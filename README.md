@@ -99,7 +99,7 @@ This is equivalent to compressing and then immediately decompressing again, and 
  
 The block footprints go from 4x4 (8 bits per pixel) all the way up to 12x12 (0.89 bits/pixel). Like any lossy codec, such as JPEG there will come a point where selecting too aggressive a compression results in inacceptable quality loss, and ASTC is no exception. Finding this optimum balance between size and quality is one place where ASTC excels since its compression ratio is adjustable in much finer steps than other texture codecs.
  
-The compression speed runs from `-veryfast`, through `-fast`, `-medium` and -thorough, up to `-exhaustive`. In general, the more time the encoder has to spend looking for good encodings, the better the results.
+The compression speed runs from `-veryfast`, through `-fast`, `-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the encoder has to spend looking for good encodings, the better the results.
 
 # Support
 Please submit your questions and issues to the [ARM Mali Graphics forums](http://community.arm.com/groups/arm-mali-graphics).
