@@ -2,7 +2,7 @@
 
 This is the official repository of the evaluation codec for the Adaptive Scalable Texture Compression (ASTC) standard.
 
-ASTC technology developed by ARM® and AMD has been adopted as an official extension to both the Open GL® and OpenGL ES graphics APIs. ASTC is a major step forward in terms of image quality, reducing memory bandwidth and thus energy use.
+ASTC technology developed by ARMÂ® and AMD has been adopted as an official extension to both the Open GLÂ® and OpenGL ES graphics APIs. ASTC is a major step forward in terms of image quality, reducing memory bandwidth and thus energy use.
 
 The **ASTC Evaluation Codec** is a command-line executable that compresses and decompresses images using this texture compression standard.
 
@@ -91,7 +91,7 @@ If you just want to test what compression and decompression are like, use the te
 
 and on Windows:
 
-    astcenc -c C:\images\example.png C:\images\example-compressed.tga 6x6 -medium
+    astcenc -t C:\images\example.png C:\images\example-compressed.tga 6x6 -medium
  
 This is equivalent to compressing and then immediately decompressing again, and it also prints out statistics about the fidelity of the resulting image, using the peak signal-to-noise ratio.
  
