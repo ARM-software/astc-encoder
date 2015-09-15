@@ -695,7 +695,7 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 															   int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
 {
 	int i;
-	int best_integer_count = -4;
+	int best_integer_count = 0;
 	float best_integer_count_error = 1e20f;
 	int integer_count;
 
