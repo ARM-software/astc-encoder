@@ -19,13 +19,6 @@
 #include <math.h>
 #include "mathlib.h"
 
-#ifdef WIN32
-	double cbrt(double n)
-	{
-		return n < 0 ? -pow(-n, 1.0 / 3.0) : pow(n, 1.0 / 3.0);
-	}
-#endif
-
 /**************************
   basic opencl functions
 **************************/
