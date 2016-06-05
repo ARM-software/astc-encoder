@@ -857,8 +857,8 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			}
 		}
 
-        separate_errors[best_partition] = 1e30f;
-        best_partition = ((best_partition >> PARTITION_BITS) << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
+		separate_errors[best_partition] = 1e30f;
+		best_partition = ((best_partition >> PARTITION_BITS) << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
 		best_partitions_dual_weight_planes[i] = best_partition;
 	}
 
