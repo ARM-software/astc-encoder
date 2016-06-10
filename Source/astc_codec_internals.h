@@ -703,6 +703,28 @@ struct encoding_choice_errors
 	int can_blue_contract;
 };
 
+// buffers used to store intermediate data in compress_symbolic_block_fixed_partition_*()
+struct compress_fixed_partition_buffers
+{
+	endpoints_and_weights* ei1;
+	endpoints_and_weights* ei2;
+	endpoints_and_weights* eix1;
+	endpoints_and_weights* eix2;
+	float *decimated_quantized_weights;
+	float *decimated_weights;
+	float *flt_quantized_decimated_quantized_weights;
+	uint8_t *u8_quantized_decimated_quantized_weights;
+};
+
+struct compress_symbolic_block_buffers
+{
+	error_weight_block *ewb;
+	error_weight_block_orig *ewbo;
+	symbolic_compressed_block *tempblocks;
+	imageblock *temp;
+	compress_fixed_partition_buffers *plane1;
+	compress_fixed_partition_buffers *planes2;
+};
 
 void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblock * pb, const partition_info * pi, const error_weight_block * ewb,
 									int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
@@ -758,7 +780,8 @@ void compute_angular_endpoints_2planes(float mode_cutoff,
 /* *********************************** high-level encode and decode functions ************************************ */
 
 float compress_symbolic_block(const astc_codec_image * input_image,
-							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb);
+							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb,
+							  compress_symbolic_block_buffers * tmpbuf);
 
 
 float4 lerp_color_flt(const float4 color0, const float4 color1, float weight,	// 0..1
