@@ -1577,6 +1577,7 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 														 i,	// the color component to test a separate plane of weights for.
 														 blk, ewb, tempblocks, tmpbuf->planes2);
 
+		best_errorval_in_mode = 1e30f;
 		for (j = 0; j < 4; j++)
 		{
 			if (tempblocks[j].error_block)
@@ -1670,11 +1671,11 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 
-					// modesel = 4*(partition_count-2) + 5;
+					// modesel = 4*(partition_count-2) + 5 + i;
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5] = best_errorval_in_mode;
+			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
@@ -1739,11 +1740,11 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 
-					// modesel = 4*(partition_count-2) + 5 + 2;
+					// modesel = 4*(partition_count-2) + 5 + 2 + i;
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2 + i] = best_errorval_in_mode;
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
