@@ -278,9 +278,9 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 			int vx_low_s = read_bits(9, 10, pb.data);
 			int vx_high_s = read_bits(9, 19, pb.data);
 			int vx_low_t = read_bits(9, 28, pb.data);
-			int vx_high_t = read_bits(9, 36, pb.data);
-			int vx_low_p = read_bits(9, 45, pb.data);
-			int vx_high_p = read_bits(9, 54, pb.data);
+			int vx_high_t = read_bits(9, 37, pb.data);
+			int vx_low_p = read_bits(9, 46, pb.data);
+			int vx_high_p = read_bits(9, 55, pb.data);
 
 			int all_ones = vx_low_s == 0x1FF && vx_high_s == 0x1FF && vx_low_t == 0x1FF && vx_high_t == 0x1FF && vx_low_p == 0x1FF && vx_high_p == 0x1FF;
 
