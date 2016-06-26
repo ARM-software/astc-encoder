@@ -827,7 +827,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 		int best_partition = 0;
 		float best_partition_error = 1e30f;
 
-		for (j = 0; j < defacto_search_limit; j++)
+		for (j = 0; j <= defacto_search_limit; j++)
 		{
 			if (1 || !uses_alpha)
 			{

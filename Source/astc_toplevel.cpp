@@ -1012,7 +1012,7 @@ int main(int argc, char **argv)
 				"\n"
 				" -plimit <number>\n"
 				"      Test only <number> different partitionings. Higher numbers give better\n"
-				"      quality at the expense of longer decode time; however large values tend\n"
+				"      quality at the expense of longer encode time; however large values tend\n"
 				"      to give diminishing returns. This parameter can be set to a\n"
 				"      number from 1 to %d. By default, this limit is set based on the active\n"
 				"      preset, as follows:\n"
