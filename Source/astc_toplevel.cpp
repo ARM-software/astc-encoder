@@ -1848,7 +1848,7 @@ int main(int argc, char **argv)
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-oplimit switch with no argument\n");
+				printf("-mincorrel switch with no argument\n");
 				exit(1);
 			}
 			mincorrel_user_specified = static_cast < float >(atof(argv[argidx - 1]));
