@@ -274,7 +274,8 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 	int texels_to_process = bsd->texelcount_for_bitmap_partitioning;
 	for (i = 0; i < texels_to_process; i++)
 	{
-		pt->coverage_bitmaps[pt->partition_of_texel[i]] |= 1ULL << i;
+		int idx = bsd->texels_for_bitmap_partitioning[i];
+		pt->coverage_bitmaps[pt->partition_of_texel[idx]] |= 1ULL << i;
 	}
 
 }
