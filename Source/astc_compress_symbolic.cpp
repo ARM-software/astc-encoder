@@ -224,7 +224,7 @@ int realign_weights(astc_decode_mode decode_mode,
 			int prev_wt = qat->prev_quantized_value[current_wt];
 			if (prev_wt == current_wt)
 				break;
-			uq_plane1_weights[i] = qat->unquantized_value_flt[prev_wt];
+			uq_plane2_weights[i] = qat->unquantized_value_flt[prev_wt];
 			float prev_error;
 			COMPUTE_ERROR(prev_error);
 			if (prev_error < current_error)
