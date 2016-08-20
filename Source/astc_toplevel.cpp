@@ -593,7 +593,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 		for (j = i; j < 6; j++)
 		{
 			//              NxN       MxN         8x5               10x5              10x6
-			int is_legal = (j==i) || (j==i+1) || (j==3 && j==1) || (j==4 && j==1) || (j==4 && j==2);
+			int is_legal = (j==i) || (j==i+1) || (j==3 && i==1) || (j==4 && i==1) || (j==4 && i==2);
 
 			if(consider_illegal || is_legal)
 			{
