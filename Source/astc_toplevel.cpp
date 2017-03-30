@@ -220,7 +220,9 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 	int ydim = hdr.blockdim_y;
 	int zdim = hdr.blockdim_z;
 
-	if (xdim < 3 || xdim > 12 || ydim < 3 || ydim > 12 || (zdim < 3 && zdim != 1) || zdim > 12)
+	if ( (xdim < 3 || xdim > 6 || ydim < 3 || ydim > 6 || zdim < 3 || zdim > 6) &&
+	     (xdim < 4 || xdim == 7 || xdim == 9 || xdim == 11 || xdim > 12 ||
+	      ydim < 4 || ydim == 7 || ydim == 9 || ydim == 11 || ydim > 12 || zdim != 1) )
 	{
 		fclose(f);
 		printf("File %s not recognized %d %d %d\n", filename, xdim, ydim, zdim);
@@ -231,6 +233,13 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 	int xsize = hdr.xsize[0] + 256 * hdr.xsize[1] + 65536 * hdr.xsize[2];
 	int ysize = hdr.ysize[0] + 256 * hdr.ysize[1] + 65536 * hdr.ysize[2];
 	int zsize = hdr.zsize[0] + 256 * hdr.zsize[1] + 65536 * hdr.zsize[2];
+
+	if (xsize == 0 || ysize == 0 || zsize == 0)
+	{
+		fclose(f);
+		printf("File %s has zero dimention %d %d %d\n", filename, xsize, ysize, zsize);
+		exit(1);
+	}
 
 
 	int xblocks = (xsize + xdim - 1) / xdim;
