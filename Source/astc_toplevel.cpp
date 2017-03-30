@@ -237,7 +237,7 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 	if (xsize == 0 || ysize == 0 || zsize == 0)
 	{
 		fclose(f);
-		printf("File %s has zero dimention %d %d %d\n", filename, xsize, ysize, zsize);
+		printf("File %s has zero dimension %d %d %d\n", filename, xsize, ysize, zsize);
 		exit(1);
 	}
 
