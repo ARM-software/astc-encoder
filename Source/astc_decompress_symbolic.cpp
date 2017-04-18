@@ -133,12 +133,18 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 		if (scb->block_mode == -2)
 		{
 			// For sRGB decoding, we should return only the top 8 bits.
-			int mask = (decode_mode == DECODE_LDR_SRGB) ? 0xFF00 : 0xFFFF;
-
-			red = sf16_to_float(unorm16_to_sf16(scb->constant_color[0] & mask));
-			green = sf16_to_float(unorm16_to_sf16(scb->constant_color[1] & mask));
-			blue = sf16_to_float(unorm16_to_sf16(scb->constant_color[2] & mask));
-			alpha = sf16_to_float(unorm16_to_sf16(scb->constant_color[3] & mask));
+			if (decode_mode == DECODE_LDR_SRGB)
+			{
+				red   = (scb->constant_color[0] >> 8) / 255.0f;
+				green = (scb->constant_color[1] >> 8) / 255.0f;
+				blue  = (scb->constant_color[2] >> 8) / 255.0f;
+				alpha = (scb->constant_color[3] >> 8) / 255.0f;
+			} else {
+				red = sf16_to_float(unorm16_to_sf16(scb->constant_color[0]));
+				green = sf16_to_float(unorm16_to_sf16(scb->constant_color[1]));
+				blue = sf16_to_float(unorm16_to_sf16(scb->constant_color[2]));
+				alpha = sf16_to_float(unorm16_to_sf16(scb->constant_color[3]));
+			}
 			use_lns = 0;
 			use_nan = 0;
 		}
