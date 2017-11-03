@@ -59,6 +59,7 @@ float nan(int p)
 	return v.q;
 }
 
+#if __cplusplus < 201103L
 float fmax(float p, float q)
 {
 	if (p != p)
@@ -80,7 +81,7 @@ float fmin(float p, float q)
 		return p;
 	return q;
 }
-
+#endif  // C++11
 
 float2 fmax(float2 p, float2 q)
 {
