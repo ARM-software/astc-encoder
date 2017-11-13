@@ -14,7 +14,7 @@ See [license.txt](license.txt) file for details.
 
 # Compilation from Sources
 * You can use GCC >= 4.6 and standard GNU tools to perform make-driven compilation on Linux and/or MacOS systems.
-* You can use Visual Studio 2010 to compile for Windows systems (using solution file from `Source/win32-2010/astcenc` directory).
+* You can use Visual Studio 2013 to compile for Windows systems (using solution file from `Source/win32-2013/astcenc` directory).
 
 # ASTC Features & Benefits
 
@@ -105,4 +105,4 @@ The compression speed runs from `-veryfast`, through `-fast`, `-medium` and `-th
 Please submit your questions and issues to the [ARM Mali Graphics forums](http://community.arm.com/groups/arm-mali-graphics).
 
 - - - 
-_Copyright (c) 2013-2015, ARM Limited and Contributors. All rights reserved._
+_Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved._
