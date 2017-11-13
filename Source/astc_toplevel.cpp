@@ -1912,7 +1912,7 @@ int main(int argc, char **argv)
 			oplimit_autoset = 1.0;
 			mincorrel_autoset = 0.5;
 			dblimit_autoset_2d = MAX(85 - 35 * log10_texels_2d, 63 - 19 * log10_texels_2d);
-			dblimit_autoset_2d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
+			dblimit_autoset_3d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
 			bmc_autoset = 50;
 			maxiters_autoset = 1;
 
