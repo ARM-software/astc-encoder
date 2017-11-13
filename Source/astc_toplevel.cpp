@@ -332,6 +332,23 @@ void *encode_astc_image_threadfunc(void *vblk)
 
 	int owns_progress_counter = 0;
 
+	//allocate memory for temporary buffers
+	compress_symbolic_block_buffers temp_buffers;
+	temp_buffers.ewb = new error_weight_block;
+	temp_buffers.ewbo = new error_weight_block_orig;
+	temp_buffers.tempblocks = new symbolic_compressed_block[4];
+	temp_buffers.temp = new imageblock;
+	temp_buffers.planes2 = new compress_fixed_partition_buffers;
+	temp_buffers.planes2->ei1 = new endpoints_and_weights;
+	temp_buffers.planes2->ei2 = new endpoints_and_weights;
+	temp_buffers.planes2->eix1 = new endpoints_and_weights[MAX_DECIMATION_MODES];
+	temp_buffers.planes2->eix2 = new endpoints_and_weights[MAX_DECIMATION_MODES];
+	temp_buffers.planes2->decimated_quantized_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
+	temp_buffers.planes2->decimated_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
+	temp_buffers.planes2->flt_quantized_decimated_quantized_weights = new float[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	temp_buffers.planes2->u8_quantized_decimated_quantized_weights = new uint8_t[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	temp_buffers.plane1 = temp_buffers.planes2;
+
 	for (z = 0; z < zblocks; z++)
 		for (y = 0; y < yblocks; y++)
 			for (x = 0; x < xblocks; x++)
@@ -347,7 +364,7 @@ void *encode_astc_image_threadfunc(void *vblk)
 				#endif
 						fetch_imageblock(input_image, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_encode);
 						symbolic_compressed_block scb;
-						compress_symbolic_block(input_image, decode_mode, xdim, ydim, zdim, ewp, &pb, &scb);
+						compress_symbolic_block(input_image, decode_mode, xdim, ydim, zdim, ewp, &pb, &scb, &temp_buffers);
 						if (pack_and_unpack)
 						{
 							decompress_symbolic_block(decode_mode, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, &scb, &pb);
@@ -401,6 +418,21 @@ void *encode_astc_image_threadfunc(void *vblk)
 				else
 					ctr--;
 			}
+
+	delete[] temp_buffers.planes2->decimated_quantized_weights;
+	delete[] temp_buffers.planes2->decimated_weights;
+	delete[] temp_buffers.planes2->flt_quantized_decimated_quantized_weights;
+	delete[] temp_buffers.planes2->u8_quantized_decimated_quantized_weights;
+	delete[] temp_buffers.planes2->eix1;
+	delete[] temp_buffers.planes2->eix2;
+	delete   temp_buffers.planes2->ei1;
+	delete   temp_buffers.planes2->ei2;
+	delete   temp_buffers.planes2;
+	delete[] temp_buffers.tempblocks;
+	delete   temp_buffers.temp;
+	delete   temp_buffers.ewbo;
+	delete   temp_buffers.ewb;
+	
 	threads_completed[thread_id] = 1;
 	return NULL;
 }
@@ -561,7 +593,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 		for (j = i; j < 6; j++)
 		{
 			//              NxN       MxN         8x5               10x5              10x6
-			int is_legal = (j==i) || (j==i+1) || (j==3 && j==1) || (j==4 && j==1) || (j==4 && j==2);
+			int is_legal = (j==i) || (j==i+1) || (j==3 && i==1) || (j==4 && i==1) || (j==4 && i==2);
 
 			if(consider_illegal || is_legal)
 			{
@@ -980,7 +1012,7 @@ int main(int argc, char **argv)
 				"\n"
 				" -plimit <number>\n"
 				"      Test only <number> different partitionings. Higher numbers give better\n"
-				"      quality at the expense of longer decode time; however large values tend\n"
+				"      quality at the expense of longer encode time; however large values tend\n"
 				"      to give diminishing returns. This parameter can be set to a\n"
 				"      number from 1 to %d. By default, this limit is set based on the active\n"
 				"      preset, as follows:\n"
@@ -1816,7 +1848,7 @@ int main(int argc, char **argv)
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-oplimit switch with no argument\n");
+				printf("-mincorrel switch with no argument\n");
 				exit(1);
 			}
 			mincorrel_user_specified = static_cast < float >(atof(argv[argidx - 1]));
