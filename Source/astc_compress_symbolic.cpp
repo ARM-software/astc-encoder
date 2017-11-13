@@ -259,7 +259,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 															int max_refinement_iters,
 															int xdim, int ydim, int zdim,
 															int partition_count, int partition_index,
-															const imageblock * blk, const error_weight_block * ewb, symbolic_compressed_block * scb)
+															const imageblock * blk, const error_weight_block * ewb, symbolic_compressed_block * scb,
+															compress_fixed_partition_buffers * tmpbuf)
 {
 	int i, j, k;
 
@@ -271,8 +272,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 
 	// first, compute ideal weights and endpoint colors, under thre assumption that
 	// there is no quantization or decimation going on.
-	endpoints_and_weights *ei = new endpoints_and_weights;
-	endpoints_and_weights *eix = new endpoints_and_weights[MAX_DECIMATION_MODES];
+	endpoints_and_weights *ei = tmpbuf->ei1;
+	endpoints_and_weights *eix = tmpbuf->eix1;
 	compute_endpoints_and_ideal_weights_1_plane(xdim, ydim, zdim, pi, blk, ewb, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
@@ -281,10 +282,10 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 	// int block_mode_count = bsd->single_plane_block_mode_count;
 
 
-	float *decimated_quantized_weights = new float[MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	float *decimated_weights = new float[MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	float *flt_quantized_decimated_quantized_weights = new float[MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	uint8_t *u8_quantized_decimated_quantized_weights = new uint8_t[MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	float *decimated_quantized_weights = tmpbuf->decimated_quantized_weights;
+	float *decimated_weights = tmpbuf->decimated_weights;
+	float *flt_quantized_decimated_quantized_weights = tmpbuf->flt_quantized_decimated_quantized_weights;
+	uint8_t *u8_quantized_decimated_quantized_weights = tmpbuf->u8_quantized_decimated_quantized_weights;
 
 	// for each decimation mode, compute an ideal set of weights
 	// (that is, weights computed with the assumption that they are not quantized)
@@ -510,13 +511,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 		scb++;
 	}
 
-	delete[]flt_quantized_decimated_quantized_weights;
-	delete[]u8_quantized_decimated_quantized_weights;
-	delete[]decimated_quantized_weights;
-	delete[]decimated_weights;
-	delete ei;
-	delete[]eix;
-
 }
 
 
@@ -530,7 +524,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 															 int xdim, int ydim, int zdim,
 															 int partition_count, int partition_index,
 															 int separate_component, const imageblock * blk, const error_weight_block * ewb,
-															 symbolic_compressed_block * scb)
+															 symbolic_compressed_block * scb,
+															 compress_fixed_partition_buffers * tmpbuf)
 {
 	int i, j, k;
 
@@ -541,10 +536,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 	pi += partition_index;
 
 	// first, compute ideal weights and endpoint colors
-	endpoints_and_weights *ei1 = new endpoints_and_weights;
-	endpoints_and_weights *ei2 = new endpoints_and_weights;
-	endpoints_and_weights *eix1 = new endpoints_and_weights[MAX_DECIMATION_MODES];
-	endpoints_and_weights *eix2 = new endpoints_and_weights[MAX_DECIMATION_MODES];
+	endpoints_and_weights *ei1 = tmpbuf->ei1;
+	endpoints_and_weights *ei2 = tmpbuf->ei2;
+	endpoints_and_weights *eix1 = tmpbuf->eix1;
+	endpoints_and_weights *eix2 = tmpbuf->eix2;
 	compute_endpoints_and_ideal_weights_2_planes(xdim, ydim, zdim, pi, blk, ewb, separate_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
@@ -552,10 +547,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
 
-	float *decimated_quantized_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	float *decimated_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	float *flt_quantized_decimated_quantized_weights = new float[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	uint8_t *u8_quantized_decimated_quantized_weights = new uint8_t[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	float *decimated_quantized_weights = tmpbuf->decimated_quantized_weights;
+	float *decimated_weights = tmpbuf->decimated_weights;
+	float *flt_quantized_decimated_quantized_weights = tmpbuf->flt_quantized_decimated_quantized_weights;
+	uint8_t *u8_quantized_decimated_quantized_weights = tmpbuf->u8_quantized_decimated_quantized_weights;
 
 	// for each decimation mode, compute an ideal set of weights
 	for (i = 0; i < MAX_DECIMATION_MODES; i++)
@@ -814,15 +809,6 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 
 		scb++;
 	}
-
-	delete[]flt_quantized_decimated_quantized_weights;
-	delete[]u8_quantized_decimated_quantized_weights;
-	delete[]decimated_quantized_weights;
-	delete[]decimated_weights;
-	delete ei1;
-	delete ei2;
-	delete[]eix1;
-	delete[]eix2;
 
 }
 
@@ -1317,7 +1303,8 @@ void compress_constant_color_block(int xdim, int ydim, int zdim, const imagebloc
 int block_mode_histogram[2048];
 
 float compress_symbolic_block(const astc_codec_image * input_image,
-							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb)
+							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb,
+							  compress_symbolic_block_buffers * tmpbuf)
 {
 	int i, j;
 	int xpos = blk->xpos;
@@ -1417,8 +1404,8 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 		return 0.0f;
 	}
 
-	error_weight_block *ewb = new error_weight_block;
-	error_weight_block_orig *ewbo = new error_weight_block_orig;
+	error_weight_block *ewb = tmpbuf->ewb;
+	error_weight_block_orig *ewbo = tmpbuf->ewbo;
 
 	float error_weight_sum = prepare_error_weight_block(input_image,
 														xdim, ydim, zdim,
@@ -1439,12 +1426,12 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 		}
 	#endif
 
-	symbolic_compressed_block *tempblocks = new symbolic_compressed_block[4];
+	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
 	float error_of_best_block = 1e20f;
 	// int modesel=0;
 
-	imageblock *temp = new imageblock;
+	imageblock *temp = tmpbuf->temp;
 
 	float best_errorvals_in_modes[17];
 	for (i = 0; i < 17; i++)
@@ -1516,7 +1503,7 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 	{
 		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ewp->max_refinement_iters, xdim, ydim, zdim, 1,	// partition count
 														0,	// partition index
-														blk, ewb, tempblocks);
+														blk, ewb, tempblocks, tmpbuf->plane1);
 
 		best_errorval_in_mode = 1e30f;
 		for (j = 0; j < 4; j++)
@@ -1588,8 +1575,9 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ewp->max_refinement_iters, xdim, ydim, zdim, 1,	// partition count
 														 0,	// partition index
 														 i,	// the color component to test a separate plane of weights for.
-														 blk, ewb, tempblocks);
+														 blk, ewb, tempblocks, tmpbuf->planes2);
 
+		best_errorval_in_mode = 1e30f;
 		for (j = 0; j < 4; j++)
 		{
 			if (tempblocks[j].error_block)
@@ -1650,7 +1638,7 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 
 		for (i = 0; i < 2; i++)
 		{
-			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ewp->max_refinement_iters, xdim, ydim, zdim, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks);
+			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ewp->max_refinement_iters, xdim, ydim, zdim, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, tmpbuf->plane1);
 
 			best_errorval_in_mode = 1e30f;
 			for (j = 0; j < 4; j++)
@@ -1683,11 +1671,11 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 
-					// modesel = 4*(partition_count-2) + 5;
+					// modesel = 4*(partition_count-2) + 5 + i;
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5] = best_errorval_in_mode;
+			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
@@ -1718,7 +1706,7 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 															 xdim, ydim, zdim,
 															 partition_count,
 															 partition_indices_2planes[i] & (PARTITION_COUNT - 1), partition_indices_2planes[i] >> PARTITION_BITS,
-															 blk, ewb, tempblocks);
+															 blk, ewb, tempblocks, tmpbuf->planes2);
 
 			best_errorval_in_mode = 1e30f;
 			for (j = 0; j < 4; j++)
@@ -1752,11 +1740,11 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 
-					// modesel = 4*(partition_count-2) + 5 + 2;
+					// modesel = 4*(partition_count-2) + 5 + 2 + i;
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2 + i] = best_errorval_in_mode;
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
@@ -1789,14 +1777,8 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 	if (scb->block_mode >= 0)
 		block_mode_histogram[scb->block_mode & 0x7ff]++;
 
-	delete[]tempblocks;
-	delete temp;
-	delete ewb;
-	delete ewbo;
-
+	
 	// compress/decompress to a physical block
-
-
 	physical_compressed_block psb = symbolic_to_physical(xdim, ydim, zdim, scb);
 	physical_to_symbolic(xdim, ydim, zdim, psb, scb);
 

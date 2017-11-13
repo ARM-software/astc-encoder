@@ -19,13 +19,6 @@
 #include <math.h>
 #include "mathlib.h"
 
-#ifdef WIN32
-	double cbrt(double n)
-	{
-		return n < 0 ? -pow(-n, 1.0 / 3.0) : pow(n, 1.0 / 3.0);
-	}
-#endif
-
 /**************************
   basic opencl functions
 **************************/
@@ -57,28 +50,6 @@ float nan(int p)
 	} v;
 	v.p = p | 0x7FC00000U;
 	return v.q;
-}
-
-float fmax(float p, float q)
-{
-	if (p != p)
-		return q;
-	if (q != q)
-		return p;
-	if (p > q)
-		return p;
-	return q;
-}
-
-float fmin(float p, float q)
-{
-	if (p != p)
-		return q;
-	if (q != q)
-		return p;
-	if (p < q)
-		return p;
-	return q;
 }
 
 
