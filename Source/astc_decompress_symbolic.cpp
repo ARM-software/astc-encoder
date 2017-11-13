@@ -14,10 +14,11 @@
  */ 
 /*----------------------------------------------------------------------------*/ 
 
+#include <math.h>
+
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
-#include <math.h>
 #include <stdio.h>
 
 int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, const int *weights)

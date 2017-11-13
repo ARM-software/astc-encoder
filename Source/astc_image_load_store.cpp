@@ -13,12 +13,13 @@
  */ 
 /*----------------------------------------------------------------------------*/ 
 
+#include <math.h>
+
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
 #include <stdint.h>
 #include <stdio.h>
-#include <math.h>
 
 void destroy_image(astc_codec_image * img)
 {
