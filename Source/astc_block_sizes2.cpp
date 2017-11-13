@@ -691,6 +691,9 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 					maxprec_2planes = i;
 			}
 
+			if (2 * x_weights * y_weights > MAX_WEIGHTS_PER_BLOCK)
+				maxprec_2planes = -1;
+
 			bsd->permit_encode[decimation_mode_count] = (x_weights <= xdim && y_weights <= ydim);
 
 			bsd->decimation_mode_samples[decimation_mode_count] = weight_count;
@@ -840,6 +843,10 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 					if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
 						maxprec_2planes = i;
 				}
+
+				if ((2 * x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
+					maxprec_2planes = -1;
+
 				bsd->permit_encode[decimation_mode_count] = (x_weights <= xdim && y_weights <= ydim && z_weights <= zdim);
 
 				bsd->decimation_mode_samples[decimation_mode_count] = weight_count;

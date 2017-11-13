@@ -593,7 +593,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 		for (j = i; j < 6; j++)
 		{
 			//              NxN       MxN         8x5               10x5              10x6
-			int is_legal = (j==i) || (j==i+1) || (j==3 && j==1) || (j==4 && j==1) || (j==4 && j==2);
+			int is_legal = (j==i) || (j==i+1) || (j==3 && i==1) || (j==4 && i==1) || (j==4 && i==2);
 
 			if(consider_illegal || is_legal)
 			{
@@ -1012,7 +1012,7 @@ int main(int argc, char **argv)
 				"\n"
 				" -plimit <number>\n"
 				"      Test only <number> different partitionings. Higher numbers give better\n"
-				"      quality at the expense of longer decode time; however large values tend\n"
+				"      quality at the expense of longer encode time; however large values tend\n"
 				"      to give diminishing returns. This parameter can be set to a\n"
 				"      number from 1 to %d. By default, this limit is set based on the active\n"
 				"      preset, as follows:\n"
@@ -1848,7 +1848,7 @@ int main(int argc, char **argv)
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-oplimit switch with no argument\n");
+				printf("-mincorrel switch with no argument\n");
 				exit(1);
 			}
 			mincorrel_user_specified = static_cast < float >(atof(argv[argidx - 1]));
