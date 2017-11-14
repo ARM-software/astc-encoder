@@ -45,11 +45,11 @@ ASTC specification includes two profiles: LDR and Full. The smaller LDR Profile 
 
 * Source code
 * Full specification of the ASTC data format
-* Binaries for Windows, Mac OS X and Linux (x86, 32-bit)
+* Binaries for Windows, Mac OS X and Linux
 
 # Getting Started
  
-First, accept the [license](license.txt) and download the source code. In the subdirectories Win32, Mac OS X and Linux32 are binaries for Windows, Mac OS X, and Linux (x86 versions). If you are running on another system, you might like to try compiling from source.
+First, accept the [license](license.txt) and download the source code. The `Binary` subdirectory contains executable binaries for Windows, Mac OS X, and Linux. If you are running on another system, you might like to try compiling from source.
  
 Open a terminal, change to the appropriate directory for your system, and run the astcenc encoder program, like this on Linux or Mac OS:
  
