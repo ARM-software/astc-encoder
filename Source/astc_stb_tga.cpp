@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -11,8 +11,8 @@
  *
  *	@brief	Functions for loading/storing TGA files and the file types
  *			accessible through STB.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -105,7 +105,7 @@ astc_codec_image * load_image_with_stb(const char *filename, int padding, int *r
 
 
 
-/* 
+/*
    given a TGA filename, read in a TGA file and create test-vectors from it.
 */
 
@@ -158,7 +158,7 @@ enum tga_errors
 };
 
 
-/* 
+/*
 	return: if positive number, then the number is #components in the image
 	1=Grayscale 2=Grayscale+Alpha 3=RGB 4=RGB+Alpha
 	add 0x80 if the file was in fact a HTGA file with HDR content.
@@ -335,7 +335,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][3 * x + 2];	// tga uses BGR, we use RGB
+					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][3 * x + 1];
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][3 * x];
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = 0xFF;
@@ -345,7 +345,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][4 * x + 2];	// tga uses BGR, we use RGB
+					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][4 * x + 1];
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][4 * x];
 					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = row_pointers8[y_src][4 * x + 3];
@@ -390,7 +390,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][3 * x + 2];	// tga uses BGR, we use RGB
+					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][3 * x + 1];
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][3 * x];
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = 0x3C00;
@@ -400,7 +400,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][4 * x + 2];	// tga uses BGR, we use RGB
+					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][4 * x + 1];
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][4 * x];
 					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = row_pointers16[y_src][4 * x + 3];
@@ -421,7 +421,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 
 
 
-/* 
+/*
    returns -1 if any problems arose when writing the file, else the number of color channels it chose to write.
  */
 int store_tga_image(const astc_codec_image * img, const char *tga_filename, int bitness)

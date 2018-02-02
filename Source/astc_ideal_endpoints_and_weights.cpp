@@ -30,8 +30,8 @@
 	#include <fenv.h>
 #endif
 
-static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, int zdim, 
-															const partition_info * pt, const imageblock * blk, 
+static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, int zdim,
+															const partition_info * pt, const imageblock * blk,
 															const error_weight_block * ewb, endpoints_and_weights * ei,
 															int component)
 {
@@ -156,7 +156,7 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 				printf("%d High: <%g> => <%g %g %g %g>\n", i, highvalues[i], ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
 			}
 			printf("Ideal-weights:\n");
-	
+
 			for (i = 0; i < texels_per_block; i++)
 			{
 				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
@@ -168,7 +168,7 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 
 
 static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim, int zdim, const partition_info * pt,
-															 const imageblock * blk, const error_weight_block * ewb, 
+															 const imageblock * blk, const error_weight_block * ewb,
 															 endpoints_and_weights * ei, int component1, int component2)
 {
 	int i;
@@ -402,7 +402,7 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 				printf("%d High: <%g %g> => <%g %g %g %g>\n", i, highvalues[i].x, highvalues[i].y, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
 			}
 			printf("Ideal-weights:\n");
-	
+
 			for (i = 0; i < texels_per_block; i++)
 			{
 				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
@@ -685,7 +685,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 				printf("%d High: <%g %g %g> => <%g %g %g %g>\n", i, highvalues[i].x, highvalues[i].y, highvalues[i].z, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
 			}
 			printf("Ideal-weights:\n");
-	
+
 			for (i = 0; i < texels_per_block; i++)
 			{
 				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, (i % xdim), (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
@@ -856,7 +856,7 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 				printf("%d High: <%g %g %g %g>\n", i, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
 			}
 			printf("\nIdeal-weights:\n");
-	
+
 			for (i = 0; i < texels_per_block; i++)
 			{
 				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
@@ -869,7 +869,7 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 
 
 
-/* 
+/*
 
 	For a given partitioning, compute: for each partition, the ideal endpoint colors;
 	these define a color line for the partition. for each pixel, the ideal position of the pixel on the partition's
@@ -950,7 +950,7 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
 
 
 
-/* 
+/*
    After having computed ideal weights for the case where a weight exists for
    every texel, we want to compute the ideal weights for the case where weights
    exist only for some texels.
@@ -958,7 +958,7 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
    We do this with a steepest-descent grid solver; this works as follows:
 
    * First, for each actual weight, perform a weighted averaging based on the
-     texels affected by the weight. 
+     texels affected by the weight.
    * Then, set step size to <some initial value>
    * Then, repeat:
 		1: First, compute for each weight how much the error will change
@@ -977,7 +977,7 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
    the error one routine to compute the error change of an infinitesimal
    weight change
 
-   Data structures needed: 
+   Data structures needed:
    For every decimation pattern, we need:
    * For each weight, a list of <texel, weight> tuples that tell which texels
      the weight influences.
@@ -1013,10 +1013,9 @@ static inline float compute_error_of_texel(const endpoints_and_weights * eai, in
 */
 
 
-// this routine is rather heavily optimized since it consumes
-// a lot of cpu time.
+// this routine is rather heavily optimized since it consumes a lot of CPU time.
 void compute_two_error_changes_from_perturbing_weight_infill(const endpoints_and_weights * eai, const decimation_table * it,
-															float *infilled_weights, int weight_to_perturb, 
+															float *infilled_weights, int weight_to_perturb,
 															float perturbation1, float perturbation2, float *res1, float *res2)
 {
 	int num_weights = it->weight_num_texels[weight_to_perturb];
@@ -1055,7 +1054,7 @@ float compute_error_of_weight_set(const endpoints_and_weights * eai, const decim
 }
 
 
-/* 
+/*
 	Given a complete weight set and a decimation table, try to
 	compute the optimal weight set (assuming infinite precision)
 	given the selected decimation table.
@@ -1159,18 +1158,18 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 			float error_change_up, error_change_down;
 			compute_two_error_changes_from_perturbing_weight_infill(eai, it, infilled_weights, i, stepsize, -stepsize, &error_change_up, &error_change_down);
 
-			/* 
+			/*
 				assume that the error-change function behaves like a quadratic function in the interval examined,
 				with "error_change_up" and "error_change_down" defining the function at the endpoints
 				of the interval. Then, find the position where the function's derivative is zero.
 
 				The "fabs(b) >= a" check tests several conditions in one:
-					if a is negative, then the 2nd derivative fo the function is negative;
+					if a is negative, then the 2nd derivative of the function is negative;
 					in this case, f'(x)=0 will maximize error.
 				If fabs(b) > fabs(a), then f'(x)=0 will lie outside the interval altogether.
 				If a and b are both 0, then set step to 0;
 					otherwise, we end up computing 0/0, which produces a lethal NaN.
-				We can get an a=b=0 situation if an error weight is 0 in the wrong place. 
+				We can get an a=b=0 situation if an error weight is 0 in the wrong place.
 			*/
 
 			float step;
@@ -1249,7 +1248,7 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 
 
 
-/* 
+/*
 	For a decimation table, try to compute an optimal weight set, assuming
 	that the weights are quantized and subject to a transfer function.
 
@@ -1275,11 +1274,11 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 		if (print_diagnostics)
 		{
 			printf("%s : texels-per-block=%d,  weights=%d,  quantization-level=%d\n\n", __func__, texels_per_block, weight_count, quantization_level);
-	
+
 			printf("Weight values before quantization:\n");
 			for (i = 0; i < weight_count; i++)
 				printf("%3d : %g\n", i, weight_set_in[i]);
-	
+
 			printf("Low-bound: %f  High-bound: %f\n", low_bound, high_bound);
 		}
 	#endif
@@ -1288,7 +1287,7 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 	// quantize the weight set using both the specified low/high bounds and the
 	// standard 0..1 weight bounds.
 
-	/* 
+	/*
 	   WTF issue that we need to examine some time
 	*/
 
@@ -1394,7 +1393,7 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 					printf("%3d : %g <%d> <error=%g>\n", i, weight_set_out[i], quantized_weight_set[i], weight_set_out[i] - weight_set_in[i]);
 				printf("\n");
 				printf("%s: Early-out\n\n", __func__);
-	
+
 			}
 		#endif
 
@@ -1556,7 +1555,7 @@ static inline float mat_square_sum(mat2 p)
 
 
 
-/* 
+/*
    for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
 void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
 							float4 * rgbs_vectors,	// used to return RGBS-vectors. (endpoint mode #6)
@@ -1593,7 +1592,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		if (print_diagnostics)
 		{
 			printf("%s : %dx%dx%d texels_per_block, %d partitions, plane2-color-component=%d\n\n", __func__, xdim, ydim, zdim, partition_count, plane2_color_component);
-	
+
 			printf("Pre-adjustment endpoint-colors: \n");
 			for (i = 0; i < partition_count; i++)
 			{
@@ -1864,7 +1863,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		qsum[i] = red_vec[i].y + green_vec[i].y + blue_vec[i].y;
 	}
 
-	// rgb+offset for HDR endpoint mode #7
+	// RGB+offset for HDR endpoint mode #7
 	int rgbo_fail[4];
 	for (i = 0; i < partition_count; i++)
 	{
@@ -1884,7 +1883,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		float4 rgbovec = transform(rmod7_mat, vect);
 		rgbo_vectors[i] = rgbovec;
 
-		// we will occasionally get a failure due to a singluar matrix. Record whether such a
+		// we will occasionally get a failure due to a singular matrix. Record whether such a
 		// failure has taken place; if it did, compute rgbo_vectors[] with a different method
 		// later on.
 		float chkval = dot(rgbovec, rgbovec);
@@ -1953,7 +1952,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		{
 
 			// otherwise, complete the analytic calculation of ideal-endpoint-values
-			// for the given set of texel weigths and pixel colors.
+			// for the given set of texel weights and pixel colors.
 
 			#ifdef DEBUG_CAPTURE_NAN
 				fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -2068,7 +2067,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 				#endif
 
 				// otherwise, complete the analytic calculation of ideal-endpoint-values
-				// for the given set of texel weigths and pixel colors.
+				// for the given set of texel weights and pixel colors.
 				float red_det2 = determinant(pmat2_red[i]);
 				float green_det2 = determinant(pmat2_green[i]);
 				float blue_det2 = determinant(pmat2_blue[i]);
@@ -2151,11 +2150,11 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			{
 				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
 				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
-	
+
 				printf("%d RGBS: <%g %g %g %g>\n", i, rgbs_vectors[i].x, rgbs_vectors[i].y, rgbs_vectors[i].z, rgbs_vectors[i].w);
-	
+
 				printf("%d RGBO <%g %g %g %g>\n", i, rgbo_vectors[i].x, rgbo_vectors[i].y, rgbo_vectors[i].z, rgbo_vectors[i].w);
-	
+
 				printf("%d Lum: <%g %g>\n", i, lum_vectors[i].x, lum_vectors[i].y);
 			}
 		}

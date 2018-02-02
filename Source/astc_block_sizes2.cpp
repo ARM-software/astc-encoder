@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -11,8 +11,8 @@
  *
  *	@brief	For ASTC, generate the block size descriptor and the associated
  *			decimation tables.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -438,7 +438,7 @@ static void initialize_decimation_table_2d(
 		dt->texel_num_weights[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
-		// This allows a branch-free implemntation of compute_value_of_texel_flt()
+		// This allows a branch-free implementation of compute_value_of_texel_flt()
 		for (j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
@@ -600,7 +600,7 @@ static void initialize_decimation_table_3d(
 				weight[2] = w2;
 				weight[3] = w3;
 
-				/* 
+				/*
 				   for(i=0;i<4;i++) weight[i] <<= 4; */
 
 				for (i = 0; i < 4; i++)
@@ -620,7 +620,7 @@ static void initialize_decimation_table_3d(
 		dt->texel_num_weights[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
-		// This allows a branch-free implemntation of compute_value_of_texel_flt()
+		// This allows a branch-free implementation of compute_value_of_texel_flt()
 		for (j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
@@ -959,7 +959,7 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 static block_size_descriptor *bsd_pointers[4096];
 
 // function to obtain a block size descriptor. If the descriptor does not exist,
-// it is created as needed. Should not be called from within multithreaded code.
+// it is created as needed. Should not be called from within multi-threaded code.
 const block_size_descriptor *get_block_size_descriptor(int xdim, int ydim, int zdim)
 {
 	int bsd_index = xdim + (ydim << 4) + (zdim << 8);

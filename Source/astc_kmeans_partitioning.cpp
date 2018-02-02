@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -18,12 +18,12 @@
  *			After clustering is done, we use the clustering result to construct
  *			one bitmap for each partition. We then scan though the partition table,
  *			counting how well the bitmaps matched.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
-// for k++ means, we need pseudorandom numbers, however using random numbers directly
+// for k++ means, we need pseudo-random numbers, however using random numbers directly
 // results in irreproducible encoding results. As such, we will instead
 // just supply a handful of numbers from random.org, and apply an algorithm similar
 // to XKCD #221. (http://xkcd.com/221/)

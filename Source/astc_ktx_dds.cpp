@@ -16,8 +16,8 @@
  *			standard way to get HDR and 3D texture data to/from the codec.
  *
  *			Status: only tested on our corpus of images.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 #include "astc_codec_internals.h"
 
 #include <stdio.h>
@@ -343,13 +343,13 @@ uint32_t u32_byterev(uint32_t v)
 
 
 
-/* 
-	Notes about KTX: 
+/*
+	Notes about KTX:
 
 	After the header and the key/value data area, the actual image data follows.
 	Each image starts with a 4-byte "imageSize" value indicating the number of bytes of image data follow.
 	(For cube-maps, this value appears only after first image; the remaining 5 images are all of equal size.)
-	If the size of an image is not a multiple of 4, then it is padded to the next multiple of 4. 
+	If the size of an image is not a multiple of 4, then it is padded to the next multiple of 4.
 	Note that this padding is NOT included in the "imageSize" field.
 	In a cubemap, the padding appears after each face note that in a 2D/3D texture, padding does
 	NOT appear between the lines/planes of the texture!
@@ -366,7 +366,7 @@ uint32_t u32_byterev(uint32_t v)
 						Byte data[format-specific-number-of-bytes]
 					* end
 				* end
-			*end 
+			*end
 			Byte cubePadding[0-3]
 		*end
 		Byte mipPadding[3 - ((imageSize+ 3) % 4)]
@@ -377,7 +377,7 @@ uint32_t u32_byterev(uint32_t v)
 
 	gl_type: UNSIGNED_BYTE UNSIGNED_SHORT HALF_FLOAT FLOAT UNSIGNED_INT_8_8_8_8 UNSIGNED_INT_8_8_8_8_REV
 	gl_format: RED, RG. RGB, RGBA BGR, BGRA
-	gl_internal_format: used for upload to opengl; we can ignore it on uncompressed-load, but
+	gl_internal_format: used for upload to OpenGL; we can ignore it on uncompressed-load, but
 		need to provide a reasonable value on store: RGB8 RGBA8 RGB16F RGBA16F
    gl_base_internal_format: same as gl_format unless texture is compressed (well, BGR is turned into RGB)
 		RED, RG, RGB, RGBA
@@ -404,12 +404,12 @@ struct ktx_header
 {
 	uint8_t magic[12];
 	uint32_t endianness;		// should be 0x04030201; if it is instead 0x01020304, then the endianness of everything must be switched.
-	uint32_t gl_type;			// 0 for compressed textures, otherwise value from table 3.2 (page 162) of opengl 4.0 spec
+	uint32_t gl_type;			// 0 for compressed textures, otherwise value from table 3.2 (page 162) of OpenGL 4.0 spec
 	uint32_t gl_type_size;		// size of data elements to do endianness swap on (1=endian-neutral data)
-	uint32_t gl_format;			// 0 for compressed textures, otherwise value from table 3.3 (page 163) of opengl spec
-	uint32_t gl_internal_format;	// sized-internal-format, corresponding to table 3.12 to 3.14 (pages 182-185) of opengl spec
-	uint32_t gl_base_internal_format;	// unsized-internal-format: corresponding to table 3.11 (page 179) of opengl spec
-	uint32_t pixel_width;		// texture dimensions; not runded up to block size for compressed.
+	uint32_t gl_format;			// 0 for compressed textures, otherwise value from table 3.3 (page 163) of OpenGLl spec
+	uint32_t gl_internal_format;	// sized-internal-format, corresponding to table 3.12 to 3.14 (pages 182-185) of OpenGL spec
+	uint32_t gl_base_internal_format;	// unsized-internal-format: corresponding to table 3.11 (page 179) of OpenGL spec
+	uint32_t pixel_width;		// texture dimensions; not rounded up to block size for compressed.
 	uint32_t pixel_height;		// must be 0 for 1D textures.
 	uint32_t pixel_depth;		// must be 0 for 1D, 2D and cubemap textures.
 	uint32_t number_of_array_elements;	// 0 if not a texture array
@@ -495,7 +495,7 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 
 	// the formats we support are:
 
-	// cartesian product of gl_type=(UNSIGNED_BYTE, UNSIGNED_SHORT, HALF_FLOAT, FLOAT) x gl_format=(RED, RG, RGB, RGBA, BGR, BGRA)
+	// Cartesian product of gl_type=(UNSIGNED_BYTE, UNSIGNED_SHORT, HALF_FLOAT, FLOAT) x gl_format=(RED, RG, RGB, RGBA, BGR, BGRA)
 
 	int components;
 	switch (hdr.gl_format)
@@ -968,7 +968,7 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 
 
 
-/* 
+/*
 	Loader for DDS files.
 
 	Note that after the header, data are densely packed with no padding;
@@ -981,7 +981,7 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 struct dds_pixelformat
 {
 	uint32_t size;				// structure size, set to 32.
-	/* 
+	/*
 	   flags bits are a combination of the following: 0x1 : Texture contains alpha data 0x2 : ---- (older files: texture contains alpha data, for Alpha-only texture) 0x4 : The fourcc field is valid,
 	   indicating a compressed or DX10 texture format 0x40 : texture contains uncompressed RGB data 0x200 : ---- (YUV in older files) 0x20000 : Texture contains Luminance data (can be combined with
 	   0x1 for Lum-Alpha) */
@@ -998,16 +998,16 @@ struct dds_pixelformat
 struct dds_header
 {
 	uint32_t size;				// header size; must be exactly 124.
-	/* 
+	/*
 	   flag field is an OR or the following bits, that indicate fields containing valid data:
-		1: caps/caps2/caps3/caps4 (set in all dds files, ignore on read)
-		2: height (set in all dds files, ignore on read)
-		4: width (set in all dds files, ignore on read)
+		1: caps/caps2/caps3/caps4 (set in all DDS files, ignore on read)
+		2: height (set in all DDS files, ignore on read)
+		4: width (set in all DDS files, ignore on read)
 		8: pitch (for uncompressed texture)
-		0x1000: the pixelformat field (set in all dds files, ignore on read)
-		0x20000: mipmapcount (for mipmapped textures with >1 level)
+		0x1000: the pixel format field (set in all DDS files, ignore on read)
+		0x20000: mipmap count (for mipmapped textures with >1 level)
 		0x80000: pitch (for compressed texture)
-		0x800000: depth (for 3d textures) 
+		0x800000: depth (for 3d textures)
 	*/
 	uint32_t flags;
 	uint32_t height;
@@ -1018,14 +1018,14 @@ struct dds_header
 	// unused, set to 0
 	uint32_t reserved1[11];
 	dds_pixelformat ddspf;
-	/* 
+	/*
 	   caps field is an OR of the following values:
 		8 : should be set for a file that contains more than 1 surface (ignore on read)
 		0x400000 : should be set for a mipmapped texture
 		0x1000 : should be set if the surface is a texture at all (all DDS files, ignore on read)
 	*/
 	uint32_t caps;
-	/* 
+	/*
 	   caps2 field is an OR of the following values:
 		0x200 : texture is cubemap
 		0x400 : +X face of cubemap is present
@@ -1141,7 +1141,7 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 	{
 
 		// DX10 header present; use the DXGI format.
-		
+
 		#define DXGI_FORMAT_R32G32B32A32_FLOAT   2
 		#define DXGI_FORMAT_R32G32B32_FLOAT      6
 		#define DXGI_FORMAT_R16G16B16A16_FLOAT  10

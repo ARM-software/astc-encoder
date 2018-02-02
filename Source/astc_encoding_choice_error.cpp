@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -30,14 +30,14 @@
  *			Quantization errors generally scale with quantization level, but are
  *			not actually independent of color encoding. In particular:
  *			* if we can use offset encoding then quantization error is halved.
- *			* if we can use blue-contraction, qunatization error for red and
+ *			* if we can use blue-contraction, quantization error for red and
  *			  green is halved.
  *			* quantization error is higher for the HDR endpoint modes.
  *
  *			Other than these errors, quantization error is assumed to be
  *			proportional to the quantization step.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -96,9 +96,11 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 
 
 
-/* 
-   for a given set of input colors and a given partitioning, determine: color error that results from RGB-scale encoding (relevant for LDR only) color error that results from RGB-lumashift encoding
-   (relevant for HDR only) color error that results from luminance-encoding color error that results form dropping alpha. whether we are eligible for offset encoding whether we are eligible for
+/*
+   for a given set of input colors and a given partitioning, determine: color error that results
+   from RGB-scale encoding (relevant for LDR only) color error that results from RGB-lumashift encoding
+   (relevant for HDR only) color error that results from luminance-encoding color error that results
+   form dropping alpha. whether we are eligible for offset encoding whether we are eligible for
    blue-contraction
 
    The input data are: color data partitioning error-weight data

@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -14,8 +14,8 @@
  *
  *			The routine below uses summed area tables in order to perform the
  *			computation in O(1) time per pixel, independent of big N is.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -316,7 +316,7 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 					input_alpha_averages[z_dst][y_dst][x_dst] = static_cast < float >(vasum * alpha_rsamples);
 
 
-					// summed-area table lookups for rgba average
+					// summed-area table lookups for RGBA average
 					double4 v0sum =
 						(varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
 						 - varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
@@ -389,7 +389,7 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 					input_alpha_averages[z_dst][y_dst][x_dst] = static_cast < float >(vasum * alpha_rsamples);
 
 
-					// summed-area table lookups for rgba average
+					// summed-area table lookups for RGBA average
 					double4 v0sum =
 						varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
 						- varbuf1[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
@@ -492,7 +492,7 @@ static void allocate_input_average_and_variance_buffers(int xsize, int ysize, in
 }
 
 
-// compute avergaes and variances for the current input image.
+// compute averages and variances for the current input image.
 void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_var_kernel_radius, int alpha_kernel_radius, swizzlepattern swz)
 {
 	int xsize = img->xsize;

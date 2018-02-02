@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -34,8 +34,8 @@
  *			Assuming N quantization steps, the scaling factor becomes s=2*PI*(N-1);
  *			we should probably have about 1 scaling factor for every 1/4
  *			quantization step (perhaps 1/8 for low levels of quantization)
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include <math.h>
 #include "astc_codec_internals.h"
@@ -123,7 +123,7 @@ void prepare_angular_tables(void)
 
 
 	// yes, the next-to-last entry is supposed to have the value 33. This because under
-	// ASTC, the the 32-weight mode leaves a double-sized hole in the middle of the
+	// ASTC, the 32-weight mode leaves a double-sized hole in the middle of the
 	// weight space, so we are better off matching 33 weights than 32.
 	static const int steps_of_level[] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36 };
 
@@ -181,7 +181,7 @@ void compute_angular_offsets(int samplecount, const float *samples, const float 
 		}
 	}
 
-	// postprocess the angle-sums
+	// post-process the angle-sums
 	for (i = 0; i < max_angular_steps; i++)
 	{
 		float angle = atan2(anglesum_y[i], anglesum_x[i]);	// positive angle -> positive offset
@@ -404,7 +404,7 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 			printf("Samplecount=%d, max_quantization_level=%d\n", samplecount, max_quantization_level);
 			for (i = 0; i < samplecount; i++)
 				printf("Sample %d : %f (weight %f)\n", i, samples[i], sample_weights[i]);
-	
+
 			for (i = 0; i < max_angular_steps; i++)
 			{
 				printf("%d: offset=%f error=%f lowest=%d highest=%d cl=%f ch=%f\n", i, offsets[i], error[i], lowest_weight[i], highest_weight[i], cut_low_weight_error[i], cut_high_weight_error[i]);
@@ -471,8 +471,8 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 
 	}
 
-	// if we got a better error-value for a low samplecount than for a high one,
-	// use the low-samplecount error value for the higher samplecount as well.
+	// if we got a better error-value for a low sample count than for a high one,
+	// use the low sample count error value for the higher sample count as well.
 	for (i = 3; i <= max_quantization_steps; i++)
 	{
 		if (best_errors[i] > best_errors[i - 1])

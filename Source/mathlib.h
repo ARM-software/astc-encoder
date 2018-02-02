@@ -1,8 +1,8 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
+ *	(C) COPYRIGHT 2011-2012, 2018 ARM Limited
  *	ALL RIGHTS RESERVED
  *
  *	The entire notice above must be reproduced on all authorised
@@ -10,8 +10,8 @@
  *	by a licensing agreement from ARM Limited.
  *
  *	@brief	Internal math library declarations for ASTC codec.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #ifndef MATHLIB_H_INCLUDED
 
@@ -41,7 +41,7 @@ float2 fmin(float2 p, float2 q);
 float3 fmin(float3 p, float3 q);
 float4 fmin(float4 p, float4 q);
 
-/* 
+/*
 	float dot( float2 p, float2 q );
 	float dot( float3 p, float3 q );
 	float dot( float4 p, float4 q );
@@ -86,7 +86,7 @@ float4 normalize(float4 p);
 
 
 
-// functions other than just basic opencl functions
+// functions other than just basic OpenCL functions
 
 float4 gcross(float4 p, float4 q, float4 r);
 
@@ -152,7 +152,7 @@ struct line2
 	float2 b;
 };
 
-// paramtric line, 3D
+// parametric line, 3D
 struct line3
 {
 	float3 a;
