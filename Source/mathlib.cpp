@@ -20,7 +20,7 @@
 #include "mathlib.h"
 
 /**************************
-  basic opencl functions
+  basic OpenCL functions
 **************************/
 
 float inversesqrt(float p)
@@ -584,7 +584,7 @@ float3 eigenvector(mat3 p, float eigvl)
 // generalized cross product: 3 vectors with 4 components each.
 // The result is a vector that is perpendicular to all the three specified vectors.
 
-// it works in the sense that it produces a perpendicular-to-everyting vector,
+// it works in the sense that it produces a perpendicular-to-everything vector,
 // but it has not been tested whether it points in the "right" direction.
 float4 gcross(float4 p, float4 q, float4 r)
 {

@@ -13,8 +13,8 @@
  *			etc.
  *
  *			This is also where main() lives.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -31,16 +31,16 @@
 	{
 		timeval tv;
 		gettimeofday(&tv, 0);
-	
+
 		return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
 	}
-	
-	
+
+
 	int astc_codec_unlink(const char *filename)
 	{
 		return unlink(filename);
 	}
-	
+
 #else
 	// Windows.h defines IGNORE, so we must #undef our own version.
 	#undef IGNORE
@@ -51,30 +51,30 @@
 
 	typedef HANDLE pthread_t;
 	typedef int pthread_attr_t;
-	
+
 	int pthread_create(pthread_t * thread, const pthread_attr_t * attribs, void *(*threadfunc) (void *), void *thread_arg)
 	{
 		*thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) threadfunc, thread_arg, 0, NULL);
 		return 0;
 	}
-	
+
 	int pthread_join(pthread_t thread, void **value)
 	{
 		WaitForSingleObject(thread, INFINITE);
 		return 0;
 	}
-	
+
 	double get_time()
 	{
 		FILETIME tv;
 		GetSystemTimeAsFileTime(&tv);
-	
+
 		unsigned __int64 ticks = tv.dwHighDateTime;
 		ticks = (ticks << 32) | tv.dwLowDateTime;
-	
+
 		return ((double)ticks) / 1.0e7;
 	}
-	
+
 	// Define an unlink() function in terms of the Win32 DeleteFile function.
 	int astc_codec_unlink(const char *filename)
 	{
@@ -441,7 +441,7 @@ void *encode_astc_image_threadfunc(void *vblk)
 	delete   temp_buffers.temp;
 	delete   temp_buffers.ewbo;
 	delete   temp_buffers.ewb;
-	
+
 	threads_completed[thread_id] = 1;
 	return NULL;
 }
@@ -458,7 +458,7 @@ void encode_astc_image(const astc_codec_image * input_image,
 	int *counters = new int[threadcount];
 	int *threads_completed = new int[threadcount];
 
-	// before entering into the multithreadeed routine, ensure that the block size descriptors
+	// before entering into the multi-threaded routine, ensure that the block size descriptors
 	// and the partition table descriptors needed actually exist.
 	get_block_size_descriptor(xdim, ydim, zdim);
 	get_partition_table(xdim, ydim, zdim, 0);
@@ -568,7 +568,7 @@ astc_codec_image *pack_and_unpack_astc_image(const astc_codec_image * input_imag
 
 	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
 
-	/* 
+	/*
 	   allocate_output_image_space( bitness, xsize, ysize, zsize ); */
 
 	int xblocks = (xsize + xdim - 1) / xdim;
@@ -1203,7 +1203,7 @@ int main(int argc, char **argv)
 				"artifacts, then using the commandline option\n"
 				" -ch 1 6 1 1\n"
 				"should improve the result significantly.\n"
-				
+
 			   , argv[0], argv[0], argv[0], argv[0], PARTITION_COUNT, PARTITION_COUNT);
 
 		exit(1);
@@ -1354,7 +1354,7 @@ int main(int argc, char **argv)
 	int high_fstop = 10;
 
 
-	// parse the commandline's encoding options.
+	// parse the command line's encoding options.
 	int argidx;
 	if (opmode == 0 || opmode == 2)
 	{
@@ -2178,12 +2178,12 @@ int main(int argc, char **argv)
 
 	if (opmode == 0 || opmode == 2)
 	{
-		// if encode, process the parsed commandline values
+		// if encode, process the parsed command line values
 
 		if (preset_has_been_set != 1)
 		{
-			printf("For encoding, need to specify exactly one performace-quality\n"
-				   "tradeoff preset option. The available presets are:\n" " -veryfast\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
+			printf("For encoding, need to specify exactly one performance-quality\n"
+				   "trade-off preset option. The available presets are:\n" " -veryfast\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
 			exit(1);
 		}
 
@@ -2453,7 +2453,7 @@ int main(int argc, char **argv)
 		{
 			if (!silentmode)
 			{
-				printf("Computing texel-neigborhood means and variances ... ");
+				printf("Computing texel-neighborhood means and variances ... ");
 				fflush(stdout);
 			}
 			compute_averages_and_variances(input_image, ewp.rgb_power, ewp.alpha_power, ewp.mean_stdev_radius, ewp.alpha_radius, swz_encode);

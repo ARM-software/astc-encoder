@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -12,7 +12,7 @@
  *	@brief	ASTC encoding of texture
  *
  *			major step 1:
- *			* find best partitioning assuming uncorrellated colors
+ *			* find best partitioning assuming uncorrelated colors
  *			* find best partitioning assuming RGBS color representation
  *
  *			finding best partitioning for a block:
@@ -21,17 +21,17 @@
  *			* this defines two lines, both of which go through the
  *			  mean-color-value:
  *			* one line has a direction defined by the dominant direction;
- *			  this line is used to assess the error from using an uncorrellated
+ *			  this line is used to assess the error from using an uncorrelated
  *			  color representation.
  *			* the other line goes through (0,0,0,1) and is used to assess the
  *			  error from using an RGBS color representation.
  *			* we then compute, as a sum across the block, the squared-errors
  *			  that result from using the dominant-direction-lines and the
  *			  squared-errors that result from using the 0001-lines.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
-/* 
+/*
  *	Partition table representation:
  *	We have 3 tables, each with 1024 partitionings
  *	(these correspond to the 3x128 hardware partitionings crossed with all the
@@ -193,17 +193,17 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 }
 
 
-/* 
+/*
    main function to identify the best partitioning for a given number of texels */
 
 
 void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count,
 							 const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
-							 // best partitionings to use if the endpoint colors are assumed to be uncorrellated
+							 // best partitionings to use if the endpoint colors are assumed to be uncorrelated
 							 int *best_partitions_uncorrellated,
 							 // best partitionings to use if the endpoint colors have the same chroma
 							 int *best_partitions_samechroma,
-							 // best partitionings to use if using dual plane of weightss
+							 // best partitionings to use if using dual plane of weights
 							 int *best_partitions_dual_weight_planes)
 {
 
@@ -244,13 +244,13 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 	const partition_info *ptab = get_partition_table(xdim, ydim, zdim, partition_count);
 
-	// partitioning errors assuming uncorrellated-chrominance endpoints
+	// partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncorr_errors[PARTITION_COUNT];
 	// partitioning errors assuming same-chrominance endpoints
 	float samechroma_errors[PARTITION_COUNT];
 
 	// partitioning errors assuming that one of the color channels
-	// is uncorrellated from all the other ones
+	// is uncorrelated from all the other ones
 	float separate_errors[4 * PARTITION_COUNT];
 
 
@@ -468,10 +468,10 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 			compute_rgb_minmax(xdim, ydim, zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
-			/* 
+			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
-			   This error is computed as follows, for each partition 
-			   1: compute the principal-axis vector (full length) in error-space 
+			   This error is computed as follows, for each partition
+			   1: compute the principal-axis vector (full length) in error-space
 			   2: convert the principal-axis vector to regular RGB-space
 			   3: scale the vector by a constant that estimates average quantization error
 			   4: for each texel, square the vector, then do a dot-product with the texel's error weight;
@@ -722,9 +722,9 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 
 
-			/* 
+			/*
 			   compute an estimate of error introduced by weight imprecision.
-			   This error is computed as follows, for each partition 
+			   This error is computed as follows, for each partition
 			   1: compute the principal-axis vector (full length) in error-space
 			   2: convert the principal-axis vector to regular RGB-space
 			   3: scale the vector by a constant that estimates average quantization error.

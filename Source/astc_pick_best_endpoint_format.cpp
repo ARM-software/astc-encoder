@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -10,8 +10,8 @@
  *	by a licensing agreement from ARM Limited.
  *
  *	@brief	Functions to pick the best ASTC endpoint format for a given block.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 #include "astc_codec_internals.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -34,7 +34,7 @@ static inline float clamp01(float val)
 	return val;
 }
 
-/* 
+/*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
 
  */
@@ -78,9 +78,8 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		(65536.0f * 65536.0f / 18.0f) / (255 * 255)
 	};
 
-	// float4 eps = ep->endpt_scale[partition_index];
-	float4 ep0 = ep->endpt0[partition_index];	// / eps;
-	float4 ep1 = ep->endpt1[partition_index];	// / eps;
+	float4 ep0 = ep->endpt0[partition_index];
+	float4 ep1 = ep->endpt1[partition_index];
 
 	float ep0_max = MAX(MAX(ep0.x, ep0.y), ep0.z);
 	float ep0_min = MIN(MIN(ep0.x, ep0.y), ep0.z);
@@ -92,16 +91,9 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 	ep0_max = MAX(ep0_max, 1e-10f);
 	ep1_max = MAX(ep1_max, 1e-10f);
 
-	/* 
-	   float lum_scale = MAX(ep0_max, ep1_max); float alpha_scale = MAX(ep0.w, ep1.w); 
-	*/
-
-
 	float4 error_weight = error_weightings[partition_index];
 
-
 	float error_weight_rgbsum = error_weight.x + error_weight.y + error_weight.z;
-
 
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
@@ -142,13 +134,13 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		if (print_diagnostics)
 		{
 			printf("%s : partition=%d\nrgb-error_wt=%f  alpha_error_wt=%f\n", __func__, partition_index, error_weight_rgbsum, error_weight.w);
-	
+
 			printf("ep0 = %f %f %f %f\n", ep0.x, ep0.y, ep0.z, ep0.w);
 			printf("ep1 = %f %f %f %f\n", ep1.x, ep1.y, ep1.z, ep1.w);
-	
-	
+
+
 			printf("rgb_range_error = %f, alpha_range_error = %f\n", rgb_range_error, alpha_range_error);
-	
+
 			printf("rgb-luma-error: %f\n", eci->rgb_luma_error);
 		}
 	#endif
@@ -432,7 +424,7 @@ static void one_partition_find_best_combination_for_bitcount(float combined_best
 		// compute the quantization level for a given number of integers and a given number of bits.
 		int quantization_level = quantization_mode_table[i + 1][bits_available];
 		if (quantization_level == -1)
-			continue;			// used to indicate the case where we don't have enoug bits to represent a given endpoint format at all.
+			continue;			// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
 		if (combined_best_error[quantization_level][i] < best_integer_count_error)
 		{
 			best_integer_count_error = combined_best_error[quantization_level][i];
@@ -509,7 +501,7 @@ static void two_partitions_find_best_combination_for_bitcount(float combined_bes
 		// compute the quantization level for a given number of integers and a given number of bits.
 		int quantization_level = quantization_mode_table[integer_count][bits_available];
 		if (quantization_level == -1)
-			break;				// used to indicate the case where we don't have enoug bits to represent a given endpoint format at all.
+			break;				// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
 		float integer_count_error = combined_best_error[quantization_level][integer_count - 2];
 		if (integer_count_error < best_integer_count_error)
 		{
@@ -704,7 +696,7 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 		// compute the quantization level for a given number of integers and a given number of bits.
 		int quantization_level = quantization_mode_table[integer_count][bits_available];
 		if (quantization_level == -1)
-			break;				// used to indicate the case where we don't have enoug bits to represent a given endpoint format at all.
+			break;				// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
 		float integer_count_error = combined_best_error[quantization_level][integer_count - 4];
 		if (integer_count_error < best_integer_count_error)
 		{
@@ -733,7 +725,7 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 
 
 
-/* 
+/*
 	The determine_optimal_set_of_endpoint_formats_to_use() function.
 
 	It identifies, for each mode, which set of color endpoint encodings
@@ -742,9 +734,9 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 
 	It takes as input:
 		a partitioning an imageblock,
-		a set of color endpoints. 
+		a set of color endpoints.
 		for each mode, the number of bits available for color encoding and the error incurred by quantization.
-		in case of 2 plane of weightss, a specifier for which color component to use for the second plane of weights.
+		in case of 2 plane of weights, a specifier for which color component to use for the second plane of weights.
 
 	It delivers as output for each of the 4 selected modes:
 		format specifier
@@ -754,9 +746,9 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 		(when all format specifiers are equal)
  */
 
-void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim, 
+void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim,
 													  const partition_info * pt, const imageblock * blk, const error_weight_block * ewb,
-													  const endpoints * ep, 
+													  const endpoints * ep,
 													  int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 													  // bitcounts and errors computed for the various quantization methods
 													  const int *qwt_bitcounts, const float *qwt_errors,

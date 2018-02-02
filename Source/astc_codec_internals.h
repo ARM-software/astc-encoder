@@ -1,8 +1,8 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
+ *	(C) COPYRIGHT 2011-2012, 2018 ARM Limited
  *	ALL RIGHTS RESERVED
  *
  *	The entire notice above must be reproduced on all authorised
@@ -10,8 +10,8 @@
  *	by a licensing agreement from ARM Limited.
  *
  *	@brief	Internal function and data declarations for ASTC codec.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #ifndef ASTC_CODEC_INTERNALS_INCLUDED
 
@@ -57,7 +57,7 @@ void astc_codec_internal_error(const char *filename, int linenumber);
 // works on Linux only, and slows down encoding significantly.
 // #define DEBUG_CAPTURE_NAN
 
-// the PRINT_DIAGNOSTICS macro enables the -diag commandline switch,
+// the PRINT_DIAGNOSTICS macro enables the -diag command line switch,
 // which can be used to look for codec bugs
 #define DEBUG_PRINT_DIAGNOSTICS
 
@@ -99,11 +99,11 @@ enum astc_decode_mode
 };
 
 
-/* 
+/*
 	Partition table representation:
 	For each block size, we have 3 tables, each with 1024 partitionings;
-	these three tables correspond to 2, 3 and 4 partitions repsectively.
-	For each partitioning, we have: 
+	these three tables correspond to 2, 3 and 4 partitions respectively.
+	For each partitioning, we have:
 	* a 4-entry table indicating how many texels there are in each of the 4 partitions.
 	  This may be from 0 to a very large value.
 	* a table indicating the partition index of each of the texels in the block.
@@ -124,7 +124,7 @@ struct partition_info
 
 
 
-/* 
+/*
    In ASTC, we don't necessarily provide a weight for every texel.
    As such, for each block size, there are a number of patterns where some texels
    have their weights computed as a weighted average of more than 1 weight.
@@ -149,7 +149,7 @@ struct decimation_table
 
 
 
-/* 
+/*
    data structure describing information that pertains to a block size and its associated block modes.
 */
 struct block_mode
@@ -183,15 +183,15 @@ struct block_size_descriptor
 
 // data structure representing one block of an image.
 // it is expanded to float prior to processing to save some computation time
-// on conversions to/from uint8_t (this also allows us to handle hdr textures easily)
+// on conversions to/from uint8_t (this also allows us to handle HDR textures easily)
 struct imageblock
 {
 	float orig_data[MAX_TEXELS_PER_BLOCK * 4];	// original input data
 	float work_data[MAX_TEXELS_PER_BLOCK * 4];	// the data that we will compress, either linear or LNS (0..65535 in both cases)
-	float deriv_data[MAX_TEXELS_PER_BLOCK * 4];	// derivative of the conversion function used, used ot modify error weighting
+	float deriv_data[MAX_TEXELS_PER_BLOCK * 4];	// derivative of the conversion function used, used to modify error weighting
 
-	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK * 4];	// 1 if RGB data are being trated as LNS
-	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK * 4];	// 1 if Alpha data are being trated as LNS
+	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK * 4];	// 1 if RGB data are being treated as LNS
+	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK * 4];	// 1 if Alpha data are being treated as LNS
 	uint8_t nan_texel[MAX_TEXELS_PER_BLOCK * 4];	// 1 if the texel is a NaN-texel.
 
 	float red_min, red_max;
@@ -246,7 +246,7 @@ void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount);
 
 
 
-/* 
+/*
 	Data structure representing error weighting for one block of an image. this is used as
 	a multiplier for the error weight to apply to each color component when computing PSNR.
 
@@ -297,7 +297,7 @@ struct error_weight_block_orig
 };
 
 
-// enumeration of all the quantization methods we support under this format.  
+// enumeration of all the quantization methods we support under this format.
 enum quantization_method
 {
 	QUANT_2 = 0,
@@ -324,7 +324,7 @@ enum quantization_method
 };
 
 
-/* 
+/*
 	In ASTC, we support relatively many combinations of weight precisions and weight transfer functions.
 	As such, for each combination we support, we have a hardwired data structure.
 
@@ -454,33 +454,33 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 // (with the assumption that each partitioning has colors lying on a line where
 // they are represented with infinite precision. Also return the length of the line
 // segments that the partition's colors are actually projected onto.
-float compute_error_squared_gba(const partition_info * pt,	// the partition that we use when computing the squared-error. 
+float compute_error_squared_gba(const partition_info * pt,	// the partition that we use when computing the squared-error.
 								const imageblock * blk, const error_weight_block * ewb, const processed_line3 * plines,
 								// output: computed length of the partitioning's line. This is not part of the
 								// error introduced by partitioning itself, but us used to estimate the error introduced by quantization
 								float *length_of_lines);
 
-float compute_error_squared_rba(const partition_info * pt,	// the partition that we use when computing the squared-error. 
+float compute_error_squared_rba(const partition_info * pt,	// the partition that we use when computing the squared-error.
 								const imageblock * blk, const error_weight_block * ewb, const processed_line3 * plines,
 								// output: computed length of the partitioning's line. This is not part of the
 								// error introduced by partitioning itself, but us used to estimate the error introduced by quantization
 								float *length_of_lines);
 
-float compute_error_squared_rga(const partition_info * pt,	// the partition that we use when computing the squared-error. 
+float compute_error_squared_rga(const partition_info * pt,	// the partition that we use when computing the squared-error.
 								const imageblock * blk, const error_weight_block * ewb, const processed_line3 * plines,
 								// output: computed length of the partitioning's line. This is not part of the
 								// error introduced by partitioning itself, but us used to estimate the error introduced by quantization
 								float *length_of_lines);
 
-float compute_error_squared_rgb(const partition_info * pt,	// the partition that we use when computing the squared-error. 
+float compute_error_squared_rgb(const partition_info * pt,	// the partition that we use when computing the squared-error.
 								const imageblock * blk, const error_weight_block * ewb, const processed_line3 * plines,
 								// output: computed length of the partitioning's line. This is not part of the
 								// error introduced by partitioning itself, but us used to estimate the error introduced by quantization
 								float *length_of_lines);
 
 
-float compute_error_squared_rgba(const partition_info * pt,	// the partition that we use when computing the squared-error. 
-								 const imageblock * blk, const error_weight_block * ewb, const processed_line4 * lines,	// one line for each of the partitions. The lines are assumed to be normalized. 
+float compute_error_squared_rgba(const partition_info * pt,	// the partition that we use when computing the squared-error.
+								 const imageblock * blk, const error_weight_block * ewb, const processed_line4 * lines,	// one line for each of the partitions. The lines are assumed to be normalized.
 								 float *length_of_lines);
 
 float compute_error_squared_rg(const partition_info * pt,	// the partition that we use when computing the squared-error.
@@ -498,7 +498,7 @@ float compute_error_squared_ra(const partition_info * pt,	// the partition that 
 
 // functions to compute error value across a tile for a particular line function
 // for a single partition.
-float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim, int ydim, int zdim, const partition_info * pt,	// the partition that we use when computing the squared-error. 
+float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim, int ydim, int zdim, const partition_info * pt,	// the partition that we use when computing the squared-error.
 												 const imageblock * blk, const error_weight_block * ewb, const processed_line3 * lin	// the line for the partition.
 	);
 
@@ -512,11 +512,11 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 // function to find the best partitioning for a given block.
 
 void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count, const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
-							 // best partitionings to use if the endpoint colors are assumed to be uncorrellated
+							 // best partitionings to use if the endpoint colors are assumed to be uncorrelated
 							 int *best_partitions_uncorrellated,
 							 // best partitionings to use if the endpoint colors have the same chroma
 							 int *best_partitions_samechroma,
-							 // best partitionings to use if dual plane of weightss are present
+							 // best partitionings to use if dual plane of weights are present
 							 int *best_partitions_dual_weight_planes);
 
 
@@ -568,7 +568,7 @@ int determine_image_channels(const astc_codec_image * img);
 void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_kernel_radius, int var_kernel_radius, swizzlepattern swz);
 
 
-/* 
+/*
 	Functions to load image from file.
 	If successful, return an astc_codec_image object.
 	If unsuccessful, returns NULL.
@@ -590,7 +590,7 @@ astc_codec_image *astc_codec_load_image(const char *filename, int padding, int *
 int astc_codec_unlink(const char *filename);
 
 // function to store image to file
-// If sucessful, returns the number of channels in input image
+// If successful, returns the number of channels in input image
 // If unsuccessful, returns a negative number.
 int store_ktx_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness);
 int store_dds_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness);
@@ -605,7 +605,7 @@ int get_output_filename_enforced_bitness(const char *filename);
 void compute_error_metrics(int input_image_is_hdr, int input_components, const astc_codec_image * img1, const astc_codec_image * img2, int low_fstop, int high_fstop, int psnrmode);
 
 // fetch an image-block from the input file
-void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to imitialize with image data
+void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to initialize with image data
 					  // block dimensions
 					  int xdim, int ydim, int zdim,
 					  // position in picture to fetch block from
@@ -614,7 +614,7 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
-void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to imitialize with image data
+void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to initialize with image data
 					  // block dimensions
 					  int xdim, int ydim, int zdim,
 					  // position in picture to write block to.
@@ -698,7 +698,7 @@ struct encoding_choice_errors
 	float rgb_luma_error;		// error of using HDR RGB-scale instead of complete endpoints.
 	float luminance_error;		// error of using luminance instead of RGB
 	float alpha_drop_error;		// error of discarding alpha
-	float rgb_drop_error;		// error of discarding rgb
+	float rgb_drop_error;		// error of discarding RGB
 	int can_offset_encode;
 	int can_blue_contract;
 };
@@ -743,7 +743,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
 							float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 							float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
-							float2 * lum_vectors,	// used to return lumiannce-vectors.
+							float2 * lum_vectors,	// used to return luminance-vectors.
 							const uint8_t * weight_set,	// the current set of weight values
 							const uint8_t * plane2_weight_set,	// NULL if plane 2 is not actually used.
 							int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present

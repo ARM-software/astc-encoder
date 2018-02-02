@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------------*/  
+/*----------------------------------------------------------------------------*/
 /**
  *	This confidential and proprietary software may be used only as
  *	authorised by a licensing agreement from ARM Limited
@@ -10,8 +10,8 @@
  *	by a licensing agreement from ARM Limited.
  *
  *	@brief	Color quantization functions for ASTC.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ */
+/*----------------------------------------------------------------------------*/
 
 #include <stdio.h>
 
@@ -23,13 +23,13 @@
 	#include <stdio.h>
 #endif
 
-/* 
-	quantize an LDR RGB color. Since this is a fallback encoding, we cannot actually
+/*
+	quantize an LDR RGB color. Since this is a fall-back encoding, we cannot actually
 	fail but must just go on until we can produce a sensible result.
 
 	Due to how this encoding works, color0 cannot be larger than color1; as such,
 	if color0 is actually larger than color1, then color0 is reduced and color1 is
-	increased until color0 is no longer larger than color1. 
+	increased until color0 is no longer larger than color1.
 */
 static inline int cqt_lookup(int quantization_level, int value)
 {
@@ -128,7 +128,7 @@ void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
 }
 
 
-/* 
+/*
    quantize an RGBA color. */
 void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization_level)
 {
@@ -148,7 +148,7 @@ void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization
 
 
 
-/* 
+/*
    attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
 int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller color
 								   float4 color1,	// assumed to be the larger color
@@ -213,7 +213,7 @@ int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller c
 
 
 
-/* 
+/*
    quantize an RGBA color with blue-contraction */
 int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8], int quantization_level)
 {
@@ -237,7 +237,7 @@ int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8],
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
 
-/* 
+/*
    attempt to quantize an RGB endpoint value with delta-encoding. */
 
 int try_quantize_rgb_delta(float4 color0, float4 color1, int output[6], int quantization_level)
@@ -695,7 +695,7 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 	float a1 = clamp255(color1.w);
 
 	// if the endpoints are *really* close, then pull them apart slightly;
-	// tisa affords for >8 bits precision for normal maps.
+	// this affords for >8 bits precision for normal maps.
 	if (quantization_level > 18 && fabs(lum0 - lum1) < 3.0f)
 	{
 		if (lum0 < lum1)
@@ -861,7 +861,7 @@ static inline void quantize_and_unquantize_retain_top_bit(int quantization_level
 
 
 
-/* 
+/*
    HDR color encoding, take #3 */
 
 
@@ -1914,7 +1914,7 @@ void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int qu
 
 
 
-/* 
+/*
 	Quantize a color. When quantizing an RGB or RGBA color, the quantizer may choose a
 	delta-based representation; as such, it will report back the format it actually used.
 */
@@ -1930,7 +1930,7 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 			printf("%s : format=%d  quantization_level=%d\n", __func__, format, quantization_level);
 			printf("Color 0: <%g %g %g %g>\n", color0.x, color0.y, color0.z, color0.w);
 			printf("Color 1: <%g %g %g %g>\n", color1.x, color1.y, color1.z, color1.w);
-	
+
 		}
 	#endif
 
@@ -2073,19 +2073,19 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 			int i;
 			printf("Quantized to format %d\n", retval);
 			printf("Quantized color:");
-	
+
 			for (i = 0; i < 8; i++)
 				printf(" %X", output[i]);
-	
+
 			ushort4 res0;
 			ushort4 res1;
 			int rgb_hdr;
 			int alpha_hdr;
 			int nan_endpoint;
-	
+
 			unpack_color_endpoints(decode_mode, retval, quantization_level, output, &rgb_hdr, &alpha_hdr, &nan_endpoint, &res0, &res1);
 			printf("rgb-hdr=%d alpha-hdr=%d nan-endpoint=%d\n", rgb_hdr, alpha_hdr, nan_endpoint);
-	
+
 			printf("Unquantized color 0: <%u %u %u %u>\n", res0.x, res0.y, res0.z, res0.w);
 			printf("Unquantized color 1: <%u %u %u %u>\n", res1.x, res1.y, res1.z, res1.w);
 			printf("\n\n");
