@@ -1141,7 +1141,7 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 		infilled_weights[i] = compute_value_of_texel_flt(i, it, weight_set);
 	}
 
-	const float stepsizes[3] = { 0.25f, 0.125f, 0.0625f };
+	const float stepsizes[2] = { 0.25f, 0.125f };
 
 	for (j = 0; j < 2; j++)
 	{
