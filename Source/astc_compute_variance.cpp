@@ -115,10 +115,10 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 
 					if (!powers_are_1)
 					{
-						d.x = pow(MAX(d.x, 1e-6f), (double)rgb_power_to_use);
-						d.y = pow(MAX(d.y, 1e-6f), (double)rgb_power_to_use);
-						d.z = pow(MAX(d.z, 1e-6f), (double)rgb_power_to_use);
-						d.w = pow(MAX(d.w, 1e-6f), (double)alpha_power_to_use);
+						d.x = pow(MAX(d.x, 1e-6), (double)rgb_power_to_use);
+						d.y = pow(MAX(d.y, 1e-6), (double)rgb_power_to_use);
+						d.z = pow(MAX(d.z, 1e-6), (double)rgb_power_to_use);
+						d.w = pow(MAX(d.w, 1e-6), (double)alpha_power_to_use);
 					}
 
 					varbuf1[z][y][x] = d;
