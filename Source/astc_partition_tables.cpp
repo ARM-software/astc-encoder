@@ -200,7 +200,7 @@ int select_partition(int seed, int x, int y, int z, int partitioncount, int smal
 	c &= 0x3F;
 	d &= 0x3F;
 
-	// remove some of the components of we are to output < 4 partitions.
+	// remove some of the components if we are to output < 4 partitions.
 	if (partitioncount <= 3)
 		d = 0;
 	if (partitioncount <= 2)
