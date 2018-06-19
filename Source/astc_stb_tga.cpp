@@ -14,14 +14,17 @@
  */
 /*----------------------------------------------------------------------------*/
 
+
+#define STBI_HEADER_FILE_ONLY
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.c"
+
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
 #include <stdint.h>
 #include <stdio.h>
 
-#define STBI_HEADER_FILE_ONLY
-#include "stb_image.c"
 
 astc_codec_image * load_image_with_stb(const char *filename, int padding, int *result)
 {
