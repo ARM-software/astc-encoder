@@ -457,7 +457,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 			scb->color_formats_matched = 0;
 
 			if ((partition_count >= 2 && scb->color_formats[0] == scb->color_formats[1]
-				 && color_quantization_level != color_quantization_level_mod)
+				&& color_quantization_level[i] != color_quantization_level_mod[i])
 				&& (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2] && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
 			{
 				int colorvals[4][12];
@@ -753,7 +753,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 			scb->color_formats_matched = 0;
 
 			if ((partition_count >= 2 && scb->color_formats[0] == scb->color_formats[1]
-				 && color_quantization_level != color_quantization_level_mod)
+				&& color_quantization_level[i] != color_quantization_level_mod[i])
 				&& (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2] && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
 			{
 				int colorvals[4][12];
