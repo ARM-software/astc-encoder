@@ -39,6 +39,7 @@ SOURCES = \
     astc_toplevel.cpp \
     mathlib.cpp \
     softfloat.cpp \
+    astc_main.cpp \
 
 
 HEADERS = \
