@@ -22,6 +22,7 @@
     <ProjectGuid>{D6D60D86-0502-446A-8498-888F78B869C2}</ProjectGuid>
     <RootNamespace>astcenc</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -39,7 +40,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -167,6 +168,7 @@
     <ClCompile Include="..\..\astc_integer_sequence.cpp" />
     <ClCompile Include="..\..\astc_kmeans_partitioning.cpp" />
     <ClCompile Include="..\..\astc_ktx_dds.cpp" />
+    <ClCompile Include="..\..\astc_main.cpp" />
     <ClCompile Include="..\..\astc_partition_tables.cpp" />
     <ClCompile Include="..\..\astc_percentile_tables.cpp" />
     <ClCompile Include="..\..\astc_pick_best_endpoint_format.cpp" />
