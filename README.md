@@ -14,7 +14,7 @@ See [license.txt](license.txt) file for details.
 
 # Compilation from Sources
 * You can use GCC >= 4.6 and standard GNU tools to perform make-driven compilation on Linux and/or MacOS systems.
-* You can use Visual Studio 2013 to compile for Windows systems (using solution file from `Source/win32-2013/astcenc` directory).
+* You can use Visual Studio 2017 to compile for Windows systems (using solution file from `Source/win32-2017/astcenc` directory).
 
 # ASTC Features & Benefits
 

@@ -811,5 +811,6 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 uint16_t unorm16_to_sf16(uint16_t p);
 uint16_t lns_to_sf16(uint16_t p);
 
+int astc_main(int argc, char ** argv);
 
 #endif

@@ -93,6 +93,9 @@
     <ClCompile Include="..\..\astc_weight_quant_xfer_tables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\astc_main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\astc_codec_internals.h">
