@@ -19,7 +19,7 @@
 
 #include "astc_codec_internals.h"
 
-#include <math.h>
+#include <cmath>
 #include "mathlib.h"
 #include "softfloat.h"
 

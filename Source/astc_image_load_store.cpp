@@ -13,7 +13,7 @@
  */
 /*----------------------------------------------------------------------------*/
 
-#include <math.h>
+#include <cmath>
 
 #include "astc_codec_internals.h"
 
@@ -1272,7 +1272,7 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 
 	// check the ending of the input filename
 	int load_fileformat = LOAD_STB_IMAGE;
-	int filename_len = strlen(input_filename);
+	size_t filename_len = strlen(input_filename);
 
 	const char *eptr = input_filename + filename_len - 5;
 	if (eptr > input_filename && (strcmp(eptr, ".htga") == 0 || strcmp(eptr, ".HTGA") == 0))
@@ -1346,7 +1346,7 @@ int get_output_filename_enforced_bitness(const char *output_filename)
 	if (output_filename == NULL)
 		return -1;
 
-	int filename_len = strlen(output_filename);
+	size_t filename_len = strlen(output_filename);
 	const char *eptr = output_filename + filename_len - 5;
 
 	if (eptr > output_filename && (strcmp(eptr, ".htga") == 0 || strcmp(eptr, ".HTGA") == 0))
@@ -1380,7 +1380,7 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 	#define STORE_DDS 3
 	#define STORE_EXR 4
 
-	int filename_len = strlen(output_filename);
+	size_t filename_len = strlen(output_filename);
 
 	int store_fileformat = STORE_TGA;
 	const char *eptr = output_filename + filename_len - 5;
