@@ -4,7 +4,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
   tools {
-      msbuild 'MSBuild' 
+      msbuild 'MSBuild-15.0' 
   }
   stages {
     stage('Build') {
