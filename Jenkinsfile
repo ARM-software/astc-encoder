@@ -3,6 +3,9 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
+  tools {
+      msbuild 'MBuild-15.0' 
+  }
   stages {
     stage('Build') {
       parallel {
