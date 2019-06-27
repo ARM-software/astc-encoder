@@ -9,7 +9,7 @@ pipeline {
         echo 'Build test'
         script {
           def MSBuild = tool(name: 'MSBuild', type: 'hudson.plugins.msbuild.MsBuildInstallation')
-          bat(script: "${MSBuild} .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: true, returnStdout: true)
+          bat(script: "\"${MSBuild}\" .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: true, returnStdout: true)
         }
       }
     }
