@@ -57,6 +57,9 @@ and macOS (x64) are available here:
 
 * [Binary directory](/Binary/).
 
+ These binaries are built from the latest stable tag, and therefore do not
+ necessarily represent the current state of the `master` branch source code.
+
 # Building from source
 
 Builds for Linux and macOS use GCC and Make, and are tested with GCC 4.6 and
@@ -116,14 +119,14 @@ console.
 
 ## Experimenting
 
-Efficient real-time graphics benefits from low bandwidth texture access,
-as it reduces bandwidth, saves energy, and can improve texture cache
-efficiency. However, like any lossy compression format there will come a point
-where the output compression quality is unacceptable because there are simply
-not enough bits to represent the output at the quality needed. We recommend
-experimenting with the block footprint to find the optimum balance between size
-and quality, as the finely adjustable compression ratio is one of major
-strengths of the ASTC format.
+Efficient real-time graphics benefits from minimizing the bitrate needed to
+store a texture, as it reduces memory bandwidth, saves energy, and can improve
+texture cache efficiency. However, like any lossy compression format there will
+come a point where the compressed image quality is unacceptable because there
+are simply not enough bits to represent the output with the precision needed.
+We recommend experimenting with the block footprint to find the optimum balance
+between size and quality, as the finely adjustable compression ratio is one of
+major strengths of the ASTC format.
 
 The compression speed can be controlled from `-veryfast`, through `-fast`,
 `-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the
