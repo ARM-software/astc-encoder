@@ -26,7 +26,10 @@ pipeline {
     }
     stage('Archive') {
       steps {
-        archiveArtifacts(onlyIfSuccessful: true, artifacts: 'Source\\win32-2017\\astcenc\\x64\\Release\\astcenc.exe,Source\\win32-2017\\astcenc\\x64\\Debug\\astcenc.exe,')
+        archiveArtifacts(onlyIfSuccessful: true, artifacts: 'Source\\win32-2017\\astcenc\\Win32\\Release\\astcenc.exe')
+        archiveArtifacts(artifacts: 'Source\\win32-2017\\astcenc\\Win32\\Debug\\astcenc.exe', onlyIfSuccessful: true)
+        archiveArtifacts(artifacts: 'Source\\win32-2017\\astcenc\\x64\\Release\\astcenc.exe', onlyIfSuccessful: true)
+        archiveArtifacts 'Source\\win32-2017\\astcenc\\x64\\Debug\\astcenc.exe'
       }
     }
   }
