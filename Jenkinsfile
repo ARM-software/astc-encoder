@@ -4,17 +4,17 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
   tools {
-      msbuild '15.0' 
+      msbuild 'MSBuild' 
   }
   stages {
     stage('Build') {
       parallel {
         stage('x64 Release') {
           steps {
-            echo 'Build test'
             script {
-              def MSBuild = tool(name: 'MSBuild', type: 'hudson.plugins.msbuild.MsBuildInstallation')
-              bat(script: "\"${MSBuild}\" .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: false, returnStdout: false)
+              //def MSBuild = tool(name: 'MSBuild', type: 'hudson.plugins.msbuild.MsBuildInstallation')
+              //bat(script: "\"${MSBuild}\" .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: false, returnStdout: false)
+              bat(script: "msbuild .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: false, returnStdout: false)
             }
 
           }
