@@ -16,7 +16,7 @@ energy consumption.
 
 The ASTC data format specification is available here:
 
-* [OES_texture_compression_astc](https://www.khronos.org/registry/OpenGL/extensions/OES/OES_texture_compression_astc.txt)
+* [Khronos Data Format Specification v1.2 # ASTC](https://www.khronos.org/registry/DataFormat/specs/1.2/dataformat.1.2.html#ASTC)
 
 # Encoder feature support
 
