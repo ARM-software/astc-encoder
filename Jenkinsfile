@@ -4,7 +4,7 @@ pipeline {
     stage('Build Release') {
       steps {
         echo 'Build test'
-        bat(script: 'msbuild .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64', returnStatus: true, returnStdout: true)
+        bat(script: '${tool \'MSBuild\'} .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64', returnStatus: true, returnStdout: true)
       }
     }
   }
