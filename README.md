@@ -1,108 +1,148 @@
 # About
 
-This is the official repository of the evaluation codec for the Adaptive Scalable Texture Compression (ASTC) standard.
+This is the official repository for the Arm® Adaptive Scalable Texture
+Compression (ASTC) Encoder, `astcenc`, a command-line tool for compressing
+and decompressing images using the ASTC texture compression standard.
 
-ASTC technology developed by ARM® and AMD has been adopted as an official extension to both the Open GL® and OpenGL ES graphics APIs. ASTC is a major step forward in terms of image quality, reducing memory bandwidth and thus energy use.
+## The ASTC format
 
-The **ASTC Evaluation Codec** is a command-line executable that compresses and decompresses images using this texture compression standard.
+The ASTC compressed data format, developed by Arm® and AMD, has been adopted as
+an official extension to the Open GL®, OpenGL ES, and Vulkan® graphics APIs. It
+provides a major step forward both in terms of image quality at a given
+bitrate, and in terms of the format and bitrate flexibility available to
+content creators. This allows more assets to use compression, often at a
+reduced bitrate compared to legacy formats, reducing memory bandwidth and
+energy consumption.
 
-Running on a standard PC, this tool allows content developers to evaluate the impressive quality and size benefits offered by this texture compression format, in advance of it being available in GPU  hardware.
+The ASTC data format specification is available here:
 
-# License #
-By downloading the packages below you ackowledge that you accept the End User Licence Agreement for the ATSC Codec.
-See [license.txt](license.txt) file for details.
+* [Khronos Data Format Specification v1.2 # ASTC](https://www.khronos.org/registry/DataFormat/specs/1.2/dataformat.1.2.html#ASTC)
 
-# Compilation from Sources
-* You can use GCC >= 4.6 and standard GNU tools to perform make-driven compilation on Linux and/or MacOS systems.
-* You can use Visual Studio 2017 to compile for Windows systems (using solution file from `Source/win32-2017/astcenc` directory).
+# Encoder feature support
 
-# ASTC Features & Benefits
+The encoder supports compression of PNG, TGA and KTX input images into ASTC
+format output images. The encoder supports decompression of ASTC input images
+into TGA or KTX format output images.
 
-ASTC offers a number of advantages over existing texture compression schemes:
+The encoder allows control over the compression time/quality tradeoff with
+`exhaustive`, `thorough`, `medium`, `fast`, and `very fast` encoding speeds.
 
-* Flexibility, with bit rates from 8 bits per pixel (bpp) down to less than 1 bpp. This allows content developers to fine-tune the tradeoff of space against quality.
-* Support for 1 to 4 color channels, together with modes for uncorrelated channels for use in mask textures and normal maps.
-* Support for both low dynamic range (LDR) and high dynamic range (HDR) images.
-* Support for both 2D and 3D images.
-* Interoperability: Developers can choose any combination of features that suits their needs.
+The encoder allows compression time and quality analysis by reporting the
+compression time, and the Peak Signal-to-Noise Ratio (PSNR) between the input
+image and the compressed output.
 
-ASTC specification includes two profiles: LDR and Full. The smaller LDR Profile supports 2D low dynamic range images only. It is designed to be easy to integrate with existing hardware designs that already deal with compressed 2D images in other formats. The LDR Profile is a strict subset of the Full Profile, which also includes the 3D textures and high dynamic range support.
+## ASTC format support
 
-## Encoding
+The ASTC specification allows three profiles of implementation:
 
-* Compression of PNG, TGA and KTX into ASTC format
-* Control of bit rate from 0.89 bits/pixel upto 8bits/pixel in fine steps
-* Control of compression time/quality tradeoff with exhaustive, thorough, medium, fast and very fast encoding speeds
-* Supports both low (LDR) and high dynamic range (HDR) images
-* Supports 3D texture compression
-* Measure PSNR between input and output
+* 2D Low Dynamic Range (LDR profile)
+* 2D LDR and High Dynamic Range (HDR profile)
+* 2D and 3D, LDR and HDR (Full profile)
 
-## Decoding
+The `astcenc` compressor supports generation of images for all three profiles.
+In addition it also supports all of the ASTC block sizes and compression
+modes, allowing content creators access the full spectrum of quality-to-bitrate
+options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
-* Decodes ASTC images to TGA or KTX
+# License
 
-# Package Contents
+By downloading any component from this repository you acknowledge that you
+accept the End User Licence Agreement for the ASTC Encoder. See the
+[license.txt](license.txt) file for details.
 
-* Source code
-* Full specification of the ASTC data format
-* Binaries for Windows, Mac OS X and Linux
+# Prebuilt binaries
 
-# Getting Started
- 
-First, accept the [license](license.txt) and download the source code. The `Binary` subdirectory contains executable binaries for Windows, Mac OS X, and Linux. If you are running on another system, you might like to try compiling from source.
- 
-Open a terminal, change to the appropriate directory for your system, and run the astcenc encoder program, like this on Linux or Mac OS:
- 
+Prebuilt release build binaries for Windows (x86 and x64), Linux (x86 and x64),
+and macOS (x64) are available here:
+
+* [Binary directory](/Binary/).
+
+# Building from source
+
+Builds for Linux and macOS use GCC and Make, and are tested with GCC 4.6 and
+GNU Make 3.82.
+
+```
+cd Source
+make
+```
+
+Builds for Windows platforms use Visual Studio 2017, using the solution file
+located in the `Source/win32-2017/astcenc/` directory.
+
+# Getting started
+
+Open a terminal, change to the appropriate directory for your system, and run
+the astcenc encoder program, like this on Linux or Mac OS:
+
     ./astcenc
- 
-Or like this on Windows:
- 
+
+... or like this on Windows:
+
     astcenc
- 
-Invoking the tool with no arguments gives a very extensive help message, including usage instructions, and details of all the possible options.
- 
-## How do I run the tool?
- 
-First, find a 24-bit .png or .tga file you wish to use, say `/images/example.png` (or on Windows `C:\images\example.png`).
- 
-You can compress it using the `-c` option, like this (on Linux or Mac OS X):
- 
-    ./astcenc -c /images/example.png /images/example-compressed.astc 6x6 -medium
 
-and on Windows:
+Invoking the tool with no arguments gives an extensive help message, including
+usage instructions, and details of all the available command line options.
 
-    astcenc -c C:\images\example.png C:\images\example-compressed.astc 6x6 -medium
- 
-The `-c` indicates a compression operation, followed by the input and output filenames. The block footprint size follows, in this case 6x6 pixels, then the requested compression speed, medium.
- 
-To decompress the file again, you should use:
- 
-    ./astcenc -d /images/example-compressed.astc /images/example-decompressed.tga
-    
-and on Windows:
+## Compressing an image
 
-    astcenc -d C:\images\example-compressed.astc C:\images\example-decompressed.tga
- 
-The `-d` indicates decompression, followed by the input and output filenames. The output file will be an uncompressed TGA image.
- 
-If you just want to test what compression and decompression are like, use the test mode:
- 
-    ./astcenc -t /images/example.png /images/example-decompressed.tga 6x6 -medium
+Compress an image using the `-c` option:
 
-and on Windows:
+    astcenc -c example.png example.astc 6x6 -medium
 
-    astcenc -t C:\images\example.png C:\images\example-compressed.tga 6x6 -medium
- 
-This is equivalent to compressing and then immediately decompressing again, and it also prints out statistics about the fidelity of the resulting image, using the peak signal-to-noise ratio.
- 
+This compresses `example.png` using the 6x6 block footprint (3.55 bits/pixel)
+and a `medium` compression speed, storing the compressed output to
+`example.astc`.
+
+## Decompressing an image
+
+Decompress an image using the `-d` option:
+
+    astcenc -d example.astc example.tga
+
+This decompresses `example.astc` storing the decompressed output to
+`example.tga`.
+
+## Measuring image quality
+
+Review the compression quality using the `-t` option:
+
+    astcenc -t example.png example.tga
+
+This is equivalent to compressing and then immediately decompressing the
+image, allowing a visual inspection of the decompression quality. In addition
+this mode also prints out the PSNR quality of the compressed image to the
+console.
+
 ## Experimenting
- 
-The block footprints go from 4x4 (8 bits per pixel) all the way up to 12x12 (0.89 bits/pixel). Like any lossy codec, such as JPEG there will come a point where selecting too aggressive a compression results in inacceptable quality loss, and ASTC is no exception. Finding this optimum balance between size and quality is one place where ASTC excels since its compression ratio is adjustable in much finer steps than other texture codecs.
- 
-The compression speed runs from `-veryfast`, through `-fast`, `-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the encoder has to spend looking for good encodings, the better the results.
+
+Efficient real-time graphics benefits from low bandwidth texture access,
+as it reduces bandwidth, saves energy, and can improve texture cache
+efficiency. However, like any lossy compression format there will come a point
+where the output compression quality is unacceptable because there are simply
+not enough bits to represent the output at the quality needed. We recommend
+experimenting with the block footprint to find the optimum balance between size
+and quality, as the finely adjustable compression ratio is one of major
+strengths of the ASTC format.
+
+The compression speed can be controlled from `-veryfast`, through `-fast`,
+`-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the
+encoder has to spend looking for good encodings the better the results, but it
+does result in increasingly small improvements for the amount of time required.
+
+There are many other command line options for tuning the encoder parameters
+which can be used to fine tune the compression algorithm. See the command line
+help message for more details.
 
 # Support
-Please submit your questions and issues to the [ARM Mali Graphics forums](http://community.arm.com/groups/arm-mali-graphics).
 
-- - - 
-_Copyright (c) 2013-2017, ARM Limited and Contributors. All rights reserved._
+If you have issues with the `astcenc` encoder, or questions about the ASTC
+texture format itself, please raise them in the GitHub issue tracker.
+
+If you have any questions about Arm Mali GPUs, application development for Arm
+Mali GPUs, or general graphics technology please submit them on the [Arm Mali
+Graphics forums](https://community.arm.com/graphics/).
+
+- - -
+
+_Copyright (c) 2013-2019, Arm Limited and Contributors. All rights reserved._
