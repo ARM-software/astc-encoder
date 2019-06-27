@@ -4,7 +4,7 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '10', artifactNumToKeepStr: '10'))
   }
   tools {
-      MSBuild 'MSBuild-15.0' 
+      msbuild 'MSBuild-15.0' 
   }
   stages {
     stage('Build') {
@@ -13,7 +13,7 @@ pipeline {
           steps {
             script {
               //def MSBuild = tool(name: 'MSBuild', type: 'hudson.plugins.msbuild.MsBuildInstallation')
-              bat(script: "\"${MSBuild}\" .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: false, returnStdout: false)
+              bat(script: "\"${msbuild}\" .\\Source\\win32-2017\\astcenc\\astcenc.sln /p:Configuration=Release /p:Platform=x64", returnStatus: false, returnStdout: false)
             }
           }
         }
