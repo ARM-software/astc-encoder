@@ -54,6 +54,11 @@ pipeline {
       }
     }
   }
+  post {
+      always {
+          recordIssues(enabledForFailure: true, tool: msBuild())
+      }
+  }
   triggers {
     pollSCM('H/15 * * * *')
   }
