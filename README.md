@@ -6,8 +6,8 @@ and decompressing images using the ASTC texture compression standard.
 
 ## The ASTC format
 
-The ASTC compressed data format, developed by ARM® and AMD, has been adopted as
-an official extension to the Open GL®, OpenGL ES, and Vulkan graphics APIs. It
+The ASTC compressed data format, developed by Arm® and AMD, has been adopted as
+an official extension to the Open GL®, OpenGL ES, and Vulkan® graphics APIs. It
 provides a major step forward both in terms of image quality at a given
 bitrate, and in terms of the format and bitrate flexibility available to
 content creators. This allows more assets to use compression, often at a
@@ -139,9 +139,9 @@ help message for more details.
 If you have issues with the `astcenc` encoder, or questions about the ASTC
 texture format itself, please raise them in the GitHub issue tracker.
 
-If you have any questions about Arm Mali GPUs or other graphics technology
-please submit your questions to the [Arm Mali Graphics
-forums](https://community.arm.com/graphics/).
+If you have any questions about Arm Mali GPUs, application development for Arm
+Mali GPUs, or general graphics technology please submit them on the [Arm Mali
+Graphics forums](https://community.arm.com/graphics/).
 
 - - -
 
