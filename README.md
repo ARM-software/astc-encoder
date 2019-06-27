@@ -14,9 +14,9 @@ content creators. This allows more assets to use compression, often at a
 reduced bitrate compared to legacy formats, reducing memory bandwidth and
 energy consumption.
 
-The ASTC format specification is available here:
+The ASTC data format specification is available here:
 
-* [ASTC Specification v1.0 (PDF)](./Documentation/ASTC%20Specification%20v1.0.pdf)
+* [OES_texture_compression_astc](https://www.khronos.org/registry/OpenGL/extensions/OES/OES_texture_compression_astc.txt)
 
 # Encoder feature support
 
@@ -35,14 +35,14 @@ image and the compressed output.
 
 The ASTC specification allows three profiles of implementation:
 
-* 2D Low Dynamic Range (LDR)
-* 2D LDR and High Dynamic Range (HDR)
-* 2D and 3D, LDR and HDR
+* 2D Low Dynamic Range (LDR profile)
+* 2D LDR and High Dynamic Range (HDR profile)
+* 2D and 3D, LDR and HDR (Full profile)
 
 The `astcenc` compressor supports generation of images for all three profiles.
 In addition it also supports all of the ASTC block sizes and compression
 modes, allowing content creators access the full spectrum of quality-to-bitrate
-trade options ranging from 0.89 bits/pixel up to 8bits/pixel.
+options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
 # License
 
@@ -77,12 +77,12 @@ the astcenc encoder program, like this on Linux or Mac OS:
 
     ./astcenc
 
-Or like this on Windows:
+... or like this on Windows:
 
     astcenc
 
 Invoking the tool with no arguments gives an extensive help message, including
-usage instructions, and details of all the available options.
+usage instructions, and details of all the available command line options.
 
 ## Compressing an image
 
