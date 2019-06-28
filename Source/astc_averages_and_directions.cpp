@@ -29,11 +29,12 @@
 
 /* routines to compute average colors and dominant directions for blocks with 3 and 4 components. */
 
-/*
-	for a full block, functions to compute averages and dominant directions. The averages and directions are computed separately for each partition.
-	We have separate versions for blocks with and without alpha, since the processing for blocks with alpha is significantly more expensive.
-	The direction vectors it produces are NOT normalized. 
-*/
+/* For a full block, functions to compute averages and dominant directions. The
+ * averages and directions are computed separately for each partition. We have
+ * separate versions for blocks with and without alpha, since the processing for 
+ * blocks with alpha is significantly more expensive. The direction vectors it
+ * produces are NOT normalized. 
+ */
 void compute_averages_and_directions_rgba(const partition_info * pt,
 										  const imageblock * blk,
 										  const error_weight_block * ewb,
