@@ -819,7 +819,7 @@ int astc_main(int argc, char **argv)
 				" * Half-Float-TGA (*.htga)\n"
 				" * OpenEXR (*.exr; only if t'exr_to_htga' is present in the path)\n"
 				"\n"
-				"Targa is suitable only for 2D LDR images; for HDR and/or 3D images,\n"
+				"Targa is suitable only for 2D LDR images; for   and/or 3D images,\n"
 				"please use KTX or DDS.\n"
 				"\n"
 				"For compression, the <rate> argument specifies the bitrate or block\n"

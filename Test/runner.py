@@ -1,0 +1,424 @@
+#!/usr/bin/env python3
+# -----------------------------------------------------------------------------
+# This confidential and proprietary software may be used only as authorised by
+# a licensing agreement from Arm Limited.
+#     (C) COPYRIGHT 2019 Arm Limited, ALL RIGHTS RESERVED
+# The entire notice above must be reproduced on all authorised copies and
+# copies may only be made to the extent permitted by a licensing agreement from
+# Arm Limited.
+# -----------------------------------------------------------------------------
+
+import argparse
+import csv
+import junit_xml as juxml
+import os
+from PIL import Image
+import re
+import shutil
+import subprocess as sp
+import sys
+
+
+TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
+
+TEST_EXTENSIONS = [".png", ".hdr"]
+
+
+class TestReference():
+    """
+    A single test reference result from the reference spreadsheet. These
+    define the baseline for pass/fail for both PSNR and performance.
+    """
+
+    def __init__(self, row):
+        self.name = row[0]
+        self.testBlock = row[1]
+        self.testPSNR = row[2]
+        self.testTime = row[3]
+
+
+class TestImage():
+    """
+    A single test definition, and the test results if it is actually run.
+    """
+    warmupRuns = 0
+    testRuns = 1
+
+    def __init__(self, filePath, testReference):
+        """
+        Construct a new test definition.
+        """
+        self.filePath = filePath
+
+        # Name is the file name minus any extension (strip flags later)
+        self.name = os.path.basename(self.filePath)[:-4]
+
+        # All tests are used in the full run
+        self.useLevel = ["all"]
+        self.useRange = ["all"]
+
+        # Tokenize the file name
+        nameParts = self.name.split("-")
+        if len(nameParts) == 4:
+            assert len(nameParts) == 4
+            if "s" in nameParts[3]:
+                self.useLevel.append("smoke")
+
+            # Name of the test excludes flags from the file name
+            self.name = "-".join(nameParts[0:3])
+        else:
+            assert len(nameParts) == 3
+
+        self.dynamicRange = nameParts[0]
+        self.useRange.append(self.dynamicRange)
+        self.format = nameParts[1]
+
+        # Find the reference PSNR for this test in the spreadsheet
+        self.referencePSNR = None
+        if testReference:
+            self.referencePSNR = dict()
+            for ref in testReference:
+                if ref.name == self.name:
+                    self.referencePSNR[ref.testBlock] = float(ref.testPSNR)
+
+            # Sanity check we found some results
+            assert self.referencePSNR, "Reference PSNR scores not found"
+
+        # Initialize test run results
+        self.runTime = None
+        self.runPSNR = None
+        self.status = "pending"
+
+    def run_once(self, testBinary, blockSize):
+        """
+        Run a single compression pass.
+        """
+        pathParts = splitall(self.filePath)
+        assert len(pathParts) == 4
+
+        # Create the test output directory if it doesn't exist
+        outDir = os.path.join("TestOutput", "Images", pathParts[2], blockSize)
+        os.makedirs(outDir,  exist_ok=True)
+
+        if self.dynamicRange == "ldr":
+            outFile = pathParts[3].replace(".png", ".tga")
+        else:
+            outFile = pathParts[3].replace(".hdr", ".htga")
+        outFilePath = os.path.join(outDir, outFile)
+
+        if self.dynamicRange == "ldr":
+            outFile = pathParts[3].replace(".png", "-out.png")
+            outFilePath2 = os.path.join(outDir, outFile)
+
+        # Run the compressor
+        args = [testBinary, "-t", self.filePath, outFilePath,
+                blockSize, "-thorough", "-time", "-showpsnr", "-silentmode"]
+        result = sp.run(args, capture_output=True, check=True, text=True)
+
+        # Convert the TGA to PNG and delete the TGA (LDR only)
+        if self.dynamicRange == "ldr":
+            im = Image.open(outFilePath)
+            im.save(outFilePath2)
+            os.remove(outFilePath)
+        # TODO: Convert the HTGA to EXR or HDR (HDR only)
+
+        # Create log parsing patterns
+        if self.dynamicRange == "ldr":
+            if self.format == "rgb":
+                patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
+            elif self.format == "rgba":
+                patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
+            else:
+                assert False, "Unsupported LDR color format %s" % self.format
+        else:
+            patternPSNR = "PSNR \\(RGB normalized to peak\\): ([0-9.]*) dB"
+
+        patternPSNR = re.compile(patternPSNR)
+        patternTime = re.compile(".* coding time: ([0-9.]*) seconds")
+
+        # Extract results from the log
+        runPSNR = None
+        runTime = None
+
+        for line in result.stdout.splitlines():
+            match = patternPSNR.match(line)
+            if match:
+                runPSNR = float(match.group(1))
+
+            match = patternTime.match(line)
+            if match:
+                runTime = float(match.group(1))
+
+        assert runPSNR is not None, "No coding PSNR found %s" % result.stdout
+        assert runTime is not None, "No coding time found %s" % result.stdout
+
+        return (runPSNR, runTime)
+
+    def run(self, testBinary, blockSize):
+        """
+        Run the test scenario including N warmup passes and M run passes.
+
+        Returned performance score is the average of the M run passes.
+        """
+        results = []
+        for i in range(0, self.warmupRuns):
+            self.run_once(testBinary, blockSize)
+
+        for i in range(0, self.testRuns):
+            result = self.run_once(testBinary, blockSize)
+            results.append(result)
+
+        listPSNR, timeList = list(zip(*results))
+
+        # Store raw results
+        self.runPSNR = listPSNR[0]
+        self.runTime = sum(timeList) / len(timeList)
+
+        # No reference data is a failure
+        if self.referencePSNR is None:
+            self.status = "fail"
+        # Pass if PSNR matches to 3dp rounding
+        elif (float("%0.3f" % listPSNR[0])) == self.referencePSNR[blockSize]:
+            self.status = "pass"
+        # Pass if PSNR is better
+        elif listPSNR[0] >= float(self.referencePSNR[blockSize]):
+            self.status = "pass"
+        else:
+            self.status = "fail"
+
+
+def splitall(path):
+    """
+    Completely tokenize a path into its component pieces.
+    """
+    allparts = []
+    while True:
+        parts = os.path.split(path)
+        if parts[0] == path:
+            allparts.insert(0, parts[0])
+            break
+        elif parts[1] == path:
+            allparts.insert(0, parts[1])
+            break
+        else:
+            path = parts[0]
+            allparts.insert(0, parts[1])
+
+    return allparts
+
+
+def get_test_binary():
+    """
+    Return the test binary path for the current host machine.
+    """
+    if "linux" in sys.platform:
+        return "./Source/astcenc"
+    elif sys.platform == "darwin":
+        return "./Source/astcenc"
+    elif sys.platform == "win32":
+        return "./Source/win32-2017/astcenc/x64/Release/astcenc.exe"
+
+    assert False, "Unknown operating system %s" % sys.platform
+
+
+def get_reference_binary():
+    """
+    Return the reference binary path for the current host machine.
+    """
+    if "linux" in sys.platform:
+        return "./Binary/linux-x64/astcenc"
+    elif sys.platform == "darwin":
+        return  "./Binary/mac-x64/astcenc"
+    elif sys.platform == "win32":
+        return  "./Binary/windows-x64/astcenc.exe"
+
+    assert False, "Unknown operating system %s" % sys.platform
+
+
+def get_test_listing(testReference):
+    """
+    Return the test image listing.
+    """
+    tests = []
+    for root, _, files, in os.walk(os.path.join("Test", "Images")):
+        for testFile in files:
+            # Detect test images
+            for ext in TEST_EXTENSIONS:
+                if testFile.endswith(ext):
+                    break
+            else:
+                continue
+
+            testFilePath = os.path.join(root, testFile)
+            image = TestImage(testFilePath, testReference)
+            tests.append(image)
+
+    return tests
+
+
+def get_test_reference_scores():
+    """
+    Return the test reference score listing.
+    """
+    referenceResults = []
+    with open('Test/reference.csv') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        for row in reader:
+            result = TestReference(row)
+            referenceResults.append(result)
+
+    return referenceResults
+
+
+def run_tests(args):
+    """
+    Run the user defined test scenario.
+    """
+    TestImage.testRuns = args.testRepeats
+    TestImage.warmupRuns = args.testWarmups
+
+    # Create output location
+    if not os.path.exists("TestOutput"):
+        os.mkdir("TestOutput")
+
+    # Load test resources
+    binary = get_test_binary()
+    reference = get_test_reference_scores()
+    testList = get_test_listing(reference)
+
+    # Run tests
+    suites = []
+    suite = None
+    suiteFormat = None
+
+    for blockSize in args.testBlockSize:
+        for test in testList:
+            # Skip tests not enabled for the current testing throughness level
+            if args.testLevel not in test.useLevel:
+                # TODO: Flag these as skipped in juxml?
+                continue
+
+            # Skip tests not enabled for the current dynamic range level
+            if args.testRange not in test.useRange:
+                # TODO: Flag these as skipped in juxml?
+                continue
+
+            # Start a new suite if the format changes
+            dat = (test.dynamicRange, test.format, blockSize)
+            testFormat = "%s.%s.%s" % dat
+            if (not suite) or (suiteFormat != testFormat):
+                suiteFormat = testFormat
+                suite = juxml.TestSuite("Image %s test suite" % suiteFormat)
+                suites.append(suite)
+                print("Running suite: %s" % suiteFormat)
+
+            # Run the test
+            test.run(binary, blockSize)
+            dat = (test.name, blockSize, test.runPSNR,
+                   test.runTime, test.status)
+            log = "Ran test: %s %s, %0.3f dB, %0.3f s, %s" % dat
+            print(" + %s" % log)
+
+            # Generate JUnit result
+            caseName = "%s.%s" %(test.name, blockSize)
+            case = juxml.TestCase(caseName, elapsed_sec=test.runTime,
+                                  stdout=log)
+            suite.test_cases.append(case)
+
+            if test.status == "fail":
+                dat = (test.runPSNR, test.referencePSNR)
+                msg = "PSNR fail %0.3f dB is worse than %s dB" % dat
+                case.add_failure_info(msg)
+
+    # Write the JUnit results file
+    with open("TestOutput/results.xml", "w") as fileHandle:
+        juxml.TestSuite.to_file(fileHandle, suites)
+
+
+def run_reference():
+    """
+    Run the reference test generator test scenario
+    """
+    TestImage.testRuns = 10
+    TestImage.warmupRuns = 1
+
+    # Delete and recreate test output location
+    if os.path.exists("TestOutput"):
+        shutil.rmtree("TestOutput")
+    os.mkdir("TestOutput")
+
+    # Load test resources
+    binary = get_reference_binary()
+    testList = get_test_listing(None)
+
+    # Run tests
+    with open("Test/reference.csv", "w", newline="") as fileHandle:
+        writer = csv.writer(fileHandle)
+        writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
+
+        for blockSize in TEST_BLOCK_SIZES:
+            for test in testList:
+                # Run the test
+                print("Running: %s @ %s" % (test.name, blockSize))
+                test.run(binary, blockSize)
+                row = [test.name, blockSize,
+                       "%0.3f" % test.runPSNR,
+                       "%0.3f" % test.runTime]
+                writer.writerow(row)
+
+
+def parse_command_line():
+    """
+    Parse the command line.
+    """
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--test-level", dest="testLevel", default="smoke",
+                        choices=["smoke", "all"],
+                        help="testing test level")
+
+    parser.add_argument("--dynamic-range", dest="testRange", default="all",
+                        choices=["ldr", "hdr", "all"],
+                        help="testing dynamic range")
+
+    choices = list(TEST_BLOCK_SIZES) + ["all"]
+    parser.add_argument("--block-size", dest="testBlockSize", default="all",
+                        choices=choices,
+                        help="testing block size")
+
+    parser.add_argument("--repeats", dest="testRepeats", default=1,
+                        type=int, help="test iteration count")
+
+    parser.add_argument("--warmup", dest="testWarmups", default=0,
+                        type=int, help="test warmup count")
+
+    parser.add_argument("--update-reference", default=False, dest="reference",
+                        action="store_true", help="generate reference data")
+
+    args = parser.parse_args()
+
+    if args.testBlockSize == "all":
+        args.testBlockSize = TEST_BLOCK_SIZES
+    else:
+        args.testBlockSize = [args.testBlockSize]
+
+    return args
+
+
+def main():
+    """
+    The main function.
+    """
+    # Parse command lines
+    args = parse_command_line()
+
+    if not args.reference:
+        run_tests(args)
+    else:
+        run_reference()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
