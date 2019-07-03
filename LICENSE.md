@@ -1,5 +1,6 @@
-END USER LICENCE AGREEMENT FOR THE MALI ASTC SPECIFICATION AND SOFTWARE CODEC,
-VERSION: 1.3
+# END USER LICENCE AGREEMENT FOR THE MALI ASTC SPECIFICATION AND SOFTWARE CODEC
+
+**VERSION: 1.3**
 
 THIS END USER LICENCE AGREEMENT ("LICENCE") IS A LEGAL AGREEMENT BETWEEN YOU
 (EITHER A SINGLE INDIVIDUAL, OR SINGLE LEGAL ENTITY) AND ARM LIMITED ("ARM")
@@ -12,19 +13,20 @@ TERMS OF THIS LICENCE.
 IF YOU DO NOT AGREE TO THE TERMS OF THIS LICENCE, ARM IS UNWILLING TO LICENSE
 THE SOFTWARE TO YOU AND YOU MAY NOT INSTALL, USE OR COPY THE SOFTWARE.
 
-1.  DEFINITIONS.
+# 1. DEFINITIONS
 
 "Authorised Purpose" means the use of the Software solely to develop products
 and tools which implement the Khronos ASTC specification to;
-(i) compress texture images into ASTC format ("Compression Results"); 
-(ii) distribute such Compression Results to third parties; and 
-(iii) decompress texture images stored in ASTC format.
+
+* (i) compress texture images into ASTC format ("Compression Results");
+* (ii) distribute such Compression Results to third parties; and
+* (iii) decompress texture images stored in ASTC format.
 
 "Software" means the source code and Software binaries accompanying this
 Licence, and any printed, electronic or online documentation supplied with it,
 in all cases relating to the MALI ASTC SPECIFICATION AND SOFTWARE CODEC.
 
-2. LICENCE GRANT.
+# 2. LICENCE GRANT
 
 ARM hereby grants to you, subject to the terms and conditions of this Licence,
 a nonexclusive, nontransferable, free of charge, royalty free, worldwide
@@ -39,7 +41,7 @@ programming interface specification issued by The Khronos Group Inc.
 ("Khronos"), provided that you have licences to develop such products
 under the relevant Khronos agreements.
 
- 3. RESTRICTIONS ON USE OF THE SOFTWARE.
+# 3. RESTRICTIONS ON USE OF THE SOFTWARE
 
 RESTRICTIONS ON TRANSFER OF LICENSED RIGHTS: The rights granted to you under
 this Licence may not be assigned by you to any third party without the prior
@@ -60,12 +62,12 @@ trademarks to market Compression Results. If you distribute the Software to a
 third party, you agree to include a copy of this Licence with such
 distribution.
 
-4. NO SUPPORT.
+# 4. NO SUPPORT
 
 ARM has no obligation to support or to continue providing or updating any of
 the Software.
 
-5. NO WARRANTIES.
+# 5. NO WARRANTIES
 
 YOU AGREE THAT THE SOFTWARE IS LICENSED "AS IS", AND THAT ARM EXPRESSLY
 DISCLAIMS ALL REPRESENTATIONS, WARRANTIES, CONDITIONS OR OTHER TERMS, EXPRESS,
@@ -74,7 +76,7 @@ ASSUME ALL LIABILITIES AND RISKS, FOR USE OR OPERATION OF ANY APPLICATION
 PROGRAMS YOU CREATE WITH THE SOFTWARE, AND YOU ASSUME THE ENTIRE COST OF ALL
 NECESSARY SERVICING, REPAIR OR CORRECTION.
 
-6. LIMITATION OF LIABILITY.
+# 6. LIMITATION OF LIABILITY
 
 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL ARM BE
 LIABLE FOR ANY INDIRECT, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES
@@ -94,14 +96,14 @@ IN CONTRACT TORT OR OTHERWISE UNDER OR IN CONNECTION WITH THE SUBJECT MATTER
 OF THIS LICENCE SHALL NOT EXCEED THE GREATER OF THE TOTAL OF SUMS PAID BY YOU
 TO ARM (IF ANY) FOR THIS LICENCE AND US$5.00.
 
-7. U.S. GOVERNMENT END USERS.
+# 7. U.S. GOVERNMENT END USERS
 
 US Government Restrictions: Use, duplication, reproduction, release,
 modification, disclosure or transfer of this commercial product and
 accompanying documentation is restricted in accordance with the terms
 of this Licence.
 
-8. TERM AND TERMINATION.
+# 8. TERM AND TERMINATION
 
 This Licence shall remain in force until terminated by you or by ARM. Without
 prejudice to any of its other rights if you are in breach of any of the terms
@@ -113,7 +115,7 @@ Software and destroy all copies of the Software in your possession together
 with all documentation and related materials. The provisions of Clauses 1, 3,
 4, 5, 6, 7, 8 and 9  shall survive termination of this Licence.
 
-9. GENERAL.
+# 9. GENERAL
 
 This Licence is governed by English Law. Except where ARM agrees otherwise in
 a written contract signed by you and ARM, this is the only agreement between
@@ -132,6 +134,6 @@ and other countries ("Export Laws") to assure that the Software is not;
 (1) exported, directly or indirectly, in violation of Export Laws, either to
 any countries that are subject to U.S.A. export restrictions or to any end
 user who has been prohibited from participating in the U.S.A. export
-transactions by any federal agency of the U.S.A. government; or 
+transactions by any federal agency of the U.S.A. government; or
 (2) intended to be used for any purpose prohibited by Export Laws, including,
 without limitation, nuclear, chemical, or biological weapons proliferation.

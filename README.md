@@ -18,6 +18,12 @@ The ASTC data format specification is available here:
 
 * [Khronos Data Format Specification v1.2 # ASTC](https://www.khronos.org/registry/DataFormat/specs/1.2/dataformat.1.2.html#ASTC)
 
+## License
+
+By downloading any component from this repository you acknowledge that you
+accept the End User Licence Agreement for the ASTC Encoder. See the
+[LICENSE.md](LICENSE.md) file for details.
+
 # Encoder feature support
 
 The encoder supports compression of PNG, TGA and KTX input images into ASTC
@@ -44,12 +50,6 @@ In addition it also supports all of the ASTC block sizes and compression
 modes, allowing content creators access the full spectrum of quality-to-bitrate
 options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
-# License
-
-By downloading any component from this repository you acknowledge that you
-accept the End User Licence Agreement for the ASTC Encoder. See the
-[license.txt](license.txt) file for details.
-
 # Prebuilt binaries
 
 Prebuilt release build binaries for Windows (x86 and x64), Linux (x86 and x64),
@@ -59,19 +59,6 @@ and macOS (x64) are available here:
 
  These binaries are built from the latest stable tag, and therefore do not
  necessarily represent the current state of the `master` branch source code.
-
-# Building from source
-
-Builds for Linux and macOS use GCC and Make, and are tested with GCC 4.6 and
-GNU Make 3.82.
-
-```
-cd Source
-make
-```
-
-Builds for Windows platforms use Visual Studio 2017, using the solution file
-located in the `Source/win32-2017/astcenc/` directory.
 
 # Getting started
 
@@ -94,8 +81,8 @@ Compress an image using the `-c` option:
     astcenc -c example.png example.astc 6x6 -medium
 
 This compresses `example.png` using the 6x6 block footprint (3.55 bits/pixel)
-and a `medium` compression speed, storing the compressed output to
-`example.astc`.
+and a `medium` compression speed, storing the compressed output in the linear
+color space to `example.astc`.
 
 ## Decompressing an image
 
@@ -119,12 +106,12 @@ console.
 
 ## Experimenting
 
-Efficient real-time graphics benefits from minimizing the bitrate needed to
-store a texture, as it reduces memory bandwidth, saves energy, and can improve
-texture cache efficiency. However, like any lossy compression format there will
-come a point where the compressed image quality is unacceptable because there
-are simply not enough bits to represent the output with the precision needed.
-We recommend experimenting with the block footprint to find the optimum balance
+Efficient real-time graphics benefits from minimizing compressed texture size,
+as it reduces memory bandwidth, saves energy, and can improve texture cache
+efficiency. However, like any lossy compression format there will come a point
+where the compressed image quality is unacceptable because there are simply
+not enough bits to represent the output with the precision needed. We
+recommend experimenting with the block footprint to find the optimum balance
 between size and quality, as the finely adjustable compression ratio is one of
 major strengths of the ASTC format.
 
@@ -136,6 +123,19 @@ does result in increasingly small improvements for the amount of time required.
 There are many other command line options for tuning the encoder parameters
 which can be used to fine tune the compression algorithm. See the command line
 help message for more details.
+
+# Documentation
+
+The [Effective ASTC Encoding](./Docs/Encoding.md) page looks at some of the
+guidelines that should be followed when compressing data using `astcenc`.
+It covers:
+
+* How to efficiently encoding data with fewer than 4 channels.
+* How to efficiently encode normal maps, sRGB data, and HDR data
+* Coding equivalents to other compression formats.
+
+The [Building ASTC Encoder](./Docs/Building.md) page provides the instructions
+on how to build `astcenc` from the sources in this repository.
 
 # Support
 
