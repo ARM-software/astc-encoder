@@ -185,7 +185,7 @@ HDR data can be encoded just like LDR data, but with some caveats around
 handling the alpha channel.
 
 For many use cases the alpha channel is an actual alpha opacity channel and is
-therefore used for storing an LDR value between 0 and 1 . For these cases use
+therefore used for storing an LDR value between 0 and 1. For these cases use
 the `-hdr` compressor option which will treat the RGB channels as HDR, but the
 A channel as LDR.
 
