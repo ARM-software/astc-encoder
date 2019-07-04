@@ -130,7 +130,7 @@ The [Effective ASTC Encoding](./Docs/Encoding.md) page looks at some of the
 guidelines that should be followed when compressing data using `astcenc`.
 It covers:
 
-* How to efficiently encoding data with fewer than 4 channels.
+* How to efficiently encode data with fewer than 4 channels.
 * How to efficiently encode normal maps, sRGB data, and HDR data
 * Coding equivalents to other compression formats.
 
