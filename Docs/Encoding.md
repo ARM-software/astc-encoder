@@ -151,7 +151,7 @@ Z component of the normal can be reconstructed in shader code based on the
 knowledge that the vector is unit length.
 
 To encode this we therefore want to store two input channels and should
-therefore using `rrrg` coding swizzle, and the `.ga` sampling swizzle. The
+therefore use the `rrrg` coding swizzle, and the `.ga` sampling swizzle. The
 OpenGL ES shader code for reconstruction of the Z value is:
 
     vec3 normal;
