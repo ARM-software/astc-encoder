@@ -135,7 +135,7 @@ Most other texture compression formats have a static channel assignment in
 terms of the expected data correlation. For example, ETC2+EAC assumes that RGB
 are always correlated and that alpha is non-correlated. ASTC can automatically
 encode data as either fully correlated across all 4 channels, or with any one
-channel assigned to a separate non correlated partition to the other three.
+channel assigned to a separate non-correlated partition to the other three.
 
 The non-correlated channel can be changed on a block-by-block basis, so the
 compressor can dynamically adjust the coding based on the data present in the
