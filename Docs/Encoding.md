@@ -131,14 +131,19 @@ textures using ASTC.
 
 ## Encoding non-correlated channels
 
-ASTC can optionally assign any single color channel to a separate
-non-correlated partition to the other three channels, chosen on a
-block-by-block basis. In the general case there is no need for non-correlated
-data to be in a specific channel in the data set; the compressor will
-assign the non-correlated channel on demand if it is needed.
+Most other texture compression formats have a static channel assignment in
+terms of the expected data correlation. For example, ETC2+EAC assumes that RGB
+are always correlated and that alpha is non-correlated. ASTC can automatically
+encode data as either fully correlated across all 4 channels, or with any one
+channel assigned to a separate non correlated partition to the other three.
 
-It is worth noting that the alpha channel is treated differently to the RGB
-color channels in some circumstances:
+The non-correlated channel can be changed on a block-by-block basis, so the
+compressor can dynamically adjust the coding based on the data present in the
+image. This means that there is no need for non-correlated data to be stored
+in a specific channel in the input image.
+
+It is however worth noting that the alpha channel is treated differently to
+the RGB color channels in some circumstances:
 
 * When coding for sRGB the alpha channel will always be stored in linear space.
 * When coding for HDR the alpha channel can optionally be kept as LDR data.
