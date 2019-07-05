@@ -2352,11 +2352,6 @@ int astc_main(int argc, char **argv)
 					printf("3D source images not supported with -array option: %s\n", new_input_filename);
 					exit(1);
 				}
-
-				// BCJ(DEBUG)
-				// printf("\n\n Image %d \n", image_index);
-				// dump_image( input_images[image_index] );
-				// printf("\n\n");
 			}
 
 			// Check load result.
@@ -2414,14 +2409,16 @@ int astc_main(int argc, char **argv)
 			{
 				destroy_image(input_images[i]);
 			}
-			input_images = NULL;
 
 			// Clamp texels outside the actual image area.
 			fill_image_padding_area(input_image);
-
-			// BCJ(DEBUG)
-			// dump_image( input_image );
 		}
+
+		delete[] input_images;
+		input_images = NULL;
+
+		delete[] load_results;
+		load_results = NULL;
 
 		input_components = load_result & 7;
 		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;
@@ -2511,11 +2508,13 @@ int astc_main(int argc, char **argv)
 			}
 		}
 	}
+
 	if (opmode == 0)
 	{
 		store_astc_file(input_image, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
 	}
 
+	destroy_image(input_image);
 
 	if (print_block_mode_histogram)
 	{
