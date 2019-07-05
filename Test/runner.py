@@ -19,7 +19,12 @@ import subprocess as sp
 import sys
 
 
-TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
+DEBUG = False
+
+if DEBUG:
+    TEST_BLOCK_SIZES = ["8x8"]
+else:
+    TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
 
 TEST_EXTENSIONS = [".png", ".hdr"]
 
@@ -44,7 +49,7 @@ class TestImage():
     warmupRuns = 0
     testRuns = 1
 
-    def __init__(self, filePath, testReference):
+    def __init__(self, filePath, testReference, patchRun=False):
         """
         Construct a new test definition.
         """
@@ -55,6 +60,7 @@ class TestImage():
 
         # All tests are used in the full run
         self.useLevel = ["all"]
+        self.useFormat = ["all"]
         self.useRange = ["all"]
 
         # Tokenize the file name
@@ -71,18 +77,22 @@ class TestImage():
 
         self.dynamicRange = nameParts[0]
         self.useRange.append(self.dynamicRange)
-        self.format = nameParts[1]
 
-        # Find the reference PSNR for this test in the spreadsheet
-        self.referencePSNR = None
+        self.format = nameParts[1]
+        self.useFormat.append(self.format)
+
+        # Find the reference data for this test in the spreadsheet
+        self.referencePSNR = dict()
+        self.referenceTime = dict()
         if testReference:
-            self.referencePSNR = dict()
             for ref in testReference:
                 if ref.name == self.name:
                     self.referencePSNR[ref.testBlock] = float(ref.testPSNR)
+                    self.referenceTime[ref.testBlock] = float(ref.testTime)
 
             # Sanity check we found some results
-            assert self.referencePSNR, "Reference PSNR scores not found"
+            if not patchRun:
+                assert self.referencePSNR, "Reference scores not found"
 
         # Initialize test run results
         self.runTime = None
@@ -113,6 +123,11 @@ class TestImage():
         # Run the compressor
         args = [testBinary, "-t", self.filePath, outFilePath,
                 blockSize, "-thorough", "-time", "-showpsnr", "-silentmode"]
+
+        # Switch normal maps into angular error metrics
+        if self.format == "xy":
+            args.append("-normal_psnr")
+
         result = sp.run(args, capture_output=True, check=True, text=True)
 
         # Convert the TGA to PNG and delete the TGA (LDR only)
@@ -124,7 +139,7 @@ class TestImage():
 
         # Create log parsing patterns
         if self.dynamicRange == "ldr":
-            if self.format == "rgb":
+            if self.format in ("rgb", "xy"):
                 patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
             elif self.format == "rgba":
                 patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
@@ -175,7 +190,7 @@ class TestImage():
         self.runTime = sum(timeList) / len(timeList)
 
         # No reference data is a failure
-        if self.referencePSNR is None:
+        if blockSize not in self.referencePSNR:
             self.status = "fail"
         # Pass if PSNR matches to 3dp rounding
         elif (float("%0.3f" % listPSNR[0])) == self.referencePSNR[blockSize]:
@@ -183,8 +198,16 @@ class TestImage():
         # Pass if PSNR is better
         elif listPSNR[0] >= float(self.referencePSNR[blockSize]):
             self.status = "pass"
+        # Else we got worse so it's a fail ...
         else:
             self.status = "fail"
+
+    def skip_run(self,blockSize):
+        """
+        Skip the test scenario, but proagate results from reference.
+        """
+        self.runPSNR = self.referencePSNR[blockSize]
+        self.runTime = self.referenceTime[blockSize]
 
 
 def splitall(path):
@@ -235,7 +258,7 @@ def get_reference_binary():
     assert False, "Unknown operating system %s" % sys.platform
 
 
-def get_test_listing(testReference):
+def get_test_listing(testReference, patchRun=False):
     """
     Return the test image listing.
     """
@@ -250,7 +273,7 @@ def get_test_listing(testReference):
                 continue
 
             testFilePath = os.path.join(root, testFile)
-            image = TestImage(testFilePath, testReference)
+            image = TestImage(testFilePath, testReference, patchRun)
             tests.append(image)
 
     return tests
@@ -336,12 +359,16 @@ def run_tests(args):
         juxml.TestSuite.to_file(fileHandle, suites)
 
 
-def run_reference():
+def run_reference_rebuild():
     """
-    Run the reference test generator test scenario
+    Run the reference test generator rebuild process.
     """
-    TestImage.testRuns = 10
-    TestImage.warmupRuns = 1
+    if DEBUG:
+        TestImage.testRuns = 1
+        TestImage.warmupRuns = 0
+    else:
+        TestImage.testRuns = 10
+        TestImage.warmupRuns = 1
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
@@ -353,19 +380,66 @@ def run_reference():
     testList = get_test_listing(None)
 
     # Run tests
+    for blockSize in TEST_BLOCK_SIZES:
+        for test in testList:
+            # Run the test
+            print("Running: %s @ %s" % (test.name, blockSize))
+            test.run(binary, blockSize)
+
+    # Write CSV
     with open("Test/reference.csv", "w", newline="") as fileHandle:
         writer = csv.writer(fileHandle)
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
-
         for blockSize in TEST_BLOCK_SIZES:
             for test in testList:
-                # Run the test
-                print("Running: %s @ %s" % (test.name, blockSize))
-                test.run(binary, blockSize)
                 row = [test.name, blockSize,
                        "%0.3f" % test.runPSNR,
                        "%0.3f" % test.runTime]
                 writer.writerow(row)
+
+
+def run_reference_update():
+    """
+    Run the reference test generator update process.
+    """
+    if DEBUG:
+        TestImage.testRuns = 1
+        TestImage.warmupRuns = 0
+    else:
+        TestImage.testRuns = 10
+        TestImage.warmupRuns = 1
+
+    # Delete and recreate test output location
+    if os.path.exists("TestOutput"):
+        shutil.rmtree("TestOutput")
+    os.mkdir("TestOutput")
+
+    # Load test resources
+    binary = get_reference_binary()
+    reference = get_test_reference_scores()
+    testList = get_test_listing(reference, True)
+
+    # Run tests
+    for blockSize in TEST_BLOCK_SIZES:
+        for test in testList:
+            if blockSize in test.referencePSNR:
+                print("Skipping: %s @ %s" % (test.name, blockSize))
+                test.skip_run(blockSize)
+            else:
+                print("Running: %s @ %s" % (test.name, blockSize))
+                test.run(binary, blockSize)
+
+    # Write CSV
+    with open("Test/reference.csv", "w", newline="") as fileHandle:
+        writer = csv.writer(fileHandle)
+        writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
+        for blockSize in TEST_BLOCK_SIZES:
+            for test in testList:
+                row = [test.name, blockSize,
+                       "%0.3f" % test.runPSNR,
+                       "%0.3f" % test.runTime]
+                writer.writerow(row)
+
 
 
 def parse_command_line():
@@ -383,6 +457,10 @@ def parse_command_line():
                         choices=["ldr", "hdr", "all"],
                         help="testing dynamic range")
 
+    parser.add_argument("--format", dest="testFormat", default="all",
+                        choices=["xy", "rgb", "rgba", "all"],
+                        help="testing dynamic range")
+
     choices = list(TEST_BLOCK_SIZES) + ["all"]
     parser.add_argument("--block-size", dest="testBlockSize", default="all",
                         choices=choices,
@@ -394,8 +472,11 @@ def parse_command_line():
     parser.add_argument("--warmup", dest="testWarmups", default=0,
                         type=int, help="test warmup count")
 
-    parser.add_argument("--update-reference", default=False, dest="reference",
-                        action="store_true", help="generate reference data")
+    parser.add_argument("--rebuild-ref-csv", default=False, dest="refRebuild",
+                        action="store_true", help="rebuild reference data")
+
+    parser.add_argument("--update-ref-csv", default=False, dest="refUpdate",
+                        action="store_true", help="update reference data")
 
     args = parser.parse_args()
 
@@ -414,10 +495,13 @@ def main():
     # Parse command lines
     args = parse_command_line()
 
-    if not args.reference:
-        run_tests(args)
+    if args.refRebuild:
+        run_reference_rebuild()
+    elif args.refUpdate:
+        run_reference_update()
     else:
-        run_reference()
+        run_tests(args)
+
 
 
 if __name__ == "__main__":
