@@ -22,7 +22,7 @@ import sys
 DEBUG = False
 
 if DEBUG:
-    TEST_BLOCK_SIZES = ["8x8"]
+    TEST_BLOCK_SIZES = ["4x4", "8x8"]
 else:
     TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
 
@@ -95,9 +95,9 @@ class TestImage():
                 assert self.referencePSNR, "Reference scores not found"
 
         # Initialize test run results
-        self.runTime = None
-        self.runPSNR = None
-        self.status = "pending"
+        self.runTime = dict()
+        self.runPSNR = dict()
+        self.status = dict()
 
     def run_once(self, testBinary, blockSize):
         """
@@ -186,28 +186,28 @@ class TestImage():
         listPSNR, timeList = list(zip(*results))
 
         # Store raw results
-        self.runPSNR = listPSNR[0]
-        self.runTime = sum(timeList) / len(timeList)
+        self.runPSNR[blockSize] = listPSNR[0]
+        self.runTime[blockSize] = sum(timeList) / len(timeList)
 
         # No reference data is a failure
         if blockSize not in self.referencePSNR:
-            self.status = "fail"
+            self.status[blockSize] = "fail"
         # Pass if PSNR matches to 3dp rounding
         elif (float("%0.3f" % listPSNR[0])) == self.referencePSNR[blockSize]:
-            self.status = "pass"
+            self.status[blockSize] = "pass"
         # Pass if PSNR is better
         elif listPSNR[0] >= float(self.referencePSNR[blockSize]):
-            self.status = "pass"
+            self.status[blockSize] = "pass"
         # Else we got worse so it's a fail ...
         else:
-            self.status = "fail"
+            self.status[blockSize] = "fail"
 
     def skip_run(self,blockSize):
         """
         Skip the test scenario, but proagate results from reference.
         """
-        self.runPSNR = self.referencePSNR[blockSize]
-        self.runTime = self.referenceTime[blockSize]
+        self.runPSNR[blockSize] = self.referencePSNR[blockSize]
+        self.runTime[blockSize] = self.referenceTime[blockSize]
 
 
 def splitall(path):
@@ -315,8 +315,14 @@ def run_tests(args):
     suite = None
     suiteFormat = None
 
+    # Run tests
+    maxCount = len(args.testBlockSize) * len(testList)
+    curCount = 0
+
     for blockSize in args.testBlockSize:
         for test in testList:
+            curCount += 1
+
             # Skip tests not enabled for the current testing throughness level
             if args.testLevel not in test.useLevel:
                 # TODO: Flag these as skipped in juxml?
@@ -338,19 +344,21 @@ def run_tests(args):
 
             # Run the test
             test.run(binary, blockSize)
-            dat = (test.name, blockSize, test.runPSNR,
-                   test.runTime, test.status)
-            log = "Ran test: %s %s, %0.3f dB, %0.3f s, %s" % dat
+            dat = (curCount, maxCount, test.name, blockSize,
+                   test.runPSNR[blockSize], test.runTime[blockSize],
+                   test.status[blockSize])
+            log = "Ran test %u/%u: %s %s, %0.3f dB, %0.3f s, %s" % dat
             print(" + %s" % log)
 
             # Generate JUnit result
             caseName = "%s.%s" %(test.name, blockSize)
-            case = juxml.TestCase(caseName, elapsed_sec=test.runTime,
+            case = juxml.TestCase(caseName,
+                                  elapsed_sec=test.runTime[blockSize],
                                   stdout=log)
             suite.test_cases.append(case)
 
-            if test.status == "fail":
-                dat = (test.runPSNR, test.referencePSNR)
+            if test.status[blockSize] == "fail":
+                dat = (test.runPSNR[blockSize], test.referencePSNR[blockSize])
                 msg = "PSNR fail %0.3f dB is worse than %s dB" % dat
                 case.add_failure_info(msg)
 
@@ -380,11 +388,21 @@ def run_reference_rebuild():
     testList = get_test_listing(None)
 
     # Run tests
+    maxCount = len(TEST_BLOCK_SIZES) * len(testList)
+    curCount = 0
+
     for blockSize in TEST_BLOCK_SIZES:
         for test in testList:
+            curCount += 1
+
             # Run the test
-            print("Running: %s @ %s" % (test.name, blockSize))
+            dat = (curCount, maxCount, test.name, blockSize)
+            print("Running %u/%u: %s @ %s" % dat)
             test.run(binary, blockSize)
+
+            runPSNR = "%0.3f" % test.runPSNR[blockSize]
+            runTime = "%0.3f" % test.runTime[blockSize]
+            print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
     with open("Test/reference.csv", "w", newline="") as fileHandle:
@@ -392,9 +410,9 @@ def run_reference_rebuild():
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
             for test in testList:
-                row = [test.name, blockSize,
-                       "%0.3f" % test.runPSNR,
-                       "%0.3f" % test.runTime]
+                row = (test.name, blockSize,
+                       "%0.3f" % test.runPSNR[blockSize],
+                       "%0.3f" % test.runTime[blockSize])
                 writer.writerow(row)
 
 
@@ -420,14 +438,24 @@ def run_reference_update():
     testList = get_test_listing(reference, True)
 
     # Run tests
+    maxCount = len(TEST_BLOCK_SIZES) * len(testList)
+    curCount = 0
+
     for blockSize in TEST_BLOCK_SIZES:
         for test in testList:
+            curCount += 1
             if blockSize in test.referencePSNR:
-                print("Skipping: %s @ %s" % (test.name, blockSize))
+                dat = (curCount, maxCount, test.name, blockSize)
+                print("Skipping %u/%u: %s @ %s" % dat)
                 test.skip_run(blockSize)
             else:
-                print("Running: %s @ %s" % (test.name, blockSize))
+                dat = (curCount, maxCount, test.name, blockSize)
+                print("Running %u/%u: %s @ %s" % dat)
                 test.run(binary, blockSize)
+
+                runPSNR = "%0.3f" % test.runPSNR[blockSize]
+                runTime = "%0.3f" % test.runTime[blockSize]
+                print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
     with open("Test/reference.csv", "w", newline="") as fileHandle:
@@ -435,11 +463,10 @@ def run_reference_update():
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
             for test in testList:
-                row = [test.name, blockSize,
-                       "%0.3f" % test.runPSNR,
-                       "%0.3f" % test.runTime]
+                row = (test.name, blockSize,
+                       "%0.3f" % test.runPSNR[blockSize],
+                       "%0.3f" % test.runTime[blockSize])
                 writer.writerow(row)
-
 
 
 def parse_command_line():
