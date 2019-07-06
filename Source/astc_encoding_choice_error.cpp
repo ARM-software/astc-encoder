@@ -41,7 +41,7 @@
 
 #include "astc_codec_internals.h"
 
-#include <math.h>
+#include <cmath>
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>

@@ -14,7 +14,7 @@
  */
 /*----------------------------------------------------------------------------*/
 
-#include <math.h>
+#include <cmath>
 
 #include "astc_codec_internals.h"
 
