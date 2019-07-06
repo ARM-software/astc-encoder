@@ -5,3 +5,4 @@ Source/win32-2017/astcenc/.vs
 Source/win32-2017/astcenc/Win32
 Source/win32-2017/astcenc/x64
 Source/win32-2017/astcenc/astcenc.vcxproj.user
+TestOutput
