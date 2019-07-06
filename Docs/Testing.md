@@ -35,13 +35,15 @@ suite, a performance regression will not cause a test to fail.
 To quickly sanity check changes you can run a smaller test list, but that
 stills runs a few tests from each image category, using the following commands:
 
+    python3 ./Test/runner.py --test-level smoke
+
 You can further filter tests by selecting runs for specific profiles, data
 formats, or block sizes. See the following options in the `--help` for
 more details:
 
-* `--dynamic-range`: select a single set of LDR or HDR tests.
-* `--format`: select a single input data format.
-* `--block-size`: select a single block size.
+* `--dynamic-range` : select a single set of either LDR or HDR tests.
+* `--format` : select a single input data format.
+* `--block-size` : select a single block size.
 
 ## Performance tests
 
@@ -49,8 +51,8 @@ To provide less noisy performance results the test suite supports running each
 compression pass multiple times and returning the average performance. To
 enable this mode use the following two options:
 
-* ``--warmup <N>`: Run N warmup compression passes which are not timed.
-* ``--repeats <M>`: Run M test compression passes which are timed.
+* `--warmup <N>` : Run N warmup compression passes which are not timed.
+* `--repeats <M>` : Run M test compression passes which are timed.
 
 **Note:**  The reference CSV contains performance results measured on an Intel
 Core i5 9600K running at 4.3GHz, running each test 10 times after a single
@@ -63,8 +65,8 @@ based on the image quality and performance of the latest stable tag. The
 runner can be used to regenerate the CSV file using the 64-bit release build
 binary in the [Binary directory](/Binary/).
 
-* ``--rebuild-ref-csv``: regenerate the whole reference, rerunning all tests.
-* ``--update-ref-csv``: patch the reference to add new test images, but keep
+* `--rebuild-ref-csv` : regenerate the whole reference, rerunning all tests.
+* `--update-ref-csv` : patch the reference to add new test images, but keep
   any existing results.
 
 # Known limitations
@@ -73,11 +75,12 @@ The current test suite is viewed as a set of bare-essentials, but has a number
 of significant omissions:
 
 * Only square block sizes from 4x4 (8bpp) up to 8x8 (2pp) are tested.
-* Only `-thorough` compression speed tested, and few additional compressor
-  options tested other than `-normal_psnr` for the `xy` data test set.
+* Only `-thorough` compression speed tested.
+* Few optional compressor options are tested other than the use of
+  `-normal_psnr` for the `xy` data test set.
 * No LDR profile coverage of luminance-only input textures.
 * Limited HDR profile coverage of HDR input textures.
 * No Full profile coverage of 3D input textures.
 
-It is intended that pair-wise test coverage should be used in future to have
-wider coverage without excessive test runtime.
+It is intended that pair-wise test coverage should be used in future to allow
+us to have have wider coverage without excessive test runtime.
