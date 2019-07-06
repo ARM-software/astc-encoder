@@ -202,7 +202,7 @@ class TestImage():
         else:
             self.status[blockSize] = "fail"
 
-    def skip_run(self,blockSize):
+    def skip_run(self, blockSize):
         """
         Skip the test scenario, but proagate results from reference.
         """
@@ -251,9 +251,9 @@ def get_reference_binary():
     if "linux" in sys.platform:
         return "./Binary/linux-x64/astcenc"
     elif sys.platform == "darwin":
-        return  "./Binary/mac-x64/astcenc"
+        return "./Binary/mac-x64/astcenc"
     elif sys.platform == "win32":
-        return  "./Binary/windows-x64/astcenc.exe"
+        return "./Binary/windows-x64/astcenc.exe"
 
     assert False, "Unknown operating system %s" % sys.platform
 
@@ -351,7 +351,7 @@ def run_tests(args):
             print(" + %s" % log)
 
             # Generate JUnit result
-            caseName = "%s.%s" %(test.name, blockSize)
+            caseName = "%s.%s" % (test.name, blockSize)
             case = juxml.TestCase(caseName,
                                   elapsed_sec=test.runTime[blockSize],
                                   stdout=log)
@@ -528,7 +528,6 @@ def main():
         run_reference_update()
     else:
         run_tests(args)
-
 
 
 if __name__ == "__main__":
