@@ -333,6 +333,11 @@ def run_tests(args):
                 # TODO: Flag these as skipped in juxml?
                 continue
 
+            # Skip tests not enabled for the current data format
+            if args.testFormat not in test.useFormat:
+                # TODO: Flag these as skipped in juxml?
+                continue
+
             # Start a new suite if the format changes
             dat = (test.dynamicRange, test.format, blockSize)
             testFormat = "%s.%s.%s" % dat

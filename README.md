@@ -134,8 +134,11 @@ It covers:
 * How to efficiently encode normal maps, sRGB data, and HDR data
 * Coding equivalents to other compression formats.
 
-The [Building ASTC Encoder](./Docs/Building.md) page provides the instructions
-on how to build `astcenc` from the sources in this repository.
+The [Building ASTC Encoder](./Docs/Building.md) page provides instructions on
+how to build `astcenc` from the sources in this repository.
+
+The [Testing ASTC Encoder](./Docs/Testing.md) page provides instructions on
+how to test any modifications to the source code in this repository.
 
 # Support
 
