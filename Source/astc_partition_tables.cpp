@@ -1,20 +1,15 @@
-/*----------------------------------------------------------------------------*/  
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions to generate partition tables for ASTC.
- *
- *			We generate tables only for the block sizes that have actually been
- *			specified to the codec.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ * @brief Functions for generating partition tables on demand.
+ */
 
 #include "astc_codec_internals.h"
 
@@ -46,7 +41,6 @@ static void gen_canonicalized_partition_table(int texel_count, const uint8_t * p
 	}
 }
 
-
 static int compare_canonicalized_partition_tables(const uint64_t part1[7], const uint64_t part2[7])
 {
 	if (part1[0] != part2[0])
@@ -66,9 +60,8 @@ static int compare_canonicalized_partition_tables(const uint64_t part1[7], const
 	return 1;
 }
 
-
-/* 
-   For a partition table, detect partitionings that are equivalent, then mark them as invalid. This reduces the number of partitions that the codec has to consider and thus improves encode
+/*
+   For a partition table, detect partitionss that are equivalent, then mark them as invalid. This reduces the number of partitions that the codec has to consider and thus improves encode
    performance. */
 static void partition_table_zap_equal_elements(int xdim, int ydim, int zdim, partition_info * pi)
 {
@@ -100,7 +93,6 @@ static void partition_table_zap_equal_elements(int xdim, int ydim, int zdim, par
 	delete[]canonicalizeds;
 }
 
-
 uint32_t hash52(uint32_t inp)
 {
 	inp ^= inp >> 15;
@@ -114,8 +106,6 @@ uint32_t hash52(uint32_t inp)
 	inp ^= inp >> 17;
 	return inp;
 }
-
-
 
 int select_partition(int seed, int x, int y, int z, int partitioncount, int small_block)
 {
@@ -158,7 +148,6 @@ int select_partition(int seed, int x, int y, int z, int partitioncount, int smal
 	seed11 *= seed11;
 	seed12 *= seed12;
 
-
 	int sh1, sh2, sh3;
 	if (seed & 1)
 	{
@@ -186,13 +175,10 @@ int select_partition(int seed, int x, int y, int z, int partitioncount, int smal
 	seed11 >>= sh3;
 	seed12 >>= sh3;
 
-
-
 	int a = seed1 * x + seed2 * y + seed11 * z + (rnum >> 14);
 	int b = seed3 * x + seed4 * y + seed12 * z + (rnum >> 10);
 	int c = seed5 * x + seed6 * y + seed9 * z + (rnum >> 6);
 	int d = seed7 * x + seed8 * y + seed10 * z + (rnum >> 2);
-
 
 	// apply the saw
 	a &= 0x3F;
@@ -220,15 +206,12 @@ int select_partition(int seed, int x, int y, int z, int partitioncount, int smal
 	return partition;
 }
 
-
-
 void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_count, int partition_index, partition_info * pt)
 {
 	int small_block = (xdim * ydim * zdim) < 32;
 
 	uint8_t *partition_of_texel = pt->partition_of_texel;
 	int x, y, z, i;
-
 
 	for (z = 0; z < zdim; z++)
 		for (y = 0; y < ydim; y++)
@@ -237,7 +220,6 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				*partition_of_texel++ = part;
 			}
-
 
 	int texels_per_block = xdim * ydim * zdim;
 
@@ -265,8 +247,6 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 	else
 		pt->partition_count = 4;
 
-
-
 	for (i = 0; i < 4; i++)
 		pt->coverage_bitmaps[i] = 0ULL;
 
@@ -277,13 +257,11 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 		int idx = bsd->texels_for_bitmap_partitioning[i];
 		pt->coverage_bitmaps[pt->partition_of_texel[idx]] |= 1ULL << i;
 	}
-
 }
 
 static void generate_partition_tables(int xdim, int ydim, int zdim)
 {
 	int i;
-
 
 	partition_info *one_partition = new partition_info;
 	partition_info *two_partitions = new partition_info[1024];
@@ -311,7 +289,6 @@ static void generate_partition_tables(int xdim, int ydim, int zdim)
 
 	partition_tables[xdim + 16 * ydim + 256 * zdim] = partition_table;
 }
-
 
 const partition_info *get_partition_table(int xdim, int ydim, int zdim, int partition_count)
 {

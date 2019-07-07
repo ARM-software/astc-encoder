@@ -1,18 +1,17 @@
-/*----------------------------------------------------------------------------*/  
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
+ * @brief Functions for finding dominant direction of a set of colors.
  *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Implements functions for finding dominant direction of a set of
- *			colors, using ARM patent pending method.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ * Uses Arm patent pending method.
+ */
 
 #include "astc_codec_internals.h"
 
@@ -27,13 +26,11 @@
 	#include <fenv.h>
 #endif
 
-/* routines to compute average colors and dominant directions for blocks with 3 and 4 components. */
-
-/*
-	for a full block, functions to compute averages and dominant directions. The averages and directions are computed separately for each partition.
-	We have separate versions for blocks with and without alpha, since the processing for blocks with alpha is significantly more expensive.
-	The direction vectors it produces are NOT normalized. 
-*/
+// For a full block, functions to compute averages and dominant directions. The
+// averages and directions are computed separately for each partition.
+// We have separate versions for blocks with and without alpha, since the
+// processing for blocks with alpha is significantly more expensive. The
+// direction vectors it produces are NOT normalized.
 void compute_averages_and_directions_rgba(const partition_info * pt,
 										  const imageblock * blk,
 										  const error_weight_block * ewb,
@@ -124,9 +121,6 @@ void compute_averages_and_directions_rgba(const partition_info * pt,
 		directions_gba[partition] = best_vector.yzw;
 	}
 }
-
-
-
 
 void compute_averages_and_directions_rgb(const partition_info * pt,
 										 const imageblock * blk,
@@ -305,9 +299,6 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 
 }
 
-
-
-
 void compute_averages_and_directions_2_components(const partition_info * pt,
 												  const imageblock * blk,
 												  const error_weight_block * ewb, const float2 * color_scalefactors, int component1, int component2, float2 * averages, float2 * directions)
@@ -330,7 +321,6 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 		ASTC_CODEC_INTERNAL_ERROR;
 		exit(1);
 	}
-
 
 	for (partition = 0; partition < partition_count; partition++)
 	{
@@ -355,7 +345,6 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 
 		float2 average = base_sum * 1.0f / MAX(partition_weight, 1e-7f);
 		averages[partition] = average * csf.xy;
-
 
 		float2 sum_xp = float2(0, 0);
 		float2 sum_yp = float2(0, 0);
@@ -387,7 +376,6 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 
 		directions[partition] = best_vector;
 	}
-
 }
 
 
@@ -407,20 +395,20 @@ float funcname( \
 	float errorsum = 0.0f; \
 	int partition; \
 	for(partition=0; partition<pt->partition_count; partition++) \
-		{ \
+	{ \
 		const uint8_t *weights = pt->texels_of_partition[ partition ]; \
 		int texelcount = pt->texels_per_partition[ partition ]; \
 		float lowparam = 1e10f; \
 		float highparam = -1e10f; \
 		processed_line2 l = plines[partition]; \
 		if( ewb->contains_zeroweight_texels ) \
-			{ \
+		{ \
 			for(i=0;i<texelcount;i++) \
-				{ \
+			{ \
 				int iwt = weights[i]; \
 				float texel_weight = ewb-> PASTE(texel_weight_ , c01_rname) [i]; \
 				if( texel_weight > 1e-20f ) \
-					{ \
+				{ \
 					float2 point = float2(blk->work_data[4*iwt + c0_iwt], blk->work_data[4*iwt + c1_iwt] ); \
 					float param = dot( point, l.bs ); \
 					float2 rp1 = l.amod + param*l.bis; \
@@ -430,12 +418,12 @@ float funcname( \
 					if( param < lowparam ) lowparam = param; \
 					if( param > highparam ) highparam = param; \
 					} \
-				} \
 			} \
+		} \
 		else \
-			{ \
+		{ \
 			for(i=0;i<texelcount;i++) \
-				{ \
+			{ \
 				int iwt = weights[i]; \
 				float2 point = float2(blk->work_data[4*iwt + c0_iwt], blk->work_data[4*iwt + c1_iwt] ); \
 				float param = dot( point, l.bs ); \
@@ -445,15 +433,15 @@ float funcname( \
 				errorsum += dot( ews. c01_name, dist*dist ); \
 				if( param < lowparam ) lowparam = param; \
 				if( param > highparam ) highparam = param; \
-				} \
 			} \
+		} \
 		float linelen = highparam - lowparam; \
 		if( !(linelen > 1e-7f) ) \
 			linelen = 1e-7f; \
 		length_of_lines[partition] = linelen; \
-		} \
+	} \
 	return errorsum; \
-	}
+}
 
 
 TWO_COMPONENT_ERROR_FUNC(compute_error_squared_rg, 0, 1, xy, rg)
@@ -478,20 +466,20 @@ float funcname( \
 	float errorsum = 0.0f; \
 	int partition; \
 	for(partition=0; partition<pt->partition_count; partition++) \
-		{ \
+	{ \
 		const uint8_t *weights = pt->texels_of_partition[ partition ]; \
 		int texelcount = pt->texels_per_partition[ partition ]; \
 		float lowparam = 1e10f; \
 		float highparam = -1e10f; \
 		processed_line3 l = plines[partition]; \
 		if( ewb->contains_zeroweight_texels ) \
-			{ \
+		{ \
 			for(i=0;i<texelcount;i++) \
-				{ \
+			{ \
 				int iwt = weights[i]; \
 				float texel_weight = ewb-> PASTE(texel_weight_ , c012_rname) [i]; \
 				if( texel_weight > 1e-20f ) \
-					{ \
+				{ \
 					float3 point = float3(blk->work_data[4*iwt + c0_iwt], blk->work_data[4*iwt + c1_iwt], blk->work_data[4*iwt + c2_iwt] ); \
 					float param = dot( point, l.bs ); \
 					float3 rp1 = l.amod + param*l.bis; \
@@ -500,13 +488,13 @@ float funcname( \
 					errorsum += dot( ews. c012_name, dist*dist ); \
 					if( param < lowparam ) lowparam = param; \
 					if( param > highparam ) highparam = param; \
-					} \
 				} \
 			} \
+		} \
 		else \
-			{ \
+		{ \
 			for(i=0;i<texelcount;i++) \
-				{ \
+			{ \
 				int iwt = weights[i]; \
 				float3 point = float3(blk->work_data[4*iwt + c0_iwt], blk->work_data[4*iwt + c1_iwt], blk->work_data[4*iwt + c2_iwt] ); \
 				float param = dot( point, l.bs ); \
@@ -516,15 +504,15 @@ float funcname( \
 				errorsum += dot( ews. c012_name, dist*dist ); \
 				if( param < lowparam ) lowparam = param; \
 				if( param > highparam ) highparam = param; \
-				} \
 			} \
+		} \
 		float linelen = highparam - lowparam; \
 		if( !(linelen > 1e-7f) ) \
 			linelen = 1e-7f; \
 		length_of_lines[partition] = linelen; \
-		} \
+	} \
 	return errorsum; \
-	}
+}
 
 THREE_COMPONENT_ERROR_FUNC(compute_error_squared_gba, 1, 2, 3, yzw, gba)
 THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rba, 0, 2, 3, xzw, rba)

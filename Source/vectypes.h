@@ -1,31 +1,24 @@
-/*----------------------------------------------------------------------------*/  
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Template library for fixed-size vectors.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ * @brief Template library for fixed size vectors.
+ */
 
 #include <string.h>
 #include <stdint.h>
 
 typedef unsigned int uint;
 typedef unsigned short ushort;
-typedef unsigned long ulong;
-typedef unsigned char uchar;
-typedef signed char schar;
 
 template < typename vtype > class vtype2;
-
 template < typename vtype > class vtype3;
-
 template < typename vtype > class vtype4;
 
 template < typename vtype > struct vtype2_xx_ref
@@ -9768,12 +9761,6 @@ typedef vtype4 < short >short4;
 typedef vtype2 < ushort > ushort2;
 typedef vtype3 < ushort > ushort3;
 typedef vtype4 < ushort > ushort4;
-typedef vtype2 < long >long2;
-typedef vtype3 < long >long3;
-typedef vtype4 < long >long4;
-typedef vtype2 < ulong > ulong2;
-typedef vtype3 < ulong > ulong3;
-typedef vtype4 < ulong > ulong4;
 static inline float2 operator+(float2 p, float2 q)
 {
 	return float2(p.x + q.x, p.y + q.y);
@@ -9989,78 +9976,6 @@ static inline ushort3 operator+(ushort p, ushort3 q)
 static inline ushort4 operator+(ushort p, ushort4 q)
 {
 	return ushort4(p + q.x, p + q.y, p + q.z, p + q.w);
-}
-static inline long2 operator+(long2 p, long2 q)
-{
-	return long2(p.x + q.x, p.y + q.y);
-}
-static inline long3 operator+(long3 p, long3 q)
-{
-	return long3(p.x + q.x, p.y + q.y, p.z + q.z);
-}
-static inline long4 operator+(long4 p, long4 q)
-{
-	return long4(p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w);
-}
-static inline long2 operator+(long2 p, long q)
-{
-	return long2(p.x + q, p.y + q);
-}
-static inline long3 operator+(long3 p, long q)
-{
-	return long3(p.x + q, p.y + q, p.z + q);
-}
-static inline long4 operator+(long4 p, long q)
-{
-	return long4(p.x + q, p.y + q, p.z + q, p.w + q);
-}
-static inline long2 operator+(long p, long2 q)
-{
-	return long2(p + q.x, p + q.y);
-}
-static inline long3 operator+(long p, long3 q)
-{
-	return long3(p + q.x, p + q.y, p + q.z);
-}
-static inline long4 operator+(long p, long4 q)
-{
-	return long4(p + q.x, p + q.y, p + q.z, p + q.w);
-}
-static inline ulong2 operator+(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x + q.x, p.y + q.y);
-}
-static inline ulong3 operator+(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x + q.x, p.y + q.y, p.z + q.z);
-}
-static inline ulong4 operator+(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w);
-}
-static inline ulong2 operator+(ulong2 p, ulong q)
-{
-	return ulong2(p.x + q, p.y + q);
-}
-static inline ulong3 operator+(ulong3 p, ulong q)
-{
-	return ulong3(p.x + q, p.y + q, p.z + q);
-}
-static inline ulong4 operator+(ulong4 p, ulong q)
-{
-	return ulong4(p.x + q, p.y + q, p.z + q, p.w + q);
-}
-static inline ulong2 operator+(ulong p, ulong2 q)
-{
-	return ulong2(p + q.x, p + q.y);
-}
-static inline ulong3 operator+(ulong p, ulong3 q)
-{
-	return ulong3(p + q.x, p + q.y, p + q.z);
-}
-static inline ulong4 operator+(ulong p, ulong4 q)
-{
-	return ulong4(p + q.x, p + q.y, p + q.z, p + q.w);
 }
 static inline float2 operator-(float2 p, float2 q)
 {
@@ -10278,78 +10193,6 @@ static inline ushort4 operator-(ushort p, ushort4 q)
 {
 	return ushort4(p - q.x, p - q.y, p - q.z, p - q.w);
 }
-static inline long2 operator-(long2 p, long2 q)
-{
-	return long2(p.x - q.x, p.y - q.y);
-}
-static inline long3 operator-(long3 p, long3 q)
-{
-	return long3(p.x - q.x, p.y - q.y, p.z - q.z);
-}
-static inline long4 operator-(long4 p, long4 q)
-{
-	return long4(p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w);
-}
-static inline long2 operator-(long2 p, long q)
-{
-	return long2(p.x - q, p.y - q);
-}
-static inline long3 operator-(long3 p, long q)
-{
-	return long3(p.x - q, p.y - q, p.z - q);
-}
-static inline long4 operator-(long4 p, long q)
-{
-	return long4(p.x - q, p.y - q, p.z - q, p.w - q);
-}
-static inline long2 operator-(long p, long2 q)
-{
-	return long2(p - q.x, p - q.y);
-}
-static inline long3 operator-(long p, long3 q)
-{
-	return long3(p - q.x, p - q.y, p - q.z);
-}
-static inline long4 operator-(long p, long4 q)
-{
-	return long4(p - q.x, p - q.y, p - q.z, p - q.w);
-}
-static inline ulong2 operator-(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x - q.x, p.y - q.y);
-}
-static inline ulong3 operator-(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x - q.x, p.y - q.y, p.z - q.z);
-}
-static inline ulong4 operator-(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w);
-}
-static inline ulong2 operator-(ulong2 p, ulong q)
-{
-	return ulong2(p.x - q, p.y - q);
-}
-static inline ulong3 operator-(ulong3 p, ulong q)
-{
-	return ulong3(p.x - q, p.y - q, p.z - q);
-}
-static inline ulong4 operator-(ulong4 p, ulong q)
-{
-	return ulong4(p.x - q, p.y - q, p.z - q, p.w - q);
-}
-static inline ulong2 operator-(ulong p, ulong2 q)
-{
-	return ulong2(p - q.x, p - q.y);
-}
-static inline ulong3 operator-(ulong p, ulong3 q)
-{
-	return ulong3(p - q.x, p - q.y, p - q.z);
-}
-static inline ulong4 operator-(ulong p, ulong4 q)
-{
-	return ulong4(p - q.x, p - q.y, p - q.z, p - q.w);
-}
 static inline float2 operator*(float2 p, float2 q)
 {
 	return float2(p.x * q.x, p.y * q.y);
@@ -10565,78 +10408,6 @@ static inline ushort3 operator*(ushort p, ushort3 q)
 static inline ushort4 operator*(ushort p, ushort4 q)
 {
 	return ushort4(p * q.x, p * q.y, p * q.z, p * q.w);
-}
-static inline long2 operator*(long2 p, long2 q)
-{
-	return long2(p.x * q.x, p.y * q.y);
-}
-static inline long3 operator*(long3 p, long3 q)
-{
-	return long3(p.x * q.x, p.y * q.y, p.z * q.z);
-}
-static inline long4 operator*(long4 p, long4 q)
-{
-	return long4(p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w);
-}
-static inline long2 operator*(long2 p, long q)
-{
-	return long2(p.x * q, p.y * q);
-}
-static inline long3 operator*(long3 p, long q)
-{
-	return long3(p.x * q, p.y * q, p.z * q);
-}
-static inline long4 operator*(long4 p, long q)
-{
-	return long4(p.x * q, p.y * q, p.z * q, p.w * q);
-}
-static inline long2 operator*(long p, long2 q)
-{
-	return long2(p * q.x, p * q.y);
-}
-static inline long3 operator*(long p, long3 q)
-{
-	return long3(p * q.x, p * q.y, p * q.z);
-}
-static inline long4 operator*(long p, long4 q)
-{
-	return long4(p * q.x, p * q.y, p * q.z, p * q.w);
-}
-static inline ulong2 operator*(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x * q.x, p.y * q.y);
-}
-static inline ulong3 operator*(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x * q.x, p.y * q.y, p.z * q.z);
-}
-static inline ulong4 operator*(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w);
-}
-static inline ulong2 operator*(ulong2 p, ulong q)
-{
-	return ulong2(p.x * q, p.y * q);
-}
-static inline ulong3 operator*(ulong3 p, ulong q)
-{
-	return ulong3(p.x * q, p.y * q, p.z * q);
-}
-static inline ulong4 operator*(ulong4 p, ulong q)
-{
-	return ulong4(p.x * q, p.y * q, p.z * q, p.w * q);
-}
-static inline ulong2 operator*(ulong p, ulong2 q)
-{
-	return ulong2(p * q.x, p * q.y);
-}
-static inline ulong3 operator*(ulong p, ulong3 q)
-{
-	return ulong3(p * q.x, p * q.y, p * q.z);
-}
-static inline ulong4 operator*(ulong p, ulong4 q)
-{
-	return ulong4(p * q.x, p * q.y, p * q.z, p * q.w);
 }
 static inline float2 operator/(float2 p, float2 q)
 {
@@ -10854,78 +10625,6 @@ static inline ushort4 operator/(ushort p, ushort4 q)
 {
 	return ushort4(p / q.x, p / q.y, p / q.z, p / q.w);
 }
-static inline long2 operator/(long2 p, long2 q)
-{
-	return long2(p.x / q.x, p.y / q.y);
-}
-static inline long3 operator/(long3 p, long3 q)
-{
-	return long3(p.x / q.x, p.y / q.y, p.z / q.z);
-}
-static inline long4 operator/(long4 p, long4 q)
-{
-	return long4(p.x / q.x, p.y / q.y, p.z / q.z, p.w / q.w);
-}
-static inline long2 operator/(long2 p, long q)
-{
-	return long2(p.x / q, p.y / q);
-}
-static inline long3 operator/(long3 p, long q)
-{
-	return long3(p.x / q, p.y / q, p.z / q);
-}
-static inline long4 operator/(long4 p, long q)
-{
-	return long4(p.x / q, p.y / q, p.z / q, p.w / q);
-}
-static inline long2 operator/(long p, long2 q)
-{
-	return long2(p / q.x, p / q.y);
-}
-static inline long3 operator/(long p, long3 q)
-{
-	return long3(p / q.x, p / q.y, p / q.z);
-}
-static inline long4 operator/(long p, long4 q)
-{
-	return long4(p / q.x, p / q.y, p / q.z, p / q.w);
-}
-static inline ulong2 operator/(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x / q.x, p.y / q.y);
-}
-static inline ulong3 operator/(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x / q.x, p.y / q.y, p.z / q.z);
-}
-static inline ulong4 operator/(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x / q.x, p.y / q.y, p.z / q.z, p.w / q.w);
-}
-static inline ulong2 operator/(ulong2 p, ulong q)
-{
-	return ulong2(p.x / q, p.y / q);
-}
-static inline ulong3 operator/(ulong3 p, ulong q)
-{
-	return ulong3(p.x / q, p.y / q, p.z / q);
-}
-static inline ulong4 operator/(ulong4 p, ulong q)
-{
-	return ulong4(p.x / q, p.y / q, p.z / q, p.w / q);
-}
-static inline ulong2 operator/(ulong p, ulong2 q)
-{
-	return ulong2(p / q.x, p / q.y);
-}
-static inline ulong3 operator/(ulong p, ulong3 q)
-{
-	return ulong3(p / q.x, p / q.y, p / q.z);
-}
-static inline ulong4 operator/(ulong p, ulong4 q)
-{
-	return ulong4(p / q.x, p / q.y, p / q.z, p / q.w);
-}
 static inline int2 operator%(int2 p, int2 q)
 {
 	return int2(p.x % q.x, p.y % q.y);
@@ -11069,78 +10768,6 @@ static inline ushort3 operator%(ushort p, ushort3 q)
 static inline ushort4 operator%(ushort p, ushort4 q)
 {
 	return ushort4(p % q.x, p % q.y, p % q.z, p % q.w);
-}
-static inline long2 operator%(long2 p, long2 q)
-{
-	return long2(p.x % q.x, p.y % q.y);
-}
-static inline long3 operator%(long3 p, long3 q)
-{
-	return long3(p.x % q.x, p.y % q.y, p.z % q.z);
-}
-static inline long4 operator%(long4 p, long4 q)
-{
-	return long4(p.x % q.x, p.y % q.y, p.z % q.z, p.w % q.w);
-}
-static inline long2 operator%(long2 p, long q)
-{
-	return long2(p.x % q, p.y % q);
-}
-static inline long3 operator%(long3 p, long q)
-{
-	return long3(p.x % q, p.y % q, p.z % q);
-}
-static inline long4 operator%(long4 p, long q)
-{
-	return long4(p.x % q, p.y % q, p.z % q, p.w % q);
-}
-static inline long2 operator%(long p, long2 q)
-{
-	return long2(p % q.x, p % q.y);
-}
-static inline long3 operator%(long p, long3 q)
-{
-	return long3(p % q.x, p % q.y, p % q.z);
-}
-static inline long4 operator%(long p, long4 q)
-{
-	return long4(p % q.x, p % q.y, p % q.z, p % q.w);
-}
-static inline ulong2 operator%(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x % q.x, p.y % q.y);
-}
-static inline ulong3 operator%(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x % q.x, p.y % q.y, p.z % q.z);
-}
-static inline ulong4 operator%(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x % q.x, p.y % q.y, p.z % q.z, p.w % q.w);
-}
-static inline ulong2 operator%(ulong2 p, ulong q)
-{
-	return ulong2(p.x % q, p.y % q);
-}
-static inline ulong3 operator%(ulong3 p, ulong q)
-{
-	return ulong3(p.x % q, p.y % q, p.z % q);
-}
-static inline ulong4 operator%(ulong4 p, ulong q)
-{
-	return ulong4(p.x % q, p.y % q, p.z % q, p.w % q);
-}
-static inline ulong2 operator%(ulong p, ulong2 q)
-{
-	return ulong2(p % q.x, p % q.y);
-}
-static inline ulong3 operator%(ulong p, ulong3 q)
-{
-	return ulong3(p % q.x, p % q.y, p % q.z);
-}
-static inline ulong4 operator%(ulong p, ulong4 q)
-{
-	return ulong4(p % q.x, p % q.y, p % q.z, p % q.w);
 }
 static inline int2 operator&(int2 p, int2 q)
 {
@@ -11286,78 +10913,6 @@ static inline ushort4 operator&(ushort p, ushort4 q)
 {
 	return ushort4(p & q.x, p & q.y, p & q.z, p & q.w);
 }
-static inline long2 operator&(long2 p, long2 q)
-{
-	return long2(p.x & q.x, p.y & q.y);
-}
-static inline long3 operator&(long3 p, long3 q)
-{
-	return long3(p.x & q.x, p.y & q.y, p.z & q.z);
-}
-static inline long4 operator&(long4 p, long4 q)
-{
-	return long4(p.x & q.x, p.y & q.y, p.z & q.z, p.w & q.w);
-}
-static inline long2 operator&(long2 p, long q)
-{
-	return long2(p.x & q, p.y & q);
-}
-static inline long3 operator&(long3 p, long q)
-{
-	return long3(p.x & q, p.y & q, p.z & q);
-}
-static inline long4 operator&(long4 p, long q)
-{
-	return long4(p.x & q, p.y & q, p.z & q, p.w & q);
-}
-static inline long2 operator&(long p, long2 q)
-{
-	return long2(p & q.x, p & q.y);
-}
-static inline long3 operator&(long p, long3 q)
-{
-	return long3(p & q.x, p & q.y, p & q.z);
-}
-static inline long4 operator&(long p, long4 q)
-{
-	return long4(p & q.x, p & q.y, p & q.z, p & q.w);
-}
-static inline ulong2 operator&(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x & q.x, p.y & q.y);
-}
-static inline ulong3 operator&(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x & q.x, p.y & q.y, p.z & q.z);
-}
-static inline ulong4 operator&(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x & q.x, p.y & q.y, p.z & q.z, p.w & q.w);
-}
-static inline ulong2 operator&(ulong2 p, ulong q)
-{
-	return ulong2(p.x & q, p.y & q);
-}
-static inline ulong3 operator&(ulong3 p, ulong q)
-{
-	return ulong3(p.x & q, p.y & q, p.z & q);
-}
-static inline ulong4 operator&(ulong4 p, ulong q)
-{
-	return ulong4(p.x & q, p.y & q, p.z & q, p.w & q);
-}
-static inline ulong2 operator&(ulong p, ulong2 q)
-{
-	return ulong2(p & q.x, p & q.y);
-}
-static inline ulong3 operator&(ulong p, ulong3 q)
-{
-	return ulong3(p & q.x, p & q.y, p & q.z);
-}
-static inline ulong4 operator&(ulong p, ulong4 q)
-{
-	return ulong4(p & q.x, p & q.y, p & q.z, p & q.w);
-}
 static inline int2 operator|(int2 p, int2 q)
 {
 	return int2(p.x | q.x, p.y | q.y);
@@ -11501,78 +11056,6 @@ static inline ushort3 operator|(ushort p, ushort3 q)
 static inline ushort4 operator|(ushort p, ushort4 q)
 {
 	return ushort4(p | q.x, p | q.y, p | q.z, p | q.w);
-}
-static inline long2 operator|(long2 p, long2 q)
-{
-	return long2(p.x | q.x, p.y | q.y);
-}
-static inline long3 operator|(long3 p, long3 q)
-{
-	return long3(p.x | q.x, p.y | q.y, p.z | q.z);
-}
-static inline long4 operator|(long4 p, long4 q)
-{
-	return long4(p.x | q.x, p.y | q.y, p.z | q.z, p.w | q.w);
-}
-static inline long2 operator|(long2 p, long q)
-{
-	return long2(p.x | q, p.y | q);
-}
-static inline long3 operator|(long3 p, long q)
-{
-	return long3(p.x | q, p.y | q, p.z | q);
-}
-static inline long4 operator|(long4 p, long q)
-{
-	return long4(p.x | q, p.y | q, p.z | q, p.w | q);
-}
-static inline long2 operator|(long p, long2 q)
-{
-	return long2(p | q.x, p | q.y);
-}
-static inline long3 operator|(long p, long3 q)
-{
-	return long3(p | q.x, p | q.y, p | q.z);
-}
-static inline long4 operator|(long p, long4 q)
-{
-	return long4(p | q.x, p | q.y, p | q.z, p | q.w);
-}
-static inline ulong2 operator|(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x | q.x, p.y | q.y);
-}
-static inline ulong3 operator|(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x | q.x, p.y | q.y, p.z | q.z);
-}
-static inline ulong4 operator|(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x | q.x, p.y | q.y, p.z | q.z, p.w | q.w);
-}
-static inline ulong2 operator|(ulong2 p, ulong q)
-{
-	return ulong2(p.x | q, p.y | q);
-}
-static inline ulong3 operator|(ulong3 p, ulong q)
-{
-	return ulong3(p.x | q, p.y | q, p.z | q);
-}
-static inline ulong4 operator|(ulong4 p, ulong q)
-{
-	return ulong4(p.x | q, p.y | q, p.z | q, p.w | q);
-}
-static inline ulong2 operator|(ulong p, ulong2 q)
-{
-	return ulong2(p | q.x, p | q.y);
-}
-static inline ulong3 operator|(ulong p, ulong3 q)
-{
-	return ulong3(p | q.x, p | q.y, p | q.z);
-}
-static inline ulong4 operator|(ulong p, ulong4 q)
-{
-	return ulong4(p | q.x, p | q.y, p | q.z, p | q.w);
 }
 static inline int2 operator^(int2 p, int2 q)
 {
@@ -11718,78 +11201,6 @@ static inline ushort4 operator^(ushort p, ushort4 q)
 {
 	return ushort4(p ^ q.x, p ^ q.y, p ^ q.z, p ^ q.w);
 }
-static inline long2 operator^(long2 p, long2 q)
-{
-	return long2(p.x ^ q.x, p.y ^ q.y);
-}
-static inline long3 operator^(long3 p, long3 q)
-{
-	return long3(p.x ^ q.x, p.y ^ q.y, p.z ^ q.z);
-}
-static inline long4 operator^(long4 p, long4 q)
-{
-	return long4(p.x ^ q.x, p.y ^ q.y, p.z ^ q.z, p.w ^ q.w);
-}
-static inline long2 operator^(long2 p, long q)
-{
-	return long2(p.x ^ q, p.y ^ q);
-}
-static inline long3 operator^(long3 p, long q)
-{
-	return long3(p.x ^ q, p.y ^ q, p.z ^ q);
-}
-static inline long4 operator^(long4 p, long q)
-{
-	return long4(p.x ^ q, p.y ^ q, p.z ^ q, p.w ^ q);
-}
-static inline long2 operator^(long p, long2 q)
-{
-	return long2(p ^ q.x, p ^ q.y);
-}
-static inline long3 operator^(long p, long3 q)
-{
-	return long3(p ^ q.x, p ^ q.y, p ^ q.z);
-}
-static inline long4 operator^(long p, long4 q)
-{
-	return long4(p ^ q.x, p ^ q.y, p ^ q.z, p ^ q.w);
-}
-static inline ulong2 operator^(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x ^ q.x, p.y ^ q.y);
-}
-static inline ulong3 operator^(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x ^ q.x, p.y ^ q.y, p.z ^ q.z);
-}
-static inline ulong4 operator^(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x ^ q.x, p.y ^ q.y, p.z ^ q.z, p.w ^ q.w);
-}
-static inline ulong2 operator^(ulong2 p, ulong q)
-{
-	return ulong2(p.x ^ q, p.y ^ q);
-}
-static inline ulong3 operator^(ulong3 p, ulong q)
-{
-	return ulong3(p.x ^ q, p.y ^ q, p.z ^ q);
-}
-static inline ulong4 operator^(ulong4 p, ulong q)
-{
-	return ulong4(p.x ^ q, p.y ^ q, p.z ^ q, p.w ^ q);
-}
-static inline ulong2 operator^(ulong p, ulong2 q)
-{
-	return ulong2(p ^ q.x, p ^ q.y);
-}
-static inline ulong3 operator^(ulong p, ulong3 q)
-{
-	return ulong3(p ^ q.x, p ^ q.y, p ^ q.z);
-}
-static inline ulong4 operator^(ulong p, ulong4 q)
-{
-	return ulong4(p ^ q.x, p ^ q.y, p ^ q.z, p ^ q.w);
-}
 static inline int2 operator<<(int2 p, int2 q)
 {
 	return int2(p.x << q.x, p.y << q.y);
@@ -11933,78 +11344,6 @@ static inline ushort3 operator<<(ushort p, ushort3 q)
 static inline ushort4 operator<<(ushort p, ushort4 q)
 {
 	return ushort4(p << q.x, p << q.y, p << q.z, p << q.w);
-}
-static inline long2 operator<<(long2 p, long2 q)
-{
-	return long2(p.x << q.x, p.y << q.y);
-}
-static inline long3 operator<<(long3 p, long3 q)
-{
-	return long3(p.x << q.x, p.y << q.y, p.z << q.z);
-}
-static inline long4 operator<<(long4 p, long4 q)
-{
-	return long4(p.x << q.x, p.y << q.y, p.z << q.z, p.w << q.w);
-}
-static inline long2 operator<<(long2 p, long q)
-{
-	return long2(p.x << q, p.y << q);
-}
-static inline long3 operator<<(long3 p, long q)
-{
-	return long3(p.x << q, p.y << q, p.z << q);
-}
-static inline long4 operator<<(long4 p, long q)
-{
-	return long4(p.x << q, p.y << q, p.z << q, p.w << q);
-}
-static inline long2 operator<<(long p, long2 q)
-{
-	return long2(p << q.x, p << q.y);
-}
-static inline long3 operator<<(long p, long3 q)
-{
-	return long3(p << q.x, p << q.y, p << q.z);
-}
-static inline long4 operator<<(long p, long4 q)
-{
-	return long4(p << q.x, p << q.y, p << q.z, p << q.w);
-}
-static inline ulong2 operator<<(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x << q.x, p.y << q.y);
-}
-static inline ulong3 operator<<(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x << q.x, p.y << q.y, p.z << q.z);
-}
-static inline ulong4 operator<<(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x << q.x, p.y << q.y, p.z << q.z, p.w << q.w);
-}
-static inline ulong2 operator<<(ulong2 p, ulong q)
-{
-	return ulong2(p.x << q, p.y << q);
-}
-static inline ulong3 operator<<(ulong3 p, ulong q)
-{
-	return ulong3(p.x << q, p.y << q, p.z << q);
-}
-static inline ulong4 operator<<(ulong4 p, ulong q)
-{
-	return ulong4(p.x << q, p.y << q, p.z << q, p.w << q);
-}
-static inline ulong2 operator<<(ulong p, ulong2 q)
-{
-	return ulong2(p << q.x, p << q.y);
-}
-static inline ulong3 operator<<(ulong p, ulong3 q)
-{
-	return ulong3(p << q.x, p << q.y, p << q.z);
-}
-static inline ulong4 operator<<(ulong p, ulong4 q)
-{
-	return ulong4(p << q.x, p << q.y, p << q.z, p << q.w);
 }
 static inline int2 operator>>(int2 p, int2 q)
 {
@@ -12150,78 +11489,6 @@ static inline ushort4 operator>>(ushort p, ushort4 q)
 {
 	return ushort4(p >> q.x, p >> q.y, p >> q.z, p >> q.w);
 }
-static inline long2 operator>>(long2 p, long2 q)
-{
-	return long2(p.x >> q.x, p.y >> q.y);
-}
-static inline long3 operator>>(long3 p, long3 q)
-{
-	return long3(p.x >> q.x, p.y >> q.y, p.z >> q.z);
-}
-static inline long4 operator>>(long4 p, long4 q)
-{
-	return long4(p.x >> q.x, p.y >> q.y, p.z >> q.z, p.w >> q.w);
-}
-static inline long2 operator>>(long2 p, long q)
-{
-	return long2(p.x >> q, p.y >> q);
-}
-static inline long3 operator>>(long3 p, long q)
-{
-	return long3(p.x >> q, p.y >> q, p.z >> q);
-}
-static inline long4 operator>>(long4 p, long q)
-{
-	return long4(p.x >> q, p.y >> q, p.z >> q, p.w >> q);
-}
-static inline long2 operator>>(long p, long2 q)
-{
-	return long2(p >> q.x, p >> q.y);
-}
-static inline long3 operator>>(long p, long3 q)
-{
-	return long3(p >> q.x, p >> q.y, p >> q.z);
-}
-static inline long4 operator>>(long p, long4 q)
-{
-	return long4(p >> q.x, p >> q.y, p >> q.z, p >> q.w);
-}
-static inline ulong2 operator>>(ulong2 p, ulong2 q)
-{
-	return ulong2(p.x >> q.x, p.y >> q.y);
-}
-static inline ulong3 operator>>(ulong3 p, ulong3 q)
-{
-	return ulong3(p.x >> q.x, p.y >> q.y, p.z >> q.z);
-}
-static inline ulong4 operator>>(ulong4 p, ulong4 q)
-{
-	return ulong4(p.x >> q.x, p.y >> q.y, p.z >> q.z, p.w >> q.w);
-}
-static inline ulong2 operator>>(ulong2 p, ulong q)
-{
-	return ulong2(p.x >> q, p.y >> q);
-}
-static inline ulong3 operator>>(ulong3 p, ulong q)
-{
-	return ulong3(p.x >> q, p.y >> q, p.z >> q);
-}
-static inline ulong4 operator>>(ulong4 p, ulong q)
-{
-	return ulong4(p.x >> q, p.y >> q, p.z >> q, p.w >> q);
-}
-static inline ulong2 operator>>(ulong p, ulong2 q)
-{
-	return ulong2(p >> q.x, p >> q.y);
-}
-static inline ulong3 operator>>(ulong p, ulong3 q)
-{
-	return ulong3(p >> q.x, p >> q.y, p >> q.z);
-}
-static inline ulong4 operator>>(ulong p, ulong4 q)
-{
-	return ulong4(p >> q.x, p >> q.y, p >> q.z, p >> q.w);
-}
 static inline int2 operator==(float2 p, float2 q)
 {
 	return int2(p.x == q.x, p.y == q.y);
@@ -12257,42 +11524,6 @@ static inline int3 operator==(float p, float3 q)
 static inline int4 operator==(float p, float4 q)
 {
 	return int4(p == q.x, p == q.y, p == q.z, p == q.w);
-}
-static inline long2 operator==(double2 p, double2 q)
-{
-	return long2(p.x == q.x, p.y == q.y);
-}
-static inline long3 operator==(double3 p, double3 q)
-{
-	return long3(p.x == q.x, p.y == q.y, p.z == q.z);
-}
-static inline long4 operator==(double4 p, double4 q)
-{
-	return long4(p.x == q.x, p.y == q.y, p.z == q.z, p.w == q.w);
-}
-static inline long2 operator==(double2 p, double q)
-{
-	return long2(p.x == q, p.y == q);
-}
-static inline long3 operator==(double3 p, double q)
-{
-	return long3(p.x == q, p.y == q, p.z == q);
-}
-static inline long4 operator==(double4 p, double q)
-{
-	return long4(p.x == q, p.y == q, p.z == q, p.w == q);
-}
-static inline long2 operator==(double p, double2 q)
-{
-	return long2(p == q.x, p == q.y);
-}
-static inline long3 operator==(double p, double3 q)
-{
-	return long3(p == q.x, p == q.y, p == q.z);
-}
-static inline long4 operator==(double p, double4 q)
-{
-	return long4(p == q.x, p == q.y, p == q.z, p == q.w);
 }
 static inline int2 operator==(int2 p, int2 q)
 {
@@ -12438,78 +11669,6 @@ static inline short4 operator==(ushort p, ushort4 q)
 {
 	return short4(p == q.x, p == q.y, p == q.z, p == q.w);
 }
-static inline long2 operator==(long2 p, long2 q)
-{
-	return long2(p.x == q.x, p.y == q.y);
-}
-static inline long3 operator==(long3 p, long3 q)
-{
-	return long3(p.x == q.x, p.y == q.y, p.z == q.z);
-}
-static inline long4 operator==(long4 p, long4 q)
-{
-	return long4(p.x == q.x, p.y == q.y, p.z == q.z, p.w == q.w);
-}
-static inline long2 operator==(long2 p, long q)
-{
-	return long2(p.x == q, p.y == q);
-}
-static inline long3 operator==(long3 p, long q)
-{
-	return long3(p.x == q, p.y == q, p.z == q);
-}
-static inline long4 operator==(long4 p, long q)
-{
-	return long4(p.x == q, p.y == q, p.z == q, p.w == q);
-}
-static inline long2 operator==(long p, long2 q)
-{
-	return long2(p == q.x, p == q.y);
-}
-static inline long3 operator==(long p, long3 q)
-{
-	return long3(p == q.x, p == q.y, p == q.z);
-}
-static inline long4 operator==(long p, long4 q)
-{
-	return long4(p == q.x, p == q.y, p == q.z, p == q.w);
-}
-static inline long2 operator==(ulong2 p, ulong2 q)
-{
-	return long2(p.x == q.x, p.y == q.y);
-}
-static inline long3 operator==(ulong3 p, ulong3 q)
-{
-	return long3(p.x == q.x, p.y == q.y, p.z == q.z);
-}
-static inline long4 operator==(ulong4 p, ulong4 q)
-{
-	return long4(p.x == q.x, p.y == q.y, p.z == q.z, p.w == q.w);
-}
-static inline long2 operator==(ulong2 p, ulong q)
-{
-	return long2(p.x == q, p.y == q);
-}
-static inline long3 operator==(ulong3 p, ulong q)
-{
-	return long3(p.x == q, p.y == q, p.z == q);
-}
-static inline long4 operator==(ulong4 p, ulong q)
-{
-	return long4(p.x == q, p.y == q, p.z == q, p.w == q);
-}
-static inline long2 operator==(ulong p, ulong2 q)
-{
-	return long2(p == q.x, p == q.y);
-}
-static inline long3 operator==(ulong p, ulong3 q)
-{
-	return long3(p == q.x, p == q.y, p == q.z);
-}
-static inline long4 operator==(ulong p, ulong4 q)
-{
-	return long4(p == q.x, p == q.y, p == q.z, p == q.w);
-}
 static inline int2 operator!=(float2 p, float2 q)
 {
 	return int2(p.x != q.x, p.y != q.y);
@@ -12545,42 +11704,6 @@ static inline int3 operator!=(float p, float3 q)
 static inline int4 operator!=(float p, float4 q)
 {
 	return int4(p != q.x, p != q.y, p != q.z, p != q.w);
-}
-static inline long2 operator!=(double2 p, double2 q)
-{
-	return long2(p.x != q.x, p.y != q.y);
-}
-static inline long3 operator!=(double3 p, double3 q)
-{
-	return long3(p.x != q.x, p.y != q.y, p.z != q.z);
-}
-static inline long4 operator!=(double4 p, double4 q)
-{
-	return long4(p.x != q.x, p.y != q.y, p.z != q.z, p.w != q.w);
-}
-static inline long2 operator!=(double2 p, double q)
-{
-	return long2(p.x != q, p.y != q);
-}
-static inline long3 operator!=(double3 p, double q)
-{
-	return long3(p.x != q, p.y != q, p.z != q);
-}
-static inline long4 operator!=(double4 p, double q)
-{
-	return long4(p.x != q, p.y != q, p.z != q, p.w != q);
-}
-static inline long2 operator!=(double p, double2 q)
-{
-	return long2(p != q.x, p != q.y);
-}
-static inline long3 operator!=(double p, double3 q)
-{
-	return long3(p != q.x, p != q.y, p != q.z);
-}
-static inline long4 operator!=(double p, double4 q)
-{
-	return long4(p != q.x, p != q.y, p != q.z, p != q.w);
 }
 static inline int2 operator!=(int2 p, int2 q)
 {
@@ -12726,78 +11849,6 @@ static inline short4 operator!=(ushort p, ushort4 q)
 {
 	return short4(p != q.x, p != q.y, p != q.z, p != q.w);
 }
-static inline long2 operator!=(long2 p, long2 q)
-{
-	return long2(p.x != q.x, p.y != q.y);
-}
-static inline long3 operator!=(long3 p, long3 q)
-{
-	return long3(p.x != q.x, p.y != q.y, p.z != q.z);
-}
-static inline long4 operator!=(long4 p, long4 q)
-{
-	return long4(p.x != q.x, p.y != q.y, p.z != q.z, p.w != q.w);
-}
-static inline long2 operator!=(long2 p, long q)
-{
-	return long2(p.x != q, p.y != q);
-}
-static inline long3 operator!=(long3 p, long q)
-{
-	return long3(p.x != q, p.y != q, p.z != q);
-}
-static inline long4 operator!=(long4 p, long q)
-{
-	return long4(p.x != q, p.y != q, p.z != q, p.w != q);
-}
-static inline long2 operator!=(long p, long2 q)
-{
-	return long2(p != q.x, p != q.y);
-}
-static inline long3 operator!=(long p, long3 q)
-{
-	return long3(p != q.x, p != q.y, p != q.z);
-}
-static inline long4 operator!=(long p, long4 q)
-{
-	return long4(p != q.x, p != q.y, p != q.z, p != q.w);
-}
-static inline long2 operator!=(ulong2 p, ulong2 q)
-{
-	return long2(p.x != q.x, p.y != q.y);
-}
-static inline long3 operator!=(ulong3 p, ulong3 q)
-{
-	return long3(p.x != q.x, p.y != q.y, p.z != q.z);
-}
-static inline long4 operator!=(ulong4 p, ulong4 q)
-{
-	return long4(p.x != q.x, p.y != q.y, p.z != q.z, p.w != q.w);
-}
-static inline long2 operator!=(ulong2 p, ulong q)
-{
-	return long2(p.x != q, p.y != q);
-}
-static inline long3 operator!=(ulong3 p, ulong q)
-{
-	return long3(p.x != q, p.y != q, p.z != q);
-}
-static inline long4 operator!=(ulong4 p, ulong q)
-{
-	return long4(p.x != q, p.y != q, p.z != q, p.w != q);
-}
-static inline long2 operator!=(ulong p, ulong2 q)
-{
-	return long2(p != q.x, p != q.y);
-}
-static inline long3 operator!=(ulong p, ulong3 q)
-{
-	return long3(p != q.x, p != q.y, p != q.z);
-}
-static inline long4 operator!=(ulong p, ulong4 q)
-{
-	return long4(p != q.x, p != q.y, p != q.z, p != q.w);
-}
 static inline int2 operator>(float2 p, float2 q)
 {
 	return int2(p.x > q.x, p.y > q.y);
@@ -12833,42 +11884,6 @@ static inline int3 operator>(float p, float3 q)
 static inline int4 operator>(float p, float4 q)
 {
 	return int4(p > q.x, p > q.y, p > q.z, p > q.w);
-}
-static inline long2 operator>(double2 p, double2 q)
-{
-	return long2(p.x > q.x, p.y > q.y);
-}
-static inline long3 operator>(double3 p, double3 q)
-{
-	return long3(p.x > q.x, p.y > q.y, p.z > q.z);
-}
-static inline long4 operator>(double4 p, double4 q)
-{
-	return long4(p.x > q.x, p.y > q.y, p.z > q.z, p.w > q.w);
-}
-static inline long2 operator>(double2 p, double q)
-{
-	return long2(p.x > q, p.y > q);
-}
-static inline long3 operator>(double3 p, double q)
-{
-	return long3(p.x > q, p.y > q, p.z > q);
-}
-static inline long4 operator>(double4 p, double q)
-{
-	return long4(p.x > q, p.y > q, p.z > q, p.w > q);
-}
-static inline long2 operator>(double p, double2 q)
-{
-	return long2(p > q.x, p > q.y);
-}
-static inline long3 operator>(double p, double3 q)
-{
-	return long3(p > q.x, p > q.y, p > q.z);
-}
-static inline long4 operator>(double p, double4 q)
-{
-	return long4(p > q.x, p > q.y, p > q.z, p > q.w);
 }
 static inline int2 operator>(int2 p, int2 q)
 {
@@ -13014,78 +12029,6 @@ static inline short4 operator>(ushort p, ushort4 q)
 {
 	return short4(p > q.x, p > q.y, p > q.z, p > q.w);
 }
-static inline long2 operator>(long2 p, long2 q)
-{
-	return long2(p.x > q.x, p.y > q.y);
-}
-static inline long3 operator>(long3 p, long3 q)
-{
-	return long3(p.x > q.x, p.y > q.y, p.z > q.z);
-}
-static inline long4 operator>(long4 p, long4 q)
-{
-	return long4(p.x > q.x, p.y > q.y, p.z > q.z, p.w > q.w);
-}
-static inline long2 operator>(long2 p, long q)
-{
-	return long2(p.x > q, p.y > q);
-}
-static inline long3 operator>(long3 p, long q)
-{
-	return long3(p.x > q, p.y > q, p.z > q);
-}
-static inline long4 operator>(long4 p, long q)
-{
-	return long4(p.x > q, p.y > q, p.z > q, p.w > q);
-}
-static inline long2 operator>(long p, long2 q)
-{
-	return long2(p > q.x, p > q.y);
-}
-static inline long3 operator>(long p, long3 q)
-{
-	return long3(p > q.x, p > q.y, p > q.z);
-}
-static inline long4 operator>(long p, long4 q)
-{
-	return long4(p > q.x, p > q.y, p > q.z, p > q.w);
-}
-static inline long2 operator>(ulong2 p, ulong2 q)
-{
-	return long2(p.x > q.x, p.y > q.y);
-}
-static inline long3 operator>(ulong3 p, ulong3 q)
-{
-	return long3(p.x > q.x, p.y > q.y, p.z > q.z);
-}
-static inline long4 operator>(ulong4 p, ulong4 q)
-{
-	return long4(p.x > q.x, p.y > q.y, p.z > q.z, p.w > q.w);
-}
-static inline long2 operator>(ulong2 p, ulong q)
-{
-	return long2(p.x > q, p.y > q);
-}
-static inline long3 operator>(ulong3 p, ulong q)
-{
-	return long3(p.x > q, p.y > q, p.z > q);
-}
-static inline long4 operator>(ulong4 p, ulong q)
-{
-	return long4(p.x > q, p.y > q, p.z > q, p.w > q);
-}
-static inline long2 operator>(ulong p, ulong2 q)
-{
-	return long2(p > q.x, p > q.y);
-}
-static inline long3 operator>(ulong p, ulong3 q)
-{
-	return long3(p > q.x, p > q.y, p > q.z);
-}
-static inline long4 operator>(ulong p, ulong4 q)
-{
-	return long4(p > q.x, p > q.y, p > q.z, p > q.w);
-}
 static inline int2 operator<(float2 p, float2 q)
 {
 	return int2(p.x < q.x, p.y < q.y);
@@ -13121,42 +12064,6 @@ static inline int3 operator<(float p, float3 q)
 static inline int4 operator<(float p, float4 q)
 {
 	return int4(p < q.x, p < q.y, p < q.z, p < q.w);
-}
-static inline long2 operator<(double2 p, double2 q)
-{
-	return long2(p.x < q.x, p.y < q.y);
-}
-static inline long3 operator<(double3 p, double3 q)
-{
-	return long3(p.x < q.x, p.y < q.y, p.z < q.z);
-}
-static inline long4 operator<(double4 p, double4 q)
-{
-	return long4(p.x < q.x, p.y < q.y, p.z < q.z, p.w < q.w);
-}
-static inline long2 operator<(double2 p, double q)
-{
-	return long2(p.x < q, p.y < q);
-}
-static inline long3 operator<(double3 p, double q)
-{
-	return long3(p.x < q, p.y < q, p.z < q);
-}
-static inline long4 operator<(double4 p, double q)
-{
-	return long4(p.x < q, p.y < q, p.z < q, p.w < q);
-}
-static inline long2 operator<(double p, double2 q)
-{
-	return long2(p < q.x, p < q.y);
-}
-static inline long3 operator<(double p, double3 q)
-{
-	return long3(p < q.x, p < q.y, p < q.z);
-}
-static inline long4 operator<(double p, double4 q)
-{
-	return long4(p < q.x, p < q.y, p < q.z, p < q.w);
 }
 static inline int2 operator<(int2 p, int2 q)
 {
@@ -13302,78 +12209,6 @@ static inline short4 operator<(ushort p, ushort4 q)
 {
 	return short4(p < q.x, p < q.y, p < q.z, p < q.w);
 }
-static inline long2 operator<(long2 p, long2 q)
-{
-	return long2(p.x < q.x, p.y < q.y);
-}
-static inline long3 operator<(long3 p, long3 q)
-{
-	return long3(p.x < q.x, p.y < q.y, p.z < q.z);
-}
-static inline long4 operator<(long4 p, long4 q)
-{
-	return long4(p.x < q.x, p.y < q.y, p.z < q.z, p.w < q.w);
-}
-static inline long2 operator<(long2 p, long q)
-{
-	return long2(p.x < q, p.y < q);
-}
-static inline long3 operator<(long3 p, long q)
-{
-	return long3(p.x < q, p.y < q, p.z < q);
-}
-static inline long4 operator<(long4 p, long q)
-{
-	return long4(p.x < q, p.y < q, p.z < q, p.w < q);
-}
-static inline long2 operator<(long p, long2 q)
-{
-	return long2(p < q.x, p < q.y);
-}
-static inline long3 operator<(long p, long3 q)
-{
-	return long3(p < q.x, p < q.y, p < q.z);
-}
-static inline long4 operator<(long p, long4 q)
-{
-	return long4(p < q.x, p < q.y, p < q.z, p < q.w);
-}
-static inline long2 operator<(ulong2 p, ulong2 q)
-{
-	return long2(p.x < q.x, p.y < q.y);
-}
-static inline long3 operator<(ulong3 p, ulong3 q)
-{
-	return long3(p.x < q.x, p.y < q.y, p.z < q.z);
-}
-static inline long4 operator<(ulong4 p, ulong4 q)
-{
-	return long4(p.x < q.x, p.y < q.y, p.z < q.z, p.w < q.w);
-}
-static inline long2 operator<(ulong2 p, ulong q)
-{
-	return long2(p.x < q, p.y < q);
-}
-static inline long3 operator<(ulong3 p, ulong q)
-{
-	return long3(p.x < q, p.y < q, p.z < q);
-}
-static inline long4 operator<(ulong4 p, ulong q)
-{
-	return long4(p.x < q, p.y < q, p.z < q, p.w < q);
-}
-static inline long2 operator<(ulong p, ulong2 q)
-{
-	return long2(p < q.x, p < q.y);
-}
-static inline long3 operator<(ulong p, ulong3 q)
-{
-	return long3(p < q.x, p < q.y, p < q.z);
-}
-static inline long4 operator<(ulong p, ulong4 q)
-{
-	return long4(p < q.x, p < q.y, p < q.z, p < q.w);
-}
 static inline int2 operator>=(float2 p, float2 q)
 {
 	return int2(p.x >= q.x, p.y >= q.y);
@@ -13409,42 +12244,6 @@ static inline int3 operator>=(float p, float3 q)
 static inline int4 operator>=(float p, float4 q)
 {
 	return int4(p >= q.x, p >= q.y, p >= q.z, p >= q.w);
-}
-static inline long2 operator>=(double2 p, double2 q)
-{
-	return long2(p.x >= q.x, p.y >= q.y);
-}
-static inline long3 operator>=(double3 p, double3 q)
-{
-	return long3(p.x >= q.x, p.y >= q.y, p.z >= q.z);
-}
-static inline long4 operator>=(double4 p, double4 q)
-{
-	return long4(p.x >= q.x, p.y >= q.y, p.z >= q.z, p.w >= q.w);
-}
-static inline long2 operator>=(double2 p, double q)
-{
-	return long2(p.x >= q, p.y >= q);
-}
-static inline long3 operator>=(double3 p, double q)
-{
-	return long3(p.x >= q, p.y >= q, p.z >= q);
-}
-static inline long4 operator>=(double4 p, double q)
-{
-	return long4(p.x >= q, p.y >= q, p.z >= q, p.w >= q);
-}
-static inline long2 operator>=(double p, double2 q)
-{
-	return long2(p >= q.x, p >= q.y);
-}
-static inline long3 operator>=(double p, double3 q)
-{
-	return long3(p >= q.x, p >= q.y, p >= q.z);
-}
-static inline long4 operator>=(double p, double4 q)
-{
-	return long4(p >= q.x, p >= q.y, p >= q.z, p >= q.w);
 }
 static inline int2 operator>=(int2 p, int2 q)
 {
@@ -13590,78 +12389,6 @@ static inline short4 operator>=(ushort p, ushort4 q)
 {
 	return short4(p >= q.x, p >= q.y, p >= q.z, p >= q.w);
 }
-static inline long2 operator>=(long2 p, long2 q)
-{
-	return long2(p.x >= q.x, p.y >= q.y);
-}
-static inline long3 operator>=(long3 p, long3 q)
-{
-	return long3(p.x >= q.x, p.y >= q.y, p.z >= q.z);
-}
-static inline long4 operator>=(long4 p, long4 q)
-{
-	return long4(p.x >= q.x, p.y >= q.y, p.z >= q.z, p.w >= q.w);
-}
-static inline long2 operator>=(long2 p, long q)
-{
-	return long2(p.x >= q, p.y >= q);
-}
-static inline long3 operator>=(long3 p, long q)
-{
-	return long3(p.x >= q, p.y >= q, p.z >= q);
-}
-static inline long4 operator>=(long4 p, long q)
-{
-	return long4(p.x >= q, p.y >= q, p.z >= q, p.w >= q);
-}
-static inline long2 operator>=(long p, long2 q)
-{
-	return long2(p >= q.x, p >= q.y);
-}
-static inline long3 operator>=(long p, long3 q)
-{
-	return long3(p >= q.x, p >= q.y, p >= q.z);
-}
-static inline long4 operator>=(long p, long4 q)
-{
-	return long4(p >= q.x, p >= q.y, p >= q.z, p >= q.w);
-}
-static inline long2 operator>=(ulong2 p, ulong2 q)
-{
-	return long2(p.x >= q.x, p.y >= q.y);
-}
-static inline long3 operator>=(ulong3 p, ulong3 q)
-{
-	return long3(p.x >= q.x, p.y >= q.y, p.z >= q.z);
-}
-static inline long4 operator>=(ulong4 p, ulong4 q)
-{
-	return long4(p.x >= q.x, p.y >= q.y, p.z >= q.z, p.w >= q.w);
-}
-static inline long2 operator>=(ulong2 p, ulong q)
-{
-	return long2(p.x >= q, p.y >= q);
-}
-static inline long3 operator>=(ulong3 p, ulong q)
-{
-	return long3(p.x >= q, p.y >= q, p.z >= q);
-}
-static inline long4 operator>=(ulong4 p, ulong q)
-{
-	return long4(p.x >= q, p.y >= q, p.z >= q, p.w >= q);
-}
-static inline long2 operator>=(ulong p, ulong2 q)
-{
-	return long2(p >= q.x, p >= q.y);
-}
-static inline long3 operator>=(ulong p, ulong3 q)
-{
-	return long3(p >= q.x, p >= q.y, p >= q.z);
-}
-static inline long4 operator>=(ulong p, ulong4 q)
-{
-	return long4(p >= q.x, p >= q.y, p >= q.z, p >= q.w);
-}
 static inline int2 operator<=(float2 p, float2 q)
 {
 	return int2(p.x <= q.x, p.y <= q.y);
@@ -13697,42 +12424,6 @@ static inline int3 operator<=(float p, float3 q)
 static inline int4 operator<=(float p, float4 q)
 {
 	return int4(p <= q.x, p <= q.y, p <= q.z, p <= q.w);
-}
-static inline long2 operator<=(double2 p, double2 q)
-{
-	return long2(p.x <= q.x, p.y <= q.y);
-}
-static inline long3 operator<=(double3 p, double3 q)
-{
-	return long3(p.x <= q.x, p.y <= q.y, p.z <= q.z);
-}
-static inline long4 operator<=(double4 p, double4 q)
-{
-	return long4(p.x <= q.x, p.y <= q.y, p.z <= q.z, p.w <= q.w);
-}
-static inline long2 operator<=(double2 p, double q)
-{
-	return long2(p.x <= q, p.y <= q);
-}
-static inline long3 operator<=(double3 p, double q)
-{
-	return long3(p.x <= q, p.y <= q, p.z <= q);
-}
-static inline long4 operator<=(double4 p, double q)
-{
-	return long4(p.x <= q, p.y <= q, p.z <= q, p.w <= q);
-}
-static inline long2 operator<=(double p, double2 q)
-{
-	return long2(p <= q.x, p <= q.y);
-}
-static inline long3 operator<=(double p, double3 q)
-{
-	return long3(p <= q.x, p <= q.y, p <= q.z);
-}
-static inline long4 operator<=(double p, double4 q)
-{
-	return long4(p <= q.x, p <= q.y, p <= q.z, p <= q.w);
 }
 static inline int2 operator<=(int2 p, int2 q)
 {
@@ -13878,78 +12569,6 @@ static inline short4 operator<=(ushort p, ushort4 q)
 {
 	return short4(p <= q.x, p <= q.y, p <= q.z, p <= q.w);
 }
-static inline long2 operator<=(long2 p, long2 q)
-{
-	return long2(p.x <= q.x, p.y <= q.y);
-}
-static inline long3 operator<=(long3 p, long3 q)
-{
-	return long3(p.x <= q.x, p.y <= q.y, p.z <= q.z);
-}
-static inline long4 operator<=(long4 p, long4 q)
-{
-	return long4(p.x <= q.x, p.y <= q.y, p.z <= q.z, p.w <= q.w);
-}
-static inline long2 operator<=(long2 p, long q)
-{
-	return long2(p.x <= q, p.y <= q);
-}
-static inline long3 operator<=(long3 p, long q)
-{
-	return long3(p.x <= q, p.y <= q, p.z <= q);
-}
-static inline long4 operator<=(long4 p, long q)
-{
-	return long4(p.x <= q, p.y <= q, p.z <= q, p.w <= q);
-}
-static inline long2 operator<=(long p, long2 q)
-{
-	return long2(p <= q.x, p <= q.y);
-}
-static inline long3 operator<=(long p, long3 q)
-{
-	return long3(p <= q.x, p <= q.y, p <= q.z);
-}
-static inline long4 operator<=(long p, long4 q)
-{
-	return long4(p <= q.x, p <= q.y, p <= q.z, p <= q.w);
-}
-static inline long2 operator<=(ulong2 p, ulong2 q)
-{
-	return long2(p.x <= q.x, p.y <= q.y);
-}
-static inline long3 operator<=(ulong3 p, ulong3 q)
-{
-	return long3(p.x <= q.x, p.y <= q.y, p.z <= q.z);
-}
-static inline long4 operator<=(ulong4 p, ulong4 q)
-{
-	return long4(p.x <= q.x, p.y <= q.y, p.z <= q.z, p.w <= q.w);
-}
-static inline long2 operator<=(ulong2 p, ulong q)
-{
-	return long2(p.x <= q, p.y <= q);
-}
-static inline long3 operator<=(ulong3 p, ulong q)
-{
-	return long3(p.x <= q, p.y <= q, p.z <= q);
-}
-static inline long4 operator<=(ulong4 p, ulong q)
-{
-	return long4(p.x <= q, p.y <= q, p.z <= q, p.w <= q);
-}
-static inline long2 operator<=(ulong p, ulong2 q)
-{
-	return long2(p <= q.x, p <= q.y);
-}
-static inline long3 operator<=(ulong p, ulong3 q)
-{
-	return long3(p <= q.x, p <= q.y, p <= q.z);
-}
-static inline long4 operator<=(ulong p, ulong4 q)
-{
-	return long4(p <= q.x, p <= q.y, p <= q.z, p <= q.w);
-}
 static inline int2 operator&&(float2 p, float2 q)
 {
 	return int2(p.x && q.x, p.y && q.y);
@@ -13985,42 +12604,6 @@ static inline int3 operator&&(float p, float3 q)
 static inline int4 operator&&(float p, float4 q)
 {
 	return int4(p && q.x, p && q.y, p && q.z, p && q.w);
-}
-static inline long2 operator&&(double2 p, double2 q)
-{
-	return long2(p.x && q.x, p.y && q.y);
-}
-static inline long3 operator&&(double3 p, double3 q)
-{
-	return long3(p.x && q.x, p.y && q.y, p.z && q.z);
-}
-static inline long4 operator&&(double4 p, double4 q)
-{
-	return long4(p.x && q.x, p.y && q.y, p.z && q.z, p.w && q.w);
-}
-static inline long2 operator&&(double2 p, double q)
-{
-	return long2(p.x && q, p.y && q);
-}
-static inline long3 operator&&(double3 p, double q)
-{
-	return long3(p.x && q, p.y && q, p.z && q);
-}
-static inline long4 operator&&(double4 p, double q)
-{
-	return long4(p.x && q, p.y && q, p.z && q, p.w && q);
-}
-static inline long2 operator&&(double p, double2 q)
-{
-	return long2(p && q.x, p && q.y);
-}
-static inline long3 operator&&(double p, double3 q)
-{
-	return long3(p && q.x, p && q.y, p && q.z);
-}
-static inline long4 operator&&(double p, double4 q)
-{
-	return long4(p && q.x, p && q.y, p && q.z, p && q.w);
 }
 static inline int2 operator&&(int2 p, int2 q)
 {
@@ -14166,78 +12749,6 @@ static inline short4 operator&&(ushort p, ushort4 q)
 {
 	return short4(p && q.x, p && q.y, p && q.z, p && q.w);
 }
-static inline long2 operator&&(long2 p, long2 q)
-{
-	return long2(p.x && q.x, p.y && q.y);
-}
-static inline long3 operator&&(long3 p, long3 q)
-{
-	return long3(p.x && q.x, p.y && q.y, p.z && q.z);
-}
-static inline long4 operator&&(long4 p, long4 q)
-{
-	return long4(p.x && q.x, p.y && q.y, p.z && q.z, p.w && q.w);
-}
-static inline long2 operator&&(long2 p, long q)
-{
-	return long2(p.x && q, p.y && q);
-}
-static inline long3 operator&&(long3 p, long q)
-{
-	return long3(p.x && q, p.y && q, p.z && q);
-}
-static inline long4 operator&&(long4 p, long q)
-{
-	return long4(p.x && q, p.y && q, p.z && q, p.w && q);
-}
-static inline long2 operator&&(long p, long2 q)
-{
-	return long2(p && q.x, p && q.y);
-}
-static inline long3 operator&&(long p, long3 q)
-{
-	return long3(p && q.x, p && q.y, p && q.z);
-}
-static inline long4 operator&&(long p, long4 q)
-{
-	return long4(p && q.x, p && q.y, p && q.z, p && q.w);
-}
-static inline long2 operator&&(ulong2 p, ulong2 q)
-{
-	return long2(p.x && q.x, p.y && q.y);
-}
-static inline long3 operator&&(ulong3 p, ulong3 q)
-{
-	return long3(p.x && q.x, p.y && q.y, p.z && q.z);
-}
-static inline long4 operator&&(ulong4 p, ulong4 q)
-{
-	return long4(p.x && q.x, p.y && q.y, p.z && q.z, p.w && q.w);
-}
-static inline long2 operator&&(ulong2 p, ulong q)
-{
-	return long2(p.x && q, p.y && q);
-}
-static inline long3 operator&&(ulong3 p, ulong q)
-{
-	return long3(p.x && q, p.y && q, p.z && q);
-}
-static inline long4 operator&&(ulong4 p, ulong q)
-{
-	return long4(p.x && q, p.y && q, p.z && q, p.w && q);
-}
-static inline long2 operator&&(ulong p, ulong2 q)
-{
-	return long2(p && q.x, p && q.y);
-}
-static inline long3 operator&&(ulong p, ulong3 q)
-{
-	return long3(p && q.x, p && q.y, p && q.z);
-}
-static inline long4 operator&&(ulong p, ulong4 q)
-{
-	return long4(p && q.x, p && q.y, p && q.z, p && q.w);
-}
 static inline int2 operator||(float2 p, float2 q)
 {
 	return int2(p.x || q.x, p.y || q.y);
@@ -14273,42 +12784,6 @@ static inline int3 operator||(float p, float3 q)
 static inline int4 operator||(float p, float4 q)
 {
 	return int4(p || q.x, p || q.y, p || q.z, p || q.w);
-}
-static inline long2 operator||(double2 p, double2 q)
-{
-	return long2(p.x || q.x, p.y || q.y);
-}
-static inline long3 operator||(double3 p, double3 q)
-{
-	return long3(p.x || q.x, p.y || q.y, p.z || q.z);
-}
-static inline long4 operator||(double4 p, double4 q)
-{
-	return long4(p.x || q.x, p.y || q.y, p.z || q.z, p.w || q.w);
-}
-static inline long2 operator||(double2 p, double q)
-{
-	return long2(p.x || q, p.y || q);
-}
-static inline long3 operator||(double3 p, double q)
-{
-	return long3(p.x || q, p.y || q, p.z || q);
-}
-static inline long4 operator||(double4 p, double q)
-{
-	return long4(p.x || q, p.y || q, p.z || q, p.w || q);
-}
-static inline long2 operator||(double p, double2 q)
-{
-	return long2(p || q.x, p || q.y);
-}
-static inline long3 operator||(double p, double3 q)
-{
-	return long3(p || q.x, p || q.y, p || q.z);
-}
-static inline long4 operator||(double p, double4 q)
-{
-	return long4(p || q.x, p || q.y, p || q.z, p || q.w);
 }
 static inline int2 operator||(int2 p, int2 q)
 {
@@ -14454,78 +12929,6 @@ static inline short4 operator||(ushort p, ushort4 q)
 {
 	return short4(p || q.x, p || q.y, p || q.z, p || q.w);
 }
-static inline long2 operator||(long2 p, long2 q)
-{
-	return long2(p.x || q.x, p.y || q.y);
-}
-static inline long3 operator||(long3 p, long3 q)
-{
-	return long3(p.x || q.x, p.y || q.y, p.z || q.z);
-}
-static inline long4 operator||(long4 p, long4 q)
-{
-	return long4(p.x || q.x, p.y || q.y, p.z || q.z, p.w || q.w);
-}
-static inline long2 operator||(long2 p, long q)
-{
-	return long2(p.x || q, p.y || q);
-}
-static inline long3 operator||(long3 p, long q)
-{
-	return long3(p.x || q, p.y || q, p.z || q);
-}
-static inline long4 operator||(long4 p, long q)
-{
-	return long4(p.x || q, p.y || q, p.z || q, p.w || q);
-}
-static inline long2 operator||(long p, long2 q)
-{
-	return long2(p || q.x, p || q.y);
-}
-static inline long3 operator||(long p, long3 q)
-{
-	return long3(p || q.x, p || q.y, p || q.z);
-}
-static inline long4 operator||(long p, long4 q)
-{
-	return long4(p || q.x, p || q.y, p || q.z, p || q.w);
-}
-static inline long2 operator||(ulong2 p, ulong2 q)
-{
-	return long2(p.x || q.x, p.y || q.y);
-}
-static inline long3 operator||(ulong3 p, ulong3 q)
-{
-	return long3(p.x || q.x, p.y || q.y, p.z || q.z);
-}
-static inline long4 operator||(ulong4 p, ulong4 q)
-{
-	return long4(p.x || q.x, p.y || q.y, p.z || q.z, p.w || q.w);
-}
-static inline long2 operator||(ulong2 p, ulong q)
-{
-	return long2(p.x || q, p.y || q);
-}
-static inline long3 operator||(ulong3 p, ulong q)
-{
-	return long3(p.x || q, p.y || q, p.z || q);
-}
-static inline long4 operator||(ulong4 p, ulong q)
-{
-	return long4(p.x || q, p.y || q, p.z || q, p.w || q);
-}
-static inline long2 operator||(ulong p, ulong2 q)
-{
-	return long2(p || q.x, p || q.y);
-}
-static inline long3 operator||(ulong p, ulong3 q)
-{
-	return long3(p || q.x, p || q.y, p || q.z);
-}
-static inline long4 operator||(ulong p, ulong4 q)
-{
-	return long4(p || q.x, p || q.y, p || q.z, p || q.w);
-}
 static inline float2 convert_float2(float2 p)
 {
 	return float2((float)p.x, (float)p.y);
@@ -14595,30 +12998,6 @@ static inline float3 convert_float3(ushort3 p)
 	return float3((float)p.x, (float)p.y, (float)p.z);
 }
 static inline float4 convert_float4(ushort4 p)
-{
-	return float4((float)p.x, (float)p.y, (float)p.z, (float)p.w);
-}
-static inline float2 convert_float2(long2 p)
-{
-	return float2((float)p.x, (float)p.y);
-}
-static inline float3 convert_float3(long3 p)
-{
-	return float3((float)p.x, (float)p.y, (float)p.z);
-}
-static inline float4 convert_float4(long4 p)
-{
-	return float4((float)p.x, (float)p.y, (float)p.z, (float)p.w);
-}
-static inline float2 convert_float2(ulong2 p)
-{
-	return float2((float)p.x, (float)p.y);
-}
-static inline float3 convert_float3(ulong3 p)
-{
-	return float3((float)p.x, (float)p.y, (float)p.z);
-}
-static inline float4 convert_float4(ulong4 p)
 {
 	return float4((float)p.x, (float)p.y, (float)p.z, (float)p.w);
 }
@@ -14694,30 +13073,6 @@ static inline double4 convert_double4(ushort4 p)
 {
 	return double4((double)p.x, (double)p.y, (double)p.z, (double)p.w);
 }
-static inline double2 convert_double2(long2 p)
-{
-	return double2((double)p.x, (double)p.y);
-}
-static inline double3 convert_double3(long3 p)
-{
-	return double3((double)p.x, (double)p.y, (double)p.z);
-}
-static inline double4 convert_double4(long4 p)
-{
-	return double4((double)p.x, (double)p.y, (double)p.z, (double)p.w);
-}
-static inline double2 convert_double2(ulong2 p)
-{
-	return double2((double)p.x, (double)p.y);
-}
-static inline double3 convert_double3(ulong3 p)
-{
-	return double3((double)p.x, (double)p.y, (double)p.z);
-}
-static inline double4 convert_double4(ulong4 p)
-{
-	return double4((double)p.x, (double)p.y, (double)p.z, (double)p.w);
-}
 static inline int2 convert_int2(float2 p)
 {
 	return int2((int)p.x, (int)p.y);
@@ -14787,30 +13142,6 @@ static inline int3 convert_int3(ushort3 p)
 	return int3((int)p.x, (int)p.y, (int)p.z);
 }
 static inline int4 convert_int4(ushort4 p)
-{
-	return int4((int)p.x, (int)p.y, (int)p.z, (int)p.w);
-}
-static inline int2 convert_int2(long2 p)
-{
-	return int2((int)p.x, (int)p.y);
-}
-static inline int3 convert_int3(long3 p)
-{
-	return int3((int)p.x, (int)p.y, (int)p.z);
-}
-static inline int4 convert_int4(long4 p)
-{
-	return int4((int)p.x, (int)p.y, (int)p.z, (int)p.w);
-}
-static inline int2 convert_int2(ulong2 p)
-{
-	return int2((int)p.x, (int)p.y);
-}
-static inline int3 convert_int3(ulong3 p)
-{
-	return int3((int)p.x, (int)p.y, (int)p.z);
-}
-static inline int4 convert_int4(ulong4 p)
 {
 	return int4((int)p.x, (int)p.y, (int)p.z, (int)p.w);
 }
@@ -14886,30 +13217,6 @@ static inline uint4 convert_uint4(ushort4 p)
 {
 	return uint4((uint) p.x, (uint) p.y, (uint) p.z, (uint) p.w);
 }
-static inline uint2 convert_uint2(long2 p)
-{
-	return uint2((uint) p.x, (uint) p.y);
-}
-static inline uint3 convert_uint3(long3 p)
-{
-	return uint3((uint) p.x, (uint) p.y, (uint) p.z);
-}
-static inline uint4 convert_uint4(long4 p)
-{
-	return uint4((uint) p.x, (uint) p.y, (uint) p.z, (uint) p.w);
-}
-static inline uint2 convert_uint2(ulong2 p)
-{
-	return uint2((uint) p.x, (uint) p.y);
-}
-static inline uint3 convert_uint3(ulong3 p)
-{
-	return uint3((uint) p.x, (uint) p.y, (uint) p.z);
-}
-static inline uint4 convert_uint4(ulong4 p)
-{
-	return uint4((uint) p.x, (uint) p.y, (uint) p.z, (uint) p.w);
-}
 static inline short2 convert_short2(float2 p)
 {
 	return short2((short)p.x, (short)p.y);
@@ -14979,30 +13286,6 @@ static inline short3 convert_short3(ushort3 p)
 	return short3((short)p.x, (short)p.y, (short)p.z);
 }
 static inline short4 convert_short4(ushort4 p)
-{
-	return short4((short)p.x, (short)p.y, (short)p.z, (short)p.w);
-}
-static inline short2 convert_short2(long2 p)
-{
-	return short2((short)p.x, (short)p.y);
-}
-static inline short3 convert_short3(long3 p)
-{
-	return short3((short)p.x, (short)p.y, (short)p.z);
-}
-static inline short4 convert_short4(long4 p)
-{
-	return short4((short)p.x, (short)p.y, (short)p.z, (short)p.w);
-}
-static inline short2 convert_short2(ulong2 p)
-{
-	return short2((short)p.x, (short)p.y);
-}
-static inline short3 convert_short3(ulong3 p)
-{
-	return short3((short)p.x, (short)p.y, (short)p.z);
-}
-static inline short4 convert_short4(ulong4 p)
 {
 	return short4((short)p.x, (short)p.y, (short)p.z, (short)p.w);
 }
@@ -15078,222 +13361,6 @@ static inline ushort4 convert_ushort4(ushort4 p)
 {
 	return ushort4((ushort) p.x, (ushort) p.y, (ushort) p.z, (ushort) p.w);
 }
-static inline ushort2 convert_ushort2(long2 p)
-{
-	return ushort2((ushort) p.x, (ushort) p.y);
-}
-static inline ushort3 convert_ushort3(long3 p)
-{
-	return ushort3((ushort) p.x, (ushort) p.y, (ushort) p.z);
-}
-static inline ushort4 convert_ushort4(long4 p)
-{
-	return ushort4((ushort) p.x, (ushort) p.y, (ushort) p.z, (ushort) p.w);
-}
-static inline ushort2 convert_ushort2(ulong2 p)
-{
-	return ushort2((ushort) p.x, (ushort) p.y);
-}
-static inline ushort3 convert_ushort3(ulong3 p)
-{
-	return ushort3((ushort) p.x, (ushort) p.y, (ushort) p.z);
-}
-static inline ushort4 convert_ushort4(ulong4 p)
-{
-	return ushort4((ushort) p.x, (ushort) p.y, (ushort) p.z, (ushort) p.w);
-}
-static inline long2 convert_long2(float2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(float3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(float4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(double2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(double3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(double4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(int2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(int3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(int4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(uint2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(uint3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(uint4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(short2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(short3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(short4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(ushort2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(ushort3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(ushort4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(long2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(long3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(long4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline long2 convert_long2(ulong2 p)
-{
-	return long2((long)p.x, (long)p.y);
-}
-static inline long3 convert_long3(ulong3 p)
-{
-	return long3((long)p.x, (long)p.y, (long)p.z);
-}
-static inline long4 convert_long4(ulong4 p)
-{
-	return long4((long)p.x, (long)p.y, (long)p.z, (long)p.w);
-}
-static inline ulong2 convert_ulong2(float2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(float3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(float4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(double2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(double3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(double4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(int2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(int3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(int4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(uint2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(uint3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(uint4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(short2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(short3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(short4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(ushort2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(ushort3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(ushort4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(long2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(long3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(long4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
-static inline ulong2 convert_ulong2(ulong2 p)
-{
-	return ulong2((ulong) p.x, (ulong) p.y);
-}
-static inline ulong3 convert_ulong3(ulong3 p)
-{
-	return ulong3((ulong) p.x, (ulong) p.y, (ulong) p.z);
-}
-static inline ulong4 convert_ulong4(ulong4 p)
-{
-	return ulong4((ulong) p.x, (ulong) p.y, (ulong) p.z, (ulong) p.w);
-}
 static inline float2 as_float2(float2 inp)
 {
 	float2 val1;
@@ -15315,18 +13382,6 @@ static inline uint2 as_uint2(float2 inp)
 static inline double2 as_double2(double2 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline long2 as_long2(double2 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(double2 inp)
-{
-	ulong2 val1;
 	memcpy(&val1, &inp, 16);
 	return val1;
 }
@@ -15390,42 +13445,6 @@ static inline ushort2 as_ushort2(ushort2 inp)
 	memcpy(&val1, &inp, 4);
 	return val1;
 }
-static inline double2 as_double2(long2 inp)
-{
-	double2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline long2 as_long2(long2 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(long2 inp)
-{
-	ulong2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline double2 as_double2(ulong2 inp)
-{
-	double2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline long2 as_long2(ulong2 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(ulong2 inp)
-{
-	ulong2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
 static inline short4 as_short4(float2 inp)
 {
 	short4 val1;
@@ -15480,42 +13499,6 @@ static inline ushort4 as_ushort4(uint2 inp)
 	memcpy(&val1, &inp, 8);
 	return val1;
 }
-static inline float4 as_float4(long2 inp)
-{
-	float4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline int4 as_int4(long2 inp)
-{
-	int4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline uint4 as_uint4(long2 inp)
-{
-	uint4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline float4 as_float4(ulong2 inp)
-{
-	float4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline int4 as_int4(ulong2 inp)
-{
-	int4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline uint4 as_uint4(ulong2 inp)
-{
-	uint4 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
 static inline float3 as_float3(float3 inp)
 {
 	float3 val1;
@@ -15537,18 +13520,6 @@ static inline uint3 as_uint3(float3 inp)
 static inline double3 as_double3(double3 inp)
 {
 	double3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline long3 as_long3(double3 inp)
-{
-	long3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline ulong3 as_ulong3(double3 inp)
-{
-	ulong3 val1;
 	memcpy(&val1, &inp, 24);
 	return val1;
 }
@@ -15612,57 +13583,9 @@ static inline ushort3 as_ushort3(ushort3 inp)
 	memcpy(&val1, &inp, 6);
 	return val1;
 }
-static inline double3 as_double3(long3 inp)
-{
-	double3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline long3 as_long3(long3 inp)
-{
-	long3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline ulong3 as_ulong3(long3 inp)
-{
-	ulong3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline double3 as_double3(ulong3 inp)
-{
-	double3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline long3 as_long3(ulong3 inp)
-{
-	long3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
-static inline ulong3 as_ulong3(ulong3 inp)
-{
-	ulong3 val1;
-	memcpy(&val1, &inp, 24);
-	return val1;
-}
 static inline double2 as_double2(float4 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline long2 as_long2(float4 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(float4 inp)
-{
-	ulong2 val1;
 	memcpy(&val1, &inp, 16);
 	return val1;
 }
@@ -15672,33 +13595,9 @@ static inline double2 as_double2(int4 inp)
 	memcpy(&val1, &inp, 16);
 	return val1;
 }
-static inline long2 as_long2(int4 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(int4 inp)
-{
-	ulong2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
 static inline double2 as_double2(uint4 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline long2 as_long2(uint4 inp)
-{
-	long2 val1;
-	memcpy(&val1, &inp, 16);
-	return val1;
-}
-static inline ulong2 as_ulong2(uint4 inp)
-{
-	ulong2 val1;
 	memcpy(&val1, &inp, 16);
 	return val1;
 }
@@ -15762,18 +13661,6 @@ static inline double4 as_double4(double4 inp)
 	memcpy(&val1, &inp, 32);
 	return val1;
 }
-static inline long4 as_long4(double4 inp)
-{
-	long4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline ulong4 as_ulong4(double4 inp)
-{
-	ulong4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
 static inline float4 as_float4(int4 inp)
 {
 	float4 val1;
@@ -15832,42 +13719,6 @@ static inline ushort4 as_ushort4(ushort4 inp)
 {
 	ushort4 val1;
 	memcpy(&val1, &inp, 8);
-	return val1;
-}
-static inline double4 as_double4(long4 inp)
-{
-	double4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline long4 as_long4(long4 inp)
-{
-	long4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline ulong4 as_ulong4(long4 inp)
-{
-	ulong4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline double4 as_double4(ulong4 inp)
-{
-	double4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline long4 as_long4(ulong4 inp)
-{
-	long4 val1;
-	memcpy(&val1, &inp, 32);
-	return val1;
-}
-static inline ulong4 as_ulong4(ulong4 inp)
-{
-	ulong4 val1;
-	memcpy(&val1, &inp, 32);
 	return val1;
 }
 

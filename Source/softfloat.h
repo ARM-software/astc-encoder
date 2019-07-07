@@ -1,17 +1,15 @@
-/*----------------------------------------------------------------------------*/  
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Soft IEEE-754 floating point library.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ * @brief Soft-float library for IEEE-754.
+ */
 
 #ifndef SOFTFLOAT_H_INCLUDED
 
@@ -40,19 +38,16 @@ extern "C"
 
 #endif
 
-
 uint32_t clz32(uint32_t p);
-
 
 /* targets that don't have UINT32_C probably don't have the rest of C99s stdint.h */
 #ifndef UINT32_C
-
 	#define PASTE(a) a
 	#define UINT64_C(a) PASTE(a##ULL)
 	#define UINT32_C(a) PASTE(a##U)
 	#define INT64_C(a) PASTE(a##LL)
 	#define INT32_C(a) a
-	
+
 	#define PRIX32 "X"
 	#define PRId32 "d"
 	#define PRIu32 "u"

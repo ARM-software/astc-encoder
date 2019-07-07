@@ -1,40 +1,35 @@
-/*----------------------------------------------------------------------------*/
-/**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	ASTC encoding of texture
- *
- *			major step 1:
- *			* find best partitioning assuming uncorrelated colors
- *			* find best partitioning assuming RGBS color representation
- *
- *			finding best partitioning for a block:
- *			* for each available partitioning:
- *			* compute mean-color-value and dominant direction.
- *			* this defines two lines, both of which go through the
- *			  mean-color-value:
- *			* one line has a direction defined by the dominant direction;
- *			  this line is used to assess the error from using an uncorrelated
- *			  color representation.
- *			* the other line goes through (0,0,0,1) and is used to assess the
- *			  error from using an RGBS color representation.
- *			* we then compute, as a sum across the block, the squared-errors
- *			  that result from using the dominant-direction-lines and the
- *			  squared-errors that result from using the 0001-lines.
- */
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
 
-/*
+/**
+ * @brief Functions for finding best partition for a block.
+ *
+ * Major step 1:
+ * - find best partitioning assuming uncorrelated colors
+ * - find best partitioning assuming RGBS color representation
+ *
+ * Finding best partitioning for a block:
+ *
+ * foreach available partitioning:
+ * - compute mean-color-value and dominant direction.
+ * - this defines two lines, both of which go through the mean-color-value.
+ * - one line has a direction defined by the dominant direction; this is used
+ *   to assess the error from using an uncorrelated color representation.
+ * - the other line goes through (0,0,0,1) and is used to assess the error from
+ *   using an RGBS color representation.
+ * - we then compute, as a sum across the block, the squared-errors that result
+ *   from using the dominant-direction-lines and the squared-errors that result
+ *   from using the 0001-lines.
+ *
  *	Partition table representation:
- *	We have 3 tables, each with 1024 partitionings
- *	(these correspond to the 3x128 hardware partitionings crossed with all the
+ *	We have 3 tables, each with 1024 partitions
+ *	(these correspond to the 3x128 hardware partitions crossed with all the
  *	partition-transform modes in the hardware.)
  *
  *	For each partitioning, we have:
@@ -49,12 +44,11 @@
 #include <cmath>
 
 #include "astc_codec_internals.h"
+#include "mathlib.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>
 #endif
-
-#include "mathlib.h"
 
 int imageblock_uses_alpha(int xdim, int ydim, int zdim, const imageblock * pb)
 {
@@ -101,7 +95,6 @@ static void compute_alpha_minmax(int xdim, int ydim, int zdim, const partition_i
 	}
 }
 
-
 static void compute_rgb_minmax(int xdim,
 							   int ydim,
 							   int zdim,
@@ -144,6 +137,7 @@ static void compute_rgb_minmax(int xdim,
 				blue_min[partition] = blueval;
 		}
 	}
+
 	for (i = 0; i < partition_count; i++)
 	{
 		if (red_min[i] >= red_max[i])
@@ -164,24 +158,26 @@ static void compute_rgb_minmax(int xdim,
 	}
 }
 
-
-
 void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, const error_weight_block * ewb, const partition_info * pi, float4 error_weightings[4], float4 color_scalefactors[4])
 {
 	int i;
 	int texels_per_block = xdim * ydim * zdim;
 	int pcnt = pi->partition_count;
+
 	for (i = 0; i < pcnt; i++)
 		error_weightings[i] = float4(1e-12f, 1e-12f, 1e-12f, 1e-12f);
+
 	for (i = 0; i < texels_per_block; i++)
 	{
 		int part = pi->partition_of_texel[i];
 		error_weightings[part] = error_weightings[part] + ewb->error_weights[i];
 	}
+
 	for (i = 0; i < pcnt; i++)
 	{
 		error_weightings[i] = error_weightings[i] * (1.0f / pi->texels_per_partition[i]);
 	}
+
 	for (i = 0; i < pcnt; i++)
 	{
 		color_scalefactors[i].x = sqrt(error_weightings[i].x);
@@ -189,25 +185,18 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 		color_scalefactors[i].z = sqrt(error_weightings[i].z);
 		color_scalefactors[i].w = sqrt(error_weightings[i].w);
 	}
-
 }
 
-
-/*
-   main function to identify the best partitioning for a given number of texels */
-
-
+/* main function to identify the best partitioning for a given number of texels */
 void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count,
 							 const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
-							 // best partitionings to use if the endpoint colors are assumed to be uncorrelated
+							 // best partitions to use if the endpoint colors are assumed to be uncorrelated
 							 int *best_partitions_uncorrellated,
-							 // best partitionings to use if the endpoint colors have the same chroma
+							 // best partitions to use if the endpoint colors have the same chroma
 							 int *best_partitions_samechroma,
-							 // best partitionings to use if using dual plane of weights
+							 // best partitions to use if using dual plane of weights
 							 int *best_partitions_dual_weight_planes)
 {
-
-
 	int i, j;
 
 	int texels_per_block = xdim * ydim * zdim;
@@ -227,11 +216,9 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 	else
 		weight_imprecision_estim = 0.055f;
 
-
 	int partition_sequence[PARTITION_COUNT];
 
 	kmeans_compute_partition_ordering(xdim, ydim, zdim, partition_count, pb, partition_sequence);
-
 
 	float weight_imprecision_estim_squared = weight_imprecision_estim * weight_imprecision_estim;
 
@@ -253,7 +240,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 	// is uncorrelated from all the other ones
 	float separate_errors[4 * PARTITION_COUNT];
 
-
 	float *separate_red_errors = separate_errors;
 	float *separate_green_errors = separate_errors + PARTITION_COUNT;
 	float *separate_blue_errors = separate_errors + 2 * PARTITION_COUNT;
@@ -263,7 +249,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 	if (uses_alpha)
 	{
-
 		#ifdef DEBUG_PRINT_DIAGNOSTICS
 			if (print_diagnostics)
 				printf("Partition testing with alpha, %d partitions\n\n", partition_count);
@@ -354,8 +339,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float separate_blue_linelengths[4];
 			float separate_alpha_linelengths[4];
 
-
-
 			for (j = 0; j < partition_count; j++)
 			{
 				uncorr_lines[j].a = averages[j];
@@ -367,7 +350,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * inverse_color_scalefactors[j];
 				proc_uncorr_lines[j].bs = (uncorr_lines[j].b * color_scalefactors[j]);
 				proc_uncorr_lines[j].bis = (uncorr_lines[j].b * inverse_color_scalefactors[j]);
-
 
 				samechroma_lines[j].a = float4(0, 0, 0, 0);
 				if (dot(averages[j], averages[j]) == 0)
@@ -420,7 +402,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 					(separate_alpha_lines[j].a - separate_alpha_lines[j].b * dot(separate_alpha_lines[j].a, separate_alpha_lines[j].b)) * inverse_color_scalefactors[j].xyz;
 				proc_separate_alpha_lines[j].bs = (separate_alpha_lines[j].b * color_scalefactors[j].xyz);
 				proc_separate_alpha_lines[j].bis = (separate_alpha_lines[j].b * inverse_color_scalefactors[j].xyz);
-
 			}
 
 			float uncorr_error = compute_error_squared_rgba(ptab + partition,
@@ -428,6 +409,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 															ewb,
 															proc_uncorr_lines,
 															uncorr_linelengths);
+
 			float samechroma_error = compute_error_squared_rgba(ptab + partition,
 																pb,
 																ewb,
@@ -543,11 +525,8 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				printf("Partition testing without alpha, %d partitions\n", partition_count);
 		#endif
 
-
-
 		for (i = 0; i < PARTITION_COUNT; i++)
 		{
-
 			int partition = partition_sequence[i];
 
 			int bk_partition_count = ptab[partition].partition_count;
@@ -565,6 +544,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				separate_blue_errors[i] = 1e35f;
 				continue;
 			}
+
 			// the sentinel value for valid partitions above the search limit must be smaller
 			// than the sentinel value for invalid partitions
 			if (i >= partition_search_limit)
@@ -581,7 +561,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				separate_green_errors[i] = 1e34f;
 				separate_blue_errors[i] = 1e34f;
 				break;
-
 			}
 
 			// compute the weighting to give to each color channel
@@ -681,7 +660,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				proc_separate_blue_lines[j].amod = (separate_blue_lines[j].a - separate_blue_lines[j].b * dot(separate_blue_lines[j].a, separate_blue_lines[j].b)) * inverse_color_scalefactors[j].xy;
 				proc_separate_blue_lines[j].bs = (separate_blue_lines[j].b * color_scalefactors[j].xy);
 				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b * inverse_color_scalefactors[j].xy);
-
 			}
 
 			float uncorr_error = compute_error_squared_rgb(ptab + partition,
@@ -689,6 +667,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 														   ewb,
 														   proc_uncorr_lines,
 														   uncorr_linelengths);
+
 			float samechroma_error = compute_error_squared_rgb(ptab + partition,
 															   pb,
 															   ewb,
@@ -717,10 +696,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 
-
 			compute_rgb_minmax(xdim, ydim, zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
-
-
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.
@@ -733,7 +709,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			   4(optimized): square the vector once, then do a dot-product with the average texel error,
 			     then multiply by the number of texels.
 			 */
-
 
 			for (j = 0; j < partition_count; j++)
 			{
@@ -774,7 +749,6 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				separate_blue_error += blue_scalar * error_weights.z;
 			}
 
-
 			uncorr_errors[i] = uncorr_error;
 			samechroma_errors[i] = samechroma_error;
 
@@ -790,13 +764,13 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 		}
 	}
 
-
 	for (i = 0; i < candidates_to_return; i++)
 	{
 		int best_uncorr_partition = 0;
 		int best_samechroma_partition = 0;
 		float best_uncorr_error = 1e30f;
 		float best_samechroma_error = 1e30f;
+
 		for (j = 0; j <= defacto_search_limit; j++)
 		{
 			if (uncorr_errors[j] < best_uncorr_error)
@@ -805,6 +779,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				best_uncorr_error = uncorr_errors[j];
 			}
 		}
+
 		best_partitions_uncorrellated[i] = partition_sequence[best_uncorr_partition];
 		uncorr_errors[best_uncorr_partition] = 1e30f;
 		samechroma_errors[best_uncorr_partition] = 1e30f;
@@ -817,6 +792,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 				best_samechroma_error = samechroma_errors[j];
 			}
 		}
+
 		best_partitions_samechroma[i] = partition_sequence[best_samechroma_partition];
 		samechroma_errors[best_samechroma_partition] = 1e30f;
 		uncorr_errors[best_samechroma_partition] = 1e30f;
@@ -829,6 +805,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 		for (j = 0; j <= defacto_search_limit; j++)
 		{
+			// TODO: Review this heuristic
 			if (1 || !uses_alpha)
 			{
 				if (separate_errors[j] < best_partition_error)
@@ -847,6 +824,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 					best_partition_error = separate_errors[j + 2 * PARTITION_COUNT];
 				}
 			}
+
 			if (uses_alpha)
 			{
 				if (separate_errors[j + 3 * PARTITION_COUNT] < best_partition_error)
@@ -861,5 +839,4 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 		best_partition = ((best_partition >> PARTITION_BITS) << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
 		best_partitions_dual_weight_planes[i] = best_partition;
 	}
-
 }

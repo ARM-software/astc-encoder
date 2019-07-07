@@ -1,18 +1,16 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions for loading/storing TGA files and the file types
- *			accessible through STB.
+ * @brief Functions for loading and storing files via stb_image.
  */
-/*----------------------------------------------------------------------------*/
+
 
 #include "astc_codec_internals.h"
 
@@ -26,7 +24,7 @@
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_PNM
-#include "stb_image.c"
+#include "stb_image.h"
 
 astc_codec_image * load_image_with_stb(const char *filename, int padding, int *result)
 {
@@ -104,16 +102,9 @@ astc_codec_image * load_image_with_stb(const char *filename, int padding, int *r
 	return NULL;
 }
 
-
-
-
-
-
-
 /*
    given a TGA filename, read in a TGA file and create test-vectors from it.
 */
-
 struct tga_header
 {
 	uint8_t identsize;
@@ -127,7 +118,6 @@ struct tga_header
 	uint8_t bitsperpixel;
 	uint8_t descriptor;
 };
-
 
 enum tga_descriptor
 {
@@ -162,7 +152,6 @@ enum tga_errors
 	TGA_ERROR_LAYOUT = -6		/* file layout unsupported (right-to-left flipped) */
 };
 
-
 /*
 	return: if positive number, then the number is #components in the image
 	1=Grayscale 2=Grayscale+Alpha 3=RGB 4=RGB+Alpha
@@ -176,7 +165,6 @@ enum tga_errors
 	-5=failed to load image because it has an unsupported pixel type
 	-6=failed to load image because it is flipped in the x dimension
 */
-
 astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *result)
 {
 	int x, y;
@@ -199,6 +187,7 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 		*result = TGA_ERROR_READ;
 		return NULL;
 	}
+
 	if (hdr.colormaptype != 0)
 	{
 		fclose(f);
@@ -222,11 +211,11 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 		*result = TGA_ERROR_LAYOUT;
 		return NULL;
 	}
+
 	if (hdr.descriptor & TGA_DESCRIPTOR_YFLIP)
 		y_flip = 1;
 	else
 		y_flip = 0;
-
 
 	// support 4 formats (non-RLE only):
 	// 8-bit grayscale
@@ -253,7 +242,6 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 	int bytesperpixel = hdr.bitsperpixel / 8;
 
 	int bitness = (hdr.imagetype >= 0x80) ? 16 : 8;
-
 
 	// OK, it seems we have a legit TGA or HTGA file of a format we understand.
 	// Now, let's read it.
@@ -296,8 +284,6 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 		*result = -2;
 		return NULL;
 	}
-
-
 
 	// OK, at this point, we can expand the image data to RGBA.
 	int ysize = hdr.ysize;
@@ -422,9 +408,6 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 	*result = retval;
 	return astc_img;
 }
-
-
-
 
 /*
    returns -1 if any problems arose when writing the file, else the number of color channels it chose to write.
@@ -552,8 +535,6 @@ int store_tga_image(const astc_codec_image * img, const char *tga_filename, int 
 			}
 		}
 	}
-
-
 
 	int retval = image_channels;
 

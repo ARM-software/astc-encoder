@@ -1,43 +1,33 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
+ * @brief Functions for finding color error post-compression.
  *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
+ * We assume there are two independent sources of error in any given partition.
+ * - encoding choice errors
+ * - quantization errors
  *
- *	@brief	Determine color errors for ASTC compression.
+ * Encoding choice errors are caused by encoder decisions, such as:
+ * - using luminance rather than RGB.
+ * - using RGB+scale instead of two full RGB endpoints.
+ * - dropping the alpha channel.
  *
- *			We assume that there are two independent sources of color error in
- *			any given partition.
- *
- *			These are:
- *			* quantization errors
- *			* encoding choice errors
- *
- *			Encoding choice errors are errors that come due to encoding choice,
- *			such as:
- *			* using luminance instead of RGB
- *			* using RGB-scale instead of two RGB endpoints.
- *			* dropping Alpha
- *
- *			Quantization errors occur due to the limited precision we use for
- *			storing numbers.
- *
- *			Quantization errors generally scale with quantization level, but are
- *			not actually independent of color encoding. In particular:
- *			* if we can use offset encoding then quantization error is halved.
- *			* if we can use blue-contraction, quantization error for red and
- *			  green is halved.
- *			* quantization error is higher for the HDR endpoint modes.
- *
- *			Other than these errors, quantization error is assumed to be
- *			proportional to the quantization step.
+ * Quantization errors occur due to the limited precision we use for storage.
+ * These errors generally scale with quantization level, but are not actually
+ * independent of color encoding. In particular:
+ * - if we can use offset encoding then quantization error is halved.
+ * - if we can use blue-contraction, quantization error for RG is halved.
+ * - quantization error is higher for the HDR endpoint modes.
+ * Other than these errors, quantization error is assumed to be proportional to
+ * the quantization step.
  */
-/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -94,8 +84,6 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 	}
 }
 
-
-
 /*
    for a given set of input colors and a given partitioning, determine: color error that results
    from RGB-scale encoding (relevant for LDR only) color error that results from RGB-lumashift encoding
@@ -105,8 +93,6 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 
    The input data are: color data partitioning error-weight data
  */
-
-
 void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblock * pb, const partition_info * pi, const error_weight_block * ewb,
 									int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
 									encoding_choice_errors * eci)
@@ -148,14 +134,12 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 	processed_line3 proc_rgb_luma_lines[4];	// for HDR-RGB-scale
 	processed_line3 proc_luminance_lines[4];
 
-
 	for (i = 0; i < partition_count; i++)
 	{
 		inverse_color_scalefactors[i].x = 1.0f / MAX(color_scalefactors[i].x, 1e-7f);
 		inverse_color_scalefactors[i].y = 1.0f / MAX(color_scalefactors[i].y, 1e-7f);
 		inverse_color_scalefactors[i].z = 1.0f / MAX(color_scalefactors[i].z, 1e-7f);
 		inverse_color_scalefactors[i].w = 1.0f / MAX(color_scalefactors[i].w, 1e-7f);
-
 
 		uncorr_rgb_lines[i].a = averages[i];
 		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)
@@ -201,20 +185,15 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot(luminance_lines[i].a, luminance_lines[i].b)) * inverse_color_scalefactors[i].xyz;
 		proc_luminance_lines[i].bs = luminance_lines[i].b * color_scalefactors[i].xyz;
 		proc_luminance_lines[i].bis = luminance_lines[i].b * inverse_color_scalefactors[i].xyz;
-
 	}
-
-
 
 	float uncorr_rgb_error[4];
 	float samechroma_rgb_error[4];
 	float rgb_luma_error[4];
 	float luminance_rgb_error[4];
 
-
 	for (i = 0; i < partition_count; i++)
 	{
-
 		uncorr_rgb_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_uncorr_rgb_lines[i]));
 
 		samechroma_rgb_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_samechroma_rgb_lines[i]));
@@ -235,11 +214,13 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 	// compute the error that arises from just ditching alpha and RGB
 	float alpha_drop_error[4];
 	float rgb_drop_error[4];
+
 	for (i = 0; i < partition_count; i++)
 	{
 		alpha_drop_error[i] = 0;
 		rgb_drop_error[i] = 0;
 	}
+
 	for (i = 0; i < texels_per_block; i++)
 	{
 		int partition = pi->partition_of_texel[i];
@@ -255,7 +236,6 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 	}
 
 	// check if we are eligible for blue-contraction and offset-encoding
-
 	endpoints ep;
 	if (separate_component == -1)
 	{
@@ -273,7 +253,6 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 
 	int eligible_for_offset_encode[4];
 	int eligible_for_blue_contraction[4];
-
 	for (i = 0; i < partition_count; i++)
 	{
 		float4 endpt0 = ep.endpt0[i];
@@ -294,7 +273,6 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		else
 			eligible_for_blue_contraction[i] = 0;
 	}
-
 
 	// finally, gather up our results
 	for (i = 0; i < partition_count; i++)
