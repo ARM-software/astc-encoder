@@ -88,8 +88,7 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 	}
 	else
 	{
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	return img;
@@ -129,8 +128,7 @@ void initialize_image(astc_codec_image * img)
 	}
 	else
 	{
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 }
 
@@ -1287,8 +1285,7 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 		input_image = load_image_with_stb(input_filename, padding, load_result);
 		break;
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	if (load_exr)
@@ -1399,9 +1396,7 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 			store_result = -99;
 		break;
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
-		break;
+		ASTC_CODEC_INTERNAL_ERROR();
 	};
 
 	return store_result;

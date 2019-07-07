@@ -825,7 +825,7 @@ void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quanti
 		break;
 
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	if (*alpha_hdr == -1)

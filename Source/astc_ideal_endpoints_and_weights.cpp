@@ -60,8 +60,7 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 		error_weights = ewb->texel_weight_a;
 		break;
 	default:
-		error_weights = ewb->texel_weight_r;
-		ASTC_CODEC_INTERNAL_ERROR;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -112,7 +111,7 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
 		if (astc_isnan(ei->weight_error_scale[i]))
 		{
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
 
@@ -187,7 +186,7 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 	else
 	{
 		error_weights = ewb->texel_weight_rg;
-		ASTC_CODEC_INTERNAL_ERROR;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	int texels_per_block = xdim * ydim * zdim;
@@ -377,7 +376,7 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
 		if (astc_isnan(ei->weight_error_scale[i]))
 		{
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
 
@@ -430,8 +429,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 		error_weights = ewb->texel_weight_rgb;
 	else
 	{
-		error_weights = ewb->texel_weight_gba;
-		ASTC_CODEC_INTERNAL_ERROR;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, color_scalefactors);
@@ -657,7 +655,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
 		if (astc_isnan(ei->weight_error_scale[i]))
 		{
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
 
@@ -817,7 +815,7 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
 		if (astc_isnan(ei->weight_error_scale[i]))
 		{
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
 
@@ -908,7 +906,7 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
 	case 3:					// separate weights for alpha
 		if (uses_alpha == 0)
 		{
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 		compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 1, 2);
 
