@@ -37,9 +37,6 @@
 	}
 
 #else
-	// Windows.h defines IGNORE, so we must #undef our own version.
-	#undef IGNORE
-
 	// Define pthread-like functions in terms of Windows threading API
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>

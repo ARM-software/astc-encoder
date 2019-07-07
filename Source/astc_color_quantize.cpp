@@ -695,15 +695,9 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 	output[3] = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
 }
 
-void quantize0(float4 color0, float4 color1, int output[8], int quantization_level)
+void quantize0(int output[8])
 {
-	IGNORE(color0);
-	IGNORE(color1);
-	IGNORE(output);
-	IGNORE(quantization_level);
-
-	int i;
-	for (i = 0; i < 8; i++)
+	for (int i = 0; i < 8; i++)
 		output[i] = 0;
 }
 
@@ -1829,12 +1823,9 @@ void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int qu
 	Quantize a color. When quantizing an RGB or RGBA color, the quantizer may choose a
 	delta-based representation; as such, it will report back the format it actually used.
 */
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, float2 luminances,	// ! Unused
+int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color,
 						 int format, int *output, int quantization_level)
 {
-
-	IGNORE(luminances);
-
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{
@@ -1972,7 +1963,7 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 
 	default:
 		ASTC_CODEC_INTERNAL_ERROR;
-		quantize0(color0, color1, output, quantization_level);
+		quantize0(output);
 		retval = FMT_LUMINANCE;
 		break;
 	}
