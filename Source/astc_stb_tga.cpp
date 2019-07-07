@@ -11,7 +11,6 @@
  * @brief Functions for loading and storing files via stb_image.
  */
 
-
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
@@ -19,9 +18,7 @@
 #include <stdio.h>
 
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_NO_JPEG
 #define STBI_NO_PSD
-#define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_PNM
 #include "stb_image.h"
