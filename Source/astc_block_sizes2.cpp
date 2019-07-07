@@ -169,11 +169,8 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 
 // stubbed for the time being.
 static const float dummy_percentile_table_3d[2048] = { 0 };
-const float *get_3d_percentile_table(int blockdim_x, int blockdim_y, int blockdim_z)
+const float *get_3d_percentile_table()
 {
-	IGNORE(blockdim_x);
-	IGNORE(blockdim_y);
-	IGNORE(blockdim_z);
 	return dummy_percentile_table_3d;
 }
 
@@ -864,7 +861,7 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 
 	bsd->decimation_mode_count = decimation_mode_count;
 
-	const float *percentiles = get_3d_percentile_table(xdim, ydim, zdim);
+	const float *percentiles = get_3d_percentile_table();
 
 	// then construct the list of block formats
 	for (i = 0; i < 2048; i++)

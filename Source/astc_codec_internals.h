@@ -26,10 +26,6 @@
 	#define MAX(x,y) ((x)>(y)?(x):(y))
 #endif
 
-// Macro to silence warnings on ignored parameters.
-// The presence of this macro should be a signal to look at refactoring.
-#define IGNORE(param) ((void)&param)
-
 #define astc_isnan(p) ((p)!=(p))
 
 // ASTC parameters
@@ -567,7 +563,7 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 
 // helper function to check whether a given picture-block has alpha that is not
 // just uniformly 1.
-int imageblock_uses_alpha(int xdim, int ydim, int zdim, const imageblock * pb);
+int imageblock_uses_alpha(const imageblock * pb);
 
 float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb);
 
@@ -616,7 +612,7 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 // function to pack a pair of color endpoints into a series of integers.
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, float2 luminances, int format, int *output, int quantization_level);
+int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, int format, int *output, int quantization_level);
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quantization_level, const int *input, int *rgb_hdr, int *alpha_hdr, int *nan_endpoint, ushort4 * output0, ushort4 * output1);

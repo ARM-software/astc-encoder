@@ -858,7 +858,7 @@ void compute_endpoints_and_ideal_weights_1_plane(int xdim, int ydim, int zdim, c
 			printf("%s: texels_per_block=%dx%dx%d\n\n", __func__, xdim, ydim, zdim);
 	#endif
 
-	int uses_alpha = imageblock_uses_alpha(xdim, ydim, zdim, blk);
+	int uses_alpha = imageblock_uses_alpha(blk);
 	if (uses_alpha)
 	{
 		compute_endpoints_and_ideal_weights_rgba(xdim, ydim, zdim, pt, blk, ewb, ei);
@@ -878,7 +878,7 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
 			printf("%s: texels_per_block=%dx%dx%d, separate_component=%d\n\n", __func__, xdim, ydim, zdim, separate_component);
 	#endif
 
-	int uses_alpha = imageblock_uses_alpha(xdim, ydim, zdim, blk);
+	int uses_alpha = imageblock_uses_alpha(blk);
 	switch (separate_component)
 	{
 	case 0:					// separate weights for red

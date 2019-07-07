@@ -50,12 +50,8 @@
 	#include <stdio.h>
 #endif
 
-int imageblock_uses_alpha(int xdim, int ydim, int zdim, const imageblock * pb)
+int imageblock_uses_alpha(const imageblock * pb)
 {
-	IGNORE(xdim);
-	IGNORE(ydim);
-	IGNORE(zdim);
-
 	return pb->alpha_max != pb->alpha_min;
 }
 
@@ -227,7 +223,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 		printf("weight_imprecision_estim = %g\n", weight_imprecision_estim);
 #endif
 
-	int uses_alpha = imageblock_uses_alpha(xdim, ydim, zdim, pb);
+	int uses_alpha = imageblock_uses_alpha(pb);
 
 	const partition_info *ptab = get_partition_table(xdim, ydim, zdim, partition_count);
 

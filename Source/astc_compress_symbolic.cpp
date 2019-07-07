@@ -427,7 +427,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 				scb->color_formats[j] = pack_color_endpoints(decode_mode,
 															 eix[decimation_mode].ep.endpt0[j],
 															 eix[decimation_mode].ep.endpt1[j],
-															 rgbs_colors[j], rgbo_colors[j], lum_intervals[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
+															 rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
 			}
 
 			// if all the color endpoint modes are the same, we get a few more
@@ -447,7 +447,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 					color_formats_mod[j] = pack_color_endpoints(decode_mode,
 																eix[decimation_mode].ep.endpt0[j],
 																eix[decimation_mode].ep.endpt1[j],
-																rgbs_colors[j], rgbo_colors[j], lum_intervals[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
+																rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
 				}
 				if (color_formats_mod[0] == color_formats_mod[1]
 					&& (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2] && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
@@ -717,7 +717,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 				scb->color_formats[j] = pack_color_endpoints(decode_mode,
 															 epm.endpt0[j],
 															 epm.endpt1[j],
-															 rgbs_colors[j], rgbo_colors[j], lum_intervals[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
+															 rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
 			}
 			scb->color_formats_matched = 0;
 
@@ -732,7 +732,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 					color_formats_mod[j] = pack_color_endpoints(decode_mode,
 																epm.endpt0[j],
 																epm.endpt1[j],
-																rgbs_colors[j], rgbo_colors[j], lum_intervals[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
+																rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
 				}
 				if (color_formats_mod[0] == color_formats_mod[1]
 					&& (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2] && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
@@ -1382,7 +1382,7 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 	for (i = 0; i < 17; i++)
 		best_errorvals_in_modes[i] = 1e30f;
 
-	int uses_alpha = imageblock_uses_alpha(xdim, ydim, zdim, blk);
+	int uses_alpha = imageblock_uses_alpha(blk);
 
 	// compression of average-color blocks disabled for the time being;
 	// they produce extremely severe block artifacts.
