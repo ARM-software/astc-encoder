@@ -86,9 +86,6 @@
 	#include <fenv.h>
 #endif
 
-// Define this to be 1 to allow "illegal" block sizes
-#define DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES 0
-
 extern int block_mode_histogram[2048];
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -566,7 +563,7 @@ astc_codec_image *pack_and_unpack_astc_image(const astc_codec_image * input_imag
 	return img;
 }
 
-void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal)
+void find_closest_blockdim_2d(float target_bitrate, int *x, int *y)
 {
 	int blockdims[6] = { 4, 5, 6, 8, 10, 12 };
 
@@ -582,8 +579,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 		{
 			//              NxN       MxN         8x5               10x5              10x6
 			int is_legal = (j==i) || (j==i+1) || (j==3 && i==1) || (j==4 && i==1) || (j==4 && i==2);
-
-			if(consider_illegal || is_legal)
+			if(is_legal)
 			{
 				float bitrate = 128.0f / (blockdims[i] * blockdims[j]);
 				float bitrate_error = fabs(bitrate - target_bitrate);
@@ -600,7 +596,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider
 	}
 }
 
-void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int consider_illegal)
+void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z)
 {
 	int blockdims[4] = { 3, 4, 5, 6 };
 
@@ -616,8 +612,7 @@ void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z, int 
 			{
 				//              NxNxN              MxNxN                  MxMxN
 				int is_legal = ((k==j)&&(j==i)) || ((k==j+1)&&(j==i)) || ((k==j)&&(j==i+1));
-
-				if(consider_illegal || is_legal)
+				if(is_legal)
 				{
 					float bitrate = 128.0f / (blockdims[i] * blockdims[j] * blockdims[k]);
 					float bitrate_error = fabs(bitrate - target_bitrate);
@@ -1342,8 +1337,8 @@ int astc_main(int argc, char **argv)
 		{
 			target_bitrate = static_cast < float >(atof(argv[4]));
 			target_bitrate_set = 1;
-			find_closest_blockdim_2d(target_bitrate, &xdim_2d, &ydim_2d, DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES);
-			find_closest_blockdim_3d(target_bitrate, &xdim_3d, &ydim_3d, &zdim_3d, DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES);
+			find_closest_blockdim_2d(target_bitrate, &xdim_2d, &ydim_2d);
+			find_closest_blockdim_3d(target_bitrate, &xdim_3d, &ydim_3d, &zdim_3d);
 		}
 		else
 		{
@@ -1370,7 +1365,7 @@ int astc_main(int argc, char **argv)
 					int is_legal_2d = (xdim_3d==ydim_3d) || (xdim_3d==ydim_3d+1) || ((xdim_3d==ydim_3d+2) && !(xdim_3d==6 && ydim_3d==4)) ||
 									  (xdim_3d==8 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==6);
 
-					if(!DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES && !is_legal_2d)
+					if(!is_legal_2d)
 					{
 						printf("Block dimensions %d x %d disallowed\n", xdim_3d, ydim_3d);
 						exit(1);
@@ -1388,7 +1383,7 @@ int astc_main(int argc, char **argv)
 
 					int is_legal_3d = ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d+1)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d+1));
 
-					if(!DEBUG_ALLOW_ILLEGAL_BLOCK_SIZES && !is_legal_3d)
+					if(!is_legal_3d)
 					{
 						printf("Block dimensions %d x %d x %d disallowed\n", xdim_3d, ydim_3d, zdim_3d);
 						exit(1);
