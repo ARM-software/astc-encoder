@@ -1,17 +1,15 @@
-/*----------------------------------------------------------------------------*/  
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Percentile tables for ASTC.
- */ 
-/*----------------------------------------------------------------------------*/ 
+ * @brief Percentile data tables for different block encodings.
+ */
 
 extern const float percentile_table_4x4[2048];
 extern const float percentile_table_4x5[2048];
@@ -49,7 +47,6 @@ extern const float percentile_table_12x6[2048];
 extern const float percentile_table_12x8[2048];
 extern const float percentile_table_12x10[2048];
 extern const float percentile_table_12x12[2048];
-
 
 const float percentile_table_4x4[2048] = {
 	1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f, 1.0000f,

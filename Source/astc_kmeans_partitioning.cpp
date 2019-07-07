@@ -1,34 +1,32 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
+ * @brief Functions for approximate partitioning by kmeans clustering.
  *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
+ * Do this in 2 stages:
+ * 1: basic clustering, a couple of passes just to get a few clusters
+ * 2: clustering based on line, a few passes until it seems to stabilize.
  *
- *	@brief	approximate k-means cluster partitioning. Do this in 2 stages
- *
- *			1: basic clustering, a couple of passes just to get a few clusters
- *			2: clustering based on line, a few passes until it seems to
- *			   stabilize.
- *
- *			After clustering is done, we use the clustering result to construct
- *			one bitmap for each partition. We then scan though the partition table,
- *			counting how well the bitmaps matched.
- */
-/*----------------------------------------------------------------------------*/
+ * After clustering is done, we use the clustering result to construct one
+ * bitmap for each partition. We then scan though the partition table, counting
+ * how well the bitmaps matched.
+  */
 
 #include "astc_codec_internals.h"
 
-// for k++ means, we need pseudo-random numbers, however using random numbers directly
-// results in irreproducible encoding results. As such, we will instead
-// just supply a handful of numbers from random.org, and apply an algorithm similar
-// to XKCD #221. (http://xkcd.com/221/)
-// cluster the texels using the k++ means clustering initialization algorithm.
+// for k++ means, we need pseudo-random numbers, however using random numbers
+// directly results in unreproducible encoding results. As such, we will
+// instead just supply a handful of numbers from random.org, and apply an
+// algorithm similar to XKCD #221. (http://xkcd.com/221/)
 
+// cluster the texels using the k++ means clustering initialization algorithm.
 void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, float4 * cluster_centers)
 {
 	int i;
@@ -86,7 +84,6 @@ void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const ima
 		if (sample >= texels_per_block)
 			sample = texels_per_block - 1;
 
-
 		cluster_center_samples[samples_selected] = sample;
 		samples_selected++;
 		if (samples_selected >= partition_count)
@@ -122,7 +119,6 @@ void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const ima
 	}
 }
 
-
 // basic K-means clustering: given a set of cluster centers,
 // assign each texel to a partition
 void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, const float4 * cluster_centers, int *partition_of_texel)
@@ -140,7 +136,6 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 	for (i = 1; i < partition_count; i++)
 		texels_per_partition[i] = 0;
 
-
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float4 color = float4(blk->work_data[4 * i],
@@ -152,8 +147,6 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 		distances[i] = distance;
 		partition_of_texel[i] = 0;
 	}
-
-
 
 	for (j = 1; j < partition_count; j++)
 	{
@@ -198,9 +191,7 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 		}
 	}
 	while (problem_case != 0);
-
 }
-
 
 // basic k-means clustering: given a set of cluster assignments
 // for the texels, find the center position of each cluster.
@@ -218,7 +209,6 @@ void basic_kmeans_update(int xdim, int ydim, int zdim, int partition_count, cons
 		color_sum[i] = float4(0, 0, 0, 0);
 		weight_sum[i] = 0;
 	}
-
 
 	// first, find the center-of-gravity in each cluster
 	for (i = 0; i < texels_per_block; i++)
@@ -238,16 +228,9 @@ void basic_kmeans_update(int xdim, int ydim, int zdim, int partition_count, cons
 	}
 }
 
-
-
-
 // after a few rounds of k-means-clustering, we should have a set of 2, 3 or 4 partitions;
 // we then turn this set into 2, 3 or 4 bitmaps. Then, for each of the 1024 partitions,
 // we try to match the bitmaps as well as possible.
-
-
-
-
 static inline int bitcount(uint64_t p)
 {
 	if (sizeof(void *) > 4)
@@ -290,7 +273,6 @@ static inline int bitcount(uint64_t p)
 	}
 }
 
-
 // compute the bit-mismatch for a partitioning in 2-partition mode
 static inline int partition_mismatch2(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1)
 {
@@ -298,7 +280,6 @@ static inline int partition_mismatch2(uint64_t a0, uint64_t a1, uint64_t b0, uin
 	int v2 = bitcount(a0 ^ b1) + bitcount(a1 ^ b0);
 	return MIN(v1, v2);
 }
-
 
 // compute the bit-mismatch for a partitioning in 3-partition mode
 static inline int partition_mismatch3(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t b0, uint64_t b1, uint64_t b2)
@@ -385,8 +366,6 @@ static inline int partition_mismatch4(uint64_t a0, uint64_t a1, uint64_t a2, uin
 	// 16 bitcount, 17 MIN, 28 ADD
 }
 
-
-
 void count_partition_mismatch_bits(int xdim, int ydim, int zdim, int partition_count, const uint64_t bitmaps[4], int bitcounts[PARTITION_COUNT])
 {
 	int i;
@@ -443,10 +422,8 @@ void count_partition_mismatch_bits(int xdim, int ydim, int zdim, int partition_c
 
 }
 
-
 // counting-sort on the mismatch-bits, thereby
 // sorting the partitions into an ordering.
-
 void get_partition_ordering_by_mismatch_bits(const int mismatch_bits[PARTITION_COUNT], int partition_ordering[PARTITION_COUNT])
 {
 	int i;
@@ -472,9 +449,6 @@ void get_partition_ordering_by_mismatch_bits(const int mismatch_bits[PARTITION_C
 		partition_ordering[idx] = i;
 	}
 }
-
-
-
 
 void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, int *ordering)
 {
@@ -516,5 +490,4 @@ void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partiti
 
 	// finally, sort the partitions by bits-of-partition-mismatch
 	get_partition_ordering_by_mismatch_bits(bitcounts, ordering);
-
 }

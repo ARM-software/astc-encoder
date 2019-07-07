@@ -205,10 +205,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\astc_eigenvector_and_avg.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\astc_encoding_choice_error.cpp"
 				>
 			</File>

@@ -1,23 +1,19 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2013 ARM Limited
- *	ALL RIGHTS RESERVED
+ * @brief Functions for loading/storing KTX and DDS files.
  *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions to load/store KTX and DDS files
- *
- *			The files that are loaded and stored by these functions are
- *			UNCOMPRESSED files only; the intent is mainly to provide a
- *			standard way to get HDR and 3D texture data to/from the codec.
- *
- *			Status: only tested on our corpus of images.
+ * These handle uncompressed data only; the main reason for them it is
+ * provide HDR and 3D input data to the codec.
  */
-/*----------------------------------------------------------------------------*/
+
 #include "astc_codec_internals.h"
 
 #include <stdio.h>
@@ -68,10 +64,7 @@ enum scanline_copy_method
 	LA32F_TO_RGBA16F
 };
 
-
-
 // scanline copying function: this function expands data to RGBA, either U8 or FP16.
-
 static void copy_scanline(void *dst, const void *src, int pixels, int method)
 {
 
@@ -296,7 +289,6 @@ static void copy_scanline(void *dst, const void *src, int pixels, int method)
 	};
 }
 
-
 // perform endianness switch on raw data
 static void switch_endianness2(void *dataptr, int bytes)
 {
@@ -312,7 +304,6 @@ static void switch_endianness2(void *dataptr, int bytes)
 		data += 2;
 	}
 }
-
 
 static void switch_endianness4(void *dataptr, int bytes)
 {
@@ -333,15 +324,10 @@ static void switch_endianness4(void *dataptr, int bytes)
 	}
 }
 
-
 uint32_t u32_byterev(uint32_t v)
 {
 	return (v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24);
 }
-
-
-
-
 
 /*
 	Notes about KTX:
@@ -379,11 +365,9 @@ uint32_t u32_byterev(uint32_t v)
 	gl_format: RED, RG. RGB, RGBA BGR, BGRA
 	gl_internal_format: used for upload to OpenGL; we can ignore it on uncompressed-load, but
 		need to provide a reasonable value on store: RGB8 RGBA8 RGB16F RGBA16F
-   gl_base_internal_format: same as gl_format unless texture is compressed (well, BGR is turned into RGB)
+	gl_base_internal_format: same as gl_format unless texture is compressed (well, BGR is turned into RGB)
 		RED, RG, RGB, RGBA
-
  */
-
 
 // enums copied from GL/GL.h
 #define GL_RED    0x1903
@@ -418,7 +402,6 @@ struct ktx_header
 	uint32_t bytes_of_key_value_data;	// size in bytes of the key-and-value area immediately following the header.
 };
 
-
 // magic 12-byte sequence that must appear at the beginning of every KTX file.
 uint8_t ktx_magic[12] = {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
@@ -442,10 +425,6 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 	REV(bytes_of_key_value_data);
 	#undef REV
 }
-
-
-
-
 
 astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding, int *result)
 {
@@ -531,9 +510,7 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 		return NULL;
 	};
 
-
 	// Although these are set up later, we include a default initializer to remove warnings
-
 	int bytes_per_component = 1;	// bytes per component in the KTX file.
 	int bitness = 8;			// internal precision we will use in the codec.
 	scanline_copy_method cm = R8_TO_RGBA8;
@@ -711,7 +688,6 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 		return NULL;
 	}
 
-
 	if (switch_endianness)
 		specified_bytes_of_surface = u32_byterev(specified_bytes_of_surface);
 
@@ -726,8 +702,6 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 		*result = -5;
 		return NULL;
 	}
-
-
 
 	uint8_t *buf = (uint8_t *) malloc(specified_bytes_of_surface);
 	size_t bytes_read = fread(buf, 1, specified_bytes_of_surface, f);
@@ -748,8 +722,6 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 		if (hdr.gl_type_size == 4)
 			switch_endianness4(buf, specified_bytes_of_surface);
 	}
-
-
 
 	// then transfer data from the surface to our own image-data-structure.
 	astc_codec_image *astc_img = allocate_image(bitness, xsize, ysize, zsize, padding);
@@ -776,9 +748,6 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 	*result = components + (bitness == 16 ? 0x80 : 0);
 	return astc_img;
 }
-
-
-
 
 int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_filename, int bitness)
 {
@@ -810,9 +779,7 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 	hdr.number_of_mipmap_levels = 1;
 	hdr.bytes_of_key_value_data = 0;
 
-
 	// collect image data to write
-
 	uint8_t ***row_pointers8 = NULL;
 	uint16_t ***row_pointers16 = NULL;
 	if (bitness == 8)
@@ -942,7 +909,6 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 		fclose(wf);
 		if (hdr_bytes_written + bytecount_bytes_written + data_bytes_written != expected_bytes_written)
 			retval = -1;
-
 	}
 	else
 	{
@@ -965,9 +931,6 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 	return retval;
 }
 
-
-
-
 /*
 	Loader for DDS files.
 
@@ -977,7 +940,6 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 
 	This code is NOT endian-neutral.
 */
-
 struct dds_pixelformat
 {
 	uint32_t size;				// structure size, set to 32.
@@ -993,7 +955,6 @@ struct dds_pixelformat
 	uint32_t bbitmask;			// bitmap indicating position of blue color component
 	uint32_t abitmask;			// bitmap indicating position of alpha color component
 };
-
 
 struct dds_header
 {
@@ -1045,7 +1006,6 @@ struct dds_header
 	uint32_t reserved2;
 };
 
-
 struct dds_header_dx10
 {
 	uint32_t dxgi_format;
@@ -1055,10 +1015,8 @@ struct dds_header_dx10
 	uint32_t reserved;			// set to 0.
 };
 
-
 #define DDS_MAGIC 0x20534444
 #define DX10_MAGIC 0x30315844
-
 
 astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding, int *result)
 {
@@ -1125,11 +1083,9 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 		}
 	}
 
-
 	int xsize = hdr.width;
 	int ysize = hdr.height;
 	int zsize = (hdr.flags & 0x800000) ? hdr.depth : 1;
-
 
 	int bitness;				// the bitcount that we will use internally in the codec
 	int bytes_per_component;	// the bytes per component in the DDS file itself
@@ -1139,9 +1095,7 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 	// figure out the format actually used in the DDS file.
 	if (use_dx10_header)
 	{
-
 		// DX10 header present; use the DXGI format.
-
 		#define DXGI_FORMAT_R32G32B32A32_FLOAT   2
 		#define DXGI_FORMAT_R32G32B32_FLOAT      6
 		#define DXGI_FORMAT_R16G16B16A16_FLOAT  10
@@ -1185,7 +1139,6 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 			{8, 1, 4, BGRX8_TO_RGBA8, DXGI_FORMAT_B8G8R8X8_UNORM},
 		};
 
-
 		int dxgi_modes_supported = sizeof(format_params) / sizeof(format_params[0]);
 		int did_select_format = 0;
 		for (i = 0; i < dxgi_modes_supported; i++)
@@ -1209,7 +1162,6 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 			return NULL;
 		}
 	}
-
 	else
 	{
 		// No DX10 header present. Then try to match the bitcount and bitmask against
@@ -1220,7 +1172,6 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 		uint32_t gmask = hdr.ddspf.gbitmask;
 		uint32_t bmask = hdr.ddspf.bbitmask;
 		uint32_t amask = hdr.ddspf.abitmask;
-
 
 		// RGBA-unorm8
 		if ((flags & 0x41) == 0x41 && bitcount == 32 && rmask == 0xFF && gmask == 0xFF00 && bmask == 0xFF0000 && amask == 0xFF000000)
@@ -1303,7 +1254,6 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 		bitness = bytes_per_component * 8;
 	}
 
-
 	// then, load the actual file.
 	uint32_t xstride = bytes_per_component * components * xsize;
 	uint32_t ystride = xstride * ysize;
@@ -1346,8 +1296,6 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 	return astc_img;
 }
 
-
-
 int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_filename, int bitness)
 {
 	int i, j;
@@ -1374,7 +1322,6 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 	{
 		32, 4, DX10_MAGIC, 0, 0, 0, 0, 0
 	};
-
 
 	// header handling. We will write:
 	// * DDS magic value
@@ -1412,9 +1359,7 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 	dx10.array_size = 1;
 	dx10.reserved = 0;
 
-
 	// collect image data to write
-
 	uint8_t ***row_pointers8 = NULL;
 	uint16_t ***row_pointers16 = NULL;
 	if (bitness == 8)
@@ -1566,6 +1511,7 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 		delete[]row_pointers8[0];
 		delete[]row_pointers8;
 	}
+
 	if (row_pointers16)
 	{
 		delete[]row_pointers16[0][0];

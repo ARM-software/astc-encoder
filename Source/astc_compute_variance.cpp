@@ -1,33 +1,29 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
+ * @brief Functions to calculate variance per-pixel-channel in a NxN footprint.
  *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	ASTC functions to calculate, for each pixel and each color component,
- *			its variance within an NxN footprint; we want N to be parametric.
- *
- *			The routine below uses summed area tables in order to perform the
- *			computation in O(1) time per pixel, independent of big N is.
+ * We want N to be parametric. The routine below uses summed area tables in
+ * order to execute in O(1) time per pixel, independent of big N is.
  */
-/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
 #include <cmath>
+#include <stdio.h>
 #include "mathlib.h"
 #include "softfloat.h"
 
 float4 *** input_averages;
 float  *** input_alpha_averages;
 float4 *** input_variances;
-
-#include <stdio.h>
 
 // routine to compute averages and variances for a pixel region.
 // The routine computes both in a single pass, using a summed-area table
@@ -56,7 +52,6 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 	varbuf1[0][0] = new double4[xpadsize * ypadsize * zpadsize];
 	varbuf2[0][0] = new double4[xpadsize * ypadsize * zpadsize];
 
-
 	for (z = 1; z < zpadsize; z++)
 	{
 		varbuf1[z] = varbuf1[0] + ypadsize * z;
@@ -66,14 +61,15 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 	}
 
 	for (z = 0; z < zpadsize; z++)
+	{
 		for (y = 1; y < ypadsize; y++)
 		{
 			varbuf1[z][y] = varbuf1[z][0] + xpadsize * y;
 			varbuf2[z][y] = varbuf2[z][0] + xpadsize * y;
 		}
+	}
 
 	int powers_are_1 = (rgb_power_to_use == 1.0f) && (alpha_power_to_use == 1.0f);
-
 
 	// load x and x^2 values into the allocated buffers
 	if (img->imagedata8)
@@ -179,8 +175,6 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 		}
 	}
 
-
-
 	// pad out buffers with 0s
 	for (z = 0; z < zpadsize; z++)
 	{
@@ -197,16 +191,20 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 	}
 
 	if (use_z_axis)
+	{
 		for (y = 0; y < ypadsize; y++)
+		{
 			for (x = 0; x < xpadsize; x++)
 			{
 				varbuf1[zpadsize - 1][y][x] = double4(0.0, 0.0, 0.0, 0.0);
 				varbuf2[zpadsize - 1][y][x] = double4(0.0, 0.0, 0.0, 0.0);
 			}
-
+		}
+	}
 
 	// generate summed-area tables for x and x2; this is done in-place
 	for (z = 0; z < zpadsize; z++)
+	{
 		for (y = 0; y < ypadsize; y++)
 		{
 			double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
@@ -221,8 +219,10 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 				summa2 = summa2 + val2;
 			}
 		}
+	}
 
 	for (z = 0; z < zpadsize; z++)
+	{
 		for (x = 0; x < xpadsize; x++)
 		{
 			double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
@@ -237,9 +237,12 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 				summa2 = summa2 + val2;
 			}
 		}
+	}
 
 	if (use_z_axis)
+	{
 		for (y = 0; y < ypadsize; y++)
+		{
 			for (x = 0; x < xpadsize; x++)
 			{
 				double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
@@ -254,11 +257,11 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 					summa2 = summa2 + val2;
 				}
 			}
-
+		}
+	}
 
 	int avg_var_kerneldim = 2 * avg_var_kernel_radius + 1;
 	int alpha_kerneldim = 2 * alpha_kernel_radius + 1;
-
 
 	// compute a few constants used in the variance-calculation.
 	double avg_var_samples;
@@ -276,16 +279,13 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 		alpha_rsamples = 1.0 / (alpha_kerneldim * alpha_kerneldim);
 	}
 
-
 	double avg_var_rsamples = 1.0 / avg_var_samples;
 	if (avg_var_samples == 1)
 		mul1 = 1.0;
 	else
 		mul1 = 1.0 / (avg_var_samples * (avg_var_samples - 1));
 
-
 	double mul2 = avg_var_samples * mul1;
-
 
 	// use the summed-area tables to compute variance for each sample-neighborhood
 	if (use_z_axis)
@@ -333,7 +333,6 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 										 static_cast < float >(avg.z),
 										 static_cast < float >(avg.w));
 					input_averages[z_dst][y_dst][x_dst] = favg;
-
 
 					// summed-area table lookups for variance
 					double4 v1sum =
@@ -388,7 +387,6 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 						- varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src - alpha_kernel_radius].w + varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src + alpha_kernel_radius + 1].w;
 					input_alpha_averages[z_dst][y_dst][x_dst] = static_cast < float >(vasum * alpha_rsamples);
 
-
 					// summed-area table lookups for RGBA average
 					double4 v0sum =
 						varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
@@ -402,7 +400,6 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 										 static_cast < float >(avg.z),
 										 static_cast < float >(avg.w));
 					input_averages[z_dst][y_dst][x_dst] = favg;
-
 
 					// summed-area table lookups for variance
 					double4 v1sum =
@@ -426,41 +423,42 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 			}
 		}
 	}
-	delete[]varbuf2[0][0];
-	delete[]varbuf1[0][0];
-	delete[]varbuf2[0];
-	delete[]varbuf1[0];
-	delete[]varbuf2;
-	delete[]varbuf1;
-}
 
+	delete[] varbuf2[0][0];
+	delete[] varbuf1[0][0];
+	delete[] varbuf2[0];
+	delete[] varbuf1[0];
+	delete[] varbuf2;
+	delete[] varbuf1;
+}
 
 static void allocate_input_average_and_variance_buffers(int xsize, int ysize, int zsize)
 {
 	int y, z;
 	if (input_averages)
 	{
-		delete[]input_averages[0][0];
-		delete[]input_averages[0];
-		delete[]input_averages;
+		delete[] input_averages[0][0];
+		delete[] input_averages[0];
+		delete[] input_averages;
 	}
+
 	if (input_variances)
 	{
-		delete[]input_variances[0][0];
-		delete[]input_variances[0];
-		delete[]input_variances;
+		delete[] input_variances[0][0];
+		delete[] input_variances[0];
+		delete[] input_variances;
 	}
+
 	if (input_alpha_averages)
 	{
-		delete[]input_alpha_averages[0][0];
-		delete[]input_alpha_averages[0];
-		delete[]input_alpha_averages;
+		delete[] input_alpha_averages[0][0];
+		delete[] input_alpha_averages[0];
+		delete[] input_alpha_averages;
 	}
 
 	input_averages = new float4 **[zsize];
 	input_variances = new float4 **[zsize];
 	input_alpha_averages = new float **[zsize];
-
 
 	input_averages[0] = new float4 *[ysize * zsize];
 	input_variances[0] = new float4 *[ysize * zsize];
@@ -482,15 +480,15 @@ static void allocate_input_average_and_variance_buffers(int xsize, int ysize, in
 	}
 
 	for (z = 0; z < zsize; z++)
+	{
 		for (y = 1; y < ysize; y++)
 		{
 			input_averages[z][y] = input_averages[z][0] + y * xsize;
 			input_variances[z][y] = input_variances[z][0] + y * xsize;
 			input_alpha_averages[z][y] = input_alpha_averages[z][0] + y * xsize;
 		}
-
+	}
 }
-
 
 // compute averages and variances for the current input image.
 void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_var_kernel_radius, int alpha_kernel_radius, swizzlepattern swz)
@@ -499,7 +497,6 @@ void compute_averages_and_variances(const astc_codec_image * img, float rgb_powe
 	int ysize = img->ysize;
 	int zsize = img->zsize;
 	allocate_input_average_and_variance_buffers(xsize, ysize, zsize);
-
 
 	int x, y, z;
 	for (z = 0; z < zsize; z += 32)
