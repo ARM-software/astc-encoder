@@ -917,15 +917,16 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 
 	if (row_pointers8)
 	{
-		delete[]row_pointers8[0][0];
-		delete[]row_pointers8[0];
-		delete[]row_pointers8;
+		delete[] row_pointers8[0][0];
+		delete[] row_pointers8[0];
+		delete[] row_pointers8;
 	}
+
 	if (row_pointers16)
 	{
-		delete[]row_pointers16[0][0];
-		delete[]row_pointers16[0];
-		delete[]row_pointers16;
+		delete[] row_pointers16[0][0];
+		delete[] row_pointers16[0];
+		delete[] row_pointers16;
 	}
 
 	return retval;
@@ -1507,16 +1508,16 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 
 	if (row_pointers8)
 	{
-		delete[]row_pointers8[0][0];
-		delete[]row_pointers8[0];
-		delete[]row_pointers8;
+		delete[] row_pointers8[0][0];
+		delete[] row_pointers8[0];
+		delete[] row_pointers8;
 	}
 
 	if (row_pointers16)
 	{
-		delete[]row_pointers16[0][0];
-		delete[]row_pointers16[0];
-		delete[]row_pointers16;
+		delete[] row_pointers16[0][0];
+		delete[] row_pointers16[0];
+		delete[] row_pointers16;
 	}
 
 	return retval;
