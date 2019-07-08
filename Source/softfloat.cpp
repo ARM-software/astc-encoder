@@ -1,17 +1,15 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Soft IEEE-754 floating point library.
+ * @brief Soft-float library for IEEE-754.
  */
-/*----------------------------------------------------------------------------*/
 
 #include "softfloat.h"
 
@@ -47,7 +45,6 @@
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 	};
 #endif
-
 
 /*
    32-bit count-leading-zeros function: use the Assembly instruction whenever possible. */
@@ -103,7 +100,6 @@ static SOFTFLOAT_INLINE uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
 	return inp;
 }
 
-
 static SOFTFLOAT_INLINE uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
 {
 	uint32_t vl1 = UINT32_C(1) << shamt;
@@ -112,9 +108,6 @@ static SOFTFLOAT_INLINE uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
 	inp >>= shamt;
 	return inp;
 }
-
-
-
 
 /* convert from FP16 to FP32. */
 sf32 sf16_to_sf32(sf16 inp)
@@ -168,7 +161,6 @@ sf32 sf16_to_sf32(sf16 inp)
 }
 
 /* Conversion routine that converts from FP32 to FP16. It supports denormals and all rounding modes. If a NaN is given as input, it is quietened. */
-
 sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 {
 	/* for each possible sign/exponent combination, store a case index. This gives a 512-byte table */
@@ -370,8 +362,6 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	return 0;
 }
 
-
-
 typedef union if32_
 {
 	uint32_t u;
@@ -380,7 +370,6 @@ typedef union if32_
 } if32;
 
 /* convert from soft-float to native-float */
-
 float sf16_to_float(sf16 p)
 {
 	if32 i;
@@ -389,7 +378,6 @@ float sf16_to_float(sf16 p)
 }
 
 /* convert from native-float to soft-float */
-
 sf16 float_to_sf16(float p, roundmode rm)
 {
 	if32 i;

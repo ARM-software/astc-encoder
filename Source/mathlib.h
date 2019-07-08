@@ -24,14 +24,13 @@ float fmax(float p, float q);
 float fmin(float p, float q);
 #endif  // C++11
 
-float2 fmax(float2 p, float2 q);
-
-float3 fmax(float3 p, float3 q);
-
-float4 fmax(float4 p, float4 q);
 float2 fmin(float2 p, float2 q);
 float3 fmin(float3 p, float3 q);
 float4 fmin(float4 p, float4 q);
+
+float2 fmax(float2 p, float2 q);
+float3 fmax(float3 p, float3 q);
+float4 fmax(float4 p, float4 q);
 
 static inline float dot(float2 p, float2 q)
 {
