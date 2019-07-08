@@ -131,7 +131,7 @@ guidelines that should be followed when compressing data using `astcenc`.
 It covers:
 
 * How to efficiently encode data with fewer than 4 channels.
-* How to efficiently encode normal maps, sRGB data, and HDR data
+* How to efficiently encode normal maps, sRGB data, and HDR data.
 * Coding equivalents to other compression formats.
 
 The [Building ASTC Encoder](./Docs/Building.md) page provides instructions on
