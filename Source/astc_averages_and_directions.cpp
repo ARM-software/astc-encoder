@@ -223,10 +223,8 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 		texel_weights = ewb->texel_weight_rgb;
 	else
 	{
-		texel_weights = ewb->texel_weight_gba;
-		ASTC_CODEC_INTERNAL_ERROR;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
-
 
 	for (partition = 0; partition < partition_count; partition++)
 	{
@@ -316,10 +314,7 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 		texel_weights = ewb->texel_weight_gb;
 	else
 	{
-		texel_weights = ewb->texel_weight_rg;
-		// unsupported set of color components.
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	for (partition = 0; partition < partition_count; partition++)

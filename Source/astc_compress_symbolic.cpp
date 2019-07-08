@@ -337,7 +337,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 
 		int decimation_mode = bsd->block_modes[i].decimation_mode;
 		if (bsd->decimation_mode_percentile[decimation_mode] > mode_cutoff)
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = compute_ise_bitcount(ixtab2[decimation_mode]->num_weights,
@@ -1023,7 +1023,7 @@ static void compute_covariance_matrix(int xdim, int ydim, int zdim, const imageb
 	{
 		float weight = ewb->texel_weight[i];
 		if (weight < 0.0f)
-			ASTC_CODEC_INTERNAL_ERROR;
+			ASTC_CODEC_INTERNAL_ERROR();
 		weight_sum += weight;
 		float r = blk->work_data[4 * i];
 		float g = blk->work_data[4 * i + 1];

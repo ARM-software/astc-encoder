@@ -695,12 +695,6 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 	output[3] = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
 }
 
-void quantize0(int output[8])
-{
-	for (int i = 0; i < 8; i++)
-		output[i] = 0;
-}
-
 // quantize and unquantize a number, wile making sure to retain the top two bits.
 static inline void quantize_and_unquantize_retain_top_two_bits(int quantization_level, int value_to_quantize,	// 0 to 255.
 															   int *quantized_value, int *unquantized_value)
@@ -1962,10 +1956,7 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 		break;
 
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		quantize0(output);
-		retval = FMT_LUMINANCE;
-		break;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
