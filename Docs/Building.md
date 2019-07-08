@@ -6,11 +6,12 @@ this repository.
 ## Windows
 
 Builds for Windows use Visual Studio 2017, using the solution file located in
-the `Source/win32-2017/astcenc/` directory. To compile a release build from
-the command line, it is possible to use the `msbuild` utility:
+the `Source/VS2017/` directory. To compile a release build from the command
+line, it is possible to use the `msbuild` utility from the Visual Studio 2017
+installation:
 
 ```
-msbuild .\Source\win32-2017\astcenc\astcenc.sln /p:Configuration=Release /p:Platform=x64
+msbuild .\Source\VS2017\astcenc.sln /p:Configuration=Release /p:Platform=x64
 ```
 
 ## macOS

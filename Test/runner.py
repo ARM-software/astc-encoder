@@ -239,7 +239,7 @@ def get_test_binary():
     elif sys.platform == "darwin":
         return "./Source/astcenc"
     elif sys.platform == "win32":
-        return "./Source/win32-2017/astcenc/x64/Release/astcenc.exe"
+        return "./Source/VS2017/Release/astcenc.exe"
 
     assert False, "Unknown operating system %s" % sys.platform
 
