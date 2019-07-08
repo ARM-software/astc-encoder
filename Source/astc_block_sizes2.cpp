@@ -14,39 +14,22 @@
 #include "astc_codec_internals.h"
 
 extern const float percentile_table_4x4[2048];
-extern const float percentile_table_4x5[2048];
-extern const float percentile_table_4x6[2048];
-extern const float percentile_table_4x8[2048];
-extern const float percentile_table_4x10[2048];
-extern const float percentile_table_4x12[2048];
+
 extern const float percentile_table_5x4[2048];
 extern const float percentile_table_5x5[2048];
-extern const float percentile_table_5x6[2048];
-extern const float percentile_table_5x8[2048];
-extern const float percentile_table_5x10[2048];
-extern const float percentile_table_5x12[2048];
-extern const float percentile_table_6x4[2048];
+
 extern const float percentile_table_6x5[2048];
 extern const float percentile_table_6x6[2048];
-extern const float percentile_table_6x8[2048];
-extern const float percentile_table_6x10[2048];
-extern const float percentile_table_6x12[2048];
-extern const float percentile_table_8x4[2048];
+
 extern const float percentile_table_8x5[2048];
 extern const float percentile_table_8x6[2048];
 extern const float percentile_table_8x8[2048];
-extern const float percentile_table_8x10[2048];
-extern const float percentile_table_8x12[2048];
-extern const float percentile_table_10x4[2048];
+
 extern const float percentile_table_10x5[2048];
 extern const float percentile_table_10x6[2048];
 extern const float percentile_table_10x8[2048];
 extern const float percentile_table_10x10[2048];
-extern const float percentile_table_10x12[2048];
-extern const float percentile_table_12x4[2048];
-extern const float percentile_table_12x5[2048];
-extern const float percentile_table_12x6[2048];
-extern const float percentile_table_12x8[2048];
+
 extern const float percentile_table_12x10[2048];
 extern const float percentile_table_12x12[2048];
 
@@ -59,16 +42,6 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 		{
 		case 4:
 			return percentile_table_4x4;
-		case 5:
-			return percentile_table_4x5;
-		case 6:
-			return percentile_table_4x6;
-		case 8:
-			return percentile_table_4x8;
-		case 10:
-			return percentile_table_4x10;
-		case 12:
-			return percentile_table_4x12;
 		}
 		break;
 	case 5:
@@ -78,58 +51,34 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 			return percentile_table_5x4;
 		case 5:
 			return percentile_table_5x5;
-		case 6:
-			return percentile_table_5x6;
-		case 8:
-			return percentile_table_5x8;
-		case 10:
-			return percentile_table_5x10;
-		case 12:
-			return percentile_table_5x12;
 		}
 		break;
 
 	case 6:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_6x4;
 		case 5:
 			return percentile_table_6x5;
 		case 6:
 			return percentile_table_6x6;
-		case 8:
-			return percentile_table_6x8;
-		case 10:
-			return percentile_table_6x10;
-		case 12:
-			return percentile_table_6x12;
 		}
 		break;
 
 	case 8:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_8x4;
 		case 5:
 			return percentile_table_8x5;
 		case 6:
 			return percentile_table_8x6;
 		case 8:
 			return percentile_table_8x8;
-		case 10:
-			return percentile_table_8x10;
-		case 12:
-			return percentile_table_8x12;
 		}
 		break;
 
 	case 10:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_10x4;
 		case 5:
 			return percentile_table_10x5;
 		case 6:
@@ -138,22 +87,12 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 			return percentile_table_10x8;
 		case 10:
 			return percentile_table_10x10;
-		case 12:
-			return percentile_table_10x12;
 		}
 		break;
 
 	case 12:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_12x4;
-		case 5:
-			return percentile_table_12x5;
-		case 6:
-			return percentile_table_12x6;
-		case 8:
-			return percentile_table_12x8;
 		case 10:
 			return percentile_table_12x10;
 		case 12:
