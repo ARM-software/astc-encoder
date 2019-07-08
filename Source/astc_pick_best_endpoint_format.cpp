@@ -17,8 +17,6 @@
 	#include <stdio.h>
 #endif
 
-#include <cmath>
-
 // clamp an input value to [0,1]; Nan is turned into 0.
 static inline float clamp01(float val)
 {

@@ -104,9 +104,6 @@
     <ClInclude Include="..\..\softfloat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="stdint.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\vectypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>

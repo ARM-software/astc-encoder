@@ -12,11 +12,9 @@
  */
 
 
-#include <cmath>
-#include <stdint.h>
-#include <stdio.h>
-
 #include "astc_codec_internals.h"
+
+#include <stdio.h>
 #include "softfloat.h"
 
 void destroy_image(astc_codec_image * img)

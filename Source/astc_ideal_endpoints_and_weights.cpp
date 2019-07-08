@@ -11,14 +11,11 @@
  * @brief Functions for computing color endpoints and texel weights.
  */
 
-#include <cmath>
-
 #include "astc_codec_internals.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
-#include <stdio.h>
+	#include <stdio.h>
 #endif
-
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE

@@ -14,8 +14,6 @@
  */
 
 #include "astc_codec_internals.h"
-
-#include <cmath>
 #include "mathlib.h"
 
 #ifdef DEBUG_CAPTURE_NAN

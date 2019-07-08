@@ -14,7 +14,6 @@
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
-#include <stdint.h>
 #include <stdio.h>
 
 #define STB_IMAGE_IMPLEMENTATION

@@ -291,10 +291,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\stdint.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\vectypes.h"
 				>
 			</File>

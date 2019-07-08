@@ -199,7 +199,6 @@
     <ClInclude Include="..\..\mathlib.h" />
     <ClInclude Include="..\..\softfloat.h" />
     <ClInclude Include="..\..\stb_image.h" />
-    <ClInclude Include="stdint.h" />
     <ClInclude Include="..\..\vectypes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

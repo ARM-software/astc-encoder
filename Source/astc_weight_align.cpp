@@ -34,7 +34,6 @@
  * (perhaps 1/8 for low levels of quantization).
  */
 
-#include <cmath>
 #include "astc_codec_internals.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS

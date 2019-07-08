@@ -14,7 +14,6 @@
 #include "astc_codec_internals.h"
 
 #include "softfloat.h"
-#include <cmath>
 #include <string.h>
 #include <stdio.h>
 

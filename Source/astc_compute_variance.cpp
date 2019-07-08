@@ -15,11 +15,9 @@
  */
 
 #include "astc_codec_internals.h"
-
-#include <cmath>
-#include <stdio.h>
-#include "mathlib.h"
 #include "softfloat.h"
+
+#include <stdio.h>
 
 float4 *** input_averages;
 float  *** input_alpha_averages;

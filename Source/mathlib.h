@@ -12,8 +12,10 @@
  */
 
 #ifndef MATHLIB_H_INCLUDED
-
 #define MATHLIB_H_INCLUDED
+
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "vectypes.h"
 

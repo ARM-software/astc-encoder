@@ -15,7 +15,6 @@
 
 #include "astc_codec_internals.h"
 #include "softfloat.h"
-#include <cmath>
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>
