@@ -187,7 +187,7 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count,
 							 const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
 							 // best partitions to use if the endpoint colors are assumed to be uncorrelated
-							 int *best_partitions_uncorrellated,
+							 int *best_partitions_uncorrelated,
 							 // best partitions to use if the endpoint colors have the same chroma
 							 int *best_partitions_samechroma,
 							 // best partitions to use if using dual plane of weights
@@ -776,7 +776,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			}
 		}
 
-		best_partitions_uncorrellated[i] = partition_sequence[best_uncorr_partition];
+		best_partitions_uncorrelated[i] = partition_sequence[best_uncorr_partition];
 		uncorr_errors[best_uncorr_partition] = 1e30f;
 		samechroma_errors[best_uncorr_partition] = 1e30f;
 
