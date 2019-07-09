@@ -149,7 +149,7 @@ unsigned get_number_of_cpus(void)
 	return n_cpus;
 }
 
-[[noreturn]] void astc_codec_internal_error(const char *filename, int linenum)
+NORETURN void astc_codec_internal_error(const char *filename, int linenum)
 {
 	printf("Internal error: File=%s Line=%d\n", filename, linenum);
 	exit(1);

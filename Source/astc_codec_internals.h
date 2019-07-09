@@ -18,6 +18,15 @@
 #include <stdlib.h>
 #include "mathlib.h"
 
+// Temporary workaround to build machine still running VS2013
+// Version 1910 is Visual Studio 2017
+#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
+    #define NORETURN [[noreturn]]
+#else
+    #define NORETURN
+    #define __func__ __FUNCTION__
+#endif
+
 #ifndef MIN
 	#define MIN(x,y) ((x)<(y)?(x):(y))
 #endif
@@ -43,7 +52,7 @@
 
 // error reporting for codec internal errors.
 #define ASTC_CODEC_INTERNAL_ERROR() astc_codec_internal_error(__FILE__, __LINE__)
-[[noreturn]] void astc_codec_internal_error(const char *filename, int linenumber);
+NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
