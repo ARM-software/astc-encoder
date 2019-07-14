@@ -41,17 +41,17 @@
 #endif
 
 static const float angular_steppings[] = {
-	1.0, 1.125,	1.25, 1.375, 1.5, 1.625, 1.75, 1.875,
+	 1.0,  1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875,
 
-	2.0, 2.25, 2.5, 2.75,
-	3.0, 3.25, 3.5, 3.75,
-	4.0, 4.25, 4.5, 4.75,
-	5.0, 5.25, 5.5, 5.75,
-	6.0, 6.25, 6.5, 6.75,
-	7.0, 7.25, 7.5, 7.75,
+	 2.0,  2.25,  2.5,  2.75,
+	 3.0,  3.25,  3.5,  3.75,
+	 4.0,  4.25,  4.5,  4.75,
+	 5.0,  5.25,  5.5,  5.75,
+	 6.0,  6.25,  6.5,  6.75,
+	 7.0,  7.25,  7.5,  7.75,
 
-	8.0, 8.5,
-	9.0, 9.5,
+	 8.0,  8.5,
+	 9.0,  9.5,
 	10.0, 10.5,
 	11.0, 11.5,
 	12.0, 12.5,
@@ -186,20 +186,16 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 									  int8_t * lowest_weight, int8_t * highest_weight,
 									  float *error, float *cut_low_weight_error, float *cut_high_weight_error)
 {
-	int i;
-
-	int sp;
-
 	float error_from_forcing_weight_down[60];
 	float error_from_forcing_weight_either_way[60];
-	for (i = 0; i < 60; i++)
+	for (int i = 0; i < 60; i++)
 	{
 		error_from_forcing_weight_down[i] = 0;
 		error_from_forcing_weight_either_way[i] = 0;
 	}
 
 	// weight + 12
-	static const unsigned int idxtab[256] = {
+	static const unsigned int idxtab[128] = {
 		12, 13, 14, 15, 16, 17, 18, 19,
 		20, 21, 22, 23, 24, 25, 26, 27,
 		28, 29, 30, 31, 32, 33, 34, 35,
@@ -208,34 +204,17 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 		52, 53, 54, 55, 55, 55, 55, 55,
 		55, 55, 55, 55, 55, 55, 55, 55,
 		55, 55, 55, 55, 55, 55, 55, 55,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 1, 2, 3,
-		4, 5, 6, 7, 8, 9, 10, 11,
-
-		12, 13, 14, 15, 16, 17, 18, 19,
-		20, 21, 22, 23, 24, 25, 26, 27,
-		28, 29, 30, 31, 32, 33, 34, 35,
-		36, 37, 38, 39, 40, 41, 42, 43,
-		44, 45, 46, 47, 48, 49, 50, 51,
-		52, 53, 54, 55, 55, 55, 55, 55,
-		55, 55, 55, 55, 55, 55, 55, 55,
-		55, 55, 55, 55, 55, 55, 55, 55,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 1, 2, 3,
-		4, 5, 6, 7, 8, 9, 10, 11
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  1,  2,  3,
+		 4,  5,  6,  7,  8,  9, 10, 11
 	};
 
-	for (sp = 0; sp < max_angular_steps; sp++)
+	for (int sp = 0; sp < max_angular_steps; sp++)
 	{
 		unsigned int minidx_bias12 = 55;
 		unsigned int maxidx_bias12 = 0;
@@ -247,7 +226,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		float scaled_offset = rcp_stepsize * offset;
 
-		for (i = 0; i < samplecount - 1; i += 2)
+		for (int i = 0; i < samplecount - 1; i += 2)
 		{
 			float wt1 = sample_weights[i];
 			float wt2 = sample_weights[i + 1];
@@ -265,8 +244,8 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 			errval += (dif2 * wt2) * dif2;
 
 			// table lookups that really perform a minmax function.
-			unsigned int idx1_bias12 = idxtab[p1.u & 0xFF];
-			unsigned int idx2_bias12 = idxtab[p2.u & 0xFF];
+			unsigned int idx1_bias12 = idxtab[p1.u & 0x7F];
+			unsigned int idx2_bias12 = idxtab[p2.u & 0x7F];
 
 			if (idx1_bias12 < minidx_bias12)
 				minidx_bias12 = idx1_bias12;
@@ -286,7 +265,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		if (samplecount & 1)
 		{
-			i = samplecount - 1;
+			int i = samplecount - 1;
 			float wt = sample_weights[i];
 			if32 p;
 			float sval = (samples[i] * rcp_stepsize) - scaled_offset;
@@ -296,7 +275,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 			errval += (dif * wt) * dif;
 
-			unsigned int idx_bias12 = idxtab[p.u & 0xFF];
+			unsigned int idx_bias12 = idxtab[p.u & 0x7F];
 
 			if (idx_bias12 < minidx_bias12)
 				minidx_bias12 = idx_bias12;
@@ -306,7 +285,6 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 			error_from_forcing_weight_either_way[idx_bias12] += wt;
 			error_from_forcing_weight_down[idx_bias12] += dif * wt;
 		}
-
 
 		lowest_weight[sp] = (int)minidx_bias12 - 12;
 		highest_weight[sp] = (int)maxidx_bias12 - 12;
@@ -320,8 +298,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		// clear out the error-from-forcing values we actually used in this pass
 		// so that these are clean for the next pass.
-		unsigned int ui;
-		for (ui = minidx_bias12 & ~0x3; ui <= maxidx_bias12; ui += 4)
+		for (unsigned int ui = minidx_bias12 & ~0x3; ui <= maxidx_bias12; ui += 4)
 		{
 			error_from_forcing_weight_either_way[ui] = 0;
 			error_from_forcing_weight_down[ui] = 0;
@@ -334,7 +311,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 		}
 	}
 
-	for (sp = 0; sp < max_angular_steps; sp++)
+	for (int sp = 0; sp < max_angular_steps; sp++)
 	{
 		float errscale = stepsizes_sqr[sp];
 		error[sp] *= errscale;
