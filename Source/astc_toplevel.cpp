@@ -1443,7 +1443,7 @@ int astc_main(int argc, char **argv)
 				printf("-va switch with less than 4 arguments, quitting\n");
 				exit(1);
 			}
-			ewp.alpha_power = static_cast < float >(atof(argv[argidx - 5]));
+			ewp.alpha_power = static_cast < float >(atof(argv[argidx - 4]));
 			ewp.alpha_base_weight = static_cast < float >(atof(argv[argidx - 3]));
 			ewp.alpha_mean_weight = static_cast < float >(atof(argv[argidx - 2]));
 			ewp.alpha_stdev_weight = static_cast < float >(atof(argv[argidx - 1]));
