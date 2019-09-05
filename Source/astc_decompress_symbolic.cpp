@@ -1,24 +1,19 @@
-/*----------------------------------------------------------------------------*/
-/**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Decompress a block of colors, expressed as a symbolic block,
- *			for ASTC.
- */
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
 
-#include <math.h>
+/**
+ * @brief Functions to decompress a symbolic block.
+ */
 
 #include "astc_codec_internals.h"
-
 #include "softfloat.h"
+
 #include <stdio.h>
 
 int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, const int *weights)
@@ -32,7 +27,6 @@ int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, co
 	}
 	return summed_value >> 4;
 }
-
 
 ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 color1, int weight, int plane2_weight, int plane2_color_component	// -1 in 1-plane mode
 	)
@@ -74,7 +68,6 @@ ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 col
 	ushort4 rcolor = ushort4(color.x, color.y, color.z, color.w);
 	return rcolor;
 }
-
 
 void decompress_symbolic_block(astc_decode_mode decode_mode,
 							   int xdim, int ydim, int zdim,   // dimensions of block
@@ -121,9 +114,6 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 		update_imageblock_flags(blk, xdim, ydim, zdim);
 		return;
 	}
-
-
-
 
 	if (scb->block_mode < 0)
 	{
@@ -186,12 +176,10 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 			blk->nan_texel[i] = use_nan;
 		}
 
-
 		imageblock_initialize_work_from_orig(blk, xdim * ydim * zdim);
 		update_imageblock_flags(blk, xdim, ydim, zdim);
 		return;
 	}
-
 
 	// get the appropriate partition-table entry
 	int partition_count = scb->partition_count;
@@ -202,13 +190,11 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
-
 	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
 
 	int is_dual_plane = bsd->block_modes[scb->block_mode].is_dual_plane;
 
 	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
-
 
 	// decode the color endpoints
 	ushort4 color_endpoint0[4];
@@ -222,15 +208,10 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 							   scb->color_formats[i],
 							   scb->color_quantization_level, scb->color_values[i], &(rgb_hdr_endpoint[i]), &(alpha_hdr_endpoint[i]), &(nan_endpoint[i]), &(color_endpoint0[i]), &(color_endpoint1[i]));
 
-
-
-
-
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 	int weight_count = it->num_weights;
-
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
@@ -238,17 +219,16 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	{
 		uq_plane1_weights[i] = qat->unquantized_value[scb->plane1_weights[i]];
 	}
+
 	if (is_dual_plane)
 	{
 		for (i = 0; i < weight_count; i++)
 			uq_plane2_weights[i] = qat->unquantized_value[scb->plane2_weights[i]];
 	}
 
-
 	// then undecimate them.
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
-
 
 	int texels_per_block = xdim * ydim * zdim;
 	for (i = 0; i < texels_per_block; i++)
@@ -258,9 +238,7 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 		for (i = 0; i < texels_per_block; i++)
 			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
 
-
 	int plane2_color_component = scb->plane2_color_component;
-
 
 	// now that we have endpoint colors and weights, we can unpack actual colors for
 	// each texel.
@@ -290,8 +268,6 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	update_imageblock_flags(blk, xdim, ydim, zdim);
 }
 
-
-
 float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb)
 {
 	int i;
@@ -299,6 +275,7 @@ float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblo
 	float summa = 0.0f;
 	const float *f1 = p1->work_data;
 	const float *f2 = p2->work_data;
+
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float rdiff = fabsf(f1[4 * i] - f2[4 * i]);

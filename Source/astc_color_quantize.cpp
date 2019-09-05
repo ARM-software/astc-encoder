@@ -1,23 +1,20 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Color quantization functions for ASTC.
+ * @brief Functions for color quantization.
  */
-/*----------------------------------------------------------------------------*/
 
 #include <stdio.h>
 
 #include "astc_codec_internals.h"
 #include "softfloat.h"
-#include <math.h>
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>
@@ -56,10 +53,7 @@ static inline float clamp255(float val)
 	return val;
 }
 
-
-
 // clamp an input value to [0,1]; Nan is turned into 0.
-
 static inline float clamp01(float val)
 {
 	if (val > 1.0f)
@@ -74,8 +68,6 @@ static inline float clamp01(float val)
 
 	return val;
 }
-
-
 
 void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
 				  float4 color1, int output[6], int quantization_level)
@@ -116,8 +108,7 @@ void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
 		rgb0_addon -= 0.2f;
 		rgb1_addon += 0.2f;
 		iters++;
-	}
-	while (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b);
+	} while (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b);
 
 	output[0] = ri0;
 	output[1] = ri1;
@@ -127,9 +118,7 @@ void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
 	output[5] = bi1;
 }
 
-
-/*
-   quantize an RGBA color. */
+/* quantize an RGBA color. */
 void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	color0.w = color0.w * (1.0f / 257.0f);
@@ -146,10 +135,7 @@ void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization
 	quantize_rgb(color0, color1, output, quantization_level);
 }
 
-
-
-/*
-   attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
+/* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
 int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller color
 								   float4 color1,	// assumed to be the larger color
 								   int output[6], int quantization_level)
@@ -210,11 +196,7 @@ int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller c
 	return 1;
 }
 
-
-
-
-/*
-   quantize an RGBA color with blue-contraction */
+/* quantize an RGBA color with blue-contraction */
 int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	color0.w = color0.w * (1.0f / 257.0f);
@@ -236,10 +218,7 @@ int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8],
 
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
-
-/*
-   attempt to quantize an RGB endpoint value with delta-encoding. */
-
+/* attempt to quantize an RGB endpoint value with delta-encoding. */
 int try_quantize_rgb_delta(float4 color0, float4 color1, int output[6], int quantization_level)
 {
 	color0.xyz = color0.xyz * (1.0f / 257.0f);
@@ -349,7 +328,6 @@ int try_quantize_rgb_delta(float4 color0, float4 color1, int output[6], int quan
 
 	return 1;
 }
-
 
 int try_quantize_rgb_delta_blue_contract(float4 color0, float4 color1, int output[6], int quantization_level)
 {
@@ -473,7 +451,6 @@ int try_quantize_rgb_delta_blue_contract(float4 color0, float4 color1, int outpu
 	return 1;
 }
 
-
 int try_quantize_alpha_delta(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	color0.w = color0.w * (1.0f / 257.0f);
@@ -511,8 +488,6 @@ int try_quantize_alpha_delta(float4 color0, float4 color1, int output[8], int qu
 	output[7] = a1de;
 	return 1;
 }
-
-
 
 int try_quantize_luminance_alpha_delta(float4 color0, float4 color1, int output[8], int quantization_level)
 {
@@ -576,9 +551,6 @@ int try_quantize_luminance_alpha_delta(float4 color0, float4 color1, int output[
 	return 1;
 }
 
-
-
-
 int try_quantize_rgba_delta(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	int alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quantization_level);
@@ -588,7 +560,6 @@ int try_quantize_rgba_delta(float4 color0, float4 color1, int output[8], int qua
 
 	return try_quantize_rgb_delta(color0, color1, output, quantization_level);
 }
-
 
 int try_quantize_rgba_delta_blue_contract(float4 color0, float4 color1, int output[8], int quantization_level)
 {
@@ -601,8 +572,6 @@ int try_quantize_rgba_delta_blue_contract(float4 color0, float4 color1, int outp
 
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quantization_level);
 }
-
-
 
 void quantize_rgbs_new(float4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
 					   int output[4], int quantization_level)
@@ -639,8 +608,6 @@ void quantize_rgbs_new(float4 rgbs_color,	// W component is a desired-scale to a
 	output[3] = color_quantization_tables[quantization_level][scale_idx];
 }
 
-
-
 void quantize_rgbs_alpha_new(float4 color0, float4 color1, float4 rgbs_color, int output[6], int quantization_level)
 {
 	color0.w = color0.w * (1.0f / 257.0f);
@@ -657,8 +624,6 @@ void quantize_rgbs_alpha_new(float4 color0, float4 color1, float4 rgbs_color, in
 
 	quantize_rgbs_new(rgbs_color, output, quantization_level);
 }
-
-
 
 void quantize_luminance(float4 color0, float4 color1, int output[2], int quantization_level)
 {
@@ -678,11 +643,6 @@ void quantize_luminance(float4 color0, float4 color1, int output[2], int quantiz
 	output[0] = color_quantization_tables[quantization_level][(int)floor(lum0 + 0.5f)];
 	output[1] = color_quantization_tables[quantization_level][(int)floor(lum1 + 0.5f)];
 }
-
-
-
-
-
 
 void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int quantization_level)
 {
@@ -734,20 +694,6 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 	output[3] = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
 }
 
-
-void quantize0(float4 color0, float4 color1, int output[8], int quantization_level)
-{
-	IGNORE(color0);
-	IGNORE(color1);
-	IGNORE(output);
-	IGNORE(quantization_level);
-
-	int i;
-	for (i = 0; i < 8; i++)
-		output[i] = 0;
-}
-
-
 // quantize and unquantize a number, wile making sure to retain the top two bits.
 static inline void quantize_and_unquantize_retain_top_two_bits(int quantization_level, int value_to_quantize,	// 0 to 255.
 															   int *quantized_value, int *unquantized_value)
@@ -777,13 +723,11 @@ static inline void quantize_and_unquantize_retain_top_two_bits(int quantization_
 			// decrement the input value in hopes that this will avoid rounding down.
 			value_to_quantize--;
 		}
-	}
-	while (perform_loop);
+	} while (perform_loop);
 
 	*quantized_value = quantval;
 	*unquantized_value = uquantval;
 }
-
 
 // quantize and unquantize a number, wile making sure to retain the top four bits.
 static inline void quantize_and_unquantize_retain_top_four_bits(int quantization_level, int value_to_quantize,	// 0 to 255.
@@ -814,8 +758,7 @@ static inline void quantize_and_unquantize_retain_top_four_bits(int quantization
 			// decrement the input value in hopes that this will avoid rounding down.
 			value_to_quantize--;
 		}
-	}
-	while (perform_loop);
+	} while (perform_loop);
 
 	*quantized_value = quantval;
 	*unquantized_value = uquantval;
@@ -850,21 +793,13 @@ static inline void quantize_and_unquantize_retain_top_bit(int quantization_level
 			// decrement the input value in hopes that this will avoid rounding down.
 			value_to_quantize--;
 		}
-	}
-	while (perform_loop);
+	} while (perform_loop);
 
 	*quantized_value = quantval;
 	*unquantized_value = uquantval;
 }
 
-
-
-
-
-/*
-   HDR color encoding, take #3 */
-
-
+/* HDR color encoding, take #3 */
 void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 {
 	color.xyz = color.xyz + color.www;
@@ -918,7 +853,6 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 		{9, 6, 7},
 		{8, 7, 6}
 	};
-
 
 	static const float mode_cutoffs[5][2] = {
 		{1024, 4096},
@@ -979,7 +913,6 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 
 		r_intval = (r_intval & ~0x3f) | (r_uquantval & 0x3f);
 		float r_fval = r_intval * mode_rscale;
-
 
 		// next, recompute G and B, then quantize and unquantize them.
 		float g_fval = r_fval - color.y;
@@ -1093,7 +1026,6 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 		g_fval = g_intval * mode_rscale;
 		b_fval = b_intval * mode_rscale;
 
-
 		// finally, recompute the scale value, based on the errors
 		// introduced to red, green and blue.
 
@@ -1151,7 +1083,6 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 			bit4 = (r_intval >> 6) & 1;
 			break;
 		}
-
 
 		s_lowbits |= bit6 << 5;
 		s_lowbits |= bit5 << 6;
@@ -1222,12 +1153,6 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 	return;
 }
 
-
-
-
-
-
-
 void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantization_level)
 {
 	if (!(color0.x > 0.0f))
@@ -1292,14 +1217,11 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 	else if (a_base > 65535.0f)
 		a_base = 65535.0f;
 
-
 	float b0_base = a_base - color1.y;
 	float b1_base = a_base - color1.z;
 	float c_base = a_base - color0.x;
 	float d0_base = a_base - b0_base - c_base - color0.y;
 	float d1_base = a_base - b1_base - c_base - color0.z;
-
-
 
 	// number of bits in the various fields in the various modes
 	static const int mode_bits[8][4] = {
@@ -1348,7 +1270,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 		16.0f,
 		16.0f
 	};
-
 
 	// try modes one by one, with the highest-precision mode first.
 	int mode;
@@ -1407,7 +1328,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 		c_intval = (c_intval & ~0x3F) | (c_uquantval & 0x3F);
 		c_fval = c_intval * mode_rscale;
 
-
 		// next, recompute B0 and B1, then quantize and unquantize them
 		float b0_fval = a_fval - color1.y;
 		float b1_fval = a_fval - color1.z;
@@ -1427,8 +1347,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 		{
 			continue;
 		}
-
-
 
 		int b0_lowbits = b0_intval & 0x3f;
 		int b1_lowbits = b1_intval & 0x3f;
@@ -1489,7 +1407,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 		b0_fval = b0_intval * mode_rscale;
 		b1_fval = b1_intval * mode_rscale;
 
-
 		// finally, recompute D0 and D1, then quantize and unquantize them
 		float d0_fval = a_fval - b0_fval - c_fval - color0.y;
 		float d1_fval = a_fval - b1_fval - c_fval - color0.z;
@@ -1509,9 +1426,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 
 		if (abs(d0_intval) >= d_intcutoff || abs(d1_intval) >= d_intcutoff)
 			continue;
-
-		// d0_intval += mode_dbiases[mode];
-		// d1_intval += mode_dbiases[mode];
 
 		int d0_lowbits = d0_intval & 0x1f;
 		int d1_lowbits = d1_intval & 0x1f;
@@ -1612,7 +1526,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 	vals[4] = color0_bak.z;
 	vals[5] = color1_bak.z;
 
-
 	for (i = 0; i < 6; i++)
 	{
 		if (vals[i] < 0.0f)
@@ -1635,10 +1548,6 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 	return;
 }
 
-
-
-
-
 void quantize_hdr_rgb_ldr_alpha3(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	color0.w *= (1.0f / 257.0f);
@@ -1654,8 +1563,6 @@ void quantize_hdr_rgb_ldr_alpha3(float4 color0, float4 color1, int output[8], in
 	output[6] = ai0;
 	output[7] = ai1;
 }
-
-
 
 void quantize_hdr_luminance_large_range3(float4 color0, float4 color1, int output[2], int quantization_level)
 {
@@ -1707,7 +1614,6 @@ void quantize_hdr_luminance_large_range3(float4 color0, float4 color1, int outpu
 	int lower0_dec = (lower_v1 << 8) + 128;
 	int lower1_dec = (lower_v0 << 8) - 128;
 
-
 	int upper0_diff = upper0_dec - ilum0;
 	int upper1_diff = upper1_dec - ilum1;
 	int lower0_diff = lower0_dec - ilum0;
@@ -1732,8 +1638,6 @@ void quantize_hdr_luminance_large_range3(float4 color0, float4 color1, int outpu
 	output[0] = color_quantization_tables[quantization_level][v0];
 	output[1] = color_quantization_tables[quantization_level][v1];
 }
-
-
 
 int try_quantize_hdr_luminance_small_range3(float4 color0, float4 color1, int output[2], int quantization_level)
 {
@@ -1794,10 +1698,9 @@ int try_quantize_hdr_luminance_small_range3(float4 color0, float4 color1, int ou
 	output[1] = v1e;
 	return 1;
 
-
 	// failed to encode the high-precision submode; well, then try to encode the
 	// low-precision submode.
-  LOW_PRECISION_SUBMODE:
+LOW_PRECISION_SUBMODE:
 
 	lowval = (ilum0 + 32) >> 6;
 	highval = (ilum1 + 32) >> 6;
@@ -1831,7 +1734,6 @@ int try_quantize_hdr_luminance_small_range3(float4 color0, float4 color1, int ou
 	output[1] = v1e;
 	return 1;
 }
-
 
 void quantize_hdr_alpha3(float alpha0, float alpha1, int output[2], int quantization_level)
 {
@@ -1904,26 +1806,19 @@ void quantize_hdr_alpha3(float alpha0, float alpha1, int output[2], int quantiza
 	return;
 }
 
-
-
 void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int quantization_level)
 {
 	quantize_hdr_rgb3(color0, color1, output, quantization_level);
 	quantize_hdr_alpha3(color0.w, color1.w, output + 6, quantization_level);
 }
 
-
-
 /*
 	Quantize a color. When quantizing an RGB or RGBA color, the quantizer may choose a
 	delta-based representation; as such, it will report back the format it actually used.
 */
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, float2 luminances,	// ! Unused
+int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color,
 						 int format, int *output, int quantization_level)
 {
-
-	IGNORE(luminances);
-
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{
@@ -1943,7 +1838,6 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 	color1.y = MAX(color1.y, 0.0f);
 	color1.z = MAX(color1.z, 0.0f);
 	color1.w = MAX(color1.w, 0.0f);
-
 
 	int retval;
 
@@ -2061,10 +1955,7 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 		break;
 
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		quantize0(color0, color1, output, quantization_level);
-		retval = FMT_LUMINANCE;
-		break;
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS

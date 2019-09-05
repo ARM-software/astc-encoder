@@ -1,25 +1,31 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012, 2018 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Internal function and data declarations for ASTC codec.
+ * @brief FUnctions and data declarations.
  */
-/*----------------------------------------------------------------------------*/
 
 #ifndef ASTC_CODEC_INTERNALS_INCLUDED
-
 #define ASTC_CODEC_INTERNALS_INCLUDED
 
-#include <stdint.h>
+#include <cstdint>
 #include <stdlib.h>
 #include "mathlib.h"
+
+// Temporary workaround to build machine still running VS2013
+// Version 1910 is Visual Studio 2017
+#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
+    #define NORETURN [[noreturn]]
+#else
+    #define NORETURN
+    #define __func__ __FUNCTION__
+#endif
 
 #ifndef MIN
 	#define MIN(x,y) ((x)<(y)?(x):(y))
@@ -28,10 +34,6 @@
 #ifndef MAX
 	#define MAX(x,y) ((x)>(y)?(x):(y))
 #endif
-
-// Macro to silence warnings on ignored parameters.
-// The presence of this macro should be a signal to look at refactoring.
-#define IGNORE(param) ((void)&param)
 
 #define astc_isnan(p) ((p)!=(p))
 
@@ -49,9 +51,8 @@
 #define MAX_WEIGHT_MODES 2048
 
 // error reporting for codec internal errors.
-#define ASTC_CODEC_INTERNAL_ERROR astc_codec_internal_error(__FILE__, __LINE__)
-
-void astc_codec_internal_error(const char *filename, int linenumber);
+#define ASTC_CODEC_INTERNAL_ERROR() astc_codec_internal_error(__FILE__, __LINE__)
+NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
@@ -98,7 +99,6 @@ enum astc_decode_mode
 	DECODE_HDR
 };
 
-
 /*
 	Partition table representation:
 	For each block size, we have 3 tables, each with 1024 partitionings;
@@ -120,9 +120,6 @@ struct partition_info
 
 	uint64_t coverage_bitmaps[4];	// used for the purposes of k-means partition search.
 };
-
-
-
 
 /*
    In ASTC, we don't necessarily provide a weight for every texel.
@@ -146,9 +143,6 @@ struct decimation_table
 	float weights_flt[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];	// the weights that the weight contributes to a texel.
 };
 
-
-
-
 /*
    data structure describing information that pertains to a block size and its associated block modes.
 */
@@ -161,7 +155,6 @@ struct block_mode
 	int8_t permit_decode;
 	float percentile;
 };
-
 
 struct block_size_descriptor
 {
@@ -203,7 +196,6 @@ struct imageblock
 	int xpos, ypos, zpos;
 };
 
-
 struct error_weighting_params
 {
 	float rgb_power;
@@ -233,18 +225,11 @@ struct error_weighting_params
 	int max_refinement_iters;
 };
 
-
-
-
 void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim);
-
 
 void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount);
 
-
 void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount);
-
-
 
 /*
 	Data structure representing error weighting for one block of an image. this is used as
@@ -289,13 +274,10 @@ struct error_weight_block
 	int contains_zeroweight_texels;
 };
 
-
-
 struct error_weight_block_orig
 {
 	float4 error_weights[MAX_TEXELS_PER_BLOCK];
 };
-
 
 // enumeration of all the quantization methods we support under this format.
 enum quantization_method
@@ -323,7 +305,6 @@ enum quantization_method
 	QUANT_256 = 20
 };
 
-
 /*
 	In ASTC, we support relatively many combinations of weight precisions and weight transfer functions.
 	As such, for each combination we support, we have a hardwired data structure.
@@ -332,7 +313,6 @@ enum quantization_method
 	weight for a given floating-point weight. For each quantized weight, the corresponding unquantized
 	and floating-point values. For each quantized weight, a previous-value and a next-value.
 */
-
 struct quantization_and_transfer_table
 {
 	quantization_method method;
@@ -344,8 +324,6 @@ struct quantization_and_transfer_table
 };
 
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
-
-
 
 enum endpoint_formats
 {
@@ -367,8 +345,6 @@ enum endpoint_formats
 	FMT_HDR_RGBA = 15,
 };
 
-
-
 struct symbolic_compressed_block
 {
 	int error_block;			// 1 marks error block, 0 marks non-error-block.
@@ -385,21 +361,17 @@ struct symbolic_compressed_block
 	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 };
 
-
 struct physical_compressed_block
 {
 	uint8_t data[16];
 };
 
-
-
-
 const block_size_descriptor *get_block_size_descriptor(int xdim, int ydim, int zdim);
-
 
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
 // **********************************************************
+
 extern const uint8_t color_quantization_tables[21][256];
 extern const uint8_t color_unquantization_tables[21][256];
 
@@ -420,12 +392,8 @@ extern int quantization_mode_table[17][128];
 // function to get a pointer to a partition table or an array thereof.
 const partition_info *get_partition_table(int xdim, int ydim, int zdim, int partition_count);
 
-
-
-
 // functions to compute color averages and dominant directions
 // for each partition in a block
-
 
 void compute_averages_and_directions_rgb(const partition_info * pt,
 										 const imageblock * blk,
@@ -433,13 +401,11 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 										 const float4 * color_scalefactors, float3 * averages, float3 * directions_rgb, float2 * directions_rg, float2 * directions_rb, float2 * directions_gb);
 
 
-
 void compute_averages_and_directions_rgba(const partition_info * pt,
 										  const imageblock * blk,
 										  const error_weight_block * ewb,
 										  const float4 * color_scalefactors,
 										  float4 * averages, float4 * directions_rgba, float3 * directions_gba, float3 * directions_rba, float3 * directions_rga, float3 * directions_rgb);
-
 
 void compute_averages_and_directions_3_components(const partition_info * pt,
 												  const imageblock * blk,
@@ -495,36 +461,27 @@ float compute_error_squared_gb(const partition_info * pt,	// the partition that 
 float compute_error_squared_ra(const partition_info * pt,	// the partition that we use when computing the squared-error.
 							   const imageblock * blk, const error_weight_block * ewb, const processed_line2 * plines, float *length_of_lines);
 
-
 // functions to compute error value across a tile for a particular line function
 // for a single partition.
 float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim, int ydim, int zdim, const partition_info * pt,	// the partition that we use when computing the squared-error.
 												 const imageblock * blk, const error_weight_block * ewb, const processed_line3 * lin	// the line for the partition.
 	);
 
-
-
 // for each partition, compute its color weightings.
 void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, const error_weight_block * ewb, const partition_info * pi, float4 error_weightings[4], float4 color_scalefactors[4]);
-
-
 
 // function to find the best partitioning for a given block.
 
 void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count, const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
 							 // best partitionings to use if the endpoint colors are assumed to be uncorrelated
-							 int *best_partitions_uncorrellated,
+							 int *best_partitions_uncorrelated,
 							 // best partitionings to use if the endpoint colors have the same chroma
 							 int *best_partitions_samechroma,
 							 // best partitionings to use if dual plane of weights are present
 							 int *best_partitions_dual_weight_planes);
 
-
 // use k-means clustering to compute a partition ordering for a block.
 void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, int *ordering);
-
-
-
 
 // *********************************************************
 // functions and data pertaining to images and imageblocks
@@ -545,11 +502,9 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 void initialize_image(astc_codec_image * img);
 void fill_image_padding_area(astc_codec_image * img);
 
-
 extern float4 ***input_averages;
 extern float4 ***input_variances;
 extern float ***input_alpha_averages;
-
 
 // the entries here : 0=red, 1=green, 2=blue, 3=alpha, 4=0.0, 5=1.0
 struct swizzlepattern
@@ -560,13 +515,10 @@ struct swizzlepattern
 	uint8_t a;
 };
 
-
-
 int determine_image_channels(const astc_codec_image * img);
 
 // function to compute regional averages and variances for an image
 void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_kernel_radius, int var_kernel_radius, swizzlepattern swz);
-
 
 /*
 	Functions to load image from file.
@@ -579,7 +531,6 @@ void compute_averages_and_variances(const astc_codec_image * img, float rgb_powe
 
 	In case of failure, *result is given a negative value.
 */
-
 
 astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding, int *result);
 astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding, int *result);
@@ -600,7 +551,6 @@ int astc_codec_store_image(const astc_codec_image * img, const char *filename, i
 
 int get_output_filename_enforced_bitness(const char *filename);
 
-
 // compute a bunch of error metrics
 void compute_error_metrics(int input_image_is_hdr, int input_components, const astc_codec_image * img1, const astc_codec_image * img2, int low_fstop, int high_fstop, int psnrmode);
 
@@ -611,7 +561,6 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					  // position in picture to fetch block from
 					  int xpos, int ypos, int zpos, swizzlepattern swz);
 
-
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
 void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to initialize with image data
@@ -620,23 +569,15 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 					  // position in picture to write block to.
 					  int xpos, int ypos, int zpos, swizzlepattern swz);
 
-
 // helper function to check whether a given picture-block has alpha that is not
 // just uniformly 1.
-int imageblock_uses_alpha(int xdim, int ydim, int zdim, const imageblock * pb);
-
+int imageblock_uses_alpha(const imageblock * pb);
 
 float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb);
-
-
-
-
 
 // ***********************************************************
 // functions pertaining to computing texel weights for a block
 // ***********************************************************
-
-
 struct endpoints
 {
 	int partition_count;
@@ -644,14 +585,12 @@ struct endpoints
 	float4 endpt1[4];
 };
 
-
 struct endpoints_and_weights
 {
 	endpoints ep;
 	float weights[MAX_TEXELS_PER_BLOCK];
 	float weight_error_scale[MAX_TEXELS_PER_BLOCK];
 };
-
 
 void compute_endpoints_and_ideal_weights_1_plane(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, endpoints_and_weights * ei);
 
@@ -666,15 +605,11 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 														  const decimation_table * it,
 														  float low_bound, float high_bound, const float *weight_set_in, float *weight_set_out, uint8_t * quantized_weight_set, int quantization_level);
 
-
 float compute_error_of_weight_set(const endpoints_and_weights * eai, const decimation_table * it, const float *weights);
-
 
 float compute_value_of_texel_flt(int texel_to_get, const decimation_table * it, const float *weights);
 
-
 int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, const int *weights);
-
 
 void merge_endpoints(const endpoints * ep1,	// contains three of the color components
 					 const endpoints * ep2,	// contains the remaining color component
@@ -685,12 +620,10 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 // function to pack a pair of color endpoints into a series of integers.
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, float2 luminances, int format, int *output, int quantization_level);
-
+int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, int format, int *output, int quantization_level);
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quantization_level, const int *input, int *rgb_hdr, int *alpha_hdr, int *nan_endpoint, ushort4 * output0, ushort4 * output1);
-
 
 struct encoding_choice_errors
 {
@@ -730,15 +663,12 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 									int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
 									encoding_choice_errors * eci);
 
-
-
 void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, const endpoints * ep,
 													  int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 													  // bitcounts and errors computed for the various quantization methods
 													  const int *qwt_bitcounts, const float *qwt_errors,
 													  // output data
 													  int partition_format_specifiers[4][4], int quantized_weight[4], int quantization_level[4], int quantization_level_mod[4]);
-
 
 void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
 							float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
@@ -750,8 +680,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 							const partition_info * pi, const decimation_table * it, const imageblock * pb,	// picture-block containing the actual data.
 							const error_weight_block * ewb);
 
-
-
 void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weighting_params * ewp);
 
 // Function to set error weights for each color component for each texel in a block.
@@ -759,7 +687,6 @@ void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weigh
 float prepare_error_weight_block(const astc_codec_image * input_image,
 								 // dimensions of error weight block.
 								 int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, error_weight_block * ewb, error_weight_block_orig * ewbo);
-
 
 // functions pertaining to weight alignment
 void prepare_angular_tables(void);
@@ -774,27 +701,21 @@ void compute_angular_endpoints_2planes(float mode_cutoff,
 									   const float *decimated_weights,
 									   float low_value1[MAX_WEIGHT_MODES], float high_value1[MAX_WEIGHT_MODES], float low_value2[MAX_WEIGHT_MODES], float high_value2[MAX_WEIGHT_MODES]);
 
-
-
-
 /* *********************************** high-level encode and decode functions ************************************ */
 
 float compress_symbolic_block(const astc_codec_image * input_image,
 							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb,
 							  compress_symbolic_block_buffers * tmpbuf);
 
-
 float4 lerp_color_flt(const float4 color0, const float4 color1, float weight,	// 0..1
 					  float plane2_weight,	// 0..1
 					  int plane2_color_component	// 0..3; -1 if only one plane of weights is present.
 	);
 
-
 ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 color1, int weight,	// 0..64
 					   int plane2_weight,	// 0..64
 					   int plane2_color_component	// 0..3; -1 if only one plane of weights is present.
 	);
-
 
 void decompress_symbolic_block(astc_decode_mode decode_mode,
 							   // dimensions of block
@@ -802,14 +723,13 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 							   // position of block
 							   int xpos, int ypos, int zpos, const symbolic_compressed_block * scb, imageblock * blk);
 
-
 physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, const symbolic_compressed_block * sc);
 
 void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_block pb, symbolic_compressed_block * res);
 
-
 uint16_t unorm16_to_sf16(uint16_t p);
 uint16_t lns_to_sf16(uint16_t p);
 
+int astc_main(int argc, char ** argv);
 
 #endif

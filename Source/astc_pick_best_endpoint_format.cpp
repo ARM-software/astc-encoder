@@ -1,24 +1,21 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions to pick the best ASTC endpoint format for a given block.
+ * @brief Functions to pick best ASTC endpoint for a block.
  */
-/*----------------------------------------------------------------------------*/
+
 #include "astc_codec_internals.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>
 #endif
-
-#include <math.h>
 
 // clamp an input value to [0,1]; Nan is turned into 0.
 static inline float clamp01(float val)
@@ -39,11 +36,8 @@ static inline float clamp01(float val)
 
  */
 
-
 // for a given partition, compute for every (integer-component-count, quantization-level)
 // the color error.
-
-
 static void compute_color_error_for_every_integer_count_and_quantization_level(int encode_hdr_rgb,	// 1 = perform HDR encoding, 0 = perform LDR encoding.
 																			   int encode_hdr_alpha, int partition_index, const partition_info * pi,
 																				const encoding_choice_errors * eci,	// pointer to the structure for the CURRENT partition.
@@ -176,7 +170,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		int c = (int)cf;
 		int d = (int)df;
 
-
 		// determine which one of the 6 submodes is likely to be used in
 		// case of an RGBO-mode
 		int rgbo_mode = 5;		// 7 bits per component
@@ -225,7 +218,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		if (b < 1024 && c < 2048 && d < 512)
 			rgb_mode = 7;
 
-
 		static const float rgbo_error_scales[6] = { 4.0f, 4.0f, 16.0f, 64.0f, 256.0f, 1024.0f };
 		static const float rgb_error_scales[9] = { 64.0f, 64.0f, 16.0f, 16.0f, 4.0f, 4.0f, 1.0f, 1.0f, 384.0f };
 
@@ -240,8 +232,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 
 		mode23mult *= 0.0005f;	// empirically determined ....
 
-
-
 		// pick among the available HDR endpoint modes
 		for (i = 0; i < 8; i++)
 		{
@@ -254,7 +244,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 			best_error[i][0] = 1e30f;
 			format_of_choice[i][0] = FMT_HDR_LUMINANCE_LARGE_RANGE;
 		}
-
 
 		for (i = 8; i < 21; i++)
 		{
@@ -305,8 +294,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 			#endif
 		}
 	}
-
-
 	else
 	{
 		for (i = 0; i < 4; i++)
@@ -321,7 +308,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 			format_of_choice[i][1] = FMT_RGB_SCALE;
 			format_of_choice[i][0] = FMT_LUMINANCE;
 		}
-
 
 		// pick among the available LDR endpoint modes
 		for (i = 4; i < 21; i++)
@@ -372,7 +358,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 				format_of_choice[i][2] = FMT_RGB;
 			}
 
-
 			// for 4 integers, we have a Luminance-Alpha encoding and the RGBS encoding
 			float ldr_rgbs_error = rgb_quantization_error + eci->alpha_drop_error + eci->rgb_scale_error + rgb_range_error;
 
@@ -388,7 +373,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 				best_error[i][1] = lum_alpha_error;
 				format_of_choice[i][1] = FMT_LUMINANCE_ALPHA;
 			}
-
 
 			// for 2 integers, we have a Luminance-encoding and an Alpha-encoding.
 			float luminance_error = rgb_quantization_error + eci->alpha_drop_error + eci->luminance_error + rgb_range_error;
@@ -409,10 +393,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 	}
 }
 
-
-
 // for 1 partition, find the best combination (one format + a quantization level) for a given bitcount
-
 static void one_partition_find_best_combination_for_bitcount(float combined_best_error[21][4],
 															 int formats_of_choice[21][4], int bits_available, int *best_quantization_level, int *best_formats, float *error_of_best_combination)
 {
@@ -440,13 +421,9 @@ static void one_partition_find_best_combination_for_bitcount(float combined_best
 		*best_formats = formats_of_choice[ql][best_integer_count];
 	else
 		*best_formats = FMT_LUMINANCE;
-
 }
 
-
-
 // for 2 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-
 static void two_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[2][21][4],	// indexed by (partition, quant-level, integer-pair-count-minus-1)
 																						  int format_of_choice[2][21][4],
 																						  float combined_best_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
@@ -483,9 +460,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 	}
 }
 
-
 // for 2 partitions, find the best combination (two formats + a quantization level) for a given bitcount
-
 static void two_partitions_find_best_combination_for_bitcount(float combined_best_error[21][7],
 															  int formats_of_choice[21][7][2],
 															  int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
@@ -528,11 +503,7 @@ static void two_partitions_find_best_combination_for_bitcount(float combined_bes
 	}
 }
 
-
-
-
 // for 3 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-
 static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
 																							int format_of_choice[3][21][4], float combined_best_error[21][10], int formats_of_choice[21][10][3])
 {
@@ -575,9 +546,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 	}
 }
 
-
 // for 3 partitions, find the best combination (three formats + a quantization level) for a given bitcount
-
 static void three_partitions_find_best_combination_for_bitcount(float combined_best_error[21][10],
 																int formats_of_choice[21][10][3],
 																int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
@@ -620,11 +589,7 @@ static void three_partitions_find_best_combination_for_bitcount(float combined_b
 	}
 }
 
-
-
-
 // for 4 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-
 static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
 																						   int format_of_choice[4][21][4], float combined_best_error[21][13], int formats_of_choice[21][13][4])
 {
@@ -675,13 +640,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 	}
 }
 
-
-
-
-
-
 // for 4 partitions, find the best combination (four formats + a quantization level) for a given bitcount
-
 static void four_partitions_find_best_combination_for_bitcount(float combined_best_error[21][13],
 															   int formats_of_choice[21][13][4],
 															   int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
@@ -723,8 +682,6 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 	}
 }
 
-
-
 /*
 	The determine_optimal_set_of_endpoint_formats_to_use() function.
 
@@ -744,8 +701,7 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 			quantization level to use
 			modified quantization level to use
 		(when all format specifiers are equal)
- */
-
+*/
 void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim,
 													  const partition_info * pt, const imageblock * blk, const error_weight_block * ewb,
 													  const endpoints * ep,
@@ -762,7 +718,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 	int encode_hdr_rgb = blk->rgb_lns[0];
 	int encode_hdr_alpha = blk->alpha_lns[0];
 
-
 	// call a helper function to compute the errors that result from various
 	// encoding choices (such as using luminance instead of RGB, discarding Alpha,
 	// using RGB-scale in place of two separate RGB endpoints and so on)
@@ -773,7 +728,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 	float4 error_weightings[4];
 	float4 dummied_color_scalefactors[4];	// only used to receive data
 	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, dummied_color_scalefactors);
-
 
 	float best_error[4][21][4];
 	int format_of_choice[4][21][4];
@@ -808,7 +762,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 			best_ep_formats[i][0] = best_format;
 		}
 	}
-
 	// code for the case where the block contains 2 partitions
 	else if (partition_count == 2)
 	{
@@ -843,7 +796,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 			best_ep_formats[i][1] = best_formats[1];
 		}
 	}
-
 	// code for the case where the block contains 3 partitions
 	else if (partition_count == 3)
 	{
@@ -877,7 +829,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 			best_ep_formats[i][2] = best_formats[2];
 		}
 	}
-
 	// code for the case where the block contains 4 partitions
 	else if (partition_count == 4)
 	{
@@ -913,7 +864,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 	}
 
 	// finally, go through the results and pick the 4 best-looking modes.
-
 	int best_error_weights[4];
 
 	for (i = 0; i < 4; i++)

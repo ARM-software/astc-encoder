@@ -1,43 +1,39 @@
-/*----------------------------------------------------------------------------*/
-/**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Angular-sum algorithm for weight alignment.
- *
- *			This algorithm works as follows:
- *			* we compute a complex number P as (cos s*i, sin s*i) for each
- *			  weight, where i is the input value and s is a scaling factor
- *			  based on the spacing between the weights.
- *			* we then add together complex numbers for all the weights.
- *			* we then compute the length and angle of the resulting sum.
- *
- *			This should produce the following results:
- *			* perfect alignment results in a vector whose length is equal to
- *			  the sum of lengths of all inputs
- *			* even distribution results in a vector of length 0.
- *			* all samples identical results in perfect alignment for every
- *			  scaling.
- *
- *			For each scaling factor within a given set, we compute an alignment
- *			factor from 0 to 1. This should then result in some scalings standing
- *			out as having particularly good alignment factors; we can use this to
- *			produce a set of candidate scale/shift values for various quantization
- *			levels; we should then actually try them and see what happens.
- *
- *			Assuming N quantization steps, the scaling factor becomes s=2*PI*(N-1);
- *			we should probably have about 1 scaling factor for every 1/4
- *			quantization step (perhaps 1/8 for low levels of quantization)
- */
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
 
-#include <math.h>
+/**
+ * @brief Functions for angular-sum algorithm for weight alignment.
+ *
+ * This algorithm works as follows:
+ * - we compute a complex number P as (cos s*i, sin s*i) for each weight,
+ *   where i is the input value and s is a scaling factor based on the spacing
+ *   between the weights.
+ * - we then add together complex numbers for all the weights.
+ * - we then compute the length and angle of the resulting sum.
+ *
+ * This should produce the following results:
+ * - perfect alignment results in a vector whose length is equal to the sum of
+ *   lengths of all inputs
+ * - even distribution results in a vector of length 0.
+ * - all samples identical results in perfect alignment for every scaling.
+ *
+ * For each scaling factor within a given set, we compute an alignment factor
+ * from 0 to 1. This should then result in some scalings standing out as having
+ * particularly good alignment factors; we can use this to produce a set of
+ * candidate scale/shift values for various quantization levels; we should then
+ * actually try them and see what happens.
+ *
+ * Assuming N quantization steps, the scaling factor becomes s=2*PI*(N-1); we
+ * should probably have about 1 scaling factor for every 1/4 quantization step
+ * (perhaps 1/8 for low levels of quantization).
+ */
+
 #include "astc_codec_internals.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -45,20 +41,17 @@
 #endif
 
 static const float angular_steppings[] = {
-	1.0, 1.125,
-	1.25, 1.375,
-	1.5, 1.625,
-	1.75, 1.875,
+	 1.0,  1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875,
 
-	2.0, 2.25, 2.5, 2.75,
-	3.0, 3.25, 3.5, 3.75,
-	4.0, 4.25, 4.5, 4.75,
-	5.0, 5.25, 5.5, 5.75,
-	6.0, 6.25, 6.5, 6.75,
-	7.0, 7.25, 7.5, 7.75,
+	 2.0,  2.25,  2.5,  2.75,
+	 3.0,  3.25,  3.5,  3.75,
+	 4.0,  4.25,  4.5,  4.75,
+	 5.0,  5.25,  5.5,  5.75,
+	 6.0,  6.25,  6.5,  6.75,
+	 7.0,  7.25,  7.5,  7.75,
 
-	8.0, 8.5,
-	9.0, 9.5,
+	 8.0,  8.5,
+	 9.0,  9.5,
 	10.0, 10.5,
 	11.0, 11.5,
 	12.0, 12.5,
@@ -84,7 +77,7 @@ static const float angular_steppings[] = {
 	32.0, 32.5,
 	33.0, 33.5,
 	34.0, 34.5,
-	35.0, 35.5,
+	35.0, 35.5
 };
 
 #define ANGULAR_STEPS ((int)(sizeof(angular_steppings)/sizeof(angular_steppings[0])))
@@ -121,7 +114,6 @@ void prepare_angular_tables(void)
 		max_angular_steps_needed_for_quant_steps[p] = MIN(i + 1, ANGULAR_STEPS - 1);
 	}
 
-
 	// yes, the next-to-last entry is supposed to have the value 33. This because under
 	// ASTC, the 32-weight mode leaves a double-sized hole in the middle of the
 	// weight space, so we are better off matching 33 weights than 32.
@@ -129,9 +121,7 @@ void prepare_angular_tables(void)
 
 	for (i = 0; i < 13; i++)
 		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[steps_of_level[i]];
-
 }
-
 
 union if32
 {
@@ -139,7 +129,6 @@ union if32
 	int32_t s;
 	uint32_t u;
 };
-
 
 // function to compute angular sums; then, from the
 // angular sums, compute alignment factor and offset.
@@ -157,7 +146,6 @@ void compute_angular_offsets(int samplecount, const float *samples, const float 
 		anglesum_x[i] = 0;
 		anglesum_y[i] = 0;
 	}
-
 
 	// compute the angle-sums.
 	for (i = 0; i < samplecount; i++)
@@ -189,34 +177,25 @@ void compute_angular_offsets(int samplecount, const float *samples, const float 
 	}
 }
 
-
-
 // for a given step-size and a given offset, compute the
 // lowest and highest weight that results from quantizing using the stepsize & offset.
 // also, compute the resulting error.
 
-
-/* static inline */
 void compute_lowest_and_highest_weight(int samplecount, const float *samples, const float *sample_weights,
 									  int max_angular_steps, const float *offsets,
 									  int8_t * lowest_weight, int8_t * highest_weight,
 									  float *error, float *cut_low_weight_error, float *cut_high_weight_error)
 {
-	int i;
-
-	int sp;
-
 	float error_from_forcing_weight_down[60];
 	float error_from_forcing_weight_either_way[60];
-	for (i = 0; i < 60; i++)
+	for (int i = 0; i < 60; i++)
 	{
 		error_from_forcing_weight_down[i] = 0;
 		error_from_forcing_weight_either_way[i] = 0;
 	}
 
 	// weight + 12
-	static const unsigned int idxtab[256] = {
-
+	static const unsigned int idxtab[128] = {
 		12, 13, 14, 15, 16, 17, 18, 19,
 		20, 21, 22, 23, 24, 25, 26, 27,
 		28, 29, 30, 31, 32, 33, 34, 35,
@@ -225,36 +204,17 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 		52, 53, 54, 55, 55, 55, 55, 55,
 		55, 55, 55, 55, 55, 55, 55, 55,
 		55, 55, 55, 55, 55, 55, 55, 55,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 1, 2, 3,
-		4, 5, 6, 7, 8, 9, 10, 11,
-
-		12, 13, 14, 15, 16, 17, 18, 19,
-		20, 21, 22, 23, 24, 25, 26, 27,
-		28, 29, 30, 31, 32, 33, 34, 35,
-		36, 37, 38, 39, 40, 41, 42, 43,
-		44, 45, 46, 47, 48, 49, 50, 51,
-		52, 53, 54, 55, 55, 55, 55, 55,
-		55, 55, 55, 55, 55, 55, 55, 55,
-		55, 55, 55, 55, 55, 55, 55, 55,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 1, 2, 3,
-		4, 5, 6, 7, 8, 9, 10, 11
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  0,  0,  0,
+		 0,  0,  0,  0,  0,  1,  2,  3,
+		 4,  5,  6,  7,  8,  9, 10, 11
 	};
 
-
-
-	for (sp = 0; sp < max_angular_steps; sp++)
+	for (int sp = 0; sp < max_angular_steps; sp++)
 	{
 		unsigned int minidx_bias12 = 55;
 		unsigned int maxidx_bias12 = 0;
@@ -266,8 +226,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		float scaled_offset = rcp_stepsize * offset;
 
-
-		for (i = 0; i < samplecount - 1; i += 2)
+		for (int i = 0; i < samplecount - 1; i += 2)
 		{
 			float wt1 = sample_weights[i];
 			float wt2 = sample_weights[i + 1];
@@ -285,8 +244,8 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 			errval += (dif2 * wt2) * dif2;
 
 			// table lookups that really perform a minmax function.
-			unsigned int idx1_bias12 = idxtab[p1.u & 0xFF];
-			unsigned int idx2_bias12 = idxtab[p2.u & 0xFF];
+			unsigned int idx1_bias12 = idxtab[p1.u & 0x7F];
+			unsigned int idx2_bias12 = idxtab[p2.u & 0x7F];
 
 			if (idx1_bias12 < minidx_bias12)
 				minidx_bias12 = idx1_bias12;
@@ -306,7 +265,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		if (samplecount & 1)
 		{
-			i = samplecount - 1;
+			int i = samplecount - 1;
 			float wt = sample_weights[i];
 			if32 p;
 			float sval = (samples[i] * rcp_stepsize) - scaled_offset;
@@ -316,7 +275,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 			errval += (dif * wt) * dif;
 
-			unsigned int idx_bias12 = idxtab[p.u & 0xFF];
+			unsigned int idx_bias12 = idxtab[p.u & 0x7F];
 
 			if (idx_bias12 < minidx_bias12)
 				minidx_bias12 = idx_bias12;
@@ -326,7 +285,6 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 			error_from_forcing_weight_either_way[idx_bias12] += wt;
 			error_from_forcing_weight_down[idx_bias12] += dif * wt;
 		}
-
 
 		lowest_weight[sp] = (int)minidx_bias12 - 12;
 		highest_weight[sp] = (int)maxidx_bias12 - 12;
@@ -340,8 +298,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 
 		// clear out the error-from-forcing values we actually used in this pass
 		// so that these are clean for the next pass.
-		unsigned int ui;
-		for (ui = minidx_bias12 & ~0x3; ui <= maxidx_bias12; ui += 4)
+		for (unsigned int ui = minidx_bias12 & ~0x3; ui <= maxidx_bias12; ui += 4)
 		{
 			error_from_forcing_weight_either_way[ui] = 0;
 			error_from_forcing_weight_down[ui] = 0;
@@ -354,8 +311,7 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 		}
 	}
 
-
-	for (sp = 0; sp < max_angular_steps; sp++)
+	for (int sp = 0; sp < max_angular_steps; sp++)
 	{
 		float errscale = stepsizes_sqr[sp];
 		error[sp] *= errscale;
@@ -364,15 +320,10 @@ void compute_lowest_and_highest_weight(int samplecount, const float *samples, co
 	}
 }
 
-
-
 // main function for running the angular algorithm.
-
-
 void compute_angular_endpoints_for_quantization_levels(int samplecount, const float *samples, const float *sample_weights, int max_quantization_level, float low_value[12], float high_value[12])
 {
 	int i;
-
 
 	max_quantization_level++;	// Temporarily increase level - needs refinement
 
@@ -385,7 +336,6 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 
 	compute_angular_offsets(samplecount, samples, sample_weights, max_angular_steps, offsets);
 
-
 	// the +4 offsets are to allow for vectorization within compute_lowest_and_highest_weight().
 	int8_t lowest_weight[ANGULAR_STEPS + 4];
 	int8_t highest_weight[ANGULAR_STEPS + 4];
@@ -395,7 +345,6 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 	float cut_high_weight_error[ANGULAR_STEPS + 4];
 
 	compute_lowest_and_highest_weight(samplecount, samples, sample_weights, max_angular_steps, offsets, lowest_weight, highest_weight, error, cut_low_weight_error, cut_high_weight_error);
-
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
@@ -424,8 +373,6 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 		best_scale[i] = -1;	// Indicates no solution found
 		cut_low_weight[i] = 0;
 	}
-
-
 
 	for (i = 0; i < max_angular_steps; i++)
 	{
@@ -483,7 +430,6 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 		}
 	}
 
-
 	max_quantization_level--;	// Decrease level again (see corresponding ++, above)
 
 	static const int ql_weights[12] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33 };
@@ -510,10 +456,8 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 
 }
 
-
 // helper functions that will compute ideal angular-endpoints
 // for a given set of weights and a given block size descriptors
-
 void compute_angular_endpoints_1plane(float mode_cutoff, const block_size_descriptor * bsd,
 									  const float *decimated_quantized_weights, const float *decimated_weights,
 									  float low_value[MAX_WEIGHT_MODES], float high_value[MAX_WEIGHT_MODES])
@@ -547,10 +491,7 @@ void compute_angular_endpoints_1plane(float mode_cutoff, const block_size_descri
 		low_value[i] = low_values[decim_mode][quant_mode];
 		high_value[i] = high_values[decim_mode][quant_mode];
 	}
-
 }
-
-
 
 void compute_angular_endpoints_2planes(float mode_cutoff,
 									   const block_size_descriptor * bsd,

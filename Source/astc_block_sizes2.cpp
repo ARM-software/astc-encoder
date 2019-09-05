@@ -1,55 +1,35 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	For ASTC, generate the block size descriptor and the associated
- *			decimation tables.
+ * @brief Functions to generate block size descriptor and decimation tables.
  */
-/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
 extern const float percentile_table_4x4[2048];
-extern const float percentile_table_4x5[2048];
-extern const float percentile_table_4x6[2048];
-extern const float percentile_table_4x8[2048];
-extern const float percentile_table_4x10[2048];
-extern const float percentile_table_4x12[2048];
+
 extern const float percentile_table_5x4[2048];
 extern const float percentile_table_5x5[2048];
-extern const float percentile_table_5x6[2048];
-extern const float percentile_table_5x8[2048];
-extern const float percentile_table_5x10[2048];
-extern const float percentile_table_5x12[2048];
-extern const float percentile_table_6x4[2048];
+
 extern const float percentile_table_6x5[2048];
 extern const float percentile_table_6x6[2048];
-extern const float percentile_table_6x8[2048];
-extern const float percentile_table_6x10[2048];
-extern const float percentile_table_6x12[2048];
-extern const float percentile_table_8x4[2048];
+
 extern const float percentile_table_8x5[2048];
 extern const float percentile_table_8x6[2048];
 extern const float percentile_table_8x8[2048];
-extern const float percentile_table_8x10[2048];
-extern const float percentile_table_8x12[2048];
-extern const float percentile_table_10x4[2048];
+
 extern const float percentile_table_10x5[2048];
 extern const float percentile_table_10x6[2048];
 extern const float percentile_table_10x8[2048];
 extern const float percentile_table_10x10[2048];
-extern const float percentile_table_10x12[2048];
-extern const float percentile_table_12x4[2048];
-extern const float percentile_table_12x5[2048];
-extern const float percentile_table_12x6[2048];
-extern const float percentile_table_12x8[2048];
+
 extern const float percentile_table_12x10[2048];
 extern const float percentile_table_12x12[2048];
 
@@ -62,16 +42,6 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 		{
 		case 4:
 			return percentile_table_4x4;
-		case 5:
-			return percentile_table_4x5;
-		case 6:
-			return percentile_table_4x6;
-		case 8:
-			return percentile_table_4x8;
-		case 10:
-			return percentile_table_4x10;
-		case 12:
-			return percentile_table_4x12;
 		}
 		break;
 	case 5:
@@ -81,58 +51,34 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 			return percentile_table_5x4;
 		case 5:
 			return percentile_table_5x5;
-		case 6:
-			return percentile_table_5x6;
-		case 8:
-			return percentile_table_5x8;
-		case 10:
-			return percentile_table_5x10;
-		case 12:
-			return percentile_table_5x12;
 		}
 		break;
 
 	case 6:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_6x4;
 		case 5:
 			return percentile_table_6x5;
 		case 6:
 			return percentile_table_6x6;
-		case 8:
-			return percentile_table_6x8;
-		case 10:
-			return percentile_table_6x10;
-		case 12:
-			return percentile_table_6x12;
 		}
 		break;
 
 	case 8:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_8x4;
 		case 5:
 			return percentile_table_8x5;
 		case 6:
 			return percentile_table_8x6;
 		case 8:
 			return percentile_table_8x8;
-		case 10:
-			return percentile_table_8x10;
-		case 12:
-			return percentile_table_8x12;
 		}
 		break;
 
 	case 10:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_10x4;
 		case 5:
 			return percentile_table_10x5;
 		case 6:
@@ -141,22 +87,12 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 			return percentile_table_10x8;
 		case 10:
 			return percentile_table_10x10;
-		case 12:
-			return percentile_table_10x12;
 		}
 		break;
 
 	case 12:
 		switch (blockdim_y)
 		{
-		case 4:
-			return percentile_table_12x4;
-		case 5:
-			return percentile_table_12x5;
-		case 6:
-			return percentile_table_12x6;
-		case 8:
-			return percentile_table_12x8;
 		case 10:
 			return percentile_table_12x10;
 		case 12:
@@ -167,20 +103,15 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 		break;
 	}
 
-	return NULL;				// should never happen.
+	return NULL;  // should never happen.
 }
 
 // stubbed for the time being.
 static const float dummy_percentile_table_3d[2048] = { 0 };
-const float *get_3d_percentile_table(int blockdim_x, int blockdim_y, int blockdim_z)
+const float *get_3d_percentile_table()
 {
-	IGNORE(blockdim_x);
-	IGNORE(blockdim_y);
-	IGNORE(blockdim_z);
 	return dummy_percentile_table_3d;
 }
-
-
 
 // return 0 on invalid mode, 1 on valid mode.
 static int decode_block_mode_2d(int blockmode, int *Nval, int *Mval, int *dual_weight_plane, int *quant_mode)
@@ -281,7 +212,6 @@ static int decode_block_mode_2d(int blockmode, int *Nval, int *Mval, int *dual_w
 	return 1;
 }
 
-
 static int decode_block_mode_3d(int blockmode, int *Nval, int *Mval, int *Qval, int *dual_weight_plane, int *quant_mode)
 {
 	int base_quant_mode = (blockmode >> 4) & 1;
@@ -365,9 +295,6 @@ static int decode_block_mode_3d(int blockmode, int *Nval, int *Mval, int *Qval, 
 	*quant_mode = qmode;
 	return 1;
 }
-
-
-
 
 static void initialize_decimation_table_2d(
 											  // dimensions of the block
@@ -469,12 +396,7 @@ static void initialize_decimation_table_2d(
 
 	dt->num_texels = texels_per_block;
 	dt->num_weights = weights_per_block;
-
-
 }
-
-
-
 
 static void initialize_decimation_table_3d(
 											  // dimensions of the block
@@ -502,7 +424,9 @@ static void initialize_decimation_table_3d(
 		weightcount_of_texel[i] = 0;
 
 	for (z = 0; z < zdim; z++)
+	{
 		for (y = 0; y < ydim; y++)
+		{
 			for (x = 0; x < xdim; x++)
 			{
 				int texel = (z * ydim + y) * xdim + x;
@@ -600,10 +524,8 @@ static void initialize_decimation_table_3d(
 				weight[2] = w2;
 				weight[3] = w3;
 
-				/*
-				   for(i=0;i<4;i++) weight[i] <<= 4; */
-
 				for (i = 0; i < 4; i++)
+				{
 					if (weight[i] != 0)
 					{
 						grid_weights_of_texel[texel][weightcount_of_texel[texel]] = qweight[i];
@@ -613,7 +535,10 @@ static void initialize_decimation_table_3d(
 						texelweights_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = weight[i];
 						texelcount_of_weight[qweight[i]]++;
 					}
+				}
 			}
+		}
+	}
 
 	for (i = 0; i < texels_per_block; i++)
 	{
@@ -651,8 +576,6 @@ static void initialize_decimation_table_3d(
 	dt->num_weights = weights_per_block;
 }
 
-
-
 void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descriptor * bsd)
 {
 	int decimation_mode_index[256];	// for each of the 256 entries in the decim_table_array, its index
@@ -669,6 +592,7 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 
 	// gather all the infill-modes that can be used with the current block size
 	for (x_weights = 2; x_weights <= 12; x_weights++)
+	{
 		for (y_weights = 2; y_weights <= 12; y_weights++)
 		{
 			if (x_weights * y_weights > MAX_WEIGHTS_PER_BLOCK)
@@ -703,6 +627,7 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 
 			decimation_mode_count++;
 		}
+	}
 
 	for (i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
@@ -772,13 +697,13 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 		for (i = 0; i < xdim * ydim; i++)
 			bsd->texels_for_bitmap_partitioning[i] = i;
 	}
-
 	else
 	{
 		// pick 64 random texels for use with bitmap partitioning.
 		int arr[MAX_TEXELS_PER_BLOCK];
 		for (i = 0; i < xdim * ydim; i++)
 			arr[i] = 0;
+
 		int arr_elements_set = 0;
 		while (arr_elements_set < 64)
 		{
@@ -789,6 +714,7 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 				arr[idx] = 1;
 			}
 		}
+
 		int texel_weights_written = 0;
 		int idx = 0;
 		while (texel_weights_written < 64)
@@ -797,12 +723,10 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 				bsd->texels_for_bitmap_partitioning[texel_weights_written++] = idx;
 			idx++;
 		}
-		bsd->texelcount_for_bitmap_partitioning = 64;
 
+		bsd->texelcount_for_bitmap_partitioning = 64;
 	}
 }
-
-
 
 void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size_descriptor * bsd)
 {
@@ -821,7 +745,9 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 
 	// gather all the infill-modes that can be used with the current block size
 	for (x_weights = 2; x_weights <= 6; x_weights++)
+	{
 		for (y_weights = 2; y_weights <= 6; y_weights++)
+		{
 			for (z_weights = 2; z_weights <= 6; z_weights++)
 			{
 				if ((x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
@@ -856,6 +782,8 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 
 				decimation_mode_count++;
 			}
+		}
+	}
 
 	for (i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
@@ -872,7 +800,7 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 
 	bsd->decimation_mode_count = decimation_mode_count;
 
-	const float *percentiles = get_3d_percentile_table(xdim, ydim, zdim);
+	const float *percentiles = get_3d_percentile_table();
 
 	// then construct the list of block formats
 	for (i = 0; i < 2048; i++)
@@ -915,7 +843,6 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
 				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
 		}
-
 	}
 
 	if (xdim * ydim * zdim <= 64)
@@ -924,7 +851,6 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 		for (i = 0; i < xdim * ydim * zdim; i++)
 			bsd->texels_for_bitmap_partitioning[i] = i;
 	}
-
 	else
 	{
 		// pick 64 random texels for use with bitmap partitioning.
@@ -952,9 +878,6 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 		bsd->texelcount_for_bitmap_partitioning = 64;
 	}
 }
-
-
-
 
 static block_size_descriptor *bsd_pointers[4096];
 

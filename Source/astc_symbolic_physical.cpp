@@ -1,18 +1,15 @@
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
 /**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions to convert a compressed block between the symbolic and
- *			the physical representation.
+ * @brief Functions for converting between symbolic and physical encodings.
  */
-/*----------------------------------------------------------------------------*/
 
 #include "astc_codec_internals.h"
 
@@ -33,7 +30,6 @@ static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * 
 	ptr[1] |= value >> 8;
 }
 
-
 // routine to read up to 8 bits
 static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
 {
@@ -46,7 +42,6 @@ static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
 	return value;
 }
 
-
 int bitrev8(int p)
 {
 	p = ((p & 0xF) << 4) | ((p >> 4) & 0xF);
@@ -55,14 +50,10 @@ int bitrev8(int p)
 	return p;
 }
 
-
-
-
 physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, const symbolic_compressed_block * sc)
 {
 	int i, j;
 	physical_compressed_block res;
-
 
 	if (sc->block_mode == -2)
 	{
@@ -82,7 +73,6 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 		return res;
 	}
 
-
 	if (sc->block_mode == -1)
 	{
 		// FP16 constant-color block.
@@ -100,8 +90,6 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 		}
 		return res;
 	}
-
-
 
 	int partition_count = sc->partition_count;
 
@@ -123,7 +111,6 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 
 	int bits_for_weights = compute_ise_bitcount(real_weight_count,
 												(quantization_method) weight_quantization_method);
-
 
 	if (is_dual_plane)
 	{
@@ -197,9 +184,10 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 			below_weights_pos -= encoded_type_highpart_size;
 		}
 	}
-
 	else
+	{
 		write_bits(sc->color_formats[0], 4, 13, res.data);
+	}
 
 	// in dual-plane mode, encode the color component of the second plane of weights
 	if (is_dual_plane)
@@ -216,12 +204,12 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 			values_to_encode[j + valuecount_to_encode] = sc->color_values[i][j];
 		valuecount_to_encode += vals;
 	}
+
 	// then, encode an ISE based on them.
 	encode_ise(sc->color_quantization_level, valuecount_to_encode, values_to_encode, res.data, (sc->partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 
 	return res;
 }
-
 
 void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_block pb, symbolic_compressed_block * res)
 {
@@ -236,8 +224,6 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 
 	// extract header fields
 	int block_mode = read_bits(11, 0, pb.data);
-
-
 	if ((block_mode & 0x1FF) == 0x1FC)
 	{
 		// void-extent block!
@@ -334,8 +320,6 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 	if (is_dual_plane && partition_count == 4)
 		res->error_block = 1;
 
-
-
 	res->color_formats_matched = 0;
 
 	// then, determine the format of each endpoint pair
@@ -378,11 +362,10 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 			}
 		}
 		res->partition_index = read_bits(6, 13, pb.data) | (read_bits(PARTITION_BITS - 6, 19, pb.data) << 6);
-
 	}
+
 	for (i = 0; i < partition_count; i++)
 		res->color_formats[i] = color_formats[i];
-
 
 	// then, determine the number of integers we need to unpack for the endpoint pairs
 	int color_integer_count = 0;
@@ -408,7 +391,6 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 	if (color_quantization_level < 4)
 		res->error_block = 1;
 
-
 	// then unpack the integer-bits
 	uint8_t values_to_decode[32];
 	decode_ise(color_quantization_level, color_integer_count, pb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
@@ -427,5 +409,4 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 	// get hold of color component for second-plane in the case of dual plane of weights.
 	if (is_dual_plane)
 		res->plane2_color_component = read_bits(2, below_weights_pos - 2, pb.data);
-
 }

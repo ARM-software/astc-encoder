@@ -1,25 +1,21 @@
-/*----------------------------------------------------------------------------*/
-/**
- *	This confidential and proprietary software may be used only as
- *	authorised by a licensing agreement from ARM Limited
- *	(C) COPYRIGHT 2011-2012 ARM Limited
- *	ALL RIGHTS RESERVED
- *
- *	The entire notice above must be reproduced on all authorised
- *	copies and copies may only be made to the extent permitted
- *	by a licensing agreement from ARM Limited.
- *
- *	@brief	Functions for managing ASTC codec images.
- */
-/*----------------------------------------------------------------------------*/
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
 
-#include <math.h>
+/**
+ * @brief Functions for loading/storing ASTC compressed images.
+ */
+
 
 #include "astc_codec_internals.h"
 
-#include "softfloat.h"
-#include <stdint.h>
 #include <stdio.h>
+#include "softfloat.h"
 
 void destroy_image(astc_codec_image * img)
 {
@@ -32,16 +28,16 @@ void destroy_image(astc_codec_image * img)
 		delete[]img->imagedata8[0];
 		delete[]img->imagedata8;
 	}
+
 	if (img->imagedata16)
 	{
 		delete[]img->imagedata16[0][0];
 		delete[]img->imagedata16[0];
 		delete[]img->imagedata16;
 	}
+
 	delete img;
 }
-
-
 
 astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, int padding)
 {
@@ -72,7 +68,6 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 
 		img->imagedata16 = NULL;
 	}
-
 	else if (bitness == 16)
 	{
 		img->imagedata16 = new uint16_t **[ezsize];
@@ -91,14 +86,11 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 	}
 	else
 	{
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	return img;
 }
-
-
 
 void initialize_image(astc_codec_image * img)
 {
@@ -134,19 +126,14 @@ void initialize_image(astc_codec_image * img)
 	}
 	else
 	{
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 }
-
-
-
 
 // fill the padding area of the input-file buffer with clamp-to-edge data
 // Done inefficiently, in that it will overwrite all the interior data at least once;
 // this is not considered a problem, since this makes up a very small part of total
 // running time.
-
 void fill_image_padding_area(astc_codec_image * img)
 {
 	if (img->padding == 0)
@@ -164,7 +151,6 @@ void fill_image_padding_area(astc_codec_image * img)
 	int ymax = img->ysize + img->padding - 1;
 	int zmax = (img->zsize == 1) ? 0 : img->zsize + img->padding - 1;
 
-
 	// This is a very simple implementation. Possible optimizations include:
 	// * Testing if texel is outside the edge.
 	// * Looping over texels that we know are outside the edge.
@@ -180,7 +166,9 @@ void fill_image_padding_area(astc_codec_image * img)
 				{
 					int xc = MIN(MAX(x, xmin), xmax);
 					for (i = 0; i < 4; i++)
+					{
 						img->imagedata8[z][y][4 * x + i] = img->imagedata8[zc][yc][4 * xc + i];
+					}
 				}
 			}
 		}
@@ -197,15 +185,14 @@ void fill_image_padding_area(astc_codec_image * img)
 				{
 					int xc = MIN(MAX(x, xmin), xmax);
 					for (i = 0; i < 4; i++)
+					{
 						img->imagedata16[z][y][4 * x + i] = img->imagedata16[zc][yc][4 * xc + i];
+					}
 				}
 			}
 		}
 	}
 }
-
-
-
 
 int determine_image_channels(const astc_codec_image * img)
 {
@@ -268,16 +255,9 @@ int determine_image_channels(const astc_codec_image * img)
 	return image_channels;
 }
 
-
-
-
-
-
 // conversion functions between the LNS representation and the FP16 representation.
-
 float float_to_lns(float p)
 {
-
 	if (astc_isnan(p) || p <= 1.0f / 67108864.0f)
 	{
 		// underflow or NaN value, return 0.
@@ -317,11 +297,8 @@ float float_to_lns(float p)
 	return p1 + 1.0f;
 }
 
-
-
 uint16_t lns_to_sf16(uint16_t p)
 {
-
 	uint16_t mc = p & 0x7FF;
 	uint16_t ec = p >> 11;
 	uint16_t mt;
@@ -337,7 +314,6 @@ uint16_t lns_to_sf16(uint16_t p)
 		res = 0x7BFF;
 	return res;
 }
-
 
 // conversion function from 16-bit LDR value to FP16.
 // note: for LDR interpolation, it is impossible to get a denormal result;
@@ -357,10 +333,6 @@ uint16_t unorm16_to_sf16(uint16_t p)
 	return p;
 }
 
-
-
-
-
 void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelcount)
 {
 	int i;
@@ -371,7 +343,6 @@ void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelco
 
 	for (i = 0; i < pixelcount; i++)
 	{
-
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
@@ -411,7 +382,6 @@ void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelco
 			dptr[2] = 65535.0f;
 		}
 
-
 		// then compute derivatives for Alpha
 		if (pb->alpha_lns[i])
 		{
@@ -436,9 +406,6 @@ void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelco
 		dptr += 4;
 	}
 }
-
-
-
 
 // helper function to initialize the work-data from the orig-data
 void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount)
@@ -470,15 +437,13 @@ void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount)
 		{
 			wptr[3] = fptr[3] * 65535.0f;
 		}
+
 		fptr += 4;
 		wptr += 4;
 	}
 
 	imageblock_initialize_deriv_from_work_and_orig(pb, pixelcount);
 }
-
-
-
 
 // helper function to initialize the orig-data from the work-data
 void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount)
@@ -518,9 +483,6 @@ void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount)
 	imageblock_initialize_deriv_from_work_and_orig(pb, pixelcount);
 }
 
-
-
-
 // fetch an imageblock from the input file.
 void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to initialize with image data
 					  // block dimensions
@@ -551,7 +513,9 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 	if (img->imagedata8)
 	{
 		for (z = 0; z < zdim; z++)
+		{
 			for (y = 0; y < ydim; y++)
+			{
 				for (x = 0; x < xdim; x++)
 				{
 					int xi = xpos + x;
@@ -585,13 +549,18 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					fptr[1] = data[swz.g];
 					fptr[2] = data[swz.b];
 					fptr[3] = data[swz.a];
+
 					fptr += 4;
 				}
+			}
+		}
 	}
 	else if (img->imagedata16)
 	{
 		for (z = 0; z < zdim; z++)
+		{
 			for (y = 0; y < ydim; y++)
+			{
 				for (x = 0; x < xdim; x++)
 				{
 					int xi = xpos + x;
@@ -627,7 +596,6 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					bf = MAX(bf, 1e-8f);
 					af = MAX(af, 1e-8f);
 
-
 					data[0] = rf;
 					data[1] = gf;
 					data[2] = bf;
@@ -639,8 +607,9 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					fptr[3] = data[swz.a];
 					fptr += 4;
 				}
+			}
+		}
 	}
-
 
 	// perform sRGB-to-linear transform on input data, if requested.
 	int pixelcount = xdim * ydim * zdim;
@@ -726,15 +695,9 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 		pb->nan_texel[i] = 0;
 	}
 
-
 	imageblock_initialize_work_from_orig(pb, pixelcount);
-
-
 	update_imageblock_flags(pb, xdim, ydim, zdim);
 }
-
-
-
 
 void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
 					  // block dimensions
@@ -749,16 +712,16 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 	int zsize = img->zsize;
 	int x, y, z;
 
-
 	float data[7];
 	data[4] = 0.0f;
 	data[5] = 1.0f;
 
-
 	if (img->imagedata8)
 	{
 		for (z = 0; z < zdim; z++)
+		{
 			for (y = 0; y < ydim; y++)
+			{
 				for (x = 0; x < xdim; x++)
 				{
 					int xi = xpos + x;
@@ -775,7 +738,6 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							img->imagedata8[zi][yi][4 * xi + 2] = 0xFF;
 							img->imagedata8[zi][yi][4 * xi + 3] = 0xFF;
 						}
-
 						else
 						{
 							// apply swizzle
@@ -816,9 +778,6 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							}
 							data[3] = fptr[3];
 
-
-
-
 							float xcoord = (data[0] * 2.0f) - 1.0f;
 							float ycoord = (data[3] * 2.0f) - 1.0f;
 							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
@@ -836,7 +795,6 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							if (data[3] > 1.0f)
 								data[3] = 1.0f;
 
-
 							// pack the data
 							int ri = static_cast < int >(floor(data[swz.r] * 255.0f + 0.5f));
 							int gi = static_cast < int >(floor(data[swz.g] * 255.0f + 0.5f));
@@ -852,11 +810,15 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 					fptr += 4;
 					nptr++;
 				}
+			}
+		}
 	}
 	else if (img->imagedata16)
 	{
 		for (z = 0; z < zdim; z++)
+		{
 			for (y = 0; y < ydim; y++)
+			{
 				for (x = 0; x < xdim; x++)
 				{
 					int xi = xpos + x;
@@ -928,14 +890,13 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 					fptr += 4;
 					nptr++;
 				}
+			}
+		}
 	}
 }
 
-
-
 /*
    For an imageblock, update its flags.
-
    The updating is done based on work_data, not orig_data.
 */
 void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim)
@@ -988,9 +949,7 @@ void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim)
 	pb->grayscale = grayscale;
 }
 
-
 // Helper functions for various error-metric calculations
-
 double clampx(double p)
 {
 	if (astc_isnan(p) || p < 0.0f)
@@ -1009,7 +968,6 @@ double xlog2(double p)
 		return -15.44269504088896340735 + p * 23637.11554992477646609062;
 }
 
-
 // mPSNR tone-mapping operator
 double mpsnr_operator(double v, int fstop)
 {
@@ -1025,7 +983,6 @@ double mpsnr_operator(double v, int fstop)
 	return v;
 }
 
-
 double mpsnr_sumdiff(double v1, double v2, int low_fstop, int high_fstop)
 {
 	int i;
@@ -1040,9 +997,6 @@ double mpsnr_sumdiff(double v1, double v2, int low_fstop, int high_fstop)
 	return summa;
 }
 
-
-
-
 // Compute PSNR and other error metrics between input and output image
 void compute_error_metrics(int compute_hdr_error_metrics, int input_components, const astc_codec_image * img1, const astc_codec_image * img2, int low_fstop, int high_fstop, int psnrmode)
 {
@@ -1051,7 +1005,6 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 	int channelmask;
 
 	channelmask = channelmasks[input_components];
-
 
 	double4 errorsum = double4(0, 0, 0, 0);
 	double4 alpha_scaled_errorsum = double4(0, 0, 0, 0);
@@ -1080,6 +1033,7 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 	double rgb_peak = 0.0f;
 
 	for (z = 0; z < zsize; z++)
+	{
 		for (y = 0; y < ysize; y++)
 		{
 			int ze1 = (img1->zsize == 1) ? z : z + img1pad;
@@ -1156,6 +1110,7 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 				}
 			}
 		}
+	}
 
 	if (compute_hdr_error_metrics)
 	{
@@ -1178,6 +1133,7 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 		mpsnr_num += mpsnr_errorsum.x;
 		samples += pixels;
 	}
+
 	if (channelmask & 2)
 	{
 		num += errorsum.y;
@@ -1186,6 +1142,7 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 		mpsnr_num += mpsnr_errorsum.y;
 		samples += pixels;
 	}
+
 	if (channelmask & 4)
 	{
 		num += errorsum.z;
@@ -1194,10 +1151,12 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 		mpsnr_num += mpsnr_errorsum.z;
 		samples += pixels;
 	}
+
 	if (channelmask & 8)
 	{
 		num += errorsum.w;
-		alpha_num += alpha_scaled_errorsum.w;	/* log_num += log_errorsum.w; mpsnr_num += mpsnr_errorsum.w; */
+		alpha_num += alpha_scaled_errorsum.w;
+		/* log_num += log_errorsum.w; mpsnr_num += mpsnr_errorsum.w; */
 		samples += pixels;
 	}
 
@@ -1235,7 +1194,6 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 		else
 			printf("PSNR (LDR-RGB): %.6lf dB\n", psnr);
 
-
 		if (compute_hdr_error_metrics)
 		{
 			printf("Color peak value: %f\n", rgb_peak);
@@ -1260,9 +1218,6 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 	We have specialized loaders for DDS, KTX and HTGA; for other formats, we use stb_image.
 	This image loader will choose one based on filename.
 */
-
-
-
 astc_codec_image *astc_codec_load_image(const char *input_filename, int padding, int *load_result)
 {
 	#define LOAD_HTGA 0
@@ -1272,7 +1227,7 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 
 	// check the ending of the input filename
 	int load_fileformat = LOAD_STB_IMAGE;
-	int filename_len = strlen(input_filename);
+	size_t filename_len = strlen(input_filename);
 
 	const char *eptr = input_filename + filename_len - 5;
 	if (eptr > input_filename && (strcmp(eptr, ".htga") == 0 || strcmp(eptr, ".HTGA") == 0))
@@ -1328,8 +1283,7 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 		input_image = load_image_with_stb(input_filename, padding, load_result);
 		break;
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
+		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	if (load_exr)
@@ -1338,15 +1292,12 @@ astc_codec_image *astc_codec_load_image(const char *input_filename, int padding,
 	return input_image;
 }
 
-
-
-
 int get_output_filename_enforced_bitness(const char *output_filename)
 {
 	if (output_filename == NULL)
 		return -1;
 
-	int filename_len = strlen(output_filename);
+	size_t filename_len = strlen(output_filename);
 	const char *eptr = output_filename + filename_len - 5;
 
 	if (eptr > output_filename && (strcmp(eptr, ".htga") == 0 || strcmp(eptr, ".HTGA") == 0))
@@ -1369,9 +1320,6 @@ int get_output_filename_enforced_bitness(const char *output_filename)
 	return -1;
 }
 
-
-
-
 int astc_codec_store_image(const astc_codec_image * output_image, const char *output_filename, int bitness, const char **format_string)
 {
 	#define STORE_TGA 0
@@ -1380,7 +1328,7 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 	#define STORE_DDS 3
 	#define STORE_EXR 4
 
-	int filename_len = strlen(output_filename);
+	size_t filename_len = strlen(output_filename);
 
 	int store_fileformat = STORE_TGA;
 	const char *eptr = output_filename + filename_len - 5;
@@ -1389,14 +1337,17 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 		store_fileformat = STORE_HTGA;
 	}
 	eptr = output_filename + filename_len - 4;
+
 	if (eptr > output_filename && (strcmp(eptr, ".ktx") == 0 || strcmp(eptr, ".KTX") == 0))
 	{
 		store_fileformat = STORE_KTX;
 	}
+
 	if (eptr > output_filename && (strcmp(eptr, ".dds") == 0 || strcmp(eptr, ".DDS") == 0))
 	{
 		store_fileformat = STORE_DDS;
 	}
+
 	if (eptr > output_filename && (strcmp(eptr, ".exr") == 0 || strcmp(eptr, ".EXR") == 0))
 	{
 		store_fileformat = STORE_EXR;
@@ -1411,7 +1362,6 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 		*format_string = "EXR";
 		return -1;
 	}
-
 
 	char htga_output_filename[300];
 	char htga_output_command[550];
@@ -1433,7 +1383,6 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 		*format_string = "DDS";
 		store_result = store_dds_uncompressed_image(output_image, output_filename, bitness);
 		break;
-
 	case STORE_EXR:
 		*format_string = "EXR";
 		sprintf(htga_output_filename, "%s.htga", output_filename);
@@ -1444,11 +1393,8 @@ int astc_codec_store_image(const astc_codec_image * output_image, const char *ou
 		if (system_retval != 0)
 			store_result = -99;
 		break;
-
 	default:
-		ASTC_CODEC_INTERNAL_ERROR;
-		exit(1);
-		break;
+		ASTC_CODEC_INTERNAL_ERROR();
 	};
 
 	return store_result;
