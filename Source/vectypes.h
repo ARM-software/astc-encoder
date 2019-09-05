@@ -13364,361 +13364,362 @@ static inline ushort4 convert_ushort4(ushort4 p)
 static inline float2 as_float2(float2 inp)
 {
 	float2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline int2 as_int2(float2 inp)
 {
 	int2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline uint2 as_uint2(float2 inp)
 {
 	uint2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline double2 as_double2(double2 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline float2 as_float2(int2 inp)
 {
 	float2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline int2 as_int2(int2 inp)
 {
 	int2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline uint2 as_uint2(int2 inp)
 {
 	uint2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline float2 as_float2(uint2 inp)
 {
 	float2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline int2 as_int2(uint2 inp)
 {
 	int2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline uint2 as_uint2(uint2 inp)
 {
 	uint2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline short2 as_short2(short2 inp)
 {
 	short2 val1;
-	memcpy(&val1, &inp, 4);
+	memcpy((void*)&val1, &inp, 4);
 	return val1;
 }
 static inline ushort2 as_ushort2(short2 inp)
 {
 	ushort2 val1;
-	memcpy(&val1, &inp, 4);
+	memcpy((void*)&val1, &inp, 4);
 	return val1;
 }
 static inline short2 as_short2(ushort2 inp)
 {
 	short2 val1;
-	memcpy(&val1, &inp, 4);
+	memcpy((void*)&val1, &inp, 4);
 	return val1;
 }
 static inline ushort2 as_ushort2(ushort2 inp)
 {
 	ushort2 val1;
-	memcpy(&val1, &inp, 4);
+	memcpy((void*)&val1, &inp, 4);
 	return val1;
 }
 static inline short4 as_short4(float2 inp)
 {
 	short4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline ushort4 as_ushort4(float2 inp)
 {
 	ushort4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline float4 as_float4(double2 inp)
 {
 	float4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline int4 as_int4(double2 inp)
 {
 	int4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline uint4 as_uint4(double2 inp)
 {
 	uint4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline short4 as_short4(int2 inp)
 {
 	short4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline ushort4 as_ushort4(int2 inp)
 {
 	ushort4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline short4 as_short4(uint2 inp)
 {
 	short4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline ushort4 as_ushort4(uint2 inp)
 {
 	ushort4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline float3 as_float3(float3 inp)
 {
 	float3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline int3 as_int3(float3 inp)
 {
 	int3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline uint3 as_uint3(float3 inp)
 {
 	uint3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline double3 as_double3(double3 inp)
 {
 	double3 val1;
-	memcpy(&val1, &inp, 24);
+	memcpy((void*)&val1, &inp, 24);
 	return val1;
 }
+
 static inline float3 as_float3(int3 inp)
 {
 	float3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline int3 as_int3(int3 inp)
 {
 	int3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline uint3 as_uint3(int3 inp)
 {
 	uint3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline float3 as_float3(uint3 inp)
 {
 	float3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline int3 as_int3(uint3 inp)
 {
 	int3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline uint3 as_uint3(uint3 inp)
 {
 	uint3 val1;
-	memcpy(&val1, &inp, 12);
+	memcpy((void*)&val1, &inp, 12);
 	return val1;
 }
 static inline short3 as_short3(short3 inp)
 {
 	short3 val1;
-	memcpy(&val1, &inp, 6);
+	memcpy((void*)&val1, &inp, 6);
 	return val1;
 }
 static inline ushort3 as_ushort3(short3 inp)
 {
 	ushort3 val1;
-	memcpy(&val1, &inp, 6);
+	memcpy((void*)&val1, &inp, 6);
 	return val1;
 }
 static inline short3 as_short3(ushort3 inp)
 {
 	short3 val1;
-	memcpy(&val1, &inp, 6);
+	memcpy((void*)&val1, &inp, 6);
 	return val1;
 }
 static inline ushort3 as_ushort3(ushort3 inp)
 {
 	ushort3 val1;
-	memcpy(&val1, &inp, 6);
+	memcpy((void*)&val1, &inp, 6);
 	return val1;
 }
 static inline double2 as_double2(float4 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline double2 as_double2(int4 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline double2 as_double2(uint4 inp)
 {
 	double2 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline float2 as_float2(short4 inp)
 {
 	float2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline int2 as_int2(short4 inp)
 {
 	int2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline uint2 as_uint2(short4 inp)
 {
 	uint2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline float2 as_float2(ushort4 inp)
 {
 	float2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline int2 as_int2(ushort4 inp)
 {
 	int2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline uint2 as_uint2(ushort4 inp)
 {
 	uint2 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline float4 as_float4(float4 inp)
 {
 	float4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline int4 as_int4(float4 inp)
 {
 	int4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline uint4 as_uint4(float4 inp)
 {
 	uint4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline double4 as_double4(double4 inp)
 {
 	double4 val1;
-	memcpy(&val1, &inp, 32);
+	memcpy((void*)&val1, &inp, 32);
 	return val1;
 }
 static inline float4 as_float4(int4 inp)
 {
 	float4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline int4 as_int4(int4 inp)
 {
 	int4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline uint4 as_uint4(int4 inp)
 {
 	uint4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline float4 as_float4(uint4 inp)
 {
 	float4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline int4 as_int4(uint4 inp)
 {
 	int4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline uint4 as_uint4(uint4 inp)
 {
 	uint4 val1;
-	memcpy(&val1, &inp, 16);
+	memcpy((void*)&val1, &inp, 16);
 	return val1;
 }
 static inline short4 as_short4(short4 inp)
 {
 	short4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline ushort4 as_ushort4(short4 inp)
 {
 	ushort4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline short4 as_short4(ushort4 inp)
 {
 	short4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 static inline ushort4 as_ushort4(ushort4 inp)
 {
 	ushort4 val1;
-	memcpy(&val1, &inp, 8);
+	memcpy((void*)&val1, &inp, 8);
 	return val1;
 }
 
