@@ -376,44 +376,47 @@ void compute_angular_endpoints_for_quantization_levels(int samplecount, const fl
 
 	for (i = 0; i < max_angular_steps; i++)
 	{
-		int samplecount = highest_weight[i] - lowest_weight[i] + 1;
-		if (samplecount >= (max_quantization_steps + 4))
+		int samplecount_weight = highest_weight[i] - lowest_weight[i] + 1;
+		if (samplecount_weight >= (max_quantization_steps + 4))
 		{
 			continue;
 		}
-		if (samplecount < 2)
-			samplecount = 2;
 
-		if (best_errors[samplecount] > error[i])
+		if (samplecount_weight < 2)
 		{
-			best_errors[samplecount] = error[i];
-			best_scale[samplecount] = i;
-			cut_low_weight[samplecount] = 0;
+			samplecount_weight = 2;
+		}
+
+		if (best_errors[samplecount_weight] > error[i])
+		{
+			best_errors[samplecount_weight] = error[i];
+			best_scale[samplecount_weight] = i;
+			cut_low_weight[samplecount_weight] = 0;
 		}
 
 		float error_cut_low = error[i] + cut_low_weight_error[i];
 		float error_cut_high = error[i] + cut_high_weight_error[i];
 		float error_cut_low_high = error[i] + cut_low_weight_error[i] + cut_high_weight_error[i];
 
-		if (best_errors[samplecount - 1] > error_cut_low)
+		if (best_errors[samplecount_weight - 1] > error_cut_low)
 		{
-			best_errors[samplecount - 1] = error_cut_low;
-			best_scale[samplecount - 1] = i;
-			cut_low_weight[samplecount - 1] = 1;
+			best_errors[samplecount_weight - 1] = error_cut_low;
+			best_scale[samplecount_weight - 1] = i;
+			cut_low_weight[samplecount_weight - 1] = 1;
 		}
 
-		if (best_errors[samplecount - 1] > error_cut_high)
+		if (best_errors[samplecount_weight - 1] > error_cut_high)
 		{
-			best_errors[samplecount - 1] = error_cut_high;
-			best_scale[samplecount - 1] = i;
-			cut_low_weight[samplecount - 1] = 0;
+			best_errors[samplecount_weight - 1] = error_cut_high;
+			best_scale[samplecount_weight - 1] = i;
+			cut_low_weight[samplecount_weight - 1] = 0;
 		}
 
-		if (best_errors[samplecount - 2] > error_cut_low_high)
+		if (best_errors[samplecount_weight - 2] > error_cut_low_high)
 		{
-			best_errors[samplecount - 2] = error_cut_low_high;
-			best_scale[samplecount - 2] = i;
-			cut_low_weight[samplecount - 2] = 1;
+			best_errors[samplecount_weight - 2] = error_cut_low_high;
+			best_scale[samplecount_weight - 2] = i;
+			cut_low_weight[samplecount_weight - 2] = 1;
 		}
 
 	}

@@ -719,8 +719,6 @@ void dump_image(astc_codec_image * img)
 
 int astc_main(int argc, char **argv)
 {
-	int i;
-
 	test_inappropriate_extended_precision();
 	// initialization routines
 	prepare_angular_tables();
@@ -1503,7 +1501,7 @@ int astc_main(int argc, char **argv)
 			}
 
 			int swizzle_components[4];
-			for (i = 0; i < 4; i++)
+			for (int i = 0; i < 4; i++)
 				switch (argv[argidx - 1][i])
 				{
 				case 'r':
@@ -1549,7 +1547,7 @@ int astc_main(int argc, char **argv)
 			}
 
 			int swizzle_components[4];
-			for (i = 0; i < 4; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				switch (argv[argidx - 1][i])
 				{
@@ -2229,10 +2227,10 @@ int astc_main(int argc, char **argv)
 	// determine encoding bitness as follows:
 	// if enforced by the output format, follow the output format's result
 	// else use decode_mode to pick bitness.
-	int bitness = get_output_filename_enforced_bitness(output_filename);
-	if (bitness == -1)
+	int out_bitness = get_output_filename_enforced_bitness(output_filename);
+	if (out_bitness == -1)
 	{
-		bitness = (decode_mode == DECODE_HDR) ? 16 : 8;
+		out_bitness = (decode_mode == DECODE_HDR) ? 16 : 8;
 	}
 
 	int xdim = -1;
@@ -2315,7 +2313,7 @@ int astc_main(int argc, char **argv)
 		// Merge input image data.
 		else
 		{
-			int i, z, xsize, ysize, zsize, bitness, slice_size;
+			int z, xsize, ysize, zsize, bitness, slice_size;
 
 			xsize = input_images[0]->xsize;
 			ysize = input_images[0]->ysize;
@@ -2340,7 +2338,7 @@ int astc_main(int argc, char **argv)
 			}
 
 			// Clean up temporary images.
-			for (i = 0; i < array_size; i++)
+			for (int i = 0; i < array_size; i++)
 			{
 				destroy_image(input_images[i]);
 			}
@@ -2400,11 +2398,11 @@ int astc_main(int argc, char **argv)
 	start_coding_time = get_time();
 
 	if (opmode == 1)
-		output_image = load_astc_file(input_filename, bitness, decode_mode, swz_decode);
+		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode);
 
 	// process image, if relevant
 	if (opmode == 2)
-		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, bitness, thread_count);
+		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
 
 	end_coding_time = get_time();
 
@@ -2423,7 +2421,7 @@ int astc_main(int argc, char **argv)
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(output_image, output_filename, bitness, &format_string);
+		store_result = astc_codec_store_image(output_image, output_filename, out_bitness, &format_string);
 
 		if (store_result < 0)
 		{
@@ -2450,8 +2448,10 @@ int astc_main(int argc, char **argv)
 	{
 		printf("%s ", argv[2]);
 		printf("%d %d  ", xdim_2d, ydim_2d);
-		for (i = 0; i < 2048; i++)
+		for (int i = 0; i < 2048; i++)
+		{
 			printf(" %d", block_mode_histogram[i]);
+		}
 		printf("\n");
 	}
 
