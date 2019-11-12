@@ -128,7 +128,12 @@ class TestImage():
         if self.format == "xy":
             args.append("-normal_psnr")
 
-        result = sp.run(args, capture_output=True, check=True, text=True)
+        try:
+            result = sp.run(args, capture_output=True, check=True, text=True)
+        except OSError:
+            print(args)
+            sys.exit(1)
+
 
         # Convert the TGA to PNG and delete the TGA (LDR only)
         if self.dynamicRange == "ldr":
@@ -192,15 +197,20 @@ class TestImage():
         # No reference data is a failure
         if blockSize not in self.referencePSNR:
             self.status[blockSize] = "fail"
+            return
+
+        refPSNR = float(self.referencePSNR[blockSize])
+        diffPSNR =  listPSNR[0] - refPSNR
+
         # Pass if PSNR matches to 3dp rounding
-        elif (float("%0.3f" % listPSNR[0])) == self.referencePSNR[blockSize]:
+        if float("%0.3f" % listPSNR[0]) == self.referencePSNR[blockSize]:
             self.status[blockSize] = "pass"
         # Pass if PSNR is better
-        elif listPSNR[0] >= float(self.referencePSNR[blockSize]):
-            self.status[blockSize] = "pass"
+        elif listPSNR[0] >= refPSNR:
+            self.status[blockSize] = "pass (Delta %0.4f dB)" % diffPSNR
         # Else we got worse so it's a fail ...
         else:
-            self.status[blockSize] = "fail"
+            self.status[blockSize] = "fail (Delta %0.4f dB)" % diffPSNR
 
     def skip_run(self, blockSize):
         """

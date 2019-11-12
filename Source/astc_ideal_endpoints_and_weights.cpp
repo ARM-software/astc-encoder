@@ -1369,9 +1369,6 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 				float flt_weight_val = qat->unquantized_value_flt[weight_val];
 				float flt_weight_next_up = qat->unquantized_value_flt[weight_next_up];
 				float flt_weight_next_down = qat->unquantized_value_flt[weight_next_down];
-
-				int do_quant_mod = 0;
-
 				float error_change_up, error_change_down;
 
 				// compute the error change from perturbing the weight either up or down.
@@ -1404,11 +1401,11 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 					quantized_weight_set[weight_to_perturb] = new_weight_val;
 
 					// update the infilled-weights
-					int num_weights = it->weight_num_texels[weight_to_perturb];
+					int num_weights_infill = it->weight_num_texels[weight_to_perturb];
 					float perturbation = (flt_new_weight_val - flt_weight_val) * (1.0f / TEXEL_WEIGHT_SUM);
 					const uint8_t *weight_texel_ptr = it->weight_texel[weight_to_perturb];
 					const float *weights_ptr = it->weights_flt[weight_to_perturb];
-					for (i = num_weights - 1; i >= 0; i--)
+					for (i = num_weights_infill - 1; i >= 0; i--)
 					{
 						uint8_t weight_texel = weight_texel_ptr[i];
 						float weights = weights_ptr[i];

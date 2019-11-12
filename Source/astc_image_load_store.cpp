@@ -869,13 +869,12 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							}
 							data[3] = fptr[3];
 
-							float x = (data[0] * 2.0f) - 1.0f;
-							float y = (data[3] * 2.0f) - 1.0f;
-							float z = 1.0f - x * x - y * y;
-							if (z < 0.0f)
-								z = 0.0f;
-							data[6] = (sqrt(z) * 0.5f) + 0.5f;
-
+							float xN = (data[0] * 2.0f) - 1.0f;
+							float yN = (data[3] * 2.0f) - 1.0f;
+							float zN = 1.0f - xN * xN - yN * yN;
+							if (zN < 0.0f)
+								zN = 0.0f;
+							data[6] = (sqrt(zN) * 0.5f) + 0.5f;
 
 							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);

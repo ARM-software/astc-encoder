@@ -810,7 +810,6 @@ void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weigh
 float prepare_error_weight_block(const astc_codec_image * input_image,
 								 int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, error_weight_block * ewb, error_weight_block_orig * ewbo)
 {
-	int x, y, z;
 	int idx = 0;
 
 	int any_mean_stdev_weight =
@@ -823,11 +822,11 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 
 	ewb->contains_zeroweight_texels = 0;
 
-	for (z = 0; z < zdim; z++)
+	for (int z = 0; z < zdim; z++)
 	{
-		for (y = 0; y < ydim; y++)
+		for (int y = 0; y < ydim; y++)
 		{
-			for (x = 0; x < xdim; x++)
+			for (int x = 0; x < xdim; x++)
 			{
 				int xpos = x + blk->xpos;
 				int ypos = y + blk->ypos;
@@ -886,14 +885,16 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 
 					if (ewp->ra_normal_angular_scale)
 					{
-						float x = (blk->orig_data[4 * idx] - 0.5f) * 2.0f;
-						float y = (blk->orig_data[4 * idx + 3] - 0.5f) * 2.0f;
-						float denom = 1.0f - x * x - y * y;
+						// Convert from 0 to 1 to -1 to +1 range.
+						float xN = (blk->orig_data[4 * idx] - 0.5f) * 2.0f;
+						float yN = (blk->orig_data[4 * idx + 3] - 0.5f) * 2.0f;
+
+						float denom = 1.0f - xN * xN - yN * yN;
 						if (denom < 0.1f)
 							denom = 0.1f;
 						denom = 1.0f / denom;
-						error_weight.x *= 1.0f + x * x * denom;
-						error_weight.w *= 1.0f + y * y * denom;
+						error_weight.x *= 1.0f + xN * xN * denom;
+						error_weight.w *= 1.0f + yN * yN * denom;
 					}
 
 					if (ewp->enable_rgb_scale_with_alpha)
@@ -959,12 +960,9 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 		}
 	}
 
-	int i;
-
 	float4 error_weight_sum = float4(0, 0, 0, 0);
 	int texels_per_block = xdim * ydim * zdim;
-
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		error_weight_sum = error_weight_sum + ewb->error_weights[i];
 

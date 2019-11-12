@@ -110,11 +110,11 @@ void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const ima
 	// finally, gather up the results.
 	for (i = 0; i < partition_count; i++)
 	{
-		int sample = cluster_center_samples[i];
-		float4 color = float4(blk->work_data[4 * sample],
-							  blk->work_data[4 * sample + 1],
-							  blk->work_data[4 * sample + 2],
-							  blk->work_data[4 * sample + 3]);
+		int center_sample = cluster_center_samples[i];
+		float4 color = float4(blk->work_data[4 * center_sample],
+							  blk->work_data[4 * center_sample + 1],
+							  blk->work_data[4 * center_sample + 2],
+							  blk->work_data[4 * center_sample + 3]);
 		cluster_centers[i] = color;
 	}
 }
@@ -128,7 +128,6 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 	int texels_per_block = xdim * ydim * zdim;
 
 	float distances[MAX_TEXELS_PER_BLOCK];
-	float4 center_color = cluster_centers[0];
 
 	int texels_per_partition[4];
 
@@ -142,7 +141,7 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 							  blk->work_data[4 * i + 1],
 							  blk->work_data[4 * i + 2],
 							  blk->work_data[4 * i + 3]);
-		float4 diff = color - center_color;
+		float4 diff = color - cluster_centers[0];
 		float distance = dot(diff, diff);
 		distances[i] = distance;
 		partition_of_texel[i] = 0;
