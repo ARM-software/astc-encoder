@@ -43,16 +43,19 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++11 -O3 -Wall -W -Wextra -Werror=shadow -msse2 -mfpmath=sse
+CPPFLAGS = -std=c++11 -O3 -Wall -W -Wall -Wextra -Wpedantic -Werror -Werror=shadow -msse2 -mfpmath=sse
 
 astcenc: $(OBJECTS)
-	g++ -o $@ $^ $(CPPFLAGS) -lpthread
+	@g++ -o $@ $^ $(CPPFLAGS) -lpthread
+	@echo "[Link] $@"
 
 $(OBJECTS): %.o: %.cpp $(HEADERS)
-	g++ -c -o $@ $< $(CPPFLAGS)
+	@g++ -c -o $@ $< $(CPPFLAGS)
+	@echo "[C++] $<"
 
 clean:
-	rm -f *.o
-	rm -f *.obj
-	rm -f astcenc
-	rm -f astcenc.exe
+	@rm -f *.o
+	@rm -f *.obj
+	@rm -f astcenc
+	@rm -f astcenc.exe
+	@echo "[Clean] Removing build outputs"
