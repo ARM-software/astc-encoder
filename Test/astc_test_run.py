@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------------
 # This confidential and proprietary software may be used only as authorised by
 # a licensing agreement from Arm Limited.
-#     (C) COPYRIGHT 2019 Arm Limited, ALL RIGHTS RESERVED
+#     (C) COPYRIGHT 2019-2020 Arm Limited, ALL RIGHTS RESERVED
 # The entire notice above must be reproduced on all authorised copies and
 # copies may only be made to the extent permitted by a licensing agreement from
 # Arm Limited.
@@ -27,6 +27,8 @@ else:
     TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
 
 TEST_EXTENSIONS = [".png", ".hdr"]
+
+TEST_REFERENCE = "Test/astc_test_reference.csv"
 
 
 class TestReference():
@@ -129,11 +131,12 @@ class TestImage():
             args.append("-normal_psnr")
 
         try:
-            result = sp.run(args, capture_output=True, check=True, text=True)
-        except OSError:
-            print(args)
+            result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
+                            check=True, universal_newlines=True)
+        except (OSError, sp.CalledProcessError):
+            print("ERROR: Test run failed")
+            print("  + %s" % " ".join(args))
             sys.exit(1)
-
 
         # Convert the TGA to PNG and delete the TGA (LDR only)
         if self.dynamicRange == "ldr":
@@ -200,7 +203,7 @@ class TestImage():
             return
 
         refPSNR = float(self.referencePSNR[blockSize])
-        diffPSNR =  listPSNR[0] - refPSNR
+        diffPSNR = listPSNR[0] - refPSNR
 
         # Pass if PSNR matches to 3dp rounding
         if float("%0.3f" % listPSNR[0]) == self.referencePSNR[blockSize]:
@@ -294,7 +297,7 @@ def get_test_reference_scores():
     Return the test reference score listing.
     """
     referenceResults = []
-    with open('Test/reference.csv') as csvfile:
+    with open(TEST_REFERENCE) as csvfile:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
@@ -329,23 +332,27 @@ def run_tests(args):
     maxCount = len(args.testBlockSize) * len(testList)
     curCount = 0
 
+    statRun = 0
+    statSkip = 0
+    statPass = 0
+
     for blockSize in args.testBlockSize:
         for test in testList:
             curCount += 1
 
             # Skip tests not enabled for the current testing throughness level
             if args.testLevel not in test.useLevel:
-                # TODO: Flag these as skipped in juxml?
+                statSkip += 1
                 continue
 
             # Skip tests not enabled for the current dynamic range level
             if args.testRange not in test.useRange:
-                # TODO: Flag these as skipped in juxml?
+                statSkip += 1
                 continue
 
             # Skip tests not enabled for the current data format
             if args.testFormat not in test.useFormat:
-                # TODO: Flag these as skipped in juxml?
+                statSkip += 1
                 continue
 
             # Start a new suite if the format changes
@@ -362,6 +369,12 @@ def run_tests(args):
             dat = (curCount, maxCount, test.name, blockSize,
                    test.runPSNR[blockSize], test.runTime[blockSize],
                    test.status[blockSize])
+
+            # Log results
+            statRun += 1
+            if "pass" in test.status[blockSize]:
+                statPass += 1
+
             log = "Ran test %u/%u: %s %s, %0.3f dB, %0.3f s, %s" % dat
             print(" + %s" % log)
 
@@ -376,6 +389,13 @@ def run_tests(args):
                 dat = (test.runPSNR[blockSize], test.referencePSNR[blockSize])
                 msg = "PSNR fail %0.3f dB is worse than %s dB" % dat
                 case.add_failure_info(msg)
+
+    # Print summary results
+    print("\nSummary")
+    if statRun == statPass:
+        print("+ PASS (%u ran)" % statRun)
+    else:
+        print("+ FAIL (%u ran, %u failed)" % (statRun, statRun - statPass))
 
     # Write the JUnit results file
     with open("TestOutput/results.xml", "w") as fileHandle:
@@ -420,7 +440,7 @@ def run_reference_rebuild():
             print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
-    with open("Test/reference.csv", "w", newline="") as fileHandle:
+    with open(TEST_REFERENCE, "w", newline="") as fileHandle:
         writer = csv.writer(fileHandle)
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
@@ -439,7 +459,7 @@ def run_reference_update():
         TestImage.testRuns = 1
         TestImage.warmupRuns = 0
     else:
-        TestImage.testRuns = 10
+        TestImage.testRuns = 3
         TestImage.warmupRuns = 1
 
     # Delete and recreate test output location
@@ -473,7 +493,7 @@ def run_reference_update():
                 print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
-    with open("Test/reference.csv", "w", newline="") as fileHandle:
+    with open(TEST_REFERENCE, "w", newline="") as fileHandle:
         writer = csv.writer(fileHandle)
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
