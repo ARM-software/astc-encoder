@@ -17,23 +17,8 @@
 	#include <stdio.h>
 #endif
 
-// clamp an input value to [0,1]; Nan is turned into 0.
-static inline float clamp01(float val)
-{
-	if (val > 1.0f)
-		val = 1.0f;
-	else if (val > 0.0f)
-	{
-		// deliberately empty; switching the order of calculation here will fail to handle 0.
-	}
-	else
-		val = 0.0f;
-	return val;
-}
-
 /*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
-
  */
 
 // for a given partition, compute for every (integer-component-count, quantization-level)
