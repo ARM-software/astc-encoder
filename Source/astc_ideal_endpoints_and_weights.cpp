@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -1018,13 +1018,13 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 {
 	int i, j, k;
 
-	int blockdim = (int)floor(sqrt((float)it->num_texels) + 0.5f);
 	int texels_per_block = it->num_texels;
 	int weight_count = it->num_weights;
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{
+			int blockdim = (int)floor(sqrt((float)it->num_texels) + 0.5f);
 			printf("%s : decimation from %d to %d weights\n\n", __func__, it->num_texels, it->num_weights);
 			printf("Input weight set:\n");
 			for (i = 0; i < it->num_texels; i++)
@@ -1054,7 +1054,6 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 
 	// if the shortcut is not available, we will instead compute a simple estimate
 	// and perform three rounds of refinement on that estimate.
-	float initial_weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
 	// compute an initial average for each weight.
@@ -1078,6 +1077,7 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 	}
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
+		float initial_weight_set[MAX_WEIGHTS_PER_BLOCK];
 		if (print_diagnostics)
 		{
 			// stash away the initial-weight estimates for later printing

@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -45,7 +45,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 																			   // arrays to return results back through.
 																			   float best_error[21][4], int format_of_choice[21][4])
 {
-	int i, j;
+	int i;
 	int partition_size = pi->texels_per_partition[partition_index];
 
 	static const float baseline_quant_error[21] = {
@@ -286,7 +286,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
 				{
-					for (j = 0; j < 4; j++)
+					for (int j = 0; j < 4; j++)
 					{
 						printf("(hdr) quant-level=%d ints=%d format=%d error=%f\n", i, j, format_of_choice[i][j], best_error[i][j]);
 					}
@@ -383,7 +383,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
 				{
-					for (j = 0; j < 4; j++)
+					for (int j = 0; j < 4; j++)
 					{
 						printf(" (ldr) quant-level=%d ints=%d format=%d error=%f\n", i, j, format_of_choice[i][j], best_error[i][j]);
 					}
