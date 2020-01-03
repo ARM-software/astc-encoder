@@ -1835,7 +1835,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
-					printf("Plane-1 partition %d determinants: R=%g G=%g B=%g A=%g L=%g S=%g\n", i, red_det1, green_det1, blue_det1, alpha_det1, lum_det1, scale_det1);
+					printf("Plane-1 partition %d determinants: R=%g G=%g B=%g A=%g S=%g\n", i, red_det1, green_det1, blue_det1, alpha_det1, scale_det1);
 			#endif
 
 			pmat1_red[i] = invert(pmat1_red[i]);
