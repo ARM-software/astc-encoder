@@ -43,7 +43,8 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++11 -O3 -Wall -W -Wall -Wextra -Wpedantic -Werror -Werror=shadow -msse2 -mfpmath=sse
+CPPFLAGS = -std=c++11 -O3 -msse2 -mfpmath=sse \
+           -Wall -Wextra -Wpedantic -Werror -Werror=shadow
 
 astcenc: $(OBJECTS)
 	@g++ -o $@ $^ $(CPPFLAGS) -lpthread
