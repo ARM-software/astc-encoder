@@ -1467,7 +1467,6 @@ static inline float mat_square_sum(mat2 p)
 void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
 							float4 * rgbs_vectors,	// used to return RGBS-vectors. (endpoint mode #6)
 							float4 * rgbo_vectors,	// used to return RGBO-vectors. (endpoint mode #7)
-							float2 * lum_vectors,	// used to return luminance-vectors.
 							const uint8_t * weight_set8,	// the current set of weight values
 							const uint8_t * plane2_weight_set8,	// NULL if plane 2 is not actually used.
 							int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
@@ -1510,13 +1509,12 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		}
 	#endif
 
-	mat2 pmat1_red[4], pmat1_green[4], pmat1_blue[4], pmat1_alpha[4], pmat1_lum[4], pmat1_scale[4];	// matrices for plane of weights 1
+	mat2 pmat1_red[4], pmat1_green[4], pmat1_blue[4], pmat1_alpha[4], pmat1_scale[4];	// matrices for plane of weights 1
 	mat2 pmat2_red[4], pmat2_green[4], pmat2_blue[4], pmat2_alpha[4];	// matrices for plane of weights 2
 	float2 red_vec[4];
 	float2 green_vec[4];
 	float2 blue_vec[4];
 	float2 alpha_vec[4];
-	float2 lum_vec[4];
 	float2 scale_vec[4];
 
 	for (i = 0; i < partition_count; i++)
@@ -1531,7 +1529,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			pmat2_blue[i].v[j] = float2(0, 0);
 			pmat1_alpha[i].v[j] = float2(0, 0);
 			pmat2_alpha[i].v[j] = float2(0, 0);
-			pmat1_lum[i].v[j] = float2(0, 0);
 			pmat1_scale[i].v[j] = float2(0, 0);
 		}
 
@@ -1539,7 +1536,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		green_vec[i] = float2(0, 0);
 		blue_vec[i] = float2(0, 0);
 		alpha_vec[i] = float2(0, 0);
-		lum_vec[i] = float2(0, 0);
 		scale_vec[i] = float2(0, 0);
 	}
 
@@ -1549,7 +1545,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 	float green_weight_sum[4];
 	float blue_weight_sum[4];
 	float alpha_weight_sum[4];
-	float lum_weight_sum[4];
 	float scale_weight_sum[4];
 
 	float red_weight_weight_sum[4];
@@ -1570,7 +1565,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		blue_weight_sum[i] = 1e-17f;
 		alpha_weight_sum[i] = 1e-17f;
 
-		lum_weight_sum[i] = 1e-17f;
 		scale_weight_sum[i] = 1e-17f;
 
 		red_weight_weight_sum[i] = 1e-17f;
@@ -1587,8 +1581,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 	float3 scale_directions[4];
 	float scale_min[4];
 	float scale_max[4];
-	float lum_min[4];
-	float lum_max[4];
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -1613,8 +1605,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		scale_directions[i] = normalize(rgb_sum[i] / rgb_weight_sum[i]);
 		scale_max[i] = 0.0f;
 		scale_min[i] = 1e10f;
-		lum_max[i] = 0.0f;
-		lum_min[i] = 1e10f;
 	}
 
 	for (i = 0; i < texels_per_block; i++)
@@ -1638,16 +1628,10 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		float blue_weight = ewb->texel_weight_b[i];
 		float alpha_weight = ewb->texel_weight_a[i];
 
-		float lum_weight = (red_weight + green_weight + blue_weight);
-		float scale_weight = lum_weight;
+		float scale_weight = (red_weight + green_weight + blue_weight);
 
-		float lum = (r * red_weight + g * green_weight + b * blue_weight) / lum_weight;
 		float3 scale_direction = scale_directions[part];
 		float scale = dot(scale_direction, float3(r, g, b));
-		if (lum < lum_min[part])
-			lum_min[part] = scale;
-		if (lum > lum_max[part])
-			lum_max[part] = scale;
 		if (scale < scale_min[part])
 			scale_min[part] = scale;
 		if (scale > scale_max[part])
@@ -1657,7 +1641,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		green_weight_sum[part] += green_weight;
 		blue_weight_sum[part] += blue_weight;
 		alpha_weight_sum[part] += alpha_weight;
-		lum_weight_sum[part] += lum_weight;
 		scale_weight_sum[part] += scale_weight;
 
 		pmat1_red[part].v[0].x += om_idx0 * om_idx0 * red_weight;
@@ -1679,11 +1662,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		pmat1_alpha[part].v[0].y += idx0 * om_idx0 * alpha_weight;
 		pmat1_alpha[part].v[1].x += idx0 * om_idx0 * alpha_weight;
 		pmat1_alpha[part].v[1].y += idx0 * idx0 * alpha_weight;
-
-		pmat1_lum[part].v[0].x += om_idx0 * om_idx0 * lum_weight;
-		pmat1_lum[part].v[0].y += idx0 * om_idx0 * lum_weight;
-		pmat1_lum[part].v[1].x += idx0 * om_idx0 * lum_weight;
-		pmat1_lum[part].v[1].y += idx0 * idx0 * lum_weight;
 
 		pmat1_scale[part].v[0].x += om_idx0 * om_idx0 * scale_weight;
 		pmat1_scale[part].v[0].y += idx0 * om_idx0 * scale_weight;
@@ -1730,14 +1708,12 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		green_vec[part].x += (green_weight * g) * (1.0f - green_idx);
 		blue_vec[part].x += (blue_weight * b) * (1.0f - blue_idx);
 		alpha_vec[part].x += (alpha_weight * a) * (1.0f - alpha_idx);
-		lum_vec[part].x += (lum_weight * lum) * om_idx0;
 		scale_vec[part].x += (scale_weight * scale) * om_idx0;
 
 		red_vec[part].y += (red_weight * r) * red_idx;
 		green_vec[part].y += (green_weight * g) * green_idx;
 		blue_vec[part].y += (blue_weight * b) * blue_idx;
 		alpha_vec[part].y += (alpha_weight * a) * alpha_idx;
-		lum_vec[part].y += (lum_weight * lum) * idx0;
 		scale_vec[part].y += (scale_weight * scale) * idx0;
 
 		red_weight_weight_sum[part] += red_weight * red_idx;
@@ -1812,7 +1788,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			scalediv = 1.0f;
 
 		rgbs_vectors[i] = float4(scale_directions[i] * scale_max[i], scalediv);
-		lum_vectors[i] = float2(lum_min[i], lum_max[i]);
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -1836,8 +1811,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
 
 			rgbs_vectors[i] = float4(scale_directions[i] * scale_max[i], 1.0f);
-			float lumval = (red_vec[i].x + red_vec[i].y + green_vec[i].x + green_vec[i].y + blue_vec[i].x + blue_vec[i].y) / (red_weight_sum[i] + green_weight_sum[i] + blue_weight_sum[i]);
-			lum_vectors[i] = float2(lumval, lumval);
 		}
 		else
 		{
@@ -1852,14 +1825,12 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			float green_det1 = determinant(pmat1_green[i]);
 			float blue_det1 = determinant(pmat1_blue[i]);
 			float alpha_det1 = determinant(pmat1_alpha[i]);
-			float lum_det1 = determinant(pmat1_lum[i]);
 			float scale_det1 = determinant(pmat1_scale[i]);
 
 			float red_mss1 = mat_square_sum(pmat1_red[i]);
 			float green_mss1 = mat_square_sum(pmat1_green[i]);
 			float blue_mss1 = mat_square_sum(pmat1_blue[i]);
 			float alpha_mss1 = mat_square_sum(pmat1_alpha[i]);
-			float lum_mss1 = mat_square_sum(pmat1_lum[i]);
 			float scale_mss1 = mat_square_sum(pmat1_scale[i]);
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1871,7 +1842,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			pmat1_green[i] = invert(pmat1_green[i]);
 			pmat1_blue[i] = invert(pmat1_blue[i]);
 			pmat1_alpha[i] = invert(pmat1_alpha[i]);
-			pmat1_lum[i] = invert(pmat1_lum[i]);
 			pmat1_scale[i] = invert(pmat1_scale[i]);
 
 			float4 ep0 = float4(dot(pmat1_red[i].v[0], red_vec[i]),
@@ -1883,8 +1853,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 								dot(pmat1_blue[i].v[1], blue_vec[i]),
 								dot(pmat1_alpha[i].v[1], alpha_vec[i]));
 
-			float lum_ep0 = dot(pmat1_lum[i].v[0], lum_vec[i]);
-			float lum_ep1 = dot(pmat1_lum[i].v[1], lum_vec[i]);
 			float scale_ep0 = dot(pmat1_scale[i].v[0], scale_vec[i]);
 			float scale_ep1 = dot(pmat1_scale[i].v[1], scale_vec[i]);
 
@@ -1909,11 +1877,6 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 				ep->endpt1[i].w = ep1.w;
 			}
 
-			if (fabs(lum_det1) > (lum_mss1 * 1e-4f) && lum_ep0 == lum_ep0 && lum_ep1 == lum_ep1 && lum_ep0 < lum_ep1)
-			{
-				lum_vectors[i].x = lum_ep0;
-				lum_vectors[i].y = lum_ep1;
-			}
 			if (fabs(scale_det1) > (scale_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
 				float scalediv = scale_ep0 / scale_ep1;
@@ -2038,12 +2001,8 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			{
 				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
 				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
-
 				printf("%d RGBS: <%g %g %g %g>\n", i, rgbs_vectors[i].x, rgbs_vectors[i].y, rgbs_vectors[i].z, rgbs_vectors[i].w);
-
 				printf("%d RGBO <%g %g %g %g>\n", i, rgbo_vectors[i].x, rgbo_vectors[i].y, rgbo_vectors[i].z, rgbo_vectors[i].w);
-
-				printf("%d Lum: <%g %g>\n", i, lum_vectors[i].x, lum_vectors[i].y);
 			}
 		}
 	#endif

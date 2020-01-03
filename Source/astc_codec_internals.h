@@ -673,7 +673,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
 							float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 							float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
-							float2 * lum_vectors,	// used to return luminance-vectors.
 							const uint8_t * weight_set,	// the current set of weight values
 							const uint8_t * plane2_weight_set,	// NULL if plane 2 is not actually used.
 							int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
