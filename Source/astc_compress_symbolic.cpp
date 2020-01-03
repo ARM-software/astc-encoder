@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -423,8 +423,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 			// store the colors for the block
 			for (j = 0; j < partition_count; j++)
 			{
-				scb->color_formats[j] = pack_color_endpoints(decode_mode,
-															 eix[decimation_mode].ep.endpt0[j],
+				scb->color_formats[j] = pack_color_endpoints(eix[decimation_mode].ep.endpt0[j],
 															 eix[decimation_mode].ep.endpt1[j],
 															 rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
 			}
@@ -443,8 +442,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 				int color_formats_mod[4];
 				for (j = 0; j < partition_count; j++)
 				{
-					color_formats_mod[j] = pack_color_endpoints(decode_mode,
-																eix[decimation_mode].ep.endpt0[j],
+					color_formats_mod[j] = pack_color_endpoints(eix[decimation_mode].ep.endpt0[j],
 																eix[decimation_mode].ep.endpt1[j],
 																rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
 				}
@@ -713,8 +711,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 			// store the colors for the block
 			for (j = 0; j < partition_count; j++)
 			{
-				scb->color_formats[j] = pack_color_endpoints(decode_mode,
-															 epm.endpt0[j],
+				scb->color_formats[j] = pack_color_endpoints(epm.endpt0[j],
 															 epm.endpt1[j],
 															 rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], scb->color_values[j], color_quantization_level[i]);
 			}
@@ -728,8 +725,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 				int color_formats_mod[4];
 				for (j = 0; j < partition_count; j++)
 				{
-					color_formats_mod[j] = pack_color_endpoints(decode_mode,
-																epm.endpt0[j],
+					color_formats_mod[j] = pack_color_endpoints(epm.endpt0[j],
 																epm.endpt1[j],
 																rgbs_colors[j], rgbo_colors[j], partition_format_specifiers[i][j], colorvals[j], color_quantization_level_mod[i]);
 				}
@@ -1256,7 +1252,6 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 	int xpos = blk->xpos;
 	int ypos = blk->ypos;
 	int zpos = blk->zpos;
-	int x, y, z;
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
@@ -1271,9 +1266,9 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 			printf("Alpha-min: %f   Alpha-max: %f\n", blk->alpha_min, blk->alpha_max);
 			printf("Grayscale: %d\n", blk->grayscale);
 
-			for (z = 0; z < zdim; z++)
-				for (y = 0; y < ydim; y++)
-					for (x = 0; x < xdim; x++)
+			for (int z = 0; z < zdim; z++)
+				for (int y = 0; y < ydim; y++)
+					for (int x = 0; x < xdim; x++)
 					{
 						int idx = ((z * ydim + y) * xdim + x) * 4;
 						printf("Texel (%d %d %d) : orig=< %g, %g, %g, %g >, work=< %g, %g, %g, %g >\n",
@@ -1357,9 +1352,9 @@ float compress_symbolic_block(const astc_codec_image * input_image,
 		if (print_diagnostics)
 		{
 			printf("\n");
-			for (z = 0; z < zdim; z++)
-				for (y = 0; y < ydim; y++)
-					for (x = 0; x < xdim; x++)
+			for (int z = 0; z < zdim; z++)
+				for (int y = 0; y < ydim; y++)
+					for (int x = 0; x < xdim; x++)
 					{
 						int idx = (z * ydim + y) * xdim + x;
 						printf("ErrorWeight (%d %d %d) : < %g, %g, %g, %g >\n", x, y, z, ewb->error_weights[idx].x, ewb->error_weights[idx].y, ewb->error_weights[idx].z, ewb->error_weights[idx].w);

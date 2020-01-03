@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -58,9 +58,9 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 // works on Linux only, and slows down encoding significantly.
 // #define DEBUG_CAPTURE_NAN
 
-// the PRINT_DIAGNOSTICS macro enables the -diag command line switch,
-// which can be used to look for codec bugs
-#define DEBUG_PRINT_DIAGNOSTICS
+// uncomment this macro to enable the ability to log diagnostics using the
+// -diag command line switch, which is useful for bug hunting in the encoder
+// #define DEBUG_PRINT_DIAGNOSTICS
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	extern int print_diagnostics;
@@ -620,7 +620,7 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 // function to pack a pair of color endpoints into a series of integers.
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, int format, int *output, int quantization_level);
+int pack_color_endpoints(float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, int format, int *output, int quantization_level);
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quantization_level, const int *input, int *rgb_hdr, int *alpha_hdr, int *nan_endpoint, ushort4 * output0, ushort4 * output1);
