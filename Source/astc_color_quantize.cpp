@@ -764,41 +764,6 @@ static inline void quantize_and_unquantize_retain_top_four_bits(int quantization
 	*unquantized_value = uquantval;
 }
 
-// quantize and unquantize a number, wile making sure to retain the top two bits.
-static inline void quantize_and_unquantize_retain_top_bit(int quantization_level, int value_to_quantize,	// 0 to 255.
-														  int *quantized_value, int *unquantized_value)
-{
-
-	int perform_loop;
-	int quantval;
-	int uquantval;
-
-	do
-	{
-		quantval = color_quantization_tables[quantization_level][value_to_quantize];
-		uquantval = color_unquantization_tables[quantization_level][quantval];
-
-		// perform looping if the top two bits were modified by quant/unquant
-		perform_loop = (value_to_quantize & 0x80) != (uquantval & 0x80);
-
-		if ((uquantval & 0x80) > (value_to_quantize & 0x80))
-		{
-			// quant/unquant rounded UP so that the top two bits changed;
-			// decrement the input value in hopes that this will avoid rounding up.
-			value_to_quantize--;
-		}
-		else if ((uquantval & 0x80) < (value_to_quantize & 0x80))
-		{
-			// quant/unquant rounded DOWN so that the top two bits changed;
-			// decrement the input value in hopes that this will avoid rounding down.
-			value_to_quantize--;
-		}
-	} while (perform_loop);
-
-	*quantized_value = quantval;
-	*unquantized_value = uquantval;
-}
-
 /* HDR color encoding, take #3 */
 void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 {
