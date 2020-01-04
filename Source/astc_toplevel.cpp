@@ -728,8 +728,8 @@ int astc_main(int argc, char **argv)
 	if (argc < 4)
 	{
 
-		printf(	"ASTC codec version 1.7\n"
-				"Copyright (C) 2011-2019 Arm Limited\n"
+		printf(	"ASTC codec version 2.0 (alpha)\n"
+				"Copyright (C) 2011-2020 Arm Limited\n"
 				"All rights reserved. Use of this software is subject to terms of its license.\n\n"
 				"Usage:\n"
 				"Compress to texture file:\n"

@@ -7,8 +7,8 @@ bisection easier, the list is maintained in approximate chronological order
 
 ## Maths library changes
 
-The astc_mathlib library has been cleaned up, with a lot of unused
-functionality stripped out.
+The astc_mathlib library has been cleaned up, with all unused functionality
+stripped out.
 
 The vector template classes have been stripped back to a basic implementation,
 with the flexible channel swizzle functionality removed. This makes it easier
