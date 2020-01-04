@@ -604,7 +604,7 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 int pack_color_endpoints(float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color, int format, int *output, int quantization_level);
 
 // unpack a pair of color endpoints from a series of integers.
-void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quantization_level, const int *input, int *rgb_hdr, int *alpha_hdr, int *nan_endpoint, ushort4 * output0, ushort4 * output1);
+void unpack_color_endpoints(astc_decode_mode decode_mode, int format, int quantization_level, const int *input, int *rgb_hdr, int *alpha_hdr, int *nan_endpoint, uint4 * output0, uint4 * output1);
 
 struct encoding_choice_errors
 {
@@ -692,7 +692,7 @@ float4 lerp_color_flt(const float4 color0, const float4 color1, float weight,	//
 					  int plane2_color_component	// 0..3; -1 if only one plane of weights is present.
 	);
 
-ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 color1, int weight,	// 0..64
+uint4 lerp_color_int(astc_decode_mode decode_mode, uint4 color0, uint4 color1, int weight,	// 0..64
 					   int plane2_weight,	// 0..64
 					   int plane2_color_component	// 0..3; -1 if only one plane of weights is present.
 	);

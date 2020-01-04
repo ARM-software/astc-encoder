@@ -53,18 +53,15 @@ typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
 typedef vtype4<float>        float4;
 typedef vtype4<double>       double4;
-typedef vtype4<unsigned short> ushort4;
 typedef vtype4<int>          int4;
 typedef vtype4<unsigned int> uint4;
 
-// TODO: Optimizations need to get rid of double and ushort from here (double
-// is large and slow and ushort has weaker support in SSE and AVX than uint)
+// TODO: Optimizations need to get rid of double; it's slow
 
 static inline float2  operator+(float2 p,  float2 q)   { return float2(  p.x + q.x, p.y + q.y ); }
 static inline float3  operator+(float3 p,  float3 q)   { return float3(  p.x + q.x, p.y + q.y, p.z + q.z ); }
 static inline float4  operator+(float4 p,  float4 q)   { return float4(  p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
 static inline double4 operator+(double4 p, double4 q)  { return double4( p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
-static inline ushort4 operator+(ushort4 p, ushort4 q)  { return ushort4( p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
 static inline int4    operator+(int4 p,    int4 q)     { return int4(    p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
 static inline uint4   operator+(uint4 p,   uint4 q)    { return uint4(   p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
 
@@ -72,7 +69,6 @@ static inline float2  operator-(float2 p,  float2 q)   { return float2(  p.x - q
 static inline float3  operator-(float3 p,  float3 q)   { return float3(  p.x - q.x, p.y - q.y, p.z - q.z ); }
 static inline float4  operator-(float4 p,  float4 q)   { return float4(  p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
 static inline double4 operator-(double4 p, double4 q)  { return double4( p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
-static inline ushort4 operator-(ushort4 p, ushort4 q)  { return ushort4( p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
 static inline int4    operator-(int4 p,    int4 q)     { return int4(    p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
 static inline uint4   operator-(uint4 p,   uint4 q)    { return uint4(   p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
 
@@ -80,7 +76,6 @@ static inline float2  operator*(float2 p,  float2 q)   { return float2(  p.x * q
 static inline float3  operator*(float3 p,  float3 q)   { return float3(  p.x * q.x, p.y * q.y, p.z * q.z ); }
 static inline float4  operator*(float4 p,  float4 q)   { return float4(  p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
 static inline double4 operator*(double4 p, double4 q)  { return double4( p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
-static inline ushort4 operator*(ushort4 p, ushort4 q)  { return ushort4( p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
 static inline int4    operator*(int4 p,    int4 q)     { return int4(    p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
 static inline uint4   operator*(uint4 p,   uint4 q)    { return uint4(   p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
 

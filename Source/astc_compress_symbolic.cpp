@@ -46,8 +46,8 @@ int realign_weights(astc_decode_mode decode_mode,
 	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
 
 	// decode the color endpoints
-	ushort4 color_endpoint0[4];
-	ushort4 color_endpoint1[4];
+	uint4 color_endpoint0[4];
+	uint4 color_endpoint1[4];
 	int rgb_hdr[4];
 	int alpha_hdr[4];
 	int nan_endpoint[4];
@@ -92,7 +92,7 @@ int realign_weights(astc_decode_mode decode_mode,
 				plane2_weight = compute_value_of_texel_flt( texel, it, uq_plane2_weights ); \
 			int int_plane1_weight = static_cast<int>(floor( plane1_weight*64.0f + 0.5f ) ); \
 			int int_plane2_weight = static_cast<int>(floor( plane2_weight*64.0f + 0.5f ) ); \
-			ushort4 lrp_color = lerp_color_int( \
+			uint4 lrp_color = lerp_color_int( \
 				decode_mode, \
 				color_endpoint0[partition], \
 				color_endpoint1[partition], \

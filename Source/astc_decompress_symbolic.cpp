@@ -27,7 +27,7 @@ int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, co
 	return summed_value >> 4;
 }
 
-ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 color1, int weight, int plane2_weight, int plane2_color_component	// -1 in 1-plane mode
+uint4 lerp_color_int(astc_decode_mode decode_mode, uint4 color0, uint4 color1, int weight, int plane2_weight, int plane2_color_component	// -1 in 1-plane mode
 	)
 {
 	int4 ecolor0 = int4(color0.x, color0.y, color0.z, color0.w);
@@ -65,7 +65,7 @@ ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 col
 	if (decode_mode == DECODE_LDR_SRGB)
 		color = color * 257;
 
-	return ushort4(color.x, color.y, color.z, color.w);
+	return uint4(color.x, color.y, color.z, color.w);
 }
 
 void decompress_symbolic_block(astc_decode_mode decode_mode,
@@ -196,8 +196,8 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
 
 	// decode the color endpoints
-	ushort4 color_endpoint0[4];
-	ushort4 color_endpoint1[4];
+	uint4 color_endpoint0[4];
+	uint4 color_endpoint1[4];
 	int rgb_hdr_endpoint[4];
 	int alpha_hdr_endpoint[4];
 	int nan_endpoint[4];
@@ -245,12 +245,12 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	{
 		int partition = pt->partition_of_texel[i];
 
-		ushort4 color = lerp_color_int(decode_mode,
-									   color_endpoint0[partition],
-									   color_endpoint1[partition],
-									   weights[i],
-									   plane2_weights[i],
-									   is_dual_plane ? plane2_color_component : -1);
+		uint4 color = lerp_color_int(decode_mode,
+									 color_endpoint0[partition],
+									 color_endpoint1[partition],
+									 weights[i],
+									 plane2_weights[i],
+									 is_dual_plane ? plane2_color_component : -1);
 
 		blk->rgb_lns[i] = rgb_hdr_endpoint[partition];
 		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
