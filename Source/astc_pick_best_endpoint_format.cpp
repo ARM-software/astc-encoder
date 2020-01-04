@@ -105,7 +105,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 
 	float4 sum_range_error =
 		(ep0_range_error_low * ep0_range_error_low) + (ep1_range_error_low * ep1_range_error_low) + (ep0_range_error_high * ep0_range_error_high) + (ep1_range_error_high * ep1_range_error_high);
-	float rgb_range_error = dot(sum_range_error.xyz, error_weight.xyz) * 0.5f * partition_size;
+	float rgb_range_error = dot(float3(sum_range_error.x, sum_range_error.y, sum_range_error.z), float3(error_weight.x, error_weight.y, error_weight.z)) * 0.5f * partition_size;
 	float alpha_range_error = sum_range_error.w * error_weight.w * 0.5f * partition_size;
 
 
@@ -146,8 +146,8 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		}
 
 		float bf = af - ep1_min;	// estimate of color-component spread in high endpoint color
-		float3 prd = ep1.xyz - float3(cf, cf, cf);
-		float3 pdif = prd - ep0.xyz;
+		float3 prd = float3(ep1.x, ep1.y, ep1.z) - float3(cf, cf, cf);
+		float3 pdif = prd - float3(ep0.x, ep0.y, ep0.z);
 		// estimate of color-component spread in low endpoint color
 		float df = MAX(MAX(fabs(pdif.x), fabs(pdif.y)), fabs(pdif.z));
 

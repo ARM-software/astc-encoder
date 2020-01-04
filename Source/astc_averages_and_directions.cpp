@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -14,7 +14,6 @@
  */
 
 #include "astc_codec_internals.h"
-#include "mathlib.h"
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
@@ -60,7 +59,7 @@ void compute_averages_and_directions_rgba(const partition_info * pt,
 			base_sum = base_sum + texel_datum;
 		}
 
-		float4 average = base_sum * 1.0f / MAX(partition_weight, 1e-7f);
+		float4 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * color_scalefactors[partition];
 
 
@@ -113,10 +112,10 @@ void compute_averages_and_directions_rgba(const partition_info * pt,
 		}
 
 		directions_rgba[partition] = best_vector;
-		directions_rgb[partition] = best_vector.xyz;
-		directions_rga[partition] = best_vector.xyw;
-		directions_rba[partition] = best_vector.xzw;
-		directions_gba[partition] = best_vector.yzw;
+		directions_rgb[partition] = float3(best_vector.x, best_vector.y, best_vector.z);
+		directions_rga[partition] = float3(best_vector.x, best_vector.y, best_vector.w);
+		directions_rba[partition] = float3(best_vector.x, best_vector.z, best_vector.w);
+		directions_gba[partition] = float3(best_vector.y, best_vector.z, best_vector.w);
 	}
 }
 
@@ -152,9 +151,8 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 		}
 
 		float4 csf = color_scalefactors[partition];
-		float3 average = base_sum * 1.0f / MAX(partition_weight, 1e-7f);
-		averages[partition] = average * csf.xyz;
-
+		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		averages[partition] = average * float3(csf.x, csf.y, csf.z);
 
 		float3 sum_xp = float3(0, 0, 0);
 		float3 sum_yp = float3(0, 0, 0);
@@ -195,9 +193,9 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 		}
 
 		directions_rgb[partition] = best_vector;
-		directions_gb[partition] = best_vector.yz;
-		directions_rb[partition] = best_vector.xz;
-		directions_rg[partition] = best_vector.xy;
+		directions_gb[partition] = float2(best_vector.y, best_vector.z);
+		directions_rb[partition] = float2(best_vector.x, best_vector.z);
+		directions_rg[partition] = float2(best_vector.x, best_vector.y);
 	}
 }
 
@@ -246,8 +244,8 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 
 		float3 csf = color_scalefactors[partition];
 
-		float3 average = base_sum * 1.0f / MAX(partition_weight, 1e-7f);
-		averages[partition] = average * csf.xyz;
+		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		averages[partition] = average * float3(csf.x, csf.y, csf.z);
 
 
 		float3 sum_xp = float3(0, 0, 0);
@@ -336,8 +334,8 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 
 		float2 csf = color_scalefactors[partition];
 
-		float2 average = base_sum * 1.0f / MAX(partition_weight, 1e-7f);
-		averages[partition] = average * csf.xy;
+		float2 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		averages[partition] = average * float2(csf.x, csf.y);
 
 		float2 sum_xp = float2(0, 0);
 		float2 sum_yp = float2(0, 0);
@@ -375,7 +373,7 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 #define XPASTE(x,y) x##y
 #define PASTE(x,y) XPASTE(x,y)
 
-#define TWO_COMPONENT_ERROR_FUNC( funcname, c0_iwt, c1_iwt, c01_name, c01_rname ) \
+#define TWO_COMPONENT_ERROR_FUNC( funcname, c0_iwt, c1_iwt, c0, c1, c01_rname ) \
 float funcname( \
 	const partition_info *pt, \
 	const imageblock *blk, \
@@ -407,7 +405,7 @@ float funcname( \
 					float2 rp1 = l.amod + param*l.bis; \
 					float2 dist = rp1 - point; \
 					float4 ews = ewb->error_weights[iwt]; \
-					errorsum += dot( ews. c01_name, dist*dist ); \
+					errorsum += dot( float2(ews.c0, ews.c1), dist*dist ); \
 					if( param < lowparam ) lowparam = param; \
 					if( param > highparam ) highparam = param; \
 					} \
@@ -423,7 +421,7 @@ float funcname( \
 				float2 rp1 = l.amod + param*l.bis; \
 				float2 dist = rp1 - point; \
 				float4 ews = ewb->error_weights[iwt]; \
-				errorsum += dot( ews. c01_name, dist*dist ); \
+				errorsum += dot( float2(ews.c0, ews.c1), dist*dist ); \
 				if( param < lowparam ) lowparam = param; \
 				if( param > highparam ) highparam = param; \
 			} \
@@ -437,16 +435,16 @@ float funcname( \
 }
 
 
-TWO_COMPONENT_ERROR_FUNC(compute_error_squared_rg, 0, 1, xy, rg)
-TWO_COMPONENT_ERROR_FUNC(compute_error_squared_rb, 0, 2, xz, rb)
-TWO_COMPONENT_ERROR_FUNC(compute_error_squared_gb, 1, 2, yz, gb)
-TWO_COMPONENT_ERROR_FUNC(compute_error_squared_ra, 0, 3, zw, ra)
+TWO_COMPONENT_ERROR_FUNC(compute_error_squared_rg, 0, 1, x, y, rg)
+TWO_COMPONENT_ERROR_FUNC(compute_error_squared_rb, 0, 2, x, z, rb)
+TWO_COMPONENT_ERROR_FUNC(compute_error_squared_gb, 1, 2, y, z, gb)
+TWO_COMPONENT_ERROR_FUNC(compute_error_squared_ra, 0, 3, z, w, ra)
 
 // function to compute the error across a tile when using a particular set of
 // lines for a particular partitioning. Also compute the length of each
 // color-space line in each partitioning.
 
-#define THREE_COMPONENT_ERROR_FUNC( funcname, c0_iwt, c1_iwt, c2_iwt, c012_name, c012_rname ) \
+#define THREE_COMPONENT_ERROR_FUNC( funcname, c0_iwt, c1_iwt, c2_iwt, c0, c1, c2, c012_rname ) \
 float funcname( \
 	const partition_info *pt, \
 	const imageblock *blk, \
@@ -478,7 +476,7 @@ float funcname( \
 					float3 rp1 = l.amod + param*l.bis; \
 					float3 dist = rp1 - point; \
 					float4 ews = ewb->error_weights[iwt]; \
-					errorsum += dot( ews. c012_name, dist*dist ); \
+					errorsum += dot( float3(ews.c0, ews.c1, ews.c2), dist*dist ); \
 					if( param < lowparam ) lowparam = param; \
 					if( param > highparam ) highparam = param; \
 				} \
@@ -494,7 +492,7 @@ float funcname( \
 				float3 rp1 = l.amod + param*l.bis; \
 				float3 dist = rp1 - point; \
 				float4 ews = ewb->error_weights[iwt]; \
-				errorsum += dot( ews. c012_name, dist*dist ); \
+				errorsum += dot( float3(ews.c0, ews.c1, ews.c2), dist*dist ); \
 				if( param < lowparam ) lowparam = param; \
 				if( param > highparam ) highparam = param; \
 			} \
@@ -507,10 +505,10 @@ float funcname( \
 	return errorsum; \
 }
 
-THREE_COMPONENT_ERROR_FUNC(compute_error_squared_gba, 1, 2, 3, yzw, gba)
-THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rba, 0, 2, 3, xzw, rba)
-THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rga, 0, 1, 3, xyw, rga)
-THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rgb, 0, 1, 2, xyz, rgb)
+THREE_COMPONENT_ERROR_FUNC(compute_error_squared_gba, 1, 2, 3, y, z, w, gba)
+THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rba, 0, 2, 3, x, z, w, rba)
+THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rga, 0, 1, 3, x, y, w, rga)
+THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rgb, 0, 1, 2, x, y, z, rgb)
 
 float compute_error_squared_rgba(const partition_info * pt,	// the partition that we use when computing the squared-error.
 								 const imageblock * blk, const error_weight_block * ewb, const processed_line4 * plines, float *length_of_lines)
@@ -601,8 +599,8 @@ float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;
 		float4 ews = ewb->error_weights[i];
-
-		errorsum += dot(ews.xyz, dist * dist);
+		float3 ews3 = float3(ews.x, ews.y, ews.z);
+		errorsum += dot(ews3, dist * dist);
 	}
 	return errorsum;
 }

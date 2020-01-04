@@ -304,8 +304,11 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 		float2 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float2 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0 = ep0 / scalefactors[i];
-		ep1 = ep1 / scalefactors[i];
+		ep0.x /= scalefactors[i].x;
+		ep0.y /= scalefactors[i].y;
+
+		ep1.x /= scalefactors[i].x;
+		ep1.y /= scalefactors[i].y;
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -561,9 +564,12 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 		float3 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float3 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0 = ep0 / scalefactors[i];
-		ep1 = ep1 / scalefactors[i];
-
+		ep0.x /= scalefactors[i].x;
+		ep0.y /= scalefactors[i].y;
+		ep0.z /= scalefactors[i].z;
+		ep1.x /= scalefactors[i].x;
+		ep1.y /= scalefactors[i].y;
+		ep1.z /= scalefactors[i].z;
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -796,8 +802,21 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
-		ei->ep.endpt0[i] = (lines[i].a + lines[i].b * lowparam[i]) / scalefactors[i];
-		ei->ep.endpt1[i] = (lines[i].a + lines[i].b * highparam[i]) / scalefactors[i];
+		float4 ep0 = lines[i].a + lines[i].b * lowparam[i];
+		float4 ep1 = lines[i].a + lines[i].b * highparam[i];
+
+		ep0.x /= scalefactors[i].x;
+		ep0.y /= scalefactors[i].y;
+		ep0.z /= scalefactors[i].z;
+		ep0.w /= scalefactors[i].w;
+
+		ep1.x /= scalefactors[i].x;
+		ep1.y /= scalefactors[i].y;
+		ep1.z /= scalefactors[i].z;
+		ep1.w /= scalefactors[i].w;
+
+		ei->ep.endpt0[i] = ep0;
+		ei->ep.endpt1[i] = ep1;
 	}
 
 	for (i = 0; i < texels_per_block; i++)
@@ -1602,7 +1621,10 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 
 	for (i = 0; i < partition_count; i++)
 	{
-		scale_directions[i] = normalize(rgb_sum[i] / rgb_weight_sum[i]);
+		float3 tmp = float3(rgb_sum[i].x / rgb_weight_sum[i].x,
+		                    rgb_sum[i].y / rgb_weight_sum[i].y,
+							rgb_sum[i].z / rgb_weight_sum[i].z);
+		scale_directions[i] = normalize(tmp);
 		scale_max[i] = 0.0f;
 		scale_min[i] = 1e10f;
 	}
@@ -1787,7 +1809,10 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		if (scalediv > 1.0f)
 			scalediv = 1.0f;
 
-		rgbs_vectors[i] = float4(scale_directions[i] * scale_max[i], scalediv);
+		rgbs_vectors[i] = float4(scale_directions[i].x * scale_max[i],
+		                         scale_directions[i].y * scale_max[i],
+		                         scale_directions[i].z * scale_max[i],
+		                         scalediv);
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -1810,7 +1835,10 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			if (plane2_color_component != 3 && avg.w == avg.w)
 				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
 
-			rgbs_vectors[i] = float4(scale_directions[i] * scale_max[i], 1.0f);
+			rgbs_vectors[i] = float4(scale_directions[i].x * scale_max[i],
+		                             scale_directions[i].y * scale_max[i],
+		                             scale_directions[i].z * scale_max[i],
+		                             1.0f);
 		}
 		else
 		{
@@ -1880,7 +1908,10 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			if (fabs(scale_det1) > (scale_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
 				float scalediv = scale_ep0 / scale_ep1;
-				rgbs_vectors[i] = float4(scale_directions[i] * scale_ep1, scalediv);
+				rgbs_vectors[i] =  float4(scale_directions[i].x * scale_ep1,
+				                          scale_directions[i].y * scale_ep1,
+				                          scale_directions[i].z * scale_ep1,
+				                          scalediv);
 			}
 
 			#ifdef DEBUG_CAPTURE_NAN
@@ -1983,13 +2014,13 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 		{
 			float4 v0 = ep->endpt0[i];
 			float4 v1 = ep->endpt1[i];
-			float avgdif = dot(v1.xyz - v0.xyz, float3(1, 1, 1)) * (1.0f / 3.0f);
+			float avgdif = dot(float3(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z), float3(1, 1, 1)) * (1.0f / 3.0f);
 			if (avgdif <= 0.0f)
 				avgdif = 0.0f;
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
 
-			rgbo_vectors[i] = float4(ep0.xyz, avgdif);
+			rgbo_vectors[i] = float4(ep0.x, ep0.y, ep0.z, avgdif);
 		}
 	}
 

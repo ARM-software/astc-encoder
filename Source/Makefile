@@ -23,6 +23,7 @@ SOURCES = \
     astc_kmeans_partitioning.cpp \
     astc_ktx_dds.cpp \
     astc_main.cpp \
+    astc_mathlib.cpp \
     astc_partition_tables.cpp \
     astc_percentile_tables.cpp \
     astc_pick_best_endpoint_format.cpp \
@@ -31,19 +32,16 @@ SOURCES = \
     astc_symbolic_physical.cpp \
     astc_toplevel.cpp \
     astc_weight_align.cpp \
-    astc_weight_quant_xfer_tables.cpp \
-    mathlib.cpp \
-    softfloat.cpp
+    astc_weight_quant_xfer_tables.cpp
 
 HEADERS = \
     astc_codec_internals.h \
-    mathlib.h \
-    softfloat.h \
+    astc_mathlib.h \
     stb_image.h
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++11 -O3 -msse2 -mfpmath=sse \
+CPPFLAGS = -std=c++17 -O3 -msse2 -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow
 
 astcenc: $(OBJECTS)

@@ -121,13 +121,6 @@ void prepare_angular_tables(void)
 		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[steps_of_level[i]];
 }
 
-union if32
-{
-	float f;
-	int32_t s;
-	uint32_t u;
-};
-
 // function to compute angular sums; then, from the
 // angular sums, compute alignment factor and offset.
 

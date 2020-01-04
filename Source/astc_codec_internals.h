@@ -16,7 +16,7 @@
 
 #include <cstdint>
 #include <stdlib.h>
-#include "mathlib.h"
+#include "astc_mathlib.h"
 
 // Temporary workaround to build machine still running VS2013
 // Version 1910 is Visual Studio 2017
@@ -72,25 +72,6 @@ extern int print_statistics;
 extern int perform_srgb_transform;
 extern int rgb_force_use_of_hdr;
 extern int alpha_force_use_of_hdr;
-
-struct processed_line2
-{
-	float2 amod;
-	float2 bs;
-	float2 bis;
-};
-struct processed_line3
-{
-	float3 amod;
-	float3 bs;
-	float3 bis;
-};
-struct processed_line4
-{
-	float4 amod;
-	float4 bs;
-	float4 bis;
-};
 
 enum astc_decode_mode
 {

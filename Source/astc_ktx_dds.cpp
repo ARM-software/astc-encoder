@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -16,10 +16,9 @@
 
 #include "astc_codec_internals.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "softfloat.h"
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 enum scanline_copy_method
 {

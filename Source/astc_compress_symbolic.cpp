@@ -13,7 +13,6 @@
 
 #include "astc_codec_internals.h"
 
-#include "softfloat.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -294,7 +293,12 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 ep = (float4(1, 1, 1, 1) - ei->ep.endpt0[i]) / (ei->ep.endpt1[i] - ei->ep.endpt0[i]);
+		float4 ep = float4(
+		    (1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x ),
+		    (1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y ),
+		    (1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z ),
+		    (1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w ));
+
 		if (ep.x > 0.5f && ep.x < min_ep.x)
 			min_ep.x = ep.x;
 		if (ep.y > 0.5f && ep.y < min_ep.y)
@@ -544,7 +548,12 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 ep1 = (float4(1, 1, 1, 1) - ei1->ep.endpt0[i]) / (ei1->ep.endpt1[i] - ei1->ep.endpt0[i]);
+		float4 ep1 = float4(
+		    (1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x ),
+		    (1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y ),
+		    (1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z ),
+		    (1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w ));
+
 		if (ep1.x > 0.5f && ep1.x < min_ep1.x)
 			min_ep1.x = ep1.x;
 		if (ep1.y > 0.5f && ep1.y < min_ep1.y)
@@ -553,7 +562,13 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 			min_ep1.z = ep1.z;
 		if (ep1.w > 0.5f && ep1.w < min_ep1.w)
 			min_ep1.w = ep1.w;
-		float4 ep2 = (float4(1, 1, 1, 1) - ei2->ep.endpt0[i]) / (ei2->ep.endpt1[i] - ei2->ep.endpt0[i]);
+
+		float4 ep2 = float4(
+		    (1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x ),
+		    (1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y ),
+		    (1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z ),
+		    (1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w ));
+
 		if (ep2.x > 0.5f && ep2.x < min_ep2.x)
 			min_ep2.x = ep2.x;
 		if (ep2.y > 0.5f && ep2.y < min_ep2.y)
@@ -860,21 +875,35 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 						float fvar = (variance.x + variance.y + variance.z) * (1.0f / 3.0f);
 
 						float mixing = ewp->rgb_mean_and_stdev_mixing;
-						avg.xyz = float3(favg, favg, favg) * mixing + avg.xyz * (1.0f - mixing);
-						variance.xyz = float3(fvar, fvar, fvar) * mixing + variance.xyz * (1.0f - mixing);
+						avg.x = favg * mixing + avg.x * (1.0f - mixing);
+						avg.y = favg * mixing + avg.y * (1.0f - mixing);
+						avg.z = favg * mixing + avg.z * (1.0f - mixing);
+
+						variance.x = fvar * mixing + variance.x * (1.0f - mixing);
+						variance.y = fvar * mixing + variance.y * (1.0f - mixing);
+						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
 
 						float4 stdev = float4(sqrt(MAX(variance.x, 0.0f)),
 											  sqrt(MAX(variance.y, 0.0f)),
 											  sqrt(MAX(variance.z, 0.0f)),
 											  sqrt(MAX(variance.w, 0.0f)));
 
-						avg.xyz = avg.xyz * ewp->rgb_mean_weight;
-						avg.w = avg.w * ewp->alpha_mean_weight;
-						stdev.xyz = stdev.xyz * ewp->rgb_stdev_weight;
+						avg.x *= ewp->rgb_mean_weight;
+						avg.y *= ewp->rgb_mean_weight;
+						avg.z *= ewp->rgb_mean_weight;
+						avg.w *= ewp->alpha_mean_weight;
+
+						stdev.x *= ewp->rgb_stdev_weight;
+						stdev.y *= ewp->rgb_stdev_weight;
+						stdev.z *= ewp->rgb_stdev_weight;
 						stdev.w = stdev.w * ewp->alpha_stdev_weight;
+
 						error_weight = error_weight + avg + stdev;
 
-						error_weight = float4(1.0f, 1.0f, 1.0f, 1.0f) / error_weight;
+						error_weight = float4(1.0f / error_weight.x,
+						                      1.0f / error_weight.y,
+						                      1.0f / error_weight.z,
+						                      1.0f / error_weight.w);
 					}
 
 					if (ewp->ra_normal_angular_scale)
@@ -901,7 +930,9 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 						if (alpha_scale < 0.0001f)
 							alpha_scale = 0.0001f;
 						alpha_scale *= alpha_scale;
-						error_weight.xyz = error_weight.xyz * alpha_scale;
+						error_weight.x *= alpha_scale;
+						error_weight.y *= alpha_scale;
+						error_weight.z *= alpha_scale;
 					}
 					error_weight = error_weight * color_weights;
 					error_weight = error_weight * ewp->block_artifact_suppression_expanded[idx];
@@ -1130,7 +1161,10 @@ void compress_constant_color_block(int xdim, int ydim, int zdim, const imagebloc
 		color_weight_sum = color_weight_sum + weights;
 	}
 
-	float4 avg_color = color_sum / color_weight_sum;
+	float4 avg_color = float4(color_sum.x / color_weight_sum.x,
+	                          color_sum.y / color_weight_sum.y,
+	                          color_sum.z / color_weight_sum.z,
+	                          color_sum.w / color_weight_sum.w);
 
 	int use_fp16 = blk->rgb_lns[0];
 

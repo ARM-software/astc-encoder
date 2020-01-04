@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -12,7 +12,6 @@
  */
 
 #include "astc_codec_internals.h"
-#include "softfloat.h"
 
 #include <stdio.h>
 
@@ -57,16 +56,16 @@ ushort4 lerp_color_int(astc_decode_mode decode_mode, ushort4 color0, ushort4 col
 
 	if (decode_mode == DECODE_LDR_SRGB)
 	{
-		ecolor0 = ecolor0 >> 8;
-		ecolor1 = ecolor1 >> 8;
+		ecolor0 = int4(ecolor0.x >> 8, ecolor0.y >> 8, ecolor0.z >> 8, ecolor0.w >> 8);
+		ecolor1 = int4(ecolor1.x >> 8, ecolor1.y >> 8, ecolor1.z >> 8, ecolor1.w >> 8);
 	}
 	int4 color = (ecolor0 * eweight0) + (ecolor1 * eweight1) + int4(32, 32, 32, 32);
-	color = color >> 6;
-	if (decode_mode == DECODE_LDR_SRGB)
-		color = color | (color << 8);
+	color = int4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
 
-	ushort4 rcolor = ushort4(color.x, color.y, color.z, color.w);
-	return rcolor;
+	if (decode_mode == DECODE_LDR_SRGB)
+		color = color * 257;
+
+	return ushort4(color.x, color.y, color.z, color.w);
 }
 
 void decompress_symbolic_block(astc_decode_mode decode_mode,

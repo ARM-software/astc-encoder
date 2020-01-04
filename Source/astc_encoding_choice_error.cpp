@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -139,23 +139,26 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		inverse_color_scalefactors[i].z = 1.0f / MAX(color_scalefactors[i].z, 1e-7f);
 		inverse_color_scalefactors[i].w = 1.0f / MAX(color_scalefactors[i].w, 1e-7f);
 
+		float3 csf = float3(color_scalefactors[i].x, color_scalefactors[i].y, color_scalefactors[i].z);
+		float3 icsf = float3(inverse_color_scalefactors[i].x, inverse_color_scalefactors[i].y, inverse_color_scalefactors[i].z);
+
 		uncorr_rgb_lines[i].a = averages[i];
 		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)
-			uncorr_rgb_lines[i].b = normalize(float3(color_scalefactors[i].xyz));
+			uncorr_rgb_lines[i].b = normalize(csf);
 		else
 			uncorr_rgb_lines[i].b = normalize(directions_rgb[i]);
 
 		samechroma_rgb_lines[i].a = float3(0, 0, 0);
 		if (dot(averages[i], averages[i]) < 1e-20)
-			samechroma_rgb_lines[i].b = normalize(float3(color_scalefactors[i].xyz));
+			samechroma_rgb_lines[i].b = normalize(csf);
 		else
 			samechroma_rgb_lines[i].b = normalize(averages[i]);
 
 		rgb_luma_lines[i].a = averages[i];
-		rgb_luma_lines[i].b = normalize(color_scalefactors[i].xyz);
+		rgb_luma_lines[i].b = normalize(csf);
 
 		luminance_lines[i].a = float3(0, 0, 0);
-		luminance_lines[i].b = normalize(color_scalefactors[i].xyz);
+		luminance_lines[i].b = normalize(csf);
 
 		#ifdef DEBUG_PRINT_DIAGNOSTICS
 			if (print_diagnostics)
@@ -168,21 +171,21 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 			}
 		#endif
 
-		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * inverse_color_scalefactors[i].xyz;
-		proc_uncorr_rgb_lines[i].bs = uncorr_rgb_lines[i].b * color_scalefactors[i].xyz;
-		proc_uncorr_rgb_lines[i].bis = uncorr_rgb_lines[i].b * inverse_color_scalefactors[i].xyz;
+		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
+		proc_uncorr_rgb_lines[i].bs = uncorr_rgb_lines[i].b * csf;
+		proc_uncorr_rgb_lines[i].bis = uncorr_rgb_lines[i].b * icsf;
 
-		proc_samechroma_rgb_lines[i].amod = (samechroma_rgb_lines[i].a - samechroma_rgb_lines[i].b * dot(samechroma_rgb_lines[i].a, samechroma_rgb_lines[i].b)) * inverse_color_scalefactors[i].xyz;
-		proc_samechroma_rgb_lines[i].bs = samechroma_rgb_lines[i].b * color_scalefactors[i].xyz;
-		proc_samechroma_rgb_lines[i].bis = samechroma_rgb_lines[i].b * inverse_color_scalefactors[i].xyz;
+		proc_samechroma_rgb_lines[i].amod = (samechroma_rgb_lines[i].a - samechroma_rgb_lines[i].b * dot(samechroma_rgb_lines[i].a, samechroma_rgb_lines[i].b)) * icsf;
+		proc_samechroma_rgb_lines[i].bs = samechroma_rgb_lines[i].b * csf;
+		proc_samechroma_rgb_lines[i].bis = samechroma_rgb_lines[i].b * icsf;
 
-		proc_rgb_luma_lines[i].amod = (rgb_luma_lines[i].a - rgb_luma_lines[i].b * dot(rgb_luma_lines[i].a, rgb_luma_lines[i].b)) * inverse_color_scalefactors[i].xyz;
-		proc_rgb_luma_lines[i].bs = rgb_luma_lines[i].b * color_scalefactors[i].xyz;
-		proc_rgb_luma_lines[i].bis = rgb_luma_lines[i].b * inverse_color_scalefactors[i].xyz;
+		proc_rgb_luma_lines[i].amod = (rgb_luma_lines[i].a - rgb_luma_lines[i].b * dot(rgb_luma_lines[i].a, rgb_luma_lines[i].b)) * icsf;
+		proc_rgb_luma_lines[i].bs = rgb_luma_lines[i].b * csf;
+		proc_rgb_luma_lines[i].bis = rgb_luma_lines[i].b * icsf;
 
-		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot(luminance_lines[i].a, luminance_lines[i].b)) * inverse_color_scalefactors[i].xyz;
-		proc_luminance_lines[i].bs = luminance_lines[i].b * color_scalefactors[i].xyz;
-		proc_luminance_lines[i].bis = luminance_lines[i].b * inverse_color_scalefactors[i].xyz;
+		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot(luminance_lines[i].a, luminance_lines[i].b)) * icsf;
+		proc_luminance_lines[i].bs = luminance_lines[i].b * csf;
+		proc_luminance_lines[i].bis = luminance_lines[i].b * icsf;
 	}
 
 	float uncorr_rgb_error[4];

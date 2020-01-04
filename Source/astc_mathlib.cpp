@@ -1,28 +1,20 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
 // ----------------------------------------------------------------------------
 
-/**
- * @brief Soft-float library for IEEE-754.
- */
-
-#include "softfloat.h"
-
-#define SOFTFLOAT_INLINE
+#include "astc_mathlib.h"
 
 /******************************************
   helper functions and their lookup tables
  ******************************************/
-/* count leading zeros functions. Only used when the input is nonzero. */
+/* count leading zeroes functions. Only used when the input is nonzero. */
 
 #if defined(__GNUC__) && (defined(__i386) || defined(__amd64))
-#elif defined(__arm__) && defined(__ARMCC_VERSION)
-#elif defined(__arm__) && defined(__GNUC__)
 #else
 	/* table used for the slow default versions. */
 	static const uint8_t clz_table[256] =
@@ -46,45 +38,36 @@
 	};
 #endif
 
+
 /*
-   32-bit count-leading-zeros function: use the Assembly instruction whenever possible. */
-SOFTFLOAT_INLINE uint32_t clz32(uint32_t inp)
+   32-bit count-leading-zeroes function: use the Assembly instruction whenever possible. */
+uint32_t clz32(uint32_t inp)
 {
 	#if defined(__GNUC__) && (defined(__i386) || defined(__amd64))
 		uint32_t bsr;
-	__asm__("bsrl %1, %0": "=r"(bsr):"r"(inp | 1));
+		__asm__("bsrl %1, %0": "=r"(bsr):"r"(inp | 1));
 		return 31 - bsr;
 	#else
-		#if defined(__arm__) && defined(__ARMCC_VERSION)
-			return __clz(inp);			/* armcc builtin */
-		#else
-			#if defined(__arm__) && defined(__GNUC__)
-				uint32_t lz;
-			__asm__("clz %0, %1": "=r"(lz):"r"(inp));
-				return lz;
-			#else
-				/* slow default version */
-				uint32_t summa = 24;
-				if (inp >= UINT32_C(0x10000))
-				{
-					inp >>= 16;
-					summa -= 16;
-				}
-				if (inp >= UINT32_C(0x100))
-				{
-					inp >>= 8;
-					summa -= 8;
-				}
-				return summa + clz_table[inp];
-			#endif
-		#endif
+		/* slow default version */
+		uint32_t summa = 24;
+		if (inp >= UINT32_C(0x10000))
+		{
+			inp >>= 16;
+			summa -= 16;
+		}
+		if (inp >= UINT32_C(0x100))
+		{
+			inp >>= 8;
+			summa -= 8;
+		}
+		return summa + clz_table[inp];
 	#endif
 }
 
-static SOFTFLOAT_INLINE uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
+static uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
 {
 	uint32_t vl1 = UINT32_C(1) << shamt;
-	uint32_t inp2 = inp + (vl1 >> 1);	/* added 0.5 ULP */
+	uint32_t inp2 = inp + (vl1 >> 1);	/* added 0.5 ulp */
 	uint32_t msk = (inp | UINT32_C(1)) & vl1;	/* nonzero if odd. '| 1' forces it to 1 if the shamt is 0. */
 	msk--;						/* negative if even, nonnegative if odd. */
 	inp2 -= (msk >> 31);		/* subtract epsilon before shift if even. */
@@ -92,7 +75,7 @@ static SOFTFLOAT_INLINE uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
 	return inp2;
 }
 
-static SOFTFLOAT_INLINE uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
+static uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
 {
 	uint32_t vl1 = (UINT32_C(1) << shamt) >> 1;
 	inp += vl1;
@@ -100,7 +83,8 @@ static SOFTFLOAT_INLINE uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
 	return inp;
 }
 
-static SOFTFLOAT_INLINE uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
+
+static uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
 {
 	uint32_t vl1 = UINT32_C(1) << shamt;
 	inp += vl1;
@@ -122,17 +106,15 @@ sf32 sf16_to_sf32(sf16 inp)
 		with just 1 table lookup, 2 shifts and 1 add.
 	*/
 
-	#define WITH_MB(a) INT32_C((a) | (1 << 31))
-	static const int32_t tbl[64] =
-	{
-		WITH_MB(0x00000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000),
-		INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000),
-		INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000),
-		INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), INT32_C(0x1C000), WITH_MB(0x38000),
-		WITH_MB(0x38000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000),
-		INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000),
-		INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000),
-		INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), INT32_C(0x54000), WITH_MB(0x70000)
+	static const uint32_t tbl[64] = {
+		UINT32_C(0x80000000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000),
+		UINT32_C(0x1C000),    UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000),
+		UINT32_C(0x1C000),    UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000),
+		UINT32_C(0x1C000),    UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x1C000), UINT32_C(0x80038000),
+		UINT32_C(0x80038000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000),
+		UINT32_C(0x54000),    UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000),
+		UINT32_C(0x54000),    UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000),
+		UINT32_C(0x54000),    UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x54000), UINT32_C(0x80070000)
 	};
 
 	int32_t res = tbl[inpx >> 10];
@@ -146,26 +128,25 @@ sf32 sf16_to_sf32(sf16 inp)
 	if ((res & UINT32_C(0x3FF)) == 0)
 		return res << 13;
 
-	/* NaN: the exponent field of 'inp' is not zero; NaNs must be quietened. */
+	/* NaN: the exponent field of 'inp' is not zero; NaNs must be quitened. */
 	if ((inpx & 0x7C00) != 0)
 		return (res << 13) | UINT32_C(0x400000);
 
 	/* the remaining cases are Denormals. */
-	{
-		uint32_t sign = (inpx & UINT32_C(0x8000)) << 16;
-		uint32_t mskval = inpx & UINT32_C(0x7FFF);
-		uint32_t leadingzeroes = clz32(mskval);
-		mskval <<= leadingzeroes;
-		return (mskval >> 8) + ((0x85 - leadingzeroes) << 23) + sign;
-	}
+	uint32_t sign = (inpx & UINT32_C(0x8000)) << 16;
+	uint32_t mskval = inpx & UINT32_C(0x7FFF);
+	uint32_t leadingzeroes = clz32(mskval);
+	mskval <<= leadingzeroes;
+	return (mskval >> 8) + ((0x85 - leadingzeroes) << 23) + sign;
 }
 
 /* Conversion routine that converts from FP32 to FP16. It supports denormals and all rounding modes. If a NaN is given as input, it is quietened. */
+
 sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 {
 	/* for each possible sign/exponent combination, store a case index. This gives a 512-byte table */
 	static const uint8_t tab[512] = {
-		0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+		 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
 		10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
@@ -182,7 +163,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 		40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40,
 		40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 50,
 
-		5, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
+		 5, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
 		15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
 		15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
 		15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15,
@@ -197,7 +178,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 		45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
 		45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
 		45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45,
-		45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 55,
+		45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 55
 	};
 
 	/* many of the cases below use a case-dependent magic constant. So we look up a magic constant before actually performing the switch. This table allows us to group cases, thereby minimizing code
@@ -220,7 +201,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	switch (idx)
 	{
 		/*
-		  	Positive number which may be Infinity or NaN.
+			Positive number which may be Infinity or NaN.
 			We need to check whether it is NaN; if it is, quieten it by setting the top bit of the mantissa.
 			(If we don't do this quieting, then a NaN  that is distinguished only by having
 			its low-order bits set, would be turned into an INF. */
@@ -243,7 +224,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 			of the mantissa is set.)
 		*/
 		p = (inp - 1) & UINT32_C(0x800000);	/* zero if INF, nonzero if NaN. */
-		return ((inp + vlx) >> 13) | (p >> 14);
+		return (uint16_t) (((inp + vlx) >> 13) | (p >> 14));
 		/*
 			positive, exponent = 0, round-mode == UP; need to check whether number actually is 0.
 			If it is, then return 0, else return 1 (the smallest representable nonzero number)
@@ -253,7 +234,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 			-inp will set the MSB if the input number is nonzero.
 			Thus (-inp) >> 31 will turn into 0 if the input number is 0 and 1 otherwise.
 		*/
-		return (uint32_t) (-(int32_t) inp) >> 31;
+		return (uint16_t) ((uint32_t) (-(int32_t) inp) >> 31);
 
 		/*
 			negative, exponent = , round-mode == DOWN, need to check whether number is
@@ -266,7 +247,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 			the MSB set if it isn't. We then right-shift the value by 31 places to
 			get a value that is 0 if the input is -0.0 and 1 otherwise.
 		*/
-		return ((vlx - inp) >> 31) + UINT32_C(0x8000);
+		return (uint16_t) (((vlx - inp) >> 31) + UINT32_C(0x8000));
 
 		/*
 			for all other cases involving underflow/overflow, we don't need to
@@ -300,7 +281,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	case 47:
 	case 48:
 	case 49:
-		return vlx;
+		return (uint16_t)vlx;
 
 		/*
 			for normal numbers, 'vlx' is the difference between the FP32 value of a number and the
@@ -319,14 +300,14 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	case 36:
 	case 37:
 	case 39:
-		return (inp + vlx) >> 13;
+		return (uint16_t) ((inp + vlx) >> 13);
 
 		/* normal number, round-to-nearest-even. */
 	case 33:
 	case 38:
 		p = inp + vlx;
 		p += (inp >> 13) & 1;
-		return p >> 13;
+		return (uint16_t) (p >> 13);
 
 		/*
 			the various denormal cases. These are not expected to be common, so their performance is a bit
@@ -341,33 +322,26 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	case 27:
 		/* denormal, round towards zero. */
 		p = 126 - ((inp >> 23) & 0xFF);
-		return (((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000)) >> p) | vlx;
+		return (uint16_t) ((((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000)) >> p) | vlx);
 	case 20:
 	case 26:
-		/* denormal, round away from zero. */
+		/* denornal, round away from zero. */
 		p = 126 - ((inp >> 23) & 0xFF);
-		return rtup_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx;
+		return (uint16_t) (rtup_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx);
 	case 24:
 	case 29:
-		/* denormal, round to nearest-away */
+		/* denornal, round to nearest-away */
 		p = 126 - ((inp >> 23) & 0xFF);
-		return rtna_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx;
+		return (uint16_t) (rtna_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx);
 	case 23:
 	case 28:
 		/* denormal, round to nearest-even. */
 		p = 126 - ((inp >> 23) & 0xFF);
-		return rtne_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx;
+		return (uint16_t) (rtne_shift32((inp & UINT32_C(0x7FFFFF)) + UINT32_C(0x800000), p) | vlx);
 	}
 
 	return 0;
 }
-
-typedef union if32_
-{
-	uint32_t u;
-	int32_t s;
-	float f;
-} if32;
 
 /* convert from soft-float to native-float */
 float sf16_to_float(sf16 p)
@@ -377,10 +351,99 @@ float sf16_to_float(sf16 p)
 	return i.f;
 }
 
-/* convert from native-float to soft-float */
+/* convert from native-float to softfloat */
 sf16 float_to_sf16(float p, roundmode rm)
 {
 	if32 i;
 	i.f = p;
 	return sf32_to_sf16(i.u, rm);
+}
+
+
+float3 cross(float3 p, float3 q)
+{
+	return float3(p.y * q.z - p.z * q.y,
+	              p.z * q.x - p.x * q.z,
+	              p.x * q.y - p.y * q.z);
+}
+
+
+float determinant(mat2 p)
+{
+	float2 v = float2(p.v[0].x * p.v[1].y, p.v[0].y * p.v[1].x);
+	return v.x - v.y;
+}
+
+float determinant(mat4 p)
+{
+	return dot(p.v[0],
+	           float4(dot(float3(p.v[1].y, p.v[1].z, p.v[1].w), cross(float3(p.v[2].y, p.v[2].z, p.v[2].w), float3(p.v[3].y, p.v[3].z, p.v[3].w))),
+	                 -dot(float3(p.v[1].x, p.v[1].z, p.v[1].w), cross(float3(p.v[2].x, p.v[2].z, p.v[2].w), float3(p.v[3].x, p.v[3].z, p.v[3].w))),
+	                  dot(float3(p.v[1].x, p.v[1].y, p.v[1].w), cross(float3(p.v[2].x, p.v[2].y, p.v[2].w), float3(p.v[3].x, p.v[3].y, p.v[3].w))),
+	                 -dot(float3(p.v[1].x, p.v[1].y, p.v[1].z), cross(float3(p.v[2].x, p.v[2].y, p.v[2].z), float3(p.v[3].x, p.v[3].y, p.v[3].z)))));
+}
+
+float2 transform(mat2 p, float2 q)
+{
+	return float2(dot(p.v[0], q), dot(p.v[1], q));
+}
+
+float4 transform(mat4 p, float4 q)
+{
+	return float4(dot(p.v[0], q), dot(p.v[1], q), dot(p.v[2], q), dot(p.v[3], q));
+}
+
+mat2 invert(mat2 p)
+{
+	float rdet = 1.0f / determinant(p);
+	mat2 res;
+	res.v[0] = float2(p.v[1].y, -p.v[0].y) * rdet;
+	res.v[1] = float2(-p.v[1].x, p.v[0].x) * rdet;
+	return res;
+}
+
+mat4 invert(mat4 p)
+{
+	// cross products between the bottom two rows
+	float3 bpc0 = cross(float3(p.v[2].y, p.v[2].z, p.v[2].w), float3(p.v[3].y, p.v[3].z, p.v[3].w));
+	float3 bpc1 = cross(float3(p.v[2].x, p.v[2].z, p.v[2].w), float3(p.v[3].x, p.v[3].z, p.v[3].w));
+	float3 bpc2 = cross(float3(p.v[2].x, p.v[2].y, p.v[2].w), float3(p.v[3].x, p.v[3].y, p.v[3].w));
+	float3 bpc3 = cross(float3(p.v[2].x, p.v[2].y, p.v[2].z), float3(p.v[3].x, p.v[3].y, p.v[3].z));
+
+	// dot-products for the top rows
+	float4 row1 = float4(dot(bpc0, float3(p.v[1].y, p.v[1].z, p.v[1].w)),
+	                    -dot(bpc1, float3(p.v[1].x, p.v[1].z, p.v[1].w)),
+	                     dot(bpc2, float3(p.v[1].x, p.v[1].y, p.v[1].w)),
+	                    -dot(bpc3, float3(p.v[1].x, p.v[1].y, p.v[1].z)));
+
+	float det = dot(p.v[0], row1);
+	float rdet = 1.0f / det;
+
+	mat4 res;
+
+	float3 tpc0 = cross(float3(p.v[0].y, p.v[0].z, p.v[0].w), float3(p.v[1].y, p.v[1].z, p.v[1].w));
+	res.v[0] = float4(row1.x,
+	                 -dot(bpc0, float3(p.v[0].y, p.v[0].z, p.v[0].w)),
+	                  dot(tpc0, float3(p.v[3].y, p.v[3].z, p.v[3].w)),
+	                 -dot(tpc0, float3(p.v[2].y, p.v[2].z, p.v[2].w))) * rdet;
+
+	float3 tpc1 = cross(float3(p.v[0].x, p.v[0].z, p.v[0].w), float3(p.v[1].x, p.v[1].z, p.v[1].w));
+	res.v[1] = float4(row1.y,
+	                  dot(bpc1, float3(p.v[0].x, p.v[0].z, p.v[0].w)),
+	                 -dot(tpc1, float3(p.v[3].x, p.v[3].z, p.v[3].w)),
+	                  dot(tpc1, float3(p.v[2].x, p.v[2].z, p.v[2].w))) * rdet;
+
+	float3 tpc2 = cross(float3(p.v[0].x, p.v[0].y, p.v[0].w), float3(p.v[1].x, p.v[1].y, p.v[1].w));
+	res.v[2] = float4(row1.z,
+	                 -dot(bpc2, float3(p.v[0].x, p.v[0].y, p.v[0].w)),
+	                  dot(tpc2, float3(p.v[3].x, p.v[3].y, p.v[3].w)),
+	                 -dot(tpc2, float3(p.v[2].x, p.v[2].y, p.v[2].w))) * rdet;
+
+	float3 tpc3 = cross(float3(p.v[0].x, p.v[0].z, p.v[0].z), float3(p.v[1].x, p.v[1].y, p.v[1].z));
+	res.v[3] = float4(row1.w,
+	                  dot(bpc3, float3(p.v[0].x, p.v[0].y, p.v[0].z)),
+	                 -dot(tpc3, float3(p.v[3].x, p.v[3].y, p.v[3].z)),
+	                  dot(tpc3, float3(p.v[2].x, p.v[2].y, p.v[2].z))) * rdet;
+
+	return res;
 }
