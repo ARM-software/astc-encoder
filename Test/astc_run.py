@@ -65,6 +65,11 @@ class TestImage():
         if self.format == "xy":
             args.append("-normal_psnr")
 
+        # Switch HDR data formats into HDR compression mode; note that this
+        # mode assumes that the alpha channel is non-correlated
+        if self.dynamicRange == "hdr":
+            args.append("-hdr")
+
         # Inject the callgrind profiler prefix
         if profile:
             args.insert(0, "--callgrind-out-file=callgrind.out")
