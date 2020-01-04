@@ -1,4 +1,7 @@
+.vs
 .vscode
+*.log
+*.diff
 Source/*.o
 Source/astcenc
 Source/VS2017/.vs

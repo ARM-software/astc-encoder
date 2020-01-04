@@ -168,11 +168,6 @@ struct mat2
 	float2 v[2];
 };
 
-struct mat3
-{
-	float3 v[3];
-};
-
 struct mat4
 {
 	float4 v[4];
@@ -223,7 +218,6 @@ struct processed_line4
 };
 
 float determinant(mat2 p);
-float determinant(mat4 p);
 
 float2 transform(mat2 p, float2 q);
 float4 transform(mat4 p, float4 q);

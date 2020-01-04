@@ -1611,8 +1611,8 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 	{
 		float3 rgb = float3(pb->work_data[4 * i], pb->work_data[4 * i + 1], pb->work_data[4 * i + 2]);
 		float3 rgb_weight = float3(ewb->texel_weight_r[i],
-								   ewb->texel_weight_g[i],
-								   ewb->texel_weight_b[i]);
+		                           ewb->texel_weight_g[i],
+		                           ewb->texel_weight_b[i]);
 
 		int part = pi->partition_of_texel[i];
 		rgb_sum[part] = rgb_sum[part] + (rgb * rgb_weight);
@@ -1623,7 +1623,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 	{
 		float3 tmp = float3(rgb_sum[i].x / rgb_weight_sum[i].x,
 		                    rgb_sum[i].y / rgb_weight_sum[i].y,
-							rgb_sum[i].z / rgb_weight_sum[i].z);
+		                    rgb_sum[i].z / rgb_weight_sum[i].z);
 		scale_directions[i] = normalize(tmp);
 		scale_max[i] = 0.0f;
 		scale_min[i] = 1e10f;
@@ -1836,9 +1836,9 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
 
 			rgbs_vectors[i] = float4(scale_directions[i].x * scale_max[i],
-		                             scale_directions[i].y * scale_max[i],
-		                             scale_directions[i].z * scale_max[i],
-		                             1.0f);
+			                         scale_directions[i].y * scale_max[i],
+			                         scale_directions[i].z * scale_max[i],
+			                         1.0f);
 		}
 		else
 		{

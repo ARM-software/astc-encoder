@@ -70,3 +70,4 @@ such as ISPC; the decision here can happen later.
 * The `double4` vector type doesn't vectorize well with SIMD; it should be
   removed, but this probably means we need a new algorithm for that part
   of the code.
+* Remove globals.

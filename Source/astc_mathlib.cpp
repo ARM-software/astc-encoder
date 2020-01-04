@@ -364,7 +364,7 @@ float3 cross(float3 p, float3 q)
 {
 	return float3(p.y * q.z - p.z * q.y,
 	              p.z * q.x - p.x * q.z,
-	              p.x * q.y - p.y * q.z);
+	              p.x * q.y - p.y * q.x);
 }
 
 
@@ -372,15 +372,6 @@ float determinant(mat2 p)
 {
 	float2 v = float2(p.v[0].x * p.v[1].y, p.v[0].y * p.v[1].x);
 	return v.x - v.y;
-}
-
-float determinant(mat4 p)
-{
-	return dot(p.v[0],
-	           float4(dot(float3(p.v[1].y, p.v[1].z, p.v[1].w), cross(float3(p.v[2].y, p.v[2].z, p.v[2].w), float3(p.v[3].y, p.v[3].z, p.v[3].w))),
-	                 -dot(float3(p.v[1].x, p.v[1].z, p.v[1].w), cross(float3(p.v[2].x, p.v[2].z, p.v[2].w), float3(p.v[3].x, p.v[3].z, p.v[3].w))),
-	                  dot(float3(p.v[1].x, p.v[1].y, p.v[1].w), cross(float3(p.v[2].x, p.v[2].y, p.v[2].w), float3(p.v[3].x, p.v[3].y, p.v[3].w))),
-	                 -dot(float3(p.v[1].x, p.v[1].y, p.v[1].z), cross(float3(p.v[2].x, p.v[2].y, p.v[2].z), float3(p.v[3].x, p.v[3].y, p.v[3].z)))));
 }
 
 float2 transform(mat2 p, float2 q)

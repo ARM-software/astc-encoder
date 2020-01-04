@@ -19,12 +19,9 @@ import subprocess as sp
 import sys
 
 
-DEBUG = False
+LOG_CLI = False
 
-if DEBUG:
-    TEST_BLOCK_SIZES = ["4x4", "8x8"]
-else:
-    TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
+TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
 
 TEST_EXTENSIONS = [".png", ".hdr"]
 
@@ -101,7 +98,7 @@ class TestImage():
         self.runPSNR = dict()
         self.status = dict()
 
-    def run_once(self, testBinary, blockSize):
+    def run_once(self, testBinary, blockSize, firstRun):
         """
         Run a single compression pass.
         """
@@ -129,6 +126,14 @@ class TestImage():
         # Switch normal maps into angular error metrics
         if self.format == "xy":
             args.append("-normal_psnr")
+
+        # Switch HDR data formats into HDR compression mode; note that this
+        # mode assumes that the alpha channel is non-correlated
+        if self.dynamicRange == "hdr":
+            args.append("-hdr")
+
+        if LOG_CLI:
+            print(" + %s " % " ".join(args))
 
         try:
             result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
@@ -185,10 +190,10 @@ class TestImage():
         """
         results = []
         for i in range(0, self.warmupRuns):
-            self.run_once(testBinary, blockSize)
+            self.run_once(testBinary, blockSize, False)
 
         for i in range(0, self.testRuns):
-            result = self.run_once(testBinary, blockSize)
+            result = self.run_once(testBinary, blockSize, i == 0)
             results.append(result)
 
         listPSNR, timeList = list(zip(*results))
@@ -406,12 +411,8 @@ def run_reference_rebuild():
     """
     Run the reference test generator rebuild process.
     """
-    if DEBUG:
-        TestImage.testRuns = 1
-        TestImage.warmupRuns = 0
-    else:
-        TestImage.testRuns = 10
-        TestImage.warmupRuns = 1
+    TestImage.testRuns = 10
+    TestImage.warmupRuns = 1
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
@@ -455,12 +456,8 @@ def run_reference_update():
     """
     Run the reference test generator update process.
     """
-    if DEBUG:
-        TestImage.testRuns = 1
-        TestImage.warmupRuns = 0
-    else:
-        TestImage.testRuns = 3
-        TestImage.warmupRuns = 1
+    TestImage.testRuns = 3
+    TestImage.warmupRuns = 1
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
