@@ -67,7 +67,7 @@ static void compute_alpha_minmax(int xdim, int ydim, int zdim, const partition_i
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		if (ewb->texel_weight[i] > 1e-10)
+		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 			float alphaval = blk->work_data[4 * i + 3];
@@ -608,7 +608,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 					uncorr_lines[j].b = normalize(directions_rgb[j]);
 
 
-				samechroma_lines[j].a = float3(0, 0, 0);
+				samechroma_lines[j].a = float3(0.0f, 0.0f, 0.0f);
 
 				if (dot(averages[j], averages[j]) == 0.0f)
 					samechroma_lines[j].b = normalize(float3(1, 1, 1));

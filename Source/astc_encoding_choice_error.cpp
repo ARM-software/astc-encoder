@@ -148,8 +148,8 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		else
 			uncorr_rgb_lines[i].b = normalize(directions_rgb[i]);
 
-		samechroma_rgb_lines[i].a = float3(0, 0, 0);
-		if (dot(averages[i], averages[i]) < 1e-20)
+		samechroma_rgb_lines[i].a = float3(0.0f, 0.0f, 0.0f);
+		if (dot(averages[i], averages[i]) < 1e-20f)
 			samechroma_rgb_lines[i].b = normalize(csf);
 		else
 			samechroma_rgb_lines[i].b = normalize(averages[i]);
@@ -157,7 +157,7 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		rgb_luma_lines[i].a = averages[i];
 		rgb_luma_lines[i].b = normalize(csf);
 
-		luminance_lines[i].a = float3(0, 0, 0);
+		luminance_lines[i].a = float3(0.0f, 0.0f, 0.0f);
 		luminance_lines[i].b = normalize(csf);
 
 		#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -259,7 +259,9 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 		float4 endpt0 = ep.endpt0[i];
 		float4 endpt1 = ep.endpt1[i];
 		float4 endpt_dif = endpt1 - endpt0;
-		if (fabs(endpt_dif.x) < (0.12 * 65535.0f) && fabs(endpt_dif.y) < (0.12 * 65535.0f) && fabs(endpt_dif.z) < (0.12 * 65535.0f))
+		if (fabsf(endpt_dif.x) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.y) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.z) < (0.12f * 65535.0f))
 			eligible_for_offset_encode[i] = 1;
 		else
 			eligible_for_offset_encode[i] = 0;

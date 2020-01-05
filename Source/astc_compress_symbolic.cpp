@@ -806,8 +806,8 @@ void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weigh
 				float zdif = (z - centerpos_z) / zdim;
 
 				float wdif = 0.36f;
-				float dist = sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
-				*bef = pow(dist, ewp->block_artifact_suppression);
+				float dist = sqrtf(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
+				*bef = powf(dist, ewp->block_artifact_suppression);
 				bef++;
 			}
 		}
@@ -822,12 +822,14 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 	int idx = 0;
 
 	int any_mean_stdev_weight =
-		ewp->rgb_base_weight != 1.0 || ewp->alpha_base_weight != 1.0 || ewp->rgb_mean_weight != 0.0 || ewp->rgb_stdev_weight != 0.0 || ewp->alpha_mean_weight != 0.0 || ewp->alpha_stdev_weight != 0.0;
+	    ewp->rgb_base_weight != 1.0f || ewp->alpha_base_weight != 1.0f || \
+	    ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
+	    ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
 
 	float4 color_weights = float4(ewp->rgba_weights[0],
-								  ewp->rgba_weights[1],
-								  ewp->rgba_weights[2],
-								  ewp->rgba_weights[3]);
+	                              ewp->rgba_weights[1],
+	                              ewp->rgba_weights[2],
+	                              ewp->rgba_weights[3]);
 
 	ewb->contains_zeroweight_texels = 0;
 
@@ -886,10 +888,10 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 						variance.y = fvar * mixing + variance.y * (1.0f - mixing);
 						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
 
-						float4 stdev = float4(sqrt(MAX(variance.x, 0.0f)),
-											  sqrt(MAX(variance.y, 0.0f)),
-											  sqrt(MAX(variance.z, 0.0f)),
-											  sqrt(MAX(variance.w, 0.0f)));
+						float4 stdev = float4(sqrtf(MAX(variance.x, 0.0f)),
+											  sqrtf(MAX(variance.y, 0.0f)),
+											  sqrtf(MAX(variance.z, 0.0f)),
+											  sqrtf(MAX(variance.w, 0.0f)));
 
 						avg.x *= ewp->rgb_mean_weight;
 						avg.y *= ewp->rgb_mean_weight;
@@ -950,15 +952,15 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 						if (r < 0.0031308f)
 							r = 12.92f;
 						else
-							r = 0.4396f * pow(r, -0.58333f);
+							r = 0.4396f * powf(r, -0.58333f);
 						if (g < 0.0031308f)
 							g = 12.92f;
 						else
-							g = 0.4396f * pow(g, -0.58333f);
+							g = 0.4396f * powf(g, -0.58333f);
 						if (b < 0.0031308f)
 							b = 12.92f;
 						else
-							b = 0.4396f * pow(b, -0.58333f);
+							b = 0.4396f * powf(b, -0.58333f);
 						error_weight.x *= r;
 						error_weight.y *= g;
 						error_weight.z *= b;
@@ -1097,12 +1099,12 @@ void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * b
 	float bb_var = cov_matrix.v[2].z;
 	float aa_var = cov_matrix.v[3].w;
 
-	float rg_correlation = cov_matrix.v[0].y / sqrt(MAX(rr_var * gg_var, 1e-30f));
-	float rb_correlation = cov_matrix.v[0].z / sqrt(MAX(rr_var * bb_var, 1e-30f));
-	float ra_correlation = cov_matrix.v[0].w / sqrt(MAX(rr_var * aa_var, 1e-30f));
-	float gb_correlation = cov_matrix.v[1].z / sqrt(MAX(gg_var * bb_var, 1e-30f));
-	float ga_correlation = cov_matrix.v[1].w / sqrt(MAX(gg_var * aa_var, 1e-30f));
-	float ba_correlation = cov_matrix.v[2].w / sqrt(MAX(bb_var * aa_var, 1e-30f));
+	float rg_correlation = cov_matrix.v[0].y / sqrtf(MAX(rr_var * gg_var, 1e-30f));
+	float rb_correlation = cov_matrix.v[0].z / sqrtf(MAX(rr_var * bb_var, 1e-30f));
+	float ra_correlation = cov_matrix.v[0].w / sqrtf(MAX(rr_var * aa_var, 1e-30f));
+	float gb_correlation = cov_matrix.v[1].z / sqrtf(MAX(gg_var * bb_var, 1e-30f));
+	float ga_correlation = cov_matrix.v[1].w / sqrtf(MAX(gg_var * aa_var, 1e-30f));
+	float ba_correlation = cov_matrix.v[2].w / sqrtf(MAX(bb_var * aa_var, 1e-30f));
 
 	if (astc_isnan(rg_correlation))
 		rg_correlation = 1.0f;
@@ -1117,11 +1119,11 @@ void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * b
 	if (astc_isnan(ba_correlation))
 		ba_correlation = 1.0f;
 
-	float lowest_correlation = MIN(fabs(rg_correlation), fabs(rb_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabs(ra_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabs(gb_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabs(ga_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabs(ba_correlation));
+	float lowest_correlation = MIN(fabsf(rg_correlation), fabsf(rb_correlation));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ra_correlation));
+	lowest_correlation = MIN(lowest_correlation, fabsf(gb_correlation));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ga_correlation));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ba_correlation));
 	*lowest_correl = lowest_correlation;
 
 	// compute a "normal-map" factor
@@ -1140,11 +1142,11 @@ void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * b
 							blk->orig_data[4 * i + 2]);
 		val = (val - float3(0.5f, 0.5f, 0.5f)) * 2.0f;
 		float length_squared = dot(val, val);
-		float nf = fabs(length_squared - 1.0f);
+		float nf = fabsf(length_squared - 1.0f);
 		nf_sum += nf;
 	}
 	float nf_avg = nf_sum / texels_per_block;
-	*is_normal_map = nf_avg < 0.2;
+	*is_normal_map = nf_avg < 0.2f;
 }
 
 void compress_constant_color_block(int xdim, int ydim, int zdim, const imageblock * blk, const error_weight_block * ewb, symbolic_compressed_block * scb)
@@ -1732,7 +1734,7 @@ END_OF_TESTS:
 
 
 	if (print_tile_errors)
-		printf("%g\n", error_of_best_block);
+		printf("%g\n", (double)error_of_best_block);
 
 	// mean squared error per color component.
 	return error_of_best_block / ((float)xdim * ydim * zdim);

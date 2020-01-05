@@ -104,8 +104,8 @@ void prepare_angular_tables(void)
 
 		for (j = 0; j < SINCOS_STEPS; j++)
 		{
-			sin_table[j][i] = static_cast < float >(sin((2.0f * M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
-			cos_table[j][i] = static_cast < float >(cos((2.0f * M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
+			sin_table[j][i] = static_cast<float>(sinf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
+			cos_table[j][i] = static_cast<float>(cosf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
 		}
 
 		int p = static_cast < int >(floor(angular_steppings[i])) + 1;

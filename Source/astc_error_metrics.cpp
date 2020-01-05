@@ -84,7 +84,7 @@ static float clamp(float val)
 static float xlog2(float val)
 {
 	if (val >= 0.00006103515625f)
-		return log(val) * 1.44269504088896340735f;	// log(x)/log(2)
+		return logf(val) * 1.44269504088896340735f;	// log(x)/log(2)
 	else
 		return -15.44269504088896340735f + val * 23637.11554992477646609062f;
 }
@@ -102,7 +102,7 @@ static float mpsnr_operator(float val, int fstop)
 	if32 p;
 	p.u = 0x3f800000 + (fstop << 23);  // 0x3f800000 is 1.0f
 	val *= p.f;
-	val = pow(val, (1.0f / 2.2f));
+	val = powf(val, (1.0f / 2.2f));
 	val *= 255.0f;
 
 	// Do not reorder these, correct NaN handling relies on the fact that
@@ -332,48 +332,48 @@ void compute_error_metrics(
 	if (num == 0.0f)
 		psnr = 999.0f;
 	else
-		psnr = 10.0f * log10(denom / num);
+		psnr = 10.0f * log10f(denom / num);
 
 	float rgb_psnr = psnr;
 	if (show_psnr)
 	{
 		if (channelmask & 8)
 		{
-			printf("PSNR (LDR-RGBA): %.6f dB\n", psnr);
+			printf("PSNR (LDR-RGBA): %.6f dB\n", (double)psnr);
 
 			float alpha_psnr;
 			if (alpha_num == 0.0f)
 				alpha_psnr = 999.0f;
 			else
-				alpha_psnr = 10.0f * log10(denom / alpha_num);
-			printf("Alpha-Weighted PSNR: %.6f dB\n", alpha_psnr);
+				alpha_psnr = 10.0f * log10f(denom / alpha_num);
+			printf("Alpha-Weighted PSNR: %.6f dB\n", (double)alpha_psnr);
 
 			float rgb_num = errorsum.sum.x + errorsum.sum.y + errorsum.sum.z;
 			if (rgb_num == 0.0f)
 				rgb_psnr = 999.0f;
 			else
-				rgb_psnr = 10.0f * log10( pixels * 3.0f / rgb_num);
-			printf("PSNR (LDR-RGB): %.6f dB\n", rgb_psnr);
+				rgb_psnr = 10.0f * log10f( pixels * 3.0f / rgb_num);
+			printf("PSNR (LDR-RGB): %.6f dB\n", (double)rgb_psnr);
 		}
 		else
-			printf("PSNR (LDR-RGB): %.6f dB\n", psnr);
+			printf("PSNR (LDR-RGB): %.6f dB\n", (double)psnr);
 
 		if (compute_hdr_metrics)
 		{
-			printf("Color peak value: %f\n", rgb_peak);
+			printf("Color peak value: %f\n", (double)rgb_peak);
 			printf("PSNR (RGB normalized to peak): %f dB\n",
-			       rgb_psnr + 20.0f * log10(rgb_peak));
+			       (double)(rgb_psnr + 20.0f * log10f(rgb_peak)));
 
 			float mpsnr;
 			if (mpsnr_num == 0.0f)
 				mpsnr = 999.0f;
 			else
-				mpsnr = 10.0f * log10(mpsnr_denom / mpsnr_num);
+				mpsnr = 10.0f * log10f(mpsnr_denom / mpsnr_num);
 			printf("mPSNR (RGB) [fstops: %+d to %+d] : %.6f dB\n",
-			       fstop_lo, fstop_hi, mpsnr);
+			       fstop_lo, fstop_hi, (double)mpsnr);
 
 			float logrmse = sqrt(log_num / pixels);
-			printf("LogRMSE (RGB): %.6f\n", logrmse);
+			printf("LogRMSE (RGB): %.6f\n", (double)logrmse);
 		}
 	}
 }

@@ -580,7 +580,7 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y)
 			if(is_legal)
 			{
 				float bitrate = 128.0f / (blockdims[i] * blockdims[j]);
-				float bitrate_error = fabs(bitrate - target_bitrate);
+				float bitrate_error = fabsf(bitrate - target_bitrate);
 				float aspect = (float)blockdims[j] / blockdims[i];
 				if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
 				{
@@ -613,7 +613,7 @@ void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z)
 				if(is_legal)
 				{
 					float bitrate = 128.0f / (blockdims[i] * blockdims[j] * blockdims[k]);
-					float bitrate_error = fabs(bitrate - target_bitrate);
+					float bitrate_error = fabsf(bitrate - target_bitrate);
 					float aspect = (float)blockdims[k] / blockdims[j] + (float)blockdims[j] / blockdims[i] + (float)blockdims[k] / blockdims[i];
 
 					if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
@@ -2133,8 +2133,8 @@ int astc_main(int argc, char **argv)
 
 		if (rgb_force_use_of_hdr == 0)
 		{
-			texel_avg_error_limit_2d = pow(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
-			texel_avg_error_limit_3d = pow(0.1f, dblimit_3d * 0.1f) * 65535.0f * 65535.0f;
+			texel_avg_error_limit_2d = powf(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
+			texel_avg_error_limit_3d = powf(0.1f, dblimit_3d * 0.1f) * 65535.0f * 65535.0f;
 		}
 		else
 		{
@@ -2186,31 +2186,31 @@ int astc_main(int argc, char **argv)
 		{
 			printf("Encoding settings:\n\n");
 			if (target_bitrate_set)
-				printf("Target bitrate provided: %.2f bpp\n", target_bitrate);
+				printf("Target bitrate provided: %.2f bpp\n", (double)target_bitrate);
 			printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
 			printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
 			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);
-			printf("RGB power: %g\n", ewp.rgb_power);
-			printf("RGB base-weight: %g\n", ewp.rgb_base_weight);
-			printf("RGB local-mean weight: %g\n", ewp.rgb_mean_weight);
-			printf("RGB local-stdev weight: %g\n", ewp.rgb_stdev_weight);
-			printf("RGB mean-and-stdev mixing across color channels: %g\n", ewp.rgb_mean_and_stdev_mixing);
-			printf("Alpha power: %g\n", ewp.alpha_power);
-			printf("Alpha base-weight: %g\n", ewp.alpha_base_weight);
-			printf("Alpha local-mean weight: %g\n", ewp.alpha_mean_weight);
-			printf("Alpha local-stdev weight: %g\n", ewp.alpha_stdev_weight);
+			printf("RGB power: %g\n", (double)ewp.rgb_power);
+			printf("RGB base-weight: %g\n", (double)ewp.rgb_base_weight);
+			printf("RGB local-mean weight: %g\n", (double)ewp.rgb_mean_weight);
+			printf("RGB local-stdev weight: %g\n", (double)ewp.rgb_stdev_weight);
+			printf("RGB mean-and-stdev mixing across color channels: %g\n", (double)ewp.rgb_mean_and_stdev_mixing);
+			printf("Alpha power: %g\n", (double)ewp.alpha_power);
+			printf("Alpha base-weight: %g\n", (double)ewp.alpha_base_weight);
+			printf("Alpha local-mean weight: %g\n", (double)ewp.alpha_mean_weight);
+			printf("Alpha local-stdev weight: %g\n", (double)ewp.alpha_stdev_weight);
 			printf("RGB weights scale with alpha: ");
 			if (ewp.enable_rgb_scale_with_alpha)
 				printf("enabled (radius=%d)\n", ewp.alpha_radius);
 			else
 				printf("disabled\n");
-			printf("Color channel relative weighting: R=%g G=%g B=%g A=%g\n", ewp.rgba_weights[0], ewp.rgba_weights[1], ewp.rgba_weights[2], ewp.rgba_weights[3]);
-			printf("Block-artifact suppression parameter : %g\n", ewp.block_artifact_suppression);
+			printf("Color channel relative weighting: R=%g G=%g B=%g A=%g\n", (double)ewp.rgba_weights[0], (double)ewp.rgba_weights[1], (double)ewp.rgba_weights[2], (double)ewp.rgba_weights[3]);
+			printf("Block-artifact suppression parameter : %g\n", (double)ewp.block_artifact_suppression);
 			printf("Number of distinct partitionings to test: %d (%s)\n", ewp.partition_search_limit, plimit_set_by_user ? "specified by user" : "preset");
-			printf("PSNR decibel limit: 2D: %f 3D: %f (%s)\n", dblimit_2d, dblimit_3d, dblimit_set_by_user ? "specified by user" : "preset");
-			printf("1->2 partition limit: %f\n", oplimit);
-			printf("Dual-plane color-correlation cutoff: %f (%s)\n", mincorrel, mincorrel_set_by_user ? "specified by user" : "preset");
-			printf("Block Mode Percentile Cutoff: %f (%s)\n", ewp.block_mode_cutoff * 100.0f, bmc_set_by_user ? "specified by user" : "preset");
+			printf("PSNR decibel limit: 2D: %f 3D: %f (%s)\n", (double)dblimit_2d, (double)dblimit_3d, dblimit_set_by_user ? "specified by user" : "preset");
+			printf("1->2 partition limit: %f\n", (double)oplimit);
+			printf("Dual-plane color-correlation cutoff: %f (%s)\n", (double)mincorrel, mincorrel_set_by_user ? "specified by user" : "preset");
+			printf("Block Mode Percentile Cutoff: %f (%s)\n", (double)(ewp.block_mode_cutoff * 100.0f), bmc_set_by_user ? "specified by user" : "preset");
 			printf("Max refinement iterations: %d (%s)\n", ewp.max_refinement_iters, maxiters_set_by_user ? "specified by user" : "preset");
 			printf("Thread count : %d (%s)\n", thread_count, thread_count_autodetected ? "autodetected" : "specified by user");
 			printf("\n");

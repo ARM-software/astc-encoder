@@ -276,7 +276,7 @@ float float_to_lns(float p)
 		return 0;
 	}
 
-	if (fabs(p) >= 65536.0f)
+	if (fabsf(p) >= 65536.0f)
 	{
 		// overflow, return a +INF value
 		return 65535;
@@ -761,17 +761,17 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 								if (r <= 0.0031308f)
 									r = r * 12.92f;
 								else if (r <= 1)
-									r = 1.055f * pow(r, (1.0f / 2.4f)) - 0.055f;
+									r = 1.055f * powf(r, (1.0f / 2.4f)) - 0.055f;
 
 								if (g <= 0.0031308f)
 									g = g * 12.92f;
 								else if (g <= 1)
-									g = 1.055f * pow(g, (1.0f / 2.4f)) - 0.055f;
+									g = 1.055f * powf(g, (1.0f / 2.4f)) - 0.055f;
 
 								if (b <= 0.0031308f)
 									b = b * 12.92f;
 								else if (b <= 1)
-									b = 1.055f * pow(b, (1.0f / 2.4f)) - 0.055f;
+									b = 1.055f * powf(b, (1.0f / 2.4f)) - 0.055f;
 
 								data[0] = r;
 								data[1] = g;
@@ -794,7 +794,7 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
 							if (zcoord < 0.0f)
 								zcoord = 0.0f;
-							data[6] = (sqrt(zcoord) * 0.5f) + 0.5f;
+							data[6] = (sqrtf(zcoord) * 0.5f) + 0.5f;
 
 							// clamp to [0,1]
 							if (data[0] > 1.0f)
@@ -858,15 +858,15 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 								if (r <= 0.0031308f)
 									r = r * 12.92f;
 								else if (r <= 1)
-									r = 1.055f * pow(r, (1.0f / 2.4f)) - 0.055f;
+									r = 1.055f * powf(r, (1.0f / 2.4f)) - 0.055f;
 								if (g <= 0.0031308f)
 									g = g * 12.92f;
 								else if (g <= 1)
-									g = 1.055f * pow(g, (1.0f / 2.4f)) - 0.055f;
+									g = 1.055f * powf(g, (1.0f / 2.4f)) - 0.055f;
 								if (b <= 0.0031308f)
 									b = b * 12.92f;
 								else if (b <= 1)
-									b = 1.055f * pow(b, (1.0f / 2.4f)) - 0.055f;
+									b = 1.055f * powf(b, (1.0f / 2.4f)) - 0.055f;
 
 								data[0] = r;
 								data[1] = g;
@@ -885,7 +885,7 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							float zN = 1.0f - xN * xN - yN * yN;
 							if (zN < 0.0f)
 								zN = 0.0f;
-							data[6] = (sqrt(zN) * 0.5f) + 0.5f;
+							data[6] = (sqrtf(zN) * 0.5f) + 0.5f;
 
 							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);

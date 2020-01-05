@@ -62,13 +62,13 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 
 	for (i = 0; i < partition_count; i++)
 	{
-		lowvalues[i] = 1e10;
-		highvalues[i] = -1e10;
+		lowvalues[i] = 1e10f;
+		highvalues[i] = -1e10f;
 	}
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		if (error_weights[i] > 1e-10)
+		if (error_weights[i] > 1e-10f)
 		{
 			float value = blk->work_data[4 * i + component];
 			int partition = pt->partition_of_texel[i];
@@ -84,8 +84,8 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 		float diff = highvalues[i] - lowvalues[i];
 		if (diff < 0)
 		{
-			lowvalues[i] = 0;
-			highvalues[i] = 0;
+			lowvalues[i] = 0.0f;
+			highvalues[i] = 0.0f;
 		}
 		if (diff < 1e-7f)
 			diff = 1e-7f;
@@ -262,7 +262,7 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		if (error_weights[i] > 1e-10)
+		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 			float2 point = float2(blk->work_data[4 * i + component1], blk->work_data[4 * i + component2]) * scalefactors[partition];
@@ -286,7 +286,7 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 	for (i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)			// case for when none of the texels had any weight
+		if (length < 0.0f)			// case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
@@ -498,8 +498,8 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 
 	for (i = 0; i < partition_count; i++)
 	{
-		lowparam[i] = 1e10;
-		highparam[i] = -1e10;
+		lowparam[i] = 1e10f;
+		highparam[i] = -1e10f;
 	}
 
 	compute_averages_and_directions_3_components(pt, blk, ewb, scalefactors, component1, component2, component3, averages, directions);
@@ -508,7 +508,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 	{
 		float3 direc = directions[i];
 		if (direc.x + direc.y + direc.z < 0.0f)
-			directions[i] = float3(0, 0, 0) - direc;
+			directions[i] = float3(0.0f, 0.0f, 0.0f) - direc;
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -522,7 +522,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		if (error_weights[i] > 1e-10)
+		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 			float3 point = float3(blk->work_data[4 * i + component1], blk->work_data[4 * i + component2], blk->work_data[4 * i + component3]) * scalefactors[partition];
@@ -756,7 +756,7 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		if (error_weights[i] > 1e-10)
+		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 
@@ -1144,7 +1144,7 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 			float step;
 			float a = (error_change_up + error_change_down) * 2.0f;
 			float b = error_change_down - error_change_up;
-			if (fabs(b) >= a)
+			if (fabsf(b) >= a)
 			{
 				if (a <= 0.0f)
 				{
@@ -1308,7 +1308,7 @@ void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_we
 		// if it is not, then it is flagged as "not perturbable". This causes a
 		// quality loss of about 0.002 dB, which is totally worth the speedup we're getting.
 		is_perturbable[i] = 0;
-		if (fabs(ix - ix0) > quantization_cutoff)
+		if (fabsf(ix - ix0) > quantization_cutoff)
 		{
 			is_perturbable[i] = 1;
 			perturbable_count++;
@@ -1817,7 +1817,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 
 	for (i = 0; i < partition_count; i++)
 	{
-		if (wmin1[i] >= wmax1[i] * 0.999)
+		if (wmin1[i] >= wmax1[i] * 0.999f)
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
@@ -1884,28 +1884,28 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 			float scale_ep0 = dot(pmat1_scale[i].v[0], scale_vec[i]);
 			float scale_ep1 = dot(pmat1_scale[i].v[1], scale_vec[i]);
 
-			if (plane2_color_component != 0 && fabs(red_det1) > (red_mss1 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+			if (plane2_color_component != 0 && fabsf(red_det1) > (red_mss1 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
 			{
 				ep->endpt0[i].x = ep0.x;
 				ep->endpt1[i].x = ep1.x;
 			}
-			if (plane2_color_component != 1 && fabs(green_det1) > (green_mss1 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+			if (plane2_color_component != 1 && fabsf(green_det1) > (green_mss1 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
 			{
 				ep->endpt0[i].y = ep0.y;
 				ep->endpt1[i].y = ep1.y;
 			}
-			if (plane2_color_component != 2 && fabs(blue_det1) > (blue_mss1 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+			if (plane2_color_component != 2 && fabsf(blue_det1) > (blue_mss1 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
 			{
 				ep->endpt0[i].z = ep0.z;
 				ep->endpt1[i].z = ep1.z;
 			}
-			if (plane2_color_component != 3 && fabs(alpha_det1) > (alpha_mss1 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+			if (plane2_color_component != 3 && fabsf(alpha_det1) > (alpha_mss1 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
 			{
 				ep->endpt0[i].w = ep0.w;
 				ep->endpt1[i].w = ep1.w;
 			}
 
-			if (fabs(scale_det1) > (scale_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
+			if (fabsf(scale_det1) > (scale_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
 				float scalediv = scale_ep0 / scale_ep1;
 				rgbs_vectors[i] =  float4(scale_directions[i].x * scale_ep1,
@@ -1921,7 +1921,7 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 
 		if (plane2_weight_set8)
 		{
-			if (wmin2[i] >= wmax2[i] * 0.999)
+			if (wmin2[i] >= wmax2[i] * 0.999f)
 			{
 				// if all weights in the partition were equal, then just take average
 				// of all colors in the partition and use that as both endpoint colors.
@@ -1975,25 +1975,25 @@ void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantizatio
 									dot(pmat2_blue[i].v[1], blue_vec[i]),
 									dot(pmat2_alpha[i].v[1], alpha_vec[i]));
 
-				if (plane2_color_component == 0 && fabs(red_det2) > (red_mss2 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+				if (plane2_color_component == 0 && fabsf(red_det2) > (red_mss2 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
 				{
 					ep->endpt0[i].x = ep0.x;
 					ep->endpt1[i].x = ep1.x;
 				}
 
-				if (plane2_color_component == 1 && fabs(green_det2) > (green_mss2 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+				if (plane2_color_component == 1 && fabsf(green_det2) > (green_mss2 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
 				{
 					ep->endpt0[i].y = ep0.y;
 					ep->endpt1[i].y = ep1.y;
 				}
 
-				if (plane2_color_component == 2 && fabs(blue_det2) > (blue_mss2 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+				if (plane2_color_component == 2 && fabsf(blue_det2) > (blue_mss2 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
 				{
 					ep->endpt0[i].z = ep0.z;
 					ep->endpt1[i].z = ep1.z;
 				}
 
-				if (plane2_color_component == 3 && fabs(alpha_det2) > (alpha_mss2 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+				if (plane2_color_component == 3 && fabsf(alpha_det2) > (alpha_mss2 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
 				{
 					ep->endpt0[i].w = ep0.w;
 					ep->endpt1[i].w = ep1.w;

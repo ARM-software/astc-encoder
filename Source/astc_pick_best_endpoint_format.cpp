@@ -149,7 +149,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 		float3 prd = float3(ep1.x, ep1.y, ep1.z) - float3(cf, cf, cf);
 		float3 pdif = prd - float3(ep0.x, ep0.y, ep0.z);
 		// estimate of color-component spread in low endpoint color
-		float df = MAX(MAX(fabs(pdif.x), fabs(pdif.y)), fabs(pdif.z));
+		float df = MAX(MAX(fabsf(pdif.x), fabsf(pdif.y)), fabsf(pdif.z));
 
 		int b = (int)bf;
 		int c = (int)cf;

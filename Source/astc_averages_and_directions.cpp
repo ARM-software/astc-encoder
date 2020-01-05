@@ -135,7 +135,7 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float3 base_sum = float3(0, 0, 0);
+		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
 		for (i = 0; i < texelcount; i++)
@@ -154,9 +154,9 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.x, csf.y, csf.z);
 
-		float3 sum_xp = float3(0, 0, 0);
-		float3 sum_yp = float3(0, 0, 0);
-		float3 sum_zp = float3(0, 0, 0);
+		float3 sum_xp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
 
 		for (i = 0; i < texelcount; i++)
 		{
@@ -227,7 +227,7 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float3 base_sum = float3(0, 0, 0);
+		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
 		for (i = 0; i < texelcount; i++)
@@ -248,9 +248,9 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 		averages[partition] = average * float3(csf.x, csf.y, csf.z);
 
 
-		float3 sum_xp = float3(0, 0, 0);
-		float3 sum_yp = float3(0, 0, 0);
-		float3 sum_zp = float3(0, 0, 0);
+		float3 sum_xp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
 
 		for (i = 0; i < texelcount; i++)
 		{
@@ -286,8 +286,8 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 			best_sum = prod_zp;
 		}
 
-		if (dot(best_vector, best_vector) < 1e-18)
-			best_vector = float3(1, 1, 1);
+		if (dot(best_vector, best_vector) < 1e-18f)
+			best_vector = float3(1.0f, 1.0f, 1.0f);
 		directions[partition] = best_vector;
 	}
 
@@ -318,7 +318,7 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float2 base_sum = float2(0, 0);
+		float2 base_sum = float2(0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
 		for (i = 0; i < texelcount; i++)
@@ -337,8 +337,8 @@ void compute_averages_and_directions_2_components(const partition_info * pt,
 		float2 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float2(csf.x, csf.y);
 
-		float2 sum_xp = float2(0, 0);
-		float2 sum_yp = float2(0, 0);
+		float2 sum_xp = float2(0.0f, 0.0f);
+		float2 sum_yp = float2(0.0f, 0.0f);
 
 		for (i = 0; i < texelcount; i++)
 		{
@@ -521,8 +521,8 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
-		float lowparam = 1e10;
-		float highparam = -1e10;
+		float lowparam = 1e10f;
+		float highparam = -1e10f;
 
 		processed_line4 l = plines[partition];
 
@@ -531,7 +531,7 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 			for (i = 0; i < texelcount; i++)
 			{
 				int iwt = weights[i];
-				if (ewb->texel_weight[iwt] > 1e-20)
+				if (ewb->texel_weight[iwt] > 1e-20f)
 				{
 					float4 point = float4(blk->work_data[4 * iwt], blk->work_data[4 * iwt + 1], blk->work_data[4 * iwt + 2], blk->work_data[4 * iwt + 3]);
 					float param = dot(point, l.bs);
@@ -591,7 +591,7 @@ float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim
 	{
 		int partition = pt->partition_of_texel[i];
 		float texel_weight = ewb->texel_weight_rgb[i];
-		if (partition != partition_to_test || texel_weight < 1e-20)
+		if (partition != partition_to_test || texel_weight < 1e-20f)
 			continue;
 		float3 point = float3(blk->work_data[4 * i], blk->work_data[4 * i + 1], blk->work_data[4 * i + 2]);
 

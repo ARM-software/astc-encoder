@@ -659,7 +659,7 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 
 	// if the endpoints are *really* close, then pull them apart slightly;
 	// this affords for >8 bits precision for normal maps.
-	if (quantization_level > 18 && fabs(lum0 - lum1) < 3.0f)
+	if (quantization_level > 18 && fabsf(lum0 - lum1) < 3.0f)
 	{
 		if (lum0 < lum1)
 		{
@@ -674,7 +674,7 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 		lum0 = clamp255(lum0);
 		lum1 = clamp255(lum1);
 	}
-	if (quantization_level > 18 && fabs(a0 - a1) < 3.0f)
+	if (quantization_level > 18 && fabsf(a0 - a1) < 3.0f)
 	{
 		if (a0 < a1)
 		{
@@ -1004,8 +1004,8 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 		float s_fval = s_base + rgb_errorsum * (1.0f / 3.0f);
 		if (s_fval < 0.0f)
 			s_fval = 0.0f;
-		else if (s_fval > 1e9)
-			s_fval = 1e9;
+		else if (s_fval > 1e9f)
+			s_fval = 1e9f;
 
 		int s_intval = (int)floor(s_fval * mode_scale + 0.5f);
 
@@ -1250,7 +1250,7 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 		float c_cutoff = mode_cutoffs[mode][1];
 		float d_cutoff = mode_cutoffs[mode][2];
 
-		if (b0_base > b_cutoff || b1_base > b_cutoff || c_base > c_cutoff || fabs(d0_base) > d_cutoff || fabs(d1_base) > d_cutoff)
+		if (b0_base > b_cutoff || b1_base > b_cutoff || c_base > c_cutoff || fabsf(d0_base) > d_cutoff || fabsf(d1_base) > d_cutoff)
 		{
 			continue;
 		}
