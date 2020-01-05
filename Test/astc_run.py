@@ -109,7 +109,7 @@ class TestImage():
             patternPSNR = "PSNR \\(RGB normalized to peak\\): ([0-9.]*) dB"
 
         patternPSNR = re.compile(patternPSNR)
-        patternTime = re.compile(".* coding time: ([0-9.]*) seconds")
+        patternTime = re.compile(".*: ([0-9.]*) .*: ([0-9.]*)")
 
         # Extract results from the log
         runPSNR = None
@@ -122,7 +122,8 @@ class TestImage():
 
             match = patternTime.match(line)
             if match:
-                runTime = float(match.group(1))
+                allTime = float(match.group(1))
+                runTime = float(match.group(2))
 
         # Convert the callgrind log to an image
         if profile:
@@ -132,7 +133,7 @@ class TestImage():
 
         assert runPSNR is not None, "No coding PSNR found %s" % result.stdout
         assert runTime is not None, "No coding time found %s" % result.stdout
-        return (runPSNR, runTime, outFilePath)
+        return (runPSNR, runTime, allTime, outFilePath)
 
 
 def splitall(path):
@@ -226,18 +227,26 @@ def main():
     image = TestImage(args.image)
 
     # Run the test scenario
-    times = []
+    allTimes = []
+    codeTimes = []
     for _ in range(0, args.testRepeats + args.testWarmups):
-        psnr, secs, output = image.run_once(app, args.block, args.profile)
-        times.append(secs)
+        psnr, codeSecs, allSecs, output = \
+            image.run_once(app, args.block, args.profile)
+        codeTimes.append(codeSecs)
+        allTimes.append(allSecs)
+
 
     # Strip off the warmup times and average the rest
-    times = times[args.testWarmups:]
-    secs = sum(times) / len(times)
+    allTimes = allTimes[args.testWarmups:]
+    allSecs = sum(allTimes) / len(allTimes)
+
+    codeTimes = codeTimes[args.testWarmups:]
+    codeSecs = sum(codeTimes) / len(codeTimes)
 
     # Print summary results
     print("PSNR: %0.3f dB" % psnr)
-    print("Time: %0.3f s (avg of %u runs)" % (secs, len(times)))
+    print("Coding time: %0.3f s (avg of %u runs)" % (codeSecs, len(codeTimes)))
+    print("All time:    %0.3f s (avg of %u runs)" % (allSecs, len(allTimes)))
     print("Image: %s" % output)
 
 

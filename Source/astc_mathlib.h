@@ -53,6 +53,7 @@ typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
 typedef vtype4<float>        float4;
 typedef vtype4<double>       double4;
+typedef vtype3<int>          int3;
 typedef vtype4<int>          int4;
 typedef vtype4<unsigned int> uint4;
 
@@ -116,6 +117,20 @@ static inline int iclamp(int val, int low, int high)
 	return val;
 }
 
+static inline float srgb_transform(float val)
+{
+	if (val <= 0.04045f)
+	{
+		return val * (1.0f / 12.92f);
+	}
+
+	if (val <= 1)
+	{
+		powf((val + 0.055f) * (1.0f / 1.055f), 2.4f);
+	}
+
+	return val;
+}
 
 
 /*******************************************************

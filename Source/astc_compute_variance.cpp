@@ -8,82 +8,221 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Functions to calculate variance per-pixel-channel in a NxN footprint.
+ * @brief Functions to calculate variance per channel in a NxN footprint.
  *
- * We want N to be parametric. The routine below uses summed area tables in
- * order to execute in O(1) time per pixel, independent of big N is.
+ * We need N to be parametric, so the routine below uses summed area tables in
+ * order to execute in O(1) time independent of how big N is.
+ *
+ * The addition uses a Brent-Kung-based parallel prefix adder. This uses the
+ * prefix tree to first perform a binary reduction, and then distributes the
+ * results. This method means that there is no serial dependency between a
+ * given element and the next one, and also significantly improves numerical
+ * stability allowing us to use floats rather than doubles.
  */
 
 #include "astc_codec_internals.h"
+#include <cassert>
 
-#include <stdio.h>
-
-float4 *** input_averages;
-float  *** input_alpha_averages;
-float4 *** input_variances;
-
-// routine to compute averages and variances for a pixel region.
-// The routine computes both in a single pass, using a summed-area table
-// to decouple the running time from the averaging/variance kernel size.
-
-static void compute_pixel_region_variance(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, swizzlepattern swz, int use_z_axis,
-										  int source_xoffset,int source_yoffset, int source_zoffset, // position of upper-left pixel in data set
-										  int xsize, int ysize, int zsize, 	// the size of the region to actually compute averages and variances for.
-										  int avg_var_kernel_radius, int alpha_kernel_radius,
-										  int dest_xoffset, int dest_yoffset, int dest_zoffset)
+/**
+ * @brief Parameter structure for compute_pixel_region_variance().
+ *
+ * This function takes a structure to avoid spilling arguments to the stack
+ * on every function invocation, as there are a lot of parameters.
+ */
+struct pixel_region_variance_args
 {
-	int x, y, z;
+	/** The image to analyze. */
+	const astc_codec_image *img;
+	/** The RGB channel power adjustment. */
+	float rgb_power;
+	/** The alpha channel power adjustment. */
+	float alpha_power;
+	/** The RGB data should be treated as sRGB. */
+	int need_srgb_transform;
+	/** The channel swizzle pattern. */
+	swizzlepattern swz;
+	/** Should the algorithm bother with Z axis processing? */
+	int have_z;
+	/** The kernel radius for average and variance. */
+	int avg_var_kernel_radius;
+	/** The kernel radius for alpha processing. */
+	int alpha_kernel_radius;
+	/** The size of the working data to process. */
+	int3 size;
+	/** The position of first src data in the data set. */
+	int3 src_offset;
+	/** The position of first dst data in the data set. */
+	int3 dst_offset;
+	/** The working memory buffer. */
+	float4 *work_memory;
+};
 
+/**
+ * @brief Parameter structure for compute_averages_and_variances_proc().
+ */
+struct avg_var_args
+{
+	/** The arguments for the nested variance computation. */
+	pixel_region_variance_args arg;
+	/** The image dimensions. */
+	int3 img_size;
+	/** The maximum working block dimensions. */
+	int3 blk_size;
+	/** The working block memory size. */
+	int work_memory_size;
+};
+
+/**
+ * @brief Generate a prefix-sum array using Brent-Kung algorithm.
+ *
+ * This will take an input array of the form:
+ *     v0, v1, v2, ...
+ * ... and modify in-place to turn it into a prefix-sum array of the form:
+ *     v0, v0+v1, v0+v1+v2, ...
+ *
+ * @param d      The array to prefix-sum.
+ * @param items  The number of items in the array.
+ * @param stride The item spacing in the array; i.e. dense arrays should use 1.
+ */
+static void brent_kung_prefix_sum(
+	float4 *d,
+	size_t items,
+	int stride
+) {
+	if (items < 2)
+		return;
+
+	size_t lc_stride = 2;
+	size_t log2_stride = 1;
+
+	// The reduction-tree loop
+	do {
+		size_t step = lc_stride >> 1;
+		size_t start = lc_stride - 1;
+		size_t iters = items >> log2_stride;
+
+		float4 *da = d + (start * stride);
+		size_t ofs = -(step * stride);
+		size_t ofs_stride = stride << log2_stride;
+
+		while (iters)
+		{
+			*da = *da + da[ofs];
+			da += ofs_stride;
+			iters--;
+		}
+
+		log2_stride += 1;
+		lc_stride <<= 1;
+	} while (lc_stride <= items);
+
+	// The expansion-tree loop
+	do {
+		log2_stride -= 1;
+		lc_stride >>= 1;
+
+		size_t step = lc_stride >> 1;
+		size_t start = step + lc_stride - 1;
+		size_t iters = (items - step) >> log2_stride;
+
+		float4 *da = d + (start * stride);
+		size_t ofs = -(step * stride);
+		size_t ofs_stride = stride << log2_stride;
+
+		while (iters)
+		{
+			*da = *da + da[ofs];
+			da += ofs_stride;
+			iters--;
+		}
+	} while (lc_stride > 2);
+}
+
+/**
+ * @brief Compute averages and variances for a pixel region.
+ *
+ * The routine computes both in a single pass, using a summed-area table to
+ * decouple the running time from the averaging/variance kernel size.
+ *
+ * @param arg The input parameter structure.
+ */
+static void compute_pixel_region_variance(
+	const pixel_region_variance_args *arg
+) {
+	// Unpack the memory structure into local variables
+	const astc_codec_image *img = arg->img;
+	float rgb_power = arg->rgb_power;
+	float alpha_power = arg->alpha_power;
+	int need_srgb_transform = arg->need_srgb_transform;
+	swizzlepattern swz = arg->swz;
+	int have_z = arg->have_z;
+
+	int size_x = arg->size.x;
+	int size_y = arg->size.y;
+	int size_z = arg->size.z;
+
+	int src_offset_x = arg->src_offset.x;
+	int src_offset_y = arg->src_offset.y;
+	int src_offset_z = arg->src_offset.z;
+
+	int dst_offset_x = arg->dst_offset.x;
+	int dst_offset_y = arg->dst_offset.y;
+	int dst_offset_z = arg->dst_offset.z;
+
+	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
+	int alpha_kernel_radius = arg->alpha_kernel_radius;
+
+	float  *input_alpha_averages = img->input_alpha_averages;
+	float4 *input_averages = img->input_averages;
+	float4 *input_variances = img->input_variances;
+	float4 *work_memory = arg->work_memory;
+
+	// Compute memory sizes and dimensions that we need
 	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);
 	int kerneldim = 2 * kernel_radius + 1;
+	int kernel_radius_xy = kernel_radius;
+	int kernel_radius_z = have_z ? kernel_radius : 0;
 
-	// allocate memory
-	int xpadsize = xsize + kerneldim;
-	int ypadsize = ysize + kerneldim;
-	int zpadsize = zsize + (use_z_axis ? kerneldim : 1);
+	int padsize_x = size_x + kerneldim;
+	int padsize_y = size_y + kerneldim;
+	int padsize_z = size_z + (have_z ? kerneldim : 0);
+	int sizeprod = padsize_x * padsize_y * padsize_z;
 
-	double4 ***varbuf1 = new double4 **[zpadsize];
-	double4 ***varbuf2 = new double4 **[zpadsize];
-	varbuf1[0] = new double4 *[ypadsize * zpadsize];
-	varbuf2[0] = new double4 *[ypadsize * zpadsize];
-	varbuf1[0][0] = new double4[xpadsize * ypadsize * zpadsize];
-	varbuf2[0][0] = new double4[xpadsize * ypadsize * zpadsize];
+	int zd_start = have_z ? 1 : 0;
+	int are_powers_1 = (rgb_power == 1.0f) && (alpha_power == 1.0f);
 
-	for (z = 1; z < zpadsize; z++)
-	{
-		varbuf1[z] = varbuf1[0] + ypadsize * z;
-		varbuf2[z] = varbuf2[0] + ypadsize * z;
-		varbuf1[z][0] = varbuf1[0][0] + xpadsize * ypadsize * z;
-		varbuf2[z][0] = varbuf2[0][0] + xpadsize * ypadsize * z;
-	}
+	float4 *varbuf1 = work_memory;
+	float4 *varbuf2 = work_memory + sizeprod;
 
-	for (z = 0; z < zpadsize; z++)
-	{
-		for (y = 1; y < ypadsize; y++)
-		{
-			varbuf1[z][y] = varbuf1[z][0] + xpadsize * y;
-			varbuf2[z][y] = varbuf2[z][0] + xpadsize * y;
-		}
-	}
+	// Scaling factors to apply to Y and Z for accesses into the work buffers
+	int yst = padsize_x;
+	int zst = padsize_x * padsize_y;
 
-	int powers_are_1 = (rgb_power_to_use == 1.0f) && (alpha_power_to_use == 1.0f);
+	// Scaling factors to apply to Y and Z for accesses into result buffers
+	int ydt = img->xsize;
+	int zdt = img->xsize * img->ysize;
 
-	// load x and x^2 values into the allocated buffers
+	// Macros to act as accessor functions for the work-memory
+	#define VARBUF1(z, y, x) varbuf1[z * zst + y * yst + x]
+	#define VARBUF2(z, y, x) varbuf2[z * zst + y * yst + x]
+
+	// Load N and N^2 values into the work buffers
 	if (img->imagedata8)
 	{
+		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
 		data[4] = 0;
 		data[5] = 255;
 
-		for (z = 0; z < zpadsize - 1; z++)
+		for (int z = zd_start; z < padsize_z; z++)
 		{
-			int z_src = z + source_zoffset - (use_z_axis ? kernel_radius : 0);
-			for (y = 0; y < ypadsize - 1; y++)
+			int z_src = (z - zd_start) + src_offset_z - kernel_radius_z;
+			for (int y = 1; y < padsize_y; y++)
 			{
-				int y_src = y + source_yoffset - kernel_radius;
-				for (x = 0; x < xpadsize - 1; x++)
+				int y_src = (y - 1) + src_offset_y - kernel_radius_xy;
+				for (int x = 1; x < padsize_x; x++)
 				{
-					int x_src = x + source_xoffset - kernel_radius;
+					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
 					data[0] = img->imagedata8[z_src][y_src][4 * x_src + 0];
 					data[1] = img->imagedata8[z_src][y_src][4 * x_src + 1];
 					data[2] = img->imagedata8[z_src][y_src][4 * x_src + 2];
@@ -94,47 +233,49 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 					uint8_t b = data[swz.b];
 					uint8_t a = data[swz.a];
 
-					double4 d = double4(r * (1.0 / 255.0),
-										g * (1.0 / 255.0),
-										b * (1.0 / 255.0),
-										a * (1.0 / 255.0));
+					float4 d = float4 (r * (1.0f / 255.0f),
+					                   g * (1.0f / 255.0f),
+					                   b * (1.0f / 255.0f),
+					                   a * (1.0f / 255.0f));
 
-					if (perform_srgb_transform)
+					if (need_srgb_transform)
 					{
-						d.x = (d.x <= 0.04045) ? d.x * (1.0 / 12.92) : (d.x <= 1) ? pow((d.x + 0.055) * (1.0 / 1.055), 2.4) : d.x;
-						d.y = (d.y <= 0.04045) ? d.y * (1.0 / 12.92) : (d.y <= 1) ? pow((d.y + 0.055) * (1.0 / 1.055), 2.4) : d.y;
-						d.z = (d.z <= 0.04045) ? d.z * (1.0 / 12.92) : (d.z <= 1) ? pow((d.z + 0.055) * (1.0 / 1.055), 2.4) : d.z;
+						d.x = srgb_transform(d.x);
+						d.y = srgb_transform(d.y);
+						d.z = srgb_transform(d.z);
 					}
 
-					if (!powers_are_1)
+					if (!are_powers_1)
 					{
-						d.x = pow(MAX(d.x, 1e-6), (double)rgb_power_to_use);
-						d.y = pow(MAX(d.y, 1e-6), (double)rgb_power_to_use);
-						d.z = pow(MAX(d.z, 1e-6), (double)rgb_power_to_use);
-						d.w = pow(MAX(d.w, 1e-6), (double)alpha_power_to_use);
+						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
+						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
+						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
+						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
 					}
 
-					varbuf1[z][y][x] = d;
-					varbuf2[z][y][x] = d * d;
+					VARBUF1(z, y, x) = d;
+					VARBUF2(z, y, x) = d * d;
 				}
 			}
 		}
 	}
 	else
 	{
+		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		uint16_t data[6];
 		data[4] = 0;
-		data[5] = 0x3C00;		// 1.0 encoded as FP16.
+		data[5] = 0x3C00;
 
-		for (z = 0; z < zpadsize - 1; z++)
+		for (int z = zd_start; z < padsize_z; z++)
 		{
-			int z_src = z + source_zoffset - (use_z_axis ? kernel_radius : 0);
-			for (y = 0; y < ypadsize - 1; y++)
+			int z_src = (z - zd_start) + src_offset_z - kernel_radius_z;
+
+			for (int y = 1; y < padsize_y; y++)
 			{
-				int y_src = y + source_yoffset - kernel_radius;
-				for (x = 0; x < xpadsize - 1; x++)
+				int y_src = (y - 1) + src_offset_y - kernel_radius_xy;
+				for (int x = 1; x < padsize_x; x++)
 				{
-					int x_src = x + source_xoffset - kernel_radius;
+					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
 					data[0] = img->imagedata16[z_src][y_src][4 * x_src];
 					data[1] = img->imagedata16[z_src][y_src][4 * x_src + 1];
 					data[2] = img->imagedata16[z_src][y_src][4 * x_src + 2];
@@ -145,374 +286,348 @@ static void compute_pixel_region_variance(const astc_codec_image * img, float rg
 					uint16_t b = data[swz.b];
 					uint16_t a = data[swz.a];
 
-					double4 d = double4(sf16_to_float(r),
-										sf16_to_float(g),
-										sf16_to_float(b),
-										sf16_to_float(a));
+					float4 d = float4(sf16_to_float(r),
+					                  sf16_to_float(g),
+					                  sf16_to_float(b),
+					                  sf16_to_float(a));
 
-					if (perform_srgb_transform)
+					if (need_srgb_transform)
 					{
-						d.x = (d.x <= 0.04045) ? d.x * (1.0 / 12.92) : (d.x <= 1) ? pow((d.x + 0.055) * (1.0 / 1.055), 2.4) : d.x;
-						d.y = (d.y <= 0.04045) ? d.y * (1.0 / 12.92) : (d.y <= 1) ? pow((d.y + 0.055) * (1.0 / 1.055), 2.4) : d.y;
-						d.z = (d.z <= 0.04045) ? d.z * (1.0 / 12.92) : (d.z <= 1) ? pow((d.z + 0.055) * (1.0 / 1.055), 2.4) : d.z;
+						d.x = srgb_transform(d.x);
+						d.y = srgb_transform(d.y);
+						d.z = srgb_transform(d.z);
 					}
 
-					if (!powers_are_1)
+					if (!are_powers_1)
 					{
-						d.x = pow(MAX(d.x, 1e-6), (double)rgb_power_to_use);
-						d.y = pow(MAX(d.y, 1e-6), (double)rgb_power_to_use);
-						d.z = pow(MAX(d.z, 1e-6), (double)rgb_power_to_use);
-						d.w = pow(MAX(d.w, 1e-6), (double)alpha_power_to_use);
+						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
+						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
+						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
+						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
 					}
 
-					varbuf1[z][y][x] = d;
-					varbuf2[z][y][x] = d * d;
+					VARBUF1(z, y, x) = d;
+					VARBUF2(z, y, x) = d * d;
 				}
 			}
 		}
 	}
 
-	// pad out buffers with 0s
-	for (z = 0; z < zpadsize; z++)
+	// Pad with an extra layer of 0s; this forms the edge of the SAT tables
+	float4 vbz = float4(0, 0, 0, 0);
+	for (int z = 0; z < padsize_z; z++)
 	{
-		for (y = 0; y < ypadsize; y++)
+		for (int y = 0; y < padsize_y; y++)
 		{
-			varbuf1[z][y][xpadsize - 1] = double4(0.0, 0.0, 0.0, 0.0);
-			varbuf2[z][y][xpadsize - 1] = double4(0.0, 0.0, 0.0, 0.0);
+			VARBUF1(z, y, 0) = vbz;
+			VARBUF2(z, y, 0) = vbz;
 		}
-		for (x = 0; x < xpadsize; x++)
+
+		for (int x = 0; x < padsize_x; x++)
 		{
-			varbuf1[z][ypadsize - 1][x] = double4(0.0, 0.0, 0.0, 0.0);
-			varbuf2[z][ypadsize - 1][x] = double4(0.0, 0.0, 0.0, 0.0);
+			VARBUF1(z, 0, x) = vbz;
+			VARBUF2(z, 0, x) = vbz;
 		}
 	}
 
-	if (use_z_axis)
+	if (have_z)
 	{
-		for (y = 0; y < ypadsize; y++)
+		for (int y = 0; y < padsize_y; y++)
 		{
-			for (x = 0; x < xpadsize; x++)
+			for (int x = 0; x < padsize_x; x++)
 			{
-				varbuf1[zpadsize - 1][y][x] = double4(0.0, 0.0, 0.0, 0.0);
-				varbuf2[zpadsize - 1][y][x] = double4(0.0, 0.0, 0.0, 0.0);
+				VARBUF1(0, y, x) = vbz;
+				VARBUF2(0, y, x) = vbz;
 			}
 		}
 	}
 
-	// generate summed-area tables for x and x2; this is done in-place
-	for (z = 0; z < zpadsize; z++)
+	// Generate summed-area tables for N and N^2; this is done in-place, using
+	// a Brent-Kung parallel-prefix based algorithm to minimize precision loss
+	for (int z = zd_start; z < padsize_z; z++)
 	{
-		for (y = 0; y < ypadsize; y++)
+		for (int y = 1; y < padsize_y; y++)
 		{
-			double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
-			double4 summa2 = double4(0.0, 0.0, 0.0, 0.0);
-			for (x = 0; x < xpadsize; x++)
+			brent_kung_prefix_sum(&(VARBUF1(z, y, 1)), padsize_x - 1, 1);
+			brent_kung_prefix_sum(&(VARBUF2(z, y, 1)), padsize_x - 1, 1);
+		}
+	}
+
+	for (int z = zd_start; z < padsize_z; z++)
+	{
+		for (int x = 1; x < padsize_x; x++)
+		{
+			brent_kung_prefix_sum(&(VARBUF1(z, 1, x)), padsize_y - 1, yst);
+			brent_kung_prefix_sum(&(VARBUF2(z, 1, x)), padsize_y - 1, yst);
+		}
+	}
+
+	if (have_z)
+	{
+		for (int y = 1; y < padsize_y; y++)
+		{
+			for (int x = 1; x < padsize_x; x++)
 			{
-				double4 val1 = varbuf1[z][y][x];
-				double4 val2 = varbuf2[z][y][x];
-				varbuf1[z][y][x] = summa1;
-				varbuf2[z][y][x] = summa2;
-				summa1 = summa1 + val1;
-				summa2 = summa2 + val2;
+				brent_kung_prefix_sum(&(VARBUF1(1, y, x)), padsize_z - 1, zst);
+				brent_kung_prefix_sum(&(VARBUF2(1, y, x)), padsize_z - 1, zst);
 			}
 		}
 	}
 
-	for (z = 0; z < zpadsize; z++)
+	int avg_var_kdim = 2 * avg_var_kernel_radius + 1;
+	int alpha_kdim = 2 * alpha_kernel_radius + 1;
+
+	// Compute a few constants used in the variance-calculation.
+	float avg_var_samples;
+	float alpha_rsamples;
+	float mul1;
+
+	if (have_z)
 	{
-		for (x = 0; x < xpadsize; x++)
-		{
-			double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
-			double4 summa2 = double4(0.0, 0.0, 0.0, 0.0);
-			for (y = 0; y < ypadsize; y++)
-			{
-				double4 val1 = varbuf1[z][y][x];
-				double4 val2 = varbuf2[z][y][x];
-				varbuf1[z][y][x] = summa1;
-				varbuf2[z][y][x] = summa2;
-				summa1 = summa1 + val1;
-				summa2 = summa2 + val2;
-			}
-		}
-	}
-
-	if (use_z_axis)
-	{
-		for (y = 0; y < ypadsize; y++)
-		{
-			for (x = 0; x < xpadsize; x++)
-			{
-				double4 summa1 = double4(0.0, 0.0, 0.0, 0.0);
-				double4 summa2 = double4(0.0, 0.0, 0.0, 0.0);
-				for (z = 0; z < zpadsize; z++)
-				{
-					double4 val1 = varbuf1[z][y][x];
-					double4 val2 = varbuf2[z][y][x];
-					varbuf1[z][y][x] = summa1;
-					varbuf2[z][y][x] = summa2;
-					summa1 = summa1 + val1;
-					summa2 = summa2 + val2;
-				}
-			}
-		}
-	}
-
-	int avg_var_kerneldim = 2 * avg_var_kernel_radius + 1;
-	int alpha_kerneldim = 2 * alpha_kernel_radius + 1;
-
-	// compute a few constants used in the variance-calculation.
-	double avg_var_samples;
-	double alpha_rsamples;
-	double mul1;
-
-	if (use_z_axis)
-	{
-		avg_var_samples = avg_var_kerneldim * avg_var_kerneldim * avg_var_kerneldim;
-		alpha_rsamples = 1.0 / (alpha_kerneldim * alpha_kerneldim * alpha_kerneldim);
+		avg_var_samples = (float)(avg_var_kdim * avg_var_kdim * avg_var_kdim);
+		alpha_rsamples = 1.0f / (float)(alpha_kdim * alpha_kdim * alpha_kdim);
 	}
 	else
 	{
-		avg_var_samples = avg_var_kerneldim * avg_var_kerneldim;
-		alpha_rsamples = 1.0 / (alpha_kerneldim * alpha_kerneldim);
+		avg_var_samples = (float)(avg_var_kdim * avg_var_kdim);
+		alpha_rsamples = 1.0f / (float)(alpha_kdim * alpha_kdim);
 	}
 
-	double avg_var_rsamples = 1.0 / avg_var_samples;
+	float avg_var_rsamples = 1.0f / avg_var_samples;
 	if (avg_var_samples == 1)
-		mul1 = 1.0;
-	else
-		mul1 = 1.0 / (avg_var_samples * (avg_var_samples - 1));
-
-	double mul2 = avg_var_samples * mul1;
-
-	// use the summed-area tables to compute variance for each sample-neighborhood
-	if (use_z_axis)
 	{
-		for (z = 0; z < zsize; z++)
+		mul1 = 1.0f;
+	}
+	else
+	{
+		mul1 = 1.0f / (float)(avg_var_samples * (avg_var_samples - 1));
+	}
+
+	float mul2 = avg_var_samples * mul1;
+
+	// Use the summed-area tables to compute variance for each neighborhood
+	if (have_z)
+	{
+		for (int z = 0; z < size_z; z++)
 		{
-			int z_src = z + kernel_radius;
-			int z_dst = z + dest_zoffset;
-			for (y = 0; y < ysize; y++)
+			int z_src = z + kernel_radius_z;
+			int z_dst = z + dst_offset_z;
+			for (int y = 0; y < size_y; y++)
 			{
-				int y_src = y + kernel_radius;
-				int y_dst = y + dest_yoffset;
+				int y_src = y + kernel_radius_xy;
+				int y_dst = y + dst_offset_y;
 
-				for (x = 0; x < xsize; x++)
+				for (int x = 0; x < size_x; x++)
 				{
-					int x_src = x + kernel_radius;
-					int x_dst = x + dest_xoffset;
+					int x_src = x + kernel_radius_xy;
+					int x_dst = x + dst_offset_x;
 
-					// summed-area table lookups for alpha average
-					double vasum =
-						(varbuf1[z_src + 1][y_src - alpha_kernel_radius][x_src - alpha_kernel_radius].w
-						 - varbuf1[z_src + 1][y_src - alpha_kernel_radius][x_src + alpha_kernel_radius + 1].w
-						 - varbuf1[z_src + 1][y_src + alpha_kernel_radius + 1][x_src - alpha_kernel_radius].w
-						 + varbuf1[z_src + 1][y_src + alpha_kernel_radius + 1][x_src + alpha_kernel_radius + 1].w) -
-						(varbuf1[z_src][y_src - alpha_kernel_radius][x_src - alpha_kernel_radius].w
-						 - varbuf1[z_src][y_src - alpha_kernel_radius][x_src + alpha_kernel_radius + 1].w
-						 - varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src - alpha_kernel_radius].w + varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src + alpha_kernel_radius + 1].w);
-					input_alpha_averages[z_dst][y_dst][x_dst] = static_cast < float >(vasum * alpha_rsamples);
+					int x_low  = x_src - alpha_kernel_radius;
+					int x_high = x_src + alpha_kernel_radius + 1;
+					int y_low  = y_src - alpha_kernel_radius;
+					int y_high = y_src + alpha_kernel_radius + 1;
+					int z_low  = z_src - alpha_kernel_radius;
+					int z_high = z_src + alpha_kernel_radius + 1;
 
+					// Summed-area table lookups for alpha average
+					float vasum = (  VARBUF1(z_high, y_low,  x_low).w
+					               - VARBUF1(z_high, y_low,  x_high).w
+					               - VARBUF1(z_high, y_high, x_low).w
+					               + VARBUF1(z_high, y_high, x_high).w) -
+					              (  VARBUF1(z_low,  y_low,  x_low).w
+					               - VARBUF1(z_low,  y_low,  x_high).w
+					               - VARBUF1(z_low,  y_high, x_low).w
+					               + VARBUF1(z_low,  y_high, x_high).w);
 
-					// summed-area table lookups for RGBA average
-					double4 v0sum =
-						(varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf1[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius]
-						 + varbuf1[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]) -
-						(varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf1[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]);
+					int out_index = z_dst * zdt + y_dst * ydt + x_dst;
+					input_alpha_averages[out_index] = (vasum * alpha_rsamples);
 
-					double4 avg = v0sum * avg_var_rsamples;
+					x_low  = x_src - avg_var_kernel_radius;
+					x_high = x_src + avg_var_kernel_radius + 1;
+					y_low  = y_src - avg_var_kernel_radius;
+					y_high = y_src + avg_var_kernel_radius + 1;
+					z_low  = z_src - avg_var_kernel_radius;
+					z_high = z_src + avg_var_kernel_radius + 1;
 
-					float4 favg = float4(static_cast < float >(avg.x),
-										 static_cast < float >(avg.y),
-										 static_cast < float >(avg.z),
-										 static_cast < float >(avg.w));
-					input_averages[z_dst][y_dst][x_dst] = favg;
+					// Summed-area table lookups for RGBA average and variance
+					float4 v1sum = (  VARBUF1(z_high, y_low,  x_low)
+					                - VARBUF1(z_high, y_low,  x_high)
+					                - VARBUF1(z_high, y_high, x_low)
+					                + VARBUF1(z_high, y_high, x_high)) -
+					               (  VARBUF1(z_low,  y_low,  x_low)
+					                - VARBUF1(z_low,  y_low,  x_high)
+					                - VARBUF1(z_low,  y_high, x_low)
+					                + VARBUF1(z_low,  y_high, x_high));
 
-					// summed-area table lookups for variance
-					double4 v1sum =
-						(varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf1[z_src + 1][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf1[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius]
-						 + varbuf1[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]) -
-						(varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf1[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]);
-					double4 v2sum =
-						(varbuf2[z_src + 1][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf2[z_src + 1][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf2[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius]
-						 + varbuf2[z_src + 1][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]) -
-						(varbuf2[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						 - varbuf2[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						 - varbuf2[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf2[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1]);
+					float4 v2sum = (  VARBUF2(z_high, y_low,  x_low)
+					                - VARBUF2(z_high, y_low,  x_high)
+					                - VARBUF2(z_high, y_high, x_low)
+					                + VARBUF2(z_high, y_high, x_high)) -
+					               (  VARBUF2(z_low,  y_low,  x_low)
+					                - VARBUF2(z_low,  y_low,  x_high)
+					                - VARBUF2(z_low,  y_high, x_low)
+					                + VARBUF2(z_low,  y_high, x_high));
 
-					// the actual variance
-					double4 variance = mul2 * v2sum - mul1 * (v1sum * v1sum);
+					// Compute and emit the average
+					float4 avg = v1sum * avg_var_rsamples;
+					input_averages[out_index] = avg;
 
-					float4 fvar = float4(static_cast < float >(variance.x),
-										 static_cast < float >(variance.y),
-										 static_cast < float >(variance.z),
-										 static_cast < float >(variance.w));
-					input_variances[z_dst][y_dst][x_dst] = fvar;
+					// Compute and emit the actual variance
+					float4 variance = mul2 * v2sum - mul1 * (v1sum * v1sum);
+					input_variances[out_index] = variance;
 				}
 			}
 		}
 	}
 	else
 	{
-		for (z = 0; z < zsize; z++)
+		for (int y = 0; y < size_y; y++)
 		{
-			int z_src = z;
-			int z_dst = z + dest_zoffset;
-			for (y = 0; y < ysize; y++)
+			int y_src = y + kernel_radius_xy;
+			int y_dst = y + dst_offset_y;
+
+			for (int x = 0; x < size_x; x++)
 			{
-				int y_src = y + kernel_radius;
-				int y_dst = y + dest_yoffset;
+				int x_src = x + kernel_radius_xy;
+				int x_dst = x + dst_offset_x;
 
-				for (x = 0; x < xsize; x++)
-				{
-					int x_src = x + kernel_radius;
-					int x_dst = x + dest_xoffset;
+				int x_low  = x_src - alpha_kernel_radius;
+				int x_high = x_src + alpha_kernel_radius + 1;
+				int y_low  = y_src - alpha_kernel_radius;
+				int y_high = y_src + alpha_kernel_radius + 1;
 
-					// summed-area table lookups for alpha average
-					double vasum =
-						varbuf1[z_src][y_src - alpha_kernel_radius][x_src - alpha_kernel_radius].w
-						- varbuf1[z_src][y_src - alpha_kernel_radius][x_src + alpha_kernel_radius + 1].w
-						- varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src - alpha_kernel_radius].w + varbuf1[z_src][y_src + alpha_kernel_radius + 1][x_src + alpha_kernel_radius + 1].w;
-					input_alpha_averages[z_dst][y_dst][x_dst] = static_cast < float >(vasum * alpha_rsamples);
+				// Summed-area table lookups for alpha average
+				float vasum = VARBUF1(0, y_low,  x_low ).w
+				            - VARBUF1(0, y_low,  x_high).w
+				            - VARBUF1(0, y_high, x_low ).w
+				            + VARBUF1(0, y_high, x_high).w;
 
-					// summed-area table lookups for RGBA average
-					double4 v0sum =
-						varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						- varbuf1[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						- varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1];
+				int out_index = y_dst * ydt + x_dst;
+				input_alpha_averages[out_index] = (vasum * alpha_rsamples);
 
-					double4 avg = v0sum * avg_var_rsamples;
+				x_low  = x_src - avg_var_kernel_radius;
+				x_high = x_src + avg_var_kernel_radius + 1;
+				y_low  = y_src - avg_var_kernel_radius;
+				y_high = y_src + avg_var_kernel_radius + 1;
 
-					float4 favg = float4(static_cast < float >(avg.x),
-										 static_cast < float >(avg.y),
-										 static_cast < float >(avg.z),
-										 static_cast < float >(avg.w));
-					input_averages[z_dst][y_dst][x_dst] = favg;
+				// summed-area table lookups for RGBA average and variance
+				float4 v1sum = VARBUF1(0, y_low,  x_low)
+				             - VARBUF1(0, y_low,  x_high)
+				             - VARBUF1(0, y_high, x_low)
+				             + VARBUF1(0, y_high, x_high);
 
-					// summed-area table lookups for variance
-					double4 v1sum =
-						varbuf1[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						- varbuf1[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						- varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf1[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1];
-					double4 v2sum =
-						varbuf2[z_src][y_src - avg_var_kernel_radius][x_src - avg_var_kernel_radius]
-						- varbuf2[z_src][y_src - avg_var_kernel_radius][x_src + avg_var_kernel_radius + 1]
-						- varbuf2[z_src][y_src + avg_var_kernel_radius + 1][x_src - avg_var_kernel_radius] + varbuf2[z_src][y_src + avg_var_kernel_radius + 1][x_src + avg_var_kernel_radius + 1];
+				float4 v2sum = VARBUF2(0, y_low,  x_low)
+				             - VARBUF2(0, y_low,  x_high)
+				             - VARBUF2(0, y_high, x_low)
+				             + VARBUF2(0, y_high, x_high);
 
-					// the actual variance
-					double4 variance = mul2 * v2sum - mul1 * (v1sum * v1sum);
+				// Compute and emit the average
+				float4 avg = v1sum * avg_var_rsamples;
+				input_averages[out_index] = avg;
 
-					float4 fvar = float4(static_cast < float >(variance.x),
-										 static_cast < float >(variance.y),
-										 static_cast < float >(variance.z),
-										 static_cast < float >(variance.w));
-					input_variances[z_dst][y_dst][x_dst] = fvar;
-				}
+				// Compute and emit the actual variance
+				float4 variance = mul2 * v2sum - mul1 * (v1sum * v1sum);
+				input_variances[out_index] = variance;
 			}
-		}
-	}
-
-	delete[] varbuf2[0][0];
-	delete[] varbuf1[0][0];
-	delete[] varbuf2[0];
-	delete[] varbuf1[0];
-	delete[] varbuf2;
-	delete[] varbuf1;
-}
-
-static void allocate_input_average_and_variance_buffers(int xsize, int ysize, int zsize)
-{
-	int y, z;
-	if (input_averages)
-	{
-		delete[] input_averages[0][0];
-		delete[] input_averages[0];
-		delete[] input_averages;
-	}
-
-	if (input_variances)
-	{
-		delete[] input_variances[0][0];
-		delete[] input_variances[0];
-		delete[] input_variances;
-	}
-
-	if (input_alpha_averages)
-	{
-		delete[] input_alpha_averages[0][0];
-		delete[] input_alpha_averages[0];
-		delete[] input_alpha_averages;
-	}
-
-	input_averages = new float4 **[zsize];
-	input_variances = new float4 **[zsize];
-	input_alpha_averages = new float **[zsize];
-
-	input_averages[0] = new float4 *[ysize * zsize];
-	input_variances[0] = new float4 *[ysize * zsize];
-	input_alpha_averages[0] = new float *[ysize * zsize];
-
-	input_averages[0][0] = new float4[xsize * ysize * zsize];
-	input_variances[0][0] = new float4[xsize * ysize * zsize];
-	input_alpha_averages[0][0] = new float[xsize * ysize * zsize];
-
-	for (z = 1; z < zsize; z++)
-	{
-		input_averages[z] = input_averages[0] + z * ysize;
-		input_variances[z] = input_variances[0] + z * ysize;
-		input_alpha_averages[z] = input_alpha_averages[0] + z * ysize;
-
-		input_averages[z][0] = input_averages[0][0] + z * ysize * xsize;
-		input_variances[z][0] = input_variances[0][0] + z * ysize * xsize;
-		input_alpha_averages[z][0] = input_alpha_averages[0][0] + z * ysize * xsize;
-	}
-
-	for (z = 0; z < zsize; z++)
-	{
-		for (y = 1; y < ysize; y++)
-		{
-			input_averages[z][y] = input_averages[z][0] + y * xsize;
-			input_variances[z][y] = input_variances[z][0] + y * xsize;
-			input_alpha_averages[z][y] = input_alpha_averages[z][0] + y * xsize;
 		}
 	}
 }
 
-// compute averages and variances for the current input image.
-void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_var_kernel_radius, int alpha_kernel_radius, swizzlepattern swz)
+static void compute_averages_and_variances_proc(const struct avg_var_args* ag)
 {
-	int xsize = img->xsize;
-	int ysize = img->ysize;
-	int zsize = img->zsize;
-	allocate_input_average_and_variance_buffers(xsize, ysize, zsize);
+	struct pixel_region_variance_args arg = ag->arg;
+	arg.work_memory = new float4[ag->work_memory_size];
 
-	int x, y, z;
-	for (z = 0; z < zsize; z += 32)
+	int size_x = ag->img_size.x;
+	int size_y = ag->img_size.y;
+	int size_z = ag->img_size.z;
+
+	int step_x = ag->blk_size.x;
+	int step_y = ag->blk_size.y;
+	int step_z = ag->blk_size.z;
+
+	int padding_xy = arg.img->padding;
+	int padding_z = arg.have_z ? padding_xy : 0;
+
+	for (int z = 0; z < size_z; z += step_z)
 	{
-		int zblocksize = MIN(32, zsize - z);
-		for (y = 0; y < ysize; y += 32)
+		arg.size.z = MIN(step_z, size_z - z);
+		arg.dst_offset.z = z;
+		arg.src_offset.z = z + padding_z;
+
+		for (int y = 0; y < size_y; y += step_y)
 		{
-			int yblocksize = MIN(32, ysize - y);
-			for (x = 0; x < xsize; x += 32)
+			arg.size.y = MIN(step_y, size_y - y);
+			arg.dst_offset.y = y;
+			arg.src_offset.y = y + padding_xy;
+
+			for (int x = 0; x < size_x; x += step_x)
 			{
-				int xblocksize = MIN(32, xsize - x);
-				compute_pixel_region_variance(img,
-											  rgb_power_to_use,
-											  alpha_power_to_use,
-											  swz,
-											  (zsize > 1),
-											  x + img->padding,
-											  y + img->padding, z + (zsize > 1 ? img->padding : 0), xblocksize, yblocksize, zblocksize, avg_var_kernel_radius, alpha_kernel_radius, x, y, z);
+				arg.size.x = MIN(step_x, size_x - x);
+				arg.dst_offset.x = x;
+				arg.src_offset.x = x + padding_xy;
+
+				compute_pixel_region_variance(&arg);
 			}
 		}
 	}
+
+	delete[] arg.work_memory;
+}
+
+/* Public function, see header file for detailed documentation */
+void compute_averages_and_variances(
+	astc_codec_image * img,
+	float rgb_power,
+	float alpha_power,
+	int avg_var_kernel_radius,
+	int alpha_kernel_radius,
+	int need_srgb_transform,
+	swizzlepattern swz
+) {
+	int size_x = img->xsize;
+	int size_y = img->ysize;
+	int size_z = img->zsize;
+	int pixel_count = size_x * size_y * size_z;
+
+	// Perform memory allocations for the destination buffers
+	if (img->input_averages)       delete[] img->input_averages;
+	if (img->input_variances)      delete[] img->input_variances;
+	if (img->input_alpha_averages) delete[] img->input_alpha_averages;
+
+	img->input_averages = new float4[pixel_count];
+	img->input_variances = new float4[pixel_count];
+	img->input_alpha_averages = new float[pixel_count];
+
+	// Compute maximum block size and from that the working memory buffer size
+	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);
+	int kerneldim = 2 * kernel_radius + 1;
+
+	int have_z = (size_z > 1);
+	int max_blk_size_xy = have_z ? 16 : 32;
+	int max_blk_size_z = MIN(size_z, have_z ? 16 : 1);
+
+	int max_padsize_xy = max_blk_size_xy + kerneldim;
+	int max_padsize_z = max_blk_size_z + (have_z ? kerneldim : 0);
+
+	// Perform block-wise averages-and-variances calculations across the image
+	struct pixel_region_variance_args arg;
+	arg.img = img;
+	arg.rgb_power = rgb_power;
+	arg.alpha_power = alpha_power;
+	arg.need_srgb_transform = need_srgb_transform;
+	arg.swz = swz;
+	arg.have_z = have_z;
+	arg.avg_var_kernel_radius = avg_var_kernel_radius;
+	arg.alpha_kernel_radius = alpha_kernel_radius;
+
+	struct avg_var_args ag;
+	ag.arg = arg;
+	ag.img_size = int3(size_x, size_y, size_z);
+	ag.blk_size = int3(max_blk_size_xy, max_blk_size_xy, max_blk_size_z);
+	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
+
+	// TODO: This can be multi-threaded, as this is currently a single-threaded
+	// pass which is executed before the main compression workers kick off.
+	compute_averages_and_variances_proc(&ag);
 }

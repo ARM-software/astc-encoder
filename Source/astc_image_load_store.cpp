@@ -36,6 +36,13 @@ void destroy_image(astc_codec_image * img)
 		delete[]img->imagedata16;
 	}
 
+	if(img->input_averages)
+		delete[] img->input_averages;
+	if(img->input_variances )
+		delete[] img->input_variances;
+	if(img->input_alpha_averages )
+		delete[] img->input_alpha_averages;
+
 	delete img;
 }
 
@@ -47,6 +54,10 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 	img->ysize = ysize;
 	img->zsize = zsize;
 	img->padding = padding;
+
+	img->input_averages = NULL;
+	img->input_variances = NULL;
+	img->input_alpha_averages = NULL;
 
 	int exsize = xsize + 2 * padding;
 	int eysize = ysize + 2 * padding;
@@ -1083,9 +1094,9 @@ void compute_error_metrics(int compute_hdr_error_metrics, int input_components, 
 				errorsum = errorsum + diffcolor * diffcolor;
 
 				double4 alpha_scaled_diffcolor = double4(diffcolor.x * input_color1.w,
-				                                         diffcolor.y * input_color1.w,
-				                                         diffcolor.z * input_color1.w,
-				                                         diffcolor.w);
+														 diffcolor.y * input_color1.w,
+														 diffcolor.z * input_color1.w,
+														 diffcolor.w);
 				alpha_scaled_errorsum = alpha_scaled_errorsum + alpha_scaled_diffcolor * alpha_scaled_diffcolor;
 
 				if (compute_hdr_error_metrics)

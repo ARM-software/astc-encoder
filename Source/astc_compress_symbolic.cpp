@@ -854,9 +854,12 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 												 ewp->rgb_base_weight,
 												 ewp->alpha_base_weight);
 
+					int ydt = input_image->xsize;
+					int zdt = input_image->xsize * input_image->ysize;
+
 					if (any_mean_stdev_weight)
 					{
-						float4 avg = input_averages[zpos][ypos][xpos];
+						float4 avg = input_image->input_averages[zpos * zdt + ypos * ydt + xpos];
 						if (avg.x < 6e-5f)
 							avg.x = 6e-5f;
 						if (avg.y < 6e-5f)
@@ -868,7 +871,7 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 
 						avg = avg * avg;
 
-						float4 variance = input_variances[zpos][ypos][xpos];
+						float4 variance = input_image->input_variances[zpos * zdt + ypos * ydt + xpos];
 						variance = variance * variance;
 
 						float favg = (avg.x + avg.y + avg.z) * (1.0f / 3.0f);
@@ -924,7 +927,7 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 					{
 						float alpha_scale;
 						if (ewp->alpha_radius != 0)
-							alpha_scale = input_alpha_averages[zpos][ypos][xpos];
+							alpha_scale = input_image->input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
 						else
 							alpha_scale = blk->orig_data[4 * idx + 3];
 						if (alpha_scale < 0.0001f)

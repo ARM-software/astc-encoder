@@ -8,7 +8,7 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief FUnctions and data declarations.
+ * @brief Functions and data declarations.
  */
 
 #ifndef ASTC_CODEC_INTERNALS_INCLUDED
@@ -98,7 +98,6 @@ struct partition_info
 	uint8_t texels_per_partition[4];
 	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t texels_of_partition[4][MAX_TEXELS_PER_BLOCK];
-
 	uint64_t coverage_bitmaps[4];	// used for the purposes of k-means partition search.
 };
 
@@ -476,16 +475,19 @@ struct astc_codec_image
 	int ysize;
 	int zsize;
 	int padding;
+
+	// Regional average-and-variance information, initialized by
+	// compute_averages_and_variances() only if the astc encoder
+	// is requested to do error weighting based on averages and variances.
+	float4 *input_averages;
+	float4 *input_variances;
+	float *input_alpha_averages;
 };
 
 void destroy_image(astc_codec_image * img);
 astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, int padding);
 void initialize_image(astc_codec_image * img);
 void fill_image_padding_area(astc_codec_image * img);
-
-extern float4 ***input_averages;
-extern float4 ***input_variances;
-extern float ***input_alpha_averages;
 
 // the entries here : 0=red, 1=green, 2=blue, 3=alpha, 4=0.0, 5=1.0
 struct swizzlepattern
@@ -498,8 +500,28 @@ struct swizzlepattern
 
 int determine_image_channels(const astc_codec_image * img);
 
-// function to compute regional averages and variances for an image
-void compute_averages_and_variances(const astc_codec_image * img, float rgb_power_to_use, float alpha_power_to_use, int avg_kernel_radius, int var_kernel_radius, swizzlepattern swz);
+/**
+ * @brief Compute regional averages and variances in an image.
+ *
+ * Results are written back into img->input_averages, img->input_variances,
+ * and img->input_alpha_averages.
+ *
+ * @param img                   The input image data, also holds output data.
+ * @param rgb_power             The RGB channel power.
+ * @param alpha_power           The A channel power.
+ * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
+ * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
+ * @param need_srgb_transform   Do we need srgb transform or not?
+ * @param swz                   Input data channel swizzle.
+ */
+void compute_averages_and_variances(
+	astc_codec_image * img,
+	float rgb_power,
+	float alpha_power,
+	int avg_var_kernel_radius,
+	int alpha_kernel_radius,
+	int need_srgb_transform,
+	swizzlepattern swz);
 
 /*
 	Functions to load image from file.

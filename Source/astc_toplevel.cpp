@@ -2381,7 +2381,16 @@ int astc_main(int argc, char **argv)
 				printf("Computing texel-neighborhood means and variances ... ");
 				fflush(stdout);
 			}
-			compute_averages_and_variances(input_image, ewp.rgb_power, ewp.alpha_power, ewp.mean_stdev_radius, ewp.alpha_radius, swz_encode);
+
+			compute_averages_and_variances(
+				input_image,
+				ewp.rgb_power,
+				ewp.alpha_power,
+				ewp.mean_stdev_radius,
+				ewp.alpha_radius,
+				perform_srgb_transform,
+				swz_encode);
+
 			if (!silentmode)
 			{
 				printf("done\n");
