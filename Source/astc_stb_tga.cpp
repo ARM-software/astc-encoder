@@ -47,10 +47,10 @@ astc_codec_image * load_image_with_stb(const char *filename, int padding, int *r
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = float_to_sf16(src[4 * x], SF_NEARESTEVEN);
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
+					astc_img->data16[0][y_dst][4 * x_dst] = float_to_sf16(src[4 * x], SF_NEARESTEVEN);
+					astc_img->data16[0][y_dst][4 * x_dst + 1] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
+					astc_img->data16[0][y_dst][4 * x_dst + 2] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
+					astc_img->data16[0][y_dst][4 * x_dst + 3] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
 				}
 			}
 			stbi_image_free(image);
@@ -77,10 +77,10 @@ astc_codec_image * load_image_with_stb(const char *filename, int padding, int *r
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = src[4 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = src[4 * x + 1];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = src[4 * x + 2];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = src[4 * x + 3];
+					astc_img->data8[0][y_dst][4 * x_dst] = src[4 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 1] = src[4 * x + 1];
+					astc_img->data8[0][y_dst][4 * x_dst + 2] = src[4 * x + 2];
+					astc_img->data8[0][y_dst][4 * x_dst + 3] = src[4 * x + 3];
 				}
 			}
 			stbi_image_free(image);
@@ -301,40 +301,40 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = 0xFF;
+					astc_img->data8[0][y_dst][4 * x_dst] = row_pointers8[y_src][x];
+					astc_img->data8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][x];
+					astc_img->data8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][x];
+					astc_img->data8[0][y_dst][4 * x_dst + 3] = 0xFF;
 				}
 				break;
 			case 2:			// two-component, treated as Luminance-Alpha
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][2 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][2 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][2 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = row_pointers8[y_src][2 * x + 1];
+					astc_img->data8[0][y_dst][4 * x_dst] = row_pointers8[y_src][2 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][2 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][2 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 3] = row_pointers8[y_src][2 * x + 1];
 				}
 				break;
 			case 3:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][3 * x + 1];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][3 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = 0xFF;
+					astc_img->data8[0][y_dst][4 * x_dst] = row_pointers8[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
+					astc_img->data8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][3 * x + 1];
+					astc_img->data8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][3 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 3] = 0xFF;
 				}
 				break;
 			case 4:			// four-component, treated as RGBA
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata8[0][y_dst][4 * x_dst] = row_pointers8[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][4 * x + 1];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][4 * x];
-					astc_img->imagedata8[0][y_dst][4 * x_dst + 3] = row_pointers8[y_src][4 * x + 3];
+					astc_img->data8[0][y_dst][4 * x_dst] = row_pointers8[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
+					astc_img->data8[0][y_dst][4 * x_dst + 1] = row_pointers8[y_src][4 * x + 1];
+					astc_img->data8[0][y_dst][4 * x_dst + 2] = row_pointers8[y_src][4 * x];
+					astc_img->data8[0][y_dst][4 * x_dst + 3] = row_pointers8[y_src][4 * x + 3];
 				}
 				break;
 			}
@@ -356,40 +356,40 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = 0x3C00;
+					astc_img->data16[0][y_dst][4 * x_dst] = row_pointers16[y_src][x];
+					astc_img->data16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][x];
+					astc_img->data16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][x];
+					astc_img->data16[0][y_dst][4 * x_dst + 3] = 0x3C00;
 				}
 				break;
 			case 4:			// two-component, treated as Luminance-Alpha
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][2 * x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][2 * x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][2 * x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = row_pointers16[y_src][2 * x + 1];
+					astc_img->data16[0][y_dst][4 * x_dst] = row_pointers16[y_src][2 * x];
+					astc_img->data16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][2 * x];
+					astc_img->data16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][2 * x];
+					astc_img->data16[0][y_dst][4 * x_dst + 3] = row_pointers16[y_src][2 * x + 1];
 				}
 				break;
 			case 6:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][3 * x + 1];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][3 * x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = 0x3C00;
+					astc_img->data16[0][y_dst][4 * x_dst] = row_pointers16[y_src][3 * x + 2];	// TGA uses BGR, we use RGB
+					astc_img->data16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][3 * x + 1];
+					astc_img->data16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][3 * x];
+					astc_img->data16[0][y_dst][4 * x_dst + 3] = 0x3C00;
 				}
 				break;
 			case 8:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
 					int x_dst = x + padding;
-					astc_img->imagedata16[0][y_dst][4 * x_dst] = row_pointers16[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][4 * x + 1];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][4 * x];
-					astc_img->imagedata16[0][y_dst][4 * x_dst + 3] = row_pointers16[y_src][4 * x + 3];
+					astc_img->data16[0][y_dst][4 * x_dst] = row_pointers16[y_src][4 * x + 2];	// TGA uses BGR, we use RGB
+					astc_img->data16[0][y_dst][4 * x_dst + 1] = row_pointers16[y_src][4 * x + 1];
+					astc_img->data16[0][y_dst][4 * x_dst + 2] = row_pointers16[y_src][4 * x];
+					astc_img->data16[0][y_dst][4 * x_dst + 3] = row_pointers16[y_src][4 * x + 3];
 				}
 				break;
 			}
@@ -456,31 +456,31 @@ int store_tga_image(const astc_codec_image * img, const char *tga_filename, int 
 			case 1:			// single-component, treated as Luminance
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers8[y][x] = img->imagedata8[0][y][4 * x];
+					row_pointers8[y][x] = img->data8[0][y][4 * x];
 				}
 				break;
 			case 2:			// two-component, treated as Luminance-Alpha
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers8[y][2 * x] = img->imagedata8[0][y][4 * x];
-					row_pointers8[y][2 * x + 1] = img->imagedata8[0][y][4 * x + 3];
+					row_pointers8[y][2 * x] = img->data8[0][y][4 * x];
+					row_pointers8[y][2 * x + 1] = img->data8[0][y][4 * x + 3];
 				}
 				break;
 			case 3:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers8[y][3 * x + 2] = img->imagedata8[0][y][4 * x];
-					row_pointers8[y][3 * x + 1] = img->imagedata8[0][y][4 * x + 1];
-					row_pointers8[y][3 * x] = img->imagedata8[0][y][4 * x + 2];
+					row_pointers8[y][3 * x + 2] = img->data8[0][y][4 * x];
+					row_pointers8[y][3 * x + 1] = img->data8[0][y][4 * x + 1];
+					row_pointers8[y][3 * x] = img->data8[0][y][4 * x + 2];
 				}
 				break;
 			case 4:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers8[y][4 * x + 2] = img->imagedata8[0][y][4 * x];
-					row_pointers8[y][4 * x + 1] = img->imagedata8[0][y][4 * x + 1];
-					row_pointers8[y][4 * x] = img->imagedata8[0][y][4 * x + 2];
-					row_pointers8[y][4 * x + 3] = img->imagedata8[0][y][4 * x + 3];
+					row_pointers8[y][4 * x + 2] = img->data8[0][y][4 * x];
+					row_pointers8[y][4 * x + 1] = img->data8[0][y][4 * x + 1];
+					row_pointers8[y][4 * x] = img->data8[0][y][4 * x + 2];
+					row_pointers8[y][4 * x + 3] = img->data8[0][y][4 * x + 3];
 				}
 				break;
 			}
@@ -500,31 +500,31 @@ int store_tga_image(const astc_codec_image * img, const char *tga_filename, int 
 			case 1:			// single-component, treated as Luminance
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers16[y][x] = img->imagedata16[0][y][4 * x];
+					row_pointers16[y][x] = img->data16[0][y][4 * x];
 				}
 				break;
 			case 2:			// two-component, treated as Luminance-Alpha
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers16[y][2 * x] = img->imagedata16[0][y][4 * x];
-					row_pointers16[y][2 * x + 1] = img->imagedata16[0][y][4 * x + 3];
+					row_pointers16[y][2 * x] = img->data16[0][y][4 * x];
+					row_pointers16[y][2 * x + 1] = img->data16[0][y][4 * x + 3];
 				}
 				break;
 			case 3:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers16[y][3 * x + 2] = img->imagedata16[0][y][4 * x];
-					row_pointers16[y][3 * x + 1] = img->imagedata16[0][y][4 * x + 1];
-					row_pointers16[y][3 * x] = img->imagedata16[0][y][4 * x + 2];
+					row_pointers16[y][3 * x + 2] = img->data16[0][y][4 * x];
+					row_pointers16[y][3 * x + 1] = img->data16[0][y][4 * x + 1];
+					row_pointers16[y][3 * x] = img->data16[0][y][4 * x + 2];
 				}
 				break;
 			case 4:			// three-component, treated as RGB
 				for (x = 0; x < xsize; x++)
 				{
-					row_pointers16[y][4 * x + 2] = img->imagedata16[0][y][4 * x];
-					row_pointers16[y][4 * x + 1] = img->imagedata16[0][y][4 * x + 1];
-					row_pointers16[y][4 * x] = img->imagedata16[0][y][4 * x + 2];
-					row_pointers16[y][4 * x + 3] = img->imagedata16[0][y][4 * x + 3];
+					row_pointers16[y][4 * x + 2] = img->data16[0][y][4 * x];
+					row_pointers16[y][4 * x + 1] = img->data16[0][y][4 * x + 1];
+					row_pointers16[y][4 * x] = img->data16[0][y][4 * x + 2];
+					row_pointers16[y][4 * x + 3] = img->data16[0][y][4 * x + 3];
 				}
 				break;
 			}

@@ -1,7 +1,7 @@
 #  ----------------------------------------------------------------------------
 #   This confidential and proprietary software may be used only as authorised
 #   by a licensing agreement from Arm Limited.
-#       (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+#       (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 #   The entire notice above must be reproduced on all authorised copies and
 #   copies may only be made to the extent permitted by a licensing agreement
 #   from Arm Limited.
@@ -16,6 +16,7 @@ SOURCES = \
     astc_compute_variance.cpp \
     astc_decompress_symbolic.cpp \
     astc_encoding_choice_error.cpp \
+    astc_error_metrics.cpp \
     astc_find_best_partitioning.cpp \
     astc_ideal_endpoints_and_weights.cpp \
     astc_image_load_store.cpp \

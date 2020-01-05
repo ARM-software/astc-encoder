@@ -705,7 +705,7 @@ void dump_image(astc_codec_image * img)
 
 			for (x = 0; x < xdim; x++)
 			{
-				printf("  0x%08X", *(int unsigned *)&img->imagedata8[z][y][x]);
+				printf("  0x%08X", *(int unsigned *)&img->data8[z][y][x]);
 			}
 		}
 	}
@@ -2324,11 +2324,11 @@ int astc_main(int argc, char **argv)
 			{
 				if (bitness == 8)
 				{
-					memcpy(*input_image->imagedata8[z], *input_images[z - padding]->imagedata8[0], slice_size * 4 * sizeof(uint8_t));
+					memcpy(*input_image->data8[z], *input_images[z - padding]->data8[0], slice_size * 4 * sizeof(uint8_t));
 				}
 				else
 				{
-					memcpy(*input_image->imagedata16[z], *input_images[z - padding]->imagedata16[0], slice_size * 4 * sizeof(uint16_t));
+					memcpy(*input_image->data16[z], *input_images[z - padding]->data16[0], slice_size * 4 * sizeof(uint16_t));
 				}
 			}
 

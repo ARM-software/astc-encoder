@@ -732,9 +732,9 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 			int ydst = y + padding;
 			void *dst;
 			if (bitness == 16)
-				dst = (void *)(astc_img->imagedata16[zdst][ydst] + 4 * padding);
+				dst = (void *)(astc_img->data16[zdst][ydst] + 4 * padding);
 			else
-				dst = (void *)(astc_img->imagedata8[zdst][ydst] + 4 * padding);
+				dst = (void *)(astc_img->data8[zdst][ydst] + 4 * padding);
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
 			copy_scanline(dst, src, xsize, cm);
@@ -804,31 +804,31 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 				case 1:		// single-component, treated as Luminance
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][x] = img->imagedata8[z][y][4 * x];
+						row_pointers8[z][y][x] = img->data8[z][y][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][2 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][2 * x + 1] = img->imagedata8[z][y][4 * x + 3];
+						row_pointers8[z][y][2 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][2 * x + 1] = img->data8[z][y][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][3 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][3 * x + 1] = img->imagedata8[z][y][4 * x + 1];
-						row_pointers8[z][y][3 * x + 2] = img->imagedata8[z][y][4 * x + 2];
+						row_pointers8[z][y][3 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][3 * x + 1] = img->data8[z][y][4 * x + 1];
+						row_pointers8[z][y][3 * x + 2] = img->data8[z][y][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][4 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][4 * x + 1] = img->imagedata8[z][y][4 * x + 1];
-						row_pointers8[z][y][4 * x + 2] = img->imagedata8[z][y][4 * x + 2];
-						row_pointers8[z][y][4 * x + 3] = img->imagedata8[z][y][4 * x + 3];
+						row_pointers8[z][y][4 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][4 * x + 1] = img->data8[z][y][4 * x + 1];
+						row_pointers8[z][y][4 * x + 2] = img->data8[z][y][4 * x + 2];
+						row_pointers8[z][y][4 * x + 3] = img->data8[z][y][4 * x + 3];
 					}
 					break;
 				}
@@ -859,31 +859,31 @@ int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_f
 				case 1:		// single-component, treated as Luminance
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][x] = img->imagedata16[z][y][4 * x];
+						row_pointers16[z][y][x] = img->data16[z][y][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][2 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][2 * x + 1] = img->imagedata16[z][y][4 * x + 3];
+						row_pointers16[z][y][2 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][2 * x + 1] = img->data16[z][y][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][3 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][3 * x + 1] = img->imagedata16[z][y][4 * x + 1];
-						row_pointers16[z][y][3 * x + 2] = img->imagedata16[z][y][4 * x + 2];
+						row_pointers16[z][y][3 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][3 * x + 1] = img->data16[z][y][4 * x + 1];
+						row_pointers16[z][y][3 * x + 2] = img->data16[z][y][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][4 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][4 * x + 1] = img->imagedata16[z][y][4 * x + 1];
-						row_pointers16[z][y][4 * x + 2] = img->imagedata16[z][y][4 * x + 2];
-						row_pointers16[z][y][4 * x + 3] = img->imagedata16[z][y][4 * x + 3];
+						row_pointers16[z][y][4 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][4 * x + 1] = img->data16[z][y][4 * x + 1];
+						row_pointers16[z][y][4 * x + 2] = img->data16[z][y][4 * x + 2];
+						row_pointers16[z][y][4 * x + 3] = img->data16[z][y][4 * x + 3];
 					}
 					break;
 				}
@@ -1280,9 +1280,9 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 			int ydst = y + padding;
 			void *dst;
 			if (bitness == 16)
-				dst = (void *)(astc_img->imagedata16[zdst][ydst] + 4 * padding);
+				dst = (void *)(astc_img->data16[zdst][ydst] + 4 * padding);
 			else
-				dst = (void *)(astc_img->imagedata8[zdst][ydst] + 4 * padding);
+				dst = (void *)(astc_img->data8[zdst][ydst] + 4 * padding);
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
 			copy_scanline(dst, src, xsize, copy_method);
@@ -1385,31 +1385,31 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 				case 1:		// single-component, treated as Luminance
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][x] = img->imagedata8[z][y][4 * x];
+						row_pointers8[z][y][x] = img->data8[z][y][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][2 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][2 * x + 1] = img->imagedata8[z][y][4 * x + 3];
+						row_pointers8[z][y][2 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][2 * x + 1] = img->data8[z][y][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][3 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][3 * x + 1] = img->imagedata8[z][y][4 * x + 1];
-						row_pointers8[z][y][3 * x + 2] = img->imagedata8[z][y][4 * x + 2];
+						row_pointers8[z][y][3 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][3 * x + 1] = img->data8[z][y][4 * x + 1];
+						row_pointers8[z][y][3 * x + 2] = img->data8[z][y][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers8[z][y][4 * x] = img->imagedata8[z][y][4 * x];
-						row_pointers8[z][y][4 * x + 1] = img->imagedata8[z][y][4 * x + 1];
-						row_pointers8[z][y][4 * x + 2] = img->imagedata8[z][y][4 * x + 2];
-						row_pointers8[z][y][4 * x + 3] = img->imagedata8[z][y][4 * x + 3];
+						row_pointers8[z][y][4 * x] = img->data8[z][y][4 * x];
+						row_pointers8[z][y][4 * x + 1] = img->data8[z][y][4 * x + 1];
+						row_pointers8[z][y][4 * x + 2] = img->data8[z][y][4 * x + 2];
+						row_pointers8[z][y][4 * x + 3] = img->data8[z][y][4 * x + 3];
 					}
 					break;
 				}
@@ -1440,31 +1440,31 @@ int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_f
 				case 1:		// single-component, treated as Luminance
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][x] = img->imagedata16[z][y][4 * x];
+						row_pointers16[z][y][x] = img->data16[z][y][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][2 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][2 * x + 1] = img->imagedata16[z][y][4 * x + 3];
+						row_pointers16[z][y][2 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][2 * x + 1] = img->data16[z][y][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][3 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][3 * x + 1] = img->imagedata16[z][y][4 * x + 1];
-						row_pointers16[z][y][3 * x + 2] = img->imagedata16[z][y][4 * x + 2];
+						row_pointers16[z][y][3 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][3 * x + 1] = img->data16[z][y][4 * x + 1];
+						row_pointers16[z][y][3 * x + 2] = img->data16[z][y][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (x = 0; x < xsize; x++)
 					{
-						row_pointers16[z][y][4 * x] = img->imagedata16[z][y][4 * x];
-						row_pointers16[z][y][4 * x + 1] = img->imagedata16[z][y][4 * x + 1];
-						row_pointers16[z][y][4 * x + 2] = img->imagedata16[z][y][4 * x + 2];
-						row_pointers16[z][y][4 * x + 3] = img->imagedata16[z][y][4 * x + 3];
+						row_pointers16[z][y][4 * x] = img->data16[z][y][4 * x];
+						row_pointers16[z][y][4 * x + 1] = img->data16[z][y][4 * x + 1];
+						row_pointers16[z][y][4 * x + 2] = img->data16[z][y][4 * x + 2];
+						row_pointers16[z][y][4 * x + 3] = img->data16[z][y][4 * x + 3];
 					}
 					break;
 				}

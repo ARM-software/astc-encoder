@@ -207,7 +207,7 @@ static void compute_pixel_region_variance(
 	#define VARBUF2(z, y, x) varbuf2[z * zst + y * yst + x]
 
 	// Load N and N^2 values into the work buffers
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
@@ -223,10 +223,10 @@ static void compute_pixel_region_variance(
 				for (int x = 1; x < padsize_x; x++)
 				{
 					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
-					data[0] = img->imagedata8[z_src][y_src][4 * x_src + 0];
-					data[1] = img->imagedata8[z_src][y_src][4 * x_src + 1];
-					data[2] = img->imagedata8[z_src][y_src][4 * x_src + 2];
-					data[3] = img->imagedata8[z_src][y_src][4 * x_src + 3];
+					data[0] = img->data8[z_src][y_src][4 * x_src + 0];
+					data[1] = img->data8[z_src][y_src][4 * x_src + 1];
+					data[2] = img->data8[z_src][y_src][4 * x_src + 2];
+					data[3] = img->data8[z_src][y_src][4 * x_src + 3];
 
 					uint8_t r = data[swz.r];
 					uint8_t g = data[swz.g];
@@ -276,10 +276,10 @@ static void compute_pixel_region_variance(
 				for (int x = 1; x < padsize_x; x++)
 				{
 					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
-					data[0] = img->imagedata16[z_src][y_src][4 * x_src];
-					data[1] = img->imagedata16[z_src][y_src][4 * x_src + 1];
-					data[2] = img->imagedata16[z_src][y_src][4 * x_src + 2];
-					data[3] = img->imagedata16[z_src][y_src][4 * x_src + 3];
+					data[0] = img->data16[z_src][y_src][4 * x_src];
+					data[1] = img->data16[z_src][y_src][4 * x_src + 1];
+					data[2] = img->data16[z_src][y_src][4 * x_src + 2];
+					data[3] = img->data16[z_src][y_src][4 * x_src + 3];
 
 					uint16_t r = data[swz.r];
 					uint16_t g = data[swz.g];

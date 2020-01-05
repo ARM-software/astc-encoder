@@ -469,8 +469,8 @@ void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partiti
 
 struct astc_codec_image
 {
-	uint8_t ***imagedata8;
-	uint16_t ***imagedata16;
+	uint8_t ***data8;
+	uint16_t ***data16;
 	int xsize;
 	int ysize;
 	int zsize;
@@ -554,8 +554,25 @@ int astc_codec_store_image(const astc_codec_image * img, const char *filename, i
 
 int get_output_filename_enforced_bitness(const char *filename);
 
-// compute a bunch of error metrics
-void compute_error_metrics(int input_image_is_hdr, int input_components, const astc_codec_image * img1, const astc_codec_image * img2, int low_fstop, int high_fstop, int psnrmode);
+/**
+ * @brief Compute error metrics comparing two images.
+ *
+ * @param compute_hdr_metrics Non-zero if HDR metrics should be computed.
+ * @param input_components    The number of input color components.
+ * @param img1                The original iamge.
+ * @param img2                The compressed image.
+ * @param fstop_lo            The low exposure fstop (HDR only).
+ * @param fstop_hi            The high exposure fstop (HDR only).
+ * @param show_psnr           Non-zero if metrics should be logged to stdout.
+ */
+void compute_error_metrics(
+	int compute_hdr_metrics,
+	int input_components,
+	const astc_codec_image * img1,
+	const astc_codec_image * img2,
+	int fstop_lo,
+	int fstop_hi,
+	int show_psnr);
 
 // fetch an image-block from the input file
 void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to initialize with image data

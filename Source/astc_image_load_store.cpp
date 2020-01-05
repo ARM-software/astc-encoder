@@ -22,18 +22,18 @@ void destroy_image(astc_codec_image * img)
 	if (img == NULL)
 		return;
 
-	if (img->imagedata8)
+	if (img->data8)
 	{
-		delete[]img->imagedata8[0][0];
-		delete[]img->imagedata8[0];
-		delete[]img->imagedata8;
+		delete[]img->data8[0][0];
+		delete[]img->data8[0];
+		delete[]img->data8;
 	}
 
-	if (img->imagedata16)
+	if (img->data16)
 	{
-		delete[]img->imagedata16[0][0];
-		delete[]img->imagedata16[0];
-		delete[]img->imagedata16;
+		delete[]img->data16[0][0];
+		delete[]img->data16[0];
+		delete[]img->data16;
 	}
 
 	if(img->input_averages)
@@ -65,35 +65,35 @@ astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, i
 
 	if (bitness == 8)
 	{
-		img->imagedata8 = new uint8_t **[ezsize];
-		img->imagedata8[0] = new uint8_t *[ezsize * eysize];
-		img->imagedata8[0][0] = new uint8_t[4 * ezsize * eysize * exsize];
+		img->data8 = new uint8_t **[ezsize];
+		img->data8[0] = new uint8_t *[ezsize * eysize];
+		img->data8[0][0] = new uint8_t[4 * ezsize * eysize * exsize];
 		for (i = 1; i < ezsize; i++)
 		{
-			img->imagedata8[i] = img->imagedata8[0] + i * eysize;
-			img->imagedata8[i][0] = img->imagedata8[0][0] + 4 * i * exsize * eysize;
+			img->data8[i] = img->data8[0] + i * eysize;
+			img->data8[i][0] = img->data8[0][0] + 4 * i * exsize * eysize;
 		}
 		for (i = 0; i < ezsize; i++)
 			for (j = 1; j < eysize; j++)
-				img->imagedata8[i][j] = img->imagedata8[i][0] + 4 * j * exsize;
+				img->data8[i][j] = img->data8[i][0] + 4 * j * exsize;
 
-		img->imagedata16 = NULL;
+		img->data16 = NULL;
 	}
 	else if (bitness == 16)
 	{
-		img->imagedata16 = new uint16_t **[ezsize];
-		img->imagedata16[0] = new uint16_t *[ezsize * eysize];
-		img->imagedata16[0][0] = new uint16_t[4 * ezsize * eysize * exsize];
+		img->data16 = new uint16_t **[ezsize];
+		img->data16[0] = new uint16_t *[ezsize * eysize];
+		img->data16[0][0] = new uint16_t[4 * ezsize * eysize * exsize];
 		for (i = 1; i < ezsize; i++)
 		{
-			img->imagedata16[i] = img->imagedata16[0] + i * eysize;
-			img->imagedata16[i][0] = img->imagedata16[0][0] + 4 * i * exsize * eysize;
+			img->data16[i] = img->data16[0] + i * eysize;
+			img->data16[i][0] = img->data16[0][0] + 4 * i * exsize * eysize;
 		}
 		for (i = 0; i < ezsize; i++)
 			for (j = 1; j < eysize; j++)
-				img->imagedata16[i][j] = img->imagedata16[i][0] + 4 * j * exsize;
+				img->data16[i][j] = img->data16[i][0] + 4 * j * exsize;
 
-		img->imagedata8 = NULL;
+		img->data8 = NULL;
 	}
 	else
 	{
@@ -111,28 +111,28 @@ void initialize_image(astc_codec_image * img)
 	int eysize = img->ysize + 2 * img->padding;
 	int ezsize = (img->zsize == 1) ? 1 : img->zsize + 2 * img->padding;
 
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		for (z = 0; z < ezsize; z++)
 			for (y = 0; y < eysize; y++)
 				for (x = 0; x < exsize; x++)
 				{
-					img->imagedata8[z][y][4 * x] = 0;
-					img->imagedata8[z][y][4 * x + 1] = 0;
-					img->imagedata8[z][y][4 * x + 2] = 0;
-					img->imagedata8[z][y][4 * x + 3] = 0xFF;
+					img->data8[z][y][4 * x] = 0;
+					img->data8[z][y][4 * x + 1] = 0;
+					img->data8[z][y][4 * x + 2] = 0;
+					img->data8[z][y][4 * x + 3] = 0xFF;
 				}
 	}
-	else if (img->imagedata16)
+	else if (img->data16)
 	{
 		for (z = 0; z < ezsize; z++)
 			for (y = 0; y < eysize; y++)
 				for (x = 0; x < exsize; x++)
 				{
-					img->imagedata16[z][y][4 * x] = 0;
-					img->imagedata16[z][y][4 * x + 1] = 0;
-					img->imagedata16[z][y][4 * x + 2] = 0;
-					img->imagedata16[z][y][4 * x + 3] = 0x3C00;
+					img->data16[z][y][4 * x] = 0;
+					img->data16[z][y][4 * x + 1] = 0;
+					img->data16[z][y][4 * x + 2] = 0;
+					img->data16[z][y][4 * x + 3] = 0x3C00;
 				}
 	}
 	else
@@ -165,7 +165,7 @@ void fill_image_padding_area(astc_codec_image * img)
 	// This is a very simple implementation. Possible optimizations include:
 	// * Testing if texel is outside the edge.
 	// * Looping over texels that we know are outside the edge.
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		for (z = 0; z < ezsize; z++)
 		{
@@ -178,13 +178,13 @@ void fill_image_padding_area(astc_codec_image * img)
 					int xc = MIN(MAX(x, xmin), xmax);
 					for (i = 0; i < 4; i++)
 					{
-						img->imagedata8[z][y][4 * x + i] = img->imagedata8[zc][yc][4 * xc + i];
+						img->data8[z][y][4 * x + i] = img->data8[zc][yc][4 * xc + i];
 					}
 				}
 			}
 		}
 	}
-	else if (img->imagedata16)
+	else if (img->data16)
 	{
 		for (z = 0; z < ezsize; z++)
 		{
@@ -197,7 +197,7 @@ void fill_image_padding_area(astc_codec_image * img)
 					int xc = MIN(MAX(x, xmin), xmax);
 					for (i = 0; i < 4; i++)
 					{
-						img->imagedata16[z][y][4 * x + i] = img->imagedata16[zc][yc][4 * xc + i];
+						img->data16[z][y][4 * x + i] = img->data16[zc][yc][4 * xc + i];
 					}
 				}
 			}
@@ -218,7 +218,7 @@ int determine_image_channels(const astc_codec_image * img)
 	int lum_mask;
 	int alpha_mask;
 	int alpha_mask_ref;
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		alpha_mask_ref = 0xFF;
 		alpha_mask = 0xFF;
@@ -229,10 +229,10 @@ int determine_image_channels(const astc_codec_image * img)
 			{
 				for (x = 0; x < xsize; x++)
 				{
-					int r = img->imagedata8[z][y][4 * x];
-					int g = img->imagedata8[z][y][4 * x + 1];
-					int b = img->imagedata8[z][y][4 * x + 2];
-					int a = img->imagedata8[z][y][4 * x + 3];
+					int r = img->data8[z][y][4 * x];
+					int g = img->data8[z][y][4 * x + 1];
+					int b = img->data8[z][y][4 * x + 2];
+					int a = img->data8[z][y][4 * x + 3];
 					lum_mask |= (r ^ g) | (r ^ b);
 					alpha_mask &= a;
 				}
@@ -250,10 +250,10 @@ int determine_image_channels(const astc_codec_image * img)
 			{
 				for (x = 0; x < xsize; x++)
 				{
-					int r = img->imagedata16[z][y][4 * x];
-					int g = img->imagedata16[z][y][4 * x + 1];
-					int b = img->imagedata16[z][y][4 * x + 2];
-					int a = img->imagedata16[z][y][4 * x + 3];
+					int r = img->data16[z][y][4 * x];
+					int g = img->data16[z][y][4 * x + 1];
+					int b = img->data16[z][y][4 * x + 2];
+					int a = img->data16[z][y][4 * x + 3];
 					lum_mask |= (r ^ g) | (r ^ b);
 					alpha_mask &= (a ^ 0xC3FF);	// a ^ 0xC3FF returns FFFF if and only if the input is 1.0
 				}
@@ -521,7 +521,7 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 	data[4] = 0;
 	data[5] = 1;
 
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		for (z = 0; z < zdim; z++)
 		{
@@ -546,10 +546,10 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					if (zi >= zsize)
 						zi = zsize - 1;
 
-					int r = img->imagedata8[zi][yi][4 * xi];
-					int g = img->imagedata8[zi][yi][4 * xi + 1];
-					int b = img->imagedata8[zi][yi][4 * xi + 2];
-					int a = img->imagedata8[zi][yi][4 * xi + 3];
+					int r = img->data8[zi][yi][4 * xi];
+					int g = img->data8[zi][yi][4 * xi + 1];
+					int b = img->data8[zi][yi][4 * xi + 2];
+					int a = img->data8[zi][yi][4 * xi + 3];
 
 					data[0] = r / 255.0f;
 					data[1] = g / 255.0f;
@@ -566,7 +566,7 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 			}
 		}
 	}
-	else if (img->imagedata16)
+	else if (img->data16)
 	{
 		for (z = 0; z < zdim; z++)
 		{
@@ -591,10 +591,10 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 					if (zi >= ysize)
 						zi = zsize - 1;
 
-					int r = img->imagedata16[zi][yi][4 * xi];
-					int g = img->imagedata16[zi][yi][4 * xi + 1];
-					int b = img->imagedata16[zi][yi][4 * xi + 2];
-					int a = img->imagedata16[zi][yi][4 * xi + 3];
+					int r = img->data16[zi][yi][4 * xi];
+					int g = img->data16[zi][yi][4 * xi + 1];
+					int b = img->data16[zi][yi][4 * xi + 2];
+					int a = img->data16[zi][yi][4 * xi + 3];
 
 					float rf = sf16_to_float(r);
 					float gf = sf16_to_float(g);
@@ -727,7 +727,7 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 	data[4] = 0.0f;
 	data[5] = 1.0f;
 
-	if (img->imagedata8)
+	if (img->data8)
 	{
 		for (z = 0; z < zdim; z++)
 		{
@@ -744,10 +744,10 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 						if (*nptr)
 						{
 							// NaN-pixel, but we can't display it. Display purple instead.
-							img->imagedata8[zi][yi][4 * xi] = 0xFF;
-							img->imagedata8[zi][yi][4 * xi + 1] = 0x00;
-							img->imagedata8[zi][yi][4 * xi + 2] = 0xFF;
-							img->imagedata8[zi][yi][4 * xi + 3] = 0xFF;
+							img->data8[zi][yi][4 * xi] = 0xFF;
+							img->data8[zi][yi][4 * xi + 1] = 0x00;
+							img->data8[zi][yi][4 * xi + 2] = 0xFF;
+							img->data8[zi][yi][4 * xi + 3] = 0xFF;
 						}
 						else
 						{
@@ -812,10 +812,10 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							int bi = static_cast < int >(floor(data[swz.b] * 255.0f + 0.5f));
 							int ai = static_cast < int >(floor(data[swz.a] * 255.0f + 0.5f));
 
-							img->imagedata8[zi][yi][4 * xi] = ri;
-							img->imagedata8[zi][yi][4 * xi + 1] = gi;
-							img->imagedata8[zi][yi][4 * xi + 2] = bi;
-							img->imagedata8[zi][yi][4 * xi + 3] = ai;
+							img->data8[zi][yi][4 * xi] = ri;
+							img->data8[zi][yi][4 * xi + 1] = gi;
+							img->data8[zi][yi][4 * xi + 2] = bi;
+							img->data8[zi][yi][4 * xi + 3] = ai;
 						}
 					}
 					fptr += 4;
@@ -824,7 +824,7 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 			}
 		}
 	}
-	else if (img->imagedata16)
+	else if (img->data16)
 	{
 		for (z = 0; z < zdim; z++)
 		{
@@ -840,10 +840,10 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 					{
 						if (*nptr)
 						{
-							img->imagedata16[zi][yi][4 * xi] = 0xFFFF;
-							img->imagedata16[zi][yi][4 * xi + 1] = 0xFFFF;
-							img->imagedata16[zi][yi][4 * xi + 2] = 0xFFFF;
-							img->imagedata16[zi][yi][4 * xi + 3] = 0xFFFF;
+							img->data16[zi][yi][4 * xi] = 0xFFFF;
+							img->data16[zi][yi][4 * xi + 1] = 0xFFFF;
+							img->data16[zi][yi][4 * xi + 2] = 0xFFFF;
+							img->data16[zi][yi][4 * xi + 3] = 0xFFFF;
 						}
 
 						else
@@ -891,10 +891,10 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
 							int b = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
 							int a = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
-							img->imagedata16[zi][yi][4 * xi] = r;
-							img->imagedata16[zi][yi][4 * xi + 1] = g;
-							img->imagedata16[zi][yi][4 * xi + 2] = b;
-							img->imagedata16[zi][yi][4 * xi + 3] = a;
+							img->data16[zi][yi][4 * xi] = r;
+							img->data16[zi][yi][4 * xi + 1] = g;
+							img->data16[zi][yi][4 * xi + 2] = b;
+							img->data16[zi][yi][4 * xi + 3] = a;
 						}
 					}
 					fptr += 4;
@@ -957,272 +957,6 @@ void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim)
 	pb->alpha_min = alpha_min;
 	pb->alpha_max = alpha_max;
 	pb->grayscale = grayscale;
-}
-
-// Helper functions for various error-metric calculations
-double clampx(double p)
-{
-	if (astc_isnan(p) || p < 0.0f)
-		p = 0.0f;
-	else if (p > 65504.0f)
-		p = 65504.0f;
-	return p;
-}
-
-// logarithm-function, linearized from 2^-14.
-double xlog2(double p)
-{
-	if (p >= 0.00006103515625)
-		return log(p) * 1.44269504088896340735;	// log(x)/log(2)
-	else
-		return -15.44269504088896340735 + p * 23637.11554992477646609062;
-}
-
-// mPSNR tone-mapping operator
-double mpsnr_operator(double v, int fstop)
-{
-	int64_t vl = 1LL << (fstop + 32);
-	double vl2 = (double)vl * (1.0 / 4294967296.0);
-	v *= vl2;
-	v = pow(v, (1.0 / 2.2));
-	v *= 255.0f;
-	if (astc_isnan(v) || v < 0.0f)
-		v = 0.0f;
-	else if (v > 255.0f)
-		v = 255.0f;
-	return v;
-}
-
-double mpsnr_sumdiff(double v1, double v2, int low_fstop, int high_fstop)
-{
-	int i;
-	double summa = 0.0;
-	for (i = low_fstop; i <= high_fstop; i++)
-	{
-		double mv1 = mpsnr_operator(v1, i);
-		double mv2 = mpsnr_operator(v2, i);
-		double mdiff = mv1 - mv2;
-		summa += mdiff * mdiff;
-	}
-	return summa;
-}
-
-// Compute PSNR and other error metrics between input and output image
-void compute_error_metrics(int compute_hdr_error_metrics, int input_components, const astc_codec_image * img1, const astc_codec_image * img2, int low_fstop, int high_fstop, int psnrmode)
-{
-	int x, y, z;
-	static int channelmasks[5] = { 0x00, 0x07, 0x0C, 0x07, 0x0F };
-	int channelmask;
-
-	channelmask = channelmasks[input_components];
-
-	double4 errorsum = double4(0, 0, 0, 0);
-	double4 alpha_scaled_errorsum = double4(0, 0, 0, 0);
-	double4 log_errorsum = double4(0, 0, 0, 0);
-	double4 mpsnr_errorsum = double4(0, 0, 0, 0);
-
-	int xsize = MIN(img1->xsize, img2->xsize);
-	int ysize = MIN(img1->ysize, img2->ysize);
-	int zsize = MIN(img1->zsize, img2->zsize);
-
-	if (img1->xsize != img2->xsize || img1->ysize != img2->ysize || img1->zsize != img2->zsize)
-	{
-		printf("Warning: comparing images of different size:\n"
-			   "Image 1: %dx%dx%d\n" "Image 2: %dx%dx%d\n" "Only intersection region will be compared.\n", img1->xsize, img1->ysize, img1->zsize, img2->xsize, img2->ysize, img2->zsize);
-	}
-
-	if (compute_hdr_error_metrics)
-	{
-		printf("Computing error metrics ... ");
-		fflush(stdout);
-	}
-
-	int img1pad = img1->padding;
-	int img2pad = img2->padding;
-
-	double rgb_peak = 0.0f;
-
-	for (z = 0; z < zsize; z++)
-	{
-		for (y = 0; y < ysize; y++)
-		{
-			int ze1 = (img1->zsize == 1) ? z : z + img1pad;
-			int ze2 = (img2->zsize == 1) ? z : z + img2pad;
-
-			int ye1 = y + img1pad;
-			int ye2 = y + img2pad;
-
-			for (x = 0; x < xsize; x++)
-			{
-				double4 input_color1;
-				double4 input_color2;
-
-				int xe1 = 4 * x + 4 * img1pad;
-				int xe2 = 4 * x + 4 * img2pad;
-
-				if (img1->imagedata8)
-				{
-					input_color1 =
-						double4(img1->imagedata8[ze1][ye1][xe1] * (1.0f / 255.0f),
-								img1->imagedata8[ze1][ye1][xe1 + 1] * (1.0f / 255.0f), img1->imagedata8[ze1][ye1][xe1 + 2] * (1.0f / 255.0f), img1->imagedata8[ze1][ye1][xe1 + 3] * (1.0f / 255.0f));
-				}
-				else
-				{
-					input_color1 =
-						double4(clampx(sf16_to_float(img1->imagedata16[ze1][ye1][xe1])),
-								clampx(sf16_to_float(img1->imagedata16[ze1][ye1][xe1 + 1])),
-								clampx(sf16_to_float(img1->imagedata16[ze1][ye1][xe1 + 2])), clampx(sf16_to_float(img1->imagedata16[ze1][ye1][xe1 + 3])));
-				}
-
-				if (img2->imagedata8)
-				{
-					input_color2 =
-						double4(img2->imagedata8[ze2][ye2][xe2] * (1.0f / 255.0f),
-								img2->imagedata8[ze2][ye2][xe2 + 1] * (1.0f / 255.0f), img2->imagedata8[ze2][ye2][xe2 + 2] * (1.0f / 255.0f), img2->imagedata8[ze2][ye2][xe2 + 3] * (1.0f / 255.0f));
-				}
-				else
-				{
-					input_color2 =
-						double4(clampx(sf16_to_float(img2->imagedata16[ze2][ye2][xe2])),
-								clampx(sf16_to_float(img2->imagedata16[ze2][ye2][xe2 + 1])),
-								clampx(sf16_to_float(img2->imagedata16[ze2][ye2][xe2 + 2])), clampx(sf16_to_float(img2->imagedata16[ze2][ye2][xe2 + 3])));
-				}
-
-				rgb_peak = MAX(MAX(input_color1.x, input_color1.y), MAX(input_color1.z, rgb_peak));
-
-				double4 diffcolor = input_color1 - input_color2;
-				errorsum = errorsum + diffcolor * diffcolor;
-
-				double4 alpha_scaled_diffcolor = double4(diffcolor.x * input_color1.w,
-														 diffcolor.y * input_color1.w,
-														 diffcolor.z * input_color1.w,
-														 diffcolor.w);
-				alpha_scaled_errorsum = alpha_scaled_errorsum + alpha_scaled_diffcolor * alpha_scaled_diffcolor;
-
-				if (compute_hdr_error_metrics)
-				{
-					double4 log_input_color1 = double4(xlog2(input_color1.x),
-													   xlog2(input_color1.y),
-													   xlog2(input_color1.z),
-													   xlog2(input_color1.w));
-
-					double4 log_input_color2 = double4(xlog2(input_color2.x),
-													   xlog2(input_color2.y),
-													   xlog2(input_color2.z),
-													   xlog2(input_color2.w));
-
-					double4 log_diffcolor = log_input_color1 - log_input_color2;
-
-					log_errorsum = log_errorsum + log_diffcolor * log_diffcolor;
-
-					double4 mpsnr_error = double4(mpsnr_sumdiff(input_color1.x, input_color2.x, low_fstop, high_fstop),
-												  mpsnr_sumdiff(input_color1.y, input_color2.y, low_fstop, high_fstop),
-												  mpsnr_sumdiff(input_color1.z, input_color2.z, low_fstop, high_fstop),
-												  mpsnr_sumdiff(input_color1.w, input_color2.w, low_fstop, high_fstop));
-					mpsnr_errorsum = mpsnr_errorsum + mpsnr_error;
-				}
-			}
-		}
-	}
-
-	if (compute_hdr_error_metrics)
-	{
-		printf("done\n");
-	}
-
-	double pixels = xsize * ysize * zsize;
-
-	double num = 0.0;
-	double alpha_num = 0.0;
-	double log_num = 0.0;
-	double mpsnr_num = 0.0;
-	double samples = 0.0;
-
-	if (channelmask & 1)
-	{
-		num += errorsum.x;
-		alpha_num += alpha_scaled_errorsum.x;
-		log_num += log_errorsum.x;
-		mpsnr_num += mpsnr_errorsum.x;
-		samples += pixels;
-	}
-
-	if (channelmask & 2)
-	{
-		num += errorsum.y;
-		alpha_num += alpha_scaled_errorsum.y;
-		log_num += log_errorsum.y;
-		mpsnr_num += mpsnr_errorsum.y;
-		samples += pixels;
-	}
-
-	if (channelmask & 4)
-	{
-		num += errorsum.z;
-		alpha_num += alpha_scaled_errorsum.z;
-		log_num += log_errorsum.z;
-		mpsnr_num += mpsnr_errorsum.z;
-		samples += pixels;
-	}
-
-	if (channelmask & 8)
-	{
-		num += errorsum.w;
-		alpha_num += alpha_scaled_errorsum.w;
-		/* log_num += log_errorsum.w; mpsnr_num += mpsnr_errorsum.w; */
-		samples += pixels;
-	}
-
-	double denom = samples;
-	double mpsnr_denom = pixels * 3.0 * (high_fstop - low_fstop + 1) * 255.0f * 255.0f;
-
-	double psnr;
-	if (num == 0)
-		psnr = 999.0;
-	else
-		psnr = 10.0 * log10((double)denom / (double)num);
-
-	double rgb_psnr = psnr;
-
-	if(psnrmode == 1)
-	{
-		if (channelmask & 8)
-		{
-			printf("PSNR (LDR-RGBA): %.6lf dB\n", psnr);
-
-			double alpha_psnr;
-			if (alpha_num == 0)
-				alpha_psnr = 999.0;
-			else
-				alpha_psnr = 10.0 * log10((double)denom / (double)alpha_num);
-			printf("Alpha-Weighted PSNR: %.6lf dB\n", alpha_psnr);
-
-			double rgb_num = errorsum.x + errorsum.y + errorsum.z;
-			if (rgb_num == 0)
-				rgb_psnr = 999.0;
-			else
-				rgb_psnr = 10.0 * log10((double)pixels * 3 / (double)rgb_num);
-			printf("PSNR (LDR-RGB): %.6lf dB\n", rgb_psnr);
-		}
-		else
-			printf("PSNR (LDR-RGB): %.6lf dB\n", psnr);
-
-		if (compute_hdr_error_metrics)
-		{
-			printf("Color peak value: %f\n", rgb_peak);
-			printf("PSNR (RGB normalized to peak): %f dB\n", rgb_psnr + 20.0 * log10(rgb_peak));
-
-			double mpsnr;
-			if (mpsnr_num == 0)
-				mpsnr = 999.0;
-			else
-				mpsnr = 10.0 * log10((double)mpsnr_denom / (double)mpsnr_num);
-			printf("mPSNR (RGB) [fstops: %+d to %+d] : %.6lf dB\n", low_fstop, high_fstop, mpsnr);
-
-			double logrmse = sqrt((double)log_num / (double)pixels);
-			printf("LogRMSE (RGB): %.6lf\n", logrmse);
-		}
-	}
 }
 
 /*
