@@ -301,10 +301,10 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 
 		float4 ep = float4(
-		    (1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x ),
-		    (1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y ),
-		    (1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z ),
-		    (1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w ));
+			(1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x ),
+			(1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y ),
+			(1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z ),
+			(1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w ));
 
 		if (ep.x > 0.5f && ep.x < min_ep.x)
 			min_ep.x = ep.x;
@@ -558,10 +558,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		#endif
 
 		float4 ep1 = float4(
-		    (1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x ),
-		    (1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y ),
-		    (1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z ),
-		    (1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w ));
+			(1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x ),
+			(1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y ),
+			(1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z ),
+			(1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w ));
 
 		if (ep1.x > 0.5f && ep1.x < min_ep1.x)
 			min_ep1.x = ep1.x;
@@ -573,10 +573,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 			min_ep1.w = ep1.w;
 
 		float4 ep2 = float4(
-		    (1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x ),
-		    (1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y ),
-		    (1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z ),
-		    (1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w ));
+			(1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x ),
+			(1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y ),
+			(1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z ),
+			(1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w ));
 
 		if (ep2.x > 0.5f && ep2.x < min_ep2.x)
 			min_ep2.x = ep2.x;
@@ -837,14 +837,14 @@ static float prepare_error_weight_block(
 	int idx = 0;
 
 	int any_mean_stdev_weight =
-	    ewp->rgb_base_weight != 1.0f || ewp->alpha_base_weight != 1.0f || \
-	    ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
-	    ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
+		ewp->rgb_base_weight != 1.0f || ewp->alpha_base_weight != 1.0f || \
+		ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
+		ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
 
 	float4 color_weights = float4(ewp->rgba_weights[0],
-	                              ewp->rgba_weights[1],
-	                              ewp->rgba_weights[2],
-	                              ewp->rgba_weights[3]);
+								  ewp->rgba_weights[1],
+								  ewp->rgba_weights[2],
+								  ewp->rgba_weights[3]);
 
 	ewb->contains_zeroweight_texels = 0;
 
@@ -921,9 +921,9 @@ static float prepare_error_weight_block(
 						error_weight = error_weight + avg + stdev;
 
 						error_weight = float4(1.0f / error_weight.x,
-						                      1.0f / error_weight.y,
-						                      1.0f / error_weight.z,
-						                      1.0f / error_weight.w);
+											  1.0f / error_weight.y,
+											  1.0f / error_weight.z,
+											  1.0f / error_weight.w);
 					}
 
 					if (ewp->ra_normal_angular_scale)
@@ -1031,31 +1031,27 @@ static float prepare_error_weight_block(
 	return dot(error_weight_sum, float4(1, 1, 1, 1));
 }
 
-/*
-	functions to analyze block statistical properties:
-		* simple properties: * mean * variance
-		* covariance-matrix correllation coefficients
- */
-
-// compute averages and covariance matrices for 4 components
-static void compute_covariance_matrix(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, mat4 * cov_matrix)
+static void prepare_block_statistics(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, int *is_normal_map, float *lowest_correl)
 {
 	int i;
 
-	float r_sum = 0.0f;
-	float g_sum = 0.0f;
-	float b_sum = 0.0f;
-	float a_sum = 0.0f;
-	float rr_sum = 0.0f;
-	float gg_sum = 0.0f;
-	float bb_sum = 0.0f;
-	float aa_sum = 0.0f;
-	float rg_sum = 0.0f;
-	float rb_sum = 0.0f;
-	float ra_sum = 0.0f;
-	float gb_sum = 0.0f;
-	float ga_sum = 0.0f;
-	float ba_sum = 0.0f;
+	// compute covariance matrix, as a collection of 10 scalars
+	// (that form the upper-triangular row of the matrix; the matrix is
+	// symmetric, so this is all we need)
+	float rs = 0.0f;
+	float gs = 0.0f;
+	float bs = 0.0f;
+	float as = 0.0f;
+	float rr_var = 0.0f;
+	float gg_var = 0.0f;
+	float bb_var = 0.0f;
+	float aa_var = 0.0f;
+	float rg_cov = 0.0f;
+	float rb_cov = 0.0f;
+	float ra_cov = 0.0f;
+	float gb_cov = 0.0f;
+	float ga_cov = 0.0f;
+	float ba_cov = 0.0f;
 
 	float weight_sum = 0.0f;
 
@@ -1065,78 +1061,71 @@ static void compute_covariance_matrix(int texels_per_block, const imageblock * b
 		if (weight < 0.0f)
 			ASTC_CODEC_INTERNAL_ERROR();
 		weight_sum += weight;
+
 		float r = blk->work_data[4 * i];
 		float g = blk->work_data[4 * i + 1];
 		float b = blk->work_data[4 * i + 2];
 		float a = blk->work_data[4 * i + 3];
-		r_sum += r * weight;
-		rr_sum += r * (r * weight);
-		rg_sum += g * (r * weight);
-		rb_sum += b * (r * weight);
-		ra_sum += a * (r * weight);
-		g_sum += g * weight;
-		gg_sum += g * (g * weight);
-		gb_sum += b * (g * weight);
-		ga_sum += a * (g * weight);
-		b_sum += b * weight;
-		bb_sum += b * (b * weight);
-		ba_sum += a * (b * weight);
-		a_sum += a * weight;
-		aa_sum += a * (a * weight);
+
+		float rw = r * weight;
+		rs += rw;
+		rr_var += r * rw;
+		rg_cov += g * rw;
+		rb_cov += b * rw;
+		ra_cov += a * rw;
+
+		float gw = g * weight;
+		gs += gw;
+		gg_var += g * gw;
+		gb_cov += b * gw;
+		ga_cov += a * gw;
+
+		float bw = b * weight;
+		bs += bw;
+		bb_var += b * bw;
+		ba_cov += a * bw;
+
+		float aw = a * weight;
+		as += aw;
+		aa_var += a * aw;
 	}
 
 	float rpt = 1.0f / MAX(weight_sum, 1e-7f);
-	float rs = r_sum;
-	float gs = g_sum;
-	float bs = b_sum;
-	float as = a_sum;
 
-	cov_matrix->v[0] = float4(rr_sum - rs * rs * rpt, rg_sum - rs * gs * rpt, rb_sum - rs * bs * rpt, ra_sum - rs * as * rpt);
-	cov_matrix->v[1] = float4(rg_sum - rs * gs * rpt, gg_sum - gs * gs * rpt, gb_sum - gs * bs * rpt, ga_sum - gs * as * rpt);
-	cov_matrix->v[2] = float4(rb_sum - rs * bs * rpt, gb_sum - gs * bs * rpt, bb_sum - bs * bs * rpt, ba_sum - bs * as * rpt);
-	cov_matrix->v[3] = float4(ra_sum - rs * as * rpt, ga_sum - gs * as * rpt, ba_sum - bs * as * rpt, aa_sum - as * as * rpt);
-}
+	rr_var -= rs*(rs*rpt);
+	rg_cov -= gs*(rs*rpt);
+	rb_cov -= bs*(rs*rpt);
+	ra_cov -= as*(rs*rpt);
 
-static void prepare_block_statistics(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, int *is_normal_map, float *lowest_correl)
-{
-	int i;
+	gg_var -= gs*(gs*rpt);
+	gb_cov -= bs*(gs*rpt);
+	ga_cov -= as*(gs*rpt);
 
-	mat4 cov_matrix;
+	bb_var -= bs*(bs*rpt);
+	ba_cov -= as*(bs*rpt);
 
-	compute_covariance_matrix(texels_per_block, blk, ewb, &cov_matrix);
+	aa_var -= as*(as*rpt);
 
-	// use the covariance matrix to compute
-	// correllation coefficients
-	float rr_var = cov_matrix.v[0].x;
-	float gg_var = cov_matrix.v[1].y;
-	float bb_var = cov_matrix.v[2].z;
-	float aa_var = cov_matrix.v[3].w;
 
-	float rg_correlation = cov_matrix.v[0].y / sqrtf(MAX(rr_var * gg_var, 1e-30f));
-	float rb_correlation = cov_matrix.v[0].z / sqrtf(MAX(rr_var * bb_var, 1e-30f));
-	float ra_correlation = cov_matrix.v[0].w / sqrtf(MAX(rr_var * aa_var, 1e-30f));
-	float gb_correlation = cov_matrix.v[1].z / sqrtf(MAX(gg_var * bb_var, 1e-30f));
-	float ga_correlation = cov_matrix.v[1].w / sqrtf(MAX(gg_var * aa_var, 1e-30f));
-	float ba_correlation = cov_matrix.v[2].w / sqrtf(MAX(bb_var * aa_var, 1e-30f));
+	rg_cov *= 1.0f / sqrtf(MAX(rr_var * gg_var, 1e-30f));
+	rb_cov *= 1.0f / sqrtf(MAX(rr_var * bb_var, 1e-30f));
+	ra_cov *= 1.0f / sqrtf(MAX(rr_var * aa_var, 1e-30f));
+	gb_cov *= 1.0f / sqrtf(MAX(gg_var * bb_var, 1e-30f));
+	ga_cov *= 1.0f / sqrtf(MAX(gg_var * aa_var, 1e-30f));
+	ba_cov *= 1.0f / sqrtf(MAX(bb_var * aa_var, 1e-30f));
 
-	if (astc_isnan(rg_correlation))
-		rg_correlation = 1.0f;
-	if (astc_isnan(rb_correlation))
-		rb_correlation = 1.0f;
-	if (astc_isnan(ra_correlation))
-		ra_correlation = 1.0f;
-	if (astc_isnan(gb_correlation))
-		gb_correlation = 1.0f;
-	if (astc_isnan(ga_correlation))
-		ga_correlation = 1.0f;
-	if (astc_isnan(ba_correlation))
-		ba_correlation = 1.0f;
+    if (astc_isnan(rg_cov)) rg_cov = 1.0f;
+    if (astc_isnan(rb_cov)) rb_cov = 1.0f;
+    if (astc_isnan(ra_cov)) ra_cov = 1.0f;
+    if (astc_isnan(gb_cov)) gb_cov = 1.0f;
+    if (astc_isnan(ga_cov)) ga_cov = 1.0f;
+    if (astc_isnan(ba_cov)) ba_cov = 1.0f;
 
-	float lowest_correlation = MIN(fabsf(rg_correlation), fabsf(rb_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ra_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabsf(gb_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ga_correlation));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ba_correlation));
+	float lowest_correlation = MIN(fabsf(rg_cov), fabsf(rb_cov));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ra_cov));
+	lowest_correlation = MIN(lowest_correlation, fabsf(gb_cov));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ga_cov));
+	lowest_correlation = MIN(lowest_correlation, fabsf(ba_cov));
 	*lowest_correl = lowest_correlation;
 
 	// compute a "normal-map" factor
@@ -1155,8 +1144,7 @@ static void prepare_block_statistics(int texels_per_block, const imageblock * bl
 		float nf = fabsf(length_squared - 1.0f);
 		nf_sum += nf;
 	}
-	float nf_avg = nf_sum / texels_per_block;
-	*is_normal_map = nf_avg < 0.2f;
+	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
 }
 
 int block_mode_histogram[2048];
