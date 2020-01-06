@@ -365,10 +365,14 @@ static inline int partition_mismatch4(uint64_t a0, uint64_t a1, uint64_t a2, uin
 	// 16 bitcount, 17 MIN, 28 ADD
 }
 
-void count_partition_mismatch_bits(int xdim, int ydim, int zdim, int partition_count, const uint64_t bitmaps[4], int bitcounts[PARTITION_COUNT])
-{
+void count_partition_mismatch_bits(
+	const block_size_descriptor* bsd,
+	int partition_count,
+	const uint64_t bitmaps[4],
+	int bitcounts[PARTITION_COUNT]
+) {
 	int i;
-	const partition_info *pi = get_partition_table(xdim, ydim, zdim, partition_count);
+	const partition_info *pi = get_partition_table(bsd, partition_count);
 
 	if (partition_count == 2)
 	{
@@ -449,11 +453,9 @@ void get_partition_ordering_by_mismatch_bits(const int mismatch_bits[PARTITION_C
 	}
 }
 
-void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, int *ordering)
+void kmeans_compute_partition_ordering(const block_size_descriptor* bsd, int partition_count, const imageblock * blk, int *ordering)
 {
 	int i;
-
-	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
 
 	float4 cluster_centers[4];
 	int partition_of_texel[MAX_TEXELS_PER_BLOCK];
@@ -462,11 +464,11 @@ void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partiti
 	for (i = 0; i < 3; i++)
 	{
 		if (i == 0)
-			kpp_initialize(xdim, ydim, zdim, partition_count, blk, cluster_centers);
+			kpp_initialize(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, cluster_centers);
 		else
-			basic_kmeans_update(xdim, ydim, zdim, partition_count, blk, partition_of_texel, cluster_centers);
+			basic_kmeans_update(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, partition_of_texel, cluster_centers);
 
-		basic_kmeans_assign_pass(xdim, ydim, zdim, partition_count, blk, cluster_centers, partition_of_texel);
+		basic_kmeans_assign_pass(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, cluster_centers, partition_of_texel);
 	}
 
 	// at this point, we have a near-ideal partitioning.
@@ -485,7 +487,7 @@ void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partiti
 
 	int bitcounts[PARTITION_COUNT];
 	// for each entry in the partition table, count bits of partition-mismatch.
-	count_partition_mismatch_bits(xdim, ydim, zdim, partition_count, bitmaps, bitcounts);
+	count_partition_mismatch_bits(bsd, partition_count, bitmaps, bitcounts);
 
 	// finally, sort the partitions by bits-of-partition-mismatch
 	get_partition_ordering_by_mismatch_bits(bitcounts, ordering);

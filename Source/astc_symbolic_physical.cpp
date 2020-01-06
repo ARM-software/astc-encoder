@@ -50,7 +50,9 @@ int bitrev8(int p)
 	return p;
 }
 
-physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, const symbolic_compressed_block * sc)
+physical_compressed_block symbolic_to_physical(
+	const block_size_descriptor* bsd,
+	const symbolic_compressed_block * sc)
 {
 	int i, j;
 	physical_compressed_block res;
@@ -99,9 +101,7 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 	for (i = 0; i < 16; i++)
 		weightbuf[i] = 0;
 
-	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
-
 
 	int weight_count = ixtab2[bsd->block_modes[sc->block_mode].decimation_mode]->num_weights;
 	int weight_quantization_method = bsd->block_modes[sc->block_mode].quantization_mode;
@@ -211,15 +211,17 @@ physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, con
 	return res;
 }
 
-void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_block pb, symbolic_compressed_block * res)
+void physical_to_symbolic(
+	const block_size_descriptor* bsd,
+	physical_compressed_block pb,
+	symbolic_compressed_block * res)
 {
 	uint8_t bswapped[16];
 	int i, j;
 
 	res->error_block = 0;
 
-	// get hold of the block-size descriptor and the decimation tables.
-	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
+	// get hold of the decimation tables.
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
 	// extract header fields
@@ -241,7 +243,7 @@ void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_bloc
 		}
 
 		// additionally, check that the void-extent
-		if (zdim == 1)
+		if (bsd->zdim == 1)
 		{
 			// 2D void-extent
 			int rsvbits = read_bits(2, 10, pb.data);

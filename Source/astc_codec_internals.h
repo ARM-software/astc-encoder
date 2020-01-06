@@ -27,16 +27,6 @@
     #define __func__ __FUNCTION__
 #endif
 
-#ifndef MIN
-	#define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
-
-#ifndef MAX
-	#define MAX(x,y) ((x)>(y)?(x):(y))
-#endif
-
-#define astc_isnan(p) ((p)!=(p))
-
 // ASTC parameters
 #define MAX_TEXELS_PER_BLOCK 216
 #define MAX_WEIGHTS_PER_BLOCK 64
@@ -98,7 +88,7 @@ struct partition_info
 	uint8_t texels_per_partition[4];
 	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t texels_of_partition[4][MAX_TEXELS_PER_BLOCK];
-	uint64_t coverage_bitmaps[4];	// used for the purposes of k-means partition search.
+	uint64_t coverage_bitmaps[4];
 };
 
 /*
@@ -138,6 +128,11 @@ struct block_mode
 
 struct block_size_descriptor
 {
+	int xdim;
+	int ydim;
+	int zdim;
+	int texel_count;
+
 	int decimation_mode_count;
 	int decimation_mode_samples[MAX_DECIMATION_MODES];
 	int decimation_mode_maxprec_1plane[MAX_DECIMATION_MODES];
@@ -346,7 +341,11 @@ struct physical_compressed_block
 	uint8_t data[16];
 };
 
-const block_size_descriptor *get_block_size_descriptor(int xdim, int ydim, int zdim);
+void init_block_size_descriptor(
+	int xdim,
+	int ydim,
+	int zdim,
+	block_size_descriptor* bsd);
 
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
@@ -370,7 +369,9 @@ extern int quantization_mode_table[17][128];
 // **********************************************
 
 // function to get a pointer to a partition table or an array thereof.
-const partition_info *get_partition_table(int xdim, int ydim, int zdim, int partition_count);
+const partition_info *get_partition_table(
+	const block_size_descriptor* bsd,
+	int partition_count);
 
 // functions to compute color averages and dominant directions
 // for each partition in a block
@@ -452,16 +453,26 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 
 // function to find the best partitioning for a given block.
 
-void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count, const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
-							 // best partitionings to use if the endpoint colors are assumed to be uncorrelated
-							 int *best_partitions_uncorrelated,
-							 // best partitionings to use if the endpoint colors have the same chroma
-							 int *best_partitions_samechroma,
-							 // best partitionings to use if dual plane of weights are present
-							 int *best_partitions_dual_weight_planes);
+void find_best_partitionings(
+	int partition_search_limit,
+	const block_size_descriptor* bsd,
+	int partition_count,
+	const imageblock * pb,
+	const error_weight_block * ewb,
+	int candidates_to_return,
+	// best partitionings to use if the endpoint colors are assumed to be uncorrelated
+	int *best_partitions_uncorrelated,
+	// best partitionings to use if the endpoint colors have the same chroma
+	int *best_partitions_samechroma,
+	// best partitionings to use if dual plane of weights are present
+	int *best_partitions_dual_weight_planes);
 
 // use k-means clustering to compute a partition ordering for a block.
-void kmeans_compute_partition_ordering(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, int *ordering);
+void kmeans_compute_partition_ordering(
+	const block_size_descriptor* bsd,
+	int partition_count,
+	const imageblock * blk,
+	int *ordering);
 
 // *********************************************************
 // functions and data pertaining to images and imageblocks
@@ -722,9 +733,14 @@ void compute_angular_endpoints_2planes(float mode_cutoff,
 
 /* *********************************** high-level encode and decode functions ************************************ */
 
-float compress_symbolic_block(const astc_codec_image * input_image,
-							  astc_decode_mode decode_mode, int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, symbolic_compressed_block * scb,
-							  compress_symbolic_block_buffers * tmpbuf);
+float compress_symbolic_block(
+	const astc_codec_image * input_image,
+	astc_decode_mode decode_mode,
+	const block_size_descriptor* bsd,
+	const error_weighting_params * ewp,
+	const imageblock * blk,
+	symbolic_compressed_block * scb,
+	compress_symbolic_block_buffers * tmpbuf);
 
 float4 lerp_color_flt(const float4 color0, const float4 color1, float weight,	// 0..1
 					  float plane2_weight,	// 0..1
@@ -736,15 +752,23 @@ uint4 lerp_color_int(astc_decode_mode decode_mode, uint4 color0, uint4 color1, i
 					   int plane2_color_component	// 0..3; -1 if only one plane of weights is present.
 	);
 
-void decompress_symbolic_block(astc_decode_mode decode_mode,
-							   // dimensions of block
-							   int xdim, int ydim, int zdim,
-							   // position of block
-							   int xpos, int ypos, int zpos, const symbolic_compressed_block * scb, imageblock * blk);
+void decompress_symbolic_block(
+	astc_decode_mode decode_mode,
+	const block_size_descriptor* bsd,
+	int xpos,
+	int ypos,
+	int zpos,
+	const symbolic_compressed_block * scb,
+	imageblock * blk);
 
-physical_compressed_block symbolic_to_physical(int xdim, int ydim, int zdim, const symbolic_compressed_block * sc);
+physical_compressed_block symbolic_to_physical(
+	const block_size_descriptor* bsd,
+	const symbolic_compressed_block * sc);
 
-void physical_to_symbolic(int xdim, int ydim, int zdim, physical_compressed_block pb, symbolic_compressed_block * res);
+void physical_to_symbolic(
+	const block_size_descriptor* bsd,
+	physical_compressed_block pb,
+	symbolic_compressed_block * res);
 
 uint16_t unorm16_to_sf16(uint16_t p);
 uint16_t lns_to_sf16(uint16_t p);

@@ -181,18 +181,22 @@ void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, cons
 }
 
 /* main function to identify the best partitioning for a given number of texels */
-void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int zdim, int partition_count,
-							 const imageblock * pb, const error_weight_block * ewb, int candidates_to_return,
-							 // best partitions to use if the endpoint colors are assumed to be uncorrelated
-							 int *best_partitions_uncorrelated,
-							 // best partitions to use if the endpoint colors have the same chroma
-							 int *best_partitions_samechroma,
-							 // best partitions to use if using dual plane of weights
-							 int *best_partitions_dual_weight_planes)
+void find_best_partitionings(
+	int partition_search_limit,
+	const block_size_descriptor* bsd,
+	int partition_count,
+	const imageblock * pb,
+	const error_weight_block * ewb,
+	int candidates_to_return,
+	// best partitions to use if the endpoint colors are assumed to be uncorrelated
+	int *best_partitions_uncorrelated,
+	// best partitions to use if the endpoint colors have the same chroma
+	int *best_partitions_samechroma,
+	// best partitions to use if using dual plane of weights
+	int *best_partitions_dual_weight_planes)
 {
 	int i, j;
-
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	// constant used to estimate quantization error for a given partitioning;
 	// the optimal value for this constant depends on bitrate.
@@ -211,7 +215,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 	int partition_sequence[PARTITION_COUNT];
 
-	kmeans_compute_partition_ordering(xdim, ydim, zdim, partition_count, pb, partition_sequence);
+	kmeans_compute_partition_ordering(bsd, partition_count, pb, partition_sequence);
 
 	float weight_imprecision_estim_squared = weight_imprecision_estim * weight_imprecision_estim;
 
@@ -222,7 +226,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 
 	int uses_alpha = imageblock_uses_alpha(pb);
 
-	const partition_info *ptab = get_partition_table(xdim, ydim, zdim, partition_count);
+	const partition_info *ptab = get_partition_table(bsd, partition_count);
 
 	// partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncorr_errors[PARTITION_COUNT];
@@ -292,7 +296,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float4 error_weightings[4];
 			float4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
-			compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
+			compute_partition_error_color_weightings(bsd->xdim, bsd->ydim, bsd->zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (j = 0; j < partition_count; j++)
 			{
@@ -439,9 +443,9 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 			float alpha_min[4], alpha_max[4];
-			compute_alpha_minmax(xdim, ydim, zdim, ptab + partition, pb, ewb, alpha_min, alpha_max);
+			compute_alpha_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, alpha_min, alpha_max);
 
-			compute_rgb_minmax(xdim, ydim, zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			compute_rgb_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
@@ -562,7 +566,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
 
-			compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
+			compute_partition_error_color_weightings(bsd->xdim, bsd->ydim, bsd->zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (j = 0; j < partition_count; j++)
 			{
@@ -689,7 +693,7 @@ void find_best_partitionings(int partition_search_limit, int xdim, int ydim, int
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 
-			compute_rgb_minmax(xdim, ydim, zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			compute_rgb_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.

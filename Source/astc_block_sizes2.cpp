@@ -576,10 +576,15 @@ static void initialize_decimation_table_3d(
 	dt->num_weights = weights_per_block;
 }
 
-void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descriptor * bsd)
+static void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descriptor * bsd)
 {
 	int decimation_mode_index[256];	// for each of the 256 entries in the decim_table_array, its index
 	int decimation_mode_count = 0;
+
+	bsd->xdim = xdim;
+	bsd->ydim = ydim;
+	bsd->zdim = 1;
+	bsd->texel_count = xdim * ydim;
 
 	for (int i = 0; i < 256; i++)
 	{
@@ -735,10 +740,15 @@ void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descripto
 	}
 }
 
-void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size_descriptor * bsd)
+static void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size_descriptor * bsd)
 {
 	int decimation_mode_index[512];	// for each of the 512 entries in the decim_table_array, its index
 	int decimation_mode_count = 0;
+
+	bsd->xdim = xdim;
+	bsd->ydim = ydim;
+	bsd->zdim = zdim;
+	bsd->texel_count = xdim * ydim * zdim;
 
 	for (int i = 0; i < 512; i++)
 	{
@@ -887,22 +897,10 @@ void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size
 	}
 }
 
-static block_size_descriptor *bsd_pointers[4096];
-
-// function to obtain a block size descriptor. If the descriptor does not exist,
-// it is created as needed. Should not be called from within multi-threaded code.
-const block_size_descriptor *get_block_size_descriptor(int xdim, int ydim, int zdim)
+void init_block_size_descriptor(int xdim, int ydim, int zdim, block_size_descriptor* bsd)
 {
-	int bsd_index = xdim + (ydim << 4) + (zdim << 8);
-	if (bsd_pointers[bsd_index] == NULL)
-	{
-		block_size_descriptor *bsd = new block_size_descriptor;
-		if (zdim > 1)
-			construct_block_size_descriptor_3d(xdim, ydim, zdim, bsd);
-		else
-			construct_block_size_descriptor_2d(xdim, ydim, bsd);
-
-		bsd_pointers[bsd_index] = bsd;
-	}
-	return bsd_pointers[bsd_index];
+	if (zdim > 1)
+		construct_block_size_descriptor_3d(xdim, ydim, zdim, bsd);
+	else
+		construct_block_size_descriptor_2d(xdim, ydim, bsd);
 }

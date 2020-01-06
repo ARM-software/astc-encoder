@@ -94,6 +94,16 @@ static inline float2 normalize(float2 p) { return p * (1.0f / sqrtf(dot(p,p))); 
 static inline float3 normalize(float3 p) { return p * (1.0f / sqrtf(dot(p,p))); }
 static inline float4 normalize(float4 p) { return p * (1.0f / sqrtf(dot(p,p))); }
 
+#ifndef MIN
+	#define MIN(x,y) ((x)<(y)?(x):(y))
+#endif
+
+#ifndef MAX
+	#define MAX(x,y) ((x)>(y)?(x):(y))
+#endif
+
+#define astc_isnan(p) ((p)!=(p))
+
 // Clamp an input value to [0,1]; NaN is turned into 0.
 static inline float clamp01(float val)
 {

@@ -68,11 +68,15 @@ uint4 lerp_color_int(astc_decode_mode decode_mode, uint4 color0, uint4 color1, i
 	return uint4(color.x, color.y, color.z, color.w);
 }
 
-void decompress_symbolic_block(astc_decode_mode decode_mode,
-							   int xdim, int ydim, int zdim,   // dimensions of block
-							   int xpos, int ypos, int zpos,   // position of block
-							   const symbolic_compressed_block * scb, imageblock * blk)
-{
+void decompress_symbolic_block(
+	astc_decode_mode decode_mode,
+	const block_size_descriptor* bsd,
+	int xpos,
+	int ypos,
+	int zpos,
+	const symbolic_compressed_block * scb,
+	imageblock * blk
+) {
 	blk->xpos = xpos;
 	blk->ypos = ypos;
 	blk->zpos = zpos;
@@ -84,7 +88,7 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	{
 		if (decode_mode == DECODE_LDR_SRGB)
 		{
-			for (i = 0; i < xdim * ydim * zdim; i++)
+			for (i = 0; i < bsd->texel_count; i++)
 			{
 				blk->orig_data[4 * i] = 1.0f;
 				blk->orig_data[4 * i + 1] = 0.0f;
@@ -97,7 +101,7 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 		}
 		else
 		{
-			for (i = 0; i < xdim * ydim * zdim; i++)
+			for (i = 0; i < bsd->texel_count; i++)
 			{
 				blk->orig_data[4 * i] = 0.0f;
 				blk->orig_data[4 * i + 1] = 0.0f;
@@ -109,8 +113,8 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 			}
 		}
 
-		imageblock_initialize_work_from_orig(blk, xdim * ydim * zdim);
-		update_imageblock_flags(blk, xdim, ydim, zdim);
+		imageblock_initialize_work_from_orig(blk, bsd->texel_count);
+		update_imageblock_flags(blk, bsd->xdim, bsd->ydim, bsd->zdim);
 		return;
 	}
 
@@ -164,7 +168,7 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 			}
 		}
 
-		for (i = 0; i < xdim * ydim * zdim; i++)
+		for (i = 0; i < bsd->texel_count; i++)
 		{
 			blk->orig_data[4 * i] = red;
 			blk->orig_data[4 * i + 1] = green;
@@ -175,18 +179,17 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 			blk->nan_texel[i] = use_nan;
 		}
 
-		imageblock_initialize_work_from_orig(blk, xdim * ydim * zdim);
-		update_imageblock_flags(blk, xdim, ydim, zdim);
+		imageblock_initialize_work_from_orig(blk, bsd->texel_count);
+		update_imageblock_flags(blk, bsd->xdim, bsd->ydim, bsd->zdim);
 		return;
 	}
 
 	// get the appropriate partition-table entry
 	int partition_count = scb->partition_count;
-	const partition_info *pt = get_partition_table(xdim, ydim, zdim, partition_count);
+	const partition_info *pt = get_partition_table(bsd, partition_count);
 	pt += scb->partition_index;
 
 	// get the appropriate block descriptor
-	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
 	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
@@ -229,19 +232,18 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
 
-	int texels_per_block = xdim * ydim * zdim;
-	for (i = 0; i < texels_per_block; i++)
+	for (i = 0; i < bsd->texel_count; i++)
 		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
 
 	if (is_dual_plane)
-		for (i = 0; i < texels_per_block; i++)
+		for (i = 0; i < bsd->texel_count; i++)
 			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
 
 	int plane2_color_component = scb->plane2_color_component;
 
 	// now that we have endpoint colors and weights, we can unpack actual colors for
 	// each texel.
-	for (i = 0; i < texels_per_block; i++)
+	for (i = 0; i < bsd->texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 
@@ -262,9 +264,9 @@ void decompress_symbolic_block(astc_decode_mode decode_mode,
 		blk->work_data[4 * i + 3] = color.w;
 	}
 
-	imageblock_initialize_orig_from_work(blk, xdim * ydim * zdim);
+	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
 
-	update_imageblock_flags(blk, xdim, ydim, zdim);
+	update_imageblock_flags(blk, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
 float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb)

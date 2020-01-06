@@ -63,12 +63,9 @@ static int compare_canonicalized_partition_tables(const uint64_t part1[7], const
 /*
    For a partition table, detect partitionss that are equivalent, then mark them as invalid. This reduces the number of partitions that the codec has to consider and thus improves encode
    performance. */
-static void partition_table_zap_equal_elements(int xdim, int ydim, int zdim, partition_info * pi)
+static void partition_table_zap_equal_elements(int texel_count, partition_info * pi)
 {
 	int partition_tables_zapped = 0;
-
-	int texel_count = xdim * ydim * zdim;
-
 	int i, j;
 	uint64_t *canonicalizeds = new uint64_t[PARTITION_COUNT * 7];
 
@@ -206,22 +203,25 @@ int select_partition(int seed, int x, int y, int z, int partitioncount, int smal
 	return partition;
 }
 
-void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_count, int partition_index, partition_info * pt)
+void generate_one_partition_table(
+	const block_size_descriptor* bsd,
+	int partition_count,
+	int partition_index,
+	partition_info * pt)
 {
-	int small_block = (xdim * ydim * zdim) < 32;
+	int texels_per_block = bsd->texel_count;
+	int small_block = texels_per_block < 32;
 
 	uint8_t *partition_of_texel = pt->partition_of_texel;
 	int x, y, z, i;
 
-	for (z = 0; z < zdim; z++)
-		for (y = 0; y < ydim; y++)
-			for (x = 0; x < xdim; x++)
+	for (z = 0; z < bsd->zdim; z++)
+		for (y = 0; y <  bsd->ydim; y++)
+			for (x = 0; x <  bsd->xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				*partition_of_texel++ = part;
 			}
-
-	int texels_per_block = xdim * ydim * zdim;
 
 	int counts[4];
 	for (i = 0; i < 4; i++)
@@ -250,7 +250,6 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 	for (i = 0; i < 4; i++)
 		pt->coverage_bitmaps[i] = 0ULL;
 
-	const block_size_descriptor *bsd = get_block_size_descriptor(xdim, ydim, zdim);
 	int texels_to_process = bsd->texelcount_for_bitmap_partitioning;
 	for (i = 0; i < texels_to_process; i++)
 	{
@@ -259,8 +258,9 @@ void generate_one_partition_table(int xdim, int ydim, int zdim, int partition_co
 	}
 }
 
-static void generate_partition_tables(int xdim, int ydim, int zdim)
-{
+static void generate_partition_tables(
+	const block_size_descriptor* bsd
+) {
 	int i;
 
 	partition_info *one_partition = new partition_info;
@@ -275,26 +275,28 @@ static void generate_partition_tables(int xdim, int ydim, int zdim)
 	partition_table[3] = three_partitions;
 	partition_table[4] = four_partitions;
 
-	generate_one_partition_table(xdim, ydim, zdim, 1, 0, one_partition);
+	generate_one_partition_table(bsd, 1, 0, one_partition);
 	for (i = 0; i < 1024; i++)
 	{
-		generate_one_partition_table(xdim, ydim, zdim, 2, i, two_partitions + i);
-		generate_one_partition_table(xdim, ydim, zdim, 3, i, three_partitions + i);
-		generate_one_partition_table(xdim, ydim, zdim, 4, i, four_partitions + i);
+		generate_one_partition_table(bsd, 2, i, two_partitions + i);
+		generate_one_partition_table(bsd, 3, i, three_partitions + i);
+		generate_one_partition_table(bsd, 4, i, four_partitions + i);
 	}
 
-	partition_table_zap_equal_elements(xdim, ydim, zdim, two_partitions);
-	partition_table_zap_equal_elements(xdim, ydim, zdim, three_partitions);
-	partition_table_zap_equal_elements(xdim, ydim, zdim, four_partitions);
+	partition_table_zap_equal_elements(bsd->texel_count, two_partitions);
+	partition_table_zap_equal_elements(bsd->texel_count, three_partitions);
+	partition_table_zap_equal_elements(bsd->texel_count, four_partitions);
 
-	partition_tables[xdim + 16 * ydim + 256 * zdim] = partition_table;
+	partition_tables[bsd->xdim + 16 * bsd->ydim + 256 * bsd->zdim] = partition_table;
 }
 
-const partition_info *get_partition_table(int xdim, int ydim, int zdim, int partition_count)
-{
-	int ptindex = xdim + 16 * ydim + 256 * zdim;
+const partition_info *get_partition_table(
+	const block_size_descriptor* bsd,
+	int partition_count
+) {
+	int ptindex = bsd->xdim + 16 * bsd->ydim + 256 * bsd->zdim;
 	if (partition_tables[ptindex] == NULL)
-		generate_partition_tables(xdim, ydim, zdim);
+		generate_partition_tables(bsd);
 
 	return partition_tables[ptindex][partition_count];
 }

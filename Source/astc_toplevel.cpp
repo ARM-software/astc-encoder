@@ -247,6 +247,9 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
 	initialize_image(img);
 
+	block_size_descriptor bsd;
+	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
+
 	imageblock pb;
 	for (z = 0; z < zblocks; z++)
 		for (y = 0; y < yblocks; y++)
@@ -256,21 +259,18 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 				uint8_t *bp = buffer + offset;
 				physical_compressed_block pcb = *(physical_compressed_block *) bp;
 				symbolic_compressed_block scb;
-				physical_to_symbolic(xdim, ydim, zdim, pcb, &scb);
-				decompress_symbolic_block(decode_mode, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, &scb, &pb);
+				physical_to_symbolic(&bsd, pcb, &scb);
+				decompress_symbolic_block(decode_mode, &bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
 				write_imageblock(img, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_decode);
 			}
 
 	free(buffer);
-
 	return img;
 }
 
 struct encode_astc_image_info
 {
-	int xdim;
-	int ydim;
-	int zdim;
+	const block_size_descriptor *bsd;
 	const error_weighting_params *ewp;
 	uint8_t *buffer;
 	int *counters;
@@ -288,9 +288,10 @@ struct encode_astc_image_info
 void *encode_astc_image_threadfunc(void *vblk)
 {
 	const encode_astc_image_info *blk = (const encode_astc_image_info *)vblk;
-	int xdim = blk->xdim;
-	int ydim = blk->ydim;
-	int zdim = blk->zdim;
+	const block_size_descriptor *bsd = blk->bsd;
+	int xdim = bsd->xdim;
+	int ydim = bsd->ydim;
+	int zdim = bsd->zdim;
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
 	int thread_id = blk->thread_id;
@@ -352,16 +353,16 @@ void *encode_astc_image_threadfunc(void *vblk)
 				#endif
 						fetch_imageblock(input_image, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_encode);
 						symbolic_compressed_block scb;
-						compress_symbolic_block(input_image, decode_mode, xdim, ydim, zdim, ewp, &pb, &scb, &temp_buffers);
+						compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
 						if (pack_and_unpack)
 						{
-							decompress_symbolic_block(decode_mode, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, &scb, &pb);
+							decompress_symbolic_block(decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
 							write_imageblock(output_image, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_decode);
 						}
 						else
 						{
 							physical_compressed_block pcb;
-							pcb = symbolic_to_physical(xdim, ydim, zdim, &scb);
+							pcb = symbolic_to_physical(bsd, &scb);
 							*(physical_compressed_block *) bp = pcb;
 						}
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -440,15 +441,14 @@ void encode_astc_image(const astc_codec_image * input_image,
 
 	// before entering into the multi-threaded routine, ensure that the block size descriptors
 	// and the partition table descriptors needed actually exist.
-	get_block_size_descriptor(xdim, ydim, zdim);
-	get_partition_table(xdim, ydim, zdim, 0);
+	block_size_descriptor bsd;
+	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
+	get_partition_table(&bsd, 0);
 
 	encode_astc_image_info *ai = new encode_astc_image_info[threadcount];
 	for (i = 0; i < threadcount; i++)
 	{
-		ai[i].xdim = xdim;
-		ai[i].ydim = ydim;
-		ai[i].zdim = zdim;
+		ai[i].bsd = &bsd;
 		ai[i].buffer = buffer;
 		ai[i].ewp = ewp;
 		ai[i].counters = counters;
@@ -475,12 +475,12 @@ void encode_astc_image(const astc_codec_image * input_image,
 
 		for (i = 0; i < threadcount; i++)
 			pthread_join(threads[i], NULL);
-		delete[]threads;
+		delete[] threads;
 	}
 
-	delete[]ai;
-	delete[]counters;
-	delete[]threads_completed;
+	delete[] ai;
+	delete[] counters;
+	delete[] threads_completed;
 }
 
 void store_astc_file(const astc_codec_image * input_image,
