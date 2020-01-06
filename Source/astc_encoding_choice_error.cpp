@@ -91,20 +91,24 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
 
    The input data are: color data partitioning error-weight data
  */
-void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblock * pb, const partition_info * pi, const error_weight_block * ewb,
-									int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
-									encoding_choice_errors * eci)
+void compute_encoding_choice_errors(
+	const block_size_descriptor* bsd,
+	const imageblock * pb,
+	const partition_info * pi,
+	const error_weight_block * ewb,
+	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
+	encoding_choice_errors * eci)
 {
 	int i;
 
 	int partition_count = pi->partition_count;
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{
-			printf("%s : texels-per-block=%dx%dx%d, separate_component=%d, partition-count=%d\n", __func__, xdim, ydim, zdim, separate_component, partition_count);
+			printf("%s : texels-per-block=%dx%dx%d, separate_component=%d, partition-count=%d\n", __func__, bsd->xdim, bsd->ydim, bsd->zdim, separate_component, partition_count);
 		}
 	#endif
 
@@ -118,7 +122,7 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 	float4 color_scalefactors[4];
 	float4 inverse_color_scalefactors[4];
 
-	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pi, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
 
 	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb, directions_rg, directions_rb, directions_gb);
 
@@ -195,13 +199,13 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 
 	for (i = 0; i < partition_count; i++)
 	{
-		uncorr_rgb_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_uncorr_rgb_lines[i]));
+		uncorr_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_uncorr_rgb_lines[i]));
 
-		samechroma_rgb_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_samechroma_rgb_lines[i]));
+		samechroma_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_samechroma_rgb_lines[i]));
 
-		rgb_luma_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_rgb_luma_lines[i]));
+		rgb_luma_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_rgb_luma_lines[i]));
 
-		luminance_rgb_error[i] = compute_error_squared_rgb_single_partition(i, xdim, ydim, zdim, pi, pb, ewb, &(proc_luminance_lines[i]));
+		luminance_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_luminance_lines[i]));
 
 		#ifdef DEBUG_PRINT_DIAGNOSTICS
 			if (print_diagnostics)
@@ -241,13 +245,13 @@ void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblo
 	if (separate_component == -1)
 	{
 		endpoints_and_weights ei;
-		compute_endpoints_and_ideal_weights_1_plane(xdim, ydim, zdim, pi, pb, ewb, &ei);
+		compute_endpoints_and_ideal_weights_1_plane(bsd, pi, pb, ewb, &ei);
 		ep = ei.ep;
 	}
 	else
 	{
 		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2_planes(xdim, ydim, zdim, pi, pb, ewb, separate_component, &ei1, &ei2);
+		compute_endpoints_and_ideal_weights_2_planes(bsd, pi, pb, ewb, separate_component, &ei1, &ei2);
 
 		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
 	}

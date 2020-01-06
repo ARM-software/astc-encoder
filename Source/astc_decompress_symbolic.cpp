@@ -269,10 +269,14 @@ void decompress_symbolic_block(
 	update_imageblock_flags(blk, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
-float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb)
-{
+float compute_imageblock_difference(
+	const block_size_descriptor* bsd,
+	const imageblock * p1,
+	const imageblock * p2,
+	const error_weight_block * ewb
+) {
 	int i;
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 	float summa = 0.0f;
 	const float *f1 = p1->work_data;
 	const float *f2 = p2->work_data;

@@ -687,16 +687,22 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 			modified quantization level to use
 		(when all format specifiers are equal)
 */
-void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim,
-													  const partition_info * pt, const imageblock * blk, const error_weight_block * ewb,
-													  const endpoints * ep,
-													  int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
-													  // bitcounts and errors computed for the various quantization methods
-													  const int *qwt_bitcounts, const float *qwt_errors,
-													  // output data
-													  int partition_format_specifiers[4][4], int quantized_weight[4],
-													  int quantization_level[4], int quantization_level_mod[4])
-{
+void determine_optimal_set_of_endpoint_formats_to_use(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	const endpoints * ep,
+	int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
+	 // bitcounts and errors computed for the various quantization methods
+	const int *qwt_bitcounts,
+	const float *qwt_errors,
+	// output data
+	int partition_format_specifiers[4][4],
+	int quantized_weight[4],
+	int quantization_level[4],
+	int quantization_level_mod[4]
+) {
 	int i, j;
 	int partition_count = pt->partition_count;
 
@@ -707,12 +713,12 @@ void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zd
 	// encoding choices (such as using luminance instead of RGB, discarding Alpha,
 	// using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[4];
-	compute_encoding_choice_errors(xdim, ydim, zdim, blk, pt, ewb, separate_component, eci);
+	compute_encoding_choice_errors(bsd, blk, pt, ewb, separate_component, eci);
 
 	// for each partition, compute the error weights to apply for that partition.
 	float4 error_weightings[4];
 	float4 dummied_color_scalefactors[4];	// only used to receive data
-	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, dummied_color_scalefactors);
+	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, dummied_color_scalefactors);
 
 	float best_error[4][21][4];
 	int format_of_choice[4][21][4];

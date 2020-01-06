@@ -444,12 +444,22 @@ float compute_error_squared_ra(const partition_info * pt,	// the partition that 
 
 // functions to compute error value across a tile for a particular line function
 // for a single partition.
-float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim, int ydim, int zdim, const partition_info * pt,	// the partition that we use when computing the squared-error.
-												 const imageblock * blk, const error_weight_block * ewb, const processed_line3 * lin	// the line for the partition.
-	);
+float compute_error_squared_rgb_single_partition(
+	int partition_to_test,
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	const processed_line3 * lin	// the line for the partition.
+);
 
 // for each partition, compute its color weightings.
-void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, const error_weight_block * ewb, const partition_info * pi, float4 error_weightings[4], float4 color_scalefactors[4]);
+void compute_partition_error_color_weightings(
+	const block_size_descriptor* bsd,
+	const error_weight_block * ewb,
+	const partition_info * pi,
+	float4 error_weightings[4],
+	float4 color_scalefactors[4]);
 
 // function to find the best partitioning for a given block.
 
@@ -579,32 +589,44 @@ int get_output_filename_enforced_bitness(const char *filename);
 void compute_error_metrics(
 	int compute_hdr_metrics,
 	int input_components,
-	const astc_codec_image * img1,
-	const astc_codec_image * img2,
+	const astc_codec_image* img1,
+	const astc_codec_image* img2,
 	int fstop_lo,
 	int fstop_hi,
 	int show_psnr);
 
 // fetch an image-block from the input file
-void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to initialize with image data
-					  // block dimensions
-					  int xdim, int ydim, int zdim,
-					  // position in picture to fetch block from
-					  int xpos, int ypos, int zpos, swizzlepattern swz);
+void fetch_imageblock(
+	const astc_codec_image* img,
+	imageblock* pb,	// picture-block to initialize with image data
+	const block_size_descriptor* bsd,
+	// position in picture to fetch block from
+	int xpos,
+	int ypos,
+	int zpos,
+	swizzlepattern swz);
 
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
-void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to initialize with image data
-					  // block dimensions
-					  int xdim, int ydim, int zdim,
-					  // position in picture to write block to.
-					  int xpos, int ypos, int zpos, swizzlepattern swz);
+void write_imageblock(
+	astc_codec_image* img,
+	const imageblock* pb,	// picture-block to initialize with image data
+	const block_size_descriptor* bsd,
+	// position in picture to write block to.
+	int xpos,
+	int ypos,
+	int zpos,
+	swizzlepattern swz);
 
 // helper function to check whether a given picture-block has alpha that is not
 // just uniformly 1.
 int imageblock_uses_alpha(const imageblock * pb);
 
-float compute_imageblock_difference(int xdim, int ydim, int zdim, const imageblock * p1, const imageblock * p2, const error_weight_block * ewb);
+float compute_imageblock_difference(
+	const block_size_descriptor* bsd,
+	const imageblock * p1,
+	const imageblock * p2,
+	const error_weight_block * ewb);
 
 // ***********************************************************
 // functions pertaining to computing texel weights for a block
@@ -623,12 +645,21 @@ struct endpoints_and_weights
 	float weight_error_scale[MAX_TEXELS_PER_BLOCK];
 };
 
-void compute_endpoints_and_ideal_weights_1_plane(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, endpoints_and_weights * ei);
+void compute_endpoints_and_ideal_weights_1_plane(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei);
 
-void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, int separate_component,
-												  endpoints_and_weights * ei1,	// for the three components of the primary plane of weights
-												  endpoints_and_weights * ei2	// for the remaining component.
-	);
+void compute_endpoints_and_ideal_weights_2_planes(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	int separate_component,
+	endpoints_and_weights * ei1, // primary plane weights
+	endpoints_and_weights * ei2); // secondary plane weights
 
 void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * eai, const decimation_table * it, float *weight_set, float *weights);
 
@@ -690,46 +721,70 @@ struct compress_symbolic_block_buffers
 	compress_fixed_partition_buffers *planes2;
 };
 
-void compute_encoding_choice_errors(int xdim, int ydim, int zdim, const imageblock * pb, const partition_info * pi, const error_weight_block * ewb,
-									int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
-									encoding_choice_errors * eci);
+void compute_encoding_choice_errors(
+	const block_size_descriptor* bsd,
+	const imageblock * pb,
+	const partition_info * pi,
+	const error_weight_block * ewb,
+	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
+	encoding_choice_errors * eci);
 
-void determine_optimal_set_of_endpoint_formats_to_use(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, const endpoints * ep,
-													  int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
-													  // bitcounts and errors computed for the various quantization methods
-													  const int *qwt_bitcounts, const float *qwt_errors,
-													  // output data
-													  int partition_format_specifiers[4][4], int quantized_weight[4], int quantization_level[4], int quantization_level_mod[4]);
+void determine_optimal_set_of_endpoint_formats_to_use(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	const endpoints * ep,
+	int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
+	 // bitcounts and errors computed for the various quantization methods
+	const int *qwt_bitcounts,
+	const float *qwt_errors,
+	// output data
+	int partition_format_specifiers[4][4],
+	int quantized_weight[4],
+	int quantization_level[4],
+	int quantization_level_mod[4]);
 
-void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
-							float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
-							float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
-							const uint8_t * weight_set,	// the current set of weight values
-							const uint8_t * plane2_weight_set,	// NULL if plane 2 is not actually used.
-							int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
-							const partition_info * pi, const decimation_table * it, const imageblock * pb,	// picture-block containing the actual data.
-							const error_weight_block * ewb);
+void recompute_ideal_colors(
+	const block_size_descriptor* bsd,
+	int weight_quantization_mode,
+	endpoints * ep,	// contains the endpoints we wish to update
+	float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
+	const uint8_t * weight_set8,	// the current set of weight values
+	const uint8_t * plane2_weight_set8,	// NULL if plane 2 is not actually used.
+	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	const partition_info * pi,
+	const decimation_table * it,
+	const imageblock * pb,	// picture-block containing the actual data.
+	const error_weight_block * ewb);
 
-void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weighting_params * ewp);
-
-// Function to set error weights for each color component for each texel in a block.
-// Returns the sum of all the error values set.
-float prepare_error_weight_block(const astc_codec_image * input_image,
-								 // dimensions of error weight block.
-								 int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, error_weight_block * ewb, error_weight_block_orig * ewbo);
+void expand_block_artifact_suppression(
+	int xdim,
+	int ydim,
+	int zdim,
+	error_weighting_params * ewp);
 
 // functions pertaining to weight alignment
 void prepare_angular_tables(void);
 
-void compute_angular_endpoints_1plane(float mode_cutoff,
-									  const block_size_descriptor * bsd,
-									  const float *decimated_quantized_weights, const float *decimated_weights, float low_value[MAX_WEIGHT_MODES], float high_value[MAX_WEIGHT_MODES]);
+void compute_angular_endpoints_1plane(
+	float mode_cutoff,
+	const block_size_descriptor * bsd,
+	const float *decimated_quantized_weights,
+	const float *decimated_weights,
+	float low_value[MAX_WEIGHT_MODES],
+	float high_value[MAX_WEIGHT_MODES]);
 
-void compute_angular_endpoints_2planes(float mode_cutoff,
-									   const block_size_descriptor * bsd,
-									   const float *decimated_quantized_weights,
-									   const float *decimated_weights,
-									   float low_value1[MAX_WEIGHT_MODES], float high_value1[MAX_WEIGHT_MODES], float low_value2[MAX_WEIGHT_MODES], float high_value2[MAX_WEIGHT_MODES]);
+void compute_angular_endpoints_2planes(
+	float mode_cutoff,
+	const block_size_descriptor * bsd,
+	const float *decimated_quantized_weights,
+	const float *decimated_weights,
+	float low_value1[MAX_WEIGHT_MODES],
+	float high_value1[MAX_WEIGHT_MODES],
+	float low_value2[MAX_WEIGHT_MODES],
+	float high_value2[MAX_WEIGHT_MODES]);
 
 /* *********************************** high-level encode and decode functions ************************************ */
 

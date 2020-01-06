@@ -52,12 +52,10 @@ int imageblock_uses_alpha(const imageblock * pb)
 	return pb->alpha_max != pb->alpha_min;
 }
 
-static void compute_alpha_minmax(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, float *alpha_min, float *alpha_max)
+static void compute_alpha_minmax(int texels_per_block, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, float *alpha_min, float *alpha_max)
 {
 	int i;
 	int partition_count = pt->partition_count;
-
-	int texels_per_block = xdim * ydim * zdim;
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -88,15 +86,20 @@ static void compute_alpha_minmax(int xdim, int ydim, int zdim, const partition_i
 	}
 }
 
-static void compute_rgb_minmax(int xdim,
-							   int ydim,
-							   int zdim,
-							   const partition_info * pt,
-							   const imageblock * blk, const error_weight_block * ewb, float *red_min, float *red_max, float *green_min, float *green_max, float *blue_min, float *blue_max)
+static void compute_rgb_minmax(
+	int texels_per_block,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	float *red_min,
+	float *red_max,
+	float *green_min,
+	float *green_max,
+	float *blue_min,
+	float *blue_max)
 {
 	int i;
 	int partition_count = pt->partition_count;
-	int texels_per_block = xdim * ydim * zdim;
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -151,10 +154,15 @@ static void compute_rgb_minmax(int xdim,
 	}
 }
 
-void compute_partition_error_color_weightings(int xdim, int ydim, int zdim, const error_weight_block * ewb, const partition_info * pi, float4 error_weightings[4], float4 color_scalefactors[4])
-{
+void compute_partition_error_color_weightings(
+	const block_size_descriptor* bsd,
+	const error_weight_block * ewb,
+	const partition_info * pi,
+	float4 error_weightings[4],
+	float4 color_scalefactors[4]
+) {
 	int i;
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 	int pcnt = pi->partition_count;
 
 	for (i = 0; i < pcnt; i++)
@@ -296,7 +304,7 @@ void find_best_partitionings(
 			float4 error_weightings[4];
 			float4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
-			compute_partition_error_color_weightings(bsd->xdim, bsd->ydim, bsd->zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
+			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (j = 0; j < partition_count; j++)
 			{
@@ -443,9 +451,9 @@ void find_best_partitionings(
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 			float alpha_min[4], alpha_max[4];
-			compute_alpha_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, alpha_min, alpha_max);
+			compute_alpha_minmax(bsd->texel_count, ptab + partition, pb, ewb, alpha_min, alpha_max);
 
-			compute_rgb_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			compute_rgb_minmax(bsd->texel_count, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
@@ -566,7 +574,7 @@ void find_best_partitionings(
 			float4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
 
-			compute_partition_error_color_weightings(bsd->xdim, bsd->ydim, bsd->zdim, ewb, ptab + partition, error_weightings, color_scalefactors);
+			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (j = 0; j < partition_count; j++)
 			{
@@ -693,7 +701,7 @@ void find_best_partitionings(
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 
-			compute_rgb_minmax(bsd->xdim, bsd->ydim, bsd->zdim, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			compute_rgb_minmax(bsd->texel_count, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.

@@ -261,7 +261,7 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 				symbolic_compressed_block scb;
 				physical_to_symbolic(&bsd, pcb, &scb);
 				decompress_symbolic_block(decode_mode, &bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-				write_imageblock(img, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_decode);
+				write_imageblock(img, &pb, &bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 			}
 
 	free(buffer);
@@ -351,13 +351,13 @@ void *encode_astc_image_threadfunc(void *vblk)
 					{
 						print_diagnostics = (diagnostics_tile == pctr) ? 1 : 0;
 				#endif
-						fetch_imageblock(input_image, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_encode);
+						fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 						symbolic_compressed_block scb;
 						compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
 						if (pack_and_unpack)
 						{
 							decompress_symbolic_block(decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-							write_imageblock(output_image, &pb, xdim, ydim, zdim, x * xdim, y * ydim, z * zdim, swz_decode);
+							write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 						}
 						else
 						{

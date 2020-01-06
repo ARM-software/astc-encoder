@@ -495,11 +495,15 @@ void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount)
 }
 
 // fetch an imageblock from the input file.
-void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-block to initialize with image data
-					  // block dimensions
-					  int xdim, int ydim, int zdim,
-					  // position in texture.
-					  int xpos, int ypos, int zpos, swizzlepattern swz)
+void fetch_imageblock(
+	const astc_codec_image * img,
+	imageblock * pb,	// picture-block to initialize with image data
+	const block_size_descriptor* bsd,
+	// position in texture.
+	int xpos,
+	int ypos,
+	int zpos,
+	swizzlepattern swz)
 {
 	float *fptr = pb->orig_data;
 	int xsize = img->xsize + 2 * img->padding;
@@ -523,11 +527,11 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 
 	if (img->data8)
 	{
-		for (z = 0; z < zdim; z++)
+		for (z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < ydim; y++)
+			for (y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < xdim; x++)
+				for (x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -568,11 +572,11 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 	}
 	else if (img->data16)
 	{
-		for (z = 0; z < zdim; z++)
+		for (z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < ydim; y++)
+			for (y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < xdim; x++)
+				for (x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -623,7 +627,7 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 	}
 
 	// perform sRGB-to-linear transform on input data, if requested.
-	int pixelcount = xdim * ydim * zdim;
+	int pixelcount = bsd->texel_count;
 
 	if (perform_srgb_transform)
 	{
@@ -707,15 +711,19 @@ void fetch_imageblock(const astc_codec_image * img, imageblock * pb,	// picture-
 	}
 
 	imageblock_initialize_work_from_orig(pb, pixelcount);
-	update_imageblock_flags(pb, xdim, ydim, zdim);
+	update_imageblock_flags(pb, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
-void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
-					  // block dimensions
-					  int xdim, int ydim, int zdim,
-					  // position to write the block to
-					  int xpos, int ypos, int zpos, swizzlepattern swz)
-{
+void write_imageblock(
+	astc_codec_image * img,
+	const imageblock * pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
+	const block_size_descriptor* bsd,
+	// position to write the block to
+	int xpos,
+	int ypos,
+	int zpos,
+	swizzlepattern swz
+) {
 	const float *fptr = pb->orig_data;
 	const uint8_t *nptr = pb->nan_texel;
 	int xsize = img->xsize;
@@ -729,11 +737,11 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 
 	if (img->data8)
 	{
-		for (z = 0; z < zdim; z++)
+		for (z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < ydim; y++)
+			for (y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < xdim; x++)
+				for (x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -826,11 +834,11 @@ void write_imageblock(astc_codec_image * img, const imageblock * pb,	// picture-
 	}
 	else if (img->data16)
 	{
-		for (z = 0; z < zdim; z++)
+		for (z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < ydim; y++)
+			for (y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < xdim; x++)
+				for (x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;

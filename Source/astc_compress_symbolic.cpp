@@ -247,14 +247,17 @@ static int realign_weights(
 /*
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
-static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode decode_mode,
-															float mode_cutoff,
-															int max_refinement_iters,
-															const block_size_descriptor *bsd,
-															int partition_count, int partition_index,
-															const imageblock * blk, const error_weight_block * ewb, symbolic_compressed_block * scb,
-															compress_fixed_partition_buffers * tmpbuf)
-{
+static void compress_symbolic_block_fixed_partition_1_plane(
+	astc_decode_mode decode_mode,
+	float mode_cutoff,
+	int max_refinement_iters,
+	const block_size_descriptor *bsd,
+	int partition_count, int partition_index,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	symbolic_compressed_block * scb,
+	compress_fixed_partition_buffers * tmpbuf
+) {
 	int i, j, k;
 
 	static const int free_bits_for_partition_count[5] = { 0, 115 - 4, 111 - 4 - PARTITION_BITS, 108 - 4 - PARTITION_BITS, 105 - 4 - PARTITION_BITS };
@@ -266,7 +269,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 	// there is no quantization or decimation going on.
 	endpoints_and_weights *ei = tmpbuf->ei1;
 	endpoints_and_weights *eix = tmpbuf->eix1;
-	compute_endpoints_and_ideal_weights_1_plane(bsd->xdim, bsd->ydim, bsd->zdim, pi, blk, ewb, ei);
+	compute_endpoints_and_ideal_weights_1_plane(bsd, pi, blk, ewb, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
@@ -382,7 +385,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 	int quantized_weight[4];
 	int color_quantization_level[4];
 	int color_quantization_level_mod[4];
-	determine_optimal_set_of_endpoint_formats_to_use(bsd->xdim, bsd->ydim, bsd->zdim, pi, blk, ewb, &(ei->ep), -1,	// used to flag that we are in single-weight mode
+	determine_optimal_set_of_endpoint_formats_to_use(bsd, pi, blk, ewb, &(ei->ep), -1,	// used to flag that we are in single-weight mode
 													 qwt_bitcounts, qwt_errors, partition_format_specifiers, quantized_weight, color_quantization_level, color_quantization_level_mod);
 
 	// then iterate over the 4 believed-to-be-best modes to find out which one is
@@ -423,7 +426,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 		int l;
 		for (l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(bsd->xdim, bsd->ydim, bsd->zdim, weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, NULL, -1, pi, it, blk, ewb);
+			recompute_ideal_colors(bsd, weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, NULL, -1, pi, it, blk, ewb);
 
 			// quantize the chosen color
 
@@ -495,15 +498,18 @@ static void compress_symbolic_block_fixed_partition_1_plane(astc_decode_mode dec
 	}
 }
 
-static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode decode_mode,
-															 float mode_cutoff,
-															 int max_refinement_iters,
-															 const block_size_descriptor* bsd,
-															 int partition_count, int partition_index,
-															 int separate_component, const imageblock * blk, const error_weight_block * ewb,
-															 symbolic_compressed_block * scb,
-															 compress_fixed_partition_buffers * tmpbuf)
-{
+static void compress_symbolic_block_fixed_partition_2_planes(
+	astc_decode_mode decode_mode,
+	float mode_cutoff,
+	int max_refinement_iters,
+	const block_size_descriptor* bsd,
+	int partition_count, int partition_index,
+	int separate_component,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	symbolic_compressed_block * scb,
+	compress_fixed_partition_buffers * tmpbuf
+) {
 	int i, j, k;
 
 	static const int free_bits_for_partition_count[5] =
@@ -517,7 +523,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 	endpoints_and_weights *ei2 = tmpbuf->ei2;
 	endpoints_and_weights *eix1 = tmpbuf->eix1;
 	endpoints_and_weights *eix2 = tmpbuf->eix2;
-	compute_endpoints_and_ideal_weights_2_planes(bsd->xdim, bsd->ydim, bsd->zdim, pi, blk, ewb, separate_component, ei1, ei2);
+	compute_endpoints_and_ideal_weights_2_planes(bsd, pi, blk, ewb, separate_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
@@ -685,10 +691,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 	endpoints epm;
 	merge_endpoints(&(ei1->ep), &(ei2->ep), separate_component, &epm);
 
-	determine_optimal_set_of_endpoint_formats_to_use(bsd->xdim, bsd->ydim, bsd->zdim,
-													 pi,
-													 blk,
-													 ewb,
+	determine_optimal_set_of_endpoint_formats_to_use(bsd, pi, blk, ewb,
 													 &epm, separate_component, qwt_bitcounts, qwt_errors, partition_format_specifiers, quantized_weight, color_quantization_level, color_quantization_level_mod);
 
 	for (i = 0; i < 4; i++)
@@ -722,7 +725,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 		int l;
 		for (l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(bsd->xdim, bsd->ydim, bsd->zdim, weight_quantization_mode, &epm, rgbs_colors, rgbo_colors, u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
+			recompute_ideal_colors(bsd, weight_quantization_mode, &epm, rgbs_colors, rgbo_colors, u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
 
 			// store the colors for the block
 			for (j = 0; j < partition_count; j++)
@@ -790,8 +793,12 @@ static void compress_symbolic_block_fixed_partition_2_planes(astc_decode_mode de
 	}
 }
 
-void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weighting_params * ewp)
-{
+void expand_block_artifact_suppression(
+	int xdim,
+	int ydim,
+	int zdim,
+	error_weighting_params * ewp
+) {
 	int x, y, z;
 	float centerpos_x = (xdim - 1) * 0.5f;
 	float centerpos_y = (ydim - 1) * 0.5f;
@@ -819,9 +826,14 @@ void expand_block_artifact_suppression(int xdim, int ydim, int zdim, error_weigh
 
 // Function to set error weights for each color component for each texel in a block.
 // Returns the sum of all the error values set.
-float prepare_error_weight_block(const astc_codec_image * input_image,
-								 int xdim, int ydim, int zdim, const error_weighting_params * ewp, const imageblock * blk, error_weight_block * ewb, error_weight_block_orig * ewbo)
-{
+static float prepare_error_weight_block(
+	const astc_codec_image * input_image,
+	const block_size_descriptor* bsd,
+	const error_weighting_params * ewp,
+	const imageblock * blk,
+	error_weight_block * ewb,
+	error_weight_block_orig * ewbo
+) {
 	int idx = 0;
 
 	int any_mean_stdev_weight =
@@ -836,11 +848,11 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 
 	ewb->contains_zeroweight_texels = 0;
 
-	for (int z = 0; z < zdim; z++)
+	for (int z = 0; z < bsd->zdim; z++)
 	{
-		for (int y = 0; y < ydim; y++)
+		for (int y = 0; y < bsd->ydim; y++)
 		{
-			for (int x = 0; x < xdim; x++)
+			for (int x = 0; x < bsd->xdim; x++)
 			{
 				int xpos = x + blk->xpos;
 				int ypos = y + blk->ypos;
@@ -994,7 +1006,7 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
 	}
 
 	float4 error_weight_sum = float4(0, 0, 0, 0);
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		error_weight_sum = error_weight_sum + ewb->error_weights[i];
@@ -1026,11 +1038,9 @@ float prepare_error_weight_block(const astc_codec_image * input_image,
  */
 
 // compute averages and covariance matrices for 4 components
-static void compute_covariance_matrix(int xdim, int ydim, int zdim, const imageblock * blk, const error_weight_block * ewb, mat4 * cov_matrix)
+static void compute_covariance_matrix(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, mat4 * cov_matrix)
 {
 	int i;
-
-	int texels_per_block = xdim * ydim * zdim;
 
 	float r_sum = 0.0f;
 	float g_sum = 0.0f;
@@ -1087,13 +1097,13 @@ static void compute_covariance_matrix(int xdim, int ydim, int zdim, const imageb
 	cov_matrix->v[3] = float4(ra_sum - rs * as * rpt, ga_sum - gs * as * rpt, ba_sum - bs * as * rpt, aa_sum - as * as * rpt);
 }
 
-void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * blk, const error_weight_block * ewb, int *is_normal_map, float *lowest_correl)
+static void prepare_block_statistics(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, int *is_normal_map, float *lowest_correl)
 {
 	int i;
 
 	mat4 cov_matrix;
 
-	compute_covariance_matrix(xdim, ydim, zdim, blk, ewb, &cov_matrix);
+	compute_covariance_matrix(texels_per_block, blk, ewb, &cov_matrix);
 
 	// use the covariance matrix to compute
 	// correllation coefficients
@@ -1135,9 +1145,6 @@ void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * b
 	// of less than 0.2f represents a normal map.
 
 	float nf_sum = 0.0f;
-
-	int texels_per_block = xdim * ydim * zdim;
-
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float3 val = float3(blk->orig_data[4 * i],
@@ -1150,136 +1157,6 @@ void prepare_block_statistics(int xdim, int ydim, int zdim, const imageblock * b
 	}
 	float nf_avg = nf_sum / texels_per_block;
 	*is_normal_map = nf_avg < 0.2f;
-}
-
-void compress_constant_color_block(int xdim, int ydim, int zdim, const imageblock * blk, const error_weight_block * ewb, symbolic_compressed_block * scb)
-{
-	int texel_count = xdim * ydim * zdim;
-	int i;
-
-	float4 color_sum = float4(0, 0, 0, 0);
-	float4 color_weight_sum = float4(0, 0, 0, 0);
-
-	const float *clp = blk->work_data;
-	for (i = 0; i < texel_count; i++)
-	{
-		float4 weights = ewb->error_weights[i];
-		float4 color_data = float4(clp[4 * i], clp[4 * i + 1], clp[4 * i + 2], clp[4 * i + 3]);
-		color_sum = color_sum + (color_data * weights);
-		color_weight_sum = color_weight_sum + weights;
-	}
-
-	float4 avg_color = float4(color_sum.x / color_weight_sum.x,
-	                          color_sum.y / color_weight_sum.y,
-	                          color_sum.z / color_weight_sum.z,
-	                          color_sum.w / color_weight_sum.w);
-
-	int use_fp16 = blk->rgb_lns[0];
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("Averaged color: %f %f %f %f\n", avg_color.x, avg_color.y, avg_color.z, avg_color.w);
-		}
-	#endif
-
-	// convert the color
-	if (blk->rgb_lns[0])
-	{
-		int avg_red = static_cast < int >(floor(avg_color.x + 0.5f));
-		int avg_green = static_cast < int >(floor(avg_color.y + 0.5f));
-		int avg_blue = static_cast < int >(floor(avg_color.z + 0.5f));
-
-		if (avg_red < 0)
-			avg_red = 0;
-		else if (avg_red > 65535)
-			avg_red = 65535;
-
-		if (avg_green < 0)
-			avg_green = 0;
-		else if (avg_green > 65535)
-			avg_green = 65535;
-
-		if (avg_blue < 0)
-			avg_blue = 0;
-		else if (avg_blue > 65535)
-			avg_blue = 65535;
-
-		avg_color.x = sf16_to_float(lns_to_sf16(avg_red));
-		avg_color.y = sf16_to_float(lns_to_sf16(avg_green));
-		avg_color.z = sf16_to_float(lns_to_sf16(avg_blue));
-	}
-	else
-	{
-		avg_color.x *= (1.0f / 65535.0f);
-		avg_color.y *= (1.0f / 65535.0f);
-		avg_color.z *= (1.0f / 65535.0f);
-	}
-
-	if (blk->alpha_lns[0])
-	{
-		int avg_alpha = static_cast < int >(floor(avg_color.w + 0.5f));
-
-		if (avg_alpha < 0)
-			avg_alpha = 0;
-		else if (avg_alpha > 65535)
-			avg_alpha = 65535;
-
-		avg_color.w = sf16_to_float(lns_to_sf16(avg_alpha));
-	}
-	else
-	{
-		avg_color.w *= (1.0f / 65535.0f);
-	}
-
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	if (print_diagnostics)
-	{
-		printf("Averaged color: %f %f %f %f   (%d)\n", avg_color.x, avg_color.y, avg_color.z, avg_color.w, use_fp16);
-
-	}
-#endif
-
-	if (use_fp16)
-	{
-		scb->error_block = 0;
-		scb->block_mode = -1;
-		scb->partition_count = 0;
-		scb->constant_color[0] = float_to_sf16(avg_color.x, SF_NEARESTEVEN);
-		scb->constant_color[1] = float_to_sf16(avg_color.y, SF_NEARESTEVEN);
-		scb->constant_color[2] = float_to_sf16(avg_color.z, SF_NEARESTEVEN);
-		scb->constant_color[3] = float_to_sf16(avg_color.w, SF_NEARESTEVEN);
-	}
-	else
-	{
-		scb->error_block = 0;
-		scb->block_mode = -2;
-		scb->partition_count = 0;
-		float red = avg_color.x;
-		float green = avg_color.y;
-		float blue = avg_color.z;
-		float alpha = avg_color.w;
-		if (red < 0)
-			red = 0;
-		else if (red > 1)
-			red = 1;
-		if (green < 0)
-			green = 0;
-		else if (green > 1)
-			green = 1;
-		if (blue < 0)
-			blue = 0;
-		else if (blue > 1)
-			blue = 1;
-		if (alpha < 0)
-			alpha = 0;
-		else if (alpha > 1)
-			alpha = 1;
-		scb->constant_color[0] = static_cast < int >(floor(red * 65535.0f + 0.5f));
-		scb->constant_color[1] = static_cast < int >(floor(green * 65535.0f + 0.5f));
-		scb->constant_color[2] = static_cast < int >(floor(blue * 65535.0f + 0.5f));
-		scb->constant_color[3] = static_cast < int >(floor(alpha * 65535.0f + 0.5f));
-	}
 }
 
 int block_mode_histogram[2048];
@@ -1389,9 +1266,7 @@ float compress_symbolic_block(
 	error_weight_block *ewb = tmpbuf->ewb;
 	error_weight_block_orig *ewbo = tmpbuf->ewbo;
 
-	float error_weight_sum = prepare_error_weight_block(input_image,
-														bsd->xdim, bsd->ydim, bsd->zdim,
-														ewp, blk, ewb, ewbo);
+	float error_weight_sum = prepare_error_weight_block(input_image, bsd, ewp, blk, ewb, ewbo);
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
@@ -1411,7 +1286,6 @@ float compress_symbolic_block(
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
 	float error_of_best_block = 1e20f;
-	// int modesel=0;
 
 	imageblock *temp = tmpbuf->temp;
 
@@ -1420,48 +1294,6 @@ float compress_symbolic_block(
 		best_errorvals_in_modes[i] = 1e30f;
 
 	int uses_alpha = imageblock_uses_alpha(blk);
-
-	// compression of average-color blocks disabled for the time being;
-	// they produce extremely severe block artifacts.
-#if 0
-	// first, compress an averaged-color block
-	compress_constant_color_block(xdim, ydim, zdim, blk, ewb, scb);
-
-	decompress_symbolic_block(decode_mode, xdim, ydim, zdim, xpos, ypos, zpos, scb, temp);
-
-	float avgblock_errorval = compute_imageblock_difference(xdim, ydim, zdim,
-															blk, temp, ewb) * 4.0f;	// bias somewhat against the average-color block.
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("\n-----------------------------------\n");
-			printf("Average-color block test completed\n");
-			printf("Resulting error value: %g\n", avgblock_errorval);
-		}
-	#endif
-
-
-	if (avgblock_errorval < error_of_best_block)
-	{
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-				printf("Accepted as better than previous-best-error, which was %g\n", error_of_best_block);
-		#endif
-
-		error_of_best_block = avgblock_errorval;
-		// *scb = tempblocks[j];
-		modesel = 0;
-	}
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("-----------------------------------\n");
-		}
-	#endif
-#endif
-
 
 	float mode_cutoff = ewp->block_mode_cutoff;
 
@@ -1473,11 +1305,6 @@ float compress_symbolic_block(
 	float errorval_mult[2] = { 2.5, 1 };
 	modecutoffs[0] = 0;
 	modecutoffs[1] = mode_cutoff;
-
-	#if 0
-		if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
-			goto END_OF_TESTS;
-	#endif
 
 	float best_errorval_in_mode;
 	for (i = 0; i < 2; i++)
@@ -1492,8 +1319,7 @@ float compress_symbolic_block(
 			if (tempblocks[j].error_block)
 				continue;
 			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-			float errorval = compute_imageblock_difference(bsd->xdim, bsd->ydim, bsd->zdim,
-														   blk, temp, ewb) * errorval_mult[i];
+			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb) * errorval_mult[i];
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
@@ -1533,7 +1359,7 @@ float compress_symbolic_block(
 
 	int is_normal_map;
 	float lowest_correl;
-	prepare_block_statistics(bsd->xdim, bsd->ydim, bsd->zdim, blk, ewb, &is_normal_map, &lowest_correl);
+	prepare_block_statistics(bsd->texel_count, blk, ewb, &is_normal_map, &lowest_correl);
 
 	if (is_normal_map && lowest_correl < 0.99f)
 		lowest_correl = 0.99f;
@@ -1563,8 +1389,7 @@ float compress_symbolic_block(
 			if (tempblocks[j].error_block)
 				continue;
 			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-			float errorval = compute_imageblock_difference(bsd->xdim, bsd->ydim, bsd->zdim,
-														   blk, temp, ewb);
+			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
@@ -1625,8 +1450,7 @@ float compress_symbolic_block(
 				if (tempblocks[j].error_block)
 					continue;
 				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-				float errorval = compute_imageblock_difference(bsd->xdim, bsd->ydim, bsd->zdim,
-															   blk, temp, ewb);
+				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
 					if (print_diagnostics)
@@ -1692,8 +1516,7 @@ float compress_symbolic_block(
 					continue;
 				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 
-				float errorval = compute_imageblock_difference(bsd->xdim, bsd->ydim, bsd->zdim,
-															   blk, temp, ewb);
+				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
 					if (print_diagnostics)

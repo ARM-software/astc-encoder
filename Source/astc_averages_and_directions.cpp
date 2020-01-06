@@ -577,13 +577,17 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 
 // function to compute the error across a tile when using a particular line for
 // a particular partition.
-float compute_error_squared_rgb_single_partition(int partition_to_test, int xdim, int ydim, int zdim, const partition_info * pt,	// the partition that we use when computing the squared-error.
-												 const imageblock * blk, const error_weight_block * ewb, const processed_line3 * lin	// the line for the partition.
-	)
-{
+float compute_error_squared_rgb_single_partition(
+	int partition_to_test,
+	const block_size_descriptor* bsd,
+	const partition_info * pt,	// the partition that we use when computing the squared-error.
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	const processed_line3 * lin	// the line for the partition.
+) {
 	int i;
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	float errorsum = 0.0f;
 

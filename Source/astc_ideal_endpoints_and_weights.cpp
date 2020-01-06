@@ -25,11 +25,14 @@
 	#include <fenv.h>
 #endif
 
-static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, int zdim,
-															const partition_info * pt, const imageblock * blk,
-															const error_weight_block * ewb, endpoints_and_weights * ei,
-															int component)
-{
+static void compute_endpoints_and_ideal_weights_1_component(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei,
+	int component
+) {
 	int i;
 
 	int partition_count = pt->partition_count;
@@ -39,7 +42,7 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 	float partition_error_scale[4];
 	float linelengths_rcp[4];
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	const float *error_weights;
 	switch (component)
@@ -159,10 +162,15 @@ static void compute_endpoints_and_ideal_weights_1_component(int xdim, int ydim, 
 	#endif
 }
 
-static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim, int zdim, const partition_info * pt,
-															 const imageblock * blk, const error_weight_block * ewb,
-															 endpoints_and_weights * ei, int component1, int component2)
-{
+static void compute_endpoints_and_ideal_weights_2_components(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei,
+	int component1,
+	int component2
+) {
 	int i;
 
 	int partition_count = pt->partition_count;
@@ -186,9 +194,9 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
-	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -402,9 +410,15 @@ static void compute_endpoints_and_ideal_weights_2_components(int xdim, int ydim,
 	#endif
 }
 
-static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim, int zdim, const partition_info * pt,
-															 const imageblock * blk, const error_weight_block * ewb,
-															 endpoints_and_weights * ei, int component1, int component2, int component3)
+static void compute_endpoints_and_ideal_weights_3_components(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei,
+	int component1,
+	int component2,
+	int component3)
 {
 	int i;
 
@@ -416,7 +430,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 
 	float3 scalefactors[4];
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	const float *error_weights;
 	if (component1 == 1 && component2 == 2 && component3 == 3)
@@ -432,7 +446,7 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
-	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -684,8 +698,13 @@ static void compute_endpoints_and_ideal_weights_3_components(int xdim, int ydim,
 	#endif
 }
 
-static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, endpoints_and_weights * ei)
-{
+static void compute_endpoints_and_ideal_weights_rgba(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei
+) {
 	int i;
 
 	const float *error_weights = ewb->texel_weight;
@@ -714,9 +733,9 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 	float4 color_scalefactors[4];
 	float4 scalefactors[4];
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
-	compute_partition_error_color_weightings(xdim, ydim, zdim, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
 	for (i = 0; i < partition_count; i++)
 		scalefactors[i] = normalize(color_scalefactors[i]) * 2.0f;
@@ -865,8 +884,13 @@ static void compute_endpoints_and_ideal_weights_rgba(int xdim, int ydim, int zdi
 
 	These data allow us to assess the error introduced by removing and quantizing the per-pixel weights.
  */
-void compute_endpoints_and_ideal_weights_1_plane(int xdim, int ydim, int zdim, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, endpoints_and_weights * ei)
-{
+void compute_endpoints_and_ideal_weights_1_plane(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	endpoints_and_weights * ei
+) {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 			printf("%s: texels_per_block=%dx%dx%d\n\n", __func__, xdim, ydim, zdim);
@@ -875,17 +899,22 @@ void compute_endpoints_and_ideal_weights_1_plane(int xdim, int ydim, int zdim, c
 	int uses_alpha = imageblock_uses_alpha(blk);
 	if (uses_alpha)
 	{
-		compute_endpoints_and_ideal_weights_rgba(xdim, ydim, zdim, pt, blk, ewb, ei);
+		compute_endpoints_and_ideal_weights_rgba(bsd, pt, blk, ewb, ei);
 	}
 	else
 	{
-		compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei, 0, 1, 2);
+		compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei, 0, 1, 2);
 	}
 }
 
-void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, const partition_info * pt,
-												  const imageblock * blk, const error_weight_block * ewb, int separate_component,
-												  endpoints_and_weights * ei1, endpoints_and_weights * ei2)
+void compute_endpoints_and_ideal_weights_2_planes(
+	const block_size_descriptor* bsd,
+	const partition_info * pt,
+	const imageblock * blk,
+	const error_weight_block * ewb,
+	int separate_component,
+	endpoints_and_weights * ei1,
+	endpoints_and_weights * ei2)
 {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
@@ -897,26 +926,26 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
 	{
 	case 0:					// separate weights for red
 		if (uses_alpha == 1)
-			compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 1, 2, 3);
+			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 1, 2, 3);
 		else
-			compute_endpoints_and_ideal_weights_2_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 1, 2);
-		compute_endpoints_and_ideal_weights_1_component(xdim, ydim, zdim, pt, blk, ewb, ei2, 0);
+			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 1, 2);
+		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 0);
 		break;
 
 	case 1:					// separate weights for green
 		if (uses_alpha == 1)
-			compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 2, 3);
+			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 0, 2, 3);
 		else
-			compute_endpoints_and_ideal_weights_2_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 2);
-		compute_endpoints_and_ideal_weights_1_component(xdim, ydim, zdim, pt, blk, ewb, ei2, 1);
+			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 2);
+		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 1);
 		break;
 
 	case 2:					// separate weights for blue
 		if (uses_alpha == 1)
-			compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 1, 3);
+			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 0, 1, 3);
 		else
-			compute_endpoints_and_ideal_weights_2_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 1);
-		compute_endpoints_and_ideal_weights_1_component(xdim, ydim, zdim, pt, blk, ewb, ei2, 2);
+			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 1);
+		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 2);
 		break;
 
 	case 3:					// separate weights for alpha
@@ -924,9 +953,9 @@ void compute_endpoints_and_ideal_weights_2_planes(int xdim, int ydim, int zdim, 
 		{
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
-		compute_endpoints_and_ideal_weights_3_components(xdim, ydim, zdim, pt, blk, ewb, ei1, 0, 1, 2);
+		compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 0, 1, 2);
 
-		compute_endpoints_and_ideal_weights_1_component(xdim, ydim, zdim, pt, blk, ewb, ei2, 3);
+		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 3);
 		break;
 	}
 }
@@ -1483,18 +1512,23 @@ static inline float mat_square_sum(mat2 p)
 }
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
-void recompute_ideal_colors(int xdim, int ydim, int zdim, int weight_quantization_mode, endpoints * ep,	// contains the endpoints we wish to update
-							float4 * rgbs_vectors,	// used to return RGBS-vectors. (endpoint mode #6)
-							float4 * rgbo_vectors,	// used to return RGBO-vectors. (endpoint mode #7)
-							const uint8_t * weight_set8,	// the current set of weight values
-							const uint8_t * plane2_weight_set8,	// NULL if plane 2 is not actually used.
-							int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
-							const partition_info * pi, const decimation_table * it, const imageblock * pb,	// picture-block containing the actual data.
-							const error_weight_block * ewb)
-{
+void recompute_ideal_colors(
+	const block_size_descriptor* bsd,
+	int weight_quantization_mode,
+	endpoints * ep,	// contains the endpoints we wish to update
+	float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
+	const uint8_t * weight_set8,	// the current set of weight values
+	const uint8_t * plane2_weight_set8,	// NULL if plane 2 is not actually used.
+	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	const partition_info * pi,
+	const decimation_table * it,
+	const imageblock * pb,	// picture-block containing the actual data.
+	const error_weight_block * ewb
+) {
 	int i, j;
 
-	int texels_per_block = xdim * ydim * zdim;
+	int texels_per_block = bsd->texel_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
 
