@@ -13,8 +13,6 @@
 
 #include "astc_codec_internals.h"
 
-static partition_info **partition_tables[4096];
-
 /*
 	Produce a canonicalized representation of a partition pattern
 
@@ -258,45 +256,24 @@ void generate_one_partition_table(
 	}
 }
 
-static void generate_partition_tables(
-	const block_size_descriptor* bsd
+/* Public function, see header file for detailed documentation */
+void init_partition_tables(
+	block_size_descriptor* bsd
 ) {
-	int i;
+	partition_info *par_tab2 = bsd->partitions;
+	partition_info *par_tab3 = par_tab2 + PARTITION_COUNT;
+	partition_info *par_tab4 = par_tab3 + PARTITION_COUNT;
+	partition_info *par_tab1 = par_tab4 + PARTITION_COUNT;
 
-	partition_info *one_partition = new partition_info;
-	partition_info *two_partitions = new partition_info[1024];
-	partition_info *three_partitions = new partition_info[1024];
-	partition_info *four_partitions = new partition_info[1024];
-
-	partition_info **partition_table = new partition_info *[5];
-	partition_table[0] = NULL;
-	partition_table[1] = one_partition;
-	partition_table[2] = two_partitions;
-	partition_table[3] = three_partitions;
-	partition_table[4] = four_partitions;
-
-	generate_one_partition_table(bsd, 1, 0, one_partition);
-	for (i = 0; i < 1024; i++)
+	generate_one_partition_table(bsd, 1, 0, par_tab1);
+	for (int i = 0; i < 1024; i++)
 	{
-		generate_one_partition_table(bsd, 2, i, two_partitions + i);
-		generate_one_partition_table(bsd, 3, i, three_partitions + i);
-		generate_one_partition_table(bsd, 4, i, four_partitions + i);
+		generate_one_partition_table(bsd, 2, i, par_tab2 + i);
+		generate_one_partition_table(bsd, 3, i, par_tab3 + i);
+		generate_one_partition_table(bsd, 4, i, par_tab4 + i);
 	}
 
-	partition_table_zap_equal_elements(bsd->texel_count, two_partitions);
-	partition_table_zap_equal_elements(bsd->texel_count, three_partitions);
-	partition_table_zap_equal_elements(bsd->texel_count, four_partitions);
-
-	partition_tables[bsd->xdim + 16 * bsd->ydim + 256 * bsd->zdim] = partition_table;
-}
-
-const partition_info *get_partition_table(
-	const block_size_descriptor* bsd,
-	int partition_count
-) {
-	int ptindex = bsd->xdim + 16 * bsd->ydim + 256 * bsd->zdim;
-	if (partition_tables[ptindex] == NULL)
-		generate_partition_tables(bsd);
-
-	return partition_tables[ptindex][partition_count];
+	partition_table_zap_equal_elements(bsd->texel_count, par_tab2);
+	partition_table_zap_equal_elements(bsd->texel_count, par_tab3);
+	partition_table_zap_equal_elements(bsd->texel_count, par_tab4);
 }

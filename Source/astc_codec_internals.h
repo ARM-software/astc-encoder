@@ -147,6 +147,9 @@ struct block_size_descriptor
 	// which 64 texels (if that many) to consider.
 	int texelcount_for_bitmap_partitioning;
 	int texels_for_bitmap_partitioning[64];
+
+	// All the partitioning information for this block size
+	partition_info partitions[(3*PARTITION_COUNT)+1];
 };
 
 // data structure representing one block of an image.
@@ -341,11 +344,44 @@ struct physical_compressed_block
 	uint8_t data[16];
 };
 
+/**
+ * @brief Populate the blocksize descriptor for the target block size.
+ *
+ * This will also initialize the partition table metadata, which is stored
+ * as part of the BSD structure.
+ *
+ * @param xdim The x axis size of the block.
+ * @param ydim The y axis size of the block.
+ * @param zdim The z axis size of the block.
+ * @param bsd  The structure to populate.
+ */
 void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
 	block_size_descriptor* bsd);
+
+/**
+ * @brief Populate the partition tables for the target block size.
+ *
+ * Note the block_size_size descriptor must be initialized before calling this
+ * function.
+ *
+ * @param bsd  The structure to populate.
+ */
+void init_partition_tables(
+	block_size_descriptor* bsd);
+
+static inline const partition_info *get_partition_table(
+	const block_size_descriptor* bsd,
+	int partition_count
+) {
+	if (partition_count == 1) {
+		partition_count = 5;
+	}
+	int index = (partition_count - 2) * PARTITION_COUNT;
+	return bsd->partitions + index;
+}
 
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
@@ -368,10 +404,7 @@ extern int quantization_mode_table[17][128];
 // functions and data pertaining to partitioning
 // **********************************************
 
-// function to get a pointer to a partition table or an array thereof.
-const partition_info *get_partition_table(
-	const block_size_descriptor* bsd,
-	int partition_count);
+
 
 // functions to compute color averages and dominant directions
 // for each partition in a block

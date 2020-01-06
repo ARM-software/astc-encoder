@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -897,10 +897,13 @@ static void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, blo
 	}
 }
 
+/* Public function, see header file for detailed documentation */
 void init_block_size_descriptor(int xdim, int ydim, int zdim, block_size_descriptor* bsd)
 {
 	if (zdim > 1)
 		construct_block_size_descriptor_3d(xdim, ydim, zdim, bsd);
 	else
 		construct_block_size_descriptor_2d(xdim, ydim, bsd);
+
+	init_partition_tables(bsd);
 }
