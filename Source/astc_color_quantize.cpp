@@ -27,8 +27,10 @@
 	if color0 is actually larger than color1, then color0 is reduced and color1 is
 	increased until color0 is no longer larger than color1.
 */
-static inline int cqt_lookup(int quantization_level, int value)
-{
+static inline int cqt_lookup(
+	int quantization_level,
+	int value
+) {
 	if (value < 0)
 		value = 0;
 	else if (value > 255)
@@ -52,9 +54,12 @@ static inline float clamp255(float val)
 	return val;
 }
 
-void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
-				  float4 color1, int output[6], int quantization_level)
-{
+void quantize_rgb(
+	float4 color0,	// LDR: 0=lowest, 255=highest
+	float4 color1,
+	int output[6],
+	int quantization_level
+) {
 	float scale = 1.0f / 257.0f;
 
 	float r0 = clamp255(color0.x * scale);
@@ -100,8 +105,12 @@ void quantize_rgb(float4 color0,	// LDR: 0=lowest, 255=highest
 }
 
 /* quantize an RGBA color. */
-void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+void quantize_rgba(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
@@ -117,10 +126,12 @@ void quantize_rgba(float4 color0, float4 color1, int output[8], int quantization
 }
 
 /* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
-int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller color
-								   float4 color1,	// assumed to be the larger color
-								   int output[6], int quantization_level)
-{
+int try_quantize_rgb_blue_contract(
+	float4 color0,	// assumed to be the smaller color
+	float4 color1,	// assumed to be the larger color
+	int output[6],
+	int quantization_level
+) {
 	color0.x *= (1.0f / 257.0f);
 	color0.y *= (1.0f / 257.0f);
 	color0.z *= (1.0f / 257.0f);
@@ -183,8 +194,12 @@ int try_quantize_rgb_blue_contract(float4 color0,	// assumed to be the smaller c
 }
 
 /* quantize an RGBA color with blue-contraction */
-int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+int try_quantize_rgba_blue_contract(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
@@ -205,8 +220,12 @@ int try_quantize_rgba_blue_contract(float4 color0, float4 color1, int output[8],
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
 /* attempt to quantize an RGB endpoint value with delta-encoding. */
-int try_quantize_rgb_delta(float4 color0, float4 color1, int output[6], int quantization_level)
-{
+int try_quantize_rgb_delta(
+	float4 color0,
+	float4 color1,
+	int output[6],
+	int quantization_level
+) {
 	color0.x *= (1.0f / 257.0f);
 	color0.y *= (1.0f / 257.0f);
 	color0.z *= (1.0f / 257.0f);
@@ -320,8 +339,12 @@ int try_quantize_rgb_delta(float4 color0, float4 color1, int output[6], int quan
 	return 1;
 }
 
-int try_quantize_rgb_delta_blue_contract(float4 color0, float4 color1, int output[6], int quantization_level)
-{
+int try_quantize_rgb_delta_blue_contract(
+	float4 color0,
+	float4 color1,
+	int output[6],
+	int quantization_level
+) {
 	color0.x *= (1.0f / 257.0f);
 	color0.y *= (1.0f / 257.0f);
 	color0.z *= (1.0f / 257.0f);
@@ -447,8 +470,12 @@ int try_quantize_rgb_delta_blue_contract(float4 color0, float4 color1, int outpu
 	return 1;
 }
 
-int try_quantize_alpha_delta(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+int try_quantize_alpha_delta(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
@@ -485,8 +512,12 @@ int try_quantize_alpha_delta(float4 color0, float4 color1, int output[8], int qu
 	return 1;
 }
 
-int try_quantize_luminance_alpha_delta(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+int try_quantize_luminance_alpha_delta(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	float l0 = clamp255((color0.x + color0.y + color0.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
 	float l1 = clamp255((color1.x + color1.y + color1.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
 	float a0 = clamp255(color0.w * (1.0f / 257.0f));
@@ -547,8 +578,12 @@ int try_quantize_luminance_alpha_delta(float4 color0, float4 color1, int output[
 	return 1;
 }
 
-int try_quantize_rgba_delta(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+int try_quantize_rgba_delta(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	int alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quantization_level);
 
 	if (alpha_delta_res == 0)
@@ -557,8 +592,12 @@ int try_quantize_rgba_delta(float4 color0, float4 color1, int output[8], int qua
 	return try_quantize_rgb_delta(color0, color1, output, quantization_level);
 }
 
-int try_quantize_rgba_delta_blue_contract(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+int try_quantize_rgba_delta_blue_contract(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	// notice that for the alpha encoding, we are swapping around color0 and color1;
 	// this is because blue-contraction involves swapping around the two colors.
 	int alpha_delta_res = try_quantize_alpha_delta(color1, color0, output, quantization_level);
@@ -569,9 +608,11 @@ int try_quantize_rgba_delta_blue_contract(float4 color0, float4 color1, int outp
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quantization_level);
 }
 
-void quantize_rgbs_new(float4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
-					   int output[4], int quantization_level)
-{
+void quantize_rgbs_new(
+	float4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
+	int output[4],
+	int quantization_level
+) {
 	rgbs_color.x *= (1.0f / 257.0f);
 	rgbs_color.y *= (1.0f / 257.0f);
 	rgbs_color.z *= (1.0f / 257.0f);
@@ -606,8 +647,13 @@ void quantize_rgbs_new(float4 rgbs_color,	// W component is a desired-scale to a
 	output[3] = color_quantization_tables[quantization_level][scale_idx];
 }
 
-void quantize_rgbs_alpha_new(float4 color0, float4 color1, float4 rgbs_color, int output[6], int quantization_level)
-{
+void quantize_rgbs_alpha_new(
+	float4 color0,
+	float4 color1,
+	float4 rgbs_color,
+	int output[6],
+	int quantization_level
+) {
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
@@ -623,8 +669,12 @@ void quantize_rgbs_alpha_new(float4 color0, float4 color1, float4 rgbs_color, in
 	quantize_rgbs_new(rgbs_color, output, quantization_level);
 }
 
-void quantize_luminance(float4 color0, float4 color1, int output[2], int quantization_level)
-{
+void quantize_luminance(
+	float4 color0,
+	float4 color1,
+	int output[2],
+	int quantization_level
+) {
 	color0.x *= (1.0f / 257.0f);
 	color0.y *= (1.0f / 257.0f);
 	color0.z *= (1.0f / 257.0f);
@@ -647,8 +697,12 @@ void quantize_luminance(float4 color0, float4 color1, int output[2], int quantiz
 	output[1] = color_quantization_tables[quantization_level][(int)floor(lum1 + 0.5f)];
 }
 
-void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int quantization_level)
-{
+void quantize_luminance_alpha(
+	float4 color0,
+	float4 color1,
+	int output[4],
+	int quantization_level
+) {
 	color0 = color0 * (1.0f / 257.0f);
 	color1 = color1 * (1.0f / 257.0f);
 
@@ -698,9 +752,12 @@ void quantize_luminance_alpha(float4 color0, float4 color1, int output[4], int q
 }
 
 // quantize and unquantize a number, wile making sure to retain the top two bits.
-static inline void quantize_and_unquantize_retain_top_two_bits(int quantization_level, int value_to_quantize,	// 0 to 255.
-															   int *quantized_value, int *unquantized_value)
-{
+static inline void quantize_and_unquantize_retain_top_two_bits(
+	int quantization_level,
+	int value_to_quantize,	// 0 to 255.
+	int *quantized_value,
+	int *unquantized_value
+) {
 	int perform_loop;
 	int quantval;
 	int uquantval;
@@ -732,9 +789,12 @@ static inline void quantize_and_unquantize_retain_top_two_bits(int quantization_
 }
 
 // quantize and unquantize a number, wile making sure to retain the top four bits.
-static inline void quantize_and_unquantize_retain_top_four_bits(int quantization_level, int value_to_quantize,	// 0 to 255.
-																int *quantized_value, int *unquantized_value)
-{
+static inline void quantize_and_unquantize_retain_top_four_bits(
+	int quantization_level,
+	int value_to_quantize,	// 0 to 255.
+	int *quantized_value,
+	int *unquantized_value
+) {
 	int perform_loop;
 	int quantval;
 	int uquantval;
@@ -766,8 +826,11 @@ static inline void quantize_and_unquantize_retain_top_four_bits(int quantization
 }
 
 /* HDR color encoding, take #3 */
-void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
-{
+void quantize_hdr_rgbo3(
+	float4 color,
+	int output[4],
+	int quantization_level
+) {
 	color.x += color.w;
 	color.y += color.w;
 	color.z += color.w;
@@ -1121,8 +1184,12 @@ void quantize_hdr_rgbo3(float4 color, int output[4], int quantization_level)
 	return;
 }
 
-void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantization_level)
-{
+void quantize_hdr_rgb3(
+	float4 color0,
+	float4 color1,
+	int output[6],
+	int quantization_level
+) {
 	if (!(color0.x > 0.0f))
 		color0.x = 0.0f;
 	else if (color0.x > 65535.0f)
@@ -1516,8 +1583,12 @@ void quantize_hdr_rgb3(float4 color0, float4 color1, int output[6], int quantiza
 	return;
 }
 
-void quantize_hdr_rgb_ldr_alpha3(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+void quantize_hdr_rgb_ldr_alpha3(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
@@ -1532,8 +1603,12 @@ void quantize_hdr_rgb_ldr_alpha3(float4 color0, float4 color1, int output[8], in
 	output[7] = ai1;
 }
 
-void quantize_hdr_luminance_large_range3(float4 color0, float4 color1, int output[2], int quantization_level)
-{
+void quantize_hdr_luminance_large_range3(
+	float4 color0,
+	float4 color1,
+	int output[2],
+	int quantization_level
+) {
 
 	float lum1 = (color1.x + color1.y + color1.z) * (1.0f / 3.0f);
 	float lum0 = (color0.x + color0.y + color0.z) * (1.0f / 3.0f);
@@ -1607,8 +1682,12 @@ void quantize_hdr_luminance_large_range3(float4 color0, float4 color1, int outpu
 	output[1] = color_quantization_tables[quantization_level][v1];
 }
 
-int try_quantize_hdr_luminance_small_range3(float4 color0, float4 color1, int output[2], int quantization_level)
-{
+int try_quantize_hdr_luminance_small_range3(
+	float4 color0,
+	float4 color1,
+	int output[2],
+	int quantization_level
+) {
 	float lum1 = (color1.x + color1.y + color1.z) * (1.0f / 3.0f);
 	float lum0 = (color0.x + color0.y + color0.z) * (1.0f / 3.0f);
 
@@ -1703,8 +1782,12 @@ LOW_PRECISION_SUBMODE:
 	return 1;
 }
 
-void quantize_hdr_alpha3(float alpha0, float alpha1, int output[2], int quantization_level)
-{
+void quantize_hdr_alpha3(
+	float alpha0,
+	float alpha1,
+	int output[2],
+	int quantization_level
+) {
 	int i;
 
 	if (alpha0 < 0)
@@ -1774,8 +1857,12 @@ void quantize_hdr_alpha3(float alpha0, float alpha1, int output[2], int quantiza
 	return;
 }
 
-void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int quantization_level)
-{
+void quantize_hdr_rgb_alpha3(
+	float4 color0,
+	float4 color1,
+	int output[8],
+	int quantization_level
+) {
 	quantize_hdr_rgb3(color0, color1, output, quantization_level);
 	quantize_hdr_alpha3(color0.w, color1.w, output + 6, quantization_level);
 }
@@ -1784,9 +1871,15 @@ void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int qu
 	Quantize a color. When quantizing an RGB or RGBA color, the quantizer may choose a
 	delta-based representation; as such, it will report back the format it actually used.
 */
-int pack_color_endpoints(float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color,
-						 int format, int *output, int quantization_level)
-{
+int pack_color_endpoints(
+	float4 color0,
+	float4 color1,
+	float4 rgbs_color,
+	float4 rgbo_color,
+	int format,
+	int* output,
+	int quantization_level
+) {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{

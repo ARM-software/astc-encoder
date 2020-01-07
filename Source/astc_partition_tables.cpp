@@ -18,8 +18,11 @@
 
 	The largest possible such representation is 432 bits, equal to 7 uint64_t values.
 */
-static void gen_canonicalized_partition_table(int texel_count, const uint8_t * partition_table, uint64_t canonicalized[7])
-{
+static void gen_canonicalized_partition_table(
+	int texel_count,
+	const uint8_t* partition_table,
+	uint64_t canonicalized[7]
+) {
 	int i;
 	for (i = 0; i < 7; i++)
 		canonicalized[i] = 0;
@@ -39,8 +42,10 @@ static void gen_canonicalized_partition_table(int texel_count, const uint8_t * p
 	}
 }
 
-static int compare_canonicalized_partition_tables(const uint64_t part1[7], const uint64_t part2[7])
-{
+static int compare_canonicalized_partition_tables(
+	const uint64_t part1[7],
+	const uint64_t part2[7]
+) {
 	if (part1[0] != part2[0])
 		return 0;
 	if (part1[1] != part2[1])
@@ -61,8 +66,10 @@ static int compare_canonicalized_partition_tables(const uint64_t part1[7], const
 /*
    For a partition table, detect partitionss that are equivalent, then mark them as invalid. This reduces the number of partitions that the codec has to consider and thus improves encode
    performance. */
-static void partition_table_zap_equal_elements(int texel_count, partition_info * pi)
-{
+static void partition_table_zap_equal_elements(
+	int texel_count,
+	partition_info* pi
+) {
 	int partition_tables_zapped = 0;
 	int i, j;
 	uint64_t *canonicalizeds = new uint64_t[PARTITION_COUNT * 7];
@@ -102,8 +109,14 @@ uint32_t hash52(uint32_t inp)
 	return inp;
 }
 
-int select_partition(int seed, int x, int y, int z, int partitioncount, int small_block)
-{
+int select_partition(
+	int seed,
+	int x,
+	int y,
+	int z,
+	int partitioncount,
+	int small_block
+) {
 	if (small_block)
 	{
 		x <<= 1;
@@ -205,8 +218,8 @@ void generate_one_partition_table(
 	const block_size_descriptor* bsd,
 	int partition_count,
 	int partition_index,
-	partition_info * pt)
-{
+	partition_info* pt
+) {
 	int texels_per_block = bsd->texel_count;
 	int small_block = texels_per_block < 32;
 

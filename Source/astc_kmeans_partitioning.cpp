@@ -27,8 +27,14 @@
 // algorithm similar to XKCD #221. (http://xkcd.com/221/)
 
 // cluster the texels using the k++ means clustering initialization algorithm.
-void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, float4 * cluster_centers)
-{
+void kpp_initialize(
+	int xdim,
+	int ydim,
+	int zdim,
+	int partition_count,
+	const imageblock* blk,
+	float4* cluster_centers
+) {
 	int i;
 
 	int texels_per_block = xdim * ydim * zdim;
@@ -121,8 +127,15 @@ void kpp_initialize(int xdim, int ydim, int zdim, int partition_count, const ima
 
 // basic K-means clustering: given a set of cluster centers,
 // assign each texel to a partition
-void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, const float4 * cluster_centers, int *partition_of_texel)
-{
+void basic_kmeans_assign_pass(
+	int xdim,
+	int ydim,
+	int zdim,
+	int partition_count,
+	const imageblock* blk,
+	const float4* cluster_centers,
+	int* partition_of_texel
+) {
 	int i, j;
 
 	int texels_per_block = xdim * ydim * zdim;
@@ -194,8 +207,15 @@ void basic_kmeans_assign_pass(int xdim, int ydim, int zdim, int partition_count,
 
 // basic k-means clustering: given a set of cluster assignments
 // for the texels, find the center position of each cluster.
-void basic_kmeans_update(int xdim, int ydim, int zdim, int partition_count, const imageblock * blk, const int *partition_of_texel, float4 * cluster_centers)
-{
+void basic_kmeans_update(
+	int xdim,
+	int ydim,
+	int zdim,
+	int partition_count,
+	const imageblock* blk,
+	const int* partition_of_texel,
+	float4* cluster_centers
+) {
 	int i;
 
 	int texels_per_block = xdim * ydim * zdim;
@@ -273,16 +293,26 @@ static inline int bitcount(uint64_t p)
 }
 
 // compute the bit-mismatch for a partitioning in 2-partition mode
-static inline int partition_mismatch2(uint64_t a0, uint64_t a1, uint64_t b0, uint64_t b1)
-{
+static inline int partition_mismatch2(
+	uint64_t a0,
+	uint64_t a1,
+	uint64_t b0,
+	uint64_t b1
+) {
 	int v1 = bitcount(a0 ^ b0) + bitcount(a1 ^ b1);
 	int v2 = bitcount(a0 ^ b1) + bitcount(a1 ^ b0);
 	return MIN(v1, v2);
 }
 
 // compute the bit-mismatch for a partitioning in 3-partition mode
-static inline int partition_mismatch3(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t b0, uint64_t b1, uint64_t b2)
-{
+static inline int partition_mismatch3(
+	uint64_t a0,
+	uint64_t a1,
+	uint64_t a2,
+	uint64_t b0,
+	uint64_t b1,
+	uint64_t b2
+) {
 	int p00 = bitcount(a0 ^ b0);
 	int p01 = bitcount(a0 ^ b1);
 	int p02 = bitcount(a0 ^ b2);
@@ -312,20 +342,29 @@ static inline int partition_mismatch3(uint64_t a0, uint64_t a1, uint64_t a2, uin
 	if (v2 < v0)
 		v0 = v2;
 
-	// 9 add, 5 MIN
-
 	return v0;
 }
 
-static inline int MIN3(int a, int b, int c)
-{
+static inline int MIN3(
+	int a,
+	int b,
+	int c
+) {
 	int d = MIN(a, b);
 	return MIN(c, d);
 }
 
 // compute the bit-mismatch for a partitioning in 4-partition mode
-static inline int partition_mismatch4(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t b0, uint64_t b1, uint64_t b2, uint64_t b3)
-{
+static inline int partition_mismatch4(
+	uint64_t a0,
+	uint64_t a1,
+	uint64_t a2,
+	uint64_t a3,
+	uint64_t b0,
+	uint64_t b1,
+	uint64_t b2,
+	uint64_t b3
+) {
 	int p00 = bitcount(a0 ^ b0);
 	int p01 = bitcount(a0 ^ b1);
 	int p02 = bitcount(a0 ^ b2);
@@ -361,8 +400,6 @@ static inline int partition_mismatch4(uint64_t a0, uint64_t a1, uint64_t a2, uin
 	int x0 = MIN(v0, v1);
 	int x1 = MIN(v2, v3);
 	return MIN(x0, x1);
-
-	// 16 bitcount, 17 MIN, 28 ADD
 }
 
 void count_partition_mismatch_bits(
@@ -427,8 +464,10 @@ void count_partition_mismatch_bits(
 
 // counting-sort on the mismatch-bits, thereby
 // sorting the partitions into an ordering.
-void get_partition_ordering_by_mismatch_bits(const int mismatch_bits[PARTITION_COUNT], int partition_ordering[PARTITION_COUNT])
-{
+void get_partition_ordering_by_mismatch_bits(
+	const int mismatch_bits[PARTITION_COUNT],
+	int partition_ordering[PARTITION_COUNT]
+) {
 	int i;
 
 	int mscount[256];
@@ -453,8 +492,12 @@ void get_partition_ordering_by_mismatch_bits(const int mismatch_bits[PARTITION_C
 	}
 }
 
-void kmeans_compute_partition_ordering(const block_size_descriptor* bsd, int partition_count, const imageblock * blk, int *ordering)
-{
+void kmeans_compute_partition_ordering(
+	const block_size_descriptor* bsd,
+	int partition_count,
+	const imageblock* blk,
+	int* ordering
+) {
 	int i;
 
 	float4 cluster_centers[4];

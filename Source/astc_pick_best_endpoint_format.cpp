@@ -23,13 +23,18 @@
 
 // for a given partition, compute for every (integer-component-count, quantization-level)
 // the color error.
-static void compute_color_error_for_every_integer_count_and_quantization_level(int encode_hdr_rgb,	// 1 = perform HDR encoding, 0 = perform LDR encoding.
-																			   int encode_hdr_alpha, int partition_index, const partition_info * pi,
-																				const encoding_choice_errors * eci,	// pointer to the structure for the CURRENT partition.
-																			   const endpoints * ep, float4 error_weightings[4],
-																			   // arrays to return results back through.
-																			   float best_error[21][4], int format_of_choice[21][4])
-{
+static void compute_color_error_for_every_integer_count_and_quantization_level(
+	int encode_hdr_rgb,	// 1 = perform HDR encoding, 0 = perform LDR encoding.
+	int encode_hdr_alpha,
+	int partition_index,
+	const partition_info* pi,
+	const encoding_choice_errors * eci,	// pointer to the structure for the CURRENT partition.
+	 const endpoints * ep,
+	 float4 error_weightings[4],
+	// arrays to return results back through.
+	float best_error[21][4],
+	int format_of_choice[21][4]
+) {
 	int i;
 	int partition_size = pi->texels_per_partition[partition_index];
 
@@ -379,9 +384,14 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(i
 }
 
 // for 1 partition, find the best combination (one format + a quantization level) for a given bitcount
-static void one_partition_find_best_combination_for_bitcount(float combined_best_error[21][4],
-															 int formats_of_choice[21][4], int bits_available, int *best_quantization_level, int *best_formats, float *error_of_best_combination)
-{
+static void one_partition_find_best_combination_for_bitcount(
+	float combined_best_error[21][4],
+	int formats_of_choice[21][4],
+	int bits_available,
+	int* best_quantization_level,
+	int* best_formats,
+	float* error_of_best_combination
+) {
 	int i;
 	int best_integer_count = -1;
 	float best_integer_count_error = 1e20f;
@@ -409,11 +419,12 @@ static void one_partition_find_best_combination_for_bitcount(float combined_best
 }
 
 // for 2 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-static void two_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[2][21][4],	// indexed by (partition, quant-level, integer-pair-count-minus-1)
-																						  int format_of_choice[2][21][4],
-																						  float combined_best_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
-																						  int formats_of_choice[21][7][2])
-{
+static void two_partitions_find_best_combination_for_every_quantization_and_integer_count(
+	float best_error[2][21][4],	// indexed by (partition, quant-level, integer-pair-count-minus-1)
+	int format_of_choice[2][21][4],
+	float combined_best_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
+	int formats_of_choice[21][7][2]
+) {
 	int i, j;
 
 	for (i = 0; i < 21; i++)
@@ -446,10 +457,15 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 }
 
 // for 2 partitions, find the best combination (two formats + a quantization level) for a given bitcount
-static void two_partitions_find_best_combination_for_bitcount(float combined_best_error[21][7],
-															  int formats_of_choice[21][7][2],
-															  int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
-{
+static void two_partitions_find_best_combination_for_bitcount(
+	float combined_best_error[21][7],
+	int formats_of_choice[21][7][2],
+	int bits_available,
+	int* best_quantization_level,
+	int* best_quantization_level_mod,
+	int* best_formats,
+	float* error_of_best_combination
+) {
 	int i;
 
 	int best_integer_count = 0;
@@ -489,9 +505,12 @@ static void two_partitions_find_best_combination_for_bitcount(float combined_bes
 }
 
 // for 3 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
-																							int format_of_choice[3][21][4], float combined_best_error[21][10], int formats_of_choice[21][10][3])
-{
+static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(
+	float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
+	int format_of_choice[3][21][4],
+	float combined_best_error[21][10],
+	int formats_of_choice[21][10][3]
+) {
 	int i, j, k;
 
 	for (i = 0; i < 21; i++)
@@ -532,10 +551,15 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 }
 
 // for 3 partitions, find the best combination (three formats + a quantization level) for a given bitcount
-static void three_partitions_find_best_combination_for_bitcount(float combined_best_error[21][10],
-																int formats_of_choice[21][10][3],
-																int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
-{
+static void three_partitions_find_best_combination_for_bitcount(
+	float combined_best_error[21][10],
+	int formats_of_choice[21][10][3],
+	int bits_available,
+	int* best_quantization_level,
+	int* best_quantization_level_mod,
+	int* best_formats,
+	float* error_of_best_combination
+) {
 	int i;
 
 	int best_integer_count = 0;
@@ -575,9 +599,12 @@ static void three_partitions_find_best_combination_for_bitcount(float combined_b
 }
 
 // for 4 partitions, find the best format combinations for every (quantization-mode, integer-count) combination
-static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
-																						   int format_of_choice[4][21][4], float combined_best_error[21][13], int formats_of_choice[21][13][4])
-{
+static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(
+	float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
+	int format_of_choice[4][21][4],
+	float combined_best_error[21][13],
+	int formats_of_choice[21][13][4]
+) {
 	int i, j, k, l;
 
 	for (i = 0; i < 21; i++)
@@ -626,10 +653,15 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 }
 
 // for 4 partitions, find the best combination (four formats + a quantization level) for a given bitcount
-static void four_partitions_find_best_combination_for_bitcount(float combined_best_error[21][13],
-															   int formats_of_choice[21][13][4],
-															   int bits_available, int *best_quantization_level, int *best_quantization_level_mod, int *best_formats, float *error_of_best_combination)
-{
+static void four_partitions_find_best_combination_for_bitcount(
+	float combined_best_error[21][13],
+	int formats_of_choice[21][13][4],
+	int bits_available,
+	int* best_quantization_level,
+	int* best_quantization_level_mod,
+	int* best_formats,
+	float* error_of_best_combination
+) {
 	int i;
 	int best_integer_count = 0;
 	float best_integer_count_error = 1e20f;
@@ -689,14 +721,14 @@ static void four_partitions_find_best_combination_for_bitcount(float combined_be
 */
 void determine_optimal_set_of_endpoint_formats_to_use(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	const endpoints * ep,
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const endpoints* ep,
 	int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 	 // bitcounts and errors computed for the various quantization methods
-	const int *qwt_bitcounts,
-	const float *qwt_errors,
+	const int* qwt_bitcounts,
+	const float* qwt_errors,
 	// output data
 	int partition_format_specifiers[4][4],
 	int quantized_weight[4],

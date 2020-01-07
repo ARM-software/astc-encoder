@@ -52,8 +52,14 @@ int imageblock_uses_alpha(const imageblock * pb)
 	return pb->alpha_max != pb->alpha_min;
 }
 
-static void compute_alpha_minmax(int texels_per_block, const partition_info * pt, const imageblock * blk, const error_weight_block * ewb, float *alpha_min, float *alpha_max)
-{
+static void compute_alpha_minmax(
+	int texels_per_block,
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	float* alpha_min,
+	float* alpha_max
+) {
 	int i;
 	int partition_count = pt->partition_count;
 
@@ -88,16 +94,16 @@ static void compute_alpha_minmax(int texels_per_block, const partition_info * pt
 
 static void compute_rgb_minmax(
 	int texels_per_block,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	float *red_min,
-	float *red_max,
-	float *green_min,
-	float *green_max,
-	float *blue_min,
-	float *blue_max)
-{
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	float* red_min,
+	float* red_max,
+	float* green_min,
+	float* green_max,
+	float* blue_min,
+	float* blue_max
+) {
 	int i;
 	int partition_count = pt->partition_count;
 
@@ -156,30 +162,31 @@ static void compute_rgb_minmax(
 
 void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
-	const error_weight_block * ewb,
-	const partition_info * pi,
+	const error_weight_block* ewb,
+	const partition_info* pi,
 	float4 error_weightings[4],
 	float4 color_scalefactors[4]
 ) {
-	int i;
 	int texels_per_block = bsd->texel_count;
 	int pcnt = pi->partition_count;
 
-	for (i = 0; i < pcnt; i++)
+	for (int i = 0; i < pcnt; i++)
+	{
 		error_weightings[i] = float4(1e-12f, 1e-12f, 1e-12f, 1e-12f);
+	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int part = pi->partition_of_texel[i];
 		error_weightings[part] = error_weightings[part] + ewb->error_weights[i];
 	}
 
-	for (i = 0; i < pcnt; i++)
+	for (int i = 0; i < pcnt; i++)
 	{
 		error_weightings[i] = error_weightings[i] * (1.0f / pi->texels_per_partition[i]);
 	}
 
-	for (i = 0; i < pcnt; i++)
+	for (int i = 0; i < pcnt; i++)
 	{
 		color_scalefactors[i].x = sqrt(error_weightings[i].x);
 		color_scalefactors[i].y = sqrt(error_weightings[i].y);
@@ -193,16 +200,13 @@ void find_best_partitionings(
 	int partition_search_limit,
 	const block_size_descriptor* bsd,
 	int partition_count,
-	const imageblock * pb,
-	const error_weight_block * ewb,
+	const imageblock* pb,
+	const error_weight_block* ewb,
 	int candidates_to_return,
-	// best partitions to use if the endpoint colors are assumed to be uncorrelated
-	int *best_partitions_uncorrelated,
-	// best partitions to use if the endpoint colors have the same chroma
-	int *best_partitions_samechroma,
-	// best partitions to use if using dual plane of weights
-	int *best_partitions_dual_weight_planes)
-{
+	int* best_partitions_uncorrelated,
+	int* best_partitions_samechroma,
+	int* best_partitions_dual_weight_planes
+) {
 	int i, j;
 	int texels_per_block = bsd->texel_count;
 
@@ -210,7 +214,7 @@ void find_best_partitionings(
 	// the optimal value for this constant depends on bitrate.
 	// These constants have been determined empirically.
 
-	float weight_imprecision_estim = 100;
+	float weight_imprecision_estim = 100.0f;
 
 	if (texels_per_block <= 20)
 		weight_imprecision_estim = 0.03f;
@@ -234,7 +238,7 @@ void find_best_partitionings(
 
 	int uses_alpha = imageblock_uses_alpha(pb);
 
-	const partition_info *ptab = get_partition_table(bsd, partition_count);
+	const partition_info* ptab = get_partition_table(bsd, partition_count);
 
 	// partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncorr_errors[PARTITION_COUNT];
@@ -245,10 +249,10 @@ void find_best_partitionings(
 	// is uncorrelated from all the other ones
 	float separate_errors[4 * PARTITION_COUNT];
 
-	float *separate_red_errors = separate_errors;
-	float *separate_green_errors = separate_errors + PARTITION_COUNT;
-	float *separate_blue_errors = separate_errors + 2 * PARTITION_COUNT;
-	float *separate_alpha_errors = separate_errors + 3 * PARTITION_COUNT;
+	float* separate_red_errors = separate_errors;
+	float* separate_green_errors = separate_errors + PARTITION_COUNT;
+	float* separate_blue_errors = separate_errors + 2 * PARTITION_COUNT;
+	float* separate_alpha_errors = separate_errors + 3 * PARTITION_COUNT;
 
 	int defacto_search_limit = PARTITION_COUNT - 1;
 
@@ -321,7 +325,11 @@ void find_best_partitionings(
 			float3 directions_rga[4];
 			float3 directions_rgb[4];
 
-			compute_averages_and_directions_rgba(ptab + partition, pb, ewb, color_scalefactors, averages, directions_rgba, directions_gba, directions_rba, directions_rga, directions_rgb);
+			compute_averages_and_directions_rgba(ptab + partition, pb, ewb,
+			                                     color_scalefactors, averages,
+			                                     directions_rgba, directions_gba,
+			                                     directions_rba, directions_rga,
+			                                     directions_rgb);
 
 			line4 uncorr_lines[4];
 			line4 samechroma_lines[4];

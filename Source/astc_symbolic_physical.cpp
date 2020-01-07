@@ -14,8 +14,12 @@
 #include "astc_codec_internals.h"
 
 // routine to write up to 8 bits
-static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr)
-{
+static inline void write_bits(
+	int value,
+	int bitcount,
+	int bitoffset,
+	uint8_t* ptr
+) {
 	int mask = (1 << bitcount) - 1;
 	value &= mask;
 	ptr += bitoffset >> 3;
@@ -31,8 +35,11 @@ static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * 
 }
 
 // routine to read up to 8 bits
-static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
-{
+static inline int read_bits(
+	int bitcount,
+	int bitoffset,
+	const uint8_t* ptr
+) {
 	int mask = (1 << bitcount) - 1;
 	ptr += bitoffset >> 3;
 	bitoffset &= 7;
@@ -52,8 +59,8 @@ int bitrev8(int p)
 
 physical_compressed_block symbolic_to_physical(
 	const block_size_descriptor* bsd,
-	const symbolic_compressed_block * sc)
-{
+	const symbolic_compressed_block* sc
+) {
 	int i, j;
 	physical_compressed_block res;
 
@@ -214,8 +221,8 @@ physical_compressed_block symbolic_to_physical(
 void physical_to_symbolic(
 	const block_size_descriptor* bsd,
 	physical_compressed_block pb,
-	symbolic_compressed_block * res)
-{
+	symbolic_compressed_block* res
+) {
 	uint8_t bswapped[16];
 	int i, j;
 

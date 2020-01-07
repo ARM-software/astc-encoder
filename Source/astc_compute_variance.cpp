@@ -85,7 +85,7 @@ struct avg_var_args
  * @param stride The item spacing in the array; i.e. dense arrays should use 1.
  */
 static void brent_kung_prefix_sum(
-	float4 *d,
+	float4* d,
 	size_t items,
 	int stride
 ) {
@@ -147,7 +147,7 @@ static void brent_kung_prefix_sum(
  * @param arg The input parameter structure.
  */
 static void compute_pixel_region_variance(
-	const pixel_region_variance_args *arg
+	const pixel_region_variance_args* arg
 ) {
 	// Unpack the memory structure into local variables
 	const astc_codec_image *img = arg->img;
@@ -533,8 +533,9 @@ static void compute_pixel_region_variance(
 	}
 }
 
-static void compute_averages_and_variances_proc(const struct avg_var_args* ag)
-{
+static void compute_averages_and_variances_proc(
+	const struct avg_var_args* ag
+) {
 	struct pixel_region_variance_args arg = ag->arg;
 	arg.work_memory = new float4[ag->work_memory_size];
 
@@ -577,7 +578,7 @@ static void compute_averages_and_variances_proc(const struct avg_var_args* ag)
 
 /* Public function, see header file for detailed documentation */
 void compute_averages_and_variances(
-	astc_codec_image * img,
+	astc_codec_image* img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,

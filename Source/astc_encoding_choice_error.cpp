@@ -36,10 +36,12 @@
 #endif
 
 // helper function to merge two endpoint-colors
-void merge_endpoints(const endpoints * ep1,	// contains three of the color components
-					 const endpoints * ep2,	// contains the remaining color component
-					 int separate_component, endpoints * res)
-{
+void merge_endpoints(
+	const endpoints * ep1,	// contains three of the color components
+	const endpoints * ep2,	// contains the remaining color component
+	int separate_component,
+	endpoints * res
+) {
 	int i;
 	int partition_count = ep1->partition_count;
 	res->partition_count = partition_count;
@@ -93,11 +95,11 @@ void merge_endpoints(const endpoints * ep1,	// contains three of the color compo
  */
 void compute_encoding_choice_errors(
 	const block_size_descriptor* bsd,
-	const imageblock * pb,
-	const partition_info * pi,
-	const error_weight_block * ewb,
+	const imageblock* pb,
+	const partition_info* pi,
+	const error_weight_block* ewb,
 	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
-	encoding_choice_errors * eci)
+	encoding_choice_errors* eci)
 {
 	int i;
 

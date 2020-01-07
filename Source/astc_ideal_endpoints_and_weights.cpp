@@ -27,10 +27,10 @@
 
 static void compute_endpoints_and_ideal_weights_1_component(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	endpoints_and_weights * ei,
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	endpoints_and_weights* ei,
 	int component
 ) {
 	int i;
@@ -164,10 +164,10 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 static void compute_endpoints_and_ideal_weights_2_components(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
+	const partition_info* pt,
+	const imageblock* blk,
 	const error_weight_block * ewb,
-	endpoints_and_weights * ei,
+	endpoints_and_weights* ei,
 	int component1,
 	int component2
 ) {
@@ -190,7 +190,6 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		error_weights = ewb->texel_weight_gb;
 	else
 	{
-		error_weights = ewb->texel_weight_rg;
 		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
@@ -412,14 +411,14 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 static void compute_endpoints_and_ideal_weights_3_components(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	endpoints_and_weights * ei,
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	endpoints_and_weights* ei,
 	int component1,
 	int component2,
-	int component3)
-{
+	int component3
+) {
 	int i;
 
 	int partition_count = pt->partition_count;
@@ -700,10 +699,10 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 static void compute_endpoints_and_ideal_weights_rgba(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	endpoints_and_weights * ei
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	endpoints_and_weights* ei
 ) {
 	int i;
 
@@ -886,10 +885,10 @@ static void compute_endpoints_and_ideal_weights_rgba(
  */
 void compute_endpoints_and_ideal_weights_1_plane(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	endpoints_and_weights * ei
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	endpoints_and_weights* ei
 ) {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
@@ -909,13 +908,13 @@ void compute_endpoints_and_ideal_weights_1_plane(
 
 void compute_endpoints_and_ideal_weights_2_planes(
 	const block_size_descriptor* bsd,
-	const partition_info * pt,
-	const imageblock * blk,
-	const error_weight_block * ewb,
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
 	int separate_component,
-	endpoints_and_weights * ei1,
-	endpoints_and_weights * ei2)
-{
+	endpoints_and_weights* ei1,
+	endpoints_and_weights* ei2
+) {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 			printf("%s: texels_per_block=%dx%dx%d, separate_component=%d\n\n", __func__, xdim, ydim, zdim, separate_component);
@@ -995,17 +994,26 @@ void compute_endpoints_and_ideal_weights_2_planes(
      go into a given texel.
 */
 
-float compute_value_of_texel_flt(int texel_to_get, const decimation_table * it, const float *weights)
-{
+float compute_value_of_texel_flt(
+	int texel_to_get,
+	const decimation_table* it,
+	const float* weights
+) {
 	const uint8_t *texel_weights = it->texel_weights[texel_to_get];
 	const float *texel_weights_float = it->texel_weights_float[texel_to_get];
 
-	return
-		(weights[texel_weights[0]] * texel_weights_float[0] + weights[texel_weights[1]] * texel_weights_float[1]) + (weights[texel_weights[2]] * texel_weights_float[2] + weights[texel_weights[3]] * texel_weights_float[3]);
+	return (weights[texel_weights[0]] * texel_weights_float[0] +
+	        weights[texel_weights[1]] * texel_weights_float[1]) +
+	       (weights[texel_weights[2]] * texel_weights_float[2] +
+	        weights[texel_weights[3]] * texel_weights_float[3]);
 }
 
-static inline float compute_error_of_texel(const endpoints_and_weights * eai, int texel_to_get, const decimation_table * it, const float *weights)
-{
+static inline float compute_error_of_texel(
+	const endpoints_and_weights * eai,
+	int texel_to_get,
+	const decimation_table* it,
+	const float *weights
+) {
 	float current_value = compute_value_of_texel_flt(texel_to_get, it, weights);
 	float valuedif = current_value - eai->weights[texel_to_get];
 	return valuedif * valuedif * eai->weight_error_scale[texel_to_get];
@@ -1019,18 +1027,23 @@ static inline float compute_error_of_texel(const endpoints_and_weights * eai, in
 	* for each weight, its current value
 	compute the change to overall error that results from adding N to the weight
 */
-void compute_two_error_changes_from_perturbing_weight_infill(const endpoints_and_weights * eai, const decimation_table * it,
-															float *infilled_weights, int weight_to_perturb,
-															float perturbation1, float perturbation2, float *res1, float *res2)
-{
+void compute_two_error_changes_from_perturbing_weight_infill(
+	const endpoints_and_weights* eai,
+	const decimation_table* it,
+	float* infilled_weights,
+	int weight_to_perturb,
+	float perturbation1,
+	float perturbation2,
+	float* res1,
+	float* res2
+) {
 	int num_weights = it->weight_num_texels[weight_to_perturb];
 	float error_change0 = 0.0f;
 	float error_change1 = 0.0f;
-	int i;
 
 	const uint8_t *weight_texel_ptr = it->weight_texel[weight_to_perturb];
 	const float *weights_ptr = it->weights_flt[weight_to_perturb];
-	for (i = num_weights - 1; i >= 0; i--)
+	for (int i = num_weights - 1; i >= 0; i--)
 	{
 		uint8_t weight_texel = weight_texel_ptr[i];
 		float weights = weights_ptr[i];
@@ -1047,12 +1060,14 @@ void compute_two_error_changes_from_perturbing_weight_infill(const endpoints_and
 	*res2 = error_change0 * (perturbation2 * perturbation2 * (1.0f / (TEXEL_WEIGHT_SUM * TEXEL_WEIGHT_SUM))) + error_change1 * (perturbation2 * (2.0f / TEXEL_WEIGHT_SUM));
 }
 
-float compute_error_of_weight_set(const endpoints_and_weights * eai, const decimation_table * it, const float *weights)
-{
-	int i;
+float compute_error_of_weight_set(
+	const endpoints_and_weights* eai,
+	const decimation_table* it,
+	const float* weights
+) {
 	int texel_count = it->num_texels;
 	float error_summa = 0.0;
-	for (i = 0; i < texel_count; i++)
+	for (int i = 0; i < texel_count; i++)
 		error_summa += compute_error_of_texel(eai, i, it, weights);
 	return error_summa;
 }
@@ -1062,8 +1077,12 @@ float compute_error_of_weight_set(const endpoints_and_weights * eai, const decim
 	compute the optimal weight set (assuming infinite precision)
 	given the selected decimation table.
 */
-void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * eai, const decimation_table * it, float *weight_set, float *weights)
-{
+void compute_ideal_weights_for_decimation_table(
+	const endpoints_and_weights* eai,
+	const decimation_table* it,
+	float* weight_set,
+	float* weights
+) {
 	int i, j, k;
 
 	int texels_per_block = it->num_texels;
@@ -1250,10 +1269,16 @@ void compute_ideal_weights_for_decimation_table(const endpoints_and_weights * ea
 	Repeat until we have made a complete processing pass over all weights without
 	triggering any perturbations *OR* we have run 4 full passes.
 */
-void compute_ideal_quantized_weights_for_decimation_table(const endpoints_and_weights * eai,
-														  const decimation_table * it,
-														  float low_bound, float high_bound, const float *weight_set_in, float *weight_set_out, uint8_t * quantized_weight_set, int quantization_level)
-{
+void compute_ideal_quantized_weights_for_decimation_table(
+	const endpoints_and_weights* eai,
+	const decimation_table* it,
+	float low_bound,
+	float high_bound,
+	const float* weight_set_in,
+	float* weight_set_out,
+	uint8_t* quantized_weight_set,
+	int quantization_level
+) {
 	int i;
 	int weight_count = it->num_weights;
 	int texels_per_block = it->num_texels;
@@ -1515,16 +1540,16 @@ static inline float mat_square_sum(mat2 p)
 void recompute_ideal_colors(
 	const block_size_descriptor* bsd,
 	int weight_quantization_mode,
-	endpoints * ep,	// contains the endpoints we wish to update
-	float4 * rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
-	float4 * rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
-	const uint8_t * weight_set8,	// the current set of weight values
-	const uint8_t * plane2_weight_set8,	// NULL if plane 2 is not actually used.
+	endpoints* ep,	// contains the endpoints we wish to update
+	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
+	const uint8_t* weight_set8,	// the current set of weight values
+	const uint8_t* plane2_weight_set8,	// NULL if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
-	const partition_info * pi,
-	const decimation_table * it,
-	const imageblock * pb,	// picture-block containing the actual data.
-	const error_weight_block * ewb
+	const partition_info* pi,
+	const decimation_table* it,
+	const imageblock* pb,	// picture-block containing the actual data.
+	const error_weight_block* ewb
 ) {
 	int i, j;
 

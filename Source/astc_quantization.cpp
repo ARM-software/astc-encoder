@@ -527,7 +527,7 @@ const uint8_t color_unquantization_tables[21][256] = {
 // and for the color encoding.
 int quantization_mode_table[17][128];
 
-void build_quantization_mode_table(void)
+void build_quantization_mode_table()
 {
 	int i, j;
 	for (i = 0; i <= 16; i++)

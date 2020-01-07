@@ -996,5 +996,4 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 	  31,
 	  },
 	 },
-
 };

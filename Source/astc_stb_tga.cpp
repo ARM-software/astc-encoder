@@ -21,15 +21,18 @@
 #define STBI_NO_PNM
 #include "stb_image.h"
 
-astc_codec_image * load_image_with_stb(const char *filename, int padding, int *result)
-{
+astc_codec_image* load_image_with_stb(
+	const char* filename,
+	int padding,
+	int* result
+) {
 	int xsize, ysize;
 	int components;
 
 	int y_flip = 1;
 	int x, y;
 
-	astc_codec_image *astc_img = NULL;
+	astc_codec_image* astc_img = NULL;
 
 	if (stbi_is_hdr(filename))
 	{
@@ -160,8 +163,11 @@ enum tga_errors
 	-5=failed to load image because it has an unsupported pixel type
 	-6=failed to load image because it is flipped in the x dimension
 */
-astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *result)
-{
+astc_codec_image* load_tga_image(
+	const char* tga_filename,
+	int padding,
+	int* result
+) {
 	int x, y;
 	int i;
 
@@ -407,8 +413,11 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 /*
    returns -1 if any problems arose when writing the file, else the number of color channels it chose to write.
  */
-int store_tga_image(const astc_codec_image * img, const char *tga_filename, int bitness)
-{
+int store_tga_image(
+	const astc_codec_image* img,
+	const char* tga_filename,
+	int bitness
+) {
 	int x, y;
 	int i;
 

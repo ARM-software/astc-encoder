@@ -28,13 +28,18 @@
 // We have separate versions for blocks with and without alpha, since the
 // processing for blocks with alpha is significantly more expensive. The
 // direction vectors it produces are NOT normalized.
-void compute_averages_and_directions_rgba(const partition_info * pt,
-										  const imageblock * blk,
-										  const error_weight_block * ewb,
-										  const float4 * color_scalefactors,
-										  float4 * averages, float4 * directions_rgba, float3 * directions_gba, float3 * directions_rba, float3 * directions_rga, float3 * directions_rgb)
-{
-	int i;
+void compute_averages_and_directions_rgba(
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const float4* color_scalefactors,
+	float4* averages,
+	float4* directions_rgba,
+	float3* directions_gba,
+	float3* directions_rba,
+	float3* directions_rga,
+	float3* directions_rgb
+) {	int i;
 	int partition_count = pt->partition_count;
 	int partition;
 
@@ -119,11 +124,17 @@ void compute_averages_and_directions_rgba(const partition_info * pt,
 	}
 }
 
-void compute_averages_and_directions_rgb(const partition_info * pt,
-										 const imageblock * blk,
-										 const error_weight_block * ewb,
-										 const float4 * color_scalefactors, float3 * averages, float3 * directions_rgb, float2 * directions_rg, float2 * directions_rb, float2 * directions_gb)
-{
+void compute_averages_and_directions_rgb(
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const float4* color_scalefactors,
+	float3* averages,
+	float3* directions_rgb,
+	float2* directions_rg,
+	float2* directions_rb,
+	float2* directions_gb
+) {
 	int i;
 	int partition_count = pt->partition_count;
 	int partition;
@@ -199,11 +210,17 @@ void compute_averages_and_directions_rgb(const partition_info * pt,
 	}
 }
 
-void compute_averages_and_directions_3_components(const partition_info * pt,
-												  const imageblock * blk,
-												  const error_weight_block * ewb,
-												  const float3 * color_scalefactors, int component1, int component2, int component3, float3 * averages, float3 * directions)
-{
+void compute_averages_and_directions_3_components(
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const float3* color_scalefactors,
+	int component1,
+	int component2,
+	int component3,
+	float3* averages,
+	float3* directions
+) {
 	int i;
 	int partition_count = pt->partition_count;
 	int partition;
@@ -293,10 +310,16 @@ void compute_averages_and_directions_3_components(const partition_info * pt,
 
 }
 
-void compute_averages_and_directions_2_components(const partition_info * pt,
-												  const imageblock * blk,
-												  const error_weight_block * ewb, const float2 * color_scalefactors, int component1, int component2, float2 * averages, float2 * directions)
-{
+void compute_averages_and_directions_2_components(
+	const partition_info* pt,
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const float2* color_scalefactors,
+	int component1,
+	int component2,
+	float2* averages,
+	float2* directions
+) {
 	int i;
 	int partition_count = pt->partition_count;
 	int partition;
@@ -510,9 +533,13 @@ THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rba, 0, 2, 3, x, z, w, rba)
 THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rga, 0, 1, 3, x, y, w, rga)
 THREE_COMPONENT_ERROR_FUNC(compute_error_squared_rgb, 0, 1, 2, x, y, z, rgb)
 
-float compute_error_squared_rgba(const partition_info * pt,	// the partition that we use when computing the squared-error.
-								 const imageblock * blk, const error_weight_block * ewb, const processed_line4 * plines, float *length_of_lines)
-{
+float compute_error_squared_rgba(
+	const partition_info* pt,	// the partition that we use when computing the squared-error.
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const processed_line4* plines,
+	float* length_of_lines
+) {
 	int i;
 
 	float errorsum = 0.0f;
@@ -533,7 +560,10 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 				int iwt = weights[i];
 				if (ewb->texel_weight[iwt] > 1e-20f)
 				{
-					float4 point = float4(blk->work_data[4 * iwt], blk->work_data[4 * iwt + 1], blk->work_data[4 * iwt + 2], blk->work_data[4 * iwt + 3]);
+					float4 point = float4(blk->work_data[4 * iwt],
+					                      blk->work_data[4 * iwt + 1],
+					                      blk->work_data[4 * iwt + 2],
+					                      blk->work_data[4 * iwt + 3]);
 					float param = dot(point, l.bs);
 					float4 rp1 = l.amod + param * l.bis;
 					float4 dist = rp1 - point;
@@ -551,7 +581,10 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 			for (i = 0; i < texelcount; i++)
 			{
 				int iwt = weights[i];
-				float4 point = float4(blk->work_data[4 * iwt], blk->work_data[4 * iwt + 1], blk->work_data[4 * iwt + 2], blk->work_data[4 * iwt + 3]);
+				float4 point = float4(blk->work_data[4 * iwt],
+				                      blk->work_data[4 * iwt + 1],
+				                      blk->work_data[4 * iwt + 2],
+				                      blk->work_data[4 * iwt + 3]);
 				float param = dot(point, l.bs);
 				float4 rp1 = l.amod + param * l.bis;
 				float4 dist = rp1 - point;
@@ -573,17 +606,15 @@ float compute_error_squared_rgba(const partition_info * pt,	// the partition tha
 	return errorsum;
 }
 
-
-
 // function to compute the error across a tile when using a particular line for
 // a particular partition.
 float compute_error_squared_rgb_single_partition(
 	int partition_to_test,
 	const block_size_descriptor* bsd,
-	const partition_info * pt,	// the partition that we use when computing the squared-error.
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	const processed_line3 * lin	// the line for the partition.
+	const partition_info* pt,	// the partition that we use when computing the squared-error.
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const processed_line3* lin	// the line for the partition.
 ) {
 	int i;
 
@@ -597,8 +628,10 @@ float compute_error_squared_rgb_single_partition(
 		float texel_weight = ewb->texel_weight_rgb[i];
 		if (partition != partition_to_test || texel_weight < 1e-20f)
 			continue;
-		float3 point = float3(blk->work_data[4 * i], blk->work_data[4 * i + 1], blk->work_data[4 * i + 2]);
 
+		float3 point = float3(blk->work_data[4 * i],
+		                      blk->work_data[4 * i + 1],
+		                      blk->work_data[4 * i + 2]);
 		float param = dot(point, lin->bs);
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;

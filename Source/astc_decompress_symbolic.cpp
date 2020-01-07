@@ -15,8 +15,11 @@
 
 #include <stdio.h>
 
-int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, const int *weights)
-{
+int compute_value_of_texel_int(
+	int texel_to_get,
+	const decimation_table* it,
+	const int* weights
+) {
 	int i;
 	int summed_value = 8;
 	int weights_to_evaluate = it->texel_num_weights[texel_to_get];
@@ -27,9 +30,14 @@ int compute_value_of_texel_int(int texel_to_get, const decimation_table * it, co
 	return summed_value >> 4;
 }
 
-uint4 lerp_color_int(astc_decode_mode decode_mode, uint4 color0, uint4 color1, int weight, int plane2_weight, int plane2_color_component	// -1 in 1-plane mode
-	)
-{
+uint4 lerp_color_int(
+	astc_decode_mode decode_mode,
+	uint4 color0,
+	uint4 color1,
+	int weight,
+	int plane2_weight,
+	int plane2_color_component	// -1 in 1-plane mode
+) {
 	int4 ecolor0 = int4(color0.x, color0.y, color0.z, color0.w);
 	int4 ecolor1 = int4(color1.x, color1.y, color1.z, color1.w);
 
@@ -74,8 +82,8 @@ void decompress_symbolic_block(
 	int xpos,
 	int ypos,
 	int zpos,
-	const symbolic_compressed_block * scb,
-	imageblock * blk
+	const symbolic_compressed_block* scb,
+	imageblock* blk
 ) {
 	blk->xpos = xpos;
 	blk->ypos = ypos;
@@ -207,8 +215,14 @@ void decompress_symbolic_block(
 
 	for (i = 0; i < partition_count; i++)
 		unpack_color_endpoints(decode_mode,
-							   scb->color_formats[i],
-							   scb->color_quantization_level, scb->color_values[i], &(rgb_hdr_endpoint[i]), &(alpha_hdr_endpoint[i]), &(nan_endpoint[i]), &(color_endpoint0[i]), &(color_endpoint1[i]));
+		                       scb->color_formats[i],
+		                       scb->color_quantization_level,
+		                       scb->color_values[i],
+		                       &(rgb_hdr_endpoint[i]),
+		                       &(alpha_hdr_endpoint[i]),
+		                       &(nan_endpoint[i]),
+		                       &(color_endpoint0[i]),
+		                       &(color_endpoint1[i]));
 
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
@@ -248,11 +262,11 @@ void decompress_symbolic_block(
 		int partition = pt->partition_of_texel[i];
 
 		uint4 color = lerp_color_int(decode_mode,
-									 color_endpoint0[partition],
-									 color_endpoint1[partition],
-									 weights[i],
-									 plane2_weights[i],
-									 is_dual_plane ? plane2_color_component : -1);
+		                             color_endpoint0[partition],
+		                             color_endpoint1[partition],
+		                             weights[i],
+		                             plane2_weights[i],
+		                             is_dual_plane ? plane2_color_component : -1);
 
 		blk->rgb_lns[i] = rgb_hdr_endpoint[partition];
 		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
@@ -271,17 +285,16 @@ void decompress_symbolic_block(
 
 float compute_imageblock_difference(
 	const block_size_descriptor* bsd,
-	const imageblock * p1,
-	const imageblock * p2,
-	const error_weight_block * ewb
+	const imageblock* p1,
+	const imageblock* p2,
+	const error_weight_block* ewb
 ) {
-	int i;
 	int texels_per_block = bsd->texel_count;
 	float summa = 0.0f;
 	const float *f1 = p1->work_data;
 	const float *f2 = p2->work_data;
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float rdiff = fabsf(f1[4 * i] - f2[4 * i]);
 		float gdiff = fabsf(f1[4 * i + 1] - f2[4 * i + 1]);
@@ -292,7 +305,10 @@ float compute_imageblock_difference(
 		bdiff = MIN(bdiff, 1e15f);
 		adiff = MIN(adiff, 1e15f);
 
-		summa += rdiff * rdiff * ewb->error_weights[i].x + gdiff * gdiff * ewb->error_weights[i].y + bdiff * bdiff * ewb->error_weights[i].z + adiff * adiff * ewb->error_weights[i].w;
+		summa += rdiff * rdiff * ewb->error_weights[i].x +
+		         gdiff * gdiff * ewb->error_weights[i].y +
+		         bdiff * bdiff * ewb->error_weights[i].z +
+		         adiff * adiff * ewb->error_weights[i].w;
 	}
 
 	return summa;

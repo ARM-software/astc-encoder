@@ -251,12 +251,12 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	astc_decode_mode decode_mode,
 	float mode_cutoff,
 	int max_refinement_iters,
-	const block_size_descriptor *bsd,
+	const block_size_descriptor* bsd,
 	int partition_count, int partition_index,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	symbolic_compressed_block * scb,
-	compress_fixed_partition_buffers * tmpbuf
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	symbolic_compressed_block* scb,
+	compress_fixed_partition_buffers* tmpbuf
 ) {
 	int i, j, k;
 
@@ -503,12 +503,13 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	float mode_cutoff,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
-	int partition_count, int partition_index,
+	int partition_count,
+	int partition_index,
 	int separate_component,
-	const imageblock * blk,
-	const error_weight_block * ewb,
-	symbolic_compressed_block * scb,
-	compress_fixed_partition_buffers * tmpbuf
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	symbolic_compressed_block* scb,
+	compress_fixed_partition_buffers* tmpbuf
 ) {
 	int i, j, k;
 
@@ -797,7 +798,7 @@ void expand_block_artifact_suppression(
 	int xdim,
 	int ydim,
 	int zdim,
-	error_weighting_params * ewp
+	error_weighting_params* ewp
 ) {
 	int x, y, z;
 	float centerpos_x = (xdim - 1) * 0.5f;
@@ -827,12 +828,12 @@ void expand_block_artifact_suppression(
 // Function to set error weights for each color component for each texel in a block.
 // Returns the sum of all the error values set.
 static float prepare_error_weight_block(
-	const astc_codec_image * input_image,
+	const astc_codec_image* input_image,
 	const block_size_descriptor* bsd,
-	const error_weighting_params * ewp,
-	const imageblock * blk,
-	error_weight_block * ewb,
-	error_weight_block_orig * ewbo
+	const error_weighting_params* ewp,
+	const imageblock* blk,
+	error_weight_block* ewb,
+	error_weight_block_orig* ewbo
 ) {
 	int idx = 0;
 
@@ -842,9 +843,9 @@ static float prepare_error_weight_block(
 		ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
 
 	float4 color_weights = float4(ewp->rgba_weights[0],
-								  ewp->rgba_weights[1],
-								  ewp->rgba_weights[2],
-								  ewp->rgba_weights[3]);
+	                              ewp->rgba_weights[1],
+	                              ewp->rgba_weights[2],
+	                              ewp->rgba_weights[3]);
 
 	ewb->contains_zeroweight_texels = 0;
 
@@ -867,9 +868,9 @@ static float prepare_error_weight_block(
 				else
 				{
 					float4 error_weight = float4(ewp->rgb_base_weight,
-												 ewp->rgb_base_weight,
-												 ewp->rgb_base_weight,
-												 ewp->alpha_base_weight);
+					                             ewp->rgb_base_weight,
+					                             ewp->rgb_base_weight,
+					                             ewp->alpha_base_weight);
 
 					int ydt = input_image->xsize;
 					int zdt = input_image->xsize * input_image->ysize;
@@ -1031,8 +1032,13 @@ static float prepare_error_weight_block(
 	return dot(error_weight_sum, float4(1, 1, 1, 1));
 }
 
-static void prepare_block_statistics(int texels_per_block, const imageblock * blk, const error_weight_block * ewb, int *is_normal_map, float *lowest_correl)
-{
+static void prepare_block_statistics(
+	int texels_per_block,
+	const imageblock * blk,
+	const error_weight_block* ewb,
+	int* is_normal_map,
+	float* lowest_correl
+) {
 	int i;
 
 	// compute covariance matrix, as a collection of 10 scalars
@@ -1150,13 +1156,13 @@ static void prepare_block_statistics(int texels_per_block, const imageblock * bl
 int block_mode_histogram[2048];
 
 float compress_symbolic_block(
-	const astc_codec_image * input_image,
+	const astc_codec_image* input_image,
 	astc_decode_mode decode_mode,
 	const block_size_descriptor* bsd,
-	const error_weighting_params * ewp,
-	const imageblock * blk,
-	symbolic_compressed_block * scb,
-	compress_symbolic_block_buffers * tmpbuf)
+	const error_weighting_params* ewp,
+	const imageblock* blk,
+	symbolic_compressed_block* scb,
+	compress_symbolic_block_buffers* tmpbuf)
 {
 	int i, j;
 	int xpos = blk->xpos;

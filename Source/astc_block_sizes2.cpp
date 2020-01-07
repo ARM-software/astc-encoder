@@ -33,8 +33,10 @@ extern const float percentile_table_10x10[2048];
 extern const float percentile_table_12x10[2048];
 extern const float percentile_table_12x12[2048];
 
-const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
-{
+const float *get_2d_percentile_table(
+	int blockdim_x,
+	int blockdim_y
+) {
 	switch (blockdim_x)
 	{
 	case 4:
@@ -108,14 +110,20 @@ const float *get_2d_percentile_table(int blockdim_x, int blockdim_y)
 
 // stubbed for the time being.
 static const float dummy_percentile_table_3d[2048] = { 0 };
-const float *get_3d_percentile_table()
+
+const float* get_3d_percentile_table()
 {
 	return dummy_percentile_table_3d;
 }
 
 // return 0 on invalid mode, 1 on valid mode.
-static int decode_block_mode_2d(int blockmode, int *Nval, int *Mval, int *dual_weight_plane, int *quant_mode)
-{
+static int decode_block_mode_2d(
+	int blockmode,
+	int* Nval,
+	int* Mval,
+	int* dual_weight_plane,
+	int* quant_mode
+) {
 	int base_quant_mode = (blockmode >> 4) & 1;
 	int H = (blockmode >> 9) & 1;
 	int D = (blockmode >> 10) & 1;
@@ -212,8 +220,14 @@ static int decode_block_mode_2d(int blockmode, int *Nval, int *Mval, int *dual_w
 	return 1;
 }
 
-static int decode_block_mode_3d(int blockmode, int *Nval, int *Mval, int *Qval, int *dual_weight_plane, int *quant_mode)
-{
+static int decode_block_mode_3d(
+	int blockmode,
+	int* Nval,
+	int* Mval,
+	int* Qval,
+	int* dual_weight_plane,
+	int* quant_mode
+) {
 	int base_quant_mode = (blockmode >> 4) & 1;
 	int H = (blockmode >> 9) & 1;
 	int D = (blockmode >> 10) & 1;
@@ -285,7 +299,9 @@ static int decode_block_mode_3d(int blockmode, int *Nval, int *Mval, int *Qval, 
 	int qmode = (base_quant_mode - 2) + 6 * H;
 
 	int weightbits = compute_ise_bitcount(weight_count, (quantization_method) qmode);
-	if (weight_count > MAX_WEIGHTS_PER_BLOCK || weightbits < MIN_WEIGHT_BITS_PER_BLOCK || weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
+	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
+	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
+	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
 		return 0;
 
 	*Nval = N;
@@ -297,11 +313,12 @@ static int decode_block_mode_3d(int blockmode, int *Nval, int *Mval, int *Qval, 
 }
 
 static void initialize_decimation_table_2d(
-											  // dimensions of the block
-											  int xdim, int ydim,
-											  // number of grid points in 2d weight grid
-											  int x_weights, int y_weights, decimation_table * dt)
-{
+	int xdim,
+	int ydim,
+	int x_weights,
+	int y_weights,
+	decimation_table* dt
+) {
 	int i, j;
 	int x, y;
 
@@ -399,11 +416,14 @@ static void initialize_decimation_table_2d(
 }
 
 static void initialize_decimation_table_3d(
-											  // dimensions of the block
-											  int xdim, int ydim, int zdim,
-											  // number of grid points in 3d weight grid
-											  int x_weights, int y_weights, int z_weights, decimation_table * dt)
-{
+	int xdim,
+	int ydim,
+	int zdim,
+	int x_weights,
+	int y_weights,
+	int z_weights,
+	decimation_table* dt
+) {
 	int i, j;
 	int x, y, z;
 
@@ -576,8 +596,11 @@ static void initialize_decimation_table_3d(
 	dt->num_weights = weights_per_block;
 }
 
-static void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_descriptor * bsd)
-{
+static void construct_block_size_descriptor_2d(
+	int xdim,
+	int ydim,
+	block_size_descriptor* bsd
+) {
 	int decimation_mode_index[256];	// for each of the 256 entries in the decim_table_array, its index
 	int decimation_mode_count = 0;
 
@@ -740,8 +763,12 @@ static void construct_block_size_descriptor_2d(int xdim, int ydim, block_size_de
 	}
 }
 
-static void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, block_size_descriptor * bsd)
-{
+static void construct_block_size_descriptor_3d(
+	int xdim,
+	int ydim,
+	int zdim,
+	block_size_descriptor * bsd
+) {
 	int decimation_mode_index[512];	// for each of the 512 entries in the decim_table_array, its index
 	int decimation_mode_count = 0;
 
@@ -898,8 +925,12 @@ static void construct_block_size_descriptor_3d(int xdim, int ydim, int zdim, blo
 }
 
 /* Public function, see header file for detailed documentation */
-void init_block_size_descriptor(int xdim, int ydim, int zdim, block_size_descriptor* bsd)
-{
+void init_block_size_descriptor(
+	int xdim,
+	int ydim,
+	int zdim,
+	block_size_descriptor* bsd
+) {
 	if (zdim > 1)
 		construct_block_size_descriptor_3d(xdim, ydim, zdim, bsd);
 	else

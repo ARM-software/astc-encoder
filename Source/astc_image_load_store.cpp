@@ -46,8 +46,13 @@ void destroy_image(astc_codec_image * img)
 	delete img;
 }
 
-astc_codec_image *allocate_image(int bitness, int xsize, int ysize, int zsize, int padding)
-{
+astc_codec_image *allocate_image(
+	int bitness,
+	int xsize,
+	int ysize,
+	int zsize,
+	int padding
+) {
 	int i, j;
 	astc_codec_image *img = new astc_codec_image;
 	img->xsize = xsize;
@@ -344,8 +349,10 @@ uint16_t unorm16_to_sf16(uint16_t p)
 	return p;
 }
 
-void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelcount)
-{
+void imageblock_initialize_deriv_from_work_and_orig(
+	imageblock* pb,
+	int pixelcount
+) {
 	int i;
 
 	const float *fptr = pb->orig_data;
@@ -419,8 +426,10 @@ void imageblock_initialize_deriv_from_work_and_orig(imageblock * pb, int pixelco
 }
 
 // helper function to initialize the work-data from the orig-data
-void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount)
-{
+void imageblock_initialize_work_from_orig(
+	imageblock* pb,
+	int pixelcount
+) {
 	int i;
 	float *fptr = pb->orig_data;
 	float *wptr = pb->work_data;
@@ -457,8 +466,10 @@ void imageblock_initialize_work_from_orig(imageblock * pb, int pixelcount)
 }
 
 // helper function to initialize the orig-data from the work-data
-void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount)
-{
+void imageblock_initialize_orig_from_work(
+	imageblock* pb,
+	int pixelcount
+) {
 	int i;
 	float *fptr = pb->orig_data;
 	float *wptr = pb->work_data;
@@ -496,15 +507,15 @@ void imageblock_initialize_orig_from_work(imageblock * pb, int pixelcount)
 
 // fetch an imageblock from the input file.
 void fetch_imageblock(
-	const astc_codec_image * img,
-	imageblock * pb,	// picture-block to initialize with image data
+	const astc_codec_image* img,
+	imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in texture.
 	int xpos,
 	int ypos,
 	int zpos,
-	swizzlepattern swz)
-{
+	swizzlepattern swz
+) {
 	float *fptr = pb->orig_data;
 	int xsize = img->xsize + 2 * img->padding;
 	int ysize = img->ysize + 2 * img->padding;
@@ -715,8 +726,8 @@ void fetch_imageblock(
 }
 
 void write_imageblock(
-	astc_codec_image * img,
-	const imageblock * pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
+	astc_codec_image* img,
+	const imageblock* pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
 	const block_size_descriptor* bsd,
 	// position to write the block to
 	int xpos,
@@ -917,8 +928,12 @@ void write_imageblock(
    For an imageblock, update its flags.
    The updating is done based on work_data, not orig_data.
 */
-void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim)
-{
+void update_imageblock_flags(
+	imageblock* pb,
+	int xdim,
+	int ydim,
+	int zdim
+) {
 	int i;
 	float red_min = 1e38f, red_max = -1e38f;
 	float green_min = 1e38f, green_max = -1e38f;
@@ -973,8 +988,11 @@ void update_imageblock_flags(imageblock * pb, int xdim, int ydim, int zdim)
 	We have specialized loaders for DDS, KTX and HTGA; for other formats, we use stb_image.
 	This image loader will choose one based on filename.
 */
-astc_codec_image *astc_codec_load_image(const char *input_filename, int padding, int *load_result)
-{
+astc_codec_image *astc_codec_load_image(
+	const char* input_filename,
+	int padding,
+	int* load_result
+) {
 	#define LOAD_HTGA 0
 	#define LOAD_KTX 1
 	#define LOAD_DDS 2
@@ -1075,8 +1093,12 @@ int get_output_filename_enforced_bitness(const char *output_filename)
 	return -1;
 }
 
-int astc_codec_store_image(const astc_codec_image * output_image, const char *output_filename, int bitness, const char **format_string)
-{
+int astc_codec_store_image(
+	const astc_codec_image* output_image,
+	const char* output_filename,
+	int bitness,
+	const char**format_string
+) {
 	#define STORE_TGA 0
 	#define STORE_HTGA 1
 	#define STORE_KTX 2

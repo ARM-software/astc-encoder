@@ -321,8 +321,12 @@ static const uint8_t integer_of_trits[3][3][3][3][3] = {
 	}
 };
 
-void find_number_of_bits_trits_quints(int quantization_level, int *bits, int *trits, int *quints)
-{
+void find_number_of_bits_trits_quints(
+	int quantization_level,
+	int* bits,
+	int* trits,
+	int* quints
+) {
 	*bits = 0;
 	*trits = 0;
 	*quints = 0;
@@ -408,8 +412,12 @@ void find_number_of_bits_trits_quints(int quantization_level, int *bits, int *tr
 }
 
 // routine to write up to 8 bits
-static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * ptr)
-{
+static inline void write_bits(
+	int value,
+	int bitcount,
+	int bitoffset,
+	uint8_t* ptr
+) {
 	int mask = (1 << bitcount) - 1;
 	value &= mask;
 	ptr += bitoffset >> 3;
@@ -425,8 +433,11 @@ static inline void write_bits(int value, int bitcount, int bitoffset, uint8_t * 
 }
 
 // routine to read up to 8 bits
-static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
-{
+static inline int read_bits(
+	int bitcount,
+	int bitoffset,
+	const uint8_t* ptr
+) {
 	int mask = (1 << bitcount) - 1;
 	ptr += bitoffset >> 3;
 	bitoffset &= 7;
@@ -436,8 +447,13 @@ static inline int read_bits(int bitcount, int bitoffset, const uint8_t * ptr)
 	return value;
 }
 
-void encode_ise(int quantization_level, int elements, const uint8_t * input_data, uint8_t * output_data, int bit_offset)
-{
+void encode_ise(
+	int quantization_level,
+	int elements,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	int bit_offset
+) {
 	int i;
 	uint8_t lowparts[64];
 	uint8_t highparts[69];		// 64 elements + 5 elements for padding
@@ -503,8 +519,13 @@ void encode_ise(int quantization_level, int elements, const uint8_t * input_data
 	}
 }
 
-void decode_ise(int quantization_level, int elements, const uint8_t * input_data, uint8_t * output_data, int bit_offset)
-{
+void decode_ise(
+	int quantization_level,
+	int elements,
+	const uint8_t* input_data,
+	uint8_t* output_data,
+	int bit_offset
+) {
 	int i;
 	// note: due to how the trit/quint-block unpacking is done in this function,
 	// we may write more temporary results than the number of outputs
@@ -587,8 +608,10 @@ void decode_ise(int quantization_level, int elements, const uint8_t * input_data
 		output_data[i] = results[i];
 }
 
-int compute_ise_bitcount(int items, quantization_method quant)
-{
+int compute_ise_bitcount(
+	int items,
+	quantization_method quant
+) {
 	switch (quant)
 	{
 	case QUANT_2:

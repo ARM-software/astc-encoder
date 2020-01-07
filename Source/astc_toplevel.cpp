@@ -151,9 +151,11 @@ unsigned get_number_of_cpus(void)
 	return n_cpus;
 }
 
-NORETURN void astc_codec_internal_error(const char *filename, int linenum)
-{
-	printf("Internal error: File=%s Line=%d\n", filename, linenum);
+NORETURN void astc_codec_internal_error(
+	const char *filename,
+	int line
+) {
+	printf("Internal error: File=%s Line=%d\n", filename, line);
 	exit(1);
 }
 
@@ -173,8 +175,12 @@ struct astc_header
 int suppress_progress_counter = 0;
 int perform_srgb_transform = 0;
 
-astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_mode decode_mode, swizzlepattern swz_decode)
-{
+astc_codec_image *load_astc_file(
+	const char *filename,
+	int bitness,
+	astc_decode_mode decode_mode,
+	swizzlepattern swz_decode
+) {
 	int x, y, z;
 	FILE *f = fopen(filename, "rb");
 	if (!f)
@@ -270,22 +276,22 @@ astc_codec_image *load_astc_file(const char *filename, int bitness, astc_decode_
 
 struct encode_astc_image_info
 {
-	const block_size_descriptor *bsd;
-	const error_weighting_params *ewp;
-	uint8_t *buffer;
-	int *counters;
+	const block_size_descriptor* bsd;
+	const error_weighting_params* ewp;
+	uint8_t* buffer;
+	int* counters;
 	int pack_and_unpack;
 	int thread_id;
 	int threadcount;
 	astc_decode_mode decode_mode;
 	swizzlepattern swz_encode;
 	swizzlepattern swz_decode;
-	int *threads_completed;
-	const astc_codec_image *input_image;
-	astc_codec_image *output_image;
+	int* threads_completed;
+	const astc_codec_image* input_image;
+	astc_codec_image* output_image;
 };
 
-void *encode_astc_image_threadfunc(void *vblk)
+void* encode_astc_image_threadfunc(void* vblk)
 {
 	const encode_astc_image_info *blk = (const encode_astc_image_info *)vblk;
 	const block_size_descriptor *bsd = blk->bsd;
@@ -428,16 +434,23 @@ void *encode_astc_image_threadfunc(void *vblk)
 	return NULL;
 }
 
-void encode_astc_image(const astc_codec_image * input_image,
-					   astc_codec_image * output_image,
-					   int xdim,
-					   int ydim,
-					   int zdim,
-					   const error_weighting_params * ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t * buffer, int pack_and_unpack, int threadcount)
-{
+void encode_astc_image(
+	const astc_codec_image* input_image,
+	astc_codec_image* output_image,
+	int xdim,
+	int ydim,
+	int zdim,
+	const error_weighting_params* ewp,
+	astc_decode_mode decode_mode,
+	swizzlepattern swz_encode,
+	swizzlepattern swz_decode,
+	uint8_t* buffer,
+	int pack_and_unpack,
+	int threadcount
+) {
 	int i;
-	int *counters = new int[threadcount];
-	int *threads_completed = new int[threadcount];
+	int* counters = new int[threadcount];
+	int* threads_completed = new int[threadcount];
 
 	// before entering into the multi-threaded routine, ensure that the block size descriptors
 	// and the partition table descriptors needed actually exist.
@@ -445,7 +458,7 @@ void encode_astc_image(const astc_codec_image * input_image,
 	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
 	get_partition_table(&bsd, 0);
 
-	encode_astc_image_info *ai = new encode_astc_image_info[threadcount];
+	encode_astc_image_info* ai = new encode_astc_image_info[threadcount];
 	for (i = 0; i < threadcount; i++)
 	{
 		ai[i].bsd = &bsd;
@@ -483,9 +496,17 @@ void encode_astc_image(const astc_codec_image * input_image,
 	delete[] threads_completed;
 }
 
-void store_astc_file(const astc_codec_image * input_image,
-					 const char *filename, int xdim, int ydim, int zdim, const error_weighting_params * ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, int threadcount)
-{
+void store_astc_file(
+	const astc_codec_image* input_image,
+	const char* filename,
+	int xdim,
+	int ydim,
+	int zdim,
+	const error_weighting_params* ewp,
+	astc_decode_mode decode_mode,
+	swizzlepattern swz_encode,
+	int threadcount
+) {
 	int xsize = input_image->xsize;
 	int ysize = input_image->ysize;
 	int zsize = input_image->zsize;
@@ -533,12 +554,18 @@ void store_astc_file(const astc_codec_image * input_image,
 	free(buffer);
 }
 
-astc_codec_image *pack_and_unpack_astc_image(const astc_codec_image * input_image,
-											 int xdim,
-											 int ydim,
-											 int zdim,
-											 const error_weighting_params * ewp, astc_decode_mode decode_mode, swizzlepattern swz_encode, swizzlepattern swz_decode, int bitness, int threadcount)
-{
+astc_codec_image *pack_and_unpack_astc_image(
+	const astc_codec_image* input_image,
+	int xdim,
+	int ydim,
+	int zdim,
+	const error_weighting_params* ewp,
+	astc_decode_mode decode_mode,
+	swizzlepattern swz_encode,
+	swizzlepattern swz_decode,
+	int bitness,
+	int threadcount
+) {
 	int xsize = input_image->xsize;
 	int ysize = input_image->ysize;
 	int zsize = input_image->zsize;
@@ -561,8 +588,11 @@ astc_codec_image *pack_and_unpack_astc_image(const astc_codec_image * input_imag
 	return img;
 }
 
-void find_closest_blockdim_2d(float target_bitrate, int *x, int *y)
-{
+void find_closest_blockdim_2d(
+	float target_bitrate,
+	int* x,
+	int* y
+) {
 	int blockdims[6] = { 4, 5, 6, 8, 10, 12 };
 
 	float best_error = 1000;
@@ -594,8 +624,12 @@ void find_closest_blockdim_2d(float target_bitrate, int *x, int *y)
 	}
 }
 
-void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z)
-{
+void find_closest_blockdim_3d(
+	float target_bitrate,
+	int* x,
+	int* y,
+	int* z
+) {
 	int blockdims[4] = { 3, 4, 5, 6 };
 
 	float best_error = 1000;
@@ -630,8 +664,13 @@ void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z)
 	}
 }
 
-void compare_two_files(const char *filename1, const char *filename2, int low_fstop, int high_fstop, int psnrmode)
-{
+void compare_two_files(
+	const char* filename1,
+	const char* filename2,
+	int low_fstop,
+	int high_fstop,
+	int psnrmode
+) {
 	int load_result1;
 	int load_result2;
 	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, &load_result1);
@@ -666,8 +705,10 @@ void compare_two_files(const char *filename1, const char *filename2, int low_fst
 // IEEE-754 compliant system, however not every system is actually IEEE-754 compliant
 // in the first place. As such, we run a quick test to check that this is actually the case
 // (e.g. gcc on 32-bit x86 will typically fail unless -msse2 -mfpmath=sse2 is specified).
+
+// TODO: Move to mathlib
 volatile float xprec_testval = 2.51f;
-void test_inappropriate_extended_precision(void)
+void test_inappropriate_extended_precision()
 {
 	if32 p;
 	p.f = xprec_testval + 12582912.0f;
@@ -712,8 +753,10 @@ void dump_image(astc_codec_image * img)
 	printf("\n\n");
 }
 
-int astc_main(int argc, char **argv)
-{
+int astc_main(
+	int argc,
+	char **argv
+) {
 	test_inappropriate_extended_precision();
 	// initialization routines
 	prepare_angular_tables();

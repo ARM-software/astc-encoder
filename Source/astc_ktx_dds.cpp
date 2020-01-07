@@ -63,8 +63,12 @@ enum scanline_copy_method
 };
 
 // scanline copying function: this function expands data to RGBA, either U8 or FP16.
-static void copy_scanline(void *dst, const void *src, int pixels, int method)
-{
+static void copy_scanline(
+	void* dst,
+	const void* src,
+	int pixels,
+	int method
+) {
 
 #define id(x) (x)
 #define u16_sf16(x) float_to_sf16( x * (1.0f/65535.0f), SF_NEARESTEVEN )
@@ -288,8 +292,10 @@ static void copy_scanline(void *dst, const void *src, int pixels, int method)
 }
 
 // perform endianness switch on raw data
-static void switch_endianness2(void *dataptr, int bytes)
-{
+static void switch_endianness2(
+	void* dataptr,
+	int bytes
+) {
 	int i;
 	uint8_t *data = (uint8_t *) dataptr;
 
@@ -303,8 +309,10 @@ static void switch_endianness2(void *dataptr, int bytes)
 	}
 }
 
-static void switch_endianness4(void *dataptr, int bytes)
-{
+static void switch_endianness4(
+	void* dataptr,
+	int bytes
+) {
 	int i;
 	uint8_t *data = (uint8_t *) dataptr;
 
@@ -424,8 +432,11 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 	#undef REV
 }
 
-astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding, int *result)
-{
+astc_codec_image* load_ktx_uncompressed_image(
+	const char* filename,
+	int padding,
+	int* result
+) {
 	int y, z;
 
 	FILE *f = fopen(filename, "rb");
@@ -747,8 +758,11 @@ astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding,
 	return astc_img;
 }
 
-int store_ktx_uncompressed_image(const astc_codec_image * img, const char *ktx_filename, int bitness)
-{
+int store_ktx_uncompressed_image(
+	const astc_codec_image* img,
+	const char* ktx_filename,
+	int bitness
+) {
 	int x, y, z;
 	int i, j;
 
@@ -1017,8 +1031,11 @@ struct dds_header_dx10
 #define DDS_MAGIC 0x20534444
 #define DX10_MAGIC 0x30315844
 
-astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding, int *result)
-{
+astc_codec_image* load_dds_uncompressed_image(
+	const char* filename,
+	int padding,
+	int* result
+) {
 	int i;
 	int y, z;
 
@@ -1295,8 +1312,11 @@ astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding,
 	return astc_img;
 }
 
-int store_dds_uncompressed_image(const astc_codec_image * img, const char *dds_filename, int bitness)
-{
+int store_dds_uncompressed_image(
+	const astc_codec_image* img,
+	const char* dds_filename,
+	int bitness
+) {
 	int i, j;
 	int x, y, z;
 

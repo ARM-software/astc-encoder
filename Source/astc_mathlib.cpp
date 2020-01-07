@@ -64,8 +64,10 @@ uint32_t clz32(uint32_t inp)
 	#endif
 }
 
-static uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
-{
+static uint32_t rtne_shift32(
+	uint32_t inp,
+	uint32_t shamt
+) {
 	uint32_t vl1 = UINT32_C(1) << shamt;
 	uint32_t inp2 = inp + (vl1 >> 1);	/* added 0.5 ulp */
 	uint32_t msk = (inp | UINT32_C(1)) & vl1;	/* nonzero if odd. '| 1' forces it to 1 if the shamt is 0. */
@@ -75,8 +77,10 @@ static uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
 	return inp2;
 }
 
-static uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
-{
+static uint32_t rtna_shift32(
+	uint32_t inp,
+	uint32_t shamt
+) {
 	uint32_t vl1 = (UINT32_C(1) << shamt) >> 1;
 	inp += vl1;
 	inp >>= shamt;
@@ -84,8 +88,10 @@ static uint32_t rtna_shift32(uint32_t inp, uint32_t shamt)
 }
 
 
-static uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
-{
+static uint32_t rtup_shift32(
+	uint32_t inp,
+	uint32_t shamt
+) {
 	uint32_t vl1 = UINT32_C(1) << shamt;
 	inp += vl1;
 	inp--;
@@ -142,8 +148,10 @@ sf32 sf16_to_sf32(sf16 inp)
 
 /* Conversion routine that converts from FP32 to FP16. It supports denormals and all rounding modes. If a NaN is given as input, it is quietened. */
 
-sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
-{
+sf16 sf32_to_sf16(
+	sf32 inp,
+	roundmode rmode
+) {
 	/* for each possible sign/exponent combination, store a case index. This gives a 512-byte table */
 	static const uint8_t tab[512] = {
 		 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,

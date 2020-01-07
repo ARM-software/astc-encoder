@@ -49,8 +49,10 @@ public:
  *
  * @return The updated accumulator
  */
-static kahan_accum4 &operator+=(kahan_accum4 &val, float4 inc)
-{
+static kahan_accum4 &operator+=(
+	kahan_accum4 &val,
+	float4 inc
+) {
 	float4 y = inc - val.comp;
 	float4 t = val.sum + y;
 	val.comp = (t - val.sum) - y;
@@ -97,8 +99,10 @@ static float xlog2(float val)
  *
  * @return The mapped color value in [0.0f, 255.0f] range
  */
-static float mpsnr_operator(float val, int fstop)
-{
+static float mpsnr_operator(
+	float val,
+	int fstop
+) {
 	if32 p;
 	p.u = 0x3f800000 + (fstop << 23);  // 0x3f800000 is 1.0f
 	val *= p.f;
@@ -124,8 +128,12 @@ static float mpsnr_operator(float val, int fstop)
  *
  * @return The summed mPSNR difference across all active fstop levels
  */
-static float mpsnr_sumdiff(float val1, float val2, int fstop_lo, int fstop_hi)
-{
+static float mpsnr_sumdiff(
+	float val1,
+	float val2,
+	int fstop_lo,
+	int fstop_hi
+) {
 	float summa = 0.0f;
 	for (int i = fstop_lo; i <= fstop_hi; i++)
 	{
@@ -141,8 +149,8 @@ static float mpsnr_sumdiff(float val1, float val2, int fstop_lo, int fstop_hi)
 void compute_error_metrics(
 	int compute_hdr_metrics,
 	int input_components,
-	const astc_codec_image * img1,
-	const astc_codec_image * img2,
+	const astc_codec_image* img1,
+	const astc_codec_image* img2,
 	int fstop_lo,
 	int fstop_hi,
 	int show_psnr
