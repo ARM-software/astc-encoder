@@ -30,17 +30,23 @@ def get_reference_binary():
 
 
 def run_size(binary):
-    args = ["size", binary]
+    args = ["size", "--format=sysv", binary]
     result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
                     check=True, universal_newlines=True)
 
-    lines = result.stdout.splitlines()
-    assert len(lines) == 2
-    values = lines[1].split()
+    data = {}
+    patterns = {"Code": ".text", "RO": ".rodata", "ZI": ".bss"}
 
-    codeSection = float(values[0])
-    roSection = float(values[1])
-    ziSection = float(values[2])
+    lines = result.stdout.splitlines()
+    for line in lines:
+        for key, value in patterns.items():
+            if line.startswith(value):
+                size = float(line.split()[1])
+                data[key] = size
+
+    codeSection = data["Code"]
+    roSection = data["RO"]
+    ziSection = data["ZI"]
     return (codeSection, roSection, ziSection)
 
 
