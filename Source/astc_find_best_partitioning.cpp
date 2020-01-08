@@ -232,8 +232,7 @@ void find_best_partitionings(
 	float weight_imprecision_estim_squared = weight_imprecision_estim * weight_imprecision_estim;
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
-	if (print_diagnostics)
-		printf("weight_imprecision_estim = %g\n", weight_imprecision_estim);
+	printf("weight_imprecision_estim = %g\n", (double)weight_imprecision_estim);
 #endif
 
 	int uses_alpha = imageblock_uses_alpha(pb);
@@ -247,12 +246,7 @@ void find_best_partitionings(
 
 	// partitioning errors assuming that one of the color channels
 	// is uncorrelated from all the other ones
-	float separate_errors[4 * PARTITION_COUNT];
-
-	float* separate_red_errors = separate_errors;
-	float* separate_green_errors = separate_errors + PARTITION_COUNT;
-	float* separate_blue_errors = separate_errors + 2 * PARTITION_COUNT;
-	float* separate_alpha_errors = separate_errors + 3 * PARTITION_COUNT;
+	float4 separate_errors[PARTITION_COUNT];
 
 	int defacto_search_limit = PARTITION_COUNT - 1;
 
@@ -277,12 +271,10 @@ void find_best_partitionings(
 
 				uncorr_errors[i] = 1e35f;
 				samechroma_errors[i] = 1e35f;
-				separate_red_errors[i] = 1e35f;
-				separate_green_errors[i] = 1e35f;
-				separate_blue_errors[i] = 1e35f;
-				separate_alpha_errors[i] = 1e35f;
+				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
 				continue;
 			}
+
 			// the sentinel value for partitions above the search limit must be smaller
 			// than the sentinel value for invalid partitions
 			if (i >= partition_search_limit)
@@ -296,10 +288,7 @@ void find_best_partitionings(
 
 				uncorr_errors[i] = 1e34f;
 				samechroma_errors[i] = 1e34f;
-				separate_red_errors[i] = 1e34f;
-				separate_green_errors[i] = 1e34f;
-				separate_blue_errors[i] = 1e34f;
-				separate_alpha_errors[i] = 1e34f;
+				separate_errors[i] = float4(1e34f, 1e34f, 1e34f, 1e34f);
 				break;
 			}
 
@@ -341,16 +330,13 @@ void find_best_partitionings(
 
 			float uncorr_linelengths[4];
 			float samechroma_linelengths[4];
-			float separate_red_linelengths[4];
-			float separate_green_linelengths[4];
-			float separate_blue_linelengths[4];
-			float separate_alpha_linelengths[4];
+			float4 separate_linelengths[4];
 
 			for (j = 0; j < partition_count; j++)
 			{
 				uncorr_lines[j].a = averages[j];
 				if (dot(directions_rgba[j], directions_rgba[j]) == 0.0f)
-					uncorr_lines[j].b = normalize(float4(1, 1, 1, 1));
+					uncorr_lines[j].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
 				else
 					uncorr_lines[j].b = normalize(directions_rgba[j]);
 
@@ -359,8 +345,8 @@ void find_best_partitionings(
 				proc_uncorr_lines[j].bis = (uncorr_lines[j].b * inverse_color_scalefactors[j]);
 
 				samechroma_lines[j].a = float4(0, 0, 0, 0);
-				if (dot(averages[j], averages[j]) == 0)
-					samechroma_lines[j].b = normalize(float4(1, 1, 1, 1));
+				if (dot(averages[j], averages[j]) == 0.0f)
+					samechroma_lines[j].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
 				else
 					samechroma_lines[j].b = normalize(averages[j]);
 
@@ -415,50 +401,32 @@ void find_best_partitionings(
 				proc_separate_alpha_lines[j].bis = (separate_alpha_lines[j].b * float3(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z));
 			}
 
-			float uncorr_error = compute_error_squared_rgba(ptab + partition,
-															pb,
-															ewb,
-															proc_uncorr_lines,
-															uncorr_linelengths);
-
-			float samechroma_error = compute_error_squared_rgba(ptab + partition,
-																pb,
-																ewb,
-																proc_samechroma_lines,
-																samechroma_linelengths);
-
-
-			float separate_red_error = compute_error_squared_gba(ptab + partition,
-																 pb,
-																 ewb,
-																 proc_separate_red_lines,
-																 separate_red_linelengths);
-
-			float separate_green_error = compute_error_squared_rba(ptab + partition,
-																   pb,
-																   ewb,
-																   proc_separate_green_lines,
-																   separate_green_linelengths);
-
-			float separate_blue_error = compute_error_squared_rga(ptab + partition,
-																  pb,
-																  ewb,
-																  proc_separate_blue_lines,
-																  separate_blue_linelengths);
-
-			float separate_alpha_error = compute_error_squared_rgb(ptab + partition,
-																   pb,
-																   ewb,
-																   proc_separate_alpha_lines,
-																   separate_alpha_linelengths);
+			float uncorr_error = 0.0f;
+			float samechroma_error = 0.0f;
+			float4 separate_error = float4(0.0f, 0.0f, 0.0f, 0.0f);
+			compute_error_squared_rgba(ptab + partition,
+										pb,
+										ewb,
+										proc_uncorr_lines,
+										proc_samechroma_lines,
+										proc_separate_red_lines,
+										proc_separate_green_lines,
+										proc_separate_blue_lines,
+										proc_separate_alpha_lines,
+										uncorr_linelengths,
+										samechroma_linelengths,
+										separate_linelengths,
+										&uncorr_error,
+										&samechroma_error,
+										&separate_error);
 
 			// compute minimum & maximum alpha values in each partition
 			float red_min[4], red_max[4];
 			float green_min[4], green_max[4];
 			float blue_min[4], blue_max[4];
 			float alpha_min[4], alpha_max[4];
-			compute_alpha_minmax(bsd->texel_count, ptab + partition, pb, ewb, alpha_min, alpha_max);
 
+			compute_alpha_minmax(bsd->texel_count, ptab + partition, pb, ewb, alpha_min, alpha_max);
 			compute_rgb_minmax(bsd->texel_count, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
 
 			/*
@@ -482,10 +450,10 @@ void find_best_partitionings(
 
 				float4 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float4 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
-				float3 separate_red_vector = (separate_red_lines[j].b * separate_red_linelengths[j]) * float3(ics.y, ics.z, ics.w);
-				float3 separate_green_vector = (separate_green_lines[j].b * separate_green_linelengths[j]) * float3(ics.x, ics.z, ics.w);
-				float3 separate_blue_vector = (separate_blue_lines[j].b * separate_blue_linelengths[j]) * float3(ics.x, ics.y, ics.w);
-				float3 separate_alpha_vector = (separate_alpha_lines[j].b * separate_alpha_linelengths[j]) * float3(ics.x, ics.y, ics.z);
+				float3 separate_red_vector = (separate_red_lines[j].b * separate_linelengths[j].x) * float3(ics.y, ics.z, ics.w);
+				float3 separate_green_vector = (separate_green_lines[j].b * separate_linelengths[j].y) * float3(ics.x, ics.z, ics.w);
+				float3 separate_blue_vector = (separate_blue_lines[j].b * separate_linelengths[j].z) * float3(ics.x, ics.y, ics.w);
+				float3 separate_alpha_vector = (separate_alpha_lines[j].b * separate_linelengths[j].w) * float3(ics.x, ics.y, ics.z);
 
 				uncorr_vector = uncorr_vector * uncorr_vector;
 				samechroma_vector = samechroma_vector * samechroma_vector;
@@ -496,10 +464,10 @@ void find_best_partitionings(
 
 				uncorr_error += dot(uncorr_vector, error_weights);
 				samechroma_error += dot(samechroma_vector, error_weights);
-				separate_red_error += dot(separate_red_vector, float3(error_weights.y, error_weights.z, error_weights.w));
-				separate_green_error += dot(separate_green_vector, float3(error_weights.x, error_weights.z, error_weights.w));
-				separate_blue_error += dot(separate_blue_vector, float3(error_weights.x, error_weights.y, error_weights.w));
-				separate_alpha_error += dot(separate_alpha_vector, float3(error_weights.x, error_weights.y, error_weights.z));
+				separate_error.x += dot(separate_red_vector, float3(error_weights.y, error_weights.z, error_weights.w));
+				separate_error.y += dot(separate_green_vector, float3(error_weights.x, error_weights.z, error_weights.w));
+				separate_error.z += dot(separate_blue_vector, float3(error_weights.x, error_weights.y, error_weights.w));
+				separate_error.w += dot(separate_alpha_vector, float3(error_weights.x, error_weights.y, error_weights.z));
 
 				float red_scalar = (red_max[j] - red_min[j]);
 				float green_scalar = (green_max[j] - green_min[j]);
@@ -509,22 +477,20 @@ void find_best_partitionings(
 				green_scalar *= green_scalar;
 				blue_scalar *= blue_scalar;
 				alpha_scalar *= alpha_scalar;
-				separate_red_error += red_scalar * error_weights.x;
-				separate_green_error += green_scalar * error_weights.y;
-				separate_blue_error += blue_scalar * error_weights.z;
-				separate_alpha_error += alpha_scalar * error_weights.w;
+				separate_error.x += red_scalar * error_weights.x;
+				separate_error.y += green_scalar * error_weights.y;
+				separate_error.z += blue_scalar * error_weights.z;
+				separate_error.w += alpha_scalar * error_weights.w;
 			}
 
 			uncorr_errors[i] = uncorr_error;
 			samechroma_errors[i] = samechroma_error;
-			separate_red_errors[i] = separate_red_error;
-			separate_green_errors[i] = separate_green_error;
-			separate_blue_errors[i] = separate_blue_error;
-			separate_alpha_errors[i] = separate_alpha_error;
+			separate_errors[i] = separate_error;
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
-					printf("Partitioning %d-%d errors: uncorr=%g, samechroma=%g, sep-alpha=%g\n", partition_count, i, uncorr_error, samechroma_error, separate_alpha_error);
+					printf("Partitioning %d-%d errors: uncorr=%g, samechroma=%g, sep-alpha=%g\n",
+					       partition_count, i, (double)uncorr_error, (double)samechroma_error, (double)separate_error.w);
 			#endif
 		}
 	}
@@ -550,9 +516,7 @@ void find_best_partitionings(
 
 				uncorr_errors[i] = 1e35f;
 				samechroma_errors[i] = 1e35f;
-				separate_red_errors[i] = 1e35f;
-				separate_green_errors[i] = 1e35f;
-				separate_blue_errors[i] = 1e35f;
+				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
 				continue;
 			}
 
@@ -568,9 +532,7 @@ void find_best_partitionings(
 				defacto_search_limit = i;
 				uncorr_errors[i] = 1e34f;
 				samechroma_errors[i] = 1e34f;
-				separate_red_errors[i] = 1e34f;
-				separate_green_errors[i] = 1e34f;
-				separate_blue_errors[i] = 1e34f;
+				separate_errors[i] = float4(1e34f, 1e34f, 1e34f, 1e34f);
 				break;
 			}
 
@@ -610,23 +572,19 @@ void find_best_partitionings(
 
 			float uncorr_linelengths[4];
 			float samechroma_linelengths[4];
-			float separate_red_linelengths[4];
-			float separate_green_linelengths[4];
-			float separate_blue_linelengths[4];
+			float3 separate_linelengths[4];
 
 			for (j = 0; j < partition_count; j++)
 			{
 				uncorr_lines[j].a = averages[j];
 				if (dot(directions_rgb[j], directions_rgb[j]) == 0.0f)
-					uncorr_lines[j].b = normalize(float3(1, 1, 1));
+					uncorr_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					uncorr_lines[j].b = normalize(directions_rgb[j]);
 
-
 				samechroma_lines[j].a = float3(0.0f, 0.0f, 0.0f);
-
 				if (dot(averages[j], averages[j]) == 0.0f)
-					samechroma_lines[j].b = normalize(float3(1, 1, 1));
+					samechroma_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					samechroma_lines[j].b = normalize(averages[j]);
 
@@ -663,8 +621,7 @@ void find_best_partitionings(
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * float2(color_scalefactors[j].y, color_scalefactors[j].z));
 				proc_separate_red_lines[j].bis = (separate_red_lines[j].b * float2(inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z));
 
-				proc_separate_green_lines[j].amod =
-					(separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) * float2(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].z);
+				proc_separate_green_lines[j].amod = (separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) * float2(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].z);
 				proc_separate_green_lines[j].bs = (separate_green_lines[j].b * float2(color_scalefactors[j].x, color_scalefactors[j].z));
 				proc_separate_green_lines[j].bis = (separate_green_lines[j].b * float2(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].z));
 
@@ -673,35 +630,24 @@ void find_best_partitionings(
 				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b * float2(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].y));
 			}
 
-			float uncorr_error = compute_error_squared_rgb(ptab + partition,
-														   pb,
-														   ewb,
-														   proc_uncorr_lines,
-														   uncorr_linelengths);
+			float uncorr_error = 0.0f;
+			float samechroma_error = 0.0f;
+			float3 separate_error = float3(0.0f, 0.0f, 0.0f);
 
-			float samechroma_error = compute_error_squared_rgb(ptab + partition,
-															   pb,
-															   ewb,
-															   proc_samechroma_lines,
-															   samechroma_linelengths);
-
-			float separate_red_error = compute_error_squared_gb(ptab + partition,
-																pb,
-																ewb,
-																proc_separate_red_lines,
-																separate_red_linelengths);
-
-			float separate_green_error = compute_error_squared_rb(ptab + partition,
-																  pb,
-																  ewb,
-																  proc_separate_green_lines,
-																  separate_green_linelengths);
-
-			float separate_blue_error = compute_error_squared_rg(ptab + partition,
-																 pb,
-																 ewb,
-																 proc_separate_blue_lines,
-																 separate_blue_linelengths);
+			compute_error_squared_rgb(ptab + partition,
+			                          pb,
+			                          ewb,
+			                          proc_uncorr_lines,
+			                          proc_samechroma_lines,
+			                          proc_separate_red_lines,
+			                          proc_separate_green_lines,
+			                          proc_separate_blue_lines,
+			                          uncorr_linelengths,
+			                          samechroma_linelengths,
+			                          separate_linelengths,
+			                          &uncorr_error,
+			                          &samechroma_error,
+			                          &separate_error);
 
 			float red_min[4], red_max[4];
 			float green_min[4], green_max[4];
@@ -718,7 +664,7 @@ void find_best_partitionings(
 			   4: for each texel, square the vector, then do a dot-product with the texel's error weight;
 			      sum up the results across all texels.
 			   4(optimized): square the vector once, then do a dot-product with the average texel error,
-			     then multiply by the number of texels.
+			      then multiply by the number of texels.
 			 */
 
 			for (j = 0; j < partition_count; j++)
@@ -731,9 +677,9 @@ void find_best_partitionings(
 				float3 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float3 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
 
-				float2 separate_red_vector = (separate_red_lines[j].b * separate_red_linelengths[j]) * float2(ics.y, ics.z);
-				float2 separate_green_vector = (separate_green_lines[j].b * separate_green_linelengths[j]) * float2(ics.x, ics.z);
-				float2 separate_blue_vector = (separate_blue_lines[j].b * separate_blue_linelengths[j]) * float2(ics.x, ics.y);
+				float2 separate_red_vector = (separate_red_lines[j].b * separate_linelengths[j].x) * float2(ics.y, ics.z);
+				float2 separate_green_vector = (separate_green_lines[j].b * separate_linelengths[j].y) * float2(ics.x, ics.z);
+				float2 separate_blue_vector = (separate_blue_lines[j].b * separate_linelengths[j].z) * float2(ics.x, ics.y);
 
 				uncorr_vector = uncorr_vector * uncorr_vector;
 				samechroma_vector = samechroma_vector * samechroma_vector;
@@ -743,9 +689,9 @@ void find_best_partitionings(
 
 				uncorr_error += dot(uncorr_vector, error_weights);
 				samechroma_error += dot(samechroma_vector, error_weights);
-				separate_red_error += dot(separate_red_vector, float2(error_weights.y, error_weights.z));
-				separate_green_error += dot(separate_green_vector, float2(error_weights.x, error_weights.z));
-				separate_blue_error += dot(separate_blue_vector, float2(error_weights.x, error_weights.y));
+				separate_error.x += dot(separate_red_vector, float2(error_weights.y, error_weights.z));
+				separate_error.y += dot(separate_green_vector, float2(error_weights.x, error_weights.z));
+				separate_error.z += dot(separate_blue_vector, float2(error_weights.x, error_weights.y));
 
 				float red_scalar = (red_max[j] - red_min[j]);
 				float green_scalar = (green_max[j] - green_min[j]);
@@ -755,22 +701,20 @@ void find_best_partitionings(
 				green_scalar *= green_scalar;
 				blue_scalar *= blue_scalar;
 
-				separate_red_error += red_scalar * error_weights.x;
-				separate_green_error += green_scalar * error_weights.y;
-				separate_blue_error += blue_scalar * error_weights.z;
+				separate_error.x += red_scalar * error_weights.x;
+				separate_error.y += green_scalar * error_weights.y;
+				separate_error.z += blue_scalar * error_weights.z;
 			}
 
 			uncorr_errors[i] = uncorr_error;
 			samechroma_errors[i] = samechroma_error;
-
-			separate_red_errors[i] = separate_red_error;
-			separate_green_errors[i] = separate_green_error;
-			separate_blue_errors[i] = separate_blue_error;
+			separate_errors[i] = float4(separate_error.x, separate_error.y, separate_error.z, 0.0f);
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
 					printf("Partitioning %d-%d errors: uncorr=%f, samechroma=%f, sep-red=%f, sep-green=%f, sep-blue=%f\n",
-						   partition_count, partition, uncorr_error, samechroma_error, separate_red_error, separate_green_error, separate_blue_error);
+					       partition_count, partition, (double)uncorr_error, (double)samechroma_error,
+					       (double)separate_error.x, (double)separate_error.y, (double)separate_error.z);
 			#endif
 		}
 	}
@@ -812,42 +756,52 @@ void find_best_partitionings(
 	for (i = 0; i < 2 * candidates_to_return; i++)
 	{
 		int best_partition = 0;
+		int best_component = 0;
 		float best_partition_error = 1e30f;
 
 		for (j = 0; j <= defacto_search_limit; j++)
 		{
-			// TODO: Review this heuristic
-			if (1 || !uses_alpha)
+			if (separate_errors[j].x < best_partition_error)
 			{
-				if (separate_errors[j] < best_partition_error)
-				{
-					best_partition = j;
-					best_partition_error = separate_errors[j];
-				}
-				if (separate_errors[j + PARTITION_COUNT] < best_partition_error)
-				{
-					best_partition = j + PARTITION_COUNT;
-					best_partition_error = separate_errors[j + PARTITION_COUNT];
-				}
-				if (separate_errors[j + 2 * PARTITION_COUNT] < best_partition_error)
-				{
-					best_partition = j + 2 * PARTITION_COUNT;
-					best_partition_error = separate_errors[j + 2 * PARTITION_COUNT];
-				}
+				best_component = 0;
+				best_partition = j;
+				best_partition_error = separate_errors[j].x;
+			}
+
+			if (separate_errors[j].y < best_partition_error)
+			{
+				best_component = 1;
+				best_partition = j;
+				best_partition_error = separate_errors[j].y;
+			}
+
+			if (separate_errors[j].z < best_partition_error)
+			{
+				best_component = 2;
+				best_partition = j;
+				best_partition_error = separate_errors[j].z;
 			}
 
 			if (uses_alpha)
 			{
-				if (separate_errors[j + 3 * PARTITION_COUNT] < best_partition_error)
+				if (separate_errors[j].w < best_partition_error)
 				{
-					best_partition = j + 3 * PARTITION_COUNT;
-					best_partition_error = separate_errors[j + 3 * PARTITION_COUNT];
+					best_component = 3;
+					best_partition = j;
+					best_partition_error = separate_errors[j].w;
 				}
 			}
 		}
 
-		separate_errors[best_partition] = 1e30f;
-		best_partition = ((best_partition >> PARTITION_BITS) << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
+		switch(best_component)
+		{
+			case 0: separate_errors[best_partition].x = 1e30f; break;
+			case 1: separate_errors[best_partition].y = 1e30f; break;
+			case 2: separate_errors[best_partition].z = 1e30f; break;
+			case 3: separate_errors[best_partition].w = 1e30f; break;
+		}
+
+		best_partition = (best_component << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
 		best_partitions_dual_weight_planes[i] = best_partition;
 	}
 }

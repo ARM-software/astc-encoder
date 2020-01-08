@@ -116,13 +116,11 @@ void compute_encoding_choice_errors(
 
 	float3 averages[4];
 	float3 directions_rgb[4];
-
 	float4 error_weightings[4];
 	float4 color_scalefactors[4];
 	float4 inverse_color_scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
-
 	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
 
 	line3 uncorr_rgb_lines[4];

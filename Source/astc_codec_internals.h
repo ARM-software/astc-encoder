@@ -15,7 +15,9 @@
 #define ASTC_CODEC_INTERNALS_INCLUDED
 
 #include <cstdint>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+
 #include "astc_mathlib.h"
 
 // Temporary workaround to build machine still running VS2013
@@ -434,7 +436,6 @@ void compute_averages_and_directions_rgb(
 	float3* averages,
 	float3* directions_rgb);
 
-
 void compute_averages_and_directions_rgba(
 	const partition_info* pt,
 	const imageblock* blk,
@@ -492,47 +493,38 @@ float compute_error_squared_rga(
 	const processed_line3* plines,
 	float* length_of_lines);
 
-float compute_error_squared_rgb(
+void compute_error_squared_rgb(
 	const partition_info* pt,	// the partition that we use when computing the squared-error.
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const processed_line3* plines,
-	float* length_of_lines);
+	const processed_line3* plines_uncorr,
+	const processed_line3* plines_samechroma,
+	const processed_line2* plines_separate_red,
+	const processed_line2* plines_separate_green,
+	const processed_line2* plines_separate_blue,
+	float* length_uncorr,
+	float* length_samechroma,
+	float3* length_separate,
+	float* uncorr_error,
+	float* samechroma_error,
+	float3* separate_color_error);
 
-float compute_error_squared_rgba(
+void compute_error_squared_rgba(
 	const partition_info* pt,	// the partition that we use when computing the squared-error.
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const processed_line4* plines,
-	float* length_of_lines);
-
-float compute_error_squared_rg(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line2* plines,
-	float* length_of_lines);
-
-float compute_error_squared_rb(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line2* plines,
-	float* length_of_lines);
-
-float compute_error_squared_gb(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line2* plines,
-	float* length_of_lines);
-
-float compute_error_squared_ra(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line2* plines,
-	float* length_of_lines);
+	const processed_line4* plines_uncorr,
+	const processed_line4* plines_samechroma,
+	const processed_line3* plines_separate_red,
+	const processed_line3* plines_separate_green,
+	const processed_line3* plines_separate_blue,
+	const processed_line3* plines_separate_alpha,
+	float* length_uncorr,
+	float* length_samechroma,
+	float4* length_separate,
+	float* uncorr_error,
+	float* samechroma_error,
+	float4* separate_color_error);
 
 // functions to compute error value across a tile for a particular line function
 // for a single partition.

@@ -37,7 +37,7 @@ class TestImage():
         self.dynamicRange = nameParts[0]
         self.format = nameParts[1]
 
-    def run_once(self, testBinary, blockSize, profile):
+    def run_once(self, testBinary, blockSize, profile, verbose=False):
         """
         Run a single compression pass.
         """
@@ -70,6 +70,10 @@ class TestImage():
         if self.dynamicRange == "hdr":
             args.append("-hdr")
 
+        if verbose:
+            args.append("-j")
+            args.append("1")
+
         # Inject the callgrind profiler prefix
         if profile:
             args.insert(0, "--callgrind-out-file=callgrind.out")
@@ -85,9 +89,14 @@ class TestImage():
         try:
             result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
                             check=True, universal_newlines=True)
-        except (OSError, sp.CalledProcessError):
+        except sp.CalledProcessError as e:
             print("ERROR: Test run failed")
             print("  + %s" % " ".join(args))
+
+            if verbose:
+                print(e.stderr)
+                print(e.stdout)
+
             sys.exit(1)
 
         # Convert the TGA to PNG and delete the TGA (LDR only)
@@ -131,6 +140,9 @@ class TestImage():
             os.system("dot -Tpng callgrind.dot -o callgrind.png")
             os.remove("callgrind.dot")
 
+        if verbose:
+            print(result.stdout)
+
         assert runPSNR is not None, "No coding PSNR found %s" % result.stdout
         assert runTime is not None, "No coding time found %s" % result.stdout
         return (runPSNR, runTime, allTime, outFilePath)
@@ -170,18 +182,18 @@ def get_test_binary():
     assert False, "Unknown operating system %s" % sys.platform
 
 
-def get_reference_binary():
+def get_binary(binary):
     """
     Return the reference binary path for the current host machine.
     """
-    if "linux" in sys.platform:
-        return "./Binary/linux-x64/astcenc"
-    elif sys.platform == "darwin":
-        return "./Binary/mac-x64/astcenc"
-    elif sys.platform == "win32":
-        return "./Binary/windows-x64/astcenc.exe"
+    appmap = {
+        "reference": "./Binary/linux-x64/astcenc",
+        "new": "./Source/astcenc",
+        "original": "./SourceOrig/astcenc",
+        "prototype": "./SourceProto/astcenc",
+    }
 
-    assert False, "Unknown operating system %s" % sys.platform
+    return appmap[binary]
 
 
 def parse_command_line():
@@ -200,14 +212,18 @@ def parse_command_line():
     parser.add_argument("--profile", dest="profile", default=False,
                         action="store_true", help="use callgrind profiler")
 
-    parser.add_argument("--reference", dest="useReference", default=False,
-                        action="store_true", help="use reference binary")
+    choices = ("reference", "original", "prototype", "new")
+    parser.add_argument("--binary", dest="useBinary", default="new",
+                        choices=choices, help="select binary")
 
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
     parser.add_argument("--warmup", dest="testWarmups", default=0,
                         type=int, help="warmup iteration count")
+
+    parser.add_argument("-v", dest="verbose", default=False,
+                        action="store_true", help="enable verbose logging")
 
     args = parser.parse_args()
     return args
@@ -220,9 +236,7 @@ def main():
     # Parse command lines
     args = parse_command_line()
 
-    app = get_test_binary()
-    if args.useReference:
-        app = get_reference_binary()
+    app = get_binary(args.useBinary)
 
     image = TestImage(args.image)
 
@@ -231,7 +245,7 @@ def main():
     codeTimes = []
     for _ in range(0, args.testRepeats + args.testWarmups):
         psnr, codeSecs, allSecs, output = \
-            image.run_once(app, args.block, args.profile)
+            image.run_once(app, args.block, args.profile, args.verbose)
         codeTimes.append(codeSecs)
         allTimes.append(allSecs)
 
@@ -244,6 +258,7 @@ def main():
     codeSecs = sum(codeTimes) / len(codeTimes)
 
     # Print summary results
+    print("Binary: %s" % args.useBinary)
     print("PSNR: %0.3f dB" % psnr)
     print("Coding time: %0.3f s (avg of %u runs)" % (codeSecs, len(codeTimes)))
     print("All time:    %0.3f s (avg of %u runs)" % (allSecs, len(allTimes)))
