@@ -320,16 +320,10 @@ void find_best_partitionings(
 
 			float4 averages[4];
 			float4 directions_rgba[4];
-			float3 directions_gba[4];
-			float3 directions_rba[4];
-			float3 directions_rga[4];
-			float3 directions_rgb[4];
 
 			compute_averages_and_directions_rgba(ptab + partition, pb, ewb,
 			                                     color_scalefactors, averages,
-			                                     directions_rgba, directions_gba,
-			                                     directions_rba, directions_rga,
-			                                     directions_rgb);
+			                                     directions_rgba);
 
 			line4 uncorr_lines[4];
 			line4 samechroma_lines[4];
@@ -375,28 +369,32 @@ void find_best_partitionings(
 				proc_samechroma_lines[j].bis = (samechroma_lines[j].b * inverse_color_scalefactors[j]);
 
 				separate_red_lines[j].a = float3(averages[j].y, averages[j].z, averages[j].w);
-				if (dot(directions_gba[j], directions_gba[j]) == 0.0f)
+				float3 dirs_gba = float3(directions_rgba[j].y, directions_rgba[j].z, directions_rgba[j].w);
+				if (dot(dirs_gba, dirs_gba) == 0.0f)
 					separate_red_lines[j].b = normalize(float3(1, 1, 1));
 				else
-					separate_red_lines[j].b = normalize(directions_gba[j]);
+					separate_red_lines[j].b = normalize(dirs_gba);
 
 				separate_green_lines[j].a = float3(averages[j].x, averages[j].z, averages[j].w);
-				if (dot(directions_rba[j], directions_rba[j]) == 0.0f)
+				float3 dirs_rba = float3(directions_rgba[j].x, directions_rgba[j].z, directions_rgba[j].w);
+				if (dot(dirs_rba, dirs_rba) == 0.0f)
 					separate_green_lines[j].b = normalize(float3(1, 1, 1));
 				else
-					separate_green_lines[j].b = normalize(directions_rba[j]);
+					separate_green_lines[j].b = normalize(dirs_rba);
 
 				separate_blue_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].w);
-				if (dot(directions_rga[j], directions_rga[j]) == 0.0f)
+				float3 dirs_rga = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].w);
+				if (dot(dirs_rga, dirs_rga ) == 0.0f)
 					separate_blue_lines[j].b = normalize(float3(1, 1, 1));
 				else
-					separate_blue_lines[j].b = normalize(directions_rga[j]);
+					separate_blue_lines[j].b = normalize(dirs_rga);
 
 				separate_alpha_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].z);
-				if (dot(directions_rgb[j], directions_rgb[j]) == 0.0f)
+				float3 dirs_rgb = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].z);
+				if (dot(dirs_rgb, dirs_rgb) == 0.0f)
 					separate_alpha_lines[j].b = normalize(float3(1, 1, 1));
 				else
-					separate_alpha_lines[j].b = normalize(directions_rgb[j]);
+					separate_alpha_lines[j].b = normalize(dirs_rgb);
 
 				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float3(inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z, inverse_color_scalefactors[j].w);
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * float3(color_scalefactors[j].y, color_scalefactors[j].z, color_scalefactors[j].w));
@@ -594,11 +592,8 @@ void find_best_partitionings(
 
 			float3 averages[4];
 			float3 directions_rgb[4];
-			float2 directions_rg[4];
-			float2 directions_rb[4];
-			float2 directions_gb[4];
 
-			compute_averages_and_directions_rgb(ptab + partition, pb, ewb, color_scalefactors, averages, directions_rgb, directions_rg, directions_rb, directions_gb);
+			compute_averages_and_directions_rgb(ptab + partition, pb, ewb, color_scalefactors, averages, directions_rgb);
 
 			line3 uncorr_lines[4];
 			line3 samechroma_lines[4];
@@ -644,22 +639,25 @@ void find_best_partitionings(
 				proc_samechroma_lines[j].bis = (samechroma_lines[j].b * float3(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z));
 
 				separate_red_lines[j].a = float2(averages[j].y, averages[j].z);
-				if (dot(directions_gb[j], directions_gb[j]) == 0.0f)
+				float2 dirs_gb = float2(directions_rgb[j].y, directions_rgb[j].z);
+				if (dot(dirs_gb, dirs_gb) == 0.0f)
 					separate_red_lines[j].b = normalize(float2(1, 1));
 				else
-					separate_red_lines[j].b = normalize(directions_gb[j]);
+					separate_red_lines[j].b = normalize(dirs_gb);
 
 				separate_green_lines[j].a = float2(averages[j].x, averages[j].z);
-				if (dot(directions_rb[j], directions_rb[j]) == 0.0f)
+				float2 dirs_rb = float2(directions_rgb[j].x, directions_rgb[j].z);
+				if (dot(dirs_rb, dirs_rb) == 0.0f)
 					separate_green_lines[j].b = normalize(float2(1, 1));
 				else
-					separate_green_lines[j].b = normalize(directions_rb[j]);
+					separate_green_lines[j].b = normalize(dirs_rb);
 
 				separate_blue_lines[j].a = float2(averages[j].x, averages[j].y);
-				if (dot(directions_rg[j], directions_rg[j]) == 0.0f)
+				float2 dirs_rg = float2(directions_rgb[j].x, directions_rgb[j].y);
+				if (dot(dirs_rg, dirs_rg) == 0.0f)
 					separate_blue_lines[j].b = normalize(float2(1, 1));
 				else
-					separate_blue_lines[j].b = normalize(directions_rg[j]);
+					separate_blue_lines[j].b = normalize(dirs_rg);
 
 				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float2(inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z);
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * float2(color_scalefactors[j].y, color_scalefactors[j].z));

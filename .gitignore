@@ -9,3 +9,4 @@ Source/VS2017/Release
 Source/VS2017/Debug
 Source/VS2017/astcenc.vcxproj.user
 TestOutput
+Binary/linux-x64/astcenc-base

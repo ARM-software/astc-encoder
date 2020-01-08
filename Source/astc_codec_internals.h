@@ -432,10 +432,7 @@ void compute_averages_and_directions_rgb(
 	const error_weight_block* ewb,
 	const float4* color_scalefactors,
 	float3* averages,
-	float3* directions_rgb,
-	float2* directions_rg,
-	float2* directions_rb,
-	float2* directions_gb);
+	float3* directions_rgb);
 
 
 void compute_averages_and_directions_rgba(
@@ -444,11 +441,7 @@ void compute_averages_and_directions_rgba(
 	const error_weight_block* ewb,
 	const float4* color_scalefactors,
 	float4* averages,
-	float4* directions_rgba,
-	float3* directions_gba,
-	float3* directions_rba,
-	float3* directions_rga,
-	float3* directions_rgb);
+	float4* directions_rgba);
 
 void compute_averages_and_directions_3_components(
 	const partition_info* pt,

@@ -34,11 +34,7 @@ void compute_averages_and_directions_rgba(
 	const error_weight_block* ewb,
 	const float4* color_scalefactors,
 	float4* averages,
-	float4* directions_rgba,
-	float3* directions_gba,
-	float3* directions_rba,
-	float3* directions_rga,
-	float3* directions_rgb
+	float4* directions_rgba
 ) {	int i;
 	int partition_count = pt->partition_count;
 	int partition;
@@ -117,10 +113,6 @@ void compute_averages_and_directions_rgba(
 		}
 
 		directions_rgba[partition] = best_vector;
-		directions_rgb[partition] = float3(best_vector.x, best_vector.y, best_vector.z);
-		directions_rga[partition] = float3(best_vector.x, best_vector.y, best_vector.w);
-		directions_rba[partition] = float3(best_vector.x, best_vector.z, best_vector.w);
-		directions_gba[partition] = float3(best_vector.y, best_vector.z, best_vector.w);
 	}
 }
 
@@ -130,10 +122,7 @@ void compute_averages_and_directions_rgb(
 	const error_weight_block* ewb,
 	const float4* color_scalefactors,
 	float3* averages,
-	float3* directions_rgb,
-	float2* directions_rg,
-	float2* directions_rb,
-	float2* directions_gb
+	float3* directions_rgb
 ) {
 	int i;
 	int partition_count = pt->partition_count;
@@ -204,9 +193,6 @@ void compute_averages_and_directions_rgb(
 		}
 
 		directions_rgb[partition] = best_vector;
-		directions_gb[partition] = float2(best_vector.y, best_vector.z);
-		directions_rb[partition] = float2(best_vector.x, best_vector.z);
-		directions_rg[partition] = float2(best_vector.x, best_vector.y);
 	}
 }
 

@@ -718,10 +718,6 @@ static void compute_endpoints_and_ideal_weights_rgba(
 
 	float4 averages[4];
 	float4 directions_rgba[4];
-	float3 directions_gba[4];
-	float3 directions_rba[4];
-	float3 directions_rga[4];
-	float3 directions_rgb[4];
 
 	line4 lines[4];
 
@@ -739,7 +735,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	for (i = 0; i < partition_count; i++)
 		scalefactors[i] = normalize(color_scalefactors[i]) * 2.0f;
 
-	compute_averages_and_directions_rgba(pt, blk, ewb, scalefactors, averages, directions_rgba, directions_gba, directions_rba, directions_rga, directions_rgb);
+	compute_averages_and_directions_rgba(pt, blk, ewb, scalefactors, averages, directions_rgba);
 
 	// if the direction-vector ends up pointing from light to dark, FLIP IT!
 	// this will make the first endpoint the darkest one.

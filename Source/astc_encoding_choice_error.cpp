@@ -116,9 +116,6 @@ void compute_encoding_choice_errors(
 
 	float3 averages[4];
 	float3 directions_rgb[4];
-	float2 directions_rg[4];
-	float2 directions_rb[4];
-	float2 directions_gb[4];
 
 	float4 error_weightings[4];
 	float4 color_scalefactors[4];
@@ -126,7 +123,7 @@ void compute_encoding_choice_errors(
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
 
-	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb, directions_rg, directions_rb, directions_gb);
+	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
 
 	line3 uncorr_rgb_lines[4];
 	line3 samechroma_rgb_lines[4];	// for LDR-RGB-scale
