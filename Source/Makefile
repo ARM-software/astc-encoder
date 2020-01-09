@@ -43,7 +43,7 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++17 -O3 -msse2 -mfpmath=sse \
+CPPFLAGS = -std=c++14 -O3 -msse2 -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 astcenc: $(OBJECTS)

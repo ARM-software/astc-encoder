@@ -392,9 +392,9 @@ static void initialize_decimation_table_2d(
 
 		for (j = 0; j < weightcount_of_texel[i]; j++)
 		{
-			dt->texel_weights_int[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_float[i][j] = static_cast < float >(weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[i][j] = grid_weights_of_texel[i][j];
+			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
+			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights[i][j] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -402,12 +402,36 @@ static void initialize_decimation_table_2d(
 	{
 		dt->weight_num_texels[i] = texelcount_of_weight[i];
 
-
 		for (j = 0; j < texelcount_of_weight[i]; j++)
 		{
-			dt->weight_texel[i][j] = texels_of_weight[i][j];
-			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-			dt->weights_flt[i][j] = static_cast < float >(texelweights_of_weight[i][j]);
+			int texel = texels_of_weight[i][j];
+			dt->weight_texel[i][j] = (uint8_t)texel;
+			dt->weights_int[i][j] = (uint8_t)texelweights_of_weight[i][j];
+			dt->weights_flt[i][j] = (float)texelweights_of_weight[i][j];
+
+			// perform a layer of array unrolling. An aspect of this unrolling is that
+			// one of the texel-weight indexes is an identity-mapped index; we will use this
+			// fact to reorder the indexes so that the first one is the identity index.
+			int swap_idx = -1;
+			for (int k = 0; k < 4; k++)
+			{
+				int dttw = dt->texel_weights[texel][k];
+				float dttwf = dt->texel_weights_float[texel][k];
+				if (dttw == i && dttwf != 0.0f)
+					swap_idx = k;
+				dt->texel_weights_texel[i][j][k] = (uint8_t)dttw;
+				dt->texel_weights_float_texel[i][j][k] = dttwf;
+			}
+
+			if (swap_idx != 0)
+			{
+				int vi = dt->texel_weights_texel[i][j][0];
+				float vf = dt->texel_weights_float_texel[i][j][0];
+				dt->texel_weights_texel[i][j][0] = dt->texel_weights_texel[i][j][swap_idx];
+				dt->texel_weights_float_texel[i][j][0] = dt->texel_weights_float_texel[i][j][swap_idx];
+				dt->texel_weights_texel[i][j][swap_idx] = (uint8_t)vi;
+				dt->texel_weights_float_texel[i][j][swap_idx] = vf;
+			}
 		}
 	}
 
@@ -575,9 +599,9 @@ static void initialize_decimation_table_3d(
 
 		for (j = 0; j < weightcount_of_texel[i]; j++)
 		{
-			dt->texel_weights_int[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_float[i][j] = static_cast < float >(weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[i][j] = grid_weights_of_texel[i][j];
+			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
+			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights[i][j] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -586,9 +610,34 @@ static void initialize_decimation_table_3d(
 		dt->weight_num_texels[i] = texelcount_of_weight[i];
 		for (j = 0; j < texelcount_of_weight[i]; j++)
 		{
-			dt->weight_texel[i][j] = texels_of_weight[i][j];
-			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-			dt->weights_flt[i][j] = static_cast < float >(texelweights_of_weight[i][j]);
+			int texel = texels_of_weight[i][j];
+			dt->weight_texel[i][j] = (uint8_t)texel;
+			dt->weights_int[i][j] = (uint8_t)texelweights_of_weight[i][j];
+			dt->weights_flt[i][j] = (float)texelweights_of_weight[i][j];
+
+			// perform a layer of array unrolling. An aspect of this unrolling is that
+			// one of the texel-weight indexes is an identity-mapped index; we will use this
+			// fact to reorder the indexes so that the first one is the identity index.
+			int swap_idx = -1;
+			for (int k = 0; k < 4; k++)
+			{
+				int dttw = dt->texel_weights[texel][k];
+				float dttwf = dt->texel_weights_float[texel][k];
+				if (dttw == i && dttwf != 0.0f)
+					swap_idx = k;
+				dt->texel_weights_texel[i][j][k] = (uint8_t)dttw;
+				dt->texel_weights_float_texel[i][j][k] = dttwf;
+			}
+
+			if (swap_idx != 0)
+			{
+				int vi = dt->texel_weights_texel[i][j][0];
+				float vf = dt->texel_weights_float_texel[i][j][0];
+				dt->texel_weights_texel[i][j][0] = dt->texel_weights_texel[i][j][swap_idx];
+				dt->texel_weights_float_texel[i][j][0] = dt->texel_weights_float_texel[i][j][swap_idx];
+				dt->texel_weights_texel[i][j][swap_idx] = (uint8_t)vi;
+				dt->texel_weights_float_texel[i][j][swap_idx] = vf;
+			}
 		}
 	}
 
