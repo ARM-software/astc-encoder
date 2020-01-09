@@ -68,6 +68,8 @@ class TestImage():
             assert len(nameParts) == 4
             if "s" in nameParts[3]:
                 self.useLevel.append("smoke")
+            if "x" in nameParts[3]:
+                self.useLevel = []
 
             # Name of the test excludes flags from the file name
             self.name = "-".join(nameParts[0:3])
@@ -127,6 +129,10 @@ class TestImage():
         if self.format == "xy":
             args.append("-normal_psnr")
 
+        # Switch sRGB images into sRGB mode
+        if self.format == "srgba":
+            args.append("-srgb")
+
         # Switch HDR data formats into HDR compression mode; note that this
         # mode assumes that the alpha channel is non-correlated
         if self.dynamicRange == "hdr":
@@ -154,7 +160,7 @@ class TestImage():
         if self.dynamicRange == "ldr":
             if self.format in ("rgb", "xy"):
                 patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
-            elif self.format == "rgba":
+            elif self.format in ("srgba", "rgba"):
                 patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
@@ -292,7 +298,10 @@ def get_test_listing(testReference, patchRun=False):
 
             testFilePath = os.path.join(root, testFile)
             image = TestImage(testFilePath, testReference, patchRun)
-            tests.append(image)
+
+            # If this image has any test use level then add it to the list
+            if image.useLevel:
+                tests.append(image)
 
     return tests
 

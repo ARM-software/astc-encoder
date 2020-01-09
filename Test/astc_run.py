@@ -65,6 +65,10 @@ class TestImage():
         if self.format == "xy":
             args.append("-normal_psnr")
 
+        # Switch sRGB images into sRGB mode
+        if self.format == "srgba":
+            args.append("-srgb")
+
         # Switch HDR data formats into HDR compression mode; note that this
         # mode assumes that the alpha channel is non-correlated
         if self.dynamicRange == "hdr":
@@ -110,7 +114,7 @@ class TestImage():
         if self.dynamicRange == "ldr":
             if self.format in ("rgb", "xy"):
                 patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
-            elif self.format == "rgba":
+            elif self.format in ("srgba", "rgba"):
                 patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
