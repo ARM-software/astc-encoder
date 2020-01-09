@@ -115,7 +115,7 @@ class TestImage():
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
         else:
-            patternPSNR = "PSNR \\(RGB normalized to peak\\): ([0-9.]*) dB"
+            patternPSNR = r"mPSNR \(RGB\) .*: ([0-9.]*) dB"
 
         patternPSNR = re.compile(patternPSNR)
         patternTime = re.compile(".*: ([0-9.]*) .*: ([0-9.]*)")

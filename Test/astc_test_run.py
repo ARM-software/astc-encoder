@@ -159,7 +159,7 @@ class TestImage():
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
         else:
-            patternPSNR = "PSNR \\(RGB normalized to peak\\): ([0-9.]*) dB"
+            patternPSNR = r"mPSNR \(RGB\) .*: ([0-9.]*) dB"
 
         patternPSNR = re.compile(patternPSNR)
         patternTime = re.compile(".* coding time: ([0-9.]*) seconds")
@@ -411,8 +411,8 @@ def run_reference_rebuild():
     """
     Run the reference test generator rebuild process.
     """
-    TestImage.testRuns = 10
-    TestImage.warmupRuns = 1
+    TestImage.testRuns = 1
+    TestImage.warmupRuns = 0
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
@@ -456,8 +456,8 @@ def run_reference_update():
     """
     Run the reference test generator update process.
     """
-    TestImage.testRuns = 3
-    TestImage.warmupRuns = 1
+    TestImage.testRuns = 1
+    TestImage.warmupRuns = 0
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
