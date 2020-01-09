@@ -1,0 +1,182 @@
+// ----------------------------------------------------------------------------
+//  This confidential and proprietary software may be used only as authorised
+//  by a licensing agreement from Arm Limited.
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
+//  The entire notice above must be reproduced on all authorised copies and
+//  copies may only be made to the extent permitted by a licensing agreement
+//  from Arm Limited.
+// ----------------------------------------------------------------------------
+
+/**
+ * @brief Platform-specific function implementations.
+ *
+ * This module contains functions with strongly OS-dependent implementations:
+ *
+ *  * CPU count queries
+ *  * Threading
+ *  * Time
+ *
+ * In addition to the basic thread abstraction (which is native pthreads on
+ * all platforms, except Windows where it is an emulation of pthreads), a
+ * utility function to create N threads and wait for them to complete a batch
+ * task has also been provided.
+ */
+
+#include "astc_codec_internals.h"
+
+/* ============================================================================
+   Platform code for Windows using the Win32 APIs.
+============================================================================ */
+#if defined(_WIN32) && !defined(__CYGWIN__)
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+typedef HANDLE pthread_t;
+typedef int pthread_attr_t;
+
+/* Public function, see header file for detailed documentation */
+static int pthread_create(
+	pthread_t* thread,
+	const pthread_attr_t* attribs,
+	void* (*threadfunc)(void*),
+	void* thread_arg
+) {
+	LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)threadfunc;
+	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
+	return 0;
+}
+
+/* Public function, see header file for detailed documentation */
+static int pthread_join(
+	pthread_t thread,
+	void** value
+) {
+	WaitForSingleObject(thread, INFINITE);
+	return 0;
+}
+
+/* Public function, see header file for detailed documentation */
+double get_time()
+{
+	FILETIME tv;
+	GetSystemTimeAsFileTime(&tv);
+	unsigned long long ticks = tv.dwHighDateTime;
+	ticks = (ticks << 32) | tv.dwLowDateTime;
+	return ((double)ticks) / 1.0e7;
+}
+
+/* Public function, see header file for detailed documentation */
+int get_cpu_count()
+{
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo.dwNumberOfProcessors;
+}
+
+/* Public function, see header file for detailed documentation */
+int unlink_file(const char *filename)
+{
+	BOOL res = DeleteFileA(filename);
+	return (res ? 0 : -1);
+}
+
+/* ============================================================================
+   Platform code for an platform using POSIX APIs.
+============================================================================ */
+#else
+
+#include <sys/time.h>
+#include <pthread.h>
+#include <unistd.h>
+
+/* Public function, see header file for detailed documentation */
+double get_time()
+{
+	timeval tv;
+	gettimeofday(&tv, 0);
+	return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
+}
+
+/* Public function, see header file for detailed documentation */
+int get_cpu_count()
+{
+	return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+/* Public function, see header file for detailed documentation */
+int unlink_file(const char *filename)
+{
+	return unlink(filename);
+}
+
+#endif
+
+/**
+ * @brief Worker thread helper payload for launch_threads.
+ */
+struct launch_desc
+{
+	/** The native thread handle. */
+	pthread_t thread_handle;
+	/** The total number of threads in the thread pool. */
+	int thread_count;
+	/** The thread index in the thread pool. */
+	int thread_id;
+	/** The user thread function to execute. */
+	void (*func)(int, int, void*);
+	/** The user thread payload. */
+	void* payload;
+};
+
+/**
+ * @brief Helper function to translate thread entry points.
+ *
+ * Convert a (void*) thread entry to an (int, void*) thread entry, where the
+ * integer contains the thread ID in the thread pool.
+ *
+ * @param p The thread launch helper payload.
+ */
+static void* launch_threads_helper(void *p)
+{
+	launch_desc* ltd = (launch_desc*)p;
+	ltd->func(ltd->thread_count, ltd->thread_id, ltd->payload);
+	return nullptr;
+}
+
+
+/* Public function, see header file for detailed documentation */
+void launch_threads(
+	int thread_count,
+	void (*func)(int, int, void*),
+	void *payload
+) {
+	// Directly execute single threaded workloads on this thread
+	if (thread_count <= 1)
+	{
+		func(1, 0, payload);
+		return;
+	}
+
+	// Otherwise spawn worker threads
+	launch_desc *thread_descs = new launch_desc[thread_count];
+	for (int i = 0; i < thread_count; i++)
+	{
+		thread_descs[i].thread_count = thread_count;
+		thread_descs[i].thread_id = i;
+		thread_descs[i].payload = payload;
+		thread_descs[i].func = func;
+
+		pthread_create(&(thread_descs[i].thread_handle), nullptr,
+		               launch_threads_helper, (void*)&(thread_descs[i]));
+	}
+
+	// ... and then wait for them to complete
+	for (int i = 0; i < thread_count; i++)
+	{
+		pthread_join(thread_descs[i].thread_handle, nullptr);
+	}
+
+	delete[] thread_descs;
+}
+

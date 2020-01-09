@@ -1060,7 +1060,7 @@ astc_codec_image *astc_codec_load_image(
 	}
 
 	if (load_exr)
-		astc_codec_unlink(htga_load_filename);
+		unlink_file(htga_load_filename);
 
 	return input_image;
 }
@@ -1166,7 +1166,7 @@ int astc_codec_store_image(
 		store_result = store_tga_image(output_image, htga_output_filename, 16);
 		sprintf(htga_output_command, "exr_to_htga -e %s %s", htga_output_filename, output_filename);
 		system_retval = system(htga_output_command);
-		astc_codec_unlink(htga_output_filename);
+		unlink_file(htga_output_filename);
 		if (system_retval != 0)
 			store_result = -99;
 		break;

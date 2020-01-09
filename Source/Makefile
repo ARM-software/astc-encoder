@@ -28,6 +28,7 @@ SOURCES = \
     astc_partition_tables.cpp \
     astc_percentile_tables.cpp \
     astc_pick_best_endpoint_format.cpp \
+    astc_platform_dependents.cpp \
     astc_quantization.cpp \
     astc_stb_tga.cpp \
     astc_symbolic_physical.cpp \

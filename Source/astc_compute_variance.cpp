@@ -534,10 +534,15 @@ static void compute_pixel_region_variance(
 }
 
 static void compute_averages_and_variances_proc(
-	const struct avg_var_args* ag
+	int thread_count,
+	int thread_id,
+	void* payload
 ) {
+	const struct avg_var_args *ag = (const struct avg_var_args *)payload;
 	struct pixel_region_variance_args arg = ag->arg;
 	arg.work_memory = new float4[ag->work_memory_size];
+
+	int block_counter = 0;
 
 	int size_x = ag->img_size.x;
 	int size_y = ag->img_size.y;
@@ -558,18 +563,24 @@ static void compute_averages_and_variances_proc(
 
 		for (int y = 0; y < size_y; y += step_y)
 		{
-			arg.size.y = MIN(step_y, size_y - y);
-			arg.dst_offset.y = y;
-			arg.src_offset.y = y + padding_xy;
-
-			for (int x = 0; x < size_x; x += step_x)
+			if (block_counter == thread_id)
 			{
-				arg.size.x = MIN(step_x, size_x - x);
-				arg.dst_offset.x = x;
-				arg.src_offset.x = x + padding_xy;
+				arg.size.y = MIN(step_y, size_y - y);
+				arg.dst_offset.y = y;
+				arg.src_offset.y = y + padding_xy;
 
-				compute_pixel_region_variance(&arg);
+				for (int x = 0; x < size_x; x += step_x)
+				{
+						arg.size.x = MIN(step_x, size_x - x);
+						arg.dst_offset.x = x;
+						arg.src_offset.x = x + padding_xy;
+						compute_pixel_region_variance(&arg);
+				}
 			}
+
+			block_counter++;
+			if (block_counter >= thread_count)
+				block_counter = 0;
 		}
 	}
 
@@ -584,7 +595,8 @@ void compute_averages_and_variances(
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	int need_srgb_transform,
-	swizzlepattern swz
+	swizzlepattern swz,
+	int thread_count
 ) {
 	int size_x = img->xsize;
 	int size_y = img->ysize;
@@ -628,7 +640,5 @@ void compute_averages_and_variances(
 	ag.blk_size = int3(max_blk_size_xy, max_blk_size_xy, max_blk_size_z);
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
 
-	// TODO: This can be multi-threaded, as this is currently a single-threaded
-	// pass which is executed before the main compression workers kick off.
-	compute_averages_and_variances_proc(&ag);
+	launch_threads(thread_count, compute_averages_and_variances_proc, &ag);
 }

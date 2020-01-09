@@ -17,65 +17,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifndef WIN32
-	#include <sys/time.h>
-	#include <pthread.h>
-	#include <unistd.h>
-
-	double get_time()
-	{
-		timeval tv;
-		gettimeofday(&tv, 0);
-
-		return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
-	}
-
-
-	int astc_codec_unlink(const char *filename)
-	{
-		return unlink(filename);
-	}
-
-#else
-	// Define pthread-like functions in terms of Windows threading API
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-
-	typedef HANDLE pthread_t;
-	typedef int pthread_attr_t;
-
-	int pthread_create(pthread_t * thread, const pthread_attr_t * attribs, void *(*threadfunc) (void *), void *thread_arg)
-	{
-		*thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) threadfunc, thread_arg, 0, NULL);
-		return 0;
-	}
-
-	int pthread_join(pthread_t thread, void **value)
-	{
-		WaitForSingleObject(thread, INFINITE);
-		CloseHandle(thread);
-		return 0;
-	}
-
-	double get_time()
-	{
-		FILETIME tv;
-		GetSystemTimeAsFileTime(&tv);
-
-		unsigned __int64 ticks = tv.dwHighDateTime;
-		ticks = (ticks << 32) | tv.dwLowDateTime;
-
-		return ((double)ticks) / 1.0e7;
-	}
-
-	// Define an unlink() function in terms of the Win32 DeleteFile function.
-	int astc_codec_unlink(const char *filename)
-	{
-		BOOL res = DeleteFileA(filename);
-		return (res ? 0 : -1);
-	}
-#endif
-
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
 		#define _GNU_SOURCE
@@ -104,52 +45,6 @@ static double start_time;
 static double end_time;
 static double start_coding_time;
 static double end_coding_time;
-
-// code to discover the number of logical CPUs available.
-#if defined(__APPLE__)
-	#define _DARWIN_C_SOURCE
-	#include <sys/types.h>
-	#include <sys/sysctl.h>
-#endif
-
-#if defined(_WIN32) || defined(__CYGWIN__)
-	#include <windows.h>
-#else
-	#include <unistd.h>
-#endif
-
-unsigned get_number_of_cpus(void)
-{
-	unsigned n_cpus = 1;
-
-	#ifdef __linux__
-		cpu_set_t mask;
-		CPU_ZERO(&mask);
-		sched_getaffinity(getpid(), sizeof(mask), &mask);
-		n_cpus = 0;
-		for (unsigned i = 0; i < CPU_SETSIZE; ++i)
-		{
-			if (CPU_ISSET(i, &mask))
-				n_cpus++;
-		}
-		if (n_cpus == 0)
-			n_cpus = 1;
-
-	#elif defined (_WIN32) || defined(__CYGWIN__)
-		SYSTEM_INFO sysinfo;
-		GetSystemInfo(&sysinfo);
-		n_cpus = sysinfo.dwNumberOfProcessors;
-
-	#elif defined(__APPLE__)
-		int mib[4];
-		size_t length = 100;
-		mib[0] = CTL_HW;
-		mib[1] = HW_AVAILCPU;
-		sysctl(mib, 2, &n_cpus, &length, NULL, 0);
-	#endif
-
-	return n_cpus;
-}
 
 NORETURN void astc_codec_internal_error(
 	const char *filename,
@@ -279,20 +174,20 @@ struct encode_astc_image_info
 	const block_size_descriptor* bsd;
 	const error_weighting_params* ewp;
 	uint8_t* buffer;
-	int* counters;
 	int pack_and_unpack;
-	int thread_id;
 	int threadcount;
 	astc_decode_mode decode_mode;
 	swizzlepattern swz_encode;
 	swizzlepattern swz_decode;
-	int* threads_completed;
 	const astc_codec_image* input_image;
 	astc_codec_image* output_image;
 };
 
-void* encode_astc_image_threadfunc(void* vblk)
-{
+void encode_astc_image_threadfunc(
+	int thread_count,
+	int thread_id,
+	void* vblk
+) {
 	const encode_astc_image_info *blk = (const encode_astc_image_info *)vblk;
 	const block_size_descriptor *bsd = blk->bsd;
 	int xdim = bsd->xdim;
@@ -300,14 +195,10 @@ void* encode_astc_image_threadfunc(void* vblk)
 	int zdim = bsd->zdim;
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
-	int thread_id = blk->thread_id;
-	int threadcount = blk->threadcount;
-	int *counters = blk->counters;
 	int pack_and_unpack = blk->pack_and_unpack;
 	astc_decode_mode decode_mode = blk->decode_mode;
 	swizzlepattern swz_encode = blk->swz_encode;
 	swizzlepattern swz_decode = blk->swz_decode;
-	int *threads_completed = blk->threads_completed;
 	const astc_codec_image *input_image = blk->input_image;
 	astc_codec_image *output_image = blk->output_image;
 
@@ -315,15 +206,13 @@ void* encode_astc_image_threadfunc(void* vblk)
 	int ctr = thread_id;
 	int pctr = 0;
 
-	int x, y, z, i;
+	int x, y, z;
 	int xsize = input_image->xsize;
 	int ysize = input_image->ysize;
 	int zsize = input_image->zsize;
 	int xblocks = (xsize + xdim - 1) / xdim;
 	int yblocks = (ysize + ydim - 1) / ydim;
 	int zblocks = (zsize + zdim - 1) / zdim;
-
-	int owns_progress_counter = 0;
 
 	//allocate memory for temporary buffers
 	compress_symbolic_block_buffers temp_buffers;
@@ -375,40 +264,8 @@ void* encode_astc_image_threadfunc(void* vblk)
 					}
 				#endif
 
-					counters[thread_id]++;
-					ctr = threadcount - 1;
-
+					ctr = thread_count - 1;
 					pctr++;
-
-					// routine to print the progress counter.
-					if (suppress_progress_counter == 0 && (pctr % progress_counter_divider) == 0 && print_tile_errors == 0 && print_statistics == 0)
-					{
-						int do_print = 1;
-						// the current thread has the responsibility for printing the progress counter
-						// if every previous thread has completed. Also, if we have ever received the
-						// responsibility to print the progress counter, we are going to keep it
-						// until the thread is completed.
-						if (!owns_progress_counter)
-						{
-							for (i = thread_id - 1; i >= 0; i--)
-							{
-								if (threads_completed[i] == 0)
-								{
-									do_print = 0;
-									break;
-								}
-							}
-						}
-						if (do_print)
-						{
-							owns_progress_counter = 1;
-							int summa = 0;
-							for (i = 0; i < threadcount; i++)
-								summa += counters[i];
-							printf("\r%d", summa);
-							fflush(stdout);
-						}
-					}
 				}
 				else
 					ctr--;
@@ -429,9 +286,6 @@ void* encode_astc_image_threadfunc(void* vblk)
 	delete   temp_buffers.temp;
 	delete   temp_buffers.ewbo;
 	delete   temp_buffers.ewb;
-
-	threads_completed[thread_id] = 1;
-	return NULL;
 }
 
 void encode_astc_image(
@@ -448,52 +302,24 @@ void encode_astc_image(
 	int pack_and_unpack,
 	int threadcount
 ) {
-	int i;
-	int* counters = new int[threadcount];
-	int* threads_completed = new int[threadcount];
-
 	// before entering into the multi-threaded routine, ensure that the block size descriptors
 	// and the partition table descriptors needed actually exist.
 	block_size_descriptor bsd;
 	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
 	get_partition_table(&bsd, 0);
 
-	encode_astc_image_info* ai = new encode_astc_image_info[threadcount];
-	for (i = 0; i < threadcount; i++)
-	{
-		ai[i].bsd = &bsd;
-		ai[i].buffer = buffer;
-		ai[i].ewp = ewp;
-		ai[i].counters = counters;
-		ai[i].pack_and_unpack = pack_and_unpack;
-		ai[i].thread_id = i;
-		ai[i].threadcount = threadcount;
-		ai[i].decode_mode = decode_mode;
-		ai[i].swz_encode = swz_encode;
-		ai[i].swz_decode = swz_decode;
-		ai[i].threads_completed = threads_completed;
-		ai[i].input_image = input_image;
-		ai[i].output_image = output_image;
-		counters[i] = 0;
-		threads_completed[i] = 0;
-	}
+	encode_astc_image_info ai;
+	ai.bsd = &bsd;
+	ai.buffer = buffer;
+	ai.ewp = ewp;
+	ai.pack_and_unpack = pack_and_unpack;
+	ai.decode_mode = decode_mode;
+	ai.swz_encode = swz_encode;
+	ai.swz_decode = swz_decode;
+	ai.input_image = input_image;
+	ai.output_image = output_image;
 
-	if (threadcount == 1)
-		encode_astc_image_threadfunc(&ai[0]);
-	else
-	{
-		pthread_t *threads = new pthread_t[threadcount];
-		for (i = 0; i < threadcount; i++)
-			pthread_create(&(threads[i]), NULL, encode_astc_image_threadfunc, (void *)(&(ai[i])));
-
-		for (i = 0; i < threadcount; i++)
-			pthread_join(threads[i], NULL);
-		delete[] threads;
-	}
-
-	delete[] ai;
-	delete[] counters;
-	delete[] threads_completed;
+	launch_threads(threadcount, encode_astc_image_threadfunc, &ai);
 }
 
 void store_astc_file(
@@ -2208,7 +2034,7 @@ int astc_main(
 
 		if (thread_count < 1)
 		{
-			thread_count = get_number_of_cpus();
+			thread_count = get_cpu_count();
 			thread_count_autodetected = 1;
 		}
 
@@ -2432,7 +2258,8 @@ int astc_main(
 				ewp.mean_stdev_radius,
 				ewp.alpha_radius,
 				perform_srgb_transform,
-				swz_encode);
+				swz_encode,
+				thread_count);
 
 			if (!silentmode)
 			{

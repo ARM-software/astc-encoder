@@ -449,7 +449,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 				&& (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2] && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
 			{
 				int colorvals[4][12];
-				int color_formats_mod[4];
+				int color_formats_mod[4] = { 0 };
 				for (j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(eix[decimation_mode].ep.endpt0[j],
@@ -742,7 +742,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 				&& (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2] && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
 			{
 				int colorvals[4][12];
-				int color_formats_mod[4];
+				int color_formats_mod[4] = { 0 };
 				for (j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(epm.endpt0[j],

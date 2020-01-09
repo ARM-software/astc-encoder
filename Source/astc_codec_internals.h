@@ -465,50 +465,6 @@ void compute_averages_and_directions_2_components(
 	float2* averages,
 	float2* directions);
 
-// functions to compute error value across a tile given a partitioning
-// (with the assumption that each partitioning has colors lying on a line where
-// they are represented with infinite precision. Also return the length of the line
-// segments that the partition's colors are actually projected onto.
-float compute_error_squared_gba(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* plines,
-	// output: computed length of the partitioning's line. This is not part of
-	// the error introduced by partitioning itself, but is used to estimate the
-	// error introduced by quantization
-	float* length_of_lines);
-
-float compute_error_squared_rba(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* plines,
-	float* length_of_lines);
-
-float compute_error_squared_rga(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* plines,
-	float* length_of_lines);
-
-void compute_error_squared_rgb(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* plines_uncorr,
-	const processed_line3* plines_samechroma,
-	const processed_line2* plines_separate_red,
-	const processed_line2* plines_separate_green,
-	const processed_line2* plines_separate_blue,
-	float* length_uncorr,
-	float* length_samechroma,
-	float3* length_separate,
-	float* uncorr_error,
-	float* samechroma_error,
-	float3* separate_color_error);
-
 void compute_error_squared_rgba(
 	const partition_info* pt,	// the partition that we use when computing the squared-error.
 	const imageblock* blk,
@@ -525,6 +481,22 @@ void compute_error_squared_rgba(
 	float* uncorr_error,
 	float* samechroma_error,
 	float4* separate_color_error);
+
+void compute_error_squared_rgb(
+	const partition_info* pt,	// the partition that we use when computing the squared-error.
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const processed_line3* plines_uncorr,
+	const processed_line3* plines_samechroma,
+	const processed_line2* plines_separate_red,
+	const processed_line2* plines_separate_green,
+	const processed_line2* plines_separate_blue,
+	float* length_uncorr,
+	float* length_samechroma,
+	float3* length_separate,
+	float* uncorr_error,
+	float* samechroma_error,
+	float3* separate_color_error);
 
 // functions to compute error value across a tile for a particular line function
 // for a single partition.
@@ -627,6 +599,7 @@ struct swizzlepattern
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
  * @param need_srgb_transform   Do we need srgb transform or not?
  * @param swz                   Input data channel swizzle.
+ * @param thread_count          The number of threads to use.
  */
 void compute_averages_and_variances(
 	astc_codec_image * img,
@@ -635,7 +608,8 @@ void compute_averages_and_variances(
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	int need_srgb_transform,
-	swizzlepattern swz);
+	swizzlepattern swz,
+	int thread_count);
 
 /*
 	Functions to load image from file.
@@ -655,7 +629,6 @@ astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *res
 astc_codec_image *load_image_with_stb(const char *filename, int padding, int *result);
 
 astc_codec_image *astc_codec_load_image(const char *filename, int padding, int *result);
-int astc_codec_unlink(const char *filename);
 
 // function to store image to file
 // If successful, returns the number of channels in input image
@@ -966,6 +939,58 @@ uint16_t unorm16_to_sf16(
 uint16_t lns_to_sf16(
 	uint16_t p);
 
+/* ============================================================================
+  Platform-specific functions
+============================================================================ */
+
+/**
+ * @brief Get the current time.
+ *
+ * @returns The current time in seconds since arbitrary epoch.
+ */
+double get_time();
+
+/**
+ * @brief Get the number of CPU cores.
+ *
+ * @returns The number of online or onlineable CPU cores in the system.
+ */
+int get_cpu_count();
+
+/**
+ * @brief Delete (unlink) a file on the filesystem.
+ *
+|* @param filename The file to delete.
+ *
+ * @returns Zero on success, non-zero otherwise.
+ */
+int unlink_file(const char *filename);
+
+/**
+ * @brief Launch N worker threads and wait for them to complete.
+ *
+ * All threads run the same thread function, and have the same thread payload,
+ * but are given a unique thread ID (0 .. N-1) as a parameter to the run
+ * function to allow thread-specific behavior.
+ *
+|* @param thread_count The number of threads to spawn.
+ * @param func         The function to execute. Must have the signature:
+ *                     void (int thread_count, int thread_id, void* payload)
+ * @param payload      Pointer to an opaque thread payload object.
+ */
+void launch_threads(
+	int thread_count,
+	void (*func)(int, int, void*),
+	void *payload);
+
+/**
+ * @brief The main entry point.
+ *
+ * @param argc The number of arguments.
+ * @param argb The array of command line arguments.
+ *
+ * @returns Zero on success, non-zero otherwise.
+ */
 int astc_main(
 	int argc,
 	char** argv);
