@@ -299,22 +299,40 @@ enum quantization_method
 	QUANT_256 = 20
 };
 
-/*
-	In ASTC, we support relatively many combinations of weight precisions and weight transfer functions.
-	As such, for each combination we support, we have a hardwired data structure.
-
-	This structure provides the following information: A table, used to estimate the closest quantized
+/**
+ * @brief Weight quantization transfer table.
+ *
+ * ASTC can store texel weights at many quantization levels, so for performance
+ * we store essential information about each level as a precomputed data
+ * structure.
+ *
+ * Unquantized weights are integers in the range [0, 64], or floats [0, 1].
+ *
+ * This structure provides the following information:
+ * A table, used to estimate the closest quantized
 	weight for a given floating-point weight. For each quantized weight, the corresponding unquantized
 	and floating-point values. For each quantized weight, a previous-value and a next-value.
 */
 struct quantization_and_transfer_table
 {
 	quantization_method method;
+	/* TODO: Now that we've introduced the packed prev_next data below, some
+	 * of these can be replaced by that in and then removed. */
 	uint8_t unquantized_value[32];	// 0..64
 	float unquantized_value_flt[32];	// 0..1
 	uint8_t prev_quantized_value[32];
 	uint8_t next_quantized_value[32];
 	uint8_t closest_quantized_weight[1025];
+
+	/**
+	 * An encoded table of previous-and-next weight values, indexed by the
+	 * current unquantized value.
+	 *  * bits 7:0 = previous-index, unquantized
+	 *  * bits 15:8 = next-index, unquantized
+	 *  * bits 23:16 = previous-index, quantized
+	 *  * bits 31:24 = next-index, quantized
+	 */
+	uint32_t prev_next_values[65];
 };
 
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];

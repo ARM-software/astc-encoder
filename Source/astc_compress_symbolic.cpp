@@ -24,221 +24,170 @@
 	#include <fenv.h>
 #endif
 
+/**
+ * @brief Attempt to improve weights given a chosen configuration.
+ *
+ * Given a fixed weight grid decimation and weight value quantization, iterate
+ * over all weights (per partition and per plane) and attempt to improve image
+ * quality by moving each weight up by one or down by one quantization step.
+ */
 static int realign_weights(
 	astc_decode_mode decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	symbolic_compressed_block* scb,
-	uint8_t* weight_set8,
+	uint8_t* plane1_weight_set8,
 	uint8_t* plane2_weight_set8
 ) {
-	int i, j;
-
-	// get the appropriate partition descriptor.
+	// Get the partition descriptor
 	int partition_count = scb->partition_count;
 	const partition_info *pt = get_partition_table(bsd, partition_count);
 	pt += scb->partition_index;
 
-	// get the appropriate block descriptor
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
-
-	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
-
-	int is_dual_plane = bsd->block_modes[scb->block_mode].is_dual_plane;
-
-	// get quantization-parameters
+	// Get the quantization table
 	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
-
-	// decode the color endpoints
-	uint4 color_endpoint0[4];
-	uint4 color_endpoint1[4];
-	int rgb_hdr[4];
-	int alpha_hdr[4];
-	int nan_endpoint[4];
-
-	for (i = 0; i < partition_count; i++)
-		unpack_color_endpoints(decode_mode,
-							   scb->color_formats[i], scb->color_quantization_level, scb->color_values[i], &rgb_hdr[i], &alpha_hdr[i], &nan_endpoint[i], &(color_endpoint0[i]), &(color_endpoint1[i]));
-
-	float uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
-	float uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = it->num_weights;
-
-	// read and unquantize the weights.
-
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
-	for (i = 0; i < weight_count; i++)
+	// Get the decimation table
+	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
+	int weight_count = it->num_weights;
+
+	int max_plane = bsd->block_modes[scb->block_mode].is_dual_plane;
+	int plane2_component = max_plane ? scb->plane2_color_component : 0;
+	int plane_mask = max_plane ? 1 << plane2_component : 0;
+
+	// Decode the color endpoints
+	int rgb_hdr;
+	int alpha_hdr;
+	int nan_endpoint;
+	int4 endpnt0[4];
+	int4 endpnt1[4];
+	float4 endpnt0f[4];
+	float4 offset[4];
+
+	for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 	{
-		uq_plane1_weights[i] = qat->unquantized_value_flt[weight_set8[i]];
+		unpack_color_endpoints(decode_mode,
+		                       scb->color_formats[pa_idx],
+		                       scb->color_quantization_level,
+		                       scb->color_values[pa_idx],
+		                       &rgb_hdr, &alpha_hdr, &nan_endpoint,
+		                       // TODO: Fix these casts ...
+		                       reinterpret_cast<uint4*>(&endpnt0[pa_idx]),
+		                       reinterpret_cast<uint4*>(&endpnt1[pa_idx]));
 	}
-	if (is_dual_plane)
-	{
-		for (i = 0; i < weight_count; i++)
-			uq_plane2_weights[i] = qat->unquantized_value_flt[plane2_weight_set8[i]];
-	}
 
-	int plane2_color_component = is_dual_plane ? scb->plane2_color_component : -1;
-
-	// for each weight, unquantize the weight, use it to compute a color and a color error.
-	// then, increment the weight until the color error stops decreasing
-	// then, decrement the weight until the color error stops increasing
-
-	#define COMPUTE_ERROR( errorvar ) \
-		errorvar = 0.0f; \
-		for(j=0;j<texels_to_evaluate;j++) \
-		{ \
-			int texel = it->weight_texel[i][j]; \
-			int partition = pt->partition_of_texel[texel]; \
-			float plane1_weight = compute_value_of_texel_flt( texel, it, uq_plane1_weights ); \
-			float plane2_weight = 0.0f; \
-			if( is_dual_plane ) \
-				plane2_weight = compute_value_of_texel_flt( texel, it, uq_plane2_weights ); \
-			int int_plane1_weight = static_cast<int>(floor( plane1_weight*64.0f + 0.5f ) ); \
-			int int_plane2_weight = static_cast<int>(floor( plane2_weight*64.0f + 0.5f ) ); \
-			uint4 lrp_color = lerp_color_int( \
-				decode_mode, \
-				color_endpoint0[partition], \
-				color_endpoint1[partition], \
-				int_plane1_weight, \
-				int_plane2_weight, \
-				plane2_color_component ); \
-			float4 color = float4( lrp_color.x, lrp_color.y, lrp_color.z, lrp_color.w ); \
-			float4 origcolor = float4( \
-				blk->work_data[4*texel], \
-				blk->work_data[4*texel+1], \
-				blk->work_data[4*texel+2], \
-				blk->work_data[4*texel+3] ); \
-			float4 error_weight = ewb->error_weights[texel]; \
-			float4 colordiff = color - origcolor; \
-			errorvar += dot( colordiff*colordiff, error_weight ); \
-		}
-
+	uint8_t uq_pl_weights[MAX_WEIGHTS_PER_BLOCK];
+	uint8_t* weight_set8 = plane1_weight_set8;
 	int adjustments = 0;
 
-	for (i = 0; i < weight_count; i++)
+	// For each plane and partition ...
+	for (int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
-		int current_wt = weight_set8[i];
-		int texels_to_evaluate = it->weight_num_texels[i];
-
-		float current_error;
-
-		COMPUTE_ERROR(current_error);
-
-		// increment until error starts increasing.
-		while (1)
+		for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 		{
-			int next_wt = qat->next_quantized_value[current_wt];
-			if (next_wt == current_wt)
-				break;
-			uq_plane1_weights[i] = qat->unquantized_value_flt[next_wt];
-			float next_error;
-			COMPUTE_ERROR(next_error);
-			if (next_error < current_error)
-			{
-				// succeeded, increment the weight
-				current_wt = next_wt;
-				current_error = next_error;
-				adjustments++;
-			}
-			else
-			{
-				// failed, back out the attempted increment
-				uq_plane1_weights[i] = qat->unquantized_value_flt[current_wt];
-				break;
-			}
+			// Compute the endpoint delta for all channels in current plane
+			int4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
+
+			if (plane_mask & 1 ) epd.x = 0;
+			if (plane_mask & 2 ) epd.y = 0;
+			if (plane_mask & 4 ) epd.z = 0;
+			if (plane_mask & 8 ) epd.w = 0;
+
+			endpnt0f[pa_idx] = float4((float)endpnt0[pa_idx].x, (float)endpnt0[pa_idx].y,
+			                          (float)endpnt0[pa_idx].z, (float)endpnt0[pa_idx].w );
+			offset[pa_idx] = float4((float)epd.x, (float)epd.y, (float)epd.z, (float)epd.w );
+			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
 		}
 
-		// decrement until error starts increasing
-		while (1)
+		// Create an unquantized weight grid for this decimation level
+		for (int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
-			int prev_wt = qat->prev_quantized_value[current_wt];
-			if (prev_wt == current_wt)
-				break;
-			uq_plane1_weights[i] = qat->unquantized_value_flt[prev_wt];
-			float prev_error;
-			COMPUTE_ERROR(prev_error);
-			if (prev_error < current_error)
-			{
-				// succeeded, decrement the weight
-				current_wt = prev_wt;
-				current_error = prev_error;
-				adjustments++;
-			}
-			else
-			{
-				// failed, back out the attempted decrement
-				uq_plane1_weights[i] = qat->unquantized_value_flt[current_wt];
-				break;
-			}
+			uq_pl_weights[we_idx] = qat->unquantized_value[weight_set8[we_idx]];
 		}
 
-		weight_set8[i] = current_wt;
-	}
-
-	if (!is_dual_plane)
-		return adjustments;
-
-	// processing of the second plane of weights
-	for (i = 0; i < weight_count; i++)
-	{
-		int current_wt = plane2_weight_set8[i];
-		int texels_to_evaluate = it->weight_num_texels[i];
-
-		float current_error;
-
-		COMPUTE_ERROR(current_error);
-
-		// increment until error starts increasing.
-		while (1)
+		// For each weight compute previous, current, and next errors
+		for (int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
-			int next_wt = qat->next_quantized_value[current_wt];
-			if (next_wt == current_wt)
-				break;
-			uq_plane2_weights[i] = qat->unquantized_value_flt[next_wt];
-			float next_error;
-			COMPUTE_ERROR(next_error);
-			if (next_error < current_error)
+			int uqw = uq_pl_weights[we_idx];
+
+			uint32_t prev_and_next = qat->prev_next_values[uqw];
+			int prev_wt_uq = prev_and_next & 0xFF;
+			int next_wt_uq = (prev_and_next >> 8) & 0xFF;
+
+			int uqw_next_dif = next_wt_uq - uqw;
+			int uqw_prev_dif = prev_wt_uq - uqw;
+
+			float current_error = 0.0f;
+			float up_error = 0.0f;
+			float down_error = 0.0f;
+
+			// Interpolate the colors to create the diffs
+			int texels_to_evaluate = it->weight_num_texels[we_idx];
+			for (int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
-				// succeeded, increment the weight
-				current_wt = next_wt;
-				current_error = next_error;
+				int texel = it->weight_texel[we_idx][te_idx];
+				const uint8_t *texel_weights = it->texel_weights_texel[we_idx][te_idx];
+				const float *texel_weights_float = it->texel_weights_float_texel[we_idx][te_idx];
+				float twf0 = texel_weights_float[0];
+				float weight_base =
+				    ((uqw * twf0
+				    + uq_pl_weights[texel_weights[1]]  * texel_weights_float[1])
+				    + (uq_pl_weights[texel_weights[2]] * texel_weights_float[2]
+				    + uq_pl_weights[texel_weights[3]]  * texel_weights_float[3]));
+
+				int partition = pt->partition_of_texel[texel];
+
+				weight_base = weight_base + 0.5f;
+				float plane_weight = floorf(weight_base );
+				float plane_up_weight = floorf(weight_base + uqw_next_dif * twf0) - plane_weight;
+				float plane_down_weight = floorf(weight_base + uqw_prev_dif * twf0) - plane_weight;
+
+				float4 color_offset = offset[partition];
+				float4 color_base   = endpnt0f[partition];
+
+				float4 color = color_base + color_offset * plane_weight;
+
+				float4 origcolor    = float4(blk->work_data[4 * texel]    , blk->work_data[4 * texel + 1],
+				                             blk->work_data[4 * texel + 2], blk->work_data[4 * texel + 3]);
+				float4 error_weight = float4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
+				                             ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
+
+				float4 colordiff       = color - origcolor;
+				float4 color_up_diff   = colordiff + color_offset * plane_up_weight;
+				float4 color_down_diff = colordiff + color_offset * plane_down_weight;
+				current_error += dot(colordiff       * colordiff,       error_weight);
+				up_error      += dot(color_up_diff   * color_up_diff,   error_weight);
+				down_error    += dot(color_down_diff * color_down_diff, error_weight);
+			}
+
+			// Check if the prev or next error is better, and if so use it
+			if ((up_error < current_error) && (up_error < down_error))
+			{
+				uq_pl_weights[we_idx] = next_wt_uq;
+				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
 				adjustments++;
 			}
-			else
+			else if(down_error < current_error )
 			{
-				// failed, back out the attempted increment
-				uq_plane2_weights[i] = qat->unquantized_value_flt[current_wt];
-				break;
-			}
-		}
-
-		// decrement until error starts increasing
-		while (1)
-		{
-			int prev_wt = qat->prev_quantized_value[current_wt];
-			if (prev_wt == current_wt)
-				break;
-			uq_plane2_weights[i] = qat->unquantized_value_flt[prev_wt];
-			float prev_error;
-			COMPUTE_ERROR(prev_error);
-			if (prev_error < current_error)
-			{
-				// succeeded, decrement the weight
-				current_wt = prev_wt;
-				current_error = prev_error;
+				uq_pl_weights[we_idx] = prev_wt_uq;
+				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
 				adjustments++;
 			}
-			else
-			{
-				// failed, back out the attempted decrement
-				uq_plane2_weights[i] = qat->unquantized_value_flt[current_wt];
-				break;
-			}
+
+			// IQ loss: The v1 compressor iterated here multiple times, trying
+			// multiple increments or decrements until the error stopped
+			// improving. This was very expensive (~15% of the v1 compressor
+			// coding time) for very small improvements in quality (typically
+			// less than 0.005 dB PSNR), so we now only check one step in
+			// either direction
 		}
 
-		plane2_weight_set8[i] = current_wt;
+		// Prepare iteration for plane 2
+		weight_set8 = plane2_weight_set8;
+		plane_mask ^= 0xF;
 	}
 
 	return adjustments;
