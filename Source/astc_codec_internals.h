@@ -14,6 +14,7 @@
 #ifndef ASTC_CODEC_INTERNALS_INCLUDED
 #define ASTC_CODEC_INTERNALS_INCLUDED
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
