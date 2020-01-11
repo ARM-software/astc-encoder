@@ -87,10 +87,13 @@
     <ClCompile Include="..\astc_weight_quant_xfer_tables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mathlib.cpp">
+    <ClCompile Include="..\astc_mathlib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\softfloat.cpp">
+    <ClCompile Include="..\astc_platform_dependents.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\astc_error_metrics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -98,16 +101,10 @@
     <ClInclude Include="..\astc_codec_internals.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\mathlib.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\softfloat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\vectypes.h">
+    <ClInclude Include="..\astc_mathlib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

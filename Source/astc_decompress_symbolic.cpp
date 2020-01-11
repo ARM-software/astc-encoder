@@ -272,10 +272,10 @@ void decompress_symbolic_block(
 		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
 		blk->nan_texel[i] = nan_endpoint[partition];
 
-		blk->work_data[4 * i] = color.x;
-		blk->work_data[4 * i + 1] = color.y;
-		blk->work_data[4 * i + 2] = color.z;
-		blk->work_data[4 * i + 3] = color.w;
+		blk->work_data[4 * i    ] = (float)color.x;
+		blk->work_data[4 * i + 1] = (float)color.y;
+		blk->work_data[4 * i + 2] = (float)color.z;
+		blk->work_data[4 * i + 3] = (float)color.w;
 	}
 
 	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
