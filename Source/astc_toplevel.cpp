@@ -304,12 +304,12 @@ void encode_astc_image(
 ) {
 	// before entering into the multi-threaded routine, ensure that the block size descriptors
 	// and the partition table descriptors needed actually exist.
-	block_size_descriptor bsd;
-	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
-	get_partition_table(&bsd, 0);
+	block_size_descriptor* bsd = new block_size_descriptor;
+	init_block_size_descriptor(xdim, ydim, zdim, bsd);
+	get_partition_table(bsd, 0);
 
 	encode_astc_image_info ai;
-	ai.bsd = &bsd;
+	ai.bsd = bsd;
 	ai.buffer = buffer;
 	ai.ewp = ewp;
 	ai.pack_and_unpack = pack_and_unpack;
@@ -320,6 +320,7 @@ void encode_astc_image(
 	ai.output_image = output_image;
 
 	launch_threads(threadcount, encode_astc_image_threadfunc, &ai);
+	delete bsd;
 }
 
 void store_astc_file(

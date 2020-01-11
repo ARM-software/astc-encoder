@@ -102,7 +102,7 @@ static void brent_kung_prefix_sum(
 		size_t iters = items >> log2_stride;
 
 		float4 *da = d + (start * stride);
-		size_t ofs = -(step * stride);
+		ptrdiff_t ofs = -(step * stride);
 		size_t ofs_stride = stride << log2_stride;
 
 		while (iters)
@@ -126,7 +126,7 @@ static void brent_kung_prefix_sum(
 		size_t iters = (items - step) >> log2_stride;
 
 		float4 *da = d + (start * stride);
-		size_t ofs = -(step * stride);
+		ptrdiff_t ofs = -(step * stride);
 		size_t ofs_stride = stride << log2_stride;
 
 		while (iters)
