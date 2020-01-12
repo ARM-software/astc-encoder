@@ -22,11 +22,7 @@ import sys
 LOG_CLI = False
 
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
-
 TEST_EXTENSIONS = [".png", ".hdr"]
-
-TEST_REFERENCE = "Test/astc_test_reference.csv"
-
 
 class TestReference():
     """
@@ -48,11 +44,12 @@ class TestImage():
     warmupRuns = 0
     testRuns = 1
 
-    def __init__(self, filePath, testReference, patchRun=False):
+    def __init__(self, filePath, testReference, testSet, patchRun=False):
         """
         Construct a new test definition.
         """
         self.filePath = filePath
+        self.testSet = testSet
 
         # Name is the file name minus any extension (strip flags later)
         self.name = os.path.basename(self.filePath)[:-4]
@@ -85,6 +82,7 @@ class TestImage():
         # Find the reference data for this test in the spreadsheet
         self.referencePSNR = dict()
         self.referenceTime = dict()
+
         if testReference:
             for ref in testReference:
                 if ref.name == self.name:
@@ -108,7 +106,8 @@ class TestImage():
         assert len(pathParts) == 4
 
         # Create the test output directory if it doesn't exist
-        outDir = os.path.join("TestOutput", "Images", pathParts[2], blockSize)
+        outDir = os.path.join("TestOutput", self.testSet,
+                              pathParts[2], blockSize)
         os.makedirs(outDir,  exist_ok=True)
 
         if self.dynamicRange == "ldr":
@@ -188,7 +187,7 @@ class TestImage():
 
         return (runPSNR, runTime)
 
-    def run(self, testBinary, blockSize):
+    def run(self, testBinary, blockSize, failureDiff):
         """
         Run the test scenario including N warmup passes and M run passes.
 
@@ -216,15 +215,21 @@ class TestImage():
         refPSNR = float(self.referencePSNR[blockSize])
         diffPSNR = listPSNR[0] - refPSNR
 
+        refTime = float(self.referenceTime[blockSize])
+        speedup = ((refTime / self.runTime[blockSize]) - 1.0) * 100.0
+
+
         # Pass if PSNR matches to 3dp rounding
         if float("%0.3f" % listPSNR[0]) == self.referencePSNR[blockSize]:
-            self.status[blockSize] = "pass"
+            self.status[blockSize] = "pass |               "
         # Pass if PSNR is better
-        elif listPSNR[0] >= refPSNR:
-            self.status[blockSize] = "pass (Delta %0.4f dB)" % diffPSNR
+        elif (listPSNR[0] >= refPSNR) or (diffPSNR >= failureDiff):
+            self.status[blockSize] = "pass | PSNR % 0.3f dB" % diffPSNR
         # Else we got worse so it's a fail ...
         else:
-            self.status[blockSize] = "fail (Delta %0.4f dB)" % diffPSNR
+            self.status[blockSize] = "fail | PSNR % 0.3f dB" % diffPSNR
+
+        self.status[blockSize] += " | Speedup % 0.1f%%" % speedup
 
     def skip_run(self, blockSize):
         """
@@ -282,12 +287,12 @@ def get_reference_binary():
     assert False, "Unknown operating system %s" % sys.platform
 
 
-def get_test_listing(testReference, patchRun=False):
+def get_test_listing(testReference, testSet, patchRun=False):
     """
     Return the test image listing.
     """
     tests = []
-    for root, _, files, in os.walk(os.path.join("Test", "Images")):
+    for root, _, files, in os.walk(os.path.join("Test", testSet)):
         for testFile in files:
             # Detect test images
             for ext in TEST_EXTENSIONS:
@@ -297,7 +302,7 @@ def get_test_listing(testReference, patchRun=False):
                 continue
 
             testFilePath = os.path.join(root, testFile)
-            image = TestImage(testFilePath, testReference, patchRun)
+            image = TestImage(testFilePath, testReference, testSet, patchRun)
 
             # If this image has any test use level then add it to the list
             if image.useLevel:
@@ -306,12 +311,12 @@ def get_test_listing(testReference, patchRun=False):
     return tests
 
 
-def get_test_reference_scores():
+def get_test_reference_scores(testRefFile):
     """
     Return the test reference score listing.
     """
     referenceResults = []
-    with open(TEST_REFERENCE) as csvfile:
+    with open(testRefFile) as csvfile:
         reader = csv.reader(csvfile)
         next(reader)
         for row in reader:
@@ -321,7 +326,7 @@ def get_test_reference_scores():
     return referenceResults
 
 
-def run_tests(args):
+def run_tests(args, testSet, testRef, failureDiff):
     """
     Run the user defined test scenario.
     """
@@ -334,8 +339,8 @@ def run_tests(args):
 
     # Load test resources
     binary = get_test_binary()
-    reference = get_test_reference_scores()
-    testList = get_test_listing(reference)
+    reference = get_test_reference_scores(testRef)
+    testList = get_test_listing(reference, testSet)
 
     # Run tests
     suites = []
@@ -379,7 +384,7 @@ def run_tests(args):
                 print("Running suite: %s" % suiteFormat)
 
             # Run the test
-            test.run(binary, blockSize)
+            test.run(binary, blockSize, failureDiff)
             dat = (curCount, maxCount, test.name, blockSize,
                    test.runPSNR[blockSize], test.runTime[blockSize],
                    test.status[blockSize])
@@ -389,7 +394,7 @@ def run_tests(args):
             if "pass" in test.status[blockSize]:
                 statPass += 1
 
-            log = "Ran test %u/%u: %s %s, %0.3f dB, %0.3f s, %s" % dat
+            log = "Ran %2u/%2u: %s %s, %0.3f dB, %0.3f s, %s" % dat
             print(" + %s" % log)
 
             # Generate JUnit result
@@ -416,12 +421,12 @@ def run_tests(args):
         juxml.TestSuite.to_file(fileHandle, suites)
 
 
-def run_reference_rebuild():
+def run_reference_rebuild(args, testSet, testRef):
     """
     Run the reference test generator rebuild process.
     """
-    TestImage.testRuns = 1
-    TestImage.warmupRuns = 0
+    TestImage.testRuns = args.testRepeats
+    TestImage.warmupRuns = args.testWarmups
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
@@ -430,7 +435,7 @@ def run_reference_rebuild():
 
     # Load test resources
     binary = get_reference_binary()
-    testList = get_test_listing(None)
+    testList = get_test_listing(None, testSet)
 
     # Run tests
     maxCount = len(TEST_BLOCK_SIZES) * len(testList)
@@ -450,7 +455,7 @@ def run_reference_rebuild():
             print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
-    with open(TEST_REFERENCE, "w", newline="") as fileHandle:
+    with open(testRef, "w", newline="") as fileHandle:
         writer = csv.writer(fileHandle)
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
@@ -461,12 +466,12 @@ def run_reference_rebuild():
                 writer.writerow(row)
 
 
-def run_reference_update():
+def run_reference_update(args, testSet, testRef):
     """
     Run the reference test generator update process.
     """
-    TestImage.testRuns = 1
-    TestImage.warmupRuns = 0
+    TestImage.testRuns = args.testRepeats
+    TestImage.warmupRuns = args.testWarmups
 
     # Delete and recreate test output location
     if os.path.exists("TestOutput"):
@@ -475,8 +480,8 @@ def run_reference_update():
 
     # Load test resources
     binary = get_reference_binary()
-    reference = get_test_reference_scores()
-    testList = get_test_listing(reference, True)
+    reference = get_test_reference_scores(testRef)
+    testList = get_test_listing(reference, testSet, True)
 
     # Run tests
     maxCount = len(TEST_BLOCK_SIZES) * len(testList)
@@ -499,7 +504,7 @@ def run_reference_update():
                 print("  + %s dB / %s s" % (runPSNR, runTime))
 
     # Write CSV
-    with open(TEST_REFERENCE, "w", newline="") as fileHandle:
+    with open(testRef, "w", newline="") as fileHandle:
         writer = csv.writer(fileHandle)
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
@@ -531,8 +536,11 @@ def parse_command_line():
 
     choices = list(TEST_BLOCK_SIZES) + ["all"]
     parser.add_argument("--block-size", dest="testBlockSize", default="all",
-                        choices=choices,
-                        help="testing block size")
+                        choices=choices, help="testing block size")
+
+    choices = ("Kodak_Images", "Small_Images")
+    parser.add_argument("--test-set", dest="testSet", default="Small_Images",
+                        choices=choices, help="testing image size")
 
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
@@ -545,6 +553,9 @@ def parse_command_line():
 
     parser.add_argument("--update-ref-csv", default=False, dest="refUpdate",
                         action="store_true", help="update reference data")
+
+    parser.add_argument("--fail-threshold", default=-0.1, dest="failureDiff",
+                        type=float, help="failure threshold (dB)")
 
     args = parser.parse_args()
 
@@ -563,12 +574,15 @@ def main():
     # Parse command lines
     args = parse_command_line()
 
+    imageSet = args.testSet
+    testRef = "Test/%s/astc_test_reference.csv" % imageSet
+
     if args.refRebuild:
-        run_reference_rebuild()
+        run_reference_rebuild(args, imageSet, testRef)
     elif args.refUpdate:
-        run_reference_update()
+        run_reference_update(args, imageSet, testRef)
     else:
-        run_tests(args)
+        run_tests(args, imageSet, testRef, args.failureDiff)
 
 
 if __name__ == "__main__":
