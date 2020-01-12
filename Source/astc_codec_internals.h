@@ -317,6 +317,9 @@ enum quantization_method
 struct quantization_and_transfer_table
 {
 	quantization_method method;
+    uint8_t unquantized_value_unsc[33];  // unquantized values, unscrambled.
+    uint8_t scramble_map[32]; // scrambling order, forward
+
 	/* TODO: Now that we've introduced the packed prev_next data below, some
 	 * of these can be replaced by that in and then removed. */
 	uint8_t unquantized_value[32];	// 0..64
@@ -760,7 +763,6 @@ void compute_ideal_weights_for_decimation_table(
 	float* weights);
 
 void compute_ideal_quantized_weights_for_decimation_table(
-	const endpoints_and_weights* eai,
 	const decimation_table* it,
 	float low_bound,
 	float high_bound,

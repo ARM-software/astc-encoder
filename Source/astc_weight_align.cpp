@@ -392,13 +392,13 @@ void compute_angular_endpoints_1plane(
 
 	for (i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
+		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
 		int quant_mode = bsd->decimation_mode_maxprec_1plane[i];
 		float percentile = bsd->decimation_mode_percentile[i];
 		int permit_encode = bsd->permit_encode[i];
 		if (permit_encode == 0 || samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
 			continue;
-
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 														  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
@@ -435,6 +435,7 @@ void compute_angular_endpoints_2planes(
 
 	for (i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
+		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
 		int quant_mode = bsd->decimation_mode_maxprec_2planes[i];
 		float percentile = bsd->decimation_mode_percentile[i];
@@ -449,7 +450,6 @@ void compute_angular_endpoints_2planes(
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 														  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
 														  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values2[i], high_values2[i]);
-
 	}
 
 	for (i = 0; i < MAX_WEIGHT_MODES; i++)

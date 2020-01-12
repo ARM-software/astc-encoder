@@ -1266,7 +1266,6 @@ void compute_ideal_weights_for_decimation_table(
 	triggering any perturbations *OR* we have run 4 full passes.
 */
 void compute_ideal_quantized_weights_for_decimation_table(
-	const endpoints_and_weights* eai,
 	const decimation_table* it,
 	float low_bound,
 	float high_bound,
@@ -1275,10 +1274,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	uint8_t* quantized_weight_set,
 	int quantization_level
 ) {
-	int i;
 	int weight_count = it->num_weights;
-	int texels_per_block = it->num_texels;
-
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quantization_level]);
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1294,8 +1290,11 @@ void compute_ideal_quantized_weights_for_decimation_table(
 		}
 	#endif
 
-	// quantize the weight set using both the specified low/high bounds and the
-	// standard 0..1 weight bounds.
+	static const int quant_levels[12] = { 2,3,4,5,6,8,10,12,16,20,24,32 };
+	float quant_level_m1 = (float)(quant_levels[quantization_level] - 1);
+
+	// Quantize the weight set using both the specified low/high bounds
+	// and the standard 0..1 weight bounds.
 
 	/*
 	   TODO: WTF issue that we need to examine some time
@@ -1309,218 +1308,36 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	float rscale = high_bound - low_bound;
 	float scale = 1.0f / rscale;
 
-	// rescale the weights so that
-	// low_bound -> 0
-	// high_bound -> 1
-	// OK: first, subtract low_bound, then divide by (high_bound - low_bound)
-	for (i = 0; i < weight_count; i++)
-		weight_set_out[i] = (weight_set_in[i] - low_bound) * scale;
+	float scaled_low_bound = low_bound * scale;
+	rscale *= 1.0f / 64.0f;
 
-	static const float quantization_step_table[12] = {
-		1.0f / 1.0f,
-		1.0f / 2.0f,
-		1.0f / 3.0f,
-		1.0f / 4.0f,
-		1.0f / 5.0f,
-		1.0f / 7.0f,
-		1.0f / 9.0f,
-		1.0f / 11.0f,
-		1.0f / 15.0f,
-		1.0f / 19.0f,
-		1.0f / 23.0f,
-		1.0f / 31.0f,
-	};
-
-	float quantization_cutoff = quantization_step_table[quantization_level] * 0.333f;
-
-	int is_perturbable[MAX_WEIGHTS_PER_BLOCK];
-	int perturbable_count = 0;
-
-	// quantize the weight set
-	for (i = 0; i < weight_count; i++)
+	// Rescale the weights so that
+	//    low_bound -> 0, high_bound -> 1
+	// and quantize the weight set
+	for (int i = 0; i < weight_count; i++)
 	{
-		float ix0 = weight_set_out[i];
-		if (ix0 < 0.0f)
-			ix0 = 0.0f;
-		if (ix0 > 1.0f)
-			ix0 = 1.0f;
-		float ix = ix0;
+		float ix = (weight_set_in[i] * scale ) - scaled_low_bound;
+		if (ix < 0.0f)
+			ix = 0.0f;
+		if (ix > 1.0f) // upper bound must be smaller than 1 to avoid an array overflow below.
+			ix = 1.0f;
 
-		ix *= 1024.0f;
-		int ix2 = (int)floor(ix + 0.5f);
-		int weight = qat->closest_quantized_weight[ix2];
+		// look up the two closest indexes and return the one that was closest.
+		float ix1 = ix * quant_level_m1;
+		int weight = (int)ix1;
+		float ixl = qat->unquantized_value_unsc[weight];
+		float ixh = qat->unquantized_value_unsc[weight + 1];
 
-		ix = qat->unquantized_value_flt[weight];
-		weight_set_out[i] = ix;
-		quantized_weight_set[i] = weight;
-
-		// test whether the error of the weight is greater than 1/3 of the weight spacing;
-		// if it is not, then it is flagged as "not perturbable". This causes a
-		// quality loss of about 0.002 dB, which is totally worth the speedup we're getting.
-		is_perturbable[i] = 0;
-		if (fabsf(ix - ix0) > quantization_cutoff)
+		if (ixl + ixh < 128.0f * ix)
 		{
-			is_perturbable[i] = 1;
-			perturbable_count++;
+			weight++;
+			ixl = ixh;
 		}
+
+		// Invert the weight-scaling that was done initially
+		weight_set_out[i] = (ixl * rscale) + low_bound;
+		quantized_weight_set[i] = qat->scramble_map[weight];
 	}
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("Weight values after initial quantization:\n");
-			for (i = 0; i < weight_count; i++)
-				printf("%3d : %g <%d>\n", i, weight_set_out[i], quantized_weight_set[i]);
-		}
-	#endif
-
-	// if the decimation table is complete, the quantization above was all we needed to do,
-	// so we can early-out.
-	if (it->num_weights == it->num_texels)
-	{
-		// invert the weight-scaling that was done initially
-		// 0 -> low_bound
-		// 1 -> high_bound
-
-		rscale = high_bound - low_bound;
-		for (i = 0; i < weight_count; i++)
-			weight_set_out[i] = (weight_set_out[i] * rscale) + low_bound;
-
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-			{
-				printf("Weight values after adjustment:\n");
-				for (i = 0; i < weight_count; i++)
-					printf("%3d : %g <%d> <error=%g>\n", i, weight_set_out[i], quantized_weight_set[i], weight_set_out[i] - weight_set_in[i]);
-				printf("\n");
-				printf("%s: Early-out\n\n", __func__);
-
-			}
-		#endif
-
-		return;
-	}
-
-	int weights_tested = 0;
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		int perturbation_count = 0;
-	#endif
-
-	// if no weights are flagged as perturbable, don't try to perturb them.
-	// if only one weight is flagged as perturbable, perturbation is also pointless.
-	if (perturbable_count > 1)
-	{
-		endpoints_and_weights eaix;
-		for (i = 0; i < texels_per_block; i++)
-		{
-			eaix.weights[i] = (eai->weights[i] - low_bound) * scale;
-			eaix.weight_error_scale[i] = eai->weight_error_scale[i];
-		}
-
-		float infilled_weights[MAX_TEXELS_PER_BLOCK];
-		for (i = 0; i < texels_per_block; i++)
-			infilled_weights[i] = compute_value_of_texel_flt(i, it, weight_set_out);
-
-		int weight_to_perturb = 0;
-		int weights_since_last_perturbation = 0;
-		int num_weights = it->num_weights;
-
-		while (weights_since_last_perturbation < num_weights && weights_tested < num_weights * 4)
-		{
-			int do_quant_mod = 0;
-			if (is_perturbable[weight_to_perturb])
-			{
-
-				int weight_val = quantized_weight_set[weight_to_perturb];
-				int weight_next_up = qat->next_quantized_value[weight_val];
-				int weight_next_down = qat->prev_quantized_value[weight_val];
-				float flt_weight_val = qat->unquantized_value_flt[weight_val];
-				float flt_weight_next_up = qat->unquantized_value_flt[weight_next_up];
-				float flt_weight_next_down = qat->unquantized_value_flt[weight_next_down];
-				float error_change_up, error_change_down;
-
-				// compute the error change from perturbing the weight either up or down.
-				compute_two_error_changes_from_perturbing_weight_infill(&eaix,
-																	   it,
-																	   infilled_weights,
-																	   weight_to_perturb,
-																	   (flt_weight_next_up - flt_weight_val), (flt_weight_next_down - flt_weight_val), &error_change_up, &error_change_down);
-
-				int new_weight_val;
-				float flt_new_weight_val;
-				if (weight_val != weight_next_up && error_change_up < 0.0f)
-				{
-					do_quant_mod = 1;
-					new_weight_val = weight_next_up;
-					flt_new_weight_val = flt_weight_next_up;
-				}
-				else if (weight_val != weight_next_down && error_change_down < 0.0f)
-				{
-					do_quant_mod = 1;
-					new_weight_val = weight_next_down;
-					flt_new_weight_val = flt_weight_next_down;
-				}
-
-				if (do_quant_mod)
-				{
-
-					// update the weight.
-					weight_set_out[weight_to_perturb] = flt_new_weight_val;
-					quantized_weight_set[weight_to_perturb] = new_weight_val;
-
-					// update the infilled-weights
-					int num_weights_infill = it->weight_num_texels[weight_to_perturb];
-					float perturbation = (flt_new_weight_val - flt_weight_val) * (1.0f / TEXEL_WEIGHT_SUM);
-					const uint8_t *weight_texel_ptr = it->weight_texel[weight_to_perturb];
-					const float *weights_ptr = it->weights_flt[weight_to_perturb];
-					for (i = num_weights_infill - 1; i >= 0; i--)
-					{
-						uint8_t weight_texel = weight_texel_ptr[i];
-						float weights = weights_ptr[i];
-						infilled_weights[weight_texel] += perturbation * weights;
-					}
-
-					#ifdef DEBUG_PRINT_DIAGNOSTICS
-						if (print_diagnostics)
-						{
-							printf("Perturbation of weight %d : %g\n", weight_to_perturb, perturbation * (float)TEXEL_WEIGHT_SUM);
-							perturbation_count++;
-						}
-					#endif
-				}
-			}
-
-			if (do_quant_mod)
-				weights_since_last_perturbation = 0;
-			else
-				weights_since_last_perturbation++;
-
-			weight_to_perturb++;
-			if (weight_to_perturb >= num_weights)
-				weight_to_perturb -= num_weights;
-
-			weights_tested++;
-		}
-	}
-
-	// invert the weight-scaling that was done initially
-	// 0 -> low_bound
-	// 1 -> high_bound
-
-	for (i = 0; i < weight_count; i++)
-		weight_set_out[i] = (weight_set_out[i] * rscale) + low_bound;
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%d weights, %d weight tests, %d perturbations\n", weight_count, weights_tested, perturbation_count);
-			printf("Weight values after adjustment:\n");
-			for (i = 0; i < weight_count; i++)
-				printf("%3d : %g <%d>\n", i, weight_set_out[i], quantized_weight_set[i]);
-			printf("\n");
-		}
-	#endif
 }
 
 static inline float mat_square_sum(mat2 p)
