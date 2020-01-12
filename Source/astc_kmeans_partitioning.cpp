@@ -247,51 +247,6 @@ void basic_kmeans_update(
 	}
 }
 
-// after a few rounds of k-means-clustering, we should have a set of 2, 3 or 4 partitions;
-// we then turn this set into 2, 3 or 4 bitmaps. Then, for each of the 1024 partitions,
-// we try to match the bitmaps as well as possible.
-static inline int bitcount(uint64_t p)
-{
-	if (sizeof(void *) > 4)
-	{
-		uint64_t mask1 = 0x5555555555555555ULL;
-		uint64_t mask2 = 0x3333333333333333ULL;
-		uint64_t mask3 = 0x0F0F0F0F0F0F0F0FULL;
-		// best-known algorithm for 64-bit bitcount, assuming 64-bit processor
-		// should probably be adapted for use with 32-bit processors and/or processors
-		// with a POPCNT instruction, but leave that for later.
-		p -= (p >> 1) & mask1;
-		p = (p & mask2) + ((p >> 2) & mask2);
-		p += p >> 4;
-		p &= mask3;
-		p *= 0x0101010101010101ULL;
-		p >>= 56;
-		return (int)p;
-	}
-	else
-	{
-		// on 32-bit processor, split the 64-bit input argument in two,
-		// and bitcount each half separately.
-		uint32_t p1 = (uint32_t) p;
-		uint32_t p2 = (uint32_t) (p >> 32);
-		uint32_t mask1 = 0x55555555U;
-		uint32_t mask2 = 0x33333333U;
-		uint32_t mask3 = 0x0F0F0F0FU;
-		p1 = p1 - ((p1 >> 1) & mask1);
-		p2 = p2 - ((p2 >> 1) & mask1);
-		p1 = (p1 & mask2) + ((p1 >> 2) & mask2);
-		p2 = (p2 & mask2) + ((p2 >> 2) & mask2);
-		p1 += p1 >> 4;
-		p2 += p2 >> 4;
-		p1 &= mask3;
-		p2 &= mask3;
-		p1 += p2;
-		p1 *= 0x01010101U;
-		p1 >>= 24;
-		return (int)p1;
-	}
-}
-
 // compute the bit-mismatch for a partitioning in 2-partition mode
 static inline int partition_mismatch2(
 	uint64_t a0,
@@ -299,8 +254,8 @@ static inline int partition_mismatch2(
 	uint64_t b0,
 	uint64_t b1
 ) {
-	int v1 = bitcount(a0 ^ b0) + bitcount(a1 ^ b1);
-	int v2 = bitcount(a0 ^ b1) + bitcount(a1 ^ b0);
+	int v1 = popcount(a0 ^ b0) + popcount(a1 ^ b1);
+	int v2 = popcount(a0 ^ b1) + popcount(a1 ^ b0);
 	return MIN(v1, v2);
 }
 
@@ -313,17 +268,17 @@ static inline int partition_mismatch3(
 	uint64_t b1,
 	uint64_t b2
 ) {
-	int p00 = bitcount(a0 ^ b0);
-	int p01 = bitcount(a0 ^ b1);
-	int p02 = bitcount(a0 ^ b2);
+	int p00 = popcount(a0 ^ b0);
+	int p01 = popcount(a0 ^ b1);
+	int p02 = popcount(a0 ^ b2);
 
-	int p10 = bitcount(a1 ^ b0);
-	int p11 = bitcount(a1 ^ b1);
-	int p12 = bitcount(a1 ^ b2);
+	int p10 = popcount(a1 ^ b0);
+	int p11 = popcount(a1 ^ b1);
+	int p12 = popcount(a1 ^ b2);
 
-	int p20 = bitcount(a2 ^ b0);
-	int p21 = bitcount(a2 ^ b1);
-	int p22 = bitcount(a2 ^ b2);
+	int p20 = popcount(a2 ^ b0);
+	int p21 = popcount(a2 ^ b1);
+	int p22 = popcount(a2 ^ b2);
 
 	int s0 = p11 + p22;
 	int s1 = p12 + p21;
@@ -365,25 +320,25 @@ static inline int partition_mismatch4(
 	uint64_t b2,
 	uint64_t b3
 ) {
-	int p00 = bitcount(a0 ^ b0);
-	int p01 = bitcount(a0 ^ b1);
-	int p02 = bitcount(a0 ^ b2);
-	int p03 = bitcount(a0 ^ b3);
+	int p00 = popcount(a0 ^ b0);
+	int p01 = popcount(a0 ^ b1);
+	int p02 = popcount(a0 ^ b2);
+	int p03 = popcount(a0 ^ b3);
 
-	int p10 = bitcount(a1 ^ b0);
-	int p11 = bitcount(a1 ^ b1);
-	int p12 = bitcount(a1 ^ b2);
-	int p13 = bitcount(a1 ^ b3);
+	int p10 = popcount(a1 ^ b0);
+	int p11 = popcount(a1 ^ b1);
+	int p12 = popcount(a1 ^ b2);
+	int p13 = popcount(a1 ^ b3);
 
-	int p20 = bitcount(a2 ^ b0);
-	int p21 = bitcount(a2 ^ b1);
-	int p22 = bitcount(a2 ^ b2);
-	int p23 = bitcount(a2 ^ b3);
+	int p20 = popcount(a2 ^ b0);
+	int p21 = popcount(a2 ^ b1);
+	int p22 = popcount(a2 ^ b2);
+	int p23 = popcount(a2 ^ b3);
 
-	int p30 = bitcount(a3 ^ b0);
-	int p31 = bitcount(a3 ^ b1);
-	int p32 = bitcount(a3 ^ b2);
-	int p33 = bitcount(a3 ^ b3);
+	int p30 = popcount(a3 ^ b0);
+	int p31 = popcount(a3 ^ b1);
+	int p32 = popcount(a3 ^ b2);
+	int p33 = popcount(a3 ^ b3);
 
 	int mx23 = MIN(p22 + p33, p23 + p32);
 	int mx13 = MIN(p21 + p33, p23 + p31);

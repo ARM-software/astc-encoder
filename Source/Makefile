@@ -7,6 +7,20 @@
 #   from Arm Limited.
 #  ----------------------------------------------------------------------------
 
+# Configure the vectorization intrinsics support; valid values are:
+#
+#   * nointrin - allow use of sse2 by the compiler, but no manual instrinsics
+#   * see2     - allow use of sse2 by the compiler and instrinsics
+#   * see4.2   - allow use of sse4.2 and popcnt by the compiler and instrinsics
+#
+# Note that we always enable at least sse2 support for compiler generated code,
+# as it is guaranteed to be present in x86-64, but we allow disabling of
+# our manually written instrinsic functions.
+#
+# Also note that we currently assume that sse4.2 implies support for popcnt,
+# which is the default GCC behavior and true on currently shipping hardware.
+VEC?=sse2
+
 SOURCES = \
     astc_averages_and_directions.cpp \
     astc_block_sizes2.cpp \
@@ -43,12 +57,26 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++14 -O3 -msse2 -mfpmath=sse \
+CPPFLAGS = -std=c++14 -O3 \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
+
+ifeq ($(VEC),nointrin)
+CPPFLAGS +=  -mfpmath=sse -msse2 -DASTC_SSE=00
+else
+ifeq ($(VEC),sse2)
+CPPFLAGS +=  -mfpmath=sse -msse2 -DASTC_SSE=20
+else
+ifeq ($(VEC),sse4.2)
+CPPFLAGS +=  -mfpmath=sse -msse4.2 -mpopcnt -DASTC_SSE=42
+else
+$(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2)
+endif
+endif
+endif
 
 astcenc: $(OBJECTS)
 	@g++ -o $@ $^ $(CPPFLAGS) -lpthread
-	@echo "[Link] $@"
+	@echo "[Link] $@ (using $(VEC))"
 
 $(OBJECTS): %.o: %.cpp $(HEADERS)
 	@g++ -c -o $@ $< $(CPPFLAGS)

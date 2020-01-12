@@ -18,6 +18,8 @@
 #include <cstdint>
 #include <cmath>
 
+#include <immintrin.h>
+
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
 #endif
@@ -237,5 +239,57 @@ float4 transform(mat4 p, float4 q);
 
 mat2 invert(mat2 p);
 mat4 invert(mat4 p);
+
+/* ============================================================================
+  Fast math library; note that many of the higher-order functions in this set
+  use approximations which are less accurate, but faster, than <cmath> standard
+  library equivalents.
+============================================================================ */
+
+/**
+ * @brief Fast floating-point round-to-nearest integer.
+ */
+static inline float ae_rint( float p )
+{
+// round to integer, round-to-nearest
+#if ASTC_SSE >= 42
+	const int flag = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
+	__m128 tmp = _mm_set_ss(p);
+	tmp = _mm_round_ss(tmp, tmp, flag);
+	return _mm_cvtss_f32(tmp);
+#else
+	return floorf(p + 0.5f);
+#endif
+}
+
+static inline int ae_convert_int_rte( float p )
+{ // convert to integer, round-to-nearest
+#if ASTC_SSE >= 20
+	return _mm_cvt_ss2si(_mm_set_ss(p));
+#else
+	return (int)(floorf(p + 0.5f));
+#endif
+}
+
+static inline int popcount(uint64_t p)
+{
+#if ASTC_SSE >= 42
+	return (int)_mm_popcnt_u64(p);
+#else
+	uint64_t mask1 = 0x5555555555555555ULL;
+	uint64_t mask2 = 0x3333333333333333ULL;
+	uint64_t mask3 = 0x0F0F0F0F0F0F0F0FULL;
+	// best-known algorithm for 64-bit bitcount, assuming 64-bit processor
+	// should probably be adapted for use with 32-bit processors and/or processors
+	// with a POPCNT instruction, but leave that for later.
+	p -= (p >> 1) & mask1;
+	p = (p & mask2) + ((p >> 2) & mask2);
+	p += p >> 4;
+	p &= mask3;
+	p *= 0x0101010101010101ULL;
+	p >>= 56;
+	return (int)p;
+#endif
+}
 
 #endif
