@@ -249,7 +249,7 @@ mat4 invert(mat4 p);
 /**
  * @brief Fast floating-point round-to-nearest integer.
  */
-static inline float ae_rint( float p )
+static inline float ae_rint(float p)
 {
 // round to integer, round-to-nearest
 #if ASTC_SSE >= 42
@@ -262,7 +262,7 @@ static inline float ae_rint( float p )
 #endif
 }
 
-static inline int ae_convert_int_rte( float p )
+static inline int ae_convert_int_rte(float p)
 { // convert to integer, round-to-nearest
 #if ASTC_SSE >= 20
 	return _mm_cvt_ss2si(_mm_set_ss(p));
@@ -290,6 +290,44 @@ static inline int popcount(uint64_t p)
 	p >>= 56;
 	return (int)p;
 #endif
+}
+
+static inline float astc_atan2(float y, float x)
+{
+	const float PI = (float)M_PI;
+	const float PI_2 = PI / 2.f;
+
+	// Handle the discontinuity at x == 0
+	if (x == 0.0f) {
+		if (y > 0.0f) {
+			return PI_2;
+		}
+		if (y == 0.0f) {
+			return 0.0f;
+		}
+		return -PI_2;
+	}
+
+	float z = y / x;
+	float z2 = z * z;
+	if (std::fabs(z) < 1.0f) {
+		float atan = z / (1.0f + (0.28f * z2));
+		if (x < 0.0f) {
+			if (y < 0.0f) {
+				return atan - PI;
+			} else {
+				return atan + PI;
+			}
+		}
+		return atan;
+	} else {
+		float atan = PI_2 - (z / (z2 + 0.28f));
+		if (y < 0.0f) {
+			return atan - PI;
+		} else {
+			return atan;
+		}
+	}
 }
 
 #endif
