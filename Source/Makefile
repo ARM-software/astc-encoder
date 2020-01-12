@@ -57,17 +57,18 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++14 -O3 \
+CPPFLAGS = -std=c++14 -O3 -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
+# Validate that the VEC parameter is a supported value, and patch CPPFLAGS
 ifeq ($(VEC),nointrin)
-CPPFLAGS +=  -mfpmath=sse -msse2 -DASTC_SSE=00
+CPPFLAGS +=  -msse2 -DASTC_SSE=00
 else
 ifeq ($(VEC),sse2)
-CPPFLAGS +=  -mfpmath=sse -msse2 -DASTC_SSE=20
+CPPFLAGS += -msse2 -DASTC_SSE=20
 else
 ifeq ($(VEC),sse4.2)
-CPPFLAGS +=  -mfpmath=sse -msse4.2 -mpopcnt -DASTC_SSE=42
+CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42
 else
 $(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2)
 endif

@@ -244,33 +244,80 @@ mat4 invert(mat4 p);
   Fast math library; note that many of the higher-order functions in this set
   use approximations which are less accurate, but faster, than <cmath> standard
   library equivalents.
+
+  Note: Many of these are not necessarily faster than simple C versions when
+  used on a single scalar value, but are included for testing purposes as most
+  have an option based on SSE intrinsics and therefore provide an obvious route
+  to future vectorization.
 ============================================================================ */
 
+// These are namespaced to avoid colliding with C standard library functions.
+namespace astc
+{
+
 /**
- * @brief Fast floating-point round-to-nearest integer.
+ * @brief SP float absolute value.
+ *
+ * @param val The value to make absolute.
+ *
+ * @return The absolute value.
  */
-static inline float ae_rint(float p)
+static inline float fabs(float val)
+{
+#if ASTC_SSE >= 20
+	static const union {
+		uint32_t u[4];
+		__m128 v;
+	} mask = { { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff } };
+	return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(val), mask.v));
+#else
+	return std::fabs(val);
+#endif
+}
+
+/**
+ * @brief SP float round-to-nearest.
+ *
+ * @param val The value to round.
+ *
+ * @return The rounded value.
+ */
+static inline float flt_rte(float val)
 {
 // round to integer, round-to-nearest
 #if ASTC_SSE >= 42
 	const int flag = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
-	__m128 tmp = _mm_set_ss(p);
+	__m128 tmp = _mm_set_ss(val);
 	tmp = _mm_round_ss(tmp, tmp, flag);
 	return _mm_cvtss_f32(tmp);
 #else
-	return floorf(p + 0.5f);
+	return floorf(val + 0.5f);
 #endif
 }
 
-static inline int ae_convert_int_rte(float p)
+/**
+ * @brief SP float round-to-nearest and convert to integer.
+ *
+ * @param val The value to round.
+ *
+ * @return The rounded value.
+ */
+static inline int flt2int_rte(float val)
 { // convert to integer, round-to-nearest
 #if ASTC_SSE >= 20
-	return _mm_cvt_ss2si(_mm_set_ss(p));
+	return _mm_cvt_ss2si(_mm_set_ss(val));
 #else
-	return (int)(floorf(p + 0.5f));
+	return (int)(floorf(val + 0.5f));
 #endif
 }
 
+/**
+ * @brief Population bit count.
+ *
+ * @param val The value to count.
+ *
+ * @return The number of 1 bits.
+ */
 static inline int popcount(uint64_t p)
 {
 #if ASTC_SSE >= 42
@@ -279,9 +326,6 @@ static inline int popcount(uint64_t p)
 	uint64_t mask1 = 0x5555555555555555ULL;
 	uint64_t mask2 = 0x3333333333333333ULL;
 	uint64_t mask3 = 0x0F0F0F0F0F0F0F0FULL;
-	// best-known algorithm for 64-bit bitcount, assuming 64-bit processor
-	// should probably be adapted for use with 32-bit processors and/or processors
-	// with a POPCNT instruction, but leave that for later.
 	p -= (p >> 1) & mask1;
 	p = (p & mask2) + ((p >> 2) & mask2);
 	p += p >> 4;
@@ -292,17 +336,33 @@ static inline int popcount(uint64_t p)
 #endif
 }
 
-static inline float astc_atan2(float y, float x)
+/**
+ * @brief Fast approximation of atan2.
+ *
+ * TODO: This implementation is reasonably accurate and a lot faster than the
+ * standard library, but quite branch heavy which makes it difficult to
+ * vectorize effectively. If we need to vectorize in future, consider using a
+ * different approximation algorithm.
+ *
+ * @param y The proportion of the Y coordinate.
+ * @param x The proportion of the X coordinate.
+ *
+ * @return The approximation of atan2().
+ */
+static inline float atan2(float y, float x)
 {
 	const float PI = (float)M_PI;
 	const float PI_2 = PI / 2.f;
 
 	// Handle the discontinuity at x == 0
-	if (x == 0.0f) {
-		if (y > 0.0f) {
+	if (x == 0.0f)
+	{
+		if (y > 0.0f)
+		{
 			return PI_2;
 		}
-		if (y == 0.0f) {
+		else if (y == 0.0f)
+		{
 			return 0.0f;
 		}
 		return -PI_2;
@@ -310,24 +370,36 @@ static inline float astc_atan2(float y, float x)
 
 	float z = y / x;
 	float z2 = z * z;
-	if (std::fabs(z) < 1.0f) {
+	if (std::fabs(z) < 1.0f)
+	{
 		float atan = z / (1.0f + (0.28f * z2));
-		if (x < 0.0f) {
-			if (y < 0.0f) {
+		if (x < 0.0f)
+		{
+			if (y < 0.0f)
+			{
 				return atan - PI;
-			} else {
+			}
+			else
+			{
 				return atan + PI;
 			}
 		}
 		return atan;
-	} else {
+	}
+	else
+	{
 		float atan = PI_2 - (z / (z2 + 0.28f));
-		if (y < 0.0f) {
+		if (y < 0.0f)
+		{
 			return atan - PI;
-		} else {
+		}
+		else
+		{
 			return atan;
 		}
 	}
+}
+
 }
 
 #endif

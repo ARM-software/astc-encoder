@@ -254,8 +254,8 @@ static inline int partition_mismatch2(
 	uint64_t b0,
 	uint64_t b1
 ) {
-	int v1 = popcount(a0 ^ b0) + popcount(a1 ^ b1);
-	int v2 = popcount(a0 ^ b1) + popcount(a1 ^ b0);
+	int v1 = astc::popcount(a0 ^ b0) + astc::popcount(a1 ^ b1);
+	int v2 = astc::popcount(a0 ^ b1) + astc::popcount(a1 ^ b0);
 	return MIN(v1, v2);
 }
 
@@ -268,17 +268,17 @@ static inline int partition_mismatch3(
 	uint64_t b1,
 	uint64_t b2
 ) {
-	int p00 = popcount(a0 ^ b0);
-	int p01 = popcount(a0 ^ b1);
-	int p02 = popcount(a0 ^ b2);
+	int p00 = astc::popcount(a0 ^ b0);
+	int p01 = astc::popcount(a0 ^ b1);
+	int p02 = astc::popcount(a0 ^ b2);
 
-	int p10 = popcount(a1 ^ b0);
-	int p11 = popcount(a1 ^ b1);
-	int p12 = popcount(a1 ^ b2);
+	int p10 = astc::popcount(a1 ^ b0);
+	int p11 = astc::popcount(a1 ^ b1);
+	int p12 = astc::popcount(a1 ^ b2);
 
-	int p20 = popcount(a2 ^ b0);
-	int p21 = popcount(a2 ^ b1);
-	int p22 = popcount(a2 ^ b2);
+	int p20 = astc::popcount(a2 ^ b0);
+	int p21 = astc::popcount(a2 ^ b1);
+	int p22 = astc::popcount(a2 ^ b2);
 
 	int s0 = p11 + p22;
 	int s1 = p12 + p21;
@@ -320,25 +320,25 @@ static inline int partition_mismatch4(
 	uint64_t b2,
 	uint64_t b3
 ) {
-	int p00 = popcount(a0 ^ b0);
-	int p01 = popcount(a0 ^ b1);
-	int p02 = popcount(a0 ^ b2);
-	int p03 = popcount(a0 ^ b3);
+	int p00 = astc::popcount(a0 ^ b0);
+	int p01 = astc::popcount(a0 ^ b1);
+	int p02 = astc::popcount(a0 ^ b2);
+	int p03 = astc::popcount(a0 ^ b3);
 
-	int p10 = popcount(a1 ^ b0);
-	int p11 = popcount(a1 ^ b1);
-	int p12 = popcount(a1 ^ b2);
-	int p13 = popcount(a1 ^ b3);
+	int p10 = astc::popcount(a1 ^ b0);
+	int p11 = astc::popcount(a1 ^ b1);
+	int p12 = astc::popcount(a1 ^ b2);
+	int p13 = astc::popcount(a1 ^ b3);
 
-	int p20 = popcount(a2 ^ b0);
-	int p21 = popcount(a2 ^ b1);
-	int p22 = popcount(a2 ^ b2);
-	int p23 = popcount(a2 ^ b3);
+	int p20 = astc::popcount(a2 ^ b0);
+	int p21 = astc::popcount(a2 ^ b1);
+	int p22 = astc::popcount(a2 ^ b2);
+	int p23 = astc::popcount(a2 ^ b3);
 
-	int p30 = popcount(a3 ^ b0);
-	int p31 = popcount(a3 ^ b1);
-	int p32 = popcount(a3 ^ b2);
-	int p33 = popcount(a3 ^ b3);
+	int p30 = astc::popcount(a3 ^ b0);
+	int p31 = astc::popcount(a3 ^ b1);
+	int p32 = astc::popcount(a3 ^ b2);
+	int p33 = astc::popcount(a3 ^ b3);
 
 	int mx23 = MIN(p22 + p33, p23 + p32);
 	int mx13 = MIN(p21 + p33, p23 + p31);
