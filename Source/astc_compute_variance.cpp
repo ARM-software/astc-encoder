@@ -240,9 +240,9 @@ static void compute_pixel_region_variance(
 
 					if (need_srgb_transform)
 					{
-						d.x = srgb_transform(d.x);
-						d.y = srgb_transform(d.y);
-						d.z = srgb_transform(d.z);
+						d.x = astc::srgb_transform(d.x);
+						d.y = astc::srgb_transform(d.y);
+						d.z = astc::srgb_transform(d.z);
 					}
 
 					if (!are_powers_1)
@@ -293,9 +293,9 @@ static void compute_pixel_region_variance(
 
 					if (need_srgb_transform)
 					{
-						d.x = srgb_transform(d.x);
-						d.y = srgb_transform(d.y);
-						d.z = srgb_transform(d.z);
+						d.x = astc::srgb_transform(d.x);
+						d.y = astc::srgb_transform(d.y);
+						d.z = astc::srgb_transform(d.z);
 					}
 
 					if (!are_powers_1)

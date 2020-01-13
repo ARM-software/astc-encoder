@@ -61,37 +61,6 @@ static kahan_accum4 &operator+=(
 }
 
 /**
- * @brief Clamp value in range [0.0f, 65504.0f], with NaNs converted to zero.
- *
- * @param val The value to clamp
- *
- * @return The clamped value
- */
-static float clamp(float val)
-{
-	// Do not reorder these, correct NaN handling relies on the fact that
-	// any comparison with NaN returns false so will fall-though to the 0.0f.
-	if (val > 65504.0f) return 65504.0f;
-	if (val > 0.0f) return val;
-	return 0.0f;
-}
-
-/**
- * @brief Logarithm, linearized from 2^-14.
- *
- * @param val The value to log2
- *
- * @return log2(val)
- */
-static float xlog2(float val)
-{
-	if (val >= 0.00006103515625f)
-		return logf(val) * 1.44269504088896340735f;	// log(x)/log(2)
-	else
-		return -15.44269504088896340735f + val * 23637.11554992477646609062f;
-}
-
-/**
  * @brief mPSNR tonemapping operator for HDR images.
  *
  * @param val The color value to tone map
@@ -218,10 +187,10 @@ void compute_error_metrics(
 				else
 				{
 					color1 = float4(
-					    clamp(sf16_to_float(img1->data16[ze1][ye1][xe1])),
-					    clamp(sf16_to_float(img1->data16[ze1][ye1][xe1 + 1])),
-					    clamp(sf16_to_float(img1->data16[ze1][ye1][xe1 + 2])),
-					    clamp(sf16_to_float(img1->data16[ze1][ye1][xe1 + 3])));
+					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1])),
+					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 1])),
+					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 2])),
+					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 3])));
 				}
 
 				if (img2->data8)
@@ -235,10 +204,10 @@ void compute_error_metrics(
 				else
 				{
 					color2 = float4(
-					    clamp(sf16_to_float(img2->data16[ze2][ye2][xe2])),
-					    clamp(sf16_to_float(img2->data16[ze2][ye2][xe2 + 1])),
-					    clamp(sf16_to_float(img2->data16[ze2][ye2][xe2 + 2])),
-					    clamp(sf16_to_float(img2->data16[ze2][ye2][xe2 + 3])));
+					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2])),
+					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 1])),
+					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 2])),
+					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 3])));
 				}
 
 				rgb_peak = MAX(MAX(color1.x, color1.y),
@@ -259,16 +228,16 @@ void compute_error_metrics(
 				if (compute_hdr_metrics)
 				{
 					float4 log_input_color1 = float4(
-					    xlog2(color1.x),
-					    xlog2(color1.y),
-					    xlog2(color1.z),
-					    xlog2(color1.w));
+					    astc::xlog2(color1.x),
+					    astc::xlog2(color1.y),
+					    astc::xlog2(color1.z),
+					    astc::xlog2(color1.w));
 
 					float4 log_input_color2 = float4(
-					    xlog2(color2.x),
-					    xlog2(color2.y),
-					    xlog2(color2.z),
-					    xlog2(color2.w));
+					    astc::xlog2(color2.x),
+					    astc::xlog2(color2.y),
+					    astc::xlog2(color2.z),
+					    astc::xlog2(color2.w));
 
 					float4 log_diffcolor = log_input_color1 - log_input_color2;
 

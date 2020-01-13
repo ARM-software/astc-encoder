@@ -1066,12 +1066,12 @@ static void prepare_block_statistics(
 	ga_cov *= 1.0f / sqrtf(MAX(gg_var * aa_var, 1e-30f));
 	ba_cov *= 1.0f / sqrtf(MAX(bb_var * aa_var, 1e-30f));
 
-    if (astc_isnan(rg_cov)) rg_cov = 1.0f;
-    if (astc_isnan(rb_cov)) rb_cov = 1.0f;
-    if (astc_isnan(ra_cov)) ra_cov = 1.0f;
-    if (astc_isnan(gb_cov)) gb_cov = 1.0f;
-    if (astc_isnan(ga_cov)) ga_cov = 1.0f;
-    if (astc_isnan(ba_cov)) ba_cov = 1.0f;
+    if (astc::isnan(rg_cov)) rg_cov = 1.0f;
+    if (astc::isnan(rb_cov)) rb_cov = 1.0f;
+    if (astc::isnan(ra_cov)) ra_cov = 1.0f;
+    if (astc::isnan(gb_cov)) gb_cov = 1.0f;
+    if (astc::isnan(ga_cov)) ga_cov = 1.0f;
+    if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
 	float lowest_correlation = MIN(fabsf(rg_cov), fabsf(rb_cov));
 	lowest_correlation = MIN(lowest_correlation, fabsf(ra_cov));

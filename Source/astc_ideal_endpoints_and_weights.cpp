@@ -109,7 +109,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 		ei->weights[i] = value;
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
-		if (astc_isnan(ei->weight_error_scale[i]))
+		if (astc::isnan(ei->weight_error_scale[i]))
 		{
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
@@ -381,7 +381,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
-		if (astc_isnan(ei->weight_error_scale[i]))
+		if (astc::isnan(ei->weight_error_scale[i]))
 		{
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
@@ -669,7 +669,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
-		if (astc_isnan(ei->weight_error_scale[i]))
+		if (astc::isnan(ei->weight_error_scale[i]))
 		{
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
@@ -843,7 +843,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			idx = 0.0f;
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
-		if (astc_isnan(ei->weight_error_scale[i]))
+		if (astc::isnan(ei->weight_error_scale[i]))
 		{
 			ASTC_CODEC_INTERNAL_ERROR();
 		}

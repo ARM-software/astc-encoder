@@ -38,22 +38,6 @@ static inline int cqt_lookup(
 	return color_quantization_tables[quantization_level][value];
 }
 
-// clamp an input value to [0,255]; NaN is turned into 0
-static inline float clamp255(float val)
-{
-	if (val > 255.0f)
-		val = 255.0f;
-	else if (val > 0.0f)
-	{
-		// deliberately empty
-		// switching the order of calculation here will fail to handle 0.
-	}
-	else
-		val = 0.0f;
-
-	return val;
-}
-
 void quantize_rgb(
 	float4 color0,	// LDR: 0=lowest, 255=highest
 	float4 color1,
@@ -62,13 +46,13 @@ void quantize_rgb(
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float r0 = clamp255(color0.x * scale);
-	float g0 = clamp255(color0.y * scale);
-	float b0 = clamp255(color0.z * scale);
+	float r0 = astc::clamp255f(color0.x * scale);
+	float g0 = astc::clamp255f(color0.y * scale);
+	float b0 = astc::clamp255f(color0.z * scale);
 
-	float r1 = clamp255(color1.x * scale);
-	float g1 = clamp255(color1.y * scale);
-	float b1 = clamp255(color1.z * scale);
+	float r1 = astc::clamp255f(color1.x * scale);
+	float g1 = astc::clamp255f(color1.y * scale);
+	float b1 = astc::clamp255f(color1.z * scale);
 
 	int ri0, gi0, bi0, ri1, gi1, bi1;
 	int ri0b, gi0b, bi0b, ri1b, gi1b, bi1b;
@@ -114,8 +98,8 @@ void quantize_rgba(
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 	int ai0 = color_quantization_tables[quantization_level][(int)floor(a0 + 0.5f)];
 	int ai1 = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
 
@@ -203,8 +187,8 @@ int try_quantize_rgba_blue_contract(
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 
 	output[7] = color_quantization_tables[quantization_level][(int)floor(a0 + 0.5f)];
 	output[6] = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
@@ -234,13 +218,13 @@ int try_quantize_rgb_delta(
 	color1.y *= (1.0f / 257.0f);
 	color1.z *= (1.0f / 257.0f);
 
-	float r0 = clamp255(color0.x);
-	float g0 = clamp255(color0.y);
-	float b0 = clamp255(color0.z);
+	float r0 = astc::clamp255f(color0.x);
+	float g0 = astc::clamp255f(color0.y);
+	float b0 = astc::clamp255f(color0.z);
 
-	float r1 = clamp255(color1.x);
-	float g1 = clamp255(color1.y);
-	float b1 = clamp255(color1.z);
+	float r1 = astc::clamp255f(color1.x);
+	float g1 = astc::clamp255f(color1.y);
+	float b1 = astc::clamp255f(color1.z);
 
 	// transform r0 to unorm9
 	int r0a = (int)floor(r0 + 0.5f);
@@ -481,8 +465,8 @@ int try_quantize_alpha_delta(
 
 	// the calculation for alpha-delta is exactly the same as for RGB-delta; see
 	// the RGB-delta function for comments.
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 
 	int a0a = (int)floor(a0 + 0.5f);
 	a0a <<= 1;
@@ -518,10 +502,10 @@ int try_quantize_luminance_alpha_delta(
 	int output[8],
 	int quantization_level
 ) {
-	float l0 = clamp255((color0.x + color0.y + color0.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float l1 = clamp255((color1.x + color1.y + color1.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float a0 = clamp255(color0.w * (1.0f / 257.0f));
-	float a1 = clamp255(color1.w * (1.0f / 257.0f));
+	float l0 = astc::clamp255f((color0.x + color0.y + color0.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
+	float l1 = astc::clamp255f((color1.x + color1.y + color1.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
+	float a0 = astc::clamp255f(color0.w * (1.0f / 257.0f));
+	float a1 = astc::clamp255f(color1.w * (1.0f / 257.0f));
 
 	int l0a = (int)floor(l0 + 0.5f);
 	int a0a = (int)floor(a0 + 0.5f);
@@ -617,9 +601,9 @@ void quantize_rgbs_new(
 	rgbs_color.y *= (1.0f / 257.0f);
 	rgbs_color.z *= (1.0f / 257.0f);
 
-	float r = clamp255(rgbs_color.x);
-	float g = clamp255(rgbs_color.y);
-	float b = clamp255(rgbs_color.z);
+	float r = astc::clamp255f(rgbs_color.x);
+	float g = astc::clamp255f(rgbs_color.y);
+	float b = astc::clamp255f(rgbs_color.z);
 
 	int ri = color_quantization_tables[quantization_level][(int)floor(r + 0.5f)];
 	int gi = color_quantization_tables[quantization_level][(int)floor(g + 0.5f)];
@@ -632,7 +616,7 @@ void quantize_rgbs_new(
 	float oldcolorsum = rgbs_color.x + rgbs_color.y + rgbs_color.z;
 	float newcolorsum = (float)(ru + gu + bu);
 
-	float scale = clamp01(rgbs_color.w * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
+	float scale = astc::clamp1f(rgbs_color.w * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
 
 	int scale_idx = (int)floor(scale * 256.0f + 0.5f);
 
@@ -657,8 +641,8 @@ void quantize_rgbs_alpha_new(
 	color0.w *= (1.0f / 257.0f);
 	color1.w *= (1.0f / 257.0f);
 
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 
 	int ai0 = color_quantization_tables[quantization_level][(int)floor(a0 + 0.5f)];
 	int ai1 = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
@@ -683,8 +667,8 @@ void quantize_luminance(
 	color1.y *= (1.0f / 257.0f);
 	color1.z *= (1.0f / 257.0f);
 
-	float lum0 = clamp255((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
-	float lum1 = clamp255((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
+	float lum0 = astc::clamp255f((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
 
 	if (lum0 > lum1)
 	{
@@ -706,10 +690,10 @@ void quantize_luminance_alpha(
 	color0 = color0 * (1.0f / 257.0f);
 	color1 = color1 * (1.0f / 257.0f);
 
-	float lum0 = clamp255((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
-	float lum1 = clamp255((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float lum0 = astc::clamp255f((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 
 	// if the endpoints are *really* close, then pull them apart slightly;
 	// this affords for >8 bits precision for normal maps.
@@ -725,8 +709,8 @@ void quantize_luminance_alpha(
 			lum0 += 0.5f;
 			lum1 -= 0.5f;
 		}
-		lum0 = clamp255(lum0);
-		lum1 = clamp255(lum1);
+		lum0 = astc::clamp255f(lum0);
+		lum1 = astc::clamp255f(lum1);
 	}
 	if (quantization_level > 18 && fabsf(a0 - a1) < 3.0f)
 	{
@@ -740,8 +724,8 @@ void quantize_luminance_alpha(
 			a0 += 0.5f;
 			a1 -= 0.5f;
 		}
-		a0 = clamp255(a0);
-		a1 = clamp255(a1);
+		a0 = astc::clamp255f(a0);
+		a1 = astc::clamp255f(a1);
 	}
 
 
@@ -1594,8 +1578,8 @@ void quantize_hdr_rgb_ldr_alpha3(
 
 	quantize_hdr_rgb3(color0, color1, output, quantization_level);
 
-	float a0 = clamp255(color0.w);
-	float a1 = clamp255(color1.w);
+	float a0 = astc::clamp255f(color0.w);
+	float a1 = astc::clamp255f(color1.w);
 	int ai0 = color_quantization_tables[quantization_level][(int)floor(a0 + 0.5f)];
 	int ai1 = color_quantization_tables[quantization_level][(int)floor(a1 + 0.5f)];
 

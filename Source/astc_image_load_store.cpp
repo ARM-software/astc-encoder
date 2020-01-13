@@ -274,7 +274,7 @@ int determine_image_channels(const astc_codec_image * img)
 // conversion functions between the LNS representation and the FP16 representation.
 float float_to_lns(float p)
 {
-	if (astc_isnan(p) || p <= 1.0f / 67108864.0f)
+	if (astc::isnan(p) || p <= 1.0f / 67108864.0f)
 	{
 		// underflow or NaN value, return 0.
 		// We count underflow if the input value is smaller than 2^-26.

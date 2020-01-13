@@ -446,3 +446,90 @@ mat4 invert(mat4 p)
 
 	return res;
 }
+
+/* Public function, see header file for detailed documentation */
+float astc::log2(float val)
+{
+	if32 p;
+	p.f = val;
+	if( p.s < 0x800000 )
+		p.s = 0x800000; // negative, 0, denormal get clamped to non-denormal.
+
+	// normalize mantissa to range [0.66, 1.33] and extract an exponent
+	// in such a way that 1.0 returns 0.
+	p.s -= 0x3f2aaaab;
+	int expo = p.s >> 23;
+	p.s &= 0x7fffff;
+	p.s += 0x3f2aaaab;
+
+	float x = p.f - 1.0f;
+
+	// taylor polynomial that, with horner's-rule style evaluation,
+	// gives sufficient precision for our use
+	// (relative error of about 1 in 10^6)
+
+	float res = (float)expo
+	          + x * ( 1.442695040888963f
+	          + x * (-0.721347520444482f
+	          + x * ( 0.480898346962988f
+	          + x * (-0.360673760222241f
+	          + x * ( 0.288539008177793f
+	          + x * (-0.240449173481494f
+	          + x * ( 0.206099291555566f
+	          + x * (-0.180336880111120f
+	          + x * ( 0.160299448987663f
+	          )))))))));
+	return res;
+}
+
+/* Public function, see header file for detailed documentation */
+float astc::atan2(float y, float x)
+{
+	const float PI = (float)M_PI;
+	const float PI_2 = PI / 2.f;
+
+	// Handle the discontinuity at x == 0
+	if (x == 0.0f)
+	{
+		if (y > 0.0f)
+		{
+			return PI_2;
+		}
+		else if (y == 0.0f)
+		{
+			return 0.0f;
+		}
+		return -PI_2;
+	}
+
+	float z = y / x;
+	float z2 = z * z;
+	if (std::fabs(z) < 1.0f)
+	{
+		float atan = z / (1.0f + (0.28f * z2));
+		if (x < 0.0f)
+		{
+			if (y < 0.0f)
+			{
+				return atan - PI;
+			}
+			else
+			{
+				return atan + PI;
+			}
+		}
+		return atan;
+	}
+	else
+	{
+		float atan = PI_2 - (z / (z2 + 0.28f));
+		if (y < 0.0f)
+		{
+			return atan - PI;
+		}
+		else
+		{
+			return atan;
+		}
+	}
+}
