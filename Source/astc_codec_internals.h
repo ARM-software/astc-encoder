@@ -168,7 +168,6 @@ struct imageblock
 {
 	float orig_data[MAX_TEXELS_PER_BLOCK * 4];  // original input data
 	float work_data[MAX_TEXELS_PER_BLOCK * 4];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
-	float deriv_data[MAX_TEXELS_PER_BLOCK * 4]; // derivative of the conversion function used, used to modify error weighting
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
@@ -910,6 +909,11 @@ void expand_block_artifact_suppression(
 
 // functions pertaining to weight alignment
 void prepare_angular_tables(void);
+
+void imageblock_initialize_deriv(
+	const imageblock* pb,
+	int pixelcount,
+	float4* dptr);
 
 void compute_angular_endpoints_1plane(
 	float mode_cutoff,

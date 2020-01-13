@@ -349,15 +349,15 @@ uint16_t unorm16_to_sf16(uint16_t p)
 	return p;
 }
 
-void imageblock_initialize_deriv_from_work_and_orig(
-	imageblock* pb,
-	int pixelcount
+void imageblock_initialize_deriv(
+	const imageblock* pb,
+	int pixelcount,
+	float4* dptr
 ) {
 	int i;
 
 	const float *fptr = pb->orig_data;
 	const float *wptr = pb->work_data;
-	float *dptr = pb->deriv_data;
 
 	for (i = 0; i < pixelcount; i++)
 	{
@@ -389,15 +389,15 @@ void imageblock_initialize_deriv_from_work_and_orig(
 			else if (bderiv > 33554432.0f)
 				bderiv = 33554432.0f;
 
-			dptr[0] = rderiv;
-			dptr[1] = gderiv;
-			dptr[2] = bderiv;
+			dptr->x = rderiv;
+			dptr->y = gderiv;
+			dptr->z = bderiv;
 		}
 		else
 		{
-			dptr[0] = 65535.0f;
-			dptr[1] = 65535.0f;
-			dptr[2] = 65535.0f;
+			dptr->x = 65535.0f;
+			dptr->y = 65535.0f;
+			dptr->z = 65535.0f;
 		}
 
 		// then compute derivatives for Alpha
@@ -412,16 +412,16 @@ void imageblock_initialize_deriv_from_work_and_orig(
 			else if (aderiv > 33554432.0f)
 				aderiv = 33554432.0f;
 
-			dptr[3] = aderiv;
+			dptr->w = aderiv;
 		}
 		else
 		{
-			dptr[3] = 65535.0f;
+			dptr->w = 65535.0f;
 		}
 
 		fptr += 4;
 		wptr += 4;
-		dptr += 4;
+		dptr += 1;
 	}
 }
 
@@ -461,8 +461,6 @@ void imageblock_initialize_work_from_orig(
 		fptr += 4;
 		wptr += 4;
 	}
-
-	imageblock_initialize_deriv_from_work_and_orig(pb, pixelcount);
 }
 
 // helper function to initialize the orig-data from the work-data
@@ -501,8 +499,6 @@ void imageblock_initialize_orig_from_work(
 		fptr += 4;
 		wptr += 4;
 	}
-
-	imageblock_initialize_deriv_from_work_and_orig(pb, pixelcount);
 }
 
 // fetch an imageblock from the input file.

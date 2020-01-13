@@ -788,6 +788,8 @@ static float prepare_error_weight_block(
 		ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
 		ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
 
+	float4 derv[MAX_TEXELS_PER_BLOCK];
+	imageblock_initialize_deriv(blk, bsd->texel_count, derv);
 	float4 color_weights = float4(ewp->rgba_weights[0],
 	                              ewp->rgba_weights[1],
 	                              ewp->rgba_weights[2],
@@ -938,10 +940,10 @@ static float prepare_error_weight_block(
 
 					ewbo->error_weights[idx] = error_weight;
 
-					error_weight.x /= (blk->deriv_data[4 * idx] * blk->deriv_data[4 * idx] * 1e-10f);
-					error_weight.y /= (blk->deriv_data[4 * idx + 1] * blk->deriv_data[4 * idx + 1] * 1e-10f);
-					error_weight.z /= (blk->deriv_data[4 * idx + 2] * blk->deriv_data[4 * idx + 2] * 1e-10f);
-					error_weight.w /= (blk->deriv_data[4 * idx + 3] * blk->deriv_data[4 * idx + 3] * 1e-10f);
+					error_weight.x /= (derv[idx].x * derv[idx].x * 1e-10f);
+					error_weight.y /= (derv[idx].y * derv[idx].y * 1e-10f);
+					error_weight.z /= (derv[idx].z * derv[idx].z * 1e-10f);
+					error_weight.w /= (derv[idx].w * derv[idx].w * 1e-10f);
 
 					ewb->error_weights[idx] = error_weight;
 					if (dot(error_weight, float4(1, 1, 1, 1)) < 1e-10f)
