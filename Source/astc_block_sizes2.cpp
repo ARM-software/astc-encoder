@@ -13,109 +13,6 @@
 
 #include "astc_codec_internals.h"
 
-extern const float percentile_table_4x4[2048];
-
-extern const float percentile_table_5x4[2048];
-extern const float percentile_table_5x5[2048];
-
-extern const float percentile_table_6x5[2048];
-extern const float percentile_table_6x6[2048];
-
-extern const float percentile_table_8x5[2048];
-extern const float percentile_table_8x6[2048];
-extern const float percentile_table_8x8[2048];
-
-extern const float percentile_table_10x5[2048];
-extern const float percentile_table_10x6[2048];
-extern const float percentile_table_10x8[2048];
-extern const float percentile_table_10x10[2048];
-
-extern const float percentile_table_12x10[2048];
-extern const float percentile_table_12x12[2048];
-
-const float *get_2d_percentile_table(
-	int blockdim_x,
-	int blockdim_y
-) {
-	switch (blockdim_x)
-	{
-	case 4:
-		switch (blockdim_y)
-		{
-		case 4:
-			return percentile_table_4x4;
-		}
-		break;
-	case 5:
-		switch (blockdim_y)
-		{
-		case 4:
-			return percentile_table_5x4;
-		case 5:
-			return percentile_table_5x5;
-		}
-		break;
-
-	case 6:
-		switch (blockdim_y)
-		{
-		case 5:
-			return percentile_table_6x5;
-		case 6:
-			return percentile_table_6x6;
-		}
-		break;
-
-	case 8:
-		switch (blockdim_y)
-		{
-		case 5:
-			return percentile_table_8x5;
-		case 6:
-			return percentile_table_8x6;
-		case 8:
-			return percentile_table_8x8;
-		}
-		break;
-
-	case 10:
-		switch (blockdim_y)
-		{
-		case 5:
-			return percentile_table_10x5;
-		case 6:
-			return percentile_table_10x6;
-		case 8:
-			return percentile_table_10x8;
-		case 10:
-			return percentile_table_10x10;
-		}
-		break;
-
-	case 12:
-		switch (blockdim_y)
-		{
-		case 10:
-			return percentile_table_12x10;
-		case 12:
-			return percentile_table_12x12;
-		}
-		break;
-	default:
-		break;
-	}
-
-	return NULL;  // should never happen.
-}
-
-// stubbed for the time being.
-static const float dummy_percentile_table_3d[2048] = { 0 };
-
-const float* get_3d_percentile_table()
-{
-	return dummy_percentile_table_3d;
-}
-
 // return 0 on invalid mode, 1 on valid mode.
 static int decode_block_mode_2d(
 	int blockmode,
@@ -766,8 +663,9 @@ static void construct_block_size_descriptor_2d(
 			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
 				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
 		}
-
 	}
+
+	delete[] percentiles;
 
 	if (xdim * ydim <= 64)
 	{
@@ -888,8 +786,6 @@ static void construct_block_size_descriptor_3d(
 
 	bsd->decimation_mode_count = decimation_mode_count;
 
-	const float *percentiles = get_3d_percentile_table();
-
 	// then construct the list of block formats
 	for (int i = 0; i < 2048; i++)
 	{
@@ -926,10 +822,10 @@ static void construct_block_size_descriptor_3d(
 			bsd->block_modes[i].is_dual_plane = is_dual_plane;
 			bsd->block_modes[i].permit_encode = permit_encode;
 			bsd->block_modes[i].permit_decode = permit_encode;
-			bsd->block_modes[i].percentile = percentiles[i];
 
-			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
-				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
+			bsd->block_modes[i].percentile = 0.0f; // No percentile table
+			if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
+				bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
 		}
 	}
 

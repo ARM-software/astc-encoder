@@ -417,6 +417,23 @@ static inline const partition_info *get_partition_table(
 	return bsd->partitions + index;
 }
 
+/**
+ * @brief Get the percentile table for 2D block modes.
+ *
+ * This is an empirically determined prioritization of which block modes to
+ * use in the search in terms of their centile (lower centiles = more useful).
+ *
+ * Returns a dynamically allocated array; caller must free with delete[].
+ *
+ * @param xdim The block x size.
+ * @param ydim The block y size.
+ *
+ * @return The unpacked table.
+ */
+const float *get_2d_percentile_table(
+	int xdim,
+	int ydim);
+
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
 // **********************************************************
