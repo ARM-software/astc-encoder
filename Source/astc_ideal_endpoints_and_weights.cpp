@@ -1375,13 +1375,13 @@ void recompute_ideal_colors(
 
 	for (i = 0; i < it->num_weights; i++)
 	{
-		weight_set[i] = qat->unquantized_value_flt[weight_set8[i]];
+		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);;
 	}
 
 	if (plane2_weight_set8)
 	{
 		for (i = 0; i < it->num_weights; i++)
-			plane2_weight_set[i] = qat->unquantized_value_flt[plane2_weight_set8[i]];
+			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
 	}
 
 	int partition_count = pi->partition_count;

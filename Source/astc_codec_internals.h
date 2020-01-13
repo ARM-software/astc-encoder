@@ -316,18 +316,14 @@ enum quantization_method
 */
 struct quantization_and_transfer_table
 {
+	/** The quantization level used */
 	quantization_method method;
-    uint8_t unquantized_value_unsc[33];  // unquantized values, unscrambled.
-    uint8_t scramble_map[32]; // scrambling order, forward
-
-	/* TODO: Now that we've introduced the packed prev_next data below, some
-	 * of these can be replaced by that in and then removed. */
-	uint8_t unquantized_value[32];	// 0..64
-	float unquantized_value_flt[32];	// 0..1
-	uint8_t prev_quantized_value[32];
-	uint8_t next_quantized_value[32];
-	uint8_t closest_quantized_weight[1025];
-
+	/** The unscrambled unquantized value. */
+	uint8_t unquantized_value_unsc[33];
+	/** The scrambling order: value[map[i]] == value_unsc[i] */
+	uint8_t scramble_map[32];
+	/** The scrambled unquantized values. */
+	uint8_t unquantized_value[32];
 	/**
 	 * An encoded table of previous-and-next weight values, indexed by the
 	 * current unquantized value.
