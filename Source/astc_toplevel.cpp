@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "stb_image.h"
+
 #ifndef WIN32
 	#include <sys/time.h>
 	#include <pthread.h>
@@ -98,6 +100,8 @@ int progress_counter_divider = 1;
 
 int rgb_force_use_of_hdr = 0;
 int alpha_force_use_of_hdr = 0;
+
+int stb_flip_on_load = 0;
 
 static double start_time;
 static double end_time;
@@ -631,6 +635,8 @@ void find_closest_blockdim_3d(float target_bitrate, int *x, int *y, int *z)
 
 void compare_two_files(const char *filename1, const char *filename2, int low_fstop, int high_fstop, int psnrmode)
 {
+	stbi_set_flip_vertically_on_load(stb_flip_on_load);
+
 	int load_result1;
 	int load_result2;
 	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, &load_result1);
@@ -2097,6 +2103,11 @@ int astc_main(int argc, char **argv)
 			}
 			argidx++;
 		}
+		else if (!strcmp(argv[argidx], "-flip"))
+		{
+			argidx++;
+			stb_flip_on_load = 1;
+		}
 		else
 		{
 			printf("Commandline argument \"%s\" not recognized\n", argv[argidx]);
@@ -2193,6 +2204,7 @@ int astc_main(int argc, char **argv)
 			printf("Encoding settings:\n\n");
 			if (target_bitrate_set)
 				printf("Target bitrate provided: %.2f bpp\n", target_bitrate);
+			printf("Flip image vertically on load: %s\n", stb_flip_on_load ? "yes" : "no");
 			printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
 			printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
 			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);
@@ -2255,6 +2267,8 @@ int astc_main(int argc, char **argv)
 		// Allocate arrays for image data and load results.
 		load_results = new int[array_size];
 		input_images = new astc_codec_image *[array_size];
+
+		stbi_set_flip_vertically_on_load(stb_flip_on_load);
 
 		// Iterate over all input images.
 		for (int image_index = 0; image_index < array_size; image_index++)
