@@ -2096,7 +2096,7 @@ int astc_main(int argc, char **argv)
 			argidx++;
 
 			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%u", &array_size) || array_size == 0)
+			if (!sscanf(argv[argidx], "%d", &array_size) || array_size == 0)
 			{
 				printf("Invalid array size (image depth) given with -array option: \"%s\".\n", argv[argidx]);
 				exit(1);

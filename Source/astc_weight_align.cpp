@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -36,9 +36,7 @@
 
 #include "astc_codec_internals.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
+#include <stdio.h>
 
 static const float angular_steppings[] = {
 	 1.0,  1.125, 1.25, 1.375, 1.5, 1.625, 1.75, 1.875,

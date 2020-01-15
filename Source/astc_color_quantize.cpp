@@ -1,7 +1,7 @@
 // ----------------------------------------------------------------------------
 //  This confidential and proprietary software may be used only as authorised
 //  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2019 Arm Limited, ALL RIGHTS RESERVED
+//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
 //  The entire notice above must be reproduced on all authorised copies and
 //  copies may only be made to the extent permitted by a licensing agreement
 //  from Arm Limited.
@@ -753,41 +753,6 @@ static inline void quantize_and_unquantize_retain_top_four_bits(int quantization
 			value_to_quantize--;
 		}
 		else if ((uquantval & 0xF0) < (value_to_quantize & 0xF0))
-		{
-			// quant/unquant rounded DOWN so that the top two bits changed;
-			// decrement the input value in hopes that this will avoid rounding down.
-			value_to_quantize--;
-		}
-	} while (perform_loop);
-
-	*quantized_value = quantval;
-	*unquantized_value = uquantval;
-}
-
-// quantize and unquantize a number, wile making sure to retain the top two bits.
-static inline void quantize_and_unquantize_retain_top_bit(int quantization_level, int value_to_quantize,	// 0 to 255.
-														  int *quantized_value, int *unquantized_value)
-{
-
-	int perform_loop;
-	int quantval;
-	int uquantval;
-
-	do
-	{
-		quantval = color_quantization_tables[quantization_level][value_to_quantize];
-		uquantval = color_unquantization_tables[quantization_level][quantval];
-
-		// perform looping if the top two bits were modified by quant/unquant
-		perform_loop = (value_to_quantize & 0x80) != (uquantval & 0x80);
-
-		if ((uquantval & 0x80) > (value_to_quantize & 0x80))
-		{
-			// quant/unquant rounded UP so that the top two bits changed;
-			// decrement the input value in hopes that this will avoid rounding up.
-			value_to_quantize--;
-		}
-		else if ((uquantval & 0x80) < (value_to_quantize & 0x80))
 		{
 			// quant/unquant rounded DOWN so that the top two bits changed;
 			// decrement the input value in hopes that this will avoid rounding down.
@@ -1816,7 +1781,7 @@ void quantize_hdr_rgb_alpha3(float4 color0, float4 color1, int output[8], int qu
 	Quantize a color. When quantizing an RGB or RGBA color, the quantizer may choose a
 	delta-based representation; as such, it will report back the format it actually used.
 */
-int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color,
+int pack_color_endpoints(float4 color0, float4 color1, float4 rgbs_color, float4 rgbo_color,
 						 int format, int *output, int quantization_level)
 {
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1967,18 +1932,6 @@ int pack_color_endpoints(astc_decode_mode decode_mode, float4 color0, float4 col
 
 			for (i = 0; i < 8; i++)
 				printf(" %X", output[i]);
-
-			ushort4 res0;
-			ushort4 res1;
-			int rgb_hdr;
-			int alpha_hdr;
-			int nan_endpoint;
-
-			unpack_color_endpoints(decode_mode, retval, quantization_level, output, &rgb_hdr, &alpha_hdr, &nan_endpoint, &res0, &res1);
-			printf("rgb-hdr=%d alpha-hdr=%d nan-endpoint=%d\n", rgb_hdr, alpha_hdr, nan_endpoint);
-
-			printf("Unquantized color 0: <%u %u %u %u>\n", res0.x, res0.y, res0.z, res0.w);
-			printf("Unquantized color 1: <%u %u %u %u>\n", res1.x, res1.y, res1.z, res1.w);
 			printf("\n\n");
 		}
 	#endif
