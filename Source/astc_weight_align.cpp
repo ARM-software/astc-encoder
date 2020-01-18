@@ -85,7 +85,7 @@ void prepare_angular_tables()
 			cos_table[j][i] = static_cast<float>(cosf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
 		}
 
-		int p = static_cast < int >(floor(angular_steppings[i])) + 1;
+		int p = astc::flt2int_rd(angular_steppings[i]) + 1;
 		max_angular_steps_needed_for_quant_steps[p] = MIN(i + 1, ANGULAR_STEPS - 1);
 	}
 
@@ -261,8 +261,8 @@ static void compute_lowest_and_highest_weight(
 		{
 			float wt = sample_weights[j];
 			float sval = (samples[j] * rcp_stepsize) - scaled_offset;
-			int idxv = (int)(std::floor(sval + 0.5f));
-			float dif = sval - std::floor(sval + 0.5f);
+			int idxv = astc::flt2int_rtn(sval);
+			float dif = sval - astc::flt2int_rtn(sval);
 			float dwt = dif * wt;
 			errval += dwt * dif;
 

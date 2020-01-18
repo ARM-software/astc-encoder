@@ -1087,7 +1087,7 @@ void compute_ideal_weights_for_decimation_table(
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_diagnostics)
 		{
-			int blockdim = (int)floor(sqrt((float)it->num_texels) + 0.5f);
+			int blockdim = astc::flt2int_rtn(sqrt((float)it->num_texels));
 			printf("%s : decimation from %d to %d weights\n\n", __func__, it->num_texels, it->num_weights);
 			printf("Input weight set:\n");
 			for (i = 0; i < it->num_texels; i++)

@@ -822,10 +822,10 @@ void write_imageblock(
 								data[3] = 1.0f;
 
 							// pack the data
-							int ri = static_cast < int >(floor(data[swz.r] * 255.0f + 0.5f));
-							int gi = static_cast < int >(floor(data[swz.g] * 255.0f + 0.5f));
-							int bi = static_cast < int >(floor(data[swz.b] * 255.0f + 0.5f));
-							int ai = static_cast < int >(floor(data[swz.a] * 255.0f + 0.5f));
+							int ri = astc::flt2int_rtn(data[swz.r] * 255.0f);
+							int gi = astc::flt2int_rtn(data[swz.g] * 255.0f);
+							int bi = astc::flt2int_rtn(data[swz.b] * 255.0f);
+							int ai = astc::flt2int_rtn(data[swz.a] * 255.0f);
 
 							img->data8[zi][yi][4 * xi] = ri;
 							img->data8[zi][yi][4 * xi + 1] = gi;

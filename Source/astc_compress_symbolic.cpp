@@ -141,9 +141,9 @@ static int realign_weights(
 				int partition = pt->partition_of_texel[texel];
 
 				weight_base = weight_base + 0.5f;
-				float plane_weight = floorf(weight_base );
-				float plane_up_weight = floorf(weight_base + uqw_next_dif * twf0) - plane_weight;
-				float plane_down_weight = floorf(weight_base + uqw_prev_dif * twf0) - plane_weight;
+				float plane_weight = astc::flt2int_rd(weight_base);
+				float plane_up_weight = astc::flt2int_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
+				float plane_down_weight = astc::flt2int_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
 
 				float4 color_offset = offset[partition];
 				float4 color_base   = endpnt0f[partition];
@@ -1167,26 +1167,31 @@ float compress_symbolic_block(
 			float green = blk->orig_data[1];
 			float blue = blk->orig_data[2];
 			float alpha = blk->orig_data[3];
+
 			if (red < 0)
 				red = 0;
 			else if (red > 1)
 				red = 1;
+
 			if (green < 0)
 				green = 0;
 			else if (green > 1)
 				green = 1;
+
 			if (blue < 0)
 				blue = 0;
 			else if (blue > 1)
 				blue = 1;
+
 			if (alpha < 0)
 				alpha = 0;
 			else if (alpha > 1)
 				alpha = 1;
-			scb->constant_color[0] = (int)floor(red * 65535.0f + 0.5f);
-			scb->constant_color[1] = (int)floor(green * 65535.0f + 0.5f);
-			scb->constant_color[2] = (int)floor(blue * 65535.0f + 0.5f);
-			scb->constant_color[3] = (int)floor(alpha * 65535.0f + 0.5f);
+
+			scb->constant_color[0] = astc::flt2int_rtn(red * 65535.0f);
+			scb->constant_color[1] = astc::flt2int_rtn(green * 65535.0f);
+			scb->constant_color[2] = astc::flt2int_rtn(blue * 65535.0f);
+			scb->constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
 
 		#ifdef DEBUG_PRINT_DIAGNOSTICS
