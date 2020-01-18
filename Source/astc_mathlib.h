@@ -264,12 +264,28 @@ static inline float flt_rte(float val)
  *
  * @return The rounded value.
  */
-static inline int flt2int_rte(float val)
+static inline int flt2int_rtn(float val)
 {
 #if (ASTC_SSE >= 42) && USE_SCALAR_SSE
 	return _mm_cvt_ss2si(_mm_set_ss(val));
 #else
-	return (int)(std::floor(val + 0.5f));
+	return (int)(val + 0.5f);
+#endif
+}
+
+/**
+ * @brief SP float round down and convert to integer.
+ *
+ * @param val The value to round.
+ *
+ * @return The rounded value.
+ */
+static inline int flt2int_rd(float val)
+{
+#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+	return _mm_cvt_ss2si(_mm_set_ss(val));
+#else
+	return (int)(val);
 #endif
 }
 
@@ -364,6 +380,30 @@ static inline float xlog2(float val)
 	// Linearized region
 	return -15.44269504088896340735f + val * 23637.11554992477646609062f;
 }
+
+/**
+ * @brief Initialize the seed structure for a random number generator.
+ *
+ * Important note: For the purposes of ASTC we want sets of random numbers to
+ * use the codec, but we want the same seed value across instances and threads
+ * to ensure that image output is stable across compressor runs and across
+ * platforms. Every PRNG created by this call will therefore return the same
+ * sequence of values ...
+ *
+ * @param state The state structure to initialize.
+ */
+void rand_init(uint64_t state[2]);
+
+/**
+ * @brief Return the next random number from the generator.
+ *
+ * This RNG is an implementation of the "xoroshoro-128+ 1.0" PRNG, based on the
+ * public-domain implementation given by David Blackman & Sebastiano Vigna at
+ * http://vigna.di.unimi.it/xorshift/xoroshiro128plus.c
+ *
+ * @param state The state structure to use/update.
+ */
+uint64_t rand(uint64_t state[2]);
 
 }
 

@@ -173,3 +173,33 @@ float astc::atan2(float y, float x)
 		}
 	}
 }
+
+/**
+ * @brief 64-bit rotate left.
+ *
+ * @param val   The value to rotate.
+ * @param count The rotation, in bits.
+ */
+static inline uint64_t rotl(uint64_t val, int count)
+{
+	return (val << count) | (val >> (64 - count));
+}
+
+/* Public function, see header file for detailed documentation */
+void astc::rand_init(uint64_t state[2])
+{
+	state[0] = 0xfaf9e171cea1ec6bULL;
+	state[1] = 0xf1b318cc06af5d71ULL;
+}
+
+/* Public function, see header file for detailed documentation */
+uint64_t astc::rand(uint64_t state[2])
+{
+	uint64_t s0 = state[0];
+	uint64_t s1 = state[1];
+	uint64_t res = s0 + s1;
+	s1 ^= s0;
+	state[0] = rotl(s0, 24) ^ s1 ^ (s1 << 16);
+	state[1] = rotl(s1, 37);
+	return res;
+}

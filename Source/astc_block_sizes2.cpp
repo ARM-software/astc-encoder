@@ -677,6 +677,9 @@ static void construct_block_size_descriptor_2d(
 	}
 	else
 	{
+		uint64_t rng_state[2];
+		astc::rand_init(rng_state);
+
 		// pick 64 random texels for use with bitmap partitioning.
 		int arr[MAX_TEXELS_PER_BLOCK];
 		for (int i = 0; i < xdim * ydim; i++)
@@ -687,7 +690,7 @@ static void construct_block_size_descriptor_2d(
 		int arr_elements_set = 0;
 		while (arr_elements_set < 64)
 		{
-			int idx = rand() % (xdim * ydim);
+			int idx = ((int)astc::rand(rng_state)) % (xdim * ydim);
 			if (arr[idx] == 0)
 			{
 				arr_elements_set++;
@@ -839,6 +842,9 @@ static void construct_block_size_descriptor_3d(
 	}
 	else
 	{
+		uint64_t rng_state[2];
+		astc::rand_init(rng_state);
+
 		// pick 64 random texels for use with bitmap partitioning.
 		int arr[MAX_TEXELS_PER_BLOCK];
 		for (int i = 0; i < xdim * ydim * zdim; i++)
@@ -849,7 +855,7 @@ static void construct_block_size_descriptor_3d(
 		int arr_elements_set = 0;
 		while (arr_elements_set < 64)
 		{
-			int idx = rand() % (xdim * ydim * zdim);
+			int idx = ((int)astc::rand(rng_state)) % (xdim * ydim * zdim);
 			if (arr[idx] == 0)
 			{
 				arr_elements_set++;
