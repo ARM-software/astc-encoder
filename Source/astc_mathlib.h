@@ -282,7 +282,7 @@ static inline int flt2int_rte(float val)
  */
 static inline int popcount(uint64_t p)
 {
-#if ASTC_SSE >= 42
+#if ASTC_POPCNT >= 1
 	return (int)_mm_popcnt_u64(p);
 #else
 	uint64_t mask1 = 0x5555555555555555ULL;

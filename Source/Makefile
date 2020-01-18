@@ -10,16 +10,17 @@
 # Configure the vectorization intrinsics support; valid values are:
 #
 #   * nointrin - allow use of sse2 by the compiler, but no manual instrinsics
-#   * see2     - allow use of sse2 by the compiler and instrinsics
-#   * see4.2   - allow use of sse4.2 and popcnt by the compiler and instrinsics
+#   * sse2     - allow use of sse2
+#   * sse4.2   - allow use of sse4.2 and popcnt
+#   * avx2     - allow use of avx2, sse4.2, and popcnt
 #
 # Note that we always enable at least sse2 support for compiler generated code,
-# as it is guaranteed to be present in x86-64, but we allow disabling of
-# our manually written instrinsic functions.
+# as it is guaranteed to be present in x86-64, we only allow disabling of our
+# manually written instrinsic functions.
 #
 # Also note that we currently assume that sse4.2 implies support for popcnt,
 # which is the default GCC behavior and true on currently shipping hardware.
-VEC?=sse2
+VEC?=avx2
 
 SOURCES = \
     astc_averages_and_directions.cpp \
@@ -62,15 +63,19 @@ CPPFLAGS = -std=c++14 -O3 -mfpmath=sse \
 
 # Validate that the VEC parameter is a supported value, and patch CPPFLAGS
 ifeq ($(VEC),nointrin)
-CPPFLAGS +=  -msse2 -DASTC_SSE=00
+CPPFLAGS +=  -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse2)
-CPPFLAGS += -msse2 -DASTC_SSE=20
+CPPFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse4.2)
-CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42
+CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
-$(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2)
+ifeq ($(VEC),avx2)
+CPPFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1
+else
+$(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2/avx2)
+endif
 endif
 endif
 endif
