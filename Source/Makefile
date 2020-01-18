@@ -40,6 +40,7 @@ SOURCES = \
     astc_ktx_dds.cpp \
     astc_main.cpp \
     astc_mathlib.cpp \
+    astc_mathlib_softfloat.cpp \
     astc_partition_tables.cpp \
     astc_percentile_tables.cpp \
     astc_pick_best_endpoint_format.cpp \
