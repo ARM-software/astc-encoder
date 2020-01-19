@@ -258,6 +258,25 @@ static inline float flt_rte(float val)
 }
 
 /**
+ * @brief SP float round-down.
+ *
+ * @param val The value to round.
+ *
+ * @return The rounded value.
+ */
+static inline float flt_rd(float val)
+{
+#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+	const int flag = _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC;
+	__m128 tmp = _mm_set_ss(val);
+	tmp = _mm_round_ss(tmp, tmp, flag);
+	return _mm_cvtss_f32(tmp);
+#else
+	return std::floor(val);
+#endif
+}
+
+/**
  * @brief SP float round-to-nearest and convert to integer.
  *
  * @param val The value to round.

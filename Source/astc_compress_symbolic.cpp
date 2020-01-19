@@ -141,9 +141,9 @@ static int realign_weights(
 				int partition = pt->partition_of_texel[texel];
 
 				weight_base = weight_base + 0.5f;
-				float plane_weight = astc::flt2int_rd(weight_base);
-				float plane_up_weight = astc::flt2int_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
-				float plane_down_weight = astc::flt2int_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
+				float plane_weight = astc::flt_rd(weight_base);
+				float plane_up_weight = astc::flt_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
+				float plane_down_weight = astc::flt_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
 
 				float4 color_offset = offset[partition];
 				float4 color_base   = endpnt0f[partition];
