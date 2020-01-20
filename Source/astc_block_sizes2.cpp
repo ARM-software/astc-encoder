@@ -690,7 +690,8 @@ static void construct_block_size_descriptor_2d(
 		int arr_elements_set = 0;
 		while (arr_elements_set < 64)
 		{
-			int idx = ((int)astc::rand(rng_state)) % (xdim * ydim);
+			unsigned int idx = (unsigned int)astc::rand(rng_state);
+			idx %= xdim * ydim;
 			if (arr[idx] == 0)
 			{
 				arr_elements_set++;
@@ -855,7 +856,8 @@ static void construct_block_size_descriptor_3d(
 		int arr_elements_set = 0;
 		while (arr_elements_set < 64)
 		{
-			int idx = ((int)astc::rand(rng_state)) % (xdim * ydim * zdim);
+			unsigned int idx = (unsigned int)astc::rand(rng_state);
+			idx %= xdim * ydim * zdim;
 			if (arr[idx] == 0)
 			{
 				arr_elements_set++;
