@@ -92,7 +92,10 @@ astc_codec_image *load_astc_file(
 		exit(1);
 	}
 
-	uint32_t magicval = hdr.magic[0] + 256 * (uint32_t) (hdr.magic[1]) + 65536 * (uint32_t) (hdr.magic[2]) + 16777216 * (uint32_t) (hdr.magic[3]);
+	uint32_t magicval = (uint32_t)(hdr.magic[0]) +
+	                    (uint32_t)(hdr.magic[1]) * 256 +
+	                    (uint32_t)(hdr.magic[2]) * 65536 +
+	                    (uint32_t)(hdr.magic[3]) * 16777216;
 
 	if (magicval != MAGIC_FILE_CONSTANT)
 	{
@@ -415,88 +418,11 @@ astc_codec_image *pack_and_unpack_astc_image(
 	return img;
 }
 
-void find_closest_blockdim_2d(
-	float target_bitrate,
-	int* x,
-	int* y
-) {
-	int blockdims[6] = { 4, 5, 6, 8, 10, 12 };
-
-	float best_error = 1000;
-	float aspect_of_best = 1;
-	int i, j;
-
-	// Y dimension
-	for (i = 0; i < 6; i++)
-	{
-		// X dimension
-		for (j = i; j < 6; j++)
-		{
-			//              NxN       MxN         8x5               10x5              10x6
-			int is_legal = (j==i) || (j==i+1) || (j==3 && i==1) || (j==4 && i==1) || (j==4 && i==2);
-			if(is_legal)
-			{
-				float bitrate = 128.0f / (blockdims[i] * blockdims[j]);
-				float bitrate_error = fabsf(bitrate - target_bitrate);
-				float aspect = (float)blockdims[j] / blockdims[i];
-				if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
-				{
-					*x = blockdims[j];
-					*y = blockdims[i];
-					best_error = bitrate_error;
-					aspect_of_best = aspect;
-				}
-			}
-		}
-	}
-}
-
-void find_closest_blockdim_3d(
-	float target_bitrate,
-	int* x,
-	int* y,
-	int* z
-) {
-	int blockdims[4] = { 3, 4, 5, 6 };
-
-	float best_error = 1000;
-	float aspect_of_best = 1;
-	int i, j, k;
-
-	for (i = 0; i < 4; i++)	// Z
-	{
-		for (j = i; j < 4; j++) // Y
-		{
-			for (k = j; k < 4; k++) // X
-			{
-				//              NxNxN              MxNxN                  MxMxN
-				int is_legal = ((k==j)&&(j==i)) || ((k==j+1)&&(j==i)) || ((k==j)&&(j==i+1));
-				if(is_legal)
-				{
-					float bitrate = 128.0f / (blockdims[i] * blockdims[j] * blockdims[k]);
-					float bitrate_error = fabsf(bitrate - target_bitrate);
-					float aspect = (float)blockdims[k] / blockdims[j] + (float)blockdims[j] / blockdims[i] + (float)blockdims[k] / blockdims[i];
-
-					if (bitrate_error < best_error || (bitrate_error == best_error && aspect < aspect_of_best))
-					{
-						*x = blockdims[k];
-						*y = blockdims[j];
-						*z = blockdims[i];
-						best_error = bitrate_error;
-						aspect_of_best = aspect;
-					}
-				}
-			}
-		}
-	}
-}
-
 void compare_two_files(
 	const char* filename1,
 	const char* filename2,
 	int low_fstop,
-	int high_fstop,
-	int psnrmode
+	int high_fstop
 ) {
 	int load_result1;
 	int load_result2;
@@ -523,7 +449,7 @@ void compare_two_files(
 	if (load_result2 & 0x80)
 		compare_hdr = 1;
 
-	compute_error_metrics(compare_hdr, comparison_components, img1, img2, low_fstop, high_fstop, psnrmode);
+	compute_error_metrics(compare_hdr, comparison_components, img1, img2, low_fstop, high_fstop);
 }
 
 // The ASTC codec is written with the assumption that a float threaded through
@@ -595,507 +521,70 @@ int astc_main(
 		feenableexcept(FE_DIVBYZERO | FE_INVALID);
 	#endif
 
-	if (argc < 4)
+	if (argc < 2)
 	{
-
-		printf(	"ASTC codec version 2.0 (alpha)\n"
-				"Copyright (C) 2011-2020 Arm Limited\n"
-				"All rights reserved. Use of this software is subject to terms of its license.\n\n"
-				"Usage:\n"
-				"Compress to texture file:\n"
-				"   %s -c <inputfile> <outputfile> <rate> [options]\n"
-				"Decompress from texture file:\n"
-				"   %s -d <inputfile> <outputfile> [options]\n"
-				"Compress, then immediately decompress to image:\n"
-				"   %s -t <inputfile> <outputfile> <rate> [options]\n"
-				"Compare two files (no compression or decompression):\n"
-				"   %s -compare <file1> <file2> [options]\n"
-				"\n"
-				"When encoding/decoding a texture for use with the LDR-SRGB submode,\n"
-				"use -cs, -ds, -ts instead of -c, -d, -t.\n"
-				"When encoding/decoding a texture for use with the LDR-linear submode,\n"
-				"use -cl, -dl, -tl instead of -c, -d, -t.\n"
-				"\n"
-				"For compression, the input file formats supported are\n"
-				" * PNG (*.png)\n"
-				" * Targa (*.tga)\n"
-				" * JPEG (*.jpg)\n"
-				" * GIF (*.gif) (non-animated only)\n"
-				" * BMP (*.bmp)\n"
-				" * Radiance HDR (*.hdr)\n"
-				" * Khronos Texture KTX (*.ktx)\n"
-				" * DirectDraw Surface DDS (*.dds)\n"
-				" * Half-Float-TGA (*.htga)\n"
-				" * OpenEXR (*.exr; only if 'exr_to_htga' is present in the path)\n"
-				"\n"
-				"For the KTX and DDS formats, the following subset of the format\n"
-				"features are supported; the subset is:\n"
-				" * 2D and 3D textures supported\n"
-				" * Uncompressed only, with unorm8, unorm16, float16 or float32 components\n"
-				" * R, RG, RGB, BGR, RGBA, BGRA, Luminance and Luminance-Alpha texel formats\n"
-				" * In case of multiple image in one file (mipmap, cube-faces, texture-arrays)\n"
-				"   the codec will read the first one and ignore the other ones.\n"
-				"\n"
-				"When using HDR or 3D textures, it is recommended to use the KTX or DDS formats.\n"
-				"Separate 2D image slices can be assembled into a 3D image using the -array option.\n"
-				"\n"
-				"The output file will be an ASTC compressed texture file (recommended filename\n"
-				"ending .astc)\n"
-				"\n"
-				"For decompression, the input file must be an ASTC compressed texture file;\n"
-				"the following formats are supported for output:\n"
-				" * Targa (*.tga)\n"
-				" * KTX (*.ktx)\n"
-				" * DDS (*.dds)\n"
-				" * Half-Float-TGA (*.htga)\n"
-				" * OpenEXR (*.exr; only if 'exr_to_htga' is present in the path)\n"
-				"\n"
-				"Targa is suitable only for 2D LDR images; for HDR and/or 3D images,\n"
-				"please use KTX or DDS.\n"
-				"\n"
-				"For compression, the <rate> argument specifies the bitrate or block\n"
-				"dimension to use. This argument can be specified in one of two ways:\n"
-				" * A decimal number (at least one actual decimal needed). This will cause \n"
-				"   the codec to interpret the number as a desired bitrate, and pick a block\n"
-				"   size to match that bitrate as closely as possible. For example, if you want a\n"
-				"   bitrate of 2.0 bits per texel, then specify the <rate> argument as 2.0\n"
-				" * A block size. This specifies the block dimensions to use along the\n"
-				"   X, Y (and for 3D textures) Z axes. The dimensions are separated with\n"
-				"   the character x, with no spaces. For 2D textures, the supported\n"
-				"   dimensions along each axis are picked from the set {4,5,6,8,10,12};\n"
-				"   for 3D textures, the supported dimensions are picked from the\n"
-				"   set {3,4,5,6}. For example, if you wish to encode a 2D texture using the\n"
-				"   10x6 block size (10 texels per block along the X axis, 6 texels per block\n"
-				"   along the Y axis, then specify the <rate> argument as 10x6 .\n"
-				"Some examples of supported 2D block sizes are:\n"
-				"  4x4 -> 8.0 bpp\n"
-				"  5x5 -> 5.12 bpp\n"
-				"  6x6 -> 3.56 bpp\n"
-				"  8x6 -> 2.67 bpp\n"
-				"  8x8 -> 2.0 bpp\n"
-				" 10x8 -> 1.6 bpp\n"
-				" 10x10 -> 1.28 bpp\n"
-				" 10x12 -> 1.07 bpp\n"
-				" 12x12 -> 0.89 bpp\n"
-				"If you try to specify a bitrate that can potentially map to multiple different\n"
-				"block sizes, the codec will choose the block size with the least lopsided\n"
-				"aspect ratio (e.g. if you specify 2.67, then the codec will choose the\n"
-				"8x6 block size, not 12x4)\n"
-				"\n"
-				"Below is a description of all the available options. Most of them make sense\n"
-				"for encoding only, however there are some that affect decoding as well\n"
-				"(such as -dsw and the normal-presets)\n"
-				"\n"
-				"\n"
-				"Built-in error-weighting Presets:\n"
-				"---------------------------------\n"
-				"The presets provide easy-to-use combinations of encoding options that\n"
-				"are designed for use with certain commonly-occurring kinds of\n"
-				"textures.\n"
-				"\n"
-				" -normal_psnr\n"
-				"      For encoding, assume that the input texture is a normal map with the\n"
-				"      X and Y components of the actual normals in the Red and Green\n"
-				"      color channels. The codec will then move the 2nd component to Alpha,\n"
-				"      and apply an error-weighting function based on angular error.\n"
-				"\n"
-				"      It is possible to use this preset with texture decoding as well,\n"
-				"      in which case it will expand the normal map from 2 to 3 components\n"
-				"      after the actual decoding.\n"
-				"\n"
-				"      The -normal_psnr preset as a whole is equivalent to the options\n"
-				"      \"-rn -esw rrrg -dsw raz1 -ch 1 0 0 1 -oplimit 1000 -mincorrel 0.99\" .\n"
-				"\n"
-				" -normal_percep\n"
-				"      Similar to -normal_psnr, except that it tries to optimize the normal\n"
-				"      map for best possible perceptual results instead of just maximizing\n"
-				"      angular PSNR.\n"
-				"      The -normal_percep preset as a whole is equivalent to the options\n"
-				"      \"-normal_psnr -b 2.5 -v 3 1 1 0 50 0 -va 1 1 0 50 -dblimit 60\" .\n"
-				"\n"
-				" -mask\n"
-				"      Assume that the input texture is a texture that contains\n"
-				"      unrelated content in its various color channels, and where\n"
-				"      it is undesirable for errors in one channel to affect\n"
-				"      the other channels.\n"
-				"      Equivalent to \"-v 3 1 1 0 25 0.03 -va 0 25\" .\n"
-				"\n"
-				" -alphablend\n"
-				"      Assume that the input texture is an RGB-alpha texture where\n"
-				"      the alpha component is used to represent opacity.\n"
-				"      (0=fully transparent, 1=fully opaque)\n"
-				"      Equivalent to \"-a 1\" .\n"
-				"\n"
-				" -hdr\n"
-				"      Assume that the input texture is an HDR texture. If an alpha channel is\n"
-				"      present, it is treated as an LDR channel (e.g. opacity)\n"
-				"      Optimize for 4th-root error for the color and linear error for the alpha.\n"
-				"      Equivalent to\n"
-				"          \"-forcehdr_rgb -v 0 0.75 0 1 0 0 -va 0.02 1 0 0 -dblimit 999\"\n"
-				"\n"
-				" -hdra\n"
-				"      Assume that the input texture is an HDR texture, and optimize\n"
-				"      for 4th-root error. If an alpha channel is present, it is\n"
-				"      assumed to be HDR and optimized for 4th-root error as well.\n"
-				"      Equivalent to\n"
-				"          \"-forcehdr_rgba -v 0 0.75 0 1 0 0 -va 0.75 0 1 0 -dblimit 999\"\n"
-				"\n"
-				" -hdr_log\n"
-				" -hdra_log\n"
-				"      Assume that the input texture is an HDR texture, and optimize\n"
-				"      for logarithmic error. This should give better results than -hdr\n"
-				"      on metrics like \"logRMSE\" and \"mPSNR\", but the subjective\n"
-				"      quality (in particular block artifacts) is generally significantly worse\n"
-				"      than -hdr.\n"
-				"      \"-hdr_log\" is equivalent to\n"
-				"          \"-forcehdr_rgb -v 0 1 0 1 0 0 -va 0.02 1 0 0 -dblimit 999\"\n"
-				"      \"-hdra_log\" is equivalent to\n"
-				"          \"-forcehdr_rgba -v 0 1 0 1 0 0 -va 1 0 1 0 -dblimit 999\"\n"
-				"\n"
-				"\n"
-				"\n"
-				"Performance-quality tradeoff presets:\n"
-				"-------------------------------------\n"
-				"These are presets that provide different tradeoffs between encoding\n"
-				"performance and quality. Exactly one of these presets has to be specified\n"
-				"for encoding; if this is not done, the codec reports an error message.\n"
-				"\n"
-				" -veryfast\n"
-				"      Run codec in very-fast-mode; this generally results in substantial\n"
-				"      quality loss.\n"
-				"\n"
-				" -fast\n"
-				"      Run codec in fast-mode. This generally results in mild quality loss.\n"
-				"\n"
-				" -medium\n"
-				"      Run codec in medium-speed-mode.\n"
-				"\n"
-				" -thorough\n"
-				"     Run codec in thorough-mode. This should be sufficient to fix most\n"
-				"     cases where \"-medium\" provides inadequate quality.\n"
-				"\n"
-				" -exhaustive\n"
-				"      Run codec in exhaustive-mode. This usually produces only\n"
-				"      marginally better quality than \"-thorough\" while considerably\n"
-				"      increasing encode time.\n"
-				"\n"
-				"\n"
-				"Low-level error weighting options:\n"
-				"----------------------------------\n"
-				"These options provide low-level control of the error-weighting options\n"
-				"that the codec provides.\n"
-				"\n"
-				" -v <radius> <power> <baseweight> <avgscale> <stdevscale> <mixing-factor>\n"
-				"      Compute the per-texel relative error weighting for the RGB color\n"
-				"      channels as follows:\n"
-				"\n"
-				"       weight = 1 / (<baseweight> + <avgscale>\n"
-				"            * average^2 + <stdevscale> * stdev^2)\n"
-				"\n"
-				"      The average and stdev are computed as the average-value and the\n"
-				"      standard deviation across a neighborhood of each texel; the <radius>\n"
-				"      argument specifies how wide this neighborhood should be.\n"
-				"      If this option is given without -va, it affects the weighting of RGB\n"
-				"      color components only, while alpha is assigned the weight 1.0 .\n"
-				"\n"
-				"      The <mixing-factor> parameter is used to control the degree of mixing\n"
-				"      between color channels. Setting this parameter to 0 causes the average\n"
-				"      and stdev computation to be done completely separately for each color\n"
-				"      channel; setting it to 1 causes the results from the red, green and\n"
-				"      blue color channel to be combined into a single result that is applied\n"
-				"      to all three channels. It is possible to set the mixing factor\n"
-				"      to a value between 0 and 1 in order to obtain a result in-between.\n"
-				"\n"
-				"      The <power> argument is a power used to raise the values of the input\n"
-				"      pixels before computing average and stdev; e.g. a power of 0.5 causes\n"
-				"      the codec to take the square root of every input pixel value before\n"
-				"      computing the averages and standard deviations.\n"
-				"\n"
-				" -va <baseweight> <power> <avgscale> <stdevscale>\n"
-				"      Used together with -v; it computes a relative per-texel\n"
-				"      weighting for the alpha component based on average and standard\n"
-				"      deviation in the same manner as described for -v, but with its own\n"
-				"      <baseweight>, <power>, <avgscale> and <stdevscale> parameters.\n"
-				"\n"
-				" -a <radius>\n"
-				"      For textures with alpha channel, scale per-texel weights by\n"
-				"      alpha. The alpha value chosen for scaling of any particular texel\n"
-				"      is taken as an average across a neighborhood of the texel.\n"
-				"      The <radius> argument gives the radius of this neighborhood;\n"
-				"      a radius of 0 causes the texel's own alpha value to be used with\n"
-				"      no contribution from neighboring texels.\n"
-				"\n"
-				" -ch <red_weight> <green_weight> <blue_weight> <alpha_weight>\n"
-				"      Assign relative weight to each color channel.\n"
-				"      If this option is combined with any of the other options above,\n"
-				"      the other options are used to compute a weighting, then the \n"
-				"      weighting is multiplied by the weighting provided by this argument.\n"
-				"\n"
-				" -rn\n"
-				"      Assume that the red and alpha color channels (after swizzle)\n"
-				"      represent the X and Y components for a normal map,\n"
-				"      and scale the error weighting so as to match angular error as closely\n"
-				"      as possible. The reconstruction function for the Z component\n"
-				"      is assumed to be Z=sqrt(1 - X^2 - X^2).\n"
-				"\n"
-				" -b <weighting>\n"
-				"      Increase error weight for texels at compression-block edges\n"
-				"      and corners; the parameter specifies how much the weights are to be\n"
-				"      modified, with 0 giving no modification. Higher values should reduce\n"
-				"      block-artifacts, at the cost of worsening other artifacts.\n"
-				"\n"
-				"\n"
-				"Low-level performance-quality tradeoff options:\n"
-				"-----------------------------------------------\n"
-				"These options provide low-level control of the performance-quality tradeoffs\n"
-				"that the codec provides.\n"
-				"\n"
-				" -plimit <number>\n"
-				"      Test only <number> different partitions. Higher numbers give better\n"
-				"      quality at the expense of longer encode time; however large values tend\n"
-				"      to give diminishing returns. This parameter can be set to a\n"
-				"      number from 1 to %d. By default, this limit is set based on the active\n"
-				"      preset, as follows:\n"
-				"        -veryfast :  2\n"
-				"        -fast     :  4\n"
-				"        -medium   :  25\n"
-				"        -thorough :  100\n"
-				"        -exhaustive  : %d\n"
-				"\n"
-				" -dblimit <number>\n"
-				"      Stop compression work on a block as soon as the PSNR of the block,\n"
-				"      as measured in dB, exceeds this limit. Higher numbers give better\n"
-				"      quality at the expense of longer encode times. If not set explicitly,\n"
-				"      it is set based on the currently-active block size and preset, as listed\n"
-				"      below (where N is the number of texels per block):\n"
-				"\n"
-				"        -veryfast : dblimit = MAX( 53-19*log10(N), 70-35*log10(N) )\n"
-				"        -fast     : dblimit = MAX( 63-19*log10(N), 85-35*log10(N) )\n"
-				"        -medium   : dblimit = MAX( 70-19*log10(N), 95-35*log10(N) )\n"
-				"        -thorough   : dblimit = MAX( 77-19*log10(N), 105-35*log10(N) )\n"
-				"        -exhaustive : dblimit = 999\n"
-				"\n"
-				"      Note that the compressor is not actually guaranteed to reach these PSNR\n"
-				"      numbers for any given block; also, at the point where the compressor\n"
-				"      discovers that it has exceeded the dblimit, it may have exceeded it by\n"
-				"      a large amount, so it is still possible to get a PSNR value that is\n"
-				"      substantially higher than the dblimit would suggest.\n"
-				"\n"
-				"      This option is ineffective for HDR textures.\n"
-				"\n"
-				" -oplimit <factor>\n"
-				"      If the error term from encoding with 2 partitions is greater than the\n"
-				"      error term from encoding with 1 partition by more than the specified\n"
-				"      factor, then cut compression work short.\n"
-				"      By default, this factor is set based on the active preset, as follows:\n"
-				"        -veryfast : 1.0\n"
-				"        -fast     : 1.0\n"
-				"        -medium   : 1.2\n"
-				"        -thorough : 2.5\n"
-				"        -exhaustive  : 1000\n"
-				"      The codec will not apply this factor if the input texture is a normal\n"
-				"      map (content resembles a normal-map, or one of the -normal_* presets\n"
-				"      is used).\n"
-				"\n"
-				" -mincorrel <value>\n"
-				"      For each block, the codec will compute the correlation coefficients\n"
-				"      between any two color components; if no pair of colors have a\n"
-				"      correlation coefficient below the cutoff specified by this switch,\n"
-				"      the codec will abstain from trying the dual-weight-planes.\n"
-				"      By default, this factor is set based on the active preset, as follows:\n"
-				"        -veryfast : 0.5\n"
-				"        -fast     : 0.5\n"
-				"        -medium   : 0.75\n"
-				"        -thorough : 0.95\n"
-				"        -exhaustive  : 0.99\n"
-				"      If the input texture is a normal-map (content resembles a normal-map\n"
-				"      or one of the -normal_* presets are used) the codec will use a value\n"
-				"      of 0.99.\n"
-				"\n"
-				" -bmc <value>\n"
-				"      Cutoff on the set of block modes to use; the cutoff is a percentile\n"
-				"      of the block modes that are most commonly used. The value takes a value\n"
-				"      from 0 to 100, where 0 offers the highest speed and lowest quality,\n"
-				"      and 100 offers the highest quality and lowest speed.\n"
-				"      By default, this factor is set based on the active preset, as follows:\n"
-				"       -veryfast  : 25\n"
-				"       -fast      : 50\n"
-				"       -medium    : 75\n"
-				"       -thorough  : 95\n"
-				"       -exhaustive : 100\n"
-				"      This option is ineffective for 3D textures.\n"
-				"\n"
-				" -maxiters <value>\n"
-				"      Maximum number of refinement iterations to apply to colors and weights.\n"
-				"      Minimum value is 1; larger values give slight quality increase\n"
-				"      at expense of mild performance loss. By default, the iteration count is\n"
-				"      picked based on the active preset, as follows:\n"
-				"       -veryfast  : 1\n"
-				"       -fast      : 1\n"
-				"       -medium    : 2\n"
-				"       -thorough  : 4\n"
-				"       -exhaustive : 4\n"
-				"\n"
-				"\n"
-				"\n"
-				"Other options:\n"
-				"--------------\n"
-				"\n"
-				" -array <size>\n"
-				"      Loads a an array of 2D image slices as a 3D image. The filename given\n"
-				"      is used as a base, and decorated with _0, _1, up to _<size-1> prior\n"
-				"      to loading each slice. So -array 3 input.png would load input_0.png,\n"
-				"      input_1.png and input_2.png as slices at z=0,1,2 respectively.\n"
-				"\n"
-				" -forcehdr_rgb\n"
-				"      Force the use of HDR endpoint modes. By default, only LDR endpoint\n"
-				"      modes are used. If alpha is present, alpha is kept as LDR.\n"
-				" -forcehdr_rgba\n"
-				"      Force the use of HDR endpoint modes. By default, only LDR endpoint\n"
-				"      modes are used. If alpha is present, alpha is forced into HDR as well.\n"
-				"\n"
-				" -esw <swizzlepattern>\n"
-				"      Swizzle the color components before encoding. The swizzle pattern\n"
-				"      is specified as a 4-character string, where the characters specify\n"
-				"      which color component will end up in the Red, Green, Blue and Alpha\n"
-				"      channels before encoding takes place. The characters may be taken\n"
-				"      from the set (r,g,b,a,0,1), where r,g,b,a use color components from\n"
-				"      the input texture and 0,1 use the constant values 0 and 1.\n"
-				"\n"
-				"      As an example, if you have an input RGBA texture where you wish to\n"
-				"      switch around the R and G channels, as well as replacing the\n"
-				"      alpha channel with the constant value 1, a suitable swizzle\n"
-				"      option would be:\n"
-				"        -esw grb1\n"
-				"      Note that if -esw is used together with any of the\n"
-				"      error weighting functions, the swizzle is considered to be\n"
-				"      applied before the error weighting function.\n"
-				"\n"
-				" -dsw <swizzlepattern>\n"
-				"      Swizzle pattern to apply after decoding a texture. This pattern is\n"
-				"      specified in the same way as the pre-encoding swizzle pattern\n"
-				"      for the -sw switch. However, one additional character is supported,\n"
-				"      namely 'z' for constructing the third component of a normal map.\n"
-				"\n"
-				" -srgb\n"
-				"      Convert input image from sRGB to linear-RGB before encode; convert\n"
-				"      output image from linear-RGB to sRGB after decode. For encode, the\n"
-				"      transform is applied after swizzle; for decode, the transform\n"
-				"      is applied before swizzle.\n"
-				"\n"
-				" -j <numthreads>\n"
-				"      Run encoding with multithreading, using the specified number\n"
-				"      of threads. If not specified, the codec will autodetect the\n"
-				"      number of available logical CPUs and spawn one thread for each.\n"
-				"      Use \"-j 1\" if you wish to run the codec in single-thread mode.\n"
-				"\n"
-				" -silentmode\n"
-				"      Suppresses all output from the codec, except in case of errors.\n"
-				"      If this switch is not provided, the codec will display the encoding\n"
-				"      settings it uses and show a progress counter during encode.\n"
-				"\n"
-				" -time\n"
-				"      Displays time taken for entire run, together with time taken for\n"
-				"      coding step only. If requested, this is output even in -silentmode.\n"
-				"\n"
-				" -showpsnr\n"
-				"      In test mode (-t), displays PSNR difference between input and output\n"
-				"      images, in dB, even if -silentmode is specified. Works for LDR images\n"
-				"      only.\n"
-				"\n"
-				" -mpsnr <low> <high>\n"
-				"     Set the low and high f-stop values to use for the mPSNR error metric.\n"
-				"     Default is low=-10, high=10.\n"
-				"     The mPSNR error metric only applies to HDR textures.\n"
-				"     This option can be used together with -compare .\n"
-				"\n"
-				"\n"
-				"\n"
-				"Tips & tricks:\n"
-				"--------------"
-				"\n"
-				"ASTC, being a block-based format, is moderately prone to block artifacts.\n"
-				"If block artifacts are a problem when compressing a given texture,\n"
-				"adding some or all of following command-line options may help:\n"
-				" -b 1.8\n"
-				" -v 2 1 1 0 25 0.1\n"
-				" -va 1 1 0 25\n"
-				" -dblimit 60\n"
-				"The -b option is a general-purpose block-artifact reduction option. The\n"
-				"-v and -va options concentrate effort where smooth regions lie next to regions\n"
-				"with high detail (such regions are particularly prone to block artifacts\n"
-				"otherwise). The -dblimit option is sometimes also needed to reduce\n"
-				"block artifacts in regions with very smooth gradients.\n"
-				"\n"
-				"If a texture exhibits severe block artifacts in only some, but not all, of\n"
-				"the color channels (common problem with mask textures), then it may help\n"
-				"to use the -ch option to raise the weighting of the affected color channel(s).\n"
-				"For example, if the green color channel in particular suffers from block\n"
-				"artifacts, then using the commandline option\n"
-				" -ch 1 6 1 1\n"
-				"should improve the result significantly.\n"
-
-			   , argv[0], argv[0], argv[0], argv[0], PARTITION_COUNT, PARTITION_COUNT);
-
-		exit(1);
+		astcenc_print_shorthelp();
+		return 0;
 	}
+
+	enum astc_op_mode {
+		ASTC_ENCODE,
+		ASTC_DECODE,
+		ASTC_ENCODE_AND_DECODE,
+		ASTC_IMAGE_COMPARE,
+		ASTC_PRINT_LONGHELP,
+		ASTC_PRINT_VERSION,
+		ASTC_UNRECOGNIZED
+	};
 
 	astc_decode_mode decode_mode = DECODE_HDR;
-	int opmode;					// 0=compress, 1=decompress, 2=do both, 4=compare
-	if (!strcmp(argv[1], "-c"))
+	astc_op_mode op_mode = ASTC_UNRECOGNIZED;
+
+	struct {
+		const char *opt;
+		astc_op_mode op_mode;
+		astc_decode_mode decode_mode;
+	} modes[] = {
+		{"-c",       ASTC_ENCODE,            DECODE_HDR      },
+		{"-d",       ASTC_DECODE,            DECODE_HDR      },
+		{"-t",       ASTC_ENCODE_AND_DECODE, DECODE_HDR      },
+		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB },
+		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB },
+		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB },
+		{"-cl",      ASTC_ENCODE,            DECODE_LDR      },
+		{"-dl",      ASTC_DECODE,            DECODE_LDR      },
+		{"-tl",      ASTC_ENCODE_AND_DECODE, DECODE_LDR      },
+		{"-compare", ASTC_IMAGE_COMPARE,     DECODE_HDR      },
+		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR      },
+		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR      },
+		{"-v",       ASTC_PRINT_VERSION,     DECODE_HDR      },
+		{"-version", ASTC_PRINT_VERSION,     DECODE_HDR      },
+	};
+
+	int modes_count = sizeof(modes) / sizeof(modes[0]);
+	for (int i = 0; i < modes_count; i++)
 	{
-		opmode = 0;
-		decode_mode = DECODE_HDR;
+		if (!strcmp(argv[1], modes[i].opt))
+		{
+			op_mode = modes[i].op_mode;
+			decode_mode = modes[i].decode_mode;
+			break;
+		}
 	}
-	else if (!strcmp(argv[1], "-d"))
+
+	switch (op_mode)
 	{
-		opmode = 1;
-		decode_mode = DECODE_HDR;
-	}
-	else if (!strcmp(argv[1], "-t"))
-	{
-		opmode = 2;
-		decode_mode = DECODE_HDR;
-	}
-	else if (!strcmp(argv[1], "-cs"))
-	{
-		opmode = 0;
-		decode_mode = DECODE_LDR_SRGB;
-	}
-	else if (!strcmp(argv[1], "-ds"))
-	{
-		opmode = 1;
-		decode_mode = DECODE_LDR_SRGB;
-	}
-	else if (!strcmp(argv[1], "-ts"))
-	{
-		opmode = 2;
-		decode_mode = DECODE_LDR_SRGB;
-	}
-	else if (!strcmp(argv[1], "-cl"))
-	{
-		opmode = 0;
-		decode_mode = DECODE_LDR;
-	}
-	else if (!strcmp(argv[1], "-dl"))
-	{
-		opmode = 1;
-		decode_mode = DECODE_LDR;
-	}
-	else if (!strcmp(argv[1], "-tl"))
-	{
-		opmode = 2;
-		decode_mode = DECODE_LDR;
-	}
-	else if (!strcmp(argv[1], "-compare"))
-	{
-		opmode = 4;
-		decode_mode = DECODE_HDR;
-	}
-	else
-	{
-		printf("Unrecognized operation\n");
-		exit(1);
+		case ASTC_UNRECOGNIZED:
+			printf("Unrecognized operation mode \"%s\"\n", argv[1]);
+			return 1;
+		case ASTC_PRINT_LONGHELP:
+			astcenc_print_longhelp();
+			return 0;
+		case ASTC_PRINT_VERSION:
+			astcenc_print_header();
+			return 0;
+		default:
+			break;
 	}
 
 	int array_size = 1;
@@ -1104,8 +593,6 @@ int astc_main(
 	const char *output_filename = argv[3];
 
 	int silentmode = 0;
-	int timemode = 0;
-	int psnrmode = 0;
 
 	error_weighting_params ewp;
 
@@ -1184,76 +671,66 @@ int astc_main(
 
 	// parse the command line's encoding options.
 	int argidx;
-	if (opmode == 0 || opmode == 2)
+	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		if (argc < 5)
 		{
 			printf("Cannot encode without specifying blocksize\n");
-			exit(1);
+			return 1;
 		}
 
-		if (strchr(argv[4], '.') != NULL)
+		int dimensions = sscanf(argv[4], "%dx%dx%d", &xdim_3d, &ydim_3d, &zdim_3d);
+		switch (dimensions)
 		{
-			target_bitrate = static_cast < float >(atof(argv[4]));
-			target_bitrate_set = 1;
-			find_closest_blockdim_2d(target_bitrate, &xdim_2d, &ydim_2d);
-			find_closest_blockdim_3d(target_bitrate, &xdim_3d, &ydim_3d, &zdim_3d);
-		}
-		else
-		{
-			int dimensions = sscanf(argv[4], "%dx%dx%d", &xdim_3d, &ydim_3d, &zdim_3d);
-			switch (dimensions)
+		case 0:
+		case 1:
+			// failed to parse the blocksize argument at all.
+			printf("Blocksize not specified\n");
+			return 1;
+		case 2:
 			{
-			case 0:
-			case 1:
-				// failed to parse the blocksize argument at all.
-				printf("Blocksize not specified\n");
-				exit(1);
-			case 2:
+				zdim_3d = 1;
+
+				// Check 2D constraints
+				if(!(xdim_3d ==4 || xdim_3d == 5 || xdim_3d == 6 || xdim_3d == 8 || xdim_3d == 10 || xdim_3d == 12) ||
+					!(ydim_3d ==4 || ydim_3d == 5 || ydim_3d == 6 || ydim_3d == 8 || ydim_3d == 10 || ydim_3d == 12) )
 				{
-					zdim_3d = 1;
-
-					// Check 2D constraints
-					if(!(xdim_3d ==4 || xdim_3d == 5 || xdim_3d == 6 || xdim_3d == 8 || xdim_3d == 10 || xdim_3d == 12) ||
-					   !(ydim_3d ==4 || ydim_3d == 5 || ydim_3d == 6 || ydim_3d == 8 || ydim_3d == 10 || ydim_3d == 12) )
-					{
-						printf("Block dimensions %d x %d unsupported\n", xdim_3d, ydim_3d);
-						exit(1);
-					}
-
-					int is_legal_2d = (xdim_3d==ydim_3d) || (xdim_3d==ydim_3d+1) || ((xdim_3d==ydim_3d+2) && !(xdim_3d==6 && ydim_3d==4)) ||
-									  (xdim_3d==8 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==6);
-
-					if(!is_legal_2d)
-					{
-						printf("Block dimensions %d x %d disallowed\n", xdim_3d, ydim_3d);
-						exit(1);
-					}
+					printf("Block dimensions %d x %d unsupported\n", xdim_3d, ydim_3d);
+					return 1;
 				}
-				break;
-			default:
+
+				int is_legal_2d = (xdim_3d==ydim_3d) || (xdim_3d==ydim_3d+1) || ((xdim_3d==ydim_3d+2) && !(xdim_3d==6 && ydim_3d==4)) ||
+									(xdim_3d==8 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==6);
+
+				if(!is_legal_2d)
 				{
-					// Check 3D constraints
-					if(xdim_3d < 3 || xdim_3d > 6 || ydim_3d < 3 || ydim_3d > 6 || zdim_3d < 3 || zdim_3d > 6)
-					{
-						printf("Block dimensions %d x %d x %d unsupported\n", xdim_3d, ydim_3d, zdim_3d);
-						exit(1);
-					}
-
-					int is_legal_3d = ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d+1)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d+1));
-
-					if(!is_legal_3d)
-					{
-						printf("Block dimensions %d x %d x %d disallowed\n", xdim_3d, ydim_3d, zdim_3d);
-						exit(1);
-					}
+					printf("Block dimensions %d x %d disallowed\n", xdim_3d, ydim_3d);
+					return 1;
 				}
-				break;
 			}
+			break;
+		default:
+			{
+				// Check 3D constraints
+				if(xdim_3d < 3 || xdim_3d > 6 || ydim_3d < 3 || ydim_3d > 6 || zdim_3d < 3 || zdim_3d > 6)
+				{
+					printf("Block dimensions %d x %d x %d unsupported\n", xdim_3d, ydim_3d, zdim_3d);
+					return 1;
+				}
 
-			xdim_2d = xdim_3d;
-			ydim_2d = ydim_3d;
+				int is_legal_3d = ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d+1)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d+1));
+
+				if(!is_legal_3d)
+				{
+					printf("Block dimensions %d x %d x %d disallowed\n", xdim_3d, ydim_3d, zdim_3d);
+					return 1;
+				}
+			}
+			break;
 		}
+
+		xdim_2d = xdim_3d;
+		ydim_2d = ydim_3d;
 
 		log10_texels_2d = log((float)(xdim_2d * ydim_2d)) / log(10.0f);
 		log10_texels_3d = log((float)(xdim_3d * ydim_3d * zdim_3d)) / log(10.0f);
@@ -1267,21 +744,11 @@ int astc_main(
 
 	while (argidx < argc)
 	{
-		if (!strcmp(argv[argidx], "-silentmode"))
+		if (!strcmp(argv[argidx], "-silent"))
 		{
 			argidx++;
 			silentmode = 1;
 			suppress_progress_counter = 1;
-		}
-		else if (!strcmp(argv[argidx], "-time"))
-		{
-			argidx++;
-			timemode = 1;
-		}
-		else if (!strcmp(argv[argidx], "-showpsnr"))
-		{
-			argidx++;
-			psnrmode = 1;
 		}
 		else if (!strcmp(argv[argidx], "-v"))
 		{
@@ -1289,7 +756,7 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-v switch with less than 6 arguments, quitting\n");
-				exit(1);
+				return 1;
 			}
 			ewp.mean_stdev_radius = atoi(argv[argidx - 6]);
 			ewp.rgb_power = static_cast < float >(atof(argv[argidx - 5]));
@@ -1304,7 +771,7 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-va switch with less than 4 arguments, quitting\n");
-				exit(1);
+				return 1;
 			}
 			ewp.alpha_power = static_cast < float >(atof(argv[argidx - 4]));
 			ewp.alpha_base_weight = static_cast < float >(atof(argv[argidx - 3]));
@@ -1317,7 +784,7 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-ch switch with less than 4 arguments\n");
-				exit(1);
+				return 1;
 			}
 			ewp.rgba_weights[0] = static_cast < float >(atof(argv[argidx - 4]));
 			ewp.rgba_weights[1] = static_cast < float >(atof(argv[argidx - 3]));
@@ -1330,15 +797,10 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-a switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 			ewp.enable_rgb_scale_with_alpha = 1;
 			ewp.alpha_radius = atoi(argv[argidx - 1]);
-		}
-		else if (!strcmp(argv[argidx], "-rn"))
-		{
-			argidx++;
-			ewp.ra_normal_angular_scale = 1;
 		}
 		else if (!strcmp(argv[argidx], "-b"))
 		{
@@ -1346,7 +808,7 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-b switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 			ewp.block_artifact_suppression = static_cast < float >(atof(argv[argidx - 1]));
 		}
@@ -1356,13 +818,13 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-esw switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
 				printf("Swizzle pattern for the -esw switch must have exactly 4 characters\n");
-				exit(1);
+				return 1;
 			}
 
 			int swizzle_components[4];
@@ -1389,7 +851,7 @@ int astc_main(
 					break;
 				default:
 					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
-					exit(1);
+					return 1;
 				}
 			swz_encode.r = swizzle_components[0];
 			swz_encode.g = swizzle_components[1];
@@ -1402,13 +864,13 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-dsw switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
 				printf("Swizzle pattern for the -dsw switch must have exactly 4 characters\n");
-				exit(1);
+				return 1;
 			}
 
 			int swizzle_components[4];
@@ -1439,7 +901,7 @@ int astc_main(
 					break;
 				default:
 					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
-					exit(1);
+					return 1;
 				}
 			}
 			swz_decode.r = swizzle_components[0];
@@ -1524,7 +986,7 @@ int astc_main(
 			if(decode_mode != DECODE_HDR)
 			{
 				printf("The option -hdra is only available in HDR mode\n");
-				exit(1);
+				return 1;
 			}
 
 			argidx++;
@@ -1545,7 +1007,7 @@ int astc_main(
 			if(decode_mode != DECODE_HDR)
 			{
 				printf("The option -hdr is only available in HDR mode\n");
-				exit(1);
+				return 1;
 			}
 
 			argidx++;
@@ -1559,71 +1021,13 @@ int astc_main(
 			dblimit_user_specified = 999;
 			dblimit_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-hdra_log"))
-		{
-			if(decode_mode != DECODE_HDR)
-			{
-				printf("The option -hdra_log is only available in HDR mode\n");
-				exit(1);
-			}
-
-			argidx++;
-			ewp.mean_stdev_radius = 0;
-			ewp.rgb_power = 1;
-			ewp.rgb_base_weight = 0;
-			ewp.rgb_mean_weight = 1;
-			ewp.alpha_power = 1;
-			ewp.alpha_base_weight = 0;
-			ewp.alpha_mean_weight = 1;
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 1;
-			dblimit_user_specified = 999;
-			dblimit_set_by_user = 1;
-		}
-		else if (!strcmp(argv[argidx], "-hdr_log"))
-		{
-			argidx++;
-			ewp.mean_stdev_radius = 0;
-			ewp.rgb_power = 1;
-			ewp.rgb_base_weight = 0;
-			ewp.rgb_mean_weight = 1;
-			ewp.alpha_base_weight = 0.05f;
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 0;
-			dblimit_user_specified = 999;
-			dblimit_set_by_user = 1;
-		}
-		// presets end here
-		else if (!strcmp(argv[argidx], "-forcehdr_rgb"))
-		{
-			if(decode_mode != DECODE_HDR)
-			{
-				printf("The option -forcehdr_rgb is only available in HDR mode\n");
-				exit(1);
-			}
-
-			argidx++;
-			rgb_force_use_of_hdr = 1;
-		}
-		else if (!strcmp(argv[argidx], "-forcehdr_rgba"))
-		{
-			if(decode_mode != DECODE_HDR)
-			{
-				printf("The option -forcehdr_rgbs is only available in HDR mode\n");
-				exit(1);
-			}
-
-			argidx++;
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 1;
-		}
-		else if (!strcmp(argv[argidx], "-bmc"))
+		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-bmc switch with no argument\n");
-				exit(1);
+				printf("-blockmodelimit switch with no argument\n");
+				return 1;
 			}
 			float cutoff = (float)atof(argv[argidx - 1]);
 			if (cutoff > 100 || !(cutoff >= 0))
@@ -1631,13 +1035,13 @@ int astc_main(
 			bmc_user_specified = cutoff;
 			bmc_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-plimit"))
+		else if (!strcmp(argv[argidx], "-partitionlimitt"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-plimit switch with no argument\n");
-				exit(1);
+				printf("-partitionlimit switch with no argument\n");
+				return 1;
 			}
 			plimit_user_specified = atoi(argv[argidx - 1]);
 			plimit_set_by_user = 1;
@@ -1648,80 +1052,43 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-dblimit switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 			dblimit_user_specified = static_cast < float >(atof(argv[argidx - 1]));
 			dblimit_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-oplimit"))
+		else if (!strcmp(argv[argidx], "-partitionearlylimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-oplimit switch with no argument\n");
-				exit(1);
+				printf("-partitionearlylimit switch with no argument\n");
+				return 1;
 			}
 			oplimit_user_specified = static_cast < float >(atof(argv[argidx - 1]));
 			oplimit_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-mincorrel"))
+		else if (!strcmp(argv[argidx], "-planecorlimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-mincorrel switch with no argument\n");
-				exit(1);
+				printf("-planecorlimit switch with no argument\n");
+				return 1;
 			}
 			mincorrel_user_specified = static_cast < float >(atof(argv[argidx - 1]));
 			mincorrel_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-maxiters"))
+		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-maxiters switch with no argument\n");
-				exit(1);
+				printf("-refinementlimit switch with no argument\n");
+				return 1;
 			}
 			maxiters_user_specified = atoi(argv[argidx - 1]);
 			maxiters_set_by_user = 1;
-		}
-		else if (!strcmp(argv[argidx], "-veryfast"))
-		{
-			argidx++;
-			plimit_autoset = 2;
-			oplimit_autoset = 1.0;
-			dblimit_autoset_2d = MAX(70 - 35 * log10_texels_2d, 53 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(70 - 35 * log10_texels_3d, 53 - 19 * log10_texels_3d);
-			bmc_autoset = 25;
-			mincorrel_autoset = 0.5;
-			maxiters_autoset = 1;
-
-			switch (ydim_2d)
-			{
-			case 4:
-				pcdiv = 240;
-				break;
-			case 5:
-				pcdiv = 56;
-				break;
-			case 6:
-				pcdiv = 64;
-				break;
-			case 8:
-				pcdiv = 47;
-				break;
-			case 10:
-				pcdiv = 36;
-				break;
-			case 12:
-				pcdiv = 30;
-				break;
-			default:
-				pcdiv = 30;
-				break;
-			}
-			preset_has_been_set++;
 		}
 		else if (!strcmp(argv[argidx], "-fast"))
 		{
@@ -1877,11 +1244,11 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-j switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 			thread_count = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-srgb"))
+		else if (!strcmp(argv[argidx], "-linsrgb"))
 		{
 			argidx++;
 			perform_srgb_transform = 1;
@@ -1894,14 +1261,14 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-mpsnr switch with less than 2 arguments\n");
-				exit(1);
+				return 1;
 			}
 			low_fstop = atoi(argv[argidx - 2]);
 			high_fstop = atoi(argv[argidx - 1]);
 			if (high_fstop < low_fstop)
 			{
 				printf("For -mpsnr switch, the <low> argument cannot be greater than the\n" "high argument.\n");
-				exit(1);
+				return 1;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-diag"))
@@ -1910,14 +1277,14 @@ int astc_main(
 			if (argidx > argc)
 			{
 				printf("-diag switch with no argument\n");
-				exit(1);
+				return 1;
 			}
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				diagnostics_tile = atoi(argv[argidx - 1]);
 			#else
 				printf("-diag switch given, but codec has been compiled without\n" "DEBUG_PRINT_DIAGNOSTICS enabled; please recompile.\n");
-				exit(1);
+				return 1;
 			#endif
 		}
 		else if (!strcmp(argv[argidx], "-bmstat"))
@@ -1939,17 +1306,17 @@ int astc_main(
 		else if (!strcmp(argv[argidx], "-array"))
 		{
 			// Only supports compressing (not decompressing or comparison).
-			if (opmode != 0)
+			if (op_mode != ASTC_ENCODE)
 			{
 				printf("-array switch given when not compressing files - decompression and comparison of arrays not supported.\n");
-				exit(1);
+				return 1;
 			}
 
 			// Image depth must be specified.
 			if (argidx + 2 > argc)
 			{
 				printf("-array switch given, but no array size (image depth) given.\n");
-				exit(1);
+				return 1;
 			}
 			argidx++;
 
@@ -1957,35 +1324,35 @@ int astc_main(
 			if (!sscanf(argv[argidx], "%d", &array_size) || array_size == 0)
 			{
 				printf("Invalid array size (image depth) given with -array option: \"%s\".\n", argv[argidx]);
-				exit(1);
+				return 1;
 			}
 			argidx++;
 		}
 		else
 		{
 			printf("Commandline argument \"%s\" not recognized\n", argv[argidx]);
-			exit(1);
+			return 1;
 		}
 	}
 
-	if (opmode == 4)
+	if (op_mode == ASTC_IMAGE_COMPARE)
 	{
-		compare_two_files(input_filename, output_filename, low_fstop, high_fstop, psnrmode);
-		exit(0);
+		compare_two_files(input_filename, output_filename, low_fstop, high_fstop);
+		return 0;
 	}
 
 	float texel_avg_error_limit_2d = 0.0f;
 	float texel_avg_error_limit_3d = 0.0f;
 
-	if (opmode == 0 || opmode == 2)
+	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		// if encode, process the parsed command line values
 
 		if (preset_has_been_set != 1)
 		{
 			printf("For encoding, need to specify exactly one performance-quality\n"
-				   "trade-off preset option. The available presets are:\n" " -veryfast\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
-			exit(1);
+				   "trade-off preset option. The available presets are:\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
+			return 1;
 		}
 
 		progress_counter_divider = pcdiv;
@@ -2114,7 +1481,7 @@ int astc_main(
 	int input_image_is_hdr = 0;
 
 	// load image
-	if (opmode == 0 || opmode == 2 || opmode == 3)
+	if (op_mode == ASTC_ENCODE || op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		// Allocate arrays for image data and load results.
 		load_results = new int[array_size];
@@ -2137,7 +1504,7 @@ int astc_main(
 				if (NULL == strrchr(input_filename, '.'))
 				{
 					printf("Unable to determine file type from extension: %s\n", input_filename);
-					exit(1);
+					return 1;
 				}
 
 				// Construct new file name and load: <name>_N.<extension>
@@ -2149,7 +1516,7 @@ int astc_main(
 				if (input_images[image_index]->zsize != 1)
 				{
 					printf("3D source images not supported with -array option: %s\n", new_input_filename);
-					exit(1);
+					return 1;
 				}
 			}
 
@@ -2157,14 +1524,14 @@ int astc_main(
 			if (load_results[image_index] < 0)
 			{
 				printf("Failed to load image %s\n", input_filename);
-				exit(1);
+				return 1;
 			}
 
 			// Check format matches other slices.
 			if (load_results[image_index] != load_results[0])
 			{
 				printf("Mismatching image format - image 0 and %d are a different format\n", image_index);
-				exit(1);
+				return 1;
 			}
 		}
 
@@ -2272,36 +1639,32 @@ int astc_main(
 
 	start_coding_time = get_time();
 
-	if (opmode == 1)
+	if (op_mode == ASTC_DECODE)
 		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode);
 
 	// process image, if relevant
-	if (opmode == 2)
+	if (op_mode == ASTC_ENCODE_AND_DECODE)
 		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
 
 	end_coding_time = get_time();
 
 	// print PSNR if encoding
-	if (opmode == 2)
+	if (op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		if (psnrmode == 1)
-		{
-			compute_error_metrics(input_image_is_hdr, input_components, input_image, output_image, low_fstop, high_fstop, psnrmode);
-		}
+		compute_error_metrics(input_image_is_hdr, input_components, input_image, output_image, low_fstop, high_fstop);
 	}
 
 	// store image
-	if (opmode == 1 || opmode == 2)
+	if (op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		int store_result = -1;
 		const char *format_string = "";
 
 		store_result = astc_codec_store_image(output_image, output_filename, out_bitness, &format_string);
-
 		if (store_result < 0)
 		{
 			printf("Failed to store image %s\n", output_filename);
-			exit(1);
+			return 1;
 		}
 		else
 		{
@@ -2312,7 +1675,7 @@ int astc_main(
 		}
 	}
 
-	if (opmode == 0)
+	if (op_mode == ASTC_ENCODE)
 	{
 		store_astc_file(input_image, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
 	}
@@ -2332,9 +1695,12 @@ int astc_main(
 
 	end_time = get_time();
 
-	if (timemode)
+	if (op_mode == ASTC_ENCODE_AND_DECODE || !silentmode)
 	{
-		printf("\nElapsed time: %.2lf seconds, of which coding time: %.2lf seconds\n", end_time - start_time, end_coding_time - start_coding_time);
+		printf("\nCoding time\n");
+		printf("-----------\n");
+		printf("Total time:             %6.2f s\n", end_time - start_time);
+		printf("Coding time:            %6.2f s\n", end_coding_time - start_coding_time);
 	}
 
 	return 0;

@@ -49,6 +49,7 @@ SOURCES = \
     astc_stb_tga.cpp \
     astc_symbolic_physical.cpp \
     astc_toplevel.cpp \
+    astc_toplevel_help.cpp \
     astc_weight_align.cpp \
     astc_weight_quant_xfer_tables.cpp
 

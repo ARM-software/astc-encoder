@@ -1017,7 +1017,7 @@ astc_codec_image *astc_codec_load_image(
 		if (filename_len > 250)
 		{
 			*load_result = -1;
-			return NULL;
+			return nullptr;
 		}
 
 		char exr_to_htga_command[550];
@@ -1027,8 +1027,9 @@ astc_codec_image *astc_codec_load_image(
 		int retval = system(exr_to_htga_command);
 		if (retval != 0)
 		{
+			*load_result = -1;
 			printf("Failed to run exr_to_htga to convert input .exr file.\n");
-			exit(1);
+			return nullptr;
 		}
 		input_filename = htga_load_filename;
 		load_fileformat = LOAD_HTGA;

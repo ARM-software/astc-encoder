@@ -377,6 +377,19 @@ struct physical_compressed_block
 	uint8_t data[16];
 };
 
+/* ============================================================================
+  Functions for printing build info and help messages
+============================================================================ */
+void astcenc_print_header();
+
+void astcenc_print_shorthelp();
+
+void astcenc_print_longhelp();
+
+/* ============================================================================
+  Functions and data pertaining to quantization and encoding
+============================================================================ */
+
 /**
  * @brief Populate the blocksize descriptor for the target block size.
  *
@@ -698,8 +711,7 @@ void compute_error_metrics(
 	const astc_codec_image* img1,
 	const astc_codec_image* img2,
 	int fstop_lo,
-	int fstop_hi,
-	int show_psnr);
+	int fstop_hi);
 
 // fetch an image-block from the input file
 void fetch_imageblock(

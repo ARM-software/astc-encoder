@@ -128,12 +128,11 @@ class TestImage():
 
         # Run the compressor
         args = [testBinary, opmode, self.filePath, outFilePath,
-                blockSize, "-thorough", "-time", "-showpsnr", "-silentmode"]
+                blockSize, "-thorough", "-silent"]
 
         # Switch normal maps into angular error metrics
         if self.format == "xy":
             args.append("-normal_psnr")
-
 
         # Switch HDR data formats into HDR compression mode; note that this
         # mode assumes that the alpha channel is non-correlated
@@ -161,16 +160,16 @@ class TestImage():
         # Create log parsing patterns
         if self.dynamicRange == "ldr":
             if self.format in ("rgb", "xy"):
-                patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
+                patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             elif self.format in ("srgba", "rgba"):
-                patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
+                patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
         else:
-            patternPSNR = r"mPSNR \(RGB\) .*: ([0-9.]*) dB"
+            patternPSNR = r"mPSNR \(RGB\):\s*([0-9.]*) dB .*"
 
         patternPSNR = re.compile(patternPSNR)
-        patternTime = re.compile(".* coding time: ([0-9.]*) seconds")
+        patternTime = re.compile("Coding time:\s*([0-9.]*) s")
 
         # Extract results from the log
         runPSNR = None

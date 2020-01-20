@@ -405,7 +405,7 @@ void compute_angular_endpoints_for_quantization_levels(
 		if (bsi < 0)
 		{
 			printf("ERROR: Unable to find an encoding within the specified error limits.\n");
-			exit(1);
+			ASTC_CODEC_INTERNAL_ERROR();
 		}
 
 		float stepsize = stepsizes[bsi];
