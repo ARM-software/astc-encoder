@@ -21,7 +21,7 @@ import sys
 
 LOG_CLI = False
 
-TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8"]
+TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12"]
 TEST_EXTENSIONS = [".png", ".hdr"]
 
 class TestReference():
@@ -120,17 +120,20 @@ class TestImage():
             outFile = pathParts[3].replace(".png", "-out.png")
             outFilePath2 = os.path.join(outDir, outFile)
 
+        # Switch sRGB images into sRGB mode
+        if self.format in ("srgb", "srgba"):
+            opmode = "-ts"
+        else:
+            opmode = "-t"
+
         # Run the compressor
-        args = [testBinary, "-t", self.filePath, outFilePath,
+        args = [testBinary, opmode, self.filePath, outFilePath,
                 blockSize, "-thorough", "-time", "-showpsnr", "-silentmode"]
 
         # Switch normal maps into angular error metrics
         if self.format == "xy":
             args.append("-normal_psnr")
 
-        # Switch sRGB images into sRGB mode
-        if self.format == "srgba":
-            args.append("-srgb")
 
         # Switch HDR data formats into HDR compression mode; note that this
         # mode assumes that the alpha channel is non-correlated
@@ -448,7 +451,7 @@ def run_reference_rebuild(args, testSet, testRef):
             # Run the test
             dat = (curCount, maxCount, test.name, blockSize)
             print("Running %u/%u: %s @ %s" % dat)
-            test.run(binary, blockSize)
+            test.run(binary, blockSize, 0)
 
             runPSNR = "%0.3f" % test.runPSNR[blockSize]
             runTime = "%0.3f" % test.runTime[blockSize]
@@ -497,7 +500,7 @@ def run_reference_update(args, testSet, testRef):
             else:
                 dat = (curCount, maxCount, test.name, blockSize)
                 print("Running %u/%u: %s @ %s" % dat)
-                test.run(binary, blockSize)
+                test.run(binary, blockSize, 0)
 
                 runPSNR = "%0.3f" % test.runPSNR[blockSize]
                 runTime = "%0.3f" % test.runTime[blockSize]
