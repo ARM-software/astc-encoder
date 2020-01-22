@@ -21,8 +21,9 @@ import sys
 
 LOG_CLI = False
 
-TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12"]
-TEST_EXTENSIONS = [".png", ".hdr"]
+TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
+                    "3x3x3", "6x6x6"]
+TEST_EXTENSIONS = [".png", ".hdr", ".dds"]
 
 class TestReference():
     """
@@ -58,6 +59,7 @@ class TestImage():
         self.useLevel = ["all"]
         self.useFormat = ["all"]
         self.useRange = ["all"]
+        self.is2D = True
 
         # Tokenize the file name
         nameParts = self.name.split("-")
@@ -67,6 +69,8 @@ class TestImage():
                 self.useLevel.append("smoke")
             if "x" in nameParts[3]:
                 self.useLevel = []
+            if "3" in nameParts[3]:
+                self.is2D = False
 
             # Name of the test excludes flags from the file name
             self.name = "-".join(nameParts[0:3])
@@ -98,7 +102,7 @@ class TestImage():
         self.runPSNR = dict()
         self.status = dict()
 
-    def run_once(self, testBinary, blockSize, firstRun):
+    def run_once(self, testBinary, blockSize, firstRun, rebuild):
         """
         Run a single compression pass.
         """
@@ -123,6 +127,8 @@ class TestImage():
         # Switch sRGB images into sRGB mode
         if self.format in ("srgb", "srgba"):
             opmode = "-ts"
+        elif self.dynamicRange == "ldr":
+            opmode = "-tl"
         else:
             opmode = "-t"
 
@@ -142,6 +148,11 @@ class TestImage():
         if LOG_CLI:
             print(" + %s " % " ".join(args))
 
+        # For reference runs we need to translate the command line back
+        # to the old format
+        if rebuild:
+            args = self.rewrite_args_for_old_cli(args)
+
         try:
             result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
                             check=True, universal_newlines=True)
@@ -151,25 +162,26 @@ class TestImage():
             sys.exit(1)
 
         # Convert the TGA to PNG and delete the TGA (LDR only)
-        if self.dynamicRange == "ldr":
+        if self.dynamicRange == "ldr" and self.is2D:
             im = Image.open(outFilePath)
             im.save(outFilePath2)
             os.remove(outFilePath)
+
         # TODO: Convert the HTGA to EXR or HDR (HDR only)
 
         # Create log parsing patterns
         if self.dynamicRange == "ldr":
-            if self.format in ("rgb", "xy"):
+            if self.format in ("rgb", "xy", "l"):
                 patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             elif self.format in ("srgba", "rgba"):
                 patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
         else:
-            patternPSNR = r"mPSNR \(RGB\):\s*([0-9.]*) dB .*"
+            patternPSNR = r"mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
 
         patternPSNR = re.compile(patternPSNR)
-        patternTime = re.compile("Coding time:\s*([0-9.]*) s")
+        patternTime = re.compile(".*[Cc]oding time:\s*([0-9.]*) s.*")
 
         # Extract results from the log
         runPSNR = None
@@ -189,7 +201,27 @@ class TestImage():
 
         return (runPSNR, runTime)
 
-    def run(self, testBinary, blockSize, failureDiff):
+    def rewrite_args_for_old_cli(self, args):
+        replacements = [
+            ("-silent", "-silentmode")
+        ]
+
+        extensions = [
+            ("-t", ("-showpsnr", "-time")),
+            ("-tl", ("-showpsnr", "-time")),
+            ("-ts", ("-showpsnr", "-time"))
+        ]
+
+        for new, old in replacements:
+            args = [old if x == new else x for x in args]
+
+        for new, exts in extensions:
+            if new in args:
+                args.extend(exts)
+
+        return args
+
+    def run(self, testBinary, blockSize, failureDiff, rebuild=False):
         """
         Run the test scenario including N warmup passes and M run passes.
 
@@ -197,10 +229,10 @@ class TestImage():
         """
         results = []
         for i in range(0, self.warmupRuns):
-            self.run_once(testBinary, blockSize, False)
+            self.run_once(testBinary, blockSize, False, rebuild)
 
         for i in range(0, self.testRuns):
-            result = self.run_once(testBinary, blockSize, i == 0)
+            result = self.run_once(testBinary, blockSize, i == 0, rebuild)
             results.append(result)
 
         listPSNR, timeList = list(zip(*results))
@@ -220,14 +252,10 @@ class TestImage():
         refTime = float(self.referenceTime[blockSize])
         speedup = ((refTime / self.runTime[blockSize]) - 1.0) * 100.0
 
-
-        # Pass if PSNR matches to 3dp rounding
-        if float("%0.3f" % listPSNR[0]) == self.referencePSNR[blockSize]:
-            self.status[blockSize] = "pass |               "
-        # Pass if PSNR is better
-        elif (listPSNR[0] >= refPSNR) or (diffPSNR >= failureDiff):
+        # Pass if PSNR is better or above threshold
+        if (listPSNR[0] >= refPSNR) or (diffPSNR >= failureDiff):
             self.status[blockSize] = "pass | PSNR % 0.3f dB" % diffPSNR
-        # Else we got worse so it's a fail ...
+        # Else we got worse by at least threshold so it's a fail ...
         else:
             self.status[blockSize] = "fail | PSNR % 0.3f dB" % diffPSNR
 
@@ -235,7 +263,7 @@ class TestImage():
 
     def skip_run(self, blockSize):
         """
-        Skip the test scenario, but proagate results from reference.
+        Skip the test scenario, but propagate results from reference
         """
         self.runPSNR[blockSize] = self.referencePSNR[blockSize]
         self.runTime[blockSize] = self.referenceTime[blockSize]
@@ -349,67 +377,74 @@ def run_tests(args, testSet, testRef, failureDiff):
     suite = None
     suiteFormat = None
 
-    # Run tests
-    maxCount = len(args.testBlockSize) * len(testList)
-    curCount = 0
-
     statRun = 0
     statSkip = 0
     statPass = 0
 
-    for blockSize in args.testBlockSize:
+    # Build a list of valid pairings of block size and test
+    tests = []
+    for blockSize in TEST_BLOCK_SIZES:
         for test in testList:
-            curCount += 1
+            is2DBlock = (blockSize.count("x") == 1)
+            is2DTest = test.is2D
+            if is2DBlock == is2DTest:
+                tests.append((blockSize, test))
 
-            # Skip tests not enabled for the current testing throughness level
-            if args.testLevel not in test.useLevel:
-                statSkip += 1
-                continue
+    maxCount = len(tests)
+    curCount = 0
 
-            # Skip tests not enabled for the current dynamic range level
-            if args.testRange not in test.useRange:
-                statSkip += 1
-                continue
+    for blockSize, test in tests:
+        curCount += 1
 
-            # Skip tests not enabled for the current data format
-            if args.testFormat not in test.useFormat:
-                statSkip += 1
-                continue
+        # Skip tests not enabled for the current testing throughness level
+        if args.testLevel not in test.useLevel:
+            statSkip += 1
+            continue
 
-            # Start a new suite if the format changes
-            dat = (test.dynamicRange, test.format, blockSize)
-            testFormat = "%s.%s.%s" % dat
-            if (not suite) or (suiteFormat != testFormat):
-                suiteFormat = testFormat
-                suite = juxml.TestSuite("Image %s test suite" % suiteFormat)
-                suites.append(suite)
-                print("Running suite: %s" % suiteFormat)
+        # Skip tests not enabled for the current dynamic range level
+        if args.testRange not in test.useRange:
+            statSkip += 1
+            continue
 
-            # Run the test
-            test.run(binary, blockSize, failureDiff)
-            dat = (curCount, maxCount, test.name, blockSize,
-                   test.runPSNR[blockSize], test.runTime[blockSize],
-                   test.status[blockSize])
+        # Skip tests not enabled for the current data format
+        if args.testFormat not in test.useFormat:
+            statSkip += 1
+            continue
 
-            # Log results
-            statRun += 1
-            if "pass" in test.status[blockSize]:
-                statPass += 1
+        # Start a new suite if the format changes
+        dat = (test.dynamicRange, test.format, blockSize)
+        testFormat = "%s.%s.%s" % dat
+        if (not suite) or (suiteFormat != testFormat):
+            suiteFormat = testFormat
+            suite = juxml.TestSuite("Image %s test suite" % suiteFormat)
+            suites.append(suite)
+            print("Running suite: %s" % suiteFormat)
 
-            log = "Ran %2u/%2u: %s %s, %0.3f dB, %0.3f s, %s" % dat
-            print(" + %s" % log)
+        # Run the test
+        test.run(binary, blockSize, failureDiff)
+        dat = (curCount, maxCount, test.name, blockSize,
+                test.runPSNR[blockSize], test.runTime[blockSize],
+                test.status[blockSize])
 
-            # Generate JUnit result
-            caseName = "%s.%s" % (test.name, blockSize)
-            case = juxml.TestCase(caseName,
-                                  elapsed_sec=test.runTime[blockSize],
-                                  stdout=log)
-            suite.test_cases.append(case)
+        # Log results
+        statRun += 1
+        if "pass" in test.status[blockSize]:
+            statPass += 1
 
-            if test.status[blockSize] == "fail":
-                dat = (test.runPSNR[blockSize], test.referencePSNR[blockSize])
-                msg = "PSNR fail %0.3f dB is worse than %s dB" % dat
-                case.add_failure_info(msg)
+        log = "Ran %2u/%2u: %s %s, %0.3f dB, %0.3f s, %s" % dat
+        print(" + %s" % log)
+
+        # Generate JUnit result
+        caseName = "%s.%s" % (test.name, blockSize)
+        case = juxml.TestCase(caseName,
+                                elapsed_sec=test.runTime[blockSize],
+                                stdout=log)
+        suite.test_cases.append(case)
+
+        if test.status[blockSize] == "fail":
+            dat = (test.runPSNR[blockSize], test.referencePSNR[blockSize])
+            msg = "PSNR fail %0.3f dB is worse than %s dB" % dat
+            case.add_failure_info(msg)
 
     # Print summary results
     print("\nSummary")
@@ -423,7 +458,39 @@ def run_tests(args, testSet, testRef, failureDiff):
         juxml.TestSuite.to_file(fileHandle, suites)
 
 
-def run_reference_rebuild(args, testSet, testRef):
+
+def run_rebuild(binary, testList, canSkip):
+    # Build a list of valid pairings of block size and test
+    tests = []
+    for blockSize in TEST_BLOCK_SIZES:
+        for test in testList:
+            is2DBlock = (blockSize.count("x") == 1)
+            is2DTest = test.is2D
+            if is2DBlock == is2DTest:
+                tests.append((blockSize, test))
+
+    curCount = 0
+    maxCount = len(tests)
+
+    for blockSize, test in tests:
+        curCount += 1
+
+        if canSkip and (blockSize in test.referencePSNR):
+            dat = (curCount, maxCount, test.name, blockSize)
+            print("Skipping %u/%u: %s @ %s" % dat)
+            test.skip_run(blockSize)
+        else:
+            # Run the test
+            dat = (curCount, maxCount, test.name, blockSize)
+            print("Running %u/%u: %s @ %s" % dat)
+            test.run(binary, blockSize, 0, True)
+
+        runPSNR = "%0.3f" % test.runPSNR[blockSize]
+        runTime = "%0.3f" % test.runTime[blockSize]
+        print("  + %s dB / %s s" % (runPSNR, runTime))
+
+
+def run_reference_rebuild(args, testSet, testRef, canSkip=False):
     """
     Run the reference test generator rebuild process.
     """
@@ -437,24 +504,12 @@ def run_reference_rebuild(args, testSet, testRef):
 
     # Load test resources
     binary = get_reference_binary()
-    testList = get_test_listing(None, testSet)
+    refData = None
+    if canSkip:
+        refData = get_test_reference_scores(testRef)
+    testList = get_test_listing(refData, testSet, refData != None)
 
-    # Run tests
-    maxCount = len(TEST_BLOCK_SIZES) * len(testList)
-    curCount = 0
-
-    for blockSize in TEST_BLOCK_SIZES:
-        for test in testList:
-            curCount += 1
-
-            # Run the test
-            dat = (curCount, maxCount, test.name, blockSize)
-            print("Running %u/%u: %s @ %s" % dat)
-            test.run(binary, blockSize, 0)
-
-            runPSNR = "%0.3f" % test.runPSNR[blockSize]
-            runTime = "%0.3f" % test.runTime[blockSize]
-            print("  + %s dB / %s s" % (runPSNR, runTime))
+    run_rebuild(binary, testList, canSkip)
 
     # Write CSV
     with open(testRef, "w", newline="") as fileHandle:
@@ -462,58 +517,15 @@ def run_reference_rebuild(args, testSet, testRef):
         writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
         for blockSize in TEST_BLOCK_SIZES:
             for test in testList:
+                is2DBlock = (blockSize.count("x") == 1)
+                is2DTest = test.is2D
+                if is2DBlock != is2DTest:
+                    continue
+
                 row = (test.name, blockSize,
-                       "%0.3f" % test.runPSNR[blockSize],
-                       "%0.3f" % test.runTime[blockSize])
-                writer.writerow(row)
+                    "%0.3f" % test.runPSNR[blockSize],
+                    "%0.3f" % test.runTime[blockSize])
 
-
-def run_reference_update(args, testSet, testRef):
-    """
-    Run the reference test generator update process.
-    """
-    TestImage.testRuns = args.testRepeats
-    TestImage.warmupRuns = args.testWarmups
-
-    # Delete and recreate test output location
-    if os.path.exists("TestOutput"):
-        shutil.rmtree("TestOutput")
-    os.mkdir("TestOutput")
-
-    # Load test resources
-    binary = get_reference_binary()
-    reference = get_test_reference_scores(testRef)
-    testList = get_test_listing(reference, testSet, True)
-
-    # Run tests
-    maxCount = len(TEST_BLOCK_SIZES) * len(testList)
-    curCount = 0
-
-    for blockSize in TEST_BLOCK_SIZES:
-        for test in testList:
-            curCount += 1
-            if blockSize in test.referencePSNR:
-                dat = (curCount, maxCount, test.name, blockSize)
-                print("Skipping %u/%u: %s @ %s" % dat)
-                test.skip_run(blockSize)
-            else:
-                dat = (curCount, maxCount, test.name, blockSize)
-                print("Running %u/%u: %s @ %s" % dat)
-                test.run(binary, blockSize, 0)
-
-                runPSNR = "%0.3f" % test.runPSNR[blockSize]
-                runTime = "%0.3f" % test.runTime[blockSize]
-                print("  + %s dB / %s s" % (runPSNR, runTime))
-
-    # Write CSV
-    with open(testRef, "w", newline="") as fileHandle:
-        writer = csv.writer(fileHandle)
-        writer.writerow(["Name", "Block Size", "PSNR (dB)", "Time (s)"])
-        for blockSize in TEST_BLOCK_SIZES:
-            for test in testList:
-                row = (test.name, blockSize,
-                       "%0.3f" % test.runPSNR[blockSize],
-                       "%0.3f" % test.runTime[blockSize])
                 writer.writerow(row)
 
 
@@ -521,7 +533,6 @@ def parse_command_line():
     """
     Parse the command line.
     """
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--test-level", dest="testLevel", default="smoke",
@@ -582,7 +593,7 @@ def main():
     if args.refRebuild:
         run_reference_rebuild(args, imageSet, testRef)
     elif args.refUpdate:
-        run_reference_update(args, imageSet, testRef)
+        run_reference_rebuild(args, imageSet, testRef, True)
     else:
         run_tests(args, imageSet, testRef, args.failureDiff)
 
