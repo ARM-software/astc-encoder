@@ -57,10 +57,10 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	extern int print_diagnostics;
+	extern int print_tile_errors;
+	extern int print_statistics;
 #endif
 
-extern int print_tile_errors;
-extern int print_statistics;
 
 extern int perform_srgb_transform;
 extern int rgb_force_use_of_hdr;

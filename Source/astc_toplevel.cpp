@@ -25,16 +25,15 @@
 	#include <fenv.h>
 #endif
 
-extern int block_mode_histogram[2048];
-
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	int print_diagnostics = 0;
 	int diagnostics_tile = -1;
+	int print_tile_errors = 0;
+	int print_statistics = 0;
+	extern int block_mode_histogram[2048];
 #endif
 
-int print_tile_errors = 0;
 
-int print_statistics = 0;
 
 int progress_counter_divider = 1;
 
@@ -661,7 +660,9 @@ int astc_main(
 	int target_bitrate_set = 0;
 	float target_bitrate = 0;
 
-	int print_block_mode_histogram = 0;
+	#ifdef DEBUG_PRINT_DIAGNOSTICS
+		int print_block_mode_histogram = 0;
+	#endif
 
 	float log10_texels_2d = 0.0f;
 	float log10_texels_3d = 0.0f;
@@ -1271,6 +1272,7 @@ int astc_main(
 				return 1;
 			}
 		}
+	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		else if (!strcmp(argv[argidx], "-diag"))
 		{
 			argidx += 2;
@@ -1280,12 +1282,7 @@ int astc_main(
 				return 1;
 			}
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				diagnostics_tile = atoi(argv[argidx - 1]);
-			#else
-				printf("-diag switch given, but codec has been compiled without\n" "DEBUG_PRINT_DIAGNOSTICS enabled; please recompile.\n");
-				return 1;
-			#endif
+			diagnostics_tile = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-bmstat"))
 		{
@@ -1302,6 +1299,7 @@ int astc_main(
 			argidx++;
 			print_statistics = 1;
 		}
+	#endif
 		// Option: Encode a 3D image from an array of 2D images.
 		else if (!strcmp(argv[argidx], "-array"))
 		{
@@ -1381,24 +1379,18 @@ int astc_main(
 
 		ewp.partition_1_to_2_limit = oplimit;
 		ewp.lowest_correlation_cutoff = mincorrel;
-
-		if (partitions_to_test < 1)
-			partitions_to_test = 1;
-		else if (partitions_to_test > PARTITION_COUNT)
-			partitions_to_test = PARTITION_COUNT;
-
-		ewp.partition_search_limit = partitions_to_test;
+		ewp.partition_search_limit = astc::clampi(partitions_to_test, 1, PARTITION_COUNT);
 
 		// if diagnostics are run, force the thread count to 1.
-		if (
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-			   diagnostics_tile >= 0 ||
-			#endif
-			   print_tile_errors > 0 || print_statistics > 0)
-		{
-			thread_count = 1;
-			thread_count_autodetected = 0;
-		}
+		#ifdef DEBUG_PRINT_DIAGNOSTICS
+			if (diagnostics_tile >= 0 ||
+				print_tile_errors > 0 ||
+				print_statistics > 0)
+			{
+				thread_count = 1;
+				thread_count_autodetected = 0;
+			}
+		#endif
 
 		if (thread_count < 1)
 		{
@@ -1682,16 +1674,18 @@ int astc_main(
 
 	destroy_image(input_image);
 
-	if (print_block_mode_histogram)
-	{
-		printf("%s ", argv[2]);
-		printf("%d %d  ", xdim_2d, ydim_2d);
-		for (int i = 0; i < 2048; i++)
+	#ifdef DEBUG_PRINT_DIAGNOSTICS
+		if (print_block_mode_histogram)
 		{
-			printf(" %d", block_mode_histogram[i]);
+			printf("%s ", argv[2]);
+			printf("%d %d  ", xdim_2d, ydim_2d);
+			for (int i = 0; i < 2048; i++)
+			{
+				printf(" %d", block_mode_histogram[i]);
+			}
+			printf("\n");
 		}
-		printf("\n");
-	}
+	#endif
 
 	end_time = get_time();
 
