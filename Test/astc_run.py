@@ -37,7 +37,27 @@ class TestImage():
         self.dynamicRange = nameParts[0]
         self.format = nameParts[1]
 
-    def run_once(self, testBinary, blockSize, profile, verbose=False):
+    def rewrite_args_for_old_cli(self, args):
+        replacements = [
+            ("-silent", "-silentmode")
+        ]
+
+        extensions = [
+            ("-t", ("-showpsnr", "-time")),
+            ("-tl", ("-showpsnr", "-time")),
+            ("-ts", ("-showpsnr", "-time"))
+        ]
+
+        for new, old in replacements:
+            args = [old if x == new else x for x in args]
+
+        for new, exts in extensions:
+            if new in args:
+                args.extend(exts)
+
+        return args
+
+    def run_once(self, testBinary, blockSize, profile, verbose, newCLI):
         """
         Run a single compression pass.
         """
@@ -57,17 +77,21 @@ class TestImage():
             outFile = pathParts[-1].replace(".png", "-out.png")
             outFilePath2 = os.path.join(outDir, outFile)
 
+        # Switch sRGB images into sRGB mode
+        if self.format in ("srgb", "srgba"):
+            opmode = "-ts"
+        elif self.dynamicRange == "ldr":
+            opmode = "-tl"
+        else:
+            opmode = "-t"
+
         # Run the compressor
-        args = [testBinary, "-t", self.filePath, outFilePath,
-                blockSize, "-thorough", "-time", "-showpsnr", "-silentmode"]
+        args = [testBinary, opmode, self.filePath, outFilePath,
+                blockSize, "-thorough", "-silent"]
 
         # Switch normal maps into angular error metrics
         if self.format == "xy":
             args.append("-normal_psnr")
-
-        # Switch sRGB images into sRGB mode
-        if self.format == "srgba":
-            args.append("-srgb")
 
         # Switch HDR data formats into HDR compression mode; note that this
         # mode assumes that the alpha channel is non-correlated
@@ -89,6 +113,10 @@ class TestImage():
                 os.remove("callgrind.dot")
             if os.path.exists("callgrind.png"):
                 os.remove("callgrind.png")
+
+
+        if not newCLI:
+            args = self.rewrite_args_for_old_cli(args)
 
         try:
             result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
@@ -112,17 +140,17 @@ class TestImage():
 
         # Create log parsing patterns
         if self.dynamicRange == "ldr":
-            if self.format in ("rgb", "xy"):
-                patternPSNR = "PSNR \\(LDR-RGB\\): ([0-9.]*) dB"
+            if self.format in ("rgb", "xy", "l"):
+                patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             elif self.format in ("srgba", "rgba"):
-                patternPSNR = "PSNR \\(LDR-RGBA\\): ([0-9.]*) dB"
+                patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
             else:
                 assert False, "Unsupported LDR color format %s" % self.format
         else:
             patternPSNR = r"mPSNR \(RGB\) .*: ([0-9.]*) dB"
 
         patternPSNR = re.compile(patternPSNR)
-        patternTime = re.compile(".*: ([0-9.]*) .*: ([0-9.]*)")
+        patternTime = re.compile(".*[Cc]oding time:\s*([0-9.]*) s.*")
 
         # Extract results from the log
         runPSNR = None
@@ -136,7 +164,7 @@ class TestImage():
             match = patternTime.match(line)
             if match:
                 allTime = float(match.group(1))
-                runTime = float(match.group(2))
+                runTime = float(match.group(1))
 
         # Convert the callgrind log to an image
         if profile:
@@ -249,7 +277,8 @@ def main():
     codeTimes = []
     for _ in range(0, args.testRepeats + args.testWarmups):
         psnr, codeSecs, allSecs, output = \
-            image.run_once(app, args.block, args.profile, args.verbose)
+            image.run_once(app, args.block, args.profile, args.verbose,
+            args.useBinary == "new")
         codeTimes.append(codeSecs)
         allTimes.append(allSecs)
 
