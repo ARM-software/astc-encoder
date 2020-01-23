@@ -22,6 +22,8 @@
 # which is the default GCC behavior and true on currently shipping hardware.
 VEC?=avx2
 
+DBG?=0
+
 SOURCES = \
     astc_averages_and_directions.cpp \
     astc_block_sizes2.cpp \
@@ -60,12 +62,19 @@ HEADERS = \
 
 OBJECTS = $(SOURCES:.cpp=.o)
 
-CPPFLAGS = -std=c++14 -O3 -mfpmath=sse \
+CPPFLAGS = -std=c++14 -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the VEC parameter is a supported value, and patch CPPFLAGS
+ifeq ($(DBG),0)
+CPPFLAGS += -O3
+else
+CPPFLAGS += -O0 -g
+endif
+
+# Validate that the VEC parameter is a supported value, and patch CPPFLAGS
 ifeq ($(VEC),nointrin)
-CPPFLAGS +=  -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
+CPPFLAGS += -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse2)
 CPPFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
@@ -84,7 +93,7 @@ endif
 
 astcenc: $(OBJECTS)
 	@g++ -o $@ $^ $(CPPFLAGS) -lpthread
-	@echo "[Link] $@ (using $(VEC))"
+	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
 $(OBJECTS): %.o: %.cpp $(HEADERS)
 	@g++ -c -o $@ $< $(CPPFLAGS)
