@@ -357,8 +357,6 @@ void imageblock_initialize_deriv(
 	int i;
 
 	const float *fptr = pb->orig_data;
-	const float *wptr = pb->work_data;
-
 	for (i = 0; i < pixelcount; i++)
 	{
 		// compute derivatives for RGB first
@@ -420,7 +418,6 @@ void imageblock_initialize_deriv(
 		}
 
 		fptr += 4;
-		wptr += 4;
 		dptr += 1;
 	}
 }
