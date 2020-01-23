@@ -101,7 +101,7 @@ void prepare_angular_tables()
 // function to compute angular sums; then, from the
 // angular sums, compute alignment factor and offset.
 
-void compute_angular_offsets(
+static void compute_angular_offsets(
 	int samplecount,
 	const float* samples,
 	const float* sample_weights,

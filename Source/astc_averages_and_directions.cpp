@@ -198,9 +198,7 @@ void compute_averages_and_directions_3_components(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const float3* color_scalefactors,
-	int component1,
-	int component2,
-	int component3,
+	int omittedComponent,
 	float3* averages,
 	float3* directions
 ) {
@@ -212,37 +210,33 @@ void compute_averages_and_directions_3_components(
 	const float* data_vr;
 	const float* data_vg;
 	const float* data_vb;
-	if (component1 == 1 && component2 == 2 && component3 == 3)
+	if (omittedComponent == 0)
 	{
 		texel_weights = ewb->texel_weight_gba;
 		data_vr = blk->data_g;
 		data_vg = blk->data_b;
 		data_vb = blk->data_a;
 	}
-	else if (component1 == 0 && component2 == 2 && component3 == 3)
+	else if (omittedComponent == 1)
 	{
 		texel_weights = ewb->texel_weight_rba;
 		data_vr = blk->data_r;
 		data_vg = blk->data_b;
 		data_vb = blk->data_a;
 	}
-	else if (component1 == 0 && component2 == 1 && component3 == 3)
+	else if (omittedComponent == 2)
 	{
 		texel_weights = ewb->texel_weight_rga;
 		data_vr = blk->data_r;
 		data_vg = blk->data_g;
 		data_vb = blk->data_a;
 	}
-	else if (component1 == 0 && component2 == 1 && component3 == 2)
+	else
 	{
 		texel_weights = ewb->texel_weight_rgb;
 		data_vr = blk->data_r;
 		data_vg = blk->data_g;
 		data_vb = blk->data_b;
-	}
-	else
-	{
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	for (partition = 0; partition < partition_count; partition++)
@@ -459,12 +453,12 @@ void compute_error_squared_rgba(
 
 		// TODO: split up this loop due to too many temporaries; in particular,
 		// the six line functions will consume 18 vector registers
-		for(int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 
 			float texel_weight_rgba = ewb->texel_weight[iwt];
-			if(texel_weight_rgba > 1e-20f)
+			if (texel_weight_rgba > 1e-20f)
 			{
 				float4 dat = float4(blk->data_r[iwt],
 				                    blk->data_g[iwt],
@@ -503,7 +497,7 @@ void compute_error_squared_rgba(
 				                         (samechroma_param * l_samechroma.bis);
 				samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 
-				float3 red_dist = (l_red.amod - float3(dat.y, dat.z, dat.w )) +
+				float3 red_dist = (l_red.amod - float3(dat.y, dat.z, dat.w)) +
 				                  (separate_param.x * l_red.bis);
 				red_errorsum += dot(float3(ews.y, ews.z, ews.w), red_dist * red_dist);
 
@@ -643,7 +637,7 @@ void compute_error_squared_rgb(
 
 				float2 blue_dist = (l_blue.amod - float2(dat.x, dat.y)) +
 				                   (separate_param.z * l_blue.bis);
-				blue_errorsum += dot( float2(ews.x, ews.y), blue_dist * blue_dist );
+				blue_errorsum += dot(float2(ews.x, ews.y), blue_dist * blue_dist);
 			}
 		}
 

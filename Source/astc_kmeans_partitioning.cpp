@@ -27,7 +27,7 @@
 // algorithm similar to XKCD #221. (http://xkcd.com/221/)
 
 // cluster the texels using the k++ means clustering initialization algorithm.
-void kpp_initialize(
+static void kpp_initialize(
 	int xdim,
 	int ydim,
 	int zdim,
@@ -121,16 +121,16 @@ void kpp_initialize(
 	{
 		int center_sample = cluster_center_samples[i];
 		float4 color = float4(blk->data_r[center_sample],
-							  blk->data_g[center_sample],
-							  blk->data_b[center_sample],
-							  blk->data_a[center_sample]);
+		                      blk->data_g[center_sample],
+		                      blk->data_b[center_sample],
+		                      blk->data_a[center_sample]);
 		cluster_centers[i] = color;
 	}
 }
 
 // basic K-means clustering: given a set of cluster centers,
 // assign each texel to a partition
-void basic_kmeans_assign_pass(
+static void basic_kmeans_assign_pass(
 	int xdim,
 	int ydim,
 	int zdim,
@@ -210,7 +210,7 @@ void basic_kmeans_assign_pass(
 
 // basic k-means clustering: given a set of cluster assignments
 // for the texels, find the center position of each cluster.
-void basic_kmeans_update(
+static void basic_kmeans_update(
 	int xdim,
 	int ydim,
 	int zdim,
@@ -360,7 +360,7 @@ static inline int partition_mismatch4(
 	return MIN(x0, x1);
 }
 
-void count_partition_mismatch_bits(
+static void count_partition_mismatch_bits(
 	const block_size_descriptor* bsd,
 	int partition_count,
 	const uint64_t bitmaps[4],
@@ -422,7 +422,7 @@ void count_partition_mismatch_bits(
 
 // counting-sort on the mismatch-bits, thereby
 // sorting the partitions into an ordering.
-void get_partition_ordering_by_mismatch_bits(
+static void get_partition_ordering_by_mismatch_bits(
 	const int mismatch_bits[PARTITION_COUNT],
 	int partition_ordering[PARTITION_COUNT]
 ) {

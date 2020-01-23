@@ -497,9 +497,9 @@ static void compute_pixel_region_variance(
 				int y_high = y_src + alpha_kernel_radius + 1;
 
 				// Summed-area table lookups for alpha average
-				float vasum = VARBUF1(0, y_low,  x_low ).w
+				float vasum = VARBUF1(0, y_low,  x_low).w
 				            - VARBUF1(0, y_low,  x_high).w
-				            - VARBUF1(0, y_high, x_low ).w
+				            - VARBUF1(0, y_high, x_low).w
 				            + VARBUF1(0, y_high, x_high).w;
 
 				int out_index = y_dst * ydt + x_dst;

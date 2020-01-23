@@ -71,145 +71,145 @@ static void copy_scanline(
 ) {
 
 #define id(x) (x)
-#define u16_sf16(x) float_to_sf16( x * (1.0f/65535.0f), SF_NEARESTEVEN )
-#define f32_sf16(x) sf32_to_sf16( x, SF_NEARESTEVEN )
+#define u16_sf16(x) float_to_sf16(x * (1.0f/65535.0f), SF_NEARESTEVEN)
+#define f32_sf16(x) sf32_to_sf16(x, SF_NEARESTEVEN)
 
-#define COPY_R( dsttype, srctype, convfunc, oneval ) \
+#define COPY_R(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[i]); \
-		d[4*i+1] = 0; \
-		d[4*i+2] = 0; \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[i]); \
+			d[4*i+1] = 0; \
+			d[4*i+2] = 0; \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_RG( dsttype, srctype, convfunc, oneval ) \
+#define COPY_RG(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[2*i]); \
-		d[4*i+1] = convfunc(s[2*i+1]); \
-		d[4*i+2] = 0; \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[2*i]); \
+			d[4*i+1] = convfunc(s[2*i+1]); \
+			d[4*i+2] = 0; \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_RGB( dsttype, srctype, convfunc, oneval ) \
+#define COPY_RGB(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[3*i]); \
-		d[4*i+1] = convfunc(s[3*i+1]); \
-		d[4*i+2] = convfunc(s[3*i+2]); \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[3*i]); \
+			d[4*i+1] = convfunc(s[3*i+1]); \
+			d[4*i+2] = convfunc(s[3*i+2]); \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_BGR( dsttype, srctype, convfunc, oneval ) \
+#define COPY_BGR(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[3*i+2]); \
-		d[4*i+1] = convfunc(s[3*i+1]); \
-		d[4*i+2] = convfunc(s[3*i]); \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[3*i+2]); \
+			d[4*i+1] = convfunc(s[3*i+1]); \
+			d[4*i+2] = convfunc(s[3*i]); \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_RGBX( dsttype, srctype, convfunc, oneval ) \
+#define COPY_RGBX(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[4*i]); \
-		d[4*i+1] = convfunc(s[4*i+1]); \
-		d[4*i+2] = convfunc(s[4*i+2]); \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[4*i]); \
+			d[4*i+1] = convfunc(s[4*i+1]); \
+			d[4*i+2] = convfunc(s[4*i+2]); \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_BGRX( dsttype, srctype, convfunc, oneval ) \
+#define COPY_BGRX(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[4*i+2]); \
-		d[4*i+1] = convfunc(s[4*i+1]); \
-		d[4*i+2] = convfunc(s[4*i]); \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[4*i+2]); \
+			d[4*i+1] = convfunc(s[4*i+1]); \
+			d[4*i+2] = convfunc(s[4*i]); \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_RGBA( dsttype, srctype, convfunc, oneval ) \
+#define COPY_RGBA(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[4*i]); \
-		d[4*i+1] = convfunc(s[4*i+1]); \
-		d[4*i+2] = convfunc(s[4*i+2]); \
-		d[4*i+3] = convfunc(s[4*i+3]); \
+			d[4*i] = convfunc(s[4*i]); \
+			d[4*i+1] = convfunc(s[4*i+1]); \
+			d[4*i+2] = convfunc(s[4*i+2]); \
+			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_BGRA( dsttype, srctype, convfunc, oneval ) \
+#define COPY_BGRA(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[4*i+2]); \
-		d[4*i+1] = convfunc(s[4*i+1]); \
-		d[4*i+2] = convfunc(s[4*i]); \
-		d[4*i+3] = convfunc(s[4*i+3]); \
+			d[4*i] = convfunc(s[4*i+2]); \
+			d[4*i+1] = convfunc(s[4*i+1]); \
+			d[4*i+2] = convfunc(s[4*i]); \
+			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_L( dsttype, srctype, convfunc, oneval ) \
+#define COPY_L(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[i]); \
-		d[4*i+1] = convfunc(s[i]); \
-		d[4*i+2] = convfunc(s[i]); \
-		d[4*i+3] = oneval; \
+			d[4*i] = convfunc(s[i]); \
+			d[4*i+1] = convfunc(s[i]); \
+			d[4*i+2] = convfunc(s[i]); \
+			d[4*i+3] = oneval; \
 		} \
 	} while(0); \
 	break;
 
-#define COPY_LA( dsttype, srctype, convfunc, oneval ) \
+#define COPY_LA(dsttype, srctype, convfunc, oneval) \
 	do { \
-	srctype *s = (srctype *)src; \
-	dsttype *d = (dsttype *)dst; \
-	for(i=0;i<pixels;i++)\
+		srctype *s = (srctype *)src; \
+		dsttype *d = (dsttype *)dst; \
+		for (i=0;i<pixels;i++)\
 		{\
-		d[4*i] = convfunc(s[2*i]); \
-		d[4*i+1] = convfunc(s[2*i]); \
-		d[4*i+2] = convfunc(s[2*i]); \
-		d[4*i+3] = convfunc(s[2*i+1]); \
+			d[4*i] = convfunc(s[2*i]); \
+			d[4*i+1] = convfunc(s[2*i]); \
+			d[4*i+2] = convfunc(s[2*i]); \
+			d[4*i+3] = convfunc(s[2*i+1]); \
 		} \
 	} while(0); \
 	break;
@@ -330,7 +330,7 @@ static void switch_endianness4(
 	}
 }
 
-uint32_t u32_byterev(uint32_t v)
+static uint32_t u32_byterev(uint32_t v)
 {
 	return (v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24);
 }
@@ -415,7 +415,7 @@ uint8_t ktx_magic[12] = {
 
 static void ktx_header_switch_endianness(ktx_header * kt)
 {
-	#define REV(x) kt->x = u32_byterev( kt->x )
+	#define REV(x) kt->x = u32_byterev(kt->x)
 	REV(endianness);
 	REV(gl_type);
 	REV(gl_type_size);

@@ -349,7 +349,7 @@ astc_codec_image* load_tga_image(
 		delete[]row_pointers8;
 		retval = bytesperpixel;
 	}
-	else						// if( bitness == 16 )
+	else						// if (bitness == 16)
 	{
 		for (y = 0; y < ysize; y++)
 		{

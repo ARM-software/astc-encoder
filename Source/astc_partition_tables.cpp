@@ -95,7 +95,7 @@ static void partition_table_zap_equal_elements(
 	delete[]canonicalizeds;
 }
 
-uint32_t hash52(uint32_t inp)
+static uint32_t hash52(uint32_t inp)
 {
 	inp ^= inp >> 15;
 
@@ -109,7 +109,7 @@ uint32_t hash52(uint32_t inp)
 	return inp;
 }
 
-int select_partition(
+static int select_partition(
 	int seed,
 	int x,
 	int y,
@@ -214,7 +214,7 @@ int select_partition(
 	return partition;
 }
 
-void generate_one_partition_table(
+static void generate_one_partition_table(
 	const block_size_descriptor* bsd,
 	int partition_count,
 	int partition_index,

@@ -318,7 +318,7 @@ void compute_error_metrics(
 		if (rgb_num == 0.0f)
 			rgb_psnr = 999.0f;
 		else
-			rgb_psnr = 10.0f * log10f( pixels * 3.0f / rgb_num);
+			rgb_psnr = 10.0f * log10f(pixels * 3.0f / rgb_num);
 		printf("PSNR (LDR-RGB):          %9.6f dB\n", (double)rgb_psnr);
 	}
 	else

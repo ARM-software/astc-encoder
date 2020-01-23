@@ -38,7 +38,7 @@ static inline int cqt_lookup(
 	return color_quantization_tables[quantization_level][value];
 }
 
-void quantize_rgb(
+static void quantize_rgb(
 	float4 color0,	// LDR: 0=lowest, 255=highest
 	float4 color1,
 	int output[6],
@@ -89,7 +89,7 @@ void quantize_rgb(
 }
 
 /* quantize an RGBA color. */
-void quantize_rgba(
+static void quantize_rgba(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -110,7 +110,7 @@ void quantize_rgba(
 }
 
 /* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
-int try_quantize_rgb_blue_contract(
+static int try_quantize_rgb_blue_contract(
 	float4 color0,	// assumed to be the smaller color
 	float4 color1,	// assumed to be the larger color
 	int output[6],
@@ -178,7 +178,7 @@ int try_quantize_rgb_blue_contract(
 }
 
 /* quantize an RGBA color with blue-contraction */
-int try_quantize_rgba_blue_contract(
+static int try_quantize_rgba_blue_contract(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -204,7 +204,7 @@ int try_quantize_rgba_blue_contract(
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
 /* attempt to quantize an RGB endpoint value with delta-encoding. */
-int try_quantize_rgb_delta(
+static int try_quantize_rgb_delta(
 	float4 color0,
 	float4 color1,
 	int output[6],
@@ -323,7 +323,7 @@ int try_quantize_rgb_delta(
 	return 1;
 }
 
-int try_quantize_rgb_delta_blue_contract(
+static int try_quantize_rgb_delta_blue_contract(
 	float4 color0,
 	float4 color1,
 	int output[6],
@@ -454,7 +454,7 @@ int try_quantize_rgb_delta_blue_contract(
 	return 1;
 }
 
-int try_quantize_alpha_delta(
+static int try_quantize_alpha_delta(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -562,7 +562,7 @@ int try_quantize_luminance_alpha_delta(
 	return 1;
 }
 
-int try_quantize_rgba_delta(
+static int try_quantize_rgba_delta(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -576,7 +576,7 @@ int try_quantize_rgba_delta(
 	return try_quantize_rgb_delta(color0, color1, output, quantization_level);
 }
 
-int try_quantize_rgba_delta_blue_contract(
+static int try_quantize_rgba_delta_blue_contract(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -592,7 +592,7 @@ int try_quantize_rgba_delta_blue_contract(
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quantization_level);
 }
 
-void quantize_rgbs_new(
+static void quantize_rgbs_new(
 	float4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
 	int output[4],
 	int quantization_level
@@ -626,7 +626,7 @@ void quantize_rgbs_new(
 	output[3] = color_quantization_tables[quantization_level][scale_idx];
 }
 
-void quantize_rgbs_alpha_new(
+static void quantize_rgbs_alpha_new(
 	float4 color0,
 	float4 color1,
 	float4 rgbs_color,
@@ -648,7 +648,7 @@ void quantize_rgbs_alpha_new(
 	quantize_rgbs_new(rgbs_color, output, quantization_level);
 }
 
-void quantize_luminance(
+static void quantize_luminance(
 	float4 color0,
 	float4 color1,
 	int output[2],
@@ -676,7 +676,7 @@ void quantize_luminance(
 	output[1] = color_quantization_tables[quantization_level][astc::flt2int_rtn(lum1)];
 }
 
-void quantize_luminance_alpha(
+static void quantize_luminance_alpha(
 	float4 color0,
 	float4 color1,
 	int output[4],
@@ -804,7 +804,7 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 }
 
 /* HDR color encoding, take #3 */
-void quantize_hdr_rgbo3(
+static void quantize_hdr_rgbo3(
 	float4 color,
 	int output[4],
 	int quantization_level
@@ -1162,7 +1162,7 @@ void quantize_hdr_rgbo3(
 	return;
 }
 
-void quantize_hdr_rgb3(
+static void quantize_hdr_rgb3(
 	float4 color0,
 	float4 color1,
 	int output[6],
@@ -1561,7 +1561,7 @@ void quantize_hdr_rgb3(
 	return;
 }
 
-void quantize_hdr_rgb_ldr_alpha3(
+static void quantize_hdr_rgb_ldr_alpha3(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -1581,7 +1581,7 @@ void quantize_hdr_rgb_ldr_alpha3(
 	output[7] = ai1;
 }
 
-void quantize_hdr_luminance_large_range3(
+static void quantize_hdr_luminance_large_range3(
 	float4 color0,
 	float4 color1,
 	int output[2],
@@ -1660,7 +1660,7 @@ void quantize_hdr_luminance_large_range3(
 	output[1] = color_quantization_tables[quantization_level][v1];
 }
 
-int try_quantize_hdr_luminance_small_range3(
+static int try_quantize_hdr_luminance_small_range3(
 	float4 color0,
 	float4 color1,
 	int output[2],
@@ -1760,7 +1760,7 @@ LOW_PRECISION_SUBMODE:
 	return 1;
 }
 
-void quantize_hdr_alpha3(
+static void quantize_hdr_alpha3(
 	float alpha0,
 	float alpha1,
 	int output[2],
@@ -1835,7 +1835,7 @@ void quantize_hdr_alpha3(
 	return;
 }
 
-void quantize_hdr_rgb_alpha3(
+static void quantize_hdr_rgb_alpha3(
 	float4 color0,
 	float4 color1,
 	int output[8],
@@ -1930,27 +1930,21 @@ int pack_color_endpoints(
 
 	case FMT_RGB_SCALE:
 		quantize_rgbs_new(rgbs_color, output, quantization_level);
-		// quantize_rgbs( color0, color1, output, quantization_level );
 		retval = FMT_RGB_SCALE;
 		break;
 
 	case FMT_HDR_RGB_SCALE:
 		quantize_hdr_rgbo3(rgbo_color, output, quantization_level);
-
-		// quantize_hdr_rgb_scale( rgbo_color, output, quantization_level );
 		retval = FMT_HDR_RGB_SCALE;
 		break;
 
 	case FMT_HDR_RGB:
 		quantize_hdr_rgb3(color0, color1, output, quantization_level);
-
-		// quantize_hdr_rgb_rgba( color0, color1, 0, output, quantization_level );
 		retval = FMT_HDR_RGB;
 		break;
 
 	case FMT_RGB_SCALE_ALPHA:
 		quantize_rgbs_alpha_new(color0, color1, rgbs_color, output, quantization_level);
-		// quantize_rgbs_alpha( color0, color1, output, quantization_level );
 		retval = FMT_RGB_SCALE_ALPHA;
 		break;
 

@@ -1127,7 +1127,7 @@ const float *get_2d_percentile_table(
 		int accum = apt->initial_percs[i];
 		const uint16_t *item_ptr = apt->items[i];
 
-		for(int j = 0; j < itemcount; j++)
+		for (int j = 0; j < itemcount; j++)
 		{
 			uint16_t item = item_ptr[j];
 			int idx = item & 0x7FF;

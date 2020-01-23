@@ -49,7 +49,7 @@ static inline int read_bits(
 	return value;
 }
 
-int bitrev8(int p)
+static inline int bitrev8(int p)
 {
 	p = ((p & 0xF) << 4) | ((p >> 4) & 0xF);
 	p = ((p & 0x33) << 2) | ((p >> 2) & 0x33);

@@ -15,7 +15,7 @@
 
 #include <stdio.h>
 
-int compute_value_of_texel_int(
+static int compute_value_of_texel_int(
 	int texel_to_get,
 	const decimation_table* it,
 	const int* weights
@@ -30,7 +30,7 @@ int compute_value_of_texel_int(
 	return summed_value >> 4;
 }
 
-uint4 lerp_color_int(
+static uint4 lerp_color_int(
 	astc_decode_mode decode_mode,
 	uint4 color0,
 	uint4 color1,

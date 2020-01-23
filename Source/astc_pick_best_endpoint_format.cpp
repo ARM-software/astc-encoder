@@ -903,7 +903,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 		best_error_weights[i] = best_error_index;
 
-		if(best_error_index >= 0)
+		if (best_error_index >= 0)
 		{
 			errors_of_best_combination[best_error_index] = 1e30f;
 		}

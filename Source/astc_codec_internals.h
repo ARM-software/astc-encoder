@@ -185,6 +185,11 @@ struct imageblock
 	int xpos, ypos, zpos;
 };
 
+static inline int imageblock_uses_alpha(const imageblock * pb)
+{
+	return pb->alpha_max != pb->alpha_min;
+}
+
 struct error_weighting_params
 {
 	float rgb_power;
@@ -505,9 +510,7 @@ void compute_averages_and_directions_3_components(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const float3 * color_scalefactors,
-	int component1,
-	int component2,
-	int component3,
+	int omittedComponent,
 	float3* averages,
 	float3* directions);
 
@@ -803,16 +806,6 @@ float compute_error_of_weight_set(
 	const decimation_table* it,
 	const float *weights);
 
-float compute_value_of_texel_flt(
-	int texel_to_get,
-	const decimation_table * it,
-	const float *weights);
-
-int compute_value_of_texel_int(
-	int texel_to_get,
-	const decimation_table* it,
-	const int* weights);
-
 void merge_endpoints(
 	const endpoints* ep1,	// contains three of the color components
 	const endpoints* ep2,	// contains the remaining color component
@@ -958,21 +951,6 @@ float compress_symbolic_block(
 	const imageblock* blk,
 	symbolic_compressed_block* scb,
 	compress_symbolic_block_buffers* tmpbuf);
-
-float4 lerp_color_flt(
-	const float4 color0,
-	const float4 color1,
-	float weight,	// 0..1
-	float plane2_weight,	// 0..1
-	int plane2_color_component);	// 0..3; -1 if only one plane of weights is present.
-
-uint4 lerp_color_int(
-	astc_decode_mode decode_mode,
-	uint4 color0,
-	uint4 color1,
-	int weight,	// 0..64
-	int plane2_weight,	// 0..64
-	int plane2_color_component); // 0..3; -1 if only one plane of weights is present.
 
 void decompress_symbolic_block(
 	astc_decode_mode decode_mode,

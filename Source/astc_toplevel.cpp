@@ -107,9 +107,9 @@ astc_codec_image *load_astc_file(
 	int ydim = hdr.blockdim_y;
 	int zdim = hdr.blockdim_z;
 
-	if ( (xdim < 3 || xdim > 6 || ydim < 3 || ydim > 6 || zdim < 3 || zdim > 6) &&
-	     (xdim < 4 || xdim == 7 || xdim == 9 || xdim == 11 || xdim > 12 ||
-	      ydim < 4 || ydim == 7 || ydim == 9 || ydim == 11 || ydim > 12 || zdim != 1) )
+	if ((xdim < 3 || xdim > 6 || ydim < 3 || ydim > 6 || zdim < 3 || zdim > 6) &&
+	    (xdim < 4 || xdim == 7 || xdim == 9 || xdim == 11 || xdim > 12 ||
+	     ydim < 4 || ydim == 7 || ydim == 9 || ydim == 11 || ydim > 12 || zdim != 1))
 	{
 		fclose(f);
 		printf("File %s not recognized %d %d %d\n", filename, xdim, ydim, zdim);
@@ -185,7 +185,7 @@ struct encode_astc_image_info
 	astc_codec_image* output_image;
 };
 
-void encode_astc_image_threadfunc(
+static void encode_astc_image_threadfunc(
 	int thread_count,
 	int thread_id,
 	void* vblk
@@ -290,7 +290,7 @@ void encode_astc_image_threadfunc(
 	delete   temp_buffers.ewb;
 }
 
-void encode_astc_image(
+static void encode_astc_image(
 	const astc_codec_image* input_image,
 	astc_codec_image* output_image,
 	int xdim,
@@ -325,7 +325,7 @@ void encode_astc_image(
 	delete bsd;
 }
 
-void store_astc_file(
+static void store_astc_file(
 	const astc_codec_image* input_image,
 	const char* filename,
 	int xdim,
@@ -383,7 +383,7 @@ void store_astc_file(
 	free(buffer);
 }
 
-astc_codec_image *pack_and_unpack_astc_image(
+static astc_codec_image *pack_and_unpack_astc_image(
 	const astc_codec_image* input_image,
 	int xdim,
 	int ydim,
@@ -401,7 +401,7 @@ astc_codec_image *pack_and_unpack_astc_image(
 
 	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
 
-	/* allocate_output_image_space( bitness, xsize, ysize, zsize ); */
+	/* allocate_output_image_space (bitness, xsize, ysize, zsize); */
 	int xblocks = (xsize + xdim - 1) / xdim;
 	int yblocks = (ysize + ydim - 1) / ydim;
 	int zblocks = (zsize + zdim - 1) / zdim;
@@ -417,7 +417,7 @@ astc_codec_image *pack_and_unpack_astc_image(
 	return img;
 }
 
-void compare_two_files(
+static void compare_two_files(
 	const char* filename1,
 	const char* filename2,
 	int low_fstop,
@@ -460,7 +460,7 @@ void compare_two_files(
 
 // TODO: Move to mathlib
 volatile float xprec_testval = 2.51f;
-void test_inappropriate_extended_precision()
+static void test_inappropriate_extended_precision()
 {
 	if32 p;
 	p.f = xprec_testval + 12582912.0f;
@@ -470,39 +470,6 @@ void test_inappropriate_extended_precision()
 		printf("Single-precision test failed; please recompile with proper IEEE-754 support.\n");
 		exit(1);
 	}
-}
-
-// Debug routine to dump the entire image if requested.
-void dump_image(astc_codec_image * img)
-{
-	int x, y, z, xdim, ydim, zdim;
-
-	printf("\n\nDumping image ( %d x %d x %d + %d)...\n\n", img->xsize, img->ysize, img->zsize, img->padding);
-
-	if (img->zsize != 1)
-		zdim = img->zsize + 2 * img->padding;
-	else
-		zdim = img->zsize;
-
-	ydim = img->ysize + 2 * img->padding;
-	xdim = img->xsize + 2 * img->padding;
-
-	for (z = 0; z < zdim; z++)
-	{
-		if (z != 0)
-			printf("\n\n");
-		for (y = 0; y < ydim; y++)
-		{
-			if (y != 0)
-				printf("\n");
-
-			for (x = 0; x < xdim; x++)
-			{
-				printf("  0x%08X", *(int unsigned *)&img->data8[z][y][x]);
-			}
-		}
-	}
-	printf("\n\n");
 }
 
 int astc_main(
@@ -693,8 +660,8 @@ int astc_main(
 				zdim_3d = 1;
 
 				// Check 2D constraints
-				if(!(xdim_3d ==4 || xdim_3d == 5 || xdim_3d == 6 || xdim_3d == 8 || xdim_3d == 10 || xdim_3d == 12) ||
-					!(ydim_3d ==4 || ydim_3d == 5 || ydim_3d == 6 || ydim_3d == 8 || ydim_3d == 10 || ydim_3d == 12) )
+				if (!(xdim_3d ==4 || xdim_3d == 5 || xdim_3d == 6 || xdim_3d == 8 || xdim_3d == 10 || xdim_3d == 12) ||
+				    !(ydim_3d ==4 || ydim_3d == 5 || ydim_3d == 6 || ydim_3d == 8 || ydim_3d == 10 || ydim_3d == 12))
 				{
 					printf("Block dimensions %d x %d unsupported\n", xdim_3d, ydim_3d);
 					return 1;
@@ -703,7 +670,7 @@ int astc_main(
 				int is_legal_2d = (xdim_3d==ydim_3d) || (xdim_3d==ydim_3d+1) || ((xdim_3d==ydim_3d+2) && !(xdim_3d==6 && ydim_3d==4)) ||
 									(xdim_3d==8 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==6);
 
-				if(!is_legal_2d)
+				if (!is_legal_2d)
 				{
 					printf("Block dimensions %d x %d disallowed\n", xdim_3d, ydim_3d);
 					return 1;
@@ -713,7 +680,7 @@ int astc_main(
 		default:
 			{
 				// Check 3D constraints
-				if(xdim_3d < 3 || xdim_3d > 6 || ydim_3d < 3 || ydim_3d > 6 || zdim_3d < 3 || zdim_3d > 6)
+				if (xdim_3d < 3 || xdim_3d > 6 || ydim_3d < 3 || ydim_3d > 6 || zdim_3d < 3 || zdim_3d > 6)
 				{
 					printf("Block dimensions %d x %d x %d unsupported\n", xdim_3d, ydim_3d, zdim_3d);
 					return 1;
@@ -721,7 +688,7 @@ int astc_main(
 
 				int is_legal_3d = ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d+1)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d+1));
 
-				if(!is_legal_3d)
+				if (!is_legal_3d)
 				{
 					printf("Block dimensions %d x %d x %d disallowed\n", xdim_3d, ydim_3d, zdim_3d);
 					return 1;
@@ -984,7 +951,7 @@ int astc_main(
 		}
 		else if (!strcmp(argv[argidx], "-hdra"))
 		{
-			if(decode_mode != DECODE_HDR)
+			if (decode_mode != DECODE_HDR)
 			{
 				printf("The option -hdra is only available in HDR mode\n");
 				return 1;
@@ -1005,7 +972,7 @@ int astc_main(
 		}
 		else if (!strcmp(argv[argidx], "-hdr"))
 		{
-			if(decode_mode != DECODE_HDR)
+			if (decode_mode != DECODE_HDR)
 			{
 				printf("The option -hdr is only available in HDR mode\n");
 				return 1;

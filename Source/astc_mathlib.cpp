@@ -92,7 +92,7 @@ float astc::log2(float val)
 {
 	if32 p;
 	p.f = val;
-	if( p.s < 0x800000 )
+	if (p.s < 0x800000)
 		p.s = 0x800000; // negative, 0, denormal get clamped to non-denormal.
 
 	// normalize mantissa to range [0.66, 1.33] and extract an exponent
@@ -123,8 +123,10 @@ float astc::log2(float val)
 }
 
 /* Public function, see header file for detailed documentation */
-float astc::atan2(float y, float x)
-{
+float astc::atan2(
+	float y,
+	float x
+) {
 	const float PI = (float)M_PI;
 	const float PI_2 = PI / 2.f;
 

@@ -13,7 +13,7 @@
 
 #include "astc_codec_internals.h"
 
-int rgb_delta_unpack(
+static int rgb_delta_unpack(
 	const int input[6],
 	int quantization_level,
 	uint4* output0,
@@ -128,7 +128,7 @@ int rgb_delta_unpack(
 	return retval;
 }
 
-int rgb_unpack(
+static int rgb_unpack(
 	const int input[6],
 	int quantization_level,
 	uint4* output0,
@@ -175,7 +175,7 @@ int rgb_unpack(
 	}
 }
 
-void rgba_unpack(
+static void rgba_unpack(
 	const int input[8],
 	int quantization_level,
 	uint4* output0,
@@ -194,7 +194,7 @@ void rgba_unpack(
 	}
 }
 
-void rgba_delta_unpack(
+static void rgba_delta_unpack(
 	const int input[8],
 	int quantization_level,
 	uint4* output0,
@@ -228,7 +228,7 @@ void rgba_delta_unpack(
 	}
 }
 
-void rgb_scale_unpack(
+static void rgb_scale_unpack(
 	const int input[4],
 	int quantization_level,
 	uint4* output0,
@@ -244,7 +244,7 @@ void rgb_scale_unpack(
 	*output0 = uint4((ir * iscale) >> 8, (ig * iscale) >> 8, (ib * iscale) >> 8, 255);
 }
 
-void rgb_scale_alpha_unpack(
+static void rgb_scale_alpha_unpack(
 	const int input[6],
 	int quantization_level,
 	uint4 * output0,
@@ -255,7 +255,7 @@ void rgb_scale_alpha_unpack(
 	output1->w = color_unquantization_tables[quantization_level][input[5]];
 }
 
-void luminance_unpack(
+static void luminance_unpack(
 	const int input[2],
 	int quantization_level,
 	uint4* output0,
@@ -267,7 +267,7 @@ void luminance_unpack(
 	*output1 = uint4(lum1, lum1, lum1, 255);
 }
 
-void luminance_delta_unpack(
+static void luminance_delta_unpack(
 	const int input[2],
 	int quantization_level,
 	uint4* output0,
@@ -285,7 +285,7 @@ void luminance_delta_unpack(
 	*output1 = uint4(l1, l1, l1, 255);
 }
 
-void luminance_alpha_unpack(
+static void luminance_alpha_unpack(
 	const int input[4],
 	int quantization_level,
 	uint4* output0,
@@ -299,7 +299,7 @@ void luminance_alpha_unpack(
 	*output1 = uint4(lum1, lum1, lum1, alpha1);
 }
 
-void luminance_alpha_delta_unpack(
+static void luminance_alpha_delta_unpack(
 	const int input[4],
 	int quantization_level,
 	uint4* output0,
@@ -341,7 +341,7 @@ void luminance_alpha_delta_unpack(
 }
 
 // RGB-offset format
-void hdr_rgbo_unpack3(
+static void hdr_rgbo_unpack3(
 	const int input[4],
 	int quantization_level,
 	uint4* output0,
@@ -485,7 +485,7 @@ void hdr_rgbo_unpack3(
 	*output1 = uint4(red << 4, green << 4, blue << 4, 0x7800);
 }
 
-void hdr_rgb_unpack3(
+static void hdr_rgb_unpack3(
 	const int input[6],
 	int quantization_level,
 	uint4* output0,
@@ -663,7 +663,7 @@ void hdr_rgb_unpack3(
 	*output1 = uint4(red1 << 4, green1 << 4, blue1 << 4, 0x7800);
 }
 
-void hdr_rgb_ldr_alpha_unpack3(
+static void hdr_rgb_ldr_alpha_unpack3(
 	const int input[8],
 	int quantization_level,
 	uint4* output0,
@@ -677,7 +677,7 @@ void hdr_rgb_ldr_alpha_unpack3(
 	output1->w = v7;
 }
 
-void hdr_luminance_small_range_unpack(
+static void hdr_luminance_small_range_unpack(
 	const int input[2],
 	int quantization_level,
 	uint4* output0,
@@ -706,7 +706,7 @@ void hdr_luminance_small_range_unpack(
 	*output1 = uint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
 }
 
-void hdr_luminance_large_range_unpack(
+static void hdr_luminance_large_range_unpack(
 	const int input[2],
 	int quantization_level,
 	uint4* output0,
@@ -730,7 +730,7 @@ void hdr_luminance_large_range_unpack(
 	*output1 = uint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
 }
 
-void hdr_alpha_unpack(
+static void hdr_alpha_unpack(
 	const int input[2],
 	int quantization_level,
 	int *a0,

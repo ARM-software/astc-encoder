@@ -247,7 +247,7 @@ static inline float srgb_transform(float val)
  */
 static inline float flt_rte(float val)
 {
-#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+#if (ASTC_SSE >= 42)
 	const int flag = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
 	__m128 tmp = _mm_set_ss(val);
 	tmp = _mm_round_ss(tmp, tmp, flag);
@@ -266,7 +266,7 @@ static inline float flt_rte(float val)
  */
 static inline float flt_rd(float val)
 {
-#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+#if (ASTC_SSE >= 42)
 	const int flag = _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC;
 	__m128 tmp = _mm_set_ss(val);
 	tmp = _mm_round_ss(tmp, tmp, flag);

@@ -38,9 +38,9 @@ void destroy_image(astc_codec_image * img)
 
 	if (img->input_averages)
 		delete[] img->input_averages;
-	if (img->input_variances )
+	if (img->input_variances)
 		delete[] img->input_variances;
-	if (img->input_alpha_averages )
+	if (img->input_alpha_averages)
 		delete[] img->input_alpha_averages;
 
 	delete img;
@@ -244,7 +244,7 @@ int determine_image_channels(const astc_codec_image * img)
 			}
 		}
 	}
-	else						// if( bitness == 16 )
+	else						// if (bitness == 16)
 	{
 		alpha_mask_ref = 0xFFFF;
 		alpha_mask = 0xFFFF;

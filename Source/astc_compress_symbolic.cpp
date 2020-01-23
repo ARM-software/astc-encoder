@@ -91,14 +91,14 @@ static int realign_weights(
 			// Compute the endpoint delta for all channels in current plane
 			int4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
 
-			if (plane_mask & 1 ) epd.x = 0;
-			if (plane_mask & 2 ) epd.y = 0;
-			if (plane_mask & 4 ) epd.z = 0;
-			if (plane_mask & 8 ) epd.w = 0;
+			if (plane_mask & 1) epd.x = 0;
+			if (plane_mask & 2) epd.y = 0;
+			if (plane_mask & 4) epd.z = 0;
+			if (plane_mask & 8) epd.w = 0;
 
 			endpnt0f[pa_idx] = float4((float)endpnt0[pa_idx].x, (float)endpnt0[pa_idx].y,
-			                          (float)endpnt0[pa_idx].z, (float)endpnt0[pa_idx].w );
-			offset[pa_idx] = float4((float)epd.x, (float)epd.y, (float)epd.z, (float)epd.w );
+			                          (float)endpnt0[pa_idx].z, (float)endpnt0[pa_idx].w);
+			offset[pa_idx] = float4((float)epd.x, (float)epd.y, (float)epd.z, (float)epd.w);
 			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
 		}
 
@@ -170,7 +170,7 @@ static int realign_weights(
 				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
 				adjustments++;
 			}
-			else if(down_error < current_error )
+			else if (down_error < current_error)
 			{
 				uq_pl_weights[we_idx] = prev_wt_uq;
 				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
@@ -250,10 +250,10 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 
 		float4 ep = float4(
-			(1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x ),
-			(1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y ),
-			(1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z ),
-			(1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w ));
+			(1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x),
+			(1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y),
+			(1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z),
+			(1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w));
 
 		if (ep.x > 0.5f && ep.x < min_ep.x)
 			min_ep.x = ep.x;
@@ -507,10 +507,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		#endif
 
 		float4 ep1 = float4(
-			(1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x ),
-			(1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y ),
-			(1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z ),
-			(1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w ));
+			(1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x),
+			(1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y),
+			(1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z),
+			(1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w));
 
 		if (ep1.x > 0.5f && ep1.x < min_ep1.x)
 			min_ep1.x = ep1.x;
@@ -522,10 +522,10 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 			min_ep1.w = ep1.w;
 
 		float4 ep2 = float4(
-			(1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x ),
-			(1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y ),
-			(1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z ),
-			(1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w ));
+			(1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x),
+			(1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y),
+			(1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z),
+			(1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w));
 
 		if (ep2.x > 0.5f && ep2.x < min_ep2.x)
 			min_ep2.x = ep2.x;

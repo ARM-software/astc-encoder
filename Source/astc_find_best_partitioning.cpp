@@ -47,11 +47,6 @@
 	#include <stdio.h>
 #endif
 
-int imageblock_uses_alpha(const imageblock * pb)
-{
-	return pb->alpha_max != pb->alpha_min;
-}
-
 static void compute_alpha_minmax(
 	int texels_per_block,
 	const partition_info* pt,
@@ -370,7 +365,7 @@ void find_best_partitionings(
 
 				separate_blue_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].w);
 				float3 dirs_rga = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].w);
-				if (dot(dirs_rga, dirs_rga ) == 0.0f)
+				if (dot(dirs_rga, dirs_rga) == 0.0f)
 					separate_blue_lines[j].b = normalize(float3(1, 1, 1));
 				else
 					separate_blue_lines[j].b = normalize(dirs_rga);
