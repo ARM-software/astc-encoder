@@ -48,18 +48,18 @@ void kpp_initialize(
 
 	// compute the distance to the first point.
 	int sample = cluster_center_samples[0];
-	float4 center_color = float4(blk->work_data[4 * sample],
-								 blk->work_data[4 * sample + 1],
-								 blk->work_data[4 * sample + 2],
-								 blk->work_data[4 * sample + 3]);
+	float4 center_color = float4(blk->data_r[sample],
+								 blk->data_g[sample],
+								 blk->data_b[sample],
+								 blk->data_a[sample]);
 
 	float distance_sum = 0.0f;
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float4 color = float4(blk->work_data[4 * i],
-							  blk->work_data[4 * i + 1],
-							  blk->work_data[4 * i + 2],
-							  blk->work_data[4 * i + 3]);
+		float4 color = float4(blk->data_r[i],
+							  blk->data_g[i],
+							  blk->data_b[i],
+							  blk->data_a[i]);
 		float4 diff = color - center_color;
 		float distance = dot(diff, diff);
 		distance_sum += distance;
@@ -96,15 +96,18 @@ void kpp_initialize(
 			break;
 
 		// update the distances with the new point.
-		center_color = float4(blk->work_data[4 * sample], blk->work_data[4 * sample + 1], blk->work_data[4 * sample + 2], blk->work_data[4 * sample + 3]);
+		center_color = float4(blk->data_r[sample],
+		                      blk->data_g[sample],
+		                      blk->data_b[sample],
+		                      blk->data_a[sample]);
 
 		distance_sum = 0.0f;
 		for (i = 0; i < texels_per_block; i++)
 		{
-			float4 color = float4(blk->work_data[4 * i],
-								  blk->work_data[4 * i + 1],
-								  blk->work_data[4 * i + 2],
-								  blk->work_data[4 * i + 3]);
+			float4 color = float4(blk->data_r[i],
+			                      blk->data_g[i],
+			                      blk->data_b[i],
+			                      blk->data_a[i]);
 			float4 diff = color - center_color;
 			float distance = dot(diff, diff);
 			distance = MIN(distance, distances[i]);
@@ -117,10 +120,10 @@ void kpp_initialize(
 	for (i = 0; i < partition_count; i++)
 	{
 		int center_sample = cluster_center_samples[i];
-		float4 color = float4(blk->work_data[4 * center_sample],
-							  blk->work_data[4 * center_sample + 1],
-							  blk->work_data[4 * center_sample + 2],
-							  blk->work_data[4 * center_sample + 3]);
+		float4 color = float4(blk->data_r[center_sample],
+							  blk->data_g[center_sample],
+							  blk->data_b[center_sample],
+							  blk->data_a[center_sample]);
 		cluster_centers[i] = color;
 	}
 }
@@ -150,10 +153,10 @@ void basic_kmeans_assign_pass(
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float4 color = float4(blk->work_data[4 * i],
-							  blk->work_data[4 * i + 1],
-							  blk->work_data[4 * i + 2],
-							  blk->work_data[4 * i + 3]);
+		float4 color = float4(blk->data_r[i],
+							  blk->data_g[i],
+							  blk->data_b[i],
+							  blk->data_a[i]);
 		float4 diff = color - cluster_centers[0];
 		float distance = dot(diff, diff);
 		distances[i] = distance;
@@ -166,10 +169,10 @@ void basic_kmeans_assign_pass(
 
 		for (i = 0; i < texels_per_block; i++)
 		{
-			float4 color = float4(blk->work_data[4 * i],
-								  blk->work_data[4 * i + 1],
-								  blk->work_data[4 * i + 2],
-								  blk->work_data[4 * i + 3]);
+			float4 color = float4(blk->data_r[i],
+								  blk->data_g[i],
+								  blk->data_b[i],
+								  blk->data_a[i]);
 			float4 diff = color - center_color;
 			float distance = dot(diff, diff);
 			if (distance < distances[i])
@@ -232,10 +235,10 @@ void basic_kmeans_update(
 	// first, find the center-of-gravity in each cluster
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float4 color = float4(blk->work_data[4 * i],
-							  blk->work_data[4 * i + 1],
-							  blk->work_data[4 * i + 2],
-							  blk->work_data[4 * i + 3]);
+		float4 color = float4(blk->data_r[i],
+							  blk->data_g[i],
+							  blk->data_b[i],
+							  blk->data_a[i]);
 		int part = partition_of_texel[i];
 		color_sum[part] = color_sum[part] + color;
 		weight_sum[part]++;

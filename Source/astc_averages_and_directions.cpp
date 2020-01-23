@@ -49,10 +49,10 @@ void compute_averages_and_directions_rgba(
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-			float4 texel_datum = float4(blk->work_data[4 * iwt],
-										blk->work_data[4 * iwt + 1],
-										blk->work_data[4 * iwt + 2],
-										blk->work_data[4 * iwt + 3]) * weight;
+			float4 texel_datum = float4(blk->data_r[iwt],
+										blk->data_g[iwt],
+										blk->data_b[iwt],
+										blk->data_a[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -70,10 +70,10 @@ void compute_averages_and_directions_rgba(
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-			float4 texel_datum = float4(blk->work_data[4 * iwt],
-										blk->work_data[4 * iwt + 1],
-										blk->work_data[4 * iwt + 2],
-										blk->work_data[4 * iwt + 3]);
+			float4 texel_datum = float4(blk->data_r[iwt],
+										blk->data_g[iwt],
+										blk->data_b[iwt],
+										blk->data_a[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -139,9 +139,9 @@ void compute_averages_and_directions_rgb(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->work_data[4 * iwt],
-										blk->work_data[4 * iwt + 1],
-										blk->work_data[4 * iwt + 2]) * weight;
+			float3 texel_datum = float3(blk->data_r[iwt],
+										blk->data_g[iwt],
+										blk->data_b[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -159,9 +159,9 @@ void compute_averages_and_directions_rgb(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->work_data[4 * iwt],
-										blk->work_data[4 * iwt + 1],
-										blk->work_data[4 * iwt + 2]);
+			float3 texel_datum = float3(blk->data_r[iwt],
+										blk->data_g[iwt],
+										blk->data_b[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -209,14 +209,37 @@ void compute_averages_and_directions_3_components(
 	int partition;
 
 	const float *texel_weights;
+	const float* data_vr;
+	const float* data_vg;
+	const float* data_vb;
 	if (component1 == 1 && component2 == 2 && component3 == 3)
+	{
 		texel_weights = ewb->texel_weight_gba;
+		data_vr = blk->data_g;
+		data_vg = blk->data_b;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 2 && component3 == 3)
+	{
 		texel_weights = ewb->texel_weight_rba;
+		data_vr = blk->data_r;
+		data_vg = blk->data_b;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 1 && component3 == 3)
+	{
 		texel_weights = ewb->texel_weight_rga;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 1 && component3 == 2)
+	{
 		texel_weights = ewb->texel_weight_rgb;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+		data_vb = blk->data_b;
+	}
 	else
 	{
 		ASTC_CODEC_INTERNAL_ERROR();
@@ -234,9 +257,9 @@ void compute_averages_and_directions_3_components(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->work_data[4 * iwt + component1],
-										blk->work_data[4 * iwt + component2],
-										blk->work_data[4 * iwt + component3]) * weight;
+			float3 texel_datum = float3(data_vr[iwt],
+										data_vg[iwt],
+										data_vb[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -256,9 +279,9 @@ void compute_averages_and_directions_3_components(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->work_data[4 * iwt + component1],
-										blk->work_data[4 * iwt + component2],
-										blk->work_data[4 * iwt + component3]);
+			float3 texel_datum = float3(data_vr[iwt],
+										data_vg[iwt],
+										data_vb[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -308,12 +331,26 @@ void compute_averages_and_directions_2_components(
 	int partition;
 
 	const float *texel_weights;
+	const float* data_vr = nullptr;
+	const float* data_vg = nullptr;
 	if (component1 == 0 && component2 == 1)
+	{
 		texel_weights = ewb->texel_weight_rg;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+	}
 	else if (component1 == 0 && component2 == 2)
+	{
 		texel_weights = ewb->texel_weight_rb;
+		data_vr = blk->data_r;
+		data_vg = blk->data_b;
+	}
 	else if (component1 == 1 && component2 == 2)
+	{
 		texel_weights = ewb->texel_weight_gb;
+		data_vr = blk->data_g;
+		data_vg = blk->data_b;
+	}
 	else
 	{
 		ASTC_CODEC_INTERNAL_ERROR();
@@ -331,8 +368,7 @@ void compute_averages_and_directions_2_components(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float2 texel_datum = float2(blk->work_data[4 * iwt + component1],
-										blk->work_data[4 * iwt + component2]) * weight;
+			float2 texel_datum = float2(data_vr[iwt], data_vg[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -350,8 +386,7 @@ void compute_averages_and_directions_2_components(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float2 texel_datum = float2(blk->work_data[4 * iwt + component1],
-										blk->work_data[4 * iwt + component2]);
+			float2 texel_datum = float2(data_vr[iwt], data_vg[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -431,10 +466,10 @@ void compute_error_squared_rgba(
 			float texel_weight_rgba = ewb->texel_weight[iwt];
 			if(texel_weight_rgba > 1e-20f)
 			{
-				float4 dat = float4(blk->work_data[4 * iwt],
-				                    blk->work_data[4 * iwt + 1],
-				                    blk->work_data[4 * iwt + 2],
-				                    blk->work_data[4 * iwt + 3]);
+				float4 dat = float4(blk->data_r[iwt],
+				                    blk->data_g[iwt],
+				                    blk->data_b[iwt],
+				                    blk->data_a[iwt]);
 
 				float4 ews = ewb->error_weights[iwt];
 
@@ -562,9 +597,9 @@ void compute_error_squared_rgb(
 			float texel_weight_rgb = ewb->texel_weight_rgb[iwt];
 			if (texel_weight_rgb > 1e-20f)
 			{
-				float3 dat = float3(blk->work_data[4 * iwt],
-				                    blk->work_data[4 * iwt + 1],
-				                    blk->work_data[4 * iwt + 2]);
+				float3 dat = float3(blk->data_r[iwt],
+				                    blk->data_g[iwt],
+				                    blk->data_b[iwt]);
 
 				float3 ews = float3(ewb->error_weights[iwt].x,
 				                    ewb->error_weights[iwt].y,
@@ -656,9 +691,9 @@ float compute_error_squared_rgb_single_partition(
 		if (partition != partition_to_test || texel_weight < 1e-20f)
 			continue;
 
-		float3 point = float3(blk->work_data[4 * i],
-		                      blk->work_data[4 * i + 1],
-		                      blk->work_data[4 * i + 2]);
+		float3 point = float3(blk->data_r[i],
+		                      blk->data_g[i],
+		                      blk->data_b[i]);
 		float param = dot(point, lin->bs);
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;

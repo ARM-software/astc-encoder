@@ -272,10 +272,10 @@ void decompress_symbolic_block(
 		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
 		blk->nan_texel[i] = nan_endpoint[partition];
 
-		blk->work_data[4 * i    ] = (float)color.x;
-		blk->work_data[4 * i + 1] = (float)color.y;
-		blk->work_data[4 * i + 2] = (float)color.z;
-		blk->work_data[4 * i + 3] = (float)color.w;
+		blk->data_r[i] = (float)color.x;
+		blk->data_g[i] = (float)color.y;
+		blk->data_b[i] = (float)color.z;
+		blk->data_a[i] = (float)color.w;
 	}
 
 	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
@@ -291,15 +291,13 @@ float compute_imageblock_difference(
 ) {
 	int texels_per_block = bsd->texel_count;
 	float summa = 0.0f;
-	const float *f1 = p1->work_data;
-	const float *f2 = p2->work_data;
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		float rdiff = fabsf(f1[4 * i] - f2[4 * i]);
-		float gdiff = fabsf(f1[4 * i + 1] - f2[4 * i + 1]);
-		float bdiff = fabsf(f1[4 * i + 2] - f2[4 * i + 2]);
-		float adiff = fabsf(f1[4 * i + 3] - f2[4 * i + 3]);
+		float rdiff = fabsf(p1->data_r[i] - p2->data_r[i]);
+		float gdiff = fabsf(p1->data_g[i] - p2->data_g[i]);
+		float bdiff = fabsf(p1->data_b[i] - p2->data_b[i]);
+		float adiff = fabsf(p1->data_a[i] - p2->data_a[i]);
 		rdiff = MIN(rdiff, 1e15f);
 		gdiff = MIN(gdiff, 1e15f);
 		bdiff = MIN(bdiff, 1e15f);

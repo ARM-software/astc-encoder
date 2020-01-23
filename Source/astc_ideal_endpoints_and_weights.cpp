@@ -45,19 +45,24 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	int texels_per_block = bsd->texel_count;
 
 	const float *error_weights;
+	const float* data_vr = nullptr;
 	switch (component)
 	{
 	case 0:
 		error_weights = ewb->texel_weight_r;
+		data_vr = blk->data_r;
 		break;
 	case 1:
 		error_weights = ewb->texel_weight_g;
+		data_vr = blk->data_g;
 		break;
 	case 2:
 		error_weights = ewb->texel_weight_b;
+		data_vr = blk->data_b;
 		break;
 	case 3:
 		error_weights = ewb->texel_weight_a;
+		data_vr = blk->data_a;
 		break;
 	default:
 		ASTC_CODEC_INTERNAL_ERROR();
@@ -73,7 +78,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	{
 		if (error_weights[i] > 1e-10f)
 		{
-			float value = blk->work_data[4 * i + component];
+			float value = data_vr[i];
 			int partition = pt->partition_of_texel[i];
 			if (value < lowvalues[partition])
 				lowvalues[partition] = value;
@@ -98,7 +103,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float value = blk->work_data[4 * i + component];
+		float value = data_vr[i];
 		int partition = pt->partition_of_texel[i];
 		value -= lowvalues[partition];
 		value *= linelengths_rcp[partition];
@@ -182,12 +187,26 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	float2 scalefactors[4];
 
 	const float *error_weights;
+	const float* data_vr = nullptr;
+	const float* data_vg = nullptr;
 	if (component1 == 0 && component2 == 1)
+	{
 		error_weights = ewb->texel_weight_rg;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+	}
 	else if (component1 == 0 && component2 == 2)
+	{
 		error_weights = ewb->texel_weight_rb;
+		data_vr = blk->data_r;
+		data_vg = blk->data_b;
+	}
 	else if (component1 == 1 && component2 == 2)
+	{
 		error_weights = ewb->texel_weight_gb;
+		data_vr = blk->data_g;
+		data_vg = blk->data_b;
+	}
 	else
 	{
 		ASTC_CODEC_INTERNAL_ERROR();
@@ -272,7 +291,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float2 point = float2(blk->work_data[4 * i + component1], blk->work_data[4 * i + component2]) * scalefactors[partition];
+			float2 point = float2(data_vr[i], data_vg[i]) * scalefactors[partition];
 			line2 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
@@ -432,14 +451,37 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	int texels_per_block = bsd->texel_count;
 
 	const float *error_weights;
+	const float* data_vr = nullptr;
+	const float* data_vg = nullptr;
+	const float* data_vb = nullptr;
 	if (component1 == 1 && component2 == 2 && component3 == 3)
+	{
 		error_weights = ewb->texel_weight_gba;
+		data_vr = blk->data_g;
+		data_vg = blk->data_b;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 2 && component3 == 3)
+	{
 		error_weights = ewb->texel_weight_rba;
+		data_vr = blk->data_r;
+		data_vg = blk->data_b;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 1 && component3 == 3)
+	{
 		error_weights = ewb->texel_weight_rga;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+		data_vb = blk->data_a;
+	}
 	else if (component1 == 0 && component2 == 1 && component3 == 2)
+	{
 		error_weights = ewb->texel_weight_rgb;
+		data_vr = blk->data_r;
+		data_vg = blk->data_g;
+		data_vb = blk->data_b;
+	}
 	else
 	{
 		ASTC_CODEC_INTERNAL_ERROR();
@@ -538,7 +580,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float3 point = float3(blk->work_data[4 * i + component1], blk->work_data[4 * i + component2], blk->work_data[4 * i + component3]) * scalefactors[partition];
+			float3 point = float3(data_vr[i], data_vg[i], data_vb[i]) * scalefactors[partition];
 			line3 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
@@ -774,7 +816,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		{
 			int partition = pt->partition_of_texel[i];
 
-			float4 point = float4(blk->work_data[4 * i], blk->work_data[4 * i + 1], blk->work_data[4 * i + 2], blk->work_data[4 * i + 3]) * scalefactors[partition];
+			float4 point = float4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * scalefactors[partition];
 			line4 l = lines[partition];
 
 			float param = dot(point - l.a, l.b);
@@ -1481,7 +1523,7 @@ void recompute_ideal_colors(
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float3 rgb = float3(pb->work_data[4 * i], pb->work_data[4 * i + 1], pb->work_data[4 * i + 2]);
+		float3 rgb = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
 		float3 rgb_weight = float3(ewb->texel_weight_r[i],
 		                           ewb->texel_weight_g[i],
 		                           ewb->texel_weight_b[i]);
@@ -1503,10 +1545,10 @@ void recompute_ideal_colors(
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float r = pb->work_data[4 * i];
-		float g = pb->work_data[4 * i + 1];
-		float b = pb->work_data[4 * i + 2];
-		float a = pb->work_data[4 * i + 3];
+		float r = pb->data_r[i];
+		float g = pb->data_g[i];
+		float b = pb->data_b[i];
+		float a = pb->data_a[i];
 
 		int part = pi->partition_of_texel[i];
 		float idx0 = it ? compute_value_of_texel_flt(i, it, weight_set) : weight_set[i];

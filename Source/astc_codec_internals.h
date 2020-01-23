@@ -167,7 +167,10 @@ struct block_size_descriptor
 struct imageblock
 {
 	float orig_data[MAX_TEXELS_PER_BLOCK * 4];  // original input data
-	float work_data[MAX_TEXELS_PER_BLOCK * 4];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
+	float data_r[MAX_TEXELS_PER_BLOCK];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
+	float data_g[MAX_TEXELS_PER_BLOCK];
+	float data_b[MAX_TEXELS_PER_BLOCK];
+	float data_a[MAX_TEXELS_PER_BLOCK];
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS

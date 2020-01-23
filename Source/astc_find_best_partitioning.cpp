@@ -74,7 +74,7 @@ static void compute_alpha_minmax(
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float alphaval = blk->work_data[4 * i + 3];
+			float alphaval = blk->data_a[i];
 			if (alphaval > alpha_max[partition])
 				alpha_max[partition] = alphaval;
 			if (alphaval < alpha_min[partition])
@@ -122,9 +122,9 @@ static void compute_rgb_minmax(
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float redval = blk->work_data[4 * i];
-			float greenval = blk->work_data[4 * i + 1];
-			float blueval = blk->work_data[4 * i + 2];
+			float redval = blk->data_r[i];
+			float greenval = blk->data_g[i];
+			float blueval = blk->data_b[i];
 			if (redval > red_max[partition])
 				red_max[partition] = redval;
 			if (redval < red_min[partition])

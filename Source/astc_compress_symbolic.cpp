@@ -150,8 +150,8 @@ static int realign_weights(
 
 				float4 color = color_base + color_offset * plane_weight;
 
-				float4 origcolor    = float4(blk->work_data[4 * texel]    , blk->work_data[4 * texel + 1],
-				                             blk->work_data[4 * texel + 2], blk->work_data[4 * texel + 3]);
+				float4 origcolor    = float4(blk->data_r[texel], blk->data_g[texel],
+				                             blk->data_b[texel], blk->data_a[texel]);
 				float4 error_weight = float4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
 				                             ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
 
@@ -1016,10 +1016,10 @@ static void prepare_block_statistics(
 			ASTC_CODEC_INTERNAL_ERROR();
 		weight_sum += weight;
 
-		float r = blk->work_data[4 * i];
-		float g = blk->work_data[4 * i + 1];
-		float b = blk->work_data[4 * i + 2];
-		float a = blk->work_data[4 * i + 3];
+		float r = blk->data_r[i];
+		float g = blk->data_g[i];
+		float b = blk->data_b[i];
+		float a = blk->data_a[i];
 
 		float rw = r * weight;
 		rs += rw;
@@ -1139,8 +1139,8 @@ float compress_symbolic_block(
 						int idx = ((z * ydim + y) * xdim + x) * 4;
 						printf("Texel (%d %d %d) : orig=< %g, %g, %g, %g >, work=< %g, %g, %g, %g >\n",
 							x, y, z,
-							blk->orig_data[idx],
-							blk->orig_data[idx + 1], blk->orig_data[idx + 2], blk->orig_data[idx + 3], blk->work_data[idx], blk->work_data[idx + 1], blk->work_data[idx + 2], blk->work_data[idx + 3]);
+							blk->orig_data[idx], blk->orig_data[idx + 1], blk->orig_data[idx + 2], blk->orig_data[idx + 3],
+							blk->data_r[idx], blk->data_g[idx], blk->data_b[idx], blk->data_a[idx]);
 					}
 			printf("\n");
 		}

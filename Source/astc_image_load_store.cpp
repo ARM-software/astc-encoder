@@ -24,23 +24,23 @@ void destroy_image(astc_codec_image * img)
 
 	if (img->data8)
 	{
-		delete[]img->data8[0][0];
-		delete[]img->data8[0];
-		delete[]img->data8;
+		delete[] img->data8[0][0];
+		delete[] img->data8[0];
+		delete[] img->data8;
 	}
 
 	if (img->data16)
 	{
-		delete[]img->data16[0][0];
-		delete[]img->data16[0];
-		delete[]img->data16;
+		delete[] img->data16[0][0];
+		delete[] img->data16[0];
+		delete[] img->data16;
 	}
 
-	if(img->input_averages)
+	if (img->input_averages)
 		delete[] img->input_averages;
-	if(img->input_variances )
+	if (img->input_variances )
 		delete[] img->input_variances;
-	if(img->input_alpha_averages )
+	if (img->input_alpha_averages )
 		delete[] img->input_alpha_averages;
 
 	delete img;
@@ -427,36 +427,33 @@ void imageblock_initialize_work_from_orig(
 	imageblock* pb,
 	int pixelcount
 ) {
-	int i;
 	float *fptr = pb->orig_data;
-	float *wptr = pb->work_data;
 
-	for (i = 0; i < pixelcount; i++)
+	for (int i = 0; i < pixelcount; i++)
 	{
 		if (pb->rgb_lns[i])
 		{
-			wptr[0] = float_to_lns(fptr[0]);
-			wptr[1] = float_to_lns(fptr[1]);
-			wptr[2] = float_to_lns(fptr[2]);
+			pb->data_r[i] = float_to_lns(fptr[0]);
+			pb->data_g[i] = float_to_lns(fptr[1]);
+			pb->data_b[i] = float_to_lns(fptr[2]);
 		}
 		else
 		{
-			wptr[0] = fptr[0] * 65535.0f;
-			wptr[1] = fptr[1] * 65535.0f;
-			wptr[2] = fptr[2] * 65535.0f;
+			pb->data_r[i] = fptr[0] * 65535.0f;
+			pb->data_g[i] = fptr[1] * 65535.0f;
+			pb->data_b[i] = fptr[2] * 65535.0f;
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			wptr[3] = float_to_lns(fptr[3]);
+			pb->data_a[i] = float_to_lns(fptr[3]);
 		}
 		else
 		{
-			wptr[3] = fptr[3] * 65535.0f;
+			pb->data_a[i] = fptr[3] * 65535.0f;
 		}
 
 		fptr += 4;
-		wptr += 4;
 	}
 }
 
@@ -465,36 +462,33 @@ void imageblock_initialize_orig_from_work(
 	imageblock* pb,
 	int pixelcount
 ) {
-	int i;
 	float *fptr = pb->orig_data;
-	float *wptr = pb->work_data;
 
-	for (i = 0; i < pixelcount; i++)
+	for (int i = 0; i < pixelcount; i++)
 	{
 		if (pb->rgb_lns[i])
 		{
-			fptr[0] = sf16_to_float(lns_to_sf16((uint16_t) wptr[0]));
-			fptr[1] = sf16_to_float(lns_to_sf16((uint16_t) wptr[1]));
-			fptr[2] = sf16_to_float(lns_to_sf16((uint16_t) wptr[2]));
+			fptr[0] = sf16_to_float(lns_to_sf16((uint16_t)pb->data_r[i]));
+			fptr[1] = sf16_to_float(lns_to_sf16((uint16_t)pb->data_g[i]));
+			fptr[2] = sf16_to_float(lns_to_sf16((uint16_t)pb->data_b[i]));
 		}
 		else
 		{
-			fptr[0] = sf16_to_float(unorm16_to_sf16((uint16_t) wptr[0]));
-			fptr[1] = sf16_to_float(unorm16_to_sf16((uint16_t) wptr[1]));
-			fptr[2] = sf16_to_float(unorm16_to_sf16((uint16_t) wptr[2]));
+			fptr[0] = sf16_to_float(unorm16_to_sf16((uint16_t)pb->data_r[i]));
+			fptr[1] = sf16_to_float(unorm16_to_sf16((uint16_t)pb->data_g[i]));
+			fptr[2] = sf16_to_float(unorm16_to_sf16((uint16_t)pb->data_b[i]));
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			fptr[3] = sf16_to_float(lns_to_sf16((uint16_t) wptr[3]));
+			fptr[3] = sf16_to_float(lns_to_sf16((uint16_t)pb->data_a[i]));
 		}
 		else
 		{
-			fptr[3] = sf16_to_float(unorm16_to_sf16((uint16_t) wptr[3]));
+			fptr[3] = sf16_to_float(unorm16_to_sf16((uint16_t)pb->data_a[i]));
 		}
 
 		fptr += 4;
-		wptr += 4;
 	}
 }
 
@@ -919,7 +913,7 @@ void write_imageblock(
 
 /*
    For an imageblock, update its flags.
-   The updating is done based on work_data, not orig_data.
+   The updating is done based on data, not orig_data.
 */
 void update_imageblock_flags(
 	imageblock* pb,
@@ -939,10 +933,10 @@ void update_imageblock_flags(
 
 	for (i = 0; i < texels_per_block; i++)
 	{
-		float red = pb->work_data[4 * i];
-		float green = pb->work_data[4 * i + 1];
-		float blue = pb->work_data[4 * i + 2];
-		float alpha = pb->work_data[4 * i + 3];
+		float red = pb->data_r[i];
+		float green = pb->data_g[i];
+		float blue = pb->data_b[i];
+		float alpha = pb->data_a[i];
 		if (red < red_min)
 			red_min = red;
 		if (red > red_max)

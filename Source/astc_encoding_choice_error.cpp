@@ -226,14 +226,14 @@ void compute_encoding_choice_errors(
 	for (i = 0; i < texels_per_block; i++)
 	{
 		int partition = pi->partition_of_texel[i];
-		float alpha = pb->work_data[4 * i + 3];
+		float alpha = pb->data_a[i];
 		float default_alpha = pb->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
 
 		float omalpha = alpha - default_alpha;
 		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].w;
-		float red = pb->work_data[4 * i];
-		float green = pb->work_data[4 * i + 1];
-		float blue = pb->work_data[4 * i + 2];
+		float red = pb->data_r[i];
+		float green = pb->data_g[i];
+		float blue = pb->data_b[i];
 		rgb_drop_error[partition] += red * red * ewb->error_weights[i].x + green * green * ewb->error_weights[i].y + blue * blue * ewb->error_weights[i].z;
 	}
 
