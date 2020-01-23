@@ -28,6 +28,7 @@
     <ClCompile Include="..\astc_ktx_dds.cpp" />
     <ClCompile Include="..\astc_main.cpp" />
     <ClCompile Include="..\astc_mathlib.cpp" />
+    <ClCompile Include="..\astc_mathlib_softfloat.cpp" />
     <ClCompile Include="..\astc_partition_tables.cpp" />
     <ClCompile Include="..\astc_percentile_tables.cpp" />
     <ClCompile Include="..\astc_pick_best_endpoint_format.cpp" />
@@ -36,6 +37,7 @@
     <ClCompile Include="..\astc_stb_tga.cpp" />
     <ClCompile Include="..\astc_symbolic_physical.cpp" />
     <ClCompile Include="..\astc_toplevel.cpp" />
+    <ClCompile Include="..\astc_toplevel_help.cpp" />
     <ClCompile Include="..\astc_weight_align.cpp" />
     <ClCompile Include="..\astc_weight_quant_xfer_tables.cpp" />
   </ItemGroup>
@@ -89,7 +91,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ASTC_SSE=42;ASTC_AVX=2;ASTC_POPCNT=1;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -108,7 +110,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ASTC_SSE=42;ASTC_AVX=2;ASTC_POPCNT=1;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>

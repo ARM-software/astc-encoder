@@ -150,7 +150,8 @@ class TestImage():
             patternPSNR = r"mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
 
         patternPSNR = re.compile(patternPSNR)
-        patternTime = re.compile(".*[Cc]oding time:\s*([0-9.]*) s.*")
+        patternTime1 = re.compile(".*[Cc]oding time:\s*([0-9.]*) s.*")
+        patternTime2 = re.compile(".*[Tt]otal time:\s*([0-9.]*) s.*")
 
         # Extract results from the log
         runPSNR = None
@@ -161,10 +162,13 @@ class TestImage():
             if match:
                 runPSNR = float(match.group(1))
 
-            match = patternTime.match(line)
+            match = patternTime1.match(line)
+            if match:
+                runTime = float(match.group(1))
+
+            match = patternTime2.match(line)
             if match:
                 allTime = float(match.group(1))
-                runTime = float(match.group(1))
 
         # Convert the callgrind log to an image
         if profile:
@@ -177,6 +181,7 @@ class TestImage():
 
         assert runPSNR is not None, "No coding PSNR found %s" % result.stdout
         assert runTime is not None, "No coding time found %s" % result.stdout
+        assert allTime is not None, "No total time found %s" % result.stdout
         return (runPSNR, runTime, allTime, outFilePath)
 
 
@@ -293,8 +298,8 @@ def main():
     # Print summary results
     print("Binary: %s" % args.useBinary)
     print("PSNR: %0.3f dB" % psnr)
-    print("Coding time: %0.3f s (avg of %u runs)" % (codeSecs, len(codeTimes)))
-    print("All time:    %0.3f s (avg of %u runs)" % (allSecs, len(allTimes)))
+    print("Coding time: %0.3f s (avg of %u runs) %0.3f s best" % (codeSecs, len(codeTimes), min(codeTimes)))
+    print("All time:    %0.3f s (avg of %u runs) %0.3f s best" % (allSecs, len(allTimes), min(allTimes)))
     print("Image: %s" % output)
 
 

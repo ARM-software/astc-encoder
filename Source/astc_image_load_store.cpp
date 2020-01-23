@@ -800,7 +800,7 @@ void write_imageblock(
 							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
 							if (zcoord < 0.0f)
 								zcoord = 0.0f;
-							data[6] = (sqrtf(zcoord) * 0.5f) + 0.5f;
+							data[6] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
 
 							// clamp to [0,1]
 							if (data[0] > 1.0f)
@@ -891,7 +891,7 @@ void write_imageblock(
 							float zN = 1.0f - xN * xN - yN * yN;
 							if (zN < 0.0f)
 								zN = 0.0f;
-							data[6] = (sqrtf(zN) * 0.5f) + 0.5f;
+							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
 
 							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
