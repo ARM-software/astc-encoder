@@ -1004,47 +1004,6 @@ static inline float compute_error_of_texel(
 	return valuedif * valuedif * eai->weight_error_scale[texel_to_get];
 }
 
-/*
-	helper function: given
-	* for each texel, an ideal weight and an error-modifier these are contained
-	  in an endpoints_and_weights data structure.
-	* a weight_table data structure
-	* for each weight, its current value
-	compute the change to overall error that results from adding N to the weight
-*/
-static void compute_two_error_changes_from_perturbing_weight_infill(
-	const endpoints_and_weights* eai,
-	const decimation_table* it,
-	float* infilled_weights,
-	int weight_to_perturb,
-	float perturbation1,
-	float perturbation2,
-	float* res1,
-	float* res2
-) {
-	int num_weights = it->weight_num_texels[weight_to_perturb];
-	float error_change0 = 0.0f;
-	float error_change1 = 0.0f;
-
-	const uint8_t *weight_texel_ptr = it->weight_texel[weight_to_perturb];
-	const float *weights_ptr = it->weights_flt[weight_to_perturb];
-	for (int i = num_weights - 1; i >= 0; i--)
-	{
-		uint8_t weight_texel = weight_texel_ptr[i];
-		float weights = weights_ptr[i];
-
-		float scale = eai->weight_error_scale[weight_texel] * weights;
-		float old_weight = infilled_weights[weight_texel];
-		float ideal_weight = eai->weights[weight_texel];
-
-		error_change0 += weights * scale;
-		error_change1 += (old_weight - ideal_weight) * scale;
-	}
-
-	*res1 = error_change0 * (perturbation1 * perturbation1 * (1.0f / (TEXEL_WEIGHT_SUM * TEXEL_WEIGHT_SUM))) + error_change1 * (perturbation1 * (2.0f / TEXEL_WEIGHT_SUM));
-	*res2 = error_change0 * (perturbation2 * perturbation2 * (1.0f / (TEXEL_WEIGHT_SUM * TEXEL_WEIGHT_SUM))) + error_change1 * (perturbation2 * (2.0f / TEXEL_WEIGHT_SUM));
-}
-
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
 	const decimation_table* it,
@@ -1084,7 +1043,7 @@ void compute_ideal_weights_for_decimation_table(
 	}
 
 	// if the shortcut is not available, we will instead compute a simple estimate
-	// and perform three rounds of refinement on that estimate.
+	// and perform a single iteration of refinement on that estimate.
 	float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
 	// compute an initial average for each weight.
@@ -1109,83 +1068,54 @@ void compute_ideal_weights_for_decimation_table(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		infilled_weights[i] = compute_value_of_texel_flt(i, it, weight_set);
+		const uint8_t *texel_weights = it->texel_weights[i];
+		const float *texel_weights_float = it->texel_weights_float[i];
+		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
+		                     + weight_set[texel_weights[1]] * texel_weights_float[1])
+		                    + (weight_set[texel_weights[2]] * texel_weights_float[2]
+		                     + weight_set[texel_weights[3]] * texel_weights_float[3]);
 	}
 
-	const float stepsizes[2] = { 0.25f, 0.125f };
+	constexpr float stepsize = 0.25f;
+	constexpr float ch0_scale = 4.0f * (stepsize * stepsize * (1.0f / (TEXEL_WEIGHT_SUM * TEXEL_WEIGHT_SUM)));
+	constexpr float ch1_scale = -2.0f * (stepsize * (2.0f / TEXEL_WEIGHT_SUM));
+	constexpr float chd_scale = (ch1_scale / ch0_scale) * stepsize;
 
-	for (int j = 0; j < 2; j++)
+	for (int i = 0; i < weight_count; i++)
 	{
-		float stepsize = stepsizes[j];
-		for (int i = 0; i < weight_count; i++)
+		float weight_val = weight_set[i];
+
+		const uint8_t *weight_texel_ptr = it->weight_texel[i];
+		const float *weights_ptr = it->weights_flt[i];
+
+		// compute the two error changes that can occur from perturbing the current index.
+		int num_weights = it->weight_num_texels[i];
+
+		float error_change0 = 1e-10f; // done in order to ensure that this value isn't 0, in order to avoid a possible divide by zero later.
+		float error_change1 = 0.0f;
+
+		for (int k = 0; k < num_weights; k++)
 		{
-			float weight_val = weight_set[i];
-			float error_change_up, error_change_down;
-			compute_two_error_changes_from_perturbing_weight_infill(eai, it, infilled_weights, i, stepsize, -stepsize, &error_change_up, &error_change_down);
+			uint8_t weight_texel = weight_texel_ptr[k];
+			float weights2 = weights_ptr[k];
 
-			/*
-				assume that the error-change function behaves like a quadratic function in the interval examined,
-				with "error_change_up" and "error_change_down" defining the function at the endpoints
-				of the interval. Then, find the position where the function's derivative is zero.
+			float scale = eai->weight_error_scale[weight_texel] * weights2;
+			float old_weight = infilled_weights[weight_texel];
+			float ideal_weight = eai->weights[weight_texel];
 
-				The "fabs(b) >= a" check tests several conditions in one:
-					if a is negative, then the 2nd derivative of the function is negative;
-					in this case, f'(x)=0 will maximize error.
-				If fabs(b) > fabs(a), then f'(x)=0 will lie outside the interval altogether.
-				If a and b are both 0, then set step to 0;
-					otherwise, we end up computing 0/0, which produces a lethal NaN.
-				We can get an a=b=0 situation if an error weight is 0 in the wrong place.
-			*/
-
-			float step;
-			float a = (error_change_up + error_change_down) * 2.0f;
-			float b = error_change_down - error_change_up;
-			if (fabsf(b) >= a)
-			{
-				if (a <= 0.0f)
-				{
-					if (error_change_up < error_change_down)
-						step = 1.0f;
-					else if (error_change_up > error_change_down)
-						step = -1.0f;
-					else
-						step = 0.0f;
-				}
-				else
-				{
-					if (a < 1e-10f)
-						a = 1e-10f;
-
-					step = b / a;
-
-					if (step < -1.0f)
-						step = -1.0f;
-					else if (step > 1.0f)
-						step = 1.0f;
-				}
-			}
-			else
-			{
-				step = b / a;
-			}
-
-			step *= stepsize;
-			float new_weight_val = weight_val + step;
-
-			// update the weight
-			weight_set[i] = new_weight_val;
-			// update the infilled-weights
-			int num_weights = it->weight_num_texels[i];
-			float perturbation = (new_weight_val - weight_val) * (1.0f / TEXEL_WEIGHT_SUM);
-			const uint8_t *weight_texel_ptr = it->weight_texel[i];
-			const float *weights_ptr = it->weights_flt[i];
-			for (int k = 0; k < num_weights; k++)
-			{
-				uint8_t weight_texel = weight_texel_ptr[k];
-				float weight_weight = weights_ptr[k];
-				infilled_weights[weight_texel] += perturbation * weight_weight;
-			}
+			error_change0 += weights2 * scale;
+			error_change1 += (old_weight - ideal_weight) * scale;
 		}
+
+		float step = (error_change1 * chd_scale) / error_change0;
+		// clamp the step-value.
+		if (step < -stepsize )
+			step = -stepsize;
+		else if(step > stepsize)
+			step = stepsize;
+
+		// update the weight
+		weight_set[i] = weight_val + step;
 	}
 }
 
