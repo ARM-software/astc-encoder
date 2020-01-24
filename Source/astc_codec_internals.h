@@ -326,9 +326,11 @@ struct quantization_and_transfer_table
 	/** The quantization level used */
 	quantization_method method;
 	/** The unscrambled unquantized value. */
-	uint8_t unquantized_value_unsc[33];
+	// TODO: Converted to floats to support AVX gathers
+	float unquantized_value_unsc[33];
 	/** The scrambling order: value[map[i]] == value_unsc[i] */
-	uint8_t scramble_map[32];
+	// TODO: Converted to u32 to support AVX gathers
+	int32_t scramble_map[32];
 	/** The scrambled unquantized values. */
 	uint8_t unquantized_value[32];
 	/**

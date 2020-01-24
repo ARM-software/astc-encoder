@@ -214,7 +214,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	const partition_info *pi = get_partition_table(bsd, partition_count);
 	pi += partition_index;
 
-	// first, compute ideal weights and endpoint colors, under thre assumption that
+	// first, compute ideal weights and endpoint colors, under the assumption that
 	// there is no quantization or decimation going on.
 	endpoints_and_weights *ei = tmpbuf->ei1;
 	endpoints_and_weights *eix = tmpbuf->eix1;
