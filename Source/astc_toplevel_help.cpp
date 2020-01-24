@@ -415,7 +415,10 @@ TEST
 
        This operation mode will print error metrics suitable for either
        LDR and HDR images, allowing some assessment of the compression
-       image quality.
+       image quality.)"
+// This split in the literals is needed for Visual Studio; the compiler
+// will concatenate these two strings together ...
+R"(
 
 FILE FORMATS
        The following formats are supported as compression inputs:
