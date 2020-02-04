@@ -8,7 +8,33 @@ pipeline {
   stages {
     stage('Build All') {
       parallel {
-
+        /* Build for Linux on x86_64 */
+        stage('Linux-x86_64') {
+          agent {
+            docker {
+              image 'gcc:7.5.0'
+              registryUrl 'https://registry.k8s.dsg.arm.com'
+              registryCredentialsId 'harbor'
+              label 'docker'
+              alwaysPull true
+            }
+          }
+          stages {
+            stage('Build') {
+              steps {
+                sh '''
+                  cd ./Source/
+                  make
+                '''
+              }
+            }
+            stage('Archive Artefacts') {
+              steps {
+                archiveArtifacts(artifacts: './astcenc', onlyIfSuccessful: true)
+              }
+            }
+          }
+        }
         /* Build for Windows on x86_64 */
         stage('Windows-x86_64') {
           agent {
@@ -41,7 +67,7 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38\\bin;c:\\Python38\\Scripts;%Path%
-                  call python Test/runner.py --test-level all --warmup 1 --repeats 5
+                  call python ./Test/astc_test_run.py
                 '''
               }
             }
