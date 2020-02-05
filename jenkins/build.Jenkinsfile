@@ -41,8 +41,8 @@ pipeline {
           }
           post {
             always {
-              perfReport(sourceDataFiles:'TestOutput\\results.xml')
-              junit(testResults: 'TestOutput\\results.xml')
+              perfReport(sourceDataFiles:'TestOutput/results.xml')
+              junit(testResults: 'TestOutput/results.xml')
             }
           }
         }
@@ -90,6 +90,7 @@ pipeline {
             }
           }
         }
+        /* Build for Mac on x86_64 */
         stage('MacOS-x86_64') {
           agent {
             label 'mac && x86_64'
@@ -119,8 +120,8 @@ pipeline {
           }
           post {
             always {
-              perfReport(sourceDataFiles:'TestOutput\\results.xml')
-              junit(testResults: 'TestOutput\\results.xml')
+              perfReport(sourceDataFiles:'TestOutput/results.xml')
+              junit(testResults: 'TestOutput/results.xml')
             }
           }
         }
