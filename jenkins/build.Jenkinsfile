@@ -1,3 +1,28 @@
+def dsgArtifactoryUpload(String sourcePattern, String target) {
+    rtBuildInfo (
+      // Maximum builds to keep in Artifactory.
+      maxBuilds: 10,
+      // Also delete the build artifacts when deleting a build.
+      deleteBuildArtifacts: true
+    )
+    rtUpload (
+      serverId: 'dsg-artifactory',
+      spec: """
+        {
+          "files": [
+            {
+              "pattern": "${sourcePattern}",
+              "target": "${target}"
+            }
+          ]
+        }
+      """
+    )
+    rtPublishBuildInfo (
+      serverId: 'dsg-artifactory'
+    )
+}
+
 pipeline {
   agent none
   options {
@@ -20,7 +45,12 @@ pipeline {
             }
           }
           stages {
-            stage('Build') {
+            stage('Clean workspace') {
+              steps {
+                sh 'git clean -fdx'
+              }
+            }
+            stage('Linux Build') {
               steps {
                 sh '''
                   cd ./Source/
@@ -28,21 +58,19 @@ pipeline {
                 '''
               }
             }
-            stage('Archive Artefacts') {
+            stage('Stash Artefacts') {
               steps {
-                archiveArtifacts(artifacts: 'Source/astcenc', onlyIfSuccessful: true)
+                dir('Source') {
+                  stash name: 'astcenc-linux', includes: 'astcenc'
+                }
               }
             }
-            stage('Test') {
+            stage('Linux Tests') {
               steps {
                 sh 'python3 ./Test/astc_test_run.py'
+                perfReport(sourceDataFiles:'TestOutput/results.xml')
+                junit(testResults: 'TestOutput/results.xml')
               }
-            }
-          }
-          post {
-            always {
-              perfReport(sourceDataFiles:'TestOutput/results.xml')
-              junit(testResults: 'TestOutput/results.xml')
             }
           }
         }
@@ -52,7 +80,12 @@ pipeline {
             label 'Windows && x86_64'
           }
           stages {
-            stage('Release') {
+            stage('Clean workspace') {
+              steps {
+                bat 'git clean -fdx'
+              }
+            }
+            stage('Windows Release Build') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2017\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -60,7 +93,7 @@ pipeline {
                 '''
               }
             }
-            stage('Debug') {
+            stage('Windows Debug Build') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2017\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -68,25 +101,22 @@ pipeline {
                 '''
               }
             }
-            stage('Archive Artefacts') {
+            stage('Stash Artefacts') {
               steps {
-                archiveArtifacts(artifacts: 'Source\\VS2017\\Release\\astcenc.exe', onlyIfSuccessful: true)
-                archiveArtifacts(artifacts: 'Source\\VS2017\\Debug\\astcenc.exe', onlyIfSuccessful: true)
+                dir('Source\\VS2017\\Release') {
+                  stash name: 'astcenc-win-release', includes: 'astcenc.exe'
+                }
               }
             }
-            stage('Test') {
+            stage('Windows Tests') {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
                   call python ./Test/astc_test_run.py
                 '''
+                perfReport(sourceDataFiles:'TestOutput\\results.xml')
+                junit(testResults: 'TestOutput\\results.xml')
               }
-            }
-          }
-          post {
-            always {
-              perfReport(sourceDataFiles:'TestOutput\\results.xml')
-              junit(testResults: 'TestOutput\\results.xml')
             }
           }
         }
@@ -96,7 +126,12 @@ pipeline {
             label 'mac && x86_64'
           }
           stages {
-            stage('Build') {
+            stage('Clean workspace') {
+              steps {
+                sh 'git clean -fdx'
+              }
+            }
+            stage('MacOS Build') {
               steps {
                 sh '''
                   cd ./Source/
@@ -104,25 +139,59 @@ pipeline {
                 '''
               }
             }
-            stage('Archive Artefacts') {
+            stage('Stash Artefacts') {
               steps {
-                archiveArtifacts(artifacts: 'Source/astcenc', onlyIfSuccessful: true)
+                dir('Source') {
+                  stash name: 'astcenc-mac', includes: 'astcenc'
+                }
               }
             }
-            stage('Test') {
+            stage('MacOS Tests') {
               steps {
                 sh '''
                   export PATH=$PATH:/usr/local/bin
                   python3 ./Test/astc_test_run.py
                 '''
+                perfReport(sourceDataFiles:'TestOutput/results.xml')
+                junit(testResults: 'TestOutput/results.xml')
               }
             }
           }
-          post {
-            always {
-              perfReport(sourceDataFiles:'TestOutput/results.xml')
-              junit(testResults: 'TestOutput/results.xml')
+        }
+      }
+    }
+    stage('Upload to Artifactory') {
+      agent {
+        docker {
+          image 'mobilestudio/astcenc:0.1.0'
+          registryUrl 'https://registry.k8s.dsg.arm.com'
+          registryCredentialsId 'harbor'
+          label 'docker'
+          alwaysPull true
+        }
+      }
+      options {
+        skipDefaultCheckout true
+      }
+      stages {
+        stage('Unstash artefacts') {
+          steps {
+            deleteDir()
+            dir('upload/Linux-x86_64') {
+              unstash 'astcenc-linux'
             }
+            dir('upload/Windows-x86_64') {
+              unstash 'astcenc-win-release'
+            }
+            dir('upload/MacOS-x86_64') {
+              unstash 'astcenc-mac'
+            }
+          }
+        }
+        stage('Upload to Artifactory') {
+          steps {
+            zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
+            dsgArtifactoryUpload('*.zip', "astc-encoder/build/${currentBuild.number}/")
           }
         }
       }
