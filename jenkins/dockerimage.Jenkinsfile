@@ -1,7 +1,7 @@
 node('docker') {
 
     def image
-    final string dockerfile = 'jenkins/build.Dockerfile'
+    final String dockerfile = 'jenkins/build.Dockerfile'
 
     stage('Checkout code') {
         checkout scm
