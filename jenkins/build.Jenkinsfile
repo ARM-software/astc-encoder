@@ -30,7 +30,7 @@ pipeline {
             }
             stage('Archive Artefacts') {
               steps {
-                archiveArtifacts(artifacts: './Source/astcenc', onlyIfSuccessful: true)
+                archiveArtifacts(artifacts: 'Source/astcenc', onlyIfSuccessful: true)
               }
             }
             stage('Test') {
@@ -93,7 +93,7 @@ pipeline {
             }
             stage('Archive Artefacts') {
               steps {
-                archiveArtifacts(artifacts: './Source/astcenc', onlyIfSuccessful: true)
+                archiveArtifacts(artifacts: 'Source/astcenc', onlyIfSuccessful: true)
               }
             }
             stage('Test') {
