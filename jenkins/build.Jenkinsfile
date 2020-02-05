@@ -30,7 +30,12 @@ pipeline {
             }
             stage('Archive Artefacts') {
               steps {
-                archiveArtifacts(artifacts: './astcenc', onlyIfSuccessful: true)
+                archiveArtifacts(artifacts: './Source/astcenc', onlyIfSuccessful: true)
+              }
+            }
+            stage('Test') {
+              steps {
+                sh 'python3 ./Test/astc_test_run.py'
               }
             }
           }
@@ -69,6 +74,31 @@ pipeline {
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
                   call python ./Test/astc_test_run.py
                 '''
+              }
+            }
+          }
+        }
+        stage('MacOS-x86_64') {
+          agent {
+            label 'mac && x86_64'
+          }
+          stages {
+            stage('Build') {
+              steps {
+                sh '''
+                  cd ./Source/
+                  make
+                '''
+              }
+            }
+            stage('Archive Artefacts') {
+              steps {
+                archiveArtifacts(artifacts: './Source/astcenc', onlyIfSuccessful: true)
+              }
+            }
+            stage('Test') {
+              steps {
+                sh 'python3 ./Test/astc_test_run.py'
               }
             }
           }
