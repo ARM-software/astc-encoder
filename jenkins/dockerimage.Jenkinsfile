@@ -8,7 +8,7 @@ node('docker') {
     }
 
     stage('Build and Push Docker image') {
-        final string imageVersion = sh(script: "grep build.environment.version ${dockerfile} | cut -d'\"' -f 2", returnStdout: true).trim()
+        final String imageVersion = sh(script: "grep build.environment.version ${dockerfile} | cut -d'\"' -f 2", returnStdout: true).trim()
         println "Building image version ${imageVersion}"
         currentBuild.displayName = imageVersion
 
