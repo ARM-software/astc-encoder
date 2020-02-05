@@ -12,7 +12,7 @@ pipeline {
         stage('Linux-x86_64') {
           agent {
             docker {
-              image 'gcc:7.5.0'
+              image 'mobilestudio/astcenc:0.1.0'
               registryUrl 'https://registry.k8s.dsg.arm.com'
               registryCredentialsId 'harbor'
               label 'docker'
@@ -66,7 +66,7 @@ pipeline {
             stage('Test') {
               steps {
                 bat '''
-                  set Path=c:\\Python38\\bin;c:\\Python38\\Scripts;%Path%
+                  set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
                   call python ./Test/astc_test_run.py
                 '''
               }
