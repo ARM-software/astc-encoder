@@ -39,6 +39,12 @@ pipeline {
               }
             }
           }
+          post {
+            always {
+              perfReport(sourceDataFiles:'TestOutput\\results.xml')
+              junit(testResults: 'TestOutput\\results.xml')
+            }
+          }
         }
         /* Build for Windows on x86_64 */
         stage('Windows-x86_64') {
@@ -77,6 +83,12 @@ pipeline {
               }
             }
           }
+          post {
+            always {
+              perfReport(sourceDataFiles:'TestOutput\\results.xml')
+              junit(testResults: 'TestOutput\\results.xml')
+            }
+          }
         }
         stage('MacOS-x86_64') {
           agent {
@@ -103,6 +115,12 @@ pipeline {
                   python3 ./Test/astc_test_run.py
                 '''
               }
+            }
+          }
+          post {
+            always {
+              perfReport(sourceDataFiles:'TestOutput\\results.xml')
+              junit(testResults: 'TestOutput\\results.xml')
             }
           }
         }
