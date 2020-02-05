@@ -98,7 +98,10 @@ pipeline {
             }
             stage('Test') {
               steps {
-                sh 'python3 ./Test/astc_test_run.py'
+                sh '''
+                  export PATH=$PATH:/usr/local/bin
+                  python3 ./Test/astc_test_run.py
+                '''
               }
             }
           }
