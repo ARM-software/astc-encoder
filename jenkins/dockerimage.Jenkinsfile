@@ -22,3 +22,4 @@ node('docker') {
     stage('Clean up') {
         sh("docker rmi -f ${image.imageName()}")
     }
+}
