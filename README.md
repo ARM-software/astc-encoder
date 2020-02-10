@@ -26,9 +26,9 @@ The ASTC data format specification is available here:
 
 ## License
 
-By downloading any component from this repository you acknowledge that you
-accept the End User Licence Agreement for the ASTC Encoder. See the
-[LICENSE.md](LICENSE.md) file for details.
+This project is licensed under the Apache 2.0 license. By downloading any
+component from this repository you acknowledge that you accept terms specified
+in the [LICENSE.txt](LICENSE.txt) file.
 
 # Encoder feature support
 
@@ -157,4 +157,4 @@ Graphics forums](https://community.arm.com/graphics/).
 
 - - -
 
-_Copyright (c) 2013-2020, Arm Limited and Contributors. All rights reserved._
+_Copyright (c) 2013-2020, Arm Limited and contributors. All rights reserved._
