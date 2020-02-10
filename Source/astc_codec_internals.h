@@ -1,14 +1,22 @@
+// SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-//  This confidential and proprietary software may be used only as authorised
-//  by a licensing agreement from Arm Limited.
-//      (C) COPYRIGHT 2011-2020 Arm Limited, ALL RIGHTS RESERVED
-//  The entire notice above must be reproduced on all authorised copies and
-//  copies may only be made to the extent permitted by a licensing agreement
-//  from Arm Limited.
+// Copyright 2011-2020 Arm Limited
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy
+// of the License at:
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
 // ----------------------------------------------------------------------------
 
 /**
- * @brief FUnctions and data declarations.
+ * @brief Functions and data declarations.
  */
 
 #ifndef ASTC_CODEC_INTERNALS_INCLUDED
