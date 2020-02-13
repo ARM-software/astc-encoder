@@ -159,11 +159,12 @@ class TestImage():
 
         patternPSNR = re.compile(patternPSNR)
         patternTime1 = re.compile(".*[Cc]oding time:\s*([0-9.]*) s.*")
-        patternTime2 = re.compile(".*[Tt]otal time:\s*([0-9.]*) s.*")
+        patternTime2 = re.compile(".*(?:[Tt]otal|Elapsed) time:\s*([0-9.]*) s.*")
 
         # Extract results from the log
         runPSNR = None
         runTime = None
+        allTime = None
 
         for line in result.stdout.splitlines():
             match = patternPSNR.match(line)
