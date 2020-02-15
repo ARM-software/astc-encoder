@@ -63,9 +63,10 @@ options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
 # Prebuilt binaries
 
-Prebuilt release build binaries for 64-bit Linux, macOS, and Windows are
-available in the GitHub Releases page. Note currently, no 2.x series binaries
-are available.
+Prebuilt release build binaries of `astcenc` for 64-bit Linux, macOS, and
+Windows are available in the
+[GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
+Note that currently no 2.x series pre-built binaries are available.
 
 # Getting started
 
