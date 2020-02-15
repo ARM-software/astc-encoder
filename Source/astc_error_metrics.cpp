@@ -348,7 +348,7 @@ void compute_error_metrics(
 		printf("mPSNR (RGB):             %9.6f dB (fstops %+d to %+d)\n",
 				(double)mpsnr, fstop_lo, fstop_hi);
 
-		float logrmse = astc::sqrt(log_num / pixels);
+		float logrmse = sqrt(log_num / pixels);
 		printf("LogRMSE (RGB):           %9.6f\n", (double)logrmse);
 	}
 }

@@ -906,6 +906,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int quantization_level_mod[4]);
 
 void recompute_ideal_colors(
+	const block_size_descriptor* bsd,
 	int weight_quantization_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6

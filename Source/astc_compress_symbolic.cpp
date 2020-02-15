@@ -382,7 +382,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		int l;
 		for (l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, NULL, -1, pi, it, blk, ewb);
+			recompute_ideal_colors(bsd, weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, NULL, -1, pi, it, blk, ewb);
 
 			// quantize the chosen color
 
@@ -680,7 +680,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		int l;
 		for (l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(weight_quantization_mode, &epm, rgbs_colors, rgbo_colors, u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
+			recompute_ideal_colors(bsd, weight_quantization_mode, &epm, rgbs_colors, rgbo_colors, u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
 
 			// store the colors for the block
 			for (j = 0; j < partition_count; j++)
@@ -771,7 +771,7 @@ void expand_block_artifact_suppression(
 				float zdif = (z - centerpos_z) / zdim;
 
 				float wdif = 0.36f;
-				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
+				float dist = sqrtf(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
 				*bef = powf(dist, ewp->block_artifact_suppression);
 				bef++;
 			}
@@ -860,10 +860,10 @@ static float prepare_error_weight_block(
 						variance.y = fvar * mixing + variance.y * (1.0f - mixing);
 						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
 
-						float4 stdev = float4(astc::sqrt(MAX(variance.x, 0.0f)),
-											  astc::sqrt(MAX(variance.y, 0.0f)),
-											  astc::sqrt(MAX(variance.z, 0.0f)),
-											  astc::sqrt(MAX(variance.w, 0.0f)));
+						float4 stdev = float4(sqrtf(MAX(variance.x, 0.0f)),
+											  sqrtf(MAX(variance.y, 0.0f)),
+											  sqrtf(MAX(variance.z, 0.0f)),
+											  sqrtf(MAX(variance.w, 0.0f)));
 
 						avg.x *= ewp->rgb_mean_weight;
 						avg.y *= ewp->rgb_mean_weight;
@@ -1069,12 +1069,12 @@ static void prepare_block_statistics(
 	aa_var -= as*(as*rpt);
 
 
-	rg_cov *= astc::rsqrt(MAX(rr_var * gg_var, 1e-30f));
-	rb_cov *= astc::rsqrt(MAX(rr_var * bb_var, 1e-30f));
-	ra_cov *= astc::rsqrt(MAX(rr_var * aa_var, 1e-30f));
-	gb_cov *= astc::rsqrt(MAX(gg_var * bb_var, 1e-30f));
-	ga_cov *= astc::rsqrt(MAX(gg_var * aa_var, 1e-30f));
-	ba_cov *= astc::rsqrt(MAX(bb_var * aa_var, 1e-30f));
+	rg_cov *= 1.0f / sqrtf(MAX(rr_var * gg_var, 1e-30f));
+	rb_cov *= 1.0f / sqrtf(MAX(rr_var * bb_var, 1e-30f));
+	ra_cov *= 1.0f / sqrtf(MAX(rr_var * aa_var, 1e-30f));
+	gb_cov *= 1.0f / sqrtf(MAX(gg_var * bb_var, 1e-30f));
+	ga_cov *= 1.0f / sqrtf(MAX(gg_var * aa_var, 1e-30f));
+	ba_cov *= 1.0f / sqrtf(MAX(bb_var * aa_var, 1e-30f));
 
     if (astc::isnan(rg_cov)) rg_cov = 1.0f;
     if (astc::isnan(rb_cov)) rb_cov = 1.0f;

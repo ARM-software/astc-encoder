@@ -24,6 +24,77 @@ float3 cross(float3 p, float3 q)
 	              p.x * q.y - p.y * q.x);
 }
 
+float determinant(mat2 p)
+{
+	float2 v = float2(p.v[0].x * p.v[1].y, p.v[0].y * p.v[1].x);
+	return v.x - v.y;
+}
+
+float2 transform(mat2 p, float2 q)
+{
+	return float2(dot(p.v[0], q), dot(p.v[1], q));
+}
+
+float4 transform(mat4 p, float4 q)
+{
+	return float4(dot(p.v[0], q), dot(p.v[1], q), dot(p.v[2], q), dot(p.v[3], q));
+}
+
+mat2 invert(mat2 p)
+{
+	float rdet = 1.0f / determinant(p);
+	mat2 res;
+	res.v[0] = float2(p.v[1].y, -p.v[0].y) * rdet;
+	res.v[1] = float2(-p.v[1].x, p.v[0].x) * rdet;
+	return res;
+}
+
+mat4 invert(mat4 p)
+{
+	// cross products between the bottom two rows
+	float3 bpc0 = cross(float3(p.v[2].y, p.v[2].z, p.v[2].w), float3(p.v[3].y, p.v[3].z, p.v[3].w));
+	float3 bpc1 = cross(float3(p.v[2].x, p.v[2].z, p.v[2].w), float3(p.v[3].x, p.v[3].z, p.v[3].w));
+	float3 bpc2 = cross(float3(p.v[2].x, p.v[2].y, p.v[2].w), float3(p.v[3].x, p.v[3].y, p.v[3].w));
+	float3 bpc3 = cross(float3(p.v[2].x, p.v[2].y, p.v[2].z), float3(p.v[3].x, p.v[3].y, p.v[3].z));
+
+	// dot-products for the top rows
+	float4 row1 = float4(dot(bpc0, float3(p.v[1].y, p.v[1].z, p.v[1].w)),
+	                    -dot(bpc1, float3(p.v[1].x, p.v[1].z, p.v[1].w)),
+	                     dot(bpc2, float3(p.v[1].x, p.v[1].y, p.v[1].w)),
+	                    -dot(bpc3, float3(p.v[1].x, p.v[1].y, p.v[1].z)));
+
+	float det = dot(p.v[0], row1);
+	float rdet = 1.0f / det;
+
+	mat4 res;
+
+	float3 tpc0 = cross(float3(p.v[0].y, p.v[0].z, p.v[0].w), float3(p.v[1].y, p.v[1].z, p.v[1].w));
+	res.v[0] = float4(row1.x,
+	                 -dot(bpc0, float3(p.v[0].y, p.v[0].z, p.v[0].w)),
+	                  dot(tpc0, float3(p.v[3].y, p.v[3].z, p.v[3].w)),
+	                 -dot(tpc0, float3(p.v[2].y, p.v[2].z, p.v[2].w))) * rdet;
+
+	float3 tpc1 = cross(float3(p.v[0].x, p.v[0].z, p.v[0].w), float3(p.v[1].x, p.v[1].z, p.v[1].w));
+	res.v[1] = float4(row1.y,
+	                  dot(bpc1, float3(p.v[0].x, p.v[0].z, p.v[0].w)),
+	                 -dot(tpc1, float3(p.v[3].x, p.v[3].z, p.v[3].w)),
+	                  dot(tpc1, float3(p.v[2].x, p.v[2].z, p.v[2].w))) * rdet;
+
+	float3 tpc2 = cross(float3(p.v[0].x, p.v[0].y, p.v[0].w), float3(p.v[1].x, p.v[1].y, p.v[1].w));
+	res.v[2] = float4(row1.z,
+	                 -dot(bpc2, float3(p.v[0].x, p.v[0].y, p.v[0].w)),
+	                  dot(tpc2, float3(p.v[3].x, p.v[3].y, p.v[3].w)),
+	                 -dot(tpc2, float3(p.v[2].x, p.v[2].y, p.v[2].w))) * rdet;
+
+	float3 tpc3 = cross(float3(p.v[0].x, p.v[0].z, p.v[0].z), float3(p.v[1].x, p.v[1].y, p.v[1].z));
+	res.v[3] = float4(row1.w,
+	                  dot(bpc3, float3(p.v[0].x, p.v[0].y, p.v[0].z)),
+	                 -dot(tpc3, float3(p.v[3].x, p.v[3].y, p.v[3].z)),
+	                  dot(tpc3, float3(p.v[2].x, p.v[2].y, p.v[2].z))) * rdet;
+
+	return res;
+}
+
 /* Public function, see header file for detailed documentation */
 float astc::log2(float val)
 {

@@ -1254,79 +1254,18 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	}
 }
 
-static inline float4 compute_rgbovec(
-	float4 rgba_weight_sum,
-	float3 weight_weight_sum,
-	float red_sum,
-	float green_sum,
-	float blue_sum,
-	float psum,
-	float qsum
-) {
-	// rgb+offset for HDR endpoint mode #7
-	//float4 rmod7_mat[4];
-
-	// mat4 mod7_mat;
-
-	// mod7_mat.v[0] = float4(rgba_weight_sum.x, 0.0f, 0.0f, weight_weight_sum.x);
-	// mod7_mat.v[1] = float4(0.0f, rgba_weight_sum.y, 0.0f, weight_weight_sum.y);
-	// mod7_mat.v[2] = float4(0.0f, 0.0f, rgba_weight_sum.z, weight_weight_sum.z);
-	// mod7_mat.v[3] = float4(weight_weight_sum.x, weight_weight_sum.y, weight_weight_sum.z, psum);
-	// rmod7_mat = invert(mod7_mat); // can this matrix-inversion be simplified?
-
-	// since the matrix above has a regular structure, we can simplify the inverse
-	// calculation. This gives us ~24 multiplications, down from ~96 multiplications
-	// for the generic 4x4 inverse.
-
-	float X = rgba_weight_sum.x;
-	float Y = rgba_weight_sum.y;
-	float Z = rgba_weight_sum.z;
-	float P = weight_weight_sum.x;
-	float Q = weight_weight_sum.y;
-	float R = weight_weight_sum.z;
-	float S = psum;
-
-	float PP = P*P;
-	float QQ = Q*Q;
-	float RR = R*R;
-
-	float SZmRR = S*Z - RR;
-	float DT = SZmRR * Y - Z*QQ;
-	float YP = Y*P;
-	float QX = Q*X;
-	float YX = Y*X;
-	float mZYP = -Z*YP;
-	float mZQX = -Z*QX;
-	float mRYX = -R*YX;
-	float ZQP = Z*Q*P;
-	float RYP = R*YP;
-	float RQX = R*QX;
-
-	float rdet = 1.0f / (DT * X + mZYP * P); // reciprocal of matrix determinant.
-
-	// adjugate matrix, not inverse.
-	// We omit multiplication by 1/det, and apply that multiplication to the
-	// vector instead.
-	float4 rmod7_mat0 = float4(DT, ZQP, RYP, mZYP);
-	float4 rmod7_mat1 = float4(ZQP, SZmRR * X - Z * PP, RQX, mZQX);
-	float4 rmod7_mat2 = float4(RYP, RQX, (S*Y - QQ) * X - Y * PP, mRYX);
-	float4 rmod7_mat3 = float4(mZYP, mZQX, mRYX, Z*YX);
-	float4 vect = float4(red_sum, green_sum, blue_sum, qsum) * rdet;
-
-	#ifdef DEBUG_CAPTURE_NAN
-	    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-	#endif
-
-	float4 rgbovec = float4(dot(rmod7_mat0, vect),
-	                        dot(rmod7_mat1, vect),
-	                        dot(rmod7_mat2, vect),
-	                        dot(rmod7_mat3, vect));
-
-	return rgbovec;
+static inline float mat_square_sum(mat2 p)
+{
+	float a = p.v[0].x;
+	float b = p.v[0].y;
+	float c = p.v[1].x;
+	float d = p.v[1].y;
+	return a * a + b * b + c * c + d * d;
 }
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
 void recompute_ideal_colors(
+	const block_size_descriptor* bsd,
 	int weight_quantization_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
@@ -1339,19 +1278,23 @@ void recompute_ideal_colors(
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
+	int i, j;
+
+	int texels_per_block = bsd->texel_count;
+
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
 
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
 
-	for (int i = 0; i < it->num_weights; i++)
+	for (i = 0; i < it->num_weights; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);;
 	}
 
 	if (plane2_weight_set8)
 	{
-		for (int i = 0; i < it->num_weights; i++)
+		for (i = 0; i < it->num_weights; i++)
 			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
 	}
 
@@ -1363,7 +1306,7 @@ void recompute_ideal_colors(
 			printf("%s : %dx%dx%d texels_per_block, %d partitions, plane2-color-component=%d\n\n", __func__, xdim, ydim, zdim, partition_count, plane2_color_component);
 
 			printf("Pre-adjustment endpoint-colors: \n");
-			for (int i = 0; i < partition_count; i++)
+			for (i = 0; i < partition_count; i++)
 			{
 				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
 				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
@@ -1371,177 +1314,279 @@ void recompute_ideal_colors(
 		}
 	#endif
 
-	for (int i = 0; i < partition_count; i++)
+	mat2 pmat1_red[4], pmat1_green[4], pmat1_blue[4], pmat1_alpha[4], pmat1_scale[4];	// matrices for plane of weights 1
+	mat2 pmat2_red[4], pmat2_green[4], pmat2_blue[4], pmat2_alpha[4];	// matrices for plane of weights 2
+	float2 red_vec[4];
+	float2 green_vec[4];
+	float2 blue_vec[4];
+	float2 alpha_vec[4];
+	float2 scale_vec[4];
+
+	for (i = 0; i < partition_count; i++)
 	{
-		float4 rgba_sum        = float4(1e-17f, 1e-17f, 1e-17f, 1e-17f);
-		float4 rgba_weight_sum = float4(1e-17f, 1e-17f, 1e-17f, 1e-17f);
-
-		int texelcount = pi->texels_per_partition[i];
-		const uint8_t *texel_indexes = pi->texels_of_partition[i];
-		for (int j = 0; j < texelcount; j++)
+		for (j = 0; j < 2; j++)
 		{
-			int tix = texel_indexes[j];
-
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 error_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
-
-			rgba_sum = rgba_sum + (rgba * error_weight);
-			rgba_weight_sum = rgba_weight_sum + error_weight;
+			pmat1_red[i].v[j] = float2(0, 0);
+			pmat2_red[i].v[j] = float2(0, 0);
+			pmat1_green[i].v[j] = float2(0, 0);
+			pmat2_green[i].v[j] = float2(0, 0);
+			pmat1_blue[i].v[j] = float2(0, 0);
+			pmat2_blue[i].v[j] = float2(0, 0);
+			pmat1_alpha[i].v[j] = float2(0, 0);
+			pmat2_alpha[i].v[j] = float2(0, 0);
+			pmat1_scale[i].v[j] = float2(0, 0);
 		}
 
+		red_vec[i] = float2(0, 0);
+		green_vec[i] = float2(0, 0);
+		blue_vec[i] = float2(0, 0);
+		alpha_vec[i] = float2(0, 0);
+		scale_vec[i] = float2(0, 0);
+	}
 
-		float3 scale_direction = normalize(float3(
-		        rgba_sum.x * (1.0f / rgba_weight_sum.x),
-		        rgba_sum.y * (1.0f / rgba_weight_sum.y),
-		        rgba_sum.z * (1.0f / rgba_weight_sum.z)));
+	float wmin1[4], wmax1[4];
+	float wmin2[4], wmax2[4];
+	float red_weight_sum[4];
+	float green_weight_sum[4];
+	float blue_weight_sum[4];
+	float alpha_weight_sum[4];
+	float scale_weight_sum[4];
 
-		float scale_max = 0.0f;
-		float scale_min = 1e10f;
+	float red_weight_weight_sum[4];
+	float green_weight_weight_sum[4];
+	float blue_weight_weight_sum[4];
 
-		float wmin1 = 1.0f;
-		float wmax1 = 0.0f;
-		float wmin2 = 1.0f;
-		float wmax2 = 0.0f;
+	float psum[4];				// sum of (weight * qweight^2) across (red,green,blue)
+	float qsum[4];				// sum of (weight * qweight * texelval) across (red,green,blue)
 
-		float4 left_sum    = float4(0,0,0,0);
-		float4 middle_sum  = float4(0,0,0,0);
-		float4 right_sum   = float4(0,0,0,0);
+	for (i = 0; i < partition_count; i++)
+	{
+		wmin1[i] = 1.0f;
+		wmax1[i] = 0.0f;
+		wmin2[i] = 1.0f;
+		wmax2[i] = 0.0f;
+		red_weight_sum[i] = 1e-17f;
+		green_weight_sum[i] = 1e-17f;
+		blue_weight_sum[i] = 1e-17f;
+		alpha_weight_sum[i] = 1e-17f;
 
-		float4 left2_sum   = float4(0,0,0,0);
-		float4 middle2_sum = float4(0,0,0,0);
-		float4 right2_sum  = float4(0,0,0,0);
+		scale_weight_sum[i] = 1e-17f;
 
-		float3 lmrs_sum = float3(0,0,0);
-		float4 color_vec_x = float4(0,0,0,0);
-		float4 color_vec_y = float4(0,0,0,0);
-		float2 scale_vec = float2(0, 0);
+		red_weight_weight_sum[i] = 1e-17f;
+		green_weight_weight_sum[i] = 1e-17f;
+		blue_weight_weight_sum[i] = 1e-17f;
 
-		float3 weight_weight_sum = float3(1e-17f, 1e-17f, 1e-17f);
-		float psum = 1e-17f;
+		psum[i] = 1e-17f;
+		qsum[i] = 1e-17f;
+	}
 
-		// FIXME: the loop below has too many responsibilities, making it inefficient.
-		for (int j = 0; j < texelcount; j++)
+	// for each partition, compute the direction that an RGB-scale color endpoint pair would have.
+	float3 rgb_sum[4];
+	float3 rgb_weight_sum[4];
+	float3 scale_directions[4];
+	float scale_min[4];
+	float scale_max[4];
+
+	for (i = 0; i < partition_count; i++)
+	{
+		rgb_sum[i] = float3(1e-17f, 1e-17f, 1e-17f);
+		rgb_weight_sum[i] = float3(1e-17f, 1e-17f, 1e-17f);
+	}
+
+	for (i = 0; i < texels_per_block; i++)
+	{
+		float3 rgb = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
+		float3 rgb_weight = float3(ewb->texel_weight_r[i],
+		                           ewb->texel_weight_g[i],
+		                           ewb->texel_weight_b[i]);
+
+		int part = pi->partition_of_texel[i];
+		rgb_sum[part] = rgb_sum[part] + (rgb * rgb_weight);
+		rgb_weight_sum[part] = rgb_weight_sum[part] + rgb_weight;
+	}
+
+	for (i = 0; i < partition_count; i++)
+	{
+		float3 tmp = float3(rgb_sum[i].x / rgb_weight_sum[i].x,
+		                    rgb_sum[i].y / rgb_weight_sum[i].y,
+		                    rgb_sum[i].z / rgb_weight_sum[i].z);
+		scale_directions[i] = normalize(tmp);
+		scale_max[i] = 0.0f;
+		scale_min[i] = 1e10f;
+	}
+
+	for (i = 0; i < texels_per_block; i++)
+	{
+		float r = pb->data_r[i];
+		float g = pb->data_g[i];
+		float b = pb->data_b[i];
+		float a = pb->data_a[i];
+
+		int part = pi->partition_of_texel[i];
+		float idx0 = it ? compute_value_of_texel_flt(i, it, weight_set) : weight_set[i];
+		float om_idx0 = 1.0f - idx0;
+
+		if (idx0 > wmax1[part])
+			wmax1[part] = idx0;
+		if (idx0 < wmin1[part])
+			wmin1[part] = idx0;
+
+		float red_weight = ewb->texel_weight_r[i];
+		float green_weight = ewb->texel_weight_g[i];
+		float blue_weight = ewb->texel_weight_b[i];
+		float alpha_weight = ewb->texel_weight_a[i];
+
+		float scale_weight = (red_weight + green_weight + blue_weight);
+
+		float3 scale_direction = scale_directions[part];
+		float scale = dot(scale_direction, float3(r, g, b));
+		if (scale < scale_min[part])
+			scale_min[part] = scale;
+		if (scale > scale_max[part])
+			scale_max[part] = scale;
+
+		red_weight_sum[part] += red_weight;
+		green_weight_sum[part] += green_weight;
+		blue_weight_sum[part] += blue_weight;
+		alpha_weight_sum[part] += alpha_weight;
+		scale_weight_sum[part] += scale_weight;
+
+		pmat1_red[part].v[0].x += om_idx0 * om_idx0 * red_weight;
+		pmat1_red[part].v[0].y += idx0 * om_idx0 * red_weight;
+		pmat1_red[part].v[1].x += idx0 * om_idx0 * red_weight;
+		pmat1_red[part].v[1].y += idx0 * idx0 * red_weight;
+
+		pmat1_green[part].v[0].x += om_idx0 * om_idx0 * green_weight;
+		pmat1_green[part].v[0].y += idx0 * om_idx0 * green_weight;
+		pmat1_green[part].v[1].x += idx0 * om_idx0 * green_weight;
+		pmat1_green[part].v[1].y += idx0 * idx0 * green_weight;
+
+		pmat1_blue[part].v[0].x += om_idx0 * om_idx0 * blue_weight;
+		pmat1_blue[part].v[0].y += idx0 * om_idx0 * blue_weight;
+		pmat1_blue[part].v[1].x += idx0 * om_idx0 * blue_weight;
+		pmat1_blue[part].v[1].y += idx0 * idx0 * blue_weight;
+
+		pmat1_alpha[part].v[0].x += om_idx0 * om_idx0 * alpha_weight;
+		pmat1_alpha[part].v[0].y += idx0 * om_idx0 * alpha_weight;
+		pmat1_alpha[part].v[1].x += idx0 * om_idx0 * alpha_weight;
+		pmat1_alpha[part].v[1].y += idx0 * idx0 * alpha_weight;
+
+		pmat1_scale[part].v[0].x += om_idx0 * om_idx0 * scale_weight;
+		pmat1_scale[part].v[0].y += idx0 * om_idx0 * scale_weight;
+		pmat1_scale[part].v[1].x += idx0 * om_idx0 * scale_weight;
+		pmat1_scale[part].v[1].y += idx0 * idx0 * scale_weight;
+
+		float idx1 = 0.0f, om_idx1 = 0.0f;
+		if (plane2_weight_set8)
 		{
-			int tix = texel_indexes[j];
+			idx1 = it ? compute_value_of_texel_flt(i, it, plane2_weight_set) : plane2_weight_set[i];
+			om_idx1 = 1.0f - idx1;
+			if (idx1 > wmax2[part])
+				wmax2[part] = idx1;
+			if (idx1 < wmin2[part])
+				wmin2[part] = idx1;
 
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 color_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			pmat2_red[part].v[0].x += om_idx1 * om_idx1 * red_weight;
+			pmat2_red[part].v[0].y += idx1 * om_idx1 * red_weight;
+			pmat2_red[part].v[1].x += idx1 * om_idx1 * red_weight;
+			pmat2_red[part].v[1].y += idx1 * idx1 * red_weight;
 
-			float3 color_weight3 = float3(color_weight.x, color_weight.y, color_weight.z);
-			float3 rgb = float3(rgba.x, rgba.y, rgba.z);
+			pmat2_green[part].v[0].x += om_idx1 * om_idx1 * green_weight;
+			pmat2_green[part].v[0].y += idx1 * om_idx1 * green_weight;
+			pmat2_green[part].v[1].x += idx1 * om_idx1 * green_weight;
+			pmat2_green[part].v[1].y += idx1 * idx1 * green_weight;
 
-			// FIXME: move this calculation out to the color block.
-			float ls_weight = (color_weight.x + color_weight.y + color_weight.z);
+			pmat2_blue[part].v[0].x += om_idx1 * om_idx1 * blue_weight;
+			pmat2_blue[part].v[0].y += idx1 * om_idx1 * blue_weight;
+			pmat2_blue[part].v[1].x += idx1 * om_idx1 * blue_weight;
+			pmat2_blue[part].v[1].y += idx1 * idx1 * blue_weight;
 
-			const uint8_t *texel_weights = it->texel_weights[tix];
-			const float *texel_weights_float = it->texel_weights_float[tix];
-			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
-			            + weight_set[texel_weights[1]] * texel_weights_float[1])
-			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
-			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
-
-			float om_idx0 = 1.0f - idx0;
-			if (idx0 > wmax1)
-				wmax1 = idx0;
-			if (idx0 < wmin1)
-				wmin1 = idx0;
-
-			float scale = dot(scale_direction, rgb);
-			if (scale < scale_min)
-				scale_min = scale;
-			if (scale > scale_max)
-				scale_max = scale;
-
-			float4 left   = color_weight * (om_idx0 * om_idx0);
-			float4 middle = color_weight * (om_idx0 * idx0);
-			float4 right  = color_weight * (idx0 * idx0);
-
-			float3 lmrs = float3(om_idx0 * om_idx0, om_idx0 * idx0, idx0 * idx0) * ls_weight;
-
-			left_sum   = left_sum + left;
-			middle_sum = middle_sum + middle;
-			right_sum  = right_sum + right;
-
-			lmrs_sum = lmrs_sum + lmrs;
-
-			float idx1 = 0.0f, om_idx1 = 0.0f;
-			if (plane2_weight_set8)
-			{
-				idx1 = (plane2_weight_set[texel_weights[0]] * texel_weights_float[0]
-				      + plane2_weight_set[texel_weights[1]] * texel_weights_float[1])
-				     + (plane2_weight_set[texel_weights[2]] * texel_weights_float[2]
-				      + plane2_weight_set[texel_weights[3]] * texel_weights_float[3]);
-
-				om_idx1 = 1.0f - idx1;
-				if (idx1 > wmax2)
-					wmax2 = idx1;
-				if (idx1 < wmin2)
-					wmin2 = idx1;
-
-				float4 left2   = color_weight * (om_idx1 * om_idx1);
-				float4 middle2 = color_weight * (om_idx1 * idx1);
-				float4 right2  = color_weight * (idx1 * idx1);
-
-				left2_sum   = left2_sum   + left2;
-				middle2_sum = middle2_sum + middle2;
-				right2_sum  = right2_sum  + right2;
-			}
-
-			float4 color_idx = float4((plane2_color_component == 0) ? idx1 : idx0,
-			                          (plane2_color_component == 1) ? idx1 : idx0,
-			                          (plane2_color_component == 2) ? idx1 : idx0,
-			                          (plane2_color_component == 3) ? idx1 : idx0);
-
-			float3 color_idx3 = float3(color_idx.x, color_idx.y, color_idx.z);
-
-			float4 cwprod = color_weight * rgba;
-			float4 cwiprod = cwprod * color_idx;
-
-			color_vec_y = color_vec_y + cwiprod;
-			color_vec_x = color_vec_x + (cwprod - cwiprod);
-
-			scale_vec = scale_vec + float2(om_idx0, idx0) * (ls_weight * scale);
-
-			weight_weight_sum = weight_weight_sum + (color_weight3 * color_idx3);
-
-			psum += dot(color_weight3 * color_idx3, color_idx3);
+			pmat2_alpha[part].v[0].x += om_idx1 * om_idx1 * alpha_weight;
+			pmat2_alpha[part].v[0].y += idx1 * om_idx1 * alpha_weight;
+			pmat2_alpha[part].v[1].x += idx1 * om_idx1 * alpha_weight;
+			pmat2_alpha[part].v[1].y += idx1 * idx1 * alpha_weight;
 		}
 
-		// calculations specific to mode #7, the HDR RGB-scale mode.
-		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.x + color_vec_y.x;
-		float green_sum = color_vec_x.y + color_vec_y.y;
-		float blue_sum  = color_vec_x.z + color_vec_y.z;
-		float qsum = color_vec_y.x + color_vec_y.y + color_vec_y.z;
+		float red_idx = (plane2_color_component == 0) ? idx1 : idx0;
+		float green_idx = (plane2_color_component == 1) ? idx1 : idx0;
+		float blue_idx = (plane2_color_component == 2) ? idx1 : idx0;
+		float alpha_idx = (plane2_color_component == 3) ? idx1 : idx0;
+
+		red_vec[part].x += (red_weight * r) * (1.0f - red_idx);
+		green_vec[part].x += (green_weight * g) * (1.0f - green_idx);
+		blue_vec[part].x += (blue_weight * b) * (1.0f - blue_idx);
+		alpha_vec[part].x += (alpha_weight * a) * (1.0f - alpha_idx);
+		scale_vec[part].x += (scale_weight * scale) * om_idx0;
+
+		red_vec[part].y += (red_weight * r) * red_idx;
+		green_vec[part].y += (green_weight * g) * green_idx;
+		blue_vec[part].y += (blue_weight * b) * blue_idx;
+		alpha_vec[part].y += (alpha_weight * a) * alpha_idx;
+		scale_vec[part].y += (scale_weight * scale) * idx0;
+
+		red_weight_weight_sum[part] += red_weight * red_idx;
+		green_weight_weight_sum[part] += green_weight * green_idx;
+		blue_weight_weight_sum[part] += blue_weight * blue_idx;
+
+		psum[part] += red_weight * red_idx * red_idx + green_weight * green_idx * green_idx + blue_weight * blue_idx * blue_idx;
+	}
+
+	// calculations specific to mode #7, the HDR RGB-scale mode.
+	float red_sum[4];
+	float green_sum[4];
+	float blue_sum[4];
+
+	for (i = 0; i < partition_count; i++)
+	{
+		red_sum[i] = red_vec[i].x + red_vec[i].y;
+		green_sum[i] = green_vec[i].x + green_vec[i].y;
+		blue_sum[i] = blue_vec[i].x + blue_vec[i].y;
+		qsum[i] = red_vec[i].y + green_vec[i].y + blue_vec[i].y;
+	}
+
+	// RGB+offset for HDR endpoint mode #7
+	int rgbo_fail[4];
+
+	for (i = 0; i < partition_count; i++)
+	{
+		mat4 mod7_mat;
+		mod7_mat.v[0] = float4(red_weight_sum[i], 0.0f, 0.0f, red_weight_weight_sum[i]);
+		mod7_mat.v[1] = float4(0.0f, green_weight_sum[i], 0.0f, green_weight_weight_sum[i]);
+		mod7_mat.v[2] = float4(0.0f, 0.0f, blue_weight_sum[i], blue_weight_weight_sum[i]);
+		mod7_mat.v[3] = float4(red_weight_weight_sum[i], green_weight_weight_sum[i], blue_weight_weight_sum[i], psum[i]);
+
+		float4 vect = float4(red_sum[i], green_sum[i], blue_sum[i], qsum[i]);
 
 		#ifdef DEBUG_CAPTURE_NAN
-		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum, red_sum, green_sum, blue_sum, psum, qsum);
+		mat4 rmod7_mat = invert(mod7_mat);
+		float4 rgbovec = transform(rmod7_mat, vect);
 		rgbo_vectors[i] = rgbovec;
 
 		// we will occasionally get a failure due to a singular matrix. Record whether such a
 		// failure has taken place; if it did, compute rgbo_vectors[] with a different method
 		// later on.
 		float chkval = dot(rgbovec, rgbovec);
-		int rgbo_fail = chkval != chkval;
-
-		rgbo_vectors[i] = float4(0, 0, 0, 0);
+		rgbo_fail[i] = chkval != chkval;
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
+	}
 
-		// initialize the luminance and scale vectors with a reasonable default,
-		// just in case the subsequent calculation blows up.
+	// initialize the luminance and scale vectors with a reasonable default,
+	// just in case the subsequent calculation blows up.
+	for (i = 0; i < partition_count; i++)
+	{
 		#ifdef DEBUG_CAPTURE_NAN
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
+		float scalediv = scale_min[i] / scale_max[i];
 		if (!(scalediv > 0.0f))
-			scalediv = 0.0f;    // set to zero if scalediv is zero, negative, or NaN.
+			scalediv = 0.0f;	// set to zero if scalediv is zero, negative, or NaN.
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1550,19 +1595,22 @@ void recompute_ideal_colors(
 		if (scalediv > 1.0f)
 			scalediv = 1.0f;
 
-		float3 sds = scale_direction * scale_max;
+		rgbs_vectors[i] = float4(scale_directions[i].x * scale_max[i],
+		                         scale_directions[i].y * scale_max[i],
+		                         scale_directions[i].z * scale_max[i],
+		                         scalediv);
+	}
 
-		rgbs_vectors[i] = float4(sds.x, sds.y, sds.z, scalediv);
-
-		if (wmin1 >= wmax1 * 0.999f)
+	for (i = 0; i < partition_count; i++)
+	{
+		if (wmin1[i] >= wmax1[i] * 0.999f)
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
-			float4 avg = (color_vec_x + color_vec_y) *
-			             float4(1.0f / rgba_weight_sum.x,
-			                    1.0f / rgba_weight_sum.y,
-			                    1.0f / rgba_weight_sum.z,
-			                    1.0f / rgba_weight_sum.w);
+			float4 avg = float4((red_vec[i].x + red_vec[i].y) / red_weight_sum[i],
+								(green_vec[i].x + green_vec[i].y) / green_weight_sum[i],
+								(blue_vec[i].x + blue_vec[i].y) / blue_weight_sum[i],
+								(alpha_vec[i].x + alpha_vec[i].y) / alpha_weight_sum[i]);
 
 			if (plane2_color_component != 0 && avg.x == avg.x)
 				ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
@@ -1573,75 +1621,84 @@ void recompute_ideal_colors(
 			if (plane2_color_component != 3 && avg.w == avg.w)
 				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
 
-			rgbs_vectors[i] = float4( sds.x, sds.y, sds.z, 1.0f);
+			rgbs_vectors[i] = float4(scale_directions[i].x * scale_max[i],
+			                         scale_directions[i].y * scale_max[i],
+			                         scale_directions[i].z * scale_max[i],
+			                         1.0f);
 		}
-
 		else
 		{
 			// otherwise, complete the analytic calculation of ideal-endpoint-values
 			// for the given set of texel weights and pixel colors.
 
 			#ifdef DEBUG_CAPTURE_NAN
-			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+				fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 			#endif
 
-			float4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
-			float4 color_rdet1 = float4(1.0f / color_det1.x,
-			                            1.0f / color_det1.y,
-			                            1.0f / color_det1.z,
-			                            1.0f / color_det1.w );
+			float red_det1 = determinant(pmat1_red[i]);
+			float green_det1 = determinant(pmat1_green[i]);
+			float blue_det1 = determinant(pmat1_blue[i]);
+			float alpha_det1 = determinant(pmat1_alpha[i]);
+			float scale_det1 = determinant(pmat1_scale[i]);
 
-			float ls_det1  = (lmrs_sum.x * lmrs_sum.z) - (lmrs_sum.y * lmrs_sum.y);
-			float ls_rdet1 = 1.0f / ls_det1;
-
-			float4 color_mss1 = (left_sum * left_sum)
-			                  + (2.0f * middle_sum * middle_sum)
-			                  + (right_sum * right_sum);
-
-			float ls_mss1 = (lmrs_sum.x * lmrs_sum.x)
-			              + (2.0f * lmrs_sum.y * lmrs_sum.y)
-			              + (lmrs_sum.z * lmrs_sum.z);
+			float red_mss1 = mat_square_sum(pmat1_red[i]);
+			float green_mss1 = mat_square_sum(pmat1_green[i]);
+			float blue_mss1 = mat_square_sum(pmat1_blue[i]);
+			float alpha_mss1 = mat_square_sum(pmat1_alpha[i]);
+			float scale_mss1 = mat_square_sum(pmat1_scale[i]);
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
 				if (print_diagnostics)
-					printf("Plane-1 partition %d determinants: R=%g G=%g B=%g A=%g L=%g S=%g\n",
-					    i, (double)color_det1.x, (double)color_det1.y, (double)color_det1.z, (double)color_det1.w, (double)ls_det1, (double)ls_det1);
+					printf("Plane-1 partition %d determinants: R=%g G=%g B=%g A=%g S=%g\n", i, red_det1, green_det1, blue_det1, alpha_det1, scale_det1);
 			#endif
 
-			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
-			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
+			pmat1_red[i] = invert(pmat1_red[i]);
+			pmat1_green[i] = invert(pmat1_green[i]);
+			pmat1_blue[i] = invert(pmat1_blue[i]);
+			pmat1_alpha[i] = invert(pmat1_alpha[i]);
+			pmat1_scale[i] = invert(pmat1_scale[i]);
 
-			float scale_ep0 = (lmrs_sum.z * scale_vec.x - lmrs_sum.y * scale_vec.y) * ls_rdet1;
-			float scale_ep1 = (lmrs_sum.x * scale_vec.y - lmrs_sum.y * scale_vec.x) * ls_rdet1;
+			float4 ep0 = float4(dot(pmat1_red[i].v[0], red_vec[i]),
+								dot(pmat1_green[i].v[0], green_vec[i]),
+								dot(pmat1_blue[i].v[0], blue_vec[i]),
+								dot(pmat1_alpha[i].v[0], alpha_vec[i]));
+			float4 ep1 = float4(dot(pmat1_red[i].v[1], red_vec[i]),
+								dot(pmat1_green[i].v[1], green_vec[i]),
+								dot(pmat1_blue[i].v[1], blue_vec[i]),
+								dot(pmat1_alpha[i].v[1], alpha_vec[i]));
 
-			if (plane2_color_component != 0 && fabsf(color_det1.x) > (color_mss1.x * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+			float scale_ep0 = dot(pmat1_scale[i].v[0], scale_vec[i]);
+			float scale_ep1 = dot(pmat1_scale[i].v[1], scale_vec[i]);
+
+			if (plane2_color_component != 0 && fabsf(red_det1) > (red_mss1 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
 			{
 				ep->endpt0[i].x = ep0.x;
 				ep->endpt1[i].x = ep1.x;
 			}
-			if (plane2_color_component != 1 && fabsf(color_det1.y) > (color_mss1.y * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+			if (plane2_color_component != 1 && fabsf(green_det1) > (green_mss1 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
 			{
 				ep->endpt0[i].y = ep0.y;
 				ep->endpt1[i].y = ep1.y;
 			}
-			if (plane2_color_component != 2 && fabsf(color_det1.z) > (color_mss1.z * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+			if (plane2_color_component != 2 && fabsf(blue_det1) > (blue_mss1 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
 			{
 				ep->endpt0[i].z = ep0.z;
 				ep->endpt1[i].z = ep1.z;
 			}
-			if (plane2_color_component != 3 && fabsf(color_det1.w) > (color_mss1.w * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+			if (plane2_color_component != 3 && fabsf(alpha_det1) > (alpha_mss1 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
 			{
 				ep->endpt0[i].w = ep0.w;
 				ep->endpt1[i].w = ep1.w;
 			}
 
-			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
+			if (fabsf(scale_det1) > (scale_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
-				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
-				float3 sdsm = scale_direction * scale_ep1;
-				rgbs_vectors[i] = float4(sdsm.x, sdsm.y, sdsm.z, scalediv2);
+				float scalediv = scale_ep0 / scale_ep1;
+				rgbs_vectors[i] =  float4(scale_directions[i].x * scale_ep1,
+				                          scale_directions[i].y * scale_ep1,
+				                          scale_directions[i].z * scale_ep1,
+				                          scalediv);
 			}
-
 
 			#ifdef DEBUG_CAPTURE_NAN
 				feenableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1650,15 +1707,14 @@ void recompute_ideal_colors(
 
 		if (plane2_weight_set8)
 		{
-			if (wmin2 >= wmax2 * 0.999f)
+			if (wmin2[i] >= wmax2[i] * 0.999f)
 			{
 				// if all weights in the partition were equal, then just take average
 				// of all colors in the partition and use that as both endpoint colors.
-				float4 avg = (color_vec_x + color_vec_y)
-				           * float4(1.0f / rgba_weight_sum.x,
-				                    1.0f / rgba_weight_sum.y,
-				                    1.0f / rgba_weight_sum.z,
-				                    1.0f / rgba_weight_sum.w);
+				float4 avg = float4((red_vec[i].x + red_vec[i].y) / red_weight_sum[i],
+									(green_vec[i].x + green_vec[i].y) / green_weight_sum[i],
+									(blue_vec[i].x + blue_vec[i].y) / blue_weight_sum[i],
+									(alpha_vec[i].x + alpha_vec[i].y) / alpha_weight_sum[i]);
 
 				if (plane2_color_component == 0 && avg.x == avg.x)
 					ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
@@ -1676,42 +1732,54 @@ void recompute_ideal_colors(
 				#endif
 
 				// otherwise, complete the analytic calculation of ideal-endpoint-values
-				// for the given set of texel weigths and pixel colors.
-				float4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
-				float4 color_rdet2 = float4(1.0f / color_det2.x,
-				                            1.0f / color_det2.y,
-				                            1.0f / color_det2.z,
-				                            1.0f / color_det2.w);
+				// for the given set of texel weights and pixel colors.
+				float red_det2 = determinant(pmat2_red[i]);
+				float green_det2 = determinant(pmat2_green[i]);
+				float blue_det2 = determinant(pmat2_blue[i]);
+				float alpha_det2 = determinant(pmat2_alpha[i]);
 
-				float4 color_mss2 = (left2_sum * left2_sum)
-				                  + (2.0f * middle2_sum * middle2_sum)
-				                  + (right2_sum * right2_sum);
+				float red_mss2 = mat_square_sum(pmat2_red[i]);
+				float green_mss2 = mat_square_sum(pmat2_green[i]);
+				float blue_mss2 = mat_square_sum(pmat2_blue[i]);
+				float alpha_mss2 = mat_square_sum(pmat2_alpha[i]);
 
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
 					if (print_diagnostics)
-						printf("Plane-2 partition %d determinants: R=%g G=%g B=%g A=%g\n",
-						       i, (double)color_det2.x, (double)color_det2.y, (double)color_det2.z, (double)color_det2.w);
+						printf("Plane-2 partition %d determinants: R=%g G=%g B=%g A=%g\n", i, red_det2, green_det2, blue_det2, alpha_det2);
 				#endif
 
-				float4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
-				float4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
+				pmat2_red[i] = invert(pmat2_red[i]);
+				pmat2_green[i] = invert(pmat2_green[i]);
+				pmat2_blue[i] = invert(pmat2_blue[i]);
+				pmat2_alpha[i] = invert(pmat2_alpha[i]);
+				float4 ep0 = float4(dot(pmat2_red[i].v[0], red_vec[i]),
+									dot(pmat2_green[i].v[0], green_vec[i]),
+									dot(pmat2_blue[i].v[0], blue_vec[i]),
+									dot(pmat2_alpha[i].v[0], alpha_vec[i]));
+				float4 ep1 = float4(dot(pmat2_red[i].v[1], red_vec[i]),
+									dot(pmat2_green[i].v[1], green_vec[i]),
+									dot(pmat2_blue[i].v[1], blue_vec[i]),
+									dot(pmat2_alpha[i].v[1], alpha_vec[i]));
 
-				if (plane2_color_component == 0 && fabsf(color_det2.x) > (color_mss2.x * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+				if (plane2_color_component == 0 && fabsf(red_det2) > (red_mss2 * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
 				{
 					ep->endpt0[i].x = ep0.x;
 					ep->endpt1[i].x = ep1.x;
 				}
-				if (plane2_color_component == 1 && fabsf(color_det2.y) > (color_mss2.y * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+
+				if (plane2_color_component == 1 && fabsf(green_det2) > (green_mss2 * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
 				{
 					ep->endpt0[i].y = ep0.y;
 					ep->endpt1[i].y = ep1.y;
 				}
-				if (plane2_color_component == 2 && fabsf(color_det2.z) > (color_mss2.z * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+
+				if (plane2_color_component == 2 && fabsf(blue_det2) > (blue_mss2 * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
 				{
 					ep->endpt0[i].z = ep0.z;
 					ep->endpt1[i].z = ep1.z;
 				}
-				if (plane2_color_component == 3 && fabsf(color_det2.w) > (color_mss2.w * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+
+				if (plane2_color_component == 3 && fabsf(alpha_det2) > (alpha_mss2 * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
 				{
 					ep->endpt0[i].w = ep0.w;
 					ep->endpt1[i].w = ep1.w;
@@ -1722,15 +1790,17 @@ void recompute_ideal_colors(
 				#endif
 			}
 		}
+	}
 
-		// if the calculation of an RGB-offset vector failed, try to compute
-		// a somewhat-sensible value anyway
-		if (rgbo_fail)
+	// if the calculation of an RGB-offset vector failed, try to compute
+	// a somewhat-sensible value anyway
+	for (i = 0; i < partition_count; i++)
+	{
+		if (rgbo_fail[i])
 		{
 			float4 v0 = ep->endpt0[i];
 			float4 v1 = ep->endpt1[i];
-			float avgdif = ((v1.x - v0.x) + (v1.y - v0.y) + (v1.z - v0.z)) * (1.0f / 3.0f);
-
+			float avgdif = dot(float3(v1.x - v0.x, v1.y - v0.y, v1.z - v0.z), float3(1, 1, 1)) * (1.0f / 3.0f);
 			if (avgdif <= 0.0f)
 				avgdif = 0.0f;
 			float4 avg = (v0 + v1) * 0.5f;
@@ -1744,12 +1814,12 @@ void recompute_ideal_colors(
 		if (print_diagnostics)
 		{
 			printf("Post-adjustment endpoint-colors: \n");
-			for (int i = 0; i < partition_count; i++)
+			for (i = 0; i < partition_count; i++)
 			{
-				printf("%d Low  <%g %g %g %g>\n", i, (double)ep->endpt0[i].x, (double)ep->endpt0[i].y, (double)ep->endpt0[i].z, (double)ep->endpt0[i].w);
-				printf("%d High <%g %g %g %g>\n", i, (double)ep->endpt1[i].x, (double)ep->endpt1[i].y, (double)ep->endpt1[i].z, (double)ep->endpt1[i].w);
-				printf("%d RGBS: <%g %g %g %g>\n", i, (double)rgbs_vectors[i].x, (double)rgbs_vectors[i].y, (double)rgbs_vectors[i].z, (double)rgbs_vectors[i].w);
-				printf("%d RGBO <%g %g %g %g>\n", i, (double)rgbo_vectors[i].x, (double)rgbo_vectors[i].y, (double)rgbo_vectors[i].z, (double)rgbo_vectors[i].w);
+				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
+				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
+				printf("%d RGBS: <%g %g %g %g>\n", i, rgbs_vectors[i].x, rgbs_vectors[i].y, rgbs_vectors[i].z, rgbs_vectors[i].w);
+				printf("%d RGBO <%g %g %g %g>\n", i, rgbo_vectors[i].x, rgbo_vectors[i].y, rgbo_vectors[i].z, rgbo_vectors[i].w);
 			}
 		}
 	#endif

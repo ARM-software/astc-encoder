@@ -190,7 +190,6 @@ class TestImage():
 
         assert runPSNR is not None, "No coding PSNR found %s" % result.stdout
         assert runTime is not None, "No coding time found %s" % result.stdout
-        assert allTime is not None, "No total time found %s" % result.stdout
         return (runPSNR, runTime, allTime, outFilePath)
 
 
@@ -307,8 +306,10 @@ def main():
     # Print summary results
     print("Binary: %s" % args.useBinary)
     print("PSNR: %0.3f dB" % psnr)
-    print("Coding time: %0.3f s (avg of %u runs) %0.3f s best" % (codeSecs, len(codeTimes), min(codeTimes)))
-    print("All time:    %0.3f s (avg of %u runs) %0.3f s best" % (allSecs, len(allTimes), min(allTimes)))
+    print("Coding time: avg %0.3f s best %0.3f s (from %u runs)  " % \
+          (codeSecs, min(codeTimes), len(codeTimes)))
+    print("All time:    avg %0.3f s best %0.3f s (from %u runs) " % \
+          (allSecs, min(allTimes), len(allTimes)))
     print("Image: %s" % output)
 
 

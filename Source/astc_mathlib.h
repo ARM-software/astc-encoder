@@ -350,7 +350,7 @@ static inline int popcount(uint64_t p)
  */
 static inline float rsqrt(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE && 1
+#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
 	// FIXME: setting res = 99 causes a crash, which it really shouldn't.
 	return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(val)));
 #else
@@ -367,7 +367,7 @@ static inline float rsqrt(float val)
  */
 static inline float sqrt(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE && 1
+#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
 	return 1.0f * astc::rsqrt(val);
 #else
 	return std::sqrt(val);
@@ -561,7 +561,20 @@ float sf16_to_float(sf16);
 /*********************************
   Declaration of line types
 *********************************/
+
+struct mat2
+{
+	float2 v[2];
+};
+
+struct mat4
+{
+	float4 v[4];
+};
+
+
 // parametric line, 2D: The line is given by line = a + b*t.
+
 struct line2
 {
 	float2 a;
@@ -580,6 +593,7 @@ struct line4
 	float4 a;
 	float4 b;
 };
+
 
 struct processed_line2
 {
@@ -601,5 +615,14 @@ struct processed_line4
 	float4 bs;
 	float4 bis;
 };
+
+float determinant(mat2 p);
+
+float2 transform(mat2 p, float2 q);
+float4 transform(mat4 p, float4 q);
+
+mat2 invert(mat2 p);
+mat4 invert(mat4 p);
+
 
 #endif
