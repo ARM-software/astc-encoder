@@ -63,13 +63,9 @@ options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
 # Prebuilt binaries
 
-Prebuilt release build binaries for Windows (x86 and x64), Linux (x86 and x64),
-and macOS (x64) are available here:
-
-* [Binary directory](/Binary/).
-
- These binaries are built from the latest stable tag, and therefore do not
- necessarily represent the current state of the `master` branch source code.
+Prebuilt release build binaries for 64-bit Linux, macOS, and Windows are
+available in the GitHub Releases page. Note currently, no 2.x series binaries
+are available.
 
 # Getting started
 
