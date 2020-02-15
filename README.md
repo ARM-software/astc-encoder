@@ -122,10 +122,10 @@ recommend experimenting with the block footprint to find the optimum balance
 between size and quality, as the finely adjustable compression ratio is one of
 major strengths of the ASTC format.
 
-The compression speed can be controlled from `-veryfast`, through `-fast`,
-`-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the
-encoder has to spend looking for good encodings the better the results, but it
-does result in increasingly small improvements for the amount of time required.
+The compression speed can be controlled from `-fast`, through `-medium` and
+`-thorough`, up to `-exhaustive`. In general, the more time the encoder has to
+spend looking for good encodings the better the results, but it does result in
+increasingly small improvements for the amount of time required.
 
 There are many other command line options for tuning the encoder parameters
 which can be used to fine tune the compression algorithm. See the command line
