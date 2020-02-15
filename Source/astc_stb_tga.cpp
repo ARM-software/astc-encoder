@@ -23,12 +23,6 @@
 
 #include <stdio.h>
 
-#define STBI_NO_PSD
-#define STBI_NO_PIC
-#define STBI_NO_PNM
-#ifndef NO_STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#endif
 #include "stb_image.h"
 
 astc_codec_image* load_image_with_stb(

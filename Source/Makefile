@@ -35,7 +35,6 @@ DBG?=0
 SOURCES = \
     astc_averages_and_directions.cpp \
     astc_block_sizes2.cpp \
-    astc_codec_image.cpp \
     astc_color_quantize.cpp \
     astc_color_unquantize.cpp \
     astc_compress_symbolic.cpp \
@@ -44,10 +43,11 @@ SOURCES = \
     astc_encoding_choice_error.cpp \
     astc_error_metrics.cpp \
     astc_find_best_partitioning.cpp \
-    astc_file_load_store.cpp \
     astc_ideal_endpoints_and_weights.cpp \
+    astc_image_load_store.cpp \
     astc_integer_sequence.cpp \
     astc_kmeans_partitioning.cpp \
+    astc_ktx_dds.cpp \
     astc_main.cpp \
     astc_mathlib.cpp \
     astc_mathlib_softfloat.cpp \
@@ -56,6 +56,7 @@ SOURCES = \
     astc_pick_best_endpoint_format.cpp \
     astc_platform_dependents.cpp \
     astc_quantization.cpp \
+    astc_stb_tga.cpp \
     astc_symbolic_physical.cpp \
     astc_toplevel.cpp \
     astc_toplevel_help.cpp \
