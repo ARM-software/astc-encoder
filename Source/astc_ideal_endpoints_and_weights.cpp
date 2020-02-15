@@ -1278,8 +1278,6 @@ void recompute_ideal_colors(
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
-	int i, j;
-
 	int texels_per_block = bsd->texel_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
@@ -1287,14 +1285,14 @@ void recompute_ideal_colors(
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
 
-	for (i = 0; i < it->num_weights; i++)
+	for (int i = 0; i < it->num_weights; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);;
 	}
 
 	if (plane2_weight_set8)
 	{
-		for (i = 0; i < it->num_weights; i++)
+		for (int i = 0; i < it->num_weights; i++)
 			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
 	}
 
@@ -1322,9 +1320,9 @@ void recompute_ideal_colors(
 	float2 alpha_vec[4];
 	float2 scale_vec[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
-		for (j = 0; j < 2; j++)
+		for (int j = 0; j < 2; j++)
 		{
 			pmat1_red[i].v[j] = float2(0, 0);
 			pmat2_red[i].v[j] = float2(0, 0);
@@ -1359,7 +1357,7 @@ void recompute_ideal_colors(
 	float psum[4];				// sum of (weight * qweight^2) across (red,green,blue)
 	float qsum[4];				// sum of (weight * qweight * texelval) across (red,green,blue)
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		wmin1[i] = 1.0f;
 		wmax1[i] = 0.0f;
@@ -1387,13 +1385,13 @@ void recompute_ideal_colors(
 	float scale_min[4];
 	float scale_max[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		rgb_sum[i] = float3(1e-17f, 1e-17f, 1e-17f);
 		rgb_weight_sum[i] = float3(1e-17f, 1e-17f, 1e-17f);
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float3 rgb = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
 		float3 rgb_weight = float3(ewb->texel_weight_r[i],
@@ -1405,7 +1403,7 @@ void recompute_ideal_colors(
 		rgb_weight_sum[part] = rgb_weight_sum[part] + rgb_weight;
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float3 tmp = float3(rgb_sum[i].x / rgb_weight_sum[i].x,
 		                    rgb_sum[i].y / rgb_weight_sum[i].y,
@@ -1415,7 +1413,7 @@ void recompute_ideal_colors(
 		scale_min[i] = 1e10f;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float r = pb->data_r[i];
 		float g = pb->data_g[i];
@@ -1536,7 +1534,7 @@ void recompute_ideal_colors(
 	float green_sum[4];
 	float blue_sum[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		red_sum[i] = red_vec[i].x + red_vec[i].y;
 		green_sum[i] = green_vec[i].x + green_vec[i].y;
@@ -1547,7 +1545,7 @@ void recompute_ideal_colors(
 	// RGB+offset for HDR endpoint mode #7
 	int rgbo_fail[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		mat4 mod7_mat;
 		mod7_mat.v[0] = float4(red_weight_sum[i], 0.0f, 0.0f, red_weight_weight_sum[i]);
@@ -1578,7 +1576,7 @@ void recompute_ideal_colors(
 
 	// initialize the luminance and scale vectors with a reasonable default,
 	// just in case the subsequent calculation blows up.
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		#ifdef DEBUG_CAPTURE_NAN
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1601,7 +1599,7 @@ void recompute_ideal_colors(
 		                         scalediv);
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		if (wmin1[i] >= wmax1[i] * 0.999f)
 		{
@@ -1794,7 +1792,7 @@ void recompute_ideal_colors(
 
 	// if the calculation of an RGB-offset vector failed, try to compute
 	// a somewhat-sensible value anyway
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		if (rgbo_fail[i])
 		{
@@ -1816,10 +1814,18 @@ void recompute_ideal_colors(
 			printf("Post-adjustment endpoint-colors: \n");
 			for (i = 0; i < partition_count; i++)
 			{
-				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
-				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
-				printf("%d RGBS: <%g %g %g %g>\n", i, rgbs_vectors[i].x, rgbs_vectors[i].y, rgbs_vectors[i].z, rgbs_vectors[i].w);
-				printf("%d RGBO <%g %g %g %g>\n", i, rgbo_vectors[i].x, rgbo_vectors[i].y, rgbo_vectors[i].z, rgbo_vectors[i].w);
+				printf("%d Low  <%g %g %g %g>\n", i,
+				       (double)ep->endpt0[i].x, (double)ep->endpt0[i].y,
+				       (double)ep->endpt0[i].z, (double)ep->endpt0[i].w);
+				printf("%d High <%g %g %g %g>\n", i,
+				       (double)ep->endpt1[i].x, (double)ep->endpt1[i].y,
+				       (double)ep->endpt1[i].z, (double)ep->endpt1[i].w);
+				printf("%d RGBS: <%g %g %g %g>\n", i,
+				       (double)rgbs_vectors[i].x, (double)rgbs_vectors[i].y,
+				       (double)rgbs_vectors[i].z, (double)rgbs_vectors[i].w);
+				printf("%d RGBO <%g %g %g %g>\n", i,
+				       (double)rgbo_vectors[i].x, (double)rgbo_vectors[i].y,
+				       (double)rgbo_vectors[i].z, (double)rgbo_vectors[i].w);
 			}
 		}
 	#endif

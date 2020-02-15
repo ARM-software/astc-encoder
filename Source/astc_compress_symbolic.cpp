@@ -771,7 +771,7 @@ void expand_block_artifact_suppression(
 				float zdif = (z - centerpos_z) / zdim;
 
 				float wdif = 0.36f;
-				float dist = sqrtf(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
+				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
 				*bef = powf(dist, ewp->block_artifact_suppression);
 				bef++;
 			}
@@ -860,10 +860,10 @@ static float prepare_error_weight_block(
 						variance.y = fvar * mixing + variance.y * (1.0f - mixing);
 						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
 
-						float4 stdev = float4(sqrtf(MAX(variance.x, 0.0f)),
-											  sqrtf(MAX(variance.y, 0.0f)),
-											  sqrtf(MAX(variance.z, 0.0f)),
-											  sqrtf(MAX(variance.w, 0.0f)));
+						float4 stdev = float4(astc::sqrt(MAX(variance.x, 0.0f)),
+											  astc::sqrt(MAX(variance.y, 0.0f)),
+											  astc::sqrt(MAX(variance.z, 0.0f)),
+											  astc::sqrt(MAX(variance.w, 0.0f)));
 
 						avg.x *= ewp->rgb_mean_weight;
 						avg.y *= ewp->rgb_mean_weight;
@@ -1054,34 +1054,33 @@ static void prepare_block_statistics(
 
 	float rpt = 1.0f / MAX(weight_sum, 1e-7f);
 
-	rr_var -= rs*(rs*rpt);
-	rg_cov -= gs*(rs*rpt);
-	rb_cov -= bs*(rs*rpt);
-	ra_cov -= as*(rs*rpt);
+	rr_var -= rs * (rs * rpt);
+	rg_cov -= gs * (rs * rpt);
+	rb_cov -= bs * (rs * rpt);
+	ra_cov -= as * (rs * rpt);
 
-	gg_var -= gs*(gs*rpt);
-	gb_cov -= bs*(gs*rpt);
-	ga_cov -= as*(gs*rpt);
+	gg_var -= gs * (gs * rpt);
+	gb_cov -= bs * (gs * rpt);
+	ga_cov -= as * (gs * rpt);
 
-	bb_var -= bs*(bs*rpt);
-	ba_cov -= as*(bs*rpt);
+	bb_var -= bs * (bs * rpt);
+	ba_cov -= as * (bs * rpt);
 
-	aa_var -= as*(as*rpt);
+	aa_var -= as * (as * rpt);
 
+	rg_cov *= astc::rsqrt(MAX(rr_var * gg_var, 1e-30f));
+	rb_cov *= astc::rsqrt(MAX(rr_var * bb_var, 1e-30f));
+	ra_cov *= astc::rsqrt(MAX(rr_var * aa_var, 1e-30f));
+	gb_cov *= astc::rsqrt(MAX(gg_var * bb_var, 1e-30f));
+	ga_cov *= astc::rsqrt(MAX(gg_var * aa_var, 1e-30f));
+	ba_cov *= astc::rsqrt(MAX(bb_var * aa_var, 1e-30f));
 
-	rg_cov *= 1.0f / sqrtf(MAX(rr_var * gg_var, 1e-30f));
-	rb_cov *= 1.0f / sqrtf(MAX(rr_var * bb_var, 1e-30f));
-	ra_cov *= 1.0f / sqrtf(MAX(rr_var * aa_var, 1e-30f));
-	gb_cov *= 1.0f / sqrtf(MAX(gg_var * bb_var, 1e-30f));
-	ga_cov *= 1.0f / sqrtf(MAX(gg_var * aa_var, 1e-30f));
-	ba_cov *= 1.0f / sqrtf(MAX(bb_var * aa_var, 1e-30f));
-
-    if (astc::isnan(rg_cov)) rg_cov = 1.0f;
-    if (astc::isnan(rb_cov)) rb_cov = 1.0f;
-    if (astc::isnan(ra_cov)) ra_cov = 1.0f;
-    if (astc::isnan(gb_cov)) gb_cov = 1.0f;
-    if (astc::isnan(ga_cov)) ga_cov = 1.0f;
-    if (astc::isnan(ba_cov)) ba_cov = 1.0f;
+	if (astc::isnan(rg_cov)) rg_cov = 1.0f;
+	if (astc::isnan(rb_cov)) rb_cov = 1.0f;
+	if (astc::isnan(ra_cov)) ra_cov = 1.0f;
+	if (astc::isnan(gb_cov)) gb_cov = 1.0f;
+	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
+	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
 	float lowest_correlation = MIN(fabsf(rg_cov), fabsf(rb_cov));
 	lowest_correlation = MIN(lowest_correlation, fabsf(ra_cov));

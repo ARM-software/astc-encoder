@@ -191,10 +191,10 @@ void compute_partition_error_color_weightings(
 
 	for (int i = 0; i < pcnt; i++)
 	{
-		color_scalefactors[i].x = sqrt(error_weightings[i].x);
-		color_scalefactors[i].y = sqrt(error_weightings[i].y);
-		color_scalefactors[i].z = sqrt(error_weightings[i].z);
-		color_scalefactors[i].w = sqrt(error_weightings[i].w);
+		color_scalefactors[i].x = astc::sqrt(error_weightings[i].x);
+		color_scalefactors[i].y = astc::sqrt(error_weightings[i].y);
+		color_scalefactors[i].z = astc::sqrt(error_weightings[i].z);
+		color_scalefactors[i].w = astc::sqrt(error_weightings[i].w);
 	}
 }
 
