@@ -4,12 +4,6 @@ This is the official repository for the Arm® Adaptive Scalable Texture
 Compression (ASTC) Encoder, `astcenc`, a command-line tool for compressing
 and decompressing images using the ASTC texture compression standard.
 
-**WARNING:** This branch is a development branch for version 2.0 of the
-ASTC compressor, which is aiming to improve compression performance without
-sacrificing too much quality. It is under active development, and is likely
-to be less reliable than the master branch which contains the latest stable
-1.x compressor build.
-
 ## The ASTC format
 
 The ASTC compressed data format, developed by Arm® and AMD, has been adopted as
@@ -29,6 +23,17 @@ The ASTC data format specification is available here:
 This project is licensed under the Apache 2.0 license. By downloading any
 component from this repository you acknowledge that you accept terms specified
 in the [LICENSE.txt](LICENSE.txt) file.
+
+# Branches
+
+The `master` branch is an active development branch for the next major release
+of the compressor; version 2.x. It aims to be a stable branch, but as it is
+still under development expect changes to both the command line and the
+quality-performance trade offs the compressor is making.
+
+The `1.x` branch is a maintenance branch for the 1.x release series. It is
+stable and we will now only land bug fixes for this branch; no new
+functionality or performance improvements should be expected.
 
 # Encoder feature support
 
