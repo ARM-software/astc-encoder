@@ -475,9 +475,37 @@ static void test_inappropriate_extended_precision()
 	float q = p.f - 12582912.0f;
 	if (q != 3.0f)
 	{
-		printf("Single-precision test failed; please recompile with proper IEEE-754 support.\n");
+		printf("CPU support error: float math is not IEEE-754 compliant.\n");
+		printf("    Please recompile with IEEE-754 support.\n");
 		exit(1);
 	}
+}
+
+static void test_inappropriate_cpu_extensions()
+{
+	#if ASTC_SSE >= 42
+		if (!cpu_supports_sse42()) {
+			printf("CPU support error: host lacks SSE 4.2 support.\n");
+			printf("    Please recompile with VEC=sse2.\n");
+			exit(1);
+		}
+	#endif
+
+	#if ASTC_POPCNT >= 1
+		if (!cpu_supports_popcnt()) {
+			printf("CPU support error: host lacks POPCNT support.\n");
+			printf("    Please recompile with VEC=sse2.\n");
+			exit(1);
+		}
+	#endif
+
+	#if ASTC_AVX >= 2
+		if (!cpu_supports_avx2()) {
+			printf("CPU support error: host lacks AVX2 support.\n");
+			printf("    Please recompile with VEC=sse4.2 or VEC=sse2.\n");
+			exit(1);
+		}
+	#endif
 }
 
 int astc_main(
@@ -485,6 +513,9 @@ int astc_main(
 	char **argv
 ) {
 	test_inappropriate_extended_precision();
+
+	test_inappropriate_cpu_extensions();
+
 	// initialization routines
 	prepare_angular_tables();
 	build_quantization_mode_table();

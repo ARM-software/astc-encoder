@@ -54,6 +54,7 @@ SOURCES = \
     astc_partition_tables.cpp \
     astc_percentile_tables.cpp \
     astc_pick_best_endpoint_format.cpp \
+    astc_platform_isa_detection.cpp \
     astc_platform_dependents.cpp \
     astc_quantization.cpp \
     astc_stb_tga.cpp \
@@ -90,7 +91,7 @@ ifeq ($(VEC),sse2)
 CPPFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse4.2)
-CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=0
+CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=1
 else
 ifeq ($(VEC),avx2)
 CPPFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1

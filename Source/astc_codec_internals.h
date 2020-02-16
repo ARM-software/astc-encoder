@@ -1030,6 +1030,24 @@ void launch_threads(
 	void *payload);
 
 /**
+ * @brief Run-time detection if the host CPU supports SSE 4.2.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_sse42();
+
+/**
+ * @brief Run-time detection if the host CPU supports popcnt.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_popcnt();
+
+/**
+ * @brief Run-time detection if the host CPU supports avx2.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_avx2();
+
+/**
  * @brief The main entry point.
  *
  * @param argc The number of arguments.
