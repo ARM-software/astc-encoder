@@ -1,4 +1,4 @@
-# About
+# About [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/ARM-software/astc-encoder?branch=master&svg=true)](https://ci.appveyor.com/project/ARM-software/astc-encoder)
 
 This is the official repository for the Arm® Adaptive Scalable Texture
 Compression (ASTC) Encoder, `astcenc`, a command-line tool for compressing
