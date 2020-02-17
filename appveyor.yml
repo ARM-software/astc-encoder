@@ -1,0 +1,8 @@
+image: Visual Studio 2019
+configuration: Release
+
+build:
+  project: Source/VS2019/astcenc.sln
+
+artifacts:
+    - path: bin\Release\*.*
