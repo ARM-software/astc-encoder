@@ -3,6 +3,7 @@ configuration: Release
 
 build:
   project: Source/VS2019/astcenc.sln
+  parallel: true
 
 artifacts:
-    - path: bin\Release\*.*
+    - path: Source\VS2019\**\astcenc*.*
