@@ -64,6 +64,11 @@ SOURCES = \
     astc_weight_align.cpp \
     astc_weight_quant_xfer_tables.cpp
 
+EXTERNAL_SOURCES = \
+    stb_image.h \
+    stb_image_write.h \
+    tinyexr.h
+
 HEADERS = \
     astc_codec_internals.h \
     astc_mathlib.h \
@@ -71,30 +76,34 @@ HEADERS = \
     stb_image_write.h \
     tinyexr.h
 
-OBJECTS = $(SOURCES:.cpp=.o)
+OBJECTS = $(SOURCES:.cpp=-$(VEC).o)
 
-CPPFLAGS = -std=c++14 -mfpmath=sse \
+EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(VEC).o)
+
+BINARY = astcenc-$(VEC)
+
+CXXFLAGS = -std=c++14 -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
-# Validate that the VEC parameter is a supported value, and patch CPPFLAGS
+# Validate that the DBG parameter is a supported value, and patch CXXFLAGS
 ifeq ($(DBG),0)
-CPPFLAGS += -O3
+CXXFLAGS += -O3
 else
-CPPFLAGS += -O0 -g
+CXXFLAGS += -O0 -g
 endif
 
-# Validate that the VEC parameter is a supported value, and patch CPPFLAGS
+# Validate that the VEC parameter is a supported value, and patch CXXFLAGS
 ifeq ($(VEC),nointrin)
-CPPFLAGS += -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse2)
-CPPFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
 else
 ifeq ($(VEC),sse4.2)
-CPPFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=1
+CXXFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=1
 else
 ifeq ($(VEC),avx2)
-CPPFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1
+CXXFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1
 else
 $(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2/avx2)
 endif
@@ -102,31 +111,48 @@ endif
 endif
 endif
 
-CPPFLAGS_EXTERNAL = $(CPPFLAGS) -Wno-unused-parameter -Wno-double-promotion -fno-strict-aliasing
+# Disable necessary optimizations and warnings for third-party source files
+CXXFLAGS_EXTERNAL = \
+    $(CXXFLAGS) \
+    -Wno-unused-parameter \
+    -Wno-double-promotion \
+    -fno-strict-aliasing
 
-astcenc: stb_image.o stb_image_write.o tinyexr.o $(OBJECTS)
-	@g++ -o $@ $^ $(CPPFLAGS) -lpthread
+$(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
+	@g++ -o $@ $^ $(CXXFLAGS) -lpthread
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
-stb_image.o: stb_image.h
-	@g++ -c -x c++ -o $@ $< $(CPPFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION
+stb_image-$(VEC).o: stb_image.h
+	@g++ -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION
 	@echo "[C++] $<"
 
-stb_image_write.o: stb_image_write.h
-	@g++ -c -x c++ -o $@ $< $(CPPFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
+stb_image_write-$(VEC).o: stb_image_write.h
+	@g++ -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
 	@echo "[C++] $<"
 
-tinyexr.o: tinyexr.h
-	@g++ -c -x c++ -o $@ $< $(CPPFLAGS) -DTINYEXR_IMPLEMENTATION
+tinyexr-$(VEC).o: tinyexr.h
+	@g++ -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
 	@echo "[C++] $<"
 
-$(OBJECTS): %.o: %.cpp $(HEADERS)
-	@g++ -c -o $@ $< $(CPPFLAGS)
+$(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
+	@g++ -c -o $@ $< $(CXXFLAGS)
 	@echo "[C++] $<"
 
 clean:
-	@rm -f *.o
-	@rm -f *.obj
-	@rm -f astcenc
-	@rm -f astcenc.exe
-	@echo "[Clean] Removing build outputs"
+	@rm -f *-$(VEC).o
+	@rm -f *-$(VEC).obj
+	@rm -f $(BINARY)
+	@rm -f $(BINARY).exe
+	@echo "[Clean] Removing $(VEC) build outputs"
+
+batchbuild:
+	@+$(MAKE) -s VEC=nointrin
+	@+$(MAKE) -s VEC=sse2
+	@+$(MAKE) -s VEC=sse4.2
+	@+$(MAKE) -s VEC=avx2
+
+batchclean:
+	@+$(MAKE) -s clean VEC=nointrin
+	@+$(MAKE) -s clean VEC=sse2
+	@+$(MAKE) -s clean VEC=sse4.2
+	@+$(MAKE) -s clean VEC=avx2

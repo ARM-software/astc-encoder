@@ -102,6 +102,9 @@
     <ClCompile Include="..\astc_toplevel_help.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\astc_platform_isa_detection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\astc_codec_internals.h">

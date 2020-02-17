@@ -23,6 +23,12 @@
 
 #include <stdio.h>
 
+// On Visual Studio, include the implementation here, not just the header.
+#ifdef _MSC_VER
+    #define STB_IMAGE_IMPLEMENTATION
+    #define STBI_MSC_SECURE_CRT
+#endif
+
 #include "stb_image.h"
 
 astc_codec_image* load_image_with_stb(
