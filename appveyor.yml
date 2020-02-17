@@ -6,4 +6,4 @@ build:
   parallel: true
 
 artifacts:
-    - path: Source\VS2019\**\astcenc*.*
+    - path: Source\VS2019\**\astcenc*.exe
