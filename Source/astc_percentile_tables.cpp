@@ -74,10 +74,10 @@ static const uint16_t percentile_arr_4x4_1[84] = {
 static const packed_percentile_table block_pcd_4x4 =
 {
 	4, 4,
-	61, 84,
-	184, 141,
-	0, 53,
-	percentile_arr_4x4_0, percentile_arr_4x4_1
+	{ 61, 84 },
+	{ 184, 141 },
+	{ 0, 53 },
+	{ percentile_arr_4x4_0, percentile_arr_4x4_1 }
 };
 
 static const uint16_t percentile_arr_5x4_0[91] = {
@@ -114,10 +114,10 @@ static const uint16_t percentile_arr_5x4_1[104] = {
 static const packed_percentile_table block_pcd_5x4 =
 {
 	5, 4,
-	91, 104,
-	322, 464,
-	0, 202,
-	percentile_arr_5x4_0, percentile_arr_5x4_1
+	{ 91, 104 },
+	{ 322, 464 },
+	{ 0, 202 },
+	{ percentile_arr_5x4_0, percentile_arr_5x4_1 }
 };
 
 static const uint16_t percentile_arr_5x5_0[129] = {
@@ -162,10 +162,10 @@ static const uint16_t percentile_arr_5x5_1[126] = {
 static const packed_percentile_table block_pcd_5x5 =
 {
 	5, 5,
-	129, 126,
-	258, 291,
-	0, 116,
-	percentile_arr_5x5_0, percentile_arr_5x5_1
+	{ 129, 126 },
+	{ 258, 291 },
+	{ 0, 116 },
+	{ percentile_arr_5x5_0, percentile_arr_5x5_1 }
 };
 
 static const uint16_t percentile_arr_6x5_0[165] = {
@@ -217,10 +217,10 @@ static const uint16_t percentile_arr_6x5_1[145] = {
 static const packed_percentile_table block_pcd_6x5 =
 {
 	6, 5,
-	165, 145,
-	388, 405,
-	0, 156,
-	percentile_arr_6x5_0, percentile_arr_6x5_1
+	{ 165, 145 },
+	{ 388, 405 },
+	{ 0, 156 },
+	{ percentile_arr_6x5_0, percentile_arr_6x5_1 }
 };
 
 static const uint16_t percentile_arr_6x6_0[206] = {
@@ -279,10 +279,10 @@ static const uint16_t percentile_arr_6x6_1[164] = {
 static const packed_percentile_table block_pcd_6x6 =
 {
 	6, 6,
-	206, 164,
-	769, 644,
-	0, 256,
-	percentile_arr_6x6_0, percentile_arr_6x6_1
+	{ 206, 164 },
+	{ 769, 644 },
+	{ 0, 256 },
+	{ percentile_arr_6x6_0, percentile_arr_6x6_1 }
 };
 
 static const uint16_t percentile_arr_8x5_0[226] = {
@@ -344,10 +344,10 @@ static const uint16_t percentile_arr_8x5_1[167] = {
 static const packed_percentile_table block_pcd_8x5 =
 {
 	8, 5,
-	226, 167,
-	763, 517,
-	0, 178,
-	percentile_arr_8x5_0, percentile_arr_8x5_1
+	{ 226, 167 },
+	{ 763, 517 },
+	{ 0, 178 },
+	{ percentile_arr_8x5_0, percentile_arr_8x5_1 }
 };
 
 static const uint16_t percentile_arr_8x6_0[273] = {
@@ -418,10 +418,10 @@ static const uint16_t percentile_arr_8x6_1[186] = {
 static const packed_percentile_table block_pcd_8x6 =
 {
 	8, 6,
-	273, 186,
-	880, 300,
-	0, 64,
-	percentile_arr_8x6_0, percentile_arr_8x6_1
+	{ 273, 186 },
+	{ 880, 300 },
+	{ 0, 64 },
+	{ percentile_arr_8x6_0, percentile_arr_8x6_1 }
 };
 
 static const uint16_t percentile_arr_8x8_0[347] = {
@@ -503,10 +503,10 @@ static const uint16_t percentile_arr_8x8_1[208] = {
 static const packed_percentile_table block_pcd_8x8 =
 {
 	8, 8,
-	347, 208,
-	1144, 267,
-	0, 38,
-	percentile_arr_8x8_0, percentile_arr_8x8_1
+	{ 347, 208 },
+	{ 1144, 267 },
+	{ 0, 38 },
+	{ percentile_arr_8x8_0, percentile_arr_8x8_1 }
 };
 
 static const uint16_t percentile_arr_10x5_0[274] = {
@@ -576,10 +576,10 @@ static const uint16_t percentile_arr_10x5_1[180] = {
 static const packed_percentile_table block_pcd_10x5 =
 {
 	10, 5,
-	274, 180,
-	954, 324,
-	0, 79,
-	percentile_arr_10x5_0, percentile_arr_10x5_1
+	{ 274, 180 },
+	{ 954, 324 },
+	{ 0, 79 },
+	{ percentile_arr_10x5_0, percentile_arr_10x5_1 }
 };
 
 static const uint16_t percentile_arr_10x6_0[325] = {
@@ -657,10 +657,10 @@ static const uint16_t percentile_arr_10x6_1[199] = {
 static const packed_percentile_table block_pcd_10x6 =
 {
 	10, 6,
-	325, 199,
-	922, 381,
-	0, 78,
-	percentile_arr_10x6_0, percentile_arr_10x6_1
+	{ 325, 199 },
+	{ 922, 381 },
+	{ 0, 78 },
+	{ percentile_arr_10x6_0, percentile_arr_10x6_1 }
 };
 
 static const uint16_t percentile_arr_10x8_0[400] = {
@@ -750,10 +750,10 @@ static const uint16_t percentile_arr_10x8_1[221] = {
 static const packed_percentile_table block_pcd_10x8 =
 {
 	10, 8,
-	400, 221,
-	1119, 376,
-	0, 52,
-	percentile_arr_10x8_0, percentile_arr_10x8_1
+	{ 400, 221 },
+	{ 1119, 376 },
+	{ 0, 52 },
+	{ percentile_arr_10x8_0, percentile_arr_10x8_1 }
 };
 
 static const uint16_t percentile_arr_10x10_0[453] = {
@@ -852,10 +852,10 @@ static const uint16_t percentile_arr_10x10_1[234] = {
 static const packed_percentile_table block_pcd_10x10 =
 {
 	10, 10,
-	453, 234,
-	1095, 472,
-	0, 70,
-	percentile_arr_10x10_0, percentile_arr_10x10_1
+	{ 453, 234 },
+	{ 1095, 472 },
+	{ 0, 70 },
+	{ percentile_arr_10x10_0, percentile_arr_10x10_1 }
 };
 
 static const uint16_t percentile_arr_12x10_0[491] = {
@@ -959,10 +959,10 @@ static const uint16_t percentile_arr_12x10_1[240] = {
 static const packed_percentile_table block_pcd_12x10 =
 {
 	12, 10,
-	491, 240,
-	1099, 341,
-	0, 23,
-	percentile_arr_12x10_0, percentile_arr_12x10_1
+	{ 491, 240 },
+	{ 1099, 341 },
+	{ 0, 23 },
+	{ percentile_arr_12x10_0, percentile_arr_12x10_1 }
 };
 
 static const uint16_t percentile_arr_12x12_0[529] = {
@@ -1072,10 +1072,10 @@ static const uint16_t percentile_arr_12x12_1[246] = {
 static const packed_percentile_table block_pcd_12x12 =
 {
 	12, 12,
-	529, 246,
-	1435, 335,
-	0, 22,
-	percentile_arr_12x12_0, percentile_arr_12x12_1
+	{ 529, 246 },
+	{ 1435, 335 },
+	{ 0, 22 },
+	{ percentile_arr_12x12_0, percentile_arr_12x12_1 }
 };
 
 /**
