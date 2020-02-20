@@ -739,8 +739,8 @@ int astc_main(
 		xdim_2d = xdim_3d;
 		ydim_2d = ydim_3d;
 
-		log10_texels_2d = log((float)(xdim_2d * ydim_2d)) / log(10.0f);
-		log10_texels_3d = log((float)(xdim_3d * ydim_3d * zdim_3d)) / log(10.0f);
+		log10_texels_2d = logf((float)(xdim_2d * ydim_2d)) / logf(10.0f);
+		log10_texels_3d = logf((float)(xdim_3d * ydim_3d * zdim_3d)) / logf(10.0f);
 		argidx = 5;
 	}
 	else

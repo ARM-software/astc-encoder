@@ -296,7 +296,7 @@ float float_to_lns(float p)
 	}
 
 	int expo;
-	float normfrac = frexp(p, &expo);
+	float normfrac = frexpf(p, &expo);
 	float p1;
 	if (expo < -13)
 	{
@@ -647,17 +647,17 @@ void fetch_imageblock(
 			if (r <= 0.04045f)
 				r = r * (1.0f / 12.92f);
 			else if (r <= 1)
-				r = pow((r + 0.055f) * (1.0f / 1.055f), 2.4f);
+				r = powf((r + 0.055f) * (1.0f / 1.055f), 2.4f);
 
 			if (g <= 0.04045f)
 				g = g * (1.0f / 12.92f);
 			else if (g <= 1)
-				g = pow((g + 0.055f) * (1.0f / 1.055f), 2.4f);
+				g = powf((g + 0.055f) * (1.0f / 1.055f), 2.4f);
 
 			if (b <= 0.04045f)
 				b = b * (1.0f / 12.92f);
 			else if (b <= 1)
-				b = pow((b + 0.055f) * (1.0f / 1.055f), 2.4f);
+				b = powf((b + 0.055f) * (1.0f / 1.055f), 2.4f);
 
 			fptr[0] = r;
 			fptr[1] = g;
