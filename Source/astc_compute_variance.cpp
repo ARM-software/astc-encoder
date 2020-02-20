@@ -633,6 +633,13 @@ void compute_averages_and_variances(
 
 	// Perform block-wise averages-and-variances calculations across the image
 	struct pixel_region_variance_args arg;
+
+	// Initialize fields which are not populated until later
+	arg.size = int3(0, 0, 0);
+	arg.src_offset = int3(0, 0, 0);
+	arg.dst_offset = int3(0, 0, 0);
+	arg.work_memory = nullptr;
+
 	arg.img = img;
 	arg.rgb_power = rgb_power;
 	arg.alpha_power = alpha_power;
