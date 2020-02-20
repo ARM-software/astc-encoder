@@ -119,23 +119,23 @@ CXXFLAGS_EXTERNAL = \
     -fno-strict-aliasing
 
 $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
-	@g++ -o $@ $^ $(CXXFLAGS) -lpthread
+	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
 stb_image-$(VEC).o: stb_image.h
-	@g++ -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION
 	@echo "[C++] $<"
 
 stb_image_write-$(VEC).o: stb_image_write.h
-	@g++ -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
 	@echo "[C++] $<"
 
 tinyexr-$(VEC).o: tinyexr.h
-	@g++ -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
 	@echo "[C++] $<"
 
 $(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
-	@g++ -c -o $@ $< $(CXXFLAGS)
+	@$(CXX) -c -o $@ $< $(CXXFLAGS)
 	@echo "[C++] $<"
 
 clean:
