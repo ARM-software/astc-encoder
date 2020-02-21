@@ -550,15 +550,15 @@ int astc_main(
 		astc_op_mode op_mode;
 		astc_decode_mode decode_mode;
 	} modes[] = {
-		{"-c",       ASTC_ENCODE,            DECODE_HDR      },
-		{"-d",       ASTC_DECODE,            DECODE_HDR      },
-		{"-t",       ASTC_ENCODE_AND_DECODE, DECODE_HDR      },
-		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB },
-		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB },
-		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB },
 		{"-cl",      ASTC_ENCODE,            DECODE_LDR      },
 		{"-dl",      ASTC_DECODE,            DECODE_LDR      },
 		{"-tl",      ASTC_ENCODE_AND_DECODE, DECODE_LDR      },
+		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB },
+		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB },
+		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB },
+		{"-ch",      ASTC_ENCODE,            DECODE_HDR      },
+		{"-dh",      ASTC_DECODE,            DECODE_HDR      },
+		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR      },
 		{"-compare", ASTC_IMAGE_COMPARE,     DECODE_HDR      },
 		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR      },
 		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR      },
@@ -785,12 +785,12 @@ int astc_main(
 			ewp.alpha_mean_weight = static_cast < float >(atof(argv[argidx - 2]));
 			ewp.alpha_stdev_weight = static_cast < float >(atof(argv[argidx - 1]));
 		}
-		else if (!strcmp(argv[argidx], "-ch"))
+		else if (!strcmp(argv[argidx], "-cw"))
 		{
 			argidx += 5;
 			if (argidx > argc)
 			{
-				printf("-ch switch with less than 4 arguments\n");
+				printf("-cw switch with less than 4 arguments\n");
 				return 1;
 			}
 			ewp.rgba_weights[0] = static_cast < float >(atof(argv[argidx - 4]));
