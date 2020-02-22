@@ -282,14 +282,14 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	{
 		float2 egv = directions[i];
 		if (egv.x + egv.y < 0.0f)
-			directions[i] = float2(0, 0) - egv;
+			directions[i] = float2(0.0f, 0.0f) - egv;
 	}
 
 	for (i = 0; i < partition_count; i++)
 	{
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
-			lines[i].b = normalize(float2(1, 1));
+			lines[i].b = normalize(float2(1.0f, 1.0f));
 		else
 			lines[i].b = normalize(directions[i]);
 	}
@@ -549,7 +549,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	{
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
-			lines[i].b = normalize(float3(1, 1, 1));
+			lines[i].b = normalize(float3(1.0f, 1.0f, 1.0f));
 		else
 			lines[i].b = normalize(directions[i]);
 	}
@@ -740,14 +740,14 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	{
 		float4 direc = directions_rgba[i];
 		if (direc.x + direc.y + direc.z < 0.0f)
-			directions_rgba[i] = float4(0, 0, 0, 0) - direc;
+			directions_rgba[i] = float4(0.0f, 0.0f, 0.0f, 0.0f) - direc;
 	}
 
 	for (i = 0; i < partition_count; i++)
 	{
 		lines[i].a = averages[i];
 		if (dot(directions_rgba[i], directions_rgba[i]) == 0.0f)
-			lines[i].b = normalize(float4(1, 1, 1, 1));
+			lines[i].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
 		else
 			lines[i].b = normalize(directions_rgba[i]);
 	}

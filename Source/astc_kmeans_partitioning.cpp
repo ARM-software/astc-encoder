@@ -236,7 +236,7 @@ static void basic_kmeans_update(
 
 	for (i = 0; i < partition_count; i++)
 	{
-		color_sum[i] = float4(0, 0, 0, 0);
+		color_sum[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);
 		weight_sum[i] = 0;
 	}
 
@@ -244,9 +244,9 @@ static void basic_kmeans_update(
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float4 color = float4(blk->data_r[i],
-							  blk->data_g[i],
-							  blk->data_b[i],
-							  blk->data_a[i]);
+		                      blk->data_g[i],
+		                      blk->data_b[i],
+		                      blk->data_a[i]);
 		int part = partition_of_texel[i];
 		color_sum[part] = color_sum[part] + color;
 		weight_sum[part]++;

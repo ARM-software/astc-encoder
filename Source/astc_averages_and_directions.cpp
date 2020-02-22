@@ -17,8 +17,6 @@
 
 /**
  * @brief Functions for finding dominant direction of a set of colors.
- *
- * Uses Arm patent pending method.
  */
 
 #include "astc_codec_internals.h"
@@ -50,7 +48,7 @@ void compute_averages_and_directions_rgba(
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float4 base_sum = float4(0, 0, 0, 0);
+		float4 base_sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
 		for (int i = 0; i < texelcount; i++)
@@ -69,10 +67,10 @@ void compute_averages_and_directions_rgba(
 		float4 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * color_scalefactors[partition];
 
-		float4 sum_xp = float4(0, 0, 0, 0);
-		float4 sum_yp = float4(0, 0, 0, 0);
-		float4 sum_zp = float4(0, 0, 0, 0);
-		float4 sum_wp = float4(0, 0, 0, 0);
+		float4 sum_xp = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 sum_yp = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 sum_zp = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 sum_wp = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
 		for (int i = 0; i < texelcount; i++)
 		{

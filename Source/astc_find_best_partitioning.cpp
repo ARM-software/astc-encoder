@@ -347,7 +347,7 @@ void find_best_partitionings(
 				proc_uncorr_lines[j].bs = (uncorr_lines[j].b * color_scalefactors[j]);
 				proc_uncorr_lines[j].bis = (uncorr_lines[j].b * inverse_color_scalefactors[j]);
 
-				samechroma_lines[j].a = float4(0, 0, 0, 0);
+				samechroma_lines[j].a = float4(0.0f, 0.0f, 0.0f, 0.0f);
 				if (dot(averages[j], averages[j]) == 0.0f)
 					samechroma_lines[j].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
 				else
@@ -360,28 +360,28 @@ void find_best_partitionings(
 				separate_red_lines[j].a = float3(averages[j].y, averages[j].z, averages[j].w);
 				float3 dirs_gba = float3(directions_rgba[j].y, directions_rgba[j].z, directions_rgba[j].w);
 				if (dot(dirs_gba, dirs_gba) == 0.0f)
-					separate_red_lines[j].b = normalize(float3(1, 1, 1));
+					separate_red_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					separate_red_lines[j].b = normalize(dirs_gba);
 
 				separate_green_lines[j].a = float3(averages[j].x, averages[j].z, averages[j].w);
 				float3 dirs_rba = float3(directions_rgba[j].x, directions_rgba[j].z, directions_rgba[j].w);
 				if (dot(dirs_rba, dirs_rba) == 0.0f)
-					separate_green_lines[j].b = normalize(float3(1, 1, 1));
+					separate_green_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					separate_green_lines[j].b = normalize(dirs_rba);
 
 				separate_blue_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].w);
 				float3 dirs_rga = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].w);
 				if (dot(dirs_rga, dirs_rga) == 0.0f)
-					separate_blue_lines[j].b = normalize(float3(1, 1, 1));
+					separate_blue_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					separate_blue_lines[j].b = normalize(dirs_rga);
 
 				separate_alpha_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].z);
 				float3 dirs_rgb = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].z);
 				if (dot(dirs_rgb, dirs_rgb) == 0.0f)
-					separate_alpha_lines[j].b = normalize(float3(1, 1, 1));
+					separate_alpha_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
 				else
 					separate_alpha_lines[j].b = normalize(dirs_rgb);
 
@@ -602,21 +602,21 @@ void find_best_partitionings(
 				separate_red_lines[j].a = float2(averages[j].y, averages[j].z);
 				float2 dirs_gb = float2(directions_rgb[j].y, directions_rgb[j].z);
 				if (dot(dirs_gb, dirs_gb) == 0.0f)
-					separate_red_lines[j].b = normalize(float2(1, 1));
+					separate_red_lines[j].b = normalize(float2(1.0f, 1.0f));
 				else
 					separate_red_lines[j].b = normalize(dirs_gb);
 
 				separate_green_lines[j].a = float2(averages[j].x, averages[j].z);
 				float2 dirs_rb = float2(directions_rgb[j].x, directions_rgb[j].z);
 				if (dot(dirs_rb, dirs_rb) == 0.0f)
-					separate_green_lines[j].b = normalize(float2(1, 1));
+					separate_green_lines[j].b = normalize(float2(1.0f, 1.0f));
 				else
 					separate_green_lines[j].b = normalize(dirs_rb);
 
 				separate_blue_lines[j].a = float2(averages[j].x, averages[j].y);
 				float2 dirs_rg = float2(directions_rgb[j].x, directions_rgb[j].y);
 				if (dot(dirs_rg, dirs_rg) == 0.0f)
-					separate_blue_lines[j].b = normalize(float2(1, 1));
+					separate_blue_lines[j].b = normalize(float2(1.0f, 1.0f));
 				else
 					separate_blue_lines[j].b = normalize(dirs_rg);
 

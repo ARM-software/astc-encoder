@@ -954,7 +954,7 @@ static float prepare_error_weight_block(
 					error_weight.w /= (derv[idx].w * derv[idx].w * 1e-10f);
 
 					ewb->error_weights[idx] = error_weight;
-					if (dot(error_weight, float4(1, 1, 1, 1)) < 1e-10f)
+					if (dot(error_weight, float4(1.0f, 1.0f, 1.0f, 1.0f)) < 1e-10f)
 						ewb->contains_zeroweight_texels = 1;
 				}
 				idx++;
@@ -962,7 +962,7 @@ static float prepare_error_weight_block(
 		}
 	}
 
-	float4 error_weight_sum = float4(0, 0, 0, 0);
+	float4 error_weight_sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	int texels_per_block = bsd->texel_count;
 	for (int i = 0; i < texels_per_block; i++)
 	{
@@ -985,7 +985,7 @@ static float prepare_error_weight_block(
 		ewb->texel_weight[i] = (ewb->error_weights[i].x + ewb->error_weights[i].y + ewb->error_weights[i].z + ewb->error_weights[i].w) * 0.25f;
 	}
 
-	return dot(error_weight_sum, float4(1, 1, 1, 1));
+	return dot(error_weight_sum, float4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
 static void prepare_block_statistics(
