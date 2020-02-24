@@ -116,7 +116,7 @@ example:
 This is equivalent to using using the LDR color profile and a 5x5 block size
 to compress the image, using the `-thorough` quality preset, and then
 immediately decompressing the image and saving the result. This can be used
-to enable a visual inspection of the decompression quality. In addition
+to enable a visual inspection of the compressed image quality. In addition
 this mode also prints out some image quality metrics to the console.
 
 ## Experimenting
