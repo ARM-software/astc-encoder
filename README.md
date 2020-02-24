@@ -71,7 +71,7 @@ Note that currently no 2.x series pre-built binaries are available.
 # Getting started
 
 Open a terminal, change to the appropriate directory for your system, and run
-the astcenc encoder program, like this on Linux or Mac OS:
+the astcenc encoder program, like this on Linux or macOS:
 
     ./astcenc
 
@@ -80,37 +80,45 @@ the astcenc encoder program, like this on Linux or Mac OS:
     astcenc
 
 Invoking the tool with no arguments gives an extensive help message, including
-usage instructions, and details of all the available command line options.
+usage instructions, and details of all the available command line options. A
+summary of the main encoder options are shown below.
 
 ## Compressing an image
 
-Compress an image using the `-c` option:
+Compress an image using the `-cl` \ `-cs` \ `-ch` options. For example:
 
-    astcenc -c example.png example.astc 6x6 -medium
+    astcenc -cl example.png example.astc 6x6 -medium
 
-This compresses `example.png` using the 6x6 block footprint (3.55 bits/pixel)
-and a `medium` compression speed, storing the compressed output in the linear
-color space to `example.astc`.
+This compresses `example.png` using the LDR color profile and a 6x6 block
+footprint (3.55 bits/pixel). The `-medium` quality preset gives a reasonable
+image quality for a relatively fast compression speed. The output is stored to
+a linear color space compressed image, `example.astc`. The other modes are
+`-cs`, which compresses using the LDR sRGB color profile, and `-ch`, which
+compresses using the HDR color profile.
 
 ## Decompressing an image
 
-Decompress an image using the `-d` option:
+Decompress an image using the `-dl` \ `-ds` \ `-dh` options. For example:
 
-    astcenc -d example.astc example.tga
+    astcenc -dh example.astc example.tga
 
-This decompresses `example.astc` storing the decompressed output to
-`example.tga`.
+This decompresses `example.astc` using the full HDR feature profile, storing
+the decompressed output to `example.tga`. The other modes are `-dl`, which
+compresses using the LDR profile, and `-ds`, which decompresses using the LDR
+sRGB color profile.
 
 ## Measuring image quality
 
-Review the compression quality using the `-t` option:
+Review the compression quality using the `-tl` \ `-ts` \ -`th` options. For
+example:
 
-    astcenc -t example.png example.tga
+    astcenc -tl example.png example.tga 5x5 -thorough
 
-This is equivalent to compressing and then immediately decompressing the
-image, allowing a visual inspection of the decompression quality. In addition
-this mode also prints out the PSNR quality of the compressed image to the
-console.
+This is equivalent to using using the LDR color profile and a 5x5 block size
+to compress the image, using the `-thorough` quality preset, and then
+immediately decompressing the image and saving the result. This can be used
+to enable a visual inspection of the decompression quality. In addition
+this mode also prints out some image quality metrics to the console.
 
 ## Experimenting
 
