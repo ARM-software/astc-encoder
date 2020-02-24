@@ -176,7 +176,7 @@ luminance.
 
 For color data it is nearly always a perceptual quality win to use sRGB input
 source textures that are then compressed using the ASTC sRGB compression mode
-(compress using the `-cs` command line option rather than the `-c` command
+(compress using the `-cs` command line option rather than the `-cl` command
 line option). Note that sRGB gamma correction is only applied to the RGB
 channels during decode; the alpha channel is always treated as linear encoded
 data.

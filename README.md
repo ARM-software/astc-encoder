@@ -104,8 +104,7 @@ Decompress an image using the `-dl` \ `-ds` \ `-dh` options. For example:
 
 This decompresses `example.astc` using the full HDR feature profile, storing
 the decompressed output to `example.tga`. The other modes are `-dl`, which
-compresses using the LDR profile, and `-ds`, which decompresses using the LDR
-sRGB color profile.
+decompresses using the LDR profile, and `-ds`, which decompresses using the LDR sRGB color profile.
 
 ## Measuring image quality
 
