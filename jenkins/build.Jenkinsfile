@@ -34,10 +34,10 @@ pipeline {
     stage('Build All') {
       parallel {
         /* Build for Linux on x86_64 */
-        stage('Linux-x86_64') {
+        stage('Linux') {
           agent {
             docker {
-              image 'mobilestudio/astcenc:0.1.0'
+              image 'mobilestudio/astcenc:0.2.0'
               registryUrl 'https://registry.k8s.dsg.arm.com'
               registryCredentialsId 'harbor'
               label 'docker'
@@ -50,22 +50,22 @@ pipeline {
                 sh 'git clean -fdx'
               }
             }
-            stage('Linux Build') {
+            stage('Build') {
               steps {
                 sh '''
                   cd ./Source/
-                  make VEC=avx2
+                  make CXX=clang++ VEC=avx2
                 '''
               }
             }
-            stage('Stash Artefacts') {
+            stage('Stash') {
               steps {
                 dir('Source') {
                   stash name: 'astcenc-linux', includes: 'astcenc-*'
                 }
               }
             }
-            stage('Linux Tests') {
+            stage('Test') {
               steps {
                 sh 'python3 ./Test/astc_test_run.py'
                 perfReport(sourceDataFiles:'TestOutput/results.xml')
@@ -75,17 +75,17 @@ pipeline {
           }
         }
         /* Build for Windows on x86_64 */
-        stage('Windows-x86_64') {
+        stage('Windows') {
           agent {
             label 'Windows && x86_64'
           }
           stages {
-            stage('Clean workspace') {
+            stage('Clean') {
               steps {
                 bat 'git clean -fdx'
               }
             }
-            stage('Windows Release Build') {
+            stage('Build R') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -93,7 +93,7 @@ pipeline {
                 '''
               }
             }
-            stage('Windows Debug Build') {
+            stage('Build D') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -101,14 +101,14 @@ pipeline {
                 '''
               }
             }
-            stage('Stash Artefacts') {
+            stage('Stash') {
               steps {
                 dir('Source\\VS2019\\Release') {
                   stash name: 'astcenc-win-release', includes: 'astcenc-*.exe'
                 }
               }
             }
-            stage('Windows Tests') {
+            stage('Test') {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
@@ -121,7 +121,7 @@ pipeline {
           }
         }
         /* Build for Mac on x86_64 */
-        stage('macOS-x86_64') {
+        stage('macOS') {
           agent {
             label 'mac && x86_64'
           }
@@ -131,7 +131,7 @@ pipeline {
                 sh 'git clean -fdx'
               }
             }
-            stage('macOS Build') {
+            stage('Build') {
               steps {
                 sh '''
                   cd ./Source/
@@ -139,14 +139,14 @@ pipeline {
                 '''
               }
             }
-            stage('Stash Artefacts') {
+            stage('Stash') {
               steps {
                 dir('Source') {
                   stash name: 'astcenc-mac', includes: 'astcenc-*'
                 }
               }
             }
-            stage('macOS Tests') {
+            stage('Test') {
               steps {
                 sh '''
                   export PATH=$PATH:/usr/local/bin
@@ -160,10 +160,10 @@ pipeline {
         }
       }
     }
-    stage('Upload to Artifactory') {
+    stage('Artifactory') {
       agent {
         docker {
-          image 'mobilestudio/astcenc:0.1.0'
+          image 'mobilestudio/astcenc:0.2.0'
           registryUrl 'https://registry.k8s.dsg.arm.com'
           registryCredentialsId 'harbor'
           label 'docker'
@@ -174,7 +174,7 @@ pipeline {
         skipDefaultCheckout true
       }
       stages {
-        stage('Unstash artefacts') {
+        stage('Unstash') {
           steps {
             deleteDir()
             dir('upload/Linux-x86_64') {
@@ -188,7 +188,7 @@ pipeline {
             }
           }
         }
-        stage('Upload to Artifactory') {
+        stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
             dsgArtifactoryUpload('*.zip', "astc-encoder/build/${currentBuild.number}/")

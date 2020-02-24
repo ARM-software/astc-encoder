@@ -1,10 +1,11 @@
 FROM ubuntu:18.04
 
-LABEL build.environment.version="0.1.0"
+LABEL build.environment.version="0.2.0"
 
 RUN useradd -u 1001 -U -m -c Jenkins jenkins
 
 RUN apt update && apt-get install -y \
+    clang \
     g++ \
     gcc \
     git \
