@@ -45,7 +45,7 @@ pipeline {
             }
           }
           stages {
-            stage('Clean workspace') {
+            stage('Clean') {
               steps {
                 sh 'git clean -fdx'
               }
@@ -54,14 +54,14 @@ pipeline {
               steps {
                 sh '''
                   cd ./Source/
-                  make
+                  make VEC=avx2
                 '''
               }
             }
             stage('Stash Artefacts') {
               steps {
                 dir('Source') {
-                  stash name: 'astcenc-linux', includes: 'astcenc'
+                  stash name: 'astcenc-linux', includes: 'astcenc-*'
                 }
               }
             }
@@ -88,23 +88,23 @@ pipeline {
             stage('Windows Release Build') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2017\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  call msbuild .\\Source\\VS2017\\astcenc.sln /p:Configuration=Release /p:Platform=x64
+                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call msbuild .\\Source\\VS2019\\astcenc.sln /p:Configuration=Release /p:Platform=x64
                 '''
               }
             }
             stage('Windows Debug Build') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2017\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  call msbuild .\\Source\\VS2017\\astcenc.sln /p:Configuration=Debug /p:Platform=x64
+                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Debug /p:Platform=x64
                 '''
               }
             }
             stage('Stash Artefacts') {
               steps {
-                dir('Source\\VS2017\\Release') {
-                  stash name: 'astcenc-win-release', includes: 'astcenc.exe'
+                dir('Source\\VS2019\\Release') {
+                  stash name: 'astcenc-win-release', includes: 'astcenc-*.exe'
                 }
               }
             }
@@ -121,32 +121,32 @@ pipeline {
           }
         }
         /* Build for Mac on x86_64 */
-        stage('MacOS-x86_64') {
+        stage('macOS-x86_64') {
           agent {
             label 'mac && x86_64'
           }
           stages {
-            stage('Clean workspace') {
+            stage('Clean') {
               steps {
                 sh 'git clean -fdx'
               }
             }
-            stage('MacOS Build') {
+            stage('macOS Build') {
               steps {
                 sh '''
                   cd ./Source/
-                  make
+                  make VEC=avx2
                 '''
               }
             }
             stage('Stash Artefacts') {
               steps {
                 dir('Source') {
-                  stash name: 'astcenc-mac', includes: 'astcenc'
+                  stash name: 'astcenc-mac', includes: 'astcenc-*'
                 }
               }
             }
-            stage('MacOS Tests') {
+            stage('macOS Tests') {
               steps {
                 sh '''
                   export PATH=$PATH:/usr/local/bin
