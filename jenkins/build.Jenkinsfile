@@ -89,7 +89,7 @@ pipeline {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  call msbuild .\\Source\\VS2019\\astcenc.sln /p:Configuration=Release /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Release /p:Platform=x64
                 '''
               }
             }
@@ -103,8 +103,8 @@ pipeline {
             }
             stage('Stash') {
               steps {
-                dir('Source\\VS2019\\Release') {
-                  stash name: 'astcenc-win-release', includes: 'astcenc-*.exe'
+                dir('Source\\VS2019\\astcenc-avx2-Release') {
+                  stash name: 'astcenc-win-release', includes: 'astcenc-avx2.exe'
                 }
               }
             }
