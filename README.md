@@ -42,7 +42,7 @@ format output images. The encoder supports decompression of ASTC input images
 into TGA or KTX format output images.
 
 The encoder allows control over the compression time/quality tradeoff with
-`exhaustive`, `thorough`, `medium`, `fast`, and `very fast` encoding speeds.
+`exhaustive`, `thorough`, `medium`, and `fast` encoding quality presets.
 
 The encoder allows compression time and quality analysis by reporting the
 compression time, and the Peak Signal-to-Noise Ratio (PSNR) between the input
