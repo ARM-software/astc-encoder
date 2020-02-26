@@ -442,9 +442,9 @@ template <typename T> class vtype2
 {
 public:
 	T x, y;
-	vtype2() {};
-	vtype2(T p, T q)         : x(p),   y(q)   {};
-	vtype2(const vtype2 & p) : x(p.x), y(p.y) {};
+	vtype2() {}
+	vtype2(T p, T q)         : x(p),   y(q)   {}
+	vtype2(const vtype2 & p) : x(p.x), y(p.y) {}
 	vtype2 &operator =(const vtype2 &s) {
 		this->x = s.x;
 		this->y = s.y;
@@ -456,9 +456,9 @@ template <typename T> class vtype3
 {
 public:
 	T x, y, z;
-	vtype3() {};
-	vtype3(T p, T q, T r)    : x(p),   y(q),   z(r)   {};
-	vtype3(const vtype3 & p) : x(p.x), y(p.y), z(p.z) {};
+	vtype3() {}
+	vtype3(T p, T q, T r)    : x(p),   y(q),   z(r)   {}
+	vtype3(const vtype3 & p) : x(p.x), y(p.y), z(p.z) {}
 	vtype3 &operator =(const vtype3 &s) {
 		this->x = s.x;
 		this->y = s.y;
@@ -471,9 +471,9 @@ template <typename T> class vtype4
 {
 public:
 	T x, y, z, w;
-	vtype4() {};
-	vtype4(T p, T q, T r, T s) : x(p),   y(q),   z(r),   w(s)   {};
-	vtype4(const vtype4 & p)   : x(p.x), y(p.y), z(p.z), w(p.w) {};
+	vtype4() {}
+	vtype4(T p, T q, T r, T s) : x(p),   y(q),   z(r),   w(s)   {}
+	vtype4(const vtype4 & p)   : x(p.x), y(p.y), z(p.z), w(p.w) {}
 	vtype4 &operator =(const vtype4 &s) {
 		this->x = s.x;
 		this->y = s.y;

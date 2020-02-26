@@ -779,7 +779,7 @@ static void hdr_alpha_unpack(
 	*a1 <<= 4;
 }
 
-void hdr_rgb_hdr_alpha_unpack3(
+static void hdr_rgb_hdr_alpha_unpack3(
 	const int input[8],
 	int quantization_level,
 	uint4* output0,

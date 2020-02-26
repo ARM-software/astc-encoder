@@ -156,7 +156,7 @@ struct block_size_descriptor
 	int decimation_mode_maxprec_2planes[MAX_DECIMATION_MODES];
 	float decimation_mode_percentile[MAX_DECIMATION_MODES];
 	int permit_encode[MAX_DECIMATION_MODES];
-	const decimation_table *decimation_tables[MAX_DECIMATION_MODES + 1];
+	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
 	block_mode block_modes[MAX_WEIGHT_MODES];
 
 	// for the k-means bed bitmap partitioning algorithm, we don't
@@ -423,6 +423,9 @@ void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
+	block_size_descriptor* bsd);
+
+void deinit_block_size_descriptor(
 	block_size_descriptor* bsd);
 
 /**
