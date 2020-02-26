@@ -900,7 +900,7 @@ void init_block_size_descriptor(
 	init_partition_tables(bsd);
 }
 
-void deinit_block_size_descriptor(
+void term_block_size_descriptor(
 	block_size_descriptor* bsd)
 {
 	for(int i = 0; i < bsd->decimation_mode_count; i++)

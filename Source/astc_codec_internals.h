@@ -425,7 +425,7 @@ void init_block_size_descriptor(
 	int zdim,
 	block_size_descriptor* bsd);
 
-void deinit_block_size_descriptor(
+void term_block_size_descriptor(
 	block_size_descriptor* bsd);
 
 /**
