@@ -175,6 +175,7 @@ astc_codec_image *load_astc_file(
 				write_imageblock(img, &pb, &bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 			}
 
+	deinit_block_size_descriptor(&bsd);
 	free(buffer);
 	return img;
 }
@@ -330,6 +331,7 @@ static void encode_astc_image(
 	ai.output_image = output_image;
 
 	launch_threads(threadcount, encode_astc_image_threadfunc, &ai);
+	deinit_block_size_descriptor(bsd);
 	delete bsd;
 }
 
