@@ -1482,7 +1482,7 @@ int astc_main(
 	int input_image_is_hdr = 0;
 
 	// load image
-	if (op_mode == ASTC_ENCODE || op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE)
+	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		// Allocate arrays for image data and load results.
 		load_results = new int[array_size];
