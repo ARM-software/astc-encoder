@@ -256,7 +256,7 @@ ADVANCED COMPRESSION
            e.g. a power of 0.5 causes the codec to take the square root
            of every input pixel value.
 
-       -va <base> <power> <avg> <stdev>
+       -va <power> <base> <avg> <stdev>
            Compute the per-texel relative error weighting for the alpha
            channel, when used in conjunction with -v. See documentation for
            -v for parameter documentation.
