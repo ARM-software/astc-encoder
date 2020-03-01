@@ -47,13 +47,15 @@ class TestSet():
         tests: The list of TestImages forming the set.
     """
 
-    def __init__(self, name, rootDir):
+    def __init__(self, name, rootDir, profiles, formats):
         """
         Create a new TestSet through reflection.
 
         Args:
             name: The name of the test set.
             rootDir: The root directory of the test set.
+            profiles: The ASTC profiles to allow.
+            formats: The image formats to allow.
         """
         self.name = name
 
@@ -72,6 +74,14 @@ class TestSet():
                 # Create the TestImage for each file on disk
                 filePath = os.path.join(dirPath, fileName)
                 image = TestImage(filePath)
+
+                # Filter out the ones we don't want to allow
+                if image.colorProfile not in profiles:
+                    continue
+
+                if image.colorFormat not in formats:
+                    continue
+
                 self.tests.append((filePath, image))
 
         # Sort the TestImages so they are in a stable order

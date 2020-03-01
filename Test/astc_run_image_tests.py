@@ -39,6 +39,8 @@ RESULT_THRESHOLD_WARN = -0.1
 
 RESULT_THRESHOLD_FAIL = -0.2
 
+RESULT_THRESHOLD_3D_FAIL = -0.6
+
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
 
@@ -73,11 +75,12 @@ def count_test_set(testSet, blockSizes):
     return count
 
 
-def determine_result(reference, result):
+def determine_result(image, reference, result):
     """
     Determine a test result against a reference and thresholds.
 
     Args:
+        image: The image being compressed.
         reference: The reference result to compare against.
         result: The test result.
 
@@ -86,7 +89,10 @@ def determine_result(reference, result):
     """
     dPSNR = result.psnr - reference.psnr
 
-    if dPSNR < RESULT_THRESHOLD_FAIL:
+    if (dPSNR < RESULT_THRESHOLD_FAIL) and (not image.is3D):
+        return trs.Result.FAIL
+
+    if (dPSNR < RESULT_THRESHOLD_3D_FAIL) and image.is3D:
         return trs.Result.FAIL
 
     if dPSNR < RESULT_THRESHOLD_WARN:
@@ -138,7 +144,7 @@ def format_result(image, reference, result):
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
     tTTime = "%.2f s (%1.1fx)" % (result.tTime, sTTime)
     tCTime = "%.2f s (%1.1fx)" % (result.cTime, sCTime)
-    result = determine_result(reference, result)
+    result = determine_result(image, reference, result)
 
     return "%-32s | %22s | %14s | %14s | %s" % \
            (name, tPSNR, tTTime, tCTime, result.name)
@@ -185,7 +191,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, warmupRuns, testRuns):
 
             if testRef:
                 refResult = testRef.get_matching_record(res)
-                res.set_status(determine_result(refResult, res))
+                res.set_status(determine_result(image, refResult, res))
                 res = format_result(image, refResult, res)
             else:
                 res = format_solo_result(image, res)
@@ -206,30 +212,29 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--color-profile", dest="testRange", default="all",
-                        choices=["ldr", "ldrs", "hdr", "all"],
-                        help="test dynamic range")
+    astcProfile = ["ldr", "ldrs", "hdr", "all"]
+    parser.add_argument("--color-profile", dest="profiles", default="all",
+                        choices=astcProfile, help="test color profile")
 
-    parser.add_argument("--color-format", dest="testFormat", default="all",
-                        choices=["l", "xy", "rgb", "rgba", "all"],
-                        help="test color format")
+    imgFormat = ["l", "xy", "rgb", "rgba", "all"]
+    parser.add_argument("--color-format", dest="formats", default="all",
+                        choices=imgFormat, help="test color format")
 
     choices = list(TEST_BLOCK_SIZES) + ["all"]
-    parser.add_argument("--block-size", dest="testBlockSizes", default="all",
+    parser.add_argument("--block-size", dest="blockSizes", default="all",
                         choices=choices, help="test block size")
 
     testDir = os.path.dirname(__file__)
     testDir = os.path.join(testDir, "Images")
-    imageChoices = []
+    testSets = []
     for path in os.listdir(testDir):
         fqPath = os.path.join(testDir, path)
         if os.path.isdir(fqPath):
-            imageChoices.append(path)
+            testSets.append(path)
+    testSets.append("all")
 
-    imageChoices.append("all")
-
-    parser.add_argument("--test-set", dest="testSet", default="Small",
-                        choices=imageChoices, help="test image test set")
+    parser.add_argument("--test-set", dest="testSets", default="Small",
+                        choices=testSets, help="test image test set")
 
     parser.add_argument("--warmup", dest="testWarmups", default=0,
                         type=int, help="test warmup count")
@@ -240,20 +245,20 @@ def parse_command_line():
     args = parser.parse_args()
 
     # Turn things into canonical format lists
-    if args.testBlockSizes == "all":
-        args.testBlockSizes = TEST_BLOCK_SIZES
-    else:
-        args.testBlockSizes = [args.testBlockSizes]
+    args.encoders = testcoders if args.encoders == "all" \
+        else [args.encoders]
 
-    if args.testSet == "all":
-        args.testSet = imageChoices[:-1]
-    else:
-        args.testSet = [args.testSet]
+    args.blockSizes = TEST_BLOCK_SIZES if args.blockSizes == "all" \
+        else [args.blockSizes]
 
-    if args.encoders == "all":
-        args.encoders = testcoders
-    else:
-        args.encoders = [args.encoders]
+    args.testSets = testSets[:-1] if args.testSets == "all" \
+        else [args.testSets]
+
+    args.profiles = astcProfile[:-1] if args.profiles == "all" \
+        else [args.profiles]
+
+    args.formats = imgFormat[:-1] if args.formats == "all" \
+        else [args.formats]
 
     return args
 
@@ -268,7 +273,7 @@ def main():
     testSetCount = 0
     worstResult = trs.Result.NOTRUN
 
-    for imageSet in args.testSet:
+    for imageSet in args.testSets:
         for encoderName in args.encoders:
             if encoderName == "1.7":
                 encoder = te.Encoder1x()
@@ -296,10 +301,11 @@ def main():
                 testRef.load_from_file(testRefPath)
 
             testSetCount += 1
-            testSet = tts.TestSet(imageSet, testDir)
+            testSet = tts.TestSet(imageSet, testDir,
+                                  args.profiles, args.formats)
 
             resultSet = run_test_set(encoder, testRef, testSet,
-                                     args.testBlockSizes,
+                                     args.blockSizes,
                                      args.testWarmups, args.testRepeats)
 
             resultSet.save_to_file(testRes)

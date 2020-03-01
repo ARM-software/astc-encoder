@@ -1,86 +1,77 @@
-# Testing ASTC Encoder
+# Testing astcenc
 
-The repository contains a small suite of application tests, which can be used
-to sanity check source code changes to the compressor. It must be noted that
-this test suite is relatively limited in scope and does not cover every feature
-or bitrate of the standard.
+The repository contains a small suite of tests which can be used to sanity
+check source code changes to the compressor. It must be noted that this test
+suite is relatively limited in scope and does not cover every feature or
+bitrate of the standard.
 
-# Required Software
+# Required software
 
-Running the tests requires Python 3.7 to be installed on the host machine, with
-the following packages installed:
+Running the tests requires Python 3.7 to be installed on the host machine.
 
-    python3 -m pip install junit_xml
-    python3 -m pip install pillow
-
-# Running the Test Suite
+# Running the test suite
 
 To run the full test suite first build the 64-bit release configuration of
 `astcenc` for the host OS, and then run the following command from the root of
 directory of the repository:
 
-    python3 ./Test/runner.py
+    python3 ./Test/astc_run_image_tests.py
 
-This will run though a series of image compression tests, comparing the
-resulting PSNR against the reference results from the last stable release. The
-test will fail if any reduction in PSNR is detected.
+This will run though a series of image compression tests, comparing the image
+PSNR against a set of reference results from the last stable release. The test
+will fail if any reduction in PSNR above a set threshold is detected. Note that
+performance information is reported, but regressions will not flag a failure.
 
-All decompressed test output images are stored in the `TestOutput` directory,
-as is a summary result report in JUnit XML format which also includes test
-compression time. Note that while compression speed is reported by the test
-suite, a performance regression will not cause a test to fail.
+For debug purposes, all decompressed test output images and result CSV files
+are stored in the `TestOutput` directory, using the same test set structure as
+the `Test/Images` folder.
 
-## Smoke tests
+## Test selection
 
-To quickly sanity check changes you can run a smaller test list, but that
-stills runs a few tests from each image category, using the following commands:
+The runner supports a number of options to filter down what is run, enabling
+developers to focus local testing on the parts of the code they are working on.
 
-    python3 ./Test/runner.py --test-level smoke
-
-You can further filter tests by selecting runs for specific profiles, data
-formats, or block sizes. See the following options in the `--help` for
-more details:
-
-* `--dynamic-range` : select a single set of either LDR or HDR tests.
-* `--format` : select a single input data format.
-* `--block-size` : select a single block size.
+* `--block-size` selects which block size to run. By default a range of
+  block sizes (2D and 3D) are used.
+* `--test-set` selects which image set to run. By default the `Small` image
+  test set is selected, which aims to provide basic coverage of many different
+  color formats and color profiles.
+* `--color-profile` selects which color profiles from the standard should be
+  used (LDR, LDR sRGB, or HDR) to select images. By default all are selected.
+* `--color-format` selects which color formats should be used (L, XY, RGB,
+  RGBA) to select images. By default all are selected.
 
 ## Performance tests
 
-To provide less noisy performance results the test suite supports running each
-compression pass multiple times and returning the average performance. To
+To provide less noisy performance results the test suite supports compressing
+each image multiple times and returning the best measured performance. To
 enable this mode use the following two options:
 
 * `--warmup <N>` : Run N warmup compression passes which are not timed.
 * `--repeats <M>` : Run M test compression passes which are timed.
 
 **Note:**  The reference CSV contains performance results measured on an Intel
-Core i5 9600K running at 4.3GHz, running each test 10 times after a single
+Core i5 9600K running at 4.3GHz, running each test 5 times after a single
 warmup pass.
 
-# Updating Reference Scores
+# Updating reference data
 
-The pass and fail conditions are stored in a reference result CSV, which is
-based on the image quality and performance of the latest stable tag. The
-runner can be used to regenerate the CSV file using the 64-bit release build
-binary in the [Binary directory](/Binary/).
+The reference PSNR and performance scores are stored in CSVs committed to the
+repository. This data is created by running the tests using the last stable
+release on a standard test machine we use for performance testing builds.
 
-* `--rebuild-ref-csv` : regenerate the whole reference, rerunning all tests.
-* `--update-ref-csv` : patch the reference to add new test images, but keep
-  any existing results.
+It can be useful for developers to rebuild the reference results for their
+local machine, in particular for measuring performance improvements. To build
+new reference CSVs, download the current reference binary (1.7) from GitHub
+for your host OS and place it in to the `./Binaries/1.7/` directory. Once this
+is done, run the command:
 
-# Known limitations
+    python3 ./Test/astc_run_image_tests.py --encoder 1.7 \
+        --test-set all --warmup 1 --repeats 5
 
-The current test suite is viewed as a set of bare-essentials, but has a number
-of significant omissions:
+... to regenerate the reference CSV files.
 
-* Only square block sizes from 4x4 (8bpp) up to 8x8 (2pp) are tested.
-* Only `-thorough` compression speed tested.
-* Few optional compressor options are tested other than the use of
-  `-normal_psnr` for the `xy` data test set.
-* No LDR profile coverage of luminance-only input textures.
-* Limited HDR profile coverage of HDR input textures.
-* No Full profile coverage of 3D input textures.
-
-It is intended that pair-wise test coverage should be used in future to allow
-us to have have wider coverage without excessive test runtime.
+**WARNING:** This can take some hours to complete, and it is best done when the
+test suite gets exclusive use of the machine to avoid other processing slowing
+down the compression and disturbing the performance data. It is recommended to
+shutdown or disable any background applications that are running.

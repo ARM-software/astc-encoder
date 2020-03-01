@@ -228,7 +228,11 @@ class Encoder2x(EncoderBase):
 
     def __init__(self, variant):
         name = "astcenc-%s (%s)" % (variant, self.VERSION)
-        binary = "./Source/astcenc-%s" % variant
+        if os.name == 'nt':
+            dat = (variant, variant)
+            binary = "./Source/VS2019/astcenc-%s-Release/astcenc-%s.exe" % dat
+        else:
+            binary = "./Source/astcenc-%s" % variant
         super().__init__(name, variant, binary)
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
@@ -296,7 +300,10 @@ class Encoder1x(EncoderBase):
 
     def __init__(self):
         name = "astcenc (%s)" % self.VERSION
-        binary = "./Binaries/1.7/astcenc"
+        if os.name == 'nt':
+            binary = "./Binaries/1.7/astcenc.exe"
+        else:
+            binary = "./Binaries/1.7/astcenc"
         super().__init__(name, None, binary)
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
@@ -358,5 +365,6 @@ class EncoderProto(Encoder1x):
 
     def __init__(self):
         name = "astcenc (%s)" % self.VERSION
+        assert os.name != 'nt', "Windows builds not available"
         binary = "./Binaries/Prototype/astcenc"
         super().__init__(name, None, binary)
