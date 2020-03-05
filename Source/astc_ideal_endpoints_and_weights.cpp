@@ -1119,7 +1119,7 @@ void compute_ideal_weights_for_decimation_table(
 		// clamp the step-value.
 		if (step < -stepsize )
 			step = -stepsize;
-		else if(step > stepsize)
+		else if (step > stepsize)
 			step = stepsize;
 
 		// update the weight

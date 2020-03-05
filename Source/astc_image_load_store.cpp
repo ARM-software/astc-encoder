@@ -25,35 +25,6 @@
 #include <cstdio>
 #include <cstring>
 
-void destroy_image(astc_codec_image * img)
-{
-	if (img == nullptr)
-		return;
-
-	if (img->data8)
-	{
-		delete[] img->data8[0][0];
-		delete[] img->data8[0];
-		delete[] img->data8;
-	}
-
-	if (img->data16)
-	{
-		delete[] img->data16[0][0];
-		delete[] img->data16[0];
-		delete[] img->data16;
-	}
-
-	if (img->input_averages)
-		delete[] img->input_averages;
-	if (img->input_variances)
-		delete[] img->input_variances;
-	if (img->input_alpha_averages)
-		delete[] img->input_alpha_averages;
-
-	delete img;
-}
-
 astc_codec_image *allocate_image(
 	int bitness,
 	int xsize,
@@ -81,14 +52,20 @@ astc_codec_image *allocate_image(
 		img->data8 = new uint8_t **[ezsize];
 		img->data8[0] = new uint8_t *[ezsize * eysize];
 		img->data8[0][0] = new uint8_t[4 * ezsize * eysize * exsize];
+
 		for (i = 1; i < ezsize; i++)
 		{
 			img->data8[i] = img->data8[0] + i * eysize;
 			img->data8[i][0] = img->data8[0][0] + 4 * i * exsize * eysize;
 		}
+
 		for (i = 0; i < ezsize; i++)
+		{
 			for (j = 1; j < eysize; j++)
+			{
 				img->data8[i][j] = img->data8[i][0] + 4 * j * exsize;
+			}
+		}
 
 		img->data16 = nullptr;
 	}
@@ -97,14 +74,20 @@ astc_codec_image *allocate_image(
 		img->data16 = new uint16_t **[ezsize];
 		img->data16[0] = new uint16_t *[ezsize * eysize];
 		img->data16[0][0] = new uint16_t[4 * ezsize * eysize * exsize];
+
 		for (i = 1; i < ezsize; i++)
 		{
 			img->data16[i] = img->data16[0] + i * eysize;
 			img->data16[i][0] = img->data16[0][0] + 4 * i * exsize * eysize;
 		}
+
 		for (i = 0; i < ezsize; i++)
+		{
 			for (j = 1; j < eysize; j++)
+			{
 				img->data16[i][j] = img->data16[i][0] + 4 * j * exsize;
+			}
+		}
 
 		img->data8 = nullptr;
 	}
@@ -114,6 +97,45 @@ astc_codec_image *allocate_image(
 	}
 
 	return img;
+}
+
+void destroy_image(astc_codec_image * img)
+{
+	if (img == nullptr)
+	{
+		return;
+	}
+
+	if (img->data8)
+	{
+		delete[] img->data8[0][0];
+		delete[] img->data8[0];
+		delete[] img->data8;
+	}
+
+	if (img->data16)
+	{
+		delete[] img->data16[0][0];
+		delete[] img->data16[0];
+		delete[] img->data16;
+	}
+
+	if (img->input_averages)
+	{
+		delete[] img->input_averages;
+	}
+
+	if (img->input_variances)
+	{
+		delete[] img->input_variances;
+	}
+
+	if (img->input_alpha_averages)
+	{
+		delete[] img->input_alpha_averages;
+	}
+
+	delete img;
 }
 
 void initialize_image(astc_codec_image * img)
@@ -127,7 +149,9 @@ void initialize_image(astc_codec_image * img)
 	if (img->data8)
 	{
 		for (z = 0; z < ezsize; z++)
+		{
 			for (y = 0; y < eysize; y++)
+			{
 				for (x = 0; x < exsize; x++)
 				{
 					img->data8[z][y][4 * x] = 0;
@@ -135,11 +159,15 @@ void initialize_image(astc_codec_image * img)
 					img->data8[z][y][4 * x + 2] = 0;
 					img->data8[z][y][4 * x + 3] = 0xFF;
 				}
+			}
+		}
 	}
 	else if (img->data16)
 	{
 		for (z = 0; z < ezsize; z++)
+		{
 			for (y = 0; y < eysize; y++)
+			{
 				for (x = 0; x < exsize; x++)
 				{
 					img->data16[z][y][4 * x] = 0;
@@ -147,6 +175,8 @@ void initialize_image(astc_codec_image * img)
 					img->data16[z][y][4 * x + 2] = 0;
 					img->data16[z][y][4 * x + 3] = 0x3C00;
 				}
+			}
+		}
 	}
 	else
 	{
@@ -161,7 +191,9 @@ void initialize_image(astc_codec_image * img)
 void fill_image_padding_area(astc_codec_image * img)
 {
 	if (img->padding == 0)
+	{
 		return;
+	}
 
 	int x, y, z, i;
 	int exsize = img->xsize + 2 * img->padding;

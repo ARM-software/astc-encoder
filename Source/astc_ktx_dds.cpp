@@ -93,7 +93,7 @@ static void copy_scanline(
 			d[4*i+2] = 0; \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_RG(dsttype, srctype, convfunc, oneval) \
@@ -107,7 +107,7 @@ static void copy_scanline(
 			d[4*i+2] = 0; \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_RGB(dsttype, srctype, convfunc, oneval) \
@@ -121,7 +121,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[3*i+2]); \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_BGR(dsttype, srctype, convfunc, oneval) \
@@ -135,7 +135,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[3*i]); \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_RGBX(dsttype, srctype, convfunc, oneval) \
@@ -149,7 +149,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[4*i+2]); \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_BGRX(dsttype, srctype, convfunc, oneval) \
@@ -163,7 +163,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[4*i]); \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_RGBA(dsttype, srctype, convfunc, oneval) \
@@ -177,7 +177,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[4*i+2]); \
 			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_BGRA(dsttype, srctype, convfunc, oneval) \
@@ -191,7 +191,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[4*i]); \
 			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_L(dsttype, srctype, convfunc, oneval) \
@@ -205,7 +205,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[i]); \
 			d[4*i+3] = oneval; \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 #define COPY_LA(dsttype, srctype, convfunc, oneval) \
@@ -219,7 +219,7 @@ static void copy_scanline(
 			d[4*i+2] = convfunc(s[2*i]); \
 			d[4*i+3] = convfunc(s[2*i+1]); \
 		} \
-	} while(0); \
+	} while (0); \
 	break;
 
 	int i;

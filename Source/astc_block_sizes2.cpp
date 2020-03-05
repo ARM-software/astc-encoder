@@ -903,7 +903,7 @@ void init_block_size_descriptor(
 void term_block_size_descriptor(
 	block_size_descriptor* bsd)
 {
-	for(int i = 0; i < bsd->decimation_mode_count; i++)
+	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		delete bsd->decimation_tables[i];
 	}
