@@ -45,14 +45,12 @@ developers to focus local testing on the parts of the code they are working on.
 
 To provide less noisy performance results the test suite supports compressing
 each image multiple times and returning the best measured performance. To
-enable this mode use the following two options:
+enable this mode use the following options:
 
-* `--warmup <N>` : Run N warmup compression passes which are not timed.
 * `--repeats <M>` : Run M test compression passes which are timed.
 
 **Note:**  The reference CSV contains performance results measured on an Intel
-Core i5 9600K running at 4.3GHz, running each test 5 times after a single
-warmup pass.
+Core i5 9600K running at 4.3GHz, running each test 5 times.
 
 # Updating reference data
 
@@ -67,7 +65,7 @@ for your host OS and place it in to the `./Binaries/1.7/` directory. Once this
 is done, run the command:
 
     python3 ./Test/astc_run_image_tests.py --encoder 1.7 \
-        --test-set all --warmup 1 --repeats 5
+        --test-set all --repeats 5
 
 ... to regenerate the reference CSV files.
 

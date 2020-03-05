@@ -75,8 +75,7 @@ class EncoderBase():
         # pylint: disable=unused-argument,no-self-use
         assert False, "Missing subclass implementation"
 
-    @staticmethod
-    def execute(command):
+    def execute(self, command):
         """
         Run a subprocess with the specified command.
 
@@ -86,6 +85,7 @@ class EncoderBase():
         Return:
             The output log (stdout) split into lines.
         """
+        # pylint: disable=no-self-use
         try:
             result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                             check=True, universal_newlines=True)
@@ -172,7 +172,7 @@ class EncoderBase():
         # pylint: disable=unused-argument,no-self-use
         assert False, "Missing subclass implementation"
 
-    def run_test(self, image, blockSize, preset, warmupRuns, testRuns):
+    def run_test(self, image, blockSize, preset, testRuns):
         """
         Run the test N times.
 
@@ -180,18 +180,14 @@ class EncoderBase():
             image: The test image to compress.
             blockSize: The block size to use.
             preset: The quality-performance preset to use.
-            warmupRuns: The number of warmup runs.
             testRuns: The number of test runs.
 
         Return:
             Returns the best results from the N test runs.
             Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
         """
+        # pylint: disable=assignment-from-no-return
         command = self.build_cli(image, blockSize, preset)
-
-        # Execute warmup runs
-        for _ in range(0, warmupRuns):
-            self.execute(command)
 
         # Execute test runs
         bestPSNR = 0
@@ -227,7 +223,7 @@ class Encoder2x(EncoderBase):
     }
 
     def __init__(self, variant):
-        name = "astcenc-%s (%s)" % (variant, self.VERSION)
+        name = "astcenc-%s-%s" % (variant, self.VERSION)
         if os.name == 'nt':
             dat = (variant, variant)
             binary = "./Source/VS2019/astcenc-%s-Release/astcenc-%s.exe" % dat
@@ -238,7 +234,11 @@ class Encoder2x(EncoderBase):
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
         opmode = self.SWITCHES[image.colorProfile]
         srcPath = image.filePath
+
         dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
+        dstDir = os.path.dirname(dstPath)
+        dstFile = os.path.basename(dstPath)
+        dstPath = os.path.join(dstDir, self.name, blockSize, dstFile)
 
         dstDir = os.path.dirname(dstPath)
         os.makedirs(dstDir, exist_ok=True)
@@ -299,7 +299,7 @@ class Encoder1x(EncoderBase):
     }
 
     def __init__(self):
-        name = "astcenc (%s)" % self.VERSION
+        name = "astcenc-%s" % self.VERSION
         if os.name == 'nt':
             binary = "./Binaries/1.7/astcenc.exe"
         else:
@@ -309,7 +309,11 @@ class Encoder1x(EncoderBase):
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
         opmode = self.SWITCHES[image.colorProfile]
         srcPath = image.filePath
+
         dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
+        dstDir = os.path.dirname(dstPath)
+        dstFile = os.path.basename(dstPath)
+        dstPath = os.path.join(dstDir, self.name, blockSize, dstFile)
 
         dstDir = os.path.dirname(dstPath)
         os.makedirs(dstDir, exist_ok=True)
@@ -364,7 +368,130 @@ class EncoderProto(Encoder1x):
     }
 
     def __init__(self):
-        name = "astcenc (%s)" % self.VERSION
+        name = "astcenc-%s" % self.VERSION
         assert os.name != 'nt', "Windows builds not available"
         binary = "./Binaries/Prototype/astcenc"
         super().__init__(name, None, binary)
+
+
+class EncoderISPC(EncoderBase):
+    """
+    This class wraps the Intel ISPC compressor, which is widely used due to its
+    good performance (although with worse quality).
+
+    Note that the compressor does not support all features of ASTC (only a
+    subset of 2D block sizes, only LDR color profile), and doesn't support
+    decode at all. For round-trip analysis we use `astcenc` to provide the
+    decompression and image comparisons.
+    """
+
+    VERSION = "IntelISPC"
+
+    def __init__(self):
+        """
+        Create a new encoder instance.
+        """
+        binary = "./Binaries/ispc/astcispc"
+        super().__init__("intel-ispc", None, binary)
+        self.decodeBinary = "./Binaries/1.7/astcenc"
+
+    def get_psnr_pattern(self, image):
+        if image.colorFormat != "rgba":
+            patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
+        else:
+            patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
+
+        return patternPSNR
+
+    def get_total_time_pattern(self):
+        return r"Total time:\s*([0-9.]*) s"
+
+    def get_coding_time_pattern(self):
+        return r"Coding time:\s*([0-9.]*) s"
+
+    def execute(self, command):
+        """
+        Run a subprocess with the specified command.
+
+        Args:
+            command: The list of command line arguments.
+
+        Return:
+            The output log (stdout) split into lines.
+        """
+        command = " ".join(command)
+        try:
+            result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
+                            shell=True, check=True, universal_newlines=True)
+        except OSError:
+            print("ERROR: Test run failed (binary not found)")
+            print("  + %s" % command)
+            sys.exit(1)
+        except sp.CalledProcessError:
+            print("ERROR: Test run failed")
+            print("  + %s" % command)
+            sys.exit(1)
+
+        return result.stdout.splitlines()
+
+    def run_test(self, image, blockSize, preset, testRuns):
+        """
+        Run the test N times.
+
+        Args:
+            image: The test image to compress.
+            blockSize: The block size to use.
+            preset: (Unused - we always use ISPC's slow preset to have vaguely
+                usable image quality)
+            testRuns: The number of test runs.
+
+        Return:
+            Returns the best results from the N test runs.
+            Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
+        """
+        dstDir = os.path.dirname(image.outFilePath)
+        dstFile = os.path.basename(image.outFilePath)
+        dstDir = os.path.join(dstDir, self.name, blockSize)
+        dstPath = os.path.join(dstDir, dstFile)
+
+        compressCommand = [
+            "env",
+            "LD_LIBRARY_PATH=./Binaries/ispc",
+            self.binary,
+            image.filePath,
+            dstPath + ".astc",
+            blockSize
+        ]
+
+        decompressCommand = [
+            self.decodeBinary,
+            "-dl",
+            dstPath + ".astc",
+            dstPath + ".tga"
+        ]
+
+        compareCommand = [
+            self.decodeBinary,
+            "-compare",
+            image.filePath,
+            dstPath + ".tga",
+            "-showpsnr"
+        ]
+
+        os.makedirs(dstDir, exist_ok=True)
+
+        # Execute test runs
+        bestPSNR = 0
+        bestTTime = sys.float_info.max
+        bestCTime = sys.float_info.max
+        for _ in range(0, testRuns):
+            output = self.execute(compressCommand)
+            self.execute(decompressCommand)
+            output += self.execute(compareCommand)
+
+            output = self.parse_output(image, output)
+            bestPSNR = max(bestPSNR, output[0])
+            bestTTime = min(bestTTime, output[1])
+            bestCTime = min(bestCTime, output[2])
+
+        return (bestPSNR, bestTTime, bestCTime)

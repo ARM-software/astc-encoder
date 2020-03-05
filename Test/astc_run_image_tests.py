@@ -150,7 +150,7 @@ def format_result(image, reference, result):
            (name, tPSNR, tTTime, tCTime, result.name)
 
 
-def run_test_set(encoder, testRef, testSet, blockSizes, warmupRuns, testRuns):
+def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
     """
     Execute all tests in the test set.
 
@@ -159,7 +159,6 @@ def run_test_set(encoder, testRef, testSet, blockSizes, warmupRuns, testRuns):
         testRef: The test reference results.
         testSet: The test set.
         blockSizes: The block sizes to execute each test against.
-        warmupRuns: The number of warmup runs.
         testRuns: The number of test runs.
 
     Return:
@@ -184,8 +183,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, warmupRuns, testRuns):
 
             dat = (curCount, maxCount, blkSz, image.testFile)
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
-            res = encoder.run_test(image, blkSz, "-thorough",
-                                   warmupRuns, testRuns)
+            res = encoder.run_test(image, blkSz, "-thorough", testRuns)
             res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2])
             resultSet.add_record(res)
 
@@ -201,14 +199,47 @@ def run_test_set(encoder, testRef, testSet, blockSizes, warmupRuns, testRuns):
     return resultSet
 
 
+def get_encoder_params(encoderName, imageSet):
+    """
+    The the encoder and image set parameters for a test run.
+
+    Args:
+        encoderName: the encoder name from the command line.
+        imageSet: the test image set.
+    """
+    if encoderName == "1.7":
+        encoder = te.Encoder1x()
+        name = "reference-1.7"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "prototype":
+        encoder = te.EncoderProto()
+        name = "reference-prototype"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "intelispc":
+        encoder = te.EncoderISPC()
+        name = "reference-intelispc"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    else:
+        encoder = te.Encoder2x(encoderName)
+        name = "develop-%s" % encoderName
+        outDir = "TestOutput/%s" % imageSet
+        refName = "reference-1.7"
+
+    return (encoder, name, outDir, refName)
+
+
 def parse_command_line():
     """
     Parse the command line.
     """
     parser = argparse.ArgumentParser()
 
-    coders = ("nointrin", "sse2", "sse4.2", "avx2", "prototype", "1.7", "all")
-    testcoders = ("nointrin", "sse2", "sse4.2", "avx2")
+    refcoders = ["1.7", "prototype", "intelispc"]
+    testcoders = ["nointrin", "sse2", "sse4.2", "avx2"]
+    coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
@@ -221,8 +252,9 @@ def parse_command_line():
                         choices=imgFormat, help="test color format")
 
     choices = list(TEST_BLOCK_SIZES) + ["all"]
-    parser.add_argument("--block-size", dest="blockSizes", default="all",
-                        choices=choices, help="test block size")
+    parser.add_argument("--block-size", dest="blockSizes",
+                        action="append", choices=choices,
+                        help="test block size")
 
     testDir = os.path.dirname(__file__)
     testDir = os.path.join(testDir, "Images")
@@ -236,9 +268,6 @@ def parse_command_line():
     parser.add_argument("--test-set", dest="testSets", default="Small",
                         choices=testSets, help="test image test set")
 
-    parser.add_argument("--warmup", dest="testWarmups", default=0,
-                        type=int, help="test warmup count")
-
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
@@ -248,8 +277,8 @@ def parse_command_line():
     args.encoders = testcoders if args.encoders == "all" \
         else [args.encoders]
 
-    args.blockSizes = TEST_BLOCK_SIZES if args.blockSizes == "all" \
-        else [args.blockSizes]
+    if not args.blockSizes or ("all" in args.blockSizes):
+        args.blockSizes = TEST_BLOCK_SIZES
 
     args.testSets = testSets[:-1] if args.testSets == "all" \
         else [args.testSets]
@@ -275,21 +304,8 @@ def main():
 
     for imageSet in args.testSets:
         for encoderName in args.encoders:
-            if encoderName == "1.7":
-                encoder = te.Encoder1x()
-                name = "reference-1.7"
-                outDir = "Test/Images/%s" % imageSet
-                refName = None
-            elif encoderName == "prototype":
-                encoder = te.EncoderProto()
-                name = "reference-prototype"
-                outDir = "Test/Images/%s" % imageSet
-                refName = None
-            else:
-                encoder = te.Encoder2x(encoderName)
-                name = "develop-%s" % encoderName
-                outDir = "TestOutput/%s" % imageSet
-                refName = "reference-1.7"
+            (encoder, name, outDir, refName) = \
+                get_encoder_params(encoderName, imageSet)
 
             testDir = "Test/Images/%s" % imageSet
             testRes = "%s/astc_%s_results.csv" % (outDir, name)
@@ -305,8 +321,7 @@ def main():
                                   args.profiles, args.formats)
 
             resultSet = run_test_set(encoder, testRef, testSet,
-                                     args.blockSizes,
-                                     args.testWarmups, args.testRepeats)
+                                     args.blockSizes, args.testRepeats)
 
             resultSet.save_to_file(testRes)
 

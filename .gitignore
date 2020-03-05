@@ -11,5 +11,5 @@ Source/astcenc-*
 Source/VS2019/*Release
 Source/VS2019/*Debug
 Test/Images/Kodak
-Test/Images/Scratch
+Test/Images/Scratch*
 TestOutput
