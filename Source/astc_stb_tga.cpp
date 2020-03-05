@@ -42,13 +42,13 @@ astc_codec_image* load_image_with_stb(
 	int y_flip = 1;
 	int x, y;
 
-	astc_codec_image* astc_img = NULL;
+	astc_codec_image* astc_img = nullptr;
 
 	if (stbi_is_hdr(filename))
 	{
 		float *image = stbi_loadf(filename, &xsize, &ysize, &components, STBI_rgb_alpha);
 
-		if (image != NULL)
+		if (image != nullptr)
 		{
 			astc_img = allocate_image(16, xsize, ysize, 1, padding);
 			for (y = 0; y < ysize; y++)
@@ -78,7 +78,7 @@ astc_codec_image* load_image_with_stb(
 
 		uint8_t *imageptr = (uint8_t *) image;
 
-		if (image != NULL)
+		if (image != nullptr)
 		{
 			astc_img = allocate_image(8, xsize, ysize, 1, padding);
 			for (y = 0; y < ysize; y++)
@@ -107,7 +107,7 @@ astc_codec_image* load_image_with_stb(
 	printf("Failed to load image %s\nReason: %s\n", filename, stbi_failure_reason());
 
 	*result = -1;
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -187,7 +187,7 @@ astc_codec_image* load_tga_image(
 	if (!f)
 	{
 		*result = TGA_ERROR_OPEN;
-		return NULL;
+		return nullptr;
 	}
 
 	tga_header hdr;
@@ -196,14 +196,14 @@ astc_codec_image* load_tga_image(
 	{
 		fclose(f);
 		*result = TGA_ERROR_READ;
-		return NULL;
+		return nullptr;
 	}
 
 	if (hdr.colormaptype != 0)
 	{
 		fclose(f);
 		*result = TGA_ERROR_COLORMAP;
-		return NULL;
+		return nullptr;
 	}
 
 	// do a quick test for RLE-pictures so that we reject them
@@ -212,7 +212,7 @@ astc_codec_image* load_tga_image(
 		fclose(f);
 		printf("TGA image %s is RLE-encoded; only uncompressed TGAs are supported.\n", tga_filename);
 		*result = TGA_ERROR_RLE;
-		return NULL;
+		return nullptr;
 	}
 
 	// Check for x flip (rare, unsupported) and y flip (supported)
@@ -220,7 +220,7 @@ astc_codec_image* load_tga_image(
 	{
 		fclose(f);
 		*result = TGA_ERROR_LAYOUT;
-		return NULL;
+		return nullptr;
 	}
 
 	if (hdr.descriptor & TGA_DESCRIPTOR_YFLIP)
@@ -244,7 +244,7 @@ astc_codec_image* load_tga_image(
 	{
 		fclose(f);
 		*result = TGA_ERROR_FORMAT;
-		return NULL;
+		return nullptr;
 	}
 
 	if (hdr.identsize != 0)		// skip ID field if it present.
@@ -258,8 +258,8 @@ astc_codec_image* load_tga_image(
 	// Now, let's read it.
 
 	size_t bytestoread = 0;
-	uint8_t **row_pointers8 = NULL;
-	uint16_t **row_pointers16 = NULL;
+	uint8_t **row_pointers8 = nullptr;
+	uint16_t **row_pointers16 = nullptr;
 	if (bitness == 8)
 	{
 		row_pointers8 = new uint8_t *[hdr.ysize];
@@ -293,7 +293,7 @@ astc_codec_image* load_tga_image(
 			delete[]row_pointers16;
 		}
 		*result = -2;
-		return NULL;
+		return nullptr;
 	}
 
 	// OK, at this point, we can expand the image data to RGBA.
@@ -459,8 +459,8 @@ int store_tga_image(
 
 	// construct image data to write
 
-	uint8_t **row_pointers8 = NULL;
-	uint16_t **row_pointers16 = NULL;
+	uint8_t **row_pointers8 = nullptr;
+	uint16_t **row_pointers16 = nullptr;
 	if (bitness == 8)
 	{
 		row_pointers8 = new uint8_t *[hdr.ysize];

@@ -365,7 +365,7 @@ static void store_astc_file(
 	if (!suppress_progress_counter)
 		printf("%d blocks to process ..\n", xblocks * yblocks * zblocks);
 
-	encode_astc_image(input_image, NULL, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, threadcount);
+	encode_astc_image(input_image, nullptr, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, threadcount);
 
 	end_coding_time = get_time();
 
@@ -420,7 +420,8 @@ static astc_codec_image *pack_and_unpack_astc_image(
 	if (!suppress_progress_counter)
 		printf("%d blocks to process...\n", xblocks * yblocks * zblocks);
 
-	encode_astc_image(input_image, img, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_decode, NULL, 1, threadcount);
+	encode_astc_image(input_image, img, xdim, ydim, zdim, ewp, decode_mode,
+	                  swz_encode, swz_decode, nullptr, 1, threadcount);
 
 	if (!suppress_progress_counter)
 		printf("\n");
@@ -1471,12 +1472,12 @@ int astc_main(
 	int zdim = -1;
 
 	// Temporary image array (for merging multiple 2D images into one 3D image).
-	int *load_results = NULL;
-	astc_codec_image **input_images = NULL;
+	int *load_results = nullptr;
+	astc_codec_image **input_images = nullptr;
 
 	int load_result = 0;
-	astc_codec_image *input_image = NULL;
-	astc_codec_image *output_image = NULL;
+	astc_codec_image *input_image = nullptr;
+	astc_codec_image *output_image = nullptr;
 	int input_components = 0;
 
 	int input_image_is_hdr = 0;
@@ -1502,7 +1503,7 @@ int astc_main(
 				char new_input_filename[256];
 
 				// Check for extension: <name>.<extension>
-				if (NULL == strrchr(input_filename, '.'))
+				if (nullptr == strrchr(input_filename, '.'))
 				{
 					printf("Unable to determine file type from extension: %s\n", input_filename);
 					return 1;
@@ -1581,10 +1582,10 @@ int astc_main(
 		}
 
 		delete[] input_images;
-		input_images = NULL;
+		input_images = nullptr;
 
 		delete[] load_results;
-		load_results = NULL;
+		load_results = nullptr;
 
 		input_components = load_result & 7;
 		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;

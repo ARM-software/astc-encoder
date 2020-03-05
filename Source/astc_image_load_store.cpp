@@ -27,7 +27,7 @@
 
 void destroy_image(astc_codec_image * img)
 {
-	if (img == NULL)
+	if (img == nullptr)
 		return;
 
 	if (img->data8)
@@ -68,9 +68,9 @@ astc_codec_image *allocate_image(
 	img->zsize = zsize;
 	img->padding = padding;
 
-	img->input_averages = NULL;
-	img->input_variances = NULL;
-	img->input_alpha_averages = NULL;
+	img->input_averages = nullptr;
+	img->input_variances = nullptr;
+	img->input_alpha_averages = nullptr;
 
 	int exsize = xsize + 2 * padding;
 	int eysize = ysize + 2 * padding;
@@ -90,7 +90,7 @@ astc_codec_image *allocate_image(
 			for (j = 1; j < eysize; j++)
 				img->data8[i][j] = img->data8[i][0] + 4 * j * exsize;
 
-		img->data16 = NULL;
+		img->data16 = nullptr;
 	}
 	else if (bitness == 16)
 	{
@@ -106,7 +106,7 @@ astc_codec_image *allocate_image(
 			for (j = 1; j < eysize; j++)
 				img->data16[i][j] = img->data16[i][0] + 4 * j * exsize;
 
-		img->data8 = NULL;
+		img->data8 = nullptr;
 	}
 	else
 	{
@@ -1063,7 +1063,7 @@ astc_codec_image *astc_codec_load_image(
 
 int get_output_filename_enforced_bitness(const char *output_filename)
 {
-	if (output_filename == NULL)
+	if (output_filename == nullptr)
 		return -1;
 
 	size_t filename_len = strlen(output_filename);

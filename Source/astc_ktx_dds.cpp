@@ -452,7 +452,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 	{
 		printf("Failed to open file %s\n", filename);
 		*result = -1;
-		return NULL;
+		return nullptr;
 	}
 
 	ktx_header hdr;
@@ -463,7 +463,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("Failed to read header of KTX file %s\n", filename);
 		fclose(f);
 		*result = -2;
-		return NULL;
+		return nullptr;
 	}
 
 	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
@@ -471,7 +471,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("File %s does not have a valid KTX header\n", filename);
 		fclose(f);
 		*result = -3;
-		return NULL;
+		return nullptr;
 	}
 
 	int switch_endianness = 0;
@@ -486,7 +486,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("File %s appears to be compressed, not supported as input\n", filename);
 		fclose(f);
 		*result = -4;
-		return NULL;
+		return nullptr;
 	}
 
 	// the formats we support are:
@@ -524,7 +524,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("KTX file %s has unsupported GL type\n", filename);
 		fclose(f);
 		*result = -5;
-		return NULL;
+		return nullptr;
 	};
 
 	// Although these are set up later, we include a default initializer to remove warnings
@@ -670,7 +670,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("KTX file %s has unsupported GL format\n", filename);
 		fclose(f);
 		*result = -5;
-		return NULL;
+		return nullptr;
 	}
 
 	if (hdr.number_of_mipmap_levels > 1)
@@ -702,7 +702,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		printf("Failed to read header of KTX file %s\n", filename);
 		fclose(f);
 		*result = -2;
-		return NULL;
+		return nullptr;
 	}
 
 	if (switch_endianness)
@@ -717,7 +717,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		fclose(f);
 		printf("%s: KTX file inconsistency: computed surface size is %d bytes, but specified size is %d bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
 		*result = -5;
-		return NULL;
+		return nullptr;
 	}
 
 	uint8_t *buf = (uint8_t *) malloc(specified_bytes_of_surface);
@@ -728,7 +728,7 @@ astc_codec_image* load_ktx_uncompressed_image(
 		free(buf);
 		printf("Failed to read file %s\n", filename);
 		*result = -6;
-		return NULL;
+		return nullptr;
 	}
 
 	// perform an endianness swap on the surface if needed.
@@ -800,8 +800,8 @@ int store_ktx_uncompressed_image(
 	hdr.bytes_of_key_value_data = 0;
 
 	// collect image data to write
-	uint8_t ***row_pointers8 = NULL;
-	uint16_t ***row_pointers16 = NULL;
+	uint8_t ***row_pointers8 = nullptr;
+	uint16_t ***row_pointers16 = nullptr;
 	if (bitness == 8)
 	{
 		row_pointers8 = new uint8_t **[zsize];
@@ -1052,7 +1052,7 @@ astc_codec_image* load_dds_uncompressed_image(
 	{
 		printf("Failed to open file %s\n", filename);
 		*result = -1;
-		return NULL;
+		return nullptr;
 	}
 
 	uint8_t magic[4];
@@ -1065,7 +1065,7 @@ astc_codec_image* load_dds_uncompressed_image(
 		printf("Failed to read header of DDS file %s\n", filename);
 		fclose(f);
 		*result = -2;
-		return NULL;
+		return nullptr;
 	}
 
 	uint32_t magicx = magic[0] | (magic[1] << 8) | (magic[2] << 16) | (magic[3] << 24);
@@ -1075,7 +1075,7 @@ astc_codec_image* load_dds_uncompressed_image(
 		printf("File %s does not have a valid DDS header\n", filename);
 		fclose(f);
 		*result = -3;
-		return NULL;
+		return nullptr;
 	}
 
 	int use_dx10_header = 0;
@@ -1090,7 +1090,7 @@ astc_codec_image* load_dds_uncompressed_image(
 			printf("DDS file %s is compressed, not supported\n", filename);
 			fclose(f);
 			*result = -4;
-			return NULL;
+			return nullptr;
 		}
 	}
 
@@ -1103,7 +1103,7 @@ astc_codec_image* load_dds_uncompressed_image(
 			printf("Failed to read header of DDS file %s\n", filename);
 			fclose(f);
 			*result = -2;
-			return NULL;
+			return nullptr;
 		}
 	}
 
@@ -1183,7 +1183,7 @@ astc_codec_image* load_dds_uncompressed_image(
 			printf("DDS file %s: DXGI format not supported by codec\n", filename);
 			fclose(f);
 			*result = -4;
-			return NULL;
+			return nullptr;
 		}
 	}
 	else
@@ -1272,7 +1272,7 @@ astc_codec_image* load_dds_uncompressed_image(
 			printf("DDS file %s: Non-DXGI format not supported by codec\n", filename);
 			fclose(f);
 			*result = -4;
-			return NULL;
+			return nullptr;
 		}
 
 		bitness = bytes_per_component * 8;
@@ -1291,7 +1291,7 @@ astc_codec_image* load_dds_uncompressed_image(
 		free(buf);
 		printf("Failed to read file %s\n", filename);
 		*result = -6;
-		return NULL;
+		return nullptr;
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
@@ -1387,8 +1387,8 @@ int store_dds_uncompressed_image(
 	dx10.reserved = 0;
 
 	// collect image data to write
-	uint8_t ***row_pointers8 = NULL;
-	uint16_t ***row_pointers16 = NULL;
+	uint8_t ***row_pointers8 = nullptr;
+	uint16_t ***row_pointers16 = nullptr;
 	if (bitness == 8)
 	{
 		row_pointers8 = new uint8_t **[zsize];
