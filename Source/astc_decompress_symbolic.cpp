@@ -75,11 +75,14 @@ static uint4 lerp_color_int(
 		ecolor0 = int4(ecolor0.x >> 8, ecolor0.y >> 8, ecolor0.z >> 8, ecolor0.w >> 8);
 		ecolor1 = int4(ecolor1.x >> 8, ecolor1.y >> 8, ecolor1.z >> 8, ecolor1.w >> 8);
 	}
+
 	int4 color = (ecolor0 * eweight0) + (ecolor1 * eweight1) + int4(32, 32, 32, 32);
 	color = int4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
 
 	if (decode_mode == DECODE_LDR_SRGB)
+	{
 		color = color * 257;
+	}
 
 	return uint4(color.x, color.y, color.z, color.w);
 }
@@ -142,13 +145,26 @@ void decompress_symbolic_block(
 
 		if (scb->block_mode == -2)
 		{
-			// For sRGB decoding, we should return only the top 8 bits.
-			int mask = (decode_mode == DECODE_LDR_SRGB) ? 0xFF00 : 0xFFFF;
+			int ired = scb->constant_color[0];
+			int igreen = scb->constant_color[1];
+			int iblue = scb->constant_color[2];
+			int ialpha = scb->constant_color[3];
 
-			red = sf16_to_float(unorm16_to_sf16(scb->constant_color[0] & mask));
-			green = sf16_to_float(unorm16_to_sf16(scb->constant_color[1] & mask));
-			blue = sf16_to_float(unorm16_to_sf16(scb->constant_color[2] & mask));
-			alpha = sf16_to_float(unorm16_to_sf16(scb->constant_color[3] & mask));
+			// For sRGB decoding a real decoder would just use the top 8 bits
+			// for color conversion. We don't color convert, so linearly scale
+			// the top 8 bits into the full 16 bit dynamic range
+			if (decode_mode == DECODE_LDR_SRGB)
+			{
+				ired = (ired >> 8) * 257;
+				igreen = (igreen >> 8) * 257;
+				iblue = (iblue >> 8) * 257;
+				ialpha = (ialpha >> 8) * 257;
+			}
+
+			red = sf16_to_float(unorm16_to_sf16(ired));
+			green = sf16_to_float(unorm16_to_sf16(igreen));
+			blue = sf16_to_float(unorm16_to_sf16(iblue));
+			alpha = sf16_to_float(unorm16_to_sf16(ialpha));
 			use_lns = 0;
 			use_nan = 0;
 		}
