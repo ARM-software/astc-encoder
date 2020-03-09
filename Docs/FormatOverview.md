@@ -346,10 +346,11 @@ The compression scheme used by ASTC effectively compresses arbitrary sequences
 of floating point numbers, with a flexible number of channels, across any of
 the supported block sizes. There is no real notion of "color format" in the
 format itself at all, beyond the color endpoint mode selection, although a
-sensible compressor will want to use some format-specific metrics.
+sensible compressor will want to use some format-specific heuristics to drive
+an efficient state-space search.
 
 The orthogonal encoding design allows ASTC to provide complete coverage of our
-format matrix from earlier, across a wide range of bit rates:
+desirable format matrix from earlier, across a wide range of bit rates:
 
 ![ASTC 2D formats and bit rates](./FormatOverviewImg/coverage-astc.svg)
 
@@ -363,10 +364,10 @@ Image quality
 
 The normal expectation would be that this level of format flexibility would
 come at a cost of image quality; it has to cost something, right? Luckily this
-isn't true. The high packing efficiency allowed by the BISE encoding, and the
-ability to dynamically choose quantization levels on a per-block basis, means
-that an ASTC compressor is not forced to spend bits on things that don't help
-image quality.
+isn't true. The high packing efficiency allowed by BISE encoding, and the
+ability to dynamically choose where to spend encoding space on a per-block
+basis, means that an ASTC compressor is not forced to spend bits on things that
+don't help image quality.
 
 This gives some significant improvements in image quality compared to the older
 texture formats, even though ASTC also handles a much wider range of options.
