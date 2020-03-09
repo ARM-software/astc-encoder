@@ -44,9 +44,9 @@ pipeline {
             }
             stage('Test') {
               steps {
-                sh 'python3 ./Test/astc_test_run.py'
-                perfReport(sourceDataFiles:'TestOutput/results.xml')
-                junit(testResults: 'TestOutput/results.xml')
+                sh 'python3 ./Test/astc_run_image_tests.py --test-set Small'
+                //perfReport(sourceDataFiles:'TestOutput/results.xml')
+                //junit(testResults: 'TestOutput/results.xml')
               }
             }
           }
@@ -89,10 +89,10 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
-                  call python ./Test/astc_test_run.py
+                  call python ./Test/astc_run_image_tests.py --test-set Small
                 '''
-                perfReport(sourceDataFiles:'TestOutput\\results.xml')
-                junit(testResults: 'TestOutput\\results.xml')
+                //perfReport(sourceDataFiles:'TestOutput\\results.xml')
+                //junit(testResults: 'TestOutput\\results.xml')
               }
             }
           }
@@ -127,10 +127,10 @@ pipeline {
               steps {
                 sh '''
                   export PATH=$PATH:/usr/local/bin
-                  python3 ./Test/astc_test_run.py
+                  python3 ./Test/astc_run_image_tests.py --test-set Small
                 '''
-                perfReport(sourceDataFiles:'TestOutput/results.xml')
-                junit(testResults: 'TestOutput/results.xml')
+                //perfReport(sourceDataFiles:'TestOutput/results.xml')
+                //junit(testResults: 'TestOutput/results.xml')
               }
             }
           }
