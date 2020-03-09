@@ -112,7 +112,7 @@ pipeline {
               steps {
                 sh '''
                   cd ./Source/
-                  make VEC=avx2
+                  make VEC=sse2
                 '''
               }
             }
@@ -127,7 +127,7 @@ pipeline {
               steps {
                 sh '''
                   export PATH=$PATH:/usr/local/bin
-                  python3 ./Test/astc_run_image_tests.py --test-set Small
+                  python3 ./Test/astc_run_image_tests.py --test-set Small --encoder=sse2
                 '''
                 //perfReport(sourceDataFiles:'TestOutput/results.xml')
                 //junit(testResults: 'TestOutput/results.xml')
