@@ -14,7 +14,8 @@ content creators. This allows more assets to use compression, often at a
 reduced bitrate compared to legacy formats, reducing memory bandwidth and
 energy consumption.
 
-The ASTC data format specification is available here:
+Read our [ASTC Format Overview](./Docs/FormatOverview.md) for a quick
+introduction, or read the full data format specification:
 
 * [Khronos Data Format Specification v1.2 # ASTC](https://www.khronos.org/registry/DataFormat/specs/1.2/dataformat.1.2.html#ASTC)
 
@@ -104,7 +105,8 @@ Decompress an image using the `-dl` \ `-ds` \ `-dh` options. For example:
 
 This decompresses `example.astc` using the full HDR feature profile, storing
 the decompressed output to `example.tga`. The other modes are `-dl`, which
-decompresses using the LDR profile, and `-ds`, which decompresses using the LDR sRGB color profile.
+decompresses using the LDR profile, and `-ds`, which decompresses using the LDR
+sRGB color profile.
 
 ## Measuring image quality
 
@@ -140,6 +142,10 @@ which can be used to fine tune the compression algorithm. See the command line
 help message for more details.
 
 # Documentation
+
+The [ASTC Format Overview](./Docs/FormatOverview.md) page provides a high level
+overview of the ASTC data format, how it encodes data, and why it is both
+flexible and efficient.
 
 The [Effective ASTC Encoding](./Docs/Encoding.md) page looks at some of the
 guidelines that should be followed when compressing data using `astcenc`.
