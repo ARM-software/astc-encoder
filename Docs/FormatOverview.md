@@ -417,8 +417,8 @@ Khronos extensions
 Official Khronos extensions exist for the feature profiles of ASTC:
 
 * [KHR_texture_compression_astc_ldr][astc_ldr]: 2D LDR support
-* [KHR_texture_compression_astc_hdr][astc_ldr]: 2D LDR + HDR support
-* [KHR_texture_compression_astc_sliced_3d][astc_3d]: 3D LDR + HDR support
+* [KHR_texture_compression_astc_sliced_3d][astc_3d]: 2D + 3D LDR support
+* [KHR_texture_compression_astc_hdr][astc_ldr]: 2D + 3D, LDR + HDR support
 
 A convenience extension which provides the full feature set implied by
 supporting all three KHR extensions also exists.
