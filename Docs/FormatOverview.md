@@ -276,8 +276,8 @@ in a third, and no bias in the rest. As they are procedurally generated not all
 of the partitions are useful, in particular with the smaller block sizes.
 
 * Many partitions are duplicates.
-* Many partitions are degenerate (an N partition hash results in a partition
-  assignment with some of the N containing no texels).
+* Many partitions are degenerate (an N partition hash results in at least one
+  partition assignment that contains no texels).
 
 
 Texel weights
