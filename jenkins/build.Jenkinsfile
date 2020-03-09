@@ -1,27 +1,4 @@
-def dsgArtifactoryUpload(String sourcePattern, String target) {
-    rtBuildInfo (
-      // Maximum builds to keep in Artifactory.
-      maxBuilds: 10,
-      // Also delete the build artifacts when deleting a build.
-      deleteBuildArtifacts: true
-    )
-    rtUpload (
-      serverId: 'dsg-artifactory',
-      spec: """
-        {
-          "files": [
-            {
-              "pattern": "${sourcePattern}",
-              "target": "${target}"
-            }
-          ]
-        }
-      """
-    )
-    rtPublishBuildInfo (
-      serverId: 'dsg-artifactory'
-    )
-}
+@Library('hive-infra-library@master') _
 
 pipeline {
   agent none
@@ -191,7 +168,8 @@ pipeline {
         stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
-            dsgArtifactoryUpload('*.zip', "astc-encoder/build/${currentBuild.number}/")
+            dsgArtifactoryUpload('*.zip')
+            dsgArtifactoryPromote()
           }
         }
       }
