@@ -308,11 +308,13 @@ correlated with the color value - or normal data - the X and Y normal values
 often change independently.
 
 ASTC allows a dual-plane mode, which uses two separate weight grids for each
-texel. The RGB channels use one weight grid, and the A channel uses another.
+texel. A single channel can be assigned to a second plane of weights, while
+the other three use the first plane of weights.
 
 The use of dual-plane mode can be chosen on a per-block basis, but its use
 prevents the use of four color partitions as we do not have enough bits to
-store the payload for both concurrently.
+concurrently store both an extra plane of weights and an extra set of color
+endpoints.
 
 
 End results
