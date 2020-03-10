@@ -161,9 +161,9 @@ Quints
 ------
 
 Instead of rounding up a 5 symbol alphabet - called a "quint" in BISE - to
-three bits, we could choose to instead pack three quints together. Three
-characters in a 5-symbol alphabet have 5<sup>3</sup> (125) combinations, and
-contain 6.97 bits of information. We can store this in 7 bits and have a
+three bits, we could choose to instead pack three quint characters together.
+Three characters in a 5-symbol alphabet have 5<sup>3</sup> (125) combinations,
+and contain 6.97 bits of information. We can store this in 7 bits and have a
 storage waste of only 0.5%.
 
 
@@ -171,9 +171,9 @@ Trits
 -----
 
 We can similarly construct a 3-symbol alphabet - called a "trit" in BISE - and
-pack trits in groups of five. Each character group has 5<sup>3</sup> (243)
-combinations, and contains 7.92 bits of information. We can store this in 8
-bits and have a storage waste of only 1%.
+pack trit characters in groups of five. Each character group has 3<sup>5</sup>
+(243) combinations, and contains 7.92 bits of information. We can store this in
+8 bits and have a storage waste of only 1%.
 
 
 BISE
