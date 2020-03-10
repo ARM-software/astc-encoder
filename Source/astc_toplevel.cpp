@@ -41,10 +41,6 @@
 	extern int block_mode_histogram[2048];
 #endif
 
-
-
-int progress_counter_divider = 1;
-
 int rgb_force_use_of_hdr = 0;
 int alpha_force_use_of_hdr = 0;
 
@@ -74,7 +70,6 @@ struct astc_header
 	uint8_t zsize[3];			// block count is inferred
 };
 
-int suppress_progress_counter = 0;
 int perform_srgb_transform = 0;
 
 astc_codec_image *load_astc_file(
@@ -362,9 +357,6 @@ static void store_astc_file(
 		exit(1);
 	}
 
-	if (!suppress_progress_counter)
-		printf("%d blocks to process ..\n", xblocks * yblocks * zblocks);
-
 	encode_astc_image(input_image, nullptr, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, threadcount);
 
 	end_coding_time = get_time();
@@ -412,19 +404,8 @@ static astc_codec_image *pack_and_unpack_astc_image(
 
 	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
 
-	/* allocate_output_image_space (bitness, xsize, ysize, zsize); */
-	int xblocks = (xsize + xdim - 1) / xdim;
-	int yblocks = (ysize + ydim - 1) / ydim;
-	int zblocks = (zsize + zdim - 1) / zdim;
-
-	if (!suppress_progress_counter)
-		printf("%d blocks to process...\n", xblocks * yblocks * zblocks);
-
 	encode_astc_image(input_image, img, xdim, ydim, zdim, ewp, decode_mode,
 	                  swz_encode, swz_decode, nullptr, 1, threadcount);
-
-	if (!suppress_progress_counter)
-		printf("\n");
 
 	return img;
 }
@@ -659,8 +640,6 @@ int astc_main(
 	int maxiters_autoset = 0;
 	int maxiters_set_by_user = 0;
 
-	int pcdiv = 1;
-
 	int xdim_2d = 0;
 	int ydim_2d = 0;
 	int xdim_3d = 0;
@@ -759,7 +738,6 @@ int astc_main(
 		{
 			argidx++;
 			silentmode = 1;
-			suppress_progress_counter = 1;
 		}
 		else if (!strcmp(argv[argidx], "-v"))
 		{
@@ -1111,31 +1089,6 @@ int astc_main(
 			dblimit_autoset_3d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
 			bmc_autoset = 50;
 			maxiters_autoset = 1;
-
-			switch (ydim_2d)
-			{
-			case 4:
-				pcdiv = 60;
-				break;
-			case 5:
-				pcdiv = 27;
-				break;
-			case 6:
-				pcdiv = 30;
-				break;
-			case 8:
-				pcdiv = 24;
-				break;
-			case 10:
-				pcdiv = 16;
-				break;
-			case 12:
-				pcdiv = 20;
-				break;
-			default:
-				pcdiv = 20;
-				break;
-			};
 			preset_has_been_set++;
 		}
 		else if (!strcmp(argv[argidx], "-medium"))
@@ -1148,31 +1101,6 @@ int astc_main(
 			dblimit_autoset_3d = MAX(95 - 35 * log10_texels_3d, 70 - 19 * log10_texels_3d);
 			bmc_autoset = 75;
 			maxiters_autoset = 2;
-
-			switch (ydim_2d)
-			{
-			case 4:
-				pcdiv = 25;
-				break;
-			case 5:
-				pcdiv = 15;
-				break;
-			case 6:
-				pcdiv = 15;
-				break;
-			case 8:
-				pcdiv = 10;
-				break;
-			case 10:
-				pcdiv = 8;
-				break;
-			case 12:
-				pcdiv = 6;
-				break;
-			default:
-				pcdiv = 6;
-				break;
-			};
 			preset_has_been_set++;
 		}
 		else if (!strcmp(argv[argidx], "-thorough"))
@@ -1185,31 +1113,6 @@ int astc_main(
 			dblimit_autoset_3d = MAX(105 - 35 * log10_texels_3d, 77 - 19 * log10_texels_3d);
 			bmc_autoset = 95;
 			maxiters_autoset = 4;
-
-			switch (ydim_2d)
-			{
-			case 4:
-				pcdiv = 12;
-				break;
-			case 5:
-				pcdiv = 7;
-				break;
-			case 6:
-				pcdiv = 7;
-				break;
-			case 8:
-				pcdiv = 5;
-				break;
-			case 10:
-				pcdiv = 4;
-				break;
-			case 12:
-				pcdiv = 3;
-				break;
-			default:
-				pcdiv = 3;
-				break;
-			};
 			preset_has_been_set++;
 		}
 		else if (!strcmp(argv[argidx], "-exhaustive"))
@@ -1222,32 +1125,7 @@ int astc_main(
 			dblimit_autoset_3d = 999.0f;
 			bmc_autoset = 100;
 			maxiters_autoset = 4;
-
 			preset_has_been_set++;
-			switch (ydim_2d)
-			{
-			case 4:
-				pcdiv = 3;
-				break;
-			case 5:
-				pcdiv = 1;
-				break;
-			case 6:
-				pcdiv = 1;
-				break;
-			case 8:
-				pcdiv = 1;
-				break;
-			case 10:
-				pcdiv = 1;
-				break;
-			case 12:
-				pcdiv = 1;
-				break;
-			default:
-				pcdiv = 1;
-				break;
-			}
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
@@ -1362,8 +1240,6 @@ int astc_main(
 				   "trade-off preset option. The available presets are:\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
 			return 1;
 		}
-
-		progress_counter_divider = pcdiv;
 
 		int partitions_to_test = plimit_set_by_user ? plimit_user_specified : plimit_autoset;
 		float dblimit_2d = dblimit_set_by_user ? dblimit_user_specified : dblimit_autoset_2d;
@@ -1667,13 +1543,6 @@ int astc_main(
 		{
 			printf("Failed to store image %s\n", output_filename);
 			return 1;
-		}
-		else
-		{
-			if (!silentmode)
-			{
-				printf("Stored %s image %s with %d color channels\n", format_string, output_filename, store_result);
-			}
 		}
 	}
 
