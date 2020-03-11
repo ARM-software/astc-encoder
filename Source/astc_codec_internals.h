@@ -78,7 +78,8 @@ enum astc_decode_mode
 {
 	DECODE_LDR_SRGB,
 	DECODE_LDR,
-	DECODE_HDR
+	DECODE_HDR,
+	DECODE_HDRA
 };
 
 /*

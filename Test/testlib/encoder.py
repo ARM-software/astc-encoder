@@ -213,13 +213,15 @@ class Encoder2x(EncoderBase):
     SWITCHES = {
         "ldr": "-tl",
         "ldrs": "-ts",
-        "hdr": "-th"
+        "hdr": "-th",
+        "hdra": "-tH"
     }
 
     OUTPUTS = {
         "ldr": ".tga",
         "ldrs": ".tga",
-        "hdr": ".htga"
+        "hdr": ".htga",
+        "hdra": ".htga"
     }
 
     def __init__(self, variant):
@@ -251,14 +253,12 @@ class Encoder2x(EncoderBase):
         if image.colorFormat == "xy":
             command.append("-normal_psnr")
 
-        if image.colorProfile == "hdr":
-            command.append("-hdr")
-
         if image.isMask:
             command.append("-mask")
 
         if image.isAlphaScaled:
-            command.append("-alphablend")
+            command.append("-a")
+            command.append("1")
 
         return command
 

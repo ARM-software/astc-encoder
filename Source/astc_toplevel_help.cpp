@@ -32,36 +32,37 @@ R"(
 Basic usage:
 
 To compress an image use the following command line:
-    astcenc {-cl|-cs|-ch} <input> <output> <blockdim> <preset> [options]
+    astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <preset> [options]
 
 For example, to compress to 8x6 blocks with the thorough preset use:
-    astcenc -ch kodim01.png kodim01.astc 8x6 -thorough
+    astcenc -cl kodim01.png kodim01.astc 8x6 -thorough
 
 To decompress an image use the following command line:
-    astcenc {-dl|-ds|-dh} <input> <output>
+    astcenc {-dl|-ds|-dh|-dH} <in> <out>
 
 For example, use:
-    astcenc -dh kodim01.astc kodim01.png
+    astcenc -dl kodim01.astc kodim01.png
 
-To perform a compression test, writing back the decompressed output, use the
-following command line:
-    astcenc {-tl|-ts|-th} <input> <output> <blockdim> <preset> [options]
+To perform a compression test, writing back the decompressed output, use
+the following command line:
+    astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <preset> [options]
 
 For example, use:
-    astcenc -th kodim01.png kodim01-test.png 8x6 -thorough
+    astcenc -tl kodim01.png kodim01-test.png 8x6 -thorough
 
-The -ch/-dh/-th options are used to configure the codec to support the full
-range of LDR and HDR ASTC color encoding options. Textures compressed with
-this setting may fail to decompress correctly on GPU hardware without the
-HDR profile support.
+The -*l options are used to configure the codec to support only the linear
+LDR profile, preventing use of the HDR encoding features.
 
-The -cl/-dl/-tl options are used to configure the codec to support only
-the linear LDR profile, preventing use of the HDR encoding features.
-
-The -cl/-ds/-ts options are used to configure the codec to support only
+The -*s options are used to configure the codec to support only
 the sRGB LDR profile, preventing use of the HDR encoding features. Input
 texture data must be encoded in the sRGB colorspace for this option to
-provide correct compressed data.
+provide correct output results.
+
+The -*h/-*H options are used to configure the codec to support the HDR ASTC
+color profile. Textures compressed with this profile may fail to decompress
+correctly on GPU hardware without HDR profile support. The -*h options
+configure the compressor for HDR RGB channels with an LDR alpha channel.
+The -*H options configure the compressor for full HDR across all channels.
 
 For full help documentation run 'astcenc -help'.
 )";
@@ -74,10 +75,10 @@ NAME
 SYNOPSIS
        astcenc {-h|-help}
        astcenc {-v|-version}
-       astcenc {-cl|-cs|-ch} <in> <out> <blocksize> <preset> [options ...]
-       astcenc {-dl|-ds|-dh} <in> <out> <blocksize> <preset> [options ...]
-       astcenc {-tl|-ts|-th} <in> <out> <blocksize> <preset> [options ...]
-       astcenc {-compare} <in1> <in2> [options ...]
+       astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <preset> [options]
+       astcenc {-dl|-ds|-dh|-dH} <in> <out> <blocksize> <preset> [options]
+       astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <preset> [options]
+       astcenc {-compare} <in1> <in2> [options]
 
 DESCRIPTION
        astcenc compresses image files into the Adaptive Scalable Texture
@@ -104,8 +105,9 @@ COMPRESSION
        target block size, and the quality preset.
 
        The color profile is specified using the -cl (LDR linear),
-       -cs (LDR sRGB), and -ch (HDR) encoder option. Note that not all
-       hardware implementations of ASTC support the HDR profile.
+       -cs (LDR sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder
+       options. Note that not all hardware implementations of ASTC support
+       the HDR profile.
 
        The input file path must match a valid file format for compression,
        and the output file format must be a valid output for compression.
@@ -158,12 +160,6 @@ COMPRESSION
        useful to consider for common usage, based on the type of image
        data being compressed.
 
-       -alphablend
-           The input texture alpha component is used to represent opacity
-           of the RGB components, where 0 is fully transparent and 1 is
-           fully opaque. This improves image quality by scaling RGB error
-           significance in transparent parts of the image.
-
        -mask
            The input texture is a mask texture with unrelated data stored
            in the various color channels. This improves image quality by
@@ -185,16 +181,6 @@ COMPRESSION
            -normal_psnr, but is optimized for angular perceptual error.
            This aims to improves perceptual quality of the normals, but
            typically lowers the measured PSNR score.
-
-       -hdr
-           The input texture is an HDR RGB texture, with an LDR alpha
-           channel. This improves image quality by using error metrics that
-           are appropriate for the data in each channel.
-
-       -hdra
-           The input texture is an HDR RGB texture, with an HDR alpha
-           channel. This improves image quality by using error metrics that
-           are appropriate for the data in each channel.
 
         -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.
@@ -292,7 +278,7 @@ ADVANCED COMPRESSION
        drive the performance-quality trade off.
 
        -partitionlimit <number>
-           Test only <number> block partitionings. Higher numbers give
+           Test only <number> block partitions. Higher numbers give
            better quality, however large values give diminishing returns
            especially for smaller block sizes. Preset defaults are:
 
@@ -407,7 +393,7 @@ DECOMPRESSION
        the color profile, the input file name, and the output file name.
 
        The color profile is specified using the -dl (LDR linear), -ds
-       (LDR sRGB), and -dh (HDR) encoder option.
+       (LDR sRGB), -dh (HDR RGB, LDR A), or -dH (HDR RGBA) decoder options.
 
        The input file path must match a valid file format for
        decompression, and the output file format must be a valid output for
@@ -415,18 +401,18 @@ DECOMPRESSION
        coompression path can produce are supported for decompression. See
        the FILE FORMATS section for the list of supported formats.
 
-       The -dsw, -linearizesrgb options documented in ADVANCED COMPRESSION
+       The -dsw, -linsrgb options documented in ADVANCED COMPRESSION
        option documentation are relevent to decompression.
 
 TEST
-       To perform a compression test which round-trips a single image through
-       compression and decompression and stores the decompressed result back
-       to file, you must specify same settings as COMPRESSION other than
-       swapping the color profile to select test mode. Note that the compressed
-       intermediate data is discarded in this mode.
+       To perform a compression test which round-trips a single image
+       through compression and decompression and stores the decompressed
+       result back to file, you must specify same settings as COMPRESSION
+       other than swapping the color profile to select test mode. Note that
+       the compressed intermediate data is discarded in this mode.
 
        The color profile is specified using the -tl (LDR linear), -ts (LDR
-       sRGB), and -th (HDR) encoder option.
+       sRGB), -th (HDR RGB, LDR A), or -tH (HDR RGBA) encoder options.
 
        This operation mode will print error metrics suitable for either
        LDR and HDR images, allowing some assessment of the compression

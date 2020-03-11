@@ -527,7 +527,7 @@ int astc_main(
 		ASTC_UNRECOGNIZED
 	};
 
-	astc_decode_mode decode_mode = DECODE_HDR;
+	astc_decode_mode decode_mode = DECODE_LDR;
 	astc_op_mode op_mode = ASTC_UNRECOGNIZED;
 
 	struct {
@@ -535,20 +535,23 @@ int astc_main(
 		astc_op_mode op_mode;
 		astc_decode_mode decode_mode;
 	} modes[] = {
-		{"-cl",      ASTC_ENCODE,            DECODE_LDR      },
-		{"-dl",      ASTC_DECODE,            DECODE_LDR      },
-		{"-tl",      ASTC_ENCODE_AND_DECODE, DECODE_LDR      },
-		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB },
-		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB },
-		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB },
-		{"-ch",      ASTC_ENCODE,            DECODE_HDR      },
-		{"-dh",      ASTC_DECODE,            DECODE_HDR      },
-		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR      },
-		{"-compare", ASTC_IMAGE_COMPARE,     DECODE_HDR      },
-		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR      },
-		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR      },
-		{"-v",       ASTC_PRINT_VERSION,     DECODE_HDR      },
-		{"-version", ASTC_PRINT_VERSION,     DECODE_HDR      },
+		{"-cl",      ASTC_ENCODE,            DECODE_LDR},
+		{"-dl",      ASTC_DECODE,            DECODE_LDR},
+		{"-tl",      ASTC_ENCODE_AND_DECODE, DECODE_LDR},
+		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB},
+		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB},
+		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB},
+		{"-ch",      ASTC_ENCODE,            DECODE_HDR},
+		{"-cH",      ASTC_ENCODE,            DECODE_HDRA},
+		{"-dh",      ASTC_DECODE,            DECODE_HDR},
+		{"-dH",      ASTC_DECODE,            DECODE_HDRA},
+		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR},
+		{"-tH",      ASTC_ENCODE_AND_DECODE, DECODE_HDRA},
+		{"-compare", ASTC_IMAGE_COMPARE,     DECODE_HDR},
+		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR},
+		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR},
+		{"-v",       ASTC_PRINT_VERSION,     DECODE_HDR},
+		{"-version", ASTC_PRINT_VERSION,     DECODE_HDR}
 	};
 
 	int modes_count = sizeof(modes) / sizeof(modes[0]);
@@ -646,9 +649,6 @@ int astc_main(
 	int ydim_3d = 0;
 	int zdim_3d = 0;
 
-	int target_bitrate_set = 0;
-	float target_bitrate = 0;
-
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		int print_block_mode_histogram = 0;
 	#endif
@@ -658,6 +658,37 @@ int astc_main(
 
 	int low_fstop = -10;
 	int high_fstop = 10;
+
+	if (decode_mode == DECODE_HDRA)
+	{
+		ewp.rgb_power = 0.75f;
+		ewp.rgb_base_weight = 0.0f;
+		ewp.rgb_mean_weight = 1.0f;
+
+		ewp.alpha_power = 0.75f;
+		ewp.alpha_base_weight = 0.0f;
+		ewp.alpha_mean_weight = 1.0f;
+
+		rgb_force_use_of_hdr = 1;
+		alpha_force_use_of_hdr = 1;
+
+		dblimit_user_specified = 999.0f;
+		dblimit_set_by_user = 1;
+	}
+	else if (decode_mode == DECODE_HDR)
+	{
+		ewp.rgb_power = 0.75f;
+		ewp.rgb_base_weight = 0.0f;
+		ewp.rgb_mean_weight = 1.0f;
+
+		ewp.alpha_base_weight = 0.05f;
+
+		rgb_force_use_of_hdr = 1;
+		alpha_force_use_of_hdr = 0;
+
+		dblimit_user_specified = 999.0f;
+		dblimit_set_by_user = 1;
+	}
 
 	// parse the command line's encoding options.
 	int argidx;
@@ -964,52 +995,7 @@ int astc_main(
 			ewp.alpha_mean_weight = 0.0f;
 			ewp.alpha_stdev_weight = 25.0f;
 		}
-		else if (!strcmp(argv[argidx], "-alphablend"))
-		{
-			argidx++;
-			ewp.enable_rgb_scale_with_alpha = 1;
-			ewp.alpha_radius = 1;
-		}
-		else if (!strcmp(argv[argidx], "-hdra"))
-		{
-			if (decode_mode != DECODE_HDR)
-			{
-				printf("The option -hdra is only available in HDR mode\n");
-				return 1;
-			}
 
-			argidx++;
-			ewp.mean_stdev_radius = 0;
-			ewp.rgb_power = 0.75;
-			ewp.rgb_base_weight = 0;
-			ewp.rgb_mean_weight = 1;
-			ewp.alpha_power = 0.75;
-			ewp.alpha_base_weight = 0;
-			ewp.alpha_mean_weight = 1;
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 1;
-			dblimit_user_specified = 999;
-			dblimit_set_by_user = 1;
-		}
-		else if (!strcmp(argv[argidx], "-hdr"))
-		{
-			if (decode_mode != DECODE_HDR)
-			{
-				printf("The option -hdr is only available in HDR mode\n");
-				return 1;
-			}
-
-			argidx++;
-			ewp.mean_stdev_radius = 0;
-			ewp.rgb_power = 0.75;
-			ewp.rgb_base_weight = 0;
-			ewp.rgb_mean_weight = 1;
-			ewp.alpha_base_weight = 0.05f;
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 0;
-			dblimit_user_specified = 999;
-			dblimit_set_by_user = 1;
-		}
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
 			argidx += 2;
@@ -1300,8 +1286,6 @@ int astc_main(
 		if (!silentmode)
 		{
 			printf("Encoding settings:\n\n");
-			if (target_bitrate_set)
-				printf("Target bitrate provided: %.2f bpp\n", (double)target_bitrate);
 			printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
 			printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
 			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);

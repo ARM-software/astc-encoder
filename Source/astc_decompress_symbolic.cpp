@@ -189,6 +189,7 @@ void decompress_symbolic_block(
 				use_nan = 1;
 				break;
 			case DECODE_HDR:
+			case DECODE_HDRA:
 				// constant-color block; unpack from FP16 to FP32.
 				red = sf16_to_float(scb->constant_color[0]);
 				green = sf16_to_float(scb->constant_color[1]);

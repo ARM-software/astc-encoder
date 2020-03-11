@@ -983,7 +983,7 @@ void unpack_color_endpoints(
 		break;
 
 	case DECODE_HDR:
-
+	case DECODE_HDRA:
 		if (*rgb_hdr == 0)
 		{
 			output0->x *= 257;
