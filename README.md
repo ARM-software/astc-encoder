@@ -86,32 +86,45 @@ summary of the main encoder options are shown below.
 
 ## Compressing an image
 
-Compress an image using the `-cl` \ `-cs` \ `-ch` options. For example:
+Compress an image using the `-cl` \ `-cs` \ `-ch` \ `-cH` modes. For example:
 
     astcenc -cl example.png example.astc 6x6 -medium
 
 This compresses `example.png` using the LDR color profile and a 6x6 block
 footprint (3.55 bits/pixel). The `-medium` quality preset gives a reasonable
 image quality for a relatively fast compression speed. The output is stored to
-a linear color space compressed image, `example.astc`. The other modes are
-`-cs`, which compresses using the LDR sRGB color profile, and `-ch`, which
-compresses using the HDR color profile.
+a linear color space compressed image, `example.astc`.
+
+The modes available are:
+
+* `-cl` : use the linear LDR color profile.
+* `-cs` : use the sRGB LDR color profile.
+* `-ch` : use the HDR color profile, tuned for HDR RGB and LDR A.
+* `-cH` : use the HDR color profile, tuned for HDR RGBA.
 
 ## Decompressing an image
 
-Decompress an image using the `-dl` \ `-ds` \ `-dh` options. For example:
+Decompress an image using the `-dl` \ `-ds` \ `-dh` \ `-dH` modes. For
+example:
 
     astcenc -dh example.astc example.tga
 
 This decompresses `example.astc` using the full HDR feature profile, storing
-the decompressed output to `example.tga`. The other modes are `-dl`, which
-decompresses using the LDR profile, and `-ds`, which decompresses using the LDR
-sRGB color profile.
+the decompressed output to `example.tga`.
+
+The modes available are:
+
+* `-dl` : use the linear LDR color profile.
+* `-ds` : use the sRGB LDR color profile.
+* `-dh` and `-dH` : use the HDR color profile.
+
+Note that for decompression there is no difference between the two HDR modes,
+they are both provided simply to maintain symmetry across operations.
 
 ## Measuring image quality
 
-Review the compression quality using the `-tl` \ `-ts` \ -`th` options. For
-example:
+Review the compression quality using the `-tl` \ `-ts` \ -`th`\ -`tH` modes.
+For example:
 
     astcenc -tl example.png example.tga 5x5 -thorough
 
@@ -120,6 +133,13 @@ to compress the image, using the `-thorough` quality preset, and then
 immediately decompressing the image and saving the result. This can be used
 to enable a visual inspection of the compressed image quality. In addition
 this mode also prints out some image quality metrics to the console.
+
+The modes available are:
+
+* `-tl` : use the linear LDR color profile.
+* `-ts` : use the sRGB LDR color profile.
+* `-th` : use the HDR color profile, tuned for HDR RGB and LDR A.
+* `-tH` : use the HDR color profile, tuned for HDR RGBA.
 
 ## Experimenting
 
