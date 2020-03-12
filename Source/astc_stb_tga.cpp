@@ -25,8 +25,12 @@
 
 // On Visual Studio, include the implementation here, not just the header.
 #ifdef _MSC_VER
-    #define STB_IMAGE_IMPLEMENTATION
-    #define STBI_MSC_SECURE_CRT
+	#define STB_IMAGE_IMPLEMENTATION
+	#define STBI_MSC_SECURE_CRT
+	#define STBI_NO_GIF
+	#define STBI_NO_PIC
+	#define STBI_NO_PNM
+	#define STBI_NO_PSD
 #endif
 
 #include "stb_image.h"

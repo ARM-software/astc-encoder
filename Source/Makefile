@@ -123,7 +123,8 @@ $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
 stb_image-$(VEC).o: stb_image.h
-	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION \
+		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM
 	@echo "[C++] $<"
 
 stb_image_write-$(VEC).o: stb_image_write.h

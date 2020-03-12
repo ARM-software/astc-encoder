@@ -424,15 +424,18 @@ R"(
 FILE FORMATS
        The following formats are supported as compression inputs:
 
-           PNG (*.png)
-           Targa (*.tga)
-           JPEG (*.jpg)
-           GIF (*.gif) (non-animated only)
-           BMP (*.bmp)
-           Radiance HDR (*.hdr)
-           Khronos Texture KTX (*.ktx)
-           DirectDraw Surface DDS (*.dds)
-           OpenEXR (*.exr)
+           LDR Formats:
+               BMP (*.bmp)
+               PNG (*.png)
+               Targa (*.tga)
+               JPEG (*.jpg)
+
+           HDR Formats:
+               Radiance HDR (*.hdr)
+
+           Container Formats:
+               Khronos Texture KTX (*.ktx)
+               DirectDraw Surface DDS (*.dds)
 
        For the KTX and DDS formats only a subset of the features of the
        formats are supported:
