@@ -26,7 +26,10 @@
 #include <cstdint>
 #include <cmath>
 
-#include <immintrin.h>
+#if ASTC_SSE != 0 || ASTC_AVX != 0
+	#include <immintrin.h>
+#endif
+
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
