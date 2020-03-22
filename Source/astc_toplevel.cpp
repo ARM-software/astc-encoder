@@ -150,8 +150,7 @@ astc_codec_image *load_astc_file(
 		exit(1);
 	}
 
-	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
-	initialize_image(img);
+	astc_codec_image *img = alloc_image(bitness, xsize, ysize, zsize, 0);
 
 	block_size_descriptor bsd;
 	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
@@ -402,7 +401,7 @@ static astc_codec_image *pack_and_unpack_astc_image(
 	int ysize = input_image->ysize;
 	int zsize = input_image->zsize;
 
-	astc_codec_image *img = allocate_image(bitness, xsize, ysize, zsize, 0);
+	astc_codec_image *img = alloc_image(bitness, xsize, ysize, zsize, 0);
 
 	encode_astc_image(input_image, img, xdim, ydim, zdim, ewp, decode_mode,
 	                  swz_encode, swz_decode, nullptr, 1, threadcount);
@@ -418,13 +417,13 @@ static void compare_two_files(
 ) {
 	int load_result1;
 	int load_result2;
-	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, &load_result1);
+	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, 0, &load_result1);
 	if (load_result1 < 0)
 	{
 		printf("Failed to load file %s.\n", filename1);
 		exit(1);
 	}
-	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, &load_result2);
+	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, 0, &load_result2);
 	if (load_result2 < 0)
 	{
 		printf("Failed to load file %s.\n", filename2);
@@ -586,6 +585,7 @@ int astc_main(
 	const char *output_filename = argv[3];
 
 	int silentmode = 0;
+	int y_flip = 0;
 
 	error_weighting_params ewp;
 
@@ -1130,6 +1130,11 @@ int astc_main(
 			dblimit_user_specified = 60;
 			dblimit_set_by_user = 1;
 		}
+		else if (!strcmp(argv[argidx], "-yflip"))
+		{
+			argidx++;
+			y_flip = 1;
+		}
 		else if (!strcmp(argv[argidx], "-mpsnr"))
 		{
 			argidx += 3;
@@ -1321,7 +1326,7 @@ int astc_main(
 	// determine encoding bitness as follows:
 	// if enforced by the output format, follow the output format's result
 	// else use decode_mode to pick bitness.
-	int out_bitness = get_output_filename_enforced_bitness(output_filename);
+	int out_bitness = (op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE) ? get_output_filename_enforced_bitness(output_filename) : -1;
 	if (out_bitness == -1)
 	{
 		out_bitness = (decode_mode == DECODE_HDR) ? 16 : 8;
@@ -1355,7 +1360,7 @@ int astc_main(
 			// 2D input data.
 			if (array_size == 1)
 			{
-				input_images[image_index] = astc_codec_load_image(input_filename, padding, &load_results[image_index]);
+				input_images[image_index] = astc_codec_load_image(input_filename, padding, y_flip, &load_results[image_index]);
 			}
 			// 3D input data - multiple 2D images.
 			else
@@ -1372,7 +1377,7 @@ int astc_main(
 				// Construct new file name and load: <name>_N.<extension>
 				strcpy(new_input_filename, input_filename);
 				sprintf(strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
-				input_images[image_index] = astc_codec_load_image(new_input_filename, padding, &load_results[image_index]);
+				input_images[image_index] = astc_codec_load_image(new_input_filename, padding, y_flip, &load_results[image_index]);
 
 				// Check image is not 3D.
 				if (input_images[image_index]->zsize != 1)
@@ -1416,7 +1421,7 @@ int astc_main(
 			slice_size = (xsize + (2 * padding)) * (ysize + (2 * padding));
 
 			// Allocate image memory.
-			input_image = allocate_image(bitness, xsize, ysize, zsize, padding);
+			input_image = alloc_image(bitness, xsize, ysize, zsize, padding);
 
 			// Combine 2D source images into one 3D image (skip padding slices as these don't exist in 2D textures).
 			for (z = padding; z < zsize + padding; z++)
@@ -1434,7 +1439,7 @@ int astc_main(
 			// Clean up temporary images.
 			for (int i = 0; i < array_size; i++)
 			{
-				destroy_image(input_images[i]);
+				free_image(input_images[i]);
 			}
 
 			// Clamp texels outside the actual image area.
@@ -1522,7 +1527,7 @@ int astc_main(
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(output_image, output_filename, out_bitness, &format_string);
+		store_result = astc_codec_store_image(output_image, output_filename, &format_string, y_flip);
 		if (store_result < 0)
 		{
 			printf("Failed to store image %s\n", output_filename);
@@ -1535,7 +1540,7 @@ int astc_main(
 		store_astc_file(input_image, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
 	}
 
-	destroy_image(input_image);
+	free_image(input_image);
 
 	#ifdef DEBUG_PRINT_DIAGNOSTICS
 		if (print_block_mode_histogram)

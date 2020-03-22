@@ -218,10 +218,10 @@ class Encoder2x(EncoderBase):
     }
 
     OUTPUTS = {
-        "ldr": ".tga",
-        "ldrs": ".tga",
-        "hdr": ".htga",
-        "hdra": ".htga"
+        "ldr": ".png",
+        "ldrs": ".png",
+        "hdr": ".exr",
+        "hdra": ".exr"
     }
 
     def __init__(self, variant):
@@ -364,7 +364,8 @@ class EncoderProto(Encoder1x):
     OUTPUTS = {
         "ldr": ".png",
         "ldrs": ".png",
-        "hdr": ".exr"
+        "hdr": ".exr",
+        "hdra": ".exr"
     }
 
     def __init__(self):
