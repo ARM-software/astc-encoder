@@ -182,7 +182,7 @@ COMPRESSION
            This aims to improves perceptual quality of the normals, but
            typically lowers the measured PSNR score.
 
-        -array <size>
+       -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.
            The input filename given is used is decorated with
            _<slice_index> to find the file to load. For example, an input
@@ -376,6 +376,11 @@ ADVANCED COMPRESSION
            using the ASTC LDR sRGB format, using the -cs, -ds, and -ts
            operation modes. This preserves more perceptual image quality.
 
+       -yflip
+           Flip the image in the vertical axis prior to compression and
+           after decompression. Note that using this option in a test mode
+           (-t*) will have no effect as the image will be flipped twice.
+
        -j <threads>
            Explicitly specify the number of compression/decompression
            theads to use in the codec. If not specified, the codec will
@@ -421,7 +426,7 @@ TEST
 // will concatenate these two strings together ...
 R"(
 
-FILE FORMATS
+COMPRESSION FILE FORMATS
        The following formats are supported as compression inputs:
 
            LDR Formats:
@@ -431,6 +436,7 @@ FILE FORMATS
                JPEG (*.jpg)
 
            HDR Formats:
+               OpenEXR (*.exr)
                Radiance HDR (*.hdr)
 
            Container Formats:
@@ -451,14 +457,25 @@ FILE FORMATS
 
            ASTC (*.astc)
 
+
+DECOMPRESSION FILE FORMATS
        The following formats are supported as decompression inputs:
 
            ASTC (*.astc)
 
        The following formats are supported as decompression outputs:
 
-           Targa (*.tga)
-           Half-float Targa (*.htga)
+           LDR Formats:
+               BMP (*.bmp)
+               PNG (*.png)
+               Targa (*.tga)
+
+           HDR Formats:
+               OpenEXR (*.exr)
+
+           Container Formats:
+               Khronos Texture KTX (*.ktx)
+               DirectDraw Surface DDS (*.dds)
 )";
 
 // print version and basic build information

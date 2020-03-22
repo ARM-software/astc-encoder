@@ -22,10 +22,10 @@
     <ClCompile Include="..\astc_error_metrics.cpp" />
     <ClCompile Include="..\astc_find_best_partitioning.cpp" />
     <ClCompile Include="..\astc_ideal_endpoints_and_weights.cpp" />
+    <ClCompile Include="..\astc_image.cpp" />
     <ClCompile Include="..\astc_image_load_store.cpp" />
     <ClCompile Include="..\astc_integer_sequence.cpp" />
     <ClCompile Include="..\astc_kmeans_partitioning.cpp" />
-    <ClCompile Include="..\astc_ktx_dds.cpp" />
     <ClCompile Include="..\astc_main.cpp" />
     <ClCompile Include="..\astc_mathlib.cpp" />
     <ClCompile Include="..\astc_mathlib_softfloat.cpp" />
@@ -35,7 +35,6 @@
     <ClCompile Include="..\astc_platform_dependents.cpp" />
     <ClCompile Include="..\astc_platform_isa_detection.cpp" />
     <ClCompile Include="..\astc_quantization.cpp" />
-    <ClCompile Include="..\astc_stb_tga.cpp" />
     <ClCompile Include="..\astc_symbolic_physical.cpp" />
     <ClCompile Include="..\astc_toplevel.cpp" />
     <ClCompile Include="..\astc_toplevel_help.cpp" />

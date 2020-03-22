@@ -631,24 +631,48 @@ struct astc_codec_image
 	float *input_alpha_averages;
 };
 
-astc_codec_image *allocate_image(
+astc_codec_image* alloc_image(
 	int bitness,
 	int xsize,
 	int ysize,
 	int zsize,
 	int padding);
 
-void initialize_image(
-	astc_codec_image * img);
-
-void destroy_image(
-	astc_codec_image * img);
+void free_image(
+	astc_codec_image* img);
 
 void fill_image_padding_area(
-	astc_codec_image * img);
+	astc_codec_image* img);
 
 int determine_image_channels(
-	const astc_codec_image * img);
+	const astc_codec_image* img);
+
+// helper functions to prepare an ASTC image object from a flat array
+// Used by the image loaders in "astc_file_load_store.cpp"
+astc_codec_image* astc_img_from_floatx4_array(
+	const float* image,
+	int xsize,
+	int ysize,
+	int padding,
+	int y_flip);
+
+astc_codec_image*astc_img_from_unorm8x4_array(
+	const uint8_t*imageptr,
+	int xsize,
+	int ysize,
+	int padding,
+	int y_flip);
+
+// helper functions to prepare a flat array from an ASTC image object.
+// the array is allocated with malloc(); caller needs to use free()
+// to free it.
+float* floatx4_array_from_astc_img(
+	const astc_codec_image* img,
+	int y_flip);
+
+uint8_t* unorm8x4_array_from_astc_img(
+	const astc_codec_image* img,
+	int y_flip);
 
 // the entries here : 0=red, 1=green, 2=blue, 3=alpha, 4=0.0, 5=1.0
 struct swizzlepattern
@@ -696,23 +720,20 @@ void compute_averages_and_variances(
 	In case of failure, *result is given a negative value.
 */
 
-astc_codec_image *load_ktx_uncompressed_image(const char *filename, int padding, int *result);
-astc_codec_image *load_dds_uncompressed_image(const char *filename, int padding, int *result);
-astc_codec_image *load_tga_image(const char *tga_filename, int padding, int *result);
-astc_codec_image *load_image_with_stb(const char *filename, int padding, int *result);
+astc_codec_image* astc_codec_load_image(
+	const char* filename,
+	int padding,
+	int y_flip,
+	int* result);
 
-astc_codec_image *astc_codec_load_image(const char *filename, int padding, int *result);
+int astc_codec_store_image(
+	const astc_codec_image* output_image,
+	const char* output_filename,
+	const char** file_format_name,
+	int y_flip);
 
-// function to store image to file
-// If successful, returns the number of channels in input image
-// If unsuccessful, returns a negative number.
-int store_ktx_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness);
-int store_dds_uncompressed_image(const astc_codec_image * img, const char *filename, int bitness);
-int store_tga_image(const astc_codec_image * img, const char *tga_filename, int bitness);
-
-int astc_codec_store_image(const astc_codec_image * img, const char *filename, int bitness, const char **format_string);
-
-int get_output_filename_enforced_bitness(const char *filename);
+int get_output_filename_enforced_bitness(
+	const char* filename);
 
 /**
  * @brief Compute error metrics comparing two images.
