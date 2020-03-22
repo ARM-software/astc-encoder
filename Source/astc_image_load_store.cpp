@@ -45,12 +45,8 @@
 #include "stb_image_write.h"
 #include "tinyexr.h"
 
-
-
 /*******************************************************************
-
 Image load and store through the stb_iamge and tinyexr libraries
-
 *******************************************************************/
 
 static astc_codec_image* load_image_with_tinyexr(
@@ -63,11 +59,10 @@ static astc_codec_image* load_image_with_tinyexr(
 	int ysize;
 	float* image;
 	const char* err;
-	int load_res = LoadEXR( &image, &xsize, &ysize, filename, &err );
+	int load_res = LoadEXR(&image, &xsize, &ysize, filename, &err);
 	if (load_res != TINYEXR_SUCCESS)
 	{
-		printf("Failed to load OpenEXR file %s\nCode: %d Reason: %s\n",
-			filename, load_res, err);
+		printf("ERROR: Failed to load image %s (%s)\n", filename, err);
 		free((void*)err);
 		*result = -1;
 		return nullptr;
@@ -117,7 +112,7 @@ static astc_codec_image* load_image_with_stb(
 		}
 	}
 
-	printf("Failed to load image %s\nReason: %s\n", filename, stbi_failure_reason());
+	printf("ERROR: Failed to load image %s (%s)\n", filename, stbi_failure_reason());
 	*result = -1;
 	return nullptr;
 }
@@ -167,7 +162,6 @@ static int store_bmp_image_with_stb(
 }
 
 /*********************************************************************
-
 Native Load and store of KTX and DDS file formats.
 
 Unlike "regular" 2D image formats, which are mostly supported
@@ -178,7 +172,6 @@ The following restrictions apply to loading of these file formats:
  * Only uncompressed data supported
  * Only first mipmap in mipmap pyramid supported
  * KTX: Cube-map arrays are not supported
-
 *********************************************************************/
 enum scanline_copy_method
 {
@@ -1747,14 +1740,16 @@ static const struct {
 	const char *ending2;
 	astc_codec_image *(*loader_func)(const char *filename, int padding, int y_flip, int *load_result);
 } loader_descs[] = {
+	// HDR formats
+	{".exr",   ".EXR",  load_image_with_tinyexr },
+	// Container formats
 	{".ktx",   ".KTX",  load_ktx_uncompressed_image },
 	{".dds",   ".DDS",  load_dds_uncompressed_image },
-	{".exr",   ".EXR",  load_image_with_tinyexr },
+	// Generic catch all; this one must be last in the list
 	{ nullptr, nullptr, load_image_with_stb }
 };
 
 static const int loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
-
 
 // descriptors for each image/texture file format that we support storing to to - endings,
 // enforced-bitness, and storer function.
@@ -1788,8 +1783,9 @@ static const int storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs
 // Lack of an ending is likely to result from a write to /dev/null
 // or some other non-file thing; for this, we use the KTX format.
 
-int get_output_filename_enforced_bitness(const char *output_filename)
-{
+int get_output_filename_enforced_bitness(
+	const char*output_filename
+) {
 	const char *eptr = strrchr(output_filename, '.');
 	if (!eptr)
 	{
@@ -1799,14 +1795,14 @@ int get_output_filename_enforced_bitness(const char *output_filename)
 	for (int i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
-		 || strcmp(eptr, storer_descs[i].ending2) == 0 )
+		 || strcmp(eptr, storer_descs[i].ending2) == 0)
 		{
 			return storer_descs[i].enforced_bitness;
 		}
 	}
 
-	printf("Unrecognized file extension for destination filename: %s\n", eptr );
-	ASTC_CODEC_INTERNAL_ERROR();
+	printf("ERROR: Unknown file extension for output file: %s\n", eptr);
+	exit(1);
 }
 
 astc_codec_image* astc_codec_load_image(
@@ -1832,6 +1828,8 @@ astc_codec_image* astc_codec_load_image(
 			return loader_descs[i].loader_func(input_filename, padding, y_flip, load_result);
 		}
 	}
+
+	// Should never reach here - stb_image provides a generic handler
 	ASTC_CODEC_INTERNAL_ERROR();
 }
 
@@ -1856,5 +1854,8 @@ int astc_codec_store_image(
 			return storer_descs[i].storer_func(output_image, output_filename, y_flip);
 		}
 	}
+
+	// Should never reach here - get_output_filename_enforced_bitness should
+	// have acted as a preflight check
 	ASTC_CODEC_INTERNAL_ERROR();
 }

@@ -416,17 +416,16 @@ static void compare_two_files(
 	int high_fstop
 ) {
 	int load_result1;
-	int load_result2;
 	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, 0, &load_result1);
 	if (load_result1 < 0)
 	{
-		printf("Failed to load file %s.\n", filename1);
 		exit(1);
 	}
+
+	int load_result2;
 	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, 0, &load_result2);
 	if (load_result2 < 0)
 	{
-		printf("Failed to load file %s.\n", filename2);
 		exit(1);
 	}
 
@@ -1390,7 +1389,6 @@ int astc_main(
 			// Check load result.
 			if (load_results[image_index] < 0)
 			{
-				printf("Failed to load image %s\n", input_filename);
 				return 1;
 			}
 
