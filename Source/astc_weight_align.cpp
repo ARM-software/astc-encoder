@@ -412,7 +412,7 @@ void compute_angular_endpoints_for_quantization_levels(
 		// Did we find anything?
 		if (bsi < 0)
 		{
-			printf("ERROR: Unable to find an encoding within the specified error limits.\n");
+			printf("ERROR: Unable to find an encoding within the specified error limits\n");
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
 

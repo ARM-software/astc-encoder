@@ -1290,8 +1290,14 @@ int astc_main(
 		if (!silentmode)
 		{
 			printf("Encoding settings:\n\n");
-			printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
-			printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
+			if (zdim_3d == 1)
+			{
+				printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
+			}
+			else
+			{
+				printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
+			}
 			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);
 			printf("RGB power: %g\n", (double)ewp.rgb_power);
 			printf("RGB base-weight: %g\n", (double)ewp.rgb_base_weight);
@@ -1453,7 +1459,13 @@ int astc_main(
 		input_components = load_result & 7;
 		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;
 
-		if (input_image->zsize > 1)
+		if ((input_image->zsize > 1) && (zdim_3d == 1))
+		{
+			printf("ERROR: 3D input data for a 2D ASTC block format.\n");
+			exit(1);
+		}
+
+		if (zdim_3d != 1)
 		{
 			xdim = xdim_3d;
 			ydim = ydim_3d;
