@@ -69,10 +69,6 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 	extern int print_statistics;
 #endif
 
-
-extern int rgb_force_use_of_hdr;
-extern int alpha_force_use_of_hdr;
-
 enum astc_decode_mode
 {
 	DECODE_LDR_SRGB,
@@ -630,6 +626,8 @@ struct astc_codec_image
 	float *input_alpha_averages;
 
 	int linearize_srgb;
+	int rgb_force_use_of_hdr;
+	int alpha_force_use_of_hdr;
 };
 
 astc_codec_image* alloc_image(
@@ -726,6 +724,8 @@ astc_codec_image* astc_codec_load_image(
 	int padding,
 	int y_flip,
 	int linearize_srgb,
+	int rgb_force_use_of_hdr,
+	int alpha_force_use_of_hdr,
 	int* result);
 
 int astc_codec_store_image(
@@ -864,6 +864,7 @@ int pack_color_endpoints(
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	int format,
 	int quantization_level,
@@ -989,6 +990,7 @@ float compress_symbolic_block(
 	compress_symbolic_block_buffers* tmpbuf);
 
 void decompress_symbolic_block(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,

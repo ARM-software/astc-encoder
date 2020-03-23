@@ -40,6 +40,7 @@
  * quality by moving each weight up by one or down by one quantization step.
  */
 static int realign_weights(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
@@ -77,7 +78,8 @@ static int realign_weights(
 
 	for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 	{
-		unpack_color_endpoints(decode_mode,
+		unpack_color_endpoints(image,
+		                       decode_mode,
 		                       scb->color_formats[pa_idx],
 		                       scb->color_quantization_level,
 		                       scb->color_values[pa_idx],
@@ -205,6 +207,7 @@ static int realign_weights(
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
 static void compress_symbolic_block_fixed_partition_1_plane(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	float mode_cutoff,
 	int max_refinement_iters,
@@ -437,11 +440,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			}
 
 			// perform a final pass over the weights to try to improve them.
-			int adjustments = realign_weights(decode_mode,
-											  bsd,
-											  blk, ewb, scb,
-											  u8_weight_src,
-											  nullptr);
+			int adjustments = realign_weights(
+				image, decode_mode, bsd, blk, ewb, scb, u8_weight_src, nullptr);
 
 			if (adjustments == 0)
 				break;
@@ -455,6 +455,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 }
 
 static void compress_symbolic_block_fixed_partition_2_planes(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	float mode_cutoff,
 	int max_refinement_iters,
@@ -728,11 +729,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 				scb->error_block = 1;	// should never happen, but cannot prove it impossible
 			}
 
-			int adjustments = realign_weights(decode_mode,
-											  bsd,
-											  blk, ewb, scb,
-											  u8_weight1_src,
-											  u8_weight2_src);
+			int adjustments = realign_weights(
+				image, decode_mode, bsd, blk, ewb, scb, u8_weight1_src, u8_weight2_src);
 
 			if (adjustments == 0)
 				break;
@@ -1158,7 +1156,7 @@ float compress_symbolic_block(
 		// detected a constant-color block. Encode as FP16 if using HDR
 		scb->error_block = 0;
 
-		if (rgb_force_use_of_hdr)
+		if (input_image->rgb_force_use_of_hdr)
 		{
 			scb->block_mode = -1;
 			scb->partition_count = 0;
@@ -1265,7 +1263,7 @@ float compress_symbolic_block(
 	float best_errorval_in_mode;
 	for (i = 0; i < 2; i++)
 	{
-		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ewp->max_refinement_iters, bsd, 1,	// partition count
+		compress_symbolic_block_fixed_partition_1_plane(input_image, decode_mode, modecutoffs[i], ewp->max_refinement_iters, bsd, 1,	// partition count
 														0,	// partition index
 														blk, ewb, tempblocks, tmpbuf->plane1);
 
@@ -1274,7 +1272,7 @@ float compress_symbolic_block(
 		{
 			if (tempblocks[j].error_block)
 				continue;
-			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
+			decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb) * errorval_mult[i];
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1333,7 +1331,7 @@ float compress_symbolic_block(
 		if (!uses_alpha && i == 3)
 			continue;
 
-		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ewp->max_refinement_iters,
+		compress_symbolic_block_fixed_partition_2_planes(input_image, decode_mode, mode_cutoff, ewp->max_refinement_iters,
 														 bsd, 1,	// partition count
 														 0,	// partition index
 														 i,	// the color component to test a separate plane of weights for.
@@ -1344,7 +1342,7 @@ float compress_symbolic_block(
 		{
 			if (tempblocks[j].error_block)
 				continue;
-			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
+			decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
 			#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1397,7 +1395,7 @@ float compress_symbolic_block(
 
 		for (i = 0; i < 2; i++)
 		{
-			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ewp->max_refinement_iters,
+			compress_symbolic_block_fixed_partition_1_plane(input_image, decode_mode, mode_cutoff, ewp->max_refinement_iters,
 															bsd, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, tmpbuf->plane1);
 
 			best_errorval_in_mode = 1e30f;
@@ -1405,7 +1403,7 @@ float compress_symbolic_block(
 			{
 				if (tempblocks[j].error_block)
 					continue;
-				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
+				decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
@@ -1457,7 +1455,7 @@ float compress_symbolic_block(
 		{
 			if (lowest_correl > ewp->lowest_correlation_cutoff)
 				continue;
-			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
+			compress_symbolic_block_fixed_partition_2_planes(input_image, decode_mode,
 															 mode_cutoff,
 															 ewp->max_refinement_iters,
 															 bsd,
@@ -1470,7 +1468,7 @@ float compress_symbolic_block(
 			{
 				if (tempblocks[j].error_block)
 					continue;
-				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
+				decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 
 				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 

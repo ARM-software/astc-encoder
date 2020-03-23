@@ -39,7 +39,10 @@ astc_codec_image *alloc_image(
 	img->input_averages = nullptr;
 	img->input_variances = nullptr;
 	img->input_alpha_averages = nullptr;
+
 	img->linearize_srgb = 0;
+	img->rgb_force_use_of_hdr = 0;
+	img->alpha_force_use_of_hdr = 0;
 
 	int exsize = xsize + 2 * padding;
 	int eysize = ysize + 2 * padding;
@@ -693,8 +696,8 @@ void fetch_imageblock(
 	int alpha_lns = rgb_lns ? (max_alpha > 1.0f || max_alpha < 0.15f) : 0;
 
 	// not yet though; for the time being, just obey the command line.
-	rgb_lns = rgb_force_use_of_hdr;
-	alpha_lns = alpha_force_use_of_hdr;
+	rgb_lns = img->rgb_force_use_of_hdr;
+	alpha_lns = img->alpha_force_use_of_hdr;
 
 	// impose the choice on every pixel when encoding.
 	for (i = 0; i < pixelcount; i++)

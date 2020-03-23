@@ -88,6 +88,7 @@ static uint4 lerp_color_int(
 }
 
 void decompress_symbolic_block(
+	const astc_codec_image* image,
 	astc_decode_mode decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,
@@ -239,7 +240,9 @@ void decompress_symbolic_block(
 	int nan_endpoint[4];
 
 	for (i = 0; i < partition_count; i++)
-		unpack_color_endpoints(decode_mode,
+	{
+		unpack_color_endpoints(image,
+		                       decode_mode,
 		                       scb->color_formats[i],
 		                       scb->color_quantization_level,
 		                       scb->color_values[i],
@@ -248,6 +251,7 @@ void decompress_symbolic_block(
 		                       &(nan_endpoint[i]),
 		                       &(color_endpoint0[i]),
 		                       &(color_endpoint1[i]));
+	}
 
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
