@@ -70,13 +70,12 @@ struct astc_header
 	uint8_t zsize[3];			// block count is inferred
 };
 
-int perform_srgb_transform = 0;
-
 astc_codec_image *load_astc_file(
 	const char *filename,
 	int bitness,
 	astc_decode_mode decode_mode,
-	swizzlepattern swz_decode
+	swizzlepattern swz_decode,
+	int linearize_srgb
 ) {
 	int x, y, z;
 	FILE *f = fopen(filename, "rb");
@@ -151,13 +150,16 @@ astc_codec_image *load_astc_file(
 	}
 
 	astc_codec_image *img = alloc_image(bitness, xsize, ysize, zsize, 0);
+	img->linearize_srgb = linearize_srgb;
 
 	block_size_descriptor bsd;
 	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
 
 	imageblock pb;
 	for (z = 0; z < zblocks; z++)
+	{
 		for (y = 0; y < yblocks; y++)
+		{
 			for (x = 0; x < xblocks; x++)
 			{
 				int offset = (((z * yblocks + y) * xblocks) + x) * 16;
@@ -168,6 +170,8 @@ astc_codec_image *load_astc_file(
 				decompress_symbolic_block(decode_mode, &bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
 				write_imageblock(img, &pb, &bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 			}
+		}
+	}
 
 	term_block_size_descriptor(&bsd);
 	free(buffer);
@@ -413,17 +417,18 @@ static void compare_two_files(
 	const char* filename1,
 	const char* filename2,
 	int low_fstop,
-	int high_fstop
+	int high_fstop,
+	int linearize_srgb
 ) {
 	int load_result1;
-	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, 0, &load_result1);
+	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, 0, linearize_srgb, &load_result1);
 	if (load_result1 < 0)
 	{
 		exit(1);
 	}
 
 	int load_result2;
-	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, 0, &load_result2);
+	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, 0, linearize_srgb, &load_result2);
 	if (load_result2 < 0)
 	{
 		exit(1);
@@ -585,6 +590,7 @@ int astc_main(
 
 	int silentmode = 0;
 	int y_flip = 0;
+	int linearize_srgb = 0;
 
 	error_weighting_params ewp;
 
@@ -1125,7 +1131,7 @@ int astc_main(
 		else if (!strcmp(argv[argidx], "-linsrgb"))
 		{
 			argidx++;
-			perform_srgb_transform = 1;
+			linearize_srgb = 1;
 			dblimit_user_specified = 60;
 			dblimit_set_by_user = 1;
 		}
@@ -1213,7 +1219,7 @@ int astc_main(
 
 	if (op_mode == ASTC_IMAGE_COMPARE)
 	{
-		compare_two_files(input_filename, output_filename, low_fstop, high_fstop);
+		compare_two_files(input_filename, output_filename, low_fstop, high_fstop, linearize_srgb);
 		return 0;
 	}
 
@@ -1227,7 +1233,8 @@ int astc_main(
 		if (preset_has_been_set != 1)
 		{
 			printf("For encoding, need to specify exactly one performance-quality\n"
-				   "trade-off preset option. The available presets are:\n" " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
+			       "trade-off preset option. The available presets are:\n"
+			       " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
 			return 1;
 		}
 
@@ -1365,7 +1372,7 @@ int astc_main(
 			// 2D input data.
 			if (array_size == 1)
 			{
-				input_images[image_index] = astc_codec_load_image(input_filename, padding, y_flip, &load_results[image_index]);
+				input_images[image_index] = astc_codec_load_image(input_filename, padding, y_flip, linearize_srgb, &load_results[image_index]);
 			}
 			// 3D input data - multiple 2D images.
 			else
@@ -1382,7 +1389,7 @@ int astc_main(
 				// Construct new file name and load: <name>_N.<extension>
 				strcpy(new_input_filename, input_filename);
 				sprintf(strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
-				input_images[image_index] = astc_codec_load_image(new_input_filename, padding, y_flip, &load_results[image_index]);
+				input_images[image_index] = astc_codec_load_image(new_input_filename, padding, y_flip, linearize_srgb, &load_results[image_index]);
 
 				// Check image is not 3D.
 				if (input_images[image_index]->zsize != 1)
@@ -1461,7 +1468,7 @@ int astc_main(
 
 		if ((input_image->zsize > 1) && (zdim_3d == 1))
 		{
-			printf("ERROR: 3D input data for a 2D ASTC block format.\n");
+			printf("ERROR: 3D input data for a 2D ASTC block format\n");
 			exit(1);
 		}
 
@@ -1485,10 +1492,13 @@ int astc_main(
 		if (!silentmode)
 		{
 			printf("%s: %dD %s image, %d x %d x %d, %d components\n\n",
-				   input_filename, input_image->zsize > 1 ? 3 : 2, input_image_is_hdr ? "HDR" : "LDR", input_image->xsize, input_image->ysize, input_image->zsize, load_result & 7);
+			       input_filename, input_image->zsize > 1 ? 3 : 2, input_image_is_hdr ? "HDR" : "LDR",
+			       input_image->xsize, input_image->ysize, input_image->zsize, load_result & 7);
 		}
 
-		if (padding > 0 || ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f || ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
+		if (padding > 0 ||
+		    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
+		    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 		{
 			if (!silentmode)
 			{
@@ -1502,7 +1512,7 @@ int astc_main(
 				ewp.alpha_power,
 				ewp.mean_stdev_radius,
 				ewp.alpha_radius,
-				perform_srgb_transform,
+				linearize_srgb,
 				swz_encode,
 				thread_count);
 
@@ -1517,11 +1527,15 @@ int astc_main(
 	start_coding_time = get_time();
 
 	if (op_mode == ASTC_DECODE)
-		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode);
+	{
+		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode, linearize_srgb);
+	}
 
 	// process image, if relevant
 	if (op_mode == ASTC_ENCODE_AND_DECODE)
+	{
 		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
+	}
 
 	end_coding_time = get_time();
 

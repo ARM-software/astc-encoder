@@ -1809,6 +1809,7 @@ astc_codec_image* astc_codec_load_image(
 	const char* input_filename,
 	int padding,
 	int y_flip,
+	int linearize_srgb,
 	int* load_result
 ) {
 	// get hold of the filename ending
@@ -1825,7 +1826,9 @@ astc_codec_image* astc_codec_load_image(
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			return loader_descs[i].loader_func(input_filename, padding, y_flip, load_result);
+			astc_codec_image* img = loader_descs[i].loader_func(input_filename, padding, y_flip, load_result);
+			img->linearize_srgb = linearize_srgb;
+			return img;
 		}
 	}
 

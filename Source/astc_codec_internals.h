@@ -70,7 +70,6 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 #endif
 
 
-extern int perform_srgb_transform;
 extern int rgb_force_use_of_hdr;
 extern int alpha_force_use_of_hdr;
 
@@ -629,6 +628,8 @@ struct astc_codec_image
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
+
+	int linearize_srgb;
 };
 
 astc_codec_image* alloc_image(
@@ -724,6 +725,7 @@ astc_codec_image* astc_codec_load_image(
 	const char* filename,
 	int padding,
 	int y_flip,
+	int linearize_srgb,
 	int* result);
 
 int astc_codec_store_image(

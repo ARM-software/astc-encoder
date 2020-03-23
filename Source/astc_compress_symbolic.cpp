@@ -916,7 +916,7 @@ static float prepare_error_weight_block(
 
 					// if we perform a conversion from linear to sRGB, then we multiply
 					// the weight with the derivative of the linear->sRGB transform function.
-					if (perform_srgb_transform)
+					if (input_image->linearize_srgb)
 					{
 						float r = blk->orig_data[4 * idx];
 						float g = blk->orig_data[4 * idx + 1];

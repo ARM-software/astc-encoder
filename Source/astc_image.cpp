@@ -39,6 +39,7 @@ astc_codec_image *alloc_image(
 	img->input_averages = nullptr;
 	img->input_variances = nullptr;
 	img->input_alpha_averages = nullptr;
+	img->linearize_srgb = 0;
 
 	int exsize = xsize + 2 * padding;
 	int eysize = ysize + 2 * padding;
@@ -622,7 +623,7 @@ void fetch_imageblock(
 	// perform sRGB-to-linear transform on input data, if requested.
 	int pixelcount = bsd->texel_count;
 
-	if (perform_srgb_transform)
+	if (img->linearize_srgb)
 	{
 		fptr = pb->orig_data;
 		for (i = 0; i < pixelcount; i++)
@@ -753,7 +754,7 @@ void write_imageblock(
 						else
 						{
 							// apply swizzle
-							if (perform_srgb_transform)
+							if (img->linearize_srgb)
 							{
 								float r = fptr[0];
 								float g = fptr[1];
@@ -850,7 +851,7 @@ void write_imageblock(
 						else
 						{
 							// apply swizzle
-							if (perform_srgb_transform)
+							if (img->linearize_srgb)
 							{
 								float r = fptr[0];
 								float g = fptr[1];
