@@ -34,7 +34,7 @@ def run_size(binary):
     Args:
         binary: The path.
 
-    Return:
+    Returns:
         A tuple of (code size, read-only data size, and zero-init data size).
     """
     args = ["size", "--format=sysv", binary]

@@ -28,7 +28,7 @@ def path_splitall(path):
     Args:
         path: The relative path to split.
 
-    Return:
+    Returns:
         An array of path parts.
     """
     # Sanity check we have a relative path on Windows

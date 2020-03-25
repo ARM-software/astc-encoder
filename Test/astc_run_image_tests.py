@@ -49,7 +49,7 @@ def is_3d(blockSize):
     """
     Is a block size string for a 3D block?
 
-    Return:
+    Returns:
         True if the block string is a 3D block size.
     """
     return blockSize.count("x") == 2
@@ -84,7 +84,7 @@ def determine_result(image, reference, result):
         reference: The reference result to compare against.
         result: The test result.
 
-    Return:
+    Returns:
         A Result enum.
     """
     dPSNR = result.psnr - reference.psnr
@@ -109,7 +109,7 @@ def format_solo_result(image, result):
         image: The image being tested.
         result: The test result.
 
-    Return:
+    Returns:
         The metrics string.
     """
     # pylint: disable=unused-argument
@@ -131,7 +131,7 @@ def format_result(image, reference, result):
         reference: The reference result to compare against.
         result: The test result.
 
-    Return:
+    Returns:
         The metrics string.
     """
     # pylint: disable=unused-argument
@@ -161,7 +161,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
         blockSizes: The block sizes to execute each test against.
         testRuns: The number of test runs.
 
-    Return:
+    Returns:
         The result set.
     """
     resultSet = trs.ResultSet(testSet.name)

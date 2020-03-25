@@ -86,7 +86,7 @@ class ResultSummary():
         """
         Get the worst result in this set.
 
-        Return:
+        Returns:
             The worst Result value.
         """
         if self.fails:
@@ -187,7 +187,7 @@ class ResultSet():
             blkSz: The block size.
             name: The test name.
 
-        Return:
+        Returns:
             The result Record, if present.
 
         Raises:
@@ -209,7 +209,7 @@ class ResultSet():
         Args:
             other: The pattern result Record.
 
-        Return:
+        Returns:
             The result Record, if present.
 
         Raises:
@@ -225,7 +225,7 @@ class ResultSet():
         """
         Get a results summary of all the records in this result set.
 
-        Return:
+        Returns:
             The result summary.
         """
         summary = ResultSummary()

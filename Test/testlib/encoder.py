@@ -69,7 +69,7 @@ class EncoderBase():
             blockSize: The block size to use.
             preset: The quality-performance preset to use.
 
-        Return:
+        Returns:
             A list of command line arguments.
         """
         # pylint: disable=unused-argument,no-self-use
@@ -82,7 +82,7 @@ class EncoderBase():
         Args:
             command: The list of command line arguments.
 
-        Return:
+        Returns:
             The output log (stdout) split into lines.
         """
         # pylint: disable=no-self-use
@@ -104,7 +104,7 @@ class EncoderBase():
             image: The test image to compress.
             output: The output log from the compression process.
 
-        Return:
+        Returns:
             Tuple: (PSNR, TotalTime, CodingTime)
         """
         # Regex pattern for image quality
@@ -146,7 +146,7 @@ class EncoderBase():
         Args:
             image: The test image we are compressing.
 
-        Return:
+        Returns:
             The string for a regex pattern.
         """
         # pylint: disable=unused-argument,no-self-use
@@ -156,7 +156,7 @@ class EncoderBase():
         """
         Get the regex pattern to match the total compression time.
 
-        Return:
+        Returns:
             The string for a regex pattern.
         """
         # pylint: disable=unused-argument,no-self-use
@@ -166,7 +166,7 @@ class EncoderBase():
         """
         Get the regex pattern to match the coding compression time.
 
-        Return:
+        Returns:
             The string for a regex pattern.
         """
         # pylint: disable=unused-argument,no-self-use
@@ -182,7 +182,7 @@ class EncoderBase():
             preset: The quality-performance preset to use.
             testRuns: The number of test runs.
 
-        Return:
+        Returns:
             Returns the best results from the N test runs.
             Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
         """
@@ -417,7 +417,7 @@ class EncoderISPC(EncoderBase):
         Args:
             command: The list of command line arguments.
 
-        Return:
+        Returns:
             The output log (stdout) split into lines.
         """
         command = " ".join(command)
@@ -446,7 +446,7 @@ class EncoderISPC(EncoderBase):
                 usable image quality)
             testRuns: The number of test runs.
 
-        Return:
+        Returns:
             Returns the best results from the N test runs.
             Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
         """
