@@ -52,9 +52,9 @@ class EncoderBase():
         Create a new encoder instance.
 
         Args:
-            name: The name of the encoder.
-            variant: The SIMD variant of the encoder.
-            binary: The path to the binary on the file system.
+            name (str): The name of the encoder.
+            variant (str): The SIMD variant of the encoder.
+            binary (str): The path to the binary on the file system.
         """
         self.name = name
         self.variant = variant
@@ -65,14 +65,14 @@ class EncoderBase():
         Build the command line needed for the given test.
 
         Args:
-            image: The test image to compress.
-            blockSize: The block size to use.
-            preset: The quality-performance preset to use.
+            image (TestImage): The test image to compress.
+            blockSize (str): The block size to use.
+            preset (str): The quality-performance preset to use.
 
         Returns:
-            A list of command line arguments.
+            list(str): A list of command line arguments.
         """
-        # pylint: disable=unused-argument,no-self-use
+        # pylint: disable=unused-argument,no-self-use,redundant-returns-doc
         assert False, "Missing subclass implementation"
 
     def execute(self, command):
@@ -80,10 +80,10 @@ class EncoderBase():
         Run a subprocess with the specified command.
 
         Args:
-            command: The list of command line arguments.
+            command (list(str)): The list of command line arguments.
 
         Returns:
-            The output log (stdout) split into lines.
+            list(str): The output log (stdout) split into lines.
         """
         # pylint: disable=no-self-use
         try:
@@ -101,11 +101,12 @@ class EncoderBase():
         Parse the log output for PSNR and performance metrics.
 
         Args:
-            image: The test image to compress.
-            output: The output log from the compression process.
+            image (TestImage): The test image to compress.
+            output (list(str)): The output log from the compression process.
 
         Returns:
-            Tuple: (PSNR, TotalTime, CodingTime)
+            tuple(float, float, float): PSNR in dB, TotalTime in seconds, and
+            CodingTime in seconds.
         """
         # Regex pattern for image quality
         patternPSNR = re.compile(self.get_psnr_pattern(image))
@@ -144,12 +145,12 @@ class EncoderBase():
         to match another metric (e.g. mPSNR for HDR images).
 
         Args:
-            image: The test image we are compressing.
+            image (TestImage): The test image we are compressing.
 
         Returns:
-            The string for a regex pattern.
+            str: The string for a regex pattern.
         """
-        # pylint: disable=unused-argument,no-self-use
+        # pylint: disable=unused-argument,no-self-use,redundant-returns-doc
         assert False, "Missing subclass implementation"
 
     def get_total_time_pattern(self):
@@ -157,9 +158,9 @@ class EncoderBase():
         Get the regex pattern to match the total compression time.
 
         Returns:
-            The string for a regex pattern.
+            str: The string for a regex pattern.
         """
-        # pylint: disable=unused-argument,no-self-use
+        # pylint: disable=unused-argument,no-self-use,redundant-returns-doc
         assert False, "Missing subclass implementation"
 
     def get_coding_time_pattern(self):
@@ -167,9 +168,9 @@ class EncoderBase():
         Get the regex pattern to match the coding compression time.
 
         Returns:
-            The string for a regex pattern.
+            str: The string for a regex pattern.
         """
-        # pylint: disable=unused-argument,no-self-use
+        # pylint: disable=unused-argument,no-self-use,redundant-returns-doc
         assert False, "Missing subclass implementation"
 
     def run_test(self, image, blockSize, preset, testRuns):
@@ -177,14 +178,15 @@ class EncoderBase():
         Run the test N times.
 
         Args:
-            image: The test image to compress.
-            blockSize: The block size to use.
-            preset: The quality-performance preset to use.
-            testRuns: The number of test runs.
+            image (TestImage): The test image to compress.
+            blockSize (str): The block size to use.
+            preset (str): The quality-performance preset to use.
+            testRuns (int): The number of test runs.
 
         Returns:
-            Returns the best results from the N test runs.
-            Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
+            tuple(float, float, float): Returns the best results from the N
+            test runs, as PSNR (dB), total time (seconds), and coding time
+            (seconds).
         """
         # pylint: disable=assignment-from-no-return
         command = self.build_cli(image, blockSize, preset)
@@ -193,9 +195,12 @@ class EncoderBase():
         bestPSNR = 0
         bestTTime = sys.float_info.max
         bestCTime = sys.float_info.max
+
         for _ in range(0, testRuns):
             output = self.execute(command)
             result = self.parse_output(image, output)
+
+            # Keep the best results (highest PSNR, lowest times)
             bestPSNR = max(bestPSNR, result[0])
             bestTTime = min(bestTTime, result[1])
             bestCTime = min(bestCTime, result[2])
@@ -415,10 +420,10 @@ class EncoderISPC(EncoderBase):
         Run a subprocess with the specified command.
 
         Args:
-            command: The list of command line arguments.
+            command (list(str)): The list of command line arguments.
 
         Returns:
-            The output log (stdout) split into lines.
+            list(str): The output log (stdout) split into lines.
         """
         command = " ".join(command)
         try:
@@ -440,15 +445,16 @@ class EncoderISPC(EncoderBase):
         Run the test N times.
 
         Args:
-            image: The test image to compress.
-            blockSize: The block size to use.
-            preset: (Unused - we always use ISPC's slow preset to have vaguely
-                usable image quality)
-            testRuns: The number of test runs.
+            image (TestImage): The test image to compress.
+            blockSize (str): The block size to use.
+            preset (str): Unused - we always use ISPC's slow preset as this
+                gives acceptable image quality which is likely to be used.
+            testRuns (int): The number of test repeats to run for the image.
 
         Returns:
-            Returns the best results from the N test runs.
-            Tuple: (bestPSNR, bestTotalTime, bestCodingTime)
+            tuple(float, float, float): Returns the best results from the N
+            test runs, as PSNR (dB), total time (seconds), and coding time
+            (seconds).
         """
         dstDir = os.path.dirname(image.outFilePath)
         dstFile = os.path.basename(image.outFilePath)

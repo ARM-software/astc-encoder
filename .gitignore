@@ -10,6 +10,7 @@ Source/astcenc-*
 Source/astcenc-*
 Source/VS2019/*Release
 Source/VS2019/*Debug
+Test/DocOut
 Test/Images/Kodak
 Test/Images/Scratch*
 TestOutput

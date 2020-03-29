@@ -7,18 +7,26 @@ bitrate of the standard.
 
 # Required software
 
-Running the tests requires Python 3.7 to be installed on the host machine.
+Running the tests requires Python 3.7 to be installed on the host machine, and
+an `astcenc-avx2` release build to have been previously compiled.
 
-# Running the test suite
+# Running unit tests
 
-To run the full test suite first build the 64-bit release configuration of
-`astcenc` for the host OS, and then run the following command from the root of
-directory of the repository:
+To run the command line unit tests, which aim to get coverage of the command
+line options and core codec stability without testing the compression quality
+itself, run the command line:
 
-    python3 ./Test/astc_run_image_tests.py
+    python3 -m unittest discover -s Test -p astc_test*.py -v
+
+# Running image tests
+
+To run the image test suite run the following command from the root directory
+of the repository:
+
+    python3 ./Test/astc_test_image.py
 
 This will run though a series of image compression tests, comparing the image
-PSNR against a set of reference results from the last stable release. The test
+PSNR against a set of reference results from the last stable baseline. The test
 will fail if any reduction in PSNR above a set threshold is detected. Note that
 performance information is reported, but regressions will not flag a failure.
 
@@ -31,11 +39,16 @@ the `Test/Images` folder.
 The runner supports a number of options to filter down what is run, enabling
 developers to focus local testing on the parts of the code they are working on.
 
-* `--block-size` selects which block size to run. By default a range of
-  block sizes (2D and 3D) are used.
+* `--encoder` selects which encoder to run. By default the `avx2` encoder is
+  selected. Note that some out-of-tree reference encoders (older encoders, and
+  some third-party encoders) are supported for comparison purposes. These will
+  not work without the binaries being manually provided; they are not
+  distributed here.
 * `--test-set` selects which image set to run. By default the `Small` image
   test set is selected, which aims to provide basic coverage of many different
   color formats and color profiles.
+* `--block-size` selects which block size to run. By default a range of
+  block sizes (2D and 3D) are used.
 * `--color-profile` selects which color profiles from the standard should be
   used (LDR, LDR sRGB, or HDR) to select images. By default all are selected.
 * `--color-format` selects which color formats should be used (L, XY, RGB,
@@ -52,7 +65,7 @@ enable this mode use the following options:
 **Note:**  The reference CSV contains performance results measured on an Intel
 Core i5 9600K running at 4.3GHz, running each test 5 times.
 
-# Updating reference data
+## Updating reference data
 
 The reference PSNR and performance scores are stored in CSVs committed to the
 repository. This data is created by running the tests using the last stable
@@ -60,12 +73,11 @@ release on a standard test machine we use for performance testing builds.
 
 It can be useful for developers to rebuild the reference results for their
 local machine, in particular for measuring performance improvements. To build
-new reference CSVs, download the current reference binary (1.7) from GitHub
-for your host OS and place it in to the `./Binaries/1.7/` directory. Once this
-is done, run the command:
+new reference CSVs, download the current reference `astcenc` binary (1.7) from
+GitHub for your host OS and place it in to the `./Binaries/1.7/` directory.
+Once this is done, run the command:
 
-    python3 ./Test/astc_run_image_tests.py --encoder 1.7 \
-        --test-set all --repeats 5
+    python3 ./Test/astc_test_image.py --encoder 1.7 --test-set all --repeats 5
 
 ... to regenerate the reference CSV files.
 

@@ -16,7 +16,13 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-Main script for running image testing from the command line.
+The image test runner is used for image quality and performance testing.
+
+It is designed to process directories of arbitrary test images, using the
+directory structure and path naming conventions to self-describe how each image
+is to be compressed. Some built-in test sets are provided in the ./Test/Images
+directory, and others can be downloaded by running the astc_test_image_dl
+script.
 
 Attributes:
     RESULT_THRESHOLD_WARN: The result threshold (dB) for getting a WARN.
@@ -35,11 +41,21 @@ import testlib.testset as tts
 import testlib.resultset as trs
 
 
-RESULT_THRESHOLD_WARN = -0.1
+# Set the reference comparison against either 1.7 or latest 2.0 build
+COMPARE_WITH_1_7 = False
 
-RESULT_THRESHOLD_FAIL = -0.2
-
-RESULT_THRESHOLD_3D_FAIL = -0.6
+# If we are comparing with 1.7 then allow some relaxed thresholds, note that
+# some failures are expected here as some images degrade by more than others
+if COMPARE_WITH_1_7:
+    RESULT_THRESHOLD_WARN = -0.1
+    RESULT_THRESHOLD_FAIL = -0.2
+    RESULT_THRESHOLD_3D_FAIL = -0.6
+    RESULT_REF_NAME = "reference-1.7"
+else:
+    RESULT_THRESHOLD_WARN = -0.01
+    RESULT_THRESHOLD_FAIL = -0.02
+    RESULT_THRESHOLD_3D_FAIL = -0.02
+    RESULT_REF_NAME = "reference-2.0-avx2"
 
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
@@ -47,10 +63,13 @@ TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
 
 def is_3d(blockSize):
     """
-    Is a block size string for a 3D block?
+    Is the given block size a 3D block type?
+
+    Args:
+        blockSize (str): The block size.
 
     Returns:
-        True if the block string is a 3D block size.
+        bool: ``True`` if the block string is a 3D block size, ``False`` if 2D.
     """
     return blockSize.count("x") == 2
 
@@ -60,8 +79,11 @@ def count_test_set(testSet, blockSizes):
     Count the number of test executions needed for a test set.
 
     Args:
-        testSet: The test set to run.
-        blockSizes: The block size list to run.
+        testSet (TestSet): The test set to run.
+        blockSizes (list(str)): The block sizes to run.
+
+    Returns:
+        int: The number of test executions needed.
     """
     count = 0
     for blkSz in blockSizes:
@@ -80,12 +102,12 @@ def determine_result(image, reference, result):
     Determine a test result against a reference and thresholds.
 
     Args:
-        image: The image being compressed.
-        reference: The reference result to compare against.
-        result: The test result.
+        image (TestImage): The image being compressed.
+        reference (Record): The reference result to compare against.
+        result (Record): The test result.
 
     Returns:
-        A Result enum.
+        Result: The result code.
     """
     dPSNR = result.psnr - reference.psnr
 
@@ -106,20 +128,26 @@ def format_solo_result(image, result):
     Format a metrics string for a single (no compare) result.
 
     Args:
-        image: The image being tested.
-        result: The test result.
+        image (TestImage): The image being tested.
+        result (Record): The test result.
 
     Returns:
-        The metrics string.
+        str: The metrics string.
     """
-    # pylint: disable=unused-argument
-    # TODO: Use image to create mtex/s metric
-    name = "%5s %s" % (result.blkSz, result.name)
-    tPSNR = "%2.5f dB" % result.psnr
-    tTTime = "%3.5f s" % result.tTime
-    tCTime = "%3.5f s" % result.cTime
+    imSize = image.get_size()
+    if imSize:
+        mpix = float(imSize[0] * imSize[1]) / 1000000.0
+        tCMPS = "%3.2f MP/s" % (mpix / result.cTime)
+    else:
+        tCMPS = "?"
 
-    return "%s | %8s | %8s | %8s" % (name, tPSNR, tTTime, tCTime)
+    name = "%5s %s" % (result.blkSz, result.name)
+    tPSNR = "%2.3f dB" % result.psnr
+    tTTime = "%.2f s" % result.tTime
+    tCTime = "%.2f s" % result.cTime
+
+    return "%-32s | %8s | %8s | %8s | %10s" % \
+        (name, tPSNR, tTTime, tCTime, tCMPS)
 
 
 def format_result(image, reference, result):
@@ -127,27 +155,32 @@ def format_result(image, reference, result):
     Format a metrics string for a comparison result.
 
     Args:
-        image: The image being tested.
-        reference: The reference result to compare against.
-        result: The test result.
+        image (TestImage): The image being tested.
+        reference (Record): The reference result to compare against.
+        result (Record): The test result.
 
     Returns:
-        The metrics string.
+        str: The metrics string.
     """
-    # pylint: disable=unused-argument
-    # TODO: Use image to create mtex/s metric
+    imSize = image.get_size()
+    if imSize:
+        mpix = float(imSize[0] * imSize[1]) / 1000000.0
+        tCMPS = "%3.2f MP/s" % (mpix / result.cTime)
+    else:
+        tCMPS = "?"
+
     dPSNR = result.psnr - reference.psnr
     sTTime = reference.tTime / result.tTime
     sCTime = reference.cTime / result.cTime
 
     name = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
-    tTTime = "%.2f s (%1.1fx)" % (result.tTime, sTTime)
-    tCTime = "%.2f s (%1.1fx)" % (result.cTime, sCTime)
+    tTTime = "%.2f s (%1.2fx)" % (result.tTime, sTTime)
+    tCTime = "%.2f s (%1.2fx)" % (result.cTime, sCTime)
     result = determine_result(image, reference, result)
 
-    return "%-32s | %22s | %14s | %14s | %s" % \
-           (name, tPSNR, tTTime, tCTime, result.name)
+    return "%-32s | %22s | %14s | %14s | %10s | %s" % \
+           (name, tPSNR, tTTime, tCTime, tCMPS, result.name)
 
 
 def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
@@ -155,14 +188,14 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
     Execute all tests in the test set.
 
     Args:
-        encoder: The encoder to use.
-        testRef: The test reference results.
-        testSet: The test set.
-        blockSizes: The block sizes to execute each test against.
-        testRuns: The number of test runs.
+        encoder (EncoderBase): The encoder to use.
+        testRef (ResultSet): The test reference results.
+        testSet (TestSet): The test set.
+        blockSizes (list(str)): The block sizes to execute each test against.
+        testRuns (int): The number of test repeats to run for each image test.
 
     Returns:
-        The result set.
+        ResultSet: The test results.
     """
     resultSet = trs.ResultSet(testSet.name)
 
@@ -204,8 +237,14 @@ def get_encoder_params(encoderName, imageSet):
     The the encoder and image set parameters for a test run.
 
     Args:
-        encoderName: the encoder name from the command line.
-        imageSet: the test image set.
+        encoderName (str): The encoder name.
+        imageSet (str): The test image set.
+
+    Returns:
+        tuple(EncoderBase, str, str, str): The test parameters for the
+        requested encoder and test set. An instance of the encoder wrapper
+        class, the output data name, the output result directory, and the
+        reference to use.
     """
     if encoderName == "1.7":
         encoder = te.Encoder1x()
@@ -226,7 +265,7 @@ def get_encoder_params(encoderName, imageSet):
         encoder = te.Encoder2x(encoderName)
         name = "develop-%s" % encoderName
         outDir = "TestOutput/%s" % imageSet
-        refName = "reference-1.7"
+        refName = RESULT_REF_NAME
 
     return (encoder, name, outDir, refName)
 
@@ -234,6 +273,9 @@ def get_encoder_params(encoderName, imageSet):
 def parse_command_line():
     """
     Parse the command line.
+
+    Returns:
+        Namespace: The parsed command line container.
     """
     parser = argparse.ArgumentParser()
 
@@ -295,6 +337,9 @@ def parse_command_line():
 def main():
     """
     The main function.
+
+    Returns:
+        int: The process return code.
     """
     # Parse command lines
     args = parse_command_line()

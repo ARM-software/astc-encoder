@@ -71,7 +71,7 @@ class ResultSummary():
         Add a record to this summary.
 
         Args:
-            record: The Record to add.
+            record (Record): The Record to add.
         """
         if record.status == Result.PASS:
             self.passes += 1
@@ -87,7 +87,7 @@ class ResultSummary():
         Get the worst result in this set.
 
         Returns:
-            The worst Result value.
+            Result: The worst test result.
         """
         if self.fails:
             return Result.FAIL
@@ -124,11 +124,11 @@ class Record():
         Create a result record, initially in the NOTRUN status.
 
         Args:
-            blkSz: The block size.
-            name: The test image name.
-            psnr: The image quality (PSNR dB)
-            tTime: The total compression time.
-            cTime: The coding compression time.
+            blkSz (str): The block size.
+            name (str): The test image name.
+            psnr (float): The image quality PSNR, in dB.
+            tTime (float): The total compression time, in seconds.
+            cTime (float): The coding compression time, in seconds.
         """
         self.blkSz = blkSz
         self.name = name
@@ -142,7 +142,7 @@ class Record():
         Set the result status.
 
         Args:
-            result: The test Result.
+            result (Result): The test result.
         """
         self.status = result
 
@@ -164,7 +164,7 @@ class ResultSet():
         Create a new empty ResultSet.
 
         Args:
-            testSet: The test set these results are linked to.
+            testSet (TestSet): The test set these results are linked to.
         """
         self.testSet = testSet
         self.records = []
@@ -174,7 +174,7 @@ class ResultSet():
         Add a new test record to this result set.
 
         Args:
-            record: The test record to add.
+            record (Record): The test record to add.
         """
         self.records.append(record)
 
@@ -183,12 +183,12 @@ class ResultSet():
         Get a record matching the arguments.
 
         Args:
-            testSet: The test set to get results from.
-            blkSz: The block size.
-            name: The test name.
+            testSet (TestSet): The test set to get results from.
+            blkSz (str): The block size.
+            name (str): The test name.
 
         Returns:
-            The result Record, if present.
+            Record: The test result, if present.
 
         Raises:
             KeyError: No match could be found.
@@ -207,10 +207,10 @@ class ResultSet():
         Get a record matching the config of another record.
 
         Args:
-            other: The pattern result Record.
+            other (Record): The pattern result record to match.
 
         Returns:
-            The result Record, if present.
+            Record: The result, if present.
 
         Raises:
             KeyError: No match could be found.
@@ -226,7 +226,7 @@ class ResultSet():
         Get a results summary of all the records in this result set.
 
         Returns:
-            The result summary.
+            ResultSummary: The result summary.
         """
         summary = ResultSummary()
         for record in self.records:
@@ -238,7 +238,7 @@ class ResultSet():
         Save this result set to a CSV file.
 
         Args:
-            filePath: The output file path.
+            filePath (str): The output file path.
         """
         with open(filePath, "w") as csvfile:
             writer = csv.writer(csvfile)
@@ -252,7 +252,7 @@ class ResultSet():
         Write the header to the CSV file.
 
         Args:
-            writer: The CSV writer.
+            writer (csv.writer): The CSV writer.
         """
         row = ["Image Set", "Block Size", "Name",
                "PSNR", "Total Time", "Coding Time"]
@@ -263,8 +263,8 @@ class ResultSet():
         Write a record to the CSV file.
 
         Args:
-            writer: The CSV writer.
-            record: The record to write.
+            writer (csv.writer): The CSV writer.
+            record (Record): The record to write.
         """
         row = [self.testSet,
                record.blkSz,
@@ -279,7 +279,7 @@ class ResultSet():
         Load a reference result set from a CSV file on disk.
 
         Args:
-            filePath: The input file path.
+            filePath (str): The input file path.
         """
         with open(filePath, "r") as csvfile:
             reader = csv.reader(csvfile)

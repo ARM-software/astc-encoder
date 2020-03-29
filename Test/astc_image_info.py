@@ -16,23 +16,36 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-Utility to show info about an image.
+The ``astc_image_info`` utility provides basic image query capabilities. It is
+a modal command line utility, exposing multiple available operators.
+
+* ``info``: Query structural information about the image, such as image
+      dimensions, number of color channels, and the min/max of each channel.
+* ``color``: Query the stored color value at a specific pixel coordinate, and
+      print the result in a variety of different formats.
+
+Both modes allow multiple images to be specified on the command line.
 """
 
 import argparse
-from PIL import Image
 import sys
 
+from PIL import Image
 
-def main_pipette(args):
+
+def main_color(args):
     """
-    Main function for the "pipette" mode.
+    Main function for the "color" mode.
 
-    This mode prints the color at a pixel coordinate in the image, in a variety
-    of color format (decimal, HTML string, float).
+    This mode prints the color at a specific pixel coordinate in each image.
+    The color value is printed in a variety of color formats (decimal, HTML
+    string, float).
+
+    Args:
+        args (Namespace): The parsed command line arguments.
 
     Returns:
-        The process return code.
+        int: The process return code.
     """
     retCode = 0
 
@@ -52,6 +65,7 @@ def main_pipette(args):
             retCode = 1
         else:
             color = img.getpixel((x, y))
+
             # Print byte values
             print("+ Byte: %s" % str(color))
 
@@ -78,8 +92,11 @@ def main_info(args):
         - the number of color channels.
         - the min/max value in each color channel.
 
+    Args:
+        args (Namespace): The parsed command line arguments.
+
     Returns:
-        The process return code.
+        int: The process return code.
     """
     for i, image in enumerate(args.images):
         if i != 0:
@@ -103,11 +120,11 @@ def parse_loc(value):
     Command line argument parser for position arguments.
 
     Args:
-        value: The command line argument string to parse. Must be of the form
-            "<int>x<int>", where both integers must be zero or positive.
+        value (str): The command line argument string to parse. Must be of the
+            form <int>x<int>", where both integers must be zero or positive.
 
     Returns:
-        The parsed value [int, int].
+        list(int, int): The parsed location.
 
     Raises:
         ArgumentTypeError: The value is not a valid location.
@@ -134,35 +151,35 @@ def parse_command_line():
     Parse the command line.
 
     Returns:
-        The parsed command line container.
+        Namespace: The parsed command line container.
     """
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(
         title="Operations")
 
     # Create the parser for the "pipette" command
-    parser_a = subparsers.add_parser(
-        "pipette",
+    parserA = subparsers.add_parser(
+        "color",
         help="Print color at given coordinate")
 
-    parser_a.set_defaults(func=main_pipette)
+    parserA.set_defaults(func=main_color)
 
-    parser_a.add_argument(
+    parserA.add_argument(
         "location", metavar="loc", type=parse_loc,
         help="The location spec XxY")
 
-    parser_a.add_argument(
+    parserA.add_argument(
         "images", metavar="image", nargs="+", type=argparse.FileType("r"),
         help="The images to query")
 
     # Create the parser for the "size" command
-    parser_b = subparsers.add_parser(
+    parserB = subparsers.add_parser(
         "info",
         help="Print image metadata info")
 
-    parser_b.set_defaults(func=main_info)
+    parserB.set_defaults(func=main_info)
 
-    parser_b.add_argument(
+    parserB.add_argument(
         "images", metavar="image", nargs="+", type=argparse.FileType("r"),
         help="The images to query")
 
@@ -180,10 +197,15 @@ def parse_command_line():
 def main():
     """
     The main function.
+
+    Returns:
+        int: The process return code.
     """
     args = parse_command_line()
     if args:
         return args.func(args)
+
+    return 0
 
 
 if __name__ == "__main__":

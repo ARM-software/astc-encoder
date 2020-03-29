@@ -28,6 +28,8 @@ The directory path is structured:
 
 import os
 
+from PIL import Image
+
 import testlib.misc as misc
 
 
@@ -76,7 +78,10 @@ class TestImage():
         Create a new image definition, based on a structured file path.
 
         Args:
-            filePath: The path of the image on disk.
+            filePath (str): The path of the image on disk.
+
+        Raises:
+            ImageException: The image couldn't be found or is unstructured.
         """
         self.filePath = os.path.abspath(filePath)
         if not os.path.exists(self.filePath):
@@ -108,7 +113,10 @@ class TestImage():
         Utility function to decode metadata from an encoded file name.
 
         Args:
-            fileName: The file name to tokenize.
+            fileName (str): The file name to tokenize.
+
+        Raises:
+            ImageException: The image file path is badly structured.
         """
         # Strip off the extension
         rootName = os.path.splitext(fileName)[0]
@@ -153,3 +161,27 @@ class TestImage():
             self.is3D = "3" in seenFlags
             self.isMask = "m" in seenFlags
             self.isAlphaScaled = "a" in seenFlags
+
+    def get_size(self):
+        """
+        Get the dimensions of this test image, if format is known.
+
+        Known cases today where the format is not known:
+
+        * 3D .dds files.
+        * Any .ktx, .hdr, .exr, or .astc file.
+
+        Returns:
+            tuple(int, int): The dimensions of a 2D image, or ``None`` if PIL
+            could not open the file.
+        """
+        try:
+            img = Image.open(self.filePath)
+        except IOError:
+            # HDR files
+            return None
+        except NotImplementedError:
+            # DDS files
+            return None
+
+        return (img.size[0], img.size[1])

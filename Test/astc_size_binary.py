@@ -16,13 +16,27 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-Utility to show the section sizes of a binary, or compare the section sizes of
-two binaries. This script uses the Linux "size" utility, which must be on the
-PATH.
+The ``astc_size_binary`` utility provides a wrapper around the Linux ``size``
+utility to view binary section sizes, and optionally compare the section sizes
+of two binaries. Section sizes are given for code (``.text``), read-only data
+(``.rodata``), and zero initialized data (``.bss``). All other sections are
+ignored.
+
+A typical report comparing the size of a new binary against a reference looks
+like this:
+
+.. code-block::
+
+              Code   RO Data   ZI Data
+     Ref    411298    374560    128576
+     New    560530     89552     31744
+   Abs D    149232   -285008    -96832
+   Rel D    36.28%   -76.09%   -75.31%
 """
 
 
 import argparse
+import shutil
 import subprocess as sp
 import sys
 
@@ -32,10 +46,14 @@ def run_size(binary):
     Run size on a single binary.
 
     Args:
-        binary: The path.
+        binary (str): The path of the binary file to process.
 
     Returns:
-        A tuple of (code size, read-only data size, and zero-init data size).
+        tuple(int, int, int): A triplet of code size, read-only data size, and
+        zero-init data size, all in bytes.
+
+    Raises:
+        CalledProcessException: The ``size`` subprocess failed for any reason.
     """
     args = ["size", "--format=sysv", binary]
     result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
@@ -57,11 +75,15 @@ def run_size(binary):
 def parse_command_line():
     """
     Parse the command line.
+
+    Returns:
+        Namespace: The parsed command line container.
     """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("bin", type=argparse.FileType("r"),
                         help="The new binary to size")
+
     parser.add_argument("ref", nargs="?", type=argparse.FileType("r"),
                         help="The reference binary to compare against")
 
@@ -71,16 +93,31 @@ def parse_command_line():
 def main():
     """
     The main function.
+
+    Returns:
+        int: The process return code.
     """
     args = parse_command_line()
 
+    # Preflight - check that size exists. Note that size might still fail at
+    # runtime later, e.g. if the binary is not of the correct format
+    path = shutil.which("size")
+    if not path:
+        print("ERROR: The 'size' utility is not installed on the PATH")
+        return 1
+
     # Collect the data
-    newSize = run_size(args.bin.name)
-    if args.ref:
-        refSize = run_size(args.ref.name)
+    try:
+        newSize = run_size(args.bin.name)
+        if args.ref:
+            refSize = run_size(args.ref.name)
+    except sp.CalledProcessError as ex:
+        print("ERROR: The 'size' utility failed")
+        print("       %s" % ex.stderr.strip())
+        return 1
 
     # Print the basic table of absolute values
-    print("%8s  % 8s  % 8s  % 8s" % ("", "Code", "RO", "ZI"))
+    print("%8s  % 8s  % 8s  % 8s" % ("", "Code", "RO Data", "ZI Data"))
     if args.ref:
         print("%8s  % 8u  % 8u  % 8u" % ("Ref", *refSize))
     print("%8s  % 8u  % 8u  % 8u" % ("New", *newSize))
