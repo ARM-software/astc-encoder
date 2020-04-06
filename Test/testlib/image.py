@@ -26,7 +26,9 @@ The directory path is structured:
     colorProfile-colorFormat-name[-flags].extension
 """
 
+import collections
 import os
+import subprocess as sp
 
 from PIL import Image
 
@@ -185,3 +187,134 @@ class TestImage():
             return None
 
         return (img.size[0], img.size[1])
+
+class Image():
+
+    # TODO: We don't support KTX yet, as ImageMagick doesn't.
+    SUPPORTED_LDR = ["bmp", "dds", "jpg", "png", "tga"]
+    SUPPORTED_HDR = ["exr", "hdr"]
+
+    @classmethod
+    def is_format_supported(cls, fileFormat, profile=None):
+        assert profile in [None, "ldr", "hdr"]
+
+        if profile is None:
+            return fileFormat in cls.SUPPORTED_LDR or \
+                   fileFormat in cls.SUPPORTED_HDR
+
+        if profile is "ldr":
+            return fileFormat in cls.SUPPORTED_LDR
+
+        if profile is "hdr":
+            return fileFormat in cls.SUPPORTED_HDR
+
+    def __init__(self, filePath):
+        self.filePath = filePath
+        self.proxyPath = None
+
+    def get_colors(self, coords):
+        colors = []
+
+        # We accept both a list of positions and a single position;
+        # canonicalize here so the main processing only handles lists
+        isList = len(coords) != 0 and \
+                 isinstance(coords[0], collections.Iterable)
+
+        if not isList:
+            coords = [coords]
+
+        for (x, y) in coords:
+            command = [
+                "convert", self.filePath,
+                "-format", "%%[pixel:p{%u,%u}]" % (x, y),
+                "info:"
+            ]
+
+            result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
+                            check=True, universal_newlines=True)
+
+            rawcolor = result.stdout.strip()
+
+            # Decode ImageMagick's annoying named color outputs. Note that this
+            # only handles "known" cases triggered by our test images, we don't
+            # support the entire ImageMagick named color table.
+            if rawcolor == "black":
+                colors.append([0.0, 0.0, 0.0, 1.0])
+            elif rawcolor == "white":
+                colors.append([1.0, 1.0, 1.0, 1.0])
+            elif rawcolor == "red":
+                colors.append([1.0, 0.0, 0.0, 1.0])
+            elif rawcolor == "blue":
+                colors.append([0.0, 0.0, 1.0, 1.0])
+
+            # Decode ImageMagick's format tuples
+            elif rawcolor.startswith("srgba"):
+                rawcolor = rawcolor[6:]
+                rawcolor = rawcolor[:-1]
+                channels = rawcolor.split(",")
+                for i, channel in enumerate(channels):
+                    if (i < 3) and channel.endswith("%"):
+                        channels[i] = float(channel[:-1]) / 100.0
+                    elif (i < 3) and not channel.endswith("%"):
+                        channels[i] = float(channel) / 255.0
+                    else:
+                        channels[i] = float(channel)
+                colors.append(channels)
+            elif rawcolor.startswith("srgb"):
+                rawcolor = rawcolor[5:]
+                rawcolor = rawcolor[:-1]
+                channels = rawcolor.split(",")
+                for i, channel in enumerate(channels):
+                    if (i < 3) and channel.endswith("%"):
+                        channels[i] = float(channel[:-1]) / 100.0
+                    if (i < 3) and not channel.endswith("%"):
+                        channels[i] = float(channel) / 255.0
+                channels.append(1.0)
+                colors.append(channels)
+            elif rawcolor.startswith("rgba"):
+                rawcolor = rawcolor[5:]
+                rawcolor = rawcolor[:-1]
+                channels = rawcolor.split(",")
+                for i, channel in enumerate(channels):
+                    if (i < 3) and channel.endswith("%"):
+                        channels[i] = float(channel[:-1]) / 100.0
+                    elif (i < 3) and not channel.endswith("%"):
+                        channels[i] = float(channel) / 255.0
+                    else:
+                        channels[i] = float(channel)
+                colors.append(channels)
+            elif rawcolor.startswith("rgb"):
+                rawcolor = rawcolor[4:]
+                rawcolor = rawcolor[:-1]
+                channels = rawcolor.split(",")
+                for i, channel in enumerate(channels):
+                    if (i < 3) and channel.endswith("%"):
+                        channels[i] = float(channel[:-1]) / 100.0
+                    if (i < 3) and not channel.endswith("%"):
+                        channels[i] = float(channel) / 255.0
+                channels.append(1.0)
+                colors.append(channels)
+            else:
+                print(x, y)
+                print(rawcolor)
+                assert False
+
+        # ImageMagick decodes DDS files as BGRA not RGBA; manually correct
+        if self.filePath.endswith("dds"):
+            for color in colors:
+                tmp = color[0]
+                color[0] = color[2]
+                color[2] = tmp
+
+        # ImageMagick decodes EXR files with premult alpha; manually correct
+        if self.filePath.endswith("exr"):
+            for color in colors:
+                color[0] /= color[3]
+                color[1] /= color[3]
+                color[2] /= color[3]
+
+        # Undo list canonicalization if we were given a single scalar coord
+        if not isList:
+            return colors[0]
+
+        return colors

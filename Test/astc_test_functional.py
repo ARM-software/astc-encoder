@@ -16,9 +16,48 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-The image test runner is designed to process directories of arbitrary test
-images, using the directory structure and naming conventions to self-describe
-how each image is to be compressed.
+The functional test runner is a set of utilities that validate the ``astcenc``
+command line is correctly handled, under both valid and invalid usage
+scenarios. These tests do NOT validate the compression codec itself, beyond
+some very basic incidental usage needed to validate the command line.
+
+Due to the need to validate pixel colors in test images for both LDR and HDR
+images, these tests rely on an HDRI-enabled build of ImageMagic being available
+on the system path. To test if the version of ImageMagic on your system is
+HDRI-enabled run:
+
+    convert --version
+
+... and check that the string "HDRI" is present in the listed features.
+
+Test Tiles
+==========
+
+Some basic test images, each 8x8 texels and built up from 4 no. 4x4 texel
+constant color blocks, are used to help determine that the command line is
+being processed correctly.
+
+LDR Test Pattern
+----------------
+
+LDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
+(0, 0) is the top left, the component uncompressed block colors are:
+
+* (0, 0) TL = Black, opaque = (0.00, 0.00, 0.00, 1.00)
+* (7, 0) TR = Red, opaque   = (1.00, 0.00, 0.00, 1.00)
+* (0, 7) BL = White, opaque = (1.00, 1.00, 1.00, 1.00)
+* (7, 7) BR = Green, trans  = (0.25, 0.75, 0.00, 0.87)
+
+HDR Test Pattern
+----------------
+
+HDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
+(0, 0) is the top left, the component uncompressed block colors are:
+
+* (0, 0) TL = LDR Black, opaque = (0.00, 0.00, 0.00, 1.00)
+* (7, 0) TR = HDR Red, opaque   = (8.00, 0.00, 0.00, 1.00)
+* (0, 7) BL = HDR White, opaque = (3.98, 3.98, 3.98, 1.00)
+* (7, 7) BR = LDR Green, trans  = (0.25, 0.75, 0.00, 0.87)
 """
 import filecmp
 import os
@@ -30,6 +69,8 @@ import unittest
 
 import numpy
 from PIL import Image
+
+import testlib.image as tli
 
 # Enable these to always write out, irrespective of test result
 ASTCENC_CLI_ALWAYS = False
@@ -43,6 +84,21 @@ ASTCENC_LOG_ON_ERROR = True
 ASTCENC_CLI_ON_ERROR_NEG = True
 ASTCENC_LOG_ON_ERROR_NEG = True
 
+# LDR test pattern
+ASTCENC_TEST_PATTERN_LDR = {
+    "TL": (0.00, 0.00, 0.00, 1.00),
+    "TR": (1.00, 0.00, 0.00, 1.00),
+    "BL": (1.00, 1.00, 1.00, 1.00),
+    "BR": (0.25, 0.75, 0.00, 0.87)
+}
+
+# HDR test pattern
+ASTCENC_TEST_PATTERN_HDR = {
+    "TL": (0.00, 0.00, 0.00, 1.00),
+    "TR": (8.00, 0.00, 0.00, 1.00),
+    "BL": (3.98, 3.98, 3.98, 1.00),
+    "BR": (0.25, 0.75, 0.00, 0.87)
+}
 
 class CLITestBase(unittest.TestCase):
     """
@@ -115,12 +171,22 @@ class CLITestBase(unittest.TestCase):
         occurs.
 
         Args:
-            profile (str): The color profile.
+            profile (str): The color profile. "EXP" means explicit which means
+                the "mode" parameter is interpreted as a literal file
+                extension not a symbolic mode.
             mode (str): The type of image to load.
 
         Returns:
             str: The path to the test image file on disk.
         """
+        # Handle explicit mode
+        if profile == "EXP":
+            tmpFile, tmpPath = tempfile.mkstemp(mode, dir=self.tempDir.name)
+            os.close(tmpFile)
+            os.remove(tmpPath)
+            return tmpPath
+
+        # Handle symbolic modes
         nameMux = {
             "LDR": {
                 "comp": ".astc",
@@ -205,6 +271,46 @@ class CLIPTest(CLITestBase):
 
         return sad == 0
 
+    def get_color_refs(self, mode, corners):
+        """
+        Build a set of reference colors from apriori color list.
+        """
+        modes = {
+            "LDR": ASTCENC_TEST_PATTERN_LDR,
+            "HDR": ASTCENC_TEST_PATTERN_HDR
+        }
+
+        if isinstance(corners, str):
+            return [modes[mode][corners]]
+
+        return [modes[mode][corner] for corner in corners]
+
+    def is_color_similar(self, image, coords, refColors, refThreshold):
+        """
+        Test if colors in an image are similar to set of reference colors.
+        """
+        im = tli.Image(image)
+        colors = im.get_colors(coords)
+        mixin = zip(colors, refColors)
+        for test, ref in mixin:
+            for channel in range(0, len(test)):
+                weight = (test[channel] / ref(channel)) - 1.0
+                self.assertLessEqual(abs(weight), abs(refThreshold))
+
+    def assertColorSame(self, colorRef, colorNew, threshold=0.02, swiz=None):
+        self.assertEqual(len(colorRef), len(colorNew))
+
+        # Swizzle the reference color if needed
+        if swiz:
+            self.assertEqual(len(swiz), 4)
+            remap = { "r": 0, "g": 1, "b": 2, "a": 3, "0": 4, "1": 5 }
+            colorRefExt = [x for x in colorRef] + [0.0, 1.0]
+            colorRef = [colorRefExt[remap[s]] for s in swiz]
+
+        for chRef, chNew in zip(colorRef, colorNew):
+            deltaMax = chRef * threshold
+            self.assertAlmostEqual(chRef, chNew, delta=deltaMax)
+
     def exec(self, command):
         """
         Execute a positive test.
@@ -269,11 +375,29 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         self.assertTrue(filecmp.cmp(imRef, imOut, False))
 
-    @unittest.skip("Not implemented")
-    def test_hdr_compress(self):
+    def test_hdr_compress1(self):
         """
-        Test basic HDR compression.
+        Test basic HDR + LDR alpha compression.
         """
+        imIn = self.get_ref_image_path("HDR", "input", "A")
+        imOut = self.get_tmp_image_path("HDR", "comp")
+        imRef = self.get_ref_image_path("HDR", "comp", "A")
+
+        command = [self.binary, "-ch", imIn, imOut, "6x6", "-exhaustive"]
+        self.exec(command)
+        self.assertTrue(filecmp.cmp(imRef, imOut, False))
+
+    def test_hdr_compress2(self):
+        """
+        Test basic HDR + HDR alpha compression.
+        """
+        imIn = self.get_ref_image_path("HDR", "input", "A")
+        imOut = self.get_tmp_image_path("HDR", "comp")
+        imRef = self.get_ref_image_path("HDR", "comp", "A")
+
+        command = [self.binary, "-cH", imIn, imOut, "6x6", "-exhaustive"]
+        self.exec(command)
+        self.assertTrue(filecmp.cmp(imRef, imOut, False))
 
     def test_ldr_decompress(self):
         """
@@ -299,11 +423,35 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         self.assertTrue(self.compare(imRef, imOut))
 
-    @unittest.skip("Not implemented")
-    def test_hdr_decompress(self):
+    def test_hdr_decompress1(self):
         """
-        Test basic HDR decompression.
+        Test basic HDR + LDR alpha decompression.
         """
+        imIn = self.get_ref_image_path("HDR", "comp", "A")
+        imOut = self.get_tmp_image_path("HDR", "decomp")
+        imRef = self.get_ref_image_path("HDR", "input", "A")
+
+        command = [self.binary, "-dh", imIn, imOut]
+        self.exec(command)
+
+        colRef = tli.Image(imRef).get_colors((0,0))
+        colOut = tli.Image(imOut).get_colors((0,0))
+        self.assertColorSame(colRef, colOut)
+
+    def test_hdr_decompress2(self):
+        """
+        Test basic HDR + HDR alpha decompression.
+        """
+        imIn = self.get_ref_image_path("HDR", "comp", "A")
+        imOut = self.get_tmp_image_path("HDR", "decomp")
+        imRef = self.get_ref_image_path("HDR", "input", "A")
+
+        command = [self.binary, "-dH", imIn, imOut]
+        self.exec(command)
+
+        colRef = tli.Image(imRef).get_colors((0,0))
+        colOut = tli.Image(imOut).get_colors((0,0))
+        self.assertColorSame(colRef, colOut)
 
     def test_ldr_roundtrip(self):
         """
@@ -327,19 +475,342 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         self.assertTrue(self.compare(imIn, imOut))
 
-    @unittest.skip("Not implemented")
-    def test_hdr_roundtrip(self):
+    def test_hdr_roundtrip1(self):
         """
-        Test basic HDR round-trip.
+        Test basic HDR + LDR alpha round-trip.
         """
+        imIn = self.get_ref_image_path("HDR", "input", "A")
+        imOut = self.get_tmp_image_path("HDR", "decomp")
 
+        command = [self.binary, "-th", imIn, imOut, "6x6", "-exhaustive"]
+        self.exec(command)
+        colIn = tli.Image(imIn).get_colors((0,0))
+        colOut = tli.Image(imOut).get_colors((0,0))
+        self.assertColorSame(colIn, colOut)
+
+    def test_hdr_roundtrip2(self):
+        """
+        Test basic HDR + HDR alpha round-trip.
+        """
+        imIn = self.get_ref_image_path("HDR", "input", "A")
+        imOut = self.get_tmp_image_path("HDR", "decomp")
+
+        command = [self.binary, "-tH", imIn, imOut, "6x6", "-exhaustive"]
+        self.exec(command)
+        colIn = tli.Image(imIn).get_colors((0,0))
+        colOut = tli.Image(imOut).get_colors((0,0))
+        self.assertColorSame(colIn, colOut)
+
+    def test_valid_2d_block_sizes(self):
+        """
+        Test all valid block sizes are accepted (2D images)
+        """
+        blockSizes = [
+             "4x4",  "5x4", "5x5",  "6x5",  "6x6",    "8x5",   "8x6",
+            "10x5", "10x6", "8x8", "10x8", "10x10", "12x10", "12x12"
+        ]
+
+        imIn = self.get_ref_image_path("LDR", "input", "A")
+        imOut = self.get_tmp_image_path("LDR", "decomp")
+
+        for blk in blockSizes:
+            with self.subTest(blockSize=blk):
+                command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
+                self.exec(command)
+                colIn = tli.Image(imIn).get_colors((0,0))
+                colOut = tli.Image(imOut).get_colors((0,0))
+                self.assertColorSame(colIn, colOut)
+
+    def test_valid_3d_block_sizes(self):
+        """
+        Test all valid block sizes are accepted (3D images)
+        """
+        blockSizes = [
+             "3x3x3",
+             "4x3x3", "4x4x3", "4x4x4",
+             "5x4x4", "5x5x4", "5x5x5",
+             "6x5x5", "6x6x5", "6x6x6"
+        ]
+
+        imIn = self.get_ref_image_path("LDR", "input", "A")
+        imOut = self.get_tmp_image_path("LDR", "decomp")
+
+        for blk in blockSizes:
+            with self.subTest(blockSize=blk):
+                command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
+                self.exec(command)
+                colIn = tli.Image(imIn).get_colors((0,0))
+                colOut = tli.Image(imOut).get_colors((0,0))
+                self.assertColorSame(colIn, colOut)
+
+    def test_valid_presets(self):
+        """
+        Test all valid presets are accepted
+        """
+        presets = [
+            "-fast", "-medium", "-thorough", "-exhaustive"
+        ]
+
+        imIn = self.get_ref_image_path("LDR", "input", "A")
+        imOut = self.get_tmp_image_path("LDR", "decomp")
+
+        for preset in presets:
+            with self.subTest(preset=preset):
+                command = [self.binary, "-tl", imIn, imOut, "4x4", preset]
+                self.exec(command)
+                colIn = tli.Image(imIn).get_colors((0,0))
+                colOut = tli.Image(imOut).get_colors((0,0))
+                self.assertColorSame(colIn, colOut)
+
+    def test_valid_ldr_input_formats(self):
+        """
+        Test valid LDR input file formats.
+        """
+        imgFormats = ["bmp", "dds", "jpg", "ktx", "png", "tga"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = "./Test/Data/Tiles/ldr.%s" % imgFormat
+                imOut = self.get_tmp_image_path("LDR", "decomp")
+
+                command = [self.binary, "-tl", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat):
+                    colIn = tli.Image(imIn).get_colors((7,7))
+                    colOut = tli.Image(imOut).get_colors((7,7))
+                    self.assertColorSame(colIn, colOut)
+
+    def test_valid_ldr_output_formats(self):
+        """
+        Test valid LDR output file formats.
+        """
+        imgFormats = ["bmp", "dds", "ktx", "png", "tga"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = self.get_ref_image_path("LDR", "input", "A")
+                imOut = self.get_tmp_image_path("EXP", ".%s" % imgFormat)
+
+                command = [self.binary, "-tl", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat):
+                    colIn = tli.Image(imIn).get_colors((7,7))
+                    colOut = tli.Image(imOut).get_colors((7,7))
+                    self.assertColorSame(colIn, colOut)
+
+    def test_valid_hdr_input_formats(self):
+        """
+        Test valid HDR input file formats.
+        """
+        imgFormats = ["exr", "hdr"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = "./Test/Data/Tiles/hdr.%s" % imgFormat
+                imOut = self.get_tmp_image_path("HDR", "decomp")
+
+                command = [self.binary, "-th", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat, profile="hdr"):
+                    colIn = tli.Image(imIn).get_colors((7,7))
+                    colOut = tli.Image(imOut).get_colors((7,7))
+                    self.assertColorSame(colIn, colOut)
+
+    def test_valid_hdr_output_formats(self):
+        """
+        Test valid HDR output file formats.
+        """
+        imgFormats = ["dds", "exr", "ktx"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = self.get_ref_image_path("HDR", "input", "A")
+                imOut = self.get_tmp_image_path("EXP", ".%s" % imgFormat)
+
+                command = [self.binary, "-th", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat, profile="hdr"):
+                    colIn = tli.Image(imIn).get_colors((7,7))
+                    colOut = tli.Image(imOut).get_colors((7,7))
+                    self.assertColorSame(colIn, colOut)
+
+    def test_compress_esw(self):
+        """
+        Test LDR encoding swizzles
+        """
+        # The swizzles to test
+        swizzles = ["rgba", "g0r1", "rrrg"]
+
+        # Compress a swizzled image
+        for swizzle in swizzles:
+            with self.subTest(swizzle=swizzle):
+                decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+                command = [
+                    self.binary, "-tl",
+                    "./Test/Data/Tiles/ldr.png",
+                    decompFile, "4x4", "-exhaustive",
+                    "-esw", swizzle]
+
+                self.exec(command)
+
+                # Fetch the three color
+                im = tli.Image(decompFile)
+                colorVal = im.get_colors([(7, 7)])
+                colorRef = self.get_color_refs("LDR", "BR")
+                self.assertColorSame(colorRef[0], colorVal[0], swiz=swizzle)
+
+    def test_compress_dsw(self):
+        """
+        Test LDR encoding swizzles
+        """
+        # The swizzles to test
+        swizzles = ["rgba", "g0r1", "rrrg"]
+
+        # Decompress a swizzled image
+        for swizzle in swizzles:
+            with self.subTest(swizzle=swizzle):
+                decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+                command = [
+                    self.binary, "-tl",
+                    "./Test/Data/Tiles/ldr.png",
+                    decompFile, "4x4", "-exhaustive",
+                    "-dsw", swizzle]
+
+                self.exec(command)
+
+                # Fetch the three color
+                im = tli.Image(decompFile)
+                colorVal = im.get_colors([(7, 7)])
+                colorRef = self.get_color_refs("LDR", "BR")
+                self.assertColorSame(colorRef[0], colorVal[0], swiz=swizzle)
+
+    def test_compress_esw_dsw(self):
+        """
+        Test LDR encoding and decoding swizzles
+        """
+        # Compress a swizzled image, and swizzle back in decompression
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            "./Test/Data/Tiles/ldr.png",
+            decompFile, "4x4", "-exhaustive",
+            "-esw", "gbar", "-dsw", "argb"]
+
+        self.exec(command)
+
+        # Fetch the three color
+        im = tli.Image(decompFile)
+        colorVal = im.get_colors([(7, 7)])
+        colorRef = self.get_color_refs("LDR", "BR")
+        self.assertColorSame(colorRef[0], colorVal[0])
+
+    def test_compress_flip(self):
+        """
+        Test LDR image flip on compression.
+        """
+        # Compress a flipped image
+        compFile = self.get_tmp_image_path("LDR", "comp")
+
+        command = [
+            self.binary, "-cl",
+            "./Test/Data/Tiles/ldr.png",
+            compFile, "4x4", "-fast", "-yflip"]
+
+        self.exec(command)
+
+        # Decompress a non-flipped image
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-dl",
+            compFile,
+            decompFile]
+
+        self.exec(command)
+
+        # Compare TL (0, 0) with BL - should match
+        colorRef = self.get_color_refs("LDR", "BL")
+
+        im = tli.Image(decompFile)
+        colorVal = im.get_colors([(0, 0)])
+        self.assertColorSame(colorRef[0], colorVal[0])
+
+    def test_decompress_flip(self):
+        """
+        Test LDR image flip on decompression.
+        """
+        # Compress a non-flipped image
+        compFile = self.get_tmp_image_path("LDR", "comp")
+
+        command = [
+            self.binary, "-cl",
+            "./Test/Data/Tiles/ldr.png",
+            compFile, "4x4", "-fast"]
+
+        self.exec(command)
+
+        # Decompress a flipped image
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-dl",
+            compFile,
+            decompFile, "-yflip"]
+
+        self.exec(command)
+
+        # Compare TL (0, 0) with BL - should match
+        colorRef = self.get_color_refs("LDR", "BL")
+
+        im = tli.Image(decompFile)
+        colorVal = im.get_colors([(0, 0)])
+        self.assertColorSame(colorRef[0], colorVal[0])
+
+    def test_roundtrip_flip(self):
+        """
+        Test LDR image flip on roundtrip (no flip should occur).
+        """
+        # Compress and decompressed a flipped LDR image
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            "./Test/Data/Tiles/ldr.png",
+            decompFile, "4x4", "-fast", "-yflip"]
+
+        self.exec(command)
+
+        # Compare TL (0, 0) with TL - should match - i.e. no flip
+        colorRef = self.get_color_refs("LDR", "TL")
+
+        im = tli.Image(decompFile)
+        colorVal = im.get_colors([(0, 0)])
+
+        self.assertColorSame(colorRef[0], colorVal[0])
 
 class CLINTest(CLITestBase):
     """
     Command line interface negative tests.
 
     These tests are designed to test that bad inputs to the command line are
-    handled correctly, and that errors are correctly thrown.
+    handled cleanly and that errors are correctly thrown.
+
+    Note that many tests are mutations of a valid positive test command line,
+    to ensure that the base command line is valid before it is mutated many
+    of these tests include a *positive test* to ensure that the starting point
+    is actually a valid command line (otherwise we could be throwing an
+    arbitrary error).
     """
 
     def exec(self, command, expectPass=False):
@@ -392,7 +863,7 @@ class CLINTest(CLITestBase):
         # Otherwise just assert that we got an error log, and some positive
         # return code value was returned
 
-        # TODO: Disabled until we fix issue #100
+        # TODO: Disabled until we fix GitHub issue #100
         # self.assertIn("ERROR", result.stdout)
 
         self.assertGreater(rcode, 0, "Exec did not fail as expected")
@@ -432,6 +903,20 @@ class CLINTest(CLITestBase):
             "./Test/Data/missing.png",
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast"]
+
+        self.exec(command)
+
+    @unittest.skip("Bug #93")
+    def test_cl_missing_input_array_slice(self):
+        """
+        Test -cl with a missing input file in an array slice.
+        """
+        # Build a valid command with a missing input file
+        command = [
+            self.binary, "-cl",
+            "./Test/Data/Tiles/ldr.png",
+            self.get_tmp_image_path("LDR", "comp"),
+            "3x3x3", "-fast", "-array", "3"]
 
         self.exec(command)
 
@@ -517,6 +1002,23 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A"),
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast", "-unknown"]
+
+        self.exec(command)
+
+    def test_cl_2d_block_with_array(self):
+        """
+        Test -cl with a 2D block size and 3D input data.
+        """
+        # Build an otherwise valid command with the test flaw
+
+        # TODO: This fails late (i.e. the data is still loaded, and we fail
+        # at processing time when we see a 3D array). We could fail earlier at
+        # parse time, which might consolidate the error handling code.
+        command = [
+            self.binary, "-cl",
+            "./Test/Data/Tiles/ldr.png",
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast", "-array", "2"]
 
         self.exec(command)
 
