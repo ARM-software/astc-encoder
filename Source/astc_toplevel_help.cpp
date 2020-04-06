@@ -119,15 +119,13 @@ COMPRESSION
 
        Supported 2D block sizes are:
 
-             4x4: 8.00 bpp
-             5x5: 5.12 bpp
-             6x6: 3.56 bpp
-             8x6: 2.67 bpp
-             8x8: 2.00 bpp
-            10x8: 1.60 bpp
-           10x10: 1.28 bpp
-           12x10: 1.07 bpp
-           12x12: 0.89 bpp
+             4x4: 8.00 bpp        10x5: 2.56 bpp
+             5x4: 6.40 bpp        10x6: 2.13 bpp
+             5x5: 5.12 bpp         8x8: 2.00 bpp
+             6x5: 4.27 bpp        10x8: 1.60 bpp
+             6x6: 3.56 bpp       10x10: 1.28 bpp
+             8x5: 3.20 bpp       12x10: 1.07 bpp
+             8x6: 2.67 bpp       12x12: 0.89 bpp
 
        Supported 3D block sizes are:
 
