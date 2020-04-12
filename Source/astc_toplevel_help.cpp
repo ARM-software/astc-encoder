@@ -129,16 +129,11 @@ COMPRESSION
 
        Supported 3D block sizes are:
 
-           3x3x3: 4.74 bpp
-           4x3x3: 3.56 bpp
-           4x4x3: 2.67 bpp
-           4x4x4: 2.00 bpp
-           5x4x4: 1.60 bpp
-           5x5x4: 1.28 bpp
-           5x5x5: 1.02 bpp
-           6x5x5: 0.85 bpp
-           6x6x5: 0.71 bpp
-           6x6x6: 0.59 bpp
+           3x3x3: 4.74 bpp       5x5x4: 1.28 bpp
+           4x3x3: 3.56 bpp       5x5x5: 1.02 bpp
+           4x4x3: 2.67 bpp       6x5x5: 0.85 bpp
+           4x4x4: 2.00 bpp       6x6x5: 0.71 bpp
+           5x4x4: 1.60 bpp       6x6x6: 0.59 bpp
 
        The quality preset configures the quality-performance tradeoff for
        the compressor; more complete searches of the available search
