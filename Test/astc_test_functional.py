@@ -41,7 +41,7 @@ LDR Test Pattern
 ----------------
 
 LDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
-(0, 0) is the top left, the component uncompressed block colors are:
+(0, 0) is the top left (TL), the component uncompressed block colors are:
 
 * (0, 0) TL = Black, opaque = (0.00, 0.00, 0.00, 1.00)
 * (7, 0) TR = Red, opaque   = (1.00, 0.00, 0.00, 1.00)
@@ -52,7 +52,7 @@ HDR Test Pattern
 ----------------
 
 HDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
-(0, 0) is the top left, the component uncompressed block colors are:
+(0, 0) is the top left (TL), the component uncompressed block colors are:
 
 * (0, 0) TL = LDR Black, opaque = (0.00, 0.00, 0.00, 1.00)
 * (7, 0) TR = HDR Red, opaque   = (8.00, 0.00, 0.00, 1.00)
@@ -65,6 +65,7 @@ import signal
 import subprocess as sp
 import sys
 import tempfile
+import time
 import unittest
 
 import numpy
@@ -271,6 +272,57 @@ class CLIPTest(CLITestBase):
 
         return sad == 0
 
+    def get_channel_rmse(self, image1, image2):
+        """
+        Get the channel-by-channel root mean square error.
+
+        Args:
+            image1 (str): Path to the first image.
+            image2 (str): Path to the second image.
+
+        Returns:
+            tuple: Tuple of floats containing accumulated RMSE per channel.
+        """
+        img1 = Image.open(image1)
+        img2 = Image.open(image2)
+
+        # Images must have same size
+        if img1.size != img2.size:
+            print("Size")
+            return False
+
+        # Images must have same number of color channels
+        if img1.getbands() != img2.getbands():
+            # ... unless the only different is alpha
+            self.assertEqual(img1.getbands(), ("R", "G", "B"))
+            self.assertEqual(img2.getbands(), ("R", "G", "B", "A"))
+
+            # ... and the alpha is always one
+            bands = img2.split()
+            alphaHist = bands[3].histogram()
+            self.assertEqual(sum(alphaHist[:-1]), 0)
+
+            # Generate a version of img2 without alpha
+            img2 = Image.merge("RGB", (bands[0], bands[1], bands[2]))
+
+        # Compute root mean square error
+        img1bands = img1.split()
+        img2bands = img2.split()
+
+        rmseVals = []
+        imgBands = zip(img1bands, img2bands)
+        for img1Ch, img2Ch in imgBands:
+            imSz = numpy.prod(img1Ch.size)
+            dat1 = numpy.array(img1Ch)
+            dat2 = numpy.array(img2Ch)
+
+            sad = numpy.sum(numpy.square(dat1 - dat2))
+            mse = numpy.divide(sad, imSz)
+            rmse = numpy.sqrt(mse)
+            rmseVals.append(rmse)
+
+        return rmseVals
+
     def get_color_refs(self, mode, corners):
         """
         Build a set of reference colors from apriori color list.
@@ -284,6 +336,45 @@ class CLIPTest(CLITestBase):
             return [modes[mode][corners]]
 
         return [modes[mode][corner] for corner in corners]
+
+    @staticmethod
+    def to_srgb_color(color):
+        newColor = []
+
+        # Color convert only RGB
+        for i, ch in enumerate(color):
+            # Pass though alpha
+            if i == 3:
+                pass
+            # Linear region near zero
+            elif ch < 0.0031308:
+                ch = ch * 12.92
+            # Power curve
+            else:
+                ch = (1.055 * ch) ** (1 / 2.4) - 0.055
+
+            newColor.append(ch)
+
+        return newColor
+
+    @staticmethod
+    def from_srgb_color(color):
+        newColor = []
+
+        # Color convert only RGB
+        for i, ch in enumerate(color):
+            # Pass though alpha
+            if i == 3:
+                pass
+            # Linear region near zero
+            elif ch < 0.04045:
+                ch = ch / 12.92
+            # Power curve
+            else:
+                ch = ((ch + 0.055) / 1.055) ** 2.4
+            newColor.append(ch)
+
+        return newColor
 
     def is_color_similar(self, image, coords, refColors, refThreshold):
         """
@@ -798,6 +889,293 @@ class CLIPTest(CLITestBase):
         colorVal = im.get_colors([(0, 0)])
 
         self.assertColorSame(colorRef[0], colorVal[0])
+
+    def test_channel_weighting(self):
+        """
+        Test channel weighting.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        baseRMSE = self.get_channel_rmse(inputFile, decompFile)
+
+        # Note: Using -cw can result in a worse result than not using -cw,
+        # with regressions in RMSE for the high-weighted channel. This is
+        # particularly an issue in synthetic images, as they are more likely to
+        # hit corner cases in the heuristics. It happens to "work" for the
+        # selected test image and these settings, but might start to fail in
+        # future due to compressor changes.
+
+        # Test each channel with a high weight
+        for ch, chName in ((0, "R"), (1, "G"), (2, "B"), (3, "A")):
+            with self.subTest(channel=chName):
+                cwArg = ["%s" % (10 if x == ch else 1) for x in range(0, 4)]
+                command2 = command + ["-cw"] + cwArg
+                self.exec(command2)
+                chRMSE = self.get_channel_rmse(inputFile, decompFile)
+                self.assertLess(chRMSE[ch], baseRMSE[ch])
+
+    @unittest.skip("Issue #101")
+    def test_partition_limit(self):
+        """
+        Test partition limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-partitionlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_blockmode_limit(self):
+        """
+        Test block mode limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-blockmodelimit", "25"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_refinement_limit(self):
+        """
+        Test refinement limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-refinementlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_db_cutoff_limit(self):
+        """
+        Test db cutoff limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-dblimit", "10"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce cutoff quality
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_partition_early_limit(self):
+        """
+        Test partition early limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-partitionearlylimit", "1.0"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_dual_plane_correlation_limit(self):
+        """
+        Test dual plane correlation limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-planecorlimit", "0.1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    @unittest.skipIf(os.cpu_count() == 1, "Cannot test on single core host")
+    def test_thread_count(self):
+        """
+        Test codec thread count.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        start = time.time()
+        self.exec(command)
+        refTime = time.time() - start
+
+        command += ["-j", "1"]
+        start = time.time()
+        self.exec(command)
+        testTime = time.time() - start
+
+        # Test time should get slower with fewer threads
+        self.assertGreater(testTime, refTime)
+
+    def test_linearize_srgb1(self):
+        """
+        Test linearize srgb on compression.
+
+        This option converts srgb to linear before compression, so we expect
+        the compressed output to be linear colorspace.
+        """
+        inputFile = "./Test/Data/Tiles/ldr.png"
+        compFile = self.get_tmp_image_path("LDR", "comp")
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        compCommand = [
+            self.binary, "-cl",
+            inputFile, compFile, "4x4", "-exhaustive", "-linsrgb"]
+
+        decompCommand = [
+            self.binary, "-dl",
+            compFile, decompFile]
+
+        self.exec(compCommand)
+        self.exec(decompCommand)
+
+        im = tli.Image(inputFile)
+        refColors = im.get_colors((7,7))
+
+        im = tli.Image(decompFile)
+        testColors = im.get_colors((7,7))
+        srgbColors = self.to_srgb_color(testColors)
+
+        # Test we get a match within 5% on the RGB channels, exact on alpha
+        self.assertColorSame(refColors[:3], srgbColors[:3], threshold=0.05)
+        self.assertColorSame(refColors[3:], srgbColors[3:], threshold=0.0)
+
+    def test_linearize_srgb2(self):
+        """
+        Test linearize srgb on decompression.
+
+        This option converts linear to srgb after decompression, so we expect
+        the decompressed output to be srgb colorspace.
+        """
+        inputFile = "./Test/Data/Tiles/ldr.png"
+        compFile = self.get_tmp_image_path("LDR", "comp")
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        compCommand = [
+            self.binary, "-cl",
+            inputFile, compFile, "4x4", "-exhaustive"]
+
+        decompCommand = [
+            self.binary, "-dl",
+            compFile, decompFile, "-linsrgb"]
+
+        self.exec(compCommand)
+        self.exec(decompCommand)
+
+        im = tli.Image(inputFile)
+        refColors = im.get_colors((7,7))
+
+        im = tli.Image(decompFile)
+        testColors = im.get_colors((7,7))
+        linColors = self.from_srgb_color(testColors)
+
+        # Test we get a match within 5% on the RGB channels, exact on alpha
+        self.assertColorSame(refColors[:3], linColors[:3], threshold=0.05)
+        self.assertColorSame(refColors[3:], linColors[3:], threshold=0.0)
+
+    def test_linearize_srgb3(self):
+        """
+        Test linearize srgb on round-trip.
+
+        This should behave the same as linearizing with compression only; i.e.
+        we convert to linear before compression, but we do NOT sRGB encode the
+        output after decompression.
+        """
+        inputFile = "./Test/Data/Tiles/ldr.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-exhaustive", "-linsrgb"]
+
+        self.exec(command)
+
+        im = tli.Image(inputFile)
+        refColors = im.get_colors((7,7))
+
+        im = tli.Image(decompFile)
+        testColors = im.get_colors((7,7))
+        srgbColors = self.to_srgb_color(testColors)
+
+        # Test we get a match within 5% on the RGB channels, exact on alpha
+        self.assertColorSame(refColors[:3], srgbColors[:3], threshold=0.05)
+        self.assertColorSame(refColors[3:], srgbColors[3:], threshold=0.0)
+
 
 class CLINTest(CLITestBase):
     """
