@@ -1490,7 +1490,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_tl_unknown_input(self):
         """
         Test -tl with an unknown input file extension.

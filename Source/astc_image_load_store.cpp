@@ -1829,9 +1829,12 @@ astc_codec_image* astc_codec_load_image(
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
 			astc_codec_image* img = loader_descs[i].loader_func(input_filename, padding, y_flip, load_result);
-			img->linearize_srgb = linearize_srgb;
-			img->rgb_force_use_of_hdr = rgb_force_use_of_hdr;
-			img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
+			if (img)
+			{
+				img->linearize_srgb = linearize_srgb;
+				img->rgb_force_use_of_hdr = rgb_force_use_of_hdr;
+				img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
+			}
 			return img;
 		}
 	}
