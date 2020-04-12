@@ -123,7 +123,7 @@ they are both provided simply to maintain symmetry across operations.
 
 ## Measuring image quality
 
-Review the compression quality using the `-tl` \ `-ts` \ -`th`\ -`tH` modes.
+Review the compression quality using the `-tl` \ `-ts` \ -`th` \ -`tH` modes.
 For example:
 
     astcenc -tl example.png example.tga 5x5 -thorough

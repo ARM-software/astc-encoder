@@ -16,7 +16,9 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-Download test image sets, if images are missing.
+The ``astc_test_image_dl`` utility provides a means to programatically download
+test images that are available online, avoiding the need to duplicate them in
+the git repository.
 """
 
 
@@ -33,10 +35,10 @@ def download(testSet, index, srcUrl, dstPath):
     Download a single image.
 
     Args:
-        testSet: the test set name.
-        index: the download index.
-        srcUrl: the download URL.
-        dstPath: the destination path.
+        testSet (str): The test set name.
+        index (int): The download index.
+        srcUrl (str): The download URL.
+        dstPath (str): The destination path.
     """
     dirName = os.path.dirname(dstPath)
     if not os.path.exists(dirName):
@@ -65,6 +67,9 @@ def retrieve_kodak_set():
 def main():
     """
     The main function.
+
+    Returns:
+        int: The process return code.
     """
     retrieve_kodak_set()
     return 0

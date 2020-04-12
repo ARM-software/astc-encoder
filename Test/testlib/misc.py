@@ -26,10 +26,10 @@ def path_splitall(path):
     Utility function to split a relative path into its component pieces.
 
     Args:
-        path: The relative path to split.
+        path(str): The relative path to split.
 
     Returns:
-        An array of path parts.
+        list(str): An array of path parts.
     """
     # Sanity check we have a relative path on Windows
     assert ":" not in path

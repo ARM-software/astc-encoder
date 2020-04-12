@@ -32,7 +32,7 @@ The current code does one block at a time, in a depth-first search with full
 iterative refinement at each stage until the target quality is either hit or we
 run out of codec options to try. This approach is easier to understand, but the
 resulting code is control plane heavy and includes a lot of overhead which
-cannot be amoritzed over multiple blocks. As a first step for SIMD
+cannot be amortized over multiple blocks. As a first step for SIMD
 vectorization the data path must be reviewed to make sure that it can be
 vectorized efficiently.
 
@@ -44,7 +44,7 @@ vectorized efficiently.
 The restructure becomes particular important with an eye on a long-term
 objective (v3?) to support compression passes running on a GPU, as it is
 necessary to offload relatively large batches of work, while also avoiding
-bottlenecking GPU performance on memory access overheads rather than useful
+bottle necking GPU performance on memory access overheads rather than useful
 processing.
 
 ## Algorithm tuning

@@ -52,10 +52,13 @@ class TestSet():
         Create a new TestSet through reflection.
 
         Args:
-            name: The name of the test set.
-            rootDir: The root directory of the test set.
-            profiles: The ASTC profiles to allow.
-            formats: The image formats to allow.
+            name (str): The name of the test set.
+            rootDir (str): The root directory of the test set.
+            profiles (list(str)): The ASTC profiles to allow.
+            formats (list(str)): The image formats to allow.
+
+        Raises:
+            TSetException: The specified TestSet could not be loaded.
         """
         self.name = name
 
