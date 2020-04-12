@@ -1016,7 +1016,7 @@ int astc_main(
 			bmc_user_specified = cutoff;
 			bmc_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-partitionlimitt"))
+		else if (!strcmp(argv[argidx], "-partitionlimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
