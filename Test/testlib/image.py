@@ -26,11 +26,11 @@ The directory path is structured:
     colorProfile-colorFormat-name[-flags].extension
 """
 
-import collections.abc
+from collections.abc import Iterable
 import os
 import subprocess as sp
 
-from PIL import Image
+from PIL import Image as PILImage
 
 import testlib.misc as misc
 
@@ -178,7 +178,7 @@ class TestImage():
             could not open the file.
         """
         try:
-            img = Image.open(self.filePath)
+            img = PILImage.open(self.filePath)
         except IOError:
             # HDR files
             return None
@@ -188,7 +188,11 @@ class TestImage():
 
         return (img.size[0], img.size[1])
 
+
 class Image():
+    """
+    Wrapper around an image on the file system.
+    """
 
     # TODO: We don't support KTX yet, as ImageMagick doesn't.
     SUPPORTED_LDR = ["bmp", "dds", "jpg", "png", "tga"]
@@ -196,29 +200,56 @@ class Image():
 
     @classmethod
     def is_format_supported(cls, fileFormat, profile=None):
+        """
+        Test if a given file format is supported by the library.
+
+        Args:
+            fileFormat (str): The file extension (excluding the ".").
+            profile (str or None): The profile (ldr or hdr) of the image.
+
+        Returns:
+            bool: `True` if the image is supported, `False` otherwise.
+        """
         assert profile in [None, "ldr", "hdr"]
 
         if profile is None:
             return fileFormat in cls.SUPPORTED_LDR or \
                    fileFormat in cls.SUPPORTED_HDR
-
-        if profile is "ldr":
+        elif profile == "ldr":
             return fileFormat in cls.SUPPORTED_LDR
-
-        if profile is "hdr":
+        else:
             return fileFormat in cls.SUPPORTED_HDR
 
     def __init__(self, filePath):
+        """
+        Construct a new Image.
+
+        Args:
+            filePath (str): The path to the image on disk.
+        """
         self.filePath = filePath
         self.proxyPath = None
 
     def get_colors(self, coords):
+        """
+        Get the image colors at the given coordinate.
+
+        Args:
+            coords (tuple or list): A single coordinate, or a list of
+                coordinates to sample.
+
+        Returns:
+            tuple: A single sample color (if `coords` was a coordinate).
+            list: A list of sample colors (if `coords` was a list).
+
+            Colors are returned as float values between 0.0 and 1.0 for LDR,
+            and float values which may exceed 1.0 for HDR.
+        """
         colors = []
 
         # We accept both a list of positions and a single position;
         # canonicalize here so the main processing only handles lists
-        isList = len(coords) != 0 and \
-                 isinstance(coords[0], collections.abc.Iterable)
+        isList = len(coords) != 0 and isinstance(coords[0], Iterable)
 
         if not isList:
             coords = [coords]

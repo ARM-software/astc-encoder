@@ -20,11 +20,11 @@ The python test runner is designed to run some basic tests against the Python
 test code base.
 """
 
-import pycodestyle
 import re
 import sys
 import unittest
 
+import pycodestyle
 import pylint.epylint as lint
 
 
@@ -37,7 +37,7 @@ class PythonTests(unittest.TestCase):
         """
         Run pylint over the codebase.
         """
-        pylintOut, pylintErr = lint.py_run("./Test", True)
+        pylintOut, _ = lint.py_run("./Test", True)
         pattern = re.compile(r"Your code has been rated at (.*?)/10")
         match = pattern.search(pylintOut.getvalue())
         self.assertIsNotNone(match)

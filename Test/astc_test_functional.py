@@ -103,6 +103,7 @@ ASTCENC_TEST_PATTERN_HDR = {
     "BR": (0.25, 0.75, 0.00, 0.87)
 }
 
+
 class CLITestBase(unittest.TestCase):
     """
     Command line interface base class.
@@ -329,14 +330,15 @@ class CLIPTest(CLITestBase):
 
         return rmseVals
 
-    def get_color_refs(self, mode, corners):
+    @staticmethod
+    def get_color_refs(mode, corners):
         """
         Build a set of reference colors from apriori color list.
 
         Args:
             mode (str): The color mode (LDR, or HDR)
-            corners(list, str): The corner or list of corners -- named TL, TR,
-                BL, and BR -- to return.
+            corners (str or list): The corner or list of corners -- named TL,
+                TR, BL, and BR -- to return.
 
         Returns:
             tuple: The color value, if corners was a name.
@@ -361,7 +363,7 @@ class CLIPTest(CLITestBase):
         therefore not sRGB converted; the alpha is just passed through.
 
         Args:
-            tuple: The linear color value.
+            color (tuple): The linear color value.
 
         Returns:
             tuple: The sRGB converted color value.
@@ -369,18 +371,18 @@ class CLIPTest(CLITestBase):
         newColor = []
 
         # Color convert only RGB
-        for i, ch in enumerate(color):
+        for i, channel in enumerate(color):
             # Pass though alpha
             if i == 3:
                 pass
             # Linear region near zero
-            elif ch < 0.0031308:
-                ch = ch * 12.92
+            elif channel < 0.0031308:
+                channel = channel * 12.92
             # Power curve
             else:
-                ch = (1.055 * ch) ** (1 / 2.4) - 0.055
+                channel = ((1.055 * channel) ** (1 / 2.4)) - 0.055
 
-            newColor.append(ch)
+            newColor.append(channel)
 
         return newColor
 
@@ -393,7 +395,7 @@ class CLIPTest(CLITestBase):
         therefore not converted; the alpha is just passed through.
 
         Args:
-            tuple: The sRGB color value.
+            color (tuple): The sRGB color value.
 
         Returns:
             tuple: The linear converted color value.
@@ -401,17 +403,17 @@ class CLIPTest(CLITestBase):
         newColor = []
 
         # Color convert only RGB
-        for i, ch in enumerate(color):
+        for i, channel in enumerate(color):
             # Pass though alpha
             if i == 3:
                 pass
             # Linear region near zero
-            elif ch < 0.04045:
-                ch = ch / 12.92
+            elif channel < 0.04045:
+                channel = channel / 12.92
             # Power curve
             else:
-                ch = ((ch + 0.055) / 1.055) ** 2.4
-            newColor.append(ch)
+                channel = ((channel + 0.055) / 1.055) ** 2.4
+            newColor.append(channel)
 
         return newColor
 
@@ -425,8 +427,8 @@ class CLIPTest(CLITestBase):
             colorRef (tuple): The reference color to compare with.
             colorNew (tuple): The new color.
             threshold (float): The allowed deviation from colorRef (ratio).
-            swiz: The swizzle string (4 characters from the set `rgba01`),
-                applied to the reference color.
+            swiz (str): The swizzle string (4 characters from the set
+                `rgba01`), applied to the reference color.
         """
         self.assertEqual(len(colorRef), len(colorNew))
 
@@ -448,7 +450,7 @@ class CLIPTest(CLITestBase):
             if len(colorRef) >= 4:
                 remap["a"] = 3
 
-            colorRefExt = [x for x in colorRef] + [0.0, 1.0]
+            colorRefExt = list(colorRef) + [0.0, 1.0]
             colorRef = [colorRefExt[remap[s]] for s in swiz]
 
         for chRef, chNew in zip(colorRef, colorNew):
@@ -578,8 +580,8 @@ class CLIPTest(CLITestBase):
         command = [self.binary, "-dh", imIn, imOut]
         self.exec(command)
 
-        colRef = tli.Image(imRef).get_colors((0,0))
-        colOut = tli.Image(imOut).get_colors((0,0))
+        colRef = tli.Image(imRef).get_colors((0, 0))
+        colOut = tli.Image(imOut).get_colors((0, 0))
         self.assertColorSame(colRef, colOut)
 
     def test_hdr_decompress2(self):
@@ -593,8 +595,8 @@ class CLIPTest(CLITestBase):
         command = [self.binary, "-dH", imIn, imOut]
         self.exec(command)
 
-        colRef = tli.Image(imRef).get_colors((0,0))
-        colOut = tli.Image(imOut).get_colors((0,0))
+        colRef = tli.Image(imRef).get_colors((0, 0))
+        colOut = tli.Image(imOut).get_colors((0, 0))
         self.assertColorSame(colRef, colOut)
 
     def test_ldr_roundtrip(self):
@@ -628,8 +630,8 @@ class CLIPTest(CLITestBase):
 
         command = [self.binary, "-th", imIn, imOut, "6x6", "-exhaustive"]
         self.exec(command)
-        colIn = tli.Image(imIn).get_colors((0,0))
-        colOut = tli.Image(imOut).get_colors((0,0))
+        colIn = tli.Image(imIn).get_colors((0, 0))
+        colOut = tli.Image(imOut).get_colors((0, 0))
         self.assertColorSame(colIn, colOut)
 
     def test_hdr_roundtrip2(self):
@@ -641,8 +643,8 @@ class CLIPTest(CLITestBase):
 
         command = [self.binary, "-tH", imIn, imOut, "6x6", "-exhaustive"]
         self.exec(command)
-        colIn = tli.Image(imIn).get_colors((0,0))
-        colOut = tli.Image(imOut).get_colors((0,0))
+        colIn = tli.Image(imIn).get_colors((0, 0))
+        colOut = tli.Image(imOut).get_colors((0, 0))
         self.assertColorSame(colIn, colOut)
 
     def test_valid_2d_block_sizes(self):
@@ -650,7 +652,7 @@ class CLIPTest(CLITestBase):
         Test all valid block sizes are accepted (2D images).
         """
         blockSizes = [
-             "4x4",  "5x4", "5x5",  "6x5",  "6x6",    "8x5",   "8x6",
+            "4x4", "5x4", "5x5", "6x5", "6x6", "8x5", "8x6",
             "10x5", "10x6", "8x8", "10x8", "10x10", "12x10", "12x12"
         ]
 
@@ -661,8 +663,8 @@ class CLIPTest(CLITestBase):
             with self.subTest(blockSize=blk):
                 command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
                 self.exec(command)
-                colIn = tli.Image(imIn).get_colors((0,0))
-                colOut = tli.Image(imOut).get_colors((0,0))
+                colIn = tli.Image(imIn).get_colors((0, 0))
+                colOut = tli.Image(imOut).get_colors((0, 0))
                 self.assertColorSame(colIn, colOut)
 
     def test_valid_3d_block_sizes(self):
@@ -670,10 +672,10 @@ class CLIPTest(CLITestBase):
         Test all valid block sizes are accepted (3D images).
         """
         blockSizes = [
-             "3x3x3",
-             "4x3x3", "4x4x3", "4x4x4",
-             "5x4x4", "5x5x4", "5x5x5",
-             "6x5x5", "6x6x5", "6x6x6"
+            "3x3x3",
+            "4x3x3", "4x4x3", "4x4x4",
+            "5x4x4", "5x5x4", "5x5x5",
+            "6x5x5", "6x6x5", "6x6x6"
         ]
 
         imIn = self.get_ref_image_path("LDR", "input", "A")
@@ -683,8 +685,8 @@ class CLIPTest(CLITestBase):
             with self.subTest(blockSize=blk):
                 command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
                 self.exec(command)
-                colIn = tli.Image(imIn).get_colors((0,0))
-                colOut = tli.Image(imOut).get_colors((0,0))
+                colIn = tli.Image(imIn).get_colors((0, 0))
+                colOut = tli.Image(imOut).get_colors((0, 0))
                 self.assertColorSame(colIn, colOut)
 
     def test_valid_presets(self):
@@ -700,8 +702,8 @@ class CLIPTest(CLITestBase):
             with self.subTest(preset=preset):
                 command = [self.binary, "-tl", imIn, imOut, "4x4", preset]
                 self.exec(command)
-                colIn = tli.Image(imIn).get_colors((0,0))
-                colOut = tli.Image(imOut).get_colors((0,0))
+                colIn = tli.Image(imIn).get_colors((0, 0))
+                colOut = tli.Image(imOut).get_colors((0, 0))
                 self.assertColorSame(colIn, colOut)
 
     def test_valid_ldr_input_formats(self):
@@ -720,8 +722,8 @@ class CLIPTest(CLITestBase):
 
                 # Check colors if image wrapper supports it
                 if tli.Image.is_format_supported(imgFormat):
-                    colIn = tli.Image(imIn).get_colors((7,7))
-                    colOut = tli.Image(imOut).get_colors((7,7))
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
     def test_valid_ldr_output_formats(self):
@@ -740,8 +742,8 @@ class CLIPTest(CLITestBase):
 
                 # Check colors if image wrapper supports it
                 if tli.Image.is_format_supported(imgFormat):
-                    colIn = tli.Image(imIn).get_colors((7,7))
-                    colOut = tli.Image(imOut).get_colors((7,7))
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
     def test_valid_hdr_input_formats(self):
@@ -760,8 +762,8 @@ class CLIPTest(CLITestBase):
 
                 # Check colors if image wrapper supports it
                 if tli.Image.is_format_supported(imgFormat, profile="hdr"):
-                    colIn = tli.Image(imIn).get_colors((7,7))
-                    colOut = tli.Image(imOut).get_colors((7,7))
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
     def test_valid_hdr_output_formats(self):
@@ -780,8 +782,8 @@ class CLIPTest(CLITestBase):
 
                 # Check colors if image wrapper supports it
                 if tli.Image.is_format_supported(imgFormat, profile="hdr"):
-                    colIn = tli.Image(imIn).get_colors((7,7))
-                    colOut = tli.Image(imOut).get_colors((7,7))
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
     def test_compress_esw(self):
@@ -805,8 +807,8 @@ class CLIPTest(CLITestBase):
                 self.exec(command)
 
                 # Fetch the three color
-                im = tli.Image(decompFile)
-                colorVal = im.get_colors([(7, 7)])
+                img = tli.Image(decompFile)
+                colorVal = img.get_colors([(7, 7)])
                 colorRef = self.get_color_refs("LDR", "BR")
                 self.assertColorSame(colorRef[0], colorVal[0], swiz=swizzle)
 
@@ -831,8 +833,8 @@ class CLIPTest(CLITestBase):
                 self.exec(command)
 
                 # Fetch the three color
-                im = tli.Image(decompFile)
-                colorVal = im.get_colors([(7, 7)])
+                img = tli.Image(decompFile)
+                colorVal = img.get_colors([(7, 7)])
                 colorRef = self.get_color_refs("LDR", "BR")
                 self.assertColorSame(colorRef[0], colorVal[0], swiz=swizzle)
 
@@ -852,8 +854,8 @@ class CLIPTest(CLITestBase):
         self.exec(command)
 
         # Fetch the three color
-        im = tli.Image(decompFile)
-        colorVal = im.get_colors([(7, 7)])
+        img = tli.Image(decompFile)
+        colorVal = img.get_colors([(7, 7)])
         colorRef = self.get_color_refs("LDR", "BR")
         self.assertColorSame(colorRef[0], colorVal[0])
 
@@ -884,8 +886,8 @@ class CLIPTest(CLITestBase):
         # Compare TL (0, 0) with BL - should match
         colorRef = self.get_color_refs("LDR", "BL")
 
-        im = tli.Image(decompFile)
-        colorVal = im.get_colors([(0, 0)])
+        img = tli.Image(decompFile)
+        colorVal = img.get_colors([(0, 0)])
         self.assertColorSame(colorRef[0], colorVal[0])
 
     def test_decompress_flip(self):
@@ -915,8 +917,8 @@ class CLIPTest(CLITestBase):
         # Compare TL (0, 0) with BL - should match
         colorRef = self.get_color_refs("LDR", "BL")
 
-        im = tli.Image(decompFile)
-        colorVal = im.get_colors([(0, 0)])
+        img = tli.Image(decompFile)
+        colorVal = img.get_colors([(0, 0)])
         self.assertColorSame(colorRef[0], colorVal[0])
 
     def test_roundtrip_flip(self):
@@ -936,8 +938,8 @@ class CLIPTest(CLITestBase):
         # Compare TL (0, 0) with TL - should match - i.e. no flip
         colorRef = self.get_color_refs("LDR", "TL")
 
-        im = tli.Image(decompFile)
-        colorVal = im.get_colors([(0, 0)])
+        img = tli.Image(decompFile)
+        colorVal = img.get_colors([(0, 0)])
 
         self.assertColorSame(colorRef[0], colorVal[0])
 
@@ -964,13 +966,13 @@ class CLIPTest(CLITestBase):
         # future due to compressor changes.
 
         # Test each channel with a high weight
-        for ch, chName in ((0, "R"), (1, "G"), (2, "B"), (3, "A")):
+        for chIdx, chName in ((0, "R"), (1, "G"), (2, "B"), (3, "A")):
             with self.subTest(channel=chName):
-                cwArg = ["%s" % (10 if x == ch else 1) for x in range(0, 4)]
+                cwArg = ["%s" % (10 if x == chIdx else 1) for x in range(0, 4)]
                 command2 = command + ["-cw"] + cwArg
                 self.exec(command2)
                 chRMSE = self.get_channel_rmse(inputFile, decompFile)
-                self.assertLess(chRMSE[ch], baseRMSE[ch])
+                self.assertLess(chRMSE[chIdx], baseRMSE[chIdx])
 
     def test_partition_limit(self):
         """
@@ -1152,11 +1154,11 @@ class CLIPTest(CLITestBase):
         self.exec(compCommand)
         self.exec(decompCommand)
 
-        im = tli.Image(inputFile)
-        refColors = im.get_colors((7,7))
+        img = tli.Image(inputFile)
+        refColors = img.get_colors((7, 7))
 
-        im = tli.Image(decompFile)
-        testColors = im.get_colors((7,7))
+        img = tli.Image(decompFile)
+        testColors = img.get_colors((7, 7))
         srgbColors = self.to_srgb_color(testColors)
 
         # Test we get a match within 5% on the RGB channels, exact on alpha
@@ -1186,11 +1188,11 @@ class CLIPTest(CLITestBase):
         self.exec(compCommand)
         self.exec(decompCommand)
 
-        im = tli.Image(inputFile)
-        refColors = im.get_colors((7,7))
+        img = tli.Image(inputFile)
+        refColors = img.get_colors((7, 7))
 
-        im = tli.Image(decompFile)
-        testColors = im.get_colors((7,7))
+        img = tli.Image(decompFile)
+        testColors = img.get_colors((7, 7))
         linColors = self.from_srgb_color(testColors)
 
         # Test we get a match within 5% on the RGB channels, exact on alpha
@@ -1215,11 +1217,11 @@ class CLIPTest(CLITestBase):
 
         self.exec(command)
 
-        im = tli.Image(inputFile)
-        refColors = im.get_colors((7,7))
+        img = tli.Image(inputFile)
+        refColors = img.get_colors((7, 7))
 
-        im = tli.Image(decompFile)
-        testColors = im.get_colors((7,7))
+        img = tli.Image(decompFile)
+        testColors = img.get_colors((7, 7))
         srgbColors = self.to_srgb_color(testColors)
 
         # Test we get a match within 5% on the RGB channels, exact on alpha
