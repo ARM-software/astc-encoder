@@ -16,7 +16,7 @@
 # under the License.
 # -----------------------------------------------------------------------------
 """
-The functional test runner is a set of utilities that validate the ``astcenc``
+The functional test runner is a set of tests that validate the ``astcenc``
 command line is correctly handled, under both valid and invalid usage
 scenarios. These tests do NOT validate the compression codec itself, beyond
 some very basic incidental usage needed to validate the command line.
@@ -59,6 +59,7 @@ HDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
 * (0, 7) BL = HDR White, opaque = (3.98, 3.98, 3.98, 1.00)
 * (7, 7) BR = LDR Green, trans  = (0.25, 0.75, 0.00, 0.87)
 """
+
 import filecmp
 import os
 import signal
@@ -71,6 +72,7 @@ import unittest
 import numpy
 from PIL import Image
 
+import testlib.encoder as te
 import testlib.image as tli
 
 # Enable these to always write out, irrespective of test result
@@ -113,18 +115,22 @@ class CLITestBase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # TODO: Replace this with a cross-platform solution
-        self.binary = os.path.join(".", "Source", "astcenc-avx2")
+        encoder = te.Encoder2x("avx2")
+        self.binary = encoder.binary
 
     def setUp(self):
         """
         Set up a test case.
+
+        Create a new temporary directory for output files.
         """
         self.tempDir = tempfile.TemporaryDirectory()
 
     def tearDown(self):
         """
         Tear down a test case.
+
+        Clean up the temporary directory created for output files.
         """
         self.tempDir.cleanup()
         self.tempDir = None
@@ -281,15 +287,15 @@ class CLIPTest(CLITestBase):
             image2 (str): Path to the second image.
 
         Returns:
-            tuple: Tuple of floats containing accumulated RMSE per channel.
+            tuple: Tuple of floats containing the RMSE per channel.
+            None: Images could not be compared because they are different size.
         """
         img1 = Image.open(image1)
         img2 = Image.open(image2)
 
         # Images must have same size
         if img1.size != img2.size:
-            print("Size")
-            return False
+            return None
 
         # Images must have same number of color channels
         if img1.getbands() != img2.getbands():
@@ -326,6 +332,15 @@ class CLIPTest(CLITestBase):
     def get_color_refs(self, mode, corners):
         """
         Build a set of reference colors from apriori color list.
+
+        Args:
+            mode (str): The color mode (LDR, or HDR)
+            corners(list, str): The corner or list of corners -- named TL, TR,
+                BL, and BR -- to return.
+
+        Returns:
+            tuple: The color value, if corners was a name.
+            [tuple]: List of color values, if corners was a list of names.
         """
         modes = {
             "LDR": ASTCENC_TEST_PATTERN_LDR,
@@ -339,6 +354,18 @@ class CLIPTest(CLITestBase):
 
     @staticmethod
     def to_srgb_color(color):
+        """
+        Convert a linear color to an sRGB color.
+
+        If the input color has 4 channels the 4th is presumed to be alpha and
+        therefore not sRGB converted; the alpha is just passed through.
+
+        Args:
+            tuple: The linear color value.
+
+        Returns:
+            tuple: The sRGB converted color value.
+        """
         newColor = []
 
         # Color convert only RGB
@@ -359,6 +386,18 @@ class CLIPTest(CLITestBase):
 
     @staticmethod
     def from_srgb_color(color):
+        """
+        Convert an sRGB color to a linear color.
+
+        If the input color has 4 channels the 4th is presumed to be alpha and
+        therefore not converted; the alpha is just passed through.
+
+        Args:
+            tuple: The sRGB color value.
+
+        Returns:
+            tuple: The linear converted color value.
+        """
         newColor = []
 
         # Color convert only RGB
@@ -376,25 +415,39 @@ class CLIPTest(CLITestBase):
 
         return newColor
 
-    def is_color_similar(self, image, coords, refColors, refThreshold):
-        """
-        Test if colors in an image are similar to set of reference colors.
-        """
-        im = tli.Image(image)
-        colors = im.get_colors(coords)
-        mixin = zip(colors, refColors)
-        for test, ref in mixin:
-            for channel in range(0, len(test)):
-                weight = (test[channel] / ref(channel)) - 1.0
-                self.assertLessEqual(abs(weight), abs(refThreshold))
-
     def assertColorSame(self, colorRef, colorNew, threshold=0.02, swiz=None):
+        """
+        Test if a color is the similar to a reference.
+
+        Will trigger a test failure if the colors are not within threshold.
+
+        Args:
+            colorRef (tuple): The reference color to compare with.
+            colorNew (tuple): The new color.
+            threshold (float): The allowed deviation from colorRef (ratio).
+            swiz: The swizzle string (4 characters from the set `rgba01`),
+                applied to the reference color.
+        """
         self.assertEqual(len(colorRef), len(colorNew))
 
         # Swizzle the reference color if needed
         if swiz:
-            self.assertEqual(len(swiz), 4)
-            remap = { "r": 0, "g": 1, "b": 2, "a": 3, "0": 4, "1": 5 }
+            self.assertEqual(len(swiz), len(colorRef))
+
+            remap = {
+                "0": len(colorRef),
+                "1": len(colorRef) + 1
+            }
+
+            if len(colorRef) >= 1:
+                remap["r"] = 0
+            if len(colorRef) >= 2:
+                remap["g"] = 1
+            if len(colorRef) >= 3:
+                remap["b"] = 2
+            if len(colorRef) >= 4:
+                remap["a"] = 3
+
             colorRefExt = [x for x in colorRef] + [0.0, 1.0]
             colorRef = [colorRefExt[remap[s]] for s in swiz]
 
@@ -406,7 +459,7 @@ class CLIPTest(CLITestBase):
         """
         Execute a positive test.
 
-        Test will automatically fail if the subprocess return code is any value
+        Will trigger a test failure if the subprocess return code is any value
         other than zero.
 
         Args:
@@ -594,7 +647,7 @@ class CLIPTest(CLITestBase):
 
     def test_valid_2d_block_sizes(self):
         """
-        Test all valid block sizes are accepted (2D images)
+        Test all valid block sizes are accepted (2D images).
         """
         blockSizes = [
              "4x4",  "5x4", "5x5",  "6x5",  "6x6",    "8x5",   "8x6",
@@ -614,7 +667,7 @@ class CLIPTest(CLITestBase):
 
     def test_valid_3d_block_sizes(self):
         """
-        Test all valid block sizes are accepted (3D images)
+        Test all valid block sizes are accepted (3D images).
         """
         blockSizes = [
              "3x3x3",
@@ -638,9 +691,7 @@ class CLIPTest(CLITestBase):
         """
         Test all valid presets are accepted
         """
-        presets = [
-            "-fast", "-medium", "-thorough", "-exhaustive"
-        ]
+        presets = ["-fast", "-medium", "-thorough", "-exhaustive"]
 
         imIn = self.get_ref_image_path("LDR", "input", "A")
         imOut = self.get_tmp_image_path("LDR", "decomp")
@@ -735,7 +786,7 @@ class CLIPTest(CLITestBase):
 
     def test_compress_esw(self):
         """
-        Test LDR encoding swizzles
+        Test compression swizzles.
         """
         # The swizzles to test
         swizzles = ["rgba", "g0r1", "rrrg"]
@@ -761,7 +812,7 @@ class CLIPTest(CLITestBase):
 
     def test_compress_dsw(self):
         """
-        Test LDR encoding swizzles
+        Test decompression swizzles.
         """
         # The swizzles to test
         swizzles = ["rgba", "g0r1", "rrrg"]
@@ -787,7 +838,7 @@ class CLIPTest(CLITestBase):
 
     def test_compress_esw_dsw(self):
         """
-        Test LDR encoding and decoding swizzles
+        Test compression and decompression swizzles
         """
         # Compress a swizzled image, and swizzle back in decompression
         decompFile = self.get_tmp_image_path("LDR", "decomp")
@@ -921,7 +972,6 @@ class CLIPTest(CLITestBase):
                 chRMSE = self.get_channel_rmse(inputFile, decompFile)
                 self.assertLess(chRMSE[ch], baseRMSE[ch])
 
-    @unittest.skip("Issue #101")
     def test_partition_limit(self):
         """
         Test partition limit.

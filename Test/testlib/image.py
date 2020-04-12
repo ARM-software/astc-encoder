@@ -26,7 +26,7 @@ The directory path is structured:
     colorProfile-colorFormat-name[-flags].extension
 """
 
-import collections
+import collections.abc
 import os
 import subprocess as sp
 
@@ -218,7 +218,7 @@ class Image():
         # We accept both a list of positions and a single position;
         # canonicalize here so the main processing only handles lists
         isList = len(coords) != 0 and \
-                 isinstance(coords[0], collections.Iterable)
+                 isinstance(coords[0], collections.abc.Iterable)
 
         if not isList:
             coords = [coords]
@@ -229,6 +229,9 @@ class Image():
                 "-format", "%%[pixel:p{%u,%u}]" % (x, y),
                 "info:"
             ]
+
+            if os.name == 'nt':
+                command.insert(0, "magick")
 
             result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                             check=True, universal_newlines=True)
