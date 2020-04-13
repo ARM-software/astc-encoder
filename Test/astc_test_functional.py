@@ -1571,7 +1571,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_dl_missing_args(self):
         """
         Test -dl with missing arguments.
@@ -1595,13 +1594,27 @@ class CLINTest(CLITestBase):
                 expectPass = omit == 0
                 self.exec(testCommand, expectPass)
 
-    @unittest.skip("Bug #93")
-    def test_compare_no_args(self):
+    def test_compare_missing(self):
         """
-        Test -compare with no arguments.
+        Test -compare with missing arguments.
         """
-        command = [self.binary, "-compare"]
-        self.exec(command)
+        command = [
+            self.binary, "-compare",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_ref_image_path("LDR", "input", "A"),]
+
+        # Run the command, incrementally omitting arguments
+        commandLen = len(command)
+        for subLen in range(2, commandLen + 1):
+            omit = len(command) - subLen
+            with self.subTest(omit=omit):
+                testCommand = command[:subLen]
+
+                # For the last run we omit no arguments; make sure this works
+                # to ensure that the underlying test is actually valid and
+                # we're not failing for a different reason
+                expectPass = omit == 0
+                self.exec(testCommand, expectPass)
 
 
 def main():

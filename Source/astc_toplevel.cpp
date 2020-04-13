@@ -584,8 +584,8 @@ int astc_main(
 
 	int array_size = 1;
 
-	const char *input_filename = argv[2];
-	const char *output_filename = argv[3];
+	const char *input_filename = argc >= 3 ? argv[2] : nullptr;
+	const char *output_filename = argc >= 4 ? argv[3] : nullptr;
 
 	int silentmode = 0;
 	int y_flip = 0;
@@ -1218,6 +1218,32 @@ int astc_main(
 		}
 	}
 
+	if (!input_filename)
+	{
+		if (op_mode == ASTC_IMAGE_COMPARE)
+		{
+			printf("ERROR: Input file A not specified\n");
+		}
+		else
+		{
+			printf("ERROR: Input file not specified\n");
+		}
+		return 1;
+	}
+
+	if (!output_filename)
+	{
+		if (op_mode == ASTC_IMAGE_COMPARE)
+		{
+			printf("ERROR: Input file B not specified\n");
+		}
+		else
+		{
+			printf("ERROR: Output file not specified\n");
+		}
+		return 1;
+	}
+
 	if (op_mode == ASTC_IMAGE_COMPARE)
 	{
 		compare_two_files(input_filename, output_filename, low_fstop, high_fstop, linearize_srgb);
@@ -1230,7 +1256,6 @@ int astc_main(
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
 		// if encode, process the parsed command line values
-
 		if (preset_has_been_set != 1)
 		{
 			printf("For encoding, need to specify exactly one performance-quality\n"
