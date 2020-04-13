@@ -84,9 +84,9 @@ the astcenc encoder program, like this on Linux or macOS:
 
     astcenc
 
-Invoking the tool with no arguments gives an extensive help message, including
-usage instructions, and details of all the available command line options. A
-summary of the main encoder options are shown below.
+Invoking `astcenc -help` gives an extensive help message, including usage
+instructions and details of all available command line options. A summary of
+the main encoder options are shown below.
 
 ## Compressing an image
 
