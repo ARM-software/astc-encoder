@@ -1362,7 +1362,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_cl_missing_output(self):
         """
         Test -cl with a missing output directory.
@@ -1500,7 +1499,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_tl_missing_output(self):
         """
         Test -tl with a missing output directory.
@@ -1594,6 +1592,18 @@ class CLINTest(CLITestBase):
                 expectPass = omit == 0
                 self.exec(testCommand, expectPass)
 
+    def test_dl_missing_output(self):
+        """
+        Test -dl with a missing output directory.
+        """
+        # Build an otherwise valid command with the test flaw
+        command = [
+            self.binary, "-dl",
+            self.get_ref_image_path("LDR", "comp", "A"),
+            "./DoesNotExist/test.png"]
+
+        self.exec(command)
+
     def test_compare_missing(self):
         """
         Test -compare with missing arguments.
@@ -1601,7 +1611,7 @@ class CLINTest(CLITestBase):
         command = [
             self.binary, "-compare",
             self.get_ref_image_path("LDR", "input", "A"),
-            self.get_ref_image_path("LDR", "input", "A"),]
+            self.get_ref_image_path("LDR", "input", "A")]
 
         # Run the command, incrementally omitting arguments
         commandLen = len(command)

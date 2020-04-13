@@ -357,7 +357,7 @@ static void store_astc_file(
 	uint8_t *buffer = (uint8_t *) malloc(xblocks * yblocks * zblocks * 16);
 	if (!buffer)
 	{
-		printf("Ran out of memory\n");
+		printf("ERROR: Ran out of memory\n");
 		exit(1);
 	}
 
@@ -384,6 +384,11 @@ static void store_astc_file(
 	hdr.zsize[2] = (zsize >> 16) & 0xFF;
 
 	FILE *wf = fopen(filename, "wb");
+	if (!wf)
+	{
+		printf("ERROR: Failed to write output image %s\n", filename);
+		exit(1);
+	}
 	fwrite(&hdr, 1, sizeof(astc_header), wf);
 	fwrite(buffer, 1, xblocks * yblocks * zblocks * 16, wf);
 	fclose(wf);
@@ -1588,7 +1593,7 @@ int astc_main(
 		store_result = astc_codec_store_image(output_image, output_filename, &format_string, y_flip);
 		if (store_result < 0)
 		{
-			printf("Failed to store image %s\n", output_filename);
+			printf("ERROR: Failed to write output image %s\n", output_filename);
 			return 1;
 		}
 	}
