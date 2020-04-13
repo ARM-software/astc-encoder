@@ -1398,8 +1398,9 @@ int astc_main(
 					rgb_force_use_of_hdr, alpha_force_use_of_hdr,
 					&load_results[image_index]);
 
-				// Check image is not 3D.
-				if (input_images[image_index]->zsize != 1)
+				// If image loaded correctly, check image is not 3D.
+				if ((load_results[image_index] >= 0) &&
+				    (input_images[image_index]->zsize != 1))
 				{
 					printf("3D source images not supported with -array option: %s\n", new_input_filename);
 					return 1;

@@ -1269,15 +1269,16 @@ class CLINTest(CLITestBase):
             result = ex
             error = True
 
-        # Emit debug logging if needed
-        badResult = error == expectPass
+        rcode = result.returncode
+
+        # Emit debug logging if needed (negative rcode is a signal)
+        badResult = (error == expectPass) or (rcode < 0)
+
         if ASTCENC_CLI_ALWAYS or (badResult and ASTCENC_CLI_ON_ERROR_NEG):
             print(" ".join(command))
 
         if ASTCENC_LOG_ALWAYS or (badResult and ASTCENC_LOG_ON_ERROR_NEG):
             print(result.stdout)
-
-        rcode = result.returncode
 
         # If we expected a pass, then rcode == 0
         if expectPass:
@@ -1322,7 +1323,6 @@ class CLINTest(CLITestBase):
                 expectPass = omit == 0
                 self.exec(testCommand, expectPass)
 
-    @unittest.skip("Bug #93")
     def test_cl_missing_input(self):
         """
         Test -cl with a missing input file.
@@ -1336,7 +1336,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_cl_missing_input_array_slice(self):
         """
         Test -cl with a missing input file in an array slice.
@@ -1350,7 +1349,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #93")
     def test_cl_unknown_input(self):
         """
         Test -cl with an unknown input file extension.
@@ -1476,7 +1474,6 @@ class CLINTest(CLITestBase):
                 expectPass = omit == 0
                 self.exec(testCommand, expectPass)
 
-    @unittest.skip("Bug #93")
     def test_tl_missing_input(self):
         """
         Test -tl with a missing input file.
