@@ -1147,3 +1147,36 @@ const float *get_2d_percentile_table(
 
 	return unpacked_table;
 }
+
+/* Public function, see header file for detailed documentation */
+int is_legal_2d_block_size(
+	int xdim,
+	int ydim
+) {
+	return get_packed_table(xdim, ydim) != nullptr;
+}
+
+/* Public function, see header file for detailed documentation */
+int is_legal_3d_block_size(
+	int xdim,
+	int ydim,
+	int zdim
+) {
+	int idx = (xdim << 16) | (ydim << 8) | zdim;
+	switch (idx)
+	{
+		case 0x030303:
+		case 0x040303:
+		case 0x040403:
+		case 0x040404:
+		case 0x050404:
+		case 0x050504:
+		case 0x050505:
+		case 0x060505:
+		case 0x060605:
+		case 0x060606:
+			return 1;
+		default:
+			return 0;
+	}
+}

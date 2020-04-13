@@ -1375,7 +1375,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #99")
     def test_cl_bad_block_size(self):
         """
         Test -cl with an invalid block size.
@@ -1386,6 +1385,7 @@ class CLINTest(CLITestBase):
             "4x4x4x4",  # Too many dimensions
             "4x",       # Incomplete 2D block size
             "4x4x",     # Incomplete 3D block size
+            "4x4x4x",   # Over-long 3D block size
             "4xe",      # Illegal non-numeric character
             "4x4e"      # Additional non-numeric character
         ]
@@ -1512,7 +1512,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    @unittest.skip("Bug #99")
     def test_tl_bad_block_size(self):
         """
         Test -tl with an invalid block size.
@@ -1523,6 +1522,7 @@ class CLINTest(CLITestBase):
             "4x4x4x4",  # Too many dimensions
             "4x",       # Incomplete 2D block size
             "4x4x",     # Incomplete 3D block size
+            "4x4x4x",   # Over-long 3D block size
             "4xe",      # Illegal non-numeric character
             "4x4e"      # Additional non-numeric character
         ]

@@ -707,54 +707,36 @@ int astc_main(
 	{
 		if (argc < 5)
 		{
-			printf("Cannot encode without specifying blocksize\n");
+			printf("ERROR: Block size not specified\n");
 			return 1;
 		}
 
-		int dimensions = sscanf(argv[4], "%dx%dx%d", &xdim_3d, &ydim_3d, &zdim_3d);
+		int cnt2D, cnt3D;
+		int dimensions = sscanf(argv[4], "%dx%d%nx%d%n", &xdim_3d, &ydim_3d, &cnt2D, &zdim_3d, &cnt3D);
 		switch (dimensions)
 		{
 		case 0:
 		case 1:
-			// failed to parse the blocksize argument at all.
-			printf("Blocksize not specified\n");
+			printf("ERROR: Invalid block size %s specified\n", argv[4]);
 			return 1;
 		case 2:
 			{
+				// Character after the last match should be a NUL
+				if (argv[4][cnt2D] || !is_legal_2d_block_size(xdim_3d, ydim_3d))
+				{
+					printf("ERROR: Invalid block size %s specified\n", argv[4]);
+					return 1;
+				}
+
 				zdim_3d = 1;
-
-				// Check 2D constraints
-				if (!(xdim_3d ==4 || xdim_3d == 5 || xdim_3d == 6 || xdim_3d == 8 || xdim_3d == 10 || xdim_3d == 12) ||
-				    !(ydim_3d ==4 || ydim_3d == 5 || ydim_3d == 6 || ydim_3d == 8 || ydim_3d == 10 || ydim_3d == 12))
-				{
-					printf("Block dimensions %d x %d unsupported\n", xdim_3d, ydim_3d);
-					return 1;
-				}
-
-				int is_legal_2d = (xdim_3d==ydim_3d) || (xdim_3d==ydim_3d+1) || ((xdim_3d==ydim_3d+2) && !(xdim_3d==6 && ydim_3d==4)) ||
-									(xdim_3d==8 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==5) || (xdim_3d==10 && ydim_3d==6);
-
-				if (!is_legal_2d)
-				{
-					printf("Block dimensions %d x %d disallowed\n", xdim_3d, ydim_3d);
-					return 1;
-				}
 			}
 			break;
 		default:
 			{
-				// Check 3D constraints
-				if (xdim_3d < 3 || xdim_3d > 6 || ydim_3d < 3 || ydim_3d > 6 || zdim_3d < 3 || zdim_3d > 6)
+				// Character after the last match should be a NUL
+				if (argv[4][cnt3D]|| !is_legal_3d_block_size(xdim_3d, ydim_3d, zdim_3d))
 				{
-					printf("Block dimensions %d x %d x %d unsupported\n", xdim_3d, ydim_3d, zdim_3d);
-					return 1;
-				}
-
-				int is_legal_3d = ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d+1)&&(ydim_3d==zdim_3d)) || ((xdim_3d==ydim_3d)&&(ydim_3d==zdim_3d+1));
-
-				if (!is_legal_3d)
-				{
-					printf("Block dimensions %d x %d x %d disallowed\n", xdim_3d, ydim_3d, zdim_3d);
+					printf("ERROR: Invalid block size %s specified\n", argv[4]);
 					return 1;
 				}
 			}

@@ -463,6 +463,25 @@ const float *get_2d_percentile_table(
 	int xdim,
 	int ydim);
 
+/**
+ * @brief Query if a 2D block size is legal.
+ *
+ * @return A non-zero value if legal, zero otherwise.
+ */
+int is_legal_2d_block_size(
+	int xdim,
+	int ydim);
+
+/**
+ * @brief Query if a 3D block size is legal.
+ *
+ * @return A non-zero value if legal, zero otherwise.
+ */
+int is_legal_3d_block_size(
+	int xdim,
+	int ydim,
+	int zdim);
+
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
 // **********************************************************
