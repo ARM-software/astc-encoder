@@ -38,9 +38,13 @@ functionality or performance improvements should be expected.
 
 # Encoder feature support
 
-The encoder supports compression of PNG, TGA and KTX input images into ASTC
-format output images. The encoder supports decompression of ASTC input images
-into TGA or KTX format output images.
+The encoder supports compression of low dynamic range (BMP, JPEG, PNG, TGA) and
+high dynamic range (EXR, HDR) images, as well as a subset of image data wrapped
+in the DDS and KTX container formats, into ASTC format output images.
+
+The decoder supports decompression of ASTC format input images into low dynamic
+range (BMP, PNG, TGA), high dynamic range (EXR), or DDS and KTX wrapped output
+images.
 
 The encoder allows control over the compression time/quality tradeoff with
 `exhaustive`, `thorough`, `medium`, and `fast` encoding quality presets.
