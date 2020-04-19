@@ -62,7 +62,9 @@ HDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
 
 import filecmp
 import os
+import re
 import signal
+import string
 import subprocess as sp
 import sys
 import tempfile
@@ -102,6 +104,8 @@ ASTCENC_TEST_PATTERN_HDR = {
     "BL": (3.98, 3.98, 3.98, 1.00),
     "BR": (0.25, 0.75, 0.00, 0.87)
 }
+
+LDR_RGB_PSNR_PATTERN = re.compile(r"PSNR \(LDR-RGB\): (.*) dB")
 
 
 class CLITestBase(unittest.TestCase):
@@ -457,7 +461,7 @@ class CLIPTest(CLITestBase):
             deltaMax = chRef * threshold
             self.assertAlmostEqual(chRef, chNew, delta=deltaMax)
 
-    def exec(self, command):
+    def exec(self, command, pattern=None):
         """
         Execute a positive test.
 
@@ -466,9 +470,13 @@ class CLIPTest(CLITestBase):
 
         Args:
             command (list(str)): The command to execute.
+            pattern (re.Pattern): The regex pattern to search for, must
+                contain a single group (this is returned to the caller). The
+                test will fail if no pattern match is found.
 
         Returns:
-            str: The stdout output of the child process.
+            str: The stdout output of the child process, or the first group
+               from the passed regex pattern.
         """
         try:
             result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
@@ -494,6 +502,12 @@ class CLIPTest(CLITestBase):
         if rcode > 0:
             msg = "Exec died with application error %u" % rcode
             self.assertEqual(rcode, 0, msg)
+
+        # If there is a regex pattern provided, then search for it
+        if pattern:
+            match = pattern.search(result.stdout)
+            self.assertIsNotNone(match)
+            return match.group(1)
 
         return result.stdout
 
@@ -785,6 +799,69 @@ class CLIPTest(CLITestBase):
                     colIn = tli.Image(imIn).get_colors((7, 7))
                     colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
+
+    def test_compress_mask(self):
+        """
+        Test compression of mask textures.
+        """
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            "./Test/Images/Small/LDR-RGB/ldr-rgb-10.png",
+            decompFile, "4x4", "-exhaustive"]
+
+        noMaskdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        command.append("-mask")
+        maskdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        # Note that this test simply asserts that the "-mask" is connected and
+        # affects the output. We don't test it does something useful; that it
+        # outside the scope of this test case.
+        self.assertNotEqual(noMaskdB, maskdB)
+
+    def test_compress_normal_psnr(self):
+        """
+        Test compression of normal textures using PSNR error metrics.
+        """
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            "./Test/Images/Small/LDR-XY/ldr-xy-00.png",
+            decompFile, "5x5", "-exhaustive"]
+
+        refdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        command.append("-normal_psnr")
+        testdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        # Note that this test simply asserts that the "-normal_psnr" is
+        # connected and affects the output. We don't test it does something
+        # useful; that it outside the scope of this test case.
+        self.assertNotEqual(refdB, testdB)
+
+    def test_compress_normal_percep(self):
+        """
+        Test compression of normal textures using perceptual error metrics.
+        """
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            "./Test/Images/Small/LDR-XY/ldr-xy-00.png",
+            decompFile, "4x4", "-exhaustive"]
+
+        refdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        command.append("-normal_percep")
+        testdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
+
+        # Note that this test simply asserts that the "-normal_percep" is
+        # connected and affects the output. We don't test it does something
+        # useful; that it outside the scope of this test case.
+        self.assertNotEqual(refdB, testdB)
 
     def test_compress_esw(self):
         """
@@ -1106,6 +1183,141 @@ class CLIPTest(CLITestBase):
         # RMSE should get worse (higher) if we reduce search space
         self.assertGreater(testRMSE, refRMSE)
 
+    def test_deblock(self):
+        """
+        Test deblock bias.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-b", "1.8"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we force deblock
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_low_level_control_v(self):
+        """
+        Test low level control options.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # Test that explicit defaults match same as implicit defaults
+        command2 = command + ["-v", "0", "1", "1", "0", "0", "0"]
+        self.exec(command2)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+        self.assertEqual(testRMSE, refRMSE)
+
+        # Mutate the values to check they are worse than ref
+        subtests = [
+            ("ref", ["-v", "2.5", "0.85", "0.25", "0.75", "25.0", "0.03"]),
+            ("radius", ["-v", "3.5", "0.85", "0.25", "0.75", "25.0", "0.03"]),
+            ("power", ["-v", "2.5", "1.85", "0.25", "0.75", "25.0", "0.03"]),
+            ("base", ["-v", "2.5", "0.85", "0.05", "0.75", "25.0", "0.03"]),
+            ("avg", ["-v", "2.5", "0.85", "0.25", "2.75", "25.0", "0.03"]),
+            ("stdev", ["-v", "2.5", "0.85", "0.25", "0.75", "99.0", "0.03"]),
+            ("mix", ["-v", "2.5", "0.85", "0.25", "0.75", "25.0", "1.03"])
+        ]
+
+        # Test that our mutations made it worse; note we manually chose values
+        # that did for this test image - this is not guranteed for all images
+        resultSet = set()
+        for (name, params) in subtests:
+            with self.subTest(param=name):
+                testCommand = command + params
+                self.exec(testCommand)
+                testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+                self.assertGreater(testRMSE, refRMSE)
+                resultSet.add(testRMSE)
+
+        # Test that each mutation was "differently" worse; i.e. some new
+        # error metric was used
+        self.assertEqual(len(resultSet), len(subtests))
+
+    @unittest.skip("Issue #105")
+    def test_low_level_control_v_issue_105(self):
+        """
+        Test low level control options.
+
+        Regression test for:
+        * https://github.com/ARM-software/astc-encoder/issues/105
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium",
+            "-v", "0", "1", "2", "0", "0", "0"]
+
+        # This should not segfault
+        self.exec(command)
+
+    def test_low_level_control_va(self):
+        """
+        Test low level control options.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium",
+            "-v", "2.5", "0.85", "0.25", "0.75", "25.0", "0.03"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # Test that explicit defaults match same as implicit defaults
+        command2 = command + ["-va", "1", "1", "0", "0"]
+        self.exec(command2)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+        self.assertEqual(testRMSE, refRMSE)
+
+        # Mutate the values to check they are worse than ref
+        subtests = [
+            ("ref", ["-va", "2.8", "0.25", "0.75", "25.0"]),
+            ("power", ["-va", "4.8", "0.25", "0.75", "25.0"]),
+            ("base", ["-va", "2.8", "0.05", "0.75", "25.0"]),
+            ("avg", ["-va", "2.8", "0.25", "2.75", "25.0"]),
+            ("stdev", ["-va", "2.8", "0.25", "0.75", "99.0"])
+        ]
+
+        # Test that our mutations made it worse; note we manually chose values
+        # that did for this test image - this is not guranteed for all images
+        resultSet = set()
+        for (name, params) in subtests:
+            with self.subTest(param=name):
+                testCommand = command + params
+                self.exec(testCommand)
+                testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+                self.assertGreater(testRMSE, refRMSE)
+                resultSet.add(testRMSE)
+
+        # Test that each mutation was "differently" worse; i.e. some new
+        # error metric was used
+        self.assertEqual(len(resultSet), len(subtests))
+
     @unittest.skipIf(os.cpu_count() == 1, "Cannot test on single core host")
     def test_thread_count(self):
         """
@@ -1228,6 +1440,27 @@ class CLIPTest(CLITestBase):
         self.assertColorSame(refColors[:3], srgbColors[:3], threshold=0.05)
         self.assertColorSame(refColors[3:], srgbColors[3:], threshold=0.0)
 
+    def test_silent(self):
+        """
+        Test silent
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+        stdout = self.exec(command)
+
+        command += ["-silent"]
+        stdoutSilent = self.exec(command)
+
+        # Check that stdout is shorter in silent mode. Note that this doesn't
+        # check that it is as silent as it should be, just that silent is wired
+        # somewhere ...
+        self.assertLess(len(stdoutSilent), len(stdout))
+
 
 class CLINTest(CLITestBase):
     """
@@ -1299,6 +1532,29 @@ class CLINTest(CLITestBase):
 
         self.assertGreater(rcode, 0, "Exec did not fail as expected")
 
+    def exec_with_omit(self, command, startOmit):
+        """
+        Execute a negative test with command line argument omission.
+
+        These tests aim to prove that the command fails if arguments are
+        missing. However the passed command MUST be a valid command which
+        passes if no argument are omitted (this is checked, to ensure that
+        the test case is a valid test).
+
+        Test will automatically fail if:
+
+        * A partial command doesn't fail.
+        * The full command doesn't pass.
+        """
+        # Run the command, incrementally omitting arguments
+        commandLen = len(command)
+        for subLen in range(startOmit, commandLen + 1):
+            omit = len(command) - subLen
+            with self.subTest(omit=omit):
+                testCommand = command[:subLen]
+                expectPass = omit == 0
+                self.exec(testCommand, expectPass)
+
     def test_cl_missing_args(self):
         """
         Test -cl with missing arguments.
@@ -1310,18 +1566,7 @@ class CLINTest(CLITestBase):
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast"]
 
-        # Run the command, incrementally omitting arguments
-        commandLen = len(command)
-        for subLen in range(2, commandLen + 1):
-            omit = len(command) - subLen
-            with self.subTest(omit=omit):
-                testCommand = command[:subLen]
-
-                # For the last run we omit no arguments; make sure this works
-                # to ensure that the underlying test is actually valid and
-                # we're not failing for a different reason
-                expectPass = omit == 0
-                self.exec(testCommand, expectPass)
+        self.exec_with_omit(command, 2)
 
     def test_cl_missing_input(self):
         """
@@ -1449,6 +1694,20 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
+    def test_cl_array_missing_args(self):
+        """
+        Test -cl with a 2D block size and 3D input data.
+        """
+        # Build an otherwise valid command
+        command = [
+            self.binary, "-cl",
+            "./Test/Data/Tiles/ldr.png",
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4x4", "-fast", "-array", "2"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
     def test_tl_missing_args(self):
         """
         Test -tl with missing arguments.
@@ -1461,17 +1720,7 @@ class CLINTest(CLITestBase):
             "4x4", "-fast"]
 
         # Run the command, incrementally omitting arguments
-        commandLen = len(command)
-        for subLen in range(2, commandLen + 1):
-            omit = len(command) - subLen
-            with self.subTest(omit=omit):
-                testCommand = command[:subLen]
-
-                # For the last run we omit no arguments; make sure this works
-                # to ensure that the underlying test is actually valid and
-                # we're not failing for a different reason
-                expectPass = omit == 0
-                self.exec(testCommand, expectPass)
+        self.exec_with_omit(command, 2)
 
     def test_tl_missing_input(self):
         """
@@ -1580,17 +1829,7 @@ class CLINTest(CLITestBase):
             self.get_tmp_image_path("LDR", "decomp")]
 
         # Run the command, incrementally omitting arguments
-        commandLen = len(command)
-        for subLen in range(2, commandLen + 1):
-            omit = len(command) - subLen
-            with self.subTest(omit=omit):
-                testCommand = command[:subLen]
-
-                # For the last run we omit no arguments; make sure this works
-                # to ensure that the underlying test is actually valid and
-                # we're not failing for a different reason
-                expectPass = omit == 0
-                self.exec(testCommand, expectPass)
+        self.exec_with_omit(command, 2)
 
     def test_dl_missing_output(self):
         """
@@ -1614,17 +1853,279 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A")]
 
         # Run the command, incrementally omitting arguments
-        commandLen = len(command)
-        for subLen in range(2, commandLen + 1):
-            omit = len(command) - subLen
-            with self.subTest(omit=omit):
-                testCommand = command[:subLen]
+        self.exec_with_omit(command, 2)
 
-                # For the last run we omit no arguments; make sure this works
-                # to ensure that the underlying test is actually valid and
-                # we're not failing for a different reason
-                expectPass = omit == 0
-                self.exec(testCommand, expectPass)
+    def test_cl_v_missing_args(self):
+        """
+        Test -cl with -v and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-v", "3", "1.1", "0.8", "0.25", "0.5", "0.04"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_va_missing_args(self):
+        """
+        Test -cl with -va and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-va", "1.1", "0.8", "0.25", "0.5"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_a_missing_args(self):
+        """
+        Test -cl with -a and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-a", "2"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_cw_missing_args(self):
+        """
+        Test -cl with -cw and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-cw", "0", "1", "2", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_b_missing_args(self):
+        """
+        Test -cl with -b and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-b", "1.6"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_partitionlimit_missing_args(self):
+        """
+        Test -cl with -partitionlimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-partitionlimit", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_blockmodelimit_missing_args(self):
+        """
+        Test -cl with -blockmodelimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-blockmodelimit", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_refinementlimit_missing_args(self):
+        """
+        Test -cl with -refinementlimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-refinementlimit", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_dblimit_missing_args(self):
+        """
+        Test -cl with -dblimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-dblimit", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_partitionearlylimit_missing_args(self):
+        """
+        Test -cl with -partitionearlylimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-partitionearlylimit", "3"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_planecorlimit_missing_args(self):
+        """
+        Test -cl with -planecorlimit and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-planecorlimit", "0.66"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_esw_missing_args(self):
+        """
+        Test -cl with -esw and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-esw", "rgb1"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_esw_invalid_swizzle(self):
+        """
+        Test -cl with -esw and invalid swizzles.
+        """
+        badSwizzles = [
+            "",  # Short swizzles
+            "r",
+            "rr",
+            "rrr",
+            "rrrrr",  # Long swizzles
+        ]
+
+        # Create swizzles with all invalid printable ascii codes
+        good = ["r", "g", "b", "a", "0", "1"]
+        for channel in string.printable:
+            if channel not in good:
+                badSwizzles.append(channel * 4)
+
+        # Build a valid base command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-esw", "rgba"]
+
+        blockIndex = command.index("rgba")
+        for badSwizzle in badSwizzles:
+            with self.subTest(swizzle=badSwizzle):
+                command[blockIndex] = badSwizzle
+                self.exec(command)
+
+    def test_dl_dsw_missing_args(self):
+        """
+        Test -dl with -dsw and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-dl",
+            self.get_ref_image_path("LDR", "comp", "A"),
+            self.get_tmp_image_path("LDR", "decomp"),
+            "-dsw", "rgb1"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 5)
+
+    def test_dl_dsw_invalid_swizzle(self):
+        """
+        Test -dl with -dsw and invalid swizzles.
+        """
+        badSwizzles = [
+            "",  # Short swizzles
+            "r",
+            "rr",
+            "rrr",
+            "rrrrr",  # Long swizzles
+        ]
+
+        # Create swizzles with all invalid printable ascii codes
+        good = ["r", "g", "b", "a", "z", "0", "1"]
+        for channel in string.printable:
+            if channel not in good:
+                badSwizzles.append(channel * 4)
+
+        # Build a valid base command
+        command = [
+            self.binary, "-dl",
+            self.get_ref_image_path("LDR", "comp", "A"),
+            self.get_tmp_image_path("LDR", "decomp"),
+            "-dsw", "rgba"]
+
+        blockIndex = command.index("rgba")
+        for badSwizzle in badSwizzles:
+            with self.subTest(swizzle=badSwizzle):
+                command[blockIndex] = badSwizzle
+                self.exec(command)
+
+    def test_ch_mpsnr_missing_args(self):
+        """
+        Test -ch with -mpsnr and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-ch",
+            self.get_ref_image_path("HDR", "input", "A"),
+            self.get_tmp_image_path("HDR", "comp"),
+            "4x4", "-fast",
+            "-mpsnr", "-5", "5"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
 
 
 def main():

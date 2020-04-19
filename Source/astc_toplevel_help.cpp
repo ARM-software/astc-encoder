@@ -177,8 +177,8 @@ COMPRESSION
 
        -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.
-           The input filename given is used is decorated with
-           _<slice_index> to find the file to load. For example, an input
+           The input filename given is used is decorated with the postfix
+           "_<slice>" to find the file to load. For example, an input
            named "input.png" would load as input_0.png, input_1.png, etc.
 
 COMPRESSION TIPS & TRICKS
@@ -223,12 +223,12 @@ ADVANCED COMPRESSION
            computed.
 
            The <mix> parameter is used to control the degree of mixing
-           between the color channels. Setting this parameter to 0 causes
-           the computation to be done completely separately for each color
-           channel; setting it to 1 causes the results from the RGB
-           channels to be combined and applied to all three together.
-           Intermediate values between these two extremes do a linear mix
-           of the two error values.
+           of the average and stddev error components across the color
+           channels. Setting this parameter to 0 causes the computation
+           to be done completely separately for each color channel; setting
+           it to 1 causes the results from the RGB channels to be combined
+           and applied to all three together. Intermediate values between
+           these two extremes do a linear mix of the two error values.
 
            The <power> argument is a power used to raise the values of the
            input pixels before computing average and standard deviation;

@@ -212,13 +212,14 @@ class Image():
         """
         assert profile in [None, "ldr", "hdr"]
 
-        if profile is None:
-            return fileFormat in cls.SUPPORTED_LDR or \
-                   fileFormat in cls.SUPPORTED_HDR
-        elif profile == "ldr":
+        if profile == "ldr":
             return fileFormat in cls.SUPPORTED_LDR
-        else:
+
+        if profile == "hdr":
             return fileFormat in cls.SUPPORTED_HDR
+
+        return fileFormat in cls.SUPPORTED_LDR or \
+            fileFormat in cls.SUPPORTED_HDR
 
     def __init__(self, filePath):
         """
