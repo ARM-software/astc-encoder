@@ -246,17 +246,24 @@ def get_encoder_params(encoderName, imageSet):
         class, the output data name, the output result directory, and the
         reference to use.
     """
-    if encoderName == "1.7":
+    if encoderName == "ref-1.7":
         encoder = te.Encoder1x()
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "prototype":
+    if encoderName == "ref-2.0":
+        # Note this option rebuilds a new reference test set using the
+        # user's locally build encoder.
+        encoder = te.Encoder2x("avx2")
+        name = "reference-2.0-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-prototype":
         encoder = te.EncoderProto()
         name = "reference-prototype"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "intelispc":
+    elif encoderName == "ref-intelispc":
         encoder = te.EncoderISPC()
         name = "reference-intelispc"
         outDir = "Test/Images/%s" % imageSet
@@ -279,7 +286,7 @@ def parse_command_line():
     """
     parser = argparse.ArgumentParser()
 
-    refcoders = ["1.7", "prototype", "intelispc"]
+    refcoders = ["ref-1.7", "ref-2.0", "ref-prototype", "ref-intelispc"]
     testcoders = ["nointrin", "sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
