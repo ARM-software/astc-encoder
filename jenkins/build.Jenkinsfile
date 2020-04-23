@@ -168,8 +168,8 @@ pipeline {
         stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
-            dsgArtifactoryUpload('*.zip')
-            dsgArtifactoryPromote()
+            cepeArtifactoryUpload('*.zip')
+            cepeArtifactoryPromote()
           }
         }
       }
