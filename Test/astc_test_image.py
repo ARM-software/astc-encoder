@@ -252,7 +252,7 @@ def get_encoder_params(encoderName, imageSet):
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    if encoderName == "ref-2.0":
+    elif encoderName == "ref-2.0":
         # Note this option rebuilds a new reference test set using the
         # user's locally build encoder.
         encoder = te.Encoder2x("avx2")
