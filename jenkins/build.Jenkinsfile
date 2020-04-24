@@ -126,7 +126,7 @@ pipeline {
             stage('Test') {
               steps {
                 sh '''
-                  export PATH=$PATH:/usr/local/bin
+                  export PATH=/usr/local/bin:$PATH
                   python3 ./Test/astc_test_image.py --test-set Small --encoder=sse2
                 '''
                 //perfReport(sourceDataFiles:'TestOutput/results.xml')
