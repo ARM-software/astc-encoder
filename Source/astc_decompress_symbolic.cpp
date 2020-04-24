@@ -46,45 +46,29 @@ static uint4 lerp_color_int(
 	int plane2_weight,
 	int plane2_color_component	// -1 in 1-plane mode
 ) {
-	int4 ecolor0 = int4(color0.x, color0.y, color0.z, color0.w);
-	int4 ecolor1 = int4(color1.x, color1.y, color1.z, color1.w);
+	uint4 weight1 = uint4(
+		plane2_color_component == 0 ? plane2_weight : weight,
+		plane2_color_component == 1 ? plane2_weight : weight,
+		plane2_color_component == 2 ? plane2_weight : weight,
+		plane2_color_component == 3 ? plane2_weight : weight);
 
-	int4 eweight1 = int4(weight, weight, weight, weight);
-	switch (plane2_color_component)
-	{
-	case 0:
-		eweight1.x = plane2_weight;
-		break;
-	case 1:
-		eweight1.y = plane2_weight;
-		break;
-	case 2:
-		eweight1.z = plane2_weight;
-		break;
-	case 3:
-		eweight1.w = plane2_weight;
-		break;
-	default:
-		break;
-	}
-
-	int4 eweight0 = int4(64, 64, 64, 64) - eweight1;
+	uint4 weight0 = uint4(64, 64, 64, 64) - weight1;
 
 	if (decode_mode == DECODE_LDR_SRGB)
 	{
-		ecolor0 = int4(ecolor0.x >> 8, ecolor0.y >> 8, ecolor0.z >> 8, ecolor0.w >> 8);
-		ecolor1 = int4(ecolor1.x >> 8, ecolor1.y >> 8, ecolor1.z >> 8, ecolor1.w >> 8);
+		color0 = uint4(color0.x >> 8, color0.y >> 8, color0.z >> 8, color0.w >> 8);
+		color1 = uint4(color1.x >> 8, color1.y >> 8, color1.z >> 8, color1.w >> 8);
 	}
 
-	int4 color = (ecolor0 * eweight0) + (ecolor1 * eweight1) + int4(32, 32, 32, 32);
-	color = int4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
+	uint4 color = (color0 * weight0) + (color1 * weight1) + uint4(32, 32, 32, 32);
+	color = uint4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
 
 	if (decode_mode == DECODE_LDR_SRGB)
 	{
 		color = color * 257;
 	}
 
-	return uint4(color.x, color.y, color.z, color.w);
+	return color;
 }
 
 void decompress_symbolic_block(
