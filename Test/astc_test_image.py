@@ -318,6 +318,9 @@ def parse_command_line():
     parser.add_argument("--test-set", dest="testSets", default="Small",
                         choices=testSets, help="test image test set")
 
+    parser.add_argument("--test-image", dest="testImage", default=None,
+                        help="select a specific test image from the test set")
+
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
@@ -371,7 +374,7 @@ def main():
 
             testSetCount += 1
             testSet = tts.TestSet(imageSet, testDir,
-                                  args.profiles, args.formats)
+                                  args.profiles, args.formats, args.testImage)
 
             resultSet = run_test_set(encoder, testRef, testSet,
                                      args.blockSizes, args.testRepeats)
