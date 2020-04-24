@@ -32,6 +32,9 @@ pipeline {
                 sh '''
                   cd ./Source/
                   make CXX=clang++ VEC=avx2
+                  make CXX=clang++ VEC=sse4.2
+                  make CXX=clang++ VEC=sse2
+                  make CXX=clang++ VEC=nointrin
                 '''
               }
             }
@@ -44,7 +47,7 @@ pipeline {
             }
             stage('Test') {
               steps {
-                sh 'python3 ./Test/astc_test_image.py --test-set Small'
+                sh 'python3 ./Test/astc_test_image.py --encoder=all --test-set Small'
                 //perfReport(sourceDataFiles:'TestOutput/results.xml')
                 //junit(testResults: 'TestOutput/results.xml')
               }

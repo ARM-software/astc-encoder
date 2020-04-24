@@ -53,9 +53,10 @@ if COMPARE_WITH_1_7:
     RESULT_REF_NAME = "reference-1.7"
 else:
     RESULT_THRESHOLD_WARN = -0.01
-    RESULT_THRESHOLD_FAIL = -0.02
+    RESULT_THRESHOLD_FAIL = -0.05
     RESULT_THRESHOLD_3D_FAIL = -0.02
     RESULT_REF_NAME = "reference-2.0-avx2"
+
 
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
