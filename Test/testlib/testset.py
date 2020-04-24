@@ -47,7 +47,7 @@ class TestSet():
         tests: The list of TestImages forming the set.
     """
 
-    def __init__(self, name, rootDir, profiles, formats):
+    def __init__(self, name, rootDir, profiles, formats, imageFilter=None):
         """
         Create a new TestSet through reflection.
 
@@ -56,6 +56,7 @@ class TestSet():
             rootDir (str): The root directory of the test set.
             profiles (list(str)): The ASTC profiles to allow.
             formats (list(str)): The image formats to allow.
+            imageFilter (str): The name of the image to include (for bug repo).
 
         Raises:
             TSetException: The specified TestSet could not be loaded.
@@ -83,6 +84,9 @@ class TestSet():
                     continue
 
                 if image.colorFormat not in formats:
+                    continue
+
+                if imageFilter and image.testFile != imageFilter:
                     continue
 
                 self.tests.append((filePath, image))
