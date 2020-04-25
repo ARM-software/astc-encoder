@@ -22,6 +22,7 @@
 #include <cstring>
 #include "astcenc_internal.h"
 
+__attribute__((visibility("default")))
 astc_codec_image *alloc_image(
 	int bitness,
 	int xsize,
@@ -102,6 +103,7 @@ astc_codec_image *alloc_image(
 	return img;
 }
 
+__attribute__((visibility("default")))
 void free_image(astc_codec_image * img)
 {
 	if (img == nullptr)
@@ -146,6 +148,7 @@ void free_image(astc_codec_image * img)
 // Done inefficiently, in that it will overwrite all the interior data at least once;
 // this is not considered a problem, since this makes up a very small part of total
 // running time.
+__attribute__((visibility("default")))
 void fill_image_padding_area(astc_codec_image * img)
 {
 	if (img->padding == 0)
@@ -208,6 +211,7 @@ void fill_image_padding_area(astc_codec_image * img)
 	}
 }
 
+__attribute__((visibility("default")))
 int determine_image_channels(const astc_codec_image * img)
 {
 	int x, y, z;
@@ -491,6 +495,7 @@ void imageblock_initialize_orig_from_work(
 }
 
 // fetch an imageblock from the input file.
+__attribute__((visibility("default")))
 void fetch_imageblock(
 	const astc_codec_image* img,
 	imageblock* pb,	// picture-block to initialize with image data
@@ -710,6 +715,7 @@ void fetch_imageblock(
 	update_imageblock_flags(pb, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
+__attribute__((visibility("default")))
 void write_imageblock(
 	astc_codec_image* img,
 	const imageblock* pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
@@ -968,6 +974,7 @@ void update_imageblock_flags(
 }
 
 // initialize an astc_codec_image data structure from a 2D array of RGBA float*4
+__attribute__((visibility("default")))
 astc_codec_image* astc_img_from_floatx4_array(
 	const float* image,
 	int xsize,
@@ -998,6 +1005,7 @@ astc_codec_image* astc_img_from_floatx4_array(
 }
 
 // initialize an astc_codec_image data structure from a 2D array of UNORM8
+__attribute__((visibility("default")))
 astc_codec_image* astc_img_from_unorm8x4_array(
 	const uint8_t* imageptr,
 	int xsize,
@@ -1029,6 +1037,7 @@ astc_codec_image* astc_img_from_unorm8x4_array(
 
 // initialize a flattened array of float4 values from an ASTC codec image
 // The returned array is allocated with malloc() and needs to be freed with free().
+__attribute__((visibility("default")))
 float* floatx4_array_from_astc_img(
 	const astc_codec_image* img,
 	int y_flip
@@ -1076,6 +1085,7 @@ float* floatx4_array_from_astc_img(
 
 // initialize a flattened array of unorm8x4 values from an ASTC codec image
 // The returned array is allocated with malloc() and needs to be freed with free().
+__attribute__((visibility("default")))
 uint8_t* unorm8x4_array_from_astc_img(
 	const astc_codec_image* img,
 	int y_flip

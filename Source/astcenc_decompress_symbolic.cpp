@@ -71,6 +71,7 @@ static uint4 lerp_color_int(
 	return color;
 }
 
+__attribute__((visibility("default")))
 void decompress_symbolic_block(
 	const astc_codec_image* image,
 	astc_decode_mode decode_mode,

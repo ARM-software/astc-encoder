@@ -746,6 +746,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	}
 }
 
+__attribute__((visibility("default")))
 void expand_block_artifact_suppression(
 	int xdim,
 	int ydim,
@@ -1110,6 +1111,7 @@ static void prepare_block_statistics(
 	int block_mode_histogram[2048];
 #endif
 
+__attribute__((visibility("default")))
 float compress_symbolic_block(
 	const astc_codec_image* input_image,
 	astc_decode_mode decode_mode,

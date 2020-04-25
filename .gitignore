@@ -6,6 +6,7 @@
 __pycache__
 Binaries
 Source/*.o
+Source/*.so
 Source/astcenc-*
 Source/astcenc-*
 Source/VS2019/*Release

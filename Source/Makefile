@@ -32,7 +32,7 @@ VEC?=avx2
 
 DBG?=0
 
-SOURCES = \
+SOURCES_LIBRARY = \
     astcenc_averages_and_directions.cpp \
     astcenc_block_sizes2.cpp \
     astcenc_color_quantize.cpp \
@@ -41,7 +41,6 @@ SOURCES = \
     astcenc_compute_variance.cpp \
     astcenc_decompress_symbolic.cpp \
     astcenc_encoding_choice_error.cpp \
-    astcenc_error_metrics.cpp \
     astcenc_find_best_partitioning.cpp \
     astcenc_ideal_endpoints_and_weights.cpp \
     astcenc_image.cpp \
@@ -52,14 +51,19 @@ SOURCES = \
     astcenc_partition_tables.cpp \
     astcenc_percentile_tables.cpp \
     astcenc_pick_best_endpoint_format.cpp \
-    astcenc_platform_isa_detection.cpp \
-    astcenc_platform_dependents.cpp \
     astcenc_quantization.cpp \
     astcenc_symbolic_physical.cpp \
     astcenc_weight_align.cpp \
-    astcenc_weight_quant_xfer_tables.cpp \
+    astcenc_weight_quant_xfer_tables.cpp
+
+SOURCES_CLI = \
+    astcenc_mathlib.cpp \
+    astcenc_mathlib_softfloat.cpp \
+    astcenccli_error_metrics.cpp \
     astcenccli_image_load_store.cpp \
     astcenccli_main.cpp \
+    astcenccli_platform_isa_detection.cpp \
+    astcenccli_platform_dependents.cpp \
     astcenccli_toplevel.cpp \
     astcenccli_toplevel_help.cpp
 
@@ -75,13 +79,17 @@ HEADERS = \
     stb_image_write.h \
     tinyexr.h
 
-OBJECTS = $(SOURCES:.cpp=-$(VEC).o)
+OBJECTS_LIBRARY = $(SOURCES_LIBRARY:.cpp=-l-$(VEC).o)
 
-EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(VEC).o)
+OBJECTS_CLI = $(SOURCES_CLI:.cpp=-c-$(VEC).o)
+
+EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-c-$(VEC).o)
 
 BINARY = astcenc-$(VEC)
 
-CXXFLAGS = -std=c++14 -mfpmath=sse \
+LIBRARY = libastcenc-$(VEC).so
+
+CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the DBG parameter is a supported value, and patch CXXFLAGS
@@ -117,29 +125,45 @@ CXXFLAGS_EXTERNAL = \
     -Wno-double-promotion \
     -fno-strict-aliasing
 
-$(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
-	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
+# ==================================================
+# Build rules for the command line wrapper
+$(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS_CLI) | $(LIBRARY)
+	@$(CXX) -o $@ $^ $(CXXFLAGS) -L. -l$(BINARY) -lpthread -Wl,-rpath,'$$ORIGIN'
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
-stb_image-$(VEC).o: stb_image.h
+stb_image-c-$(VEC).o: stb_image.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION \
 		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM
 	@echo "[C++] $<"
 
-stb_image_write-$(VEC).o: stb_image_write.h
+stb_image_write-c-$(VEC).o: stb_image_write.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
 	@echo "[C++] $<"
 
-tinyexr-$(VEC).o: tinyexr.h
+tinyexr-c-$(VEC).o: tinyexr.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
 	@echo "[C++] $<"
 
-$(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
+$(OBJECTS_CLI): %-c-$(VEC).o: %.cpp $(HEADERS)
 	@$(CXX) -c -o $@ $< $(CXXFLAGS)
 	@echo "[C++] $<"
 
+# ==================================================
+# Build rules for the codec library shared object
+$(LIBRARY): $(OBJECTS_LIBRARY)
+	@$(CXX) -shared -o $@ $^ $(CXXFLAGS)
+	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
+
+$(OBJECTS_LIBRARY): %-l-$(VEC).o: %.cpp $(HEADERS)
+	@$(CXX) -c -fpic -o $@ $< $(CXXFLAGS)
+	@echo "[C++] $<"
+
+# ==================================================
+# Generic utility rules
+
 clean:
 	@rm -f *-$(VEC).o
+	@rm -f *-$(VEC).so
 	@rm -f *-$(VEC).obj
 	@rm -f $(BINARY)
 	@rm -f $(BINARY).exe

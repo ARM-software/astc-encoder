@@ -46,7 +46,9 @@ static double end_time;
 static double start_coding_time;
 static double end_coding_time;
 
-NORETURN void astc_codec_internal_error(
+
+NORETURN __attribute__((visibility("default")))
+void astc_codec_internal_error(
 	const char *filename,
 	int line
 ) {

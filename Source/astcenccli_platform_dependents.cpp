@@ -154,6 +154,7 @@ static void* launch_threads_helper(void *p)
 
 
 /* Public function, see header file for detailed documentation */
+__attribute__((visibility("default")))
 void launch_threads(
 	int thread_count,
 	void (*func)(int, int, void*),

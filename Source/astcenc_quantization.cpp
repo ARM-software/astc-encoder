@@ -535,6 +535,7 @@ const uint8_t color_unquantization_tables[21][256] = {
 // and for the color encoding.
 int quantization_mode_table[17][128];
 
+__attribute__((visibility("default")))
 void build_quantization_mode_table()
 {
 	int i, j;

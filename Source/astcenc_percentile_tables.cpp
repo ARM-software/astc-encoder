@@ -1149,6 +1149,7 @@ const float *get_2d_percentile_table(
 }
 
 /* Public function, see header file for detailed documentation */
+__attribute__((visibility("default")))
 int is_legal_2d_block_size(
 	int xdim,
 	int ydim
@@ -1157,6 +1158,7 @@ int is_legal_2d_block_size(
 }
 
 /* Public function, see header file for detailed documentation */
+__attribute__((visibility("default")))
 int is_legal_3d_block_size(
 	int xdim,
 	int ydim,
