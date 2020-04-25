@@ -30,7 +30,7 @@
  * task has also been provided.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 /* ============================================================================
    Platform code for Windows using the Win32 APIs.

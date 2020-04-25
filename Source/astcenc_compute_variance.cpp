@@ -28,7 +28,7 @@
  * stability allowing us to use floats rather than doubles.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 #include <cassert>
 
 /**

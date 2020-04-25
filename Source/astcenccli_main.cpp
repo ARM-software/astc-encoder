@@ -19,7 +19,7 @@
  * @brief Application entry point.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 int main(
 	int argc,

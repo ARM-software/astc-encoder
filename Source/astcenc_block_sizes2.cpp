@@ -19,7 +19,7 @@
  * @brief Functions to generate block size descriptor and decimation tables.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 // return 0 on invalid mode, 1 on valid mode.
 static int decode_block_mode_2d(

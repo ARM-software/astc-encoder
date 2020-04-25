@@ -19,7 +19,7 @@
  * @brief Functions to pick best ASTC endpoint for a block.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>

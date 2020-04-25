@@ -19,7 +19,7 @@
  * @brief Functions for encoding/decoding Bounded Integer Sequence Encoding.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 // unpacked quint triplets <low,middle,high> for each packed-quint value
 static const uint8_t quints_of_integer[128][3] = {

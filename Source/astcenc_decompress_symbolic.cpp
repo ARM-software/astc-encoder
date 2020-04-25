@@ -19,7 +19,7 @@
  * @brief Functions to decompress a symbolic block.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #include <stdio.h>
 

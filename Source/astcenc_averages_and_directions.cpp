@@ -19,7 +19,7 @@
  * @brief Functions for finding dominant direction of a set of colors.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE

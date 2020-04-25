@@ -15,7 +15,7 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-#include "astc_mathlib.h"
+#include "astcenc_mathlib.h"
 
 float3 cross(float3 p, float3 q)
 {

@@ -19,7 +19,7 @@
  * @brief Functions and data tables for numeric quantization..
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 const uint8_t color_quantization_tables[21][256] = {
 	{

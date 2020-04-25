@@ -20,7 +20,7 @@
  */
 
 #include <cstring>
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 astc_codec_image *alloc_image(
 	int bitness,
@@ -207,7 +207,6 @@ void fill_image_padding_area(astc_codec_image * img)
 		}
 	}
 }
-
 
 int determine_image_channels(const astc_codec_image * img)
 {

@@ -27,7 +27,7 @@
  * how well the bitmaps matched.
   */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 // for k++ means, we need pseudo-random numbers, however using random numbers
 // directly results in unreproducible encoding results. As such, we will

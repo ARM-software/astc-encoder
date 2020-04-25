@@ -22,7 +22,7 @@
  * encoding
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 /**
  * @brief Structure containing packed percentile metadata.

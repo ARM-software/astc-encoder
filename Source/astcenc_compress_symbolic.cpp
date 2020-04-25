@@ -19,7 +19,7 @@
  * @brief Functions to compress a symbolic block.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #include <string.h>
 #include <stdio.h>

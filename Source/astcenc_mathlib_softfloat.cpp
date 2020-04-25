@@ -19,7 +19,7 @@
  * @brief Soft-float library for IEEE-754.
  */
 
-#include "astc_mathlib.h"
+#include "astcenc_mathlib.h"
 
 /******************************************
   helper functions and their lookup tables

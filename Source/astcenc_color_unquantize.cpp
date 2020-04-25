@@ -19,7 +19,7 @@
  * @brief Functions for color unquantization.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 static int rgb_delta_unpack(
 	const int input[6],

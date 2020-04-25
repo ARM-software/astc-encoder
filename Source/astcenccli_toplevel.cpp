@@ -19,7 +19,7 @@
  * @brief Functions for codec library front-end.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #include <cstdio>
 #include <cstdlib>

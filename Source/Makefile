@@ -33,35 +33,35 @@ VEC?=avx2
 DBG?=0
 
 SOURCES = \
-    astc_averages_and_directions.cpp \
-    astc_block_sizes2.cpp \
-    astc_color_quantize.cpp \
-    astc_color_unquantize.cpp \
-    astc_compress_symbolic.cpp \
-    astc_compute_variance.cpp \
-    astc_decompress_symbolic.cpp \
-    astc_encoding_choice_error.cpp \
-    astc_error_metrics.cpp \
-    astc_find_best_partitioning.cpp \
-    astc_ideal_endpoints_and_weights.cpp \
-    astc_image.cpp \
-    astc_image_load_store.cpp \
-    astc_integer_sequence.cpp \
-    astc_kmeans_partitioning.cpp \
-    astc_main.cpp \
-    astc_mathlib.cpp \
-    astc_mathlib_softfloat.cpp \
-    astc_partition_tables.cpp \
-    astc_percentile_tables.cpp \
-    astc_pick_best_endpoint_format.cpp \
-    astc_platform_isa_detection.cpp \
-    astc_platform_dependents.cpp \
-    astc_quantization.cpp \
-    astc_symbolic_physical.cpp \
-    astc_toplevel.cpp \
-    astc_toplevel_help.cpp \
-    astc_weight_align.cpp \
-    astc_weight_quant_xfer_tables.cpp
+    astcenc_averages_and_directions.cpp \
+    astcenc_block_sizes2.cpp \
+    astcenc_color_quantize.cpp \
+    astcenc_color_unquantize.cpp \
+    astcenc_compress_symbolic.cpp \
+    astcenc_compute_variance.cpp \
+    astcenc_decompress_symbolic.cpp \
+    astcenc_encoding_choice_error.cpp \
+    astcenc_error_metrics.cpp \
+    astcenc_find_best_partitioning.cpp \
+    astcenc_ideal_endpoints_and_weights.cpp \
+    astcenc_image.cpp \
+    astcenc_integer_sequence.cpp \
+    astcenc_kmeans_partitioning.cpp \
+    astcenc_mathlib.cpp \
+    astcenc_mathlib_softfloat.cpp \
+    astcenc_partition_tables.cpp \
+    astcenc_percentile_tables.cpp \
+    astcenc_pick_best_endpoint_format.cpp \
+    astcenc_platform_isa_detection.cpp \
+    astcenc_platform_dependents.cpp \
+    astcenc_quantization.cpp \
+    astcenc_symbolic_physical.cpp \
+    astcenc_weight_align.cpp \
+    astcenc_weight_quant_xfer_tables.cpp \
+    astcenccli_image_load_store.cpp \
+    astcenccli_main.cpp \
+    astcenccli_toplevel.cpp \
+    astcenccli_toplevel_help.cpp
 
 EXTERNAL_SOURCES = \
     stb_image.h \
@@ -69,8 +69,8 @@ EXTERNAL_SOURCES = \
     tinyexr.h
 
 HEADERS = \
-    astc_codec_internals.h \
-    astc_mathlib.h \
+    astcenc_internal.h \
+    astcenc_mathlib.h \
     stb_image.h \
     stb_image_write.h \
     tinyexr.h

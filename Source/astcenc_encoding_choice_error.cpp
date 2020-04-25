@@ -37,7 +37,7 @@
  * the quantization step.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>

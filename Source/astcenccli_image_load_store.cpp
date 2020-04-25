@@ -20,7 +20,7 @@
  */
 
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #include <cstdio>
 #include <cstdlib>

@@ -19,7 +19,7 @@
  * @brief Functions for converting between symbolic and physical encodings.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 // routine to write up to 8 bits
 static inline void write_bits(

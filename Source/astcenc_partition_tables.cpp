@@ -19,7 +19,7 @@
  * @brief Functions for generating partition tables on demand.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 /*
 	Produce a canonicalized representation of a partition pattern

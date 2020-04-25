@@ -19,7 +19,7 @@
  * @brief Functions for printing build info and help messages.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 const char *astcenc_copyright_string =
 R"(ASTC codec v2.0.alpha, %u-bit %s%s

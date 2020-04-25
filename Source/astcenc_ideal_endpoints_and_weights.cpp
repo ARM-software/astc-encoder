@@ -19,7 +19,7 @@
  * @brief Functions for computing color endpoints and texel weights.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>

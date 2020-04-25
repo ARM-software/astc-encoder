@@ -19,7 +19,7 @@
  * @brief Data tables for quantization transfer.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #define _ 0 // using _ to indicate an entry that will not be used.
 

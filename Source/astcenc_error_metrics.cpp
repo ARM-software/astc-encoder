@@ -19,7 +19,7 @@
  * @brief Functions for computing image error metrics.
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #include <cstdio>
 

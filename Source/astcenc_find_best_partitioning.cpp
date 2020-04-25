@@ -49,7 +49,7 @@
  * each element in the table is an uint8_t indicating partition index (0, 1, 2 or 3)
  */
 
-#include "astc_codec_internals.h"
+#include "astcenc_internal.h"
 
 #ifdef DEBUG_PRINT_DIAGNOSTICS
 	#include <stdio.h>
