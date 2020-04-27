@@ -171,7 +171,7 @@ pipeline {
         stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
-            cepeArtifactoryUpload('*.zip')
+            cepeArtifactoryUpload(sourcePattern: '*.zip')
             cepeArtifactoryPromote()
           }
         }
