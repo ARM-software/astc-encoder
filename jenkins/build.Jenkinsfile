@@ -1,4 +1,4 @@
-@Library('hive-infra-library@changes/63/236263/2') _
+@Library('hive-infra-library@changes/64/237764/6') _
 
 pipeline {
   agent none
