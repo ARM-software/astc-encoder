@@ -400,38 +400,57 @@ bit rates:
 Availability
 ============
 
-The ASTC functionality is specified as a set of three feature profiles:
+The ASTC functionality is specified as a set of feature profiles, allowing
+GPU hardware manufacturers to select which parts of the standard they
+implement. There are four commonly seen profiles:
 
-* 2D LDR profile
-* 2D LDR + HDR profile
-* 2D LDR + HDR and 3D LDR + HDR profile
+* "LDR":
+    * 2D blocks.
+    * LDR and sRGB color space.
+    * [KHR_texture_compression_astc_ldr][astc_ldr]: KHR OpenGL ES extension.
+* "LDR + Sliced 3D":
+    * 2D blocks and sliced 3D blocks.
+    * LDR and sRGB color space.
+    * [KHR_texture_compression_astc_sliced_3d][astc_3d]: KHR OpenGL ES extension.
+* "HDR":
+    * 2D and sliced 3D blocks.
+    * LDR, sRGB, and HDR color spaces.
+    * [KHR_texture_compression_astc_hdr][astc_ldr]: KHR OpenGL ES extension.
+* "Full":
+    * 2D, sliced 3D, and volumetric 3D blocks.
+    * LDR, sRGB, and HDR color spaces.
+	* [OES_texture_compression_astc][astc_full]: OES OpenGL ES extension.
 
-The 2D LDR profile is mandatory in OpenGL ES 3.2, and a standardized optional
+The LDR profile is mandatory in OpenGL ES 3.2 and a standardized optional
 feature for Vulkan, and therefore widely supported on contemporary mobile
 devices. The 2D HDR profile is not mandatory, but is widely supported.
 
+3D texturing
+------------
 
-Khronos extensions
-------------------
+The APIs expose 3D textures in two flavors.
 
-Official Khronos extensions exist for the feature profiles of ASTC:
+The sliced 3D texture support builds a 3D texture from an array of 2D image
+slices that have each been individually compressed using 2D ASTC compression.
+This is required for the HDR profile, so is also widely supported.
 
-* [KHR_texture_compression_astc_ldr][astc_ldr]: 2D LDR support
-* [KHR_texture_compression_astc_sliced_3d][astc_3d]: 2D + 3D LDR support
-* [KHR_texture_compression_astc_hdr][astc_ldr]: 2D + 3D, LDR + HDR support
+The volumetric 3D texture support uses the native 3D block sizes provided by
+ASTC to implement true volumetric compression. This enables a wider choice of
+low bitrate options than the 2D blocks, which is particularly important for 3D
+textures of any non-trivial size. Volumetric formats are not widely supported,
+but are supported on all of the Arm Mali GPUs that support ASTC.
 
-A convenience extension which provides the full feature set implied by
-supporting all three KHR extensions also exists.
-
-* [OES_texture_compression_astc][astc_full]: 2D + 3D, LDR + HDR support
+ASTC decode mode
+----------------
 
 ASTC is specified to decompress texels into fp16 intermediate values, except
 for sRGB which always decompresses into 8-bit UNORM intermediates. For many use
-cases this gives more dynamic range and precision than required, and can cause
-a reduction in texturing efficiency due to the larger data size.
+cases this gives more dynamic range and precision than required. This can cause
+a reduction in both texture cache efficiency and texture filtering performance
+due to the larger decompressed data size.
 
-A pair of extensions exist, and are supported on recent mobile GPUs, which
-allow applications to reduce the intermediate precision to either UNORM8
+A pair of extensions exist, and are widely supported on recent mobile GPUs,
+which allow applications to reduce the intermediate precision to either UNORM8
 (recommended for LDR textures) or RGB9e5 (recommended for HDR textures).
 
 * [OES_texture_compression_astc_decode_mode][astc_decode]: Allow UNORM8
