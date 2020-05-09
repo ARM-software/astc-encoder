@@ -349,14 +349,19 @@ format itself at all, beyond the color endpoint mode selection, although a
 sensible compressor will want to use some format-specific heuristics to drive
 an efficient state-space search.
 
-The orthogonal encoding design allows ASTC to provide complete coverage of our
-desirable format matrix from earlier, across a wide range of bit rates:
+The orthogonal encoding design allows ASTC to provide almost complete coverage
+of our desirable format matrix from earlier, across a wide range of bit rates:
 
 ![ASTC 2D formats and bit rates](./FormatOverviewImg/coverage-astc.svg)
 
-... ticking the requirement that almost any asset can be compressed to some
-degree, and that content creators can make an appropriate bit rate choice based
-on their quality needs rather than something enforced by a format constraint.
+The only significant omission is the absence of a dedicated two channel
+encoding for HDR textures. We simply ran out of entries in the space we had for
+encoding color endpoint modes, and this one didn't make the cut.
+
+The flexibility allowed by ASTC ticks the requirement that almost any asset can
+be compressed to some degree, at an appropriate bitrate for its quality needs.
+This is a powerful enabler for a compression format, because it puts control in
+the hands of content creators and not arbitrary format restrictions.
 
 
 Image quality
