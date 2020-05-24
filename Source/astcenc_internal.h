@@ -649,6 +649,7 @@ struct astc_codec_image
 	int alpha_force_use_of_hdr;
 };
 
+
 astc_codec_image* alloc_image(
 	int bitness,
 	int xsize,

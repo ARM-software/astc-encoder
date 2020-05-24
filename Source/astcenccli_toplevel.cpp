@@ -19,11 +19,13 @@
  * @brief Functions for codec library front-end.
  */
 
+#include "astcenc.h"
 #include "astcenc_internal.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
@@ -55,7 +57,7 @@ void astc_codec_internal_error(
 	exit(1);
 }
 
-#define MAGIC_FILE_CONSTANT 0x5CA1AB13
+static const uint32_t MAGIC_FILE_CONSTANT = 0x5CA1AB13;
 
 struct astc_header
 {
@@ -68,8 +70,103 @@ struct astc_header
 	uint8_t zsize[3];			// block count is inferred
 };
 
-astc_codec_image *load_astc_file(
+struct astc_compressed_image
+{
+	int block_x;
+	int block_y;
+	int block_z;
+	int dim_x;
+	int dim_y;
+	int dim_z;
+	uint8_t* data;
+};
+
+static uint32_t unpack_bytes(
+	uint8_t a,
+	uint8_t b,
+	uint8_t c,
+	uint8_t d
+) {
+	return ((uint32_t)(a))       +
+	       ((uint32_t)(b) << 8)  +
+	       ((uint32_t)(c) << 16) +
+	       ((uint32_t)(d) << 24);
+}
+
+
+int load_astc_file(
 	const char *filename,
+	astc_compressed_image& out_image
+) {
+ 	std::ifstream file(filename, std::ios::in | std::ios::binary);
+	if (!file)
+	{
+		printf("ERROR: File open failed '%s'\n", filename);
+		return 1;
+	}
+
+	astc_header hdr;
+	file.read((char*)&hdr, sizeof(astc_header));
+	if (!file)
+	{
+		printf("ERROR: File read failed '%s'\n", filename);
+		return 1;
+	}
+
+	uint32_t magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
+	if (magicval != MAGIC_FILE_CONSTANT)
+	{
+		printf("ERROR: File not recognized '%s'\n", filename);
+		return 1;
+	}
+
+	int block_x = hdr.blockdim_x;
+	int block_y = hdr.blockdim_y;
+	int block_z = hdr.blockdim_z;
+
+	if (((block_z == 1) && !is_legal_2d_block_size(block_x, block_y)) ||
+	    ((block_z > 1) && !is_legal_3d_block_size(block_x, block_y, block_z)))
+	{
+		printf("ERROR: File corrupt '%s'\n", filename);
+		return 1;
+	}
+
+	int xsize = unpack_bytes(hdr.xsize[0], hdr.xsize[1], hdr.xsize[2], 0);
+	int ysize = unpack_bytes(hdr.ysize[0], hdr.ysize[1], hdr.ysize[2], 0);
+	int zsize = unpack_bytes(hdr.zsize[0], hdr.zsize[1], hdr.zsize[2], 0);
+
+	if (xsize == 0 || ysize == 0 || zsize == 0)
+	{
+		printf("ERROR: File corrupt '%s'\n", filename);
+		return 1;
+	}
+
+	int xblocks = (xsize + block_x - 1) / block_x;
+	int yblocks = (ysize + block_y - 1) / block_y;
+	int zblocks = (zsize + block_z - 1) / block_z;
+
+	size_t data_size = xblocks * yblocks * zblocks * 16;
+	uint8_t *buffer = new uint8_t[data_size];
+
+	file.read((char*)buffer, data_size);
+	if (!file)
+	{
+		printf("ERROR: File read failed '%s'\n", filename);
+		return 1;
+	}
+
+	out_image.data = buffer;
+	out_image.block_x = block_x;
+	out_image.block_y = block_y;
+	out_image.block_z = block_z;
+	out_image.dim_x = xsize;
+	out_image.dim_y = ysize;
+	out_image.dim_z = zsize;
+	return 0;
+}
+
+astc_codec_image* decompress_astc_image(
+	const astc_compressed_image& data,
 	int bitness,
 	astc_decode_mode decode_mode,
 	swizzlepattern swz_decode,
@@ -77,106 +174,38 @@ astc_codec_image *load_astc_file(
 	int rgb_force_use_of_hdr,
 	int alpha_force_use_of_hdr
 ) {
-	int x, y, z;
-	FILE *f = fopen(filename, "rb");
-	if (!f)
-	{
-		printf("Failed to open file %s\n", filename);
-		exit(1);
-	}
-	astc_header hdr;
-	size_t hdr_bytes_read = fread(&hdr, 1, sizeof(astc_header), f);
-	if (hdr_bytes_read != sizeof(astc_header))
-	{
-		fclose(f);
-		printf("Failed to read file %s\n", filename);
-		exit(1);
-	}
-
-	uint32_t magicval = (uint32_t)(hdr.magic[0]) +
-	                    (uint32_t)(hdr.magic[1]) * 256 +
-	                    (uint32_t)(hdr.magic[2]) * 65536 +
-	                    (uint32_t)(hdr.magic[3]) * 16777216;
-
-	if (magicval != MAGIC_FILE_CONSTANT)
-	{
-		fclose(f);
-		printf("File %s not recognized\n", filename);
-		exit(1);
-	}
-
-	int xdim = hdr.blockdim_x;
-	int ydim = hdr.blockdim_y;
-	int zdim = hdr.blockdim_z;
-
-	if ((xdim < 3 || xdim > 6 || ydim < 3 || ydim > 6 || zdim < 3 || zdim > 6) &&
-	    (xdim < 4 || xdim == 7 || xdim == 9 || xdim == 11 || xdim > 12 ||
-	     ydim < 4 || ydim == 7 || ydim == 9 || ydim == 11 || ydim > 12 || zdim != 1))
-	{
-		fclose(f);
-		printf("File %s not recognized %d %d %d\n", filename, xdim, ydim, zdim);
-		exit(1);
-	}
-
-	int xsize = hdr.xsize[0] + 256 * hdr.xsize[1] + 65536 * hdr.xsize[2];
-	int ysize = hdr.ysize[0] + 256 * hdr.ysize[1] + 65536 * hdr.ysize[2];
-	int zsize = hdr.zsize[0] + 256 * hdr.zsize[1] + 65536 * hdr.zsize[2];
-
-	if (xsize == 0 || ysize == 0 || zsize == 0)
-	{
-		fclose(f);
-		printf("File %s has zero dimension %d %d %d\n", filename, xsize, ysize, zsize);
-		exit(1);
-	}
-
-	int xblocks = (xsize + xdim - 1) / xdim;
-	int yblocks = (ysize + ydim - 1) / ydim;
-	int zblocks = (zsize + zdim - 1) / zdim;
-
-	uint8_t *buffer = (uint8_t *) malloc(xblocks * yblocks * zblocks * 16);
-	if (!buffer)
-	{
-		fclose(f);
-		printf("Ran out of memory\n");
-		exit(1);
-	}
-	size_t bytes_to_read = xblocks * yblocks * zblocks * 16;
-	size_t bytes_read = fread(buffer, 1, bytes_to_read, f);
-	fclose(f);
-	if (bytes_read != bytes_to_read)
-	{
-		printf("Failed to read file %s\n", filename);
-		exit(1);
-	}
-
-	astc_codec_image *img = alloc_image(bitness, xsize, ysize, zsize, 0);
+	astc_codec_image *img = alloc_image(bitness, data.dim_x, data.dim_y, data.dim_z, 0);
+	// TODO: Can be null?
 	img->linearize_srgb = linearize_srgb;
 	img->rgb_force_use_of_hdr = rgb_force_use_of_hdr;
 	img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
 
 	block_size_descriptor bsd;
-	init_block_size_descriptor(xdim, ydim, zdim, &bsd);
+	init_block_size_descriptor(data.dim_x, data.dim_y, data.dim_y, &bsd);
+
+	int xblocks = (data.dim_x + data.block_x - 1) / data.block_x;
+	int yblocks = (data.dim_y + data.block_y - 1) / data.block_y;
+	int zblocks = (data.dim_z + data.block_z - 1) / data.block_z;
 
 	imageblock pb;
-	for (z = 0; z < zblocks; z++)
+	for (int z = 0; z < zblocks; z++)
 	{
-		for (y = 0; y < yblocks; y++)
+		for (int y = 0; y < yblocks; y++)
 		{
-			for (x = 0; x < xblocks; x++)
+			for (int x = 0; x < xblocks; x++)
 			{
 				int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-				uint8_t *bp = buffer + offset;
+				uint8_t *bp = data.data + offset;
 				physical_compressed_block pcb = *(physical_compressed_block *) bp;
 				symbolic_compressed_block scb;
 				physical_to_symbolic(&bsd, pcb, &scb);
-				decompress_symbolic_block(img, decode_mode, &bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-				write_imageblock(img, &pb, &bsd, x * xdim, y * ydim, z * zdim, swz_decode);
+				decompress_symbolic_block(img, decode_mode, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, &scb, &pb);
+				write_imageblock(img, &pb, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, swz_decode);
 			}
 		}
 	}
 
 	term_block_size_descriptor(&bsd);
-	free(buffer);
 	return img;
 }
 
@@ -697,7 +726,7 @@ int astc_main(
 		default:
 			{
 				// Character after the last match should be a NUL
-				if (argv[4][cnt3D]|| !is_legal_3d_block_size(xdim_3d, ydim_3d, zdim_3d))
+				if (argv[4][cnt3D] || !is_legal_3d_block_size(xdim_3d, ydim_3d, zdim_3d))
 				{
 					printf("ERROR: Invalid block size %s specified\n", argv[4]);
 					return 1;
@@ -735,11 +764,11 @@ int astc_main(
 				return 1;
 			}
 			ewp.mean_stdev_radius = atoi(argv[argidx - 6]);
-			ewp.rgb_power = static_cast < float >(atof(argv[argidx - 5]));
-			ewp.rgb_base_weight = static_cast < float >(atof(argv[argidx - 4]));
-			ewp.rgb_mean_weight = static_cast < float >(atof(argv[argidx - 3]));
-			ewp.rgb_stdev_weight = static_cast < float >(atof(argv[argidx - 2]));
-			ewp.rgb_mean_and_stdev_mixing = static_cast < float >(atof(argv[argidx - 1]));
+			ewp.rgb_power = static_cast<float>(atof(argv[argidx - 5]));
+			ewp.rgb_base_weight = static_cast<float>(atof(argv[argidx - 4]));
+			ewp.rgb_mean_weight = static_cast<float>(atof(argv[argidx - 3]));
+			ewp.rgb_stdev_weight = static_cast<float>(atof(argv[argidx - 2]));
+			ewp.rgb_mean_and_stdev_mixing = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-va"))
 		{
@@ -749,10 +778,10 @@ int astc_main(
 				printf("-va switch with less than 4 arguments, quitting\n");
 				return 1;
 			}
-			ewp.alpha_power = static_cast < float >(atof(argv[argidx - 4]));
-			ewp.alpha_base_weight = static_cast < float >(atof(argv[argidx - 3]));
-			ewp.alpha_mean_weight = static_cast < float >(atof(argv[argidx - 2]));
-			ewp.alpha_stdev_weight = static_cast < float >(atof(argv[argidx - 1]));
+			ewp.alpha_power = static_cast<float>(atof(argv[argidx - 4]));
+			ewp.alpha_base_weight = static_cast<float>(atof(argv[argidx - 3]));
+			ewp.alpha_mean_weight = static_cast<float>(atof(argv[argidx - 2]));
+			ewp.alpha_stdev_weight = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-cw"))
 		{
@@ -762,10 +791,10 @@ int astc_main(
 				printf("-cw switch with less than 4 arguments\n");
 				return 1;
 			}
-			ewp.rgba_weights[0] = static_cast < float >(atof(argv[argidx - 4]));
-			ewp.rgba_weights[1] = static_cast < float >(atof(argv[argidx - 3]));
-			ewp.rgba_weights[2] = static_cast < float >(atof(argv[argidx - 2]));
-			ewp.rgba_weights[3] = static_cast < float >(atof(argv[argidx - 1]));
+			ewp.rgba_weights[0] = static_cast<float>(atof(argv[argidx - 4]));
+			ewp.rgba_weights[1] = static_cast<float>(atof(argv[argidx - 3]));
+			ewp.rgba_weights[2] = static_cast<float>(atof(argv[argidx - 2]));
+			ewp.rgba_weights[3] = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-a"))
 		{
@@ -786,7 +815,7 @@ int astc_main(
 				printf("-b switch with no argument\n");
 				return 1;
 			}
-			ewp.block_artifact_suppression = static_cast < float >(atof(argv[argidx - 1]));
+			ewp.block_artifact_suppression = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
@@ -985,7 +1014,7 @@ int astc_main(
 				printf("-dblimit switch with no argument\n");
 				return 1;
 			}
-			dblimit_user_specified = static_cast < float >(atof(argv[argidx - 1]));
+			dblimit_user_specified = static_cast<float>(atof(argv[argidx - 1]));
 			dblimit_set_by_user = 1;
 		}
 		else if (!strcmp(argv[argidx], "-partitionearlylimit"))
@@ -996,7 +1025,7 @@ int astc_main(
 				printf("-partitionearlylimit switch with no argument\n");
 				return 1;
 			}
-			oplimit_user_specified = static_cast < float >(atof(argv[argidx - 1]));
+			oplimit_user_specified = static_cast<float>(atof(argv[argidx - 1]));
 			oplimit_set_by_user = 1;
 		}
 		else if (!strcmp(argv[argidx], "-planecorlimit"))
@@ -1007,7 +1036,7 @@ int astc_main(
 				printf("-planecorlimit switch with no argument\n");
 				return 1;
 			}
-			mincorrel_user_specified = static_cast < float >(atof(argv[argidx - 1]));
+			mincorrel_user_specified = static_cast<float>(atof(argv[argidx - 1]));
 			mincorrel_set_by_user = 1;
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
@@ -1300,27 +1329,26 @@ int astc_main(
 	int zdim = -1;
 
 	// Temporary image array (for merging multiple 2D images into one 3D image).
-	int *load_results = nullptr;
-	astc_codec_image **input_images = nullptr;
-
 	int load_result = 0;
-	astc_codec_image *input_image = nullptr;
-	astc_codec_image *output_image = nullptr;
-	int input_components = 0;
+	astc_codec_image *input_decomp_img = nullptr;
+	//astc_compressed_image *input_comp_img = nullptr;
+	astc_codec_image *output_decomp_img = nullptr;
+	//astc_compressed_image *output_comp_img = nullptr;
 
+	int input_components = 0;
 	int input_image_is_hdr = 0;
 
-	// load image
+	// Load uncompressed inputs
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		// Allocate arrays for image data and load results.
-		load_results = new int[array_size];
-		input_images = new astc_codec_image *[array_size];
+		// Allocate temporary arrays for image data and load results
+		int* load_results = new int [array_size];
+		astc_codec_image** input_images = new astc_codec_image* [array_size];
 
-		// Iterate over all input images.
+		// Iterate over all input images
 		for (int image_index = 0; image_index < array_size; image_index++)
 		{
-			// 2D input data.
+			// 2D input data
 			if (array_size == 1)
 			{
 				input_images[image_index] = astc_codec_load_image(
@@ -1328,15 +1356,16 @@ int astc_main(
 					rgb_force_use_of_hdr, alpha_force_use_of_hdr,
 					&load_results[image_index]);
 			}
-			// 3D input data - multiple 2D images.
+			// 3D input data - multiple 2D images
 			else
 			{
+				// TODO: These can overflow if the file name is longer than 256
 				char new_input_filename[256];
 
 				// Check for extension: <name>.<extension>
-				if (nullptr == strrchr(input_filename, '.'))
+				if (!strrchr(input_filename, '.'))
 				{
-					printf("Unable to determine file type from extension: %s\n", input_filename);
+					printf("ERROR: Unable to determine file extension: %s\n", input_filename);
 					return 1;
 				}
 
@@ -1376,7 +1405,7 @@ int astc_main(
 		// Assign input image.
 		if (array_size == 1)
 		{
-			input_image = input_images[0];
+			input_decomp_img = input_images[0];
 		}
 		// Merge input image data.
 		else
@@ -1390,18 +1419,18 @@ int astc_main(
 			slice_size = (xsize + (2 * padding)) * (ysize + (2 * padding));
 
 			// Allocate image memory.
-			input_image = alloc_image(bitness, xsize, ysize, zsize, padding);
+			input_decomp_img = alloc_image(bitness, xsize, ysize, zsize, padding);
 
 			// Combine 2D source images into one 3D image (skip padding slices as these don't exist in 2D textures).
 			for (z = padding; z < zsize + padding; z++)
 			{
 				if (bitness == 8)
 				{
-					memcpy(*input_image->data8[z], *input_images[z - padding]->data8[0], slice_size * 4 * sizeof(uint8_t));
+					memcpy(*input_decomp_img->data8[z], *input_images[z - padding]->data8[0], slice_size * 4 * sizeof(uint8_t));
 				}
 				else
 				{
-					memcpy(*input_image->data16[z], *input_images[z - padding]->data16[0], slice_size * 4 * sizeof(uint16_t));
+					memcpy(*input_decomp_img->data16[z], *input_images[z - padding]->data16[0], slice_size * 4 * sizeof(uint16_t));
 				}
 			}
 
@@ -1412,7 +1441,7 @@ int astc_main(
 			}
 
 			// Clamp texels outside the actual image area.
-			fill_image_padding_area(input_image);
+			fill_image_padding_area(input_decomp_img);
 		}
 
 		delete[] input_images;
@@ -1424,7 +1453,7 @@ int astc_main(
 		input_components = load_result & 7;
 		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;
 
-		if ((input_image->zsize > 1) && (zdim_3d == 1))
+		if ((input_decomp_img->zsize > 1) && (zdim_3d == 1))
 		{
 			printf("ERROR: 3D input data for a 2D ASTC block format\n");
 			exit(1);
@@ -1450,8 +1479,8 @@ int astc_main(
 		if (!silentmode)
 		{
 			printf("%s: %dD %s image, %d x %d x %d, %d components\n\n",
-			       input_filename, input_image->zsize > 1 ? 3 : 2, input_image_is_hdr ? "HDR" : "LDR",
-			       input_image->xsize, input_image->ysize, input_image->zsize, load_result & 7);
+			       input_filename, input_decomp_img->zsize > 1 ? 3 : 2, input_image_is_hdr ? "HDR" : "LDR",
+			       input_decomp_img->xsize, input_decomp_img->ysize,input_decomp_img->zsize, load_result & 7);
 		}
 
 		if (padding > 0 ||
@@ -1465,7 +1494,7 @@ int astc_main(
 			}
 
 			compute_averages_and_variances(
-				input_image,
+				input_decomp_img,
 				ewp.rgb_power,
 				ewp.alpha_power,
 				ewp.mean_stdev_radius,
@@ -1477,7 +1506,6 @@ int astc_main(
 			if (!silentmode)
 			{
 				printf("done\n");
-				fflush(stdout);
 			}
 		}
 	}
@@ -1486,14 +1514,24 @@ int astc_main(
 
 	if (op_mode == ASTC_DECODE)
 	{
-		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode,
-		                              linearize_srgb, rgb_force_use_of_hdr, alpha_force_use_of_hdr);
+		astc_compressed_image comp_img;
+		int error = load_astc_file(input_filename, comp_img);
+		if (error)
+		{
+			return 1;
+		}
+
+		output_decomp_img = decompress_astc_image(
+		    comp_img, out_bitness, decode_mode, swz_decode,
+		    linearize_srgb, rgb_force_use_of_hdr, alpha_force_use_of_hdr);
+
+		delete[] comp_img.data;
 	}
 
 	// process image, if relevant
 	if (op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
+		output_decomp_img = pack_and_unpack_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
 	}
 
 	end_coding_time = get_time();
@@ -1501,7 +1539,7 @@ int astc_main(
 	// print PSNR if encoding
 	if (op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		compute_error_metrics(input_image_is_hdr, input_components, input_image, output_image, low_fstop, high_fstop);
+		compute_error_metrics(input_image_is_hdr, input_components, input_decomp_img, output_decomp_img, low_fstop, high_fstop);
 	}
 
 	// store image
@@ -1510,7 +1548,7 @@ int astc_main(
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(output_image, output_filename, &format_string, y_flip);
+		store_result = astc_codec_store_image(output_decomp_img, output_filename, &format_string, y_flip);
 		if (store_result < 0)
 		{
 			printf("ERROR: Failed to write output image %s\n", output_filename);
@@ -1520,10 +1558,10 @@ int astc_main(
 
 	if (op_mode == ASTC_ENCODE)
 	{
-		store_astc_file(input_image, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
+		store_astc_file(input_decomp_img, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
 	}
 
-	free_image(input_image);
+	free_image(input_decomp_img);
 	end_time = get_time();
 
 	if (op_mode == ASTC_ENCODE_AND_DECODE || !silentmode)

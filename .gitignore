@@ -15,3 +15,5 @@ Test/DocOut
 Test/Images/Kodak
 Test/Images/Scratch*
 TestOutput
+Docs/LibraryInterface.md
+Docs/Profiling.md
