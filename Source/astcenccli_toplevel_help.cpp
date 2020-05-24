@@ -78,7 +78,6 @@ SYNOPSIS
        astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <preset> [options]
        astcenc {-dl|-ds|-dh|-dH} <in> <out> <blocksize> <preset> [options]
        astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <preset> [options]
-       astcenc {-compare} <in1> <in2> [options]
 
 DESCRIPTION
        astcenc compresses image files into the Adaptive Scalable Texture

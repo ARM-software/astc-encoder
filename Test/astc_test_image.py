@@ -264,11 +264,6 @@ def get_encoder_params(encoderName, imageSet):
         name = "reference-prototype"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "ref-intelispc":
-        encoder = te.EncoderISPC()
-        name = "reference-intelispc"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
     else:
         encoder = te.Encoder2x(encoderName)
         name = "develop-%s" % encoderName
@@ -287,7 +282,7 @@ def parse_command_line():
     """
     parser = argparse.ArgumentParser()
 
-    refcoders = ["ref-1.7", "ref-2.0", "ref-prototype", "ref-intelispc"]
+    refcoders = ["ref-1.7", "ref-2.0", "ref-prototype"]
     testcoders = ["nointrin", "sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",

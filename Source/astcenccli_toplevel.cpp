@@ -421,38 +421,6 @@ static astc_codec_image *pack_and_unpack_astc_image(
 	return img;
 }
 
-static void compare_two_files(
-	const char* filename1,
-	const char* filename2,
-	int low_fstop,
-	int high_fstop,
-	int linearize_srgb
-) {
-	int load_result1;
-	astc_codec_image *img1 = astc_codec_load_image(filename1, 0, 0, linearize_srgb, 0, 0, &load_result1);
-	if (load_result1 < 0)
-	{
-		exit(1);
-	}
-
-	int load_result2;
-	astc_codec_image *img2 = astc_codec_load_image(filename2, 0, 0, linearize_srgb, 0, 0, &load_result2);
-	if (load_result2 < 0)
-	{
-		exit(1);
-	}
-
-	int file1_components = load_result1 & 0x7;
-	int file2_components = load_result2 & 0x7;
-	int comparison_components = MAX(file1_components, file2_components);
-
-	int compare_hdr = 0;
-	if ((load_result1 & 0x80) || (load_result2 & 0x80))
-		compare_hdr = 1;
-
-	compute_error_metrics(compare_hdr, comparison_components, img1, img2, low_fstop, high_fstop);
-}
-
 // The ASTC codec is written with the assumption that a float threaded through
 // the "if32" union will in fact be stored and reloaded as a 32-bit IEEE-754 single-precision
 // float, stored with round-to-nearest rounding. This is always the case in an
@@ -530,7 +498,6 @@ int astc_main(
 		ASTC_ENCODE,
 		ASTC_DECODE,
 		ASTC_ENCODE_AND_DECODE,
-		ASTC_IMAGE_COMPARE,
 		ASTC_PRINT_LONGHELP,
 		ASTC_PRINT_VERSION,
 		ASTC_UNRECOGNIZED
@@ -556,7 +523,6 @@ int astc_main(
 		{"-dH",      ASTC_DECODE,            DECODE_HDRA},
 		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR},
 		{"-tH",      ASTC_ENCODE_AND_DECODE, DECODE_HDRA},
-		{"-compare", ASTC_IMAGE_COMPARE,     DECODE_HDR},
 		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR},
 		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR},
 		{"-v",       ASTC_PRINT_VERSION,     DECODE_HDR},
@@ -1209,34 +1175,14 @@ int astc_main(
 
 	if (!input_filename)
 	{
-		if (op_mode == ASTC_IMAGE_COMPARE)
-		{
-			printf("ERROR: Input file A not specified\n");
-		}
-		else
-		{
-			printf("ERROR: Input file not specified\n");
-		}
+		printf("ERROR: Input file not specified\n");
 		return 1;
 	}
 
 	if (!output_filename)
 	{
-		if (op_mode == ASTC_IMAGE_COMPARE)
-		{
-			printf("ERROR: Input file B not specified\n");
-		}
-		else
-		{
-			printf("ERROR: Output file not specified\n");
-		}
+		printf("ERROR: Output file not specified\n");
 		return 1;
-	}
-
-	if (op_mode == ASTC_IMAGE_COMPARE)
-	{
-		compare_two_files(input_filename, output_filename, low_fstop, high_fstop, linearize_srgb);
-		return 0;
 	}
 
 	float texel_avg_error_limit_2d = 0.0f;

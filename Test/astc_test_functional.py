@@ -1843,18 +1843,6 @@ class CLINTest(CLITestBase):
 
         self.exec(command)
 
-    def test_compare_missing(self):
-        """
-        Test -compare with missing arguments.
-        """
-        command = [
-            self.binary, "-compare",
-            self.get_ref_image_path("LDR", "input", "A"),
-            self.get_ref_image_path("LDR", "input", "A")]
-
-        # Run the command, incrementally omitting arguments
-        self.exec_with_omit(command, 2)
-
     def test_cl_v_missing_args(self):
         """
         Test -cl with -v and missing arguments.
