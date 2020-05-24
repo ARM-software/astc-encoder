@@ -181,7 +181,7 @@ astc_codec_image* decompress_astc_image(
 	img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
 
 	block_size_descriptor bsd;
-	init_block_size_descriptor(data.dim_x, data.dim_y, data.dim_y, &bsd);
+	init_block_size_descriptor(data.block_x, data.block_y, data.block_z, &bsd);
 
 	int xblocks = (data.dim_x + data.block_x - 1) / data.block_x;
 	int yblocks = (data.dim_y + data.block_y - 1) / data.block_y;
@@ -209,38 +209,32 @@ astc_codec_image* decompress_astc_image(
 	return img;
 }
 
-struct encode_astc_image_info
+struct compress_astc_image_info
 {
 	const block_size_descriptor* bsd;
 	const error_weighting_params* ewp;
 	uint8_t* buffer;
-	int pack_and_unpack;
 	int threadcount;
 	astc_decode_mode decode_mode;
 	swizzlepattern swz_encode;
-	swizzlepattern swz_decode;
 	const astc_codec_image* input_image;
-	astc_codec_image* output_image;
 };
 
-static void encode_astc_image_threadfunc(
+static void compress_astc_image_threadfunc(
 	int thread_count,
 	int thread_id,
 	void* vblk
 ) {
-	const encode_astc_image_info *blk = (const encode_astc_image_info *)vblk;
+	const compress_astc_image_info *blk = (const compress_astc_image_info *)vblk;
 	const block_size_descriptor *bsd = blk->bsd;
 	int xdim = bsd->xdim;
 	int ydim = bsd->ydim;
 	int zdim = bsd->zdim;
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
-	int pack_and_unpack = blk->pack_and_unpack;
 	astc_decode_mode decode_mode = blk->decode_mode;
 	swizzlepattern swz_encode = blk->swz_encode;
-	swizzlepattern swz_decode = blk->swz_decode;
 	const astc_codec_image *input_image = blk->input_image;
-	astc_codec_image *output_image = blk->output_image;
 
 	imageblock pb;
 	int ctr = thread_id;
@@ -289,17 +283,7 @@ static void encode_astc_image_threadfunc(
 						fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 						symbolic_compressed_block scb;
 						compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
-						if (pack_and_unpack)
-						{
-							decompress_symbolic_block(input_image, decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-							write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
-						}
-						else
-						{
-							physical_compressed_block pcb;
-							pcb = symbolic_to_physical(bsd, &scb);
-							*(physical_compressed_block *) bp = pcb;
-						}
+						*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 				#ifdef DEBUG_PRINT_DIAGNOSTICS
 					}
 				#endif
@@ -328,18 +312,15 @@ static void encode_astc_image_threadfunc(
 	delete   temp_buffers.ewb;
 }
 
-static void encode_astc_image(
+static void compress_astc_image(
 	const astc_codec_image* input_image,
-	astc_codec_image* output_image,
 	int xdim,
 	int ydim,
 	int zdim,
 	const error_weighting_params* ewp,
 	astc_decode_mode decode_mode,
 	swizzlepattern swz_encode,
-	swizzlepattern swz_decode,
 	uint8_t* buffer,
-	int pack_and_unpack,
 	int threadcount
 ) {
 	// before entering into the multi-threaded routine, ensure that the block size descriptors
@@ -348,18 +329,15 @@ static void encode_astc_image(
 	init_block_size_descriptor(xdim, ydim, zdim, bsd);
 	get_partition_table(bsd, 0);
 
-	encode_astc_image_info ai;
+	compress_astc_image_info ai;
 	ai.bsd = bsd;
 	ai.buffer = buffer;
 	ai.ewp = ewp;
-	ai.pack_and_unpack = pack_and_unpack;
 	ai.decode_mode = decode_mode;
 	ai.swz_encode = swz_encode;
-	ai.swz_decode = swz_decode;
 	ai.input_image = input_image;
-	ai.output_image = output_image;
 
-	launch_threads(threadcount, encode_astc_image_threadfunc, &ai);
+	launch_threads(threadcount, compress_astc_image_threadfunc, &ai);
 
 	term_block_size_descriptor(bsd);
 	delete bsd;
@@ -368,9 +346,9 @@ static void encode_astc_image(
 static void store_astc_file(
 	const astc_codec_image* input_image,
 	const char* filename,
-	int xdim,
-	int ydim,
-	int zdim,
+	int block_x,
+	int block_y,
+	int block_z,
 	const error_weighting_params* ewp,
 	astc_decode_mode decode_mode,
 	swizzlepattern swz_encode,
@@ -380,9 +358,9 @@ static void store_astc_file(
 	int ysize = input_image->ysize;
 	int zsize = input_image->zsize;
 
-	int xblocks = (xsize + xdim - 1) / xdim;
-	int yblocks = (ysize + ydim - 1) / ydim;
-	int zblocks = (zsize + zdim - 1) / zdim;
+	int xblocks = (xsize + block_x - 1) / block_x;
+	int yblocks = (ysize + block_y - 1) / block_y;
+	int zblocks = (zsize + block_z - 1) / block_z;
 
 	uint8_t *buffer = (uint8_t *) malloc(xblocks * yblocks * zblocks * 16);
 	if (!buffer)
@@ -391,7 +369,7 @@ static void store_astc_file(
 		exit(1);
 	}
 
-	encode_astc_image(input_image, nullptr, xdim, ydim, zdim, ewp, decode_mode, swz_encode, swz_encode, buffer, 0, threadcount);
+	compress_astc_image(input_image, block_x, block_y, block_z, ewp, decode_mode, swz_encode, buffer, threadcount);
 
 	end_coding_time = get_time();
 
@@ -400,9 +378,9 @@ static void store_astc_file(
 	hdr.magic[1] = (MAGIC_FILE_CONSTANT >> 8) & 0xFF;
 	hdr.magic[2] = (MAGIC_FILE_CONSTANT >> 16) & 0xFF;
 	hdr.magic[3] = (MAGIC_FILE_CONSTANT >> 24) & 0xFF;
-	hdr.blockdim_x = xdim;
-	hdr.blockdim_y = ydim;
-	hdr.blockdim_z = zdim;
+	hdr.blockdim_x = block_x;
+	hdr.blockdim_y = block_y;
+	hdr.blockdim_z = block_z;
 	hdr.xsize[0] = xsize & 0xFF;
 	hdr.xsize[1] = (xsize >> 8) & 0xFF;
 	hdr.xsize[2] = (xsize >> 16) & 0xFF;
@@ -423,30 +401,6 @@ static void store_astc_file(
 	fwrite(buffer, 1, xblocks * yblocks * zblocks * 16, wf);
 	fclose(wf);
 	free(buffer);
-}
-
-static astc_codec_image *pack_and_unpack_astc_image(
-	const astc_codec_image* input_image,
-	int xdim,
-	int ydim,
-	int zdim,
-	const error_weighting_params* ewp,
-	astc_decode_mode decode_mode,
-	swizzlepattern swz_encode,
-	swizzlepattern swz_decode,
-	int bitness,
-	int threadcount
-) {
-	int xsize = input_image->xsize;
-	int ysize = input_image->ysize;
-	int zsize = input_image->zsize;
-
-	astc_codec_image *img = alloc_image(bitness, xsize, ysize, zsize, 0);
-
-	encode_astc_image(input_image, img, xdim, ydim, zdim, ewp, decode_mode,
-	                  swz_encode, swz_decode, nullptr, 1, threadcount);
-
-	return img;
 }
 
 // The ASTC codec is written with the assumption that a float threaded through
@@ -1531,7 +1485,26 @@ int astc_main(
 	// process image, if relevant
 	if (op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		output_decomp_img = pack_and_unpack_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
+		int xsize = input_decomp_img->xsize;
+		int ysize = input_decomp_img->ysize;
+		int zsize = input_decomp_img->zsize;
+		int xblocks = (xsize + xdim - 1) / xdim;
+		int yblocks = (ysize + ydim - 1) / ydim;
+		int zblocks = (zsize + zdim - 1) / zdim;
+		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
+		compress_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, buffer, thread_count);
+
+		astc_compressed_image comp_img {
+			xdim, ydim, zdim,
+			xsize, ysize, zsize,
+			buffer
+		};
+
+		output_decomp_img = decompress_astc_image(
+		    comp_img, out_bitness, decode_mode, swz_decode,
+		    0, rgb_force_use_of_hdr, alpha_force_use_of_hdr);
+
+		delete[] buffer;
 	}
 
 	end_coding_time = get_time();
