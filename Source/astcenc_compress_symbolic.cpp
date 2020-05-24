@@ -1107,10 +1107,6 @@ static void prepare_block_statistics(
 	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
 }
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	int block_mode_histogram[2048];
-#endif
-
 __attribute__((visibility("default")))
 float compress_symbolic_block(
 	const astc_codec_image* input_image,
@@ -1513,15 +1509,6 @@ float compress_symbolic_block(
 	}
 
 END_OF_TESTS:
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (scb->block_mode >= 0)
-			block_mode_histogram[scb->block_mode & 0x7ff]++;
-
-		if (print_tile_errors)
-			printf("%g\n", (double)error_of_best_block);
-	#endif
-
 	// compress/decompress to a physical block
 	physical_compressed_block psb = symbolic_to_physical(bsd, scb);
 	physical_to_symbolic(bsd, psb, scb);

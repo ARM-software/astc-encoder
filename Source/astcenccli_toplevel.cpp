@@ -38,7 +38,6 @@
 	int diagnostics_tile = -1;
 	int print_tile_errors = 0;
 	int print_statistics = 0;
-	extern int block_mode_histogram[2048];
 #endif
 
 static double start_time;
@@ -628,10 +627,6 @@ int astc_main(
 	int ydim_3d = 0;
 	int zdim_3d = 0;
 
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		int print_block_mode_histogram = 0;
-	#endif
-
 	float log10_texels_2d = 0.0f;
 	float log10_texels_3d = 0.0f;
 
@@ -1124,11 +1119,6 @@ int astc_main(
 
 			diagnostics_tile = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-bmstat"))
-		{
-			argidx++;
-			print_block_mode_histogram = 1;
-		}
 		else if (!strcmp(argv[argidx], "-pte"))
 		{
 			argidx++;
@@ -1534,20 +1524,6 @@ int astc_main(
 	}
 
 	free_image(input_image);
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_block_mode_histogram)
-		{
-			printf("%s ", argv[2]);
-			printf("%d %d  ", xdim_2d, ydim_2d);
-			for (int i = 0; i < 2048; i++)
-			{
-				printf(" %d", block_mode_histogram[i]);
-			}
-			printf("\n");
-		}
-	#endif
-
 	end_time = get_time();
 
 	if (op_mode == ASTC_ENCODE_AND_DECODE || !silentmode)
