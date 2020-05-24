@@ -343,64 +343,43 @@ static void compress_astc_image(
 	delete bsd;
 }
 
-static void store_astc_file(
-	const astc_codec_image* input_image,
-	const char* filename,
-	int block_x,
-	int block_y,
-	int block_z,
-	const error_weighting_params* ewp,
-	astc_decode_mode decode_mode,
-	swizzlepattern swz_encode,
-	int threadcount
+int store_astc_file(
+	const astc_compressed_image& comp_img,
+	const char* filename
 ) {
-	int xsize = input_image->xsize;
-	int ysize = input_image->ysize;
-	int zsize = input_image->zsize;
-
-	int xblocks = (xsize + block_x - 1) / block_x;
-	int yblocks = (ysize + block_y - 1) / block_y;
-	int zblocks = (zsize + block_z - 1) / block_z;
-
-	uint8_t *buffer = (uint8_t *) malloc(xblocks * yblocks * zblocks * 16);
-	if (!buffer)
-	{
-		printf("ERROR: Ran out of memory\n");
-		exit(1);
-	}
-
-	compress_astc_image(input_image, block_x, block_y, block_z, ewp, decode_mode, swz_encode, buffer, threadcount);
-
-	end_coding_time = get_time();
+	int xblocks = (comp_img.dim_x + comp_img.block_x - 1) / comp_img.block_x;
+	int yblocks = (comp_img.dim_y + comp_img.block_y - 1) / comp_img.block_y;
+	int zblocks = (comp_img.dim_z + comp_img.block_z - 1) / comp_img.block_z;
+	size_t data_bytes = xblocks * yblocks * zblocks * 16;
 
 	astc_header hdr;
 	hdr.magic[0] = MAGIC_FILE_CONSTANT & 0xFF;
 	hdr.magic[1] = (MAGIC_FILE_CONSTANT >> 8) & 0xFF;
 	hdr.magic[2] = (MAGIC_FILE_CONSTANT >> 16) & 0xFF;
 	hdr.magic[3] = (MAGIC_FILE_CONSTANT >> 24) & 0xFF;
-	hdr.blockdim_x = block_x;
-	hdr.blockdim_y = block_y;
-	hdr.blockdim_z = block_z;
-	hdr.xsize[0] = xsize & 0xFF;
-	hdr.xsize[1] = (xsize >> 8) & 0xFF;
-	hdr.xsize[2] = (xsize >> 16) & 0xFF;
-	hdr.ysize[0] = ysize & 0xFF;
-	hdr.ysize[1] = (ysize >> 8) & 0xFF;
-	hdr.ysize[2] = (ysize >> 16) & 0xFF;
-	hdr.zsize[0] = zsize & 0xFF;
-	hdr.zsize[1] = (zsize >> 8) & 0xFF;
-	hdr.zsize[2] = (zsize >> 16) & 0xFF;
+	hdr.blockdim_x = comp_img.block_x;
+	hdr.blockdim_y = comp_img.block_y;
+	hdr.blockdim_z = comp_img.block_z;
+	hdr.xsize[0] =  comp_img.dim_x & 0xFF;
+	hdr.xsize[1] = (comp_img.dim_x >> 8) & 0xFF;
+	hdr.xsize[2] = (comp_img.dim_x >> 16) & 0xFF;
+	hdr.ysize[0] =  comp_img.dim_y & 0xFF;
+	hdr.ysize[1] = (comp_img.dim_y >> 8) & 0xFF;
+	hdr.ysize[2] = (comp_img.dim_y >> 16) & 0xFF;
+	hdr.zsize[0] =  comp_img.dim_z & 0xFF;
+	hdr.zsize[1] = (comp_img.dim_z >> 8) & 0xFF;
+	hdr.zsize[2] = (comp_img.dim_z >> 16) & 0xFF;
 
-	FILE *wf = fopen(filename, "wb");
-	if (!wf)
+ 	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (!file)
 	{
-		printf("ERROR: Failed to write output image %s\n", filename);
-		exit(1);
+		printf("ERROR: File open failed '%s'\n", filename);
+		return 1;
 	}
-	fwrite(&hdr, 1, sizeof(astc_header), wf);
-	fwrite(buffer, 1, xblocks * yblocks * zblocks * 16, wf);
-	fclose(wf);
-	free(buffer);
+
+	file.write((char*)&hdr, sizeof(astc_header));
+	file.write((char*)comp_img.data, data_bytes);
+	return 0;
 }
 
 // The ASTC codec is written with the assumption that a float threaded through
@@ -1531,7 +1510,27 @@ int astc_main(
 
 	if (op_mode == ASTC_ENCODE)
 	{
-		store_astc_file(input_decomp_img, output_filename, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, thread_count);
+		int xsize = input_decomp_img->xsize;
+		int ysize = input_decomp_img->ysize;
+		int zsize = input_decomp_img->zsize;
+		int xblocks = (xsize + xdim - 1) / xdim;
+		int yblocks = (ysize + ydim - 1) / ydim;
+		int zblocks = (zsize + zdim - 1) / zdim;
+		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
+		compress_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, buffer, thread_count);
+
+		end_coding_time = get_time();
+
+		astc_compressed_image comp_img {
+			xdim, ydim, zdim,
+			xsize, ysize, zsize,
+			buffer
+		};
+
+		int error = store_astc_file(comp_img, output_filename);
+		if (error) {
+			return 1;
+		}
 	}
 
 	free_image(input_decomp_img);
