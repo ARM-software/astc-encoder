@@ -1,4 +1,4 @@
-@Library('hive-infra-library@master') _
+@Library('hive-infra-library@changes/64/237764/6') _
 
 pipeline {
   agent none
@@ -171,7 +171,7 @@ pipeline {
         stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
-            cepeArtifactoryUpload('*.zip')
+            cepeArtifactoryUpload(sourcePattern: '*.zip')
             cepeArtifactoryPromote()
           }
         }
