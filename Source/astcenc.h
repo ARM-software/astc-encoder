@@ -58,6 +58,9 @@
  *     astcenc_config my_config;
  *     astcenc_init_config(..., &my_config);
  *
+ *     // Power users can modify the config after it is initialized and
+ *     // before allocating the context with it.
+ *
  *     // Allocate working state given config and thread_count
  *     astcenc_context* my_context;
  *     astcenc_context_alloc(&my_config, thread_count, &my_context);
@@ -117,6 +120,7 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_PARAM,
 	ASTCENC_ERR_BAD_BLOCK_SIZE,
 	ASTCENC_ERR_BAD_PROFILE,
+	ASTCENC_ERR_BAD_PROFILE,
 	ASTCENC_ERR_BAD_PRESET,
 	ASTCENC_ERR_BAD_FLAGS
 };
@@ -137,14 +141,14 @@ enum astcenc_preset {
 	ASTCENC_PRE_EXHAUSTIVE
 };
 
-// Incoming data type
+// Image channel data type
 enum astcenc_type {
 	ASTCENC_TYP_U8 = 0,
-	ASTCENC_TYP_F16 = 1,
-	ASTCENC_TYP_F32 = 2
+	ASTCENC_TYP_U16,
+	ASTCENC_TYP_F16
 };
 
-// Incoming data type
+// Image channel swizzles
 enum astcenc_swz {
 	ASTCENC_SWZ_R = 0,
 	ASTCENC_SWZ_G = 1,
@@ -155,7 +159,7 @@ enum astcenc_swz {
 	ASTCENC_SWZ_Z = 6
 };
 
-// Incoming data type
+// Image channel swizzles
 struct astcenc_swizzle {
 	astcenc_swz r;
 	astcenc_swz g;
@@ -211,27 +215,47 @@ struct astcenc_config {
 };
 
 /**
- * TODO: What memory layout do we pass this in as? Current code uses 3D arrays
- * with unique allocations per row, which is relatively heavy, but flexible.
+ * Structure to store an uncompressed 2D image, or a slice from a 3D image.
+ *
+ * @param dim_x      The x dimension of the image, in texels.
+ * @param dim_y      The y dimension of the image, in texels.
+ * @param channels   The number of color channels.
+ * @param type       The primitive type of each channel.
+ * @param swizzle    The swizzle to apply on load (for compression) or store
+ *                   (for decompression).
+ * @param data       The data stored as an array of texels, stored in rows.
+ *                   Texels are tightly packed, but may be end-of-row padding.
+ * @param row_stride The length of each row (including padding), in bytes. Zero
+ *                   indicates that rows are tightly packed with no padding.
+ * @param data_size  The total size of data in bytes.
  */
 struct astcenc_image {
 	unsigned int dim_x;
 	unsigned int dim_y;
+	unsigned int channels;
 	astcenc_type type;
 	astcenc_swizzle swizzle;
-	void* data;        // Data stored as RGBA texels of "type" primitive.
-	size_t row_stride; // Row stride in bytes; 0 for tightly packed.
-	size_t data_size;  // Data length in bytes.
+	void* data;
+	size_t row_stride;
+	size_t data_size;
 };
 
 /**
  * Populate a compressor config based on default settings.
  *
- * Note: Advanced users can edit the returned config struct to apply manual
- * fine tuning before creating the context. Non-power users will not need to.
+ * Power users can edit the returned config struct to apply manual fine tuning
+ * before creating the context.
  *
- * Will error if any of the inputs are invalid, either individually or in
- * combination.
+ * @param profile The color profile.
+ * @param block_x The ASTC block size X dimension.
+ * @param block_y The ASTC block size Y dimension.
+ * @param block_z The ASTC block size Z dimension.
+ * @param preset  The search quality preset.
+ * @param flags   Any ASTCENC_FLG_* flag bits.
+ * @param config  The output config struct to populate.
+ *
+ * @return ASTCENC_SUCCESS on success, or an error if the inputs are invalid
+ * either individually, or in combination.
  */
 astcenc_error astcenc_init_config(
 	astcenc_profile profile,
@@ -240,62 +264,77 @@ astcenc_error astcenc_init_config(
 	unsigned int block_z,
 	astcenc_preset preset,
 	unsigned int flags,
-	astcenc_config* config);
+	astcenc_config& config);
 
 /**
  * Allocate a new compressor context based on the settings in the config.
  *
- * The persistent parts of the config are copied by this function; it can be
- * freed after this function is called.
+ * This function allocates all of the memory resources and threads needed by
+ * the compressor. This can be slow, so it is recommended that contexts are
+ * reused to serially compress multiple images in order to amortize setup cost.
  *
- * A single context can be used to sequentially compress or decompress multiple
- * images using the same configuration settings.
+ * @param config       The codec config.
+ * @param thread_count The thread count to configure for. This will allocate
+ *                     new threads unless config created with USE_USER_THREADS.
+ * @param context      Output location to store an opaque context pointer.
  *
- * This will configure the context for N threads, allocated all of the data
- * tables and per-thread working buffers.
+ * @return ASTCENC_SUCCESS on success, or an error if context creation failed.
  */
 astcenc_error astcenc_context_alloc(
-	astcenc_config const* config,
+	const astcenc_config& config,
 	int thread_count,
 	astcenc_context** context);
 
 /**
- * Compress the image.
+ * Compress an image.
  *
- * If the config did not specify USE_USER_THREADS this function will
- * automatically create and start the N threads needed to run the compressor.
+ * Note: User must allocate all output memory before calling this function.
+ *
+ * @param context      The codec context.
+ * @param image        Array of input images, each a 2D slice.
+ * @param dim_z        The length of image array, the Z dimension of 3D image.
+ * @param data_out     Pointer to byte array to store the output.
+ * @param data_len     Length of the data array, in bytes.
+ * @param thread_index The thread index [0..N-1] of the calling thread. All
+ *                     N threads must call this function.
+ *
+ * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
 astcenc_error astcenc_compress_image(
-	astcenc_context* context,
+	astcenc_context& context,
 	astcenc_image const* image,
-	size_t image_len, // Length of image array (volumetric image Z dimension)
+	size_t dim_z,
 	uint8_t* data_out,
-	size_t data_len, // Length of output array for bounds checking.
+	size_t data_len,
 	int thread_index);
 
 /**
- * Decompress the image.
+ * Decompress an image.
  *
- * If the config did not specify USE_USER_THREADS this function will
- * automatically use the context thread count to decompress the image.
- * Otherwise the user must manually invoke this function with thread_index
- * set between [0, thread_count - 1], once for each index.
+ * Note: User must allocate all output memory before calling this function.
+ *
+ * @param context      The codec context.
+ * @param data         Pointer to compressed data.
+ * @param data_len     Length of the compressed data, in bytes.
+ * @param image_out    Array of output images, each a 2D slice.
+ * @param dim_z        The length of image array, the Z dimension of 3D image.
+ * @param thread_index The thread index [0..N-1] of the calling thread. All
+ *                     N threads must call this function.
+ *
+ * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
 astcenc_error astcenc_decompress_image(
-	astcenc_context * context,
-	void* data,
+	astcenc_context& context,
+	uint8_t const* data,
 	size_t data_len,
-	astcenc_image * image_out,
-	size_t image_out_len, // Length of image array (volumetric image Z dimension)
+	astcenc_image* image_out,
+	size_t image_out_len,
 	int thread_index);
 
 /**
  * Free the compressor context.
- *
- * This must only be called when no other threads are inside a codec function
- * using this context.
  */
 void astcenc_context_free(
-	astcenc_context* context);
+	astcenc_context& context);
 
 #endif
