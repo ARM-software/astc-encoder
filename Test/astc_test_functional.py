@@ -1252,7 +1252,6 @@ class CLIPTest(CLITestBase):
         # error metric was used
         self.assertEqual(len(resultSet), len(subtests))
 
-    @unittest.skip("Issue #105")
     def test_low_level_control_v_issue_105(self):
         """
         Test low level control options.
@@ -1269,7 +1268,7 @@ class CLIPTest(CLITestBase):
             inputFile, decompFile, "4x4", "-medium",
             "-v", "0", "1", "2", "0", "0", "0"]
 
-        # This should not segfault
+        # This should not segfault ...
         self.exec(command)
 
     def test_low_level_control_va(self):
