@@ -790,7 +790,6 @@ static float prepare_error_weight_block(
 	int idx = 0;
 
 	int any_mean_stdev_weight =
-		ewp->rgb_base_weight != 1.0f || ewp->alpha_base_weight != 1.0f || \
 		ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
 		ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
 
@@ -909,6 +908,7 @@ static float prepare_error_weight_block(
 						error_weight.y *= alpha_scale;
 						error_weight.z *= alpha_scale;
 					}
+
 					error_weight = error_weight * color_weights;
 					error_weight = error_weight * ewp->block_artifact_suppression_expanded[idx];
 
