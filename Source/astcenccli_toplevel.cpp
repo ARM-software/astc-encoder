@@ -22,6 +22,7 @@
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -554,75 +555,21 @@ int astc_main(
 	swizzlepattern swz_decode = { 0, 1, 2, 3 };
 
 	int thread_count = 0;		// default value
-	int thread_count_autodetected = 0;
 
-	int plimit_autoset = -1;
-	int plimit_user_specified = -1;
-	int plimit_set_by_user = 0;
+	int plimit_set = -1;
+	float dblimit_set = 0.0f;
+	float oplimit_set = 0.0f;
+	float mincorrel_set = 0.0f;
+	float bmc_set = 0.0f;
+	int maxiters_set = 0;
 
-	float dblimit_autoset_2d = 0.0;
-	float dblimit_autoset_3d = 0.0;
-	float dblimit_user_specified = 0.0;
-	int dblimit_set_by_user = 0;
-
-	float oplimit_autoset = 0.0;
-	float oplimit_user_specified = 0.0;
-	int oplimit_set_by_user = 0;
-
-	float mincorrel_autoset = 0.0;
-	float mincorrel_user_specified = 0.0;
-	int mincorrel_set_by_user = 0;
-
-	float bmc_user_specified = 0.0;
-	float bmc_autoset = 0.0;
-	int bmc_set_by_user = 0;
-
-	int maxiters_user_specified = 0;
-	int maxiters_autoset = 0;
-	int maxiters_set_by_user = 0;
-
-	int xdim_2d = 0;
-	int ydim_2d = 0;
-	int xdim_3d = 0;
-	int ydim_3d = 0;
-	int zdim_3d = 0;
-
-	float log10_texels_2d = 0.0f;
-	float log10_texels_3d = 0.0f;
+	int block_x = 0;
+	int block_y = 0;
+	int block_z = 1;
+	float log10_texels = 0.0f;
 
 	int low_fstop = -10;
 	int high_fstop = 10;
-
-	if (decode_mode == DECODE_HDRA)
-	{
-		ewp.rgb_power = 0.75f;
-		ewp.rgb_base_weight = 0.0f;
-		ewp.rgb_mean_weight = 1.0f;
-
-		ewp.alpha_power = 0.75f;
-		ewp.alpha_base_weight = 0.0f;
-		ewp.alpha_mean_weight = 1.0f;
-
-		rgb_force_use_of_hdr = 1;
-		alpha_force_use_of_hdr = 1;
-
-		dblimit_user_specified = 999.0f;
-		dblimit_set_by_user = 1;
-	}
-	else if (decode_mode == DECODE_HDR)
-	{
-		ewp.rgb_power = 0.75f;
-		ewp.rgb_base_weight = 0.0f;
-		ewp.rgb_mean_weight = 1.0f;
-
-		ewp.alpha_base_weight = 0.05f;
-
-		rgb_force_use_of_hdr = 1;
-		alpha_force_use_of_hdr = 0;
-
-		dblimit_user_specified = 999.0f;
-		dblimit_set_by_user = 1;
-	}
 
 	// parse the command line's encoding options.
 	int argidx;
@@ -641,77 +588,69 @@ int astc_main(
 		}
 
 		int cnt2D, cnt3D;
-		int dimensions = sscanf(argv[4], "%dx%d%nx%d%n", &xdim_3d, &ydim_3d, &cnt2D, &zdim_3d, &cnt3D);
+		int dimensions = sscanf(argv[4], "%dx%d%nx%d%n", &block_x, &block_y, &cnt2D, &block_z, &cnt3D);
 		switch (dimensions)
 		{
-		case 0:
-		case 1:
-			printf("ERROR: Invalid block size %s specified\n", argv[4]);
-			return 1;
 		case 2:
+			// Character after the last match should be a NUL
+			if (argv[4][cnt2D] || !is_legal_2d_block_size(block_x, block_y))
 			{
-				// Character after the last match should be a NUL
-				if (argv[4][cnt2D] || !is_legal_2d_block_size(xdim_3d, ydim_3d))
-				{
-					printf("ERROR: Invalid block size %s specified\n", argv[4]);
-					return 1;
-				}
+				printf("ERROR: Invalid block size %s specified\n", argv[4]);
+				return 1;
+			}
 
-				zdim_3d = 1;
+			assert(block_z == 1);
+			break;
+		case 3:
+			// Character after the last match should be a NUL
+			if (argv[4][cnt3D] || !is_legal_3d_block_size(block_x, block_y, block_z))
+			{
+				printf("ERROR: Invalid block size %s specified\n", argv[4]);
+				return 1;
 			}
 			break;
 		default:
-			{
-				// Character after the last match should be a NUL
-				if (argv[4][cnt3D] || !is_legal_3d_block_size(xdim_3d, ydim_3d, zdim_3d))
-				{
-					printf("ERROR: Invalid block size %s specified\n", argv[4]);
-					return 1;
-				}
-			}
-			break;
+			printf("ERROR: Invalid block size %s specified\n", argv[4]);
+			return 1;
 		}
 
+		log10_texels = logf((float)(block_x * block_y * block_z)) / logf(10.0f);
 
 		if (!strcmp(argv[5], "-fast"))
 		{
-			plimit_autoset = 4;
-			oplimit_autoset = 1.0;
-			mincorrel_autoset = 0.5;
-			dblimit_autoset_2d = MAX(85 - 35 * log10_texels_2d, 63 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
-			bmc_autoset = 50;
-			maxiters_autoset = 1;
+			plimit_set = 4;
+			oplimit_set = 1.0f;
+			mincorrel_set = 0.5f;
+			dblimit_set = MAX(85.0f - 35.0f * log10_texels, 63.0f - 19.0f * log10_texels);
+			bmc_set = 50.0f;
+			maxiters_set = 1;
 		}
 		else if (!strcmp(argv[5], "-medium"))
 		{
-			plimit_autoset = 25;
-			oplimit_autoset = 1.2f;
-			mincorrel_autoset = 0.75f;
-			dblimit_autoset_2d = MAX(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(95 - 35 * log10_texels_3d, 70 - 19 * log10_texels_3d);
-			bmc_autoset = 75;
-			maxiters_autoset = 2;
+			plimit_set = 25;
+			oplimit_set = 1.2f;
+			mincorrel_set = 0.75f;
+			dblimit_set = MAX(95.0f - 35.0f * log10_texels, 70.0f - 19.0f * log10_texels);
+			bmc_set = 75.0f;
+			maxiters_set = 2;
 		}
 		else if (!strcmp(argv[5], "-thorough"))
 		{
-			plimit_autoset = 100;
-			oplimit_autoset = 2.5f;
-			mincorrel_autoset = 0.95f;
-			dblimit_autoset_2d = MAX(105 - 35 * log10_texels_2d, 77 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(105 - 35 * log10_texels_3d, 77 - 19 * log10_texels_3d);
-			bmc_autoset = 95;
-			maxiters_autoset = 4;
+			plimit_set = 100;
+			oplimit_set = 2.5f;
+			mincorrel_set = 0.95f;
+			dblimit_set = MAX(105.0f - 35.0f * log10_texels, 77.0f - 19.0f * log10_texels);
+			bmc_set = 95.0f;
+			maxiters_set = 4;
 		}
 		else if (!strcmp(argv[5], "-exhaustive"))
 		{
-			plimit_autoset = PARTITION_COUNT;
-			oplimit_autoset = 1000.0f;
-			mincorrel_autoset = 0.99f;
-			dblimit_autoset_2d = 999.0f;
-			dblimit_autoset_3d = 999.0f;
-			bmc_autoset = 100;
-			maxiters_autoset = 4;
+			plimit_set = PARTITION_COUNT;
+			oplimit_set = 1000.0f;
+			mincorrel_set = 0.99f;
+			dblimit_set = 999.0f;
+			bmc_set = 100.0f;
+			maxiters_set = 4;
 		}
 		else
 		{
@@ -719,11 +658,35 @@ int astc_main(
 			return 1;
 		}
 
-		xdim_2d = xdim_3d;
-		ydim_2d = ydim_3d;
+		if (decode_mode == DECODE_HDRA)
+		{
+			ewp.rgb_power = 0.75f;
+			ewp.rgb_base_weight = 0.0f;
+			ewp.rgb_mean_weight = 1.0f;
 
-		log10_texels_2d = logf((float)(xdim_2d * ydim_2d)) / logf(10.0f);
-		log10_texels_3d = logf((float)(xdim_3d * ydim_3d * zdim_3d)) / logf(10.0f);
+			ewp.alpha_power = 0.75f;
+			ewp.alpha_base_weight = 0.0f;
+			ewp.alpha_mean_weight = 1.0f;
+
+			rgb_force_use_of_hdr = 1;
+			alpha_force_use_of_hdr = 1;
+
+			dblimit_set = 999.0f;
+		}
+		else if (decode_mode == DECODE_HDR)
+		{
+			ewp.rgb_power = 0.75f;
+			ewp.rgb_base_weight = 0.0f;
+			ewp.rgb_mean_weight = 1.0f;
+
+			ewp.alpha_base_weight = 0.05f;
+
+			rgb_force_use_of_hdr = 1;
+			alpha_force_use_of_hdr = 0;
+
+			dblimit_set = 999.0f;
+		}
+
 		argidx = 6;
 	}
 	else
@@ -916,10 +879,8 @@ int astc_main(
 			swz_decode.b = 6;	// b <- reconstruct
 			swz_decode.a = 5;	// 1.0
 
-			oplimit_user_specified = 1000.0f;
-			oplimit_set_by_user = 1;
-			mincorrel_user_specified = 0.99f;
-			mincorrel_set_by_user = 1;
+			oplimit_set = 1000.0f;
+			mincorrel_set = 0.99f;
 		}
 		else if (!strcmp(argv[argidx], "-normal_percep"))
 		{
@@ -938,21 +899,17 @@ int astc_main(
 			swz_decode.b = 6;	// b <- reconstruct
 			swz_decode.a = 5;	// 1.0
 
-			oplimit_user_specified = 1000.0f;
-			oplimit_set_by_user = 1;
-			mincorrel_user_specified = 0.99f;
-			mincorrel_set_by_user = 1;
-
-			dblimit_user_specified = 999;
-			dblimit_set_by_user = 1;
+			oplimit_set = 1000.0f;
+			mincorrel_set = 0.99f;
+			dblimit_set = 999.0f;
 
 			ewp.block_artifact_suppression = 1.8f;
 			ewp.mean_stdev_radius = 3;
-			ewp.rgb_mean_weight = 0;
-			ewp.rgb_stdev_weight = 50;
-			ewp.rgb_mean_and_stdev_mixing = 0.0;
-			ewp.alpha_mean_weight = 0;
-			ewp.alpha_stdev_weight = 50;
+			ewp.rgb_mean_weight = 0.0f;
+			ewp.rgb_stdev_weight = 50.0f;
+			ewp.rgb_mean_and_stdev_mixing = 0.0f;
+			ewp.alpha_mean_weight = 0.0f;
+			ewp.alpha_stdev_weight = 50.0f;
 		}
 		else if (!strcmp(argv[argidx], "-mask"))
 		{
@@ -974,10 +931,9 @@ int astc_main(
 				return 1;
 			}
 			float cutoff = (float)atof(argv[argidx - 1]);
-			if (cutoff > 100 || !(cutoff >= 0))
-				cutoff = 100;
-			bmc_user_specified = cutoff;
-			bmc_set_by_user = 1;
+			if (cutoff > 100.0f || !(cutoff >= 0.0f))
+				cutoff = 100.0f;
+			bmc_set = cutoff;
 		}
 		else if (!strcmp(argv[argidx], "-partitionlimit"))
 		{
@@ -987,8 +943,7 @@ int astc_main(
 				printf("-partitionlimit switch with no argument\n");
 				return 1;
 			}
-			plimit_user_specified = atoi(argv[argidx - 1]);
-			plimit_set_by_user = 1;
+			plimit_set = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
@@ -998,8 +953,7 @@ int astc_main(
 				printf("-dblimit switch with no argument\n");
 				return 1;
 			}
-			dblimit_user_specified = static_cast<float>(atof(argv[argidx - 1]));
-			dblimit_set_by_user = 1;
+			dblimit_set = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-partitionearlylimit"))
 		{
@@ -1009,8 +963,7 @@ int astc_main(
 				printf("-partitionearlylimit switch with no argument\n");
 				return 1;
 			}
-			oplimit_user_specified = static_cast<float>(atof(argv[argidx - 1]));
-			oplimit_set_by_user = 1;
+			oplimit_set = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-planecorlimit"))
 		{
@@ -1020,8 +973,7 @@ int astc_main(
 				printf("-planecorlimit switch with no argument\n");
 				return 1;
 			}
-			mincorrel_user_specified = static_cast<float>(atof(argv[argidx - 1]));
-			mincorrel_set_by_user = 1;
+			mincorrel_set = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
@@ -1031,8 +983,7 @@ int astc_main(
 				printf("-refinementlimit switch with no argument\n");
 				return 1;
 			}
-			maxiters_user_specified = atoi(argv[argidx - 1]);
-			maxiters_set_by_user = 1;
+			maxiters_set = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
@@ -1048,8 +999,6 @@ int astc_main(
 		{
 			argidx++;
 			linearize_srgb = 1;
-			dblimit_user_specified = 60;
-			dblimit_set_by_user = 1;
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
@@ -1140,31 +1089,25 @@ int astc_main(
 		return 1;
 	}
 
-	float texel_avg_error_limit_2d = 0.0f;
-	float texel_avg_error_limit_3d = 0.0f;
-
+	float texel_avg_error_limit = 0.0f;
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		int partitions_to_test = plimit_set_by_user ? plimit_user_specified : plimit_autoset;
-		float dblimit_2d = dblimit_set_by_user ? dblimit_user_specified : dblimit_autoset_2d;
-		float dblimit_3d = dblimit_set_by_user ? dblimit_user_specified : dblimit_autoset_3d;
-		float oplimit = oplimit_set_by_user ? oplimit_user_specified : oplimit_autoset;
-		float mincorrel = mincorrel_set_by_user ? mincorrel_user_specified : mincorrel_autoset;
+		int partitions_to_test = plimit_set;
+		float oplimit = oplimit_set;
+		float mincorrel = mincorrel_set;
 
-		int maxiters = maxiters_set_by_user ? maxiters_user_specified : maxiters_autoset;
+		int maxiters = maxiters_set;
 		ewp.max_refinement_iters = maxiters;
 
-		ewp.block_mode_cutoff = (bmc_set_by_user ? bmc_user_specified : bmc_autoset) / 100.0f;
+		ewp.block_mode_cutoff = bmc_set / 100.0f;
 
 		if (rgb_force_use_of_hdr == 0)
 		{
-			texel_avg_error_limit_2d = powf(0.1f, dblimit_2d * 0.1f) * 65535.0f * 65535.0f;
-			texel_avg_error_limit_3d = powf(0.1f, dblimit_3d * 0.1f) * 65535.0f * 65535.0f;
+			texel_avg_error_limit = powf(0.1f, dblimit_set * 0.1f) * 65535.0f * 65535.0f;
 		}
 		else
 		{
-			texel_avg_error_limit_2d = 0.0f;
-			texel_avg_error_limit_3d = 0.0f;
+			texel_avg_error_limit = 0.0f;
 		}
 
 		ewp.partition_1_to_2_limit = oplimit;
@@ -1178,16 +1121,13 @@ int astc_main(
 				print_statistics > 0)
 			{
 				thread_count = 1;
-				thread_count_autodetected = 0;
 			}
 		#endif
 
 		if (thread_count < 1)
 		{
 			thread_count = get_cpu_count();
-			thread_count_autodetected = 1;
 		}
-
 
 		// Specifying the error weight of a color component as 0 is not allowed.
 		// If weights are 0, then they are instead set to a small positive value.
@@ -1204,13 +1144,13 @@ int astc_main(
 		if (!silentmode)
 		{
 			printf("Encoding settings:\n\n");
-			if (zdim_3d == 1)
+			if (block_z == 1)
 			{
-				printf("2D Block size: %dx%d (%.2f bpp)\n", xdim_2d, ydim_2d, 128.0 / (xdim_2d * ydim_2d));
+				printf("2D Block size: %dx%d (%.2f bpp)\n", block_x, block_y, 128.0 / (block_x * block_y));
 			}
 			else
 			{
-				printf("3D Block size: %dx%dx%d (%.2f bpp)\n", xdim_3d, ydim_3d, zdim_3d, 128.0 / (xdim_3d * ydim_3d * zdim_3d));
+				printf("2D Block size: %dx%dx%d (%.2f bpp)\n", block_x, block_y, block_z, 128.0 / (block_x * block_y * block_z));
 			}
 			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);
 			printf("RGB power: %g\n", (double)ewp.rgb_power);
@@ -1229,13 +1169,13 @@ int astc_main(
 				printf("disabled\n");
 			printf("Color channel relative weighting: R=%g G=%g B=%g A=%g\n", (double)ewp.rgba_weights[0], (double)ewp.rgba_weights[1], (double)ewp.rgba_weights[2], (double)ewp.rgba_weights[3]);
 			printf("Block-artifact suppression parameter : %g\n", (double)ewp.block_artifact_suppression);
-			printf("Number of distinct partitionings to test: %d (%s)\n", ewp.partition_search_limit, plimit_set_by_user ? "specified by user" : "preset");
-			printf("PSNR decibel limit: 2D: %f 3D: %f (%s)\n", (double)dblimit_2d, (double)dblimit_3d, dblimit_set_by_user ? "specified by user" : "preset");
+			printf("Number of distinct partitionings to test: %d\n", ewp.partition_search_limit);
+			printf("PSNR decibel limit: %f\n", (double)dblimit_set);
 			printf("1->2 partition limit: %f\n", (double)oplimit);
-			printf("Dual-plane color-correlation cutoff: %f (%s)\n", (double)mincorrel, mincorrel_set_by_user ? "specified by user" : "preset");
-			printf("Block Mode Percentile Cutoff: %f (%s)\n", (double)(ewp.block_mode_cutoff * 100.0f), bmc_set_by_user ? "specified by user" : "preset");
-			printf("Max refinement iterations: %d (%s)\n", ewp.max_refinement_iters, maxiters_set_by_user ? "specified by user" : "preset");
-			printf("Thread count : %d (%s)\n", thread_count, thread_count_autodetected ? "autodetected" : "specified by user");
+			printf("Dual-plane color-correlation cutoff: %f\n", (double)mincorrel_set);
+			printf("Block Mode Percentile Cutoff: %f\n", (double)(ewp.block_mode_cutoff * 100.0f));
+			printf("Max refinement iterations: %d\n", ewp.max_refinement_iters);
+			printf("Thread count : %d\n", thread_count);
 			printf("\n");
 		}
 	}
@@ -1250,10 +1190,6 @@ int astc_main(
 	{
 		out_bitness = (decode_mode == DECODE_HDR) ? 16 : 8;
 	}
-
-	int xdim = -1;
-	int ydim = -1;
-	int zdim = -1;
 
 	// Temporary image array (for merging multiple 2D images into one 3D image).
 	int load_result = 0;
@@ -1380,28 +1316,14 @@ int astc_main(
 		input_components = load_result & 7;
 		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;
 
-		if ((input_decomp_img->zsize > 1) && (zdim_3d == 1))
+		if ((input_decomp_img->zsize > 1) && (block_z == 1))
 		{
 			printf("ERROR: 3D input data for a 2D ASTC block format\n");
 			exit(1);
 		}
 
-		if (zdim_3d != 1)
-		{
-			xdim = xdim_3d;
-			ydim = ydim_3d;
-			zdim = zdim_3d;
-			ewp.texel_avg_error_limit = texel_avg_error_limit_3d;
-		}
-		else
-		{
-			xdim = xdim_2d;
-			ydim = ydim_2d;
-			zdim = 1;
-			ewp.texel_avg_error_limit = texel_avg_error_limit_2d;
-		}
-
-		expand_block_artifact_suppression(xdim, ydim, zdim, &ewp);
+		ewp.texel_avg_error_limit = texel_avg_error_limit;
+		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
 
 		if (!silentmode)
 		{
@@ -1461,14 +1383,14 @@ int astc_main(
 		int xsize = input_decomp_img->xsize;
 		int ysize = input_decomp_img->ysize;
 		int zsize = input_decomp_img->zsize;
-		int xblocks = (xsize + xdim - 1) / xdim;
-		int yblocks = (ysize + ydim - 1) / ydim;
-		int zblocks = (zsize + zdim - 1) / zdim;
+		int xblocks = (xsize + block_x - 1) / block_x;
+		int yblocks = (ysize + block_y - 1) / block_y;
+		int zblocks = (zsize + block_z - 1) / block_z;
 		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
-		compress_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, buffer, thread_count);
+		compress_astc_image(input_decomp_img, block_x, block_y, block_z, &ewp, decode_mode, swz_encode, buffer, thread_count);
 
 		astc_compressed_image comp_img {
-			xdim, ydim, zdim,
+			block_x, block_y, block_z,
 			xsize, ysize, zsize,
 			buffer
 		};
@@ -1507,22 +1429,23 @@ int astc_main(
 		int xsize = input_decomp_img->xsize;
 		int ysize = input_decomp_img->ysize;
 		int zsize = input_decomp_img->zsize;
-		int xblocks = (xsize + xdim - 1) / xdim;
-		int yblocks = (ysize + ydim - 1) / ydim;
-		int zblocks = (zsize + zdim - 1) / zdim;
+		int xblocks = (xsize + block_x - 1) / block_x;
+		int yblocks = (ysize + block_y - 1) / block_y;
+		int zblocks = (zsize + block_z - 1) / block_z;
 		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
-		compress_astc_image(input_decomp_img, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, buffer, thread_count);
+		compress_astc_image(input_decomp_img, block_x, block_y, block_z, &ewp, decode_mode, swz_encode, buffer, thread_count);
 
 		end_coding_time = get_time();
 
 		astc_compressed_image comp_img {
-			xdim, ydim, zdim,
+			block_x, block_y, block_z,
 			xsize, ysize, zsize,
 			buffer
 		};
 
 		int error = store_astc_file(comp_img, output_filename);
-		if (error) {
+		if (error)
+		{
 			return 1;
 		}
 	}
