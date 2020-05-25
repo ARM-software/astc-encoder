@@ -105,7 +105,7 @@ ASTCENC_TEST_PATTERN_HDR = {
     "BR": (0.25, 0.75, 0.00, 0.87)
 }
 
-LDR_RGB_PSNR_PATTERN = re.compile(r"PSNR \(LDR-RGB\): (.*) dB")
+LDR_RGB_PSNR_PATTERN = re.compile(r"\s*PSNR \(LDR-RGB\): (.*) dB")
 
 
 class CLITestBase(unittest.TestCase):

@@ -1147,53 +1147,58 @@ int astc_main(
 			switch(decode_mode)
 			{
 				case DECODE_LDR:
-					printf("    Color profile: LDR linear\n");
+					printf("    Color profile:              LDR linear\n");
 					break;
 				case DECODE_LDR_SRGB:
-					printf("    Color profile: LDR sRGB\n");
+					printf("    Color profile:              LDR sRGB\n");
 					break;
 				case DECODE_HDR:
-					printf("    Color profile: HDR RGB + LDR A\n");
+					printf("    Color profile:              HDR RGB + LDR A\n");
 					break;
 				case DECODE_HDRA:
-					printf("    Color profile: HDR RGBA\n");
+					printf("    Color profile:              HDR RGBA\n");
 					break;
 			}
 
 			if (block_z == 1)
 			{
-				printf("    Block size: %dx%d (%.2f bpp)\n", block_x, block_y, 128.0 / (block_x * block_y));
+				printf("    Block size:                 %dx%d\n", block_x, block_y);
 			}
 			else
 			{
-				printf("    Block size: %dx%dx%d (%.2f bpp)\n", block_x, block_y, block_z, 128.0 / (block_x * block_y * block_z));
+				printf("    Block size:                 %dx%dx%d\n", block_x, block_y, block_z);
 			}
 
-			printf("    Radius mean/stdev: %d texels\n", ewp.mean_stdev_radius);
-			printf("    RGB power: %g\n", (double)ewp.rgb_power);
-			printf("    RGB base weight: %g\n", (double)ewp.rgb_base_weight);
-			printf("    RGB mean weight: %g\n", (double)ewp.rgb_mean_weight);
-			printf("    RGB stdev weight: %g\n", (double)ewp.rgb_stdev_weight);
-			printf("    RGB mean/stdev channel mixing: %g\n", (double)ewp.rgb_mean_and_stdev_mixing);
-			printf("    Alpha power: %g\n", (double)ewp.alpha_power);
-			printf("    Alpha base weight: %g\n", (double)ewp.alpha_base_weight);
-			printf("    Alpha mean weight: %g\n", (double)ewp.alpha_mean_weight);
-			printf("    Alpha stdev weight: %g\n", (double)ewp.alpha_stdev_weight);
-			printf("    RGB alpha scale weight: %d\n", ewp.enable_rgb_scale_with_alpha);
+			printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (block_x * block_y * block_z));
+
+			printf("    Radius mean/stdev:          %d texels\n", ewp.mean_stdev_radius);
+			printf("    RGB power:                  %g\n", (double)ewp.rgb_power);
+			printf("    RGB base weight:            %g\n", (double)ewp.rgb_base_weight);
+			printf("    RGB mean weight:            %g\n", (double)ewp.rgb_mean_weight);
+			printf("    RGB stdev weight:           %g\n", (double)ewp.rgb_stdev_weight);
+			printf("    RGB mean/stdev mixing:      %g\n", (double)ewp.rgb_mean_and_stdev_mixing);
+			printf("    Alpha power:                %g\n", (double)ewp.alpha_power);
+			printf("    Alpha base weight:          %g\n", (double)ewp.alpha_base_weight);
+			printf("    Alpha mean weight:          %g\n", (double)ewp.alpha_mean_weight);
+			printf("    Alpha stdev weight:         %g\n", (double)ewp.alpha_stdev_weight);
+			printf("    RGB alpha scale weight:     %d\n", ewp.enable_rgb_scale_with_alpha);
 			if (ewp.enable_rgb_scale_with_alpha)
 			{
-				printf("    RGB alpha scale radius: %d)\n", ewp.alpha_radius);
+				printf("    Radius RGB alpha scale:     %d texels\n", ewp.alpha_radius);
 			}
 
-			printf("    Color channel weight: R=%g G=%g B=%g A=%g\n", (double)ewp.rgba_weights[0], (double)ewp.rgba_weights[1], (double)ewp.rgba_weights[2], (double)ewp.rgba_weights[3]);
-			printf("    Deblock artifact weight: %g\n", (double)ewp.block_artifact_suppression);
-			printf("    Block partition cutoff: %d\n", ewp.partition_search_limit);
-			printf("    PSNR decibel cutoff: %g\n", (double)dblimit_set);
-			printf("    1->2 partition cutoff: %g\n", (double)oplimit);
+			printf("    R channel weight:           %g\n",(double)ewp.rgba_weights[0]);
+			printf("    G channel weight:           %g\n",(double)ewp.rgba_weights[1]);
+			printf("    B channel weight:           %g\n",(double)ewp.rgba_weights[2]);
+			printf("    A channel weight:           %g\n",(double)ewp.rgba_weights[3]);
+			printf("    Deblock artifact setting:   %g\n", (double)ewp.block_artifact_suppression);
+			printf("    Block partition cutoff:     %d partitions\n", ewp.partition_search_limit);
+			printf("    PSNR cutoff:                %g dB\n", (double)dblimit_set);
+			printf("    1->2 partition cutoff:      %g\n", (double)oplimit);
 			printf("    2 plane correlation cutoff: %g\n", (double)mincorrel_set);
-			printf("    Block mode centile cutoff: %g\n", (double)(ewp.block_mode_cutoff * 100.0f));
-			printf("    Max refinement cutoff: %d\n", ewp.max_refinement_iters);
-			printf("    Compressor thread count: %d\n", thread_count);
+			printf("    Block mode centile cutoff:  %g%%\n", (double)(ewp.block_mode_cutoff * 100.0f));
+			printf("    Max refinement cutoff:      %d iterations\n", ewp.max_refinement_iters);
+			printf("    Compressor thread count:    %d\n", thread_count);
 			printf("\n");
 		}
 	}
@@ -1347,31 +1352,25 @@ int astc_main(
 		{
 			printf("Source image\n");
 			printf("============\n\n");
-			printf("    Source: %s\n", input_filename);
-			printf("    Color profile: %s\n", input_image_is_hdr ? "HDR" : "LDR");
+			printf("    Source:                     %s\n", input_filename);
+			printf("    Color profile:              %s\n", input_image_is_hdr ? "HDR" : "LDR");
 			if (input_decomp_img->zsize > 1)
 			{
-				printf("    Dimensions: 3D, %d x %d x %d\n",
+				printf("    Dimensions:                 3D, %d x %d x %d\n",
 				       input_decomp_img->xsize, input_decomp_img->ysize, input_decomp_img->zsize);
 			}
 			else
 			{
-				printf("    Dimensions: 2D, %d x %d\n",
+				printf("    Dimensions:                 2D, %d x %d\n",
 				       input_decomp_img->xsize, input_decomp_img->ysize);
 			}
-			printf("    Channels: %d\n\n", load_result & 7);
+			printf("    Channels:                   %d\n\n", load_result & 7);
 		}
 
 		if (padding > 0 ||
 		    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
 		    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 		{
-			if (!silentmode)
-			{
-				printf("Computing texel-neighborhood means and variances ... ");
-				fflush(stdout);
-			}
-
 			compute_averages_and_variances(
 				input_decomp_img,
 				ewp.rgb_power,
@@ -1381,11 +1380,6 @@ int astc_main(
 				linearize_srgb,
 				swz_encode,
 				thread_count);
-
-			if (!silentmode)
-			{
-				printf("done\n");
-			}
 		}
 	}
 
@@ -1485,10 +1479,10 @@ int astc_main(
 
 	if (op_mode == ASTC_ENCODE_AND_DECODE || !silentmode)
 	{
-		printf("\nCoding time\n");
-		printf("-----------\n");
-		printf("Total time:             %6.2f s\n", end_time - start_time);
-		printf("Coding time:            %6.2f s\n", end_coding_time - start_coding_time);
+		printf("Coding time\n");
+		printf("===========\n\n");
+		printf("    Total time:                %6.2f s\n", end_time - start_time);
+		printf("    Coding time:               %6.2f s\n", end_coding_time - start_coding_time);
 	}
 
 	return 0;

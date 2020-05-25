@@ -270,18 +270,18 @@ class Encoder2x(EncoderBase):
     def get_psnr_pattern(self, image):
         if image.colorProfile != "hdr":
             if image.colorFormat != "rgba":
-                patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
+                patternPSNR = r"\s*PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             else:
-                patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
+                patternPSNR = r"\s*PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
         else:
-            patternPSNR = r"mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
+            patternPSNR = r"\s*mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
         return patternPSNR
 
     def get_total_time_pattern(self):
-        return r"Total time:\s*([0-9.]*) s"
+        return r"\s*Total time:\s*([0-9.]*) s"
 
     def get_coding_time_pattern(self):
-        return r"Coding time:\s*([0-9.]*) s"
+        return r"\s*Coding time:\s*([0-9.]*) s"
 
 
 class Encoder1x(EncoderBase):

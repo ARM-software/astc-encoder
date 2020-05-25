@@ -309,34 +309,34 @@ void compute_error_metrics(
 	float rgb_psnr = psnr;
 
 	printf("Error metrics\n");
-	printf("-------------\n");
+	printf("=============\n\n");
 
 	if (channelmask & 8)
 	{
-		printf("PSNR (LDR-RGBA):         %9.6f dB\n", (double)psnr);
+		printf("    PSNR (LDR-RGBA):            %9.6f dB\n", (double)psnr);
 
 		float alpha_psnr;
 		if (alpha_num == 0.0f)
 			alpha_psnr = 999.0f;
 		else
 			alpha_psnr = 10.0f * log10f(denom / alpha_num);
-		printf("Alpha-weighted PSNR:     %9.6f dB\n", (double)alpha_psnr);
+		printf("    Alpha-weighted PSNR:        %9.6f dB\n", (double)alpha_psnr);
 
 		float rgb_num = errorsum.sum.x + errorsum.sum.y + errorsum.sum.z;
 		if (rgb_num == 0.0f)
 			rgb_psnr = 999.0f;
 		else
 			rgb_psnr = 10.0f * log10f(pixels * 3.0f / rgb_num);
-		printf("PSNR (LDR-RGB):          %9.6f dB\n", (double)rgb_psnr);
+		printf("    PSNR (LDR-RGB):             %9.6f dB\n", (double)rgb_psnr);
 	}
 	else
 	{
-		printf("PSNR (LDR-RGB):          %9.6f dB\n", (double)psnr);
+		printf("    PSNR (LDR-RGB):             %9.6f dB\n", (double)psnr);
 	}
 
 	if (compute_hdr_metrics)
 	{
-		printf("PSNR (RGB norm to peak): %9.6f dB (peak %f)\n",
+		printf("    PSNR (RGB norm to peak):    %9.6f dB (peak %f)\n",
 				(double)(rgb_psnr + 20.0f * log10f(rgb_peak)),
 				(double)rgb_peak);
 
@@ -345,10 +345,12 @@ void compute_error_metrics(
 			mpsnr = 999.0f;
 		else
 			mpsnr = 10.0f * log10f(mpsnr_denom / mpsnr_num);
-		printf("mPSNR (RGB):             %9.6f dB (fstops %+d to %+d)\n",
+		printf("    mPSNR (RGB):                %9.6f dB (fstops %+d to %+d)\n",
 				(double)mpsnr, fstop_lo, fstop_hi);
 
 		float logrmse = astc::sqrt(log_num / pixels);
-		printf("LogRMSE (RGB):           %9.6f\n", (double)logrmse);
+		printf("    LogRMSE (RGB):              %9.6f\n", (double)logrmse);
 	}
+
+	printf("\n");
 }
