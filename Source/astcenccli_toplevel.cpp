@@ -479,10 +479,10 @@ int astc_main(
 		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB},
 		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB},
 		{"-ch",      ASTC_ENCODE,            DECODE_HDR},
-		{"-cH",      ASTC_ENCODE,            DECODE_HDRA},
 		{"-dh",      ASTC_DECODE,            DECODE_HDR},
-		{"-dH",      ASTC_DECODE,            DECODE_HDRA},
 		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR},
+		{"-cH",      ASTC_ENCODE,            DECODE_HDRA},
+		{"-dH",      ASTC_DECODE,            DECODE_HDRA},
 		{"-tH",      ASTC_ENCODE_AND_DECODE, DECODE_HDRA},
 		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR},
 		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR},
@@ -555,8 +555,6 @@ int astc_main(
 
 	int thread_count = 0;		// default value
 	int thread_count_autodetected = 0;
-
-	int preset_has_been_set = 0;
 
 	int plimit_autoset = -1;
 	int plimit_user_specified = -1;
@@ -636,6 +634,12 @@ int astc_main(
 			return 1;
 		}
 
+		if (argc < 6)
+		{
+			printf("ERROR: Search quality preset not specified\n");
+			return 1;
+		}
+
 		int cnt2D, cnt3D;
 		int dimensions = sscanf(argv[4], "%dx%d%nx%d%n", &xdim_3d, &ydim_3d, &cnt2D, &zdim_3d, &cnt3D);
 		switch (dimensions)
@@ -668,16 +672,63 @@ int astc_main(
 			break;
 		}
 
+
+		if (!strcmp(argv[5], "-fast"))
+		{
+			plimit_autoset = 4;
+			oplimit_autoset = 1.0;
+			mincorrel_autoset = 0.5;
+			dblimit_autoset_2d = MAX(85 - 35 * log10_texels_2d, 63 - 19 * log10_texels_2d);
+			dblimit_autoset_3d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
+			bmc_autoset = 50;
+			maxiters_autoset = 1;
+		}
+		else if (!strcmp(argv[5], "-medium"))
+		{
+			plimit_autoset = 25;
+			oplimit_autoset = 1.2f;
+			mincorrel_autoset = 0.75f;
+			dblimit_autoset_2d = MAX(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
+			dblimit_autoset_3d = MAX(95 - 35 * log10_texels_3d, 70 - 19 * log10_texels_3d);
+			bmc_autoset = 75;
+			maxiters_autoset = 2;
+		}
+		else if (!strcmp(argv[5], "-thorough"))
+		{
+			plimit_autoset = 100;
+			oplimit_autoset = 2.5f;
+			mincorrel_autoset = 0.95f;
+			dblimit_autoset_2d = MAX(105 - 35 * log10_texels_2d, 77 - 19 * log10_texels_2d);
+			dblimit_autoset_3d = MAX(105 - 35 * log10_texels_3d, 77 - 19 * log10_texels_3d);
+			bmc_autoset = 95;
+			maxiters_autoset = 4;
+		}
+		else if (!strcmp(argv[5], "-exhaustive"))
+		{
+			plimit_autoset = PARTITION_COUNT;
+			oplimit_autoset = 1000.0f;
+			mincorrel_autoset = 0.99f;
+			dblimit_autoset_2d = 999.0f;
+			dblimit_autoset_3d = 999.0f;
+			bmc_autoset = 100;
+			maxiters_autoset = 4;
+		}
+		else
+		{
+			printf("ERROR: Unknown search preset\n");
+			return 1;
+		}
+
 		xdim_2d = xdim_3d;
 		ydim_2d = ydim_3d;
 
 		log10_texels_2d = logf((float)(xdim_2d * ydim_2d)) / logf(10.0f);
 		log10_texels_3d = logf((float)(xdim_3d * ydim_3d * zdim_3d)) / logf(10.0f);
-		argidx = 5;
+		argidx = 6;
 	}
 	else
 	{
-		// for decode and comparison, block size is not needed.
+		// For decode the block size and preset are not needed.
 		argidx = 4;
 	}
 
@@ -983,54 +1034,6 @@ int astc_main(
 			maxiters_user_specified = atoi(argv[argidx - 1]);
 			maxiters_set_by_user = 1;
 		}
-		else if (!strcmp(argv[argidx], "-fast"))
-		{
-			argidx++;
-			plimit_autoset = 4;
-			oplimit_autoset = 1.0;
-			mincorrel_autoset = 0.5;
-			dblimit_autoset_2d = MAX(85 - 35 * log10_texels_2d, 63 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(85 - 35 * log10_texels_3d, 63 - 19 * log10_texels_3d);
-			bmc_autoset = 50;
-			maxiters_autoset = 1;
-			preset_has_been_set++;
-		}
-		else if (!strcmp(argv[argidx], "-medium"))
-		{
-			argidx++;
-			plimit_autoset = 25;
-			oplimit_autoset = 1.2f;
-			mincorrel_autoset = 0.75f;
-			dblimit_autoset_2d = MAX(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(95 - 35 * log10_texels_3d, 70 - 19 * log10_texels_3d);
-			bmc_autoset = 75;
-			maxiters_autoset = 2;
-			preset_has_been_set++;
-		}
-		else if (!strcmp(argv[argidx], "-thorough"))
-		{
-			argidx++;
-			plimit_autoset = 100;
-			oplimit_autoset = 2.5f;
-			mincorrel_autoset = 0.95f;
-			dblimit_autoset_2d = MAX(105 - 35 * log10_texels_2d, 77 - 19 * log10_texels_2d);
-			dblimit_autoset_3d = MAX(105 - 35 * log10_texels_3d, 77 - 19 * log10_texels_3d);
-			bmc_autoset = 95;
-			maxiters_autoset = 4;
-			preset_has_been_set++;
-		}
-		else if (!strcmp(argv[argidx], "-exhaustive"))
-		{
-			argidx++;
-			plimit_autoset = PARTITION_COUNT;
-			oplimit_autoset = 1000.0f;
-			mincorrel_autoset = 0.99f;
-			dblimit_autoset_2d = 999.0f;
-			dblimit_autoset_3d = 999.0f;
-			bmc_autoset = 100;
-			maxiters_autoset = 4;
-			preset_has_been_set++;
-		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
 			argidx += 2;
@@ -1142,15 +1145,6 @@ int astc_main(
 
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		// if encode, process the parsed command line values
-		if (preset_has_been_set != 1)
-		{
-			printf("For encoding, need to specify exactly one performance-quality\n"
-			       "trade-off preset option. The available presets are:\n"
-			       " -fast\n" " -medium\n" " -thorough\n" " -exhaustive\n");
-			return 1;
-		}
-
 		int partitions_to_test = plimit_set_by_user ? plimit_user_specified : plimit_autoset;
 		float dblimit_2d = dblimit_set_by_user ? dblimit_user_specified : dblimit_autoset_2d;
 		float dblimit_3d = dblimit_set_by_user ? dblimit_user_specified : dblimit_autoset_3d;

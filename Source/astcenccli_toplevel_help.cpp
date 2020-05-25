@@ -135,9 +135,9 @@ COMPRESSION
            5x4x4: 1.60 bpp       6x6x6: 0.59 bpp
 
        The quality preset configures the quality-performance tradeoff for
-       the compressor; more complete searches of the available search
-       space improve image quality at the expense of compression time.
-       Available presets include:
+       the compressor; more complete searches of the search space improve
+       image quality at the expense of compression time. The available
+       presets are:
 
            -fast
            -medium
