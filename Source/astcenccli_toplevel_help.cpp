@@ -211,11 +211,11 @@ ADVANCED COMPRESSION
        These options provide low-level control of the codec error metric
        computation, used to determine what good compression looks like.
 
-       -v <radius> <power> <base> <avg> <stdev> <mix>
+       -v <radius> <power> <base> <mean> <stdev> <mix>
            Compute the per-texel relative error weighting for the RGB color
            channels as follows:
 
-           weight = 1 / (<base> + <avg> * average^2 + <stdev> * stdev^2)
+           weight = 1 / (<base> + <mean> * mean^2 + <stdev> * stdev^2)
 
            The <radius> argument specifies the pixel radius of the
            neighborhood over which the average and standard deviation are
@@ -234,7 +234,7 @@ ADVANCED COMPRESSION
            e.g. a power of 0.5 causes the codec to take the square root
            of every input pixel value.
 
-       -va <power> <base> <avg> <stdev>
+       -va <power> <base> <mean> <stdev>
            Compute the per-texel relative error weighting for the alpha
            channel, when used in conjunction with -v. See documentation for
            -v for parameter documentation.

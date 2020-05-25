@@ -187,14 +187,14 @@ struct astcenc_config {
 	unsigned int block_y;
 	unsigned int block_z;
 	unsigned int v_rgba_radius;
-	float v_rgba_avg_stdev_mix;
+	float v_rgba_mean_stdev_mix;
 	float v_rgb_power;
 	float v_rgb_base;
-	float v_rgb_avg;
+	float v_rgb_mean;
 	float v_rgb_stdev;
 	float v_a_power;
 	float v_a_base;
-	float v_a_avg;
+	float v_a_mean;
 	float v_a_stdev;
 	float cw_r_weight;
 	float cw_g_weight;

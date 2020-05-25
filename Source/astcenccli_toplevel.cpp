@@ -921,7 +921,6 @@ int astc_main(
 			ewp.alpha_mean_weight = 0.0f;
 			ewp.alpha_stdev_weight = 25.0f;
 		}
-
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
 			argidx += 2;
@@ -1098,7 +1097,6 @@ int astc_main(
 
 		int maxiters = maxiters_set;
 		ewp.max_refinement_iters = maxiters;
-
 		ewp.block_mode_cutoff = bmc_set / 100.0f;
 
 		if (rgb_force_use_of_hdr == 0)
@@ -1143,39 +1141,59 @@ int astc_main(
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)
 		{
-			printf("Encoding settings:\n\n");
+			printf("Compressor settings\n");
+			printf("===================\n\n");
+
+			switch(decode_mode)
+			{
+				case DECODE_LDR:
+					printf("    Color profile: LDR linear\n");
+					break;
+				case DECODE_LDR_SRGB:
+					printf("    Color profile: LDR sRGB\n");
+					break;
+				case DECODE_HDR:
+					printf("    Color profile: HDR RGB + LDR A\n");
+					break;
+				case DECODE_HDRA:
+					printf("    Color profile: HDR RGBA\n");
+					break;
+			}
+
 			if (block_z == 1)
 			{
-				printf("2D Block size: %dx%d (%.2f bpp)\n", block_x, block_y, 128.0 / (block_x * block_y));
+				printf("    Block size: %dx%d (%.2f bpp)\n", block_x, block_y, 128.0 / (block_x * block_y));
 			}
 			else
 			{
-				printf("2D Block size: %dx%dx%d (%.2f bpp)\n", block_x, block_y, block_z, 128.0 / (block_x * block_y * block_z));
+				printf("    Block size: %dx%dx%d (%.2f bpp)\n", block_x, block_y, block_z, 128.0 / (block_x * block_y * block_z));
 			}
-			printf("Radius for mean-and-stdev calculations: %d texels\n", ewp.mean_stdev_radius);
-			printf("RGB power: %g\n", (double)ewp.rgb_power);
-			printf("RGB base-weight: %g\n", (double)ewp.rgb_base_weight);
-			printf("RGB local-mean weight: %g\n", (double)ewp.rgb_mean_weight);
-			printf("RGB local-stdev weight: %g\n", (double)ewp.rgb_stdev_weight);
-			printf("RGB mean-and-stdev mixing across color channels: %g\n", (double)ewp.rgb_mean_and_stdev_mixing);
-			printf("Alpha power: %g\n", (double)ewp.alpha_power);
-			printf("Alpha base-weight: %g\n", (double)ewp.alpha_base_weight);
-			printf("Alpha local-mean weight: %g\n", (double)ewp.alpha_mean_weight);
-			printf("Alpha local-stdev weight: %g\n", (double)ewp.alpha_stdev_weight);
-			printf("RGB weights scale with alpha: ");
+
+			printf("    Radius mean/stdev: %d texels\n", ewp.mean_stdev_radius);
+			printf("    RGB power: %g\n", (double)ewp.rgb_power);
+			printf("    RGB base weight: %g\n", (double)ewp.rgb_base_weight);
+			printf("    RGB mean weight: %g\n", (double)ewp.rgb_mean_weight);
+			printf("    RGB stdev weight: %g\n", (double)ewp.rgb_stdev_weight);
+			printf("    RGB mean/stdev channel mixing: %g\n", (double)ewp.rgb_mean_and_stdev_mixing);
+			printf("    Alpha power: %g\n", (double)ewp.alpha_power);
+			printf("    Alpha base weight: %g\n", (double)ewp.alpha_base_weight);
+			printf("    Alpha mean weight: %g\n", (double)ewp.alpha_mean_weight);
+			printf("    Alpha stdev weight: %g\n", (double)ewp.alpha_stdev_weight);
+			printf("    RGB alpha scale weight: %d\n", ewp.enable_rgb_scale_with_alpha);
 			if (ewp.enable_rgb_scale_with_alpha)
-				printf("enabled (radius=%d)\n", ewp.alpha_radius);
-			else
-				printf("disabled\n");
-			printf("Color channel relative weighting: R=%g G=%g B=%g A=%g\n", (double)ewp.rgba_weights[0], (double)ewp.rgba_weights[1], (double)ewp.rgba_weights[2], (double)ewp.rgba_weights[3]);
-			printf("Block-artifact suppression parameter : %g\n", (double)ewp.block_artifact_suppression);
-			printf("Number of distinct partitionings to test: %d\n", ewp.partition_search_limit);
-			printf("PSNR decibel limit: %f\n", (double)dblimit_set);
-			printf("1->2 partition limit: %f\n", (double)oplimit);
-			printf("Dual-plane color-correlation cutoff: %f\n", (double)mincorrel_set);
-			printf("Block Mode Percentile Cutoff: %f\n", (double)(ewp.block_mode_cutoff * 100.0f));
-			printf("Max refinement iterations: %d\n", ewp.max_refinement_iters);
-			printf("Thread count : %d\n", thread_count);
+			{
+				printf("    RGB alpha scale radius: %d)\n", ewp.alpha_radius);
+			}
+
+			printf("    Color channel weight: R=%g G=%g B=%g A=%g\n", (double)ewp.rgba_weights[0], (double)ewp.rgba_weights[1], (double)ewp.rgba_weights[2], (double)ewp.rgba_weights[3]);
+			printf("    Deblock artifact weight: %g\n", (double)ewp.block_artifact_suppression);
+			printf("    Block partition cutoff: %d\n", ewp.partition_search_limit);
+			printf("    PSNR decibel cutoff: %g\n", (double)dblimit_set);
+			printf("    1->2 partition cutoff: %g\n", (double)oplimit);
+			printf("    2 plane correlation cutoff: %g\n", (double)mincorrel_set);
+			printf("    Block mode centile cutoff: %g\n", (double)(ewp.block_mode_cutoff * 100.0f));
+			printf("    Max refinement cutoff: %d\n", ewp.max_refinement_iters);
+			printf("    Compressor thread count: %d\n", thread_count);
 			printf("\n");
 		}
 	}
@@ -1327,9 +1345,21 @@ int astc_main(
 
 		if (!silentmode)
 		{
-			printf("%s: %dD %s image, %d x %d x %d, %d components\n\n",
-			       input_filename, input_decomp_img->zsize > 1 ? 3 : 2, input_image_is_hdr ? "HDR" : "LDR",
-			       input_decomp_img->xsize, input_decomp_img->ysize,input_decomp_img->zsize, load_result & 7);
+			printf("Source image\n");
+			printf("============\n\n");
+			printf("    Source: %s\n", input_filename);
+			printf("    Color profile: %s\n", input_image_is_hdr ? "HDR" : "LDR");
+			if (input_decomp_img->zsize > 1)
+			{
+				printf("    Dimensions: 3D, %d x %d x %d\n",
+				       input_decomp_img->xsize, input_decomp_img->ysize, input_decomp_img->zsize);
+			}
+			else
+			{
+				printf("    Dimensions: 2D, %d x %d\n",
+				       input_decomp_img->xsize, input_decomp_img->ysize);
+			}
+			printf("    Channels: %d\n\n", load_result & 7);
 		}
 
 		if (padding > 0 ||
