@@ -41,6 +41,7 @@ SOURCES_LIBRARY = \
     astcenc_compute_variance.cpp \
     astcenc_decompress_symbolic.cpp \
     astcenc_encoding_choice_error.cpp \
+    astcenc_entry.cpp \
     astcenc_find_best_partitioning.cpp \
     astcenc_ideal_endpoints_and_weights.cpp \
     astcenc_image.cpp \
@@ -145,7 +146,7 @@ tinyexr-c-$(VEC).o: tinyexr.h
 	@echo "[C++] $<"
 
 $(OBJECTS_CLI): %-c-$(VEC).o: %.cpp $(HEADERS)
-	@$(CXX) -c -o $@ $< $(CXXFLAGS)
+	@$(CXX) -c -o $@ $(abspath $<) $(CXXFLAGS)
 	@echo "[C++] $<"
 
 # ==================================================
@@ -155,7 +156,7 @@ $(LIBRARY): $(OBJECTS_LIBRARY)
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
 $(OBJECTS_LIBRARY): %-l-$(VEC).o: %.cpp $(HEADERS)
-	@$(CXX) -c -fpic -o $@ $< $(CXXFLAGS)
+	@$(CXX) -c -fpic -o $@ $(abspath $<) $(CXXFLAGS)
 	@echo "[C++] $<"
 
 # ==================================================

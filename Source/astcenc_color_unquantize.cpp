@@ -796,7 +796,7 @@ static void hdr_rgb_hdr_alpha_unpack3(
 
 void unpack_color_endpoints(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	int format,
 	int quantization_level,
 	const int* input,
@@ -928,7 +928,7 @@ void unpack_color_endpoints(
 
 	switch (decode_mode)
 	{
-	case DECODE_LDR_SRGB:
+	case ASTCENC_PRF_LDR_SRGB:
 		if (*rgb_hdr == 1)
 		{
 			output0->x = 0xFF00;
@@ -955,7 +955,7 @@ void unpack_color_endpoints(
 		*alpha_hdr = 0;
 		break;
 
-	case DECODE_LDR:
+	case ASTCENC_PRF_LDR:
 		if (*rgb_hdr == 1)
 		{
 			output0->x = 0xFFFF;
@@ -983,8 +983,8 @@ void unpack_color_endpoints(
 		*alpha_hdr = 0;
 		break;
 
-	case DECODE_HDR:
-	case DECODE_HDRA:
+	case ASTCENC_PRF_HDR_RGB_LDR_A:
+	case ASTCENC_PRF_HDR:
 		if (*rgb_hdr == 0)
 		{
 			output0->x *= 257;

@@ -169,7 +169,7 @@ int load_astc_file(
 astc_codec_image* decompress_astc_image(
 	const astc_compressed_image& data,
 	int bitness,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	swizzlepattern swz_decode,
 	int linearize_srgb,
 	int rgb_force_use_of_hdr,
@@ -216,7 +216,7 @@ struct compress_astc_image_info
 	const error_weighting_params* ewp;
 	uint8_t* buffer;
 	int threadcount;
-	astc_decode_mode decode_mode;
+	astcenc_profile decode_mode;
 	swizzlepattern swz_encode;
 	const astc_codec_image* input_image;
 };
@@ -233,7 +233,7 @@ static void compress_astc_image_threadfunc(
 	int zdim = bsd->zdim;
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
-	astc_decode_mode decode_mode = blk->decode_mode;
+	astcenc_profile decode_mode = blk->decode_mode;
 	swizzlepattern swz_encode = blk->swz_encode;
 	const astc_codec_image *input_image = blk->input_image;
 
@@ -319,7 +319,7 @@ static void compress_astc_image(
 	int ydim,
 	int zdim,
 	const error_weighting_params* ewp,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	swizzlepattern swz_encode,
 	uint8_t* buffer,
 	int threadcount
@@ -442,7 +442,7 @@ int astc_main(
 
 	// initialization routines
 	prepare_angular_tables();
-	build_quantization_mode_table();
+	build_quantization_mode_table();	start_time = get_time();
 
 	start_time = get_time();
 
@@ -465,30 +465,30 @@ int astc_main(
 		ASTC_UNRECOGNIZED
 	};
 
-	astc_decode_mode decode_mode = DECODE_LDR;
+	astcenc_profile decode_mode = ASTCENC_PRF_LDR;
 	astc_op_mode op_mode = ASTC_UNRECOGNIZED;
 
 	struct {
 		const char *opt;
 		astc_op_mode op_mode;
-		astc_decode_mode decode_mode;
+		astcenc_profile decode_mode;
 	} modes[] = {
-		{"-cl",      ASTC_ENCODE,            DECODE_LDR},
-		{"-dl",      ASTC_DECODE,            DECODE_LDR},
-		{"-tl",      ASTC_ENCODE_AND_DECODE, DECODE_LDR},
-		{"-cs",      ASTC_ENCODE,            DECODE_LDR_SRGB},
-		{"-ds",      ASTC_DECODE,            DECODE_LDR_SRGB},
-		{"-ts",      ASTC_ENCODE_AND_DECODE, DECODE_LDR_SRGB},
-		{"-ch",      ASTC_ENCODE,            DECODE_HDR},
-		{"-dh",      ASTC_DECODE,            DECODE_HDR},
-		{"-th",      ASTC_ENCODE_AND_DECODE, DECODE_HDR},
-		{"-cH",      ASTC_ENCODE,            DECODE_HDRA},
-		{"-dH",      ASTC_DECODE,            DECODE_HDRA},
-		{"-tH",      ASTC_ENCODE_AND_DECODE, DECODE_HDRA},
-		{"-h",       ASTC_PRINT_LONGHELP,    DECODE_HDR},
-		{"-help",    ASTC_PRINT_LONGHELP,    DECODE_HDR},
-		{"-v",       ASTC_PRINT_VERSION,     DECODE_HDR},
-		{"-version", ASTC_PRINT_VERSION,     DECODE_HDR}
+		{"-cl",      ASTC_ENCODE,            ASTCENC_PRF_LDR},
+		{"-dl",      ASTC_DECODE,            ASTCENC_PRF_LDR},
+		{"-tl",      ASTC_ENCODE_AND_DECODE, ASTCENC_PRF_LDR},
+		{"-cs",      ASTC_ENCODE,            ASTCENC_PRF_LDR_SRGB},
+		{"-ds",      ASTC_DECODE,            ASTCENC_PRF_LDR_SRGB},
+		{"-ts",      ASTC_ENCODE_AND_DECODE, ASTCENC_PRF_LDR_SRGB},
+		{"-ch",      ASTC_ENCODE,            ASTCENC_PRF_HDR},
+		{"-dh",      ASTC_DECODE,            ASTCENC_PRF_HDR},
+		{"-th",      ASTC_ENCODE_AND_DECODE, ASTCENC_PRF_HDR},
+		{"-cH",      ASTC_ENCODE,            ASTCENC_PRF_HDR_RGB_LDR_A},
+		{"-dH",      ASTC_DECODE,            ASTCENC_PRF_HDR_RGB_LDR_A},
+		{"-tH",      ASTC_ENCODE_AND_DECODE, ASTCENC_PRF_HDR_RGB_LDR_A},
+		{"-h",       ASTC_PRINT_LONGHELP,    ASTCENC_PRF_HDR},
+		{"-help",    ASTC_PRINT_LONGHELP,    ASTCENC_PRF_HDR},
+		{"-v",       ASTC_PRINT_VERSION,     ASTCENC_PRF_HDR},
+		{"-version", ASTC_PRINT_VERSION,     ASTCENC_PRF_HDR}
 	};
 
 	int modes_count = sizeof(modes) / sizeof(modes[0]);
@@ -658,7 +658,7 @@ int astc_main(
 			return 1;
 		}
 
-		if (decode_mode == DECODE_HDRA)
+		if (decode_mode == ASTCENC_PRF_HDR)
 		{
 			ewp.rgb_power = 0.75f;
 			ewp.rgb_base_weight = 0.0f;
@@ -673,7 +673,7 @@ int astc_main(
 
 			dblimit_set = 999.0f;
 		}
-		else if (decode_mode == DECODE_HDR)
+		else if (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A)
 		{
 			ewp.rgb_power = 0.75f;
 			ewp.rgb_base_weight = 0.0f;
@@ -1020,29 +1020,6 @@ int astc_main(
 				return 1;
 			}
 		}
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		else if (!strcmp(argv[argidx], "-diag"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("-diag switch with no argument\n");
-				return 1;
-			}
-
-			diagnostics_tile = atoi(argv[argidx - 1]);
-		}
-		else if (!strcmp(argv[argidx], "-pte"))
-		{
-			argidx++;
-			print_tile_errors = 1;
-		}
-		else if (!strcmp(argv[argidx], "-stats"))
-		{
-			argidx++;
-			print_statistics = 1;
-		}
-	#endif
 		// Option: Encode a 3D image from an array of 2D images.
 		else if (!strcmp(argv[argidx], "-array"))
 		{
@@ -1146,16 +1123,16 @@ int astc_main(
 
 			switch(decode_mode)
 			{
-				case DECODE_LDR:
+				case ASTCENC_PRF_LDR:
 					printf("    Color profile:              LDR linear\n");
 					break;
-				case DECODE_LDR_SRGB:
+				case ASTCENC_PRF_LDR_SRGB:
 					printf("    Color profile:              LDR sRGB\n");
 					break;
-				case DECODE_HDR:
+				case ASTCENC_PRF_HDR_RGB_LDR_A:
 					printf("    Color profile:              HDR RGB + LDR A\n");
 					break;
-				case DECODE_HDRA:
+				case ASTCENC_PRF_HDR:
 					printf("    Color profile:              HDR RGBA\n");
 					break;
 			}
@@ -1211,7 +1188,8 @@ int astc_main(
 	int out_bitness = (op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE) ? get_output_filename_enforced_bitness(output_filename) : -1;
 	if (out_bitness == -1)
 	{
-		out_bitness = (decode_mode == DECODE_HDR) ? 16 : 8;
+		bool is_hdr = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+		out_bitness = is_hdr ? 16 : 8;
 	}
 
 	// Temporary image array (for merging multiple 2D images into one 3D image).

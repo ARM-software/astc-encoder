@@ -19,14 +19,15 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTC_CODEC_INTERNALS_INCLUDED
-#define ASTC_CODEC_INTERNALS_INCLUDED
+#ifndef ASTCENC_INTERNAL_INCLUDED
+#define ASTCENC_INTERNAL_INCLUDED
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 
+#include "astcenc.h"
 #include "astcenc_mathlib.h"
 
 // Temporary workaround to build machine still running VS2013
@@ -68,14 +69,6 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 	extern int print_tile_errors;
 	extern int print_statistics;
 #endif
-
-enum astc_decode_mode
-{
-	DECODE_LDR_SRGB,
-	DECODE_LDR,
-	DECODE_HDR,
-	DECODE_HDRA
-};
 
 /*
 	Partition table representation:
@@ -702,6 +695,13 @@ struct swizzlepattern
 	uint8_t a;
 };
 
+struct astcenc_context
+{
+	astcenc_config config;
+	block_size_descriptor* bsd;
+	unsigned int thread_count;
+};
+
 /**
  * @brief Compute regional averages and variances in an image.
  *
@@ -885,7 +885,7 @@ int pack_color_endpoints(
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	int format,
 	int quantization_level,
 	const int* input,
@@ -1002,7 +1002,7 @@ void compute_angular_endpoints_2planes(
 
 float compress_symbolic_block(
 	const astc_codec_image* input_image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const error_weighting_params* ewp,
 	const imageblock* blk,
@@ -1011,7 +1011,7 @@ float compress_symbolic_block(
 
 void decompress_symbolic_block(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,
 	int ypos,

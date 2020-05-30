@@ -39,7 +39,7 @@ static int compute_value_of_texel_int(
 }
 
 static uint4 lerp_color_int(
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	uint4 color0,
 	uint4 color1,
 	int weight,
@@ -54,7 +54,7 @@ static uint4 lerp_color_int(
 
 	uint4 weight0 = uint4(64, 64, 64, 64) - weight1;
 
-	if (decode_mode == DECODE_LDR_SRGB)
+	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
 		color0 = uint4(color0.x >> 8, color0.y >> 8, color0.z >> 8, color0.w >> 8);
 		color1 = uint4(color1.x >> 8, color1.y >> 8, color1.z >> 8, color1.w >> 8);
@@ -63,7 +63,7 @@ static uint4 lerp_color_int(
 	uint4 color = (color0 * weight0) + (color1 * weight1) + uint4(32, 32, 32, 32);
 	color = uint4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
 
-	if (decode_mode == DECODE_LDR_SRGB)
+	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
 		color = color * 257;
 	}
@@ -74,7 +74,7 @@ static uint4 lerp_color_int(
 __attribute__((visibility("default")))
 void decompress_symbolic_block(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,
 	int ypos,
@@ -91,7 +91,7 @@ void decompress_symbolic_block(
 	// if we detected an error-block, blow up immediately.
 	if (scb->error_block)
 	{
-		if (decode_mode == DECODE_LDR_SRGB)
+		if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 		{
 			for (i = 0; i < bsd->texel_count; i++)
 			{
@@ -139,7 +139,7 @@ void decompress_symbolic_block(
 			// For sRGB decoding a real decoder would just use the top 8 bits
 			// for color conversion. We don't color convert, so linearly scale
 			// the top 8 bits into the full 16 bit dynamic range
-			if (decode_mode == DECODE_LDR_SRGB)
+			if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 			{
 				ired = (ired >> 8) * 257;
 				igreen = (igreen >> 8) * 257;
@@ -158,7 +158,7 @@ void decompress_symbolic_block(
 		{
 			switch (decode_mode)
 			{
-			case DECODE_LDR_SRGB:
+			case ASTCENC_PRF_LDR_SRGB:
 				red = 1.0f;
 				green = 0.0f;
 				blue = 1.0f;
@@ -166,7 +166,7 @@ void decompress_symbolic_block(
 				use_lns = 0;
 				use_nan = 0;
 				break;
-			case DECODE_LDR:
+			case ASTCENC_PRF_LDR:
 				red = 0.0f;
 				green = 0.0f;
 				blue = 0.0f;
@@ -174,8 +174,8 @@ void decompress_symbolic_block(
 				use_lns = 0;
 				use_nan = 1;
 				break;
-			case DECODE_HDR:
-			case DECODE_HDRA:
+			case ASTCENC_PRF_HDR_RGB_LDR_A:
+			case ASTCENC_PRF_HDR:
 				// constant-color block; unpack from FP16 to FP32.
 				red = sf16_to_float(scb->constant_color[0]);
 				green = sf16_to_float(scb->constant_color[1]);

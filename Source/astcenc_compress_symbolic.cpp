@@ -41,7 +41,7 @@
  */
 static int realign_weights(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
 	const error_weight_block* ewb,
@@ -208,7 +208,7 @@ static int realign_weights(
 */
 static void compress_symbolic_block_fixed_partition_1_plane(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	float mode_cutoff,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
@@ -456,7 +456,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 static void compress_symbolic_block_fixed_partition_2_planes(
 	const astc_codec_image* image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	float mode_cutoff,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
@@ -1110,7 +1110,7 @@ static void prepare_block_statistics(
 __attribute__((visibility("default")))
 float compress_symbolic_block(
 	const astc_codec_image* input_image,
-	astc_decode_mode decode_mode,
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const error_weighting_params* ewp,
 	const imageblock* blk,
