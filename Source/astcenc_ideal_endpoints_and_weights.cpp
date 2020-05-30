@@ -21,10 +21,6 @@
 
 #include "astcenc_internal.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
-
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
 		#define _GNU_SOURCE
@@ -152,27 +148,6 @@ static void compute_endpoints_and_ideal_weights_1_component(
 			break;
 		}
 	}
-
-	// print all the data that this function computes.
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s: %dx%dx%d texels, %d partitions, component=%d\n", __func__, xdim, ydim, zdim, partition_count, component);
-			printf("Endpoints:\n");
-			for (i = 0; i < partition_count; i++)
-			{
-				printf("%d Low: <%g> => <%g %g %g %g>\n", i, lowvalues[i], ei->ep.endpt0[i].x, ei->ep.endpt0[i].y, ei->ep.endpt0[i].z, ei->ep.endpt0[i].w);
-				printf("%d High: <%g> => <%g %g %g %g>\n", i, highvalues[i], ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
-			}
-			printf("Ideal-weights:\n");
-
-			for (i = 0; i < texels_per_block; i++)
-			{
-				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
-			}
-			printf("\n");
-		}
-	#endif
 }
 
 static void compute_endpoints_and_ideal_weights_2_components(
@@ -413,27 +388,6 @@ static void compute_endpoints_and_ideal_weights_2_components(
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
-
-	// print all the data that this function computes.
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s: %dx%dx%d texels, %d partitions, component1=%d, component2=%d\n", __func__, xdim, ydim, zdim, partition_count, component1, component2);
-			printf("Endpoints:\n");
-			for (i = 0; i < partition_count; i++)
-			{
-				printf("%d Low: <%g %g> => <%g %g %g %g>\n", i, lowvalues[i].x, lowvalues[i].y, ei->ep.endpt0[i].x, ei->ep.endpt0[i].y, ei->ep.endpt0[i].z, ei->ep.endpt0[i].w);
-				printf("%d High: <%g %g> => <%g %g %g %g>\n", i, highvalues[i].x, highvalues[i].y, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
-			}
-			printf("Ideal-weights:\n");
-
-			for (i = 0; i < texels_per_block; i++)
-			{
-				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
-			}
-			printf("\n");
-		}
-	#endif
 }
 
 static void compute_endpoints_and_ideal_weights_3_components(
@@ -671,27 +625,6 @@ static void compute_endpoints_and_ideal_weights_3_components(
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
-
-	// print all the data that this function computes.
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s: %dx%dx%d texels, %d partitions, component1=%d, component2=%d, component3=%d\n", __func__, xdim, ydim, zdim, partition_count, component1, component2, component3);
-			printf("Endpoints:\n");
-			for (i = 0; i < partition_count; i++)
-			{
-				printf("%d Low: <%g %g %f> => <%g %g %g %g>\n", i, lowvalues[i].x, lowvalues[i].y, lowvalues[i].z, ei->ep.endpt0[i].x, ei->ep.endpt0[i].y, ei->ep.endpt0[i].z, ei->ep.endpt0[i].w);
-				printf("%d High: <%g %g %g> => <%g %g %g %g>\n", i, highvalues[i].x, highvalues[i].y, highvalues[i].z, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
-			}
-			printf("Ideal-weights:\n");
-
-			for (i = 0; i < texels_per_block; i++)
-			{
-				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, (i % xdim), (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
-			}
-			printf("\n");
-		}
-	#endif
 }
 
 static void compute_endpoints_and_ideal_weights_rgba(
@@ -752,19 +685,6 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			lines[i].b = normalize(directions_rgba[i]);
 	}
 
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			for (i = 0; i < partition_count; i++)
-			{
-				printf("Direction-vector %d: <%f %f %f %f>\n", i, directions_rgba[i].x, directions_rgba[i].y, directions_rgba[i].z, directions_rgba[i].w);
-				printf("Line %d A: <%f %f %f %f>\n", i, lines[i].a.x, lines[i].a.y, lines[i].a.z, lines[i].a.w);
-				printf("Line %d B: <%f %f %f %f>\n", i, lines[i].b.x, lines[i].b.y, lines[i].b.z, lines[i].b.w);
-				printf("Scalefactors %d: <%f %f %f %f>\n", i, scalefactors[i].x, scalefactors[i].y, scalefactors[i].z, scalefactors[i].w);
-			}
-		}
-	#endif
-
 	for (i = 0; i < texels_per_block; i++)
 	{
 		if (error_weights[i] > 1e-10f)
@@ -786,14 +706,6 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			ei->weights[i] = -1e38f;
 		}
 	}
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			for (i = 0; i < partition_count; i++)
-				printf("Partition %d: Lowparam=%f Highparam=%f\n", i, lowparam[i], highparam[i]);
-		}
-	#endif
 
 	for (i = 0; i < partition_count; i++)
 	{
@@ -845,28 +757,6 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			ASTC_CODEC_INTERNAL_ERROR();
 		}
 	}
-
-	// print all the data that this function computes.
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s: %dx%dx%d texels, %d partitions\n", __func__, xdim, ydim, zdim, partition_count);
-			printf("Endpoints:\n");
-			for (i = 0; i < partition_count; i++)
-			{
-				printf("%d Low: <%g %g %g %g>\n", i, ei->ep.endpt0[i].x, ei->ep.endpt0[i].y, ei->ep.endpt0[i].z, ei->ep.endpt0[i].w);
-				printf("%d High: <%g %g %g %g>\n", i, ei->ep.endpt1[i].x, ei->ep.endpt1[i].y, ei->ep.endpt1[i].z, ei->ep.endpt1[i].w);
-			}
-			printf("\nIdeal-weights:\n");
-
-			for (i = 0; i < texels_per_block; i++)
-			{
-				printf("%3d <%2d %2d %2d>=> %g (weight=%g)\n", i, i % xdim, (i / xdim) % ydim, i / (xdim * ydim), ei->weights[i], ei->weight_error_scale[i]);
-			}
-			printf("\n\n");
-		}
-	#endif
-
 }
 
 /*
@@ -883,11 +773,6 @@ void compute_endpoints_and_ideal_weights_1_plane(
 	const error_weight_block* ewb,
 	endpoints_and_weights* ei
 ) {
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-			printf("%s: texels_per_block=%dx%dx%d\n\n", __func__, xdim, ydim, zdim);
-	#endif
-
 	int uses_alpha = imageblock_uses_alpha(blk);
 	if (uses_alpha)
 	{
@@ -908,11 +793,6 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	endpoints_and_weights* ei1,
 	endpoints_and_weights* ei2
 ) {
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-			printf("%s: texels_per_block=%dx%dx%d, separate_component=%d\n\n", __func__, xdim, ydim, zdim, separate_component);
-	#endif
-
 	int uses_alpha = imageblock_uses_alpha(blk);
 	switch (separate_component)
 	{
@@ -1150,19 +1030,6 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	int weight_count = it->num_weights;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quantization_level]);
 
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s : texels-per-block=%d,  weights=%d,  quantization-level=%d\n\n", __func__, texels_per_block, weight_count, quantization_level);
-
-			printf("Weight values before quantization:\n");
-			for (i = 0; i < weight_count; i++)
-				printf("%3d : %g\n", i, weight_set_in[i]);
-
-			printf("Low-bound: %f  High-bound: %f\n", low_bound, high_bound);
-		}
-	#endif
-
 	static const int quant_levels[12] = { 2,3,4,5,6,8,10,12,16,20,24,32 };
 	float quant_level_m1 = (float)(quant_levels[quantization_level] - 1);
 
@@ -1351,20 +1218,6 @@ void recompute_ideal_colors(
 	}
 
 	int partition_count = pi->partition_count;
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s : %dx%dx%d texels_per_block, %d partitions, plane2-color-component=%d\n\n", __func__, xdim, ydim, zdim, partition_count, plane2_color_component);
-
-			printf("Pre-adjustment endpoint-colors: \n");
-			for (int i = 0; i < partition_count; i++)
-			{
-				printf("%d Low  <%g %g %g %g>\n", i, ep->endpt0[i].x, ep->endpt0[i].y, ep->endpt0[i].z, ep->endpt0[i].w);
-				printf("%d High <%g %g %g %g>\n", i, ep->endpt1[i].x, ep->endpt1[i].y, ep->endpt1[i].z, ep->endpt1[i].w);
-			}
-		}
-	#endif
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -1603,14 +1456,6 @@ void recompute_ideal_colors(
 			              + (2.0f * lmrs_sum.y * lmrs_sum.y)
 			              + (lmrs_sum.z * lmrs_sum.z);
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-					printf("Plane-1 partition %d determinants: R=%g G=%g B=%g A=%g L=%g S=%g\n", i,
-					       (double)color_det1.x, (double)color_det1.y,
-					       (double)color_det1.z, (double)color_det1.w,
-					       (double)ls_det1, (double)ls_det1);
-			#endif
-
 			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
 			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
@@ -1695,12 +1540,6 @@ void recompute_ideal_colors(
 				                  + (2.0f * middle2_sum * middle2_sum)
 				                  + (right2_sum * right2_sum);
 
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Plane-2 partition %d determinants: R=%g G=%g B=%g A=%g\n",
-						       i, (double)color_det2.x, (double)color_det2.y, (double)color_det2.z, (double)color_det2.w);
-				#endif
-
 				float4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 				float4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
@@ -1751,26 +1590,4 @@ void recompute_ideal_colors(
 			rgbo_vectors[i] = float4(ep0.x, ep0.y, ep0.z, avgdif);
 		}
 	}
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("Post-adjustment endpoint-colors: \n");
-			for (int i = 0; i < partition_count; i++)
-			{
-				printf("%d Low  <%g %g %g %g>\n", i,
-				       (double)ep->endpt0[i].x, (double)ep->endpt0[i].y,
-				       (double)ep->endpt0[i].z, (double)ep->endpt0[i].w);
-				printf("%d High <%g %g %g %g>\n", i,
-				       (double)ep->endpt1[i].x, (double)ep->endpt1[i].y,
-				       (double)ep->endpt1[i].z, (double)ep->endpt1[i].w);
-				printf("%d RGBS: <%g %g %g %g>\n", i,
-				       (double)rgbs_vectors[i].x, (double)rgbs_vectors[i].y,
-				       (double)rgbs_vectors[i].z, (double)rgbs_vectors[i].w);
-				printf("%d RGBO <%g %g %g %g>\n", i,
-				       (double)rgbo_vectors[i].x, (double)rgbo_vectors[i].y,
-				       (double)rgbo_vectors[i].z, (double)rgbo_vectors[i].w);
-			}
-		}
-	#endif
 }

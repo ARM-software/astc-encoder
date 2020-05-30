@@ -39,10 +39,6 @@
 
 #include "astcenc_internal.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
-
 // helper function to merge two endpoint-colors
 void merge_endpoints(
 	const endpoints * ep1,	// contains three of the color components
@@ -115,13 +111,6 @@ void compute_encoding_choice_errors(
 
 	int texels_per_block = bsd->texel_count;
 
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s : texels-per-block=%dx%dx%d, separate_component=%d, partition-count=%d\n", __func__, bsd->xdim, bsd->ydim, bsd->zdim, separate_component, partition_count);
-		}
-	#endif
-
 	float3 averages[4];
 	float3 directions_rgb[4];
 	float4 error_weightings[4];
@@ -169,17 +158,6 @@ void compute_encoding_choice_errors(
 		luminance_lines[i].a = float3(0.0f, 0.0f, 0.0f);
 		luminance_lines[i].b = normalize(csf);
 
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-			{
-				printf("Partition %d\n", i);
-				printf("Average = <%g %g %g>\n", averages[i].x, averages[i].y, averages[i].z);
-				printf("Uncorr-rgb-line = <%g %g %g> + t<%g %g %g>\n",
-					uncorr_rgb_lines[i].a.x, uncorr_rgb_lines[i].a.y, uncorr_rgb_lines[i].a.z, uncorr_rgb_lines[i].b.x, uncorr_rgb_lines[i].b.y, uncorr_rgb_lines[i].b.z);
-				printf("Samechroma-line = t<%g %g %g>\n", samechroma_rgb_lines[i].b.x, samechroma_rgb_lines[i].b.y, samechroma_rgb_lines[i].b.z);
-			}
-		#endif
-
 		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
 		proc_uncorr_rgb_lines[i].bs = uncorr_rgb_lines[i].b * csf;
 		proc_uncorr_rgb_lines[i].bis = uncorr_rgb_lines[i].b * icsf;
@@ -211,14 +189,6 @@ void compute_encoding_choice_errors(
 		rgb_luma_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_rgb_luma_lines[i]));
 
 		luminance_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_luminance_lines[i]));
-
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-			{
-				printf("Partition %d : uncorr-error=%g  samechroma-error=%g  rgb-luma-error=%g  lum-error=%g\n",
-					i, uncorr_rgb_error[i], samechroma_rgb_error[i], rgb_luma_error[i], luminance_rgb_error[i]);
-			}
-		#endif
 	}
 
 	// compute the error that arises from just ditching alpha and RGB

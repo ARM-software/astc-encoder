@@ -21,10 +21,6 @@
 
 #include "astcenc_internal.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
-
 /*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
  */
@@ -120,22 +116,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		(ep0_range_error_low * ep0_range_error_low) + (ep1_range_error_low * ep1_range_error_low) + (ep0_range_error_high * ep0_range_error_high) + (ep1_range_error_high * ep1_range_error_high);
 	float rgb_range_error = dot(float3(sum_range_error.x, sum_range_error.y, sum_range_error.z), float3(error_weight.x, error_weight.y, error_weight.z)) * 0.5f * partition_size;
 	float alpha_range_error = sum_range_error.w * error_weight.w * 0.5f * partition_size;
-
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s : partition=%d\nrgb-error_wt=%f  alpha_error_wt=%f\n", __func__, partition_index, error_weight_rgbsum, error_weight.w);
-
-			printf("ep0 = %f %f %f %f\n", ep0.x, ep0.y, ep0.z, ep0.w);
-			printf("ep1 = %f %f %f %f\n", ep1.x, ep1.y, ep1.z, ep1.w);
-
-
-			printf("rgb_range_error = %f, alpha_range_error = %f\n", rgb_range_error, alpha_range_error);
-
-			printf("rgb-luma-error: %f\n", eci->rgb_luma_error);
-		}
-	#endif
 
 	if (encode_hdr_rgb)
 	{
@@ -253,11 +233,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 			float alpha_quantization_error = error_weight.w * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-					printf("rgba-quant = %f can_offset_encode=%d\n", rgba_quantization_error, eci->can_offset_encode);
-			#endif
-
 			// for 8 integers, we have two encodings: one with HDR alpha and another one
 			// with LDR alpha.
 
@@ -280,16 +255,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 			float hdr_luminance_error = (rgb_quantization_error * mode23mult) + rgb_range_error + eci->alpha_drop_error + eci->luminance_error;
 			best_error[i][0] = hdr_luminance_error;
 			format_of_choice[i][0] = FMT_HDR_LUMINANCE_LARGE_RANGE;
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					for (int j = 0; j < 4; j++)
-					{
-						printf("(hdr) quant-level=%d ints=%d format=%d error=%f\n", i, j, format_of_choice[i][j], best_error[i][j]);
-					}
-				}
-			#endif
 		}
 	}
 	else
@@ -314,11 +279,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
 			float alpha_quantization_error = error_weight.w * base_quant_error;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-					printf("rgba-quant = %f can_offset_encode=%d\n", rgba_quantization_error, eci->can_offset_encode);
-			#endif
 
 			// for 8 integers, the available encodings are:
 			// full LDR RGB-Alpha
@@ -377,16 +337,6 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 
 			best_error[i][0] = luminance_error;
 			format_of_choice[i][0] = FMT_LUMINANCE;
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					for (int j = 0; j < 4; j++)
-					{
-						printf(" (ldr) quant-level=%d ints=%d format=%d error=%f\n", i, j, format_of_choice[i][j], best_error[i][j]);
-					}
-				}
-			#endif
 		}
 	}
 }

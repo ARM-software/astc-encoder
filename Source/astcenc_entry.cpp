@@ -322,28 +322,20 @@ struct encode_astc_image_info
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
 					uint8_t *bp = buffer + offset;
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (diagnostics_tile < 0 || diagnostics_tile == pctr)
+					fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
+					symbolic_compressed_block scb;
+					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
+					if (pack_and_unpack)
 					{
-						print_diagnostics = (diagnostics_tile == pctr) ? 1 : 0;
-				#endif
-						fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
-						symbolic_compressed_block scb;
-						compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
-						if (pack_and_unpack)
-						{
-							decompress_symbolic_block(input_image, decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-							write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
-						}
-						else
-						{
-							physical_compressed_block pcb;
-							pcb = symbolic_to_physical(bsd, &scb);
-							*(physical_compressed_block *) bp = pcb;
-						}
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
+						decompress_symbolic_block(input_image, decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
+						write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 					}
-				#endif
+					else
+					{
+						physical_compressed_block pcb;
+						pcb = symbolic_to_physical(bsd, &scb);
+						*(physical_compressed_block *) bp = pcb;
+					}
 
 					ctr = thread_count - 1;
 					pctr++;

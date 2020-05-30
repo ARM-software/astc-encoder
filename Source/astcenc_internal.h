@@ -60,16 +60,6 @@ NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 // works on Linux only, and slows down encoding significantly.
 // #define DEBUG_CAPTURE_NAN
 
-// uncomment this macro to enable the ability to log diagnostics using the
-// -diag command line switch, which is useful for bug hunting in the encoder
-// #define DEBUG_PRINT_DIAGNOSTICS
-
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	extern int print_diagnostics;
-	extern int print_tile_errors;
-	extern int print_statistics;
-#endif
-
 /*
 	Partition table representation:
 	For each block size, we have 3 tables, each with 1024 partitionings;

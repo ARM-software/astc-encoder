@@ -36,18 +36,10 @@
 	#include <fenv.h>
 #endif
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	int print_diagnostics = 0;
-	int diagnostics_tile = -1;
-	int print_tile_errors = 0;
-	int print_statistics = 0;
-#endif
-
 static double start_time;
 static double end_time;
 static double start_coding_time;
 static double end_coding_time;
-
 
 NORETURN __attribute__((visibility("default")))
 void astc_codec_internal_error(
@@ -276,19 +268,10 @@ static void compress_astc_image_threadfunc(
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
 					uint8_t *bp = buffer + offset;
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (diagnostics_tile < 0 || diagnostics_tile == pctr)
-					{
-						print_diagnostics = (diagnostics_tile == pctr) ? 1 : 0;
-				#endif
-						fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
-						symbolic_compressed_block scb;
-						compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
-						*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					}
-				#endif
-
+					fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
+					symbolic_compressed_block scb;
+					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
+					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = thread_count - 1;
 					pctr++;
 				}
@@ -1089,16 +1072,6 @@ int astc_main(
 		ewp.lowest_correlation_cutoff = mincorrel;
 		ewp.partition_search_limit = astc::clampi(partitions_to_test, 1, PARTITION_COUNT);
 
-		// if diagnostics are run, force the thread count to 1.
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (diagnostics_tile >= 0 ||
-				print_tile_errors > 0 ||
-				print_statistics > 0)
-			{
-				thread_count = 1;
-			}
-		#endif
-
 		if (thread_count < 1)
 		{
 			thread_count = get_cpu_count();
@@ -1106,14 +1079,12 @@ int astc_main(
 
 		// Specifying the error weight of a color component as 0 is not allowed.
 		// If weights are 0, then they are instead set to a small positive value.
-
 		float max_color_component_weight = MAX(MAX(ewp.rgba_weights[0], ewp.rgba_weights[1]),
 											   MAX(ewp.rgba_weights[2], ewp.rgba_weights[3]));
 		ewp.rgba_weights[0] = MAX(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[1] = MAX(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[2] = MAX(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[3] = MAX(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
-
 
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)

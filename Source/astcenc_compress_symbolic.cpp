@@ -330,11 +330,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 		// then, compute weight-errors for the weight mode.
 		qwt_errors[i] = compute_error_of_weight_set(&(eix[decimation_mode]), ixtab2[decimation_mode], flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
-
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-				printf("Block mode %d -> weight error = %f\n", i, qwt_errors[i]);
-		#endif
 	}
 
 	// for each weighting mode, determine the optimal combination of color endpoint encodings
@@ -364,16 +359,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		int decimation_mode = bsd->block_modes[quantized_weight[i]].decimation_mode;
 		int weight_quantization_mode = bsd->block_modes[quantized_weight[i]].quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
-
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-			{
-				printf("Selected mode = %d\n", quantized_weight[i]);
-				printf("Selected decimation mode = %d\n", decimation_mode);
-				printf("Selected weight-quantization mode = %d\n", weight_quantization_mode);
-			}
-		#endif
-
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * quantized_weight[i];
 
 		weights_to_copy = it->num_weights;
@@ -1122,33 +1107,6 @@ float compress_symbolic_block(
 	int ypos = blk->ypos;
 	int zpos = blk->zpos;
 
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("Diagnostics of block of dimension %d x %d x %d\n\n", xdim, ydim, zdim);
-
-			printf("XPos: %d  YPos: %d  ZPos: %d\n", xpos, ypos, zpos);
-
-			printf("Red-min: %f   Red-max: %f\n", blk->red_min, blk->red_max);
-			printf("Green-min: %f   Green-max: %f\n", blk->green_min, blk->green_max);
-			printf("Blue-min: %f   Blue-max: %f\n", blk->blue_min, blk->blue_max);
-			printf("Alpha-min: %f   Alpha-max: %f\n", blk->alpha_min, blk->alpha_max);
-			printf("Grayscale: %d\n", blk->grayscale);
-
-			for (int z = 0; z < zdim; z++)
-				for (int y = 0; y < ydim; y++)
-					for (int x = 0; x < xdim; x++)
-					{
-						int idx = ((z * ydim + y) * xdim + x) * 4;
-						printf("Texel (%d %d %d) : orig=< %g, %g, %g, %g >, work=< %g, %g, %g, %g >\n",
-							x, y, z,
-							blk->orig_data[idx], blk->orig_data[idx + 1], blk->orig_data[idx + 2], blk->orig_data[idx + 3],
-							blk->data_r[idx], blk->data_g[idx], blk->data_b[idx], blk->data_a[idx]);
-					}
-			printf("\n");
-		}
-	#endif
-
 	if (blk->red_min == blk->red_max && blk->green_min == blk->green_max && blk->blue_min == blk->blue_max && blk->alpha_min == blk->alpha_max)
 	{
 		// detected a constant-color block. Encode as FP16 if using HDR
@@ -1199,16 +1157,6 @@ float compress_symbolic_block(
 			scb->constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
 
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-			{
-				printf("Block is single-color <%4.4X %4.4X %4.4X %4.4X>\n", scb->constant_color[0], scb->constant_color[1], scb->constant_color[2], scb->constant_color[3]);
-			}
-
-			if (print_tile_errors)
-				printf("0\n");
-		#endif
-
 		physical_compressed_block psb = symbolic_to_physical(bsd, scb);
 		physical_to_symbolic(bsd, psb, scb);
 
@@ -1219,21 +1167,6 @@ float compress_symbolic_block(
 	error_weight_block_orig *ewbo = tmpbuf->ewbo;
 
 	float error_weight_sum = prepare_error_weight_block(input_image, bsd, ewp, blk, ewb, ewbo);
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("\n");
-			for (int z = 0; z < zdim; z++)
-				for (int y = 0; y < ydim; y++)
-					for (int x = 0; x < xdim; x++)
-					{
-						int idx = (z * ydim + y) * xdim + x;
-						printf("ErrorWeight (%d %d %d) : < %g, %g, %g, %g >\n", x, y, z, ewb->error_weights[idx].x, ewb->error_weights[idx].y, ewb->error_weights[idx].z, ewb->error_weights[idx].w);
-					}
-			printf("\n");
-		}
-	#endif
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
@@ -1273,35 +1206,14 @@ float compress_symbolic_block(
 			decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb) * errorval_mult[i];
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("\n-----------------------------------\n");
-					printf("Single-weight partition test 0 (1 partition) completed\n");
-					printf("Resulting error value: %g\n", errorval);
-				}
-			#endif
-
 			if (errorval < best_errorval_in_mode)
 				best_errorval_in_mode = errorval;
 
 			if (errorval < error_of_best_block)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Accepted as better than previous-best-error, which was %g\n", error_of_best_block);
-				#endif
-
 				error_of_best_block = errorval;
 				*scb = tempblocks[j];
 			}
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("-----------------------------------\n");
-				}
-			#endif
 		}
 
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
@@ -1343,35 +1255,14 @@ float compress_symbolic_block(
 			decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("\n-----------------------------------\n");
-					printf("Dual-weight partition test %d (1 partition) completed\n", i);
-					printf("Resulting error value: %g\n", errorval);
-				}
-			#endif
-
 			if (errorval < best_errorval_in_mode)
 				best_errorval_in_mode = errorval;
 
 			if (errorval < error_of_best_block)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Accepted as better than previous-best-error, which was %g\n", error_of_best_block);
-				#endif
-
 				error_of_best_block = errorval;
 				*scb = tempblocks[j];
 			}
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("-----------------------------------\n");
-				}
-			#endif
 
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
@@ -1404,25 +1295,11 @@ float compress_symbolic_block(
 				decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
 
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-					{
-						printf("\n-----------------------------------\n");
-						printf("Single-weight partition test %d (%d partitions) completed\n", i, partition_count);
-						printf("Resulting error value: %g\n", errorval);
-					}
-				#endif
-
 				if (errorval < best_errorval_in_mode)
 					best_errorval_in_mode = errorval;
 
 				if (errorval < error_of_best_block)
 				{
-					#ifdef DEBUG_PRINT_DIAGNOSTICS
-						if (print_diagnostics)
-							printf("Accepted as better than previous-best-error, which was %g\n", error_of_best_block);
-					#endif
-
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 				}
@@ -1430,17 +1307,9 @@ float compress_symbolic_block(
 
 			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("-----------------------------------\n");
-				}
-			#endif
-
 			if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
 				goto END_OF_TESTS;
 		}
-
 
 		if (partition_count == 2 && !is_normal_map && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ewp->partition_1_to_2_limit))
 			goto END_OF_TESTS;
@@ -1466,42 +1335,22 @@ float compress_symbolic_block(
 			{
 				if (tempblocks[j].error_block)
 					continue;
+
 				decompress_symbolic_block(input_image, decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
 
 				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
-
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-					{
-						printf("\n-----------------------------------\n");
-						printf("Dual-weight partition test %d (%d partitions) completed\n", i, partition_count);
-						printf("Resulting error value: %g\n", errorval);
-					}
-				#endif
 
 				if (errorval < best_errorval_in_mode)
 					best_errorval_in_mode = errorval;
 
 				if (errorval < error_of_best_block)
 				{
-					#ifdef DEBUG_PRINT_DIAGNOSTICS
-						if (print_diagnostics)
-							printf("Accepted as better than previous-best-error, which was %g\n", error_of_best_block);
-					#endif
-
 					error_of_best_block = errorval;
 					*scb = tempblocks[j];
 				}
 			}
 
 			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2 + i] = best_errorval_in_mode;
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-				{
-					printf("-----------------------------------\n");
-				}
-			#endif
 
 			if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
 				goto END_OF_TESTS;

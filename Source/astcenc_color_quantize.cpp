@@ -23,10 +23,6 @@
 
 #include "astcenc_internal.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
-
 /*
 	quantize an LDR RGB color. Since this is a fall-back encoding, we cannot actually
 	fail but must just go on until we can produce a sensible result.
@@ -1866,16 +1862,6 @@ int pack_color_endpoints(
 	int* output,
 	int quantization_level
 ) {
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			printf("%s : format=%d  quantization_level=%d\n", __func__, format, quantization_level);
-			printf("Color 0: <%g %g %g %g>\n", color0.x, color0.y, color0.z, color0.w);
-			printf("Color 1: <%g %g %g %g>\n", color1.x, color1.y, color1.z, color1.w);
-
-		}
-	#endif
-
 	// we do not support negative colors.
 	color0.x = MAX(color0.x, 0.0f);
 	color0.y = MAX(color0.y, 0.0f);
@@ -1998,19 +1984,6 @@ int pack_color_endpoints(
 	default:
 		ASTC_CODEC_INTERNAL_ERROR();
 	}
-
-	#ifdef DEBUG_PRINT_DIAGNOSTICS
-		if (print_diagnostics)
-		{
-			int i;
-			printf("Quantized to format %d\n", retval);
-			printf("Quantized color:");
-
-			for (i = 0; i < 8; i++)
-				printf(" %X", output[i]);
-			printf("\n\n");
-		}
-	#endif
 
 	return retval;
 }

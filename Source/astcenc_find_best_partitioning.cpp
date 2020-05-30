@@ -51,10 +51,6 @@
 
 #include "astcenc_internal.h"
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	#include <stdio.h>
-#endif
-
 static void compute_alpha_minmax(
 	int texels_per_block,
 	const partition_info* pt,
@@ -234,10 +230,6 @@ void find_best_partitionings(
 
 	float weight_imprecision_estim_squared = weight_imprecision_estim * weight_imprecision_estim;
 
-#ifdef DEBUG_PRINT_DIAGNOSTICS
-	printf("weight_imprecision_estim = %g\n", (double)weight_imprecision_estim);
-#endif
-
 	int uses_alpha = imageblock_uses_alpha(pb);
 
 	const partition_info* ptab = get_partition_table(bsd, partition_count);
@@ -255,10 +247,6 @@ void find_best_partitionings(
 
 	if (uses_alpha)
 	{
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-				printf("Partition testing with alpha, %d partitions\n\n", partition_count);
-		#endif
 
 		for (i = 0; i < PARTITION_COUNT; i++)
 		{
@@ -267,11 +255,6 @@ void find_best_partitionings(
 
 			if (bk_partition_count < partition_count)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Partitioning %d-%d: invalid\n", partition_count, partition);
-				#endif
-
 				uncorr_errors[i] = 1e35f;
 				samechroma_errors[i] = 1e35f;
 				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
@@ -282,13 +265,7 @@ void find_best_partitionings(
 			// than the sentinel value for invalid partitions
 			if (i >= partition_search_limit)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Partitioning %d-%d: excluded from testing\n", partition_count, partition);
-				#endif
-
 				defacto_search_limit = i;
-
 				uncorr_errors[i] = 1e34f;
 				samechroma_errors[i] = 1e34f;
 				separate_errors[i] = float4(1e34f, 1e34f, 1e34f, 1e34f);
@@ -489,22 +466,10 @@ void find_best_partitionings(
 			uncorr_errors[i] = uncorr_error;
 			samechroma_errors[i] = samechroma_error;
 			separate_errors[i] = separate_error;
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-					printf("Partitioning %d-%d errors: uncorr=%g, samechroma=%g, sep-alpha=%g\n",
-					       partition_count, i, (double)uncorr_error, (double)samechroma_error, (double)separate_error.w);
-			#endif
 		}
 	}
 	else
 	{
-
-		#ifdef DEBUG_PRINT_DIAGNOSTICS
-			if (print_diagnostics)
-				printf("Partition testing without alpha, %d partitions\n", partition_count);
-		#endif
-
 		for (i = 0; i < PARTITION_COUNT; i++)
 		{
 			int partition = partition_sequence[i];
@@ -512,11 +477,6 @@ void find_best_partitionings(
 			int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf("Partitioning %d-%d: invalid\n", partition_count, i);
-				#endif
-
 				uncorr_errors[i] = 1e35f;
 				samechroma_errors[i] = 1e35f;
 				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
@@ -527,11 +487,6 @@ void find_best_partitionings(
 			// than the sentinel value for invalid partitions
 			if (i >= partition_search_limit)
 			{
-				#ifdef DEBUG_PRINT_DIAGNOSTICS
-					if (print_diagnostics)
-						printf(" Partitioning %d-%d: excluded from testing\n", partition_count, partition);
-				#endif
-
 				defacto_search_limit = i;
 				uncorr_errors[i] = 1e34f;
 				samechroma_errors[i] = 1e34f;
@@ -712,13 +667,6 @@ void find_best_partitionings(
 			uncorr_errors[i] = uncorr_error;
 			samechroma_errors[i] = samechroma_error;
 			separate_errors[i] = float4(separate_error.x, separate_error.y, separate_error.z, 0.0f);
-
-			#ifdef DEBUG_PRINT_DIAGNOSTICS
-				if (print_diagnostics)
-					printf("Partitioning %d-%d errors: uncorr=%f, samechroma=%f, sep-red=%f, sep-green=%f, sep-blue=%f\n",
-					       partition_count, partition, (double)uncorr_error, (double)samechroma_error,
-					       (double)separate_error.x, (double)separate_error.y, (double)separate_error.z);
-			#endif
 		}
 	}
 
