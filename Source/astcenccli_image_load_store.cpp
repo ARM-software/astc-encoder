@@ -124,7 +124,7 @@ static int store_exr_image_with_tinyexr(
 ) {
 	float *buf = floatx4_array_from_astc_img(img, y_flip);
 	int res = SaveEXR(buf, img->xsize, img->ysize, 4, 1, filename, nullptr);
-	free(buf);
+	delete[] buf;
 	return (res == 0) ? 4 : res;
 }
 
@@ -135,7 +135,7 @@ static int store_png_image_with_stb(
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
 	int res = stbi_write_png(filename, img->xsize, img->ysize, 4, buf, img->xsize * 4);
-	free(buf);
+	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
 
@@ -146,7 +146,7 @@ static int store_tga_image_with_stb(
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
 	int res = stbi_write_tga(filename, img->xsize, img->ysize, 4, buf);
-	free(buf);
+	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
 
@@ -157,7 +157,7 @@ static int store_bmp_image_with_stb(
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
 	int res = stbi_write_bmp(filename, img->xsize, img->ysize, 4, buf);
-	free(buf);
+	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
 
@@ -866,12 +866,12 @@ static astc_codec_image* load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	uint8_t *buf = (uint8_t *) malloc(specified_bytes_of_surface);
+	uint8_t *buf = new uint8_t[specified_bytes_of_surface];
 	size_t bytes_read = fread(buf, 1, specified_bytes_of_surface, f);
 	fclose(f);
 	if (bytes_read != specified_bytes_of_surface)
 	{
-		free(buf);
+		delete[] buf;
 		printf("Failed to read file %s\n", filename);
 		*result = -6;
 		return nullptr;
@@ -907,7 +907,7 @@ static astc_codec_image* load_ktx_uncompressed_image(
 		}
 	}
 
-	free(buf);
+	delete[] buf;
 	fill_image_padding_area(astc_img);
 	*result = components + (bitness == 16 ? 0x80 : 0);
 	return astc_img;
@@ -1434,12 +1434,12 @@ astc_codec_image* load_dds_uncompressed_image(
 	uint32_t ystride = xstride * ysize;
 	uint32_t bytes_of_surface = zsize * ystride;
 
-	uint8_t *buf = (uint8_t *) malloc(bytes_of_surface);
+	uint8_t *buf = new uint8_t[bytes_of_surface];
 	size_t bytes_read = fread(buf, 1, bytes_of_surface, f);
 	fclose(f);
 	if (bytes_read != bytes_of_surface)
 	{
-		free(buf);
+		delete[] buf;
 		printf("Failed to read file %s\n", filename);
 		*result = -6;
 		return nullptr;
@@ -1466,7 +1466,7 @@ astc_codec_image* load_dds_uncompressed_image(
 		}
 	}
 
-	free(buf);
+	delete[] buf;
 	fill_image_padding_area(astc_img);
 	*result = components + (bitness == 16 ? 0x80 : 0);
 	return astc_img;

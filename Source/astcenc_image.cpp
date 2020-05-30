@@ -1036,7 +1036,7 @@ astc_codec_image* astc_img_from_unorm8x4_array(
 }
 
 // initialize a flattened array of float4 values from an ASTC codec image
-// The returned array is allocated with malloc() and needs to be freed with free().
+// The returned array is allocated with new[] delete[].
 __attribute__((visibility("default")))
 float* floatx4_array_from_astc_img(
 	const astc_codec_image* img,
@@ -1045,8 +1045,7 @@ float* floatx4_array_from_astc_img(
 	int xsize = img->xsize;
 	int ysize = img->ysize;
 
-	float *buf = (float *)malloc(4 * sizeof(float) * xsize * ysize);
-
+	float *buf = new float[4 * xsize * ysize];
 	if (img->data8)
 	{
 		for (int y = 0; y < ysize; y++)
@@ -1084,7 +1083,7 @@ float* floatx4_array_from_astc_img(
 }
 
 // initialize a flattened array of unorm8x4 values from an ASTC codec image
-// The returned array is allocated with malloc() and needs to be freed with free().
+// The returned array is allocated with new[] and must be deleted with delete[].
 __attribute__((visibility("default")))
 uint8_t* unorm8x4_array_from_astc_img(
 	const astc_codec_image* img,
@@ -1093,7 +1092,7 @@ uint8_t* unorm8x4_array_from_astc_img(
 	int xsize = img->xsize;
 	int ysize = img->ysize;
 
-	uint8_t* buf = (uint8_t*)malloc(4 * sizeof(uint8_t) * xsize * ysize);
+	uint8_t* buf = new uint8_t[4 * xsize * ysize];
 
 	if (img->data8)
 	{

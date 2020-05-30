@@ -666,8 +666,7 @@ astc_codec_image*astc_img_from_unorm8x4_array(
 	int y_flip);
 
 // helper functions to prepare a flat array from an ASTC image object.
-// the array is allocated with malloc(); caller needs to use free()
-// to free it.
+// the array is allocated with new[], and must be freed with delete[].
 float* floatx4_array_from_astc_img(
 	const astc_codec_image* img,
 	int y_flip);
