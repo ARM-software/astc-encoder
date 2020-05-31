@@ -626,10 +626,7 @@ struct astc_codec_image
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
-
 	int linearize_srgb;
-	int rgb_force_use_of_hdr;
-	int alpha_force_use_of_hdr;
 };
 
 
@@ -724,8 +721,6 @@ astc_codec_image* astc_codec_load_image(
 	int padding,
 	int y_flip,
 	int linearize_srgb,
-	int rgb_force_use_of_hdr,
-	int alpha_force_use_of_hdr,
 	int* result);
 
 int astc_codec_store_image(
@@ -758,6 +753,7 @@ void compute_error_metrics(
 
 // fetch an image-block from the input file
 void fetch_imageblock(
+	astcenc_profile decode_mode,
 	const astc_codec_image* img,
 	imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
@@ -864,7 +860,6 @@ int pack_color_endpoints(
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(
-	const astc_codec_image* image,
 	astcenc_profile decode_mode,
 	int format,
 	int quantization_level,
@@ -990,7 +985,6 @@ float compress_symbolic_block(
 	compress_symbolic_block_buffers* tmpbuf);
 
 void decompress_symbolic_block(
-	const astc_codec_image* image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,

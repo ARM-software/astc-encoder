@@ -44,8 +44,6 @@ astc_codec_image *alloc_image(
 	img->input_alpha_averages = nullptr;
 
 	img->linearize_srgb = 0;
-	img->rgb_force_use_of_hdr = 0;
-	img->alpha_force_use_of_hdr = 0;
 
 	int exsize = xsize + 2 * padding;
 	int eysize = ysize + 2 * padding;
@@ -496,6 +494,7 @@ void imageblock_initialize_orig_from_work(
 // fetch an imageblock from the input file.
 __attribute__((visibility("default")))
 void fetch_imageblock(
+	astcenc_profile decode_mode,
 	const astc_codec_image* img,
 	imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
@@ -629,6 +628,7 @@ void fetch_imageblock(
 	// perform sRGB-to-linear transform on input data, if requested.
 	int pixelcount = bsd->texel_count;
 
+	// sRGB to Linear
 	if (img->linearize_srgb)
 	{
 		fptr = pb->orig_data;
@@ -699,8 +699,8 @@ void fetch_imageblock(
 	int alpha_lns = rgb_lns ? (max_alpha > 1.0f || max_alpha < 0.15f) : 0;
 
 	// not yet though; for the time being, just obey the command line.
-	rgb_lns = img->rgb_force_use_of_hdr;
-	alpha_lns = img->alpha_force_use_of_hdr;
+	rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+	alpha_lns = decode_mode == ASTCENC_PRF_HDR;
 
 	// impose the choice on every pixel when encoding.
 	for (i = 0; i < pixelcount; i++)
@@ -760,7 +760,7 @@ void write_imageblock(
 						}
 						else
 						{
-							// apply swizzle
+							// Linear to sRGB
 							if (img->linearize_srgb)
 							{
 								float r = fptr[0];
@@ -857,7 +857,7 @@ void write_imageblock(
 
 						else
 						{
-							// apply swizzle
+							// Linear to sRGB
 							if (img->linearize_srgb)
 							{
 								float r = fptr[0];

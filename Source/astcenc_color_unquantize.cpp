@@ -795,7 +795,6 @@ static void hdr_rgb_hdr_alpha_unpack3(
 }
 
 void unpack_color_endpoints(
-	const astc_codec_image* image,
 	astcenc_profile decode_mode,
 	int format,
 	int quantization_level,
@@ -910,7 +909,7 @@ void unpack_color_endpoints(
 
 	if (*alpha_hdr == -1)
 	{
-		if (image->alpha_force_use_of_hdr)
+		if (decode_mode == ASTCENC_PRF_HDR)
 		{
 			output0->w = 0x7800;
 			output1->w = 0x7800;

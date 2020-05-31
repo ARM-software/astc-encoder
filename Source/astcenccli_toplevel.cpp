@@ -154,15 +154,10 @@ astc_codec_image* decompress_astc_image(
 	int bitness,
 	astcenc_profile decode_mode,
 	astcenc_swizzle swz_decode,
-	int linearize_srgb,
-	int rgb_force_use_of_hdr,
-	int alpha_force_use_of_hdr
+	int linearize_srgb
 ) {
 	astc_codec_image *img = alloc_image(bitness, data.dim_x, data.dim_y, data.dim_z, 0);
-	// TODO: Can be null?
 	img->linearize_srgb = linearize_srgb;
-	img->rgb_force_use_of_hdr = rgb_force_use_of_hdr;
-	img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
 
 	block_size_descriptor bsd;
 	init_block_size_descriptor(data.block_x, data.block_y, data.block_z, &bsd);
@@ -183,7 +178,7 @@ astc_codec_image* decompress_astc_image(
 				physical_compressed_block pcb = *(physical_compressed_block *) bp;
 				symbolic_compressed_block scb;
 				physical_to_symbolic(&bsd, pcb, &scb);
-				decompress_symbolic_block(img, decode_mode, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, &scb, &pb);
+				decompress_symbolic_block(decode_mode, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, &scb, &pb);
 				write_imageblock(img, &pb, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, swz_decode);
 			}
 		}
@@ -222,7 +217,6 @@ static void compress_astc_image_threadfunc(
 
 	imageblock pb;
 	int ctr = thread_id;
-	int pctr = 0;
 
 	int x, y, z;
 	int xsize = input_image->xsize;
@@ -259,12 +253,11 @@ static void compress_astc_image_threadfunc(
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
 					uint8_t *bp = buffer + offset;
-					fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
+					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 					symbolic_compressed_block scb;
 					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = thread_count - 1;
-					pctr++;
 				}
 				else
 					ctr--;
@@ -416,7 +409,7 @@ int astc_main(
 
 	// initialization routines
 	prepare_angular_tables();
-	build_quantization_mode_table();	start_time = get_time();
+	build_quantization_mode_table();
 
 	start_time = get_time();
 
@@ -479,7 +472,7 @@ int astc_main(
 	switch (op_mode)
 	{
 		case ASTC_UNRECOGNIZED:
-			printf("Unrecognized operation mode \"%s\"\n", argv[1]);
+			printf("ERROR: Unrecognized operation '%s'\n", argv[1]);
 			return 1;
 		case ASTC_PRINT_LONGHELP:
 			astcenc_print_longhelp();
@@ -499,8 +492,6 @@ int astc_main(
 	int silentmode = 0;
 	int y_flip = 0;
 	int linearize_srgb = 0;
-	int rgb_force_use_of_hdr = 0;
-	int alpha_force_use_of_hdr = 0;
 
 	error_weighting_params ewp;
 
@@ -653,9 +644,6 @@ int astc_main(
 			ewp.alpha_base_weight = 0.0f;
 			ewp.alpha_mean_weight = 1.0f;
 
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 1;
-
 			dblimit_set = 999.0f;
 		}
 		else if (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A)
@@ -665,9 +653,6 @@ int astc_main(
 			ewp.rgb_mean_weight = 1.0f;
 
 			ewp.alpha_base_weight = 0.05f;
-
-			rgb_force_use_of_hdr = 1;
-			alpha_force_use_of_hdr = 0;
 
 			dblimit_set = 999.0f;
 		}
@@ -1067,7 +1052,7 @@ int astc_main(
 		ewp.max_refinement_iters = maxiters;
 		ewp.block_mode_cutoff = bmc_set / 100.0f;
 
-		if (rgb_force_use_of_hdr == 0)
+		if ((decode_mode == ASTCENC_PRF_LDR) || (decode_mode == ASTCENC_PRF_LDR_SRGB))
 		{
 			texel_avg_error_limit = powf(0.1f, dblimit_set * 0.1f) * 65535.0f * 65535.0f;
 		}
@@ -1196,7 +1181,6 @@ int astc_main(
 			{
 				input_images[image_index] = astc_codec_load_image(
 					input_filename, padding, y_flip, linearize_srgb,
-					rgb_force_use_of_hdr, alpha_force_use_of_hdr,
 					&load_results[image_index]);
 			}
 			// 3D input data - multiple 2D images
@@ -1217,7 +1201,6 @@ int astc_main(
 				sprintf(strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
 				input_images[image_index] = astc_codec_load_image
 					(new_input_filename, padding, y_flip, linearize_srgb,
-					rgb_force_use_of_hdr, alpha_force_use_of_hdr,
 					&load_results[image_index]);
 
 				// If image loaded correctly, check image is not 3D.
@@ -1353,7 +1336,7 @@ int astc_main(
 
 		output_decomp_img = decompress_astc_image(
 		    comp_img, out_bitness, decode_mode, swz_decode,
-		    linearize_srgb, rgb_force_use_of_hdr, alpha_force_use_of_hdr);
+		    linearize_srgb);
 
 		delete[] comp_img.data;
 	}
@@ -1377,8 +1360,7 @@ int astc_main(
 		};
 
 		output_decomp_img = decompress_astc_image(
-		    comp_img, out_bitness, decode_mode, swz_decode,
-		    0, rgb_force_use_of_hdr, alpha_force_use_of_hdr);
+		    comp_img, out_bitness, decode_mode, swz_decode, 0);
 
 		delete[] buffer;
 	}

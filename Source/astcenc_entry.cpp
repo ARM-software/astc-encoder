@@ -285,7 +285,6 @@ struct encode_astc_image_info
 
 	imageblock pb;
 	int ctr = thread_id;
-	int pctr = 0;
 
 	int x, y, z;
 	int xsize = input_image->xsize;
@@ -322,12 +321,12 @@ struct encode_astc_image_info
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
 					uint8_t *bp = buffer + offset;
-					fetch_imageblock(input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
+					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 					symbolic_compressed_block scb;
 					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
 					if (pack_and_unpack)
 					{
-						decompress_symbolic_block(input_image, decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
+						decompress_symbolic_block(decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
 						write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
 					}
 					else
@@ -338,7 +337,6 @@ struct encode_astc_image_info
 					}
 
 					ctr = thread_count - 1;
-					pctr++;
 				}
 				else
 					ctr--;

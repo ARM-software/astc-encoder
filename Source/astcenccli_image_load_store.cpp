@@ -1810,8 +1810,6 @@ astc_codec_image* astc_codec_load_image(
 	int padding,
 	int y_flip,
 	int linearize_srgb,
-	int rgb_force_use_of_hdr,
-	int alpha_force_use_of_hdr,
 	int* load_result
 ) {
 	// get hold of the filename ending
@@ -1832,8 +1830,6 @@ astc_codec_image* astc_codec_load_image(
 			if (img)
 			{
 				img->linearize_srgb = linearize_srgb;
-				img->rgb_force_use_of_hdr = rgb_force_use_of_hdr;
-				img->alpha_force_use_of_hdr = alpha_force_use_of_hdr;
 			}
 			return img;
 		}

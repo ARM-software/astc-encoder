@@ -73,7 +73,6 @@ static uint4 lerp_color_int(
 
 __attribute__((visibility("default")))
 void decompress_symbolic_block(
-	const astc_codec_image* image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	int xpos,
@@ -226,8 +225,7 @@ void decompress_symbolic_block(
 
 	for (i = 0; i < partition_count; i++)
 	{
-		unpack_color_endpoints(image,
-		                       decode_mode,
+		unpack_color_endpoints(decode_mode,
 		                       scb->color_formats[i],
 		                       scb->color_quantization_level,
 		                       scb->color_values[i],
