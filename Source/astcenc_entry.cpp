@@ -258,8 +258,8 @@ struct encode_astc_image_info
 	int pack_and_unpack;
 	int threadcount;
 	astcenc_profile decode_mode;
-	swizzlepattern swz_encode;
-	swizzlepattern swz_decode;
+	astcenc_swizzle swz_encode;
+	astcenc_swizzle swz_decode;
 	const astc_codec_image* input_image;
 	astc_codec_image* output_image;
 };
@@ -278,8 +278,8 @@ struct encode_astc_image_info
 	const error_weighting_params *ewp = blk->ewp;
 	int pack_and_unpack = blk->pack_and_unpack;
 	astcenc_profile decode_mode = blk->decode_mode;
-	swizzlepattern swz_encode = blk->swz_encode;
-	swizzlepattern swz_decode = blk->swz_decode;
+	astcenc_swizzle swz_encode = blk->swz_encode;
+	astcenc_swizzle swz_decode = blk->swz_decode;
 	const astc_codec_image *input_image = blk->input_image;
 	astc_codec_image *output_image = blk->output_image;
 

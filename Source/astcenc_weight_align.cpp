@@ -411,7 +411,8 @@ void compute_angular_endpoints_for_quantization_levels(
 		int bsi = best_scale[q];
 
 		// Did we find anything?
-		// TODO: Can we do better than bsi = 0 here?
+		// TODO: Can we do better than bsi = 0 here. We should at least
+		// propagate an error (and move the printf into the CLI).
 		if (bsi < 0)
 		{
 			printf("WARNING: Unable to find encoding within specified error limit\n");

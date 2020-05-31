@@ -675,15 +675,6 @@ uint8_t* unorm8x4_array_from_astc_img(
 	const astc_codec_image* img,
 	int y_flip);
 
-// the entries here : 0=red, 1=green, 2=blue, 3=alpha, 4=0.0, 5=1.0
-struct swizzlepattern
-{
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-	uint8_t a;
-};
-
 struct astcenc_context
 {
 	astcenc_config config;
@@ -713,7 +704,7 @@ void compute_averages_and_variances(
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	int need_srgb_transform,
-	swizzlepattern swz,
+	astcenc_swizzle swz,
 	int thread_count);
 
 /*
@@ -774,7 +765,7 @@ void fetch_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	swizzlepattern swz);
+	astcenc_swizzle swz);
 
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
@@ -786,7 +777,7 @@ void write_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	swizzlepattern swz);
+	astcenc_swizzle swz);
 
 // helper function to check whether a given picture-block has alpha that is not
 // just uniformly 1.

@@ -503,7 +503,7 @@ void fetch_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	swizzlepattern swz
+	astcenc_swizzle swz
 ) {
 	float *fptr = pb->orig_data;
 	int xsize = img->xsize + 2 * img->padding;
@@ -723,7 +723,7 @@ void write_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	swizzlepattern swz
+	astcenc_swizzle swz
 ) {
 	const float *fptr = pb->orig_data;
 	const uint8_t *nptr = pb->nan_texel;

@@ -74,6 +74,7 @@ EXTERNAL_SOURCES = \
     tinyexr.h
 
 HEADERS = \
+    astcenc.h \
     astcenc_internal.h \
     astcenc_mathlib.h \
     stb_image.h \
@@ -132,17 +133,21 @@ $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS_CLI) | $(LIBRARY)
 	@$(CXX) -o $@ $^ $(CXXFLAGS) -L. -l$(BINARY) -lpthread -Wl,-rpath,'$$ORIGIN'
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
+# Note: ensure NDEBUG is undefined; all three libraries are weak at runtime
+# handling of corrupt files, relying on asserts to handle bd file input.
+# Compiling with NDEBUG is a potential security risk.
 stb_image-c-$(VEC).o: stb_image.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION \
-		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM
+		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM -UNDEBUG
 	@echo "[C++] $<"
 
 stb_image_write-c-$(VEC).o: stb_image_write.h
-	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION \
+		-UNDEBUG
 	@echo "[C++] $<"
 
 tinyexr-c-$(VEC).o: tinyexr.h
-	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION -UNDEBUG
 	@echo "[C++] $<"
 
 $(OBJECTS_CLI): %-c-$(VEC).o: %.cpp $(HEADERS)

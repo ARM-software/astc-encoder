@@ -153,7 +153,7 @@ astc_codec_image* decompress_astc_image(
 	const astc_compressed_image& data,
 	int bitness,
 	astcenc_profile decode_mode,
-	swizzlepattern swz_decode,
+	astcenc_swizzle swz_decode,
 	int linearize_srgb,
 	int rgb_force_use_of_hdr,
 	int alpha_force_use_of_hdr
@@ -200,7 +200,7 @@ struct compress_astc_image_info
 	uint8_t* buffer;
 	int threadcount;
 	astcenc_profile decode_mode;
-	swizzlepattern swz_encode;
+	astcenc_swizzle swz_encode;
 	const astc_codec_image* input_image;
 };
 
@@ -217,7 +217,7 @@ static void compress_astc_image_threadfunc(
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
 	astcenc_profile decode_mode = blk->decode_mode;
-	swizzlepattern swz_encode = blk->swz_encode;
+	astcenc_swizzle swz_encode = blk->swz_encode;
 	const astc_codec_image *input_image = blk->input_image;
 
 	imageblock pb;
@@ -294,7 +294,7 @@ static void compress_astc_image(
 	int zdim,
 	const error_weighting_params* ewp,
 	astcenc_profile decode_mode,
-	swizzlepattern swz_encode,
+	astcenc_swizzle swz_encode,
 	uint8_t* buffer,
 	int threadcount
 ) {
@@ -525,8 +525,19 @@ int astc_main(
 	ewp.rgba_weights[3] = 1.0f;
 	ewp.ra_normal_angular_scale = 0;
 
-	swizzlepattern swz_encode = { 0, 1, 2, 3 };
-	swizzlepattern swz_decode = { 0, 1, 2, 3 };
+	astcenc_swizzle swz_encode {
+		ASTCENC_SWZ_R,
+		ASTCENC_SWZ_G,
+		ASTCENC_SWZ_B,
+		ASTCENC_SWZ_A
+	};
+
+	astcenc_swizzle swz_decode {
+		ASTCENC_SWZ_R,
+		ASTCENC_SWZ_G,
+		ASTCENC_SWZ_B,
+		ASTCENC_SWZ_A
+	};
 
 	int thread_count = 0;		// default value
 
@@ -753,32 +764,34 @@ int astc_main(
 				return 1;
 			}
 
-			int swizzle_components[4];
+			astcenc_swz swizzle_components[4];
 			for (int i = 0; i < 4; i++)
+			{
 				switch (argv[argidx - 1][i])
 				{
 				case 'r':
-					swizzle_components[i] = 0;
+					swizzle_components[i] = ASTCENC_SWZ_R;
 					break;
 				case 'g':
-					swizzle_components[i] = 1;
+					swizzle_components[i] = ASTCENC_SWZ_G;
 					break;
 				case 'b':
-					swizzle_components[i] = 2;
+					swizzle_components[i] = ASTCENC_SWZ_B;
 					break;
 				case 'a':
-					swizzle_components[i] = 3;
+					swizzle_components[i] = ASTCENC_SWZ_A;
 					break;
 				case '0':
-					swizzle_components[i] = 4;
+					swizzle_components[i] = ASTCENC_SWZ_0;
 					break;
 				case '1':
-					swizzle_components[i] = 5;
+					swizzle_components[i] = ASTCENC_SWZ_1;
 					break;
 				default:
 					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
 					return 1;
 				}
+			}
 			swz_encode.r = swizzle_components[0];
 			swz_encode.g = swizzle_components[1];
 			swz_encode.b = swizzle_components[2];
@@ -799,31 +812,31 @@ int astc_main(
 				return 1;
 			}
 
-			int swizzle_components[4];
+			astcenc_swz swizzle_components[4];
 			for (int i = 0; i < 4; i++)
 			{
 				switch (argv[argidx - 1][i])
 				{
 				case 'r':
-					swizzle_components[i] = 0;
+					swizzle_components[i] = ASTCENC_SWZ_R;
 					break;
 				case 'g':
-					swizzle_components[i] = 1;
+					swizzle_components[i] = ASTCENC_SWZ_G;
 					break;
 				case 'b':
-					swizzle_components[i] = 2;
+					swizzle_components[i] = ASTCENC_SWZ_B;
 					break;
 				case 'a':
-					swizzle_components[i] = 3;
+					swizzle_components[i] = ASTCENC_SWZ_A;
 					break;
 				case '0':
-					swizzle_components[i] = 4;
+					swizzle_components[i] = ASTCENC_SWZ_0;
 					break;
 				case '1':
-					swizzle_components[i] = 5;
+					swizzle_components[i] = ASTCENC_SWZ_1;
 					break;
 				case 'z':
-					swizzle_components[i] = 6;
+					swizzle_components[i] =  ASTCENC_SWZ_Z;
 					break;
 				default:
 					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
@@ -844,14 +857,16 @@ int astc_main(
 			ewp.rgba_weights[2] = 0.0f;
 			ewp.rgba_weights[3] = 1.0f;
 			ewp.ra_normal_angular_scale = 1;
-			swz_encode.r = 0;	// r <- red
-			swz_encode.g = 0;	// g <- red
-			swz_encode.b = 0;	// b <- red
-			swz_encode.a = 1;	// a <- green
-			swz_decode.r = 0;	// r <- red
-			swz_decode.g = 3;	// g <- alpha
-			swz_decode.b = 6;	// b <- reconstruct
-			swz_decode.a = 5;	// 1.0
+
+			swz_encode.r = ASTCENC_SWZ_R;
+			swz_encode.g = ASTCENC_SWZ_R;
+			swz_encode.b = ASTCENC_SWZ_R;
+			swz_encode.a = ASTCENC_SWZ_G;
+
+			swz_decode.r = ASTCENC_SWZ_R;
+			swz_decode.g = ASTCENC_SWZ_A;
+			swz_decode.b = ASTCENC_SWZ_Z;
+			swz_decode.a = ASTCENC_SWZ_1;
 
 			oplimit_set = 1000.0f;
 			mincorrel_set = 0.99f;
@@ -864,14 +879,16 @@ int astc_main(
 			ewp.rgba_weights[2] = 0.0f;
 			ewp.rgba_weights[3] = 1.0f;
 			ewp.ra_normal_angular_scale = 1;
-			swz_encode.r = 0;	// r <- red
-			swz_encode.g = 0;	// g <- red
-			swz_encode.b = 0;	// b <- red
-			swz_encode.a = 1;	// a <- green
-			swz_decode.r = 0;	// r <- red
-			swz_decode.g = 3;	// g <- alpha
-			swz_decode.b = 6;	// b <- reconstruct
-			swz_decode.a = 5;	// 1.0
+
+			swz_encode.r = ASTCENC_SWZ_R;
+			swz_encode.g = ASTCENC_SWZ_R;
+			swz_encode.b = ASTCENC_SWZ_R;
+			swz_encode.a = ASTCENC_SWZ_G;
+
+			swz_decode.r = ASTCENC_SWZ_R;
+			swz_decode.g = ASTCENC_SWZ_A;
+			swz_decode.b = ASTCENC_SWZ_Z;
+			swz_decode.a = ASTCENC_SWZ_1;
 
 			oplimit_set = 1000.0f;
 			mincorrel_set = 0.99f;

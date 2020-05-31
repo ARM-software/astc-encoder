@@ -48,7 +48,7 @@ struct pixel_region_variance_args
 	/** The RGB data should be treated as sRGB. */
 	int need_srgb_transform;
 	/** The channel swizzle pattern. */
-	swizzlepattern swz;
+	astcenc_swizzle swz;
 	/** Should the algorithm bother with Z axis processing? */
 	int have_z;
 	/** The kernel radius for average and variance. */
@@ -162,7 +162,7 @@ static void compute_pixel_region_variance(
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
 	int need_srgb_transform = arg->need_srgb_transform;
-	swizzlepattern swz = arg->swz;
+	astcenc_swizzle swz = arg->swz;
 	int have_z = arg->have_z;
 
 	int size_x = arg->size.x;
@@ -219,8 +219,8 @@ static void compute_pixel_region_variance(
 	{
 		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
-		data[4] = 0;
-		data[5] = 255;
+		data[ASTCENC_SWZ_0] = 0;
+		data[ASTCENC_SWZ_1] = 255;
 
 		for (int z = zd_start; z < padsize_z; z++)
 		{
@@ -271,8 +271,8 @@ static void compute_pixel_region_variance(
 	{
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		uint16_t data[6];
-		data[4] = 0;
-		data[5] = 0x3C00;
+		data[ASTCENC_SWZ_0] = 0;
+		data[ASTCENC_SWZ_1] = 0x3C00;
 
 		for (int z = zd_start; z < padsize_z; z++)
 		{
@@ -604,7 +604,7 @@ void compute_averages_and_variances(
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	int need_srgb_transform,
-	swizzlepattern swz,
+	astcenc_swizzle swz,
 	int thread_count
 ) {
 	int size_x = img->xsize;
@@ -613,9 +613,9 @@ void compute_averages_and_variances(
 	int pixel_count = size_x * size_y * size_z;
 
 	// Perform memory allocations for the destination buffers
-	if (img->input_averages)       delete[] img->input_averages;
-	if (img->input_variances)      delete[] img->input_variances;
-	if (img->input_alpha_averages) delete[] img->input_alpha_averages;
+	delete[] img->input_averages;
+	delete[] img->input_variances;
+	delete[] img->input_alpha_averages;
 
 	img->input_averages = new float4[pixel_count];
 	img->input_variances = new float4[pixel_count];
