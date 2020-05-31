@@ -345,15 +345,11 @@ void compute_averages_and_directions_2_components(
 		data_vr = blk->data_r;
 		data_vg = blk->data_b;
 	}
-	else if (component1 == 1 && component2 == 2)
+	else // (component1 == 1 && component2 == 2)
 	{
 		texel_weights = ewb->texel_weight_gb;
 		data_vr = blk->data_g;
 		data_vg = blk->data_b;
-	}
-	else
-	{
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	for (partition = 0; partition < partition_count; partition++)

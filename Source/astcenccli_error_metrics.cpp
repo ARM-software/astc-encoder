@@ -147,7 +147,7 @@ void compute_error_metrics(
 	    img1->ysize != img2->ysize ||
 	    img1->zsize != img2->zsize)
 	{
-		printf("Warning: Only intersection of images will be compared:\n"
+		printf("WARNING: Only intersection of images will be compared:\n"
 		       "  Image 1: %dx%dx%d\n"
 		       "  Image 2: %dx%dx%d\n",
 		       img1->xsize, img1->ysize, img1->zsize,

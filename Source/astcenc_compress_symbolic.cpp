@@ -21,8 +21,9 @@
 
 #include "astcenc_internal.h"
 
-#include <string.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstring>
+#include <cstdio>
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
@@ -306,8 +307,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			weight_high_value[i] = 1.0f;
 
 		int decimation_mode = bsd->block_modes[i].decimation_mode;
-		if (bsd->decimation_mode_percentile[decimation_mode] > mode_cutoff)
-			ASTC_CODEC_INTERNAL_ERROR();
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = compute_ise_bitcount(ixtab2[decimation_mode]->num_weights,
@@ -1004,8 +1003,7 @@ static void prepare_block_statistics(
 	for (i = 0; i < texels_per_block; i++)
 	{
 		float weight = ewb->texel_weight[i];
-		if (weight < 0.0f)
-			ASTC_CODEC_INTERNAL_ERROR();
+		assert(weight >= 0.0f);
 		weight_sum += weight;
 
 		float r = blk->data_r[i];

@@ -19,6 +19,8 @@
  * @brief Functions for computing color endpoints and texel weights.
  */
 
+#include <cassert>
+
 #include "astcenc_internal.h"
 
 #ifdef DEBUG_CAPTURE_NAN
@@ -35,7 +37,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	endpoints_and_weights* ei,
-	int component
+	unsigned int component
 ) {
 	int i;
 
@@ -50,6 +52,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 	const float *error_weights;
 	const float* data_vr = nullptr;
+	assert(component <= 3);
 	switch (component)
 	{
 	case 0:
@@ -68,8 +71,6 @@ static void compute_endpoints_and_ideal_weights_1_component(
 		error_weights = ewb->texel_weight_a;
 		data_vr = blk->data_a;
 		break;
-	default:
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -118,10 +119,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 		ei->weights[i] = value;
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
-		if (astc::isnan(ei->weight_error_scale[i]))
-		{
-			ASTC_CODEC_INTERNAL_ERROR();
-		}
+		assert(!astc::isnan(ei->weight_error_scale[i]));
 	}
 
 	for (i = 0; i < partition_count; i++)
@@ -184,15 +182,11 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		data_vr = blk->data_r;
 		data_vg = blk->data_b;
 	}
-	else if (component1 == 1 && component2 == 2)
+	else // (component1 == 1 && component2 == 2)
 	{
 		error_weights = ewb->texel_weight_gb;
 		data_vr = blk->data_g;
 		data_vg = blk->data_b;
-	}
-	else
-	{
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	int texels_per_block = bsd->texel_count;
@@ -383,10 +377,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
-		if (astc::isnan(ei->weight_error_scale[i]))
-		{
-			ASTC_CODEC_INTERNAL_ERROR();
-		}
+		assert(!astc::isnan(ei->weight_error_scale[i]));
 	}
 }
 
@@ -620,10 +611,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
-		if (astc::isnan(ei->weight_error_scale[i]))
-		{
-			ASTC_CODEC_INTERNAL_ERROR();
-		}
+		assert(!astc::isnan(ei->weight_error_scale[i]));
 	}
 }
 
@@ -752,10 +740,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			idx = 0.0f;
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
-		if (astc::isnan(ei->weight_error_scale[i]))
-		{
-			ASTC_CODEC_INTERNAL_ERROR();
-		}
+		assert(!astc::isnan(ei->weight_error_scale[i]));
 	}
 }
 
@@ -821,12 +806,8 @@ void compute_endpoints_and_ideal_weights_2_planes(
 		break;
 
 	case 3:					// separate weights for alpha
-		if (uses_alpha == 0)
-		{
-			ASTC_CODEC_INTERNAL_ERROR();
-		}
+		assert(uses_alpha != 0);
 		compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 3);
-
 		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 3);
 		break;
 	}

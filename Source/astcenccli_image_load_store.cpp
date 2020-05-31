@@ -820,13 +820,13 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	}
 
 	if (hdr.number_of_mipmap_levels > 1)
-		printf("warning: KTX file %s has %d mipmap levels; only the first one will be encoded.\n", filename, hdr.number_of_mipmap_levels);
+		printf("WARNING: KTX file %s has %d mipmap levels; only the first one will be encoded.\n", filename, hdr.number_of_mipmap_levels);
 
 	if (hdr.number_of_array_elements > 1)
-		printf("warning: KTX file %s contains a texture array with %d layers; only the first one will be encoded.\n", filename, hdr.number_of_array_elements);
+		printf("WARNING: KTX file %s contains a texture array with %d layers; only the first one will be encoded.\n", filename, hdr.number_of_array_elements);
 
 	if (hdr.number_of_faces > 1)
-		printf("warning: KTX file %s contains a cubemap with 6 faces; only the first one will be encoded.\n", filename);
+		printf("WARNING: KTX file %s contains a cubemap with 6 faces; only the first one will be encoded.\n", filename);
 
 
 	int xsize = hdr.pixel_width;
@@ -1840,7 +1840,7 @@ astc_codec_image* astc_codec_load_image(
 	}
 
 	// Should never reach here - stb_image provides a generic handler
-	ASTC_CODEC_INTERNAL_ERROR();
+	return nullptr;
 }
 
 int astc_codec_store_image(
@@ -1867,5 +1867,5 @@ int astc_codec_store_image(
 
 	// Should never reach here - get_output_filename_enforced_bitness should
 	// have acted as a preflight check
-	ASTC_CODEC_INTERNAL_ERROR();
+	return -1;
 }

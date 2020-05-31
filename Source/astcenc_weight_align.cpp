@@ -350,8 +350,8 @@ void compute_angular_endpoints_for_quantization_levels(
 	uint8_t cut_low_weight[40];
 	for (i = 0; i < (max_quantization_steps + 4); i++)
 	{
-		best_errors[i] = 1e30f;
 		best_scale[i] = -1;	// Indicates no solution found
+		best_errors[i] = 1e30f;
 		cut_low_weight[i] = 0;
 	}
 
@@ -411,10 +411,11 @@ void compute_angular_endpoints_for_quantization_levels(
 		int bsi = best_scale[q];
 
 		// Did we find anything?
+		// TODO: Can we do better than bsi = 0 here?
 		if (bsi < 0)
 		{
-			printf("ERROR: Unable to find an encoding within the specified error limits\n");
-			ASTC_CODEC_INTERNAL_ERROR();
+			printf("WARNING: Unable to find encoding within specified error limit\n");
+			bsi = 0;
 		}
 
 		float stepsize = stepsizes[bsi];

@@ -808,6 +808,7 @@ void unpack_color_endpoints(
 ) {
 	*nan_endpoint = 0;
 
+	// TODO: Make format the correct enum type
 	switch (format)
 	{
 	case FMT_LUMINANCE:
@@ -905,9 +906,6 @@ void unpack_color_endpoints(
 		*alpha_hdr = 1;
 		hdr_rgb_hdr_alpha_unpack3(input, quantization_level, output0, output1);
 		break;
-
-	default:
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	if (*alpha_hdr == -1)

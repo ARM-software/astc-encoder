@@ -41,15 +41,6 @@ static double end_time;
 static double start_coding_time;
 static double end_coding_time;
 
-NORETURN __attribute__((visibility("default")))
-void astc_codec_internal_error(
-	const char *filename,
-	int line
-) {
-	printf("Internal error: File=%s Line=%d\n", filename, line);
-	exit(1);
-}
-
 static const uint32_t MAGIC_FILE_CONSTANT = 0x5CA1AB13;
 
 struct astc_header

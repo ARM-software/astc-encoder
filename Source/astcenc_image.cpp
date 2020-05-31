@@ -19,7 +19,9 @@
  * @brief Functions for creating in-memory ASTC image structures.
  */
 
+#include <cassert>
 #include <cstring>
+
 #include "astcenc_internal.h"
 
 __attribute__((visibility("default")))
@@ -49,6 +51,7 @@ astc_codec_image *alloc_image(
 	int eysize = ysize + 2 * padding;
 	int ezsize = (zsize == 1) ? 1 : zsize + 2 * padding;
 
+	assert(bitness == 8 || bitness == 16);
 	if (bitness == 8)
 	{
 		img->data8 = new uint8_t **[ezsize];
@@ -94,10 +97,6 @@ astc_codec_image *alloc_image(
 		}
 
 		img->data8 = nullptr;
-	}
-	else
-	{
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	return img;

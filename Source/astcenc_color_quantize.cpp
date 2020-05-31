@@ -1874,6 +1874,7 @@ int pack_color_endpoints(
 
 	int retval;
 
+	// TODO: Make format an endpoint_fmt enum type
 	switch (format)
 	{
 	case FMT_RGB:
@@ -1980,9 +1981,6 @@ int pack_color_endpoints(
 		quantize_hdr_rgb_alpha3(color0, color1, output, quantization_level);
 		retval = FMT_HDR_RGBA;
 		break;
-
-	default:
-		ASTC_CODEC_INTERNAL_ERROR();
 	}
 
 	return retval;
