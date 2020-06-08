@@ -143,7 +143,6 @@ enum astcenc_preset {
 // Image channel data type
 enum astcenc_type {
 	ASTCENC_TYP_U8 = 0,
-	ASTCENC_TYP_U16,
 	ASTCENC_TYP_F16
 };
 
