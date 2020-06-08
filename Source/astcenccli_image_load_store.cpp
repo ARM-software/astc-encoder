@@ -1456,7 +1456,7 @@ astc_codec_image* load_dds_uncompressed_image(
 
 	delete[] buf;
 	fill_image_padding_area(astc_img);
-	is_hdr = bitness;
+	is_hdr = bitness == 16;
 	num_components = components;
 	return astc_img;
 }
