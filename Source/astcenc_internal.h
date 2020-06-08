@@ -704,24 +704,25 @@ void compute_averages_and_variances(
 	astcenc_swizzle swz,
 	int thread_count);
 
-/*
-	Functions to load image from file.
-	If successful, return an astc_codec_image object.
-	If unsuccessful, returns nullptr.
-
-	*result is used to return a result. In case of a successfully loaded image, bits[2:0]
-	of *result indicate how many components are present, and bit[7] indicate whether
-	the input image was LDR or HDR (0=LDR, 1=HDR).
-
-	In case of failure, *result is given a negative value.
-*/
-
+/**
+ * Functions to load image from file.
+ *
+ * @param filename            The file path on disk.
+ * @param padding             The texel padding needed around the image.
+ * @param y_flip              Should this image be Y flipped?
+ * @param linearize_srgb      Should this image be converted to linear from sRGB?
+ * @param[out] is_hdr         Is the loaded image HDR?
+ * @param[out] num_components The number of components in the loaded image.
+ *
+ * @return The astc image file, or nullptr on error.
+ */
 astc_codec_image* astc_codec_load_image(
 	const char* filename,
 	int padding,
-	int y_flip,
-	int linearize_srgb,
-	int* result);
+	bool y_flip,
+	bool linearize_srgb,
+	bool& is_hdr,
+	int& num_components);
 
 int astc_codec_store_image(
 	const astc_codec_image* output_image,

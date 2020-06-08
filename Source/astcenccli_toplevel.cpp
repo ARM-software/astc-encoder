@@ -435,15 +435,15 @@ static std::string get_slice_filename(
 /**
  * @brief Load a non-astc image file from memory.
  *
- * @param filename           The file to load, or a pattern for array loads.
- * @param dim_z              The number of slices to load.
- * @param padding            The number of texels of padding.
- * @param y_flip             Should this image be Y flipped?
- * @param linearize_srgb     Should this image be Y flipped?
- * @param img_is_hdr         Is the loaded image HDR?
- * @param img_num_components How many components in the loaded image?
+ * @param filename            The file to load, or a pattern for array loads.
+ * @param dim_z               The number of slices to load.
+ * @param padding             The number of texels of padding.
+ * @param y_flip              Should this image be Y flipped?
+ * @param linearize_srgb      Should this image be converted to linear from sRGB?
+ * @param[out] is_hdr         Is the loaded image HDR?
+ * @param[out] num_components The number of components in the loaded image.
  *
- * @return The astc image file, or nullptr is the load failed.
+ * @return The astc image file, or nullptr on error.
  */
 static astc_codec_image* load_decomp_file(
 	const char* filename,
@@ -451,20 +451,21 @@ static astc_codec_image* load_decomp_file(
 	int padding,
 	bool y_flip,
 	bool linearize_srgb,
-	bool& img_is_hdr,
-	int& img_num_components
+	bool& is_hdr,
+	int& num_components
 ) {
-	int load_result = 0;
 	astc_codec_image *image = nullptr;
 
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = astc_codec_load_image(filename, padding, y_flip, linearize_srgb, &load_result);
+		image = astc_codec_load_image(filename, padding, y_flip, linearize_srgb,
+		                              is_hdr, num_components);
 	}
 	else
 	{
-		int slice_result = 0;
+		bool slice_is_hdr;
+		int slice_num_components;
 		astc_codec_image* slice = nullptr;
 		std::vector<astc_codec_image*> slices;
 
@@ -479,13 +480,13 @@ static astc_codec_image* load_decomp_file(
 				break;
 			}
 
-			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip, linearize_srgb, &slice_result);
+			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip, linearize_srgb,
+			                              slice_is_hdr, slice_num_components);
 			if (!slice)
 			{
 				break;
 			}
 
-			assert(slice_result != 0);
 			slices.push_back(slice);
 
 			// Check it is not a 3D image
@@ -498,7 +499,7 @@ static astc_codec_image* load_decomp_file(
 			// Check slices are consistent with each other
 			if (image_index != 0)
 			{
-				if (load_result != slice_result)
+				if ((is_hdr != slice_is_hdr) || (num_components != slice_num_components))
 				{
 					printf("ERROR: Image array[0] and [%d] are different formats\n", image_index);
 					break;
@@ -514,7 +515,8 @@ static astc_codec_image* load_decomp_file(
 			}
 			else
 			{
-				load_result = slice_result;
+				is_hdr = slice_is_hdr;
+				num_components = slice_num_components;
 			}
 		}
 
@@ -523,7 +525,7 @@ static astc_codec_image* load_decomp_file(
 		{
 			unsigned int dim_x = slices[0]->xsize;
 			unsigned int dim_y = slices[0]->ysize;
-			int bitness = (load_result & 0x80) ? 16 : 8;
+			int bitness = is_hdr ? 16 : 8;
 			int slice_size = (dim_x + (2 * padding)) * (dim_y + (2 * padding));
 
 			image = alloc_image(bitness, dim_x, dim_y, dim_y, padding);
@@ -553,8 +555,6 @@ static astc_codec_image* load_decomp_file(
 		}
 	}
 
-	img_num_components = load_result & 7;
-	img_is_hdr = (bool)(load_result & 0x80);
 	return image;
 }
 
