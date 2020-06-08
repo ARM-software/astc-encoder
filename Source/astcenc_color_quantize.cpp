@@ -1872,7 +1872,7 @@ int pack_color_endpoints(
 	color1.z = MAX(color1.z, 0.0f);
 	color1.w = MAX(color1.w, 0.0f);
 
-	int retval;
+	int retval = 0;
 
 	// TODO: Make format an endpoint_fmt enum type
 	switch (format)
