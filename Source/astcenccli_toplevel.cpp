@@ -445,7 +445,7 @@ static std::string get_slice_filename(
  *
  * @return The astc image file, or nullptr on error.
  */
-static astc_codec_image* load_decomp_file(
+static astc_codec_image* load_uncomp_file(
 	const char* filename,
 	unsigned int dim_z,
 	int padding,
@@ -1201,29 +1201,20 @@ int astc_main(
 		return 1;
 	}
 
-	float texel_avg_error_limit = 0.0f;
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		int partitions_to_test = plimit_set;
-		float oplimit = oplimit_set;
-		float mincorrel = mincorrel_set;
-
-		int maxiters = maxiters_set;
-		ewp.max_refinement_iters = maxiters;
+		ewp.max_refinement_iters = maxiters_set;
 		ewp.block_mode_cutoff = bmc_set / 100.0f;
 
+		ewp.texel_avg_error_limit = 0.0f;
 		if ((decode_mode == ASTCENC_PRF_LDR) || (decode_mode == ASTCENC_PRF_LDR_SRGB))
 		{
-			texel_avg_error_limit = powf(0.1f, dblimit_set * 0.1f) * 65535.0f * 65535.0f;
-		}
-		else
-		{
-			texel_avg_error_limit = 0.0f;
+			ewp.texel_avg_error_limit = powf(0.1f, dblimit_set * 0.1f) * 65535.0f * 65535.0f;
 		}
 
-		ewp.partition_1_to_2_limit = oplimit;
-		ewp.lowest_correlation_cutoff = mincorrel;
-		ewp.partition_search_limit = astc::clampi(partitions_to_test, 1, PARTITION_COUNT);
+		ewp.partition_1_to_2_limit = oplimit_set;
+		ewp.lowest_correlation_cutoff = mincorrel_set;
+		ewp.partition_search_limit = astc::clampi(plimit_set, 1, PARTITION_COUNT);
 
 		if (thread_count < 1)
 		{
@@ -1233,11 +1224,13 @@ int astc_main(
 		// Specifying the error weight of a color component as 0 is not allowed.
 		// If weights are 0, then they are instead set to a small positive value.
 		float max_color_component_weight = MAX(MAX(ewp.rgba_weights[0], ewp.rgba_weights[1]),
-											   MAX(ewp.rgba_weights[2], ewp.rgba_weights[3]));
+		                                       MAX(ewp.rgba_weights[2], ewp.rgba_weights[3]));
 		ewp.rgba_weights[0] = MAX(ewp.rgba_weights[0], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[1] = MAX(ewp.rgba_weights[1], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[2] = MAX(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[3] = MAX(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
+
+		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
 
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)
@@ -1295,8 +1288,8 @@ int astc_main(
 			printf("    Deblock artifact setting:   %g\n", (double)ewp.block_artifact_suppression);
 			printf("    Block partition cutoff:     %d partitions\n", ewp.partition_search_limit);
 			printf("    PSNR cutoff:                %g dB\n", (double)dblimit_set);
-			printf("    1->2 partition cutoff:      %g\n", (double)oplimit);
-			printf("    2 plane correlation cutoff: %g\n", (double)mincorrel_set);
+			printf("    1->2 partition cutoff:      %g\n", (double)ewp.partition_1_to_2_limit);
+			printf("    2 plane correlation cutoff: %g\n", (double)ewp.lowest_correlation_cutoff);
 			printf("    Block mode centile cutoff:  %g%%\n", (double)(ewp.block_mode_cutoff * 100.0f));
 			printf("    Max refinement cutoff:      %d iterations\n", ewp.max_refinement_iters);
 			printf("    Compressor thread count:    %d\n", thread_count);
@@ -1312,125 +1305,145 @@ int astc_main(
 
 	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
 
-	// determine encoding bitness as follows:
-	// if enforced by the output format, follow the output format's result
-	// else use decode_mode to pick bitness.
-	int out_bitness = (op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE) ? get_output_filename_enforced_bitness(output_filename) : -1;
-	if (out_bitness == -1)
-	{
-		bool is_hdr = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
-		out_bitness = is_hdr ? 16 : 8;
-	}
+	// Flatten out the list of operations we need to perform
+	bool stage_compress = (op_mode == ASTC_ENCODE) || (op_mode == ASTC_ENCODE_AND_DECODE);
+	bool stage_decompress = (op_mode == ASTC_DECODE) || (op_mode == ASTC_ENCODE_AND_DECODE);
+	bool stage_load_uncomp = stage_compress;
+	bool stage_load_comp = op_mode == ASTC_DECODE;
+	bool stage_compare = op_mode == ASTC_ENCODE_AND_DECODE;
+	bool stage_store_comp = op_mode == ASTC_ENCODE;
+	bool stage_store_decomp = stage_decompress;
 
-	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
+	astc_codec_image* image_uncomp_in = nullptr ;
+	int image_uncomp_in_num_chan = 0;
+	bool image_uncomp_in_is_hdr = false;
+
+	astc_compressed_image image_comp;
+
+	astc_codec_image* image_decomp_out = nullptr;
+
+	// TODO: Handle RAII resources so they get freed when out of scope
+
+	// Load the uncompressed input file if needed
+	if (stage_load_uncomp)
 	{
+		// TODO: This can be moved to command line parsing
 		if ((array_size > 1) && (block_z == 1))
 		{
 			printf("ERROR: 3D input data for a 2D ASTC block format\n");
 			return 1;
 		}
 
-		input_decomp_img = load_decomp_file(input_filename, array_size, padding, y_flip, linearize_srgb, input_decomp_img_is_hdr, input_decomp_img_num_chan);
-		if (!input_decomp_img)
+		image_uncomp_in = load_uncomp_file(input_filename, array_size, padding, y_flip, linearize_srgb,
+		                                   image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
+		if (!image_uncomp_in)
 		{
 			return 1;
 		}
-
-		ewp.texel_avg_error_limit = texel_avg_error_limit;
-		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
 
 		if (!silentmode)
 		{
 			printf("Source image\n");
 			printf("============\n\n");
 			printf("    Source:                     %s\n", input_filename);
-			printf("    Color profile:              %s\n", input_decomp_img_is_hdr ? "HDR" : "LDR");
-			if (input_decomp_img->zsize > 1)
+			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
+			if (image_uncomp_in->zsize > 1)
 			{
 				printf("    Dimensions:                 3D, %d x %d x %d\n",
-				       input_decomp_img->xsize, input_decomp_img->ysize, input_decomp_img->zsize);
+				       image_uncomp_in->xsize, image_uncomp_in->ysize, image_uncomp_in->zsize);
 			}
 			else
 			{
 				printf("    Dimensions:                 2D, %d x %d\n",
-				       input_decomp_img->xsize, input_decomp_img->ysize);
+				       image_uncomp_in->xsize, image_uncomp_in->ysize);
 			}
-			printf("    Channels:                   %d\n\n", input_decomp_img_num_chan);
+			printf("    Channels:                   %d\n\n", image_uncomp_in_num_chan);
 		}
+	}
 
-		if (padding > 0 ||
-		    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
-		    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
+	// Load the compressed input file if needed
+	if (stage_load_comp)
+	{
+		int error = load_astc_file(input_filename, image_comp);
+		if (error)
 		{
-			compute_averages_and_variances(
-				input_decomp_img,
-				ewp.rgb_power,
-				ewp.alpha_power,
-				ewp.mean_stdev_radius,
-				ewp.alpha_radius,
-				linearize_srgb,
-				swz_encode,
-				thread_count);
+			return 1;
 		}
 	}
 
 	start_coding_time = get_time();
 
-	if (op_mode == ASTC_DECODE)
+	// Compress an image
+	if (stage_compress)
 	{
-		astc_compressed_image comp_img;
-		int error = load_astc_file(input_filename, comp_img);
-		if (error)
+		if (padding > 0 ||
+		    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
+		    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 		{
-			return 1;
+			compute_averages_and_variances(image_uncomp_in, ewp.rgb_power, ewp.alpha_power,
+			                               ewp.mean_stdev_radius, ewp.alpha_radius, linearize_srgb,
+			                               swz_encode, thread_count);
 		}
 
-		output_decomp_img = decompress_astc_image(
-		    comp_img, out_bitness, decode_mode, swz_decode,
-		    linearize_srgb);
-
-		delete[] comp_img.data;
-	}
-
-	// process image, if relevant
-	if (op_mode == ASTC_ENCODE_AND_DECODE)
-	{
-		int xsize = input_decomp_img->xsize;
-		int ysize = input_decomp_img->ysize;
-		int zsize = input_decomp_img->zsize;
+		int xsize = image_uncomp_in->xsize;
+		int ysize = image_uncomp_in->ysize;
+		int zsize = image_uncomp_in->zsize;
 		int xblocks = (xsize + block_x - 1) / block_x;
 		int yblocks = (ysize + block_y - 1) / block_y;
 		int zblocks = (zsize + block_z - 1) / block_z;
 		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
-		compress_astc_image(input_decomp_img, block_x, block_y, block_z, &ewp, decode_mode, swz_encode, buffer, thread_count);
+		compress_astc_image(image_uncomp_in, block_x, block_y, block_z, &ewp, decode_mode,
+		                    swz_encode, buffer, thread_count);
 
-		astc_compressed_image comp_img {
-			block_x, block_y, block_z,
-			xsize, ysize, zsize,
-			buffer
-		};
+		image_comp.block_x = block_x;
+		image_comp.block_y = block_y;
+		image_comp.block_z = block_z;
+		image_comp.dim_x = xsize;
+		image_comp.dim_y = ysize;
+		image_comp.dim_z = zsize;
+		image_comp.data = buffer;
+	}
 
-		output_decomp_img = decompress_astc_image(
-		    comp_img, out_bitness, decode_mode, swz_decode, 0);
+	// Decompress an image
+	if (stage_decompress)
+	{
+		int out_bitness = get_output_filename_enforced_bitness(output_filename);
+		if (out_bitness == -1)
+		{
+			bool is_hdr = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+			out_bitness = is_hdr ? 16 : 8;
+		}
 
-		delete[] buffer;
+		image_decomp_out = decompress_astc_image(
+		    image_comp, out_bitness, decode_mode, swz_decode, linearize_srgb);
 	}
 
 	end_coding_time = get_time();
 
-	// print PSNR if encoding
-	if (op_mode == ASTC_ENCODE_AND_DECODE)
+	// Print metrics in comparison mode
+	if (stage_compare)
 	{
-		compute_error_metrics(input_decomp_img_is_hdr, input_decomp_img_num_chan, input_decomp_img, output_decomp_img, low_fstop, high_fstop);
+		compute_error_metrics(image_uncomp_in_is_hdr, image_uncomp_in_num_chan, image_uncomp_in,
+		                      image_decomp_out, low_fstop, high_fstop);
 	}
 
-	// store image
-	if (op_mode == ASTC_DECODE || op_mode == ASTC_ENCODE_AND_DECODE)
+	// Store compressed image
+	if (stage_store_comp)
+	{
+		int error = store_astc_file(image_comp, output_filename);
+		if (error)
+		{
+			return 1;
+		}
+	}
+
+	// Store decompressed image
+	if (stage_store_decomp)
 	{
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(output_decomp_img, output_filename, &format_string, y_flip);
+		store_result = astc_codec_store_image(image_decomp_out, output_filename, &format_string, y_flip);
 		if (store_result < 0)
 		{
 			printf("ERROR: Failed to write output image %s\n", output_filename);
@@ -1438,36 +1451,13 @@ int astc_main(
 		}
 	}
 
-	if (op_mode == ASTC_ENCODE)
-	{
-		int xsize = input_decomp_img->xsize;
-		int ysize = input_decomp_img->ysize;
-		int zsize = input_decomp_img->zsize;
-		int xblocks = (xsize + block_x - 1) / block_x;
-		int yblocks = (ysize + block_y - 1) / block_y;
-		int zblocks = (zsize + block_z - 1) / block_z;
-		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
-		compress_astc_image(input_decomp_img, block_x, block_y, block_z, &ewp, decode_mode, swz_encode, buffer, thread_count);
+	free_image(image_uncomp_in);
+	free_image(image_decomp_out);
+	delete[] image_comp.data;
 
-		end_coding_time = get_time();
-
-		astc_compressed_image comp_img {
-			block_x, block_y, block_z,
-			xsize, ysize, zsize,
-			buffer
-		};
-
-		int error = store_astc_file(comp_img, output_filename);
-		if (error)
-		{
-			return 1;
-		}
-	}
-
-	free_image(input_decomp_img);
 	end_time = get_time();
 
-	if (op_mode == ASTC_ENCODE_AND_DECODE || !silentmode)
+	if (stage_compare || !silentmode)
 	{
 		printf("Coding time\n");
 		printf("===========\n\n");

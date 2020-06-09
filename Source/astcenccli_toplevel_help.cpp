@@ -361,11 +361,14 @@ ADVANCED COMPRESSION
            Convert input images from sRGB to linear RGB before compression,
            and output images from linear RGB to sRGB after decompression.
            For compression, the transform is applied after any swizzle; for
-           decode, the transform is applied before any swizzle.
+           decode, the transform is applied before any swizzle. Note that
+           using this option in a test mode (-t*) will have no obvious
+           effect as the image will be converted twice, although some image
+           precision loss may occur.
 
            Note that this switch is only intended for diagnostic purposes;
            real use cases should directly compress/decompress sRGB data
-           using the ASTC LDR sRGB format, using the -cs, -ds, and -ts
+           using the LDR sRGB profile, using the -cs, -ds, and -ts
            operation modes. This preserves more perceptual image quality.
 
        -yflip
