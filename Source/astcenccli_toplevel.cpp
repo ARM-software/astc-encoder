@@ -1297,8 +1297,13 @@ int astc_main(
 		}
 	}
 
-	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
+	astc_codec_image* input_decomp_img = nullptr ;
+	int input_decomp_img_num_chan = 0;
+	bool input_decomp_img_is_hdr = false;
 
+	astc_codec_image* output_decomp_img = nullptr;
+
+	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
 
 	// Flatten out the list of operations we need to perform
 	bool stage_compress = (op_mode == ASTC_ENCODE) || (op_mode == ASTC_ENCODE_AND_DECODE);
