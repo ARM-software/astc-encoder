@@ -52,8 +52,9 @@ Image load and store through the stb_iamge and tinyexr libraries
 static astc_codec_image* load_image_with_tinyexr(
 	const char* filename,
 	int padding,
-	int y_flip,
-	int* result
+	bool y_flip,
+	bool& is_hdr,
+	int& num_components
 ) {
 	int xsize;
 	int ysize;
@@ -64,7 +65,6 @@ static astc_codec_image* load_image_with_tinyexr(
 	{
 		printf("ERROR: Failed to load image %s (%s)\n", filename, err);
 		free((void*)err);
-		*result = -1;
 		return nullptr;
 	}
 
@@ -72,16 +72,17 @@ static astc_codec_image* load_image_with_tinyexr(
 		image, xsize, ysize, padding, y_flip);
 
 	free(image);
-
-	*result = 0x84; // 4 components of 16-bit data.
+	is_hdr = true;
+	num_components = 4;
 	return res_img;
 }
 
 static astc_codec_image* load_image_with_stb(
 	const char* filename,
 	int padding,
-	int y_flip,
-	int* result
+	bool y_flip,
+	bool& is_hdr,
+	int& num_components
 ) {
 	int xsize, ysize;
 	int components;
@@ -95,7 +96,8 @@ static astc_codec_image* load_image_with_stb(
 		{
 			astc_img = astc_img_from_floatx4_array(image, xsize, ysize, padding, y_flip);
 			stbi_image_free(image);
-			*result = components + 0x80;
+			is_hdr = true;
+			num_components = 4;
 			return astc_img;
 		}
 	}
@@ -107,13 +109,13 @@ static astc_codec_image* load_image_with_stb(
 		{
 			astc_img = astc_img_from_unorm8x4_array(imageptr, xsize, ysize, padding, y_flip);
 			stbi_image_free(image);
-			*result = components;
+			is_hdr = false;
+			num_components = 4;
 			return astc_img;
 		}
 	}
 
 	printf("ERROR: Failed to load image %s (%s)\n", filename, stbi_failure_reason());
-	*result = -1;
 	return nullptr;
 }
 
@@ -588,8 +590,9 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 static astc_codec_image* load_ktx_uncompressed_image(
 	const char* filename,
 	int padding,
-	int y_flip,
-	int* result
+	bool y_flip,
+	bool& is_hdr,
+	int& num_components
 ) {
 	int y, z;
 
@@ -597,7 +600,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	if (!f)
 	{
 		printf("Failed to open file %s\n", filename);
-		*result = -1;
 		return nullptr;
 	}
 
@@ -608,7 +610,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		printf("Failed to read header of KTX file %s\n", filename);
 		fclose(f);
-		*result = -2;
 		return nullptr;
 	}
 
@@ -616,7 +617,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		printf("File %s does not have a valid KTX header\n", filename);
 		fclose(f);
-		*result = -3;
 		return nullptr;
 	}
 
@@ -631,7 +631,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		printf("File %s appears to be compressed, not supported as input\n", filename);
 		fclose(f);
-		*result = -4;
 		return nullptr;
 	}
 
@@ -669,7 +668,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	default:
 		printf("KTX file %s has unsupported GL type\n", filename);
 		fclose(f);
-		*result = -5;
 		return nullptr;
 	};
 
@@ -815,7 +813,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	default:
 		printf("KTX file %s has unsupported GL format\n", filename);
 		fclose(f);
-		*result = -5;
 		return nullptr;
 	}
 
@@ -847,7 +844,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		printf("Failed to read header of KTX file %s\n", filename);
 		fclose(f);
-		*result = -2;
 		return nullptr;
 	}
 
@@ -862,7 +858,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		fclose(f);
 		printf("%s: KTX file inconsistency: computed surface size is %d bytes, but specified size is %d bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
-		*result = -5;
 		return nullptr;
 	}
 
@@ -873,7 +868,6 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	{
 		delete[] buf;
 		printf("Failed to read file %s\n", filename);
-		*result = -6;
 		return nullptr;
 	}
 
@@ -909,7 +903,8 @@ static astc_codec_image* load_ktx_uncompressed_image(
 
 	delete[] buf;
 	fill_image_padding_area(astc_img);
-	*result = components + (bitness == 16 ? 0x80 : 0);
+	is_hdr = bitness == 16;
+	num_components = components;
 	return astc_img;
 }
 
@@ -1192,8 +1187,9 @@ struct dds_header_dx10
 astc_codec_image* load_dds_uncompressed_image(
 	const char* filename,
 	int padding,
-	int y_flip,
-	int* result
+	bool y_flip,
+	bool& is_hdr,
+	int& num_components
 ) {
 	int i;
 	int y, z;
@@ -1202,7 +1198,6 @@ astc_codec_image* load_dds_uncompressed_image(
 	if (!f)
 	{
 		printf("Failed to open file %s\n", filename);
-		*result = -1;
 		return nullptr;
 	}
 
@@ -1215,7 +1210,6 @@ astc_codec_image* load_dds_uncompressed_image(
 	{
 		printf("Failed to read header of DDS file %s\n", filename);
 		fclose(f);
-		*result = -2;
 		return nullptr;
 	}
 
@@ -1225,7 +1219,6 @@ astc_codec_image* load_dds_uncompressed_image(
 	{
 		printf("File %s does not have a valid DDS header\n", filename);
 		fclose(f);
-		*result = -3;
 		return nullptr;
 	}
 
@@ -1240,7 +1233,6 @@ astc_codec_image* load_dds_uncompressed_image(
 		{
 			printf("DDS file %s is compressed, not supported\n", filename);
 			fclose(f);
-			*result = -4;
 			return nullptr;
 		}
 	}
@@ -1253,7 +1245,6 @@ astc_codec_image* load_dds_uncompressed_image(
 		{
 			printf("Failed to read header of DDS file %s\n", filename);
 			fclose(f);
-			*result = -2;
 			return nullptr;
 		}
 	}
@@ -1333,7 +1324,6 @@ astc_codec_image* load_dds_uncompressed_image(
 		{
 			printf("DDS file %s: DXGI format not supported by codec\n", filename);
 			fclose(f);
-			*result = -4;
 			return nullptr;
 		}
 	}
@@ -1422,7 +1412,6 @@ astc_codec_image* load_dds_uncompressed_image(
 		{
 			printf("DDS file %s: Non-DXGI format not supported by codec\n", filename);
 			fclose(f);
-			*result = -4;
 			return nullptr;
 		}
 
@@ -1441,7 +1430,6 @@ astc_codec_image* load_dds_uncompressed_image(
 	{
 		delete[] buf;
 		printf("Failed to read file %s\n", filename);
-		*result = -6;
 		return nullptr;
 	}
 
@@ -1468,7 +1456,8 @@ astc_codec_image* load_dds_uncompressed_image(
 
 	delete[] buf;
 	fill_image_padding_area(astc_img);
-	*result = components + (bitness == 16 ? 0x80 : 0);
+	is_hdr = bitness == 16;
+	num_components = components;
 	return astc_img;
 }
 
@@ -1738,7 +1727,7 @@ we use tinyexr; for TGA, BMP and PNG, we use stb_image_write.
 static const struct {
 	const char *ending1;
 	const char *ending2;
-	astc_codec_image *(*loader_func)(const char *filename, int padding, int y_flip, int *load_result);
+	astc_codec_image *(*loader_func)(const char *filename, int padding, bool y_flip, bool& is_hdr, int& num_components);
 } loader_descs[] = {
 	// HDR formats
 	{".exr",   ".EXR",  load_image_with_tinyexr },
@@ -1808,9 +1797,10 @@ int get_output_filename_enforced_bitness(
 astc_codec_image* astc_codec_load_image(
 	const char* input_filename,
 	int padding,
-	int y_flip,
-	int linearize_srgb,
-	int* load_result
+	bool y_flip,
+	bool linearize_srgb,
+	bool& is_hdr,
+	int& num_components
 ) {
 	// get hold of the filename ending
 	const char* eptr = strrchr(input_filename, '.');
@@ -1826,7 +1816,7 @@ astc_codec_image* astc_codec_load_image(
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			astc_codec_image* img = loader_descs[i].loader_func(input_filename, padding, y_flip, load_result);
+			astc_codec_image* img = loader_descs[i].loader_func(input_filename, padding, y_flip, is_hdr, num_components);
 			if (img)
 			{
 				img->linearize_srgb = linearize_srgb;

@@ -143,7 +143,6 @@ enum astcenc_preset {
 // Image channel data type
 enum astcenc_type {
 	ASTCENC_TYP_U8 = 0,
-	ASTCENC_TYP_U16,
 	ASTCENC_TYP_F16
 };
 
@@ -229,10 +228,13 @@ struct astcenc_config {
 struct astcenc_image {
 	unsigned int dim_x;
 	unsigned int dim_y;
+	unsigned int dim_z;
 	unsigned int channels;
 	astcenc_type type;
 	astcenc_swizzle swizzle;
-	void* data;
+	uint8_t ***data8;
+	uint16_t ***data16;
+	size_t padding_texels;
 	size_t row_stride;
 	size_t data_size;
 };
@@ -288,19 +290,19 @@ astcenc_error astcenc_context_alloc(
  * Note: User must allocate all output memory before calling this function.
  *
  * @param context      The codec context.
- * @param image        Array of input images, each a 2D slice.
- * @param dim_z        The length of image array, the Z dimension of 3D image.
+ * @param image        The input image.
  * @param data_out     Pointer to byte array to store the output.
  * @param data_len     Length of the data array, in bytes.
  * @param thread_index The thread index [0..N-1] of the calling thread. All
- *                     N threads must call this function.
+ *                     N threads must call this function exactly once per
+ *                     decompression, and all threads must ext this function
+ *                     before a new image can be compressed or decompressed
  *
  * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
 astcenc_error astcenc_compress_image(
 	astcenc_context& context,
-	astcenc_image const* image,
-	size_t dim_z,
+	astcenc_image& image,
 	uint8_t* data_out,
 	size_t data_len,
 	int thread_index);
@@ -313,10 +315,11 @@ astcenc_error astcenc_compress_image(
  * @param context      The codec context.
  * @param data         Pointer to compressed data.
  * @param data_len     Length of the compressed data, in bytes.
- * @param image_out    Array of output images, each a 2D slice.
- * @param dim_z        The length of image array, the Z dimension of 3D image.
+ * @param image_out    The output image.
  * @param thread_index The thread index [0..N-1] of the calling thread. All
- *                     N threads must call this function.
+ *                     N threads must call this function exactly once per
+ *                     decompression, and all threads must ext this function
+ *                     before a new image can be compressed or decompressed.
  *
  * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
@@ -324,8 +327,7 @@ astcenc_error astcenc_decompress_image(
 	astcenc_context& context,
 	uint8_t const* data,
 	size_t data_len,
-	astcenc_image* image_out,
-	size_t image_out_len,
+	astcenc_image& image_out,
 	int thread_index);
 
 /**

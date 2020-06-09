@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <vector>
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
@@ -398,6 +399,165 @@ static void test_inappropriate_cpu_extensions()
 		}
 	#endif
 }
+
+/**
+ * @brief Utility to generate a slice file name from a pattern.
+ *
+ * Convert "foo/bar.png" in to "foo/bar_<slice>.png"
+ *
+ * @param basename The base pattern; must contain a file extension.
+ * @param index    The slice index.
+ * @param error    Set to true on success, false on error (no extension found).
+ *
+ * @return The slice file name.
+ */
+static std::string get_slice_filename(
+	const std::string& basename,
+	unsigned int index,
+	bool& error
+) {
+	error = false;
+
+	size_t sep = basename.find_last_of(".");
+	if (sep == std::string::npos)
+	{
+		error = true;
+		return "";
+	}
+
+	std::string base = basename.substr(0, sep);
+	std::string ext = basename.substr(sep);
+
+	std::string name = base + "_" + std::to_string(index) + ext;
+	return name;
+}
+
+/**
+ * @brief Load a non-astc image file from memory.
+ *
+ * @param filename            The file to load, or a pattern for array loads.
+ * @param dim_z               The number of slices to load.
+ * @param padding             The number of texels of padding.
+ * @param y_flip              Should this image be Y flipped?
+ * @param linearize_srgb      Should this image be converted to linear from sRGB?
+ * @param[out] is_hdr         Is the loaded image HDR?
+ * @param[out] num_components The number of components in the loaded image.
+ *
+ * @return The astc image file, or nullptr on error.
+ */
+static astc_codec_image* load_decomp_file(
+	const char* filename,
+	unsigned int dim_z,
+	int padding,
+	bool y_flip,
+	bool linearize_srgb,
+	bool& is_hdr,
+	int& num_components
+) {
+	astc_codec_image *image = nullptr;
+
+	// For a 2D image just load the image directly
+	if (dim_z == 1)
+	{
+		image = astc_codec_load_image(filename, padding, y_flip, linearize_srgb,
+		                              is_hdr, num_components);
+	}
+	else
+	{
+		bool slice_is_hdr;
+		int slice_num_components;
+		astc_codec_image* slice = nullptr;
+		std::vector<astc_codec_image*> slices;
+
+		// For a 3D image load an array of slices
+		for (unsigned int image_index = 0; image_index < dim_z; image_index++)
+		{
+			bool error;
+			std::string slice_name = get_slice_filename(filename, image_index, error);
+			if (error)
+			{
+				printf("ERROR: Image pattern does not contain an extension: %s\n", filename);
+				break;
+			}
+
+			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip, linearize_srgb,
+			                              slice_is_hdr, slice_num_components);
+			if (!slice)
+			{
+				break;
+			}
+
+			slices.push_back(slice);
+
+			// Check it is not a 3D image
+			if (slice->zsize != 1)
+			{
+				printf("ERROR: Image arrays do not support 3D sources: %s\n", slice_name.c_str());
+				break;
+			}
+
+			// Check slices are consistent with each other
+			if (image_index != 0)
+			{
+				if ((is_hdr != slice_is_hdr) || (num_components != slice_num_components))
+				{
+					printf("ERROR: Image array[0] and [%d] are different formats\n", image_index);
+					break;
+				}
+
+				if ((slices[0]->xsize != slice->xsize) ||
+				    (slices[0]->ysize != slice->ysize) ||
+				    (slices[0]->zsize != slice->zsize))
+				{
+					printf("ERROR: Image array[0] and [%d] are different dimensions\n", image_index);
+					break;
+				}
+			}
+			else
+			{
+				is_hdr = slice_is_hdr;
+				num_components = slice_num_components;
+			}
+		}
+
+		// If all slices loaded correctly then repack them into a single image
+		if (slices.size() == dim_z)
+		{
+			unsigned int dim_x = slices[0]->xsize;
+			unsigned int dim_y = slices[0]->ysize;
+			int bitness = is_hdr ? 16 : 8;
+			int slice_size = (dim_x + (2 * padding)) * (dim_y + (2 * padding));
+
+			image = alloc_image(bitness, dim_x, dim_y, dim_y, padding);
+
+			// Combine 2D source images into one 3D image; skipping padding slices
+			for (unsigned int z = padding; z < dim_z + padding; z++)
+			{
+				if (bitness == 8)
+				{
+					size_t copy_size = slice_size * 4 * sizeof(uint8_t);
+					memcpy(*image->data8[z], *slices[z - padding]->data8[0], copy_size);
+				}
+				else
+				{
+					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
+					memcpy(*image->data16[z], *slices[z - padding]->data16[0], copy_size);
+				}
+			}
+
+			// Fill in the padding slices with clamped data
+			fill_image_padding_area(image);
+		}
+
+		for (auto &i : slices)
+		{
+			free_image(i);
+		}
+	}
+
+	return image;
+}
+
 
 int astc_main(
 	int argc,
@@ -1144,6 +1304,12 @@ int astc_main(
 		}
 	}
 
+	astc_codec_image* input_decomp_img = nullptr ;
+	int input_decomp_img_num_chan = 0;
+	bool input_decomp_img_is_hdr = false;
+
+	astc_codec_image* output_decomp_img = nullptr;
+
 	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
 
 	// determine encoding bitness as follows:
@@ -1156,133 +1322,18 @@ int astc_main(
 		out_bitness = is_hdr ? 16 : 8;
 	}
 
-	// Temporary image array (for merging multiple 2D images into one 3D image).
-	int load_result = 0;
-	astc_codec_image *input_decomp_img = nullptr;
-	//astc_compressed_image *input_comp_img = nullptr;
-	astc_codec_image *output_decomp_img = nullptr;
-	//astc_compressed_image *output_comp_img = nullptr;
-
-	int input_components = 0;
-	int input_image_is_hdr = 0;
-
-	// Load uncompressed inputs
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		// Allocate temporary arrays for image data and load results
-		int* load_results = new int [array_size];
-		astc_codec_image** input_images = new astc_codec_image* [array_size];
-
-		// Iterate over all input images
-		for (int image_index = 0; image_index < array_size; image_index++)
-		{
-			// 2D input data
-			if (array_size == 1)
-			{
-				input_images[image_index] = astc_codec_load_image(
-					input_filename, padding, y_flip, linearize_srgb,
-					&load_results[image_index]);
-			}
-			// 3D input data - multiple 2D images
-			else
-			{
-				// TODO: These can overflow if the file name is longer than 256
-				char new_input_filename[256];
-
-				// Check for extension: <name>.<extension>
-				if (!strrchr(input_filename, '.'))
-				{
-					printf("ERROR: Unable to determine file extension: %s\n", input_filename);
-					return 1;
-				}
-
-				// Construct new file name and load: <name>_N.<extension>
-				strcpy(new_input_filename, input_filename);
-				sprintf(strrchr(new_input_filename, '.'), "_%d%s", image_index, strrchr(input_filename, '.'));
-				input_images[image_index] = astc_codec_load_image
-					(new_input_filename, padding, y_flip, linearize_srgb,
-					&load_results[image_index]);
-
-				// If image loaded correctly, check image is not 3D.
-				if ((load_results[image_index] >= 0) &&
-				    (input_images[image_index]->zsize != 1))
-				{
-					printf("3D source images not supported with -array option: %s\n", new_input_filename);
-					return 1;
-				}
-			}
-
-			// Check load result.
-			if (load_results[image_index] < 0)
-			{
-				return 1;
-			}
-
-			// Check format matches other slices.
-			if (load_results[image_index] != load_results[0])
-			{
-				printf("Mismatching image format - image 0 and %d are a different format\n", image_index);
-				return 1;
-			}
-		}
-
-		load_result = load_results[0];
-
-		// Assign input image.
-		if (array_size == 1)
-		{
-			input_decomp_img = input_images[0];
-		}
-		// Merge input image data.
-		else
-		{
-			int z, xsize, ysize, zsize, bitness, slice_size;
-
-			xsize = input_images[0]->xsize;
-			ysize = input_images[0]->ysize;
-			zsize = array_size;
-			bitness = (load_result & 0x80) ? 16 : 8;
-			slice_size = (xsize + (2 * padding)) * (ysize + (2 * padding));
-
-			// Allocate image memory.
-			input_decomp_img = alloc_image(bitness, xsize, ysize, zsize, padding);
-
-			// Combine 2D source images into one 3D image (skip padding slices as these don't exist in 2D textures).
-			for (z = padding; z < zsize + padding; z++)
-			{
-				if (bitness == 8)
-				{
-					memcpy(*input_decomp_img->data8[z], *input_images[z - padding]->data8[0], slice_size * 4 * sizeof(uint8_t));
-				}
-				else
-				{
-					memcpy(*input_decomp_img->data16[z], *input_images[z - padding]->data16[0], slice_size * 4 * sizeof(uint16_t));
-				}
-			}
-
-			// Clean up temporary images.
-			for (int i = 0; i < array_size; i++)
-			{
-				free_image(input_images[i]);
-			}
-
-			// Clamp texels outside the actual image area.
-			fill_image_padding_area(input_decomp_img);
-		}
-
-		delete[] input_images;
-		input_images = nullptr;
-
-		delete[] load_results;
-		load_results = nullptr;
-
-		input_components = load_result & 7;
-		input_image_is_hdr = (load_result & 0x80) ? 1 : 0;
-
-		if ((input_decomp_img->zsize > 1) && (block_z == 1))
+		if ((array_size > 1) && (block_z == 1))
 		{
 			printf("ERROR: 3D input data for a 2D ASTC block format\n");
-			exit(1);
+			return 1;
+		}
+
+		input_decomp_img = load_decomp_file(input_filename, array_size, padding, y_flip, linearize_srgb, input_decomp_img_is_hdr, input_decomp_img_num_chan);
+		if (!input_decomp_img)
+		{
+			return 1;
 		}
 
 		ewp.texel_avg_error_limit = texel_avg_error_limit;
@@ -1293,7 +1344,7 @@ int astc_main(
 			printf("Source image\n");
 			printf("============\n\n");
 			printf("    Source:                     %s\n", input_filename);
-			printf("    Color profile:              %s\n", input_image_is_hdr ? "HDR" : "LDR");
+			printf("    Color profile:              %s\n", input_decomp_img_is_hdr ? "HDR" : "LDR");
 			if (input_decomp_img->zsize > 1)
 			{
 				printf("    Dimensions:                 3D, %d x %d x %d\n",
@@ -1304,7 +1355,7 @@ int astc_main(
 				printf("    Dimensions:                 2D, %d x %d\n",
 				       input_decomp_img->xsize, input_decomp_img->ysize);
 			}
-			printf("    Channels:                   %d\n\n", load_result & 7);
+			printf("    Channels:                   %d\n\n", input_decomp_img_num_chan);
 		}
 
 		if (padding > 0 ||
@@ -1370,7 +1421,7 @@ int astc_main(
 	// print PSNR if encoding
 	if (op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		compute_error_metrics(input_image_is_hdr, input_components, input_decomp_img, output_decomp_img, low_fstop, high_fstop);
+		compute_error_metrics(input_decomp_img_is_hdr, input_decomp_img_num_chan, input_decomp_img, output_decomp_img, low_fstop, high_fstop);
 	}
 
 	// store image
