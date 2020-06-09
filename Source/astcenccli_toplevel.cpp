@@ -1065,6 +1065,8 @@ int astc_main(
 		ewp.rgba_weights[2] = MAX(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[3] = MAX(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
 
+		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
+
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)
 		{
@@ -1130,8 +1132,9 @@ int astc_main(
 		}
 	}
 
-	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
-
+	astc_codec_image* input_decomp_img = nullptr ;
+	int input_decomp_img_num_chan = 0;
+	bool input_decomp_img_is_hdr = false;
 
 	// Flatten out the list of operations we need to perform
 	bool stage_compress = (op_mode == ASTC_ENCODE) || (op_mode == ASTC_ENCODE_AND_DECODE);
@@ -1370,6 +1373,7 @@ int astc_main(
 	free_image(image_uncomp_in);
 	free_image(image_decomp_out);
 	astcenc_context_free(codec_context);
+
 	delete[] image_comp.data;
 
 	end_time = get_time();
