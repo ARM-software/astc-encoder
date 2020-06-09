@@ -121,7 +121,8 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_BLOCK_SIZE,
 	ASTCENC_ERR_BAD_PROFILE,
 	ASTCENC_ERR_BAD_PRESET,
-	ASTCENC_ERR_BAD_FLAGS
+	ASTCENC_ERR_BAD_FLAGS,
+	ASTCENC_ERR_NOT_IMPLEMENTED
 };
 
 // Compression color feature profile
@@ -166,18 +167,22 @@ struct astcenc_swizzle {
 };
 
 // Config mode flags
-static const unsigned int ASTCENC_FLG_MAP_NORMAL         = 1 << 0;
-static const unsigned int ASTCENC_FLG_MAP_MASK           = 1 << 1;
-static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT   = 1 << 2;
-static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL     = 1 << 3;
-static const unsigned int ASTCENC_FLG_USE_USER_THREADS   = 1 << 4;
+static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
+static const unsigned int ASTCENC_FLG_MAP_MASK            = 1 << 1;
+static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
+static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL      = 1 << 3;
+static const unsigned int ASTCENC_FLG_USE_USER_THREADS    = 1 << 4;
+
+// TODO: Work out what we do with this? Remove it?
+static const unsigned int ASTCENC_FLG_USE_LINEARIZED_SRGB = 1 << 5;
 
 static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_NORMAL |
                               ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
                               ASTCENC_FLG_USE_PERCEPTUAL |
-                              ASTCENC_FLG_USE_USER_THREADS;
+                              ASTCENC_FLG_USE_USER_THREADS |
+                              ASTCENC_FLG_USE_LINEARIZED_SRGB;
 
 // Config structure
 struct astcenc_config {
@@ -215,28 +220,16 @@ struct astcenc_config {
  *
  * @param dim_x      The x dimension of the image, in texels.
  * @param dim_y      The y dimension of the image, in texels.
+ * @param dim_z      The z dimension of the image, in texels.
  * @param channels   The number of color channels.
- * @param type       The primitive type of each channel.
- * @param swizzle    The swizzle to apply on load (for compression) or store
- *                   (for decompression).
- * @param data       The data stored as an array of texels, stored in rows.
- *                   Texels are tightly packed, but may be end-of-row padding.
- * @param row_stride The length of each row (including padding), in bytes. Zero
- *                   indicates that rows are tightly packed with no padding.
- * @param data_size  The total size of data in bytes.
  */
 struct astcenc_image {
 	unsigned int dim_x;
 	unsigned int dim_y;
 	unsigned int dim_z;
-	unsigned int channels;
-	astcenc_type type;
-	astcenc_swizzle swizzle;
 	uint8_t ***data8;
 	uint16_t ***data16;
 	size_t padding_texels;
-	size_t row_stride;
-	size_t data_size;
 };
 
 /**
@@ -295,14 +288,15 @@ astcenc_error astcenc_context_alloc(
  * @param data_len     Length of the data array, in bytes.
  * @param thread_index The thread index [0..N-1] of the calling thread. All
  *                     N threads must call this function exactly once per
- *                     decompression, and all threads must ext this function
+ *                     decompression, and all threads must exit this function
  *                     before a new image can be compressed or decompressed
  *
  * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
 astcenc_error astcenc_compress_image(
-	astcenc_context& context,
+	astcenc_context* context,
 	astcenc_image& image,
+	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
 	int thread_index);
@@ -318,22 +312,33 @@ astcenc_error astcenc_compress_image(
  * @param image_out    The output image.
  * @param thread_index The thread index [0..N-1] of the calling thread. All
  *                     N threads must call this function exactly once per
- *                     decompression, and all threads must ext this function
+ *                     decompression, and all threads must exit this function
  *                     before a new image can be compressed or decompressed.
  *
  * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
 astcenc_error astcenc_decompress_image(
-	astcenc_context& context,
-	uint8_t const* data,
+	astcenc_context* context,
+	uint8_t* data,
 	size_t data_len,
 	astcenc_image& image_out,
+	astcenc_swizzle swizzle,
 	int thread_index);
 
 /**
  * Free the compressor context.
  */
 void astcenc_context_free(
-	astcenc_context& context);
+	astcenc_context* context);
+
+/**
+ * Utility to get a string string for specific error code.
+ *
+ * @param status The status value.
+ *
+ * @return A human readable nul-terminated string.
+ */
+const char* astcenc_get_error_string(
+	astcenc_error status);
 
 #endif
