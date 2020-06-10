@@ -20,7 +20,7 @@
  */
 
 #include "astcenc.h"
-#include "astcenc_internal.h"
+#include "astcenccli_internal.h"
 
 #include <cassert>
 #include <cstdio>
@@ -29,14 +29,7 @@
 #include <fstream>
 #include <vector>
 
-#ifdef DEBUG_CAPTURE_NAN
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE
-	#endif
-
-	#include <fenv.h>
-#endif
-
+// TODO: Move these into astc_main().
 static double start_time;
 static double end_time;
 static double start_coding_time;
@@ -401,7 +394,7 @@ static astc_codec_image* load_uncomp_file(
 }
 
 
-int astc_main(
+int main(
 	int argc,
 	char **argv
 ) {
@@ -619,7 +612,7 @@ int astc_main(
 		}
 		else if (!strcmp(argv[5], "-exhaustive"))
 		{
-			plimit_set = PARTITION_COUNT;
+			plimit_set = 1024;
 			oplimit_set = 1000.0f;
 			mincorrel_set = 0.99f;
 			dblimit_set = 999.0f;
@@ -1052,7 +1045,7 @@ int astc_main(
 
 		ewp.partition_1_to_2_limit = oplimit_set;
 		ewp.lowest_correlation_cutoff = mincorrel_set;
-		ewp.partition_search_limit = astc::clampi(plimit_set, 1, PARTITION_COUNT);
+		ewp.partition_search_limit = astc::clampi(plimit_set, 1, 1024);
 
 		if (thread_count < 1)
 		{

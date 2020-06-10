@@ -21,7 +21,7 @@
  * This module contains functions for querying the host extended ISA support.
  */
 
-#include "astcenc_internal.h"
+#include "astcenccli_internal.h"
 
 static int g_cpu_has_sse42 = -1;
 static int g_cpu_has_avx2 = -1;

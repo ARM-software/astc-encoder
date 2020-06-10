@@ -64,7 +64,6 @@ SOURCES_CLI = \
     astcenccli_error_metrics.cpp \
     astcenccli_image.cpp \
     astcenccli_image_load_store.cpp \
-    astcenccli_main.cpp \
     astcenccli_platform_isa_detection.cpp \
     astcenccli_platform_dependents.cpp \
     astcenccli_toplevel.cpp \
@@ -79,6 +78,7 @@ HEADERS = \
     astcenc.h \
     astcenc_internal.h \
     astcenc_mathlib.h \
+    astcenccli_internal.h \
     stb_image.h \
     stb_image_write.h \
     tinyexr.h

@@ -19,12 +19,11 @@
  * @brief Functions for loading/storing ASTC compressed images.
  */
 
-
-#include "astcenc_internal.h"
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#include "astcenccli_internal.h"
 
 // on windows/msvc, compile stb and tinyexr together with this file;
 // on other systems, use makefile to compile them separately.

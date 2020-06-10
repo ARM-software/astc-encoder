@@ -341,4 +341,28 @@ void astcenc_context_free(
 const char* astcenc_get_error_string(
 	astcenc_error status);
 
+
+/**
+ * @brief Query if a 2D block size is legal.
+ *
+ * TODO: Temporarily part of the interface; should be checked in init_config.
+ *
+ * @return A non-zero value if legal, zero otherwise.
+ */
+int is_legal_2d_block_size(
+	int xdim,
+	int ydim);
+
+/**
+ * @brief Query if a 3D block size is legal.
+ *
+ * TODO: Temporarily part of the interface; should be checked in init_config.
+ *
+ * @return A non-zero value if legal, zero otherwise.
+ */
+int is_legal_3d_block_size(
+	int xdim,
+	int ydim,
+	int zdim);
+
 #endif
