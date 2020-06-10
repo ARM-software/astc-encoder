@@ -71,7 +71,6 @@ static uint4 lerp_color_int(
 	return color;
 }
 
-__attribute__((visibility("default")))
 void decompress_symbolic_block(
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
