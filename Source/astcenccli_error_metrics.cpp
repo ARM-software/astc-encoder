@@ -139,7 +139,7 @@ void compute_error_metrics(
 	kahan_accum4 log_errorsum;
 	kahan_accum4 mpsnr_errorsum;
 
-	int xsize = MIN(img1->dim_x, img2->dim_y);
+	int xsize = MIN(img1->dim_x, img2->dim_x);
 	int ysize = MIN(img1->dim_y, img2->dim_y);
 	int zsize = MIN(img1->dim_z, img2->dim_z);
 
