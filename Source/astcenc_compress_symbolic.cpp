@@ -726,24 +726,22 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	}
 }
 
-__attribute__((visibility("default")))
 void expand_block_artifact_suppression(
-	int xdim,
-	int ydim,
-	int zdim,
+	unsigned int xdim,
+	unsigned int ydim,
+	unsigned int zdim,
 	error_weighting_params* ewp
 ) {
-	int x, y, z;
 	float centerpos_x = (xdim - 1) * 0.5f;
 	float centerpos_y = (ydim - 1) * 0.5f;
 	float centerpos_z = (zdim - 1) * 0.5f;
 	float *bef = ewp->block_artifact_suppression_expanded;
 
-	for (z = 0; z < zdim; z++)
+	for (unsigned int z = 0; z < zdim; z++)
 	{
-		for (y = 0; y < ydim; y++)
+		for (unsigned int y = 0; y < ydim; y++)
 		{
-			for (x = 0; x < xdim; x++)
+			for (unsigned int x = 0; x < xdim; x++)
 			{
 				float xdif = (x - centerpos_x) / xdim;
 				float ydif = (y - centerpos_y) / ydim;

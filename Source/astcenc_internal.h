@@ -943,9 +943,9 @@ void recompute_ideal_colors(
 	const error_weight_block* ewb);
 
 void expand_block_artifact_suppression(
-	int xdim,
-	int ydim,
-	int zdim,
+	unsigned int xdim,
+	unsigned int ydim,
+	unsigned int zdim,
 	error_weighting_params* ewp);
 
 // functions pertaining to weight alignment

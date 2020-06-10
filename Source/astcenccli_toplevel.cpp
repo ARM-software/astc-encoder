@@ -150,167 +150,6 @@ int load_astc_file(
 	return 0;
 }
 
-astc_codec_image* decompress_astc_image(
-	const astc_compressed_image& data,
-	int bitness,
-	astcenc_profile decode_mode,
-	astcenc_swizzle swz_decode,
-	int linearize_srgb
-) {
-	astc_codec_image *img = alloc_image(bitness, data.dim_x, data.dim_y, data.dim_z, 0);
-	img->linearize_srgb = linearize_srgb;
-
-	block_size_descriptor bsd;
-	init_block_size_descriptor(data.block_x, data.block_y, data.block_z, &bsd);
-
-	int xblocks = (data.dim_x + data.block_x - 1) / data.block_x;
-	int yblocks = (data.dim_y + data.block_y - 1) / data.block_y;
-	int zblocks = (data.dim_z + data.block_z - 1) / data.block_z;
-
-	imageblock pb;
-	for (int z = 0; z < zblocks; z++)
-	{
-		for (int y = 0; y < yblocks; y++)
-		{
-			for (int x = 0; x < xblocks; x++)
-			{
-				int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-				uint8_t *bp = data.data + offset;
-				physical_compressed_block pcb = *(physical_compressed_block *) bp;
-				symbolic_compressed_block scb;
-				physical_to_symbolic(&bsd, pcb, &scb);
-				decompress_symbolic_block(decode_mode, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, &scb, &pb);
-				write_imageblock(img, &pb, &bsd, x * data.block_x, y * data.block_y, z * data.block_z, swz_decode);
-			}
-		}
-	}
-
-	term_block_size_descriptor(&bsd);
-	return img;
-}
-
-struct compress_astc_image_info
-{
-	const block_size_descriptor* bsd;
-	const error_weighting_params* ewp;
-	uint8_t* buffer;
-	int threadcount;
-	astcenc_profile decode_mode;
-	astcenc_swizzle swz_encode;
-	const astc_codec_image* input_image;
-};
-
-static void compress_astc_image_threadfunc(
-	int thread_count,
-	int thread_id,
-	void* vblk
-) {
-	const compress_astc_image_info *blk = (const compress_astc_image_info *)vblk;
-	const block_size_descriptor *bsd = blk->bsd;
-	int xdim = bsd->xdim;
-	int ydim = bsd->ydim;
-	int zdim = bsd->zdim;
-	uint8_t *buffer = blk->buffer;
-	const error_weighting_params *ewp = blk->ewp;
-	astcenc_profile decode_mode = blk->decode_mode;
-	astcenc_swizzle swz_encode = blk->swz_encode;
-	const astc_codec_image *input_image = blk->input_image;
-
-	imageblock pb;
-	int ctr = thread_id;
-
-	int x, y, z;
-	int xsize = input_image->xsize;
-	int ysize = input_image->ysize;
-	int zsize = input_image->zsize;
-	int xblocks = (xsize + xdim - 1) / xdim;
-	int yblocks = (ysize + ydim - 1) / ydim;
-	int zblocks = (zsize + zdim - 1) / zdim;
-
-	//allocate memory for temporary buffers
-	compress_symbolic_block_buffers temp_buffers;
-	temp_buffers.ewb = new error_weight_block;
-	temp_buffers.ewbo = new error_weight_block_orig;
-	temp_buffers.tempblocks = new symbolic_compressed_block[4];
-	temp_buffers.temp = new imageblock;
-	temp_buffers.planes2 = new compress_fixed_partition_buffers;
-	temp_buffers.planes2->ei1 = new endpoints_and_weights;
-	temp_buffers.planes2->ei2 = new endpoints_and_weights;
-	temp_buffers.planes2->eix1 = new endpoints_and_weights[MAX_DECIMATION_MODES];
-	temp_buffers.planes2->eix2 = new endpoints_and_weights[MAX_DECIMATION_MODES];
-	temp_buffers.planes2->decimated_quantized_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->decimated_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->flt_quantized_decimated_quantized_weights = new float[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->u8_quantized_decimated_quantized_weights = new uint8_t[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.plane1 = temp_buffers.planes2;
-
-	for (z = 0; z < zblocks; z++)
-	{
-		for (y = 0; y < yblocks; y++)
-		{
-			for (x = 0; x < xblocks; x++)
-			{
-				if (ctr == 0)
-				{
-					int offset = ((z * yblocks + y) * xblocks + x) * 16;
-					uint8_t *bp = buffer + offset;
-					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
-					symbolic_compressed_block scb;
-					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
-					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
-					ctr = thread_count - 1;
-				}
-				else
-					ctr--;
-			}
-		}
-	}
-
-	delete[] temp_buffers.planes2->decimated_quantized_weights;
-	delete[] temp_buffers.planes2->decimated_weights;
-	delete[] temp_buffers.planes2->flt_quantized_decimated_quantized_weights;
-	delete[] temp_buffers.planes2->u8_quantized_decimated_quantized_weights;
-	delete[] temp_buffers.planes2->eix1;
-	delete[] temp_buffers.planes2->eix2;
-	delete   temp_buffers.planes2->ei1;
-	delete   temp_buffers.planes2->ei2;
-	delete   temp_buffers.planes2;
-	delete[] temp_buffers.tempblocks;
-	delete   temp_buffers.temp;
-	delete   temp_buffers.ewbo;
-	delete   temp_buffers.ewb;
-}
-
-static void compress_astc_image(
-	const astc_codec_image* input_image,
-	int xdim,
-	int ydim,
-	int zdim,
-	const error_weighting_params* ewp,
-	astcenc_profile decode_mode,
-	astcenc_swizzle swz_encode,
-	uint8_t* buffer,
-	int threadcount
-) {
-	// before entering into the multi-threaded routine, ensure that the block size descriptors
-	// and the partition table descriptors needed actually exist.
-	block_size_descriptor* bsd = new block_size_descriptor;
-	init_block_size_descriptor(xdim, ydim, zdim, bsd);
-	get_partition_table(bsd, 0);
-
-	compress_astc_image_info ai;
-	ai.bsd = bsd;
-	ai.buffer = buffer;
-	ai.ewp = ewp;
-	ai.decode_mode = decode_mode;
-	ai.swz_encode = swz_encode;
-	ai.input_image = input_image;
-
-	launch_threads(threadcount, compress_astc_image_threadfunc, &ai);
-
-	term_block_size_descriptor(bsd);
-	delete bsd;
-}
 
 int store_astc_file(
 	const astc_compressed_image& comp_img,
@@ -376,7 +215,8 @@ static void test_inappropriate_extended_precision()
 static void test_inappropriate_cpu_extensions()
 {
 	#if ASTC_SSE >= 42
-		if (!cpu_supports_sse42()) {
+		if (!cpu_supports_sse42())
+		{
 			printf("CPU support error: host lacks SSE 4.2 support.\n");
 			printf("    Please recompile with VEC=sse2.\n");
 			exit(1);
@@ -384,7 +224,8 @@ static void test_inappropriate_cpu_extensions()
 	#endif
 
 	#if ASTC_POPCNT >= 1
-		if (!cpu_supports_popcnt()) {
+		if (!cpu_supports_popcnt())
+		{
 			printf("CPU support error: host lacks POPCNT support.\n");
 			printf("    Please recompile with VEC=sse2.\n");
 			exit(1);
@@ -392,7 +233,8 @@ static void test_inappropriate_cpu_extensions()
 	#endif
 
 	#if ASTC_AVX >= 2
-		if (!cpu_supports_avx2()) {
+		if (!cpu_supports_avx2())
+		{
 			printf("CPU support error: host lacks AVX2 support.\n");
 			printf("    Please recompile with VEC=sse4.2 or VEC=sse2.\n");
 			exit(1);
@@ -563,13 +405,9 @@ int astc_main(
 	int argc,
 	char **argv
 ) {
+	// TODO: These should move into the backend code and fail on context_alloc.
 	test_inappropriate_extended_precision();
-
 	test_inappropriate_cpu_extensions();
-
-	// initialization routines
-	prepare_angular_tables();
-	build_quantization_mode_table();
 
 	start_time = get_time();
 
@@ -1230,8 +1068,6 @@ int astc_main(
 		ewp.rgba_weights[2] = MAX(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[3] = MAX(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
 
-		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
-
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)
 		{
@@ -1297,12 +1133,6 @@ int astc_main(
 		}
 	}
 
-	astc_codec_image* input_decomp_img = nullptr ;
-	int input_decomp_img_num_chan = 0;
-	bool input_decomp_img_is_hdr = false;
-
-	astc_codec_image* output_decomp_img = nullptr;
-
 	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
 
 	// Flatten out the list of operations we need to perform
@@ -1323,6 +1153,85 @@ int astc_main(
 	astc_codec_image* image_decomp_out = nullptr;
 
 	// TODO: Handle RAII resources so they get freed when out of scope
+	// Load the compressed input file if needed
+
+	// This has to come first, as the block size is in the file header
+	if (stage_load_comp)
+	{
+		int error = load_astc_file(input_filename, image_comp);
+		if (error)
+		{
+			return 1;
+		}
+	}
+
+	astcenc_error    codec_status;
+	astcenc_config   codec_config;
+	astcenc_context* codec_context;
+
+	// TODO: Temporary code until we get command line parser populating config natively
+	codec_config.profile = decode_mode;
+
+	codec_config.flags = 0;
+
+	if (ewp.ra_normal_angular_scale)
+	{
+		codec_config.flags |= ASTCENC_FLG_MAP_NORMAL;
+	}
+
+	if (ewp.enable_rgb_scale_with_alpha)
+	{
+		codec_config.flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
+	}
+
+	if (linearize_srgb)
+	{
+		codec_config.flags |= ASTCENC_FLG_USE_LINEARIZED_SRGB;
+	}
+
+	if (stage_load_uncomp)
+	{
+		codec_config.block_x = block_x;
+		codec_config.block_y = block_y;
+		codec_config.block_z = block_z;
+	}
+	else
+	{
+		codec_config.block_x = image_comp.block_x;
+		codec_config.block_y = image_comp.block_y;
+		codec_config.block_z = image_comp.block_z;
+	}
+
+	codec_config.v_rgba_radius = ewp.mean_stdev_radius;
+	codec_config.v_rgba_mean_stdev_mix = ewp.rgb_mean_and_stdev_mixing;
+	codec_config.v_rgb_power = ewp.rgb_power;
+	codec_config.v_rgb_base = ewp.rgb_base_weight;
+	codec_config.v_rgb_mean = ewp.rgb_mean_weight;
+	codec_config.v_rgb_stdev = ewp.rgb_stdev_weight;
+	codec_config.v_a_power = ewp.alpha_power;
+	codec_config.v_a_base = ewp.alpha_base_weight;
+	codec_config.v_a_mean = ewp.alpha_mean_weight;
+	codec_config.v_a_stdev = ewp.alpha_stdev_weight;
+	codec_config.cw_r_weight = ewp.rgba_weights[0];
+	codec_config.cw_g_weight = ewp.rgba_weights[1];
+	codec_config.cw_b_weight = ewp.rgba_weights[2];
+	codec_config.cw_a_weight = ewp.rgba_weights[3];
+	codec_config.a_scale_radius = ewp.alpha_radius;
+	codec_config.b_deblock_weight = ewp.block_artifact_suppression;
+	codec_config.tune_partition_limit = ewp.partition_search_limit;
+	codec_config.tune_block_mode_limit = ewp.block_mode_cutoff * 100.0f;
+	codec_config.tune_refinement_limit = ewp.max_refinement_iters;
+	// TODO: This isn't exactly right - we should move computing avg_error_limit in to the codec
+	codec_config.tune_db_limit = ewp.texel_avg_error_limit;
+	codec_config.tune_partition_early_out_limit = ewp.partition_1_to_2_limit;
+	codec_config.tune_two_plane_early_out_limit = ewp.lowest_correlation_cutoff;
+
+	codec_status = astcenc_context_alloc(codec_config, thread_count, &codec_context);
+	if (codec_status != ASTCENC_SUCCESS)
+	{
+		printf("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
+		return 1;
+	}
 
 	// Load the uncompressed input file if needed
 	if (stage_load_uncomp)
@@ -1361,46 +1270,44 @@ int astc_main(
 		}
 	}
 
-	// Load the compressed input file if needed
-	if (stage_load_comp)
-	{
-		int error = load_astc_file(input_filename, image_comp);
-		if (error)
-		{
-			return 1;
-		}
-	}
-
 	start_coding_time = get_time();
 
 	// Compress an image
 	if (stage_compress)
 	{
-		if (padding > 0 ||
-		    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
-		    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
-		{
-			compute_averages_and_variances(image_uncomp_in, ewp.rgb_power, ewp.alpha_power,
-			                               ewp.mean_stdev_radius, ewp.alpha_radius, linearize_srgb,
-			                               swz_encode, thread_count);
-		}
+		// TODO: Loaded functions should return astcenc_image natively
+		astcenc_image image;
+		image.data8 = image_uncomp_in->data8;
+		image.data16 = image_uncomp_in->data16;
+		image.dim_x = image_uncomp_in->xsize;
+		image.dim_y = image_uncomp_in->ysize;
+		image.dim_z = image_uncomp_in->zsize;
+		image.padding_texels = image_uncomp_in->padding;
 
-		int xsize = image_uncomp_in->xsize;
-		int ysize = image_uncomp_in->ysize;
-		int zsize = image_uncomp_in->zsize;
-		int xblocks = (xsize + block_x - 1) / block_x;
-		int yblocks = (ysize + block_y - 1) / block_y;
-		int zblocks = (zsize + block_z - 1) / block_z;
-		uint8_t* buffer = new uint8_t [xblocks * yblocks * zblocks * 16];
-		compress_astc_image(image_uncomp_in, block_x, block_y, block_z, &ewp, decode_mode,
-		                    swz_encode, buffer, thread_count);
+		int xdims = image.dim_x;
+		int ydims = image.dim_y;
+		int zdims = image.dim_z;
+
+		int xblocks = (xdims + block_x - 1) / block_x;
+		int yblocks = (ydims + block_y - 1) / block_y;
+		int zblocks = (zdims + block_z - 1) / block_z;
+
+		size_t buffer_size = xblocks * yblocks * zblocks * 16;
+		uint8_t* buffer = new uint8_t[buffer_size];
+
+		codec_status = astcenc_compress_image(codec_context, image, swz_encode, buffer, buffer_size, 0);
+		if (codec_status != ASTCENC_SUCCESS)
+		{
+			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(codec_status));
+			return 1;
+		}
 
 		image_comp.block_x = block_x;
 		image_comp.block_y = block_y;
 		image_comp.block_z = block_z;
-		image_comp.dim_x = xsize;
-		image_comp.dim_y = ysize;
-		image_comp.dim_z = zsize;
+		image_comp.dim_x = xdims;
+		image_comp.dim_y = ydims;
+		image_comp.dim_z = zdims;
 		image_comp.data = buffer;
 	}
 
@@ -1414,8 +1321,25 @@ int astc_main(
 			out_bitness = is_hdr ? 16 : 8;
 		}
 
-		image_decomp_out = decompress_astc_image(
-		    image_comp, out_bitness, decode_mode, swz_decode, linearize_srgb);
+		image_decomp_out = alloc_image(
+		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z, 0);
+
+		// TODO: Standardized on astcenc_image everywhere in the CLI
+		astcenc_image image;
+		image.dim_x = image_comp.dim_x;
+		image.dim_y = image_comp.dim_y;
+		image.dim_z = image_comp.dim_z;
+		image.data8 = image_decomp_out->data8;
+		image.data16 = image_decomp_out->data16;
+		image.padding_texels = image_decomp_out->padding;
+
+		// TODO: Pass through data len to avoid out-of-bounds reads
+		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0, image, swz_decode, 0);
+		if (codec_status != ASTCENC_SUCCESS)
+		{
+			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
+			return 1;
+		}
 	}
 
 	end_coding_time = get_time();
@@ -1453,6 +1377,8 @@ int astc_main(
 
 	free_image(image_uncomp_in);
 	free_image(image_decomp_out);
+	astcenc_context_free(codec_context);
+
 	delete[] image_comp.data;
 
 	end_time = get_time();

@@ -25,6 +25,7 @@
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
+__attribute__((visibility("default")))
 astcenc_error astcenc_init_config(
 	astcenc_profile profile,
 	unsigned int block_x,
@@ -200,9 +201,16 @@ astcenc_error astcenc_init_config(
 		config.v_a_stdev = 25.0f;
 	}
 
+	// TODO: We don't support user threads yet
+	if (flags & ASTCENC_FLG_USE_USER_THREADS)
+	{
+		return ASTCENC_ERR_NOT_IMPLEMENTED;
+	}
+
 	return ASTCENC_SUCCESS;
 }
 
+__attribute__((visibility("default")))
 astcenc_error astcenc_context_alloc(
 	astcenc_config const& config,
 	int thread_count,
@@ -239,6 +247,7 @@ astcenc_error astcenc_context_alloc(
 	return ASTCENC_SUCCESS;
 }
 
+__attribute__((visibility("default")))
 void astcenc_context_free(
 	astcenc_context* context
 ) {
@@ -250,38 +259,32 @@ void astcenc_context_free(
 	}
 }
 
-struct encode_astc_image_info
+struct compress_astc_image_info
 {
 	const block_size_descriptor* bsd;
 	const error_weighting_params* ewp;
 	uint8_t* buffer;
-	int pack_and_unpack;
 	int threadcount;
 	astcenc_profile decode_mode;
 	astcenc_swizzle swz_encode;
-	astcenc_swizzle swz_decode;
 	const astc_codec_image* input_image;
-	astc_codec_image* output_image;
 };
 
-/*static*/ void encode_astc_image_threadfunc(
+static void encode_astc_image_threadfunc(
 	int thread_count,
 	int thread_id,
 	void* vblk
 ) {
-	const encode_astc_image_info *blk = (const encode_astc_image_info *)vblk;
+	const compress_astc_image_info *blk = (const compress_astc_image_info *)vblk;
 	const block_size_descriptor *bsd = blk->bsd;
 	int xdim = bsd->xdim;
 	int ydim = bsd->ydim;
 	int zdim = bsd->zdim;
 	uint8_t *buffer = blk->buffer;
 	const error_weighting_params *ewp = blk->ewp;
-	int pack_and_unpack = blk->pack_and_unpack;
 	astcenc_profile decode_mode = blk->decode_mode;
 	astcenc_swizzle swz_encode = blk->swz_encode;
-	astcenc_swizzle swz_decode = blk->swz_decode;
 	const astc_codec_image *input_image = blk->input_image;
-	astc_codec_image *output_image = blk->output_image;
 
 	imageblock pb;
 	int ctr = thread_id;
@@ -324,18 +327,7 @@ struct encode_astc_image_info
 					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 					symbolic_compressed_block scb;
 					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
-					if (pack_and_unpack)
-					{
-						decompress_symbolic_block(decode_mode, bsd, x * xdim, y * ydim, z * zdim, &scb, &pb);
-						write_imageblock(output_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_decode);
-					}
-					else
-					{
-						physical_compressed_block pcb;
-						pcb = symbolic_to_physical(bsd, &scb);
-						*(physical_compressed_block *) bp = pcb;
-					}
-
+					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = thread_count - 1;
 				}
 				else
@@ -344,7 +336,6 @@ struct encode_astc_image_info
 		}
 	}
 
-	// TODO - move this to the context creation
 	delete[] temp_buffers.planes2->decimated_quantized_weights;
 	delete[] temp_buffers.planes2->decimated_weights;
 	delete[] temp_buffers.planes2->flt_quantized_decimated_quantized_weights;
@@ -360,33 +351,175 @@ struct encode_astc_image_info
 	delete   temp_buffers.ewb;
 }
 
+__attribute__((visibility("default")))
 astcenc_error astcenc_compress_image(
 	astcenc_context* context,
-	astcenc_image const* image,
-	size_t image_len,
+	astcenc_image& image,
+	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
 	int thread_index
 ) {
-	(void)context;
-	(void)image;
-	(void)image_len;
-	(void)data_out;
-	(void)data_len;
-	(void)thread_index;
-	return ASTCENC_SUCCESS;
-#if 0
-	encode_astc_image_info ai;
-	ai.bsd = contex->bsd;
-	ai.buffer = data_out;
-	ai.ewp = ewp;
-	ai.pack_and_unpack = 0;
-	ai.decode_mode = context.;
-	ai.swz_encode = swz_encode;
-	ai.swz_decode = swz_decode;
-	ai.input_image = input_image;
-	ai.output_image = output_image;
+	// TODO: Replace error_weighting_params in the core codec with the config / context structs
+	error_weighting_params ewp;
+	ewp.rgb_power = context->config.v_rgb_power;
+	ewp.rgb_base_weight = context->config.v_rgb_base;
+	ewp.rgb_mean_weight = context->config.v_rgb_mean;
+	ewp.rgb_stdev_weight = context->config.v_rgb_stdev;
+	ewp.alpha_power = context->config.v_a_power;
+	ewp.alpha_base_weight = context->config.v_a_base;
+	ewp.alpha_mean_weight = context->config.v_a_mean;
+	ewp.alpha_stdev_weight = context->config.v_a_stdev;
+	ewp.rgb_mean_and_stdev_mixing = context->config.v_rgba_mean_stdev_mix;
+	ewp.mean_stdev_radius = context->config.v_rgba_radius;
+	ewp.enable_rgb_scale_with_alpha = (context->config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT) == 0 ? 0 : 1;
+	ewp.alpha_radius = context->config.a_scale_radius;
+	ewp.ra_normal_angular_scale = (context->config.flags & ASTCENC_FLG_MAP_NORMAL) == 0 ? 0 : 1;
+	ewp.block_artifact_suppression = context->config.b_deblock_weight;
+	ewp.rgba_weights[0] = context->config.cw_r_weight;
+	ewp.rgba_weights[1] = context->config.cw_g_weight;
+	ewp.rgba_weights[2] = context->config.cw_b_weight;
+	ewp.rgba_weights[3] = context->config.cw_a_weight;
+	ewp.partition_search_limit = context->config.tune_partition_limit;
+	ewp.block_mode_cutoff = context->config.tune_block_mode_limit / 100.0f;
+	ewp.texel_avg_error_limit = context->config.tune_db_limit;
+	ewp.partition_1_to_2_limit = context->config.tune_partition_early_out_limit;
+	ewp.lowest_correlation_cutoff = context->config.tune_two_plane_early_out_limit;
+	ewp.max_refinement_iters = context->config.tune_refinement_limit;
 
-	launch_threads(threadcount, encode_astc_image_threadfunc, &ai);
-#endif
+	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
+	astc_codec_image input_image;
+	input_image.data8 = image.data8;
+	input_image.data16 = image.data16;
+	input_image.xsize = image.dim_x;
+	input_image.ysize = image.dim_y;
+	input_image.zsize = image.dim_z;
+	input_image.padding = image.padding_texels;
+
+	// Need to agree what we do with linearize sRGB
+	input_image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
+
+	input_image.input_averages = nullptr;
+	input_image.input_variances = nullptr;
+	input_image.input_alpha_averages = nullptr;
+
+	if (image.padding_texels > 0 ||
+	    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
+	    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
+	{
+		compute_averages_and_variances(&input_image, ewp.rgb_power, ewp.alpha_power,
+		                               ewp.mean_stdev_radius, ewp.alpha_radius,
+		                               input_image.linearize_srgb, swizzle, context->thread_count);
+	}
+
+	// TODO: This could be done once when the context is created
+	expand_block_artifact_suppression(
+		context->config.block_x, context->config.block_y, context->config.block_z, &ewp);
+
+	compress_astc_image_info ai;
+	ai.bsd = context->bsd;
+	ai.buffer = data_out;
+	ai.ewp = &ewp;
+	ai.decode_mode = context->config.profile;
+	ai.swz_encode = swizzle;
+	ai.input_image = &input_image;
+
+	// TODO: Add bounds checking
+	(void)data_len;
+
+	// TODO: Implement user-thread pools
+	(void)thread_index;
+
+	launch_threads(context->thread_count, encode_astc_image_threadfunc, &ai);
+
+	return ASTCENC_SUCCESS;
+}
+
+
+__attribute__((visibility("default")))
+astcenc_error astcenc_decompress_image(
+	astcenc_context* context,
+	uint8_t* data,
+	size_t data_len,
+	astcenc_image& image_out,
+	astcenc_swizzle swizzle,
+	int thread_index
+) {
+	unsigned int block_x = context->config.block_x;
+	unsigned int block_y = context->config.block_y;
+	unsigned int block_z = context->config.block_z;
+
+	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
+	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
+	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
+
+	// TODO: Check output bounds
+	(void)data_len;
+
+	// TODO: Handle custom threading
+	(void)thread_index;
+
+	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
+	astc_codec_image image;
+	image.data8 = image_out.data8;
+	image.data16 = image_out.data16;
+	image.xsize = image_out.dim_x;
+	image.ysize = image_out.dim_y;
+	image.zsize = image_out.dim_z;
+	image.padding = image_out.padding_texels;
+
+	// Need to agree what we do with linearize sRGB
+	image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
+
+	image.input_averages = nullptr;
+	image.input_variances = nullptr;
+	image.input_alpha_averages = nullptr;
+
+	imageblock pb;
+	for (unsigned int z = 0; z < zblocks; z++)
+	{
+		for (unsigned int y = 0; y < yblocks; y++)
+		{
+			for (unsigned int x = 0; x < xblocks; x++)
+			{
+				unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
+				uint8_t* bp = data + offset;
+				physical_compressed_block pcb = *(physical_compressed_block *) bp;
+				symbolic_compressed_block scb;
+				physical_to_symbolic(context->bsd, pcb, &scb);
+				decompress_symbolic_block(context->config.profile, context->bsd,
+				                          x * block_x, y * block_y, z * block_z,
+				                          &scb, &pb);
+				write_imageblock(&image, &pb, context->bsd,
+				                 x * block_x, y * block_y, z * block_z, swizzle);
+			}
+		}
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
+
+__attribute__((visibility("default")))
+const char* astcenc_get_error_string(
+	astcenc_error status
+) {
+	switch(status) {
+		case ASTCENC_ERR_OUT_OF_MEM:
+			return "ASTCENC_ERR_OUT_OF_MEM";
+		case ASTCENC_ERR_BAD_PARAM:
+			return "ASTCENC_ERR_BAD_PARAM";
+		case ASTCENC_ERR_BAD_BLOCK_SIZE:
+			return "ASTCENC_ERR_BAD_BLOCK_SIZE";
+		case ASTCENC_ERR_BAD_PROFILE:
+			return "ASTCENC_ERR_BAD_PROFILE";
+		case ASTCENC_ERR_BAD_PRESET:
+			return "ASTCENC_ERR_BAD_PRESET";
+		case ASTCENC_ERR_BAD_FLAGS:
+			return "ASTCENC_ERR_BAD_FLAGS";
+		case ASTCENC_ERR_NOT_IMPLEMENTED:
+			return "ASTCENC_ERR_NOT_IMPLEMENTED";
+		default:
+			return nullptr;
+	}
 }
