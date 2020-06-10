@@ -139,9 +139,9 @@ void compute_error_metrics(
 	kahan_accum4 log_errorsum;
 	kahan_accum4 mpsnr_errorsum;
 
-	int xsize = MIN(img1->dim_x, img2->dim_x);
-	int ysize = MIN(img1->dim_y, img2->dim_y);
-	int zsize = MIN(img1->dim_z, img2->dim_z);
+	unsigned int dim_x = MIN(img1->dim_x, img2->dim_x);
+	unsigned int dim_y = MIN(img1->dim_y, img2->dim_y);
+	unsigned int dim_z = MIN(img1->dim_z, img2->dim_z);
 
 	if (img1->dim_x != img2->dim_x ||
 	    img1->dim_y != img2->dim_y ||
@@ -158,9 +158,9 @@ void compute_error_metrics(
 	int img2pad = img2->dim_pad;
 	float rgb_peak = 0.0f;
 
-	for (int z = 0; z < zsize; z++)
+	for (unsigned int z = 0; z < dim_z; z++)
 	{
-		for (int y = 0; y < ysize; y++)
+		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			int ze1 = (img1->dim_z == 1) ? z : z + img1pad;
 			int ze2 = (img2->dim_z == 1) ? z : z + img2pad;
@@ -168,7 +168,7 @@ void compute_error_metrics(
 			int ye1 = y + img1pad;
 			int ye2 = y + img2pad;
 
-			for (int x = 0; x < xsize; x++)
+			for (unsigned int x = 0; x < dim_x; x++)
 			{
 				float4 color1;
 				float4 color2;
@@ -255,7 +255,7 @@ void compute_error_metrics(
 		}
 	}
 
-	float pixels = (float)(xsize * ysize * zsize);
+	float pixels = (float)(dim_x * dim_y * dim_z);
 	float num = 0.0f;
 	float alpha_num = 0.0f;
 	float log_num = 0.0f;

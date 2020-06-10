@@ -40,12 +40,12 @@ static const uint32_t MAGIC_FILE_CONSTANT = 0x5CA1AB13;
 struct astc_header
 {
 	uint8_t magic[4];
-	uint8_t blockdim_x;
-	uint8_t blockdim_y;
-	uint8_t blockdim_z;
-	uint8_t xsize[3];			// x-size = xsize[0] + xsize[1] + xsize[2]
-	uint8_t ysize[3];			// x-size, y-size and z-size are given in texels;
-	uint8_t zsize[3];			// block count is inferred
+	uint8_t block_x;
+	uint8_t block_y;
+	uint8_t block_z;
+	uint8_t dim_x[3];			// dims = dim[0] + (dim[1] << 8) + (dim[2] << 16)
+	uint8_t dim_y[3];			// Sizes are given in texels;
+	uint8_t dim_z[3];			// block count is inferred
 };
 
 struct astc_compressed_image
@@ -81,7 +81,7 @@ enum astc_op_mode {
 };
 
 int load_astc_file(
-	const char *filename,
+	const char* filename,
 	astc_compressed_image& out_image
 ) {
  	std::ifstream file(filename, std::ios::in | std::ios::binary);
@@ -106,9 +106,9 @@ int load_astc_file(
 		return 1;
 	}
 
-	int block_x = hdr.blockdim_x;
-	int block_y = hdr.blockdim_y;
-	int block_z = hdr.blockdim_z;
+	int block_x = hdr.block_x;
+	int block_y = hdr.block_y;
+	int block_z = hdr.block_z;
 
 	if (((block_z == 1) && !is_legal_2d_block_size(block_x, block_y)) ||
 	    ((block_z > 1) && !is_legal_3d_block_size(block_x, block_y, block_z)))
@@ -117,19 +117,19 @@ int load_astc_file(
 		return 1;
 	}
 
-	int xsize = unpack_bytes(hdr.xsize[0], hdr.xsize[1], hdr.xsize[2], 0);
-	int ysize = unpack_bytes(hdr.ysize[0], hdr.ysize[1], hdr.ysize[2], 0);
-	int zsize = unpack_bytes(hdr.zsize[0], hdr.zsize[1], hdr.zsize[2], 0);
+	int dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
+	int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
+	int dim_z = unpack_bytes(hdr.dim_z[0], hdr.dim_z[1], hdr.dim_z[2], 0);
 
-	if (xsize == 0 || ysize == 0 || zsize == 0)
+	if (dim_x == 0 || dim_z == 0 || dim_z == 0)
 	{
 		printf("ERROR: File corrupt '%s'\n", filename);
 		return 1;
 	}
 
-	int xblocks = (xsize + block_x - 1) / block_x;
-	int yblocks = (ysize + block_y - 1) / block_y;
-	int zblocks = (zsize + block_z - 1) / block_z;
+	int xblocks = (dim_x + block_x - 1) / block_x;
+	int yblocks = (dim_y + block_y - 1) / block_y;
+	int zblocks = (dim_z + block_z - 1) / block_z;
 
 	size_t data_size = xblocks * yblocks * zblocks * 16;
 	uint8_t *buffer = new uint8_t[data_size];
@@ -145,9 +145,9 @@ int load_astc_file(
 	out_image.block_x = block_x;
 	out_image.block_y = block_y;
 	out_image.block_z = block_z;
-	out_image.dim_x = xsize;
-	out_image.dim_y = ysize;
-	out_image.dim_z = zsize;
+	out_image.dim_x = dim_x;
+	out_image.dim_y = dim_y;
+	out_image.dim_z = dim_z;
 	return 0;
 }
 
@@ -166,18 +166,18 @@ int store_astc_file(
 	hdr.magic[1] = (MAGIC_FILE_CONSTANT >> 8) & 0xFF;
 	hdr.magic[2] = (MAGIC_FILE_CONSTANT >> 16) & 0xFF;
 	hdr.magic[3] = (MAGIC_FILE_CONSTANT >> 24) & 0xFF;
-	hdr.blockdim_x = comp_img.block_x;
-	hdr.blockdim_y = comp_img.block_y;
-	hdr.blockdim_z = comp_img.block_z;
-	hdr.xsize[0] =  comp_img.dim_x & 0xFF;
-	hdr.xsize[1] = (comp_img.dim_x >> 8) & 0xFF;
-	hdr.xsize[2] = (comp_img.dim_x >> 16) & 0xFF;
-	hdr.ysize[0] =  comp_img.dim_y & 0xFF;
-	hdr.ysize[1] = (comp_img.dim_y >> 8) & 0xFF;
-	hdr.ysize[2] = (comp_img.dim_y >> 16) & 0xFF;
-	hdr.zsize[0] =  comp_img.dim_z & 0xFF;
-	hdr.zsize[1] = (comp_img.dim_z >> 8) & 0xFF;
-	hdr.zsize[2] = (comp_img.dim_z >> 16) & 0xFF;
+	hdr.block_x = comp_img.block_x;
+	hdr.block_y = comp_img.block_y;
+	hdr.block_z = comp_img.block_z;
+	hdr.dim_x[0] =  comp_img.dim_x & 0xFF;
+	hdr.dim_x[1] = (comp_img.dim_x >> 8) & 0xFF;
+	hdr.dim_x[2] = (comp_img.dim_x >> 16) & 0xFF;
+	hdr.dim_y[0] =  comp_img.dim_y & 0xFF;
+	hdr.dim_y[1] = (comp_img.dim_y >> 8) & 0xFF;
+	hdr.dim_y[2] = (comp_img.dim_y >> 16) & 0xFF;
+	hdr.dim_z[0] =  comp_img.dim_z & 0xFF;
+	hdr.dim_z[1] = (comp_img.dim_z >> 8) & 0xFF;
+	hdr.dim_z[2] = (comp_img.dim_z >> 16) & 0xFF;
 
  	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
@@ -291,22 +291,22 @@ static std::string get_slice_filename(
 static astcenc_image* load_uncomp_file(
 	const char* filename,
 	unsigned int dim_z,
-	int padding,
+	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
-	int& num_components
+	unsigned int& num_components
 ) {
 	astcenc_image *image = nullptr;
 
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = astc_codec_load_image(filename, padding, y_flip, is_hdr, num_components);
+		image = astc_codec_load_image(filename, dim_pad, y_flip, is_hdr, num_components);
 	}
 	else
 	{
 		bool slice_is_hdr;
-		int slice_num_components;
+		unsigned int slice_num_components;
 		astcenc_image* slice = nullptr;
 		std::vector<astcenc_image*> slices;
 
@@ -321,7 +321,7 @@ static astcenc_image* load_uncomp_file(
 				break;
 			}
 
-			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip,
+			slice = astc_codec_load_image(slice_name.c_str(), dim_pad, y_flip,
 			                              slice_is_hdr, slice_num_components);
 			if (!slice)
 			{
@@ -367,22 +367,22 @@ static astcenc_image* load_uncomp_file(
 			unsigned int dim_x = slices[0]->dim_x;
 			unsigned int dim_y = slices[0]->dim_y;
 			int bitness = is_hdr ? 16 : 8;
-			int slice_size = (dim_x + (2 * padding)) * (dim_y + (2 * padding));
+			int slice_size = (dim_x + (2 * dim_pad)) * (dim_y + (2 * dim_pad));
 
-			image = alloc_image(bitness, dim_x, dim_y, dim_z, padding);
+			image = alloc_image(bitness, dim_x, dim_y, dim_z, dim_pad);
 
 			// Combine 2D source images into one 3D image; skipping padding slices
-			for (unsigned int z = padding; z < dim_z + padding; z++)
+			for (unsigned int z = dim_pad; z < dim_z + dim_pad; z++)
 			{
 				if (bitness == 8)
 				{
 					size_t copy_size = slice_size * 4 * sizeof(uint8_t);
-					memcpy(*image->data8[z], *slices[z - padding]->data8[0], copy_size);
+					memcpy(*image->data8[z], *slices[z - dim_pad]->data8[0], copy_size);
 				}
 				else
 				{
 					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
-					memcpy(*image->data16[z], *slices[z - padding]->data16[0], copy_size);
+					memcpy(*image->data16[z], *slices[z - dim_pad]->data16[0], copy_size);
 				}
 			}
 
@@ -1177,7 +1177,7 @@ int main(
 	bool stage_store_decomp = stage_decompress;
 
 	astcenc_image* image_uncomp_in = nullptr ;
-	int image_uncomp_in_num_chan = 0;
+	unsigned int image_uncomp_in_num_chan = 0;
 	bool image_uncomp_in_is_hdr = false;
 
 	astcenc_image* image_decomp_out = nullptr;
