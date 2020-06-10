@@ -22,7 +22,7 @@
 #include <cassert>
 #include <cstring>
 
-#include "astcenc_internal.h"
+#include "astcenccli_internal.h"
 
 astc_codec_image *alloc_image(
 	int bitness,

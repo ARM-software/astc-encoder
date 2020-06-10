@@ -30,15 +30,6 @@
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
-// Temporary workaround to build machine still running VS2013
-// Version 1910 is Visual Studio 2017
-#if !defined(_MSC_VER) || (_MSC_VER >= 1910)
-    #define NORETURN [[noreturn]]
-#else
-    #define NORETURN
-    #define __func__ __FUNCTION__
-#endif
-
 // ASTC parameters
 #define MAX_TEXELS_PER_BLOCK 216
 #define MAX_WEIGHTS_PER_BLOCK 64
@@ -51,10 +42,6 @@
 #define TEXEL_WEIGHT_SUM 16
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
-
-// error reporting for codec internal errors.
-#define ASTC_CODEC_INTERNAL_ERROR() astc_codec_internal_error(__FILE__, __LINE__)
-NORETURN void astc_codec_internal_error(const char *filename, int linenumber);
 
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
@@ -350,7 +337,7 @@ enum endpoint_formats
 	FMT_RGBA = 12,
 	FMT_RGBA_DELTA = 13,
 	FMT_HDR_RGB_LDR_ALPHA = 14,
-	FMT_HDR_RGBA = 15,
+	FMT_HDR_RGBA = 15
 };
 
 struct symbolic_compressed_block
@@ -373,15 +360,6 @@ struct physical_compressed_block
 {
 	uint8_t data[16];
 };
-
-/* ============================================================================
-  Functions for printing build info and help messages
-============================================================================ */
-void astcenc_print_header();
-
-void astcenc_print_shorthelp();
-
-void astcenc_print_longhelp();
 
 /* ============================================================================
   Functions and data pertaining to quantization and encoding
@@ -630,48 +608,6 @@ struct astc_codec_image
 };
 
 
-astc_codec_image* alloc_image(
-	int bitness,
-	int xsize,
-	int ysize,
-	int zsize,
-	int padding);
-
-void free_image(
-	astc_codec_image* img);
-
-void fill_image_padding_area(
-	astc_codec_image* img);
-
-int determine_image_channels(
-	const astc_codec_image* img);
-
-// helper functions to prepare an ASTC image object from a flat array
-// Used by the image loaders in "astc_file_load_store.cpp"
-astc_codec_image* astc_img_from_floatx4_array(
-	const float* image,
-	int xsize,
-	int ysize,
-	int padding,
-	int y_flip);
-
-astc_codec_image*astc_img_from_unorm8x4_array(
-	const uint8_t*imageptr,
-	int xsize,
-	int ysize,
-	int padding,
-	int y_flip);
-
-// helper functions to prepare a flat array from an ASTC image object.
-// the array is allocated with new[], and must be freed with delete[].
-float* floatx4_array_from_astc_img(
-	const astc_codec_image* img,
-	int y_flip);
-
-uint8_t* unorm8x4_array_from_astc_img(
-	const astc_codec_image* img,
-	int y_flip);
-
 struct astcenc_context
 {
 	astcenc_config config;
@@ -703,54 +639,6 @@ void compute_averages_and_variances(
 	int need_srgb_transform,
 	astcenc_swizzle swz,
 	int thread_count);
-
-/**
- * Functions to load image from file.
- *
- * @param filename            The file path on disk.
- * @param padding             The texel padding needed around the image.
- * @param y_flip              Should this image be Y flipped?
- * @param linearize_srgb      Should this image be converted to linear from sRGB?
- * @param[out] is_hdr         Is the loaded image HDR?
- * @param[out] num_components The number of components in the loaded image.
- *
- * @return The astc image file, or nullptr on error.
- */
-astc_codec_image* astc_codec_load_image(
-	const char* filename,
-	int padding,
-	bool y_flip,
-	bool linearize_srgb,
-	bool& is_hdr,
-	int& num_components);
-
-int astc_codec_store_image(
-	const astc_codec_image* output_image,
-	const char* output_filename,
-	const char** file_format_name,
-	int y_flip);
-
-int get_output_filename_enforced_bitness(
-	const char* filename);
-
-/**
- * @brief Compute error metrics comparing two images.
- *
- * @param compute_hdr_metrics Non-zero if HDR metrics should be computed.
- * @param input_components    The number of input color components.
- * @param img1                The original iamge.
- * @param img2                The compressed image.
- * @param fstop_lo            The low exposure fstop (HDR only).
- * @param fstop_hi            The high exposure fstop (HDR only).
- * @param show_psnr           Non-zero if metrics should be logged to stdout.
- */
-void compute_error_metrics(
-	int compute_hdr_metrics,
-	int input_components,
-	const astc_codec_image* img1,
-	const astc_codec_image* img2,
-	int fstop_lo,
-	int fstop_hi);
 
 // fetch an image-block from the input file
 void fetch_imageblock(
@@ -1012,30 +900,6 @@ uint16_t lns_to_sf16(
 /* ============================================================================
   Platform-specific functions
 ============================================================================ */
-
-/**
- * @brief Get the current time.
- *
- * @returns The current time in seconds since arbitrary epoch.
- */
-double get_time();
-
-/**
- * @brief Get the number of CPU cores.
- *
- * @returns The number of online or onlineable CPU cores in the system.
- */
-int get_cpu_count();
-
-/**
- * @brief Delete (unlink) a file on the filesystem.
- *
-|* @param filename The file to delete.
- *
- * @returns Zero on success, non-zero otherwise.
- */
-int unlink_file(const char *filename);
-
 /**
  * @brief Launch N worker threads and wait for them to complete.
  *
@@ -1052,35 +916,5 @@ void launch_threads(
 	int thread_count,
 	void (*func)(int, int, void*),
 	void *payload);
-
-/**
- * @brief Run-time detection if the host CPU supports SSE 4.2.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_sse42();
-
-/**
- * @brief Run-time detection if the host CPU supports popcnt.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_popcnt();
-
-/**
- * @brief Run-time detection if the host CPU supports avx2.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_avx2();
-
-/**
- * @brief The main entry point.
- *
- * @param argc The number of arguments.
- * @param argb The array of command line arguments.
- *
- * @returns Zero on success, non-zero otherwise.
- */
-int astc_main(
-	int argc,
-	char** argv);
 
 #endif

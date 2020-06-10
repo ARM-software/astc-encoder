@@ -19,9 +19,9 @@
  * @brief Functions for computing image error metrics.
  */
 
-#include "astcenc_internal.h"
-
 #include <cstdio>
+
+#include "astcenccli_internal.h"
 
 /**
  * @brief An accumulator using Kahan compensated floating-point summation.
