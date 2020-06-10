@@ -886,7 +886,6 @@ static void construct_block_size_descriptor_3d(
 }
 
 /* Public function, see header file for detailed documentation */
-__attribute__((visibility("default")))
 void init_block_size_descriptor(
 	int xdim,
 	int ydim,
@@ -901,7 +900,6 @@ void init_block_size_descriptor(
 	init_partition_tables(bsd);
 }
 
-__attribute__((visibility("default")))
 void term_block_size_descriptor(
 	block_size_descriptor* bsd)
 {

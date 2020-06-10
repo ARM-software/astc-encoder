@@ -52,6 +52,7 @@ SOURCES_LIBRARY = \
     astcenc_partition_tables.cpp \
     astcenc_percentile_tables.cpp \
     astcenc_pick_best_endpoint_format.cpp \
+    astcenc_platform_dependents.cpp \
     astcenc_quantization.cpp \
     astcenc_symbolic_physical.cpp \
     astcenc_weight_align.cpp \
@@ -61,6 +62,7 @@ SOURCES_CLI = \
     astcenc_mathlib.cpp \
     astcenc_mathlib_softfloat.cpp \
     astcenccli_error_metrics.cpp \
+    astcenccli_image.cpp \
     astcenccli_image_load_store.cpp \
     astcenccli_main.cpp \
     astcenccli_platform_isa_detection.cpp \

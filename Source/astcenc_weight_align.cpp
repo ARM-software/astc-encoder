@@ -78,7 +78,6 @@ static int max_angular_steps_needed_for_quant_level[13];
 static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
 static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
-__attribute__((visibility("default")))
 void prepare_angular_tables()
 {
 	int i, j;

@@ -1084,7 +1084,6 @@ static void prepare_block_statistics(
 	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
 }
 
-__attribute__((visibility("default")))
 float compress_symbolic_block(
 	const astc_codec_image* input_image,
 	astcenc_profile decode_mode,

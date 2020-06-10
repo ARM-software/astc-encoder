@@ -596,7 +596,6 @@ static void compute_averages_and_variances_proc(
 }
 
 /* Public function, see header file for detailed documentation */
-__attribute__((visibility("default")))
 void compute_averages_and_variances(
 	astc_codec_image* img,
 	float rgb_power,

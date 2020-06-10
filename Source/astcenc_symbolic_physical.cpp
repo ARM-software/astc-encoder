@@ -65,7 +65,6 @@ static inline int bitrev8(int p)
 	return p;
 }
 
-__attribute__((visibility("default")))
 physical_compressed_block symbolic_to_physical(
 	const block_size_descriptor* bsd,
 	const symbolic_compressed_block* sc
@@ -227,7 +226,6 @@ physical_compressed_block symbolic_to_physical(
 	return res;
 }
 
-__attribute__((visibility("default")))
 void physical_to_symbolic(
 	const block_size_descriptor* bsd,
 	physical_compressed_block pb,
