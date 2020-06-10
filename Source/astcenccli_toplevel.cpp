@@ -215,7 +215,8 @@ static void test_inappropriate_extended_precision()
 static void test_inappropriate_cpu_extensions()
 {
 	#if ASTC_SSE >= 42
-		if (!cpu_supports_sse42()) {
+		if (!cpu_supports_sse42())
+		{
 			printf("CPU support error: host lacks SSE 4.2 support.\n");
 			printf("    Please recompile with VEC=sse2.\n");
 			exit(1);
@@ -223,7 +224,8 @@ static void test_inappropriate_cpu_extensions()
 	#endif
 
 	#if ASTC_POPCNT >= 1
-		if (!cpu_supports_popcnt()) {
+		if (!cpu_supports_popcnt())
+		{
 			printf("CPU support error: host lacks POPCNT support.\n");
 			printf("    Please recompile with VEC=sse2.\n");
 			exit(1);
@@ -231,7 +233,8 @@ static void test_inappropriate_cpu_extensions()
 	#endif
 
 	#if ASTC_AVX >= 2
-		if (!cpu_supports_avx2()) {
+		if (!cpu_supports_avx2())
+		{
 			printf("CPU support error: host lacks AVX2 support.\n");
 			printf("    Please recompile with VEC=sse4.2 or VEC=sse2.\n");
 			exit(1);
@@ -1065,8 +1068,6 @@ int astc_main(
 		ewp.rgba_weights[2] = MAX(ewp.rgba_weights[2], max_color_component_weight / 1000.0f);
 		ewp.rgba_weights[3] = MAX(ewp.rgba_weights[3], max_color_component_weight / 1000.0f);
 
-		expand_block_artifact_suppression(block_x, block_y, block_z, &ewp);
-
 		// print all encoding settings unless specifically told otherwise.
 		if (!silentmode)
 		{
@@ -1132,9 +1133,7 @@ int astc_main(
 		}
 	}
 
-	astc_codec_image* input_decomp_img = nullptr ;
-	int input_decomp_img_num_chan = 0;
-	bool input_decomp_img_is_hdr = false;
+	int padding = MAX(ewp.mean_stdev_radius, ewp.alpha_radius);
 
 	// Flatten out the list of operations we need to perform
 	bool stage_compress = (op_mode == ASTC_ENCODE) || (op_mode == ASTC_ENCODE_AND_DECODE);
@@ -1175,15 +1174,18 @@ int astc_main(
 
 	codec_config.flags = 0;
 
-	if (ewp.ra_normal_angular_scale) {
+	if (ewp.ra_normal_angular_scale)
+	{
 		codec_config.flags |= ASTCENC_FLG_MAP_NORMAL;
 	}
 
-	if (ewp.enable_rgb_scale_with_alpha) {
+	if (ewp.enable_rgb_scale_with_alpha)
+	{
 		codec_config.flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
 	}
 
-	if (linearize_srgb) {
+	if (linearize_srgb)
+	{
 		codec_config.flags |= ASTCENC_FLG_USE_LINEARIZED_SRGB;
 	}
 
@@ -1225,7 +1227,8 @@ int astc_main(
 	codec_config.tune_two_plane_early_out_limit = ewp.lowest_correlation_cutoff;
 
 	codec_status = astcenc_context_alloc(codec_config, thread_count, &codec_context);
-	if (codec_status != ASTCENC_SUCCESS) {
+	if (codec_status != ASTCENC_SUCCESS)
+	{
 		printf("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
 		return 1;
 	}
@@ -1293,7 +1296,8 @@ int astc_main(
 		uint8_t* buffer = new uint8_t[buffer_size];
 
 		codec_status = astcenc_compress_image(codec_context, image, swz_encode, buffer, buffer_size, 0);
-		if (codec_status != ASTCENC_SUCCESS) {
+		if (codec_status != ASTCENC_SUCCESS)
+		{
 			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(codec_status));
 			return 1;
 		}
@@ -1331,7 +1335,8 @@ int astc_main(
 
 		// TODO: Pass through data len to avoid out-of-bounds reads
 		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0, image, swz_decode, 0);
-		if (codec_status != ASTCENC_SUCCESS) {
+		if (codec_status != ASTCENC_SUCCESS)
+		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
 			return 1;
 		}

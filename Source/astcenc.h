@@ -332,7 +332,7 @@ void astcenc_context_free(
 	astcenc_context* context);
 
 /**
- * Utility to get a string string for specific error code.
+ * Utility to get a string for specific status code.
  *
  * @param status The status value.
  *
