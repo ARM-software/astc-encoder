@@ -62,6 +62,7 @@ SOURCES_CLI = \
     astcenc_mathlib.cpp \
     astcenc_mathlib_softfloat.cpp \
     astcenccli_error_metrics.cpp \
+    astcenccli_image.cpp \
     astcenccli_image_load_store.cpp \
     astcenccli_main.cpp \
     astcenccli_platform_isa_detection.cpp \
