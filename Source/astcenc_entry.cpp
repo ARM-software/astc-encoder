@@ -394,7 +394,7 @@ astcenc_error astcenc_compress_image(
 	input_image.xsize = image.dim_x;
 	input_image.ysize = image.dim_y;
 	input_image.zsize = image.dim_z;
-	input_image.padding = image.padding_texels;
+	input_image.padding = image.dim_pad;
 
 	// Need to agree what we do with linearize sRGB
 	input_image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
@@ -403,7 +403,7 @@ astcenc_error astcenc_compress_image(
 	input_image.input_variances = nullptr;
 	input_image.input_alpha_averages = nullptr;
 
-	if (image.padding_texels > 0 ||
+	if (image.dim_pad > 0 ||
 	    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
 	    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 	{
@@ -466,7 +466,7 @@ astcenc_error astcenc_decompress_image(
 	image.xsize = image_out.dim_x;
 	image.ysize = image_out.dim_y;
 	image.zsize = image_out.dim_z;
-	image.padding = image_out.padding_texels;
+	image.padding = image_out.dim_pad;
 
 	// Need to agree what we do with linearize sRGB
 	image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;

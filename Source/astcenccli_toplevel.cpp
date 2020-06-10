@@ -280,29 +280,27 @@ static std::string get_slice_filename(
  *
  * @return The astc image file, or nullptr on error.
  */
-static astc_codec_image* load_uncomp_file(
+static astcenc_image* load_uncomp_file(
 	const char* filename,
 	unsigned int dim_z,
 	int padding,
 	bool y_flip,
-	bool linearize_srgb,
 	bool& is_hdr,
 	int& num_components
 ) {
-	astc_codec_image *image = nullptr;
+	astcenc_image *image = nullptr;
 
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = astc_codec_load_image(filename, padding, y_flip, linearize_srgb,
-		                              is_hdr, num_components);
+		image = astc_codec_load_image(filename, padding, y_flip, is_hdr, num_components);
 	}
 	else
 	{
 		bool slice_is_hdr;
 		int slice_num_components;
-		astc_codec_image* slice = nullptr;
-		std::vector<astc_codec_image*> slices;
+		astcenc_image* slice = nullptr;
+		std::vector<astcenc_image*> slices;
 
 		// For a 3D image load an array of slices
 		for (unsigned int image_index = 0; image_index < dim_z; image_index++)
@@ -315,7 +313,7 @@ static astc_codec_image* load_uncomp_file(
 				break;
 			}
 
-			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip, linearize_srgb,
+			slice = astc_codec_load_image(slice_name.c_str(), padding, y_flip,
 			                              slice_is_hdr, slice_num_components);
 			if (!slice)
 			{
@@ -325,7 +323,7 @@ static astc_codec_image* load_uncomp_file(
 			slices.push_back(slice);
 
 			// Check it is not a 3D image
-			if (slice->zsize != 1)
+			if (slice->dim_z != 1)
 			{
 				printf("ERROR: Image arrays do not support 3D sources: %s\n", slice_name.c_str());
 				break;
@@ -340,9 +338,9 @@ static astc_codec_image* load_uncomp_file(
 					break;
 				}
 
-				if ((slices[0]->xsize != slice->xsize) ||
-				    (slices[0]->ysize != slice->ysize) ||
-				    (slices[0]->zsize != slice->zsize))
+				if ((slices[0]->dim_x != slice->dim_x) ||
+				    (slices[0]->dim_y != slice->dim_y) ||
+				    (slices[0]->dim_z != slice->dim_z))
 				{
 					printf("ERROR: Image array[0] and [%d] are different dimensions\n", image_index);
 					break;
@@ -358,12 +356,12 @@ static astc_codec_image* load_uncomp_file(
 		// If all slices loaded correctly then repack them into a single image
 		if (slices.size() == dim_z)
 		{
-			unsigned int dim_x = slices[0]->xsize;
-			unsigned int dim_y = slices[0]->ysize;
+			unsigned int dim_x = slices[0]->dim_x;
+			unsigned int dim_y = slices[0]->dim_y;
 			int bitness = is_hdr ? 16 : 8;
 			int slice_size = (dim_x + (2 * padding)) * (dim_y + (2 * padding));
 
-			image = alloc_image(bitness, dim_x, dim_y, dim_y, padding);
+			image = alloc_image(bitness, dim_x, dim_y, dim_z, padding);
 
 			// Combine 2D source images into one 3D image; skipping padding slices
 			for (unsigned int z = padding; z < dim_z + padding; z++)
@@ -1137,13 +1135,13 @@ int main(
 	bool stage_store_comp = op_mode == ASTC_ENCODE;
 	bool stage_store_decomp = stage_decompress;
 
-	astc_codec_image* image_uncomp_in = nullptr ;
+	astcenc_image* image_uncomp_in = nullptr ;
 	int image_uncomp_in_num_chan = 0;
 	bool image_uncomp_in_is_hdr = false;
 
 	astc_compressed_image image_comp;
 
-	astc_codec_image* image_decomp_out = nullptr;
+	astcenc_image* image_decomp_out = nullptr;
 
 	// TODO: Handle RAII resources so they get freed when out of scope
 	// Load the compressed input file if needed
@@ -1236,7 +1234,7 @@ int main(
 			return 1;
 		}
 
-		image_uncomp_in = load_uncomp_file(input_filename, array_size, padding, y_flip, linearize_srgb,
+		image_uncomp_in = load_uncomp_file(input_filename, array_size, padding, y_flip,
 		                                   image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
 		if (!image_uncomp_in)
 		{
@@ -1249,15 +1247,15 @@ int main(
 			printf("============\n\n");
 			printf("    Source:                     %s\n", input_filename);
 			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
-			if (image_uncomp_in->zsize > 1)
+			if (image_uncomp_in->dim_z > 1)
 			{
 				printf("    Dimensions:                 3D, %d x %d x %d\n",
-				       image_uncomp_in->xsize, image_uncomp_in->ysize, image_uncomp_in->zsize);
+				       image_uncomp_in->dim_x, image_uncomp_in->dim_y, image_uncomp_in->dim_z);
 			}
 			else
 			{
 				printf("    Dimensions:                 2D, %d x %d\n",
-				       image_uncomp_in->xsize, image_uncomp_in->ysize);
+				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
 			printf("    Channels:                   %d\n\n", image_uncomp_in_num_chan);
 		}
@@ -1268,27 +1266,14 @@ int main(
 	// Compress an image
 	if (stage_compress)
 	{
-		// TODO: Loaded functions should return astcenc_image natively
-		astcenc_image image;
-		image.data8 = image_uncomp_in->data8;
-		image.data16 = image_uncomp_in->data16;
-		image.dim_x = image_uncomp_in->xsize;
-		image.dim_y = image_uncomp_in->ysize;
-		image.dim_z = image_uncomp_in->zsize;
-		image.padding_texels = image_uncomp_in->padding;
-
-		int xdims = image.dim_x;
-		int ydims = image.dim_y;
-		int zdims = image.dim_z;
-
-		int xblocks = (xdims + block_x - 1) / block_x;
-		int yblocks = (ydims + block_y - 1) / block_y;
-		int zblocks = (zdims + block_z - 1) / block_z;
-
-		size_t buffer_size = xblocks * yblocks * zblocks * 16;
+		unsigned int blocks_x = (image_uncomp_in->dim_x + block_x - 1) / block_x;
+		unsigned int blocks_y = (image_uncomp_in->dim_y + block_y - 1) / block_y;
+		unsigned int blocks_z = (image_uncomp_in->dim_z + block_z - 1) / block_z;
+		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
 		uint8_t* buffer = new uint8_t[buffer_size];
 
-		codec_status = astcenc_compress_image(codec_context, image, swz_encode, buffer, buffer_size, 0);
+		codec_status = astcenc_compress_image(codec_context, *image_uncomp_in, swz_encode,
+		                                      buffer, buffer_size, 0);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(codec_status));
@@ -1298,9 +1283,9 @@ int main(
 		image_comp.block_x = block_x;
 		image_comp.block_y = block_y;
 		image_comp.block_z = block_z;
-		image_comp.dim_x = xdims;
-		image_comp.dim_y = ydims;
-		image_comp.dim_z = zdims;
+		image_comp.dim_x = image_uncomp_in->dim_x;
+		image_comp.dim_y = image_uncomp_in->dim_y;
+		image_comp.dim_z = image_uncomp_in->dim_z;
 		image_comp.data = buffer;
 	}
 
@@ -1317,17 +1302,9 @@ int main(
 		image_decomp_out = alloc_image(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z, 0);
 
-		// TODO: Standardized on astcenc_image everywhere in the CLI
-		astcenc_image image;
-		image.dim_x = image_comp.dim_x;
-		image.dim_y = image_comp.dim_y;
-		image.dim_z = image_comp.dim_z;
-		image.data8 = image_decomp_out->data8;
-		image.data16 = image_decomp_out->data16;
-		image.padding_texels = image_decomp_out->padding;
-
 		// TODO: Pass through data len to avoid out-of-bounds reads
-		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0, image, swz_decode, 0);
+		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0,
+		                                        *image_decomp_out, swz_decode, 0);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));

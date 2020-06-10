@@ -227,9 +227,9 @@ struct astcenc_image {
 	unsigned int dim_x;
 	unsigned int dim_y;
 	unsigned int dim_z;
+	unsigned int dim_pad;
 	uint8_t ***data8;
 	uint16_t ***data16;
-	size_t padding_texels;
 };
 
 /**
