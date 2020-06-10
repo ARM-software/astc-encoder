@@ -78,6 +78,7 @@ HEADERS = \
     astcenc.h \
     astcenc_internal.h \
     astcenc_mathlib.h \
+    astcenccli_internal.h \
     stb_image.h \
     stb_image_write.h \
     tinyexr.h
