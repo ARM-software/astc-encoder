@@ -207,6 +207,8 @@ astcenc_error astcenc_init_config(
 		return ASTCENC_ERR_NOT_IMPLEMENTED;
 	}
 
+	config.flags = flags;
+
 	return ASTCENC_SUCCESS;
 }
 
@@ -376,13 +378,21 @@ astcenc_error astcenc_compress_image(
 	ewp.alpha_radius = context->config.a_scale_radius;
 	ewp.ra_normal_angular_scale = (context->config.flags & ASTCENC_FLG_MAP_NORMAL) == 0 ? 0 : 1;
 	ewp.block_artifact_suppression = context->config.b_deblock_weight;
-	ewp.rgba_weights[0] = context->config.cw_r_weight;
-	ewp.rgba_weights[1] = context->config.cw_g_weight;
-	ewp.rgba_weights[2] = context->config.cw_b_weight;
-	ewp.rgba_weights[3] = context->config.cw_a_weight;
+	ewp.rgba_weights[0] = MAX(context->config.cw_r_weight, 0.001f);
+	ewp.rgba_weights[1] = MAX(context->config.cw_g_weight, 0.001f);
+	ewp.rgba_weights[2] = MAX(context->config.cw_b_weight, 0.001f);
+	ewp.rgba_weights[3] = MAX(context->config.cw_a_weight, 0.001f);
 	ewp.partition_search_limit = context->config.tune_partition_limit;
 	ewp.block_mode_cutoff = context->config.tune_block_mode_limit / 100.0f;
-	ewp.texel_avg_error_limit = context->config.tune_db_limit;
+	if ((context->config.profile == ASTCENC_PRF_LDR) || (context->config.profile == ASTCENC_PRF_LDR_SRGB))
+	{
+		ewp.texel_avg_error_limit  = powf(0.1f, context->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
+	}
+	else
+	{
+		ewp.texel_avg_error_limit = 0.0f;
+	}
+
 	ewp.partition_1_to_2_limit = context->config.tune_partition_early_out_limit;
 	ewp.lowest_correlation_cutoff = context->config.tune_two_plane_early_out_limit;
 	ewp.max_refinement_iters = context->config.tune_refinement_limit;

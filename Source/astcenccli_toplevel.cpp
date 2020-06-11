@@ -416,23 +416,28 @@ static astc_codec_image* load_uncomp_file(
 }
 
 /**
- * @brief Initialize the astcenc_config
+ * @brief Parse the commadline and read op_mode, profile
+ *        input and output file names
  *
  * @param argc
  * @param argv
- * @param op_mode
- * @param configuration
+ * @param op_mode              ASTC operation mode
+ * @param profile              ASTC profile
+ * @param input_filename       The input file name
+ * @param output_filename      The output file name
  *
  * @return 0 if everything is Okay, 1 if there is some error
  */
-int init_astcenc_config(
-		int argc,
-		char **argv,
-		astc_op_mode& op_mode,
-		astcenc_config& codec_configuration
-	) {
+int parse_commandline_options(
+	int argc,
+	char **argv,
+	astc_op_mode& op_mode,
+	astcenc_profile& profile,
+	std::string& input_filename,
+	std::string& output_filename
+) {
 
-	astcenc_profile profile = ASTCENC_PRF_LDR;
+	profile = ASTCENC_PRF_LDR;
 	op_mode = ASTC_UNRECOGNIZED;
 
 	struct {
@@ -469,22 +474,60 @@ int init_astcenc_config(
 		}
 	}
 
-	switch (op_mode)
+	if (op_mode == ASTC_UNRECOGNIZED)
 	{
-		case ASTC_UNRECOGNIZED:
-			printf("ERROR: Unrecognized operation '%s'\n", argv[1]);
-			return 1;
-		case ASTC_PRINT_LONGHELP:
-			return 0;
-		case ASTC_PRINT_VERSION:
-			return 0;
-		default:
-			break;
+		printf("ERROR: Failed to read OP_MODE\n");
+		return 1;
 	}
 
-	int block_x = 0;
-	int block_y = 0;
-	int block_z = 1;
+	input_filename = argc >= 3 ? argv[2] : "";
+	output_filename = argc >= 4 ? argv[3] : "";
+
+	if (input_filename.empty())
+	{
+		printf("ERROR: Input file not specified\n");
+		return 1;
+	}
+
+	if (output_filename.empty())
+	{
+		printf("ERROR: Output file not specified\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Initialize the astcenc_config
+ *
+ * @param argc
+ * @param argv
+ * @param op_mode          ASTC operation mode
+ * @param comp_image
+ * @param configuration    The astcenc configuration
+ *
+ * @return 0 if everything is Okay, 1 if there is some error
+ */
+int init_astcenc_config(
+	int argc,
+	char **argv,
+	astcenc_profile profile,
+	astc_op_mode op_mode,
+	astc_compressed_image& comp_image,
+	astcenc_config& codec_configuration
+) {
+	unsigned int block_x = 0;
+	unsigned int block_y = 0;
+	unsigned int block_z = 1;
+
+	// For decode the block size is set by the incoming image.
+	if (op_mode == ASTC_DECODE)
+	{
+		block_x = comp_image.block_x;
+		block_y = comp_image.block_y;
+		block_z = comp_image.block_y;
+	}
 
 	astcenc_preset preset = ASTCENC_PRE_FAST;
 
@@ -505,7 +548,7 @@ int init_astcenc_config(
 		}
 
 		int cnt2D, cnt3D;
-		int dimensions = sscanf(argv[4], "%dx%d%nx%d%n", &block_x, &block_y, &cnt2D, &block_z, &cnt3D);
+		int dimensions = sscanf(argv[4], "%ux%u%nx%u%n", &block_x, &block_y, &cnt2D, &block_z, &cnt3D);
 		switch (dimensions)
 		{
 		case 2:
@@ -579,7 +622,6 @@ int init_astcenc_config(
 		else if (!strcmp(argv[argidx], "-normal_percep"))
 		{
 			argidx++;
-
 			flags |= ASTCENC_FLG_MAP_NORMAL;
 			flags |= ASTCENC_FLG_USE_PERCEPTUAL;
 		}
@@ -599,9 +641,10 @@ int init_astcenc_config(
 		}
 	}
 
-	if (astcenc_init_config(profile, block_x, block_y, block_z, preset, flags, codec_configuration) != ASTCENC_SUCCESS)
+	astcenc_error status = astcenc_init_config(profile, block_x, block_y, block_z, preset, flags, codec_configuration);
+	if (status != ASTCENC_SUCCESS)
 	{
-		printf ("ERROR: Failed to initialize configuration\n");
+		printf ("ERROR: Failed to initialize configuration '%s'\n", astcenc_get_error_string(status));
 		return 1;
 	}
 
@@ -613,15 +656,15 @@ int init_astcenc_config(
  *
  * @param argc
  * @param argv
- * @param op_mode
+ * @param op_mode             ASTC operation mode
  * @param array_size
- * @param silentmode
+ * @param silentmode          Should astcenc run in silent mode
  * @param y_flip              Should this image be Y flipped?
  * @param linearize_srgb      Should this image be converted to linear from sRGB?
  * @param thread_count
  * @param low_fstop
  * @param high_fstop
- * @param configuration
+ * @param configuration       The astcenc configuration
  *
  * @return 0 if everything is Okay, 1 if there is some error
  */
@@ -640,13 +683,6 @@ int edit_astcenc_config(
 	) {
 
 	int argidx = (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE) ? 6 : 4;
-
-	int plimit_set = -1;
-	float dblimit_set = 0.0f;
-	float oplimit_set = 0.0f;
-	float mincorrel_set = 0.0f;
-	float bmc_set = 0.0f;
-	int maxiters_set = 0;
 
 	while (argidx < argc)
 	{
@@ -865,13 +901,7 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			float cutoff = (float)atof(argv[argidx - 1]);
-			if (cutoff > 100.0f || !(cutoff >= 0.0f))
-			{
-				cutoff = 100.0f;
-			}
-
-			bmc_set = cutoff;
+			codec_configuration.tune_block_mode_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-partitionlimit"))
 		{
@@ -882,7 +912,7 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			plimit_set = atoi(argv[argidx - 1]);
+			codec_configuration.tune_partition_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
@@ -893,7 +923,11 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			dblimit_set = static_cast<float>(atof(argv[argidx - 1]));
+			codec_configuration.tune_db_limit = 999.0f;
+			if ((codec_configuration.profile == ASTCENC_PRF_LDR) || (codec_configuration.profile == ASTCENC_PRF_LDR_SRGB))
+			{
+				codec_configuration.tune_db_limit = static_cast<float>(atof(argv[argidx - 1]));;
+			}
 		}
 		else if (!strcmp(argv[argidx], "-partitionearlylimit"))
 		{
@@ -904,7 +938,7 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			oplimit_set = static_cast<float>(atof(argv[argidx - 1]));
+			codec_configuration.tune_partition_early_out_limit = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-planecorlimit"))
 		{
@@ -915,7 +949,7 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			mincorrel_set = static_cast<float>(atof(argv[argidx - 1]));
+			codec_configuration.tune_two_plane_early_out_limit = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
@@ -926,7 +960,7 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			maxiters_set = atoi(argv[argidx - 1]);
+			codec_configuration.tune_refinement_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
@@ -1008,28 +1042,6 @@ int edit_astcenc_config(
 
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-	    codec_configuration.tune_refinement_limit  = maxiters_set;
-		codec_configuration.tune_block_mode_limit = bmc_set;
-
-		codec_configuration.tune_db_limit = 0.0f;
-		if ((codec_configuration.profile == ASTCENC_PRF_LDR) || (codec_configuration.profile == ASTCENC_PRF_LDR_SRGB))
-		{
-			codec_configuration.tune_db_limit = powf(0.1f, dblimit_set * 0.1f) * 65535.0f * 65535.0f;
-		}
-
-		codec_configuration.tune_partition_early_out_limit = oplimit_set;
-		codec_configuration.tune_two_plane_early_out_limit = mincorrel_set;
-		codec_configuration.tune_partition_limit = astc::clampi(plimit_set, 1, 1024);
-
-		// Specifying the error weight of a color component as 0 is not allowed.
-		// If weights are 0, then they are instead set to a small positive value.
-		float max_color_component_weight = MAX(MAX(codec_configuration.cw_r_weight, codec_configuration.cw_g_weight),
-		                                       MAX(codec_configuration.cw_b_weight, codec_configuration.cw_a_weight));
-		codec_configuration.cw_r_weight = MAX(codec_configuration.cw_r_weight, max_color_component_weight / 1000.0f);
-		codec_configuration.cw_g_weight = MAX(codec_configuration.cw_g_weight, max_color_component_weight / 1000.0f);
-		codec_configuration.cw_b_weight = MAX(codec_configuration.cw_b_weight, max_color_component_weight / 1000.0f);
-		codec_configuration.cw_a_weight = MAX(codec_configuration.cw_a_weight, max_color_component_weight / 1000.0f);
-
 		if (thread_count < 1)
 		{
 			thread_count = get_cpu_count();
@@ -1090,7 +1102,7 @@ int edit_astcenc_config(
 			printf("    A channel weight:           %g\n",(double)codec_configuration.cw_a_weight);
 			printf("    Deblock artifact setting:   %g\n", (double)codec_configuration.b_deblock_weight);
 			printf("    Block partition cutoff:     %d partitions\n", codec_configuration.tune_partition_limit);
-			printf("    PSNR cutoff:                %g dB\n", (double)dblimit_set);
+			printf("    PSNR cutoff:                %g dB\n", (double)codec_configuration.tune_db_limit);
 			printf("    1->2 partition cutoff:      %g\n", (double)codec_configuration.tune_partition_early_out_limit);
 			printf("    2 plane correlation cutoff: %g\n", (double)codec_configuration.tune_two_plane_early_out_limit);
 			printf("    Block mode centile cutoff:  %g%%\n", (double)(codec_configuration.tune_block_mode_limit));
@@ -1124,37 +1136,15 @@ int main(
 		return 0;
 	}
 
-	astc_op_mode op_mode = ASTC_UNRECOGNIZED;
+	astc_op_mode op_mode;
+	astcenc_profile profile;
 
-	// TODO: Move it to commandline parsing method
-	const char *input_filename = argc >= 3 ? argv[2] : nullptr;
-	const char *output_filename = argc >= 4 ? argv[3] : nullptr;
+	std::string input_filename;
+	std::string output_filename;
 
-	if (!input_filename)
+	if (parse_commandline_options(argc, argv, op_mode, profile, input_filename, output_filename))
 	{
-		printf("ERROR: Input file not specified\n");
-		return 1;
-	}
-
-	if (!output_filename)
-	{
-		printf("ERROR: Output file not specified\n");
-		return 1;
-	}
-
-	int array_size = 1;
-	int silentmode = 0;
-	int y_flip = 0;
-	int linearize_srgb = 0;
-	int thread_count = 0;		// default value
-
-	int low_fstop = -10;
-	int high_fstop = 10;
-
-	astcenc_config codec_configuration;
-	if(init_astcenc_config(argc, argv, op_mode,	codec_configuration))
-	{
-		printf("ERROR: Astcenc configuration intialization failed.\n");
+		printf ("ERROR: Filed to read command line options\n");
 		return 1;
 	}
 
@@ -1171,6 +1161,36 @@ int main(
 			return 0;
 		default:
 			break;
+	}
+
+	int array_size = 1;
+	int silentmode = 0;
+	int y_flip = 0;
+	int linearize_srgb = 0;
+	int thread_count = 0;		// default value
+
+	int low_fstop = -10;
+	int high_fstop = 10;
+
+	// TODO: Handle RAII resources so they get freed when out of scope
+	// Load the compressed input file if needed
+
+	// This has to come first, as the block size is in the file header
+	astc_compressed_image image_comp;
+	if (op_mode == ASTC_DECODE)
+	{
+		int error = load_astc_file(input_filename.c_str(), image_comp);
+		if (error)
+		{
+			return 1;
+		}
+	}
+
+	astcenc_config codec_configuration;
+	if(init_astcenc_config(argc, argv, profile, op_mode, image_comp, codec_configuration))
+	{
+		printf("ERROR: Astcenc configuration intialization failed.\n");
+		return 1;
 	}
 
 	if(edit_astcenc_config(argc, argv, op_mode,	array_size, silentmode, y_flip, linearize_srgb, thread_count, low_fstop, high_fstop, codec_configuration))
@@ -1194,8 +1214,6 @@ int main(
 	int image_uncomp_in_num_chan = 0;
 	bool image_uncomp_in_is_hdr = false;
 
-	astc_compressed_image image_comp;
-
 	astc_codec_image* image_decomp_out = nullptr;
 
 	// TODO: Handle RAII resources so they get freed when out of scope
@@ -1204,7 +1222,7 @@ int main(
 	// This has to come first, as the block size is in the file header
 	if (stage_load_comp)
 	{
-		int error = load_astc_file(input_filename, image_comp);
+		int error = load_astc_file(input_filename.c_str(), image_comp);
 		if (error)
 		{
 			return 1;
@@ -1229,13 +1247,11 @@ int main(
 		return 1;
 	}
 
-
 	// Load the uncompressed input file if needed
 	if (stage_load_uncomp)
 	{
-		image_uncomp_in = load_uncomp_file(input_filename, array_size, padding, y_flip, linearize_srgb,
+		image_uncomp_in = load_uncomp_file(input_filename.c_str(), array_size, padding, y_flip, linearize_srgb,
 		                                   image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
-
 
 		if (!image_uncomp_in)
 		{
@@ -1247,7 +1263,7 @@ int main(
 		{
 			printf("Source image\n");
 			printf("============\n\n");
-			printf("    Source:                     %s\n", input_filename);
+			printf("    Source:                     %s\n", input_filename.c_str());
 			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
 			if (image_uncomp_in->zsize > 1)
 			{
@@ -1307,7 +1323,7 @@ int main(
 	// Decompress an image
 	if (stage_decompress)
 	{
-		int out_bitness = get_output_filename_enforced_bitness(output_filename);
+		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
 		if (out_bitness == -1)
 		{
 			bool is_hdr = (codec_configuration.profile == ASTCENC_PRF_HDR) || (codec_configuration.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
@@ -1347,7 +1363,7 @@ int main(
 	// Store compressed image
 	if (stage_store_comp)
 	{
-		int error = store_astc_file(image_comp, output_filename);
+		int error = store_astc_file(image_comp, output_filename.c_str());
 		if (error)
 		{
 			printf ("ERROR: Failed to store compressed image\n");
@@ -1361,10 +1377,10 @@ int main(
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(image_decomp_out, output_filename, &format_string, y_flip);
+		store_result = astc_codec_store_image(image_decomp_out, output_filename.c_str(), &format_string, y_flip);
 		if (store_result < 0)
 		{
-			printf("ERROR: Failed to write output image %s\n", output_filename);
+			printf("ERROR: Failed to write output image %s\n", output_filename.c_str());
 			return 1;
 		}
 	}
