@@ -121,6 +121,7 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_BLOCK_SIZE,
 	ASTCENC_ERR_BAD_PROFILE,
 	ASTCENC_ERR_BAD_PRESET,
+	ASTCENC_ERR_BAD_SWIZZLE,
 	ASTCENC_ERR_BAD_FLAGS,
 	ASTCENC_ERR_NOT_IMPLEMENTED
 };
@@ -274,7 +275,7 @@ astcenc_error astcenc_init_config(
  */
 astcenc_error astcenc_context_alloc(
 	const astcenc_config& config,
-	int thread_count,
+	unsigned int thread_count,
 	astcenc_context** context);
 
 /**
@@ -299,7 +300,7 @@ astcenc_error astcenc_compress_image(
 	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	int thread_index);
+	unsigned int thread_index);
 
 /**
  * Decompress an image.
@@ -323,7 +324,7 @@ astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	astcenc_image& image_out,
 	astcenc_swizzle swizzle,
-	int thread_index);
+	unsigned int thread_index);
 
 /**
  * Free the compressor context.
