@@ -521,7 +521,7 @@ int main(
 		ASTCENC_SWZ_A
 	};
 
-	int thread_count = 0;		// default value
+	unsigned int thread_count = 0;		// default value
 
 	int plimit_set = -1;
 	float dblimit_set = 0.0f;

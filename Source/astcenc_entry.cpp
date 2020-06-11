@@ -25,6 +25,196 @@
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
+static astcenc_error validate_profile(
+	astcenc_profile profile
+) {
+	switch(profile)
+	{
+		case ASTCENC_PRF_LDR_SRGB:
+		case ASTCENC_PRF_LDR:
+		case ASTCENC_PRF_HDR_RGB_LDR_A:
+		case ASTCENC_PRF_HDR:
+			return ASTCENC_SUCCESS;
+		default:
+			return ASTCENC_ERR_BAD_PROFILE;
+	}
+}
+
+static astcenc_error validate_block_size(
+	unsigned int block_x,
+	unsigned int block_y,
+	unsigned int block_z
+) {
+	if (((block_z <= 1) && is_legal_2d_block_size(block_x, block_y)) ||
+	    ((block_z >= 2) && is_legal_3d_block_size(block_x, block_y, block_z)))
+	{
+		return ASTCENC_SUCCESS;
+	}
+
+	return ASTCENC_ERR_BAD_BLOCK_SIZE;
+}
+
+static astcenc_error validate_flags(
+	unsigned int flags
+) {
+	// Flags field must not contain any unknown flag bits
+	unsigned int exMask = ~ASTCENC_ALL_FLAGS;
+	if (astc::popcount(flags & exMask) != 0)
+	{
+		return ASTCENC_ERR_BAD_FLAGS;
+	}
+
+	// Flags field must only contain at most a single map type
+	exMask = ASTCENC_FLG_MAP_MASK | ASTCENC_FLG_MAP_NORMAL;
+	if (astc::popcount(flags & exMask) > 1)
+	{
+		return ASTCENC_ERR_BAD_FLAGS;
+	}
+
+	// TODO: We don't support user threads yet
+	if (flags & ASTCENC_FLG_USE_USER_THREADS)
+	{
+		return ASTCENC_ERR_NOT_IMPLEMENTED;
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
+static astcenc_error validate_compression_swz(
+	astcenc_swz swizzle
+) {
+	switch(swizzle)
+	{
+		case ASTCENC_SWZ_R:
+		case ASTCENC_SWZ_G:
+		case ASTCENC_SWZ_B:
+		case ASTCENC_SWZ_A:
+		case ASTCENC_SWZ_0:
+		case ASTCENC_SWZ_1:
+			return ASTCENC_SUCCESS;
+		default:
+			return ASTCENC_ERR_BAD_SWIZZLE;
+	}
+}
+
+static astcenc_error validate_compression_swizzle(
+	astcenc_swizzle swizzle
+) {
+	if (validate_compression_swz(swizzle.r) ||
+	    validate_compression_swz(swizzle.g) ||
+	    validate_compression_swz(swizzle.b) ||
+	    validate_compression_swz(swizzle.a))
+	{
+		return ASTCENC_ERR_BAD_SWIZZLE;
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
+static astcenc_error validate_decompression_swz(
+	astcenc_swz swizzle
+) {
+	switch(swizzle)
+	{
+		case ASTCENC_SWZ_R:
+		case ASTCENC_SWZ_G:
+		case ASTCENC_SWZ_B:
+		case ASTCENC_SWZ_A:
+		case ASTCENC_SWZ_0:
+		case ASTCENC_SWZ_1:
+		case ASTCENC_SWZ_Z:
+			return ASTCENC_SUCCESS;
+		default:
+			return ASTCENC_ERR_BAD_SWIZZLE;
+	}
+}
+
+static astcenc_error validate_decompression_swizzle(
+	astcenc_swizzle swizzle
+) {
+	if (validate_decompression_swz(swizzle.r) ||
+	    validate_decompression_swz(swizzle.g) ||
+	    validate_decompression_swz(swizzle.b) ||
+	    validate_decompression_swz(swizzle.a))
+	{
+		return ASTCENC_ERR_BAD_SWIZZLE;
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
+/**
+ * Validate that an incoming configuration is in-spec.
+ *
+ * This function can respond in two ways:
+ *
+ *   * Numerical inputs that have valid ranges are clamped to those valid
+ *     ranges. No error is thrown for out-of-range inputs in this case.
+ *   * Numerical inputs and logic inputs are are logically invalid and which
+ *     make no sense algorithmically will return an error.
+ */
+static astcenc_error validate_config(
+	astcenc_config &config
+) {
+	astcenc_error status;
+
+	status = validate_profile(config.profile);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	status = validate_flags(config.flags);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	status = validate_block_size(config.block_x, config.block_y, config.block_z);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	config.v_rgba_mean_stdev_mix = MAX(config.v_rgba_mean_stdev_mix, 0.0f);
+	config.v_rgb_power = MAX(config.v_rgb_power, 0.0f);
+	config.v_rgb_base = MAX(config.v_rgb_base, 0.0f);
+	config.v_rgb_mean = MAX(config.v_rgb_mean, 0.0f);
+	config.v_rgb_stdev = MAX(config.v_rgb_stdev, 0.0f);
+	config.v_a_power = MAX(config.v_a_power, 0.0f);
+	config.v_a_base = MAX(config.v_a_base, 0.0f);
+	config.v_a_mean = MAX(config.v_a_mean, 0.0f);
+	config.v_a_stdev = MAX(config.v_a_stdev, 0.0f);
+
+	config.b_deblock_weight = MAX(config.b_deblock_weight, 0.0f);
+
+	config.tune_partition_limit = astc::clampi(config.tune_partition_limit, 1, PARTITION_COUNT);
+	config.tune_block_mode_limit = astc::clampi(config.tune_block_mode_limit, 1, 100);
+	config.tune_refinement_limit = MAX(config.tune_refinement_limit, 1);
+	config.tune_db_limit = MAX(config.tune_db_limit, 0.0f);
+	config.tune_partition_early_out_limit = MAX(config.tune_partition_early_out_limit, 0.0f);
+	config.tune_two_plane_early_out_limit = MAX(config.tune_two_plane_early_out_limit, 0.0f);
+
+	// Specifying a zero weight color component is not allowed; force to small value
+	float max_weight = MAX(MAX(config.cw_r_weight, config.cw_g_weight),
+	                       MAX(config.cw_b_weight, config.cw_a_weight));
+	if (max_weight > 0.0f)
+	{
+		max_weight /= 1000.0f;
+		config.cw_r_weight = MAX(config.cw_r_weight, max_weight);
+		config.cw_g_weight = MAX(config.cw_g_weight, max_weight);
+		config.cw_b_weight = MAX(config.cw_b_weight, max_weight);
+		config.cw_a_weight = MAX(config.cw_a_weight, max_weight);
+	}
+	// If all color components error weights are zero then return an error
+	else
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
 __attribute__((visibility("default")))
 astcenc_error astcenc_init_config(
 	astcenc_profile profile,
@@ -35,20 +225,17 @@ astcenc_error astcenc_init_config(
 	unsigned int flags,
 	astcenc_config& config
 ) {
+	astcenc_error status;
+
 	// Zero init all config fields; although most of will be over written
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
-	if (block_z <= 1) {
-		if (!is_legal_2d_block_size(block_x, block_y))
-		{
-			return ASTCENC_ERR_BAD_BLOCK_SIZE;
-		}
-		block_z = 1;
-	}
-	else if (!is_legal_3d_block_size(block_x, block_y, block_z))
+	block_z = MAX(block_z, 1); // For 2D blocks Z==0 is accepted, but convert to 1
+	status = validate_block_size(block_x, block_y, block_z);
+	if (status != ASTCENC_SUCCESS)
 	{
-		return ASTCENC_ERR_BAD_BLOCK_SIZE;
+		return status;
 	}
 
 	config.block_x = block_x;
@@ -156,18 +343,10 @@ astcenc_error astcenc_init_config(
 	}
 
 	// Flags field must not contain any unknown flag bits
-	unsigned int exMask;
-	exMask = ~ASTCENC_ALL_FLAGS;
-	if (astc::popcount(flags & exMask) != 0)
+	status = validate_flags(flags);
+	if (status != ASTCENC_SUCCESS)
 	{
-		return ASTCENC_ERR_BAD_FLAGS;
-	}
-
-	// Flags field must only contain at most a single map type
-	exMask = ASTCENC_FLG_MAP_MASK | ASTCENC_FLG_MAP_NORMAL;
-	if (astc::popcount(flags & exMask) > 1)
-	{
-		return ASTCENC_ERR_BAD_FLAGS;
+		return status;
 	}
 
 	if (flags & ASTCENC_FLG_MAP_NORMAL)
@@ -201,29 +380,33 @@ astcenc_error astcenc_init_config(
 		config.v_a_stdev = 25.0f;
 	}
 
-	// TODO: We don't support user threads yet
-	if (flags & ASTCENC_FLG_USE_USER_THREADS)
-	{
-		return ASTCENC_ERR_NOT_IMPLEMENTED;
-	}
-
 	return ASTCENC_SUCCESS;
 }
+
 
 __attribute__((visibility("default")))
 astcenc_error astcenc_context_alloc(
 	astcenc_config const& config,
-	int thread_count,
+	unsigned int thread_count,
 	astcenc_context** context
 ) {
-	astcenc_context* ctx { nullptr };
-	block_size_descriptor* bsd { nullptr };
+	astcenc_context* ctx = nullptr;
+	block_size_descriptor* bsd = nullptr;
+	*context = nullptr;
 
 	try
 	{
 		ctx = new astcenc_context;
 		ctx->thread_count = thread_count;
 		ctx->config = config;
+
+		// Copy the config first and validate the copy (may modify it)
+		astcenc_error status = validate_config(ctx->config);
+		if (status != ASTCENC_SUCCESS)
+		{
+			delete ctx;
+			return status;
+		}
 
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
@@ -358,8 +541,24 @@ astcenc_error astcenc_compress_image(
 	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	int thread_index
+	unsigned int thread_index
 ) {
+	astcenc_error status;
+
+	status = validate_compression_swizzle(swizzle);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	if (context->config.flags & ASTCENC_FLG_USE_USER_THREADS)
+	{
+		if (thread_index >= context->thread_count)
+		{
+			return ASTCENC_ERR_BAD_PARAM;
+		}
+	}
+
 	// TODO: Replace error_weighting_params in the core codec with the config / context structs
 	error_weighting_params ewp;
 	ewp.rgb_power = context->config.v_rgb_power;
@@ -443,8 +642,24 @@ astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	astcenc_image& image_out,
 	astcenc_swizzle swizzle,
-	int thread_index
+	unsigned int thread_index
 ) {
+	astcenc_error status;
+
+	status = validate_decompression_swizzle(swizzle);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	if (context->config.flags & ASTCENC_FLG_USE_USER_THREADS)
+	{
+		if (thread_index >= context->thread_count)
+		{
+			return ASTCENC_ERR_BAD_PARAM;
+		}
+	}
+
 	unsigned int block_x = context->config.block_x;
 	unsigned int block_y = context->config.block_y;
 	unsigned int block_z = context->config.block_z;
@@ -517,6 +732,8 @@ const char* astcenc_get_error_string(
 			return "ASTCENC_ERR_BAD_PRESET";
 		case ASTCENC_ERR_BAD_FLAGS:
 			return "ASTCENC_ERR_BAD_FLAGS";
+		case ASTCENC_ERR_BAD_SWIZZLE:
+			return "ASTCENC_ERR_BAD_SWIZZLE";
 		case ASTCENC_ERR_NOT_IMPLEMENTED:
 			return "ASTCENC_ERR_NOT_IMPLEMENTED";
 		default:
