@@ -99,20 +99,22 @@ void compute_averages_and_directions_rgba(
 
 		float4 best_vector = sum_xp;
 		float best_sum = prod_xp;
+
 		if (prod_yp > best_sum)
 		{
 			best_vector = sum_yp;
 			best_sum = prod_yp;
 		}
+
 		if (prod_zp > best_sum)
 		{
 			best_vector = sum_zp;
 			best_sum = prod_zp;
 		}
+
 		if (prod_wp > best_sum)
 		{
 			best_vector = sum_wp;
-			best_sum = prod_wp;
 		}
 
 		directions_rgba[partition] = best_vector;
@@ -184,15 +186,16 @@ void compute_averages_and_directions_rgb(
 
 		float3 best_vector = sum_xp;
 		float best_sum = prod_xp;
+
 		if (prod_yp > best_sum)
 		{
 			best_vector = sum_yp;
 			best_sum = prod_yp;
 		}
+
 		if (prod_zp > best_sum)
 		{
 			best_vector = sum_zp;
-			best_sum = prod_zp;
 		}
 
 		directions_rgb[partition] = best_vector;
@@ -298,19 +301,23 @@ void compute_averages_and_directions_3_components(
 
 		float3 best_vector = sum_xp;
 		float best_sum = prod_xp;
+
 		if (prod_yp > best_sum)
 		{
 			best_vector = sum_yp;
 			best_sum = prod_yp;
 		}
+
 		if (prod_zp > best_sum)
 		{
 			best_vector = sum_zp;
-			best_sum = prod_zp;
 		}
 
 		if (dot(best_vector, best_vector) < 1e-18f)
+		{
 			best_vector = float3(1.0f, 1.0f, 1.0f);
+		}
+
 		directions[partition] = best_vector;
 	}
 
@@ -396,10 +403,10 @@ void compute_averages_and_directions_2_components(
 
 		float2 best_vector = sum_xp;
 		float best_sum = prod_xp;
+
 		if (prod_yp > best_sum)
 		{
 			best_vector = sum_yp;
-			best_sum = prod_yp;
 		}
 
 		directions[partition] = best_vector;

@@ -1105,14 +1105,10 @@ static void quantize_hdr_rgbo3(
 		int s_uquantval;
 
 		quantize_and_unquantize_retain_top_four_bits(quantization_level, s_lowbits, &s_quantval, &s_uquantval);
-
-		s_intval = (s_intval & ~0x1f) | (s_uquantval & 0x1f);
-		s_fval = s_intval * mode_rscale;
 		output[0] = r_quantval;
 		output[1] = g_quantval;
 		output[2] = b_quantval;
 		output[3] = s_quantval;
-
 		return;
 	}
 

@@ -108,7 +108,7 @@ int load_astc_file(
 
 	int block_x = hdr.block_x;
 	int block_y = hdr.block_y;
-	int block_z = hdr.block_z;
+	int block_z = MAX(hdr.block_z, 1);
 
 	if (((block_z == 1) && !is_legal_2d_block_size(block_x, block_y)) ||
 	    ((block_z > 1) && !is_legal_3d_block_size(block_x, block_y, block_z)))

@@ -442,18 +442,8 @@ void fetch_imageblock(
 		fptr += 4;
 	}
 
-	float max_rgb = MAX(max_red, MAX(max_green, max_blue));
-
-	// use LNS if:
-	// * RGB-maximum is less than 0.15
-	// * RGB-maximum is greater than 1
-	// * Alpha-maximum is greater than 1
-	int rgb_lns = (max_rgb < 0.15f || max_rgb > 1.0f || max_alpha > 1.0f) ? 1 : 0;
-	int alpha_lns = rgb_lns ? (max_alpha > 1.0f || max_alpha < 0.15f) : 0;
-
-	// not yet though; for the time being, just obey the command line.
-	rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
-	alpha_lns = decode_mode == ASTCENC_PRF_HDR;
+	int rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+	int alpha_lns = decode_mode == ASTCENC_PRF_HDR;
 
 	// impose the choice on every pixel when encoding.
 	for (i = 0; i < pixelcount; i++)

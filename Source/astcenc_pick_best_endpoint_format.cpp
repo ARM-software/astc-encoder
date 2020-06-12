@@ -69,15 +69,8 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	float4 ep0 = ep->endpt0[partition_index];
 	float4 ep1 = ep->endpt1[partition_index];
 
-	float ep0_max = MAX(MAX(ep0.x, ep0.y), ep0.z);
-	float ep0_min = MIN(MIN(ep0.x, ep0.y), ep0.z);
-	float ep1_max = MAX(MAX(ep1.x, ep1.y), ep1.z);
 	float ep1_min = MIN(MIN(ep1.x, ep1.y), ep1.z);
-
-	ep0_min = MAX(ep0_min, 0.0f);
 	ep1_min = MAX(ep1_min, 0.0f);
-	ep0_max = MAX(ep0_max, 1e-10f);
-	ep1_max = MAX(ep1_max, 1e-10f);
 
 	float4 error_weight = error_weightings[partition_index];
 
@@ -113,8 +106,12 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	ep1_range_error_low.w = MIN(0.0f, ep1.w);
 
 	float4 sum_range_error =
-		(ep0_range_error_low * ep0_range_error_low) + (ep1_range_error_low * ep1_range_error_low) + (ep0_range_error_high * ep0_range_error_high) + (ep1_range_error_high * ep1_range_error_high);
-	float rgb_range_error = dot(float3(sum_range_error.x, sum_range_error.y, sum_range_error.z), float3(error_weight.x, error_weight.y, error_weight.z)) * 0.5f * partition_size;
+		(ep0_range_error_low * ep0_range_error_low) +
+		(ep1_range_error_low * ep1_range_error_low) +
+		(ep0_range_error_high * ep0_range_error_high) +
+		(ep1_range_error_high * ep1_range_error_high);
+	float rgb_range_error = dot(float3(sum_range_error.x, sum_range_error.y, sum_range_error.z),
+	                            float3(error_weight.x, error_weight.y, error_weight.z)) * 0.5f * partition_size;
 	float alpha_range_error = sum_range_error.w * error_weight.w * 0.5f * partition_size;
 
 	if (encode_hdr_rgb)
