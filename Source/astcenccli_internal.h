@@ -30,25 +30,6 @@
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
-// TODO: Replace this with astcenc_image
-struct astc_codec_image
-{
-	uint8_t ***data8;
-	uint16_t ***data16;
-	int xsize;
-	int ysize;
-	int zsize;
-	int padding;
-
-	// Regional average-and-variance information, initialized by
-	// compute_averages_and_variances() only if the astc encoder
-	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
-	float *input_alpha_averages;
-	int linearize_srgb;
-};
-
 // Config options to be read from command line
 struct cli_config_options
 {
@@ -70,22 +51,20 @@ struct cli_config_options
  * @param filename            The file path on disk.
  * @param padding             The texel padding needed around the image.
  * @param y_flip              Should this image be Y flipped?
- * @param linearize_srgb      Should this image be converted to linear from sRGB?
  * @param[out] is_hdr         Is the loaded image HDR?
  * @param[out] num_components The number of components in the loaded image.
  *
  * @return The astc image file, or nullptr on error.
  */
-astc_codec_image* astc_codec_load_image(
+astcenc_image* astc_codec_load_image(
 	const char* filename,
 	int padding,
 	bool y_flip,
-	bool linearize_srgb,
 	bool& is_hdr,
 	int& num_components);
 
 int astc_codec_store_image(
-	const astc_codec_image* output_image,
+	const astcenc_image* output_image,
 	const char* output_filename,
 	const char** file_format_name,
 	int y_flip);
@@ -94,32 +73,32 @@ int get_output_filename_enforced_bitness(
 	const char* filename);
 
 
-astc_codec_image* alloc_image(
+astcenc_image* alloc_image(
 	int bitness,
-	int xsize,
-	int ysize,
-	int zsize,
-	int padding);
+	int dim_x,
+	int dim_y,
+	int dim_z,
+	int dim_pad);
 
 void free_image(
-	astc_codec_image* img);
+	astcenc_image* img);
 
 void fill_image_padding_area(
-	astc_codec_image* img);
+	astcenc_image* img);
 
 int determine_image_channels(
-	const astc_codec_image* img);
+	const astcenc_image* img);
 
 // helper functions to prepare an ASTC image object from a flat array
 // Used by the image loaders in "astc_file_load_store.cpp"
-astc_codec_image* astc_img_from_floatx4_array(
+astcenc_image* astc_img_from_floatx4_array(
 	const float* image,
 	int xsize,
 	int ysize,
 	int padding,
 	int y_flip);
 
-astc_codec_image*astc_img_from_unorm8x4_array(
+astcenc_image*astc_img_from_unorm8x4_array(
 	const uint8_t*imageptr,
 	int xsize,
 	int ysize,
@@ -129,11 +108,11 @@ astc_codec_image*astc_img_from_unorm8x4_array(
 // helper functions to prepare a flat array from an ASTC image object.
 // the array is allocated with new[], and must be freed with delete[].
 float* floatx4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip);
 
 uint8_t* unorm8x4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip);
 
 /* ============================================================================
@@ -159,8 +138,8 @@ void astcenc_print_longhelp();
 void compute_error_metrics(
 	int compute_hdr_metrics,
 	int input_components,
-	const astc_codec_image* img1,
-	const astc_codec_image* img2,
+	const astcenc_image* img1,
+	const astcenc_image* img2,
 	int fstop_lo,
 	int fstop_hi);
 

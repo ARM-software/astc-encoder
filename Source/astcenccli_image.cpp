@@ -24,29 +24,23 @@
 
 #include "astcenccli_internal.h"
 
-astc_codec_image *alloc_image(
+astcenc_image *alloc_image(
 	int bitness,
-	int xsize,
-	int ysize,
-	int zsize,
-	int padding
+	int dim_x,
+	int dim_y,
+	int dim_z,
+	int dim_pad
 ) {
 	int i, j;
-	astc_codec_image *img = new astc_codec_image;
-	img->xsize = xsize;
-	img->ysize = ysize;
-	img->zsize = zsize;
-	img->padding = padding;
+	astcenc_image *img = new astcenc_image;
+	img->dim_x = dim_x;
+	img->dim_y = dim_y;
+	img->dim_z = dim_z;
+	img->dim_pad = dim_pad;
 
-	img->input_averages = nullptr;
-	img->input_variances = nullptr;
-	img->input_alpha_averages = nullptr;
-
-	img->linearize_srgb = 0;
-
-	int exsize = xsize + 2 * padding;
-	int eysize = ysize + 2 * padding;
-	int ezsize = (zsize == 1) ? 1 : zsize + 2 * padding;
+	int exsize = dim_x + 2 * dim_pad;
+	int eysize = dim_y + 2 * dim_pad;
+	int ezsize = (dim_z == 1) ? 1 : dim_z + 2 * dim_pad;
 
 	assert(bitness == 8 || bitness == 16);
 	if (bitness == 8)
@@ -99,7 +93,7 @@ astc_codec_image *alloc_image(
 	return img;
 }
 
-void free_image(astc_codec_image * img)
+void free_image(astcenc_image * img)
 {
 	if (img == nullptr)
 	{
@@ -120,21 +114,6 @@ void free_image(astc_codec_image * img)
 		delete[] img->data16;
 	}
 
-	if (img->input_averages)
-	{
-		delete[] img->input_averages;
-	}
-
-	if (img->input_variances)
-	{
-		delete[] img->input_variances;
-	}
-
-	if (img->input_alpha_averages)
-	{
-		delete[] img->input_alpha_averages;
-	}
-
 	delete img;
 }
 
@@ -143,24 +122,24 @@ void free_image(astc_codec_image * img)
 // Done inefficiently, in that it will overwrite all the interior data at least once;
 // this is not considered a problem, since this makes up a very small part of total
 // running time.
-void fill_image_padding_area(astc_codec_image * img)
+void fill_image_padding_area(astcenc_image * img)
 {
-	if (img->padding == 0)
+	if (img->dim_pad == 0)
 	{
 		return;
 	}
 
 	int x, y, z, i;
-	int exsize = img->xsize + 2 * img->padding;
-	int eysize = img->ysize + 2 * img->padding;
-	int ezsize = (img->zsize == 1) ? 1 : (img->zsize + 2 * img->padding);
+	int exsize = img->dim_x + 2 * img->dim_pad;
+	int eysize = img->dim_y + 2 * img->dim_pad;
+	int ezsize = (img->dim_z == 1) ? 1 : (img->dim_z + 2 * img->dim_pad);
 
-	int xmin = img->padding;
-	int ymin = img->padding;
-	int zmin = (img->zsize == 1) ? 0 : img->padding;
-	int xmax = img->xsize + img->padding - 1;
-	int ymax = img->ysize + img->padding - 1;
-	int zmax = (img->zsize == 1) ? 0 : img->zsize + img->padding - 1;
+	int xmin = img->dim_pad;
+	int ymin = img->dim_pad;
+	int zmin = (img->dim_z == 1) ? 0 : img->dim_pad;
+	int xmax = img->dim_x + img->dim_pad - 1;
+	int ymax = img->dim_y + img->dim_pad - 1;
+	int zmax = (img->dim_z == 1) ? 0 : img->dim_z + img->dim_pad - 1;
 
 	// This is a very simple implementation. Possible optimizations include:
 	// * Testing if texel is outside the edge.
@@ -205,13 +184,13 @@ void fill_image_padding_area(astc_codec_image * img)
 	}
 }
 
-int determine_image_channels(const astc_codec_image * img)
+int determine_image_channels(const astcenc_image * img)
 {
 	int x, y, z;
 
-	int xsize = img->xsize;
-	int ysize = img->ysize;
-	int zsize = img->zsize;
+	int xsize = img->dim_x;
+	int ysize = img->dim_y;
+	int zsize = img->dim_z;
 	// scan through the image data
 	// to determine how many color channels the image has.
 
@@ -266,15 +245,15 @@ int determine_image_channels(const astc_codec_image * img)
 	return image_channels;
 }
 
-// initialize an astc_codec_image data structure from a 2D array of RGBA float*4
-astc_codec_image* astc_img_from_floatx4_array(
+// initialize an astcenc_image data structure from a 2D array of RGBA float*4
+astcenc_image* astc_img_from_floatx4_array(
 	const float* image,
 	int xsize,
 	int ysize,
 	int padding,
 	int y_flip
 ) {
-	astc_codec_image* astc_img = alloc_image(16, xsize, ysize, 1, padding);
+	astcenc_image* astc_img = alloc_image(16, xsize, ysize, 1, padding);
 
 	for (int y = 0; y < ysize; y++)
 	{
@@ -296,15 +275,15 @@ astc_codec_image* astc_img_from_floatx4_array(
 	return astc_img;
 }
 
-// initialize an astc_codec_image data structure from a 2D array of UNORM8
-astc_codec_image* astc_img_from_unorm8x4_array(
+// initialize an astcenc_image data structure from a 2D array of UNORM8
+astcenc_image* astc_img_from_unorm8x4_array(
 	const uint8_t* imageptr,
 	int xsize,
 	int ysize,
 	int padding,
 	int y_flip
 ) {
-	astc_codec_image *astc_img = alloc_image(8, xsize, ysize, 1, padding);
+	astcenc_image *astc_img = alloc_image(8, xsize, ysize, 1, padding);
 
 	for (int y = 0; y < ysize; y++)
 	{
@@ -329,11 +308,11 @@ astc_codec_image* astc_img_from_unorm8x4_array(
 // initialize a flattened array of float4 values from an ASTC codec image
 // The returned array is allocated with new[] and must be deleted with delete[].
 float* floatx4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip
 ) {
-	int xsize = img->xsize;
-	int ysize = img->ysize;
+	int xsize = img->dim_x;
+	int ysize = img->dim_y;
 
 	float *buf = new float[4 * xsize * ysize];
 	if (img->data8)
@@ -341,7 +320,7 @@ float* floatx4_array_from_astc_img(
 		for (int y = 0; y < ysize; y++)
 		{
 			int ymod = y_flip ? ysize - y - 1 : y;
-			const uint8_t* src = img->data8[0][ymod + img->padding] + (4 * img->padding);
+			const uint8_t* src = img->data8[0][ymod + img->dim_pad] + (4 * img->dim_pad);
 			float* dst = buf + y * xsize * 4;
 			for (int x = 0; x < xsize; x++)
 			{
@@ -357,7 +336,7 @@ float* floatx4_array_from_astc_img(
 		for (int y = 0; y < ysize; y++)
 		{
 			int ymod = y_flip ? ysize - y - 1 : y;
-			const uint16_t *src = img->data16[0][ymod + img->padding] + (4 * img->padding);
+			const uint16_t *src = img->data16[0][ymod + img->dim_pad] + (4 * img->dim_pad);
 			float *dst = buf + y * xsize * 4;
 			for (int x = 0; x < xsize; x++)
 			{
@@ -375,11 +354,11 @@ float* floatx4_array_from_astc_img(
 // initialize a flattened array of unorm8x4 values from an ASTC codec image
 // The returned array is allocated with new[] and must be deleted with delete[].
 uint8_t* unorm8x4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip
 ) {
-	int xsize = img->xsize;
-	int ysize = img->ysize;
+	int xsize = img->dim_x;
+	int ysize = img->dim_y;
 
 	uint8_t* buf = new uint8_t[4 * xsize * ysize];
 
@@ -388,7 +367,7 @@ uint8_t* unorm8x4_array_from_astc_img(
 		for (int y = 0; y < ysize; y++)
 		{
 			int ymod = y_flip ? ysize-y-1 : y;
-			const uint8_t* src = img->data8[0][ymod + img->padding] + (4 * img->padding);
+			const uint8_t* src = img->data8[0][ymod + img->dim_pad] + (4 * img->dim_pad);
 			uint8_t* dst = buf + y * xsize * 4;
 			for (int x = 0; x < xsize; x++)
 			{
@@ -404,7 +383,7 @@ uint8_t* unorm8x4_array_from_astc_img(
 		for (int y = 0; y < ysize; y++)
 		{
 			int ymod = y_flip ? ysize-y-1 : y;
-			const uint16_t* src = img->data16[0][ymod + img->padding] + (4 * img->padding);
+			const uint16_t* src = img->data16[0][ymod + img->dim_pad] + (4 * img->dim_pad);
 			uint8_t* dst = buf + y * xsize * 4;
 			for (int x = 0; x < xsize; x++)
 			{

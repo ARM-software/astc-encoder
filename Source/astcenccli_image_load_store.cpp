@@ -48,7 +48,7 @@
 Image load and store through the stb_iamge and tinyexr libraries
 *******************************************************************/
 
-static astc_codec_image* load_image_with_tinyexr(
+static astcenc_image* load_image_with_tinyexr(
 	const char* filename,
 	int padding,
 	bool y_flip,
@@ -67,7 +67,7 @@ static astc_codec_image* load_image_with_tinyexr(
 		return nullptr;
 	}
 
-	astc_codec_image* res_img = astc_img_from_floatx4_array(
+	astcenc_image* res_img = astc_img_from_floatx4_array(
 		image, xsize, ysize, padding, y_flip);
 
 	free(image);
@@ -76,7 +76,7 @@ static astc_codec_image* load_image_with_tinyexr(
 	return res_img;
 }
 
-static astc_codec_image* load_image_with_stb(
+static astcenc_image* load_image_with_stb(
 	const char* filename,
 	int padding,
 	bool y_flip,
@@ -86,7 +86,7 @@ static astc_codec_image* load_image_with_stb(
 	int xsize, ysize;
 	int components;
 
-	astc_codec_image* astc_img = nullptr;
+	astcenc_image* astc_img = nullptr;
 
 	if (stbi_is_hdr(filename))
 	{
@@ -119,45 +119,45 @@ static astc_codec_image* load_image_with_stb(
 }
 
 static int store_exr_image_with_tinyexr(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* filename,
 	int y_flip
 ) {
 	float *buf = floatx4_array_from_astc_img(img, y_flip);
-	int res = SaveEXR(buf, img->xsize, img->ysize, 4, 1, filename, nullptr);
+	int res = SaveEXR(buf, img->dim_x, img->dim_y, 4, 1, filename, nullptr);
 	delete[] buf;
 	return (res == 0) ? 4 : res;
 }
 
 static int store_png_image_with_stb(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* filename,
 	int y_flip
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
-	int res = stbi_write_png(filename, img->xsize, img->ysize, 4, buf, img->xsize * 4);
+	int res = stbi_write_png(filename, img->dim_x, img->dim_y, 4, buf, img->dim_x * 4);
 	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
 
 static int store_tga_image_with_stb(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* filename,
 	int y_flip
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
-	int res = stbi_write_tga(filename, img->xsize, img->ysize, 4, buf);
+	int res = stbi_write_tga(filename, img->dim_x, img->dim_y, 4, buf);
 	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
 
 static int store_bmp_image_with_stb(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* filename,
 	int y_flip
 ) {
 	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
-	int res = stbi_write_bmp(filename, img->xsize, img->ysize, 4, buf);
+	int res = stbi_write_bmp(filename, img->dim_x, img->dim_y, 4, buf);
 	delete[] buf;
 	return (res == 0) ? -1 : 4;
 }
@@ -586,7 +586,7 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 	#undef REV
 }
 
-static astc_codec_image* load_ktx_uncompressed_image(
+static astcenc_image* load_ktx_uncompressed_image(
 	const char* filename,
 	int padding,
 	bool y_flip,
@@ -880,7 +880,7 @@ static astc_codec_image* load_ktx_uncompressed_image(
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
-	astc_codec_image *astc_img = alloc_image(bitness, xsize, ysize, zsize, padding);
+	astcenc_image *astc_img = alloc_image(bitness, xsize, ysize, zsize, padding);
 
 	for (z = 0; z < zsize; z++)
 	{
@@ -908,16 +908,16 @@ static astc_codec_image* load_ktx_uncompressed_image(
 }
 
 static int store_ktx_uncompressed_image(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* ktx_filename,
 	int y_flip
 ) {
 	int x, y, z;
 	int i, j;
 
-	int xsize = img->xsize;
-	int ysize = img->ysize;
-	int zsize = img->zsize;
+	int xsize = img->dim_x;
+	int ysize = img->dim_y;
+	int zsize = img->dim_z;
 
 	int bitness = img->data16 == nullptr ? 8 : 16;
 	int image_channels = determine_image_channels(img);
@@ -1183,7 +1183,7 @@ struct dds_header_dx10
 #define DDS_MAGIC 0x20534444
 #define DX10_MAGIC 0x30315844
 
-astc_codec_image* load_dds_uncompressed_image(
+astcenc_image* load_dds_uncompressed_image(
 	const char* filename,
 	int padding,
 	bool y_flip,
@@ -1433,7 +1433,7 @@ astc_codec_image* load_dds_uncompressed_image(
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
-	astc_codec_image *astc_img = alloc_image(bitness, xsize, ysize, zsize, padding);
+	astcenc_image *astc_img = alloc_image(bitness, xsize, ysize, zsize, padding);
 
 	for (z = 0; z < zsize; z++)
 	{
@@ -1461,16 +1461,16 @@ astc_codec_image* load_dds_uncompressed_image(
 }
 
 static int store_dds_uncompressed_image(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	const char* dds_filename,
 	int y_flip
 ) {
 	int i, j;
 	int x, y, z;
 
-	int xsize = img->xsize;
-	int ysize = img->ysize;
-	int zsize = img->zsize;
+	int xsize = img->dim_x;
+	int ysize = img->dim_y;
+	int zsize = img->dim_z;
 
 	int bitness = img->data16 == nullptr ? 8 : 16;
 	int image_channels = (bitness == 16) ? 4 : determine_image_channels(img);
@@ -1726,7 +1726,7 @@ we use tinyexr; for TGA, BMP and PNG, we use stb_image_write.
 static const struct {
 	const char *ending1;
 	const char *ending2;
-	astc_codec_image *(*loader_func)(const char *filename, int padding, bool y_flip, bool& is_hdr, int& num_components);
+	astcenc_image *(*loader_func)(const char *filename, int padding, bool y_flip, bool& is_hdr, int& num_components);
 } loader_descs[] = {
 	// HDR formats
 	{".exr",   ".EXR",  load_image_with_tinyexr },
@@ -1747,7 +1747,7 @@ static const struct
 	const char *ending2;
 	const char *file_format_name;
 	int enforced_bitness;
-	int (*storer_func)(const astc_codec_image *output_image, const char *output_filename, int y_flip);
+	int (*storer_func)(const astcenc_image *output_image, const char *output_filename, int y_flip);
 } storer_descs[] = {
 	// LDR formats
 	{".bmp", ".BMP", "BMP",             8, store_bmp_image_with_stb},
@@ -1793,11 +1793,10 @@ int get_output_filename_enforced_bitness(
 	exit(1);
 }
 
-astc_codec_image* astc_codec_load_image(
+astcenc_image* astc_codec_load_image(
 	const char* input_filename,
 	int padding,
 	bool y_flip,
-	bool linearize_srgb,
 	bool& is_hdr,
 	int& num_components
 ) {
@@ -1815,12 +1814,7 @@ astc_codec_image* astc_codec_load_image(
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			astc_codec_image* img = loader_descs[i].loader_func(input_filename, padding, y_flip, is_hdr, num_components);
-			if (img)
-			{
-				img->linearize_srgb = linearize_srgb;
-			}
-			return img;
+			return loader_descs[i].loader_func(input_filename, padding, y_flip, is_hdr, num_components);
 		}
 	}
 
@@ -1829,7 +1823,7 @@ astc_codec_image* astc_codec_load_image(
 }
 
 int astc_codec_store_image(
-	const astc_codec_image* output_image,
+	const astcenc_image* output_image,
 	const char* output_filename,
 	const char** file_format_name,
 	int y_flip

@@ -126,8 +126,8 @@ static float mpsnr_sumdiff(
 void compute_error_metrics(
 	int compute_hdr_metrics,
 	int input_components,
-	const astc_codec_image* img1,
-	const astc_codec_image* img2,
+	const astcenc_image* img1,
+	const astcenc_image* img2,
 	int fstop_lo,
 	int fstop_hi
 ) {
@@ -139,31 +139,31 @@ void compute_error_metrics(
 	kahan_accum4 log_errorsum;
 	kahan_accum4 mpsnr_errorsum;
 
-	int xsize = MIN(img1->xsize, img2->xsize);
-	int ysize = MIN(img1->ysize, img2->ysize);
-	int zsize = MIN(img1->zsize, img2->zsize);
+	int xsize = MIN(img1->dim_x, img2->dim_x);
+	int ysize = MIN(img1->dim_y, img2->dim_y);
+	int zsize = MIN(img1->dim_z, img2->dim_z);
 
-	if (img1->xsize != img2->xsize ||
-	    img1->ysize != img2->ysize ||
-	    img1->zsize != img2->zsize)
+	if (img1->dim_x != img2->dim_x ||
+	    img1->dim_y != img2->dim_y ||
+	    img1->dim_z != img2->dim_z)
 	{
 		printf("WARNING: Only intersection of images will be compared:\n"
 		       "  Image 1: %dx%dx%d\n"
 		       "  Image 2: %dx%dx%d\n",
-		       img1->xsize, img1->ysize, img1->zsize,
-		       img2->xsize, img2->ysize, img2->zsize);
+		       img1->dim_x, img1->dim_y, img1->dim_z,
+		       img2->dim_x, img2->dim_y, img2->dim_z);
 	}
 
-	int img1pad = img1->padding;
-	int img2pad = img2->padding;
+	int img1pad = img1->dim_pad;
+	int img2pad = img2->dim_pad;
 	float rgb_peak = 0.0f;
 
 	for (int z = 0; z < zsize; z++)
 	{
 		for (int y = 0; y < ysize; y++)
 		{
-			int ze1 = (img1->zsize == 1) ? z : z + img1pad;
-			int ze2 = (img2->zsize == 1) ? z : z + img2pad;
+			int ze1 = (img1->dim_z == 1) ? z : z + img1pad;
+			int ze2 = (img2->dim_z == 1) ? z : z + img2pad;
 
 			int ye1 = y + img1pad;
 			int ye2 = y + img2pad;
