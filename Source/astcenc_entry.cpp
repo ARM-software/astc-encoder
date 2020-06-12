@@ -25,18 +25,65 @@
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
+// The ASTC codec is written with the assumption that a float threaded through
+// the "if32" union will in fact be stored and reloaded as a 32-bit IEEE-754 single-precision
+// float, stored with round-to-nearest rounding. This is always the case in an
+// IEEE-754 compliant system, however not every system is actually IEEE-754 compliant
+// in the first place. As such, we run a quick test to check that this is actually the case
+// (e.g. gcc on 32-bit x86 will typically fail unless -msse2 -mfpmath=sse2 is specified).
+static astcenc_error validate_cpu_float()
+{
+	if32 p;
+	volatile float xprec_testval = 2.51f;
+	p.f = xprec_testval + 12582912.0f;
+	float q = p.f - 12582912.0f;
+
+	if (q != 3.0f)
+	{
+		return ASTCENC_ERR_BAD_CPU_FLOAT;
+	}
+
+	return ASTCENC_SUCCESS;
+}
+
+static astcenc_error validate_cpu_isa()
+{
+	#if ASTCENC_SSE >= 42
+		if (!cpu_supports_sse42())
+		{
+			return ASTCENC_ERR_BAD_CPU_ISA;
+		}
+	#endif
+
+	#if ASTCENC_POPCNT >= 1
+		if (!cpu_supports_popcnt())
+		{
+			return ASTCENC_ERR_BAD_CPU_ISA;
+		}
+	#endif
+
+	#if ASTCENC_AVX >= 2
+		if (!cpu_supports_avx2())
+		{
+			return ASTCENC_ERR_BAD_CPU_ISA;
+		}
+	#endif
+
+	return ASTCENC_SUCCESS;
+}
+
 static astcenc_error validate_profile(
 	astcenc_profile profile
 ) {
 	switch(profile)
 	{
-		case ASTCENC_PRF_LDR_SRGB:
-		case ASTCENC_PRF_LDR:
-		case ASTCENC_PRF_HDR_RGB_LDR_A:
-		case ASTCENC_PRF_HDR:
-			return ASTCENC_SUCCESS;
-		default:
-			return ASTCENC_ERR_BAD_PROFILE;
+	case ASTCENC_PRF_LDR_SRGB:
+	case ASTCENC_PRF_LDR:
+	case ASTCENC_PRF_HDR_RGB_LDR_A:
+	case ASTCENC_PRF_HDR:
+		return ASTCENC_SUCCESS;
+	default:
+		return ASTCENC_ERR_BAD_PROFILE;
 	}
 }
 
@@ -85,15 +132,15 @@ static astcenc_error validate_compression_swz(
 ) {
 	switch(swizzle)
 	{
-		case ASTCENC_SWZ_R:
-		case ASTCENC_SWZ_G:
-		case ASTCENC_SWZ_B:
-		case ASTCENC_SWZ_A:
-		case ASTCENC_SWZ_0:
-		case ASTCENC_SWZ_1:
-			return ASTCENC_SUCCESS;
-		default:
-			return ASTCENC_ERR_BAD_SWIZZLE;
+	case ASTCENC_SWZ_R:
+	case ASTCENC_SWZ_G:
+	case ASTCENC_SWZ_B:
+	case ASTCENC_SWZ_A:
+	case ASTCENC_SWZ_0:
+	case ASTCENC_SWZ_1:
+		return ASTCENC_SUCCESS;
+	default:
+		return ASTCENC_ERR_BAD_SWIZZLE;
 	}
 }
 
@@ -116,16 +163,16 @@ static astcenc_error validate_decompression_swz(
 ) {
 	switch(swizzle)
 	{
-		case ASTCENC_SWZ_R:
-		case ASTCENC_SWZ_G:
-		case ASTCENC_SWZ_B:
-		case ASTCENC_SWZ_A:
-		case ASTCENC_SWZ_0:
-		case ASTCENC_SWZ_1:
-		case ASTCENC_SWZ_Z:
-			return ASTCENC_SUCCESS;
-		default:
-			return ASTCENC_ERR_BAD_SWIZZLE;
+	case ASTCENC_SWZ_R:
+	case ASTCENC_SWZ_G:
+	case ASTCENC_SWZ_B:
+	case ASTCENC_SWZ_A:
+	case ASTCENC_SWZ_0:
+	case ASTCENC_SWZ_1:
+	case ASTCENC_SWZ_Z:
+		return ASTCENC_SUCCESS;
+	default:
+		return ASTCENC_ERR_BAD_SWIZZLE;
 	}
 }
 
@@ -250,40 +297,40 @@ astcenc_error astcenc_init_config(
 	// may replace some of these settings with more use case tuned values
 	switch(preset)
 	{
-		case ASTCENC_PRE_FAST:
-			config.tune_partition_limit = 4;
-			config.tune_block_mode_limit = 50;
-			config.tune_refinement_limit = 1;
-			config.tune_db_limit = MAX(85 - 35 * ltexels, 63 - 19 * ltexels);
-			config.tune_partition_early_out_limit = 1.0f;
-			config.tune_two_plane_early_out_limit = 0.5f;
-			break;
-		case ASTCENC_PRE_MEDIUM:
-			config.tune_partition_limit = 25;
-			config.tune_block_mode_limit = 75;
-			config.tune_refinement_limit = 2;
-			config.tune_db_limit = MAX(95 - 35 * ltexels, 70 - 19 * ltexels);
-			config.tune_partition_early_out_limit = 1.2f;
-			config.tune_two_plane_early_out_limit = 0.75f;
-			break;
-		case ASTCENC_PRE_THOROUGH:
-			config.tune_partition_limit = 100;
-			config.tune_block_mode_limit = 95;
-			config.tune_refinement_limit = 4;
-			config.tune_db_limit = MAX(105 - 35 * ltexels, 77 - 19 * ltexels);
-			config.tune_partition_early_out_limit = 2.5f;
-			config.tune_two_plane_early_out_limit = 0.95f;
-			break;
-		case ASTCENC_PRE_EXHAUSTIVE:
-			config.tune_partition_limit = 1024;
-			config.tune_block_mode_limit = 100;
-			config.tune_refinement_limit = 4;
-			config.tune_db_limit = 999.0f;
-			config.tune_partition_early_out_limit = 1000.0f;
-			config.tune_two_plane_early_out_limit = 0.99f;
-			break;
-		default:
-			return ASTCENC_ERR_BAD_PRESET;
+	case ASTCENC_PRE_FAST:
+		config.tune_partition_limit = 4;
+		config.tune_block_mode_limit = 50;
+		config.tune_refinement_limit = 1;
+		config.tune_db_limit = MAX(85 - 35 * ltexels, 63 - 19 * ltexels);
+		config.tune_partition_early_out_limit = 1.0f;
+		config.tune_two_plane_early_out_limit = 0.5f;
+		break;
+	case ASTCENC_PRE_MEDIUM:
+		config.tune_partition_limit = 25;
+		config.tune_block_mode_limit = 75;
+		config.tune_refinement_limit = 2;
+		config.tune_db_limit = MAX(95 - 35 * ltexels, 70 - 19 * ltexels);
+		config.tune_partition_early_out_limit = 1.2f;
+		config.tune_two_plane_early_out_limit = 0.75f;
+		break;
+	case ASTCENC_PRE_THOROUGH:
+		config.tune_partition_limit = 100;
+		config.tune_block_mode_limit = 95;
+		config.tune_refinement_limit = 4;
+		config.tune_db_limit = MAX(105 - 35 * ltexels, 77 - 19 * ltexels);
+		config.tune_partition_early_out_limit = 2.5f;
+		config.tune_two_plane_early_out_limit = 0.95f;
+		break;
+	case ASTCENC_PRE_EXHAUSTIVE:
+		config.tune_partition_limit = 1024;
+		config.tune_block_mode_limit = 100;
+		config.tune_refinement_limit = 4;
+		config.tune_db_limit = 999.0f;
+		config.tune_partition_early_out_limit = 1000.0f;
+		config.tune_two_plane_early_out_limit = 0.99f;
+		break;
+	default:
+		return ASTCENC_ERR_BAD_PRESET;
 	}
 
 	// Set heuristics to the defaults for each color profile
@@ -302,46 +349,46 @@ astcenc_error astcenc_init_config(
 	config.profile = profile;
 	switch(profile)
 	{
-		case ASTCENC_PRF_LDR:
-		case ASTCENC_PRF_LDR_SRGB:
-			config.v_rgb_power = 1.0f;
-			config.v_rgb_base = 1.0f;
-			config.v_rgb_mean = 0.0f;
-			config.v_rgb_stdev = 0.0f;
+	case ASTCENC_PRF_LDR:
+	case ASTCENC_PRF_LDR_SRGB:
+		config.v_rgb_power = 1.0f;
+		config.v_rgb_base = 1.0f;
+		config.v_rgb_mean = 0.0f;
+		config.v_rgb_stdev = 0.0f;
 
-			config.v_a_power = 1.0f;
-			config.v_a_base = 1.0f;
-			config.v_a_mean = 0.0f;
-			config.v_a_stdev = 0.0f;
-			break;
-		case ASTCENC_PRF_HDR_RGB_LDR_A:
-			config.v_rgb_power = 0.75f;
-			config.v_rgb_base = 0.0f;
-			config.v_rgb_mean = 1.0f;
-			config.v_rgb_stdev = 0.0f;
+		config.v_a_power = 1.0f;
+		config.v_a_base = 1.0f;
+		config.v_a_mean = 0.0f;
+		config.v_a_stdev = 0.0f;
+		break;
+	case ASTCENC_PRF_HDR_RGB_LDR_A:
+		config.v_rgb_power = 0.75f;
+		config.v_rgb_base = 0.0f;
+		config.v_rgb_mean = 1.0f;
+		config.v_rgb_stdev = 0.0f;
 
-			config.v_a_power = 1.0f;
-			config.v_a_base = 0.05f;
-			config.v_a_mean = 0.0f;
-			config.v_a_stdev = 0.0f;
+		config.v_a_power = 1.0f;
+		config.v_a_base = 0.05f;
+		config.v_a_mean = 0.0f;
+		config.v_a_stdev = 0.0f;
 
-			config.tune_db_limit = 999.0f;
-			break;
-		case ASTCENC_PRF_HDR:
-			config.v_rgb_power = 0.75f;
-			config.v_rgb_base = 0.0f;
-			config.v_rgb_mean = 1.0f;
-			config.v_rgb_stdev = 0.0f;
+		config.tune_db_limit = 999.0f;
+		break;
+	case ASTCENC_PRF_HDR:
+		config.v_rgb_power = 0.75f;
+		config.v_rgb_base = 0.0f;
+		config.v_rgb_mean = 1.0f;
+		config.v_rgb_stdev = 0.0f;
 
-			config.v_a_power = 0.75f;
-			config.v_a_base = 0.0f;
-			config.v_a_mean = 1.0f;
-			config.v_a_stdev = 0.0f;
+		config.v_a_power = 0.75f;
+		config.v_a_base = 0.0f;
+		config.v_a_mean = 1.0f;
+		config.v_a_stdev = 0.0f;
 
-			config.tune_db_limit = 999.0f;
-			break;
-		default:
-			return ASTCENC_ERR_BAD_PROFILE;
+		config.tune_db_limit = 999.0f;
+		break;
+	default:
+		return ASTCENC_ERR_BAD_PROFILE;
 	}
 
 	// Flags field must not contain any unknown flag bits
@@ -400,8 +447,21 @@ astcenc_error astcenc_context_alloc(
 	unsigned int thread_count,
 	astcenc_context** context
 ) {
+	astcenc_error status;
 	astcenc_context* ctx = nullptr;
 	block_size_descriptor* bsd = nullptr;
+
+	status = validate_cpu_float();
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	status = validate_cpu_isa();
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
 
 	try
 	{
@@ -410,7 +470,7 @@ astcenc_error astcenc_context_alloc(
 		ctx->config = config;
 
 		// Copy the config first and validate the copy (may modify it)
-		astcenc_error status = validate_config(ctx->config);
+		status = validate_config(ctx->config);
 		if (status != ASTCENC_SUCCESS)
 		{
 			delete ctx;
@@ -739,24 +799,29 @@ __attribute__((visibility("default")))
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {
-	switch(status) {
-		case ASTCENC_ERR_OUT_OF_MEM:
-			return "ASTCENC_ERR_OUT_OF_MEM";
-		case ASTCENC_ERR_BAD_PARAM:
-			return "ASTCENC_ERR_BAD_PARAM";
-		case ASTCENC_ERR_BAD_BLOCK_SIZE:
-			return "ASTCENC_ERR_BAD_BLOCK_SIZE";
-		case ASTCENC_ERR_BAD_PROFILE:
-			return "ASTCENC_ERR_BAD_PROFILE";
-		case ASTCENC_ERR_BAD_PRESET:
-			return "ASTCENC_ERR_BAD_PRESET";
-		case ASTCENC_ERR_BAD_FLAGS:
-			return "ASTCENC_ERR_BAD_FLAGS";
-		case ASTCENC_ERR_BAD_SWIZZLE:
-			return "ASTCENC_ERR_BAD_SWIZZLE";
-		case ASTCENC_ERR_NOT_IMPLEMENTED:
-			return "ASTCENC_ERR_NOT_IMPLEMENTED";
-		default:
-			return nullptr;
+	switch(status)
+	{
+	case ASTCENC_ERR_OUT_OF_MEM:
+		return "ASTCENC_ERR_OUT_OF_MEM";
+	case ASTCENC_ERR_BAD_CPU_FLOAT:
+		return "ASTCENC_ERR_BAD_CPU_FLOAT";
+	case ASTCENC_ERR_BAD_CPU_ISA:
+		return "ASTCENC_ERR_BAD_CPU_ISA";
+	case ASTCENC_ERR_BAD_PARAM:
+		return "ASTCENC_ERR_BAD_PARAM";
+	case ASTCENC_ERR_BAD_BLOCK_SIZE:
+		return "ASTCENC_ERR_BAD_BLOCK_SIZE";
+	case ASTCENC_ERR_BAD_PROFILE:
+		return "ASTCENC_ERR_BAD_PROFILE";
+	case ASTCENC_ERR_BAD_PRESET:
+		return "ASTCENC_ERR_BAD_PRESET";
+	case ASTCENC_ERR_BAD_FLAGS:
+		return "ASTCENC_ERR_BAD_FLAGS";
+	case ASTCENC_ERR_BAD_SWIZZLE:
+		return "ASTCENC_ERR_BAD_SWIZZLE";
+	case ASTCENC_ERR_NOT_IMPLEMENTED:
+		return "ASTCENC_ERR_NOT_IMPLEMENTED";
+	default:
+		return nullptr;
 	}
 }

@@ -26,7 +26,7 @@
 #include <cstdint>
 #include <cmath>
 
-#if ASTC_SSE != 0 || ASTC_AVX != 0
+#if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
 #endif
 
@@ -100,7 +100,7 @@ float atan2(float y, float x);
  */
 static inline float fabs(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
 	static const union {
 		uint32_t u[4];
 		__m128 v;
@@ -125,7 +125,7 @@ static inline float fabs(float val)
  */
 static inline float fmin(float p, float q)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
 	return _mm_cvtss_f32(_mm_min_ss(_mm_set_ss(p),_mm_set_ss(q)));
 #else
 	return p < q ? p : q;
@@ -146,7 +146,7 @@ static inline float fmin(float p, float q)
  */
 static inline float fmax(float p, float q)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
     return _mm_cvtss_f32(_mm_max_ss(_mm_set_ss(p),_mm_set_ss(q)));
 #else
     return q < p ? p : q;
@@ -258,7 +258,7 @@ static inline float srgb_transform(float val)
  */
 static inline float flt_rte(float val)
 {
-#if (ASTC_SSE >= 42)
+#if (ASTCENC_SSE >= 42)
 	const int flag = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
 	__m128 tmp = _mm_set_ss(val);
 	tmp = _mm_round_ss(tmp, tmp, flag);
@@ -277,7 +277,7 @@ static inline float flt_rte(float val)
  */
 static inline float flt_rd(float val)
 {
-#if (ASTC_SSE >= 42)
+#if (ASTCENC_SSE >= 42)
 	const int flag = _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC;
 	__m128 tmp = _mm_set_ss(val);
 	tmp = _mm_round_ss(tmp, tmp, flag);
@@ -296,7 +296,7 @@ static inline float flt_rd(float val)
  */
 static inline int flt2int_rtn(float val)
 {
-#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 42) && USE_SCALAR_SSE
 	return _mm_cvt_ss2si(_mm_set_ss(val));
 #else
 	return (int)(val + 0.5f);
@@ -312,7 +312,7 @@ static inline int flt2int_rtn(float val)
  */
 static inline int flt2int_rd(float val)
 {
-#if (ASTC_SSE >= 42) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 42) && USE_SCALAR_SSE
 	return _mm_cvt_ss2si(_mm_set_ss(val));
 #else
 	return (int)(val);
@@ -328,7 +328,7 @@ static inline int flt2int_rd(float val)
  */
 static inline int popcount(uint64_t p)
 {
-#if ASTC_POPCNT >= 1
+#if ASTCENC_POPCNT >= 1
 	return (int)_mm_popcnt_u64(p);
 #else
 	uint64_t mask1 = 0x5555555555555555ULL;
@@ -353,7 +353,7 @@ static inline int popcount(uint64_t p)
  */
 static inline float rsqrt(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
 	// FIXME: setting val = 99 causes a crash, which it really shouldn't.
 	return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(val)));
 #else
@@ -370,7 +370,7 @@ static inline float rsqrt(float val)
  */
 static inline float sqrt(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
 	return 1.0f * astc::rsqrt(val);
 #else
 	return std::sqrt(val);
@@ -386,7 +386,7 @@ static inline float sqrt(float val)
  */
 static inline float recip(float val)
 {
-#if (ASTC_SSE >= 20) && USE_SCALAR_SSE
+#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
 	return _mm_cvtss_f32(_mm_rcp_ss(_mm_set_ss(val)));
 #else
 	return 1.0f / val;

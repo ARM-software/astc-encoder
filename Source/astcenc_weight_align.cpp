@@ -177,7 +177,7 @@ static void compute_lowest_and_highest_weight(
 // TODO: Add AVX2 version of this; SSE4.2 vectorizes almost perfectly in terms
 // of user-visible speedup. Might need to change the length of max_angular
 // steps to be a multiple of 8 though ...
-#if ASTC_SSE >= 42
+#if ASTCENC_SSE >= 42
 	// Arrays are always multiple of 4, so this is safe even if overshoot max
 	for (int sp = 0; sp < max_angular_steps; sp += 4)
 	{

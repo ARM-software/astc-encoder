@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 
 #include "astcenccli_internal.h"
 
@@ -835,7 +836,9 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	if (switch_endianness)
+	{
 		specified_bytes_of_surface = u32_byterev(specified_bytes_of_surface);
+	}
 
 	// read the surface
 	uint32_t xstride = bytes_per_component * components * dim_x;
@@ -862,9 +865,14 @@ static astcenc_image* load_ktx_uncompressed_image(
 	if (switch_endianness)
 	{
 		if (hdr.gl_type_size == 2)
+		{
 			switch_endianness2(buf, specified_bytes_of_surface);
+		}
+
 		if (hdr.gl_type_size == 4)
+		{
 			switch_endianness4(buf, specified_bytes_of_surface);
+		}
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
@@ -1796,7 +1804,7 @@ int get_output_filename_enforced_bitness(
 	exit(1);
 }
 
-astcenc_image* astc_codec_load_image(
+astcenc_image* load_ncimage(
 	const char* filename,
 	unsigned int dim_pad,
 	bool y_flip,
@@ -1825,7 +1833,7 @@ astcenc_image* astc_codec_load_image(
 	return nullptr;
 }
 
-int astc_codec_store_image(
+int store_ncimage(
 	const astcenc_image* output_image,
 	const char* output_filename,
 	const char** file_format_name,
@@ -1850,4 +1858,142 @@ int astc_codec_store_image(
 	// Should never reach here - get_output_filename_enforced_bitness should
 	// have acted as a preflight check
 	return -1;
+}
+
+/* ============================================================================
+	ASTC compressed file loading
+============================================================================ */
+struct astc_header
+{
+	uint8_t magic[4];
+	uint8_t block_x;
+	uint8_t block_y;
+	uint8_t block_z;
+	uint8_t dim_x[3];			// dims = dim[0] + (dim[1] << 8) + (dim[2] << 16)
+	uint8_t dim_y[3];			// Sizes are given in texels;
+	uint8_t dim_z[3];			// block count is inferred
+};
+
+
+static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+
+static unsigned int unpack_bytes(
+	uint8_t a,
+	uint8_t b,
+	uint8_t c,
+	uint8_t d
+) {
+	return ((unsigned int)(a))       +
+	       ((unsigned int)(b) << 8)  +
+	       ((unsigned int)(c) << 16) +
+	       ((unsigned int)(d) << 24);
+}
+
+int load_cimage(
+	const char* filename,
+	astc_compressed_image& out_image
+) {
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
+	if (!file)
+	{
+		printf("ERROR: File open failed '%s'\n", filename);
+		return 1;
+	}
+
+	astc_header hdr;
+	file.read((char*)&hdr, sizeof(astc_header));
+	if (!file)
+	{
+		printf("ERROR: File read failed '%s'\n", filename);
+		return 1;
+	}
+
+	unsigned int magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
+	if (magicval != ASTC_MAGIC_ID)
+	{
+		printf("ERROR: File not recognized '%s'\n", filename);
+		return 1;
+	}
+
+	// Ensure these are not zero to avoid div by zero
+	unsigned int block_x = MAX(hdr.block_x, 1);
+	unsigned int block_y = MAX(hdr.block_y, 1);
+	unsigned int block_z = MAX(hdr.block_z, 1);
+
+	unsigned int dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
+	unsigned int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
+	unsigned int dim_z = unpack_bytes(hdr.dim_z[0], hdr.dim_z[1], hdr.dim_z[2], 0);
+
+	if (dim_x == 0 || dim_z == 0 || dim_z == 0)
+	{
+		printf("ERROR: File corrupt '%s'\n", filename);
+		return 1;
+	}
+
+	unsigned int xblocks = (dim_x + block_x - 1) / block_x;
+	unsigned int yblocks = (dim_y + block_y - 1) / block_y;
+	unsigned int zblocks = (dim_z + block_z - 1) / block_z;
+
+	size_t data_size = xblocks * yblocks * zblocks * 16;
+	uint8_t *buffer = new uint8_t[data_size];
+
+	file.read((char*)buffer, data_size);
+	if (!file)
+	{
+		printf("ERROR: File read failed '%s'\n", filename);
+		return 1;
+	}
+
+	out_image.data = buffer;
+	out_image.block_x = block_x;
+	out_image.block_y = block_y;
+	out_image.block_z = block_z;
+	out_image.dim_x = dim_x;
+	out_image.dim_y = dim_y;
+	out_image.dim_z = dim_z;
+	return 0;
+}
+
+
+int store_cimage(
+	const astc_compressed_image& comp_img,
+	const char* filename
+) {
+	int xblocks = (comp_img.dim_x + comp_img.block_x - 1) / comp_img.block_x;
+	int yblocks = (comp_img.dim_y + comp_img.block_y - 1) / comp_img.block_y;
+	int zblocks = (comp_img.dim_z + comp_img.block_z - 1) / comp_img.block_z;
+	size_t data_bytes = xblocks * yblocks * zblocks * 16;
+
+	astc_header hdr;
+	hdr.magic[0] =  ASTC_MAGIC_ID        & 0xFF;
+	hdr.magic[1] = (ASTC_MAGIC_ID >>  8) & 0xFF;
+	hdr.magic[2] = (ASTC_MAGIC_ID >> 16) & 0xFF;
+	hdr.magic[3] = (ASTC_MAGIC_ID >> 24) & 0xFF;
+
+	hdr.block_x = comp_img.block_x;
+	hdr.block_y = comp_img.block_y;
+	hdr.block_z = comp_img.block_z;
+
+	hdr.dim_x[0] =  comp_img.dim_x        & 0xFF;
+	hdr.dim_x[1] = (comp_img.dim_x >>  8) & 0xFF;
+	hdr.dim_x[2] = (comp_img.dim_x >> 16) & 0xFF;
+
+	hdr.dim_y[0] =  comp_img.dim_y       & 0xFF;
+	hdr.dim_y[1] = (comp_img.dim_y >>  8) & 0xFF;
+	hdr.dim_y[2] = (comp_img.dim_y >> 16) & 0xFF;
+
+	hdr.dim_z[0] =  comp_img.dim_z        & 0xFF;
+	hdr.dim_z[1] = (comp_img.dim_z >>  8) & 0xFF;
+	hdr.dim_z[2] = (comp_img.dim_z >> 16) & 0xFF;
+
+ 	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (!file)
+	{
+		printf("ERROR: File open failed '%s'\n", filename);
+		return 1;
+	}
+
+	file.write((char*)&hdr, sizeof(astc_header));
+	file.write((char*)comp_img.data, data_bytes);
+	return 0;
 }

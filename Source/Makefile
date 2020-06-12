@@ -53,6 +53,7 @@ SOURCES_LIBRARY = \
     astcenc_percentile_tables.cpp \
     astcenc_pick_best_endpoint_format.cpp \
     astcenc_platform_dependents.cpp \
+    astcenc_platform_isa_detection.cpp \
     astcenc_quantization.cpp \
     astcenc_symbolic_physical.cpp \
     astcenc_weight_align.cpp \
@@ -64,7 +65,6 @@ SOURCES_CLI = \
     astcenccli_error_metrics.cpp \
     astcenccli_image.cpp \
     astcenccli_image_load_store.cpp \
-    astcenccli_platform_isa_detection.cpp \
     astcenccli_platform_dependents.cpp \
     astcenccli_toplevel.cpp \
     astcenccli_toplevel_help.cpp
@@ -105,16 +105,16 @@ endif
 
 # Validate that the VEC parameter is a supported value, and patch CXXFLAGS
 ifeq ($(VEC),nointrin)
-CXXFLAGS += -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
 else
 ifeq ($(VEC),sse2)
-CXXFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
 else
 ifeq ($(VEC),sse4.2)
-CXXFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=1
+CXXFLAGS += -msse4.2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1
 else
 ifeq ($(VEC),avx2)
-CXXFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1
+CXXFLAGS += -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1
 else
 $(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2/avx2)
 endif

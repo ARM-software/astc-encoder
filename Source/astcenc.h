@@ -117,6 +117,8 @@ struct astcenc_context;
 enum astcenc_error {
 	ASTCENC_SUCCESS = 0,
 	ASTCENC_ERR_OUT_OF_MEM,
+	ASTCENC_ERR_BAD_CPU_FLOAT,
+	ASTCENC_ERR_BAD_CPU_ISA,
 	ASTCENC_ERR_BAD_PARAM,
 	ASTCENC_ERR_BAD_BLOCK_SIZE,
 	ASTCENC_ERR_BAD_PROFILE,
@@ -173,8 +175,6 @@ static const unsigned int ASTCENC_FLG_MAP_MASK            = 1 << 1;
 static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
 static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL      = 1 << 3;
 static const unsigned int ASTCENC_FLG_USE_USER_THREADS    = 1 << 4;
-
-// TODO: Work out what we do with this? Remove it?
 static const unsigned int ASTCENC_FLG_USE_LINEARIZED_SRGB = 1 << 5;
 
 static const unsigned int ASTCENC_ALL_FLAGS =
@@ -341,29 +341,5 @@ void astcenc_context_free(
  */
 const char* astcenc_get_error_string(
 	astcenc_error status);
-
-
-/**
- * @brief Query if a 2D block size is legal.
- *
- * TODO: Temporarily part of the interface; should be checked in init_config.
- *
- * @return A non-zero value if legal, zero otherwise.
- */
-int is_legal_2d_block_size(
-	int xdim,
-	int ydim);
-
-/**
- * @brief Query if a 3D block size is legal.
- *
- * TODO: Temporarily part of the interface; should be checked in init_config.
- *
- * @return A non-zero value if legal, zero otherwise.
- */
-int is_legal_3d_block_size(
-	int xdim,
-	int ydim,
-	int zdim);
 
 #endif
