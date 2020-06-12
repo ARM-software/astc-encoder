@@ -248,7 +248,8 @@ astcenc_error astcenc_init_config(
 	// Process the performance preset; note that this must be done before we
 	// process any additional settings, such as color profile and flags, which
 	// may replace some of these settings with more use case tuned values
-	switch(preset) {
+	switch(preset)
+	{
 		case ASTCENC_PRE_FAST:
 			config.tune_partition_limit = 4;
 			config.tune_block_mode_limit = 50;
@@ -299,7 +300,8 @@ astcenc_error astcenc_init_config(
 	config.b_deblock_weight = 0.0f;
 
 	config.profile = profile;
-	switch(profile) {
+	switch(profile)
+	{
 		case ASTCENC_PRF_LDR:
 		case ASTCENC_PRF_LDR_SRGB:
 			config.v_rgb_power = 1.0f;
@@ -380,6 +382,14 @@ astcenc_error astcenc_init_config(
 		config.v_a_stdev = 25.0f;
 	}
 
+	// TODO: We don't support user threads yet
+	if (flags & ASTCENC_FLG_USE_USER_THREADS)
+	{
+		return ASTCENC_ERR_NOT_IMPLEMENTED;
+	}
+
+	config.flags = flags;
+
 	return ASTCENC_SUCCESS;
 }
 
@@ -392,7 +402,6 @@ astcenc_error astcenc_context_alloc(
 ) {
 	astcenc_context* ctx = nullptr;
 	block_size_descriptor* bsd = nullptr;
-	*context = nullptr;
 
 	try
 	{
@@ -575,16 +584,24 @@ astcenc_error astcenc_compress_image(
 	ewp.alpha_radius = context->config.a_scale_radius;
 	ewp.ra_normal_angular_scale = (context->config.flags & ASTCENC_FLG_MAP_NORMAL) == 0 ? 0 : 1;
 	ewp.block_artifact_suppression = context->config.b_deblock_weight;
-	ewp.rgba_weights[0] = context->config.cw_r_weight;
-	ewp.rgba_weights[1] = context->config.cw_g_weight;
-	ewp.rgba_weights[2] = context->config.cw_b_weight;
-	ewp.rgba_weights[3] = context->config.cw_a_weight;
+	ewp.rgba_weights[0] = MAX(context->config.cw_r_weight, 0.001f);
+	ewp.rgba_weights[1] = MAX(context->config.cw_g_weight, 0.001f);
+	ewp.rgba_weights[2] = MAX(context->config.cw_b_weight, 0.001f);
+	ewp.rgba_weights[3] = MAX(context->config.cw_a_weight, 0.001f);
 	ewp.partition_search_limit = context->config.tune_partition_limit;
 	ewp.block_mode_cutoff = context->config.tune_block_mode_limit / 100.0f;
-	ewp.texel_avg_error_limit = context->config.tune_db_limit;
 	ewp.partition_1_to_2_limit = context->config.tune_partition_early_out_limit;
 	ewp.lowest_correlation_cutoff = context->config.tune_two_plane_early_out_limit;
 	ewp.max_refinement_iters = context->config.tune_refinement_limit;
+
+	if ((context->config.profile == ASTCENC_PRF_LDR) || (context->config.profile == ASTCENC_PRF_LDR_SRGB))
+	{
+		ewp.texel_avg_error_limit  = powf(0.1f, context->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
+	}
+	else
+	{
+		ewp.texel_avg_error_limit = 0.0f;
+	}
 
 	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
 	astc_codec_image input_image;
@@ -593,7 +610,7 @@ astcenc_error astcenc_compress_image(
 	input_image.xsize = image.dim_x;
 	input_image.ysize = image.dim_y;
 	input_image.zsize = image.dim_z;
-	input_image.padding = image.padding_texels;
+	input_image.padding = image.dim_pad;
 
 	// Need to agree what we do with linearize sRGB
 	input_image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
@@ -602,7 +619,7 @@ astcenc_error astcenc_compress_image(
 	input_image.input_variances = nullptr;
 	input_image.input_alpha_averages = nullptr;
 
-	if (image.padding_texels > 0 ||
+	if (image.dim_pad > 0 ||
 	    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
 	    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 	{
@@ -628,6 +645,11 @@ astcenc_error astcenc_compress_image(
 
 	// TODO: Implement user-thread pools
 	launch_threads(context->thread_count, encode_astc_image_threadfunc, &ai);
+
+	// Clean up any memory allocated by compute_averages_and_variances
+	delete[] input_image.input_averages;
+	delete[] input_image.input_variances;
+	delete[] input_image.input_alpha_averages;
 
 	return ASTCENC_SUCCESS;
 }
@@ -679,7 +701,7 @@ astcenc_error astcenc_decompress_image(
 	image.xsize = image_out.dim_x;
 	image.ysize = image_out.dim_y;
 	image.zsize = image_out.dim_z;
-	image.padding = image_out.padding_texels;
+	image.padding = image_out.dim_pad;
 
 	// Need to agree what we do with linearize sRGB
 	image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;

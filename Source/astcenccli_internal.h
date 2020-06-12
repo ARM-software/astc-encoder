@@ -30,53 +30,19 @@
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
-// TODO: Replace this with astcenc_image
-struct astc_codec_image
+// Config options to be read from command line
+struct cli_config_options
 {
-	uint8_t ***data8;
-	uint16_t ***data16;
-	int xsize;
-	int ysize;
-	int zsize;
-	int padding;
-
-	// Regional average-and-variance information, initialized by
-	// compute_averages_and_variances() only if the astc encoder
-	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
-	float *input_alpha_averages;
+	int array_size;
+	int silentmode;
+	int y_flip;
 	int linearize_srgb;
-};
+	int thread_count;
+	int low_fstop;
+	int high_fstop;
 
-// TODO: Replace this with astcenc_config
-struct error_weighting_params
-{
-	float rgb_power;
-	float rgb_base_weight;
-	float rgb_mean_weight;
-	float rgb_stdev_weight;
-	float alpha_power;
-	float alpha_base_weight;
-	float alpha_mean_weight;
-	float alpha_stdev_weight;
-	float rgb_mean_and_stdev_mixing;
-	int mean_stdev_radius;
-	int enable_rgb_scale_with_alpha;
-	int alpha_radius;
-	int ra_normal_angular_scale;
-	float block_artifact_suppression;
-	float rgba_weights[4];
-
-	float block_artifact_suppression_expanded[216];
-
-	// parameters that deal with heuristic codec speedups
-	int partition_search_limit;
-	float block_mode_cutoff;
-	float texel_avg_error_limit;
-	float partition_1_to_2_limit;
-	float lowest_correlation_cutoff;
-	int max_refinement_iters;
+	astcenc_swizzle swz_encode;
+	astcenc_swizzle swz_decode;
 };
 
 /**
@@ -85,22 +51,20 @@ struct error_weighting_params
  * @param filename            The file path on disk.
  * @param padding             The texel padding needed around the image.
  * @param y_flip              Should this image be Y flipped?
- * @param linearize_srgb      Should this image be converted to linear from sRGB?
  * @param[out] is_hdr         Is the loaded image HDR?
  * @param[out] num_components The number of components in the loaded image.
  *
  * @return The astc image file, or nullptr on error.
  */
-astc_codec_image* astc_codec_load_image(
+astcenc_image* astc_codec_load_image(
 	const char* filename,
 	int padding,
 	bool y_flip,
-	bool linearize_srgb,
 	bool& is_hdr,
 	int& num_components);
 
 int astc_codec_store_image(
-	const astc_codec_image* output_image,
+	const astcenc_image* output_image,
 	const char* output_filename,
 	const char** file_format_name,
 	int y_flip);
@@ -109,32 +73,32 @@ int get_output_filename_enforced_bitness(
 	const char* filename);
 
 
-astc_codec_image* alloc_image(
+astcenc_image* alloc_image(
 	int bitness,
-	int xsize,
-	int ysize,
-	int zsize,
-	int padding);
+	int dim_x,
+	int dim_y,
+	int dim_z,
+	int dim_pad);
 
 void free_image(
-	astc_codec_image* img);
+	astcenc_image* img);
 
 void fill_image_padding_area(
-	astc_codec_image* img);
+	astcenc_image* img);
 
 int determine_image_channels(
-	const astc_codec_image* img);
+	const astcenc_image* img);
 
 // helper functions to prepare an ASTC image object from a flat array
 // Used by the image loaders in "astc_file_load_store.cpp"
-astc_codec_image* astc_img_from_floatx4_array(
+astcenc_image* astc_img_from_floatx4_array(
 	const float* image,
 	int xsize,
 	int ysize,
 	int padding,
 	int y_flip);
 
-astc_codec_image*astc_img_from_unorm8x4_array(
+astcenc_image*astc_img_from_unorm8x4_array(
 	const uint8_t*imageptr,
 	int xsize,
 	int ysize,
@@ -144,11 +108,11 @@ astc_codec_image*astc_img_from_unorm8x4_array(
 // helper functions to prepare a flat array from an ASTC image object.
 // the array is allocated with new[], and must be freed with delete[].
 float* floatx4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip);
 
 uint8_t* unorm8x4_array_from_astc_img(
-	const astc_codec_image* img,
+	const astcenc_image* img,
 	int y_flip);
 
 /* ============================================================================
@@ -174,8 +138,8 @@ void astcenc_print_longhelp();
 void compute_error_metrics(
 	int compute_hdr_metrics,
 	int input_components,
-	const astc_codec_image* img1,
-	const astc_codec_image* img2,
+	const astcenc_image* img1,
+	const astcenc_image* img2,
 	int fstop_lo,
 	int fstop_hi);
 
