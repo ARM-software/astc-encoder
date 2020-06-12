@@ -50,7 +50,7 @@ struct astc_codec_image
 };
 
 // Config options to be read from command line
-struct cli_config
+struct cli_config_options
 {
 	int array_size;
 	int silentmode;
@@ -59,6 +59,9 @@ struct cli_config
 	int thread_count;
 	int low_fstop;
 	int high_fstop;
+
+	astcenc_swizzle swz_encode;
+	astcenc_swizzle swz_decode;
 };
 
 /**
