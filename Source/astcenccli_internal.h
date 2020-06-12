@@ -49,6 +49,18 @@ struct astc_codec_image
 	int linearize_srgb;
 };
 
+// Config options to be read from command line
+struct cli_config
+{
+	int array_size;
+	int silentmode;
+	int y_flip;
+	int linearize_srgb;
+	int thread_count;
+	int low_fstop;
+	int high_fstop;
+};
+
 /**
  * Functions to load image from file.
  *
