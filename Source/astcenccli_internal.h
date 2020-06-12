@@ -58,10 +58,10 @@ struct cli_config_options
  */
 astcenc_image* astc_codec_load_image(
 	const char* filename,
-	int padding,
+	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
-	int& num_components);
+	unsigned int& num_components);
 
 int astc_codec_store_image(
 	const astcenc_image* output_image,
@@ -74,11 +74,11 @@ int get_output_filename_enforced_bitness(
 
 
 astcenc_image* alloc_image(
-	int bitness,
-	int dim_x,
-	int dim_y,
-	int dim_z,
-	int dim_pad);
+	unsigned int bitness,
+	unsigned int dim_x,
+	unsigned int dim_y,
+	unsigned int dim_z,
+	unsigned int dim_pad);
 
 void free_image(
 	astcenc_image* img);
@@ -92,28 +92,28 @@ int determine_image_channels(
 // helper functions to prepare an ASTC image object from a flat array
 // Used by the image loaders in "astc_file_load_store.cpp"
 astcenc_image* astc_img_from_floatx4_array(
-	const float* image,
-	int xsize,
-	int ysize,
-	int padding,
-	int y_flip);
+	const float* data,
+	unsigned int dim_x,
+	unsigned int dim_y,
+	unsigned int dim_pad,
+	bool y_flip);
 
 astcenc_image*astc_img_from_unorm8x4_array(
-	const uint8_t*imageptr,
-	int xsize,
-	int ysize,
-	int padding,
-	int y_flip);
+	const uint8_t* data,
+	unsigned int dim_x,
+	unsigned int dim_y,
+	unsigned int dim_pad,
+	bool y_flip);
 
 // helper functions to prepare a flat array from an ASTC image object.
 // the array is allocated with new[], and must be freed with delete[].
 float* floatx4_array_from_astc_img(
 	const astcenc_image* img,
-	int y_flip);
+	bool y_flip);
 
 uint8_t* unorm8x4_array_from_astc_img(
 	const astcenc_image* img,
-	int y_flip);
+	bool y_flip);
 
 /* ============================================================================
   Functions for printing build info and help messages
