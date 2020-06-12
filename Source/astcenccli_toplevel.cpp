@@ -647,12 +647,12 @@ int init_astcenc_config(
  * @return 0 if everything is Okay, 1 if there is some error
  */
 int edit_astcenc_config(
-		int argc,
-		char **argv,
-		const astc_op_mode op_mode,
-		cli_config_options& cli_config,
-		astcenc_config& config
-	) {
+	int argc,
+	char **argv,
+	const astc_op_mode op_mode,
+	cli_config_options& cli_config,
+	astcenc_config& config
+) {
 
 	int argidx = (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE) ? 6 : 4;
 
@@ -1216,8 +1216,8 @@ int main(
 	// Load the uncompressed input file if needed
 	if (stage_load_uncomp)
 	{
-		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size, padding, cli_config.y_flip,
-				                           image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
+		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size, padding,
+		                                   cli_config.y_flip, image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
 		if (!image_uncomp_in)
 		{
 			printf ("ERROR: Failed to load uncompressed image file\n");
