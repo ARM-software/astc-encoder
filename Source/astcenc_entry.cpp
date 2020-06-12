@@ -580,14 +580,14 @@ astcenc_error astcenc_compress_image(
 	ewp.alpha_stdev_weight = context->config.v_a_stdev;
 	ewp.rgb_mean_and_stdev_mixing = context->config.v_rgba_mean_stdev_mix;
 	ewp.mean_stdev_radius = context->config.v_rgba_radius;
-	ewp.enable_rgb_scale_with_alpha = (context->config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT) == 0 ? 0 : 1;
+	ewp.enable_rgb_scale_with_alpha = context->config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT ? 1 : 0;
 	ewp.alpha_radius = context->config.a_scale_radius;
-	ewp.ra_normal_angular_scale = (context->config.flags & ASTCENC_FLG_MAP_NORMAL) == 0 ? 0 : 1;
+	ewp.ra_normal_angular_scale = context->config.flags & ASTCENC_FLG_MAP_NORMAL ? 1 : 0;
 	ewp.block_artifact_suppression = context->config.b_deblock_weight;
-	ewp.rgba_weights[0] = MAX(context->config.cw_r_weight, 0.001f);
-	ewp.rgba_weights[1] = MAX(context->config.cw_g_weight, 0.001f);
-	ewp.rgba_weights[2] = MAX(context->config.cw_b_weight, 0.001f);
-	ewp.rgba_weights[3] = MAX(context->config.cw_a_weight, 0.001f);
+	ewp.rgba_weights[0] = context->config.cw_r_weight;
+	ewp.rgba_weights[1] = context->config.cw_g_weight;
+	ewp.rgba_weights[2] = context->config.cw_b_weight;
+	ewp.rgba_weights[3] = context->config.cw_a_weight;
 	ewp.partition_search_limit = context->config.tune_partition_limit;
 	ewp.block_mode_cutoff = context->config.tune_block_mode_limit / 100.0f;
 	ewp.partition_1_to_2_limit = context->config.tune_partition_early_out_limit;
@@ -613,7 +613,7 @@ astcenc_error astcenc_compress_image(
 	input_image.padding = image.dim_pad;
 
 	// Need to agree what we do with linearize sRGB
-	input_image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
+	input_image.linearize_srgb = context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB ? 1 : 0;
 
 	input_image.input_averages = nullptr;
 	input_image.input_variances = nullptr;
