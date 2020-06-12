@@ -643,7 +643,7 @@ int init_astcenc_config(
  * @param argc
  * @param argv
  * @param op_mode               ASTC operation mode
- * @param cli_config_options    Command line config options
+ * @param cli_config            Command line config options
  * @param config                The astcenc configuration
  *
  * @return 0 if everything is Okay, 1 if there is some error
@@ -652,9 +652,7 @@ int edit_astcenc_config(
 		int argc,
 		char **argv,
 		const astc_op_mode op_mode,
-		cli_config& cli_config_options,
-		astcenc_swizzle& swz_encode,
-		astcenc_swizzle& swz_decode,
+		cli_config_options& cli_config,
 		astcenc_config& config
 	) {
 
@@ -665,7 +663,7 @@ int edit_astcenc_config(
 		if (!strcmp(argv[argidx], "-silent"))
 		{
 			argidx++;
-			cli_config_options.silentmode = 1;
+			cli_config.silentmode = 1;
 		}
 		else
 			if (!strcmp(argv[argidx], "-v"))
@@ -778,10 +776,10 @@ int edit_astcenc_config(
 				}
 			}
 
-			swz_encode.r = swizzle_components[0];
-			swz_encode.g = swizzle_components[1];
-			swz_encode.b = swizzle_components[2];
-			swz_encode.a = swizzle_components[3];
+			cli_config.swz_encode.r = swizzle_components[0];
+			cli_config.swz_encode.g = swizzle_components[1];
+			cli_config.swz_encode.b = swizzle_components[2];
+			cli_config.swz_encode.a = swizzle_components[3];
 		}
 		else if (!strcmp(argv[argidx], "-dsw"))
 		{
@@ -830,39 +828,39 @@ int edit_astcenc_config(
 				}
 			}
 
-			swz_decode.r = swizzle_components[0];
-			swz_decode.g = swizzle_components[1];
-			swz_decode.b = swizzle_components[2];
-			swz_decode.a = swizzle_components[3];
+			cli_config.swz_decode.r = swizzle_components[0];
+			cli_config.swz_decode.g = swizzle_components[1];
+			cli_config.swz_decode.b = swizzle_components[2];
+			cli_config.swz_decode.a = swizzle_components[3];
 		}
 		// presets begin here
 		else if (!strcmp(argv[argidx], "-normal_psnr"))
 		{
 			argidx++;
 
-			swz_encode.r = ASTCENC_SWZ_R;
-			swz_encode.g = ASTCENC_SWZ_R;
-			swz_encode.b = ASTCENC_SWZ_R;
-			swz_encode.a = ASTCENC_SWZ_G;
+			cli_config.swz_encode.r = ASTCENC_SWZ_R;
+			cli_config.swz_encode.g = ASTCENC_SWZ_R;
+			cli_config.swz_encode.b = ASTCENC_SWZ_R;
+			cli_config.swz_encode.a = ASTCENC_SWZ_G;
 
-			swz_decode.r = ASTCENC_SWZ_R;
-			swz_decode.g = ASTCENC_SWZ_A;
-			swz_decode.b = ASTCENC_SWZ_Z;
-			swz_decode.a = ASTCENC_SWZ_1;
+			cli_config.swz_decode.r = ASTCENC_SWZ_R;
+			cli_config.swz_decode.g = ASTCENC_SWZ_A;
+			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
+			cli_config.swz_decode.a = ASTCENC_SWZ_1;
 		}
 		else if (!strcmp(argv[argidx], "-normal_percep"))
 		{
 			argidx++;
 
-			swz_encode.r = ASTCENC_SWZ_R;
-			swz_encode.g = ASTCENC_SWZ_R;
-			swz_encode.b = ASTCENC_SWZ_R;
-			swz_encode.a = ASTCENC_SWZ_G;
+			cli_config.swz_encode.r = ASTCENC_SWZ_R;
+			cli_config.swz_encode.g = ASTCENC_SWZ_R;
+			cli_config.swz_encode.b = ASTCENC_SWZ_R;
+			cli_config.swz_encode.a = ASTCENC_SWZ_G;
 
-			swz_decode.r = ASTCENC_SWZ_R;
-			swz_decode.g = ASTCENC_SWZ_A;
-			swz_decode.b = ASTCENC_SWZ_Z;
-			swz_decode.a = ASTCENC_SWZ_1;
+			cli_config.swz_decode.r = ASTCENC_SWZ_R;
+			cli_config.swz_decode.g = ASTCENC_SWZ_A;
+			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
+			cli_config.swz_decode.a = ASTCENC_SWZ_1;
 		}
 		else if (!strcmp(argv[argidx], "-mask"))
 		{
@@ -946,17 +944,17 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			cli_config_options.thread_count = atoi(argv[argidx - 1]);
+			cli_config.thread_count = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-linsrgb"))
 		{
 			argidx++;
-			cli_config_options.linearize_srgb = 1;
+			cli_config.linearize_srgb = 1;
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
 			argidx++;
-			cli_config_options.y_flip = 1;
+			cli_config.y_flip = 1;
 		}
 		else if (!strcmp(argv[argidx], "-mpsnr"))
 		{
@@ -967,9 +965,9 @@ int edit_astcenc_config(
 				return 1;
 			}
 
-			cli_config_options.low_fstop = atoi(argv[argidx - 2]);
-			cli_config_options.high_fstop = atoi(argv[argidx - 1]);
-			if (cli_config_options.high_fstop < cli_config_options.low_fstop)
+			cli_config.low_fstop = atoi(argv[argidx - 2]);
+			cli_config.high_fstop = atoi(argv[argidx - 1]);
+			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
 				printf("For -mpsnr switch, the <low> argument cannot be greater than the\n" "high argument.\n");
 				return 1;
@@ -994,14 +992,14 @@ int edit_astcenc_config(
 			argidx++;
 
 			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%d", &cli_config_options.array_size) || cli_config_options.array_size == 0)
+			if (!sscanf(argv[argidx], "%d", &cli_config.array_size) || cli_config.array_size == 0)
 			{
 				printf("Invalid array size (image depth) given with -array option: \"%s\".\n", argv[argidx]);
 				return 1;
 			}
 
 			if ((op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
-					&& (cli_config_options.array_size > 1) && (config.block_z == 1))
+					&& (cli_config.array_size > 1) && (config.block_z == 1))
 			{
 				printf("ERROR: 3D input data for a 2D ASTC block format\n");
 				return 1;
@@ -1017,13 +1015,13 @@ int edit_astcenc_config(
 
 	if (op_mode == ASTC_ENCODE || op_mode == ASTC_ENCODE_AND_DECODE)
 	{
-		if (cli_config_options.thread_count < 1)
+		if (cli_config.thread_count < 1)
 		{
-			cli_config_options.thread_count = get_cpu_count();
+			cli_config.thread_count = get_cpu_count();
 		}
 
 		// print all encoding settings unless specifically told otherwise.
-		if (!cli_config_options.silentmode)
+		if (!cli_config.silentmode)
 		{
 			printf("Compressor settings\n");
 			printf("===================\n\n");
@@ -1082,7 +1080,7 @@ int edit_astcenc_config(
 			printf("    2 plane correlation cutoff: %g\n", (double)config.tune_two_plane_early_out_limit);
 			printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
 			printf("    Max refinement cutoff:      %d iterations\n", config.tune_refinement_limit);
-			printf("    Compressor thread count:    %d\n", cli_config_options.thread_count);
+			printf("    Compressor thread count:    %d\n", cli_config.thread_count);
 			printf("\n");
 		}
 	}
@@ -1150,30 +1148,16 @@ int main(
 
 	astcenc_config config;
 
-    error = init_astcenc_config(argc, argv, profile, op_mode, image_comp, config);
+	error = init_astcenc_config(argc, argv, profile, op_mode, image_comp, config);
 	if(error)
 	{
 		printf("ERROR: Astcenc configuration intialization failed.\n");
 		return 1;
 	}
 
-	astcenc_swizzle swz_encode {
-		ASTCENC_SWZ_R,
-		ASTCENC_SWZ_G,
-		ASTCENC_SWZ_B,
-		ASTCENC_SWZ_A
-	};
+	cli_config_options cli_config { 1, 0, 0, 0, 0, -10, 10 }; // Set default values
 
-	astcenc_swizzle swz_decode {
-		ASTCENC_SWZ_R,
-		ASTCENC_SWZ_G,
-		ASTCENC_SWZ_B,
-		ASTCENC_SWZ_A
-	};
-
-	cli_config cli_config_options { 1, 0, 0, 0, 0, -10, 10 }; // Set default values
-
-	error = edit_astcenc_config(argc, argv, op_mode, cli_config_options, swz_encode, swz_decode, config);
+	error = edit_astcenc_config(argc, argv, op_mode, cli_config, config);
 	if(error)
 	{
 		printf("ERROR: Astcenc configuration intialization failed.\n");
@@ -1220,7 +1204,7 @@ int main(
 		config.block_z = image_comp.block_z;
 	}
 
-	codec_status = astcenc_context_alloc(config, cli_config_options.thread_count, &codec_context);
+	codec_status = astcenc_context_alloc(config, cli_config.thread_count, &codec_context);
 
 	if (codec_status != ASTCENC_SUCCESS)
 	{
@@ -1231,8 +1215,8 @@ int main(
 	// Load the uncompressed input file if needed
 	if (stage_load_uncomp)
 	{
-		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config_options.array_size, padding, cli_config_options.y_flip,
-				                           cli_config_options.linearize_srgb, image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
+		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size, padding, cli_config.y_flip,
+				                           cli_config.linearize_srgb, image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
 
 		if (!image_uncomp_in)
 		{
@@ -1240,7 +1224,7 @@ int main(
 			return 1;
 		}
 
-		if (!cli_config_options.silentmode)
+		if (!cli_config.silentmode)
 		{
 			printf("Source image\n");
 			printf("============\n\n");
@@ -1285,7 +1269,7 @@ int main(
 		size_t buffer_size = xblocks * yblocks * zblocks * 16;
 		uint8_t* buffer = new uint8_t[buffer_size];
 
-		codec_status = astcenc_compress_image(codec_context, image, swz_encode, buffer, buffer_size, 0);
+		codec_status = astcenc_compress_image(codec_context, image, cli_config.swz_encode, buffer, buffer_size, 0);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(codec_status));
@@ -1324,7 +1308,7 @@ int main(
 		image.padding_texels = image_decomp_out->padding;
 
 		// TODO: Pass through data len to avoid out-of-bounds reads
-		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0, image, swz_decode, 0);
+		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0, image, cli_config.swz_decode, 0);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
@@ -1338,7 +1322,7 @@ int main(
 	if (stage_compare)
 	{
 		compute_error_metrics(image_uncomp_in_is_hdr, image_uncomp_in_num_chan, image_uncomp_in,
-		                      image_decomp_out, cli_config_options.low_fstop, cli_config_options.high_fstop);
+		                      image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
 	}
 
 	// Store compressed image
@@ -1358,7 +1342,7 @@ int main(
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = astc_codec_store_image(image_decomp_out, output_filename.c_str(), &format_string, cli_config_options.y_flip);
+		store_result = astc_codec_store_image(image_decomp_out, output_filename.c_str(), &format_string, cli_config.y_flip);
 		if (store_result < 0)
 		{
 			printf("ERROR: Failed to write output image %s\n", output_filename.c_str());
@@ -1374,7 +1358,7 @@ int main(
 
 	end_time = get_time();
 
-	if (stage_compare || !cli_config_options.silentmode)
+	if (stage_compare || !cli_config.silentmode)
 	{
 		printf("Coding time\n");
 		printf("===========\n\n");
