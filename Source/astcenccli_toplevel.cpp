@@ -1232,12 +1232,12 @@ int main(
 			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
 			if (image_uncomp_in->dim_z > 1)
 			{
-				printf("    Dimensions:                 3D, %d x %d x %d\n",
+				printf("    Dimensions:                 3D, %ux%ux%u\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y, image_uncomp_in->dim_z);
 			}
 			else
 			{
-				printf("    Dimensions:                 2D, %d x %d\n",
+				printf("    Dimensions:                 2D, %ux%u\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
 			printf("    Channels:                   %d\n\n", image_uncomp_in_num_chan);
