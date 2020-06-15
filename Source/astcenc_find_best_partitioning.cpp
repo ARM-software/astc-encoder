@@ -746,10 +746,18 @@ void find_best_partitionings(
 
 		switch(best_component)
 		{
-			case 0: separate_errors[best_partition].x = 1e30f; break;
-			case 1: separate_errors[best_partition].y = 1e30f; break;
-			case 2: separate_errors[best_partition].z = 1e30f; break;
-			case 3: separate_errors[best_partition].w = 1e30f; break;
+		case 0:
+			separate_errors[best_partition].x = 1e30f;
+			break;
+		case 1:
+			separate_errors[best_partition].y = 1e30f;
+			break;
+		case 2:
+			separate_errors[best_partition].z = 1e30f;
+			break;
+		case 3:
+			separate_errors[best_partition].w = 1e30f;
+			break;
 		}
 
 		best_partition = (best_component << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];

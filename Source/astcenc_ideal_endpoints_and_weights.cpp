@@ -1034,7 +1034,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 
 	int i = 0;
 
-#if ASTC_AVX >= 2
+#if ASTCENC_AVX >= 2
 	//  TODO: This is currently 4-wide. Could try 8?
 	int clipped_weight_count = weight_count & ~3;
 	__m128i shuf = _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1,

@@ -476,17 +476,17 @@ DECOMPRESSION FILE FORMATS
 // print version and basic build information
 void astcenc_print_header()
 {
-#if (ASTC_AVX == 2)
+#if (ASTCENC_AVX == 2)
 	const char* simdtype = "avx2";
-#elif (ASTC_SSE == 42)
-	const char* simdtype = "sse42";
-#elif (ASTC_SSE == 20)
+#elif (ASTCENC_SSE == 42)
+	const char* simdtype = "sse4.2";
+#elif (ASTCENC_SSE == 20)
 	const char* simdtype = "sse2";
 #else
 	const char* simdtype = "unknown";
 #endif
 
-#if (ASTC_POPCNT == 1)
+#if (ASTCENC_POPCNT == 1)
 	const char* pcnttype = "+popcnt";
 #else
 	const char* pcnttype = "";

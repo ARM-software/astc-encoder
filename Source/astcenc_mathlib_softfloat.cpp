@@ -226,7 +226,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 	switch (idx)
 	{
 		/*
-		  	Positive number which may be Infinity or NaN.
+			Positive number which may be Infinity or NaN.
 			We need to check whether it is NaN; if it is, quieten it by setting the top bit of the mantissa.
 			(If we don't do this quieting, then a NaN  that is distinguished only by having
 			its low-order bits set, would be turned into an INF. */

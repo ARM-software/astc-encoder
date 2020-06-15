@@ -27,6 +27,18 @@
 #include <cstdio>
 #include <cstdlib>
 
+#ifndef ASTCENC_SSE
+#error ERROR: ASTCENC_SSE not defined
+#endif
+
+#ifndef ASTCENC_POPCNT
+#error ERROR: ASTCENC_POPCNT not defined
+#endif
+
+#ifndef ASTCENC_AVX
+#error ERROR: ASTCENC_AVX not defined
+#endif
+
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
@@ -900,6 +912,24 @@ uint16_t lns_to_sf16(
 /* ============================================================================
   Platform-specific functions
 ============================================================================ */
+/**
+ * @brief Run-time detection if the host CPU supports SSE 4.2.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_sse42();
+
+/**
+ * @brief Run-time detection if the host CPU supports popcnt.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_popcnt();
+
+/**
+ * @brief Run-time detection if the host CPU supports avx2.
+ * @returns Zero if not supported, positive value if it is.
+ */
+int cpu_supports_avx2();
+
 /**
  * @brief Launch N worker threads and wait for them to complete.
  *

@@ -30,17 +30,27 @@
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
+struct astc_compressed_image
+{
+	unsigned int block_x;
+	unsigned int block_y;
+	unsigned int block_z;
+	unsigned int dim_x;
+	unsigned int dim_y;
+	unsigned int dim_z;
+	uint8_t* data;
+};
+
 // Config options to be read from command line
 struct cli_config_options
 {
-	int array_size;
-	int silentmode;
-	int y_flip;
-	int linearize_srgb;
-	int thread_count;
+	unsigned thread_count;
+	unsigned int array_size;
+	bool silentmode;
+	bool y_flip;
+	bool linearize_srgb;
 	int low_fstop;
 	int high_fstop;
-
 	astcenc_swizzle swz_encode;
 	astcenc_swizzle swz_decode;
 };
@@ -56,14 +66,14 @@ struct cli_config_options
  *
  * @return The astc image file, or nullptr on error.
  */
-astcenc_image* astc_codec_load_image(
+astcenc_image* load_ncimage(
 	const char* filename,
 	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components);
 
-int astc_codec_store_image(
+int store_ncimage(
 	const astcenc_image* output_image,
 	const char* output_filename,
 	const char** file_format_name,
@@ -88,6 +98,14 @@ void fill_image_padding_area(
 
 int determine_image_channels(
 	const astcenc_image* img);
+
+int load_cimage(
+	const char* filename,
+	astc_compressed_image& out_image);
+
+int store_cimage(
+	const astc_compressed_image& comp_img,
+	const char* filename);
 
 // helper functions to prepare an ASTC image object from a flat array
 // Used by the image loaders in "astc_file_load_store.cpp"
@@ -156,23 +174,5 @@ double get_time();
  * @returns The number of online or onlineable CPU cores in the system.
  */
 int get_cpu_count();
-
-/**
- * @brief Run-time detection if the host CPU supports SSE 4.2.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_sse42();
-
-/**
- * @brief Run-time detection if the host CPU supports popcnt.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_popcnt();
-
-/**
- * @brief Run-time detection if the host CPU supports avx2.
- * @returns Zero if not supported, positive value if it is.
- */
-int cpu_supports_avx2();
 
 #endif
