@@ -1,4 +1,4 @@
-@Library('hive-infra-library@changes/64/237764/6') _
+@Library('hive-infra-library@changes/18/246018/1') _
 
 pipeline {
   agent none
@@ -14,9 +14,9 @@ pipeline {
         stage('Linux') {
           agent {
             docker {
-              image 'mobilestudio/astcenc:0.2.0'
-              registryUrl 'https://registry.k8s.dsg.arm.com'
-              registryCredentialsId 'harbor'
+              image 'astcenc:1.0.0'
+              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
+              registryCredentialsId 'cepe-artifactory-jenkins'
               label 'docker'
               alwaysPull true
             }
@@ -143,9 +143,9 @@ pipeline {
     stage('Artifactory') {
       agent {
         docker {
-          image 'mobilestudio/astcenc:0.2.0'
-          registryUrl 'https://registry.k8s.dsg.arm.com'
-          registryCredentialsId 'harbor'
+          image 'astcenc:1.0.0'
+          registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
+          registryCredentialsId 'cepe-artifactory-jenkins'
           label 'docker'
           alwaysPull true
         }
