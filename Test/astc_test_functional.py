@@ -1530,10 +1530,7 @@ class CLINTest(CLITestBase):
 
         # Otherwise just assert that we got an error log, and some positive
         # return code value was returned
-
-        # TODO: Disabled until we fix GitHub issue #100
-        # self.assertIn("ERROR", result.stdout)
-
+        self.assertIn("ERROR", result.stdout)
         self.assertGreater(rcode, 0, "Exec did not fail as expected")
 
     def exec_with_omit(self, command, startOmit):

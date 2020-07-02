@@ -166,7 +166,7 @@ static astcenc_image* load_uncomp_file(
 			std::string slice_name = get_slice_filename(filename, image_index, error);
 			if (error)
 			{
-				printf("ERROR: Image pattern does not contain an extension: %s\n", filename);
+				printf("ERROR: Image pattern does not contain file extension: %s\n", filename);
 				break;
 			}
 
@@ -442,7 +442,7 @@ int edit_astcenc_config(
 			argidx += 7;
 			if (argidx > argc)
 			{
-				printf("-v switch with less than 6 arguments, quitting\n");
+				printf("ERROR: -v switch with less than 6 arguments\n");
 				return 1;
 			}
 
@@ -458,7 +458,7 @@ int edit_astcenc_config(
 			argidx += 5;
 			if (argidx > argc)
 			{
-				printf("-va switch with less than 4 arguments, quitting\n");
+				printf("ERROR: -va switch with less than 4 arguments\n");
 				return 1;
 			}
 
@@ -472,7 +472,7 @@ int edit_astcenc_config(
 			argidx += 5;
 			if (argidx > argc)
 			{
-				printf("-cw switch with less than 4 arguments\n");
+				printf("ERROR: -cw switch with less than 4 arguments\n");
 				return 1;
 			}
 
@@ -486,7 +486,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-a switch with no argument\n");
+				printf("ERROR: -a switch with no argument\n");
 				return 1;
 			}
 
@@ -497,7 +497,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-b switch with no argument\n");
+				printf("ERROR: -b switch with no argument\n");
 				return 1;
 			}
 
@@ -508,13 +508,13 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-esw switch with no argument\n");
+				printf("ERROR: -esw switch with no argument\n");
 				return 1;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
-				printf("Swizzle pattern for the -esw switch must have exactly 4 characters\n");
+				printf("ERROR: -esw pattern does not contain 4 characters\n");
 				return 1;
 			}
 
@@ -542,7 +542,7 @@ int edit_astcenc_config(
 					swizzle_components[i] = ASTCENC_SWZ_1;
 					break;
 				default:
-					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
+					printf("ERROR: -esw channel '%c' is not valid\n", argv[argidx - 1][i]);
 					return 1;
 				}
 			}
@@ -557,13 +557,13 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-dsw switch with no argument\n");
+				printf("ERROR: -dsw switch with no argument\n");
 				return 1;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
-				printf("Swizzle pattern for the -dsw switch must have exactly 4 characters\n");
+				printf("ERROR: -dsw switch does not contain 4 characters\n");
 				return 1;
 			}
 
@@ -594,7 +594,7 @@ int edit_astcenc_config(
 					swizzle_components[i] =  ASTCENC_SWZ_Z;
 					break;
 				default:
-					printf("Character '%c' is not a valid swizzle-character\n", argv[argidx - 1][i]);
+					printf("ERROR: ERROR: -dsw channel '%c' is not valid\n", argv[argidx - 1][i]);
 					return 1;
 				}
 			}
@@ -642,7 +642,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-blockmodelimit switch with no argument\n");
+				printf("ERROR: -blockmodelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -653,7 +653,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-partitionlimit switch with no argument\n");
+				printf("ERROR: -partitionlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -664,7 +664,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-dblimit switch with no argument\n");
+				printf("ERROR: -dblimit switch with no argument\n");
 				return 1;
 			}
 
@@ -678,7 +678,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-partitionearlylimit switch with no argument\n");
+				printf("ERROR: -partitionearlylimit switch with no argument\n");
 				return 1;
 			}
 
@@ -689,7 +689,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-planecorlimit switch with no argument\n");
+				printf("ERROR: -planecorlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -700,7 +700,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-refinementlimit switch with no argument\n");
+				printf("ERROR: -refinementlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -711,7 +711,7 @@ int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("-j switch with no argument\n");
+				printf("ERROR: -j switch with no argument\n");
 				return 1;
 			}
 
@@ -732,7 +732,7 @@ int edit_astcenc_config(
 			argidx += 3;
 			if (argidx > argc)
 			{
-				printf("-mpsnr switch with less than 2 arguments\n");
+				printf("ERROR: -mpsnr switch with less than 2 arguments\n");
 				return 1;
 			}
 
@@ -740,7 +740,7 @@ int edit_astcenc_config(
 			cli_config.high_fstop = atoi(argv[argidx - 1]);
 			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
-				printf("For -mpsnr switch, the <low> argument cannot be greater than the\n" "high argument.\n");
+				printf("ERROR: -mpsnr switch <low> is greater than the <high>\n");
 				return 1;
 			}
 		}
@@ -750,14 +750,14 @@ int edit_astcenc_config(
 			// Only supports compressing
 			if (!(operation & ASTCENC_STAGE_COMPRESS))
 			{
-				printf("-array switch given when not compressing files - decompression of arrays not supported.\n");
+				printf("ERROR: -array switch is only valid for compression\n");
 				return 1;
 			}
 
 			// Image depth must be specified.
 			if (argidx + 2 > argc)
 			{
-				printf("-array switch given, but no array size (image depth) given.\n");
+				printf("ERROR: -array switch with no argument\n");
 				return 1;
 			}
 			argidx++;
@@ -765,20 +765,20 @@ int edit_astcenc_config(
 			// Read array size (image depth).
 			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
 			{
-				printf("Invalid array size (image depth) given with -array option: \"%s\".\n", argv[argidx]);
+				printf("ERROR: -array size '%s' is invalid\n", argv[argidx]);
 				return 1;
 			}
 
 			if ((cli_config.array_size > 1) && (config.block_z == 1))
 			{
-				printf("ERROR: 3D input data for a 2D ASTC block format\n");
+				printf("ERROR: -array with 3D input data for a 2D output format\n");
 				return 1;
 			}
 			argidx++;
 		}
 		else // check others as well
 		{
-			printf("Commandline argument \"%s\" not recognized\n", argv[argidx]);
+			printf("ERROR: Argument '%s' not recognized\n", argv[argidx]);
 			return 1;
 		}
 	}
