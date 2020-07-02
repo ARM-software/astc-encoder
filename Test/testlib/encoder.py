@@ -270,18 +270,18 @@ class Encoder2x(EncoderBase):
     def get_psnr_pattern(self, image):
         if image.colorProfile != "hdr":
             if image.colorFormat != "rgba":
-                patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
+                patternPSNR = r"\s*PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             else:
-                patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
+                patternPSNR = r"\s*PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
         else:
-            patternPSNR = r"mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
+            patternPSNR = r"\s*mPSNR \(RGB\)(?: \[.*?\] )?:\s*([0-9.]*) dB.*"
         return patternPSNR
 
     def get_total_time_pattern(self):
-        return r"Total time:\s*([0-9.]*) s"
+        return r"\s*Total time:\s*([0-9.]*) s"
 
     def get_coding_time_pattern(self):
-        return r"Coding time:\s*([0-9.]*) s"
+        return r"\s*Coding time:\s*([0-9.]*) s"
 
 
 class Encoder1x(EncoderBase):
@@ -379,127 +379,3 @@ class EncoderProto(Encoder1x):
         assert os.name != 'nt', "Windows builds not available"
         binary = "./Binaries/Prototype/astcenc"
         super().__init__(binary)
-
-
-class EncoderISPC(EncoderBase):
-    """
-    This class wraps the Intel ISPC compressor, which is widely used due to its
-    good performance (although with worse quality).
-
-    Note that the compressor does not support all features of ASTC (only a
-    subset of 2D block sizes, only LDR color profile), and doesn't support
-    decode at all. For round-trip analysis we use `astcenc` to provide the
-    decompression and image comparisons.
-    """
-
-    VERSION = "IntelISPC"
-
-    def __init__(self):
-        """
-        Create a new encoder instance.
-        """
-        binary = "./Binaries/ispc/astcispc"
-        super().__init__("intel-ispc", None, binary)
-        self.decodeBinary = "./Binaries/1.7/astcenc"
-
-    def get_psnr_pattern(self, image):
-        if image.colorFormat != "rgba":
-            patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
-        else:
-            patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
-
-        return patternPSNR
-
-    def get_total_time_pattern(self):
-        return r"Total time:\s*([0-9.]*) s"
-
-    def get_coding_time_pattern(self):
-        return r"Coding time:\s*([0-9.]*) s"
-
-    def execute(self, command):
-        """
-        Run a subprocess with the specified command.
-
-        Args:
-            command (list(str)): The list of command line arguments.
-
-        Returns:
-            list(str): The output log (stdout) split into lines.
-        """
-        command = " ".join(command)
-        try:
-            result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
-                            shell=True, check=True, universal_newlines=True)
-        except OSError:
-            print("ERROR: Test run failed (binary not found)")
-            print("  + %s" % command)
-            sys.exit(1)
-        except sp.CalledProcessError:
-            print("ERROR: Test run failed")
-            print("  + %s" % command)
-            sys.exit(1)
-
-        return result.stdout.splitlines()
-
-    def run_test(self, image, blockSize, preset, testRuns):
-        """
-        Run the test N times.
-
-        Args:
-            image (TestImage): The test image to compress.
-            blockSize (str): The block size to use.
-            preset (str): Unused - we always use ISPC's slow preset as this
-                gives acceptable image quality which is likely to be used.
-            testRuns (int): The number of test repeats to run for the image.
-
-        Returns:
-            tuple(float, float, float): Returns the best results from the N
-            test runs, as PSNR (dB), total time (seconds), and coding time
-            (seconds).
-        """
-        dstDir = os.path.dirname(image.outFilePath)
-        dstFile = os.path.basename(image.outFilePath)
-        dstDir = os.path.join(dstDir, self.name, blockSize)
-        dstPath = os.path.join(dstDir, dstFile)
-
-        compressCommand = [
-            "env",
-            "LD_LIBRARY_PATH=./Binaries/ispc",
-            self.binary,
-            image.filePath,
-            dstPath + ".astc",
-            blockSize
-        ]
-
-        decompressCommand = [
-            self.decodeBinary,
-            "-dl",
-            dstPath + ".astc",
-            dstPath + ".tga"
-        ]
-
-        compareCommand = [
-            self.decodeBinary,
-            "-compare",
-            image.filePath,
-            dstPath + ".tga",
-            "-showpsnr"
-        ]
-
-        os.makedirs(dstDir, exist_ok=True)
-
-        # Execute test runs
-        bestPSNR = 0
-        bestTTime = sys.float_info.max
-        bestCTime = sys.float_info.max
-        for _ in range(0, testRuns):
-            output = self.execute(compressCommand)
-            self.execute(decompressCommand)
-            output += self.execute(compareCommand)
-
-            output = self.parse_output(image, output)
-            bestPSNR = max(bestPSNR, output[0])
-            bestTTime = min(bestTTime, output[1])
-            bestCTime = min(bestCTime, output[2])
-
-        return (bestPSNR, bestTTime, bestCTime)

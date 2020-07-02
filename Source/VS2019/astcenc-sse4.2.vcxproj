@@ -11,40 +11,46 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\astc_averages_and_directions.cpp" />
-    <ClCompile Include="..\astc_block_sizes2.cpp" />
-    <ClCompile Include="..\astc_color_quantize.cpp" />
-    <ClCompile Include="..\astc_color_unquantize.cpp" />
-    <ClCompile Include="..\astc_compress_symbolic.cpp" />
-    <ClCompile Include="..\astc_compute_variance.cpp" />
-    <ClCompile Include="..\astc_decompress_symbolic.cpp" />
-    <ClCompile Include="..\astc_encoding_choice_error.cpp" />
-    <ClCompile Include="..\astc_error_metrics.cpp" />
-    <ClCompile Include="..\astc_find_best_partitioning.cpp" />
-    <ClCompile Include="..\astc_ideal_endpoints_and_weights.cpp" />
-    <ClCompile Include="..\astc_image.cpp" />
-    <ClCompile Include="..\astc_image_load_store.cpp" />
-    <ClCompile Include="..\astc_integer_sequence.cpp" />
-    <ClCompile Include="..\astc_kmeans_partitioning.cpp" />
-    <ClCompile Include="..\astc_main.cpp" />
-    <ClCompile Include="..\astc_mathlib.cpp" />
-    <ClCompile Include="..\astc_mathlib_softfloat.cpp" />
-    <ClCompile Include="..\astc_partition_tables.cpp" />
-    <ClCompile Include="..\astc_percentile_tables.cpp" />
-    <ClCompile Include="..\astc_pick_best_endpoint_format.cpp" />
-    <ClCompile Include="..\astc_platform_dependents.cpp" />
-    <ClCompile Include="..\astc_platform_isa_detection.cpp" />
-    <ClCompile Include="..\astc_quantization.cpp" />
-    <ClCompile Include="..\astc_symbolic_physical.cpp" />
-    <ClCompile Include="..\astc_toplevel.cpp" />
-    <ClCompile Include="..\astc_toplevel_help.cpp" />
-    <ClCompile Include="..\astc_weight_align.cpp" />
-    <ClCompile Include="..\astc_weight_quant_xfer_tables.cpp" />
+    <ClInclude Include="..\astcenc.h" />
+    <ClInclude Include="..\astcenccli_internal.h" />
+    <ClInclude Include="..\astcenc_internal.h" />
+    <ClInclude Include="..\astcenc_mathlib.h" />
+    <ClInclude Include="..\stb_image.h" />
+    <ClInclude Include="..\stb_image_write.h" />
+    <ClInclude Include="..\tinyexr.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\astc_codec_internals.h" />
-    <ClInclude Include="..\astc_mathlib.h" />
-    <ClInclude Include="..\stb_image.h" />
+    <ClCompile Include="..\astcenccli_error_metrics.cpp" />
+    <ClCompile Include="..\astcenccli_image.cpp" />
+    <ClCompile Include="..\astcenccli_image_load_store.cpp" />
+    <ClCompile Include="..\astcenccli_platform_dependents.cpp" />
+    <ClCompile Include="..\astcenccli_toplevel.cpp" />
+    <ClCompile Include="..\astcenccli_toplevel_help.cpp" />
+    <ClCompile Include="..\astcenc_averages_and_directions.cpp" />
+    <ClCompile Include="..\astcenc_block_sizes2.cpp" />
+    <ClCompile Include="..\astcenc_color_quantize.cpp" />
+    <ClCompile Include="..\astcenc_color_unquantize.cpp" />
+    <ClCompile Include="..\astcenc_compress_symbolic.cpp" />
+    <ClCompile Include="..\astcenc_compute_variance.cpp" />
+    <ClCompile Include="..\astcenc_decompress_symbolic.cpp" />
+    <ClCompile Include="..\astcenc_encoding_choice_error.cpp" />
+    <ClCompile Include="..\astcenc_entry.cpp" />
+    <ClCompile Include="..\astcenc_find_best_partitioning.cpp" />
+    <ClCompile Include="..\astcenc_ideal_endpoints_and_weights.cpp" />
+    <ClCompile Include="..\astcenc_image.cpp" />
+    <ClCompile Include="..\astcenc_integer_sequence.cpp" />
+    <ClCompile Include="..\astcenc_kmeans_partitioning.cpp" />
+    <ClCompile Include="..\astcenc_mathlib.cpp" />
+    <ClCompile Include="..\astcenc_mathlib_softfloat.cpp" />
+    <ClCompile Include="..\astcenc_partition_tables.cpp" />
+    <ClCompile Include="..\astcenc_percentile_tables.cpp" />
+    <ClCompile Include="..\astcenc_pick_best_endpoint_format.cpp" />
+    <ClCompile Include="..\astcenc_platform_dependents.cpp" />
+    <ClCompile Include="..\astcenc_platform_isa_detection.cpp" />
+    <ClCompile Include="..\astcenc_quantization.cpp" />
+    <ClCompile Include="..\astcenc_symbolic_physical.cpp" />
+    <ClCompile Include="..\astcenc_weight_align.cpp" />
+    <ClCompile Include="..\astcenc_weight_quant_xfer_tables.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9FB06FB7-F57D-4B12-9AE9-91CD50FD4879}</ProjectGuid>
@@ -92,7 +98,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;ASTC_SSE=42;ASTC_AVX=0;ASTC_POPCNT=1;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ASTCENC_SSE=42;ASTCENC_AVX=0;ASTCENC_POPCNT=1;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -112,7 +118,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;ASTC_SSE=42;ASTC_AVX=0;ASTC_POPCNT=1;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;ASTCENC_SSE=42;ASTCENC_AVX=0;ASTCENC_POPCNT=1;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>

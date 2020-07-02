@@ -105,7 +105,7 @@ ASTCENC_TEST_PATTERN_HDR = {
     "BR": (0.25, 0.75, 0.00, 0.87)
 }
 
-LDR_RGB_PSNR_PATTERN = re.compile(r"PSNR \(LDR-RGB\): (.*) dB")
+LDR_RGB_PSNR_PATTERN = re.compile(r"\s*PSNR \(LDR-RGB\): (.*) dB")
 
 
 class CLITestBase(unittest.TestCase):
@@ -488,7 +488,10 @@ class CLIPTest(CLITestBase):
 
         # Emit debug logging if needed
         if ASTCENC_CLI_ALWAYS or (error and ASTCENC_CLI_ON_ERROR):
-            print(" ".join(command))
+            # Format for shell replay
+            print("\n" + " ".join(command))
+            # Format for script command list replay
+            print("\n" + ", ".join(("\"%s\"" % x for x in command)))
 
         if ASTCENC_LOG_ALWAYS or (error and ASTCENC_LOG_ON_ERROR):
             print(result.stdout)
@@ -1342,7 +1345,7 @@ class CLIPTest(CLITestBase):
         # Test time should get slower with fewer threads
         self.assertGreater(testTime, refTime)
 
-    def test_linearize_srgb1(self):
+    def test_linearize_srgb_compress(self):
         """
         Test linearize srgb on compression.
 
@@ -1376,7 +1379,7 @@ class CLIPTest(CLITestBase):
         self.assertColorSame(refColors[:3], srgbColors[:3], threshold=0.05)
         self.assertColorSame(refColors[3:], srgbColors[3:], threshold=0.0)
 
-    def test_linearize_srgb2(self):
+    def test_linearize_srgb_decompress(self):
         """
         Test linearize srgb on decompression.
 
@@ -1410,13 +1413,13 @@ class CLIPTest(CLITestBase):
         self.assertColorSame(refColors[:3], linColors[:3], threshold=0.05)
         self.assertColorSame(refColors[3:], linColors[3:], threshold=0.0)
 
-    def test_linearize_srgb3(self):
+    def test_linearize_srgb_roundtrip(self):
         """
         Test linearize srgb on round-trip.
 
-        This should behave the same as linearizing with compression only; i.e.
-        we convert to linear before compression, but we do NOT sRGB encode the
-        output after decompression.
+        This linearizes on input, and converts back to sRGB on output, so
+        overall no conversion should occur. There may be some precision
+        losses however.
         """
         inputFile = "./Test/Data/Tiles/ldr.png"
         decompFile = self.get_tmp_image_path("LDR", "decomp")
@@ -1433,11 +1436,10 @@ class CLIPTest(CLITestBase):
 
         img = tli.Image(decompFile)
         testColors = img.get_colors((7, 7))
-        srgbColors = self.to_srgb_color(testColors)
 
         # Test we get a match within 5% on the RGB channels, exact on alpha
-        self.assertColorSame(refColors[:3], srgbColors[:3], threshold=0.05)
-        self.assertColorSame(refColors[3:], srgbColors[3:], threshold=0.0)
+        self.assertColorSame(refColors[:3], testColors[:3], threshold=0.0)
+        self.assertColorSame(refColors[3:], testColors[3:], threshold=0.0)
 
     def test_silent(self):
         """
@@ -1507,7 +1509,10 @@ class CLINTest(CLITestBase):
         badResult = (error == expectPass) or (rcode < 0)
 
         if ASTCENC_CLI_ALWAYS or (badResult and ASTCENC_CLI_ON_ERROR_NEG):
-            print(" ".join(command))
+            # Format for shell replay
+            print("\n" + " ".join(command))
+            # Format for script command list replay
+            print("\n" + ", ".join(("\"%s\"" % x for x in command)))
 
         if ASTCENC_LOG_ALWAYS or (badResult and ASTCENC_LOG_ON_ERROR_NEG):
             print(result.stdout)
@@ -1525,10 +1530,7 @@ class CLINTest(CLITestBase):
 
         # Otherwise just assert that we got an error log, and some positive
         # return code value was returned
-
-        # TODO: Disabled until we fix GitHub issue #100
-        # self.assertIn("ERROR", result.stdout)
-
+        self.assertIn("ERROR", result.stdout)
         self.assertGreater(rcode, 0, "Exec did not fail as expected")
 
     def exec_with_omit(self, command, startOmit):
@@ -1841,18 +1843,6 @@ class CLINTest(CLITestBase):
             "./DoesNotExist/test.png"]
 
         self.exec(command)
-
-    def test_compare_missing(self):
-        """
-        Test -compare with missing arguments.
-        """
-        command = [
-            self.binary, "-compare",
-            self.get_ref_image_path("LDR", "input", "A"),
-            self.get_ref_image_path("LDR", "input", "A")]
-
-        # Run the command, incrementally omitting arguments
-        self.exec_with_omit(command, 2)
 
     def test_cl_v_missing_args(self):
         """

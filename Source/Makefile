@@ -33,35 +33,37 @@ VEC?=avx2
 DBG?=0
 
 SOURCES = \
-    astc_averages_and_directions.cpp \
-    astc_block_sizes2.cpp \
-    astc_color_quantize.cpp \
-    astc_color_unquantize.cpp \
-    astc_compress_symbolic.cpp \
-    astc_compute_variance.cpp \
-    astc_decompress_symbolic.cpp \
-    astc_encoding_choice_error.cpp \
-    astc_error_metrics.cpp \
-    astc_find_best_partitioning.cpp \
-    astc_ideal_endpoints_and_weights.cpp \
-    astc_image.cpp \
-    astc_image_load_store.cpp \
-    astc_integer_sequence.cpp \
-    astc_kmeans_partitioning.cpp \
-    astc_main.cpp \
-    astc_mathlib.cpp \
-    astc_mathlib_softfloat.cpp \
-    astc_partition_tables.cpp \
-    astc_percentile_tables.cpp \
-    astc_pick_best_endpoint_format.cpp \
-    astc_platform_isa_detection.cpp \
-    astc_platform_dependents.cpp \
-    astc_quantization.cpp \
-    astc_symbolic_physical.cpp \
-    astc_toplevel.cpp \
-    astc_toplevel_help.cpp \
-    astc_weight_align.cpp \
-    astc_weight_quant_xfer_tables.cpp
+    astcenc_averages_and_directions.cpp \
+    astcenc_block_sizes2.cpp \
+    astcenc_color_quantize.cpp \
+    astcenc_color_unquantize.cpp \
+    astcenc_compress_symbolic.cpp \
+    astcenc_compute_variance.cpp \
+    astcenc_decompress_symbolic.cpp \
+    astcenc_encoding_choice_error.cpp \
+    astcenc_entry.cpp \
+    astcenc_find_best_partitioning.cpp \
+    astcenc_ideal_endpoints_and_weights.cpp \
+    astcenc_image.cpp \
+    astcenc_integer_sequence.cpp \
+    astcenc_kmeans_partitioning.cpp \
+    astcenc_mathlib.cpp \
+    astcenc_mathlib_softfloat.cpp \
+    astcenc_partition_tables.cpp \
+    astcenc_percentile_tables.cpp \
+    astcenc_pick_best_endpoint_format.cpp \
+    astcenc_platform_dependents.cpp \
+    astcenc_platform_isa_detection.cpp \
+    astcenc_quantization.cpp \
+    astcenc_symbolic_physical.cpp \
+    astcenc_weight_align.cpp \
+    astcenc_weight_quant_xfer_tables.cpp \
+    astcenccli_error_metrics.cpp \
+    astcenccli_image.cpp \
+    astcenccli_image_load_store.cpp \
+    astcenccli_platform_dependents.cpp \
+    astcenccli_toplevel.cpp \
+    astcenccli_toplevel_help.cpp
 
 EXTERNAL_SOURCES = \
     stb_image.h \
@@ -69,8 +71,10 @@ EXTERNAL_SOURCES = \
     tinyexr.h
 
 HEADERS = \
-    astc_codec_internals.h \
-    astc_mathlib.h \
+    astcenc.h \
+    astcenc_internal.h \
+    astcenc_mathlib.h \
+    astcenccli_internal.h \
     stb_image.h \
     stb_image_write.h \
     tinyexr.h
@@ -81,28 +85,28 @@ EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(VEC).o)
 
 BINARY = astcenc-$(VEC)
 
-CXXFLAGS = -std=c++14 -mfpmath=sse \
+CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the DBG parameter is a supported value, and patch CXXFLAGS
 ifeq ($(DBG),0)
-CXXFLAGS += -O3
+CXXFLAGS += -O3 -DNDEBUG
 else
 CXXFLAGS += -O0 -g
 endif
 
 # Validate that the VEC parameter is a supported value, and patch CXXFLAGS
 ifeq ($(VEC),nointrin)
-CXXFLAGS += -msse2 -DASTC_SSE=0 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
 else
 ifeq ($(VEC),sse2)
-CXXFLAGS += -msse2 -DASTC_SSE=20 -DASTC_AVX=0 -DASTC_POPCNT=0
+CXXFLAGS += -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
 else
 ifeq ($(VEC),sse4.2)
-CXXFLAGS += -msse4.2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=0 -DASTC_POPCNT=1
+CXXFLAGS += -msse4.2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1
 else
 ifeq ($(VEC),avx2)
-CXXFLAGS += -mavx2 -mpopcnt -DASTC_SSE=42 -DASTC_AVX=2 -DASTC_POPCNT=1
+CXXFLAGS += -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1
 else
 $(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2/avx2)
 endif
@@ -117,29 +121,39 @@ CXXFLAGS_EXTERNAL = \
     -Wno-double-promotion \
     -fno-strict-aliasing
 
+# ==================================================
+# Build rules for the command line wrapper
 $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
 	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
+# Note: ensure NDEBUG is undefined; all three libraries are weak at runtime
+# handling of corrupt files, relying on asserts to handle bd file input.
+# Compiling with NDEBUG is a potential security risk.
 stb_image-$(VEC).o: stb_image.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION \
-		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM
+		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM -UNDEBUG
 	@echo "[C++] $<"
 
 stb_image_write-$(VEC).o: stb_image_write.h
-	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION \
+		-UNDEBUG
 	@echo "[C++] $<"
 
 tinyexr-$(VEC).o: tinyexr.h
-	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION
+	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION -UNDEBUG
 	@echo "[C++] $<"
 
 $(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
-	@$(CXX) -c -o $@ $< $(CXXFLAGS)
+	@$(CXX) -c -o $@ $(abspath $<) $(CXXFLAGS)
 	@echo "[C++] $<"
+
+# ==================================================
+# Generic utility rules
 
 clean:
 	@rm -f *-$(VEC).o
+	@rm -f *-$(VEC).so
 	@rm -f *-$(VEC).obj
 	@rm -f $(BINARY)
 	@rm -f $(BINARY).exe
