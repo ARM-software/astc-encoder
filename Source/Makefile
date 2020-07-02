@@ -90,7 +90,7 @@ CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
 
 # Validate that the DBG parameter is a supported value, and patch CXXFLAGS
 ifeq ($(DBG),0)
-CXXFLAGS += -O3 -DNDEBUG
+CXXFLAGS += -O3 -DNDEBUG -flto
 else
 CXXFLAGS += -O0 -g
 endif

@@ -899,7 +899,7 @@ int main(
 	// Load the compressed input file if needed
 
 	// This has to come first, as the block size is in the file header
-	astc_compressed_image image_comp;
+	astc_compressed_image image_comp {};
 	if (operation & ASTCENC_STAGE_LD_COMP)
 	{
 		error = load_cimage(input_filename.c_str(), image_comp);
@@ -909,7 +909,7 @@ int main(
 		}
 	}
 
-	astcenc_config config;
+	astcenc_config config {};
 	error = init_astcenc_config(argc, argv, profile, operation, image_comp, config);
 	if (error)
 	{

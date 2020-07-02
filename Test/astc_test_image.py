@@ -138,7 +138,7 @@ def format_solo_result(image, result):
     imSize = image.get_size()
     if imSize:
         mpix = float(imSize[0] * imSize[1]) / 1000000.0
-        tCMPS = "%3.2f MP/s" % (mpix / result.cTime)
+        tCMPS = "%3.3f MP/s" % (mpix / result.cTime)
     else:
         tCMPS = "?"
 
@@ -166,7 +166,7 @@ def format_result(image, reference, result):
     imSize = image.get_size()
     if imSize:
         mpix = float(imSize[0] * imSize[1]) / 1000000.0
-        tCMPS = "%3.2f MP/s" % (mpix / result.cTime)
+        tCMPS = "%3.3f MP/s" % (mpix / result.cTime)
     else:
         tCMPS = "?"
 
