@@ -763,7 +763,7 @@ int edit_astcenc_config(
 			argidx++;
 
 			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%d", &cli_config.array_size) || cli_config.array_size == 0)
+			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
 			{
 				printf("Invalid array size (image depth) given with -array option: \"%s\".\n", argv[argidx]);
 				return 1;
