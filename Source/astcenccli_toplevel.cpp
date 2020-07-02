@@ -131,7 +131,6 @@ static std::string get_slice_filename(
  * @param dim_z               The number of slices to load.
  * @param padding             The number of texels of padding.
  * @param y_flip              Should this image be Y flipped?
- * @param linearize_srgb      Should this image be converted to linear from sRGB?
  * @param[out] is_hdr         Is the loaded image HDR?
  * @param[out] num_components The number of components in the loaded image.
  *
@@ -396,10 +395,6 @@ astcenc_error init_astcenc_config(
 		{
 
 			flags |= ASTCENC_FLG_MAP_MASK;
-		}
-		else if (!strcmp(argv[argidx], "-linsrgb"))
-		{
-			flags |= ASTCENC_FLG_USE_LINEARIZED_SRGB;
 		}
 		argidx ++;
 	}
@@ -717,11 +712,6 @@ int edit_astcenc_config(
 
 			cli_config.thread_count = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-linsrgb"))
-		{
-			argidx++;
-			cli_config.linearize_srgb = 1;
-		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
 			argidx++;
@@ -928,7 +918,7 @@ int main(
 	}
 
 	// Initialize cli_config_options with default values
-	cli_config_options cli_config { 0, 1, false, false, false, -10, 10,
+	cli_config_options cli_config { 0, 1, false, false, -10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A } };
 

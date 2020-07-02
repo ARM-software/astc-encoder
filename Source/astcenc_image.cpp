@@ -378,82 +378,18 @@ void fetch_imageblock(
 		}
 	}
 
-	// perform sRGB-to-linear transform on input data, if requested.
-	int pixelcount = bsd->texel_count;
-
-	// sRGB to Linear
-	if (img->linearize_srgb)
-	{
-		fptr = pb->orig_data;
-		for (i = 0; i < pixelcount; i++)
-		{
-			float r = fptr[0];
-			float g = fptr[1];
-			float b = fptr[2];
-
-			if (r <= 0.04045f)
-				r = r * (1.0f / 12.92f);
-			else if (r <= 1)
-				r = powf((r + 0.055f) * (1.0f / 1.055f), 2.4f);
-
-			if (g <= 0.04045f)
-				g = g * (1.0f / 12.92f);
-			else if (g <= 1)
-				g = powf((g + 0.055f) * (1.0f / 1.055f), 2.4f);
-
-			if (b <= 0.04045f)
-				b = b * (1.0f / 12.92f);
-			else if (b <= 1)
-				b = powf((b + 0.055f) * (1.0f / 1.055f), 2.4f);
-
-			fptr[0] = r;
-			fptr[1] = g;
-			fptr[2] = b;
-
-			fptr += 4;
-		}
-	}
-
-	// collect color max-value, in order to determine whether to use LDR or HDR
-	// interpolation.
-	float max_red, max_green, max_blue, max_alpha;
-	max_red = 0.0f;
-	max_green = 0.0f;
-	max_blue = 0.0f;
-	max_alpha = 0.0f;
-
-	fptr = pb->orig_data;
-	for (i = 0; i < pixelcount; i++)
-	{
-		float r = fptr[0];
-		float g = fptr[1];
-		float b = fptr[2];
-		float a = fptr[3];
-
-		if (r > max_red)
-			max_red = r;
-		if (g > max_green)
-			max_green = g;
-		if (b > max_blue)
-			max_blue = b;
-		if (a > max_alpha)
-			max_alpha = a;
-
-		fptr += 4;
-	}
-
 	int rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
 	int alpha_lns = decode_mode == ASTCENC_PRF_HDR;
 
 	// impose the choice on every pixel when encoding.
-	for (i = 0; i < pixelcount; i++)
+	for (i = 0; i < bsd->texel_count; i++)
 	{
 		pb->rgb_lns[i] = rgb_lns;
 		pb->alpha_lns[i] = alpha_lns;
 		pb->nan_texel[i] = 0;
 	}
 
-	imageblock_initialize_work_from_orig(pb, pixelcount);
+	imageblock_initialize_work_from_orig(pb,bsd->texel_count);
 	update_imageblock_flags(pb, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
@@ -502,42 +438,9 @@ void write_imageblock(
 						}
 						else
 						{
-							// Linear to sRGB
-							if (img->linearize_srgb)
-							{
-								float r = fptr[0];
-								float g = fptr[1];
-								float b = fptr[2];
-
-								if (r <= 0.0031308f)
-									r = r * 12.92f;
-								else if (r <= 1)
-									r = 1.055f * powf(r, (1.0f / 2.4f)) - 0.055f;
-
-								if (g <= 0.0031308f)
-									g = g * 12.92f;
-								else if (g <= 1)
-									g = 1.055f * powf(g, (1.0f / 2.4f)) - 0.055f;
-
-								if (b <= 0.0031308f)
-									b = b * 12.92f;
-								else if (b <= 1)
-									b = 1.055f * powf(b, (1.0f / 2.4f)) - 0.055f;
-
-								data[0] = r;
-								data[1] = g;
-								data[2] = b;
-							}
-							else
-							{
-								float r = fptr[0];
-								float g = fptr[1];
-								float b = fptr[2];
-
-								data[0] = r;
-								data[1] = g;
-								data[2] = b;
-							}
+							data[0] = fptr[0];
+							data[1] = fptr[1];
+							data[2] = fptr[2];
 							data[3] = fptr[3];
 
 							float xcoord = (data[0] * 2.0f) - 1.0f;
@@ -599,36 +502,9 @@ void write_imageblock(
 
 						else
 						{
-							// Linear to sRGB
-							if (img->linearize_srgb)
-							{
-								float r = fptr[0];
-								float g = fptr[1];
-								float b = fptr[2];
-
-								if (r <= 0.0031308f)
-									r = r * 12.92f;
-								else if (r <= 1)
-									r = 1.055f * powf(r, (1.0f / 2.4f)) - 0.055f;
-								if (g <= 0.0031308f)
-									g = g * 12.92f;
-								else if (g <= 1)
-									g = 1.055f * powf(g, (1.0f / 2.4f)) - 0.055f;
-								if (b <= 0.0031308f)
-									b = b * 12.92f;
-								else if (b <= 1)
-									b = 1.055f * powf(b, (1.0f / 2.4f)) - 0.055f;
-
-								data[0] = r;
-								data[1] = g;
-								data[2] = b;
-							}
-							else
-							{
-								data[0] = fptr[0];
-								data[1] = fptr[1];
-								data[2] = fptr[2];
-							}
+							data[0] = fptr[0];
+							data[1] = fptr[1];
+							data[2] = fptr[2];
 							data[3] = fptr[3];
 
 							float xN = (data[0] * 2.0f) - 1.0f;

@@ -672,9 +672,6 @@ astcenc_error astcenc_compress_image(
 	input_image.zsize = image.dim_z;
 	input_image.padding = image.dim_pad;
 
-	// Need to agree what we do with linearize sRGB
-	input_image.linearize_srgb = context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB ? 1 : 0;
-
 	input_image.input_averages = nullptr;
 	input_image.input_variances = nullptr;
 	input_image.input_alpha_averages = nullptr;
@@ -685,7 +682,7 @@ astcenc_error astcenc_compress_image(
 	{
 		compute_averages_and_variances(&input_image, ewp.rgb_power, ewp.alpha_power,
 		                               ewp.mean_stdev_radius, ewp.alpha_radius,
-		                               input_image.linearize_srgb, swizzle, context->thread_count);
+		                               swizzle, context->thread_count);
 	}
 
 	// TODO: This could be done once when the context is created
@@ -760,9 +757,6 @@ astcenc_error astcenc_decompress_image(
 	image.ysize = image_out.dim_y;
 	image.zsize = image_out.dim_z;
 	image.padding = image_out.dim_pad;
-
-	// Need to agree what we do with linearize sRGB
-	image.linearize_srgb = (context->config.flags & ASTCENC_FLG_USE_LINEARIZED_SRGB) == 0 ? 0 : 1;
 
 	image.input_averages = nullptr;
 	image.input_variances = nullptr;

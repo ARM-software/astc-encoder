@@ -357,20 +357,6 @@ ADVANCED COMPRESSION
            which uses an 'rrrg' compression swizzle, you should specify an
            'raz1' swizzle for decompression.
 
-       -linsrgb
-           Convert input images from sRGB to linear RGB before compression,
-           and output images from linear RGB to sRGB after decompression.
-           For compression, the transform is applied after any swizzle; for
-           decode, the transform is applied before any swizzle. Note that
-           using this option in a test mode (-t*) will have no obvious
-           effect as the image will be converted twice, although some image
-           precision loss may occur.
-
-           Note that this switch is only intended for diagnostic purposes;
-           real use cases should directly compress/decompress sRGB data
-           using the LDR sRGB profile, using the -cs, -ds, and -ts
-           operation modes. This preserves more perceptual image quality.
-
        -yflip
            Flip the image in the vertical axis prior to compression and
            after decompression. Note that using this option in a test mode
@@ -401,8 +387,8 @@ DECOMPRESSION
        coompression path can produce are supported for decompression. See
        the FILE FORMATS section for the list of supported formats.
 
-       The -dsw, -linsrgb options documented in ADVANCED COMPRESSION
-       option documentation are relevent to decompression.
+       The -dsw options documented in ADVANCED COMPRESSION option documentation
+	   are relevent to decompression.
 
 TEST
        To perform a compression test which round-trips a single image

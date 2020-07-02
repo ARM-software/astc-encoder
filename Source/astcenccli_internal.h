@@ -48,7 +48,6 @@ struct cli_config_options
 	unsigned int array_size;
 	bool silentmode;
 	bool y_flip;
-	bool linearize_srgb;
 	int low_fstop;
 	int high_fstop;
 	astcenc_swizzle swz_encode;

@@ -234,22 +234,6 @@ static inline int clampi(int val, int low, int high)
 }
 
 /**
- * @brief Return the sRGB transform of a color value.
- *
- * Values outside of the 0-1 range are passed through unmodified.
- *
- * @param val The value to convert.
- *
- * @return The transformed value.
- */
-static inline float srgb_transform(float val)
-{
-	if (val <= 0.04045f) return val * (1.0f / 12.92f);
-	if (val <= 1) return powf((val + 0.055f) * (1.0f / 1.055f), 2.4f);
-	return val;
-}
-
-/**
  * @brief SP float round-to-nearest.
  *
  * @param val The value to round.

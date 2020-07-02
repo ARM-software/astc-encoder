@@ -891,30 +891,6 @@ static float prepare_error_weight_block(
 					error_weight = error_weight * color_weights;
 					error_weight = error_weight * ewp->block_artifact_suppression_expanded[idx];
 
-					// if we perform a conversion from linear to sRGB, then we multiply
-					// the weight with the derivative of the linear->sRGB transform function.
-					if (input_image->linearize_srgb)
-					{
-						float r = blk->orig_data[4 * idx];
-						float g = blk->orig_data[4 * idx + 1];
-						float b = blk->orig_data[4 * idx + 2];
-						if (r < 0.0031308f)
-							r = 12.92f;
-						else
-							r = 0.4396f * powf(r, -0.58333f);
-						if (g < 0.0031308f)
-							g = 12.92f;
-						else
-							g = 0.4396f * powf(g, -0.58333f);
-						if (b < 0.0031308f)
-							b = 12.92f;
-						else
-							b = 0.4396f * powf(b, -0.58333f);
-						error_weight.x *= r;
-						error_weight.y *= g;
-						error_weight.z *= b;
-					}
-
 					// when we loaded the block to begin with, we applied a transfer function
 					// and computed the derivative of the transfer function. However, the
 					// error-weight computation so far is based on the original color values,

@@ -616,7 +616,6 @@ struct astc_codec_image
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
-	int linearize_srgb;
 };
 
 
@@ -638,7 +637,6 @@ struct astcenc_context
  * @param alpha_power           The A channel power.
  * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
- * @param need_srgb_transform   Do we need srgb transform or not?
  * @param swz                   Input data channel swizzle.
  * @param thread_count          The number of threads to use.
  */
@@ -648,7 +646,6 @@ void compute_averages_and_variances(
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
-	int need_srgb_transform,
 	astcenc_swizzle swz,
 	int thread_count);
 

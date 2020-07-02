@@ -175,15 +175,13 @@ static const unsigned int ASTCENC_FLG_MAP_MASK            = 1 << 1;
 static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
 static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL      = 1 << 3;
 static const unsigned int ASTCENC_FLG_USE_USER_THREADS    = 1 << 4;
-static const unsigned int ASTCENC_FLG_USE_LINEARIZED_SRGB = 1 << 5;
 
 static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_NORMAL |
                               ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
                               ASTCENC_FLG_USE_PERCEPTUAL |
-                              ASTCENC_FLG_USE_USER_THREADS |
-                              ASTCENC_FLG_USE_LINEARIZED_SRGB;
+                              ASTCENC_FLG_USE_USER_THREADS;
 
 // Config structure
 struct astcenc_config {

@@ -45,8 +45,6 @@ struct pixel_region_variance_args
 	float rgb_power;
 	/** The alpha channel power adjustment. */
 	float alpha_power;
-	/** The RGB data should be treated as sRGB. */
-	int need_srgb_transform;
 	/** The channel swizzle pattern. */
 	astcenc_swizzle swz;
 	/** Should the algorithm bother with Z axis processing? */
@@ -161,7 +159,6 @@ static void compute_pixel_region_variance(
 	const astc_codec_image *img = arg->img;
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
-	int need_srgb_transform = arg->need_srgb_transform;
 	astcenc_swizzle swz = arg->swz;
 	int have_z = arg->have_z;
 
@@ -246,13 +243,6 @@ static void compute_pixel_region_variance(
 					                   b * (1.0f / 255.0f),
 					                   a * (1.0f / 255.0f));
 
-					if (need_srgb_transform)
-					{
-						d.x = astc::srgb_transform(d.x);
-						d.y = astc::srgb_transform(d.y);
-						d.z = astc::srgb_transform(d.z);
-					}
-
 					if (!are_powers_1)
 					{
 						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
@@ -298,13 +288,6 @@ static void compute_pixel_region_variance(
 					                  sf16_to_float(g),
 					                  sf16_to_float(b),
 					                  sf16_to_float(a));
-
-					if (need_srgb_transform)
-					{
-						d.x = astc::srgb_transform(d.x);
-						d.y = astc::srgb_transform(d.y);
-						d.z = astc::srgb_transform(d.z);
-					}
 
 					if (!are_powers_1)
 					{
@@ -602,7 +585,6 @@ void compute_averages_and_variances(
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
-	int need_srgb_transform,
 	astcenc_swizzle swz,
 	int thread_count
 ) {
@@ -643,7 +625,6 @@ void compute_averages_and_variances(
 	arg.img = img;
 	arg.rgb_power = rgb_power;
 	arg.alpha_power = alpha_power;
-	arg.need_srgb_transform = need_srgb_transform;
 	arg.swz = swz;
 	arg.have_z = have_z;
 	arg.avg_var_kernel_radius = avg_var_kernel_radius;
