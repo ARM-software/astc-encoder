@@ -288,7 +288,7 @@ astcenc_error astcenc_init_config(
 	config.block_y = block_y;
 	config.block_z = block_z;
 
-	float texels = block_x * block_y * block_z;
+	float texels = static_cast<float>(block_x * block_y * block_z);
 	float ltexels = logf(texels) / logf(10.0f);
 
 	// Process the performance preset; note that this must be done before we

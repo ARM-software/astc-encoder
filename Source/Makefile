@@ -124,7 +124,7 @@ CXXFLAGS_EXTERNAL = \
 # ==================================================
 # Build rules for the command line wrapper
 $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
-	@$(CXX) -o $@ $^ $(CXXFLAGS) -L. -lpthread
+	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
 	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
 
 # Note: ensure NDEBUG is undefined; all three libraries are weak at runtime
