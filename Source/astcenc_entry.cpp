@@ -262,7 +262,6 @@ static astcenc_error validate_config(
 	return ASTCENC_SUCCESS;
 }
 
-__attribute__((visibility("default")))
 astcenc_error astcenc_init_config(
 	astcenc_profile profile,
 	unsigned int block_x,
@@ -440,8 +439,6 @@ astcenc_error astcenc_init_config(
 	return ASTCENC_SUCCESS;
 }
 
-
-__attribute__((visibility("default")))
 astcenc_error astcenc_context_alloc(
 	astcenc_config const& config,
 	unsigned int thread_count,
@@ -461,6 +458,11 @@ astcenc_error astcenc_context_alloc(
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
+	}
+
+	if (thread_count == 0)
+	{
+		thread_count = get_cpu_count();
 	}
 
 	try
@@ -499,7 +501,6 @@ astcenc_error astcenc_context_alloc(
 	return ASTCENC_SUCCESS;
 }
 
-__attribute__((visibility("default")))
 void astcenc_context_free(
 	astcenc_context* context
 ) {
@@ -603,7 +604,6 @@ static void encode_astc_image_threadfunc(
 	delete   temp_buffers.ewb;
 }
 
-__attribute__((visibility("default")))
 astcenc_error astcenc_compress_image(
 	astcenc_context* context,
 	astcenc_image& image,
@@ -714,8 +714,6 @@ astcenc_error astcenc_compress_image(
 	return ASTCENC_SUCCESS;
 }
 
-
-__attribute__((visibility("default")))
 astcenc_error astcenc_decompress_image(
 	astcenc_context* context,
 	uint8_t* data,
@@ -794,8 +792,6 @@ astcenc_error astcenc_decompress_image(
 	return ASTCENC_SUCCESS;
 }
 
-
-__attribute__((visibility("default")))
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {

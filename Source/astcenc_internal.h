@@ -931,6 +931,13 @@ int cpu_supports_popcnt();
 int cpu_supports_avx2();
 
 /**
+ * @brief Get the number of CPU cores.
+ *
+ * @returns The number of online or onlineable CPU cores in the system.
+ */
+int get_cpu_count();
+
+/**
  * @brief Launch N worker threads and wait for them to complete.
  *
  * All threads run the same thread function, and have the same thread payload,

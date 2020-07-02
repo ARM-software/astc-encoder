@@ -44,7 +44,7 @@ struct astc_compressed_image
 // Config options to be read from command line
 struct cli_config_options
 {
-	unsigned thread_count;
+	unsigned int thread_count;
 	unsigned int array_size;
 	bool silentmode;
 	bool y_flip;
@@ -167,12 +167,5 @@ void compute_error_metrics(
  * @returns The current time in seconds since arbitrary epoch.
  */
 double get_time();
-
-/**
- * @brief Get the number of CPU cores.
- *
- * @returns The number of online or onlineable CPU cores in the system.
- */
-int get_cpu_count();
 
 #endif

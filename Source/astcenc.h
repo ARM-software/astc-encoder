@@ -269,6 +269,8 @@ astcenc_error astcenc_init_config(
  * @param config       The codec config.
  * @param thread_count The thread count to configure for. This will allocate
  *                     new threads unless config created with USE_USER_THREADS.
+ *                     If thread count is zero, the compressor will auto-set
+ *                     the thread count to the host CPU count.
  * @param context      Output location to store an opaque context pointer.
  *
  * @return ASTCENC_SUCCESS on success, or an error if context creation failed.

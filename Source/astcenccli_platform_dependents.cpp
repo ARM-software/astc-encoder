@@ -51,14 +51,6 @@ double get_time()
 }
 
 /* Public function, see header file for detailed documentation */
-int get_cpu_count()
-{
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo(&sysinfo);
-	return sysinfo.dwNumberOfProcessors;
-}
-
-/* Public function, see header file for detailed documentation */
 int unlink_file(const char *filename)
 {
 	BOOL res = DeleteFileA(filename);
@@ -79,12 +71,6 @@ double get_time()
 	timeval tv;
 	gettimeofday(&tv, 0);
 	return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
-}
-
-/* Public function, see header file for detailed documentation */
-int get_cpu_count()
-{
-	return sysconf(_SC_NPROCESSORS_ONLN);
 }
 
 /* Public function, see header file for detailed documentation */

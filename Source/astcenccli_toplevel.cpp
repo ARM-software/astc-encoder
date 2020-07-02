@@ -785,11 +785,6 @@ int edit_astcenc_config(
 
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
-		if (cli_config.thread_count < 1)
-		{
-			cli_config.thread_count = get_cpu_count();
-		}
-
 		// print all encoding settings unless specifically told otherwise.
 		if (!cli_config.silentmode)
 		{
