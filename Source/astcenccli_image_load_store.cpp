@@ -1945,6 +1945,7 @@ int load_cimage(
 	}
 
 	out_image.data = buffer;
+	out_image.data_len = data_size;
 	out_image.block_x = block_x;
 	out_image.block_y = block_y;
 	out_image.block_z = block_z;
@@ -1959,11 +1960,6 @@ int store_cimage(
 	const astc_compressed_image& comp_img,
 	const char* filename
 ) {
-	int xblocks = (comp_img.dim_x + comp_img.block_x - 1) / comp_img.block_x;
-	int yblocks = (comp_img.dim_y + comp_img.block_y - 1) / comp_img.block_y;
-	int zblocks = (comp_img.dim_z + comp_img.block_z - 1) / comp_img.block_z;
-	size_t data_bytes = xblocks * yblocks * zblocks * 16;
-
 	astc_header hdr;
 	hdr.magic[0] =  ASTC_MAGIC_ID        & 0xFF;
 	hdr.magic[1] = (ASTC_MAGIC_ID >>  8) & 0xFF;
@@ -1994,6 +1990,6 @@ int store_cimage(
 	}
 
 	file.write((char*)&hdr, sizeof(astc_header));
-	file.write((char*)comp_img.data, data_bytes);
+	file.write((char*)comp_img.data, comp_img.data_len);
 	return 0;
 }

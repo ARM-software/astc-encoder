@@ -39,6 +39,7 @@ struct astc_compressed_image
 	unsigned int dim_y;
 	unsigned int dim_z;
 	uint8_t* data;
+	size_t data_len;
 };
 
 // Config options to be read from command line

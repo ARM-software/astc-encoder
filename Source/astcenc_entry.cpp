@@ -590,6 +590,21 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
+	unsigned int block_x = context->config.block_x;
+	unsigned int block_y = context->config.block_y;
+	unsigned int block_z = context->config.block_z;
+
+	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
+	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
+	unsigned int zblocks = (image.dim_z + block_z - 1) / block_z;
+
+	// Check we have enough output space (16 bytes per block)
+	size_t size_needed = xblocks * yblocks * zblocks * 16;
+	if (data_len < size_needed)
+	{
+		return ASTCENC_ERR_OUT_OF_MEM;
+	}
+
 	// TODO: Replace error_weighting_params in the core codec with the config / context structs
 	error_weighting_params& ewp = context->ewp;
 	ewp.rgb_power = context->config.v_rgb_power;
@@ -710,8 +725,12 @@ astcenc_error astcenc_decompress_image(
 	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
 	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
 
-	// TODO: Check output bounds
-	(void)data_len;
+	// Check we have enough output space (16 bytes per block)
+	size_t size_needed = xblocks * yblocks * zblocks * 16;
+	if (data_len < size_needed)
+	{
+		return ASTCENC_ERR_OUT_OF_MEM;
+	}
 
 	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
 	astc_codec_image image;
@@ -727,6 +746,7 @@ astcenc_error astcenc_decompress_image(
 	image.input_alpha_averages = nullptr;
 
 	imageblock pb;
+
 	for (unsigned int z = 0; z < zblocks; z++)
 	{
 		for (unsigned int y = 0; y < yblocks; y++)

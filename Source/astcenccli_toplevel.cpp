@@ -1043,6 +1043,7 @@ int main(
 		image_comp.dim_y = image_uncomp_in->dim_y;
 		image_comp.dim_z = image_uncomp_in->dim_z;
 		image_comp.data = buffer;
+		image_comp.data_len = buffer_size;
 	}
 
 	// Decompress an image
@@ -1059,7 +1060,7 @@ int main(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z, 0);
 
 		// TODO: Pass through data len to avoid out-of-bounds reads
-		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0,
+		codec_status = astcenc_decompress_image(codec_context, image_comp.data, image_comp.data_len,
 		                                        *image_decomp_out, cli_config.swz_decode);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
