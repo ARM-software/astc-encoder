@@ -327,7 +327,7 @@ int parse_commandline_options(
  *
  * @return 0 if everything is Okay, 1 if there is some error
  */
-astcenc_error init_astcenc_config(
+int init_astcenc_config(
 	int argc,
 	char **argv,
 	astcenc_profile profile,
@@ -356,7 +356,8 @@ astcenc_error init_astcenc_config(
 		// Read and decode block size
 		if (argc < 5)
 		{
-			return ASTCENC_ERR_BAD_BLOCK_SIZE;
+			printf("ERROR: Block size must be specified\n");
+			return 1;
 		}
 
 		int cnt2D, cnt3D;
@@ -365,13 +366,15 @@ astcenc_error init_astcenc_config(
 		// Character after the last match should be a NUL
 		if (!(((dimensions == 2) && !argv[4][cnt2D]) || ((dimensions == 3) && !argv[4][cnt3D])))
 		{
-			return ASTCENC_ERR_BAD_BLOCK_SIZE;
+			printf("ERROR: Block size '%s' is invalid\n", argv[4]);
+			return 1;
 		}
 
 		// Read and decode search preset
 		if (argc < 6)
 		{
-			return ASTCENC_ERR_BAD_PRESET;
+			printf("ERROR: Search preset must be specified\n");
+			return 1;
 		}
 
 		if (!strcmp(argv[5], "-fast"))
@@ -392,7 +395,8 @@ astcenc_error init_astcenc_config(
 		}
 		else
 		{
-			return ASTCENC_ERR_BAD_PRESET;
+			printf("ERROR: Search preset '%s' is invalid\n", argv[5]);
+			return 1;
 		}
 
 		argidx = 6;
@@ -427,7 +431,28 @@ astcenc_error init_astcenc_config(
 	}
 
 	astcenc_error status = astcenc_init_config(profile, block_x, block_y, block_z, preset, flags, config);
-	return status;
+	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
+	{
+		printf("ERROR: Block size '%s' is invalid\n", argv[4]);
+		return 1;
+	}
+	else if (status == ASTCENC_ERR_BAD_CPU_ISA)
+	{
+		printf("ERROR: Required SIMD ISA support missing on this CPU\n");
+		return 1;
+	}
+	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
+	{
+		printf("ERROR: astcenc must not be compiled with -ffast-math\n");
+		return 1;
+	}
+	else if (status != ASTCENC_SUCCESS)
+	{
+		printf("ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
+		return 1;
+	}
+
+	return 0;
 }
 
 /**
@@ -945,7 +970,6 @@ int main(
 	error = init_astcenc_config(argc, argv, profile, operation, image_comp, config);
 	if (error)
 	{
-		printf("ERROR: Astcenc configuration initialization failed.\n");
 		return 1;
 	}
 
@@ -957,7 +981,6 @@ int main(
 	error = edit_astcenc_config(argc, argv, operation, cli_config, config);
 	if (error)
 	{
-		printf("ERROR: Astcenc configuration initialization failed.\n");
 		return 1;
 	}
 
