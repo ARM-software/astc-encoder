@@ -937,7 +937,7 @@ struct encoding_choice_errors
 };
 
 // buffers used to store intermediate data in compress_symbolic_block_fixed_partition_*()
-struct compress_fixed_partition_buffers
+struct alignas(32) compress_fixed_partition_buffers
 {
 	endpoints_and_weights ei1;
 	endpoints_and_weights ei2;
