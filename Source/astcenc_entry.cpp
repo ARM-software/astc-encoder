@@ -472,6 +472,9 @@ astcenc_error astcenc_context_alloc(
 		ctx->bsd = bsd;
 
 		ctx->barrier = new Barrier(thread_count);
+
+		expand_block_artifact_suppression(
+		    ctx->config.block_x, ctx->config.block_y, ctx->config.block_z, &ctx->ewp);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -680,13 +683,6 @@ astcenc_error astcenc_compress_image(
 		context->barrier->wait();
 
 		compute_averages_and_variances(context->thread_count, thread_index, context->ag);
-	}
-
-	// TODO: This could be done once when the context is created
-	if (thread_index <= 0)
-	{
-		expand_block_artifact_suppression(
-		    context->config.block_x, context->config.block_y, context->config.block_z, &ewp);
 	}
 
 	compress_astc_image_info ai;
