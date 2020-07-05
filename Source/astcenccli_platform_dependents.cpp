@@ -40,6 +40,38 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
+typedef HANDLE pthread_t;
+typedef int pthread_attr_t;
+
+/* Public function, see header file for detailed documentation */
+static int pthread_create(
+	pthread_t* thread,
+	const pthread_attr_t* attribs,
+	void* (*threadfunc)(void*),
+	void* thread_arg
+) {
+	LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)threadfunc;
+	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
+	return 0;
+}
+
+/* Public function, see header file for detailed documentation */
+static int pthread_join(
+	pthread_t thread,
+	void** value
+) {
+	WaitForSingleObject(thread, INFINITE);
+	return 0;
+}
+
+/* Public function, see header file for detailed documentation */
+int get_cpu_count()
+{
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo(&sysinfo);
+	return sysinfo.dwNumberOfProcessors;
+}
+
 /* Public function, see header file for detailed documentation */
 double get_time()
 {
@@ -62,8 +94,15 @@ int unlink_file(const char *filename)
 ============================================================================ */
 #else
 
+#include <pthread.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+/* Public function, see header file for detailed documentation */
+int get_cpu_count()
+{
+	return sysconf(_SC_NPROCESSORS_ONLN);
+}
 
 /* Public function, see header file for detailed documentation */
 double get_time()
@@ -80,3 +119,70 @@ int unlink_file(const char *filename)
 }
 
 #endif
+
+/**
+ * @brief Worker thread helper payload for launch_threads.
+ */
+struct launch_desc
+{
+	/** The native thread handle. */
+	pthread_t thread_handle;
+	/** The total number of threads in the thread pool. */
+	int thread_count;
+	/** The thread index in the thread pool. */
+	int thread_id;
+	/** The user thread function to execute. */
+	void (*func)(int, int, void*);
+	/** The user thread payload. */
+	void* payload;
+};
+
+/**
+ * @brief Helper function to translate thread entry points.
+ *
+ * Convert a (void*) thread entry to an (int, void*) thread entry, where the
+ * integer contains the thread ID in the thread pool.
+ *
+ * @param p The thread launch helper payload.
+ */
+static void* launch_threads_helper(void *p)
+{
+	launch_desc* ltd = (launch_desc*)p;
+	ltd->func(ltd->thread_count, ltd->thread_id, ltd->payload);
+	return nullptr;
+}
+
+/* Public function, see header file for detailed documentation */
+void launch_threads(
+	int thread_count,
+	void (*func)(int, int, void*),
+	void *payload
+) {
+	// Directly execute single threaded workloads on this thread
+	if (thread_count <= 1)
+	{
+		func(1, 0, payload);
+		return;
+	}
+
+	// Otherwise spawn worker threads
+	launch_desc *thread_descs = new launch_desc[thread_count];
+	for (int i = 0; i < thread_count; i++)
+	{
+		thread_descs[i].thread_count = thread_count;
+		thread_descs[i].thread_id = i;
+		thread_descs[i].payload = payload;
+		thread_descs[i].func = func;
+
+		pthread_create(&(thread_descs[i].thread_handle), nullptr,
+		               launch_threads_helper, (void*)&(thread_descs[i]));
+	}
+
+	// ... and then wait for them to complete
+	for (int i = 0; i < thread_count; i++)
+	{
+		pthread_join(thread_descs[i].thread_handle, nullptr);
+	}
+
+	delete[] thread_descs;
+}

@@ -93,6 +93,33 @@ static const mode_entry modes[] = {
 	{"-version", ASTCENC_OP_VERSION,    ASTCENC_PRF_HDR}
 };
 
+struct compression_workload {
+	astcenc_context* context;
+	astcenc_image* image;
+	astcenc_swizzle swizzle;
+	uint8_t* data_out;
+	size_t data_len;
+	astcenc_error error;
+};
+
+static void compression_workload_runner(
+	int thread_count,
+	int thread_id,
+	void* payload
+) {
+	(void)thread_count;
+
+	compression_workload* work = static_cast<compression_workload*>(payload);
+	astcenc_error error = astcenc_compress_image(
+	                       work->context, *work->image, work->swizzle,
+	                       work->data_out, work->data_len, thread_id);
+
+	// This is a racy update, so which error gets returned is a random, but it
+	// will reliably report an error if an error occurs
+	if (error != ASTCENC_SUCCESS) {
+		work->error = error;
+	}
+}
 
 /**
  * @brief Utility to generate a slice file name from a pattern.
@@ -773,6 +800,11 @@ int edit_astcenc_config(
 		}
 	}
 
+	if (cli_config.thread_count <= 0)
+	{
+		cli_config.thread_count = get_cpu_count();
+	}
+
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
 		// print all encoding settings unless specifically told otherwise.
@@ -988,11 +1020,19 @@ int main(
 		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
 		uint8_t* buffer = new uint8_t[buffer_size];
 
-		codec_status = astcenc_compress_image(codec_context, *image_uncomp_in, cli_config.swz_encode,
-		                                      buffer, buffer_size, 0);
-		if (codec_status != ASTCENC_SUCCESS)
+		compression_workload work;
+		work.context = codec_context;
+		work.image = image_uncomp_in;
+		work.swizzle = cli_config.swz_encode;
+		work.data_out = buffer;
+		work.data_len = buffer_size;
+		work.error = ASTCENC_SUCCESS;
+
+		launch_threads(cli_config.thread_count, compression_workload_runner, &work);
+
+		if (work.error != ASTCENC_SUCCESS)
 		{
-			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(codec_status));
+			printf("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
 			return 1;
 		}
 
@@ -1020,7 +1060,7 @@ int main(
 
 		// TODO: Pass through data len to avoid out-of-bounds reads
 		codec_status = astcenc_decompress_image(codec_context, image_comp.data, 0,
-		                                        *image_decomp_out, cli_config.swz_decode, 0);
+		                                        *image_decomp_out, cli_config.swz_decode);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));

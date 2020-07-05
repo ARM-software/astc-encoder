@@ -118,12 +118,6 @@ static astcenc_error validate_flags(
 		return ASTCENC_ERR_BAD_FLAGS;
 	}
 
-	// TODO: We don't support user threads yet
-	if (flags & ASTCENC_FLG_USE_USER_THREADS)
-	{
-		return ASTCENC_ERR_NOT_IMPLEMENTED;
-	}
-
 	return ASTCENC_SUCCESS;
 }
 
@@ -428,12 +422,6 @@ astcenc_error astcenc_init_config(
 		config.v_a_stdev = 25.0f;
 	}
 
-	// TODO: We don't support user threads yet
-	if (flags & ASTCENC_FLG_USE_USER_THREADS)
-	{
-		return ASTCENC_ERR_NOT_IMPLEMENTED;
-	}
-
 	config.flags = flags;
 
 	return ASTCENC_SUCCESS;
@@ -462,7 +450,7 @@ astcenc_error astcenc_context_alloc(
 
 	if (thread_count == 0)
 	{
-		thread_count = get_cpu_count();
+		return ASTCENC_ERR_BAD_PARAM;
 	}
 
 	try
@@ -482,6 +470,8 @@ astcenc_error astcenc_context_alloc(
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
+
+		ctx->barrier = new Barrier(thread_count);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -620,16 +610,13 @@ astcenc_error astcenc_compress_image(
 		return status;
 	}
 
-	if (context->config.flags & ASTCENC_FLG_USE_USER_THREADS)
+	if (thread_index >= context->thread_count)
 	{
-		if (thread_index >= context->thread_count)
-		{
-			return ASTCENC_ERR_BAD_PARAM;
-		}
+		return ASTCENC_ERR_BAD_PARAM;
 	}
 
 	// TODO: Replace error_weighting_params in the core codec with the config / context structs
-	error_weighting_params ewp;
+	error_weighting_params& ewp = context->ewp;
 	ewp.rgb_power = context->config.v_rgb_power;
 	ewp.rgb_base_weight = context->config.v_rgb_base;
 	ewp.rgb_mean_weight = context->config.v_rgb_mean;
@@ -664,7 +651,7 @@ astcenc_error astcenc_compress_image(
 	}
 
 	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
-	astc_codec_image input_image;
+	astc_codec_image& input_image = context->input_image;
 	input_image.data8 = image.data8;
 	input_image.data16 = image.data16;
 	input_image.xsize = image.dim_x;
@@ -676,18 +663,31 @@ astcenc_error astcenc_compress_image(
 	input_image.input_variances = nullptr;
 	input_image.input_alpha_averages = nullptr;
 
+	context->barrier->wait();
+
 	if (image.dim_pad > 0 ||
 	    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
 	    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
 	{
-		compute_averages_and_variances(&input_image, ewp.rgb_power, ewp.alpha_power,
-		                               ewp.mean_stdev_radius, ewp.alpha_radius,
-		                               swizzle, context->thread_count);
+		if (thread_index == 0)
+		{
+			init_compute_averages_and_variances(
+			    &input_image, ewp.rgb_power, ewp.alpha_power,
+			    ewp.mean_stdev_radius, ewp.alpha_radius, swizzle,
+			    context->arg, context->ag);
+		}
+
+		context->barrier->wait();
+
+		compute_averages_and_variances(context->thread_count, thread_index, context->ag);
 	}
 
 	// TODO: This could be done once when the context is created
-	expand_block_artifact_suppression(
-		context->config.block_x, context->config.block_y, context->config.block_z, &ewp);
+	if (thread_index <= 0)
+	{
+		expand_block_artifact_suppression(
+		    context->config.block_x, context->config.block_y, context->config.block_z, &ewp);
+	}
 
 	compress_astc_image_info ai;
 	ai.bsd = context->bsd;
@@ -701,23 +701,30 @@ astcenc_error astcenc_compress_image(
 	(void)data_len;
 
 	// TODO: Implement user-thread pools
-	launch_threads(context->thread_count, encode_astc_image_threadfunc, &ai);
+
+	context->barrier->wait();
+
+	encode_astc_image_threadfunc(context->thread_count, thread_index, (void*)&ai);
+
+	context->barrier->wait();
 
 	// Clean up any memory allocated by compute_averages_and_variances
-	delete[] input_image.input_averages;
-	delete[] input_image.input_variances;
-	delete[] input_image.input_alpha_averages;
+	if (thread_index < 0)
+	{
+		delete[] input_image.input_averages;
+		delete[] input_image.input_variances;
+		delete[] input_image.input_alpha_averages;
+	}
 
 	return ASTCENC_SUCCESS;
 }
 
 astcenc_error astcenc_decompress_image(
 	astcenc_context* context,
-	uint8_t* data,
+	const uint8_t* data,
 	size_t data_len,
 	astcenc_image& image_out,
-	astcenc_swizzle swizzle,
-	unsigned int thread_index
+	astcenc_swizzle swizzle
 ) {
 	astcenc_error status;
 
@@ -725,14 +732,6 @@ astcenc_error astcenc_decompress_image(
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
-	}
-
-	if (context->config.flags & ASTCENC_FLG_USE_USER_THREADS)
-	{
-		if (thread_index >= context->thread_count)
-		{
-			return ASTCENC_ERR_BAD_PARAM;
-		}
 	}
 
 	unsigned int block_x = context->config.block_x;
@@ -745,9 +744,6 @@ astcenc_error astcenc_decompress_image(
 
 	// TODO: Check output bounds
 	(void)data_len;
-
-	// TODO: Handle custom threading
-	(void)thread_index;
 
 	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
 	astc_codec_image image;
@@ -770,7 +766,7 @@ astcenc_error astcenc_decompress_image(
 			for (unsigned int x = 0; x < xblocks; x++)
 			{
 				unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-				uint8_t* bp = data + offset;
+				const uint8_t* bp = data + offset;
 				physical_compressed_block pcb = *(physical_compressed_block *) bp;
 				symbolic_compressed_block scb;
 				physical_to_symbolic(context->bsd, pcb, &scb);

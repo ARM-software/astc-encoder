@@ -26,6 +26,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <condition_variable>
+#include <mutex>
 
 #ifndef ASTCENC_SSE
 #error ERROR: ASTCENC_SSE not defined
@@ -54,6 +56,98 @@
 #define TEXEL_WEIGHT_SUM 16
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
+
+/**
+ * @brief A thread barrier.
+ *
+ * This barrier will block and hold threads until all threads in the thread
+ * pool have reached this point. It is useful as a simple means to manage
+ * execution of dependent workloads in a data processing pipeline; simply
+ * inserting barriers between pipeline stages ensures data dependencies are
+ * resolved before the next stage starts.
+ *
+ * This implementation is a reusable barrier that can be waited on multiple
+ * times.
+ */
+class Barrier
+{
+private:
+	/** @brief The allowed direction of the counter changes. */
+	enum Dir {
+		Up, Down
+	};
+
+	/** @brief The mutex for manageinv access to cv. */
+	std::mutex mtx;
+
+	/** @brief The condition variable to wait on. */
+	std::condition_variable cv;
+
+	/** @brief The waiting threads (or thread_count minus current count). */
+	size_t current_count;
+
+	/** @brief The number of threads in the workgroup. */
+	const size_t thread_count;
+
+	/** @brief The current direction of the counter changes. */
+	Dir dir;
+
+public:
+	/**
+	 * @brief Create a new barrier for a workgroup of the given size.
+	 *
+	 * @param thread_count The workgroup size.
+	 */
+	Barrier(size_t thread_count) :
+		current_count(0),
+		thread_count(thread_count),
+		dir(Dir::Up) { }
+
+	/**
+	 * @brief Wait the current thread on the barrier.
+	 *
+	 * This will wake up all threads in the workgroup once all threads in the
+	 * workgroup are waiting on the barrier.
+	 */
+	void wait()
+	{
+		// Acquire the mutex
+		std::unique_lock<std::mutex> lock { mtx };
+
+		// In down direction count until we hit zero, then flip the direction
+		// ready for the next barrier wait operation.
+		if (dir == Dir::Down)
+		{
+			current_count--;
+			if (current_count == 0)
+			{
+				dir = Dir::Up;
+				cv.notify_all();
+			}
+			else
+			{
+				// Use a predicate wait to filter-out false wake ups
+				cv.wait(lock, [this] { return dir == Dir::Up; });
+			}
+		}
+		// In up direction count until we hit thread_count, then flip the
+		// direction ready for the next barrier wait operation.
+		else
+		{
+			current_count++;
+			if (current_count == thread_count)
+			{
+				dir = Dir::Down;
+				cv.notify_all();
+			}
+			else
+			{
+				// Use a predicate wait to filter-out false wake ups
+				cv.wait(lock, [this] { return dir == Dir::Down; });
+			}
+		}
+	}
+};
 
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
@@ -619,11 +713,68 @@ struct astc_codec_image
 };
 
 
+/**
+ * @brief Parameter structure for compute_pixel_region_variance().
+ *
+ * This function takes a structure to avoid spilling arguments to the stack
+ * on every function invocation, as there are a lot of parameters.
+ */
+struct pixel_region_variance_args
+{
+	/** The image to analyze. */
+	const astc_codec_image *img;
+	/** The RGB channel power adjustment. */
+	float rgb_power;
+	/** The alpha channel power adjustment. */
+	float alpha_power;
+	/** The channel swizzle pattern. */
+	astcenc_swizzle swz;
+	/** Should the algorithm bother with Z axis processing? */
+	int have_z;
+	/** The kernel radius for average and variance. */
+	int avg_var_kernel_radius;
+	/** The kernel radius for alpha processing. */
+	int alpha_kernel_radius;
+	/** The size of the working data to process. */
+	int3 size;
+	/** The position of first src data in the data set. */
+	int3 src_offset;
+	/** The position of first dst data in the data set. */
+	int3 dst_offset;
+	/** The working memory buffer. */
+	float4 *work_memory;
+};
+
+/**
+ * @brief Parameter structure for compute_averages_and_variances_proc().
+ */
+struct avg_var_args
+{
+	/** The arguments for the nested variance computation. */
+	pixel_region_variance_args arg;
+	/** The image dimensions. */
+	int3 img_size;
+	/** The maximum working block dimensions. */
+	int3 blk_size;
+	/** The working block memory size. */
+	int work_memory_size;
+};
+
 struct astcenc_context
 {
 	astcenc_config config;
 	block_size_descriptor* bsd;
+	pixel_region_variance_args arg;
+	avg_var_args ag;
 	unsigned int thread_count;
+
+	// TODO: Replace these with config and input image. Currently here so they
+	// can be shared by user thread pool
+	astc_codec_image input_image;
+	error_weighting_params ewp;
+
+	// Thread management
+	Barrier* barrier;
 };
 
 /**
@@ -640,14 +791,20 @@ struct astcenc_context
  * @param swz                   Input data channel swizzle.
  * @param thread_count          The number of threads to use.
  */
-void compute_averages_and_variances(
+void init_compute_averages_and_variances(
 	astc_codec_image * img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	astcenc_swizzle swz,
-	int thread_count);
+	pixel_region_variance_args& arg,
+	avg_var_args& ag);
+
+void compute_averages_and_variances(
+	int thread_count,
+	int thread_id,
+	const avg_var_args& ag);
 
 // fetch an image-block from the input file
 void fetch_imageblock(
@@ -926,29 +1083,5 @@ int cpu_supports_popcnt();
  * @returns Zero if not supported, positive value if it is.
  */
 int cpu_supports_avx2();
-
-/**
- * @brief Get the number of CPU cores.
- *
- * @returns The number of online or onlineable CPU cores in the system.
- */
-int get_cpu_count();
-
-/**
- * @brief Launch N worker threads and wait for them to complete.
- *
- * All threads run the same thread function, and have the same thread payload,
- * but are given a unique thread ID (0 .. N-1) as a parameter to the run
- * function to allow thread-specific behavior.
- *
-|* @param thread_count The number of threads to spawn.
- * @param func         The function to execute. Must have the signature:
- *                     void (int thread_count, int thread_id, void* payload)
- * @param payload      Pointer to an opaque thread payload object.
- */
-void launch_threads(
-	int thread_count,
-	void (*func)(int, int, void*),
-	void *payload);
 
 #endif

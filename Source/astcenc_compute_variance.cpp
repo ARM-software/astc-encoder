@@ -32,53 +32,6 @@
 #include <cassert>
 
 /**
- * @brief Parameter structure for compute_pixel_region_variance().
- *
- * This function takes a structure to avoid spilling arguments to the stack
- * on every function invocation, as there are a lot of parameters.
- */
-struct pixel_region_variance_args
-{
-	/** The image to analyze. */
-	const astc_codec_image *img;
-	/** The RGB channel power adjustment. */
-	float rgb_power;
-	/** The alpha channel power adjustment. */
-	float alpha_power;
-	/** The channel swizzle pattern. */
-	astcenc_swizzle swz;
-	/** Should the algorithm bother with Z axis processing? */
-	int have_z;
-	/** The kernel radius for average and variance. */
-	int avg_var_kernel_radius;
-	/** The kernel radius for alpha processing. */
-	int alpha_kernel_radius;
-	/** The size of the working data to process. */
-	int3 size;
-	/** The position of first src data in the data set. */
-	int3 src_offset;
-	/** The position of first dst data in the data set. */
-	int3 dst_offset;
-	/** The working memory buffer. */
-	float4 *work_memory;
-};
-
-/**
- * @brief Parameter structure for compute_averages_and_variances_proc().
- */
-struct avg_var_args
-{
-	/** The arguments for the nested variance computation. */
-	pixel_region_variance_args arg;
-	/** The image dimensions. */
-	int3 img_size;
-	/** The maximum working block dimensions. */
-	int3 blk_size;
-	/** The working block memory size. */
-	int work_memory_size;
-};
-
-/**
  * @brief Generate a prefix-sum array using Brent-Kung algorithm.
  *
  * This will take an input array of the form:
@@ -524,24 +477,23 @@ static void compute_pixel_region_variance(
 	}
 }
 
-static void compute_averages_and_variances_proc(
+void compute_averages_and_variances(
 	int thread_count,
 	int thread_id,
-	void* payload
+	const avg_var_args &ag
 ) {
-	const struct avg_var_args *ag = (const struct avg_var_args *)payload;
-	struct pixel_region_variance_args arg = ag->arg;
-	arg.work_memory = new float4[ag->work_memory_size];
+	pixel_region_variance_args arg = ag.arg;
+	arg.work_memory = new float4[ag.work_memory_size];
 
 	int block_counter = 0;
 
-	int size_x = ag->img_size.x;
-	int size_y = ag->img_size.y;
-	int size_z = ag->img_size.z;
+	int size_x = ag.img_size.x;
+	int size_y = ag.img_size.y;
+	int size_z = ag.img_size.z;
 
-	int step_x = ag->blk_size.x;
-	int step_y = ag->blk_size.y;
-	int step_z = ag->blk_size.z;
+	int step_x = ag.blk_size.x;
+	int step_y = ag.blk_size.y;
+	int step_z = ag.blk_size.z;
 
 	int padding_xy = arg.img->padding;
 	int padding_z = arg.have_z ? padding_xy : 0;
@@ -579,14 +531,15 @@ static void compute_averages_and_variances_proc(
 }
 
 /* Public function, see header file for detailed documentation */
-void compute_averages_and_variances(
+void init_compute_averages_and_variances(
 	astc_codec_image* img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
 	astcenc_swizzle swz,
-	int thread_count
+	pixel_region_variance_args& arg,
+	avg_var_args& ag
 ) {
 	int size_x = img->xsize;
 	int size_y = img->ysize;
@@ -614,8 +567,6 @@ void compute_averages_and_variances(
 	int max_padsize_z = max_blk_size_z + (have_z ? kerneldim : 0);
 
 	// Perform block-wise averages-and-variances calculations across the image
-	struct pixel_region_variance_args arg;
-
 	// Initialize fields which are not populated until later
 	arg.size = int3(0, 0, 0);
 	arg.src_offset = int3(0, 0, 0);
@@ -630,11 +581,9 @@ void compute_averages_and_variances(
 	arg.avg_var_kernel_radius = avg_var_kernel_radius;
 	arg.alpha_kernel_radius = alpha_kernel_radius;
 
-	struct avg_var_args ag;
 	ag.arg = arg;
 	ag.img_size = int3(size_x, size_y, size_z);
 	ag.blk_size = int3(max_blk_size_xy, max_blk_size_xy, max_blk_size_z);
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
-
-	launch_threads(thread_count, compute_averages_and_variances_proc, &ag);
 }
+

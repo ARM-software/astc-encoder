@@ -52,7 +52,6 @@ SOURCES = \
     astcenc_partition_tables.cpp \
     astcenc_percentile_tables.cpp \
     astcenc_pick_best_endpoint_format.cpp \
-    astcenc_platform_dependents.cpp \
     astcenc_platform_isa_detection.cpp \
     astcenc_quantization.cpp \
     astcenc_symbolic_physical.cpp \
