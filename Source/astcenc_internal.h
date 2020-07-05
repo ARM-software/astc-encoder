@@ -87,7 +87,7 @@ private:
 	size_t current_count;
 
 	/** @brief The number of threads in the workgroup. */
-	const size_t thread_count;
+	const size_t workgroup_size;
 
 	/** @brief The current direction of the counter changes. */
 	Dir dir;
@@ -100,7 +100,7 @@ public:
 	 */
 	Barrier(size_t thread_count) :
 		current_count(0),
-		thread_count(thread_count),
+		workgroup_size(thread_count),
 		dir(Dir::Up) { }
 
 	/**
@@ -135,7 +135,7 @@ public:
 		else
 		{
 			current_count++;
-			if (current_count == thread_count)
+			if (current_count == workgroup_size)
 			{
 				dir = Dir::Down;
 				cv.notify_all();

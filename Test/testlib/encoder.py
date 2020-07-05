@@ -92,6 +92,8 @@ class EncoderBase():
         except (OSError, sp.CalledProcessError):
             print("ERROR: Test run failed")
             print("  + %s" % " ".join(command))
+            qcommand = ["\"%s\"" % x for x in command]
+            print("  + %s" % ", ".join(qcommand))
             sys.exit(1)
 
         return result.stdout.splitlines()

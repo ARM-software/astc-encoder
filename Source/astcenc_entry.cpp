@@ -473,6 +473,7 @@ astcenc_error astcenc_context_alloc(
 
 		ctx->barrier = new Barrier(thread_count);
 
+		ctx->ewp.block_artifact_suppression = ctx->config.b_deblock_weight;
 		expand_block_artifact_suppression(
 		    ctx->config.block_x, ctx->config.block_y, ctx->config.block_z, &ctx->ewp);
 	}
@@ -610,7 +611,6 @@ astcenc_error astcenc_compress_image(
 	ewp.enable_rgb_scale_with_alpha = context->config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT ? 1 : 0;
 	ewp.alpha_radius = context->config.a_scale_radius;
 	ewp.ra_normal_angular_scale = context->config.flags & ASTCENC_FLG_MAP_NORMAL ? 1 : 0;
-	ewp.block_artifact_suppression = context->config.b_deblock_weight;
 	ewp.rgba_weights[0] = context->config.cw_r_weight;
 	ewp.rgba_weights[1] = context->config.cw_g_weight;
 	ewp.rgba_weights[2] = context->config.cw_b_weight;
