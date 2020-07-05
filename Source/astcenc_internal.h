@@ -939,24 +939,23 @@ struct encoding_choice_errors
 // buffers used to store intermediate data in compress_symbolic_block_fixed_partition_*()
 struct compress_fixed_partition_buffers
 {
-	endpoints_and_weights* ei1;
-	endpoints_and_weights* ei2;
-	endpoints_and_weights* eix1;
-	endpoints_and_weights* eix2;
-	float* decimated_quantized_weights;
-	float* decimated_weights;
-	float* flt_quantized_decimated_quantized_weights;
-	uint8_t* u8_quantized_decimated_quantized_weights;
+	endpoints_and_weights ei1;
+	endpoints_and_weights ei2;
+	endpoints_and_weights eix1[MAX_DECIMATION_MODES];
+	endpoints_and_weights eix2[MAX_DECIMATION_MODES];
+	float decimated_quantized_weights[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
+	float decimated_weights[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
+	float flt_quantized_decimated_quantized_weights[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	uint8_t u8_quantized_decimated_quantized_weights[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
 };
 
 struct compress_symbolic_block_buffers
 {
-	error_weight_block* ewb;
-	error_weight_block_orig* ewbo;
-	symbolic_compressed_block* tempblocks;
-	imageblock* temp;
-	compress_fixed_partition_buffers* plane1;
-	compress_fixed_partition_buffers* planes2;
+	error_weight_block ewb;
+	error_weight_block_orig ewbo;
+	symbolic_compressed_block tempblocks[4];
+	imageblock temp;
+	compress_fixed_partition_buffers planes;
 };
 
 void compute_encoding_choice_errors(

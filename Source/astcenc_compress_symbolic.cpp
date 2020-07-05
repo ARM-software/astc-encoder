@@ -225,7 +225,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 	// first, compute ideal weights and endpoint colors, under the assumption that
 	// there is no quantization or decimation going on.
-	endpoints_and_weights *ei = tmpbuf->ei1;
+	endpoints_and_weights *ei = &tmpbuf->ei1;
 	endpoints_and_weights *eix = tmpbuf->eix1;
 	compute_endpoints_and_ideal_weights_1_plane(bsd, pi, blk, ewb, ei);
 
@@ -457,8 +457,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	pi += partition_index;
 
 	// first, compute ideal weights and endpoint colors
-	endpoints_and_weights *ei1 = tmpbuf->ei1;
-	endpoints_and_weights *ei2 = tmpbuf->ei2;
+	endpoints_and_weights *ei1 = &tmpbuf->ei1;
+	endpoints_and_weights *ei2 = &tmpbuf->ei2;
 	endpoints_and_weights *eix1 = tmpbuf->eix1;
 	endpoints_and_weights *eix2 = tmpbuf->eix2;
 	compute_endpoints_and_ideal_weights_2_planes(bsd, pi, blk, ewb, separate_component, ei1, ei2);
@@ -1131,8 +1131,8 @@ float compress_symbolic_block(
 		return 0.0f;
 	}
 
-	error_weight_block *ewb = tmpbuf->ewb;
-	error_weight_block_orig *ewbo = tmpbuf->ewbo;
+	error_weight_block *ewb = &tmpbuf->ewb;
+	error_weight_block_orig *ewbo = &tmpbuf->ewbo;
 
 	float error_weight_sum = prepare_error_weight_block(input_image, bsd, ewp, blk, ewb, ewbo);
 
@@ -1140,7 +1140,7 @@ float compress_symbolic_block(
 
 	float error_of_best_block = 1e20f;
 
-	imageblock *temp = tmpbuf->temp;
+	imageblock *temp = &tmpbuf->temp;
 
 	float best_errorvals_in_modes[17];
 	for (i = 0; i < 17; i++)
@@ -1164,7 +1164,7 @@ float compress_symbolic_block(
 	{
 		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ewp->max_refinement_iters, bsd, 1,	// partition count
 														0,	// partition index
-														blk, ewb, tempblocks, tmpbuf->plane1);
+														blk, ewb, tempblocks, &tmpbuf->planes);
 
 		best_errorval_in_mode = 1e30f;
 		for (j = 0; j < 4; j++)
@@ -1213,7 +1213,7 @@ float compress_symbolic_block(
 														 bsd, 1,	// partition count
 														 0,	// partition index
 														 i,	// the color component to test a separate plane of weights for.
-														 blk, ewb, tempblocks, tmpbuf->planes2);
+														 blk, ewb, tempblocks, &tmpbuf->planes);
 
 		best_errorval_in_mode = 1e30f;
 		for (j = 0; j < 4; j++)
@@ -1253,7 +1253,7 @@ float compress_symbolic_block(
 		for (i = 0; i < 2; i++)
 		{
 			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ewp->max_refinement_iters,
-															bsd, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, tmpbuf->plane1);
+															bsd, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
 			for (j = 0; j < 4; j++)
@@ -1296,7 +1296,7 @@ float compress_symbolic_block(
 															 bsd,
 															 partition_count,
 															 partition_indices_2planes[i] & (PARTITION_COUNT - 1), partition_indices_2planes[i] >> PARTITION_BITS,
-															 blk, ewb, tempblocks, tmpbuf->planes2);
+															 blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
 			for (j = 0; j < 4; j++)

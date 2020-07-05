@@ -543,22 +543,8 @@ static void encode_astc_image_threadfunc(
 	int yblocks = (ysize + ydim - 1) / ydim;
 	int zblocks = (zsize + zdim - 1) / zdim;
 
-	//allocate memory for temporary buffers
-	compress_symbolic_block_buffers temp_buffers;
-	temp_buffers.ewb = new error_weight_block;
-	temp_buffers.ewbo = new error_weight_block_orig;
-	temp_buffers.tempblocks = new symbolic_compressed_block[4];
-	temp_buffers.temp = new imageblock;
-	temp_buffers.planes2 = new compress_fixed_partition_buffers;
-	temp_buffers.planes2->ei1 = new endpoints_and_weights;
-	temp_buffers.planes2->ei2 = new endpoints_and_weights;
-	temp_buffers.planes2->eix1 = new endpoints_and_weights[MAX_DECIMATION_MODES];
-	temp_buffers.planes2->eix2 = new endpoints_and_weights[MAX_DECIMATION_MODES];
-	temp_buffers.planes2->decimated_quantized_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->decimated_weights = new float[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->flt_quantized_decimated_quantized_weights = new float[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.planes2->u8_quantized_decimated_quantized_weights = new uint8_t[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	temp_buffers.plane1 = temp_buffers.planes2;
+	// Allocate temporary buffers. Large, so allocate on the heap
+	auto temp_buffers = std::make_unique<compress_symbolic_block_buffers>();
 
 	for (z = 0; z < zblocks; z++)
 	{
@@ -572,7 +558,7 @@ static void encode_astc_image_threadfunc(
 					uint8_t *bp = buffer + offset;
 					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
 					symbolic_compressed_block scb;
-					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, &temp_buffers);
+					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers.get());
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = thread_count - 1;
 				}
@@ -581,20 +567,6 @@ static void encode_astc_image_threadfunc(
 			}
 		}
 	}
-
-	delete[] temp_buffers.planes2->decimated_quantized_weights;
-	delete[] temp_buffers.planes2->decimated_weights;
-	delete[] temp_buffers.planes2->flt_quantized_decimated_quantized_weights;
-	delete[] temp_buffers.planes2->u8_quantized_decimated_quantized_weights;
-	delete[] temp_buffers.planes2->eix1;
-	delete[] temp_buffers.planes2->eix2;
-	delete   temp_buffers.planes2->ei1;
-	delete   temp_buffers.planes2->ei2;
-	delete   temp_buffers.planes2;
-	delete[] temp_buffers.tempblocks;
-	delete   temp_buffers.temp;
-	delete   temp_buffers.ewbo;
-	delete   temp_buffers.ewb;
 }
 
 astcenc_error astcenc_compress_image(
