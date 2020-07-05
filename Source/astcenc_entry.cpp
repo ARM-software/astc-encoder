@@ -501,44 +501,32 @@ void astcenc_context_free(
 	{
 		term_block_size_descriptor(context->bsd);
 		delete context->bsd;
+		delete context->barrier;
 		delete context;
 	}
 }
 
-struct compress_astc_image_info
-{
-	const block_size_descriptor* bsd;
-	const error_weighting_params* ewp;
-	uint8_t* buffer;
-	int threadcount;
-	astcenc_profile decode_mode;
-	astcenc_swizzle swz_encode;
-	const astc_codec_image* input_image;
-};
-
-static void encode_astc_image_threadfunc(
-	int thread_count,
-	int thread_id,
-	void* vblk
+static void compress_astc_image(
+	astcenc_context& ctx,
+	const astc_codec_image& image,
+	astcenc_swizzle swizzle,
+	uint8_t* buffer,
+	int thread_id
 ) {
-	const compress_astc_image_info *blk = (const compress_astc_image_info *)vblk;
-	const block_size_descriptor *bsd = blk->bsd;
+	const block_size_descriptor *bsd = ctx.bsd;
 	int xdim = bsd->xdim;
 	int ydim = bsd->ydim;
 	int zdim = bsd->zdim;
-	uint8_t *buffer = blk->buffer;
-	const error_weighting_params *ewp = blk->ewp;
-	astcenc_profile decode_mode = blk->decode_mode;
-	astcenc_swizzle swz_encode = blk->swz_encode;
-	const astc_codec_image *input_image = blk->input_image;
+	const error_weighting_params *ewp = &ctx.ewp;
+	astcenc_profile decode_mode = ctx.config.profile;
 
 	imageblock pb;
 	int ctr = thread_id;
 
 	int x, y, z;
-	int xsize = input_image->xsize;
-	int ysize = input_image->ysize;
-	int zsize = input_image->zsize;
+	int xsize = image.xsize;
+	int ysize = image.ysize;
+	int zsize = image.zsize;
 	int xblocks = (xsize + xdim - 1) / xdim;
 	int yblocks = (ysize + ydim - 1) / ydim;
 	int zblocks = (zsize + zdim - 1) / zdim;
@@ -555,15 +543,17 @@ static void encode_astc_image_threadfunc(
 				if (ctr == 0)
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
-					uint8_t *bp = buffer + offset;
-					fetch_imageblock(decode_mode, input_image, &pb, bsd, x * xdim, y * ydim, z * zdim, swz_encode);
+					const uint8_t *bp = buffer + offset;
+					fetch_imageblock(decode_mode, &image, &pb, bsd, x * xdim, y * ydim, z * zdim, swizzle);
 					symbolic_compressed_block scb;
-					compress_symbolic_block(input_image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers.get());
+					compress_symbolic_block(&image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers.get());
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
-					ctr = thread_count - 1;
+					ctr = ctx.thread_count - 1;
 				}
 				else
+				{
 					ctr--;
+				}
 			}
 		}
 	}
@@ -653,6 +643,7 @@ astcenc_error astcenc_compress_image(
 	input_image.input_variances = nullptr;
 	input_image.input_alpha_averages = nullptr;
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	context->barrier->wait();
 
 	if (image.dim_pad > 0 ||
@@ -667,32 +658,22 @@ astcenc_error astcenc_compress_image(
 			    context->arg, context->ag);
 		}
 
+		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 		context->barrier->wait();
 
 		compute_averages_and_variances(context->thread_count, thread_index, context->ag);
 	}
 
-	compress_astc_image_info ai;
-	ai.bsd = context->bsd;
-	ai.buffer = data_out;
-	ai.ewp = &ewp;
-	ai.decode_mode = context->config.profile;
-	ai.swz_encode = swizzle;
-	ai.input_image = &input_image;
-
-	// TODO: Add bounds checking
-	(void)data_len;
-
-	// TODO: Implement user-thread pools
-
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	context->barrier->wait();
 
-	encode_astc_image_threadfunc(context->thread_count, thread_index, (void*)&ai);
+	compress_astc_image(*context, input_image, swizzle, data_out, thread_index);
 
+	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	context->barrier->wait();
 
 	// Clean up any memory allocated by compute_averages_and_variances
-	if (thread_index < 0)
+	if (thread_index == 0)
 	{
 		delete[] input_image.input_averages;
 		delete[] input_image.input_variances;
