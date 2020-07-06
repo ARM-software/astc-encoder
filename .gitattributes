@@ -10,6 +10,7 @@ Jenkinsfile text
 
 # VS solution always use Windows line endings
 *.sln text eol=crlf
+*.vcxproj text eol=crlf
 
 # Denote all files that are truly binary and should not be modified.
 *.png binary
