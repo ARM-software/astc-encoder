@@ -84,7 +84,7 @@ EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(VEC).o)
 
 BINARY = astcenc-$(VEC)
 
-CXXFLAGS = -std=c++17 -fvisibility=hidden -mfpmath=sse \
+CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the DBG parameter is a supported value, and patch CXXFLAGS

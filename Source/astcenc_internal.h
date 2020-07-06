@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <condition_variable>
+#include <malloc.h>
 #include <mutex>
 
 #ifndef ASTCENC_SSE
@@ -1082,5 +1083,51 @@ int cpu_supports_popcnt();
  * @returns Zero if not supported, positive value if it is.
  */
 int cpu_supports_avx2();
+
+
+/**
+ * @brief Allocate an aligned memory buffer.
+ *
+ * Allocated memory must be freed by aligned_free;
+ *
+ * @param size    The desired buffer size.
+ * @param align   The desired buffer alignment; must be 2^N.
+ * @returns The memory buffer pointer.
+ * @throw std::bad_alloc on allocation failure.
+ */
+template<typename T>
+T* aligned_malloc(size_t size, size_t align)
+{
+	void* ptr;
+	int error = 0;
+
+#if defined(_WIN32)
+	ptr = _aligned_malloc(size, align);
+#else
+	error = posix_memalign(&ptr, align, size);
+#endif
+
+	if (error || (!ptr))
+	{
+		throw std::bad_alloc();
+	}
+
+	return static_cast<T*>(ptr);
+}
+
+/**
+ * @brief Free an aligned memory buffer.
+ *
+ * @param ptr   The buffer to free.
+ */
+template<typename T>
+void aligned_free(T* ptr)
+{
+#if defined(_WIN32)
+	_aligned_free(ptr);
+#else
+	free(ptr);
+#endif
+}
 
 #endif

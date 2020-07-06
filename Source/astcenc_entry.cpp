@@ -22,6 +22,7 @@
 #include <cstring>
 #include <new>
 
+
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
@@ -533,7 +534,7 @@ static void compress_astc_image(
 	int zblocks = (zsize + zdim - 1) / zdim;
 
 	// Allocate temporary buffers. Large, so allocate on the heap
-	auto temp_buffers = std::make_unique<compress_symbolic_block_buffers>();
+	auto temp_buffers = aligned_malloc<compress_symbolic_block_buffers>(sizeof(compress_symbolic_block_buffers), 32);
 
 	for (z = 0; z < zblocks; z++)
 	{
@@ -547,7 +548,7 @@ static void compress_astc_image(
 					const uint8_t *bp = buffer + offset;
 					fetch_imageblock(decode_mode, &image, &pb, bsd, x * xdim, y * ydim, z * zdim, swizzle);
 					symbolic_compressed_block scb;
-					compress_symbolic_block(&image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers.get());
+					compress_symbolic_block(&image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers);
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = ctx.thread_count - 1;
 				}
@@ -558,6 +559,8 @@ static void compress_astc_image(
 			}
 		}
 	}
+
+	aligned_free<compress_symbolic_block_buffers>(temp_buffers);
 }
 
 astcenc_error astcenc_compress_image(
