@@ -258,7 +258,7 @@ class Encoder2x(EncoderBase):
         ]
 
         if image.colorFormat == "xy":
-            command.append("-normal_psnr")
+            command.append("-normal")
 
         if image.isMask:
             command.append("-mask")

@@ -774,7 +774,7 @@ class CLIPTest(CLITestBase):
 
         refdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
 
-        command.append("-normal_psnr")
+        command.append("-normal")
         testdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
 
         # Note that this test simply asserts that the "-normal_psnr" is
@@ -795,10 +795,11 @@ class CLIPTest(CLITestBase):
 
         refdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
 
-        command.append("-normal_percep")
+        command.append("-normal")
+        command.append("-perceptual")
         testdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
 
-        # Note that this test simply asserts that the "-normal_percep" is
+        # Note that this test simply asserts that the "-normal -percep" is
         # connected and affects the output. We don't test it does something
         # useful; that it outside the scope of this test case.
         self.assertNotEqual(refdB, testdB)

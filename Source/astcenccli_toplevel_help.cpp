@@ -158,7 +158,7 @@ COMPRESSION
            trying to minimize the effect of error cross-talk across the
            color channels.
 
-       -normal_psnr
+       -normal
            The input texture is a three channel normal map, storing unit
            length normals as R=X, G=Y, and B=Z, optimized for angular PSNR.
            The compressor will compress this data as a two channel X+Y
@@ -168,11 +168,11 @@ COMPRESSION
 
                Z = sqrt(1 - X^2 - Y^2).
 
-       -normal_percep
-           The input texture is a three channel normal map, as per
-           -normal_psnr, but is optimized for angular perceptual error.
-           This aims to improves perceptual quality of the normals, but
-           typically lowers the measured PSNR score.
+       -perceptual
+           The codec should optimize perceptual error, instead of direct
+           RMS error. This aims to improves perceived image quality, but
+           typically lowers the measured PSNR score. Perceptual methods
+           are currently only available for normal maps.
 
        -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.

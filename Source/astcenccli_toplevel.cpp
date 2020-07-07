@@ -413,13 +413,12 @@ int init_astcenc_config(
 			argidx++;
 			flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
 		}
-		else if (!strcmp(argv[argidx], "-normal_psnr"))
+		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			flags |= ASTCENC_FLG_MAP_NORMAL;
 		}
-		else if (!strcmp(argv[argidx], "-normal_percep"))
+		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
-			flags |= ASTCENC_FLG_MAP_NORMAL;
 			flags |= ASTCENC_FLG_USE_PERCEPTUAL;
 		}
 		else if (!strcmp(argv[argidx], "-mask"))
@@ -652,7 +651,7 @@ int edit_astcenc_config(
 			cli_config.swz_decode.a = swizzle_components[3];
 		}
 		// presets begin here
-		else if (!strcmp(argv[argidx], "-normal_psnr"))
+		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			argidx++;
 
@@ -666,19 +665,9 @@ int edit_astcenc_config(
 			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
 			cli_config.swz_decode.a = ASTCENC_SWZ_1;
 		}
-		else if (!strcmp(argv[argidx], "-normal_percep"))
+		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
 			argidx++;
-
-			cli_config.swz_encode.r = ASTCENC_SWZ_R;
-			cli_config.swz_encode.g = ASTCENC_SWZ_R;
-			cli_config.swz_encode.b = ASTCENC_SWZ_R;
-			cli_config.swz_encode.a = ASTCENC_SWZ_G;
-
-			cli_config.swz_decode.r = ASTCENC_SWZ_R;
-			cli_config.swz_decode.g = ASTCENC_SWZ_A;
-			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
-			cli_config.swz_decode.a = ASTCENC_SWZ_1;
 		}
 		else if (!strcmp(argv[argidx], "-mask"))
 		{
