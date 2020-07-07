@@ -726,16 +726,17 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	}
 }
 
-void expand_block_artifact_suppression(
-	unsigned int xdim,
-	unsigned int ydim,
-	unsigned int zdim,
-	error_weighting_params* ewp
+void expand_deblock_weights(
+	astcenc_context& ctx
 ) {
+	unsigned int xdim = ctx.config.block_x;
+	unsigned int ydim = ctx.config.block_y;
+	unsigned int zdim = ctx.config.block_z;
+
 	float centerpos_x = (xdim - 1) * 0.5f;
 	float centerpos_y = (ydim - 1) * 0.5f;
 	float centerpos_z = (zdim - 1) * 0.5f;
-	float *bef = ewp->block_artifact_suppression_expanded;
+	float *bef = ctx.deblock_weights;
 
 	for (unsigned int z = 0; z < zdim; z++)
 	{
@@ -749,7 +750,7 @@ void expand_block_artifact_suppression(
 
 				float wdif = 0.36f;
 				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
-				*bef = powf(dist, ewp->block_artifact_suppression);
+				*bef = powf(dist, ctx.config.b_deblock_weight);
 				bef++;
 			}
 		}
@@ -759,25 +760,24 @@ void expand_block_artifact_suppression(
 // Function to set error weights for each color component for each texel in a block.
 // Returns the sum of all the error values set.
 static float prepare_error_weight_block(
+	const astcenc_context& ctx,
 	const astc_codec_image* input_image,
 	const block_size_descriptor* bsd,
-	const error_weighting_params* ewp,
 	const imageblock* blk,
 	error_weight_block* ewb,
 	error_weight_block_orig* ewbo
 ) {
 	int idx = 0;
-
 	int any_mean_stdev_weight =
-		ewp->rgb_mean_weight != 0.0f || ewp->rgb_stdev_weight != 0.0f || \
-		ewp->alpha_mean_weight != 0.0f || ewp->alpha_stdev_weight != 0.0f;
+		ctx.config.v_rgb_mean != 0.0f || ctx.config.v_rgb_stdev != 0.0f || \
+		ctx.config.v_a_mean != 0.0f || ctx.config.v_a_stdev != 0.0f;
 
 	float4 derv[MAX_TEXELS_PER_BLOCK];
 	imageblock_initialize_deriv(blk, bsd->texel_count, derv);
-	float4 color_weights = float4(ewp->rgba_weights[0],
-	                              ewp->rgba_weights[1],
-	                              ewp->rgba_weights[2],
-	                              ewp->rgba_weights[3]);
+	float4 color_weights = float4(ctx.config.cw_r_weight,
+	                              ctx.config.cw_g_weight,
+	                              ctx.config.cw_b_weight,
+	                              ctx.config.cw_a_weight);
 
 	ewb->contains_zeroweight_texels = 0;
 
@@ -799,10 +799,10 @@ static float prepare_error_weight_block(
 				}
 				else
 				{
-					float4 error_weight = float4(ewp->rgb_base_weight,
-					                             ewp->rgb_base_weight,
-					                             ewp->rgb_base_weight,
-					                             ewp->alpha_base_weight);
+					float4 error_weight = float4(ctx.config.v_rgb_base,
+					                             ctx.config.v_rgb_base,
+					                             ctx.config.v_rgb_base,
+					                             ctx.config.v_a_base);
 
 					int ydt = input_image->xsize;
 					int zdt = input_image->xsize * input_image->ysize;
@@ -827,7 +827,7 @@ static float prepare_error_weight_block(
 						float favg = (avg.x + avg.y + avg.z) * (1.0f / 3.0f);
 						float fvar = (variance.x + variance.y + variance.z) * (1.0f / 3.0f);
 
-						float mixing = ewp->rgb_mean_and_stdev_mixing;
+						float mixing = ctx.config.v_rgba_mean_stdev_mix;
 						avg.x = favg * mixing + avg.x * (1.0f - mixing);
 						avg.y = favg * mixing + avg.y * (1.0f - mixing);
 						avg.z = favg * mixing + avg.z * (1.0f - mixing);
@@ -841,15 +841,15 @@ static float prepare_error_weight_block(
 											  astc::sqrt(MAX(variance.z, 0.0f)),
 											  astc::sqrt(MAX(variance.w, 0.0f)));
 
-						avg.x *= ewp->rgb_mean_weight;
-						avg.y *= ewp->rgb_mean_weight;
-						avg.z *= ewp->rgb_mean_weight;
-						avg.w *= ewp->alpha_mean_weight;
+						avg.x *= ctx.config.v_rgb_mean;
+						avg.y *= ctx.config.v_rgb_mean;
+						avg.z *= ctx.config.v_rgb_mean;
+						avg.w *= ctx.config.v_a_mean;
 
-						stdev.x *= ewp->rgb_stdev_weight;
-						stdev.y *= ewp->rgb_stdev_weight;
-						stdev.z *= ewp->rgb_stdev_weight;
-						stdev.w = stdev.w * ewp->alpha_stdev_weight;
+						stdev.x *= ctx.config.v_rgb_stdev;
+						stdev.y *= ctx.config.v_rgb_stdev;
+						stdev.z *= ctx.config.v_rgb_stdev;
+						stdev.w *= ctx.config.v_a_stdev;
 
 						error_weight = error_weight + avg + stdev;
 
@@ -859,7 +859,7 @@ static float prepare_error_weight_block(
 											  1.0f / error_weight.w);
 					}
 
-					if (ewp->ra_normal_angular_scale)
+					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
 					{
 						// Convert from 0 to 1 to -1 to +1 range.
 						float xN = (blk->orig_data[4 * idx] - 0.5f) * 2.0f;
@@ -873,15 +873,17 @@ static float prepare_error_weight_block(
 						error_weight.w *= 1.0f + yN * yN * denom;
 					}
 
-					if (ewp->enable_rgb_scale_with_alpha)
+					if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 					{
 						float alpha_scale;
-						if (ewp->alpha_radius != 0)
+						if (ctx.config.a_scale_radius != 0)
 							alpha_scale = input_image->input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
 						else
 							alpha_scale = blk->orig_data[4 * idx + 3];
+
 						if (alpha_scale < 0.0001f)
 							alpha_scale = 0.0001f;
+
 						alpha_scale *= alpha_scale;
 						error_weight.x *= alpha_scale;
 						error_weight.y *= alpha_scale;
@@ -889,7 +891,7 @@ static float prepare_error_weight_block(
 					}
 
 					error_weight = error_weight * color_weights;
-					error_weight = error_weight * ewp->block_artifact_suppression_expanded[idx];
+					error_weight = error_weight * ctx.deblock_weights[idx];
 
 					// when we loaded the block to begin with, we applied a transfer function
 					// and computed the derivative of the transfer function. However, the
@@ -1061,10 +1063,10 @@ static void prepare_block_statistics(
 }
 
 float compress_symbolic_block(
+	const astcenc_context& ctx,
 	const astc_codec_image* input_image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
-	const error_weighting_params* ewp,
 	const imageblock* blk,
 	symbolic_compressed_block* scb,
 	compress_symbolic_block_buffers* tmpbuf)
@@ -1134,7 +1136,7 @@ float compress_symbolic_block(
 	error_weight_block *ewb = &tmpbuf->ewb;
 	error_weight_block_orig *ewbo = &tmpbuf->ewbo;
 
-	float error_weight_sum = prepare_error_weight_block(input_image, bsd, ewp, blk, ewb, ewbo);
+	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb, ewbo);
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
@@ -1148,7 +1150,7 @@ float compress_symbolic_block(
 
 	int uses_alpha = imageblock_uses_alpha(blk);
 
-	float mode_cutoff = ewp->block_mode_cutoff;
+	float mode_cutoff = ctx.config.tune_block_mode_limit / 100.0f;
 
 	// next, test mode #0. This mode uses 1 plane of weights and 1 partition.
 	// we test it twice, first with a modecutoff of 0, then with the specified mode-cutoff.
@@ -1162,7 +1164,7 @@ float compress_symbolic_block(
 	float best_errorval_in_mode;
 	for (i = 0; i < 2; i++)
 	{
-		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ewp->max_refinement_iters, bsd, 1,	// partition count
+		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
 														0,	// partition index
 														blk, ewb, tempblocks, &tmpbuf->planes);
 
@@ -1185,7 +1187,7 @@ float compress_symbolic_block(
 		}
 
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
+		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 			goto END_OF_TESTS;
 	}
 
@@ -1200,7 +1202,7 @@ float compress_symbolic_block(
 	for (i = 0; i < 4; i++)
 	{
 
-		if (lowest_correl > ewp->lowest_correlation_cutoff)
+		if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
 			continue;
 
 		if (blk->grayscale && i != 3)
@@ -1209,7 +1211,7 @@ float compress_symbolic_block(
 		if (!uses_alpha && i == 3)
 			continue;
 
-		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ewp->max_refinement_iters,
+		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ctx.config.tune_refinement_limit,
 														 bsd, 1,	// partition count
 														 0,	// partition index
 														 i,	// the color component to test a separate plane of weights for.
@@ -1235,7 +1237,7 @@ float compress_symbolic_block(
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
 
-		if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
+		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 			goto END_OF_TESTS;
 	}
 
@@ -1246,13 +1248,13 @@ float compress_symbolic_block(
 		int partition_indices_1plane[2];
 		int partition_indices_2planes[2];
 
-		find_best_partitionings(ewp->partition_search_limit,
+		find_best_partitionings(ctx.config.tune_partition_limit,
 								bsd, partition_count, blk, ewb, 1,
 								&(partition_indices_1plane[0]), &(partition_indices_1plane[1]), &(partition_indices_2planes[0]));
 
 		for (i = 0; i < 2; i++)
 		{
-			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ewp->max_refinement_iters,
+			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ctx.config.tune_refinement_limit,
 															bsd, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
@@ -1275,11 +1277,11 @@ float compress_symbolic_block(
 
 			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
-			if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
+			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 				goto END_OF_TESTS;
 		}
 
-		if (partition_count == 2 && !is_normal_map && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ewp->partition_1_to_2_limit))
+		if (partition_count == 2 && !is_normal_map && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
 			goto END_OF_TESTS;
 
 		// don't bother to check 4 partitions for dual plane of weights, ever.
@@ -1288,11 +1290,11 @@ float compress_symbolic_block(
 
 		for (i = 0; i < 2; i++)
 		{
-			if (lowest_correl > ewp->lowest_correlation_cutoff)
+			if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
 				continue;
 			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
 															 mode_cutoff,
-															 ewp->max_refinement_iters,
+															 ctx.config.tune_refinement_limit,
 															 bsd,
 															 partition_count,
 															 partition_indices_2planes[i] & (PARTITION_COUNT - 1), partition_indices_2planes[i] >> PARTITION_BITS,
@@ -1320,7 +1322,7 @@ float compress_symbolic_block(
 
 			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2 + i] = best_errorval_in_mode;
 
-			if ((error_of_best_block / error_weight_sum) < ewp->texel_avg_error_limit)
+			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 				goto END_OF_TESTS;
 		}
 	}

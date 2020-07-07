@@ -468,15 +468,25 @@ astcenc_error astcenc_context_alloc(
 			return status;
 		}
 
+		// Rewrite config settings into a canonical internal form
+		// Expand deblock supression into a weight scale per texel in the block
+		expand_deblock_weights(*ctx);
+
+		// Turn a dB limit into a per-texel error for faster use later
+		if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
+		{
+			ctx->config.tune_db_limit = powf(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
+		}
+		else
+		{
+			ctx->config.tune_db_limit = 0.0f;
+		}
+
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
 
 		ctx->barrier = new Barrier(thread_count);
-
-		ctx->ewp.block_artifact_suppression = ctx->config.b_deblock_weight;
-		expand_block_artifact_suppression(
-		    ctx->config.block_x, ctx->config.block_y, ctx->config.block_z, &ctx->ewp);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -519,7 +529,6 @@ static void compress_astc_image(
 	int xdim = bsd->xdim;
 	int ydim = bsd->ydim;
 	int zdim = bsd->zdim;
-	const error_weighting_params *ewp = &ctx.ewp;
 	astcenc_profile decode_mode = ctx.config.profile;
 
 	imageblock pb;
@@ -548,7 +557,7 @@ static void compress_astc_image(
 					const uint8_t *bp = buffer + offset;
 					fetch_imageblock(decode_mode, &image, &pb, bsd, x * xdim, y * ydim, z * zdim, swizzle);
 					symbolic_compressed_block scb;
-					compress_symbolic_block(&image, decode_mode, bsd, ewp, &pb, &scb, temp_buffers);
+					compress_symbolic_block(ctx, &image, decode_mode, bsd, &pb, &scb, temp_buffers);
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = ctx.thread_count - 1;
 				}
@@ -564,7 +573,7 @@ static void compress_astc_image(
 }
 
 astcenc_error astcenc_compress_image(
-	astcenc_context* context,
+	astcenc_context* ctx,
 	astcenc_image& image,
 	astcenc_swizzle swizzle,
 	uint8_t* data_out,
@@ -579,14 +588,14 @@ astcenc_error astcenc_compress_image(
 		return status;
 	}
 
-	if (thread_index >= context->thread_count)
+	if (thread_index >= ctx->thread_count)
 	{
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	unsigned int block_x = context->config.block_x;
-	unsigned int block_y = context->config.block_y;
-	unsigned int block_z = context->config.block_z;
+	unsigned int block_x = ctx->config.block_x;
+	unsigned int block_y = ctx->config.block_y;
+	unsigned int block_z = ctx->config.block_z;
 
 	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
 	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
@@ -599,42 +608,8 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	// TODO: Replace error_weighting_params in the core codec with the config / context structs
-	error_weighting_params& ewp = context->ewp;
-	ewp.rgb_power = context->config.v_rgb_power;
-	ewp.rgb_base_weight = context->config.v_rgb_base;
-	ewp.rgb_mean_weight = context->config.v_rgb_mean;
-	ewp.rgb_stdev_weight = context->config.v_rgb_stdev;
-	ewp.alpha_power = context->config.v_a_power;
-	ewp.alpha_base_weight = context->config.v_a_base;
-	ewp.alpha_mean_weight = context->config.v_a_mean;
-	ewp.alpha_stdev_weight = context->config.v_a_stdev;
-	ewp.rgb_mean_and_stdev_mixing = context->config.v_rgba_mean_stdev_mix;
-	ewp.mean_stdev_radius = context->config.v_rgba_radius;
-	ewp.enable_rgb_scale_with_alpha = context->config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT ? 1 : 0;
-	ewp.alpha_radius = context->config.a_scale_radius;
-	ewp.ra_normal_angular_scale = context->config.flags & ASTCENC_FLG_MAP_NORMAL ? 1 : 0;
-	ewp.rgba_weights[0] = context->config.cw_r_weight;
-	ewp.rgba_weights[1] = context->config.cw_g_weight;
-	ewp.rgba_weights[2] = context->config.cw_b_weight;
-	ewp.rgba_weights[3] = context->config.cw_a_weight;
-	ewp.partition_search_limit = context->config.tune_partition_limit;
-	ewp.block_mode_cutoff = context->config.tune_block_mode_limit / 100.0f;
-	ewp.partition_1_to_2_limit = context->config.tune_partition_early_out_limit;
-	ewp.lowest_correlation_cutoff = context->config.tune_two_plane_early_out_limit;
-	ewp.max_refinement_iters = context->config.tune_refinement_limit;
-
-	if ((context->config.profile == ASTCENC_PRF_LDR) || (context->config.profile == ASTCENC_PRF_LDR_SRGB))
-	{
-		ewp.texel_avg_error_limit  = powf(0.1f, context->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
-	}
-	else
-	{
-		ewp.texel_avg_error_limit = 0.0f;
-	}
-
 	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
-	astc_codec_image& input_image = context->input_image;
+	astc_codec_image& input_image = ctx->input_image;
 	input_image.data8 = image.data8;
 	input_image.data16 = image.data16;
 	input_image.xsize = image.dim_x;
@@ -647,33 +622,33 @@ astcenc_error astcenc_compress_image(
 	input_image.input_alpha_averages = nullptr;
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	context->barrier->wait();
+	ctx->barrier->wait();
 
 	if (image.dim_pad > 0 ||
-	    ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f ||
-	    ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f)
+	    ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
+	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f)
 	{
 		if (thread_index == 0)
 		{
 			init_compute_averages_and_variances(
-			    &input_image, ewp.rgb_power, ewp.alpha_power,
-			    ewp.mean_stdev_radius, ewp.alpha_radius, swizzle,
-			    context->arg, context->ag);
+			    &input_image, ctx->config.v_rgb_power, ctx->config.v_a_power,
+			    ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
+			    ctx->arg, ctx->ag);
 		}
 
 		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-		context->barrier->wait();
+		ctx->barrier->wait();
 
-		compute_averages_and_variances(context->thread_count, thread_index, context->ag);
+		compute_averages_and_variances(ctx->thread_count, thread_index, ctx->ag);
 	}
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	context->barrier->wait();
+	ctx->barrier->wait();
 
-	compress_astc_image(*context, input_image, swizzle, data_out, thread_index);
+	compress_astc_image(*ctx, input_image, swizzle, data_out, thread_index);
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	context->barrier->wait();
+	ctx->barrier->wait();
 
 	// Clean up any memory allocated by compute_averages_and_variances
 	if (thread_index == 0)

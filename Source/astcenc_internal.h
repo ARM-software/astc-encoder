@@ -769,6 +769,8 @@ struct astcenc_context
 	avg_var_args ag;
 	unsigned int thread_count;
 
+	float deblock_weights[MAX_TEXELS_PER_BLOCK];
+
 	// TODO: Replace these with config and input image. Currently here so they
 	// can be shared by user thread pool
 	astc_codec_image input_image;
@@ -996,14 +998,11 @@ void recompute_ideal_colors(
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb);
 
-void expand_block_artifact_suppression(
-	unsigned int xdim,
-	unsigned int ydim,
-	unsigned int zdim,
-	error_weighting_params* ewp);
+void expand_deblock_weights(
+	astcenc_context& ctx);
 
 // functions pertaining to weight alignment
-void prepare_angular_tables(void);
+void prepare_angular_tables();
 
 void imageblock_initialize_deriv(
 	const imageblock* pb,
@@ -1031,10 +1030,10 @@ void compute_angular_endpoints_2planes(
 /* *********************************** high-level encode and decode functions ************************************ */
 
 float compress_symbolic_block(
+	const astcenc_context& ctx,
 	const astc_codec_image* input_image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
-	const error_weighting_params* ewp,
 	const imageblock* blk,
 	symbolic_compressed_block* scb,
 	compress_symbolic_block_buffers* tmpbuf);
