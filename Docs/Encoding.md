@@ -151,9 +151,9 @@ the RGB color channels in some circumstances:
 ## Encoding normal maps
 
 The best way to store normal maps using ASTC is similar to the scheme used by
-BC5; store the X and Y components of a unit-length tangent space normal. The
-Z component of the normal can be reconstructed in shader code based on the
-knowledge that the vector is unit length.
+BC5; store the X and Y components of a unit-length normal. The Z component of
+the normal can be reconstructed in shader code based on the knowledge that the
+vector is unit length.
 
 To encode this we therefore want to store two input channels and should
 therefore use the `rrrg` coding swizzle, and the `.ga` sampling swizzle. The
@@ -163,9 +163,17 @@ OpenGL ES shader code for reconstruction of the Z value is:
     normal.xy = texture(...).ga;
     normal.z = sqrt(1 - dot(normal.xy, normal.xy));
 
-In addition to this it is useful to use the `-normal_psnr` command line
-option, which switches the compressor to optimize for angular error in the
-resulting vector rather than for absolute color error in the data.
+In addition to this it is useful to optimize for angular error in the resulting
+vector rather than for absolute color error in the data, which improves the
+perceptual quality of the image.
+
+Both the encoding swizzle and the angular error function are enabled by using
+the `-normal` command line option. Normal map compression additionally supports
+a dedicated perceptual error mode, enabled with the `-perceptual` switch, which
+also optimizes for variance in the normal vector over a small neighborhood.
+This can improve perceived visual quality by reducing variability that is
+amplified by specular lighting calculations, but it will reduce the apparent
+PSNR of the image.
 
 ## Encoding sRGB data
 
@@ -191,9 +199,9 @@ handling the alpha channel.
 
 For many use cases the alpha channel is an actual alpha opacity channel and is
 therefore used for storing an LDR value between 0 and 1. For these cases use
-the `-hdr` compressor option which will treat the RGB channels as HDR, but the
+the `-ch` compressor option which will treat the RGB channels as HDR, but the
 A channel as LDR.
 
 For other use cases the alpha channel is simply a fourth data channel which is
-also storing an HDR value. For these cases use the `-hdra` compressor option
+also storing an HDR value. For these cases use the `-cH` compressor option
 which will treat all channels as HDR data.
