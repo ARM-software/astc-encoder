@@ -271,35 +271,6 @@ static inline int imageblock_uses_alpha(const imageblock * pb)
 	return pb->alpha_max != pb->alpha_min;
 }
 
-struct error_weighting_params
-{
-	float rgb_power;
-	float rgb_base_weight;
-	float rgb_mean_weight;
-	float rgb_stdev_weight;
-	float alpha_power;
-	float alpha_base_weight;
-	float alpha_mean_weight;
-	float alpha_stdev_weight;
-	float rgb_mean_and_stdev_mixing;
-	int mean_stdev_radius;
-	int enable_rgb_scale_with_alpha;
-	int alpha_radius;
-	int ra_normal_angular_scale;
-	float block_artifact_suppression;
-	float rgba_weights[4];
-
-	float block_artifact_suppression_expanded[MAX_TEXELS_PER_BLOCK];
-
-	// parameters that deal with heuristic codec speedups
-	int partition_search_limit;
-	float block_mode_cutoff;
-	float texel_avg_error_limit;
-	float partition_1_to_2_limit;
-	float lowest_correlation_cutoff;
-	int max_refinement_iters;
-};
-
 void update_imageblock_flags(
 	imageblock* pb,
 	int xdim,
@@ -774,7 +745,6 @@ struct astcenc_context
 	// TODO: Replace these with config and input image. Currently here so they
 	// can be shared by user thread pool
 	astc_codec_image input_image;
-	error_weighting_params ewp;
 
 	// Thread management
 	Barrier* barrier;
