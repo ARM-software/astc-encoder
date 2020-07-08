@@ -344,7 +344,7 @@ int init_astcenc_config(
 	{
 		block_x = comp_image.block_x;
 		block_y = comp_image.block_y;
-		block_z = comp_image.block_y;
+		block_z = comp_image.block_z;
 	}
 
 	astcenc_preset preset = ASTCENC_PRE_FAST;
