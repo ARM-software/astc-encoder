@@ -667,17 +667,6 @@ void kmeans_compute_partition_ordering(
 // functions and data pertaining to images and imageblocks
 // *********************************************************
 
-struct astc_codec_image
-{
-	uint8_t ***data8;
-	uint16_t ***data16;
-	int xsize;
-	int ysize;
-	int zsize;
-	int padding;
-};
-
-
 /**
  * @brief Parameter structure for compute_pixel_region_variance().
  *
@@ -689,7 +678,7 @@ struct pixel_region_variance_args
 	/** The image to analyze. */
 	const astcenc_context* ctx;
 	/** The image to analyze. */
-	const astc_codec_image* img;
+	const astcenc_image* img;
 	/** The RGB channel power adjustment. */
 	float rgb_power;
 	/** The alpha channel power adjustment. */
@@ -744,10 +733,6 @@ struct astcenc_context
 	float4 *input_variances;
 	float *input_alpha_averages;
 
-	// TODO: Replace these with config and input image. Currently here so they
-	// can be shared by user thread pool
-	astc_codec_image input_image;
-
 	// Thread management
 	Barrier* barrier;
 };
@@ -769,7 +754,7 @@ struct astcenc_context
  */
 void init_compute_averages_and_variances(
 	astcenc_context& ctx,
-	astc_codec_image& img,
+	astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,
@@ -786,7 +771,7 @@ void compute_averages_and_variances(
 // fetch an image-block from the input file
 void fetch_imageblock(
 	astcenc_profile decode_mode,
-	const astc_codec_image* img,
+	const astcenc_image& img,
 	imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in picture to fetch block from
@@ -798,7 +783,7 @@ void fetch_imageblock(
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
 void write_imageblock(
-	astc_codec_image* img,
+	astcenc_image& img,
 	const imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in picture to write block to.
@@ -1005,7 +990,7 @@ void compute_angular_endpoints_2planes(
 
 float compress_symbolic_block(
 	const astcenc_context& ctx,
-	const astc_codec_image* input_image,
+	const astcenc_image& image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,

@@ -248,7 +248,7 @@ void imageblock_initialize_orig_from_work(
 // fetch an imageblock from the input file.
 void fetch_imageblock(
 	astcenc_profile decode_mode,
-	const astc_codec_image* img,
+	const astcenc_image& img,
 	imageblock* pb,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in texture.
@@ -258,9 +258,9 @@ void fetch_imageblock(
 	astcenc_swizzle swz
 ) {
 	float *fptr = pb->orig_data;
-	int xsize = img->xsize + 2 * img->padding;
-	int ysize = img->ysize + 2 * img->padding;
-	int zsize = (img->zsize == 1) ? 1 : img->zsize + 2 * img->padding;
+	int xsize = img.dim_x + 2 * img.dim_pad;
+	int ysize = img.dim_y + 2 * img.dim_pad;
+	int zsize = (img.dim_z == 1) ? 1 : img.dim_z + 2 * img.dim_pad;
 
 	int x, y, z, i;
 
@@ -268,16 +268,18 @@ void fetch_imageblock(
 	pb->ypos = ypos;
 	pb->zpos = zpos;
 
-	xpos += img->padding;
-	ypos += img->padding;
-	if (img->zsize > 1)
-		zpos += img->padding;
+	xpos += img.dim_pad;
+	ypos += img.dim_pad;
+	if (img.dim_z > 1)
+	{
+		zpos += img.dim_pad;
+	}
 
 	float data[6];
 	data[4] = 0;
 	data[5] = 1;
 
-	if (img->data8)
+	if (img.data8)
 	{
 		for (z = 0; z < bsd->zdim; z++)
 		{
@@ -302,10 +304,10 @@ void fetch_imageblock(
 					if (zi >= zsize)
 						zi = zsize - 1;
 
-					int r = img->data8[zi][yi][4 * xi];
-					int g = img->data8[zi][yi][4 * xi + 1];
-					int b = img->data8[zi][yi][4 * xi + 2];
-					int a = img->data8[zi][yi][4 * xi + 3];
+					int r = img.data8[zi][yi][4 * xi];
+					int g = img.data8[zi][yi][4 * xi + 1];
+					int b = img.data8[zi][yi][4 * xi + 2];
+					int a = img.data8[zi][yi][4 * xi + 3];
 
 					data[0] = r / 255.0f;
 					data[1] = g / 255.0f;
@@ -322,7 +324,7 @@ void fetch_imageblock(
 			}
 		}
 	}
-	else if (img->data16)
+	else if (img.data16)
 	{
 		for (z = 0; z < bsd->zdim; z++)
 		{
@@ -347,10 +349,10 @@ void fetch_imageblock(
 					if (zi >= ysize)
 						zi = zsize - 1;
 
-					int r = img->data16[zi][yi][4 * xi];
-					int g = img->data16[zi][yi][4 * xi + 1];
-					int b = img->data16[zi][yi][4 * xi + 2];
-					int a = img->data16[zi][yi][4 * xi + 3];
+					int r = img.data16[zi][yi][4 * xi];
+					int g = img.data16[zi][yi][4 * xi + 1];
+					int b = img.data16[zi][yi][4 * xi + 2];
+					int a = img.data16[zi][yi][4 * xi + 3];
 
 					float rf = sf16_to_float(r);
 					float gf = sf16_to_float(g);
@@ -394,7 +396,7 @@ void fetch_imageblock(
 }
 
 void write_imageblock(
-	astc_codec_image* img,
+	astcenc_image& img,
 	const imageblock* pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
 	const block_size_descriptor* bsd,
 	// position to write the block to
@@ -405,16 +407,16 @@ void write_imageblock(
 ) {
 	const float *fptr = pb->orig_data;
 	const uint8_t *nptr = pb->nan_texel;
-	int xsize = img->xsize;
-	int ysize = img->ysize;
-	int zsize = img->zsize;
+	int xsize = img.dim_x;
+	int ysize = img.dim_y;
+	int zsize = img.dim_z;
 	int x, y, z;
 
 	float data[7];
 	data[4] = 0.0f;
 	data[5] = 1.0f;
 
-	if (img->data8)
+	if (img.data8)
 	{
 		for (z = 0; z < bsd->zdim; z++)
 		{
@@ -431,10 +433,10 @@ void write_imageblock(
 						if (*nptr)
 						{
 							// NaN-pixel, but we can't display it. Display purple instead.
-							img->data8[zi][yi][4 * xi] = 0xFF;
-							img->data8[zi][yi][4 * xi + 1] = 0x00;
-							img->data8[zi][yi][4 * xi + 2] = 0xFF;
-							img->data8[zi][yi][4 * xi + 3] = 0xFF;
+							img.data8[zi][yi][4 * xi] = 0xFF;
+							img.data8[zi][yi][4 * xi + 1] = 0x00;
+							img.data8[zi][yi][4 * xi + 2] = 0xFF;
+							img.data8[zi][yi][4 * xi + 3] = 0xFF;
 						}
 						else
 						{
@@ -466,10 +468,10 @@ void write_imageblock(
 							int bi = astc::flt2int_rtn(data[swz.b] * 255.0f);
 							int ai = astc::flt2int_rtn(data[swz.a] * 255.0f);
 
-							img->data8[zi][yi][4 * xi] = ri;
-							img->data8[zi][yi][4 * xi + 1] = gi;
-							img->data8[zi][yi][4 * xi + 2] = bi;
-							img->data8[zi][yi][4 * xi + 3] = ai;
+							img.data8[zi][yi][4 * xi] = ri;
+							img.data8[zi][yi][4 * xi + 1] = gi;
+							img.data8[zi][yi][4 * xi + 2] = bi;
+							img.data8[zi][yi][4 * xi + 3] = ai;
 						}
 					}
 					fptr += 4;
@@ -478,7 +480,7 @@ void write_imageblock(
 			}
 		}
 	}
-	else if (img->data16)
+	else if (img.data16)
 	{
 		for (z = 0; z < bsd->zdim; z++)
 		{
@@ -494,10 +496,10 @@ void write_imageblock(
 					{
 						if (*nptr)
 						{
-							img->data16[zi][yi][4 * xi] = 0xFFFF;
-							img->data16[zi][yi][4 * xi + 1] = 0xFFFF;
-							img->data16[zi][yi][4 * xi + 2] = 0xFFFF;
-							img->data16[zi][yi][4 * xi + 3] = 0xFFFF;
+							img.data16[zi][yi][4 * xi] = 0xFFFF;
+							img.data16[zi][yi][4 * xi + 1] = 0xFFFF;
+							img.data16[zi][yi][4 * xi + 2] = 0xFFFF;
+							img.data16[zi][yi][4 * xi + 3] = 0xFFFF;
 						}
 
 						else
@@ -518,10 +520,10 @@ void write_imageblock(
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
 							int b = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
 							int a = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
-							img->data16[zi][yi][4 * xi] = r;
-							img->data16[zi][yi][4 * xi + 1] = g;
-							img->data16[zi][yi][4 * xi + 2] = b;
-							img->data16[zi][yi][4 * xi + 3] = a;
+							img.data16[zi][yi][4 * xi] = r;
+							img.data16[zi][yi][4 * xi + 1] = g;
+							img.data16[zi][yi][4 * xi + 2] = b;
+							img.data16[zi][yi][4 * xi + 3] = a;
 						}
 					}
 					fptr += 4;

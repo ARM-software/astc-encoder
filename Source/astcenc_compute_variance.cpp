@@ -110,7 +110,7 @@ static void compute_pixel_region_variance(
 ) {
 	// Unpack the memory structure into local variables
 	const astcenc_context* ctx = arg->ctx;
-	const astc_codec_image* img = arg->img;
+	const astcenc_image* img = arg->img;
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
 	astcenc_swizzle swz = arg->swz;
@@ -158,8 +158,8 @@ static void compute_pixel_region_variance(
 	int zst = padsize_x * padsize_y;
 
 	// Scaling factors to apply to Y and Z for accesses into result buffers
-	int ydt = img->xsize;
-	int zdt = img->xsize * img->ysize;
+	int ydt = img->dim_x;
+	int zdt = img->dim_x * img->dim_y;
 
 	// Macros to act as accessor functions for the work-memory
 	#define VARBUF1(z, y, x) varbuf1[z * zst + y * yst + x]
@@ -496,7 +496,7 @@ void compute_averages_and_variances(
 	int step_y = ag.blk_size.y;
 	int step_z = ag.blk_size.z;
 
-	int padding_xy = arg.img->padding;
+	int padding_xy = arg.img->dim_pad;
 	int padding_z = arg.have_z ? padding_xy : 0;
 
 	for (int z = 0; z < size_z; z += step_z)
@@ -534,7 +534,7 @@ void compute_averages_and_variances(
 /* Public function, see header file for detailed documentation */
 void init_compute_averages_and_variances(
 	astcenc_context& ctx,
-	astc_codec_image& img,
+	astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,
@@ -543,9 +543,9 @@ void init_compute_averages_and_variances(
 	pixel_region_variance_args& arg,
 	avg_var_args& ag
 ) {
-	int size_x = img.xsize;
-	int size_y = img.ysize;
-	int size_z = img.zsize;
+	int size_x = img.dim_x;
+	int size_y = img.dim_y;
+	int size_z = img.dim_z;
 
 	// Compute maximum block size and from that the working memory buffer size
 	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);

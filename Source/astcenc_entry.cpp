@@ -525,44 +525,42 @@ void astcenc_context_free(
 
 static void compress_image(
 	astcenc_context& ctx,
-	const astc_codec_image& image,
+	const astcenc_image& image,
 	astcenc_swizzle swizzle,
 	uint8_t* buffer,
 	int thread_id
 ) {
 	const block_size_descriptor *bsd = ctx.bsd;
-	int xdim = bsd->xdim;
-	int ydim = bsd->ydim;
-	int zdim = bsd->zdim;
+	int block_x = bsd->xdim;
+	int block_y = bsd->ydim;
+	int block_z = bsd->zdim;
 	astcenc_profile decode_mode = ctx.config.profile;
 
 	imageblock pb;
 	int ctr = thread_id;
-
-	int x, y, z;
-	int xsize = image.xsize;
-	int ysize = image.ysize;
-	int zsize = image.zsize;
-	int xblocks = (xsize + xdim - 1) / xdim;
-	int yblocks = (ysize + ydim - 1) / ydim;
-	int zblocks = (zsize + zdim - 1) / zdim;
+	int dim_x = image.dim_x;
+	int dim_y = image.dim_y;
+	int dim_z = image.dim_z;
+	int xblocks = (dim_x + block_x - 1) / block_x;
+	int yblocks = (dim_y + block_y - 1) / block_y;
+	int zblocks = (dim_z + block_z - 1) / block_z;
 
 	// Allocate temporary buffers. Large, so allocate on the heap
 	auto temp_buffers = aligned_malloc<compress_symbolic_block_buffers>(sizeof(compress_symbolic_block_buffers), 32);
 
-	for (z = 0; z < zblocks; z++)
+	for (int z = 0; z < zblocks; z++)
 	{
-		for (y = 0; y < yblocks; y++)
+		for (int y = 0; y < yblocks; y++)
 		{
-			for (x = 0; x < xblocks; x++)
+			for (int x = 0; x < xblocks; x++)
 			{
 				if (ctr == 0)
 				{
 					int offset = ((z * yblocks + y) * xblocks + x) * 16;
 					const uint8_t *bp = buffer + offset;
-					fetch_imageblock(decode_mode, &image, &pb, bsd, x * xdim, y * ydim, z * zdim, swizzle);
+					fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 					symbolic_compressed_block scb;
-					compress_symbolic_block(ctx, &image, decode_mode, bsd, &pb, &scb, temp_buffers);
+					compress_symbolic_block(ctx, image, decode_mode, bsd, &pb, &scb, temp_buffers);
 					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
 					ctr = ctx.thread_count - 1;
 				}
@@ -613,15 +611,6 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
-	astc_codec_image& input_image = ctx->input_image;
-	input_image.data8 = image.data8;
-	input_image.data16 = image.data16;
-	input_image.xsize = image.dim_x;
-	input_image.ysize = image.dim_y;
-	input_image.zsize = image.dim_z;
-	input_image.padding = image.dim_pad;
-
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
 
@@ -638,7 +627,7 @@ astcenc_error astcenc_compress_image(
 			ctx->input_alpha_averages = new float[texel_count];
 
 			init_compute_averages_and_variances(
-			    *ctx, input_image, ctx->config.v_rgb_power, ctx->config.v_a_power,
+			    *ctx, image, ctx->config.v_rgb_power, ctx->config.v_a_power,
 			    ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
 			    ctx->arg, ctx->ag);
 		}
@@ -652,7 +641,7 @@ astcenc_error astcenc_compress_image(
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
 
-	compress_image(*ctx, input_image, swizzle, data_out, thread_index);
+	compress_image(*ctx, image, swizzle, data_out, thread_index);
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
@@ -703,15 +692,6 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	// TODO: Replace astc_codec_image in the core codec with the astcenc_image struct
-	astc_codec_image image;
-	image.data8 = image_out.data8;
-	image.data16 = image_out.data16;
-	image.xsize = image_out.dim_x;
-	image.ysize = image_out.dim_y;
-	image.zsize = image_out.dim_z;
-	image.padding = image_out.dim_pad;
-
 	imageblock pb;
 
 	for (unsigned int z = 0; z < zblocks; z++)
@@ -728,7 +708,7 @@ astcenc_error astcenc_decompress_image(
 				decompress_symbolic_block(context->config.profile, context->bsd,
 				                          x * block_x, y * block_y, z * block_z,
 				                          &scb, &pb);
-				write_imageblock(&image, &pb, context->bsd,
+				write_imageblock(image_out, &pb, context->bsd,
 				                 x * block_x, y * block_y, z * block_z, swizzle);
 			}
 		}

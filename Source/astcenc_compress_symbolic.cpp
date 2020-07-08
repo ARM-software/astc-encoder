@@ -761,7 +761,7 @@ void expand_deblock_weights(
 // Returns the sum of all the error values set.
 static float prepare_error_weight_block(
 	const astcenc_context& ctx,
-	const astc_codec_image* input_image,
+	const astcenc_image& input_image,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
 	error_weight_block* ewb,
@@ -787,11 +787,11 @@ static float prepare_error_weight_block(
 		{
 			for (int x = 0; x < bsd->xdim; x++)
 			{
-				int xpos = x + blk->xpos;
-				int ypos = y + blk->ypos;
-				int zpos = z + blk->zpos;
+				unsigned int xpos = x + blk->xpos;
+				unsigned int ypos = y + blk->ypos;
+				unsigned int zpos = z + blk->zpos;
 
-				if (xpos >= input_image->xsize || ypos >= input_image->ysize || zpos >= input_image->zsize)
+				if (xpos >= input_image.dim_x || ypos >= input_image.dim_y || zpos >= input_image.dim_z)
 				{
 					float4 weights = float4(1e-11f, 1e-11f, 1e-11f, 1e-11f);
 					ewb->error_weights[idx] = weights;
@@ -804,8 +804,8 @@ static float prepare_error_weight_block(
 					                             ctx.config.v_rgb_base,
 					                             ctx.config.v_a_base);
 
-					int ydt = input_image->xsize;
-					int zdt = input_image->xsize * input_image->ysize;
+					int ydt = input_image.dim_x;
+					int zdt = input_image.dim_x * input_image.dim_y;
 
 					if (any_mean_stdev_weight)
 					{
@@ -1064,7 +1064,7 @@ static void prepare_block_statistics(
 
 float compress_symbolic_block(
 	const astcenc_context& ctx,
-	const astc_codec_image* input_image,
+	const astcenc_image& input_image,
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
