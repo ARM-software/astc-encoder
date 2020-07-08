@@ -675,13 +675,6 @@ struct astc_codec_image
 	int ysize;
 	int zsize;
 	int padding;
-
-	// Regional average-and-variance information, initialized by
-	// compute_averages_and_variances() only if the astc encoder
-	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
-	float *input_alpha_averages;
 };
 
 
@@ -694,7 +687,9 @@ struct astc_codec_image
 struct pixel_region_variance_args
 {
 	/** The image to analyze. */
-	const astc_codec_image *img;
+	const astcenc_context* ctx;
+	/** The image to analyze. */
+	const astc_codec_image* img;
 	/** The RGB channel power adjustment. */
 	float rgb_power;
 	/** The alpha channel power adjustment. */
@@ -742,6 +737,13 @@ struct astcenc_context
 
 	float deblock_weights[MAX_TEXELS_PER_BLOCK];
 
+	// Regional average-and-variance information, initialized by
+	// compute_averages_and_variances() only if the astc encoder
+	// is requested to do error weighting based on averages and variances.
+	float4 *input_averages;
+	float4 *input_variances;
+	float *input_alpha_averages;
+
 	// TODO: Replace these with config and input image. Currently here so they
 	// can be shared by user thread pool
 	astc_codec_image input_image;
@@ -756,6 +758,7 @@ struct astcenc_context
  * Results are written back into img->input_averages, img->input_variances,
  * and img->input_alpha_averages.
  *
+ * @param ctxg                  The context holding intermediate storage.
  * @param img                   The input image data, also holds output data.
  * @param rgb_power             The RGB channel power.
  * @param alpha_power           The A channel power.
@@ -765,7 +768,8 @@ struct astcenc_context
  * @param thread_count          The number of threads to use.
  */
 void init_compute_averages_and_variances(
-	astc_codec_image * img,
+	astcenc_context& ctx,
+	astc_codec_image& img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,

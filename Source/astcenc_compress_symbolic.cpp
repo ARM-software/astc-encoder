@@ -809,7 +809,7 @@ static float prepare_error_weight_block(
 
 					if (any_mean_stdev_weight)
 					{
-						float4 avg = input_image->input_averages[zpos * zdt + ypos * ydt + xpos];
+						float4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
 						if (avg.x < 6e-5f)
 							avg.x = 6e-5f;
 						if (avg.y < 6e-5f)
@@ -821,7 +821,7 @@ static float prepare_error_weight_block(
 
 						avg = avg * avg;
 
-						float4 variance = input_image->input_variances[zpos * zdt + ypos * ydt + xpos];
+						float4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
 						variance = variance * variance;
 
 						float favg = (avg.x + avg.y + avg.z) * (1.0f / 3.0f);
@@ -877,7 +877,7 @@ static float prepare_error_weight_block(
 					{
 						float alpha_scale;
 						if (ctx.config.a_scale_radius != 0)
-							alpha_scale = input_image->input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
+							alpha_scale = ctx.input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
 						else
 							alpha_scale = blk->orig_data[4 * idx + 3];
 

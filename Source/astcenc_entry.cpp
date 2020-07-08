@@ -460,6 +460,11 @@ astcenc_error astcenc_context_alloc(
 		ctx->thread_count = thread_count;
 		ctx->config = config;
 
+		// Clear scratch storage (allocated per compress pass)
+		ctx->input_averages = nullptr;
+		ctx->input_variances = nullptr;
+		ctx->input_alpha_averages = nullptr;
+
 		// Copy the config first and validate the copy (may modify it)
 		status = validate_config(ctx->config);
 		if (status != ASTCENC_SUCCESS)
@@ -518,7 +523,7 @@ void astcenc_context_free(
 	}
 }
 
-static void compress_astc_image(
+static void compress_image(
 	astcenc_context& ctx,
 	const astc_codec_image& image,
 	astcenc_swizzle swizzle,
@@ -617,10 +622,6 @@ astcenc_error astcenc_compress_image(
 	input_image.zsize = image.dim_z;
 	input_image.padding = image.dim_pad;
 
-	input_image.input_averages = nullptr;
-	input_image.input_variances = nullptr;
-	input_image.input_alpha_averages = nullptr;
-
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
 
@@ -630,8 +631,14 @@ astcenc_error astcenc_compress_image(
 	{
 		if (thread_index == 0)
 		{
+			// Perform memory allocations for the destination buffers
+			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
+			ctx->input_averages = new float4[texel_count];
+			ctx->input_variances = new float4[texel_count];
+			ctx->input_alpha_averages = new float[texel_count];
+
 			init_compute_averages_and_variances(
-			    &input_image, ctx->config.v_rgb_power, ctx->config.v_a_power,
+			    *ctx, input_image, ctx->config.v_rgb_power, ctx->config.v_a_power,
 			    ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
 			    ctx->arg, ctx->ag);
 		}
@@ -645,7 +652,7 @@ astcenc_error astcenc_compress_image(
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
 
-	compress_astc_image(*ctx, input_image, swizzle, data_out, thread_index);
+	compress_image(*ctx, input_image, swizzle, data_out, thread_index);
 
 	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 	ctx->barrier->wait();
@@ -653,9 +660,14 @@ astcenc_error astcenc_compress_image(
 	// Clean up any memory allocated by compute_averages_and_variances
 	if (thread_index == 0)
 	{
-		delete[] input_image.input_averages;
-		delete[] input_image.input_variances;
-		delete[] input_image.input_alpha_averages;
+		delete[] ctx->input_averages;
+		ctx->input_averages = nullptr;
+
+		delete[] ctx->input_variances;
+		ctx->input_variances = nullptr;
+
+		delete[] ctx->input_alpha_averages;
+		ctx->input_alpha_averages = nullptr;
 	}
 
 	return ASTCENC_SUCCESS;
@@ -699,10 +711,6 @@ astcenc_error astcenc_decompress_image(
 	image.ysize = image_out.dim_y;
 	image.zsize = image_out.dim_z;
 	image.padding = image_out.dim_pad;
-
-	image.input_averages = nullptr;
-	image.input_variances = nullptr;
-	image.input_alpha_averages = nullptr;
 
 	imageblock pb;
 

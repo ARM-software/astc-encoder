@@ -109,7 +109,8 @@ static void compute_pixel_region_variance(
 	const pixel_region_variance_args* arg
 ) {
 	// Unpack the memory structure into local variables
-	const astc_codec_image *img = arg->img;
+	const astcenc_context* ctx = arg->ctx;
+	const astc_codec_image* img = arg->img;
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
 	astcenc_swizzle swz = arg->swz;
@@ -130,9 +131,9 @@ static void compute_pixel_region_variance(
 	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
 	int alpha_kernel_radius = arg->alpha_kernel_radius;
 
-	float  *input_alpha_averages = img->input_alpha_averages;
-	float4 *input_averages = img->input_averages;
-	float4 *input_variances = img->input_variances;
+	float  *input_alpha_averages = ctx->input_alpha_averages;
+	float4 *input_averages = ctx->input_averages;
+	float4 *input_variances = ctx->input_variances;
 	float4 *work_memory = arg->work_memory;
 
 	// Compute memory sizes and dimensions that we need
@@ -532,7 +533,8 @@ void compute_averages_and_variances(
 
 /* Public function, see header file for detailed documentation */
 void init_compute_averages_and_variances(
-	astc_codec_image* img,
+	astcenc_context& ctx,
+	astc_codec_image& img,
 	float rgb_power,
 	float alpha_power,
 	int avg_var_kernel_radius,
@@ -541,19 +543,9 @@ void init_compute_averages_and_variances(
 	pixel_region_variance_args& arg,
 	avg_var_args& ag
 ) {
-	int size_x = img->xsize;
-	int size_y = img->ysize;
-	int size_z = img->zsize;
-	int pixel_count = size_x * size_y * size_z;
-
-	// Perform memory allocations for the destination buffers
-	delete[] img->input_averages;
-	delete[] img->input_variances;
-	delete[] img->input_alpha_averages;
-
-	img->input_averages = new float4[pixel_count];
-	img->input_variances = new float4[pixel_count];
-	img->input_alpha_averages = new float[pixel_count];
+	int size_x = img.xsize;
+	int size_y = img.ysize;
+	int size_z = img.zsize;
 
 	// Compute maximum block size and from that the working memory buffer size
 	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);
@@ -573,7 +565,8 @@ void init_compute_averages_and_variances(
 	arg.dst_offset = int3(0, 0, 0);
 	arg.work_memory = nullptr;
 
-	arg.img = img;
+	arg.ctx = &ctx;
+	arg.img = &img;
 	arg.rgb_power = rgb_power;
 	arg.alpha_power = alpha_power;
 	arg.swz = swz;
