@@ -27,7 +27,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <condition_variable>
-#include <malloc.h>
 #include <mutex>
 
 #ifndef ASTCENC_SSE
