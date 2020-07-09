@@ -1304,6 +1304,29 @@ class CLIPTest(CLITestBase):
         # somewhere ...
         self.assertLess(len(stdoutSilent), len(stdout))
 
+    def test_image_quality_stability(self):
+        """
+        Test that a round-trip and a file-based round-trip give same result.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        p1DecompFile = self.get_tmp_image_path("LDR", "decomp")
+        p2CompFile = self.get_tmp_image_path("LDR", "comp")
+        p2DecompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the first image using a direct round-trip
+        command = [self.binary, "-tl", inputFile, p1DecompFile, "4x4", "-medium"]
+        self.exec(command)
+
+        # Compute the first image using a file-based round-trip
+        command = [self.binary, "-cl", inputFile, p2CompFile, "4x4", "-medium"]
+        self.exec(command)
+        command = [self.binary, "-dl", p2CompFile, p2DecompFile]
+        self.exec(command)
+
+        # RMSE should be the same
+        p1RMSE = sum(self.get_channel_rmse(inputFile, p1DecompFile))
+        p2RMSE = sum(self.get_channel_rmse(inputFile, p2DecompFile)))
+        self.assertEqual(p1RMSE, p2RMSE)
 
 class CLINTest(CLITestBase):
     """
