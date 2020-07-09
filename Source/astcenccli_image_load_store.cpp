@@ -1117,7 +1117,7 @@ bool load_ktx_compressed_image(
 	{
 		printf("Failed to data from KTX file %s\n", filename);
 		fclose(f);
-		return __GCC_ATOMIC_TEST_AND_SET_TRUEVAL;
+		return true;
 	}
 
 	if (switch_endianness)
