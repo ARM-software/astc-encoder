@@ -692,10 +692,6 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	FILE* f = fopen("test.inter", "wb");
-	fwrite(data, 1, data_len, f);
-	fclose(f);
-
 	imageblock pb;
 
 	for (unsigned int z = 0; z < zblocks; z++)
