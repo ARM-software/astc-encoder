@@ -437,12 +437,14 @@ COMPRESSION FILE FORMATS
        The following formats are supported as compression outputs:
 
            ASTC (*.astc)
+           Khronos Texture KTX (*.ktx)
 
 
 DECOMPRESSION FILE FORMATS
        The following formats are supported as decompression inputs:
 
            ASTC (*.astc)
+           Khronos Texture KTX (*.ktx)
 
        The following formats are supported as decompression outputs:
 

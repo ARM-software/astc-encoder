@@ -102,6 +102,12 @@ struct compression_workload {
 	astcenc_error error;
 };
 
+static bool ends_with(const std::string& str, const std::string& suffix)
+{
+	return (str.size() >= suffix.size()) &&
+	       (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
+}
+
 static void compression_workload_runner(
 	int thread_count,
 	int thread_id,
@@ -948,10 +954,38 @@ int main(
 	astc_compressed_image image_comp {};
 	if (operation & ASTCENC_STAGE_LD_COMP)
 	{
-		error = load_cimage(input_filename.c_str(), image_comp);
-		if (error)
+		if (ends_with(input_filename, ".astc"))
 		{
-			return 1;
+			// TODO: Just pass on a std::string
+			error = load_cimage(input_filename.c_str(), image_comp);
+			if (error)
+			{
+				return 1;
+			}
+		}
+		else if (ends_with(input_filename, ".ktx"))
+		{
+			// TODO: Just pass on a std::string
+			bool is_srgb;
+			error = load_ktx_compressed_image(input_filename.c_str(), is_srgb, image_comp);
+			if (error)
+			{
+				return 1;
+			}
+
+			if (is_srgb && (profile != ASTCENC_PRF_LDR_SRGB))
+			{
+				printf("WARNING: Input file is sRGB, but decompressing as linear\n");
+			}
+
+			if (!is_srgb && (profile == ASTCENC_PRF_LDR_SRGB))
+			{
+				printf("WARNING: Input file is linear, but decompressing as sRGB\n");
+			}
+		}
+		else
+		{
+			printf("ERROR: Unknown compressed input file type\n");
 		}
 	}
 
@@ -1093,10 +1127,28 @@ int main(
 	// Store compressed image
 	if (operation & ASTCENC_STAGE_ST_COMP)
 	{
-		error = store_cimage(image_comp, output_filename.c_str());
-		if (error)
+		if (ends_with(output_filename, ".astc"))
 		{
-			printf ("ERROR: Failed to store compressed image\n");
+			error = store_cimage(image_comp, output_filename.c_str());
+			if (error)
+			{
+				printf ("ERROR: Failed to store compressed image\n");
+				return 1;
+			}
+		}
+		else if (ends_with(output_filename, ".ktx"))
+		{
+			bool srgb = profile == ASTCENC_PRF_LDR_SRGB;
+			error = store_ktx_compressed_image(image_comp, output_filename.c_str(), srgb);
+			if (error)
+			{
+				printf ("ERROR: Failed to store compressed image\n");
+				return 1;
+			}
+		}
+		else
+		{
+			printf("ERROR: Unknown compressed output file type\n");
 			return 1;
 		}
 	}
