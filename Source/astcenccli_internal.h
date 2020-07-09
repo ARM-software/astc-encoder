@@ -107,6 +107,16 @@ int store_cimage(
 	const astc_compressed_image& comp_img,
 	const char* filename);
 
+bool load_ktx_compressed_image(
+	const char* filename,
+	bool& is_srgb,
+	astc_compressed_image& img) ;
+
+bool store_ktx_compressed_image(
+	const astc_compressed_image& img,
+	const char* filename,
+	bool srgb);
+
 // helper functions to prepare an ASTC image object from a flat array
 // Used by the image loaders in "astc_file_load_store.cpp"
 astcenc_image* astc_img_from_floatx4_array(

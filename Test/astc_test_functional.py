@@ -680,9 +680,9 @@ class CLIPTest(CLITestBase):
                     colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
-    def test_valid_ldr_output_formats(self):
+    def test_valid_uncomp_ldr_output_formats(self):
         """
-        Test valid LDR output file formats.
+        Test valid uncompressed LDR output file formats.
         """
         imgFormats = ["bmp", "dds", "ktx", "png", "tga"]
 
@@ -699,6 +699,30 @@ class CLIPTest(CLITestBase):
                     colIn = tli.Image(imIn).get_colors((7, 7))
                     colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
+
+    def test_valid_comp_ldr_output_formats(self):
+        """
+        Test valid compressed LDR output file formats.
+        """
+        imgFormats = ["astc", "ktx"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = self.get_ref_image_path("LDR", "input", "A")
+                imOut = self.get_tmp_image_path("EXP", ".%s" % imgFormat)
+                imOut2 = self.get_tmp_image_path("LDR", "decomp")
+
+                command = [self.binary, "-cl", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                command = [self.binary, "-dl", imOut, imOut2]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat):
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut2).get_colors((7, 7))
+                    self.assertColorSame(colIn, colOut2)
 
     def test_valid_hdr_input_formats(self):
         """
@@ -720,9 +744,9 @@ class CLIPTest(CLITestBase):
                     colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
 
-    def test_valid_hdr_output_formats(self):
+    def test_valid_uncomp_hdr_output_formats(self):
         """
-        Test valid HDR output file formats.
+        Test valid uncompressed HDR output file formats.
         """
         imgFormats = ["dds", "exr", "ktx"]
 
@@ -739,6 +763,30 @@ class CLIPTest(CLITestBase):
                     colIn = tli.Image(imIn).get_colors((7, 7))
                     colOut = tli.Image(imOut).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut)
+
+    def test_valid_comp_hdr_output_formats(self):
+        """
+        Test valid compressed HDR output file formats.
+        """
+        imgFormats = ["astc", "ktx"]
+
+        for imgFormat in imgFormats:
+            with self.subTest(imgFormat=imgFormat):
+                imIn = self.get_ref_image_path("HDR", "input", "A")
+                imOut = self.get_tmp_image_path("EXP", ".%s" % imgFormat)
+                imOut2 = self.get_tmp_image_path("HDR", "decomp")
+
+                command = [self.binary, "-ch", imIn, imOut, "4x4", "-fast"]
+                self.exec(command)
+
+                command = [self.binary, "-dh", imOut, imOut2]
+                self.exec(command)
+
+                # Check colors if image wrapper supports it
+                if tli.Image.is_format_supported(imgFormat):
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut2).get_colors((7, 7))
+                    self.assertColorSame(colIn, colOut2)
 
     def test_compress_mask(self):
         """
@@ -1482,6 +1530,19 @@ class CLINTest(CLITestBase):
             self.binary, "-cl",
             self.get_ref_image_path("LDR", "input", "A"),
             "./DoesNotExist/test.astc",
+            "4x4", "-fast"]
+
+        self.exec(command)
+
+    def test_cl_unknown_output(self):
+        """
+        Test -cl with an unknown output file extension.
+        """
+        # Build an otherwise valid command with the test flaw
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            "./test.aastc",
             "4x4", "-fast"]
 
         self.exec(command)

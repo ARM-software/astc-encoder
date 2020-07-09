@@ -19,6 +19,8 @@
  * @brief Functions for loading/storing ASTC compressed images.
  */
 
+#include <array>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -540,6 +542,151 @@ static uint32_t u32_byterev(uint32_t v)
 #define GL_HALF_FLOAT      0x140B
 #define GL_FLOAT           0x1406
 
+#define GL_COMPRESSED_RGBA_ASTC_4x4                0x93B0
+#define GL_COMPRESSED_RGBA_ASTC_5x4                0x93B1
+#define GL_COMPRESSED_RGBA_ASTC_5x5                0x93B2
+#define GL_COMPRESSED_RGBA_ASTC_6x5                0x93B3
+#define GL_COMPRESSED_RGBA_ASTC_6x6                0x93B4
+#define GL_COMPRESSED_RGBA_ASTC_8x5                0x93B5
+#define GL_COMPRESSED_RGBA_ASTC_8x6                0x93B6
+#define GL_COMPRESSED_RGBA_ASTC_8x8                0x93B7
+#define GL_COMPRESSED_RGBA_ASTC_10x5               0x93B8
+#define GL_COMPRESSED_RGBA_ASTC_10x6               0x93B9
+#define GL_COMPRESSED_RGBA_ASTC_10x8               0x93BA
+#define GL_COMPRESSED_RGBA_ASTC_10x10              0x93BB
+#define GL_COMPRESSED_RGBA_ASTC_12x10              0x93BC
+#define GL_COMPRESSED_RGBA_ASTC_12x12              0x93BD
+
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4        0x93D0
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4        0x93D1
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5        0x93D2
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5        0x93D3
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6        0x93D4
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5        0x93D5
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6        0x93D6
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8        0x93D7
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5       0x93D8
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6       0x93D9
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8       0x93DA
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10      0x93DB
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10      0x93DC
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12      0x93DD
+
+#define GL_COMPRESSED_RGBA_ASTC_3x3x3_OES          0x93C0
+#define GL_COMPRESSED_RGBA_ASTC_4x3x3_OES          0x93C1
+#define GL_COMPRESSED_RGBA_ASTC_4x4x3_OES          0x93C2
+#define GL_COMPRESSED_RGBA_ASTC_4x4x4_OES          0x93C3
+#define GL_COMPRESSED_RGBA_ASTC_5x4x4_OES          0x93C4
+#define GL_COMPRESSED_RGBA_ASTC_5x5x4_OES          0x93C5
+#define GL_COMPRESSED_RGBA_ASTC_5x5x5_OES          0x93C6
+#define GL_COMPRESSED_RGBA_ASTC_6x5x5_OES          0x93C7
+#define GL_COMPRESSED_RGBA_ASTC_6x6x5_OES          0x93C8
+#define GL_COMPRESSED_RGBA_ASTC_6x6x6_OES          0x93C9
+
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_3x3x3_OES   0x93E0
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x3x3_OES   0x93E1
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4x3_OES   0x93E2
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4x4_OES   0x93E3
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4x4_OES   0x93E4
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5x4_OES   0x93E5
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5x5_OES   0x93E6
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5x5_OES   0x93E7
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x5_OES   0x93E8
+#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x6_OES   0x93E9
+
+struct format_entry {
+	unsigned int x;
+	unsigned int y;
+	unsigned int z;
+	bool srgb;
+	unsigned int format;
+};
+
+static const std::array<format_entry, 48> ASTC_FORMATS =
+{{
+	// 2D Linear RGB
+	{ 4,  4,  1, false, GL_COMPRESSED_RGBA_ASTC_4x4},
+	{ 5,  4,  1, false, GL_COMPRESSED_RGBA_ASTC_5x4},
+	{ 5,  5,  1, false, GL_COMPRESSED_RGBA_ASTC_5x5},
+	{ 6,  5,  1, false, GL_COMPRESSED_RGBA_ASTC_6x5},
+	{ 6,  6,  1, false, GL_COMPRESSED_RGBA_ASTC_6x6},
+	{ 8,  5,  1, false, GL_COMPRESSED_RGBA_ASTC_8x5},
+	{ 8,  6,  1, false, GL_COMPRESSED_RGBA_ASTC_8x6},
+	{ 8,  8,  1, false, GL_COMPRESSED_RGBA_ASTC_8x8},
+	{10,  5,  1, false, GL_COMPRESSED_RGBA_ASTC_10x5},
+	{10,  6,  1, false, GL_COMPRESSED_RGBA_ASTC_10x6},
+	{10,  8,  1, false, GL_COMPRESSED_RGBA_ASTC_10x8},
+	{10, 10,  1, false, GL_COMPRESSED_RGBA_ASTC_10x10},
+	{12, 10,  1, false, GL_COMPRESSED_RGBA_ASTC_12x10},
+	{12, 12,  1, false, GL_COMPRESSED_RGBA_ASTC_12x12},
+	// 2D SRGB
+	{ 4,  4,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4},
+	{ 5,  4,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4},
+	{ 5,  5,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5},
+	{ 6,  5,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5},
+	{ 6,  6,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6},
+	{ 8,  5,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5},
+	{ 8,  6,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6},
+	{ 8,  8,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8},
+	{10,  5,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5},
+	{10,  6,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6},
+	{10,  8,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8},
+	{10, 10,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10},
+	{12, 10,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10},
+	{12, 12,  1,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12},
+	// 3D Linear RGB
+	{ 3,  3,  3, false, GL_COMPRESSED_RGBA_ASTC_3x3x3_OES},
+	{ 4,  3,  3, false, GL_COMPRESSED_RGBA_ASTC_4x3x3_OES},
+	{ 4,  4,  3, false, GL_COMPRESSED_RGBA_ASTC_4x4x3_OES},
+	{ 4,  4,  4, false, GL_COMPRESSED_RGBA_ASTC_4x4x4_OES},
+	{ 5,  4,  4, false, GL_COMPRESSED_RGBA_ASTC_5x4x4_OES},
+	{ 5,  5,  4, false, GL_COMPRESSED_RGBA_ASTC_5x5x4_OES},
+	{ 5,  5,  5, false, GL_COMPRESSED_RGBA_ASTC_5x5x5_OES},
+	{ 6,  5,  5, false, GL_COMPRESSED_RGBA_ASTC_6x5x5_OES},
+	{ 6,  6,  5, false, GL_COMPRESSED_RGBA_ASTC_6x6x5_OES},
+	{ 6,  6,  6, false, GL_COMPRESSED_RGBA_ASTC_6x6x6_OES},
+	// 3D SRGB
+	{ 3,  3,  3,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_3x3x3_OES},
+	{ 4,  3,  3,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x3x3_OES},
+	{ 4,  4,  3,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4x3_OES},
+	{ 4,  4,  4,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4x4_OES},
+	{ 5,  4,  4,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4x4_OES},
+	{ 5,  5,  4,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5x4_OES},
+	{ 5,  5,  5,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5x5_OES},
+	{ 6,  5,  5,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5x5_OES},
+	{ 6,  6,  5,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x5_OES},
+	{ 6,  6,  6,  true, GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x6_OES}
+}};
+
+static const format_entry* get_format(
+	unsigned int format
+) {
+	for (auto& it : ASTC_FORMATS)
+	{
+		if (it.format == format)
+		{
+			return &it;
+		}
+	}
+	return nullptr;
+}
+
+static unsigned int get_format(
+	unsigned int x,
+	unsigned int y,
+	unsigned int z,
+	bool srgb
+) {
+	for (auto& it : ASTC_FORMATS)
+	{
+		if ((it.x == x) && (it.y == y) && (it.z == z)  && (it.srgb == srgb))
+		{
+			return it.format;
+		}
+	}
+	return 0;
+}
+
 struct ktx_header
 {
 	uint8_t magic[12];
@@ -903,6 +1050,136 @@ static astcenc_image* load_ktx_uncompressed_image(
 	is_hdr = bitness == 16;
 	num_components = components;
 	return astc_img;
+}
+
+bool load_ktx_compressed_image(
+	const char* filename,
+	bool& is_srgb,
+	astc_compressed_image& img
+) {
+	FILE *f = fopen(filename, "rb");
+	if (!f)
+	{
+		printf("Failed to open file %s\n", filename);
+		return true;
+	}
+
+	ktx_header hdr;
+	size_t actual = fread(&hdr, 1, sizeof(hdr), f);
+	if (actual != sizeof(hdr))
+	{
+		printf("Failed to read header of KTX file %s\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
+	{
+		printf("File %s does not have a valid KTX header\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	bool switch_endianness = false;
+	if (hdr.endianness == 0x01020304)
+	{
+		switch_endianness = true;
+		ktx_header_switch_endianness(&hdr);
+	}
+
+	if (hdr.gl_type != 0 || hdr.gl_format != 0 || hdr.gl_type_size != 1 || hdr.gl_base_internal_format != GL_RGBA)
+	{
+		printf("File %s is not a compressed ASTC file\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	const format_entry* fmt = get_format(hdr.gl_internal_format);
+	if (!fmt)
+	{
+		printf("File %s is not a compressed ASTC file\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	unsigned int data_len;
+	actual = fread(&data_len, 1, sizeof(data_len), f);
+	if (actual != sizeof(data_len))
+	{
+		printf("Failed to read data size of KTX file %s\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	unsigned char* data = new unsigned char[data_len];
+	actual = fread(data, 1, data_len, f);
+	if (actual != data_len)
+	{
+		printf("Failed to data from KTX file %s\n", filename);
+		fclose(f);
+		return true;
+	}
+
+	if (switch_endianness)
+	{
+		data_len = u32_byterev(data_len);
+	}
+
+	img.block_x = fmt->x;
+	img.block_y = fmt->y;
+	img.block_z = fmt->z == 0 ? 1 : fmt->z;
+
+ 	img.dim_x = hdr.pixel_width;
+	img.dim_y = hdr.pixel_height;
+	img.dim_z = hdr.pixel_depth == 0 ? 1 : hdr.pixel_depth;
+
+	img.data_len = data_len;
+	img.data = data;
+
+	is_srgb = fmt->srgb;
+
+	return false;
+}
+
+
+bool store_ktx_compressed_image(
+	const astc_compressed_image& img,
+	const char* filename,
+	bool srgb
+) {
+	unsigned int fmt = get_format(img.block_x, img.block_y, img.block_z, srgb);
+
+	ktx_header hdr;
+	memcpy(hdr.magic, ktx_magic, 12);
+	hdr.endianness = 0x04030201;
+	hdr.gl_type = 0;
+	hdr.gl_type_size = 1;
+	hdr.gl_format = 0;
+	hdr.gl_internal_format = fmt;
+	hdr.gl_base_internal_format = GL_RGBA;
+	hdr.pixel_width = img.dim_x;
+	hdr.pixel_height = img.dim_y;
+	hdr.pixel_depth = (img.dim_z == 1) ? 0 : img.dim_z;
+	hdr.number_of_array_elements = 0;
+	hdr.number_of_faces = 1;
+	hdr.number_of_mipmap_levels = 1;
+	hdr.bytes_of_key_value_data = 0;
+
+	size_t expected = sizeof(ktx_header) + 4 + img.data_len;
+	size_t actual = 0;
+
+	FILE *wf = fopen(filename, "wb");
+	actual += fwrite(&hdr, 1, sizeof(ktx_header), wf);
+	actual += fwrite(&img.data_len, 1, 4, wf);
+	actual += fwrite(img.data, 1, img.data_len, wf);
+	fclose(wf);
+
+	if (actual != expected)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 static int store_ktx_uncompressed_image(
