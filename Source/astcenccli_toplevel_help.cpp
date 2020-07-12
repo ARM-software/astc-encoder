@@ -217,7 +217,7 @@ ADVANCED COMPRESSION
 
            weight = 1 / (<base> + <mean> * mean^2 + <stdev> * stdev^2)
 
-           The <radius> argument specifies the pixel radius of the
+           The <radius> argument specifies the texel radius of the
            neighborhood over which the average and standard deviation are
            computed.
 
@@ -230,9 +230,9 @@ ADVANCED COMPRESSION
            these two extremes do a linear mix of the two error values.
 
            The <power> argument is a power used to raise the values of the
-           input pixels before computing average and standard deviation;
+           input texels before computing average and standard deviation;
            e.g. a power of 0.5 causes the codec to take the square root
-           of every input pixel value.
+           of every input texel value.
 
        -va <power> <base> <mean> <stdev>
            Compute the per-texel relative error weighting for the alpha

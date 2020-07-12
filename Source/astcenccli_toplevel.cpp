@@ -203,7 +203,7 @@ static astcenc_image* load_uncomp_file(
 			}
 
 			slice = load_ncimage(slice_name.c_str(), dim_pad, y_flip,
-			                             slice_is_hdr, slice_num_components);
+			                     slice_is_hdr, slice_num_components);
 			if (!slice)
 			{
 				break;
