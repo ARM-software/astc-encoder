@@ -7369,16 +7369,16 @@ static void WriteAttributeToMemory(std::vector<unsigned char> *out,
   out->insert(out->end(), data, data + len);
 }
 
-typedef struct {
+struct ChannelInfo {
   std::string name;  // less than 255 bytes long
   int pixel_type;
   int x_sampling;
   int y_sampling;
   unsigned char p_linear;
   unsigned char pad[3];
-} ChannelInfo;
+};
 
-typedef struct {
+struct HeaderInfo {
   std::vector<tinyexr::ChannelInfo> channels;
   std::vector<EXRAttribute> attributes;
 
@@ -7430,7 +7430,7 @@ typedef struct {
     header_len = 0;
     compression_type = 0;
   }
-} HeaderInfo;
+};
 
 static bool ReadChannelInfo(std::vector<ChannelInfo> &channels,
                             const std::vector<unsigned char> &data) {
