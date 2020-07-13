@@ -110,7 +110,7 @@ use today.
 | EAC_R11  | `rrr1`              | `.r`                  |                  |
 | EAC_RG11 | `rrrg`              | `.ra` <sup>2</sup>    |                  |
 | ETC1     | `rgb1`              | `.rgb`                |                  |
-| ETC2     | `rgba` <sup>1</sup> | `.rgb`                |                  |
+| ETC2     | `rgba` <sup>1</sup> | `.rgba`               |                  |
 | ETC2+EAC | `rgba`              | `.rgba`               |                  |
 | ETC2+EAC | `rgba`              | `.rgba`               |                  |
 
