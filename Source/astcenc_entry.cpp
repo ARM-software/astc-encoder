@@ -22,7 +22,6 @@
 #include <cstring>
 #include <new>
 
-
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
@@ -561,11 +560,13 @@ static void compress_image(
 
 		for (unsigned int i = base; i < base + count; i++)
 		{
+			// Decode i into x, y, z block indices
 			int z = i / plane_blocks;
-			i = i - (z * plane_blocks);
-			int y = i / row_blocks;
-			int x = i - (y * row_blocks);
+			unsigned int rem = i - (z * plane_blocks);
+			int y = rem / row_blocks;
+			int x = rem - (y * row_blocks);
 
+			// Decompress
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			const uint8_t *bp = buffer + offset;
 			fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
@@ -576,9 +577,6 @@ static void compress_image(
 
 		ctx.manage_compress.complete_task_assignment(count);
 	};
-
-	// Wait here for all threads to retire
-	ctx.manage_compress.wait();
 
 	aligned_free<compress_symbolic_block_buffers>(temp_buffers);
 }
@@ -650,7 +648,7 @@ astcenc_error astcenc_compress_image(
 
 	compress_image(*ctx, image, swizzle, data_out);
 
-	// Wait for compute to complete before freeing memory
+	// Wait for compress to complete before freeing memory
 	ctx->manage_compress.wait();
 
 	auto term_compress = [ctx]() {
