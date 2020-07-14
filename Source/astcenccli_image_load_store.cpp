@@ -160,6 +160,17 @@ static int store_bmp_image_with_stb(
 	return (res == 0) ? -1 : 4;
 }
 
+static int store_hdr_image_with_stb(
+	const astcenc_image* img,
+	const char* filename,
+	int y_flip
+) {
+	float* buf = floatx4_array_from_astc_img(img, y_flip);
+	int res = stbi_write_hdr(filename, img->dim_x, img->dim_y, 4, buf);
+	delete[] buf;
+	return (res == 0) ? -1 : 4;
+}
+
 /*********************************************************************
 Native Load and store of KTX and DDS file formats.
 
@@ -2043,6 +2054,7 @@ static const struct
 	{".tga", ".TGA", "Targa",           8, store_tga_image_with_stb},
 	// HDR formats
 	{".exr", ".EXR", "OpenEXR",        16, store_exr_image_with_tinyexr},
+	{".hdr", ".HDR", "Radiance HDR",   16, store_hdr_image_with_stb},
 	// Container formats
 	{".dds", ".DDS", "DirectDraw DDS", -1, store_dds_uncompressed_image},
 	{".ktx", ".KTX", "Khronos KTX",    -1, store_ktx_uncompressed_image}
