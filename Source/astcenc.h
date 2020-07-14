@@ -483,10 +483,8 @@ astcenc_error astcenc_compress_image(
  * it for image N + 1.
  *
  * @param context   Codec context.
- *
- * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
-astcenc_error astcenc_compress_reset(
+void astcenc_compress_reset(
 	astcenc_context* context);
 
 /**
