@@ -638,19 +638,19 @@ astcenc_error astcenc_compress_image(
 				ctx->arg, ctx->ag);
 		};
 
-		// Only the first thread will run this
+		// Only the first thread actually runs the initializer
 		ctx->manage_avg_var.init(init_avg_var);
-
 
 		// All threads will enter this function and dynamically grab work
 		compute_averages_and_variances(*ctx, ctx->ag);
 	}
 
-	// Wait for all threads to complete compute_averages_and_variances
+	// Wait for compute_averages_and_variances to complete before compressing
 	ctx->manage_avg_var.wait();
 
 	compress_image(*ctx, image, swizzle, data_out);
 
+	// Wait for compute to complete before freeing memory
 	ctx->manage_compress.wait();
 
 	auto term_compress = [ctx]() {
@@ -664,6 +664,7 @@ astcenc_error astcenc_compress_image(
 		ctx->input_alpha_averages = nullptr;
 	};
 
+	// Only the first thread to arrive actually runs the term
 	ctx->manage_compress.term(term_compress);
 
 	return ASTCENC_SUCCESS;

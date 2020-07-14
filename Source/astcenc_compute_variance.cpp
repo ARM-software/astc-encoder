@@ -30,6 +30,8 @@
 
 #include "astcenc_internal.h"
 
+#include <cassert>
+
 /**
  * @brief Generate a prefix-sum array using Brent-Kung algorithm.
  *
@@ -507,26 +509,24 @@ void compute_averages_and_variances(
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		assert(count == 1);
+		int z = (base / (y_tasks)) * step_z;
+		int y = (base - (z * y_tasks)) * step_y;
+
+		arg.size.z = MIN(step_z, size_z - z);
+		arg.dst_offset.z = z;
+		arg.src_offset.z = z + padding_z;
+
+		arg.size.y = MIN(step_y, size_y - y);
+		arg.dst_offset.y = y;
+		arg.src_offset.y = y + padding_xy;
+
+		for (int x = 0; x < size_x; x += step_x)
 		{
-			int z = (i / (y_tasks)) * step_z;
-			int y = (i - (z * y_tasks)) * step_y;
-
-			arg.size.z = MIN(step_z, size_z - z);
-			arg.dst_offset.z = z;
-			arg.src_offset.z = z + padding_z;
-
-			arg.size.y = MIN(step_y, size_y - y);
-			arg.dst_offset.y = y;
-			arg.src_offset.y = y + padding_xy;
-
-			for (int x = 0; x < size_x; x += step_x)
-			{
-					arg.size.x = MIN(step_x, size_x - x);
-					arg.dst_offset.x = x;
-					arg.src_offset.x = x + padding_xy;
-					compute_pixel_region_variance(ctx, &arg);
-			}
+			arg.size.x = MIN(step_x, size_x - x);
+			arg.dst_offset.x = x;
+			arg.src_offset.x = x + padding_xy;
+			compute_pixel_region_variance(ctx, &arg);
 		}
 
 		ctx.manage_avg_var.complete_task_assignment(count);
