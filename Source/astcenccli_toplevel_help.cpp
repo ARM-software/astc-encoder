@@ -455,6 +455,7 @@ DECOMPRESSION FILE FORMATS
 
            HDR Formats:
                OpenEXR (*.exr)
+               Radiance HDR (*.hdr)
 
            Container Formats:
                Khronos Texture KTX (*.ktx)

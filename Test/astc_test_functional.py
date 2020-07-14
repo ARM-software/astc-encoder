@@ -748,7 +748,7 @@ class CLIPTest(CLITestBase):
         """
         Test valid uncompressed HDR output file formats.
         """
-        imgFormats = ["dds", "exr", "ktx"]
+        imgFormats = ["dds", "exr", "hdr", "ktx"]
 
         for imgFormat in imgFormats:
             with self.subTest(imgFormat=imgFormat):
@@ -1373,7 +1373,7 @@ class CLIPTest(CLITestBase):
 
         # RMSE should be the same
         p1RMSE = sum(self.get_channel_rmse(inputFile, p1DecompFile))
-        p2RMSE = sum(self.get_channel_rmse(inputFile, p2DecompFile)))
+        p2RMSE = sum(self.get_channel_rmse(inputFile, p2DecompFile))
         self.assertEqual(p1RMSE, p2RMSE)
 
 class CLINTest(CLITestBase):
