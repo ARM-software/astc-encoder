@@ -26,7 +26,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <condition_variable>
+
+#include <atomic>
 #include <mutex>
 
 #ifndef ASTCENC_SSE
@@ -56,98 +57,6 @@
 #define TEXEL_WEIGHT_SUM 16
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
-
-/**
- * @brief A thread barrier.
- *
- * This barrier will block and hold threads until all threads in the thread
- * pool have reached this point. It is useful as a simple means to manage
- * execution of dependent workloads in a data processing pipeline; simply
- * inserting barriers between pipeline stages ensures data dependencies are
- * resolved before the next stage starts.
- *
- * This implementation is a reusable barrier that can be waited on multiple
- * times.
- */
-class Barrier
-{
-private:
-	/** @brief The allowed direction of the counter changes. */
-	enum Dir {
-		Up, Down
-	};
-
-	/** @brief The mutex for manageinv access to cv. */
-	std::mutex mtx;
-
-	/** @brief The condition variable to wait on. */
-	std::condition_variable cv;
-
-	/** @brief The waiting threads (or thread_count minus current count). */
-	size_t current_count;
-
-	/** @brief The number of threads in the workgroup. */
-	const size_t workgroup_size;
-
-	/** @brief The current direction of the counter changes. */
-	Dir dir;
-
-public:
-	/**
-	 * @brief Create a new barrier for a workgroup of the given size.
-	 *
-	 * @param thread_count The workgroup size.
-	 */
-	Barrier(size_t thread_count) :
-		current_count(0),
-		workgroup_size(thread_count),
-		dir(Dir::Up) { }
-
-	/**
-	 * @brief Wait the current thread on the barrier.
-	 *
-	 * This will wake up all threads in the workgroup once all threads in the
-	 * workgroup are waiting on the barrier.
-	 */
-	void wait()
-	{
-		// Acquire the mutex
-		std::unique_lock<std::mutex> lock { mtx };
-
-		// In down direction count until we hit zero, then flip the direction
-		// ready for the next barrier wait operation.
-		if (dir == Dir::Down)
-		{
-			current_count--;
-			if (current_count == 0)
-			{
-				dir = Dir::Up;
-				cv.notify_all();
-			}
-			else
-			{
-				// Use a predicate wait to filter-out false wake ups
-				cv.wait(lock, [this] { return dir == Dir::Up; });
-			}
-		}
-		// In up direction count until we hit thread_count, then flip the
-		// direction ready for the next barrier wait operation.
-		else
-		{
-			current_count++;
-			if (current_count == workgroup_size)
-			{
-				dir = Dir::Down;
-				cv.notify_all();
-			}
-			else
-			{
-				// Use a predicate wait to filter-out false wake ups
-				cv.wait(lock, [this] { return dir == Dir::Down; });
-			}
-		}
-	}
-};
 
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
@@ -725,15 +634,20 @@ struct astcenc_context
 
 	float deblock_weights[MAX_TEXELS_PER_BLOCK];
 
+	std::mutex lock;
+	std::atomic<bool> stage_done_init_avg_var;
+	std::atomic<unsigned int> stage_queue_avg_var;
+	std::atomic<unsigned int> stage_done_avg_var;
+	std::atomic<unsigned int> stage_queue_compress;
+	std::atomic<unsigned int> stage_done_compress;
+	std::atomic<bool> stage_done_term_avg_var;
+
 	// Regional average-and-variance information, initialized by
 	// compute_averages_and_variances() only if the astc encoder
 	// is requested to do error weighting based on averages and variances.
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
-
-	// Thread management
-	Barrier* barrier;
 };
 
 /**

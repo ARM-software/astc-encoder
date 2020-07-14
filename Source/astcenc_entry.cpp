@@ -490,8 +490,6 @@ astcenc_error astcenc_context_alloc(
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
-
-		ctx->barrier = new Barrier(thread_count);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -518,7 +516,6 @@ void astcenc_context_free(
 	{
 		term_block_size_descriptor(context->bsd);
 		delete context->bsd;
-		delete context->barrier;
 		delete context;
 	}
 }
@@ -611,40 +608,40 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
-
 	if (image.dim_pad > 0 ||
 	    ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
 	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f)
 	{
-		if (thread_index == 0)
+		// First thread to enter will do setup, other threads will subsequently
+		// enter the critical section but simply skip over the initialization
 		{
-			// Perform memory allocations for the destination buffers
-			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
-			ctx->input_averages = new float4[texel_count];
-			ctx->input_variances = new float4[texel_count];
-			ctx->input_alpha_averages = new float[texel_count];
+			const std::lock_guard<std::mutex> lock(ctx->lock);
+			if (!ctx->stage_done_init_avg_var.load())
+			{
+				// Perform memory allocations for the destination buffers
+				size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
+				ctx->input_averages = new float4[texel_count];
+				ctx->input_variances = new float4[texel_count];
+				ctx->input_alpha_averages = new float[texel_count];
 
-			init_compute_averages_and_variances(
-			    *ctx, image, ctx->config.v_rgb_power, ctx->config.v_a_power,
-			    ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
-			    ctx->arg, ctx->ag);
+				init_compute_averages_and_variances(
+					*ctx, image, ctx->config.v_rgb_power, ctx->config.v_a_power,
+					ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
+					ctx->arg, ctx->ag);
+
+				ctx->stage_done_init_avg_var.store(true);
+			}
 		}
 
-		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-		ctx->barrier->wait();
-
+		// All threads will enter this function and work-steal
 		compute_averages_and_variances(ctx->thread_count, thread_index, ctx->ag);
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
+	// First thread to enter will do setup, other threads will enter the
+	// critical section but then jump over the init
+	const std::lock_guard<std::mutex> lock(ctx->lock);
 
 	compress_image(*ctx, image, swizzle, data_out, thread_index);
-
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
 
 	// Clean up any memory allocated by compute_averages_and_variances
 	if (thread_index == 0)
@@ -660,6 +657,15 @@ astcenc_error astcenc_compress_image(
 	}
 
 	return ASTCENC_SUCCESS;
+}
+
+astcenc_error astcenc_compress_reset(
+	astcenc_context* ctx
+) {
+	ctx->stage_done_init_avg_var.store(false);
+	ctx->stage_count_avg_var.store(0);
+	ctx->stage_count_compress.store(0);
+	ctx->stage_done_term_avg_var.store(0);
 }
 
 astcenc_error astcenc_decompress_image(
