@@ -30,7 +30,6 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-#include <thread>
 
 #ifndef ASTCENC_SSE
 #error ERROR: ASTCENC_SSE not defined
