@@ -22,11 +22,13 @@
 #ifndef ASTCENC_INTERNAL_INCLUDED
 #define ASTCENC_INTERNAL_INCLUDED
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 
 #ifndef ASTCENC_SSE
@@ -57,101 +59,228 @@
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
 
+// uncomment this macro to enable checking for inappropriate NaNs;
+// works on Linux only, and slows down encoding significantly.
+// #define DEBUG_CAPTURE_NAN
+
+/* ============================================================================
+  Parallel execution control
+============================================================================ */
+
 /**
- * @brief A thread barrier.
+ * @brief A simple counter-based manager for parallel task execution.
  *
- * This barrier will block and hold threads until all threads in the thread
- * pool have reached this point. It is useful as a simple means to manage
- * execution of dependent workloads in a data processing pipeline; simply
- * inserting barriers between pipeline stages ensures data dependencies are
- * resolved before the next stage starts.
+ * The task processing execution consists of:
  *
- * This implementation is a reusable barrier that can be waited on multiple
- * times.
+ *     * A single-threaded init stage.
+ *     * A multi-threaded processing stage.
+ *     * A condition variable so threads can wait for processing completion.
+ *
+ * The init stage will be executed by the first thread to arrive in the
+ * critical section, there is no master thread in the thread pool.
+ *
+ * The processing stage uses dynamic dispatch to assign task tickets to threads
+ * on an on-demand basis. Threads may each therefore executed different numbers
+ * of tasks, depending on their processing complexity. The task queue and the
+ * task tickets are just counters; the caller must map these integers to an
+ * actual processing partition in a specific problem domain.
+ *
+ * The exit wait condition is needed to ensure processing has finished before
+ * a worker thread can progress to the next stage of the pipeline. Specifically
+ * a worker may exit the processing stage because there are no new tasks to
+ * assign to it while other worker threads are still processing. Calling wait()
+ * will ensure that all other worker have finished before the thread can
+ * proceed.
+ *
+ * The basic usage model:
+ *
+ *     // --------- From single-threaded code ---------
+ *
+ *     // Reset the tracker state
+ *     manager->reset()
+ *
+ *     // --------- From multi-threaded code ---------
+ *
+ *     // Run the stage init; only first thread actually runs the lambda
+ *     manager->init(<lambda>)
+ *
+ *     do
+ *     {
+ *         // Request a task assignment
+ *         uint task_count;
+ *         uint base_index = manager->get_tasks(<granule>, task_count);
+ *
+ *         // Process any tasks we were given (task_count <= granule size)
+ *         if (task_count)
+ *         {
+ *             // Run the user task processing code for N tasks here
+ *             ...
+ *
+ *             // Flag these tasks as complete
+ *             manager->complete_tasks(task_count);
+ *         }
+ *     } while (task_count);
+ *
+ *     // Wait for all threads to complete tasks before progressing
+ *     manager->wait()
+ *
+  *     // Run the stage term; only first thread actually runs the lambda
+ *     manager->term(<lambda>)
  */
-class Barrier
+class ParallelManager
 {
 private:
-	/** @brief The allowed direction of the counter changes. */
-	enum Dir {
-		Up, Down
-	};
+	/** \brief Lock used for critical section and condition synchronization. */
+	std::mutex m_lock;
 
-	/** @brief The mutex for manageinv access to cv. */
-	std::mutex mtx;
+	/** \brief True if the stage init() step has been executed. */
+	bool m_init_done;
 
-	/** @brief The condition variable to wait on. */
-	std::condition_variable cv;
+	/** \brief True if the stage term() step has been executed. */
+	bool m_term_done;
 
-	/** @brief The waiting threads (or thread_count minus current count). */
-	size_t current_count;
+	/** \brief Contition variable for tracking stage processing completion. */
+	std::condition_variable m_complete;
 
-	/** @brief The number of threads in the workgroup. */
-	const size_t workgroup_size;
+	/** \brief Number of tasks started, but not necessarily finished. */
+	unsigned int m_start_count;
 
-	/** @brief The current direction of the counter changes. */
-	Dir dir;
+	/** \brief Number of tasks finished. */
+	unsigned int m_done_count;
+
+	/** \brief Number of tasks that need to be processed. */
+	unsigned int m_task_count;
 
 public:
-	/**
-	 * @brief Create a new barrier for a workgroup of the given size.
-	 *
-	 * @param thread_count The workgroup size.
-	 */
-	Barrier(size_t thread_count) :
-		current_count(0),
-		workgroup_size(thread_count),
-		dir(Dir::Up) { }
+	/** \brief Create a new ParallelManager. */
+	ParallelManager()
+	{
+		reset();
+	}
 
 	/**
-	 * @brief Wait the current thread on the barrier.
+	 * \brief Reset the tracker for a new processing batch.
 	 *
-	 * This will wake up all threads in the workgroup once all threads in the
-	 * workgroup are waiting on the barrier.
+	 * This must be called from single-threaded code before starting the
+	 * multi-threaded procesing operations.
+	 */
+	void reset()
+	{
+		m_init_done = false;
+		m_term_done = false;
+		m_start_count = 0;
+		m_done_count = 0;
+		m_task_count = 0;
+	}
+
+	/**
+	 * \brief Trigger the pipeline stage init step.
+	 *
+	 * This can be called from multi-threaded code. The first thread to
+	 * hit this will process the initialization. Other threads will block
+	 * and wait for it to complete.
+	 *
+	 * \param init_func    Callable which executes the stage initialization.
+	 *                     Must return the number of tasks in the stage.
+	 */
+	void init(std::function<unsigned int(void)> init_func)
+	{
+		std::lock_guard<std::mutex> lck(m_lock);
+		if (!m_init_done)
+		{
+			m_task_count = init_func();
+			m_init_done = true;
+		}
+	}
+
+	/**
+	 * \brief Trigger the pipeline stage init step.
+	 *
+	 * This can be called from multi-threaded code. The first thread to
+	 * hit this will process the initialization. Other threads will block
+	 * and wait for it to complete.
+	 *
+	 * \param task_count   Total number of tasks needing processing.
+	 */
+	void init(unsigned int task_count)
+	{
+		std::lock_guard<std::mutex> lck(m_lock);
+		if (!m_init_done)
+		{
+			m_task_count = task_count;
+			m_init_done = true;
+		}
+	}
+
+	/**
+	 * \brief Request a task assignment.
+	 *
+	 * Assign up to \c granule tasks to the caller for processing.
+	 *
+	 * \param      granule   Maximum number of tasks that can be assigned.
+	 * \param[out] count     Actual number of tasks assigned, or zero if
+	 *                       no tasks were assigned.
+	 *
+	 * \return Task index of the first assigned task; assigned tasks
+	 *         increment from this.
+	 */
+	unsigned int get_task_assignment(unsigned int granule, unsigned int& count)
+	{
+		std::lock_guard<std::mutex> lck(m_lock);
+		unsigned int base = m_start_count;
+		count = std::min(granule, m_task_count - m_start_count);
+		m_start_count += count;
+		return base;
+	}
+
+	/**
+	 * \brief Complete a task assignment.
+	 *
+	 * Mark \c count tasks as complete. This will notify all threads blocked
+	 * on \c wait() if this completes the processing of the stage.
+	 *
+	 * \param count   The number of completed tasks.
+	 */
+	void complete_task_assignment(unsigned int count)
+	{
+		std::unique_lock<std::mutex> lck(m_lock);
+		this->m_done_count += count;
+		if (m_done_count == m_task_count)
+		{
+			lck.unlock();
+			m_complete.notify_all();
+		}
+	}
+
+	/**
+	 * \brief Wait for stage processing to complete.
 	 */
 	void wait()
 	{
-		// Acquire the mutex
-		std::unique_lock<std::mutex> lock { mtx };
+		std::unique_lock<std::mutex> lck(m_lock);
+		m_complete.wait(lck, [this]{ return m_done_count == m_task_count; });
+	}
 
-		// In down direction count until we hit zero, then flip the direction
-		// ready for the next barrier wait operation.
-		if (dir == Dir::Down)
+	/**
+	 * \brief Trigger the pipeline stage term step.
+	 *
+	 * This can be called from multi-threaded code. The first thread to
+	 * hit this will process the thread termintion. Caller must have called
+	 * wait() prior to calling this function to ensure processing is complete.
+	 *
+	 * \param term_func   Callable which executes the stage termination.
+	 */
+	void term(std::function<void(void)> term_func)
+	{
+		std::lock_guard<std::mutex> lck(m_lock);
+		if (!m_term_done)
 		{
-			current_count--;
-			if (current_count == 0)
-			{
-				dir = Dir::Up;
-				cv.notify_all();
-			}
-			else
-			{
-				// Use a predicate wait to filter-out false wake ups
-				cv.wait(lock, [this] { return dir == Dir::Up; });
-			}
-		}
-		// In up direction count until we hit thread_count, then flip the
-		// direction ready for the next barrier wait operation.
-		else
-		{
-			current_count++;
-			if (current_count == workgroup_size)
-			{
-				dir = Dir::Down;
-				cv.notify_all();
-			}
-			else
-			{
-				// Use a predicate wait to filter-out false wake ups
-				cv.wait(lock, [this] { return dir == Dir::Down; });
-			}
+			term_func();
+			m_term_done = true;
 		}
 	}
 };
 
-// uncomment this macro to enable checking for inappropriate NaNs;
-// works on Linux only, and slows down encoding significantly.
-// #define DEBUG_CAPTURE_NAN
 
 /*
 	Partition table representation:
@@ -675,8 +804,6 @@ void kmeans_compute_partition_ordering(
 struct pixel_region_variance_args
 {
 	/** The image to analyze. */
-	const astcenc_context* ctx;
-	/** The image to analyze. */
 	const astcenc_image* img;
 	/** The RGB channel power adjustment. */
 	float rgb_power;
@@ -725,15 +852,15 @@ struct astcenc_context
 
 	float deblock_weights[MAX_TEXELS_PER_BLOCK];
 
+	ParallelManager manage_avg_var;
+	ParallelManager manage_compress;
+
 	// Regional average-and-variance information, initialized by
 	// compute_averages_and_variances() only if the astc encoder
 	// is requested to do error weighting based on averages and variances.
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
-
-	// Thread management
-	Barrier* barrier;
 };
 
 /**
@@ -742,7 +869,6 @@ struct astcenc_context
  * Results are written back into img->input_averages, img->input_variances,
  * and img->input_alpha_averages.
  *
- * @param ctxg                  The context holding intermediate storage.
  * @param img                   The input image data, also holds output data.
  * @param rgb_power             The RGB channel power.
  * @param alpha_power           The A channel power.
@@ -750,9 +876,10 @@ struct astcenc_context
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
  * @param swz                   Input data channel swizzle.
  * @param thread_count          The number of threads to use.
+ *
+ * @return The number of tasks in the processing stage.
  */
-void init_compute_averages_and_variances(
-	astcenc_context& ctx,
+unsigned int init_compute_averages_and_variances(
 	astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
@@ -763,8 +890,7 @@ void init_compute_averages_and_variances(
 	avg_var_args& ag);
 
 void compute_averages_and_variances(
-	int thread_count,
-	int thread_id,
+	astcenc_context& ctx,
 	const avg_var_args& ag);
 
 // fetch an image-block from the input file

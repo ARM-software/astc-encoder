@@ -29,6 +29,7 @@
  */
 
 #include "astcenc_internal.h"
+
 #include <cassert>
 
 /**
@@ -106,10 +107,10 @@ static void brent_kung_prefix_sum(
  * @param arg The input parameter structure.
  */
 static void compute_pixel_region_variance(
+	astcenc_context& ctx,
 	const pixel_region_variance_args* arg
 ) {
 	// Unpack the memory structure into local variables
-	const astcenc_context* ctx = arg->ctx;
 	const astcenc_image* img = arg->img;
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
@@ -131,9 +132,9 @@ static void compute_pixel_region_variance(
 	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
 	int alpha_kernel_radius = arg->alpha_kernel_radius;
 
-	float  *input_alpha_averages = ctx->input_alpha_averages;
-	float4 *input_averages = ctx->input_averages;
-	float4 *input_variances = ctx->input_variances;
+	float  *input_alpha_averages = ctx.input_alpha_averages;
+	float4 *input_averages = ctx.input_averages;
+	float4 *input_variances = ctx.input_variances;
 	float4 *work_memory = arg->work_memory;
 
 	// Compute memory sizes and dimensions that we need
@@ -479,14 +480,11 @@ static void compute_pixel_region_variance(
 }
 
 void compute_averages_and_variances(
-	int thread_count,
-	int thread_id,
+	astcenc_context& ctx,
 	const avg_var_args &ag
 ) {
 	pixel_region_variance_args arg = ag.arg;
 	arg.work_memory = new float4[ag.work_memory_size];
-
-	int block_counter = 0;
 
 	int size_x = ag.img_size.x;
 	int size_y = ag.img_size.y;
@@ -499,41 +497,46 @@ void compute_averages_and_variances(
 	int padding_xy = arg.img->dim_pad;
 	int padding_z = arg.have_z ? padding_xy : 0;
 
-	for (int z = 0; z < size_z; z += step_z)
+	int y_tasks = (size_y + step_y - 1) / step_y;
+
+	// All threads run this processing loop until there is no work remaining
+	while (true)
 	{
+		unsigned int count;
+		unsigned int base = ctx.manage_avg_var.get_task_assignment(1, count);
+		if (!count)
+		{
+			break;
+		}
+
+		assert(count == 1);
+		int z = (base / (y_tasks)) * step_z;
+		int y = (base - (z * y_tasks)) * step_y;
+
 		arg.size.z = MIN(step_z, size_z - z);
 		arg.dst_offset.z = z;
 		arg.src_offset.z = z + padding_z;
 
-		for (int y = 0; y < size_y; y += step_y)
+		arg.size.y = MIN(step_y, size_y - y);
+		arg.dst_offset.y = y;
+		arg.src_offset.y = y + padding_xy;
+
+		for (int x = 0; x < size_x; x += step_x)
 		{
-			if (block_counter == thread_id)
-			{
-				arg.size.y = MIN(step_y, size_y - y);
-				arg.dst_offset.y = y;
-				arg.src_offset.y = y + padding_xy;
-
-				for (int x = 0; x < size_x; x += step_x)
-				{
-						arg.size.x = MIN(step_x, size_x - x);
-						arg.dst_offset.x = x;
-						arg.src_offset.x = x + padding_xy;
-						compute_pixel_region_variance(&arg);
-				}
-			}
-
-			block_counter++;
-			if (block_counter >= thread_count)
-				block_counter = 0;
+			arg.size.x = MIN(step_x, size_x - x);
+			arg.dst_offset.x = x;
+			arg.src_offset.x = x + padding_xy;
+			compute_pixel_region_variance(ctx, &arg);
 		}
+
+		ctx.manage_avg_var.complete_task_assignment(count);
 	}
 
 	delete[] arg.work_memory;
 }
 
 /* Public function, see header file for detailed documentation */
-void init_compute_averages_and_variances(
-	astcenc_context& ctx,
+unsigned int init_compute_averages_and_variances(
 	astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
@@ -565,7 +568,6 @@ void init_compute_averages_and_variances(
 	arg.dst_offset = int3(0, 0, 0);
 	arg.work_memory = nullptr;
 
-	arg.ctx = &ctx;
 	arg.img = &img;
 	arg.rgb_power = rgb_power;
 	arg.alpha_power = alpha_power;
@@ -578,5 +580,10 @@ void init_compute_averages_and_variances(
 	ag.img_size = int3(size_x, size_y, size_z);
 	ag.blk_size = int3(max_blk_size_xy, max_blk_size_xy, max_blk_size_z);
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
+
+	// The parallel task count
+	int z_tasks = (size_z + max_blk_size_z - 1) / max_blk_size_z;
+	int y_tasks = (size_y + max_blk_size_xy - 1) / max_blk_size_xy;
+	return z_tasks * y_tasks;
 }
 

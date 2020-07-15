@@ -22,7 +22,6 @@
 #include <cstring>
 #include <new>
 
-
 #include "astcenc.h"
 #include "astcenc_internal.h"
 
@@ -490,8 +489,6 @@ astcenc_error astcenc_context_alloc(
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
-
-		ctx->barrier = new Barrier(thread_count);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -518,7 +515,6 @@ void astcenc_context_free(
 	{
 		term_block_size_descriptor(context->bsd);
 		delete context->bsd;
-		delete context->barrier;
 		delete context;
 	}
 }
@@ -527,8 +523,7 @@ static void compress_image(
 	astcenc_context& ctx,
 	const astcenc_image& image,
 	astcenc_swizzle swizzle,
-	uint8_t* buffer,
-	int thread_id
+	uint8_t* buffer
 ) {
 	const block_size_descriptor *bsd = ctx.bsd;
 	int block_x = bsd->xdim;
@@ -537,7 +532,6 @@ static void compress_image(
 	astcenc_profile decode_mode = ctx.config.profile;
 
 	imageblock pb;
-	int ctr = thread_id;
 	int dim_x = image.dim_x;
 	int dim_y = image.dim_y;
 	int dim_z = image.dim_z;
@@ -545,32 +539,44 @@ static void compress_image(
 	int yblocks = (dim_y + block_y - 1) / block_y;
 	int zblocks = (dim_z + block_z - 1) / block_z;
 
+	int row_blocks = xblocks;
+	int plane_blocks = xblocks * yblocks;
+
 	// Allocate temporary buffers. Large, so allocate on the heap
 	auto temp_buffers = aligned_malloc<compress_symbolic_block_buffers>(sizeof(compress_symbolic_block_buffers), 32);
 
-	for (int z = 0; z < zblocks; z++)
+	// Only the first thread actually runs the initializer
+	ctx.manage_compress.init(zblocks * yblocks * xblocks);
+
+	// All threads run this processing loop until there is no work remaining
+	while (true)
 	{
-		for (int y = 0; y < yblocks; y++)
+		unsigned int count;
+		unsigned int base = ctx.manage_compress.get_task_assignment(4, count);
+		if (!count)
 		{
-			for (int x = 0; x < xblocks; x++)
-			{
-				if (ctr == 0)
-				{
-					int offset = ((z * yblocks + y) * xblocks + x) * 16;
-					const uint8_t *bp = buffer + offset;
-					fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
-					symbolic_compressed_block scb;
-					compress_symbolic_block(ctx, image, decode_mode, bsd, &pb, &scb, temp_buffers);
-					*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
-					ctr = ctx.thread_count - 1;
-				}
-				else
-				{
-					ctr--;
-				}
-			}
+			break;
 		}
-	}
+
+		for (unsigned int i = base; i < base + count; i++)
+		{
+			// Decode i into x, y, z block indices
+			int z = i / plane_blocks;
+			unsigned int rem = i - (z * plane_blocks);
+			int y = rem / row_blocks;
+			int x = rem - (y * row_blocks);
+
+			// Decompress
+			int offset = ((z * yblocks + y) * xblocks + x) * 16;
+			const uint8_t *bp = buffer + offset;
+			fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+			symbolic_compressed_block scb;
+			compress_symbolic_block(ctx, image, decode_mode, bsd, &pb, &scb, temp_buffers);
+			*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
+		}
+
+		ctx.manage_compress.complete_task_assignment(count);
+	};
 
 	aligned_free<compress_symbolic_block_buffers>(temp_buffers);
 }
@@ -611,44 +617,41 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
-
 	if (image.dim_pad > 0 ||
 	    ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
 	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f)
 	{
-		if (thread_index == 0)
-		{
+		// First thread to enter will do setup, other threads will subsequently
+		// enter the critical section but simply skip over the initialization
+		auto init_avg_var = [ctx, &image, swizzle]() {
 			// Perform memory allocations for the destination buffers
 			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
 			ctx->input_averages = new float4[texel_count];
 			ctx->input_variances = new float4[texel_count];
 			ctx->input_alpha_averages = new float[texel_count];
 
-			init_compute_averages_and_variances(
-			    *ctx, image, ctx->config.v_rgb_power, ctx->config.v_a_power,
-			    ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
-			    ctx->arg, ctx->ag);
-		}
+			return init_compute_averages_and_variances(
+				image, ctx->config.v_rgb_power, ctx->config.v_a_power,
+				ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
+				ctx->arg, ctx->ag);
+		};
 
-		// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-		ctx->barrier->wait();
+		// Only the first thread actually runs the initializer
+		ctx->manage_avg_var.init(init_avg_var);
 
-		compute_averages_and_variances(ctx->thread_count, thread_index, ctx->ag);
+		// All threads will enter this function and dynamically grab work
+		compute_averages_and_variances(*ctx, ctx->ag);
 	}
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
+	// Wait for compute_averages_and_variances to complete before compressing
+	ctx->manage_avg_var.wait();
 
-	compress_image(*ctx, image, swizzle, data_out, thread_index);
+	compress_image(*ctx, image, swizzle, data_out);
 
-	// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	ctx->barrier->wait();
+	// Wait for compress to complete before freeing memory
+	ctx->manage_compress.wait();
 
-	// Clean up any memory allocated by compute_averages_and_variances
-	if (thread_index == 0)
-	{
+	auto term_compress = [ctx]() {
 		delete[] ctx->input_averages;
 		ctx->input_averages = nullptr;
 
@@ -657,9 +660,19 @@ astcenc_error astcenc_compress_image(
 
 		delete[] ctx->input_alpha_averages;
 		ctx->input_alpha_averages = nullptr;
-	}
+	};
+
+	// Only the first thread to arrive actually runs the term
+	ctx->manage_compress.term(term_compress);
 
 	return ASTCENC_SUCCESS;
+}
+
+void astcenc_compress_reset(
+	astcenc_context* ctx
+) {
+	ctx->manage_avg_var.reset();
+	ctx->manage_compress.reset();
 }
 
 astcenc_error astcenc_decompress_image(

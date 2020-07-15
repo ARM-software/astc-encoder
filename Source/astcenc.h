@@ -47,10 +47,6 @@
  *       is responsible for creating the worker threads. Note that
  *       decompression is always single-threaded.
  *
- * When using multi-threading for a single image is is critical that all of the
- * specified threads call astcenc_compress(); the internal code synchronizes
- * using barriers that will wait forever if some threads are missing.
- *
  * Threading
  * =========
  *
@@ -70,7 +66,9 @@
  *     foreach image:
  *         // For each thread in the thread pool
  *         for i in range(0, thread_count):
- *             astcenc_compress_image(&my_context, &my_input, my_output, i);
+ *             astcenc_compress_image(my_context, &my_input, my_output, i);
+ *
+ *         astcenc_compress_reset(my_context);
  *
  *     // Clean up
  *     astcenc_context_free(my_context);
@@ -455,9 +453,9 @@ astcenc_error astcenc_context_alloc(
  *
  * A single context can only compress or decompress a single image at a time.
  *
- * For a context configured for multi-threading, all N threads must call this
- * function or it will never return due to use of barrier-style thread
- * synchronization.
+ * For a context configured for multi-threading, any set of the N threads can
+ * call this function. Work will be dynamically scheduled across the threads
+ * available. Each thread must have a unique thread_index.
  *
  * @param         context        Codec context.
  * @param[in,out] image          Input image.
@@ -475,6 +473,19 @@ astcenc_error astcenc_compress_image(
 	uint8_t* data_out,
 	size_t data_len,
 	unsigned int thread_index);
+
+/**
+ * @brief Reset the compressor state for a new compression.
+ *
+ * The caller is responsible for synchronizing threads in the worker thread
+ * pool. This function must only be called when all threads have exited the
+ * astcenc_compress_image() function for image N, but before any thread enters
+ * it for image N + 1.
+ *
+ * @param context   Codec context.
+ */
+void astcenc_compress_reset(
+	astcenc_context* context);
 
 /**
  * @brief Decompress an image.
