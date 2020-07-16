@@ -96,6 +96,31 @@
  * the following config settings:
  *
  *     max(config.v_rgba_radius, config.a_scale_radius)
+ *
+ * Common compressor usage
+ * =======================
+ *
+ * One of the most important things for coding image quality is to align the
+ * input data channel count with the ASTC color endpoint mode. This avoids
+ * wasting bits encoding channels you don't need in the endpoint colors.
+ *
+ *         | Input data | Encoding swizzle | Sampling swizzle |
+ *         | ---------- | ---------------- | ---------------- |
+ *         | 1 channel  | RRR1             | .g               |
+ *         | 2 channels | RRRG             | .ga              |
+ *         | 3 channels | RGB1             | .rgb             |
+ *         | 4 channels | RGBA             | .rgba            |
+ *
+ * The 1 and 2 channel modes recommend sampling from "g" to recover the
+ * luminance value as this provide best compatibility with ETC1. For ETC the
+ * luminance data will be stored as RGB565 where the green channel has the
+ * best quality. For ASTC any of the rgb channels can be used - the same data
+ * will be returned for all three.
+ *
+ * When using the normal map compression mode ASTC will store normals as a two
+ * channel X+Y map. Input images must contain unit-length normalized and should
+ * be passed in using the RRRG swizzle. The Z component can be programatically
+ * recovered in shader code, using knowledge that the vector is unit length.
  */
 
 #ifndef ASTCENC_INCLUDED
