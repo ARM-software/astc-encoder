@@ -842,27 +842,6 @@ struct avg_var_args
 	int work_memory_size;
 };
 
-struct astcenc_context
-{
-	astcenc_config config;
-	block_size_descriptor* bsd;
-	pixel_region_variance_args arg;
-	avg_var_args ag;
-	unsigned int thread_count;
-
-	float deblock_weights[MAX_TEXELS_PER_BLOCK];
-
-	ParallelManager manage_avg_var;
-	ParallelManager manage_compress;
-
-	// Regional average-and-variance information, initialized by
-	// compute_averages_and_variances() only if the astc encoder
-	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
-	float *input_alpha_averages;
-};
-
 /**
  * @brief Compute regional averages and variances in an image.
  *
@@ -1145,6 +1124,30 @@ uint16_t unorm16_to_sf16(
 
 uint16_t lns_to_sf16(
 	uint16_t p);
+
+
+struct astcenc_context
+{
+	astcenc_config config;
+	block_size_descriptor* bsd;
+	pixel_region_variance_args arg;
+	avg_var_args ag;
+	unsigned int thread_count;
+
+	float deblock_weights[MAX_TEXELS_PER_BLOCK];
+
+	compress_symbolic_block_buffers* working_buffers;
+
+	ParallelManager manage_avg_var;
+	ParallelManager manage_compress;
+
+	// Regional average-and-variance information, initialized by
+	// compute_averages_and_variances() only if the astc encoder
+	// is requested to do error weighting based on averages and variances.
+	float4 *input_averages;
+	float4 *input_variances;
+	float *input_alpha_averages;
+};
 
 /* ============================================================================
   Platform-specific functions

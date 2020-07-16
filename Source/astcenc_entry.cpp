@@ -489,6 +489,9 @@ astcenc_error astcenc_context_alloc(
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
+
+		size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
+		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -509,18 +512,20 @@ astcenc_error astcenc_context_alloc(
 }
 
 void astcenc_context_free(
-	astcenc_context* context
+	astcenc_context* ctx
 ) {
-	if (context)
+	if (ctx)
 	{
-		term_block_size_descriptor(context->bsd);
-		delete context->bsd;
-		delete context;
+		aligned_free<compress_symbolic_block_buffers>(ctx->working_buffers);
+		term_block_size_descriptor(ctx->bsd);
+		delete ctx->bsd;
+		delete ctx;
 	}
 }
 
 static void compress_image(
 	astcenc_context& ctx,
+	unsigned int thread_index,
 	const astcenc_image& image,
 	astcenc_swizzle swizzle,
 	uint8_t* buffer
@@ -542,8 +547,8 @@ static void compress_image(
 	int row_blocks = xblocks;
 	int plane_blocks = xblocks * yblocks;
 
-	// Allocate temporary buffers. Large, so allocate on the heap
-	auto temp_buffers = aligned_malloc<compress_symbolic_block_buffers>(sizeof(compress_symbolic_block_buffers), 32);
+	// Use preallocated scratch buffer
+	auto temp_buffers = &(ctx.working_buffers[thread_index]);
 
 	// Only the first thread actually runs the initializer
 	ctx.manage_compress.init(zblocks * yblocks * xblocks);
@@ -577,8 +582,6 @@ static void compress_image(
 
 		ctx.manage_compress.complete_task_assignment(count);
 	};
-
-	aligned_free<compress_symbolic_block_buffers>(temp_buffers);
 }
 
 astcenc_error astcenc_compress_image(
@@ -646,7 +649,7 @@ astcenc_error astcenc_compress_image(
 	// Wait for compute_averages_and_variances to complete before compressing
 	ctx->manage_avg_var.wait();
 
-	compress_image(*ctx, image, swizzle, data_out);
+	compress_image(*ctx, thread_index, image, swizzle, data_out);
 
 	// Wait for compress to complete before freeing memory
 	ctx->manage_compress.wait();
