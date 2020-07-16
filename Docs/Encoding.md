@@ -37,7 +37,7 @@ their compressed bitrate are shown in the table below.
 **Note:** BC2 (RGB+A) is not included in the table because it's rarely used in
 practice due to poor quality alpha encoding; BC3 is nearly always used instead.
 
-**Note** Color representations shown with a `+` symbol indicate non-correlated
+**Note:** Color representations shown with a `+` symbol indicate non-correlated
 compression groups; e.g. an `RGB + A` format compresses `RGB` and `A`
 independently and does not assume the two signals are correlated. This can be
 a strength (it improves quality when compressing non-correlated signals), but
