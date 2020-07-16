@@ -1,6 +1,6 @@
 # ASTC Format Overview
 
-Adaptive Scalable Texture Compression (ASTC) is a next-generation lossy texture
+Adaptive Scalable Texture Compression (ASTC) is an advanced lossy texture
 compression technology developed by Arm and AMD. It has been adopted as an
 official Khronos extension to the OpenGL and OpenGL ES APIs, and as a standard
 optional feature for the Vulkan API.
