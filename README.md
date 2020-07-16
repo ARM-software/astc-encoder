@@ -40,7 +40,7 @@ functionality or performance improvements should be expected.
 
 The encoder supports compression of low dynamic range (BMP, JPEG, PNG, TGA) and
 high dynamic range (EXR, HDR) images, as well as a subset of image data wrapped
-in the DDS and KTX container formats, into ASTC format output images.
+in the DDS and KTX container formats, into ASTC or KTX format output images.
 
 The decoder supports decompression of ASTC format input images into low dynamic
 range (BMP, PNG, TGA), high dynamic range (EXR, HDR), or DDS and KTX wrapped output
