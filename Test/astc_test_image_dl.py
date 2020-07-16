@@ -59,7 +59,7 @@ def retrieve_kodak_set():
     testSet = "Kodak"
     for i in range(1, 25):
         fle = "ldr-rgb-kodak%02u.png" % i
-        dst = os.path.join(TEST_IMAGE_DIR, "Kodak_Images", "LDR-RGB", fle)
+        dst = os.path.join(TEST_IMAGE_DIR, "Kodak", "LDR-RGB", fle)
         src = "http://r0k.us/graphics/kodak/kodak/kodim%02u.png" % i
         download(testSet, i, src, dst)
 
