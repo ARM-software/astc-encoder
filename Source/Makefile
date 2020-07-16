@@ -159,10 +159,10 @@ clean:
 	@echo "[Clean] Removing $(VEC) build outputs"
 
 batchbuild:
-	@+$(MAKE) -s VEC=nointrin
-	@+$(MAKE) -s VEC=sse2
-	@+$(MAKE) -s VEC=sse4.2
-	@+$(MAKE) -s VEC=avx2
+	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=nointrin
+	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=sse2
+	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=sse4.2
+	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=avx2
 
 batchclean:
 	@+$(MAKE) -s clean VEC=nointrin
