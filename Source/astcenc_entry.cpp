@@ -256,7 +256,7 @@ static astcenc_error validate_config(
 	return ASTCENC_SUCCESS;
 }
 
-astcenc_error astcenc_init_config(
+astcenc_error astcenc_config_init(
 	astcenc_profile profile,
 	unsigned int block_x,
 	unsigned int block_y,

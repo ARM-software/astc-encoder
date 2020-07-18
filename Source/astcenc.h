@@ -54,7 +54,7 @@
  *
  *     // Configure the compressor run
  *     astcenc_config my_config;
- *     astcenc_init_config(..., &my_config);
+ *     astcenc_config_init(..., &my_config);
  *
  *     // Power users can tune the tweak <my_config> settings here ...
  *
@@ -284,7 +284,7 @@ static const unsigned int ASTCENC_ALL_FLAGS =
 /**
  * @brief The config structure.
  *
- * This structure will initially be populated by a call to astcenc_init_config,
+ * This structure will initially be populated by a call to astcenc_config_init,
  * but power users may modify it before calling astcenc_context_alloc. See
  * astcenccli_toplevel_help.cpp for full user documentation of the power-user
  * settings.
@@ -452,7 +452,7 @@ struct astcenc_image {
  * @return ASTCENC_SUCCESS on success, or an error if the inputs are invalid
  * either individually, or in combination.
  */
-astcenc_error astcenc_init_config(
+astcenc_error astcenc_config_init(
 	astcenc_profile profile,
 	unsigned int block_x,
 	unsigned int block_y,

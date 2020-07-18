@@ -435,7 +435,7 @@ int init_astcenc_config(
 		argidx ++;
 	}
 
-	astcenc_error status = astcenc_init_config(profile, block_x, block_y, block_z, preset, flags, config);
+	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
 		printf("ERROR: Block size '%s' is invalid\n", argv[4]);
