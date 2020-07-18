@@ -1074,7 +1074,18 @@ int main(
 		work.data_len = buffer_size;
 		work.error = ASTCENC_SUCCESS;
 
-		launch_threads(cli_config.thread_count, compression_workload_runner, &work);
+		// Only launch worker threads for multi-threaded use - it makes basic
+		// single-threaded profiling and debugging a little less convoluted
+		if (cli_config.thread_count > 1)
+		{
+			launch_threads(cli_config.thread_count, compression_workload_runner, &work);
+		}
+		else
+		{
+			work.error = astcenc_compress_image(
+			    work.context, *work.image, work.swizzle,
+			    work.data_out, work.data_len, 0);
+		}
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
