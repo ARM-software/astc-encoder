@@ -81,6 +81,9 @@
  * point inputs (passed in via the data16 pointer). The unused pointer should
  * be set to nullptr.
  *
+ * Images can be any dimension; there is no requirement for them to be a
+ * multiple of the ASTC block size.
+ *
  * Data is always passed in as 4 color channels, and accessed as 3D array
  * indexed using e.g.
  *
@@ -89,13 +92,16 @@
  *     data8[z_coord][y_coord][x_coord * 4 + 2]   // Blue
  *     data8[z_coord][y_coord][x_coord * 4 + 3]   // Alpha
  *
- * If a region-based error heuristic is used for compression, the image will
- * need to be padded on all sides by pad_dim texels in x and y dimensions (and
- * z dimensions for 3D images). The padding region must be filled by
+ * If a region-based error heuristic is used for compression, the input image
+ * must be padded on all sides by pad_dim texels in x and y dimensions (and z
+ * dimensions for 3D images). The padding region must be filled by
  * extrapolating the nearest edge color. The required padding size is given by
  * the following config settings:
  *
  *     max(config.v_rgba_radius, config.a_scale_radius)
+ *
+ * This can be programatically determined by reading the config containing the
+ * values passed into astcenc_context_alloc().
  *
  * Common compressor usage
  * =======================
