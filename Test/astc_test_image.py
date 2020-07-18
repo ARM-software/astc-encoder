@@ -283,7 +283,7 @@ def parse_command_line():
     parser = argparse.ArgumentParser()
 
     refcoders = ["ref-1.7", "ref-2.0", "ref-prototype"]
-    testcoders = ["nointrin", "sse2", "sse4.2", "avx2"]
+    testcoders = ["sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")

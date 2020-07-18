@@ -34,7 +34,6 @@ pipeline {
                   make CXX=clang++ VEC=avx2
                   make CXX=clang++ VEC=sse4.2
                   make CXX=clang++ VEC=sse2
-                  make CXX=clang++ VEC=nointrin
                 '''
               }
             }
@@ -70,6 +69,8 @@ pipeline {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Release /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse4.2.vcxproj /p:Configuration=Release /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Release /p:Platform=x64
                 '''
               }
             }
@@ -78,13 +79,15 @@ pipeline {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Debug /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse4.2.vcxproj /p:Configuration=Debug /p:Platform=x64
+				  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Debug /p:Platform=x64
                 '''
               }
             }
             stage('Stash') {
               steps {
-                dir('Source\\VS2019\\astcenc-avx2-Release') {
-                  stash name: 'astcenc-win-release', includes: 'astcenc-avx2.exe'
+                dir('Source\\VS2019\\') {
+                  stash name: 'astcenc-win-release', includes: '*.exe'
                 }
               }
             }
@@ -115,6 +118,8 @@ pipeline {
               steps {
                 sh '''
                   cd ./Source/
+                  make VEC=avx2
+                  make VEC=sse4.2
                   make VEC=sse2
                 '''
               }
@@ -130,7 +135,7 @@ pipeline {
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
-                  python3 ./Test/astc_test_image.py --test-set Small --encoder=sse2
+                  python3 ./Test/astc_test_image.py --test-set Small
                 '''
                 //perfReport(sourceDataFiles:'TestOutput/results.xml')
                 //junit(testResults: 'TestOutput/results.xml')

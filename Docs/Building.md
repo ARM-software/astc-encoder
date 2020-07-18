@@ -34,21 +34,21 @@ msbuild astcenc.sln /p:Configuration=Release /p:Platform=x64
 ## macOS and Linux
 
 Builds for macOS and Linux use GCC or Clang and Make. They are tested using
-Clang 9.0, GCC 7.4, and Make 3.82. Using Clang 9.0 is recommended, as Clang
-builds out-perform GCC builds by approximately 20% in benchmarked test runs.
+Clang 9.0, GCC 7.4, and Make 3.82. Using Clang 9.0 is recommended, as it
+out-performs GCC by 15-20% in benchmarked test runs.
 
 ### Single variants
 
 To compile a single SIMD variant compile with:
 
 ```
-make -C Source CXX=clang++ VEC=[nointrin|sse2|sse4.2|avx2] -j8
+make -C Source CXX=clang++ VEC=[sse2|sse4.2|avx2] -j8
 ```
 
 ... and use:
 
 ```
-make -C Source CXX=clang++ VEC=[nointrin|sse2|sse4.2|avx2] clean
+make -C Source CXX=clang++ VEC=[sse2|sse4.2|avx2] clean
 ```
 
 ... to clean the build.
@@ -69,3 +69,14 @@ make -sC Source batchclean -j8
 
 ... to clean the build.
 
+### Developer build options
+
+The default build, `BUILD=release`, is heavily optimized using link-time
+optimization (`-O3 -flto`) and does not include symbols.
+
+For debugging, add `BUILD=debug` to the Make command line. This will build a
+non-optimized build (`-O0`) with symbols included (`-g`).
+
+For easier profiling, add `BUILD=profile` to the Make command line. This will
+build a moderately optimized build (`-O2`) with symbols include (`-g`), but
+without link-time optimization (no `-flto`).

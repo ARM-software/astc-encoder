@@ -15,22 +15,22 @@
 # under the License.
 # -----------------------------------------------------------------------------
 
-# Configure the vectorization intrinsics support; valid values are:
+# Configure the SIMD ISA and intrinsics support; valid values are:
 #
-#   * nointrin - allow use of sse2 by the compiler, but no manual instrinsics
-#   * sse2     - allow use of sse2
-#   * sse4.2   - allow use of sse4.2 and popcnt
-#   * avx2     - allow use of avx2, sse4.2, and popcnt
+#   * sse2   - allow use of sse2
+#   * sse4.2 - allow use of sse4.2 and popcnt
+#   * avx2   - allow use of avx2, sse4.2, and popcnt
 #
-# Note that we always enable at least sse2 support for compiler generated code,
-# as it is guaranteed to be present in x86-64, we only allow disabling of our
-# manually written instrinsic functions.
-#
-# Also note that we currently assume that sse4.2 implies support for popcnt,
-# which is the default GCC behavior and true on currently shipping hardware.
-VEC?=avx2
+# We assume that sse4.2 implies support for popcnt, which is the default GCC
+# behavior and true on currently shipping hardware.
+VEC ?= avx2
 
-DBG?=0
+# Configure the build type; valid values are:
+#
+#   * release - build a fully optimized build without symbols
+#   * profile - build a moderately optimized build, with symbols
+#   * debug   - build an unoptimized build with symbols
+BUILD ?= release
 
 SOURCES = \
     astcenc_averages_and_directions.cpp \
@@ -87,17 +87,22 @@ BINARY = astcenc-$(VEC)
 CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
-# Validate that the DBG parameter is a supported value, and patch CXXFLAGS
-ifeq ($(DBG),0)
+# Validate that the BUILD parameter is a supported value, and patch CXXFLAGS
+ifeq ($(BUILD),release)
 CXXFLAGS += -O3 -DNDEBUG -flto
 else
+ifeq ($(BUILD),profile)
+CXXFLAGS += -O2 -g
+else
+ifeq ($(BUILD),debug)
 CXXFLAGS += -O0 -g
+else
+$(error Unsupported build, use BUILD=release/profile/debug)
+endif
+endif
 endif
 
 # Validate that the VEC parameter is a supported value, and patch CXXFLAGS
-ifeq ($(VEC),nointrin)
-CXXFLAGS += -msse2 -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
-else
 ifeq ($(VEC),sse2)
 CXXFLAGS += -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
 else
@@ -107,8 +112,7 @@ else
 ifeq ($(VEC),avx2)
 CXXFLAGS += -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1
 else
-$(error Unsupported VEC target, use VEC=nointrin/sse2/sse4.2/avx2)
-endif
+$(error Unsupported VEC target, use VEC=sse2/sse4.2/avx2)
 endif
 endif
 endif
@@ -121,10 +125,15 @@ CXXFLAGS_EXTERNAL = \
     -fno-strict-aliasing
 
 # ==================================================
+# Exports for child make invocations
+export CXX
+export BUILD
+
+# ==================================================
 # Build rules for the command line wrapper
 $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
 	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
-	@echo "[Link] $@ (using $(VEC), debug=$(DBG))"
+	@echo "[Link] $@ (using $(VEC) $(BUILD))"
 
 # Note: ensure NDEBUG is undefined; all three libraries are weak at runtime
 # handling of corrupt files, relying on asserts to handle bd file input.
@@ -159,13 +168,11 @@ clean:
 	@echo "[Clean] Removing $(VEC) build outputs"
 
 batchbuild:
-	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=nointrin
-	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=sse2
-	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=sse4.2
-	@+$(MAKE) -s CXX=$(CXX) DBG=$(DBG) VEC=avx2
+	@+$(MAKE) -s VEC=sse2
+	@+$(MAKE) -s VEC=sse4.2
+	@+$(MAKE) -s VEC=avx2
 
 batchclean:
-	@+$(MAKE) -s clean VEC=nointrin
 	@+$(MAKE) -s clean VEC=sse2
 	@+$(MAKE) -s clean VEC=sse4.2
 	@+$(MAKE) -s clean VEC=avx2
