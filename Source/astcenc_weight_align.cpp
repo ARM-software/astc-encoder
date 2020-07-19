@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for angular-sum algorithm for weight alignment.
  *
@@ -517,3 +519,5 @@ void compute_angular_endpoints_2planes(
 		high_value2[i] = high_values2[decim_mode][quant_mode];
 	}
 }
+
+#endif

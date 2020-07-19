@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions to calculate variance per channel in a NxN footprint.
  *
@@ -587,3 +589,4 @@ unsigned int init_compute_averages_and_variances(
 	return z_tasks * y_tasks;
 }
 
+#endif

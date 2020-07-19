@@ -121,6 +121,7 @@ static astcenc_error validate_flags(
 	return ASTCENC_SUCCESS;
 }
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 static astcenc_error validate_compression_swz(
 	astcenc_swz swizzle
 ) {
@@ -151,6 +152,7 @@ static astcenc_error validate_compression_swizzle(
 
 	return ASTCENC_SUCCESS;
 }
+#endif
 
 static astcenc_error validate_decompression_swz(
 	astcenc_swz swizzle
@@ -223,6 +225,14 @@ static astcenc_error validate_config(
 	{
 		return ASTCENC_ERR_BAD_PARAM;
 	}
+
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	// Decompress-only builds only support decompress-only contexts
+	if (!(config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+#endif
 
 	config.v_rgba_mean_stdev_mix = MAX(config.v_rgba_mean_stdev_mix, 0.0f);
 	config.v_rgb_power = MAX(config.v_rgb_power, 0.0f);
@@ -467,7 +477,7 @@ astcenc_error astcenc_context_alloc(
 		ctx->config = config;
 		ctx->working_buffers = nullptr;
 
-		// Clear scratch storage (allocated per compress, based on image size)
+		// These are allocated per-compress, as they depend on image size
 		ctx->input_averages = nullptr;
 		ctx->input_variances = nullptr;
 		ctx->input_alpha_averages = nullptr;
@@ -484,6 +494,7 @@ astcenc_error astcenc_context_alloc(
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 		// Do setup only needed by compression
 		if (!(status & ASTCENC_FLG_DECOMPRESS_ONLY))
 		{
@@ -503,6 +514,7 @@ astcenc_error astcenc_context_alloc(
 			size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
 			ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
 		}
+#endif
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -516,7 +528,9 @@ astcenc_error astcenc_context_alloc(
 	*context = ctx;
 
 	// TODO: Currently static memory; should move to context memory
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	prepare_angular_tables();
+#endif
 	build_quantization_mode_table();
 
 	return ASTCENC_SUCCESS;
@@ -534,6 +548,7 @@ void astcenc_context_free(
 	}
 }
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 static void compress_image(
 	astcenc_context& ctx,
 	unsigned int thread_index,
@@ -594,6 +609,7 @@ static void compress_image(
 		ctx.manage_compress.complete_task_assignment(count);
 	};
 }
+#endif
 
 astcenc_error astcenc_compress_image(
 	astcenc_context* ctx,
@@ -603,6 +619,15 @@ astcenc_error astcenc_compress_image(
 	size_t data_len,
 	unsigned int thread_index
 ) {
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	(void)ctx;
+	(void)image;
+	(void)swizzle;
+	(void)data_out;
+	(void)data_len;
+	(void)thread_index;
+	return ASTCENC_ERR_BAD_CONTEXT;
+#else
 	astcenc_error status;
 
 	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
@@ -685,11 +710,16 @@ astcenc_error astcenc_compress_image(
 	ctx->manage_compress.term(term_compress);
 
 	return ASTCENC_SUCCESS;
+#endif
 }
 
 astcenc_error astcenc_compress_reset(
 	astcenc_context* ctx
 ) {
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	(void)ctx;
+	return ASTCENC_ERR_BAD_CONTEXT;
+#else
 	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
 	{
 		return ASTCENC_ERR_BAD_CONTEXT;
@@ -698,6 +728,7 @@ astcenc_error astcenc_compress_reset(
 	ctx->manage_avg_var.reset();
 	ctx->manage_compress.reset();
 	return ASTCENC_SUCCESS;
+#endif
 }
 
 astcenc_error astcenc_decompress_image(

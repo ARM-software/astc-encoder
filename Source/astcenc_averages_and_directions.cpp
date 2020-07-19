@@ -18,6 +18,7 @@
 /**
  * @brief Functions for finding dominant direction of a set of colors.
  */
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 
 #include "astcenc_internal.h"
 
@@ -706,3 +707,5 @@ float compute_error_squared_rgb_single_partition(
 	}
 	return errorsum;
 }
+
+#endif

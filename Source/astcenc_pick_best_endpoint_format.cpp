@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions to pick best ASTC endpoint for a block.
  */
@@ -878,3 +880,5 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 	}
 }
+
+#endif

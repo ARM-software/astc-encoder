@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions to compress a symbolic block.
  */
@@ -1335,3 +1337,5 @@ END_OF_TESTS:
 	// mean squared error per color component.
 	return error_of_best_block / ((float)(bsd->xdim * bsd->ydim * bsd->zdim));
 }
+
+#endif

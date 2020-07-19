@@ -15,14 +15,22 @@
 # under the License.
 # -----------------------------------------------------------------------------
 
+# Configure the application to build
+#
+#   * astcenc - a full compressor/decompressor
+#   * astcdec - a decompressor without compression support
+#
+# Note that "astcdec" is not a fully customized command line application. It
+# will look like a normal astcenc build except for the binary name, and all
+# operations requring a compression will fail. It is only intended for use as
+# test vehicle for the decompress-only library testing.
+APP ?= astcenc
+
 # Configure the SIMD ISA and intrinsics support; valid values are:
 #
 #   * sse2   - allow use of sse2
 #   * sse4.2 - allow use of sse4.2 and popcnt
 #   * avx2   - allow use of avx2, sse4.2, and popcnt
-#
-# We assume that sse4.2 implies support for popcnt, which is the default GCC
-# behavior and true on currently shipping hardware.
 VEC ?= avx2
 
 # Configure the build type; valid values are:
@@ -31,6 +39,9 @@ VEC ?= avx2
 #   * profile - build a moderately optimized build, with symbols
 #   * debug   - build an unoptimized build with symbols
 BUILD ?= release
+
+# ==================================================
+# File listings
 
 SOURCES = \
     astcenc_averages_and_directions.cpp \
@@ -78,14 +89,28 @@ HEADERS = \
     stb_image_write.h \
     tinyexr.h
 
-OBJECTS = $(SOURCES:.cpp=-$(VEC).o)
+BINARY = $(APP)-$(VEC)
 
-EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(VEC).o)
+OBJECTS = $(SOURCES:.cpp=-$(BINARY).o)
 
-BINARY = astcenc-$(VEC)
+EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(BINARY).o)
+
+# ==================================================
+# CXXFLAGS setup (and input validation)
 
 CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
+
+# Validate that the APP parameter is a supported value, and patch CXXFLAGS
+ifeq ($(APP),astcenc)
+# Nothing to set up
+else
+ifeq ($(APP),astcdec)
+CXXFLAGS += -DASTCENC_DECOMPRESS_ONLY
+else
+$(error Unsupported app, use APP=astcenc/astcdec)
+endif
+endif
 
 # Validate that the BUILD parameter is a supported value, and patch CXXFLAGS
 ifeq ($(BUILD),release)
@@ -126,33 +151,35 @@ CXXFLAGS_EXTERNAL = \
 
 # ==================================================
 # Exports for child make invocations
+
 export CXX
 export BUILD
 
 # ==================================================
 # Build rules for the command line wrapper
+
 $(BINARY): $(EXTERNAL_OBJECTS) $(OBJECTS)
 	@$(CXX) -o $@ $^ $(CXXFLAGS) -lpthread
 	@echo "[Link] $@ (using $(VEC) $(BUILD))"
 
 # Note: ensure NDEBUG is undefined; all three libraries are weak at runtime
-# handling of corrupt files, relying on asserts to handle bd file input.
+# handling of corrupt files, relying on asserts to handle bad file input.
 # Compiling with NDEBUG is a potential security risk.
-stb_image-$(VEC).o: stb_image.h
+stb_image-$(BINARY).o: stb_image.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_IMPLEMENTATION \
 		-DSTBI_NO_PSD -DSTBI_NO_GIF -DSTBI_NO_PIC -DSTBI_NO_PNM -UNDEBUG
 	@echo "[C++] $<"
 
-stb_image_write-$(VEC).o: stb_image_write.h
+stb_image_write-$(BINARY).o: stb_image_write.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS_EXTERNAL) -DSTB_IMAGE_WRITE_IMPLEMENTATION \
 		-UNDEBUG
 	@echo "[C++] $<"
 
-tinyexr-$(VEC).o: tinyexr.h
+tinyexr-$(BINARY).o: tinyexr.h
 	@$(CXX) -c -x c++ -o $@ $< $(CXXFLAGS) -DTINYEXR_IMPLEMENTATION -UNDEBUG
 	@echo "[C++] $<"
 
-$(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
+$(OBJECTS): %-$(BINARY).o: %.cpp $(HEADERS)
 	@$(CXX) -c -o $@ $(abspath $<) $(CXXFLAGS)
 	@echo "[C++] $<"
 
@@ -160,9 +187,8 @@ $(OBJECTS): %-$(VEC).o: %.cpp $(HEADERS)
 # Generic utility rules
 
 clean:
-	@rm -f *-$(VEC).o
-	@rm -f *-$(VEC).so
-	@rm -f *-$(VEC).obj
+	@rm -f *-$(BINARY).o
+	@rm -f *-$(BINARY).obj
 	@rm -f $(BINARY)
 	@rm -f $(BINARY).exe
 	@echo "[Clean] Removing $(VEC) build outputs"

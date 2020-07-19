@@ -1129,17 +1129,12 @@ uint16_t lns_to_sf16(
 struct astcenc_context
 {
 	astcenc_config config;
-	block_size_descriptor* bsd;
-	pixel_region_variance_args arg;
-	avg_var_args ag;
 	unsigned int thread_count;
+	block_size_descriptor* bsd;
 
-	float deblock_weights[MAX_TEXELS_PER_BLOCK];
-
-	compress_symbolic_block_buffers* working_buffers;
-
-	ParallelManager manage_avg_var;
-	ParallelManager manage_compress;
+	// Fields below here are not needed in a decompress-only build, but some
+	// remain as they are small and it avoids littering the code with #ifdefs.
+	// The most significant contributors to large structure size are omitted.
 
 	// Regional average-and-variance information, initialized by
 	// compute_averages_and_variances() only if the astc encoder
@@ -1147,6 +1142,18 @@ struct astcenc_context
 	float4 *input_averages;
 	float4 *input_variances;
 	float *input_alpha_averages;
+
+	compress_symbolic_block_buffers* working_buffers;
+
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	pixel_region_variance_args arg;
+	avg_var_args ag;
+
+	float deblock_weights[MAX_TEXELS_PER_BLOCK];
+
+	ParallelManager manage_avg_var;
+	ParallelManager manage_compress;
+#endif
 };
 
 /* ============================================================================

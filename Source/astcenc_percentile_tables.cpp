@@ -19,11 +19,12 @@
  * @brief Percentile data tables for different block encodings.
  *
  * To reduce binary size the tables are stored using a packed differential
- * encoding
+ * encoding.
  */
 
 #include "astcenc_internal.h"
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 /**
  * @brief Structure containing packed percentile metadata.
  *
@@ -1147,13 +1148,34 @@ const float *get_2d_percentile_table(
 
 	return unpacked_table;
 }
+#endif
 
 /* Public function, see header file for detailed documentation */
 int is_legal_2d_block_size(
 	int xdim,
 	int ydim
 ) {
-	return get_packed_table(xdim, ydim) != nullptr;
+	int idx = (xdim << 8) | ydim;
+	switch (idx)
+	{
+		case 0x0404:
+		case 0x0504:
+		case 0x0505:
+		case 0x0605:
+		case 0x0606:
+		case 0x0805:
+		case 0x0806:
+		case 0x0808:
+		case 0x0A05:
+		case 0x0A06:
+		case 0x0A08:
+		case 0x0A0A:
+		case 0x0C0A:
+		case 0x0C0C:
+			return 1;
+	};
+
+	return 0;
 }
 
 /* Public function, see header file for detailed documentation */

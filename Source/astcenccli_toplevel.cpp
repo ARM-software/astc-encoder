@@ -435,6 +435,10 @@ int init_astcenc_config(
 		argidx ++;
 	}
 
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
+#endif
+
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
@@ -824,6 +828,10 @@ int edit_astcenc_config(
 	{
 		cli_config.thread_count = get_cpu_count();
 	}
+
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	cli_config.thread_count = 1;
+#endif
 
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{

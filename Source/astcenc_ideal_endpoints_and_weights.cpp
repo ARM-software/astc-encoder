@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for computing color endpoints and texel weights.
  */
@@ -1572,3 +1574,5 @@ void recompute_ideal_colors(
 		}
 	}
 }
+
+#endif

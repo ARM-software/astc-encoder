@@ -627,7 +627,9 @@ static void construct_block_size_descriptor_2d(
 
 	bsd->decimation_mode_count = decimation_mode_count;
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	const float *percentiles = get_2d_percentile_table(xdim, ydim);
+#endif
 
 	// then construct the list of block formats
 	for (int i = 0; i < 2048; i++)
@@ -666,14 +668,20 @@ static void construct_block_size_descriptor_2d(
 			bsd->block_modes[i].is_dual_plane = is_dual_plane;
 			bsd->block_modes[i].permit_encode = permit_encode;
 			bsd->block_modes[i].permit_decode = permit_encode;	// disallow decode of grid size larger than block size.
-			bsd->block_modes[i].percentile = percentiles[i];
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+			bsd->block_modes[i].percentile = percentiles[i];
 			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
 				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
+#else
+			bsd->block_modes[i].percentile = 0.0f;
+#endif
 		}
 	}
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	delete[] percentiles;
+#endif
 
 	if (xdim * ydim <= 64)
 	{

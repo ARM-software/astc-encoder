@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for color quantization.
  */
@@ -1981,3 +1983,5 @@ int pack_color_endpoints(
 
 	return retval;
 }
+
+#endif

@@ -21,6 +21,8 @@
 
 #include "astcenc_internal.h"
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 const uint8_t color_quantization_tables[21][256] = {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -401,6 +403,8 @@ const uint8_t color_quantization_tables[21][256] = {
 		240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
 	}
 };
+
+#endif
 
 const uint8_t color_unquantization_tables[21][256] = {
 	{

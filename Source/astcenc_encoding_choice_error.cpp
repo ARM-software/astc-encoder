@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for finding color error post-compression.
  *
@@ -268,3 +270,5 @@ void compute_encoding_choice_errors(
 		eci[i].can_blue_contract = eligible_for_blue_contraction[i];
 	}
 }
+
+#endif

@@ -127,6 +127,26 @@
  * channel X+Y map. Input images must contain unit-length normalized and should
  * be passed in using the RRRG swizzle. The Z component can be programatically
  * recovered in shader code, using knowledge that the vector is unit length.
+ *
+ * Decompress-only usage
+ * =====================
+ *
+ * For some use cases it is useful to have a cut-down context and/or library
+ * which supports decompression but not compression.
+ *
+ * A context can be made decompress-only using the ASTCENC_FLG_DECOMPRESS_ONLY
+ * flag when the context is allocated. These contexts have lower dynamic memory
+ * footprint than a full context.
+ *
+ * The entire library can be made decompress-only by building the files with
+ * the define ASTCENC_DECOMPRESS_ONLY set. In this build the context will be
+ * smaller, and the library will exclude the functionality which is only needed
+ * for compression. This reduces the binary size by ~180KB. For these builds
+ * contexts must be created with the ASTCENC_FLG_DECOMPRESS_ONLY flag.
+ *
+ * Note that context structures returned by a library built as decompress-only
+ * are incompatible with a library built with compression included, and visa
+ * versa, as they have different sizes and memory layout.
  */
 
 #ifndef ASTCENC_INCLUDED
@@ -482,7 +502,9 @@ astcenc_error astcenc_config_init(
  * Contexts can be allocated to support only decompression by setting the
  * ASTCENC_FLG_DECOMPRESS_ONLY flag when creating the configuration. These
  * contexts must be allocated with a thread count of 1 (decompression is always
- * single threaded), and the compression functions will fail if invoked.
+ * single threaded), and the compression functions will fail if invoked. For
+ * a decompress-only library build the ASTCENC_FLG_DECOMPRESS_ONLY flag must
+ * be set when creating ay context.
  *
  * @param[in]  config         Codec config.
  * @param      thread_count   Thread count to configure for. Decompress-only

@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for approximate partitioning by kmeans clustering.
  *
@@ -501,3 +503,5 @@ void kmeans_compute_partition_ordering(
 	// finally, sort the partitions by bits-of-partition-mismatch
 	get_partition_ordering_by_mismatch_bits(bitcounts, ordering);
 }
+
+#endif

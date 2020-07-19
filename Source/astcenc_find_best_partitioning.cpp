@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
 /**
  * @brief Functions for finding best partition for a block.
  *
@@ -764,3 +766,5 @@ void find_best_partitionings(
 		best_partitions_dual_weight_planes[i] = best_partition;
 	}
 }
+
+#endif
