@@ -195,7 +195,8 @@ static astcenc_error validate_decompression_swizzle(
  *     make no sense algorithmically will return an error.
  */
 static astcenc_error validate_config(
-	astcenc_config &config
+	astcenc_config &config,
+	unsigned int thread_count
 ) {
 	astcenc_error status;
 
@@ -215,6 +216,12 @@ static astcenc_error validate_config(
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
+	}
+
+	// Decompress-only contexts must be single threaded
+	if ((config.flags & ASTCENC_FLG_DECOMPRESS_ONLY) && (thread_count > 1))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
 	}
 
 	config.v_rgba_mean_stdev_mix = MAX(config.v_rgba_mean_stdev_mix, 0.0f);
@@ -458,40 +465,44 @@ astcenc_error astcenc_context_alloc(
 		ctx = new astcenc_context;
 		ctx->thread_count = thread_count;
 		ctx->config = config;
+		ctx->working_buffers = nullptr;
 
-		// Clear scratch storage (allocated per compress pass)
+		// Clear scratch storage (allocated per compress, based on image size)
 		ctx->input_averages = nullptr;
 		ctx->input_variances = nullptr;
 		ctx->input_alpha_averages = nullptr;
 
-		// Copy the config first and validate the copy (may modify it)
-		status = validate_config(ctx->config);
+		// Copy the config first and validate the copy (we may modify it)
+		status = validate_config(ctx->config, thread_count);
 		if (status != ASTCENC_SUCCESS)
 		{
 			delete ctx;
 			return status;
 		}
 
-		// Rewrite config settings into a canonical internal form
-		// Expand deblock supression into a weight scale per texel in the block
-		expand_deblock_weights(*ctx);
-
-		// Turn a dB limit into a per-texel error for faster use later
-		if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
-		{
-			ctx->config.tune_db_limit = powf(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
-		}
-		else
-		{
-			ctx->config.tune_db_limit = 0.0f;
-		}
-
 		bsd = new block_size_descriptor;
 		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
 		ctx->bsd = bsd;
 
-		size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
-		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
+		// Do setup only needed by compression
+		if (!(status & ASTCENC_FLG_DECOMPRESS_ONLY))
+		{
+			// Expand deblock supression into a weight scale per texel in the block
+			expand_deblock_weights(*ctx);
+
+			// Turn a dB limit into a per-texel error for faster use later
+			if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
+			{
+				ctx->config.tune_db_limit = powf(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
+			}
+			else
+			{
+				ctx->config.tune_db_limit = 0.0f;
+			}
+
+			size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
+			ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
+		}
 	}
 	catch(const std::bad_alloc&)
 	{
@@ -594,6 +605,11 @@ astcenc_error astcenc_compress_image(
 ) {
 	astcenc_error status;
 
+	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
+	{
+		return ASTCENC_ERR_BAD_CONTEXT;
+	}
+
 	status = validate_compression_swizzle(swizzle);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -671,11 +687,17 @@ astcenc_error astcenc_compress_image(
 	return ASTCENC_SUCCESS;
 }
 
-void astcenc_compress_reset(
+astcenc_error astcenc_compress_reset(
 	astcenc_context* ctx
 ) {
+	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
+	{
+		return ASTCENC_ERR_BAD_CONTEXT;
+	}
+
 	ctx->manage_avg_var.reset();
 	ctx->manage_compress.reset();
+	return ASTCENC_SUCCESS;
 }
 
 astcenc_error astcenc_decompress_image(
@@ -756,6 +778,8 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_BAD_FLAGS";
 	case ASTCENC_ERR_BAD_SWIZZLE:
 		return "ASTCENC_ERR_BAD_SWIZZLE";
+	case ASTCENC_ERR_BAD_CONTEXT:
+		return "ASTCENC_ERR_BAD_CONTEXT";
 	case ASTCENC_ERR_NOT_IMPLEMENTED:
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
 	default:

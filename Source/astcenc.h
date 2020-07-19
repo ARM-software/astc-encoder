@@ -150,7 +150,7 @@ struct astcenc_context;
 enum astcenc_error {
 	/** @brief The call was successful. */
 	ASTCENC_SUCCESS = 0,
-	/** @brief The call failed due to low memory. */
+	/** @brief The call failed due to low memory, or undersized I/O buffers. */
 	ASTCENC_ERR_OUT_OF_MEM,
 	/** @brief The call failed due to the build using fast math. */
 	ASTCENC_ERR_BAD_CPU_FLOAT,
@@ -168,6 +168,8 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_SWIZZLE,
 	/** @brief The call failed due to an out-of-spec flag set. */
 	ASTCENC_ERR_BAD_FLAGS,
+	/** @brief The call failed due to the context not supporting the operation. */
+	ASTCENC_ERR_BAD_CONTEXT,
 	/** @brief The call failed due to unimplemented functionality. */
 	ASTCENC_ERR_NOT_IMPLEMENTED
 };
@@ -273,13 +275,22 @@ static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
 static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL      = 1 << 3;
 
 /**
+ * @brief Create a decompression-only context.
+ *
+ * This mode enables context allocation to skip some transient buffer
+ * allocation, resulting in a lower-memory footprint.
+ */
+static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY     = 1 << 4;
+
+/**
  * @brief The bit mask of all valid flags.
  */
 static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_NORMAL |
                               ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
-                              ASTCENC_FLG_USE_PERCEPTUAL;
+                              ASTCENC_FLG_USE_PERCEPTUAL |
+                              ASTCENC_FLG_DECOMPRESS_ONLY;
 
 /**
  * @brief The config structure.
@@ -468,8 +479,14 @@ astcenc_error astcenc_config_init(
  * the codec. This can be slow, so it is recommended that contexts are reused
  * to serially compress or decompress multiple images to amortize setup cost.
  *
+ * Contexts can be allocated to support only decompression by setting the
+ * ASTCENC_FLG_DECOMPRESS_ONLY flag when creating the configuration. These
+ * contexts must be allocated with a thread count of 1 (decompression is always
+ * single threaded), and the compression functions will fail if invoked.
+ *
  * @param[in]  config         Codec config.
- * @param      thread_count   Thread count to configure for.
+ * @param      thread_count   Thread count to configure for. Decompress-only
+ *                            contexts must have a thread_count of 1.
  * @param[out] context        Location to store an opaque context pointer.
  *
  * @return ASTCENC_SUCCESS on success, or an error if context creation failed.
@@ -514,8 +531,10 @@ astcenc_error astcenc_compress_image(
  * it for image N + 1.
  *
  * @param context   Codec context.
+ *
+ * @return ASTCENC_SUCCESS on success, or an error if reset failed.
  */
-void astcenc_compress_reset(
+astcenc_error astcenc_compress_reset(
 	astcenc_context* context);
 
 /**
