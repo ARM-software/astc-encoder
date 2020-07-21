@@ -1185,8 +1185,8 @@ int cpu_supports_avx2();
  *
  * @param size    The desired buffer size.
  * @param align   The desired buffer alignment; must be 2^N.
- * @returns The memory buffer pointer.
- * @throw std::bad_alloc on allocation failure.
+ *
+ * @returns The memory buffer pointer or nullptr on allocation failure.
  */
 template<typename T>
 T* aligned_malloc(size_t size, size_t align)
@@ -1202,7 +1202,7 @@ T* aligned_malloc(size_t size, size_t align)
 
 	if (error || (!ptr))
 	{
-		throw std::bad_alloc();
+		return nullptr;
 	}
 
 	return static_cast<T*>(ptr);

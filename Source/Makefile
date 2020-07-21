@@ -200,11 +200,13 @@ clean:
 	@echo "[Clean] Removing $(VEC) build outputs"
 
 batchbuild:
+	# NEON is deliberately not here - needs a different CXX setting
 	@+$(MAKE) -s VEC=sse2
 	@+$(MAKE) -s VEC=sse4.2
 	@+$(MAKE) -s VEC=avx2
 
 batchclean:
+	@+$(MAKE) -s clean VEC=neon
 	@+$(MAKE) -s clean VEC=sse2
 	@+$(MAKE) -s clean VEC=sse4.2
 	@+$(MAKE) -s clean VEC=avx2

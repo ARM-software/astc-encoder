@@ -470,60 +470,53 @@ astcenc_error astcenc_context_alloc(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	try
+	ctx = new astcenc_context;
+	ctx->thread_count = thread_count;
+	ctx->config = config;
+	ctx->working_buffers = nullptr;
+
+	// These are allocated per-compress, as they depend on image size
+	ctx->input_averages = nullptr;
+	ctx->input_variances = nullptr;
+	ctx->input_alpha_averages = nullptr;
+
+	// Copy the config first and validate the copy (we may modify it)
+	status = validate_config(ctx->config, thread_count);
+	if (status != ASTCENC_SUCCESS)
 	{
-		ctx = new astcenc_context;
-		ctx->thread_count = thread_count;
-		ctx->config = config;
-		ctx->working_buffers = nullptr;
+		delete ctx;
+		return status;
+	}
 
-		// These are allocated per-compress, as they depend on image size
-		ctx->input_averages = nullptr;
-		ctx->input_variances = nullptr;
-		ctx->input_alpha_averages = nullptr;
-
-		// Copy the config first and validate the copy (we may modify it)
-		status = validate_config(ctx->config, thread_count);
-		if (status != ASTCENC_SUCCESS)
-		{
-			delete ctx;
-			return status;
-		}
-
-		bsd = new block_size_descriptor;
-		init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
-		ctx->bsd = bsd;
+	bsd = new block_size_descriptor;
+	init_block_size_descriptor(config.block_x, config.block_y, config.block_z, bsd);
+	ctx->bsd = bsd;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-		// Do setup only needed by compression
-		if (!(status & ASTCENC_FLG_DECOMPRESS_ONLY))
-		{
-			// Expand deblock supression into a weight scale per texel in the block
-			expand_deblock_weights(*ctx);
-
-			// Turn a dB limit into a per-texel error for faster use later
-			if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
-			{
-				ctx->config.tune_db_limit = powf(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
-			}
-			else
-			{
-				ctx->config.tune_db_limit = 0.0f;
-			}
-
-			size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
-			ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
-		}
-#endif
-	}
-	catch(const std::bad_alloc&)
+	// Do setup only needed by compression
+	if (!(status & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
-		term_block_size_descriptor(bsd);
-		delete bsd;
-		delete ctx;
-		*context = nullptr;
-		return ASTCENC_ERR_OUT_OF_MEM;
+		// Expand deblock supression into a weight scale per texel in the block
+		expand_deblock_weights(*ctx);
+
+		// Turn a dB limit into a per-texel error for faster use later
+		if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
+		{
+			ctx->config.tune_db_limit = powf(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
+		}
+		else
+		{
+			ctx->config.tune_db_limit = 0.0f;
+		}
+
+		size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
+		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
+		if (!ctx->working_buffers)
+		{
+			goto error_oom;
+		}
 	}
+#endif
 
 	*context = ctx;
 
@@ -534,6 +527,13 @@ astcenc_error astcenc_context_alloc(
 	build_quantization_mode_table();
 
 	return ASTCENC_SUCCESS;
+
+error_oom:
+	term_block_size_descriptor(bsd);
+	delete bsd;
+	delete ctx;
+	*context = nullptr;
+	return ASTCENC_ERR_OUT_OF_MEM;
 }
 
 void astcenc_context_free(
