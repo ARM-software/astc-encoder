@@ -28,9 +28,10 @@ APP ?= astcenc
 
 # Configure the SIMD ISA and intrinsics support; valid values are:
 #
-#   * sse2   - allow use of sse2
-#   * sse4.2 - allow use of sse4.2 and popcnt
-#   * avx2   - allow use of avx2, sse4.2, and popcnt
+#   * neon   - compile for Arm aarch64 + NEON
+#   * sse2   - allow use of x86-64 + sse2
+#   * sse4.2 - allow use of x86-64 + sse4.2 and popcnt
+#   * avx2   - allow use of x86-64 + avx2, sse4.2, and popcnt
 VEC ?= avx2
 
 # Configure the build type; valid values are:
@@ -98,7 +99,7 @@ EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(BINARY).o)
 # ==================================================
 # CXXFLAGS setup (and input validation)
 
-CXXFLAGS = -std=c++14 -fvisibility=hidden -mfpmath=sse \
+CXXFLAGS = -std=c++14 -fvisibility=hidden \
            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the APP parameter is a supported value, and patch CXXFLAGS
@@ -128,16 +129,21 @@ endif
 endif
 
 # Validate that the VEC parameter is a supported value, and patch CXXFLAGS
+ifeq ($(VEC),neon)
+# NEON is on by default; no enabled needed
+CXXFLAGS += -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0 -DASTCENC_VECALIGN=16
+else
 ifeq ($(VEC),sse2)
-CXXFLAGS += -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0
+CXXFLAGS += -mfpmath=sse -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0 -DASTCENC_VECALIGN=16
 else
 ifeq ($(VEC),sse4.2)
-CXXFLAGS += -msse4.2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1
+CXXFLAGS += -mfpmath=sse -msse4.2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=16
 else
 ifeq ($(VEC),avx2)
-CXXFLAGS += -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1
+CXXFLAGS += -mfpmath=sse -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=32
 else
-$(error Unsupported VEC target, use VEC=sse2/sse4.2/avx2)
+$(error Unsupported VEC target, use VEC=neon/sse2/sse4.2/avx2)
+endif
 endif
 endif
 endif

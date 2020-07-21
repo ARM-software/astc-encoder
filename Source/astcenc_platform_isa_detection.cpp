@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#if (ASTCENC_SSE > 0) || (ASTCENC_AVX > 0) || (ASTCENC_POPCNT > 0)
+
 /**
  * @brief Platform-specific function implementations.
  *
@@ -94,3 +96,5 @@ int cpu_supports_avx2()
 
 	return g_cpu_has_avx2;
 }
+
+#endif

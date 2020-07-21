@@ -330,15 +330,15 @@ void compute_angular_endpoints_for_quantization_levels(
 
 	int max_quantization_steps = quantization_steps_for_level[max_quantization_level + 1];
 
-	alignas(32) float angular_offsets[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
 	int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quantization_level];
 	compute_angular_offsets(samplecount, samples, sample_weights, max_angular_steps, angular_offsets);
 
-	alignas(32) int32_t lowest_weight[ANGULAR_STEPS];
-	alignas(32) int32_t weight_span[ANGULAR_STEPS];
-	alignas(32) float error[ANGULAR_STEPS];
-	alignas(32) float cut_low_weight_error[ANGULAR_STEPS];
-	alignas(32) float cut_high_weight_error[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) int32_t weight_span[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float error[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float cut_low_weight_error[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float cut_high_weight_error[ANGULAR_STEPS];
 
 	compute_lowest_and_highest_weight(samplecount, samples, sample_weights,
 	                                  max_angular_steps, max_quantization_steps,
