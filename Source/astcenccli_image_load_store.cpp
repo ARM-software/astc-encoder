@@ -1079,12 +1079,13 @@ bool load_ktx_compressed_image(
 	size_t actual = fread(&hdr, 1, sizeof(hdr), f);
 	if (actual != sizeof(hdr))
 	{
-		printf("Failed to read header of KTX file %s\n", filename);
+		printf("Failed to read header from %s\n", filename);
 		fclose(f);
 		return true;
 	}
 
-	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
+	if (memcmp(hdr.magic, ktx_magic, 12) != 0 ||
+	    (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
 		printf("File %s does not have a valid KTX header\n", filename);
 		fclose(f);
@@ -1098,7 +1099,8 @@ bool load_ktx_compressed_image(
 		ktx_header_switch_endianness(&hdr);
 	}
 
-	if (hdr.gl_type != 0 || hdr.gl_format != 0 || hdr.gl_type_size != 1 || hdr.gl_base_internal_format != GL_RGBA)
+	if (hdr.gl_type != 0 || hdr.gl_format != 0 || hdr.gl_type_size != 1 ||
+	    hdr.gl_base_internal_format != GL_RGBA)
 	{
 		printf("File %s is not a compressed ASTC file\n", filename);
 		fclose(f);
@@ -1113,20 +1115,21 @@ bool load_ktx_compressed_image(
 		return true;
 	}
 
+	// Skip over any key-value pairs
+	int seekerr;
+	seekerr = fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
+	if (seekerr)
+	{
+		printf("Failed to skip key-value pairs in %s\n", filename);
+		fclose(f);
+	}
+
+	// Read the length of the data and endianess convert
 	unsigned int data_len;
 	actual = fread(&data_len, 1, sizeof(data_len), f);
 	if (actual != sizeof(data_len))
 	{
-		printf("Failed to read data size of KTX file %s\n", filename);
-		fclose(f);
-		return true;
-	}
-
-	unsigned char* data = new unsigned char[data_len];
-	actual = fread(data, 1, data_len, f);
-	if (actual != data_len)
-	{
-		printf("Failed to data from KTX file %s\n", filename);
+		printf("Failed to read mip 0 size from %s\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1134,6 +1137,17 @@ bool load_ktx_compressed_image(
 	if (switch_endianness)
 	{
 		data_len = u32_byterev(data_len);
+	}
+
+	// Read the data
+	unsigned char* data = new unsigned char[data_len];
+	actual = fread(data, 1, data_len, f);
+	if (actual != data_len)
+	{
+		printf("Failed to read mip 0 data from %s\n", filename);
+		fclose(f);
+		delete[] data;
+		return true;
 	}
 
 	img.block_x = fmt->x;
