@@ -42,6 +42,8 @@ static void detect_cpu_isa()
 	__cpuid(data, 0);
 	int num_id = data[0];
 
+	g_cpu_has_sse42 = 0;
+	g_cpu_has_popcnt = 0;
 	if (num_id >= 1)
 	{
 		__cpuidex(data, 1, 0);
@@ -51,6 +53,7 @@ static void detect_cpu_isa()
 		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
 	}
 
+	g_cpu_has_avx2 = 0;
 	if (num_id >= 7) {
 		__cpuidex(data, 7, 0);
 		// AVX2 = Bank 7, EBX, bit 5
@@ -62,11 +65,28 @@ static void detect_cpu_isa()
    Platform code for GCC and Clang
 ============================================================================ */
 #else
+#include <cpuid.h>
+
 static void detect_cpu_isa()
 {
-	g_cpu_has_sse42 = __builtin_cpu_supports("sse4.2") ? 1 : 0;
-	g_cpu_has_popcnt = __builtin_cpu_supports("popcnt") ? 1 : 0;
-	g_cpu_has_avx2 = __builtin_cpu_supports("avx2") ? 1 : 0;
+	unsigned int data[4];
+
+	g_cpu_has_sse42 = 0;
+	g_cpu_has_popcnt = 0;
+	if (__get_cpuid_count(1, 0, &data[0], &data[1], &data[2], &data[3]))
+	{
+		// SSE42 = Bank 1, ECX, bit 20
+		g_cpu_has_sse42 = data[2] & (1 << 20) ? 1 : 0;
+		// POPCNT = Bank 1, ECX, bit 23
+		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
+	}
+
+	g_cpu_has_avx2 = 0;
+	if (__get_cpuid_count(7, 0, &data[0], &data[1], &data[2], &data[3]))
+	{
+		// AVX2 = Bank 7, EBX, bit 5
+		g_cpu_has_avx2 = data[1] & (1 << 5) ? 1 : 0;
+	}
 }
 #endif
 
