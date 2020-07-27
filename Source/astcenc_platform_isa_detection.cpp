@@ -54,7 +54,8 @@ static void detect_cpu_isa()
 	}
 
 	g_cpu_has_avx2 = 0;
-	if (num_id >= 7) {
+	if (num_id >= 7)
+	{
 		__cpuidex(data, 7, 0);
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? 1 : 0;
@@ -94,7 +95,9 @@ static void detect_cpu_isa()
 int cpu_supports_sse42()
 {
 	if (g_cpu_has_sse42 == -1)
+	{
 		detect_cpu_isa();
+	}
 
 	return g_cpu_has_sse42;
 }
@@ -103,7 +106,9 @@ int cpu_supports_sse42()
 int cpu_supports_popcnt()
 {
 	if (g_cpu_has_popcnt == -1)
+	{
 		detect_cpu_isa();
+	}
 
 	return g_cpu_has_popcnt;
 }
@@ -112,7 +117,9 @@ int cpu_supports_popcnt()
 int cpu_supports_avx2()
 {
 	if (g_cpu_has_avx2 == -1)
+	{
 		detect_cpu_isa();
+	}
 
 	return g_cpu_has_avx2;
 }
