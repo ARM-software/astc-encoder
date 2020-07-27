@@ -68,10 +68,27 @@ options ranging from 0.89 bits/pixel up to 8 bits/pixel.
 
 # Prebuilt binaries
 
-Prebuilt release build binaries of `astcenc` for 64-bit Linux, macOS, and
-Windows are available in the
+Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
-Note that currently no 2.x series pre-built binaries are available.
+Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
+
+## astcenc 2.x binaries
+
+The current builds of the astcenc 2.x series are provided as multiple binaries,
+each tuned for a specific SIMD instruction set. We provide, in order of
+increasing performance:
+
+* `astcenc-sse2` - uses SSE2
+* `astcenc-sse4.2` - uses SSE4.2 and POPCNT
+* `astcenc-avx2` - uses SSE4.2, POPCNT, and AVX2
+
+The SSE2 builds will work on all x86-64 host machines, but it is the slowest of
+the three. The other two require extended CPU instruction set support which is
+not universally available.
+
+It is worth noting that the three binaries do not produce identical output
+images; there are minor output differences caused by variations in
+floating-point rounding.
 
 # Getting started
 
