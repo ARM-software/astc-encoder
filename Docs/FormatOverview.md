@@ -226,7 +226,16 @@ ASTC always compresses blocks of texels into 128-bit outputs, but allows the
 developer to select from a range of block sizes to enable a fine-grained
 tradeoff between image quality and size.
 
-![ASTC 2D block footprint bit rates](./FormatOverviewImg/2d-bitrates.svg)
+| Block footprint | Bits/texel |     | Block footprint | Bits/texel |
+| --------------- | ---------- | --- | --------------- | ---------- |
+|             4x4 |       8.00 |     |            10x5 |       2.56 |
+|             5x4 |       6.40 |     |            10x6 |       2.13 |
+|             5x5 |       5.12 |     |             8x8 |       2.00 |
+|             6x5 |       4.27 |     |            10x8 |       1.60 |
+|             6x6 |       3.56 |     |           10x10 |       1.28 |
+|             8x8 |       3.20 |     |           12x10 |       1.07 |
+|             8x6 |       2.67 |     |           12x12 |       0.89 |
+
 
 
 Color endpoints
@@ -399,7 +408,13 @@ ASTC is therefore also able to optionally support compression of 3D textures,
 which is a unique feature not found in any earlier format, at the following
 bit rates:
 
-![ASTC 3D block footprint bit rates](./FormatOverviewImg/3d-bitrates.svg)
+| Block footprint | Bits/texel |     | Block footprint | Bits/texel |
+| --------------- | ---------- | --- | --------------- | ---------- |
+|           3x3x3 |       4.74 |     |           5x5x4 |       1.28 |
+|           4x3x3 |       3.56 |     |           5x5x5 |       1.02 |
+|           4x4x3 |       2.67 |     |           6x5x5 |       0.85 |
+|           4x4x4 |       2.00 |     |           6x6x5 |       0.71 |
+|           5x4x4 |       1.60 |     |           6x6x6 |       0.59 |
 
 
 Availability
