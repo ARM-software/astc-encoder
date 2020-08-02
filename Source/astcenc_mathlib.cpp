@@ -65,7 +65,7 @@ float astc::atan2(
 	float x
 ) {
 	const float PI = (float)M_PI;
-	const float PI_2 = PI / 2.f;
+	const float PI_2 = PI / 2.0f;
 
 	// Handle the discontinuity at x == 0
 	if (x == 0.0f)
