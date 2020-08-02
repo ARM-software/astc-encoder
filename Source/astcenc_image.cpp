@@ -291,8 +291,9 @@ void fetch_imageblock(
 	data[4] = 0;
 	data[5] = 1;
 
-	if (img.data8)
+	if (img.data_type == ASTCENC_TYPE_U8)
 	{
+		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
 			for (int y = 0; y < bsd->ydim; y++)
@@ -316,10 +317,10 @@ void fetch_imageblock(
 					if (zi >= zsize)
 						zi = zsize - 1;
 
-					int r = img.data8[zi][yi][4 * xi];
-					int g = img.data8[zi][yi][4 * xi + 1];
-					int b = img.data8[zi][yi][4 * xi + 2];
-					int a = img.data8[zi][yi][4 * xi + 3];
+					int r = data8[zi][yi][4 * xi];
+					int g = data8[zi][yi][4 * xi + 1];
+					int b = data8[zi][yi][4 * xi + 2];
+					int a = data8[zi][yi][4 * xi + 3];
 
 					data[0] = r / 255.0f;
 					data[1] = g / 255.0f;
@@ -336,8 +337,10 @@ void fetch_imageblock(
 			}
 		}
 	}
-	else if (img.data16)
+	else // if (img.data_type == ASTCENC_TYPE_F16)
 	{
+		assert(img.data_type == ASTCENC_TYPE_F16);
+		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
 			for (int y = 0; y < bsd->ydim; y++)
@@ -361,10 +364,10 @@ void fetch_imageblock(
 					if (zi >= ysize)
 						zi = zsize - 1;
 
-					int r = img.data16[zi][yi][4 * xi];
-					int g = img.data16[zi][yi][4 * xi + 1];
-					int b = img.data16[zi][yi][4 * xi + 2];
-					int a = img.data16[zi][yi][4 * xi + 3];
+					int r = data16[zi][yi][4 * xi];
+					int g = data16[zi][yi][4 * xi + 1];
+					int b = data16[zi][yi][4 * xi + 2];
+					int a = data16[zi][yi][4 * xi + 3];
 
 					float rf = sf16_to_float(r);
 					float gf = sf16_to_float(g);
@@ -427,8 +430,9 @@ void write_imageblock(
 	data[4] = 0.0f;
 	data[5] = 1.0f;
 
-	if (img.data8)
+	if (img.data_type == ASTCENC_TYPE_U8)
 	{
+		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
 			for (int y = 0; y < bsd->ydim; y++)
@@ -444,10 +448,10 @@ void write_imageblock(
 						if (*nptr)
 						{
 							// NaN-pixel, but we can't display it. Display purple instead.
-							img.data8[zi][yi][4 * xi] = 0xFF;
-							img.data8[zi][yi][4 * xi + 1] = 0x00;
-							img.data8[zi][yi][4 * xi + 2] = 0xFF;
-							img.data8[zi][yi][4 * xi + 3] = 0xFF;
+							data8[zi][yi][4 * xi] = 0xFF;
+							data8[zi][yi][4 * xi + 1] = 0x00;
+							data8[zi][yi][4 * xi + 2] = 0xFF;
+							data8[zi][yi][4 * xi + 3] = 0xFF;
 						}
 						else
 						{
@@ -460,18 +464,31 @@ void write_imageblock(
 							float ycoord = (data[3] * 2.0f) - 1.0f;
 							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
 							if (zcoord < 0.0f)
+							{
 								zcoord = 0.0f;
+							}
 							data[6] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
 
 							// clamp to [0,1]
 							if (data[0] > 1.0f)
+							{
 								data[0] = 1.0f;
+							}
+
 							if (data[1] > 1.0f)
+							{
 								data[1] = 1.0f;
+							}
+
 							if (data[2] > 1.0f)
+							{
 								data[2] = 1.0f;
+							}
+
 							if (data[3] > 1.0f)
+							{
 								data[3] = 1.0f;
+							}
 
 							// pack the data
 							int ri = astc::flt2int_rtn(data[swz.r] * 255.0f);
@@ -479,10 +496,10 @@ void write_imageblock(
 							int bi = astc::flt2int_rtn(data[swz.b] * 255.0f);
 							int ai = astc::flt2int_rtn(data[swz.a] * 255.0f);
 
-							img.data8[zi][yi][4 * xi] = ri;
-							img.data8[zi][yi][4 * xi + 1] = gi;
-							img.data8[zi][yi][4 * xi + 2] = bi;
-							img.data8[zi][yi][4 * xi + 3] = ai;
+							data8[zi][yi][4 * xi] = ri;
+							data8[zi][yi][4 * xi + 1] = gi;
+							data8[zi][yi][4 * xi + 2] = bi;
+							data8[zi][yi][4 * xi + 3] = ai;
 						}
 					}
 					fptr += 4;
@@ -491,8 +508,10 @@ void write_imageblock(
 			}
 		}
 	}
-	else if (img.data16)
+	else // if (img.data_type == ASTCENC_TYPE_F16)
 	{
+		assert(img.data_type == ASTCENC_TYPE_F16);
+		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
 			for (int y = 0; y < bsd->ydim; y++)
@@ -507,10 +526,10 @@ void write_imageblock(
 					{
 						if (*nptr)
 						{
-							img.data16[zi][yi][4 * xi] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 1] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 2] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 3] = 0xFFFF;
+							data16[zi][yi][4 * xi] = 0xFFFF;
+							data16[zi][yi][4 * xi + 1] = 0xFFFF;
+							data16[zi][yi][4 * xi + 2] = 0xFFFF;
+							data16[zi][yi][4 * xi + 3] = 0xFFFF;
 						}
 
 						else
@@ -524,17 +543,19 @@ void write_imageblock(
 							float yN = (data[3] * 2.0f) - 1.0f;
 							float zN = 1.0f - xN * xN - yN * yN;
 							if (zN < 0.0f)
+							{
 								zN = 0.0f;
+							}
 							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
 
 							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
 							int b = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
 							int a = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
-							img.data16[zi][yi][4 * xi] = r;
-							img.data16[zi][yi][4 * xi + 1] = g;
-							img.data16[zi][yi][4 * xi + 2] = b;
-							img.data16[zi][yi][4 * xi + 3] = a;
+							data16[zi][yi][4 * xi] = r;
+							data16[zi][yi][4 * xi + 1] = g;
+							data16[zi][yi][4 * xi + 2] = b;
+							data16[zi][yi][4 * xi + 3] = a;
 						}
 					}
 					fptr += 4;
