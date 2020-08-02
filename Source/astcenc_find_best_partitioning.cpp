@@ -53,14 +53,16 @@
 
 #include "astcenc_internal.h"
 
-static void compute_alpha_minmax(
+static void compute_alpha_range(
 	int texels_per_block,
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	float* alpha_min,
-	float* alpha_max
+	float alpha_range[4]
 ) {
+	float alpha_min[4];
+	float alpha_max[4];
+
 	int partition_count = pt->partition_count;
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -89,35 +91,29 @@ static void compute_alpha_minmax(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		if (alpha_min[i] >= alpha_max[i])
+		alpha_range[i] = alpha_max[i] - alpha_min[i];
+		if (alpha_range[i] <= 0.0f)
 		{
-			alpha_min[i] = 0;
-			alpha_max[i] = 1e-10f;
+			alpha_range[i] = 1e-10f;
 		}
 	}
 }
 
-static void compute_rgb_minmax(
+static void compute_rgb_range(
 	int texels_per_block,
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	float* red_min,
-	float* red_max,
-	float* green_min,
-	float* green_max,
-	float* blue_min,
-	float* blue_max
+	float3 rgb_range[4]
 ) {
+	float3 rgb_min[4];
+	float3 rgb_max[4];
+
 	int partition_count = pt->partition_count;
 	for (int i = 0; i < partition_count; i++)
 	{
-		red_min[i] = 1e38f;
-		red_max[i] = -1e38f;
-		green_min[i] = 1e38f;
-		green_max[i] = -1e38f;
-		blue_min[i] = 1e38f;
-		blue_max[i] = -1e38f;
+		rgb_min[i] = float3(1e38f, 1e38f, 1e38f);
+		rgb_max[i] = float3(-1e38f, -1e38f, -1e38f);
 	}
 
 	for (int i = 0; i < texels_per_block; i++)
@@ -125,60 +121,62 @@ static void compute_rgb_minmax(
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
+
 			float redval = blk->data_r[i];
+			if (redval > rgb_max[partition].x)
+			{
+				rgb_max[partition].x = redval;
+			}
+
+			if (redval < rgb_min[partition].x)
+			{
+				rgb_min[partition].x = redval;
+			}
+
 			float greenval = blk->data_g[i];
+			if (greenval > rgb_max[partition].y)
+			{
+				rgb_max[partition].y = greenval;
+			}
+
+			if (greenval < rgb_min[partition].y)
+			{
+				rgb_min[partition].y = greenval;
+			}
+
 			float blueval = blk->data_b[i];
-
-			if (redval > red_max[partition])
+			if (blueval > rgb_max[partition].z)
 			{
-				red_max[partition] = redval;
+				rgb_max[partition].z = blueval;
 			}
 
-			if (redval < red_min[partition])
+			if (blueval < rgb_min[partition].z)
 			{
-				red_min[partition] = redval;
-			}
-
-			if (greenval > green_max[partition])
-			{
-				green_max[partition] = greenval;
-			}
-
-			if (greenval < green_min[partition])
-			{
-				green_min[partition] = greenval;
-			}
-
-			if (blueval > blue_max[partition])
-			{
-				blue_max[partition] = blueval;
-			}
-
-			if (blueval < blue_min[partition])
-			{
-				blue_min[partition] = blueval;
+				rgb_min[partition].z = blueval;
 			}
 		}
 	}
 
+	// Covert min/max into ranges forcing a min range of 1e-10
+	// to avoid divide by zeros later ...
 	for (int i = 0; i < partition_count; i++)
 	{
-		if (red_min[i] >= red_max[i])
+		rgb_range[i].x = rgb_max[i].x - rgb_min[i].x;
+		if (rgb_range[i].x <= 0.0f)
 		{
-			red_min[i] = 0.0f;
-			red_max[i] = 1e-10f;
+			rgb_range[i].x = 1e-10f;
 		}
 
-		if (green_min[i] >= green_max[i])
+		rgb_range[i].y = rgb_max[i].y - rgb_min[i].y;
+		if (rgb_range[i].y <= 0.0f)
 		{
-			green_min[i] = 0.0f;
-			green_max[i] = 1e-10f;
+			rgb_range[i].y = 1e-10f;
 		}
 
-		if (blue_min[i] >= blue_max[i])
+		rgb_range[i].z = rgb_max[i].z - rgb_min[i].z;
+		if (rgb_range[i].z <= 0.0f)
 		{
-			blue_min[i] = 0.0f;
-			blue_max[i] = 1e-10f;
+			rgb_range[i].z = 1e-10f;
 		}
 	}
 }
@@ -453,13 +451,11 @@ void find_best_partitionings(
 			                           &separate_error);
 
 			// compute minimum & maximum alpha values in each partition
-			float red_min[4], red_max[4];
-			float green_min[4], green_max[4];
-			float blue_min[4], blue_max[4];
-			float alpha_min[4], alpha_max[4];
+			float3 rgb_range[4];
+			float alpha_range[4];
 
-			compute_alpha_minmax(bsd->texel_count, ptab + partition, pb, ewb, alpha_min, alpha_max);
-			compute_rgb_minmax(bsd->texel_count, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			compute_alpha_range(bsd->texel_count, ptab + partition, pb, ewb, alpha_range);
+			compute_rgb_range(bsd->texel_count, ptab + partition, pb, ewb, rgb_range);
 
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
@@ -501,18 +497,10 @@ void find_best_partitionings(
 				separate_error.z += dot(separate_blue_vector, float3(error_weights.x, error_weights.y, error_weights.w));
 				separate_error.w += dot(separate_alpha_vector, float3(error_weights.x, error_weights.y, error_weights.z));
 
-				float red_scalar = (red_max[j] - red_min[j]);
-				float green_scalar = (green_max[j] - green_min[j]);
-				float blue_scalar = (blue_max[j] - blue_min[j]);
-				float alpha_scalar = (alpha_max[j] - alpha_min[j]);
-				red_scalar *= red_scalar;
-				green_scalar *= green_scalar;
-				blue_scalar *= blue_scalar;
-				alpha_scalar *= alpha_scalar;
-				separate_error.x += red_scalar * error_weights.x;
-				separate_error.y += green_scalar * error_weights.y;
-				separate_error.z += blue_scalar * error_weights.z;
-				separate_error.w += alpha_scalar * error_weights.w;
+				separate_error.x += rgb_range[j].x * rgb_range[j].x * error_weights.x;
+				separate_error.y += rgb_range[j].y * rgb_range[j].y * error_weights.y;
+				separate_error.z += rgb_range[j].z * rgb_range[j].z * error_weights.z;
+				separate_error.w += alpha_range[j] * alpha_range[j] * error_weights.w;
 			}
 
 			uncorr_errors[i] = uncorr_error;
@@ -679,11 +667,8 @@ void find_best_partitionings(
 			                          &samechroma_error,
 			                          &separate_error);
 
-			float red_min[4], red_max[4];
-			float green_min[4], green_max[4];
-			float blue_min[4], blue_max[4];
-
-			compute_rgb_minmax(bsd->texel_count, ptab + partition, pb, ewb, red_min, red_max, green_min, green_max, blue_min, blue_max);
+			float3 rgb_range[4];
+			compute_rgb_range(bsd->texel_count, ptab + partition, pb, ewb, rgb_range);
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.
@@ -723,17 +708,9 @@ void find_best_partitionings(
 				separate_error.y += dot(separate_green_vector, float2(error_weights.x, error_weights.z));
 				separate_error.z += dot(separate_blue_vector, float2(error_weights.x, error_weights.y));
 
-				float red_scalar = (red_max[j] - red_min[j]);
-				float green_scalar = (green_max[j] - green_min[j]);
-				float blue_scalar = (blue_max[j] - blue_min[j]);
-
-				red_scalar *= red_scalar;
-				green_scalar *= green_scalar;
-				blue_scalar *= blue_scalar;
-
-				separate_error.x += red_scalar * error_weights.x;
-				separate_error.y += green_scalar * error_weights.y;
-				separate_error.z += blue_scalar * error_weights.z;
+				separate_error.x += rgb_range[j].x * rgb_range[j].x * error_weights.x;
+				separate_error.y += rgb_range[j].y * rgb_range[j].y * error_weights.y;
+				separate_error.z += rgb_range[j].z * rgb_range[j].z * error_weights.z;
 			}
 
 			uncorr_errors[i] = uncorr_error;
