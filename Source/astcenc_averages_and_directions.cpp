@@ -130,13 +130,10 @@ void compute_averages_and_directions_rgb(
 	float3* averages,
 	float3* directions_rgb
 ) {
-	int i;
 	int partition_count = pt->partition_count;
-	int partition;
-
 	const float *texel_weights = ewb->texel_weight_rgb;
 
-	for (partition = 0; partition < partition_count; partition++)
+	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
@@ -144,7 +141,7 @@ void compute_averages_and_directions_rgb(
 		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -164,7 +161,7 @@ void compute_averages_and_directions_rgb(
 		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
 		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -174,11 +171,19 @@ void compute_averages_and_directions_rgb(
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
+			{
 				sum_xp = sum_xp + texel_datum;
+			}
+
 			if (texel_datum.y > 0.0f)
+			{
 				sum_yp = sum_yp + texel_datum;
+			}
+
 			if (texel_datum.z > 0.0f)
+			{
 				sum_zp = sum_zp + texel_datum;
+			}
 		}
 
 		float prod_xp = dot(sum_xp, sum_xp);
@@ -212,14 +217,11 @@ void compute_averages_and_directions_3_components(
 	float3* averages,
 	float3* directions
 ) {
-	int i;
-	int partition_count = pt->partition_count;
-	int partition;
-
 	const float *texel_weights;
 	const float* data_vr;
 	const float* data_vg;
 	const float* data_vb;
+
 	if (omittedComponent == 0)
 	{
 		texel_weights = ewb->texel_weight_gba;
@@ -249,7 +251,8 @@ void compute_averages_and_directions_3_components(
 		data_vb = blk->data_b;
 	}
 
-	for (partition = 0; partition < partition_count; partition++)
+	int partition_count = pt->partition_count;
+	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
@@ -257,7 +260,7 @@ void compute_averages_and_directions_3_components(
 		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -279,7 +282,7 @@ void compute_averages_and_directions_3_components(
 		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
 		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -289,11 +292,19 @@ void compute_averages_and_directions_3_components(
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
+			{
 				sum_xp = sum_xp + texel_datum;
+			}
+
 			if (texel_datum.y > 0.0f)
+			{
 				sum_yp = sum_yp + texel_datum;
+			}
+
 			if (texel_datum.z > 0.0f)
+			{
 				sum_zp = sum_zp + texel_datum;
+			}
 		}
 
 		float prod_xp = dot(sum_xp, sum_xp);
@@ -334,13 +345,10 @@ void compute_averages_and_directions_2_components(
 	float2* averages,
 	float2* directions
 ) {
-	int i;
-	int partition_count = pt->partition_count;
-	int partition;
-
 	const float *texel_weights;
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
+
 	if (component1 == 0 && component2 == 1)
 	{
 		texel_weights = ewb->texel_weight_rg;
@@ -360,7 +368,8 @@ void compute_averages_and_directions_2_components(
 		data_vg = blk->data_b;
 	}
 
-	for (partition = 0; partition < partition_count; partition++)
+	int partition_count = pt->partition_count;
+	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
@@ -368,7 +377,7 @@ void compute_averages_and_directions_2_components(
 		float2 base_sum = float2(0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -386,7 +395,7 @@ void compute_averages_and_directions_2_components(
 		float2 sum_xp = float2(0.0f, 0.0f);
 		float2 sum_yp = float2(0.0f, 0.0f);
 
-		for (i = 0; i < texelcount; i++)
+		for (int i = 0; i < texelcount; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -394,9 +403,14 @@ void compute_averages_and_directions_2_components(
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
+			{
 				sum_xp = sum_xp + texel_datum;
+			}
+
 			if (texel_datum.y > 0.0f)
+			{
 				sum_yp = sum_yp + texel_datum;
+			}
 		}
 
 		float prod_xp = dot(sum_xp, sum_xp);
@@ -530,12 +544,35 @@ void compute_error_squared_rgba(
 		float4 separate_linelen = separate_highparam - separate_lowparam;
 
 		// Turn very small numbers and NaNs into a small number
-		if (!(uncorr_linelen > 1e-7f))     uncorr_linelen = 1e-7f;
-		if (!(samechroma_linelen > 1e-7f)) samechroma_linelen = 1e-7f;
-		if (!(separate_linelen.x > 1e-7f)) separate_linelen.x = 1e-7f;
-		if (!(separate_linelen.y > 1e-7f)) separate_linelen.y = 1e-7f;
-		if (!(separate_linelen.z > 1e-7f)) separate_linelen.z = 1e-7f;
-		if (!(separate_linelen.w > 1e-7f)) separate_linelen.w = 1e-7f;
+		if (!(uncorr_linelen > 1e-7f))
+		{
+			uncorr_linelen = 1e-7f;
+		}
+
+		if (!(samechroma_linelen > 1e-7f))
+		{
+			samechroma_linelen = 1e-7f;
+		}
+
+		if (!(separate_linelen.x > 1e-7f))
+		{
+			separate_linelen.x = 1e-7f;
+		}
+
+		if (!(separate_linelen.y > 1e-7f))
+		{
+			separate_linelen.y = 1e-7f;
+		}
+
+		if (!(separate_linelen.z > 1e-7f))
+		{
+			separate_linelen.z = 1e-7f;
+		}
+
+		if (!(separate_linelen.w > 1e-7f))
+		{
+			separate_linelen.w = 1e-7f;
+		}
 
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
@@ -656,11 +693,30 @@ void compute_error_squared_rgb(
 		float3 separate_linelen = separate_highparam - separate_lowparam;
 
 		// Turn very small numbers and NaNs into a small number
-		if (!(uncorr_linelen > 1e-7f))     uncorr_linelen = 1e-7f;
-		if (!(samechroma_linelen > 1e-7f)) samechroma_linelen = 1e-7f;
-		if (!(separate_linelen.x > 1e-7f)) separate_linelen.x = 1e-7f;
-		if (!(separate_linelen.y > 1e-7f)) separate_linelen.y = 1e-7f;
-		if (!(separate_linelen.z > 1e-7f)) separate_linelen.z = 1e-7f;
+		if (!(uncorr_linelen > 1e-7f))
+		{
+			uncorr_linelen = 1e-7f;
+		}
+
+		if (!(samechroma_linelen > 1e-7f))
+		{
+			samechroma_linelen = 1e-7f;
+		}
+
+		if (!(separate_linelen.x > 1e-7f))
+		{
+			separate_linelen.x = 1e-7f;
+		}
+
+		if (!(separate_linelen.y > 1e-7f))
+		{
+			separate_linelen.y = 1e-7f;
+		}
+
+		if (!(separate_linelen.z > 1e-7f))
+		{
+			separate_linelen.z = 1e-7f;
+		}
 
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
@@ -682,18 +738,18 @@ float compute_error_squared_rgb_single_partition(
 	const error_weight_block* ewb,
 	const processed_line3* lin	// the line for the partition.
 ) {
-	int i;
-
 	int texels_per_block = bsd->texel_count;
-
 	float errorsum = 0.0f;
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		float texel_weight = ewb->texel_weight_rgb[i];
+
 		if (partition != partition_to_test || texel_weight < 1e-20f)
+		{
 			continue;
+		}
 
 		float3 point = float3(blk->data_r[i],
 		                      blk->data_g[i],
@@ -705,6 +761,7 @@ float compute_error_squared_rgb_single_partition(
 		float3 ews3 = float3(ews.x, ews.y, ews.z);
 		errorsum += dot(ews3, dist * dist);
 	}
+
 	return errorsum;
 }
 

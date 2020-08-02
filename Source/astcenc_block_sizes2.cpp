@@ -224,9 +224,6 @@ static void initialize_decimation_table_2d(
 	int y_weights,
 	decimation_table* dt
 ) {
-	int i, j;
-	int x, y;
-
 	int texels_per_block = xdim * ydim;
 	int weights_per_block = x_weights * y_weights;
 
@@ -238,13 +235,19 @@ static void initialize_decimation_table_2d(
 	int texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
-	for (i = 0; i < weights_per_block; i++)
+	for (int i = 0; i < weights_per_block; i++)
+	{
 		texelcount_of_weight[i] = 0;
-	for (i = 0; i < texels_per_block; i++)
-		weightcount_of_texel[i] = 0;
+	}
 
-	for (y = 0; y < ydim; y++)
-		for (x = 0; x < xdim; x++)
+	for (int i = 0; i < texels_per_block; i++)
+	{
+		weightcount_of_texel[i] = 0;
+	}
+
+	for (int y = 0; y < ydim; y++)
+	{
+		for (int x = 0; x < xdim; x++)
 		{
 			int texel = y * xdim + x;
 
@@ -270,7 +273,8 @@ static void initialize_decimation_table_2d(
 			weight[2] = y_weight_frac - weight[3];
 			weight[0] = 16 - x_weight_frac - y_weight_frac + weight[3];
 
-			for (i = 0; i < 4; i++)
+			for (int i = 0; i < 4; i++)
+			{
 				if (weight[i] != 0)
 				{
 					grid_weights_of_texel[texel][weightcount_of_texel[texel]] = qweight[i];
@@ -280,22 +284,24 @@ static void initialize_decimation_table_2d(
 					texelweights_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = weight[i];
 					texelcount_of_weight[qweight[i]]++;
 				}
+			}
 		}
+	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		dt->texel_num_weights[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
-		for (j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
 			dt->texel_weights_float[i][j] = 0.0f;
 			dt->texel_weights[i][j] = 0;
 		}
 
-		for (j = 0; j < weightcount_of_texel[i]; j++)
+		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
 			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
 			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
@@ -303,11 +309,11 @@ static void initialize_decimation_table_2d(
 		}
 	}
 
-	for (i = 0; i < weights_per_block; i++)
+	for (int i = 0; i < weights_per_block; i++)
 	{
 		dt->weight_num_texels[i] = texelcount_of_weight[i];
 
-		for (j = 0; j < texelcount_of_weight[i]; j++)
+		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			int texel = texels_of_weight[i][j];
 			dt->weight_texel[i][j] = (uint8_t)texel;
@@ -353,9 +359,6 @@ static void initialize_decimation_table_3d(
 	int z_weights,
 	decimation_table* dt
 ) {
-	int i, j;
-	int x, y, z;
-
 	int texels_per_block = xdim * ydim * zdim;
 	int weights_per_block = x_weights * y_weights * z_weights;
 
@@ -367,16 +370,21 @@ static void initialize_decimation_table_3d(
 	int texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
-	for (i = 0; i < weights_per_block; i++)
-		texelcount_of_weight[i] = 0;
-	for (i = 0; i < texels_per_block; i++)
-		weightcount_of_texel[i] = 0;
-
-	for (z = 0; z < zdim; z++)
+	for (int i = 0; i < weights_per_block; i++)
 	{
-		for (y = 0; y < ydim; y++)
+		texelcount_of_weight[i] = 0;
+	}
+
+	for (int i = 0; i < texels_per_block; i++)
+	{
+		weightcount_of_texel[i] = 0;
+	}
+
+	for (int z = 0; z < zdim; z++)
+	{
+		for (int y = 0; y < ydim; y++)
 		{
-			for (x = 0; x < xdim; x++)
+			for (int x = 0; x < xdim; x++)
 			{
 				int texel = (z * ydim + y) * xdim + x;
 
@@ -473,7 +481,7 @@ static void initialize_decimation_table_3d(
 				weight[2] = w2;
 				weight[3] = w3;
 
-				for (i = 0; i < 4; i++)
+				for (int i = 0; i < 4; i++)
 				{
 					if (weight[i] != 0)
 					{
@@ -489,20 +497,20 @@ static void initialize_decimation_table_3d(
 		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		dt->texel_num_weights[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
-		for (j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
 			dt->texel_weights_float[i][j] = 0.0f;
 			dt->texel_weights[i][j] = 0;
 		}
 
-		for (j = 0; j < weightcount_of_texel[i]; j++)
+		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
 			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
 			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
@@ -510,10 +518,10 @@ static void initialize_decimation_table_3d(
 		}
 	}
 
-	for (i = 0; i < weights_per_block; i++)
+	for (int i = 0; i < weights_per_block; i++)
 	{
 		dt->weight_num_texels[i] = texelcount_of_weight[i];
-		for (j = 0; j < texelcount_of_weight[i]; j++)
+		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			int texel = texels_of_weight[i][j];
 			dt->weight_texel[i][j] = (uint8_t)texel;
@@ -886,7 +894,9 @@ static void construct_block_size_descriptor_3d(
 		while (texel_weights_written < 64)
 		{
 			if (arr[idx])
+			{
 				bsd->texels_for_bitmap_partitioning[texel_weights_written++] = idx;
+			}
 			idx++;
 		}
 		bsd->texelcount_for_bitmap_partitioning = 64;
@@ -901,9 +911,13 @@ void init_block_size_descriptor(
 	block_size_descriptor* bsd
 ) {
 	if (zdim > 1)
+	{
 		construct_block_size_descriptor_3d(xdim, ydim, zdim, bsd);
+	}
 	else
+	{
 		construct_block_size_descriptor_2d(xdim, ydim, bsd);
+	}
 
 	init_partition_tables(bsd);
 }

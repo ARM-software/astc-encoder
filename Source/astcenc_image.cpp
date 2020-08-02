@@ -107,10 +107,8 @@ void imageblock_initialize_deriv(
 	int pixelcount,
 	float4* dptr
 ) {
-	int i;
-
 	const float *fptr = pb->orig_data;
-	for (i = 0; i < pixelcount; i++)
+	for (int i = 0; i < pixelcount; i++)
 	{
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
@@ -126,19 +124,31 @@ void imageblock_initialize_deriv(
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
 			if (rderiv < (1.0f / 32.0f))
+			{
 				rderiv = (1.0f / 32.0f);
+			}
 			else if (rderiv > 33554432.0f)
+			{
 				rderiv = 33554432.0f;
+			}
 
 			if (gderiv < (1.0f / 32.0f))
+			{
 				gderiv = (1.0f / 32.0f);
+			}
 			else if (gderiv > 33554432.0f)
+			{
 				gderiv = 33554432.0f;
+			}
 
 			if (bderiv < (1.0f / 32.0f))
+			{
 				bderiv = (1.0f / 32.0f);
+			}
 			else if (bderiv > 33554432.0f)
+			{
 				bderiv = 33554432.0f;
+			}
 
 			dptr->x = rderiv;
 			dptr->y = gderiv;
@@ -159,9 +169,13 @@ void imageblock_initialize_deriv(
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
 			if (aderiv < (1.0f / 32.0f))
+			{
 				aderiv = (1.0f / 32.0f);
+			}
 			else if (aderiv > 33554432.0f)
+			{
 				aderiv = 33554432.0f;
+			}
 
 			dptr->w = aderiv;
 		}
@@ -262,8 +276,6 @@ void fetch_imageblock(
 	int ysize = img.dim_y + 2 * img.dim_pad;
 	int zsize = (img.dim_z == 1) ? 1 : img.dim_z + 2 * img.dim_pad;
 
-	int x, y, z, i;
-
 	pb->xpos = xpos;
 	pb->ypos = ypos;
 	pb->zpos = zpos;
@@ -281,11 +293,11 @@ void fetch_imageblock(
 
 	if (img.data8)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -326,11 +338,11 @@ void fetch_imageblock(
 	}
 	else if (img.data16)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -384,7 +396,7 @@ void fetch_imageblock(
 	int alpha_lns = decode_mode == ASTCENC_PRF_HDR;
 
 	// impose the choice on every pixel when encoding.
-	for (i = 0; i < bsd->texel_count; i++)
+	for (int i = 0; i < bsd->texel_count; i++)
 	{
 		pb->rgb_lns[i] = rgb_lns;
 		pb->alpha_lns[i] = alpha_lns;
@@ -410,7 +422,6 @@ void write_imageblock(
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
-	int x, y, z;
 
 	float data[7];
 	data[4] = 0.0f;
@@ -418,11 +429,11 @@ void write_imageblock(
 
 	if (img.data8)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -482,11 +493,11 @@ void write_imageblock(
 	}
 	else if (img.data16)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -544,7 +555,6 @@ void update_imageblock_flags(
 	int ydim,
 	int zdim
 ) {
-	int i;
 	float red_min = 1e38f, red_max = -1e38f;
 	float green_min = 1e38f, green_max = -1e38f;
 	float blue_min = 1e38f, blue_max = -1e38f;
@@ -554,7 +564,7 @@ void update_imageblock_flags(
 
 	int grayscale = 1;
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float red = pb->data_r[i];
 		float green = pb->data_g[i];
@@ -578,7 +588,9 @@ void update_imageblock_flags(
 			alpha_max = alpha;
 
 		if (grayscale == 1 && (red != green || red != blue))
+		{
 			grayscale = 0;
+		}
 	}
 
 	pb->red_min = red_min;

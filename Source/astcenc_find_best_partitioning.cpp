@@ -61,29 +61,33 @@ static void compute_alpha_minmax(
 	float* alpha_min,
 	float* alpha_max
 ) {
-	int i;
 	int partition_count = pt->partition_count;
-
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		alpha_min[i] = 1e38f;
 		alpha_max[i] = -1e38f;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 			float alphaval = blk->data_a[i];
+
 			if (alphaval > alpha_max[partition])
+			{
 				alpha_max[partition] = alphaval;
+			}
+
 			if (alphaval < alpha_min[partition])
+			{
 				alpha_min[partition] = alphaval;
+			}
 		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		if (alpha_min[i] >= alpha_max[i])
 		{
@@ -105,10 +109,8 @@ static void compute_rgb_minmax(
 	float* blue_min,
 	float* blue_max
 ) {
-	int i;
 	int partition_count = pt->partition_count;
-
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		red_min[i] = 1e38f;
 		red_max[i] = -1e38f;
@@ -118,7 +120,7 @@ static void compute_rgb_minmax(
 		blue_max[i] = -1e38f;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
@@ -126,33 +128,53 @@ static void compute_rgb_minmax(
 			float redval = blk->data_r[i];
 			float greenval = blk->data_g[i];
 			float blueval = blk->data_b[i];
+
 			if (redval > red_max[partition])
+			{
 				red_max[partition] = redval;
+			}
+
 			if (redval < red_min[partition])
+			{
 				red_min[partition] = redval;
+			}
+
 			if (greenval > green_max[partition])
+			{
 				green_max[partition] = greenval;
+			}
+
 			if (greenval < green_min[partition])
+			{
 				green_min[partition] = greenval;
+			}
+
 			if (blueval > blue_max[partition])
+			{
 				blue_max[partition] = blueval;
+			}
+
 			if (blueval < blue_min[partition])
+			{
 				blue_min[partition] = blueval;
+			}
 		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		if (red_min[i] >= red_max[i])
 		{
 			red_min[i] = 0.0f;
 			red_max[i] = 1e-10f;
 		}
+
 		if (green_min[i] >= green_max[i])
 		{
 			green_min[i] = 0.0f;
 			green_max[i] = 1e-10f;
 		}
+
 		if (blue_min[i] >= blue_max[i])
 		{
 			blue_min[i] = 0.0f;
@@ -208,23 +230,27 @@ void find_best_partitionings(
 	int* best_partitions_samechroma,
 	int* best_partitions_dual_weight_planes
 ) {
-	int i, j;
-	int texels_per_block = bsd->texel_count;
-
 	// constant used to estimate quantization error for a given partitioning;
 	// the optimal value for this constant depends on bitrate.
 	// These constants have been determined empirically.
-
+	int texels_per_block = bsd->texel_count;
 	float weight_imprecision_estim = 100.0f;
-
 	if (texels_per_block <= 20)
+	{
 		weight_imprecision_estim = 0.03f;
+	}
 	else if (texels_per_block <= 31)
+	{
 		weight_imprecision_estim = 0.04f;
+	}
 	else if (texels_per_block <= 41)
+	{
 		weight_imprecision_estim = 0.05f;
+	}
 	else
+	{
 		weight_imprecision_estim = 0.055f;
+	}
 
 	int partition_sequence[PARTITION_COUNT];
 
@@ -250,7 +276,7 @@ void find_best_partitionings(
 	if (uses_alpha)
 	{
 
-		for (i = 0; i < PARTITION_COUNT; i++)
+		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
 			int partition = partition_sequence[i];
 			int bk_partition_count = ptab[partition].partition_count;
@@ -281,7 +307,7 @@ void find_best_partitionings(
 			float4 inverse_color_scalefactors[4];
 			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				inverse_color_scalefactors[j].x = 1.0f / MAX(color_scalefactors[j].x, 1e-7f);
 				inverse_color_scalefactors[j].y = 1.0f / MAX(color_scalefactors[j].y, 1e-7f);
@@ -314,13 +340,17 @@ void find_best_partitionings(
 			float samechroma_linelengths[4];
 			float4 separate_linelengths[4];
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				uncorr_lines[j].a = averages[j];
 				if (dot(directions_rgba[j], directions_rgba[j]) == 0.0f)
+				{
 					uncorr_lines[j].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					uncorr_lines[j].b = normalize(directions_rgba[j]);
+				}
 
 				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * inverse_color_scalefactors[j];
 				proc_uncorr_lines[j].bs = (uncorr_lines[j].b * color_scalefactors[j]);
@@ -328,9 +358,13 @@ void find_best_partitionings(
 
 				samechroma_lines[j].a = float4(0.0f, 0.0f, 0.0f, 0.0f);
 				if (dot(averages[j], averages[j]) == 0.0f)
+				{
 					samechroma_lines[j].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					samechroma_lines[j].b = normalize(averages[j]);
+				}
 
 				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * inverse_color_scalefactors[j];
 				proc_samechroma_lines[j].bs = (samechroma_lines[j].b * color_scalefactors[j]);
@@ -339,30 +373,46 @@ void find_best_partitionings(
 				separate_red_lines[j].a = float3(averages[j].y, averages[j].z, averages[j].w);
 				float3 dirs_gba = float3(directions_rgba[j].y, directions_rgba[j].z, directions_rgba[j].w);
 				if (dot(dirs_gba, dirs_gba) == 0.0f)
+				{
 					separate_red_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					separate_red_lines[j].b = normalize(dirs_gba);
+				}
 
 				separate_green_lines[j].a = float3(averages[j].x, averages[j].z, averages[j].w);
 				float3 dirs_rba = float3(directions_rgba[j].x, directions_rgba[j].z, directions_rgba[j].w);
 				if (dot(dirs_rba, dirs_rba) == 0.0f)
+				{
 					separate_green_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					separate_green_lines[j].b = normalize(dirs_rba);
+				}
 
 				separate_blue_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].w);
 				float3 dirs_rga = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].w);
 				if (dot(dirs_rga, dirs_rga) == 0.0f)
+				{
 					separate_blue_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					separate_blue_lines[j].b = normalize(dirs_rga);
+				}
 
 				separate_alpha_lines[j].a = float3(averages[j].x, averages[j].y, averages[j].z);
 				float3 dirs_rgb = float3(directions_rgba[j].x, directions_rgba[j].y, directions_rgba[j].z);
 				if (dot(dirs_rgb, dirs_rgb) == 0.0f)
+				{
 					separate_alpha_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					separate_alpha_lines[j].b = normalize(dirs_rgb);
+				}
 
 				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float3(inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z, inverse_color_scalefactors[j].w);
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * float3(color_scalefactors[j].y, color_scalefactors[j].z, color_scalefactors[j].w));
@@ -387,20 +437,20 @@ void find_best_partitionings(
 			float samechroma_error = 0.0f;
 			float4 separate_error = float4(0.0f, 0.0f, 0.0f, 0.0f);
 			compute_error_squared_rgba(ptab + partition,
-										pb,
-										ewb,
-										proc_uncorr_lines,
-										proc_samechroma_lines,
-										proc_separate_red_lines,
-										proc_separate_green_lines,
-										proc_separate_blue_lines,
-										proc_separate_alpha_lines,
-										uncorr_linelengths,
-										samechroma_linelengths,
-										separate_linelengths,
-										&uncorr_error,
-										&samechroma_error,
-										&separate_error);
+			                           pb,
+			                           ewb,
+			                           proc_uncorr_lines,
+			                           proc_samechroma_lines,
+			                           proc_separate_red_lines,
+			                           proc_separate_green_lines,
+			                           proc_separate_blue_lines,
+			                           proc_separate_alpha_lines,
+			                           uncorr_linelengths,
+			                           samechroma_linelengths,
+			                           separate_linelengths,
+			                           &uncorr_error,
+			                           &samechroma_error,
+			                           &separate_error);
 
 			// compute minimum & maximum alpha values in each partition
 			float red_min[4], red_max[4];
@@ -423,7 +473,7 @@ void find_best_partitionings(
 			      then multiply by the number of texels.
 			 */
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
@@ -472,7 +522,7 @@ void find_best_partitionings(
 	}
 	else
 	{
-		for (i = 0; i < PARTITION_COUNT; i++)
+		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
 			int partition = partition_sequence[i];
 
@@ -504,7 +554,7 @@ void find_best_partitionings(
 
 			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				inverse_color_scalefactors[j].x = 1.0f / MAX(color_scalefactors[j].x, 1e-7f);
 				inverse_color_scalefactors[j].y = 1.0f / MAX(color_scalefactors[j].y, 1e-7f);
@@ -534,19 +584,27 @@ void find_best_partitionings(
 			float samechroma_linelengths[4];
 			float3 separate_linelengths[4];
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				uncorr_lines[j].a = averages[j];
 				if (dot(directions_rgb[j], directions_rgb[j]) == 0.0f)
+				{
 					uncorr_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					uncorr_lines[j].b = normalize(directions_rgb[j]);
+				}
 
 				samechroma_lines[j].a = float3(0.0f, 0.0f, 0.0f);
 				if (dot(averages[j], averages[j]) == 0.0f)
+				{
 					samechroma_lines[j].b = normalize(float3(1.0f, 1.0f, 1.0f));
+				}
 				else
+				{
 					samechroma_lines[j].b = normalize(averages[j]);
+				}
 
 				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * float3(inverse_color_scalefactors[j].x, inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z);
 				proc_uncorr_lines[j].bs = (uncorr_lines[j].b * float3(color_scalefactors[j].x, color_scalefactors[j].y, color_scalefactors[j].z));
@@ -559,23 +617,35 @@ void find_best_partitionings(
 				separate_red_lines[j].a = float2(averages[j].y, averages[j].z);
 				float2 dirs_gb = float2(directions_rgb[j].y, directions_rgb[j].z);
 				if (dot(dirs_gb, dirs_gb) == 0.0f)
+				{
 					separate_red_lines[j].b = normalize(float2(1.0f, 1.0f));
+				}
 				else
+				{
 					separate_red_lines[j].b = normalize(dirs_gb);
+				}
 
 				separate_green_lines[j].a = float2(averages[j].x, averages[j].z);
 				float2 dirs_rb = float2(directions_rgb[j].x, directions_rgb[j].z);
 				if (dot(dirs_rb, dirs_rb) == 0.0f)
+				{
 					separate_green_lines[j].b = normalize(float2(1.0f, 1.0f));
+				}
 				else
+				{
 					separate_green_lines[j].b = normalize(dirs_rb);
+				}
 
 				separate_blue_lines[j].a = float2(averages[j].x, averages[j].y);
 				float2 dirs_rg = float2(directions_rgb[j].x, directions_rgb[j].y);
 				if (dot(dirs_rg, dirs_rg) == 0.0f)
+				{
 					separate_blue_lines[j].b = normalize(float2(1.0f, 1.0f));
+				}
 				else
+				{
 					separate_blue_lines[j].b = normalize(dirs_rg);
+				}
 
 				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float2(inverse_color_scalefactors[j].y, inverse_color_scalefactors[j].z);
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * float2(color_scalefactors[j].y, color_scalefactors[j].z));
@@ -627,7 +697,7 @@ void find_best_partitionings(
 			      then multiply by the number of texels.
 			 */
 
-			for (j = 0; j < partition_count; j++)
+			for (int j = 0; j < partition_count; j++)
 			{
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
@@ -672,14 +742,14 @@ void find_best_partitionings(
 		}
 	}
 
-	for (i = 0; i < candidates_to_return; i++)
+	for (int i = 0; i < candidates_to_return; i++)
 	{
 		int best_uncorr_partition = 0;
 		int best_samechroma_partition = 0;
 		float best_uncorr_error = 1e30f;
 		float best_samechroma_error = 1e30f;
 
-		for (j = 0; j <= defacto_search_limit; j++)
+		for (int j = 0; j <= defacto_search_limit; j++)
 		{
 			if (uncorr_errors[j] < best_uncorr_error)
 			{
@@ -692,7 +762,7 @@ void find_best_partitionings(
 		uncorr_errors[best_uncorr_partition] = 1e30f;
 		samechroma_errors[best_uncorr_partition] = 1e30f;
 
-		for (j = 0; j <= defacto_search_limit; j++)
+		for (int j = 0; j <= defacto_search_limit; j++)
 		{
 			if (samechroma_errors[j] < best_samechroma_error)
 			{
@@ -706,13 +776,13 @@ void find_best_partitionings(
 		uncorr_errors[best_samechroma_partition] = 1e30f;
 	}
 
-	for (i = 0; i < 2 * candidates_to_return; i++)
+	for (int i = 0; i < 2 * candidates_to_return; i++)
 	{
 		int best_partition = 0;
 		int best_component = 0;
 		float best_partition_error = 1e30f;
 
-		for (j = 0; j <= defacto_search_limit; j++)
+		for (int j = 0; j <= defacto_search_limit; j++)
 		{
 			if (separate_errors[j].x < best_partition_error)
 			{

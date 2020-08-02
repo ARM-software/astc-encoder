@@ -898,8 +898,7 @@ static void quantize_hdr_rgbo3(
 	float b_base = color.x - color.z;
 	float s_base = color.w;
 
-	int mode;
-	for (mode = 0; mode < 5; mode++)
+	for (int mode = 0; mode < 5; mode++)
 	{
 		if (g_base > mode_cutoffs[mode][0] || b_base > mode_cutoffs[mode][0] || s_base > mode_cutoffs[mode][1])
 		{
@@ -933,13 +932,22 @@ static void quantize_hdr_rgbo3(
 		float g_fval = r_fval - color.y;
 		float b_fval = r_fval - color.z;
 		if (g_fval < 0.0f)
+		{
 			g_fval = 0.0f;
+		}
 		else if (g_fval > 65535.0f)
+		{
 			g_fval = 65535.0f;
+		}
+
 		if (b_fval < 0.0f)
+		{
 			b_fval = 0.0f;
+		}
 		else if (b_fval > 65535.0f)
+		{
 			b_fval = 65535.0f;
+		}
 
 		int g_intval = astc::flt2int_rtn(g_fval * mode_scale);
 		int b_intval = astc::flt2int_rtn(b_fval * mode_scale);
@@ -1050,9 +1058,13 @@ static void quantize_hdr_rgbo3(
 
 		float s_fval = s_base + rgb_errorsum * (1.0f / 3.0f);
 		if (s_fval < 0.0f)
+		{
 			s_fval = 0.0f;
+		}
 		else if (s_fval > 1e9f)
+		{
 			s_fval = 1e9f;
+		}
 
 		int s_intval = astc::flt2int_rtn(s_fval * mode_scale);
 
@@ -1116,8 +1128,6 @@ static void quantize_hdr_rgbo3(
 
 	// failed to encode any of the modes above? In that case,
 	// encode using mode #5.
-	int i;
-
 	float vals[4];
 	int ivals[4];
 	vals[0] = color_bak.x;
@@ -1127,12 +1137,16 @@ static void quantize_hdr_rgbo3(
 
 	float cvals[3];
 
-	for (i = 0; i < 3; i++)
+	for (int i = 0; i < 3; i++)
 	{
 		if (vals[i] < 0.0f)
+		{
 			vals[i] = 0.0f;
+		}
 		else if (vals[i] > 65020.0f)
+		{
 			vals[i] = 65020.0f;
+		}
 
 		ivals[i] = astc::flt2int_rtn(vals[i] * (1.0f / 512.0f));
 		cvals[i] = ivals[i] * 512.0f;
@@ -1142,9 +1156,13 @@ static void quantize_hdr_rgbo3(
 	vals[3] += rgb_errorsum * (1.0f / 3.0f);
 
 	if (vals[3] < 0.0f)
+	{
 		vals[3] = 0.0f;
+	}
 	else if (vals[3] > 65020.0f)
+	{
 		vals[3] = 65020.0f;
+	}
 
 	ivals[3] = astc::flt2int_rtn(vals[3] * (1.0f / 512.0f));
 
@@ -1155,7 +1173,7 @@ static void quantize_hdr_rgbo3(
 	encvals[2] = (ivals[2] & 0x7f) | 0x80;
 	encvals[3] = (ivals[3] & 0x7f) | ((ivals[0] & 0x40) << 1);
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		int dummy;
 		quantize_and_unquantize_retain_top_four_bits(quantization_level, encvals[i], &(output[i]), &dummy);
@@ -1171,45 +1189,75 @@ static void quantize_hdr_rgb3(
 	int quantization_level
 ) {
 	if (!(color0.x > 0.0f))
+	{
 		color0.x = 0.0f;
+	}
 	else if (color0.x > 65535.0f)
+	{
 		color0.x = 65535.0f;
+	}
 
 	if (!(color0.y > 0.0f))
+	{
 		color0.y = 0.0f;
+	}
 	else if (color0.y > 65535.0f)
+	{
 		color0.y = 65535.0f;
+	}
 
 	if (!(color0.z > 0.0f))
+	{
 		color0.z = 0.0f;
+	}
 	else if (color0.z > 65535.0f)
+	{
 		color0.z = 65535.0f;
+	}
 
 	if (!(color1.x > 0.0f))
+	{
 		color1.x = 0.0f;
+	}
 	else if (color1.x > 65535.0f)
+	{
 		color1.x = 65535.0f;
+	}
 
 	if (!(color1.y > 0.0f))
+	{
 		color1.y = 0.0f;
+	}
 	else if (color1.y > 65535.0f)
+	{
 		color1.y = 65535.0f;
+	}
 
 	if (!(color1.z > 0.0f))
+	{
 		color1.z = 0.0f;
+	}
 	else if (color1.z > 65535.0f)
+	{
 		color1.z = 65535.0f;
+	}
 
 	float4 color0_bak = color0;
 	float4 color1_bak = color1;
 
 	int majcomp;
 	if (color1.x > color1.y && color1.x > color1.z)
+	{
 		majcomp = 0;			// red is largest
+	}
 	else if (color1.y > color1.z)
+	{
 		majcomp = 1;			// green is largest
+	}
 	else
+	{
 		majcomp = 2;			// blue is largest
+	}
 
 	// swizzle the components
 	switch (majcomp)
@@ -1228,9 +1276,13 @@ static void quantize_hdr_rgb3(
 
 	float a_base = color1.x;
 	if (a_base < 0.0f)
+	{
 		a_base = 0.0f;
+	}
 	else if (a_base > 65535.0f)
+	{
 		a_base = 65535.0f;
+	}
 
 	float b0_base = a_base - color1.y;
 	float b1_base = a_base - color1.z;
@@ -1287,8 +1339,7 @@ static void quantize_hdr_rgb3(
 	};
 
 	// try modes one by one, with the highest-precision mode first.
-	int mode;
-	for (mode = 7; mode >= 0; mode--)
+	for (int mode = 7; mode >= 0; mode--)
 	{
 		// for each mode, test if we can in fact accommodate
 		// the computed b,c,d values. If we clearly can't, then we skip to the next mode.
@@ -1347,13 +1398,22 @@ static void quantize_hdr_rgb3(
 		float b0_fval = a_fval - color1.y;
 		float b1_fval = a_fval - color1.z;
 		if (b0_fval < 0.0f)
+		{
 			b0_fval = 0.0f;
+		}
 		else if (b0_fval > 65535.0f)
+		{
 			b0_fval = 65535.0f;
+		}
+
 		if (b1_fval < 0.0f)
+		{
 			b1_fval = 0.0f;
+		}
 		else if (b1_fval > 65535.0f)
+		{
 			b1_fval = 65535.0f;
+		}
 
 		int b0_intval = astc::flt2int_rtn(b0_fval * mode_scale);
 		int b1_intval = astc::flt2int_rtn(b1_fval * mode_scale);
@@ -1427,20 +1487,30 @@ static void quantize_hdr_rgb3(
 		float d1_fval = a_fval - b1_fval - c_fval - color0.z;
 
 		if (d0_fval < -65535.0f)
+		{
 			d0_fval = -65535.0f;
+		}
 		else if (d0_fval > 65535.0f)
+		{
 			d0_fval = 65535.0f;
+		}
 
 		if (d1_fval < -65535.0f)
+		{
 			d1_fval = -65535.0f;
+		}
 		else if (d1_fval > 65535.0f)
+		{
 			d1_fval = 65535.0f;
+		}
 
 		int d0_intval = astc::flt2int_rtn(d0_fval * mode_scale);
 		int d1_intval = astc::flt2int_rtn(d1_fval * mode_scale);
 
 		if (abs(d0_intval) >= d_intcutoff || abs(d1_intval) >= d_intcutoff)
+		{
 			continue;
+		}
 
 		int d0_lowbits = d0_intval & 0x1f;
 		int d1_lowbits = d1_intval & 0x1f;
@@ -1532,7 +1602,6 @@ static void quantize_hdr_rgb3(
 	// This gives color accuracy roughly similar to LDR 4:4:3 which is not at all great
 	// but usable. This representation is used if the light color is more than 4x the
 	// color value of the dark color.
-	int i;
 	float vals[6];
 	vals[0] = color0_bak.x;
 	vals[1] = color1_bak.x;
@@ -1541,19 +1610,25 @@ static void quantize_hdr_rgb3(
 	vals[4] = color0_bak.z;
 	vals[5] = color1_bak.z;
 
-	for (i = 0; i < 6; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		if (vals[i] < 0.0f)
+		{
 			vals[i] = 0.0f;
+		}
 		else if (vals[i] > 65020.0f)
+		{
 			vals[i] = 65020.0f;
+		}
 	}
-	for (i = 0; i < 4; i++)
+
+	for (int i = 0; i < 4; i++)
 	{
 		int idx = astc::flt2int_rtn(vals[i] * 1.0f / 256.0f);
 		output[i] = color_quantization_tables[quantization_level][idx];
 	}
-	for (i = 4; i < 6; i++)
+
+	for (int i = 4; i < 6; i++)
 	{
 		int dummy;
 		int idx = astc::flt2int_rtn(vals[i] * 1.0f / 512.0f) + 128;
@@ -1608,28 +1683,44 @@ static void quantize_hdr_luminance_large_range3(
 	int upper_v1 = (ilum1 + 128) >> 8;
 
 	if (upper_v0 < 0)
+	{
 		upper_v0 = 0;
+	}
 	else if (upper_v0 > 255)
+	{
 		upper_v0 = 255;
+	}
 
 	if (upper_v1 < 0)
+	{
 		upper_v1 = 0;
+	}
 	else if (upper_v1 > 255)
+	{
 		upper_v1 = 255;
+	}
 
 	// find the closest encodable point in the lower half of the code-point space
 	int lower_v0 = (ilum1 + 256) >> 8;
 	int lower_v1 = ilum0 >> 8;
 
 	if (lower_v0 < 0)
+	{
 		lower_v0 = 0;
+	}
 	else if (lower_v0 > 255)
+	{
 		lower_v0 = 255;
+	}
 
 	if (lower_v1 < 0)
+	{
 		lower_v1 = 0;
+	}
 	else if (lower_v1 > 255)
+	{
 		lower_v1 = 255;
+	}
 
 	// determine the distance between the point in code-point space and the input value
 	int upper0_dec = upper_v0 << 8;
@@ -1683,7 +1774,9 @@ static int try_quantize_hdr_luminance_small_range3(
 
 	// difference of more than a factor-of-2 results in immediate failure.
 	if (ilum1 - ilum0 > 2048)
+	{
 		return 0;
+	}
 
 	int lowval, highval, diffval;
 	int v0, v1;
@@ -1695,31 +1788,45 @@ static int try_quantize_hdr_luminance_small_range3(
 	highval = (ilum1 + 16) >> 5;
 
 	if (lowval < 0)
+	{
 		lowval = 0;
+	}
 	else if (lowval > 2047)
+	{
 		lowval = 2047;
+	}
 
 	if (highval < 0)
+	{
 		highval = 0;
+	}
 	else if (highval > 2047)
+	{
 		highval = 2047;
+	}
 
 	v0 = lowval & 0x7F;
 	v0e = color_quantization_tables[quantization_level][v0];
 	v0d = color_unquantization_tables[quantization_level][v0e];
 	if ((v0d & 0x80) == 0x80)
+	{
 		goto LOW_PRECISION_SUBMODE;
+	}
 
 	lowval = (lowval & ~0x7F) | (v0d & 0x7F);
 	diffval = highval - lowval;
 	if (diffval < 0 || diffval > 15)
+	{
 		goto LOW_PRECISION_SUBMODE;
+	}
 
 	v1 = ((lowval >> 3) & 0xF0) | diffval;
 	v1e = color_quantization_tables[quantization_level][v1];
 	v1d = color_unquantization_tables[quantization_level][v1e];
 	if ((v1d & 0xF0) != (v1 & 0xF0))
+	{
 		goto LOW_PRECISION_SUBMODE;
+	}
 
 	output[0] = v0e;
 	output[1] = v1e;
@@ -1732,30 +1839,45 @@ LOW_PRECISION_SUBMODE:
 	lowval = (ilum0 + 32) >> 6;
 	highval = (ilum1 + 32) >> 6;
 	if (lowval < 0)
+	{
 		lowval = 0;
+	}
 	else if (lowval > 1023)
+	{
 		lowval = 1023;
+	}
+
 	if (highval < 0)
+	{
 		highval = 0;
+	}
 	else if (highval > 1023)
+	{
 		highval = 1023;
+	}
 
 	v0 = (lowval & 0x7F) | 0x80;
 	v0e = color_quantization_tables[quantization_level][v0];
 	v0d = color_unquantization_tables[quantization_level][v0e];
 	if ((v0d & 0x80) == 0)
+	{
 		return 0;
+	}
 
 	lowval = (lowval & ~0x7F) | (v0d & 0x7F);
 	diffval = highval - lowval;
 	if (diffval < 0 || diffval > 31)
+	{
 		return 0;
+	}
 
 	v1 = ((lowval >> 2) & 0xE0) | diffval;
 	v1e = color_quantization_tables[quantization_level][v1];
 	v1d = color_unquantization_tables[quantization_level][v1e];
 	if ((v1d & 0xE0) != (v1 & 0xE0))
+	{
 		return 0;;
+	}
 
 	output[0] = v0e;
 	output[1] = v1e;
@@ -1768,17 +1890,23 @@ static void quantize_hdr_alpha3(
 	int output[2],
 	int quantization_level
 ) {
-	int i;
-
 	if (alpha0 < 0)
+	{
 		alpha0 = 0;
+	}
 	else if (alpha0 > 65280)
+	{
 		alpha0 = 65280;
+	}
 
 	if (alpha1 < 0)
+	{
 		alpha1 = 0;
+	}
 	else if (alpha1 > 65280)
+	{
 		alpha1 = 65280;
+	}
 
 	int ialpha0 = astc::flt2int_rtn(alpha0);
 	int ialpha1 = astc::flt2int_rtn(alpha1);
@@ -1789,7 +1917,7 @@ static void quantize_hdr_alpha3(
 	int v6d, v7d;
 
 	// try to encode one of the delta submodes, in decreasing-precision order.
-	for (i = 2; i >= 0; i--)
+	for (int i = 2; i >= 0; i--)
 	{
 		val0 = (ialpha0 + (128 >> i)) >> (8 - i);
 		val1 = (ialpha1 + (128 >> i)) >> (8 - i);
@@ -1799,7 +1927,9 @@ static void quantize_hdr_alpha3(
 		v6d = color_unquantization_tables[quantization_level][v6e];
 
 		if ((v6 ^ v6d) & 0x80)
+		{
 			continue;
+		}
 
 		val0 = (val0 & ~0x7f) | (v6d & 0x7f);
 		diffval = val1 - val0;
@@ -1807,7 +1937,9 @@ static void quantize_hdr_alpha3(
 		int mask = 2 * cutoff - 1;
 
 		if (diffval < -cutoff || diffval >= cutoff)
+		{
 			continue;
+		}
 
 		v7 = ((i & 2) << 6) | ((val0 >> 7) << (6 - i)) | (diffval & mask);
 		v7e = color_quantization_tables[quantization_level][v7];
@@ -1816,7 +1948,9 @@ static void quantize_hdr_alpha3(
 		static const int testbits[3] = { 0xE0, 0xF0, 0xF8 };
 
 		if ((v7 ^ v7d) & testbits[i])
+		{
 			continue;
+		}
 
 		output[0] = v6e;
 		output[1] = v7e;
