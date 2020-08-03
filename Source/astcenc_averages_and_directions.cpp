@@ -22,6 +22,8 @@
 
 #include "astcenc_internal.h"
 
+#include <cassert>
+
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
 		#define _GNU_SOURCE
@@ -57,9 +59,9 @@ void compute_averages_and_directions_rgba(
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
 			float4 texel_datum = float4(blk->data_r[iwt],
-										blk->data_g[iwt],
-										blk->data_b[iwt],
-										blk->data_a[iwt]) * weight;
+			                            blk->data_g[iwt],
+			                            blk->data_b[iwt],
+			                            blk->data_a[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -78,19 +80,30 @@ void compute_averages_and_directions_rgba(
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
 			float4 texel_datum = float4(blk->data_r[iwt],
-										blk->data_g[iwt],
-										blk->data_b[iwt],
-										blk->data_a[iwt]);
+			                            blk->data_g[iwt],
+			                            blk->data_b[iwt],
+			                            blk->data_a[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
+			{
 				sum_xp = sum_xp + texel_datum;
+			}
+
 			if (texel_datum.y > 0.0f)
+			{
 				sum_yp = sum_yp + texel_datum;
+			}
+
 			if (texel_datum.z > 0.0f)
+			{
 				sum_zp = sum_zp + texel_datum;
+			}
+
 			if (texel_datum.w > 0.0f)
+			{
 				sum_wp = sum_wp + texel_datum;
+			}
 		}
 
 		float prod_xp = dot(sum_xp, sum_xp);
@@ -146,8 +159,8 @@ void compute_averages_and_directions_rgb(
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
 			float3 texel_datum = float3(blk->data_r[iwt],
-										blk->data_g[iwt],
-										blk->data_b[iwt]) * weight;
+			                            blk->data_g[iwt],
+			                            blk->data_b[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -166,8 +179,8 @@ void compute_averages_and_directions_rgb(
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
 			float3 texel_datum = float3(blk->data_r[iwt],
-										blk->data_g[iwt],
-										blk->data_b[iwt]);
+			                            blk->data_g[iwt],
+			                            blk->data_b[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -213,7 +226,7 @@ void compute_averages_and_directions_3_components(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const float3* color_scalefactors,
-	int omittedComponent,
+	int omitted_component,
 	float3* averages,
 	float3* directions
 ) {
@@ -222,21 +235,21 @@ void compute_averages_and_directions_3_components(
 	const float* data_vg;
 	const float* data_vb;
 
-	if (omittedComponent == 0)
+	if (omitted_component == 0)
 	{
 		texel_weights = ewb->texel_weight_gba;
 		data_vr = blk->data_g;
 		data_vg = blk->data_b;
 		data_vb = blk->data_a;
 	}
-	else if (omittedComponent == 1)
+	else if (omitted_component == 1)
 	{
 		texel_weights = ewb->texel_weight_rba;
 		data_vr = blk->data_r;
 		data_vg = blk->data_b;
 		data_vb = blk->data_a;
 	}
-	else if (omittedComponent == 2)
+	else if (omitted_component == 2)
 	{
 		texel_weights = ewb->texel_weight_rga;
 		data_vr = blk->data_r;
@@ -245,6 +258,7 @@ void compute_averages_and_directions_3_components(
 	}
 	else
 	{
+		assert(omitted_component == 3);
 		texel_weights = ewb->texel_weight_rgb;
 		data_vr = blk->data_r;
 		data_vg = blk->data_g;
@@ -265,8 +279,8 @@ void compute_averages_and_directions_3_components(
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
 			float3 texel_datum = float3(data_vr[iwt],
-										data_vg[iwt],
-										data_vb[iwt]) * weight;
+			                            data_vg[iwt],
+			                            data_vb[iwt]) * weight;
 			partition_weight += weight;
 
 			base_sum = base_sum + texel_datum;
@@ -277,7 +291,6 @@ void compute_averages_and_directions_3_components(
 		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.x, csf.y, csf.z);
 
-
 		float3 sum_xp = float3(0.0f, 0.0f, 0.0f);
 		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
 		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
@@ -287,8 +300,8 @@ void compute_averages_and_directions_3_components(
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
 			float3 texel_datum = float3(data_vr[iwt],
-										data_vg[iwt],
-										data_vb[iwt]);
+			                            data_vg[iwt],
+			                            data_vb[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.x > 0.0f)
@@ -363,6 +376,7 @@ void compute_averages_and_directions_2_components(
 	}
 	else // (component1 == 1 && component2 == 2)
 	{
+		assert(component1 == 1 && component2 == 2);
 		texel_weights = ewb->texel_weight_gb;
 		data_vr = blk->data_g;
 		data_vg = blk->data_b;

@@ -97,6 +97,7 @@ static void partition_table_zap_equal_elements(
 			}
 		}
 	}
+
 	delete[] canonicalizeds;
 }
 

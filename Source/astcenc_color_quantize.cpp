@@ -38,9 +38,14 @@ static inline int cqt_lookup(
 	int value
 ) {
 	if (value < 0)
+	{
 		value = 0;
+	}
 	else if (value > 255)
+	{
 		value = 255;
+	}
+
 	return color_quantization_tables[quantization_level][value];
 }
 
@@ -171,7 +176,9 @@ static int try_quantize_rgb_blue_contract(
 	// note that blue-contraction and quantization may itself change this order, which is why
 	// we must only test AFTER blue-contraction.
 	if (ru1 + gu1 + bu1 <= ru0 + gu0 + bu0)
+	{
 		return 0;
+	}
 
 	output[0] = ri1;
 	output[1] = ri0;
@@ -273,7 +280,9 @@ static int try_quantize_rgb_delta(
 
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
+	{
 		return 0;
+	}
 
 	// insert top bit of the base into the offset
 	r1d &= 0x7F;
@@ -296,27 +305,43 @@ static int try_quantize_rgb_delta(
 	int b1du = color_unquantization_tables[quantization_level][b1de];
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
+	{
 		return 0;
+	}
 
 	// check that the sum of the encoded offsets is nonnegative, else encoding fails
 	r1du &= 0x7f;
 	g1du &= 0x7f;
 	b1du &= 0x7f;
+
 	if (r1du & 0x40)
+	{
 		r1du -= 0x80;
+	}
+
 	if (g1du & 0x40)
+	{
 		g1du -= 0x80;
+	}
+
 	if (b1du & 0x40)
+	{
 		b1du -= 0x80;
+	}
+
 	if (r1du + g1du + b1du < 0)
+	{
 		return 0;
+	}
 
 	// check that the offsets produce legitimate sums as well.
 	r1du += r0b;
 	g1du += g0b;
 	b1du += b0b;
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
+	{
 		return 0;
+	}
 
 	// OK, we've come this far; we can now encode legitimate values.
 	output[0] = r0be;
@@ -359,8 +384,11 @@ static int try_quantize_rgb_delta_blue_contract(
 	r1 += (r1 - b1);
 	g1 += (g1 - b1);
 
-	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f || r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
+	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
+	    r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
+	{
 		return 0;
+	}
 
 	// transform r0 to unorm9
 	int r0a = astc::flt2int_rtn(r0);
@@ -403,7 +431,9 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
+	{
 		return 0;
+	}
 
 	// insert top bit of the base into the offset
 	r1d &= 0x7F;
@@ -426,28 +456,45 @@ static int try_quantize_rgb_delta_blue_contract(
 	int b1du = color_unquantization_tables[quantization_level][b1de];
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
+	{
 		return 0;
+	}
 
 	// check that the sum of the encoded offsets is negative, else encoding fails
 	// note that this is inverse of the test for non-blue-contracted RGB.
 	r1du &= 0x7f;
 	g1du &= 0x7f;
 	b1du &= 0x7f;
+
 	if (r1du & 0x40)
+	{
 		r1du -= 0x80;
+	}
+
 	if (g1du & 0x40)
+	{
 		g1du -= 0x80;
+	}
+
 	if (b1du & 0x40)
+	{
 		b1du -= 0x80;
+	}
+
 	if (r1du + g1du + b1du >= 0)
+	{
 		return 0;
+	}
 
 	// check that the offsets produce legitimate sums as well.
 	r1du += r0b;
 	g1du += g0b;
 	b1du += b0b;
+
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
+	{
 		return 0;
+	}
 
 	// OK, we've come this far; we can now encode legitimate values.
 	output[0] = r0be;
@@ -484,19 +531,27 @@ static int try_quantize_alpha_delta(
 	a1d <<= 1;
 	a1d -= a0b;
 	if (a1d > 63 || a1d < -64)
+	{
 		return 0;
+	}
 	a1d &= 0x7F;
 	a1d |= (a0b & 0x100) >> 1;
 	int a1de = color_quantization_tables[quantization_level][a1d];
 	int a1du = color_unquantization_tables[quantization_level][a1de];
 	if ((a1d ^ a1du) & 0xC0)
+	{
 		return 0;
+	}
 	a1du &= 0x7F;
 	if (a1du & 0x40)
+	{
 		a1du -= 0x80;
+	}
 	a1du += a0b;
 	if (a1du < 0 || a1du > 0x1FF)
+	{
 		return 0;
+	}
 	output[6] = a0be;
 	output[7] = a1de;
 	return 1;
@@ -532,9 +587,13 @@ int try_quantize_luminance_alpha_delta(
 	l1d -= l0b;
 	a1d -= a0b;
 	if (l1d > 63 || l1d < -64)
+	{
 		return 0;
+	}
 	if (a1d > 63 || a1d < -64)
+	{
 		return 0;
+	}
 	l1d &= 0x7F;
 	a1d &= 0x7F;
 	l1d |= (l0b & 0x100) >> 1;
@@ -545,21 +604,33 @@ int try_quantize_luminance_alpha_delta(
 	int l1du = color_unquantization_tables[quantization_level][l1de];
 	int a1du = color_unquantization_tables[quantization_level][a1de];
 	if ((l1d ^ l1du) & 0xC0)
+	{
 		return 0;
+	}
 	if ((a1d ^ a1du) & 0xC0)
+	{
 		return 0;
+	}
 	l1du &= 0x7F;
 	a1du &= 0x7F;
 	if (l1du & 0x40)
+	{
 		l1du -= 0x80;
+	}
 	if (a1du & 0x40)
+	{
 		a1du -= 0x80;
+	}
 	l1du += l0b;
 	a1du += a0b;
 	if (l1du < 0 || l1du > 0x1FF)
+	{
 		return 0;
+	}
 	if (a1du < 0 || a1du > 0x1FF)
+	{
 		return 0;
+	}
 	output[0] = l0be;
 	output[1] = l1de;
 	output[2] = a0be;
@@ -577,7 +648,9 @@ static int try_quantize_rgba_delta(
 	int alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quantization_level);
 
 	if (alpha_delta_res == 0)
+	{
 		return 0;
+	}
 
 	return try_quantize_rgb_delta(color0, color1, output, quantization_level);
 }
@@ -593,7 +666,9 @@ static int try_quantize_rgba_delta_blue_contract(
 	int alpha_delta_res = try_quantize_alpha_delta(color1, color0, output, quantization_level);
 
 	if (alpha_delta_res == 0)
+	{
 		return 0;
+	}
 
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quantization_level);
 }

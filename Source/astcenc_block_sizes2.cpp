@@ -74,7 +74,10 @@ static int decode_block_mode_2d(
 	{
 		base_quant_mode |= ((blockmode >> 2) & 3) << 1;
 		if (((blockmode >> 2) & 3) == 0)
+		{
 			return 0;
+		}
+
 		int B = (blockmode >> 9) & 3;
 		switch ((blockmode >> 7) & 3)
 		{
@@ -116,7 +119,9 @@ static int decode_block_mode_2d(
 
 	int weightbits = compute_ise_bitcount(weight_count, (quantization_method) qmode);
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK || weightbits < MIN_WEIGHT_BITS_PER_BLOCK || weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
+	{
 		return 0;
+	}
 
 	*Nval = N;
 	*Mval = M;
@@ -154,7 +159,10 @@ static int decode_block_mode_3d(
 	{
 		base_quant_mode |= ((blockmode >> 2) & 3) << 1;
 		if (((blockmode >> 2) & 3) == 0)
+		{
 			return 0;
+		}
+
 		int B = (blockmode >> 9) & 3;
 		if (((blockmode >> 7) & 3) != 3)
 		{
@@ -207,7 +215,9 @@ static int decode_block_mode_3d(
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
 	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
 	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
+	{
 		return 0;
+	}
 
 	*Nval = N;
 	*Mval = M;
@@ -329,7 +339,9 @@ static void initialize_decimation_table_2d(
 				int dttw = dt->texel_weights[texel][k];
 				float dttwf = dt->texel_weights_float[texel][k];
 				if (dttw == i && dttwf != 0.0f)
+				{
 					swap_idx = k;
+				}
 				dt->texel_weights_texel[i][j][k] = (uint8_t)dttw;
 				dt->texel_weights_float_texel[i][j][k] = dttwf;
 			}
@@ -463,7 +475,6 @@ static void initialize_decimation_table_3d(
 					w2 = ft - fs;
 					w3 = fs;
 					break;
-
 				default:
 					s1 = NM;
 					s2 = N;
@@ -537,7 +548,9 @@ static void initialize_decimation_table_3d(
 				int dttw = dt->texel_weights[texel][k];
 				float dttwf = dt->texel_weights_float[texel][k];
 				if (dttw == i && dttwf != 0.0f)
+				{
 					swap_idx = k;
+				}
 				dt->texel_weights_texel[i][j][k] = (uint8_t)dttw;
 				dt->texel_weights_float_texel[i][j][k] = dttwf;
 			}
@@ -598,10 +611,16 @@ static void construct_block_size_descriptor_2d(
 			{
 				int bits_1plane = compute_ise_bitcount(weight_count, (quantization_method) i);
 				int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
+
 				if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
+				{
 					maxprec_1plane = i;
+				}
+
 				if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
+				{
 					maxprec_2planes = i;
+				}
 			}
 
 			if (2 * x_weights * y_weights > MAX_WEIGHTS_PER_BLOCK)
@@ -651,7 +670,9 @@ static void construct_block_size_descriptor_2d(
 		if (decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quantization_mode))
 		{
 			if (x_weights > xdim || y_weights > ydim)
+			{
 				permit_encode = 0;
+			}
 		}
 		else
 		{
@@ -680,7 +701,9 @@ static void construct_block_size_descriptor_2d(
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 			bsd->block_modes[i].percentile = percentiles[i];
 			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
+			{
 				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
+			}
 #else
 			bsd->block_modes[i].percentile = 0.0f;
 #endif
@@ -765,7 +788,10 @@ static void construct_block_size_descriptor_3d(
 			for (int z_weights = 2; z_weights <= 6; z_weights++)
 			{
 				if ((x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
+				{
 					continue;
+				}
+
 				decimation_table *dt = new decimation_table;
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
 				initialize_decimation_table_3d(xdim, ydim, zdim, x_weights, y_weights, z_weights, dt);
@@ -778,14 +804,22 @@ static void construct_block_size_descriptor_3d(
 				{
 					int bits_1plane = compute_ise_bitcount(weight_count, (quantization_method) i);
 					int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
+
 					if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
+					{
 						maxprec_1plane = i;
+					}
+
 					if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
+					{
 						maxprec_2planes = i;
+					}
 				}
 
 				if ((2 * x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
+				{
 					maxprec_2planes = -1;
+				}
 
 				bsd->permit_encode[decimation_mode_count] = (x_weights <= xdim && y_weights <= ydim && z_weights <= zdim);
 
@@ -826,7 +860,9 @@ static void construct_block_size_descriptor_3d(
 		if (decode_block_mode_3d(i, &x_weights, &y_weights, &z_weights, &is_dual_plane, &quantization_mode))
 		{
 			if (x_weights > xdim || y_weights > ydim || z_weights > zdim)
+			{
 				permit_encode = 0;
+			}
 		}
 		else
 		{
@@ -853,7 +889,9 @@ static void construct_block_size_descriptor_3d(
 
 			bsd->block_modes[i].percentile = 0.0f; // No percentile table
 			if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
+			{
 				bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
+			}
 		}
 	}
 
