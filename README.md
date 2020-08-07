@@ -25,17 +25,6 @@ This project is licensed under the Apache 2.0 license. By downloading any
 component from this repository you acknowledge that you accept terms specified
 in the [LICENSE.txt](LICENSE.txt) file.
 
-# Branches
-
-The `master` branch is an active development branch for the next major release
-of the compressor; version 2.x. It aims to be a stable branch, but as it is
-still under development expect changes to both the command line and the
-quality-performance trade offs the compressor is making.
-
-The `1.x` branch is a maintenance branch for the 1.x release series. It is
-stable and we will now only land bug fixes for this branch; no new
-functionality or performance improvements should be expected.
-
 # Encoder feature support
 
 The encoder supports compression of low dynamic range (BMP, JPEG, PNG, TGA) and
@@ -72,6 +61,8 @@ Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
+The latest stable release is version 2.0.
+
 ## astcenc 2.x binaries
 
 The current builds of the astcenc 2.x series are provided as multiple binaries,
@@ -89,6 +80,14 @@ not universally available.
 It is worth noting that the three binaries do not produce identical output
 images; there are minor output differences caused by variations in
 floating-point rounding.
+
+## Repository branches
+
+The `master` branch is an active development branch for the compressor. It aims
+to be a stable branch, but as it is used for development expect it to change.
+
+The `1.x` branch is a maintenance branch for the 1.x release series. It is
+no longer under active development.
 
 # Getting started
 
