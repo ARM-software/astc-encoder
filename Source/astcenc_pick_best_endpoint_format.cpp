@@ -806,7 +806,10 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int format_of_choice[4][21][4];
 	for (int i = 0; i < partition_count; i++)
 	{
-		compute_color_error_for_every_integer_count_and_quantization_level(encode_hdr_rgb, encode_hdr_alpha, i, pt, &(eci[i]), ep, error_weightings, best_error[i], format_of_choice[i]);
+		compute_color_error_for_every_integer_count_and_quantization_level(
+		    encode_hdr_rgb, encode_hdr_alpha, i,
+		    pt, &(eci[i]), ep, error_weightings, best_error[i],
+		    format_of_choice[i]);
 	}
 
 	float errors_of_best_combination[MAX_WEIGHT_MODES];
@@ -828,7 +831,9 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
-			one_partition_find_best_combination_for_bitcount(best_error[0], format_of_choice[0], qwt_bitcounts[i], &best_quantization_level, &best_format, &error_of_best_combination);
+			one_partition_find_best_combination_for_bitcount(
+			    best_error[0], format_of_choice[0], qwt_bitcounts[i],
+			    &best_quantization_level, &best_format, &error_of_best_combination);
 			error_of_best_combination += qwt_errors[i];
 
 			errors_of_best_combination[i] = error_of_best_combination;
@@ -848,7 +853,8 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		float combined_best_error[21][7];
 		int formats_of_choice[21][7][2];
 
-		two_partitions_find_best_combination_for_every_quantization_and_integer_count(best_error, format_of_choice, combined_best_error, formats_of_choice);
+		two_partitions_find_best_combination_for_every_quantization_and_integer_count(
+		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 
 		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
@@ -859,8 +865,10 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
-			two_partitions_find_best_combination_for_bitcount(combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			                                                  &best_quantization_level, &best_quantization_level_mod, best_formats, &error_of_best_combination);
+			two_partitions_find_best_combination_for_bitcount(
+			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
+			    &best_quantization_level, &best_quantization_level_mod,
+			    best_formats, &error_of_best_combination);
 
 			error_of_best_combination += qwt_errors[i];
 
@@ -882,7 +890,8 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		float combined_best_error[21][10];
 		int formats_of_choice[21][10][3];
 
-		three_partitions_find_best_combination_for_every_quantization_and_integer_count(best_error, format_of_choice, combined_best_error, formats_of_choice);
+		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
+		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
 		{
@@ -892,8 +901,11 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
-			three_partitions_find_best_combination_for_bitcount(combined_best_error,
-			                                                    formats_of_choice, qwt_bitcounts[i], &best_quantization_level, &best_quantization_level_mod, best_formats, &error_of_best_combination);
+			three_partitions_find_best_combination_for_bitcount(
+			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
+			    &best_quantization_level, &best_quantization_level_mod,
+			    best_formats, &error_of_best_combination);
+
 			error_of_best_combination += qwt_errors[i];
 
 			errors_of_best_combination[i] = error_of_best_combination;
@@ -915,7 +927,8 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		float combined_best_error[21][13];
 		int formats_of_choice[21][13][4];
 
-		four_partitions_find_best_combination_for_every_quantization_and_integer_count(best_error, format_of_choice, combined_best_error, formats_of_choice);
+		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
+		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
 		{
@@ -924,8 +937,11 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				errors_of_best_combination[i] = 1e30f;
 				continue;
 			}
-			four_partitions_find_best_combination_for_bitcount(combined_best_error,
-			                                                   formats_of_choice, qwt_bitcounts[i], &best_quantization_level, &best_quantization_level_mod, best_formats, &error_of_best_combination);
+			four_partitions_find_best_combination_for_bitcount(
+			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
+			    &best_quantization_level, &best_quantization_level_mod,
+			    best_formats, &error_of_best_combination);
+
 			error_of_best_combination += qwt_errors[i];
 
 			errors_of_best_combination[i] = error_of_best_combination;
