@@ -255,8 +255,8 @@ static void rgb_scale_unpack(
 static void rgb_scale_alpha_unpack(
 	const int input[6],
 	int quantization_level,
-	uint4 * output0,
-	uint4 * output1
+	uint4* output0,
+	uint4* output1
 ) {
 	rgb_scale_unpack(input, quantization_level, output0, output1);
 	output0->w = color_unquantization_tables[quantization_level][input[4]];
@@ -497,7 +497,7 @@ static void hdr_rgb_unpack3(
 	const int input[6],
 	int quantization_level,
 	uint4* output0,
-	uint4 * output1
+	uint4* output1
 ) {
 
 	int v0 = color_unquantization_tables[quantization_level][input[0]];
@@ -741,8 +741,8 @@ static void hdr_luminance_large_range_unpack(
 static void hdr_alpha_unpack(
 	const int input[2],
 	int quantization_level,
-	int *a0,
-	int *a1
+	int* output0,
+	int* output1
 ) {
 
 	int v6 = color_unquantization_tables[quantization_level][input[0]];
@@ -753,8 +753,8 @@ static void hdr_alpha_unpack(
 	v7 &= 0x7F;
 	if (selector == 3)
 	{
-		*a0 = v6 << 5;
-		*a1 = v7 << 5;
+		*output0 = v6 << 5;
+		*output1 = v7 << 5;
 	}
 	else
 	{
@@ -771,12 +771,12 @@ static void hdr_alpha_unpack(
 		else if (v7 > 0xFFF)
 			v7 = 0xFFF;
 
-		*a0 = v6;
-		*a1 = v7;
+		*output0 = v6;
+		*output1 = v7;
 	}
 
-	*a0 <<= 4;
-	*a1 <<= 4;
+	*output0 <<= 4;
+	*output1 <<= 4;
 }
 
 static void hdr_rgb_hdr_alpha_unpack3(

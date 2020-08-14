@@ -814,8 +814,8 @@ static void quantize_luminance_alpha(
 static inline void quantize_and_unquantize_retain_top_two_bits(
 	int quantization_level,
 	int value_to_quantize,	// 0 to 255.
-	int *quantized_value,
-	int *unquantized_value
+	int* quantized_value,
+	int* unquantized_value
 ) {
 	int perform_loop;
 	int quantval;
