@@ -72,9 +72,8 @@ static float stepsizes_sqr[ANGULAR_STEPS];
 
 static int max_angular_steps_needed_for_quant_level[13];
 
-// we store sine/cosine values for 64 possible weight values; this causes
-// slight quality loss compared to using sin() and cos() directly.
-
+// Store a reduced sin/cos table for 64 possible weight values; this causes
+// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
 #define SINCOS_STEPS 64
 
 static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
@@ -135,7 +134,7 @@ static void compute_angular_offsets(
 		float sample_weight = sample_weights[i];
 		if32 p;
 		p.f = (sample * (SINCOS_STEPS - 1.0f)) + 12582912.0f;
-		unsigned int isample = p.u & 0x3F;
+		unsigned int isample = p.u & (SINCOS_STEPS - 1);
 
 		const float *sinptr = sin_table[isample];
 		const float *cosptr = cos_table[isample];
