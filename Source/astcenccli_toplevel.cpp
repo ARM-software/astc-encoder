@@ -255,15 +255,20 @@ static astcenc_image* load_uncomp_file(
 			// Combine 2D source images into one 3D image; skipping padding slices
 			for (unsigned int z = dim_pad; z < dim_z + dim_pad; z++)
 			{
-				if (bitness == 8)
+				if (image->data_type == ASTCENC_TYPE_U8)
 				{
+					uint8_t*** data8 = static_cast<uint8_t***>(image->data);
+					uint8_t*** data8src = static_cast<uint8_t***>(slices[z - dim_pad]->data);
 					size_t copy_size = slice_size * 4 * sizeof(uint8_t);
-					memcpy(*image->data8[z], *slices[z - dim_pad]->data8[0], copy_size);
+					memcpy(*data8[z], *data8src[0], copy_size);
 				}
-				else
+				else // if (image->data_type == ASTCENC_TYPE_F16)
 				{
+					assert(image->data_type == ASTCENC_TYPE_F16);
+					uint16_t*** data16 = static_cast<uint16_t***>(image->data);
+					uint16_t*** data16src = static_cast<uint16_t***>(slices[z - dim_pad]->data);
 					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
-					memcpy(*image->data16[z], *slices[z - dim_pad]->data16[0], copy_size);
+					memcpy(*data16[z], *data16src[0], copy_size);
 				}
 			}
 

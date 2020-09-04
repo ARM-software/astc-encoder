@@ -107,10 +107,8 @@ void imageblock_initialize_deriv(
 	int pixelcount,
 	float4* dptr
 ) {
-	int i;
-
 	const float *fptr = pb->orig_data;
-	for (i = 0; i < pixelcount; i++)
+	for (int i = 0; i < pixelcount; i++)
 	{
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
@@ -126,19 +124,31 @@ void imageblock_initialize_deriv(
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
 			if (rderiv < (1.0f / 32.0f))
+			{
 				rderiv = (1.0f / 32.0f);
+			}
 			else if (rderiv > 33554432.0f)
+			{
 				rderiv = 33554432.0f;
+			}
 
 			if (gderiv < (1.0f / 32.0f))
+			{
 				gderiv = (1.0f / 32.0f);
+			}
 			else if (gderiv > 33554432.0f)
+			{
 				gderiv = 33554432.0f;
+			}
 
 			if (bderiv < (1.0f / 32.0f))
+			{
 				bderiv = (1.0f / 32.0f);
+			}
 			else if (bderiv > 33554432.0f)
+			{
 				bderiv = 33554432.0f;
+			}
 
 			dptr->x = rderiv;
 			dptr->y = gderiv;
@@ -159,9 +169,13 @@ void imageblock_initialize_deriv(
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
 			if (aderiv < (1.0f / 32.0f))
+			{
 				aderiv = (1.0f / 32.0f);
+			}
 			else if (aderiv > 33554432.0f)
+			{
 				aderiv = 33554432.0f;
+			}
 
 			dptr->w = aderiv;
 		}
@@ -262,8 +276,6 @@ void fetch_imageblock(
 	int ysize = img.dim_y + 2 * img.dim_pad;
 	int zsize = (img.dim_z == 1) ? 1 : img.dim_z + 2 * img.dim_pad;
 
-	int x, y, z, i;
-
 	pb->xpos = xpos;
 	pb->ypos = ypos;
 	pb->zpos = zpos;
@@ -279,13 +291,14 @@ void fetch_imageblock(
 	data[4] = 0;
 	data[5] = 1;
 
-	if (img.data8)
+	if (img.data_type == ASTCENC_TYPE_U8)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -304,10 +317,10 @@ void fetch_imageblock(
 					if (zi >= zsize)
 						zi = zsize - 1;
 
-					int r = img.data8[zi][yi][4 * xi];
-					int g = img.data8[zi][yi][4 * xi + 1];
-					int b = img.data8[zi][yi][4 * xi + 2];
-					int a = img.data8[zi][yi][4 * xi + 3];
+					int r = data8[zi][yi][4 * xi];
+					int g = data8[zi][yi][4 * xi + 1];
+					int b = data8[zi][yi][4 * xi + 2];
+					int a = data8[zi][yi][4 * xi + 3];
 
 					data[0] = r / 255.0f;
 					data[1] = g / 255.0f;
@@ -324,13 +337,15 @@ void fetch_imageblock(
 			}
 		}
 	}
-	else if (img.data16)
+	else // if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		assert(img.data_type == ASTCENC_TYPE_F16);
+		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -349,10 +364,10 @@ void fetch_imageblock(
 					if (zi >= ysize)
 						zi = zsize - 1;
 
-					int r = img.data16[zi][yi][4 * xi];
-					int g = img.data16[zi][yi][4 * xi + 1];
-					int b = img.data16[zi][yi][4 * xi + 2];
-					int a = img.data16[zi][yi][4 * xi + 3];
+					int r = data16[zi][yi][4 * xi];
+					int g = data16[zi][yi][4 * xi + 1];
+					int b = data16[zi][yi][4 * xi + 2];
+					int a = data16[zi][yi][4 * xi + 3];
 
 					float rf = sf16_to_float(r);
 					float gf = sf16_to_float(g);
@@ -384,7 +399,7 @@ void fetch_imageblock(
 	int alpha_lns = decode_mode == ASTCENC_PRF_HDR;
 
 	// impose the choice on every pixel when encoding.
-	for (i = 0; i < bsd->texel_count; i++)
+	for (int i = 0; i < bsd->texel_count; i++)
 	{
 		pb->rgb_lns[i] = rgb_lns;
 		pb->alpha_lns[i] = alpha_lns;
@@ -410,19 +425,19 @@ void write_imageblock(
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
-	int x, y, z;
 
 	float data[7];
 	data[4] = 0.0f;
 	data[5] = 1.0f;
 
-	if (img.data8)
+	if (img.data_type == ASTCENC_TYPE_U8)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -433,10 +448,10 @@ void write_imageblock(
 						if (*nptr)
 						{
 							// NaN-pixel, but we can't display it. Display purple instead.
-							img.data8[zi][yi][4 * xi] = 0xFF;
-							img.data8[zi][yi][4 * xi + 1] = 0x00;
-							img.data8[zi][yi][4 * xi + 2] = 0xFF;
-							img.data8[zi][yi][4 * xi + 3] = 0xFF;
+							data8[zi][yi][4 * xi] = 0xFF;
+							data8[zi][yi][4 * xi + 1] = 0x00;
+							data8[zi][yi][4 * xi + 2] = 0xFF;
+							data8[zi][yi][4 * xi + 3] = 0xFF;
 						}
 						else
 						{
@@ -449,18 +464,31 @@ void write_imageblock(
 							float ycoord = (data[3] * 2.0f) - 1.0f;
 							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
 							if (zcoord < 0.0f)
+							{
 								zcoord = 0.0f;
+							}
 							data[6] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
 
 							// clamp to [0,1]
 							if (data[0] > 1.0f)
+							{
 								data[0] = 1.0f;
+							}
+
 							if (data[1] > 1.0f)
+							{
 								data[1] = 1.0f;
+							}
+
 							if (data[2] > 1.0f)
+							{
 								data[2] = 1.0f;
+							}
+
 							if (data[3] > 1.0f)
+							{
 								data[3] = 1.0f;
+							}
 
 							// pack the data
 							int ri = astc::flt2int_rtn(data[swz.r] * 255.0f);
@@ -468,10 +496,10 @@ void write_imageblock(
 							int bi = astc::flt2int_rtn(data[swz.b] * 255.0f);
 							int ai = astc::flt2int_rtn(data[swz.a] * 255.0f);
 
-							img.data8[zi][yi][4 * xi] = ri;
-							img.data8[zi][yi][4 * xi + 1] = gi;
-							img.data8[zi][yi][4 * xi + 2] = bi;
-							img.data8[zi][yi][4 * xi + 3] = ai;
+							data8[zi][yi][4 * xi] = ri;
+							data8[zi][yi][4 * xi + 1] = gi;
+							data8[zi][yi][4 * xi + 2] = bi;
+							data8[zi][yi][4 * xi + 3] = ai;
 						}
 					}
 					fptr += 4;
@@ -480,13 +508,15 @@ void write_imageblock(
 			}
 		}
 	}
-	else if (img.data16)
+	else // if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		for (z = 0; z < bsd->zdim; z++)
+		assert(img.data_type == ASTCENC_TYPE_F16);
+		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
 		{
-			for (y = 0; y < bsd->ydim; y++)
+			for (int y = 0; y < bsd->ydim; y++)
 			{
-				for (x = 0; x < bsd->xdim; x++)
+				for (int x = 0; x < bsd->xdim; x++)
 				{
 					int xi = xpos + x;
 					int yi = ypos + y;
@@ -496,10 +526,10 @@ void write_imageblock(
 					{
 						if (*nptr)
 						{
-							img.data16[zi][yi][4 * xi] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 1] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 2] = 0xFFFF;
-							img.data16[zi][yi][4 * xi + 3] = 0xFFFF;
+							data16[zi][yi][4 * xi] = 0xFFFF;
+							data16[zi][yi][4 * xi + 1] = 0xFFFF;
+							data16[zi][yi][4 * xi + 2] = 0xFFFF;
+							data16[zi][yi][4 * xi + 3] = 0xFFFF;
 						}
 
 						else
@@ -513,17 +543,19 @@ void write_imageblock(
 							float yN = (data[3] * 2.0f) - 1.0f;
 							float zN = 1.0f - xN * xN - yN * yN;
 							if (zN < 0.0f)
+							{
 								zN = 0.0f;
+							}
 							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
 
 							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
 							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
 							int b = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
 							int a = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
-							img.data16[zi][yi][4 * xi] = r;
-							img.data16[zi][yi][4 * xi + 1] = g;
-							img.data16[zi][yi][4 * xi + 2] = b;
-							img.data16[zi][yi][4 * xi + 3] = a;
+							data16[zi][yi][4 * xi] = r;
+							data16[zi][yi][4 * xi + 1] = g;
+							data16[zi][yi][4 * xi + 2] = b;
+							data16[zi][yi][4 * xi + 3] = a;
 						}
 					}
 					fptr += 4;
@@ -544,7 +576,6 @@ void update_imageblock_flags(
 	int ydim,
 	int zdim
 ) {
-	int i;
 	float red_min = 1e38f, red_max = -1e38f;
 	float green_min = 1e38f, green_max = -1e38f;
 	float blue_min = 1e38f, blue_max = -1e38f;
@@ -554,7 +585,7 @@ void update_imageblock_flags(
 
 	int grayscale = 1;
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float red = pb->data_r[i];
 		float green = pb->data_g[i];
@@ -578,7 +609,9 @@ void update_imageblock_flags(
 			alpha_max = alpha;
 
 		if (grayscale == 1 && (red != green || red != blue))
+		{
 			grayscale = 0;
+		}
 	}
 
 	pb->red_min = red_min;

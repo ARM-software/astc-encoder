@@ -72,9 +72,8 @@ static float stepsizes_sqr[ANGULAR_STEPS];
 
 static int max_angular_steps_needed_for_quant_level[13];
 
-// we store sine/cosine values for 64 possible weight values; this causes
-// slight quality loss compared to using sin() and cos() directly.
-
+// Store a reduced sin/cos table for 64 possible weight values; this causes
+// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
 #define SINCOS_STEPS 64
 
 static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
@@ -82,14 +81,13 @@ static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
 void prepare_angular_tables()
 {
-	int i, j;
 	int max_angular_steps_needed_for_quant_steps[40];
-	for (i = 0; i < ANGULAR_STEPS; i++)
+	for (int i = 0; i < ANGULAR_STEPS; i++)
 	{
 		stepsizes[i] = 1.0f / angular_steppings[i];
 		stepsizes_sqr[i] = stepsizes[i] * stepsizes[i];
 
-		for (j = 0; j < SINCOS_STEPS; j++)
+		for (int j = 0; j < SINCOS_STEPS; j++)
 		{
 			sin_table[j][i] = static_cast<float>(sinf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
 			cos_table[j][i] = static_cast<float>(cosf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
@@ -104,8 +102,10 @@ void prepare_angular_tables()
 	// weight space, so we are better off matching 33 weights than 32.
 	static const int steps_of_level[] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36 };
 
-	for (i = 0; i < 13; i++)
+	for (int i = 0; i < 13; i++)
+	{
 		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[steps_of_level[i]];
+	}
 }
 
 // function to compute angular sums; then, from the
@@ -118,30 +118,28 @@ static void compute_angular_offsets(
 	int max_angular_steps,
 	float* offsets
 ) {
-	int i, j;
-
 	float anglesum_x[ANGULAR_STEPS];
 	float anglesum_y[ANGULAR_STEPS];
 
-	for (i = 0; i < max_angular_steps; i++)
+	for (int i = 0; i < max_angular_steps; i++)
 	{
 		anglesum_x[i] = 0;
 		anglesum_y[i] = 0;
 	}
 
 	// compute the angle-sums.
-	for (i = 0; i < samplecount; i++)
+	for (int i = 0; i < samplecount; i++)
 	{
 		float sample = samples[i];
 		float sample_weight = sample_weights[i];
 		if32 p;
 		p.f = (sample * (SINCOS_STEPS - 1.0f)) + 12582912.0f;
-		unsigned int isample = p.u & 0x3F;
+		unsigned int isample = p.u & (SINCOS_STEPS - 1);
 
 		const float *sinptr = sin_table[isample];
 		const float *cosptr = cos_table[isample];
 
-		for (j = 0; j < max_angular_steps; j++)
+		for (int j = 0; j < max_angular_steps; j++)
 		{
 			float cp = cosptr[j];
 			float sp = sinptr[j];
@@ -152,7 +150,7 @@ static void compute_angular_offsets(
 	}
 
 	// post-process the angle-sums
-	for (i = 0; i < max_angular_steps; i++)
+	for (int i = 0; i < max_angular_steps; i++)
 	{
 		float angle = astc::atan2(anglesum_y[i], anglesum_x[i]);
 		offsets[i] = angle * (stepsizes[i] * (1.0f / (2.0f * (float)M_PI)));
@@ -324,8 +322,6 @@ void compute_angular_endpoints_for_quantization_levels(
 	float low_value[12],
 	float high_value[12]
 ) {
-	int i;
-
 	static const int quantization_steps_for_level[13] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36 };
 
 	int max_quantization_steps = quantization_steps_for_level[max_quantization_level + 1];
@@ -349,14 +345,14 @@ void compute_angular_endpoints_for_quantization_levels(
 	float best_errors[40];
 	int best_scale[40];
 	uint8_t cut_low_weight[40];
-	for (i = 0; i < (max_quantization_steps + 4); i++)
+	for (int i = 0; i < (max_quantization_steps + 4); i++)
 	{
 		best_scale[i] = -1;	// Indicates no solution found
 		best_errors[i] = 1e30f;
 		cut_low_weight[i] = 0;
 	}
 
-	for (i = 0; i < max_angular_steps; i++)
+	for (int i = 0; i < max_angular_steps; i++)
 	{
 		int idx_span = weight_span[i];
 
@@ -396,7 +392,7 @@ void compute_angular_endpoints_for_quantization_levels(
 
 	// if we got a better error-value for a low sample count than for a high one,
 	// use the low sample count error value for the higher sample count as well.
-	for (i = 3; i <= max_quantization_steps; i++)
+	for (int i = 3; i <= max_quantization_steps; i++)
 	{
 		if (best_errors[i] > best_errors[i - 1])
 		{
@@ -406,7 +402,7 @@ void compute_angular_endpoints_for_quantization_levels(
 		}
 	}
 
-	for (i = 0; i <= max_quantization_level; i++)
+	for (int i = 0; i <= max_quantization_level; i++)
 	{
 		int q = quantization_steps_for_level[i];
 		int bsi = best_scale[q];
@@ -440,11 +436,10 @@ void compute_angular_endpoints_1plane(
 	float low_value[MAX_WEIGHT_MODES],
 	float high_value[MAX_WEIGHT_MODES]
 ) {
-	int i;
 	float low_values[MAX_DECIMATION_MODES][12];
 	float high_values[MAX_DECIMATION_MODES][12];
 
-	for (i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
@@ -452,17 +447,22 @@ void compute_angular_endpoints_1plane(
 		float percentile = bsd->decimation_mode_percentile[i];
 		int permit_encode = bsd->permit_encode[i];
 		if (permit_encode == 0 || samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		{
 			continue;
+		}
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
-														  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
-														  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values[i], high_values[i]);
+		                                                  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
+		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values[i], high_values[i]);
 	}
 
-	for (i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
 	{
 		if (bsd->block_modes[i].is_dual_plane != 0 || bsd->block_modes[i].percentile > mode_cutoff)
+		{
 			continue;
+		}
+
 		int quant_mode = bsd->block_modes[i].quantization_mode;
 		int decim_mode = bsd->block_modes[i].decimation_mode;
 
@@ -481,35 +481,40 @@ void compute_angular_endpoints_2planes(
 	float low_value2[MAX_WEIGHT_MODES],
 	float high_value2[MAX_WEIGHT_MODES]
 ) {
-	int i;
 	float low_values1[MAX_DECIMATION_MODES][12];
 	float high_values1[MAX_DECIMATION_MODES][12];
 	float low_values2[MAX_DECIMATION_MODES][12];
 	float high_values2[MAX_DECIMATION_MODES][12];
 
-	for (i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
 		int quant_mode = bsd->decimation_mode_maxprec_2planes[i];
 		float percentile = bsd->decimation_mode_percentile[i];
 		int permit_encode = bsd->permit_encode[i];
+
 		if (permit_encode == 0 || samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		{
 			continue;
+		}
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
-														  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
-														  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values1[i], high_values1[i]);
+		                                                  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
+		                                                  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values1[i], high_values1[i]);
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
-														  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
-														  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values2[i], high_values2[i]);
+		                                                  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
+		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values2[i], high_values2[i]);
 	}
 
-	for (i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
 	{
 		if (bsd->block_modes[i].is_dual_plane != 1 || bsd->block_modes[i].percentile > mode_cutoff)
+		{
 			continue;
+		}
+
 		int quant_mode = bsd->block_modes[i].quantization_mode;
 		int decim_mode = bsd->block_modes[i].decimation_mode;
 

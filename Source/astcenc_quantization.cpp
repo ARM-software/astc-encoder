@@ -541,34 +541,39 @@ int quantization_mode_table[17][128];
 
 void build_quantization_mode_table()
 {
-	int i, j;
-	for (i = 0; i <= 16; i++)
+	for (int i = 0; i <= 16; i++)
 	{
-		for (j = 0; j < 128; j++)
+		for (int j = 0; j < 128; j++)
 		{
 			quantization_mode_table[i][j] = -1;
 		}
 	}
 
-	for (i = 0; i < 21; i++)
+	for (int i = 0; i < 21; i++)
 	{
-		for (j = 1; j <= 16; j++)
+		for (int j = 1; j <= 16; j++)
 		{
 			int p = compute_ise_bitcount(2 * j, (quantization_method) i);
 			if (p < 128)
+			{
 				quantization_mode_table[j][p] = i;
+			}
 		}
 	}
 
-	for (i = 0; i <= 16; i++)
+	for (int i = 0; i <= 16; i++)
 	{
 		int largest_value_so_far = -1;
-		for (j = 0; j < 128; j++)
+		for (int j = 0; j < 128; j++)
 		{
 			if (quantization_mode_table[i][j] > largest_value_so_far)
+			{
 				largest_value_so_far = quantization_mode_table[i][j];
+			}
 			else
+			{
 				quantization_mode_table[i][j] = largest_value_so_far;
+			}
 		}
 	}
 }

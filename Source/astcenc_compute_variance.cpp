@@ -169,8 +169,10 @@ static void compute_pixel_region_variance(
 	#define VARBUF2(z, y, x) varbuf2[z * zst + y * yst + x]
 
 	// Load N and N^2 values into the work buffers
-	if (img->data8)
+	if (img->data_type == ASTCENC_TYPE_U8)
 	{
+		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
+
 		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -185,10 +187,10 @@ static void compute_pixel_region_variance(
 				for (int x = 1; x < padsize_x; x++)
 				{
 					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
-					data[0] = img->data8[z_src][y_src][4 * x_src + 0];
-					data[1] = img->data8[z_src][y_src][4 * x_src + 1];
-					data[2] = img->data8[z_src][y_src][4 * x_src + 2];
-					data[3] = img->data8[z_src][y_src][4 * x_src + 3];
+					data[0] = data8[z_src][y_src][4 * x_src + 0];
+					data[1] = data8[z_src][y_src][4 * x_src + 1];
+					data[2] = data8[z_src][y_src][4 * x_src + 2];
+					data[3] = data8[z_src][y_src][4 * x_src + 3];
 
 					uint8_t r = data[swz.r];
 					uint8_t g = data[swz.g];
@@ -214,8 +216,11 @@ static void compute_pixel_region_variance(
 			}
 		}
 	}
-	else
+	else //if (img->data_type == ASTCENC_TYPE_F16)
 	{
+		assert(img->data_type == ASTCENC_TYPE_F16);
+		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
+
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		uint16_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -231,10 +236,10 @@ static void compute_pixel_region_variance(
 				for (int x = 1; x < padsize_x; x++)
 				{
 					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
-					data[0] = img->data16[z_src][y_src][4 * x_src];
-					data[1] = img->data16[z_src][y_src][4 * x_src + 1];
-					data[2] = img->data16[z_src][y_src][4 * x_src + 2];
-					data[3] = img->data16[z_src][y_src][4 * x_src + 3];
+					data[0] = data16[z_src][y_src][4 * x_src];
+					data[1] = data16[z_src][y_src][4 * x_src + 1];
+					data[2] = data16[z_src][y_src][4 * x_src + 2];
+					data[3] = data16[z_src][y_src][4 * x_src + 3];
 
 					uint16_t r = data[swz.r];
 					uint16_t g = data[swz.g];

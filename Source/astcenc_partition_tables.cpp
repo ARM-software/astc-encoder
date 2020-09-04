@@ -31,20 +31,25 @@ static void gen_canonicalized_partition_table(
 	const uint8_t* partition_table,
 	uint64_t canonicalized[7]
 ) {
-	int i;
-	for (i = 0; i < 7; i++)
+	for (int i = 0; i < 7; i++)
+	{
 		canonicalized[i] = 0;
+	}
 
 	int mapped_index[4];
 	int map_weight_count = 0;
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
+	{
 		mapped_index[i] = -1;
+	}
 
-	for (i = 0; i < texel_count; i++)
+	for (int i = 0; i < texel_count; i++)
 	{
 		int index = partition_table[i];
 		if (mapped_index[index] == -1)
+		{
 			mapped_index[index] = map_weight_count++;
+		}
 		uint64_t xlat_index = mapped_index[index];
 		canonicalized[i >> 5] |= xlat_index << (2 * (i & 0x1F));
 	}
@@ -54,43 +59,35 @@ static int compare_canonicalized_partition_tables(
 	const uint64_t part1[7],
 	const uint64_t part2[7]
 ) {
-	if (part1[0] != part2[0])
+	if ((part1[0] != part2[0]) || (part1[1] != part2[1]) || (part1[2] != part2[2]) ||
+	    (part1[3] != part2[3]) || (part1[4] != part2[4]) || (part1[5] != part2[5]) ||
+	    (part1[6] != part2[6]))
+	{
 		return 0;
-	if (part1[1] != part2[1])
-		return 0;
-	if (part1[2] != part2[2])
-		return 0;
-	if (part1[3] != part2[3])
-		return 0;
-	if (part1[4] != part2[4])
-		return 0;
-	if (part1[5] != part2[5])
-		return 0;
-	if (part1[6] != part2[6])
-		return 0;
+	}
+
 	return 1;
 }
 
 /*
-   For a partition table, detect partitionss that are equivalent, then mark them as invalid. This reduces the number of partitions that the codec has to consider and thus improves encode
-   performance. */
+   For a partition table, detect partitions that are equivalent, then mark them
+   as invalid. This reduces the number of partitions that the codec has to
+   consider and thus improves encode performance. */
 static void partition_table_zap_equal_elements(
 	int texel_count,
 	partition_info* pi
 ) {
 	int partition_tables_zapped = 0;
-	int i, j;
 	uint64_t *canonicalizeds = new uint64_t[PARTITION_COUNT * 7];
 
-
-	for (i = 0; i < PARTITION_COUNT; i++)
+	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
 		gen_canonicalized_partition_table(texel_count, pi[i].partition_of_texel, canonicalizeds + i * 7);
 	}
 
-	for (i = 0; i < PARTITION_COUNT; i++)
+	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		for (j = 0; j < i; j++)
+		for (int j = 0; j < i; j++)
 		{
 			if (compare_canonicalized_partition_tables(canonicalizeds + 7 * i, canonicalizeds + 7 * j))
 			{
@@ -100,7 +97,8 @@ static void partition_table_zap_equal_elements(
 			}
 		}
 	}
-	delete[]canonicalizeds;
+
+	delete[] canonicalizeds;
 }
 
 static uint32_t hash52(uint32_t inp)
@@ -164,7 +162,7 @@ static int select_partition(
 	seed11 *= seed11;
 	seed12 *= seed12;
 
-	int sh1, sh2, sh3;
+	int sh1, sh2;
 	if (seed & 1)
 	{
 		sh1 = (seed & 2 ? 4 : 5);
@@ -175,7 +173,8 @@ static int select_partition(
 		sh1 = (partitioncount == 3 ? 6 : 5);
 		sh2 = (seed & 2 ? 4 : 5);
 	}
-	sh3 = (seed & 0x10) ? sh1 : sh2;
+
+	int sh3 = (seed & 0x10) ? sh1 : sh2;
 
 	seed1 >>= sh1;
 	seed2 >>= sh2;
@@ -204,21 +203,38 @@ static int select_partition(
 
 	// remove some of the components if we are to output < 4 partitions.
 	if (partitioncount <= 3)
+	{
 		d = 0;
+	}
+
 	if (partitioncount <= 2)
+	{
 		c = 0;
+	}
+
 	if (partitioncount <= 1)
+	{
 		b = 0;
+	}
 
 	int partition;
 	if (a >= b && a >= c && a >= d)
+	{
 		partition = 0;
+	}
 	else if (b >= c && b >= d)
+	{
 		partition = 1;
+	}
 	else if (c >= d)
+	{
 		partition = 2;
+	}
 	else
+	{
 		partition = 3;
+	}
+
 	return partition;
 }
 
@@ -232,45 +248,64 @@ static void generate_one_partition_table(
 	int small_block = texels_per_block < 32;
 
 	uint8_t *partition_of_texel = pt->partition_of_texel;
-	int x, y, z, i;
 
-	for (z = 0; z < bsd->zdim; z++)
-		for (y = 0; y <  bsd->ydim; y++)
-			for (x = 0; x <  bsd->xdim; x++)
+	for (int z = 0; z < bsd->zdim; z++)
+	{
+		for (int y = 0; y <  bsd->ydim; y++)
+		{
+			for (int x = 0; x <  bsd->xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				*partition_of_texel++ = part;
 			}
+		}
+	}
 
 	int counts[4];
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
+	{
 		counts[i] = 0;
+	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		pt->texels_of_partition[partition][counts[partition]++] = i;
 	}
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
+	{
 		pt->texels_per_partition[i] = counts[i];
+	}
 
 	if (counts[0] == 0)
+	{
 		pt->partition_count = 0;
+	}
 	else if (counts[1] == 0)
+	{
 		pt->partition_count = 1;
+	}
 	else if (counts[2] == 0)
+	{
 		pt->partition_count = 2;
+	}
 	else if (counts[3] == 0)
+	{
 		pt->partition_count = 3;
+	}
 	else
+	{
 		pt->partition_count = 4;
+	}
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
+	{
 		pt->coverage_bitmaps[i] = 0ULL;
+	}
 
 	int texels_to_process = bsd->texelcount_for_bitmap_partitioning;
-	for (i = 0; i < texels_to_process; i++)
+	for (int i = 0; i < texels_to_process; i++)
 	{
 		int idx = bsd->texels_for_bitmap_partitioning[i];
 		pt->coverage_bitmaps[pt->partition_of_texel[idx]] |= 1ULL << i;

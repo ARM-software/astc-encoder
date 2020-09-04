@@ -257,6 +257,18 @@ struct astcenc_swizzle {
 };
 
 /**
+ * @brief A texel channel data format.
+ */
+enum astcenc_type {
+	/** @brief Unorm 8-bit data per channel. */
+	ASTCENC_TYPE_U8 = 0,
+	/** @brief 16-bit float per channel. */
+	ASTCENC_TYPE_F16 = 1,
+	/** @brief 32-bit float per channel. */
+	ASTCENC_TYPE_F32 = 2
+};
+
+/**
  * @brief Enable normal map compression.
  *
  * Input data will be treated a two channel normal map, storing X and Y, and
@@ -460,10 +472,10 @@ struct astcenc_image {
 	unsigned int dim_z;
 	/** @brief The border padding dimensions, in texels. */
 	unsigned int dim_pad;
-	/** @brief The data if 8-bit unorm. */
-	uint8_t ***data8;
-	/** @brief The data if 16-bit float. */
-	uint16_t ***data16;
+	/** @brief The data type per channel. */
+	astcenc_type data_type;
+	/** @brief The data; actually of type <t>***. */
+	void *data;
 };
 
 /**

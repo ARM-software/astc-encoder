@@ -241,7 +241,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[i]); \
 			d[4*i+1] = 0; \
@@ -255,7 +255,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[2*i]); \
 			d[4*i+1] = convfunc(s[2*i+1]); \
@@ -269,7 +269,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[3*i]); \
 			d[4*i+1] = convfunc(s[3*i+1]); \
@@ -283,7 +283,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[3*i+2]); \
 			d[4*i+1] = convfunc(s[3*i+1]); \
@@ -297,7 +297,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i]); \
 			d[4*i+1] = convfunc(s[4*i+1]); \
@@ -311,7 +311,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i+2]); \
 			d[4*i+1] = convfunc(s[4*i+1]); \
@@ -325,7 +325,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i]); \
 			d[4*i+1] = convfunc(s[4*i+1]); \
@@ -339,7 +339,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i+2]); \
 			d[4*i+1] = convfunc(s[4*i+1]); \
@@ -353,7 +353,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[i]); \
 			d[4*i+1] = convfunc(s[i]); \
@@ -367,7 +367,7 @@ static void copy_scanline(
 	do { \
 		srctype *s = (srctype *)src; \
 		dsttype *d = (dsttype *)dst; \
-		for (i=0;i<pixels;i++)\
+		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[2*i]); \
 			d[4*i+1] = convfunc(s[2*i]); \
@@ -377,7 +377,6 @@ static void copy_scanline(
 	} while (0); \
 	break;
 
-	int i;
 	switch (method)
 	{
 	case R8_TO_RGBA8:
@@ -459,10 +458,8 @@ static void switch_endianness2(
 	void* dataptr,
 	int bytes
 ) {
-	int i;
 	uint8_t *data = (uint8_t *) dataptr;
-
-	for (i = 0; i < bytes / 2; i++)
+	for (int i = 0; i < bytes / 2; i++)
 	{
 		uint8_t d0 = data[0];
 		uint8_t d1 = data[1];
@@ -476,10 +473,8 @@ static void switch_endianness4(
 	void* dataptr,
 	int bytes
 ) {
-	int i;
 	uint8_t *data = (uint8_t *) dataptr;
-
-	for (i = 0; i < bytes / 4; i++)
+	for (int i = 0; i < bytes / 4; i++)
 	{
 		uint8_t d0 = data[0];
 		uint8_t d1 = data[1];
@@ -1046,10 +1041,17 @@ static astcenc_image* load_ktx_uncompressed_image(
 			unsigned int ydst = ymod + dim_pad;
 			void *dst;
 
-			if (bitness == 16)
-				dst = (void *)(astc_img->data16[zdst][ydst] + 4 * dim_pad);
-			else
-				dst = (void *)(astc_img->data8[zdst][ydst] + 4 * dim_pad);
+			if (astc_img->data_type == ASTCENC_TYPE_U8)
+			{
+				uint8_t*** data8 = static_cast<uint8_t***>(astc_img->data);
+				dst = static_cast<void*>(data8[zdst][ydst] + 4 * dim_pad);
+			}
+			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
+			{
+				assert(astc_img->data_type == ASTCENC_TYPE_F16);
+				uint16_t*** data16 = static_cast<uint16_t***>(astc_img->data);
+				dst = static_cast<void*>(data16[zdst][ydst] + 4 * dim_pad);
+			}
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
 			copy_scanline(dst, src, dim_x, cm);
@@ -1216,7 +1218,7 @@ static int store_ktx_uncompressed_image(
 	unsigned int dim_y = img->dim_y;
 	unsigned int dim_z = img->dim_z;
 
-	int bitness = img->data16 == nullptr ? 8 : 16;
+	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_channels = determine_image_channels(img);
 
 	ktx_header hdr;
@@ -1261,6 +1263,7 @@ static int store_ktx_uncompressed_image(
 			}
 		}
 
+		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 0; y < dim_y; y++)
@@ -1271,31 +1274,31 @@ static int store_ktx_uncompressed_image(
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = img->data8[z][ym][4 * x];
+						row_pointers8[z][y][x] = data8[z][ym][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][2 * x + 1] = img->data8[z][ym][4 * x + 3];
+						row_pointers8[z][y][2 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][2 * x + 1] = data8[z][ym][4 * x + 3];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
+				case 3:		// three-component, treated a
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][3 * x + 1] = img->data8[z][ym][4 * x + 1];
-						row_pointers8[z][y][3 * x + 2] = img->data8[z][ym][4 * x + 2];
+						row_pointers8[z][y][3 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][3 * x + 1] = data8[z][ym][4 * x + 1];
+						row_pointers8[z][y][3 * x + 2] = data8[z][ym][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][4 * x + 1] = img->data8[z][ym][4 * x + 1];
-						row_pointers8[z][y][4 * x + 2] = img->data8[z][ym][4 * x + 2];
-						row_pointers8[z][y][4 * x + 3] = img->data8[z][ym][4 * x + 3];
+						row_pointers8[z][y][4 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][4 * x + 1] = data8[z][ym][4 * x + 1];
+						row_pointers8[z][y][4 * x + 2] = data8[z][ym][4 * x + 2];
+						row_pointers8[z][y][4 * x + 3] = data8[z][ym][4 * x + 3];
 					}
 					break;
 				}
@@ -1322,6 +1325,7 @@ static int store_ktx_uncompressed_image(
 			}
 		}
 
+		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 0; y < dim_y; y++)
@@ -1332,31 +1336,31 @@ static int store_ktx_uncompressed_image(
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = img->data16[z][ym][4 * x];
+						row_pointers16[z][y][x] = data16[z][ym][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][2 * x + 1] = img->data16[z][ym][4 * x + 3];
+						row_pointers16[z][y][2 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][2 * x + 1] = data16[z][ym][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][3 * x + 1] = img->data16[z][ym][4 * x + 1];
-						row_pointers16[z][y][3 * x + 2] = img->data16[z][ym][4 * x + 2];
+						row_pointers16[z][y][3 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][3 * x + 1] = data16[z][ym][4 * x + 1];
+						row_pointers16[z][y][3 * x + 2] = data16[z][ym][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][4 * x + 1] = img->data16[z][ym][4 * x + 1];
-						row_pointers16[z][y][4 * x + 2] = img->data16[z][ym][4 * x + 2];
-						row_pointers16[z][y][4 * x + 3] = img->data16[z][ym][4 * x + 3];
+						row_pointers16[z][y][4 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][4 * x + 1] = data16[z][ym][4 * x + 1];
+						row_pointers16[z][y][4 * x + 2] = data16[z][ym][4 * x + 2];
+						row_pointers16[z][y][4 * x + 3] = data16[z][ym][4 * x + 3];
 					}
 					break;
 				}
@@ -1749,13 +1753,16 @@ astcenc_image* load_dds_uncompressed_image(
 			unsigned int ydst = ymod + dim_pad;
 			void* dst;
 
-			if (bitness == 16)
+			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
-				dst = (void*)(astc_img->data16[zdst][ydst] + 4 * dim_pad);
+				uint8_t*** data8 = static_cast<uint8_t***>(astc_img->data);
+				dst = static_cast<void*>(data8[zdst][ydst] + 4 * dim_pad);
 			}
-			else
+			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
-				dst = (void*)(astc_img->data8[zdst][ydst] + 4 * dim_pad);
+				assert(astc_img->data_type == ASTCENC_TYPE_F16);
+				uint16_t*** data16 = static_cast<uint16_t***>(astc_img->data);
+				dst = static_cast<void*>(data16[zdst][ydst] + 4 * dim_pad);
 			}
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
@@ -1779,7 +1786,7 @@ static int store_dds_uncompressed_image(
 	unsigned int dim_y = img->dim_y;
 	unsigned int dim_z = img->dim_z;
 
-	int bitness = img->data16 == nullptr ? 8 : 16;
+	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_channels = (bitness == 16) ? 4 : determine_image_channels(img);
 
 
@@ -1864,6 +1871,7 @@ static int store_dds_uncompressed_image(
 			}
 		}
 
+		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 0; y < dim_y; y++)
@@ -1874,31 +1882,31 @@ static int store_dds_uncompressed_image(
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = img->data8[z][ym][4 * x];
+						row_pointers8[z][y][x] = data8[z][ym][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][2 * x + 1] = img->data8[z][ym][4 * x + 3];
+						row_pointers8[z][y][2 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][2 * x + 1] = data8[z][ym][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][3 * x + 1] = img->data8[z][ym][4 * x + 1];
-						row_pointers8[z][y][3 * x + 2] = img->data8[z][ym][4 * x + 2];
+						row_pointers8[z][y][3 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][3 * x + 1] = data8[z][ym][4 * x + 1];
+						row_pointers8[z][y][3 * x + 2] = data8[z][ym][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x]     = img->data8[z][ym][4 * x];
-						row_pointers8[z][y][4 * x + 1] = img->data8[z][ym][4 * x + 1];
-						row_pointers8[z][y][4 * x + 2] = img->data8[z][ym][4 * x + 2];
-						row_pointers8[z][y][4 * x + 3] = img->data8[z][ym][4 * x + 3];
+						row_pointers8[z][y][4 * x]     = data8[z][ym][4 * x];
+						row_pointers8[z][y][4 * x + 1] = data8[z][ym][4 * x + 1];
+						row_pointers8[z][y][4 * x + 2] = data8[z][ym][4 * x + 2];
+						row_pointers8[z][y][4 * x + 3] = data8[z][ym][4 * x + 3];
 					}
 					break;
 				}
@@ -1925,6 +1933,7 @@ static int store_dds_uncompressed_image(
 			}
 		}
 
+		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 0; y < dim_y; y++)
@@ -1935,31 +1944,31 @@ static int store_dds_uncompressed_image(
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = img->data16[z][ym][4 * x];
+						row_pointers16[z][y][x] = data16[z][ym][4 * x];
 					}
 					break;
 				case 2:		// two-component, treated as Luminance-Alpha
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][2 * x + 1] = img->data16[z][ym][4 * x + 3];
+						row_pointers16[z][y][2 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][2 * x + 1] = data16[z][ym][4 * x + 3];
 					}
 					break;
 				case 3:		// three-component, treated as RGB
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][3 * x + 1] = img->data16[z][ym][4 * x + 1];
-						row_pointers16[z][y][3 * x + 2] = img->data16[z][ym][4 * x + 2];
+						row_pointers16[z][y][3 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][3 * x + 1] = data16[z][ym][4 * x + 1];
+						row_pointers16[z][y][3 * x + 2] = data16[z][ym][4 * x + 2];
 					}
 					break;
 				case 4:		// four-component, treated as RGBA
 					for (unsigned int x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x]     = img->data16[z][ym][4 * x];
-						row_pointers16[z][y][4 * x + 1] = img->data16[z][ym][4 * x + 1];
-						row_pointers16[z][y][4 * x + 2] = img->data16[z][ym][4 * x + 2];
-						row_pointers16[z][y][4 * x + 3] = img->data16[z][ym][4 * x + 3];
+						row_pointers16[z][y][4 * x]     = data16[z][ym][4 * x];
+						row_pointers16[z][y][4 * x + 1] = data16[z][ym][4 * x + 1];
+						row_pointers16[z][y][4 * x + 2] = data16[z][ym][4 * x + 2];
+						row_pointers16[z][y][4 * x + 3] = data16[z][ym][4 * x + 3];
 					}
 					break;
 				}
@@ -1984,15 +1993,21 @@ static int store_dds_uncompressed_image(
 
 		size_t dx10_bytes_written;
 		if (bitness > 8)
+		{
 			dx10_bytes_written = fwrite(&dx10, 1, sizeof(dx10), wf);
+		}
 		else
+		{
 			dx10_bytes_written = 0;
+		}
 
 		size_t data_bytes_written = fwrite(dataptr, 1, image_bytes, wf);
 
 		fclose(wf);
 		if (magic_bytes_written + hdr_bytes_written + dx10_bytes_written + data_bytes_written != expected_bytes_written)
+		{
 			retval = -1;
+		}
 	}
 	else
 	{

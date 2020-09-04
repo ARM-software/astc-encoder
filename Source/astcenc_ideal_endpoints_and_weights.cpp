@@ -41,8 +41,6 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	endpoints_and_weights* ei,
 	unsigned int component
 ) {
-	int i;
-
 	int partition_count = pt->partition_count;
 	ei->ep.partition_count = partition_count;
 
@@ -75,56 +73,72 @@ static void compute_endpoints_and_ideal_weights_1_component(
 		break;
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lowvalues[i] = 1e10f;
 		highvalues[i] = -1e10f;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (error_weights[i] > 1e-10f)
 		{
 			float value = data_vr[i];
 			int partition = pt->partition_of_texel[i];
+
 			if (value < lowvalues[partition])
+			{
 				lowvalues[partition] = value;
+			}
+
 			if (value > highvalues[partition])
+			{
 				highvalues[partition] = value;
+			}
 		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float diff = highvalues[i] - lowvalues[i];
+
 		if (diff < 0)
 		{
 			lowvalues[i] = 0.0f;
 			highvalues[i] = 0.0f;
 		}
+
 		if (diff < 1e-7f)
+		{
 			diff = 1e-7f;
+		}
+
 		partition_error_scale[i] = diff * diff;
 		linelengths_rcp[i] = 1.0f / diff;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		float value = data_vr[i];
 		int partition = pt->partition_of_texel[i];
 		value -= lowvalues[partition];
 		value *= linelengths_rcp[partition];
+
 		if (value > 1.0f)
+		{
 			value = 1.0f;
+		}
 		else if (!(value > 0.0f))
+		{
 			value = 0.0f;
+		}
 
 		ei->weights[i] = value;
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
 		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
@@ -159,8 +173,6 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	int component1,
 	int component2
 ) {
-	int i;
-
 	int partition_count = pt->partition_count;
 	ei->ep.partition_count = partition_count;
 
@@ -195,7 +207,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float s1 = 0, s2 = 0;
 		switch (component1)
@@ -241,7 +253,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	float scale[4];
 	float length_squared[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lowparam[i] = 1e10;
 		highparam[i] = -1e10;
@@ -249,23 +261,27 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 	compute_averages_and_directions_2_components(pt, blk, ewb, scalefactors, component1, component2, averages, directions);
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float2 egv = directions[i];
 		if (egv.x + egv.y < 0.0f)
 			directions[i] = float2(0.0f, 0.0f) - egv;
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
+		{
 			lines[i].b = normalize(float2(1.0f, 1.0f));
+		}
 		else
+		{
 			lines[i].b = normalize(directions[i]);
+		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (error_weights[i] > 1e-10f)
 		{
@@ -274,10 +290,16 @@ static void compute_endpoints_and_ideal_weights_2_components(
 			line2 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
+
 			if (param < lowparam[partition])
+			{
 				lowparam[partition] = param;
+			}
+
 			if (param > highparam[partition])
+			{
 				highparam[partition] = param;
+			}
 		}
 		else
 		{
@@ -288,7 +310,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	float2 lowvalues[4];
 	float2 highvalues[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
 		if (length < 0.0f)			// case for when none of the texels had any weight
@@ -301,7 +323,9 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
 		if (length < 1e-7f)
+		{
 			length = 1e-7f;
+		}
 
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -319,7 +343,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		highvalues[i] = ep1;
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
 		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
@@ -368,14 +392,18 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
 		if (idx > 1.0f)
+		{
 			idx = 1.0f;
+		}
 		else if (!(idx > 0.0f))
+		{
 			idx = 0.0f;
+		}
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
@@ -391,8 +419,6 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	endpoints_and_weights* ei,
 	int omittedComponent
 ) {
-	int i;
-
 	int partition_count = pt->partition_count;
 	ei->ep.partition_count = partition_count;
 
@@ -438,7 +464,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float s1 = 0, s2 = 0, s3 = 0;
 		switch (omittedComponent)
@@ -477,7 +503,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	float scale[4];
 	float length_squared[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lowparam[i] = 1e10f;
 		highparam[i] = -1e10f;
@@ -485,23 +511,29 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 	compute_averages_and_directions_3_components(pt, blk, ewb, scalefactors, omittedComponent, averages, directions);
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float3 direc = directions[i];
 		if (direc.x + direc.y + direc.z < 0.0f)
+		{
 			directions[i] = float3(0.0f, 0.0f, 0.0f) - direc;
+		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
+		{
 			lines[i].b = normalize(float3(1.0f, 1.0f, 1.0f));
+		}
 		else
+		{
 			lines[i].b = normalize(directions[i]);
+		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (error_weights[i] > 1e-10f)
 		{
@@ -510,10 +542,16 @@ static void compute_endpoints_and_ideal_weights_3_components(
 			line3 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
+
 			if (param < lowparam[partition])
+			{
 				lowparam[partition] = param;
+			}
+
 			if (param > highparam[partition])
+			{
 				highparam[partition] = param;
+			}
 		}
 		else
 		{
@@ -524,7 +562,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	float3 lowvalues[4];
 	float3 highvalues[4];
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
 		if (length < 0)			// case for when none of the texels had any weight
@@ -537,7 +575,9 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
 		if (length < 1e-7f)
+		{
 			length = 1e-7f;
+		}
 
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -556,11 +596,10 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		highvalues[i] = ep1;
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
 		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
-
 
 		float3 ep0 = lowvalues[i];
 		float3 ep1 = highvalues[i];
@@ -602,14 +641,18 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
 		if (idx > 1.0f)
+		{
 			idx = 1.0f;
+		}
 		else if (!(idx > 0.0f))
+		{
 			idx = 0.0f;
+		}
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
@@ -624,13 +667,11 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	const error_weight_block* ewb,
 	endpoints_and_weights* ei
 ) {
-	int i;
-
 	const float *error_weights = ewb->texel_weight;
 
 	int partition_count = pt->partition_count;
 	float lowparam[4], highparam[4];
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lowparam[i] = 1e10;
 		highparam[i] = -1e10;
@@ -652,30 +693,38 @@ static void compute_endpoints_and_ideal_weights_rgba(
 
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
+	{
 		scalefactors[i] = normalize(color_scalefactors[i]) * 2.0f;
+	}
 
 	compute_averages_and_directions_rgba(pt, blk, ewb, scalefactors, averages, directions_rgba);
 
 	// if the direction-vector ends up pointing from light to dark, FLIP IT!
 	// this will make the first endpoint the darkest one.
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float4 direc = directions_rgba[i];
 		if (direc.x + direc.y + direc.z < 0.0f)
+		{
 			directions_rgba[i] = float4(0.0f, 0.0f, 0.0f, 0.0f) - direc;
+		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		lines[i].a = averages[i];
 		if (dot(directions_rgba[i], directions_rgba[i]) == 0.0f)
+		{
 			lines[i].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
+		}
 		else
+		{
 			lines[i].b = normalize(directions_rgba[i]);
+		}
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (error_weights[i] > 1e-10f)
 		{
@@ -686,10 +735,16 @@ static void compute_endpoints_and_ideal_weights_rgba(
 
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
+
 			if (param < lowparam[partition])
+			{
 				lowparam[partition] = param;
+			}
+
 			if (param > highparam[partition])
+			{
 				highparam[partition] = param;
+			}
 		}
 		else
 		{
@@ -697,7 +752,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		}
 	}
 
-	for (i = 0; i < partition_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
 		if (length < 0)
@@ -710,7 +765,9 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
 		if (length < 1e-7f)
+		{
 			length = 1e-7f;
+		}
 
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -732,14 +789,18 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		ei->ep.endpt1[i] = ep1;
 	}
 
-	for (i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
 		if (idx > 1.0f)
+		{
 			idx = 1.0f;
+		}
 		else if (!(idx > 0.0f))
+		{
 			idx = 0.0f;
+		}
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
@@ -785,25 +846,37 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	{
 	case 0:					// separate weights for red
 		if (uses_alpha == 1)
+		{
 			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 0);
+		}
 		else
+		{
 			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 1, 2);
+		}
 		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 0);
 		break;
 
 	case 1:					// separate weights for green
 		if (uses_alpha == 1)
+		{
 			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 1);
+		}
 		else
+		{
 			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 2);
+		}
 		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 1);
 		break;
 
 	case 2:					// separate weights for blue
 		if (uses_alpha == 1)
+		{
 			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 2);
+		}
 		else
+		{
 			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 1);
+		}
 		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 2);
 		break;
 
@@ -883,7 +956,9 @@ float compute_error_of_weight_set(
 	int texel_count = it->num_texels;
 	float error_summa = 0.0;
 	for (int i = 0; i < texel_count; i++)
+	{
 		error_summa += compute_error_of_texel(eai, i, it, weights);
+	}
 	return error_summa;
 }
 
@@ -980,10 +1055,14 @@ void compute_ideal_weights_for_decimation_table(
 
 		float step = (error_change1 * chd_scale) / error_change0;
 		// clamp the step-value.
-		if (step < -stepsize )
+		if (step < -stepsize)
+		{
 			step = -stepsize;
+		}
 		else if (step > stepsize)
+		{
 			step = stepsize;
+		}
 
 		// update the weight
 		weight_set[i] = weight_val + step;
@@ -1082,9 +1161,13 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	{
 		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
 		if (ix < 0.0f)
+		{
 			ix = 0.0f;
+		}
 		if (ix > 1.0f) // upper bound must be smaller than 1 to avoid an array overflow below.
+		{
 			ix = 1.0f;
+		}
 
 		// look up the two closest indexes and return the one that was closest.
 		float ix1 = ix * quant_level_m1;
@@ -1274,17 +1357,25 @@ void recompute_ideal_colors(
 
 			float om_idx0 = 1.0f - idx0;
 			if (idx0 > wmax1)
+			{
 				wmax1 = idx0;
+			}
 
 			if (idx0 < wmin1)
+			{
 				wmin1 = idx0;
+			}
 
 			float scale = dot(scale_direction, rgb);
 			if (scale < scale_min)
+			{
 				scale_min = scale;
+			}
 
 			if (scale > scale_max)
+			{
 				scale_max = scale;
+			}
 
 			float4 left   = color_weight * (om_idx0 * om_idx0);
 			float4 middle = color_weight * (om_idx0 * idx0);
@@ -1312,10 +1403,14 @@ void recompute_ideal_colors(
 
 				om_idx1 = 1.0f - idx1;
 				if (idx1 > wmax2)
+				{
 					wmax2 = idx1;
+				}
 
 				if (idx1 < wmin2)
+				{
 					wmin2 = idx1;
+				}
 
 				float4 left2   = color_weight * (om_idx1 * om_idx1);
 				float4 middle2 = color_weight * (om_idx1 * idx1);
@@ -1376,10 +1471,14 @@ void recompute_ideal_colors(
 
 		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
 		if (!(scalediv > 0.0f))
+		{
 			scalediv = 0.0f;    // set to zero if scalediv is negative, or NaN.
+		}
 
 		if (scalediv > 1.0f)
+		{
 			scalediv = 1.0f;
+		}
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1400,16 +1499,24 @@ void recompute_ideal_colors(
 			                    1.0f / rgba_weight_sum.w);
 
 			if (plane2_color_component != 0 && avg.x == avg.x)
+			{
 				ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
+			}
 
 			if (plane2_color_component != 1 && avg.y == avg.y)
+			{
 				ep->endpt0[i].y = ep->endpt1[i].y = avg.y;
+			}
 
 			if (plane2_color_component != 2 && avg.z == avg.z)
+			{
 				ep->endpt0[i].z = ep->endpt1[i].z = avg.z;
+			}
 
 			if (plane2_color_component != 3 && avg.w == avg.w)
+			{
 				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
+			}
 
 			rgbs_vectors[i] = float4( sds.x, sds.y, sds.z, 1.0f);
 		}
@@ -1494,16 +1601,24 @@ void recompute_ideal_colors(
 				                    1.0f / rgba_weight_sum.w);
 
 				if (plane2_color_component == 0 && avg.x == avg.x)
+				{
 					ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
+				}
 
 				if (plane2_color_component == 1 && avg.y == avg.y)
+				{
 					ep->endpt0[i].y = ep->endpt1[i].y = avg.y;
+				}
 
 				if (plane2_color_component == 2 && avg.z == avg.z)
+				{
 					ep->endpt0[i].z = ep->endpt1[i].z = avg.z;
+				}
 
 				if (plane2_color_component == 3 && avg.w == avg.w)
+				{
 					ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
+				}
 			}
 			else
 			{
@@ -1565,7 +1680,9 @@ void recompute_ideal_colors(
 			float avgdif = ((v1.x - v0.x) + (v1.y - v0.y) + (v1.z - v0.z)) * (1.0f / 3.0f);
 
 			if (avgdif <= 0.0f)
+			{
 				avgdif = 0.0f;
+			}
 
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;

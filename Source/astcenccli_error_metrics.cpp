@@ -19,6 +19,7 @@
  * @brief Functions for computing image error metrics.
  */
 
+#include <cassert>
 #include <cstdio>
 
 #include "astcenccli_internal.h"
@@ -176,42 +177,47 @@ void compute_error_metrics(
 				int xe1 = 4 * x + 4 * img1pad;
 				int xe2 = 4 * x + 4 * img2pad;
 
-				if (img1->data8)
+				if (img1->data_type == ASTCENC_TYPE_U8)
 				{
+					uint8_t*** data8 = static_cast<uint8_t***>(img1->data);
 					color1 = float4(
-					    img1->data8[ze1][ye1][xe1]     * (1.0f / 255.0f),
-					    img1->data8[ze1][ye1][xe1 + 1] * (1.0f / 255.0f),
-					    img1->data8[ze1][ye1][xe1 + 2] * (1.0f / 255.0f),
-					    img1->data8[ze1][ye1][xe1 + 3] * (1.0f / 255.0f));
+					    data8[ze1][ye1][xe1]     * (1.0f / 255.0f),
+					    data8[ze1][ye1][xe1 + 1] * (1.0f / 255.0f),
+					    data8[ze1][ye1][xe1 + 2] * (1.0f / 255.0f),
+					    data8[ze1][ye1][xe1 + 3] * (1.0f / 255.0f));
 				}
-				else
+				else // if (img1->data_type == ASTCENC_TYPE_F16)
 				{
+					assert(img1->data_type == ASTCENC_TYPE_F16);
+					uint16_t*** data16 = static_cast<uint16_t***>(img1->data);
 					color1 = float4(
-					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1])),
-					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 1])),
-					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 2])),
-					    astc::clamp64Kf(sf16_to_float(img1->data16[ze1][ye1][xe1 + 3])));
+					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 1])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 2])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 3])));
 				}
 
-				if (img2->data8)
+				if (img2->data_type == ASTCENC_TYPE_U8)
 				{
+					uint8_t*** data8 = static_cast<uint8_t***>(img2->data);
 					color2 = float4(
-					    img2->data8[ze2][ye2][xe2]     * (1.0f / 255.0f),
-					    img2->data8[ze2][ye2][xe2 + 1] * (1.0f / 255.0f),
-					    img2->data8[ze2][ye2][xe2 + 2] * (1.0f / 255.0f),
-					    img2->data8[ze2][ye2][xe2 + 3] * (1.0f / 255.0f));
+					    data8[ze2][ye2][xe2]     * (1.0f / 255.0f),
+					    data8[ze2][ye2][xe2 + 1] * (1.0f / 255.0f),
+					    data8[ze2][ye2][xe2 + 2] * (1.0f / 255.0f),
+					    data8[ze2][ye2][xe2 + 3] * (1.0f / 255.0f));
 				}
-				else
+				else // if (img2->data_type == ASTCENC_TYPE_F16)
 				{
+					assert(img2->data_type == ASTCENC_TYPE_F16);
+					uint16_t*** data16 = static_cast<uint16_t***>(img2->data);
 					color2 = float4(
-					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2])),
-					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 1])),
-					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 2])),
-					    astc::clamp64Kf(sf16_to_float(img2->data16[ze2][ye2][xe2 + 3])));
+					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 1])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 2])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 3])));
 				}
 
-				rgb_peak = MAX(MAX(color1.x, color1.y),
-				               MAX(color1.z, rgb_peak));
+				rgb_peak = MAX(MAX(color1.x, color1.y), MAX(color1.z, rgb_peak));
 
 				float4 diffcolor = color1 - color2;
 				errorsum += diffcolor * diffcolor;
