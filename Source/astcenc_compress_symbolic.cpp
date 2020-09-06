@@ -1270,7 +1270,9 @@ float compress_symbolic_block(
 	prepare_block_statistics(bsd->texel_count, blk, ewb, &is_normal_map, &lowest_correl);
 
 	if (is_normal_map && lowest_correl < 0.99f)
+	{
 		lowest_correl = 0.99f;
+	}
 
 	// next, test the four possible 1-partition, 2-planes modes
 	for (int i = 0; i < 4; i++)
