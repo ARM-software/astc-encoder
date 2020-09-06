@@ -26,6 +26,7 @@ compared against a set of reference results created by an earlier test run.
 
 import csv
 import enum
+import numpy as np
 
 
 @enum.unique
@@ -55,6 +56,9 @@ class ResultSummary():
         passes: The number of tests that passed.
         warnings: The number of tests that produced a warning.
         fails: The number of tests that failed.
+        tTimes: Total time speedup vs reference (<1 is slower, >1 is faster).
+        cTimes: Coding time speedup vs reference (<1 is slower, >1 is faster).
+        psnrs: Coding time quality vs reference (<0 is worse, >0 is better).
     """
 
     def __init__(self):
@@ -65,6 +69,10 @@ class ResultSummary():
         self.passes = 0
         self.warnings = 0
         self.fails = 0
+
+        self.tTimes = []
+        self.cTimes = []
+        self.psnrs = []
 
     def add_record(self, record):
         """
@@ -81,6 +89,11 @@ class ResultSummary():
             self.fails += 1
         else:
             self.notruns += 1
+
+        if record.tTimeRel is not None:
+            self.tTimes.append(record.tTimeRel)
+            self.cTimes.append(record.cTimeRel)
+            self.psnrs.append(record.psnrRel)
 
     def get_worst_result(self):
         """
@@ -101,9 +114,22 @@ class ResultSummary():
         return Result.NOTRUN
 
     def __str__(self):
+        # Overall pass/fail results
         overall = self.get_worst_result().name
         dat = (overall, self.passes, self.warnings, self.fails)
-        return "Set Status: %s (Pass: %u | Warn: %u | Fail: %u)" % dat
+        result = ["\nSet Status: %s (Pass: %u | Warn: %u | Fail: %u)" % dat]
+
+        # Performance summaries
+        dat = (np.mean(self.tTimes), np.var(self.tTimes))
+        result.append("\nTotal time:     Mean: %+0.2fx    Var: %0.2fx" % dat)
+
+        dat = (np.mean(self.cTimes), np.var(self.cTimes))
+        result.append("Coding time:    Mean: %+0.2fx    Var: %0.2fx" % dat)
+
+        dat = (np.mean(self.psnrs), np.var(self.psnrs))
+        result.append("Image quality:  Mean: %+0.2f dB  Var: %0.2f dB" % dat)
+
+        return "\n".join(result)
 
 
 class Record():
@@ -129,6 +155,9 @@ class Record():
             psnr (float): The image quality PSNR, in dB.
             tTime (float): The total compression time, in seconds.
             cTime (float): The coding compression time, in seconds.
+            tTimeRel (float): The relative total time speedup vs reference.
+            cTimeRel (float): The relative coding time speedup vs reference.
+            psnrRel (float): The relative PSNR dB vs reference.
         """
         self.blkSz = blkSz
         self.name = name
@@ -136,6 +165,10 @@ class Record():
         self.tTime = tTime
         self.cTime = cTime
         self.status = Result.NOTRUN
+
+        self.tTimeRel = None
+        self.cTimeRel = None
+        self.psnrRel = None
 
     def set_status(self, result):
         """
@@ -231,6 +264,7 @@ class ResultSet():
         summary = ResultSummary()
         for record in self.records:
             summary.add_record(record)
+
         return summary
 
     def save_to_file(self, filePath):

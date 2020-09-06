@@ -224,6 +224,11 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
             if testRef:
                 refResult = testRef.get_matching_record(res)
                 res.set_status(determine_result(image, refResult, res))
+
+                res.tTimeRel = refResult.tTime / res.tTime
+                res.cTimeRel = refResult.cTime / res.cTime
+                res.psnrRel = res.psnr - refResult.psnr
+
                 res = format_result(image, refResult, res)
             else:
                 res = format_solo_result(image, res)
