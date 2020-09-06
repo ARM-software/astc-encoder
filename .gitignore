@@ -14,6 +14,7 @@ Source/VS2019/*Debug
 Source/VS2019/*.exe
 Test/DocOut
 Test/Images/Kodak
+Test/Images/KodakSim
 Test/Images/Scratch*
 TestOutput
 Docs/LibraryInterface.md

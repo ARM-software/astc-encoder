@@ -26,6 +26,8 @@ import os
 import sys
 import urllib.request
 
+from PIL import Image
+
 
 TEST_IMAGE_DIR = os.path.join("Test", "Images")
 
@@ -52,16 +54,76 @@ def download(testSet, index, srcUrl, dstPath):
         print("%s image %u: Skipping" % (testSet, index))
 
 
+def make_landscape(imgPath):
+    """
+    Make an image on disk landscape aspect (edit in place)
+
+    Args:
+        imgPath: The pth of the image on disk.
+    """
+    img = Image.open(imgPath)
+    if img.size[0] < img.size[1]:
+        img = img.rotate(90, expand=True)
+        img.save(imgPath)
+
+
+def make_mixed_image(imgPathA, imgPathB, dstPath):
+    """
+    Make image consisting of RGB from A's RGB, and alpha from B's luminance.
+
+    Args:
+        imgPathA: The path of input A on disk.
+        imgPathB: The path of input B on disk.
+        dstPath: The path of the destination.
+    """
+    imgA = Image.open(imgPathA)
+    imgB = Image.open(imgPathB).convert("L")
+
+    imgA.putalpha(imgB)
+
+    dirs = os.path.dirname(dstPath)
+    if not os.path.exists(dirs):
+        os.makedirs(dirs)
+
+    imgA.save(dstPath)
+
+
 def retrieve_kodak_set():
     """
     Download the public domain Kodak image set.
+
+    To make test set mosaics easier to build we rotate images to make
+    everything landscape.
     """
     testSet = "Kodak"
+
+    # Download the original RGB images
     for i in range(1, 25):
         fle = "ldr-rgb-kodak%02u.png" % i
         dst = os.path.join(TEST_IMAGE_DIR, "Kodak", "LDR-RGB", fle)
         src = "http://r0k.us/graphics/kodak/kodak/kodim%02u.png" % i
         download(testSet, i, src, dst)
+
+        # Canonicalize image aspect
+        make_landscape(dst)
+
+    # Make some correlated alpha RGBA images
+    fle = "ldr-rgb-kodak%02u.png"  # Expand later
+    pattern = os.path.join(TEST_IMAGE_DIR, "Kodak", "LDR-RGB", fle)
+
+    for i in (22, 23):
+        imgA = pattern % i
+        fle = "ldr-rgba-kodak%02u+ca.png" % i
+        dst = os.path.join(TEST_IMAGE_DIR, "KodakSim", "LDR-RGBA", fle)
+        make_mixed_image(imgA, imgA, dst)
+
+    # Make some non-correlated alpha RGBA images
+    for i, j in ((22, 24), (23, 20)):
+        imgA = pattern % i
+        imgB = pattern % j
+        fle = "ldr-rgba-kodak%02u+%02u+nca.png" % (i, j)
+        dst = os.path.join(TEST_IMAGE_DIR, "KodakSim", "LDR-RGBA", fle)
+        make_mixed_image(imgA, imgB, dst)
 
 
 def main():
