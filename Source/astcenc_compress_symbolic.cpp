@@ -1231,50 +1231,38 @@ float compress_symbolic_block(
 
 	float mode_cutoff = ctx.config.tune_block_mode_limit / 100.0f;
 
-	// next, test mode #0. This mode uses 1 plane of weights and 1 partition.
-	// we test it twice, first with a modecutoff of 0, then with the specified mode-cutoff.
-	// This causes an early-out that speeds up encoding of "easy" content.
+	// Test 1 plane of weights and 1 partition.
+	compress_symbolic_block_fixed_partition_1_plane(
+	    decode_mode, mode_cutoff, ctx.config.tune_refinement_limit, bsd,
+	    1, 0, blk, ewb, tempblocks, &tmpbuf->planes);
 
-	float modecutoffs[2];
-	float errorval_mult[2] = { 2.5, 1 };
-	modecutoffs[0] = 0;
-	modecutoffs[1] = mode_cutoff;
-
-	float best_errorval_in_mode;
-	for (int i = 0; i < 2; i++)
+	float best_errorval_in_mode = 1e30f;
+	for (int j = 0; j < 4; j++)
 	{
-		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
-														0,	// partition index
-														blk, ewb, tempblocks, &tmpbuf->planes);
-
-		best_errorval_in_mode = 1e30f;
-		for (int j = 0; j < 4; j++)
+		if (tempblocks[j].error_block)
 		{
-			if (tempblocks[j].error_block)
-			{
-				continue;
-			}
-
-			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb) * errorval_mult[i];
-
-			if (errorval < best_errorval_in_mode)
-			{
-				best_errorval_in_mode = errorval;
-			}
-
-			if (errorval < error_of_best_block)
-			{
-				error_of_best_block = errorval;
-				*scb = tempblocks[j];
-			}
+			continue;
 		}
 
-		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
+		float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
+
+		if (errorval < best_errorval_in_mode)
 		{
-			goto END_OF_TESTS;
+			best_errorval_in_mode = errorval;
 		}
+
+		if (errorval < error_of_best_block)
+		{
+			error_of_best_block = errorval;
+			*scb = tempblocks[j];
+		}
+	}
+
+	best_errorvals_in_modes[0] = best_errorval_in_mode;
+	if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+	{
+		goto END_OF_TESTS;
 	}
 
 	int is_normal_map;
@@ -1303,11 +1291,9 @@ float compress_symbolic_block(
 			continue;
 		}
 
-		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ctx.config.tune_refinement_limit,
-														 bsd, 1,	// partition count
-														 0,	// partition index
-														 i,	// the color component to test a separate plane of weights for.
-														 blk, ewb, tempblocks, &tmpbuf->planes);
+		compress_symbolic_block_fixed_partition_2_planes(
+		    decode_mode, mode_cutoff, ctx.config.tune_refinement_limit, bsd,
+		    1, 0, i, blk, ewb, tempblocks, &tmpbuf->planes);
 
 		best_errorval_in_mode = 1e30f;
 		for (int j = 0; j < 4; j++)
