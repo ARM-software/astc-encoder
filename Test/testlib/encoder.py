@@ -231,13 +231,15 @@ class Encoder2x(EncoderBase):
         "hdra": ".exr"
     }
 
-    def __init__(self, variant):
+    def __init__(self, variant, binary=None):
         name = "astcenc-%s-%s" % (variant, self.VERSION)
-        if os.name == 'nt':
-            dat = (variant, variant)
-            binary = "./Source/VS2019/astcenc-%s-Release/astcenc-%s.exe" % dat
-        else:
-            binary = "./Source/astcenc-%s" % variant
+        if binary is None:
+            if os.name == 'nt':
+                dat = (variant, variant)
+                binary = "./Source/VS2019/astcenc-%s-Release/astcenc-%s.exe" % dat
+            else:
+                binary = "./Source/astcenc-%s" % variant
+
         super().__init__(name, variant, binary)
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
@@ -286,10 +288,24 @@ class Encoder2x(EncoderBase):
         return r"\s*Coding time:\s*([0-9.]*) s"
 
 
-class Encoder1x(EncoderBase):
+
+class Encoder2_0(Encoder2x):
     """
-    This class wraps the latest `astcenc` 1.x series binaries from the 1.x
-    branch.
+    This class wraps the 2.0 series binaries.
+    """
+    VERSION = "2.0"
+
+    def __init__(self, variant):
+        if os.name == 'nt':
+            binary = "./Binaries/2.0/astcenc-%s.exe" % variant
+        else:
+            binary = "./Binaries/2.0/astcenc-%s" % variant
+
+        super().__init__(variant, binary)
+
+class Encoder1_7(EncoderBase):
+    """
+    This class wraps the 1.7 series binaries.
     """
     VERSION = "1.7"
 
@@ -305,13 +321,13 @@ class Encoder1x(EncoderBase):
         "hdr": ".htga"
     }
 
-    def __init__(self, binary=None):
+    def __init__(self):
         name = "astcenc-%s" % self.VERSION
-        if not binary:
-            if os.name == 'nt':
-                binary = "./Binaries/1.7/astcenc.exe"
-            else:
-                binary = "./Binaries/1.7/astcenc"
+        if os.name == 'nt':
+            binary = "./Binaries/1.7/astcenc.exe"
+        else:
+            binary = "./Binaries/1.7/astcenc"
+
         super().__init__(name, None, binary)
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough"):
@@ -360,24 +376,3 @@ class Encoder1x(EncoderBase):
 
     def get_coding_time_pattern(self):
         return r".* coding time: \s*([0-9.]*) seconds"
-
-
-class EncoderProto(Encoder1x):
-    """
-    This class wraps a prototype `astcenc` binary variant of the 1.x branch.
-    """
-
-    VERSION = "Proto"
-
-    OUTPUTS = {
-        "ldr": ".png",
-        "ldrs": ".png",
-        "hdr": ".exr",
-        "hdra": ".exr"
-    }
-
-    def __init__(self):
-        name = "astcenc-%s" % self.VERSION
-        assert os.name != 'nt', "Windows builds not available"
-        binary = "./Binaries/Prototype/astcenc"
-        super().__init__(binary)

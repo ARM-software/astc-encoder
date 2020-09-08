@@ -61,6 +61,8 @@ else:
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
 
+TEST_QUALITIES = ["fast", "medium", "thorough"]
+
 
 def is_3d(blockSize):
     """
@@ -184,7 +186,7 @@ def format_result(image, reference, result):
            (name, tPSNR, tTTime, tCTime, tCMPS, result.name)
 
 
-def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
+def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
     """
     Execute all tests in the test set.
 
@@ -192,6 +194,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
         encoder (EncoderBase): The encoder to use.
         testRef (ResultSet): The test reference results.
         testSet (TestSet): The test set.
+        quality (str): The quality level to execute the test against.
         blockSizes (list(str)): The block sizes to execute each test against.
         testRuns (int): The number of test repeats to run for each image test.
 
@@ -203,7 +206,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
     curCount = 0
     maxCount = count_test_set(testSet, blockSizes)
 
-    title = "Test Set: %s / Encoder: %s" % (testSet.name, encoder.name)
+    title = "Test Set: %s / Encoder: %s -%s" % (testSet.name, encoder.name, quality)
     print(title)
     print("=" * len(title))
 
@@ -217,7 +220,7 @@ def run_test_set(encoder, testRef, testSet, blockSizes, testRuns):
 
             dat = (curCount, maxCount, blkSz, image.testFile)
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
-            res = encoder.run_test(image, blkSz, "-thorough", testRuns)
+            res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns)
             res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2])
             resultSet.add_record(res)
 
@@ -253,20 +256,15 @@ def get_encoder_params(encoderName, imageSet):
         reference to use.
     """
     if encoderName == "ref-1.7":
-        encoder = te.Encoder1x()
+        encoder = te.Encoder1_7()
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     elif encoderName == "ref-2.0":
         # Note this option rebuilds a new reference test set using the
         # user's locally build encoder.
-        encoder = te.Encoder2x("avx2")
+        encoder = te.Encoder2_0("avx2")
         name = "reference-2.0-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-prototype":
-        encoder = te.EncoderProto()
-        name = "reference-prototype"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     else:
@@ -287,7 +285,7 @@ def parse_command_line():
     """
     parser = argparse.ArgumentParser()
 
-    refcoders = ["ref-1.7", "ref-2.0", "ref-prototype"]
+    refcoders = ["ref-1.7", "ref-2.0"]
     testcoders = ["sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
@@ -321,6 +319,10 @@ def parse_command_line():
     parser.add_argument("--test-image", dest="testImage", default=None,
                         help="select a specific test image from the test set")
 
+    choices = list(TEST_QUALITIES) + ["all"]
+    parser.add_argument("--test-quality", dest="testQual", default="thorough",
+                        choices=choices, help="select a specific test quality")
+
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
@@ -329,6 +331,9 @@ def parse_command_line():
     # Turn things into canonical format lists
     args.encoders = testcoders if args.encoders == "all" \
         else [args.encoders]
+
+    args.testQual = TEST_QUALITIES if args.testQual == "all" \
+        else [args.testQual]
 
     if not args.blockSizes or ("all" in args.blockSizes):
         args.blockSizes = TEST_BLOCK_SIZES
@@ -358,36 +363,37 @@ def main():
     testSetCount = 0
     worstResult = trs.Result.NOTRUN
 
-    for imageSet in args.testSets:
-        for encoderName in args.encoders:
-            (encoder, name, outDir, refName) = \
-                get_encoder_params(encoderName, imageSet)
+    for quality in args.testQual:
+        for imageSet in args.testSets:
+            for encoderName in args.encoders:
+                (encoder, name, outDir, refName) = \
+                    get_encoder_params(encoderName, imageSet)
 
-            testDir = "Test/Images/%s" % imageSet
-            testRes = "%s/astc_%s_results.csv" % (outDir, name)
+                testDir = "Test/Images/%s" % imageSet
+                testRes = "%s/astc_%s_%s_results.csv" % (outDir, name, quality)
 
-            testRef = None
-            if refName:
-                testRefPath = "%s/astc_%s_results.csv" % (testDir, refName)
-                testRef = trs.ResultSet(imageSet)
-                testRef.load_from_file(testRefPath)
+                testRef = None
+                if refName:
+                    testRefPath = "%s/astc_%s_%s_results.csv" % (testDir, refName, quality)
+                    testRef = trs.ResultSet(imageSet)
+                    testRef.load_from_file(testRefPath)
 
-            testSetCount += 1
-            testSet = tts.TestSet(imageSet, testDir,
-                                  args.profiles, args.formats, args.testImage)
+                testSetCount += 1
+                testSet = tts.TestSet(imageSet, testDir,
+                                      args.profiles, args.formats, args.testImage)
 
-            resultSet = run_test_set(encoder, testRef, testSet,
-                                     args.blockSizes, args.testRepeats)
+                resultSet = run_test_set(encoder, testRef, testSet, quality,
+                                        args.blockSizes, args.testRepeats)
 
-            resultSet.save_to_file(testRes)
+                resultSet.save_to_file(testRes)
 
-            if refName:
-                summary = resultSet.get_results_summary()
-                worstResult = max(summary.get_worst_result(), worstResult)
-                print(summary)
+                if refName:
+                    summary = resultSet.get_results_summary()
+                    worstResult = max(summary.get_worst_result(), worstResult)
+                    print(summary)
 
-    if (testSetCount > 1) and (worstResult != trs.Result.NOTRUN):
-        print("OVERALL STATUS: %s" % worstResult.name)
+        if (testSetCount > 1) and (worstResult != trs.Result.NOTRUN):
+            print("OVERALL STATUS: %s" % worstResult.name)
 
     if worstResult == trs.Result.FAIL:
         return 1

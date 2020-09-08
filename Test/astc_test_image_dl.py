@@ -88,6 +88,38 @@ def make_mixed_image(imgPathA, imgPathB, dstPath):
     imgA.save(dstPath)
 
 
+def make_montage(imageDir, dstPath):
+    """
+    Make a single mosaic montage consisting of all of the Kodak images.
+
+    Args:
+        imgDir: The directory path of the Kodak images on disk.
+        dstPth: The file path of the resulting montage.
+    """
+    cols = 6
+    rows = 4
+
+    width = 768
+    height = 512
+
+    images = os.listdir(imageDir)
+    images.sort()
+
+    montage = Image.new('RGB', (width * cols, height * rows))
+
+    for i, src in enumerate(images):
+        im = Image.open(os.path.join(imageDir, src))
+        col = i % cols
+        row = i // cols
+        montage.paste(im, (width * col, height * row))
+
+    dirs = os.path.dirname(dstPath)
+    if not os.path.exists(dirs):
+        os.makedirs(dirs)
+
+    montage.save(dstPath)
+
+
 def retrieve_kodak_set():
     """
     Download the public domain Kodak image set.
@@ -124,6 +156,12 @@ def retrieve_kodak_set():
         fle = "ldr-rgba-kodak%02u+%02u+nca.png" % (i, j)
         dst = os.path.join(TEST_IMAGE_DIR, "KodakSim", "LDR-RGBA", fle)
         make_mixed_image(imgA, imgB, dst)
+
+    # Make a large montage
+    srcDir = os.path.join(TEST_IMAGE_DIR, "Kodak", "LDR-RGB")
+    fle = "ldr-rgb-montage.png"
+    dst = os.path.join(TEST_IMAGE_DIR, "KodakMnt", "LDR-RGB", fle)
+    make_montage(srcDir, dst)
 
 
 def main():
