@@ -1231,9 +1231,13 @@ float compress_symbolic_block(
 
 	float mode_cutoff = ctx.config.tune_block_mode_limit / 100.0f;
 
-	// next, test mode #0. This mode uses 1 plane of weights and 1 partition.
-	// we test it twice, first with a modecutoff of 0, then with the specified mode-cutoff.
-	// This causes an early-out that speeds up encoding of "easy" content.
+	// Trial using 1 plane of weights and 1 partition.
+
+	// Most of the time we test it twice, first with a mode cutoff of 0 and
+	// then with the specified mode cutoff. This causes an early-out that
+	// speeds up encoding of easy blocks. However, this optimization is
+	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
+	// compresion and slightly reduces image quality.
 
 	float modecutoffs[2];
 	float errorval_mult[2] = { 2.5, 1 };
@@ -1241,7 +1245,10 @@ float compress_symbolic_block(
 	modecutoffs[1] = mode_cutoff;
 
 	float best_errorval_in_mode;
-	for (int i = 0; i < 2; i++)
+
+
+	int start_trial = bsd->texel_count < 25 ? 1 : 0;
+	for (int i = start_trial; i < 2; i++)
 	{
 		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
 														0,	// partition index
