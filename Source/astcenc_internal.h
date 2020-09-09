@@ -779,7 +779,6 @@ void find_best_partitionings(
 	int partition_count,
 	const imageblock* pb,
 	const error_weight_block* ewb,
-	int candidates_to_return,
 	int* best_partitions_uncorrelated,
 	int* best_partitions_samechroma,
 	int* best_partitions_dual_weight_planes);
