@@ -1399,7 +1399,7 @@ float compress_symbolic_block(
 		// * Blocks with higher component correlation than the tuning cutoff
 		if ((partition_count == 4) ||
 		    (blk->grayscale && !uses_alpha) ||
-			(lowest_correl > ctx.config.tune_two_plane_early_out_limit))
+		    (lowest_correl > ctx.config.tune_two_plane_early_out_limit))
 		{
 			continue;
 		}
