@@ -2,12 +2,11 @@
 
 This page is a working document explaining the current understanding of the
 performance and quality impact of some of the compression trials, refinement
-passes, and the heuristics which drive them. To make things easier to
-cross-reference, I've inserted some comments in the code to identify passes
-that have been analyzed.
+passes, and the heuristics which drive them.
 
-This information will hopefully allow as "tuned up" a future version of the
-codec. At the moment it's just research.
+This information will hopefully allow a "tuned up" future version of the codec.
+It includes a mixture of both ongoing research, and a log of optimizations
+that have been applied during the current post-2.0 development.
 
 ## Configuration sensitivity
 
