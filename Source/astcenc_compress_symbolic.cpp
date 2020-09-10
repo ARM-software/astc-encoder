@@ -1399,19 +1399,19 @@ float compress_symbolic_block(
 			goto END_OF_TESTS;
 		}
 
-		// don't bother to check 4 partitions for dual plane of weights, ever.
-		if (partition_count == 4)
+		// Skip testing dual weight planes for:
+		// * 4 partitions (can't be encoded by the format)
+		// * Luminance only blocks (never need for a second plane)
+		// * Blocks with higher component correlation than the tuning cutoff
+		if ((partition_count == 4) ||
+		    (blk->grayscale && !uses_alpha) ||
+		    (lowest_correl > ctx.config.tune_two_plane_early_out_limit))
 		{
-			break;
+			continue;
 		}
 
 		for (int i = 0; i < 2; i++)
 		{
-			if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
-			{
-				continue;
-			}
-
 			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
 															 mode_cutoff,
 															 ctx.config.tune_refinement_limit,
