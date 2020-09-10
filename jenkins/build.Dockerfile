@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-LABEL build.environment.version="1.0.0"
+LABEL build.environment.version="2.0.0"
 
 RUN useradd -u 1001 -U -m -c Jenkins jenkins
 
