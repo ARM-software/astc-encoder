@@ -1237,7 +1237,7 @@ float compress_symbolic_block(
 	// then with the specified mode cutoff. This causes an early-out that
 	// speeds up encoding of easy blocks. However, this optimization is
 	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
-	// compresion and slightly reduces image quality.
+	// compression and slightly reduces image quality.
 
 	float modecutoffs[2];
 	float errorval_mult[2] = { 2.5, 1 };
