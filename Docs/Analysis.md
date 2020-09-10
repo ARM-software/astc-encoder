@@ -1,10 +1,10 @@
 # astcenc 2.1 optimization log
 
-This page is a working document explaining the my current understanding of the
+This page is a working document explaining the current understanding of the
 performance and quality impact of some of the compression trials, refinement
 passes, and the heuristics which drive them. To make things easier to
 cross-reference, I've inserted some comments in the code to identify passes
-that I've analyzed.
+that have been analyzed.
 
 This information will hopefully allow as "tuned up" a future version of the
 codec. At the moment it's just research.
