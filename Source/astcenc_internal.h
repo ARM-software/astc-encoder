@@ -59,6 +59,9 @@
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
 
+// Compile-time tuning parameters
+static const int TUNE_MIN_TEXELS_MODE0_FASTPATH { 25 };
+
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
 // #define DEBUG_CAPTURE_NAN

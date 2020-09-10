@@ -1231,9 +1231,13 @@ float compress_symbolic_block(
 
 	float mode_cutoff = ctx.config.tune_block_mode_limit / 100.0f;
 
-	// next, test mode #0. This mode uses 1 plane of weights and 1 partition.
-	// we test it twice, first with a modecutoff of 0, then with the specified mode-cutoff.
-	// This causes an early-out that speeds up encoding of "easy" content.
+	// Trial using 1 plane of weights and 1 partition.
+
+	// Most of the time we test it twice, first with a mode cutoff of 0 and
+	// then with the specified mode cutoff. This causes an early-out that
+	// speeds up encoding of easy blocks. However, this optimization is
+	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
+	// compression and slightly reduces image quality.
 
 	float modecutoffs[2];
 	float errorval_mult[2] = { 2.5, 1 };
@@ -1242,7 +1246,8 @@ float compress_symbolic_block(
 
 	float best_errorval_in_mode;
 
-	for (int i = 0; i < 2; i++)
+	int start_trial = bsd->texel_count < TUNE_MIN_TEXELS_MODE0_FASTPATH ? 1 : 0;
+	for (int i = start_trial; i < 2; i++)
 	{
 		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
 														0,	// partition index
@@ -1399,16 +1404,20 @@ float compress_symbolic_block(
 			goto END_OF_TESTS;
 		}
 
-		// don't bother to check 4 partitions for dual plane of weights, ever.
-		if (partition_count == 4)
+		// Skip testing dual weight planes for:
+		// * 4 partitions (can't be encoded by the format)
+		// * Luminance only blocks (never need for a second plane)
+		// * Blocks with higher component correlation than the tuning cutoff
+		if ((partition_count == 4) ||
+		    (blk->grayscale && !uses_alpha) ||
+		    (lowest_correl > ctx.config.tune_two_plane_early_out_limit))
 		{
-			break;
+			continue;
 		}
 
 
 		if (lowest_correl <= ctx.config.tune_two_plane_early_out_limit)
 		{
-
 			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
 															 mode_cutoff,
 															 ctx.config.tune_refinement_limit,
