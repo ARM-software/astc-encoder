@@ -12,4 +12,5 @@ RUN apt update && apt-get install -y \
     make \
     python3 \
     python3-junit.xml \
+    python3-numpy \
     python3-pil
