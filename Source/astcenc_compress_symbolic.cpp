@@ -1221,8 +1221,8 @@ float compress_symbolic_block(
 
 	imageblock *temp = &tmpbuf->temp;
 
-	float best_errorvals_in_modes[17];
-	for (int i = 0; i < 17; i++)
+	float best_errorvals_in_modes[13];
+	for (int i = 0; i < 13; i++)
 	{
 		best_errorvals_in_modes[i] = 1e30f;
 	}
@@ -1276,6 +1276,7 @@ float compress_symbolic_block(
 			}
 		}
 
+		// Mode 0
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
 		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 		{
@@ -1339,6 +1340,7 @@ float compress_symbolic_block(
 				*scb = tempblocks[j];
 			}
 
+			// Modes 1-4
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
 
@@ -1352,11 +1354,13 @@ float compress_symbolic_block(
 	for (int partition_count = 2; partition_count <= 4; partition_count++)
 	{
 		int partition_indices_1plane[2];
-		int partition_indices_2planes[2];
+		int partition_index_2planes;
 
 		find_best_partitionings(ctx.config.tune_partition_limit,
-								bsd, partition_count, blk, ewb, 1,
-								&(partition_indices_1plane[0]), &(partition_indices_1plane[1]), &(partition_indices_2planes[0]));
+								bsd, partition_count, blk, ewb,
+								&(partition_indices_1plane[0]),
+								&(partition_indices_1plane[1]),
+								&partition_index_2planes);
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -1386,7 +1390,8 @@ float compress_symbolic_block(
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
+			// Modes 5, 6, 8, 9, 11, 12
+			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
 			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 			{
@@ -1410,14 +1415,15 @@ float compress_symbolic_block(
 			continue;
 		}
 
-		for (int i = 0; i < 2; i++)
+
+		if (lowest_correl <= ctx.config.tune_two_plane_early_out_limit)
 		{
 			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
 															 mode_cutoff,
 															 ctx.config.tune_refinement_limit,
 															 bsd,
 															 partition_count,
-															 partition_indices_2planes[i] & (PARTITION_COUNT - 1), partition_indices_2planes[i] >> PARTITION_BITS,
+															 partition_index_2planes & (PARTITION_COUNT - 1), partition_index_2planes >> PARTITION_BITS,
 															 blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
@@ -1444,7 +1450,9 @@ float compress_symbolic_block(
 				}
 			}
 
-			best_errorvals_in_modes[4 * (partition_count - 2) + 5 + 2 + i] = best_errorval_in_mode;
+
+			// Modes 7, 10 (13 is unreachable)
+			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
 
 			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 			{

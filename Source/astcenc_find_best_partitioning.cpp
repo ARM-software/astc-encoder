@@ -223,7 +223,6 @@ void find_best_partitionings(
 	int partition_count,
 	const imageblock* pb,
 	const error_weight_block* ewb,
-	int candidates_to_return,
 	int* best_partitions_uncorrelated,
 	int* best_partitions_samechroma,
 	int* best_partitions_dual_weight_planes
@@ -719,99 +718,93 @@ void find_best_partitionings(
 		}
 	}
 
-	for (int i = 0; i < candidates_to_return; i++)
+	int best_uncorr_partition = 0;
+	int best_samechroma_partition = 0;
+	float best_uncorr_error = 1e30f;
+	float best_samechroma_error = 1e30f;
+
+	for (int j = 0; j <= defacto_search_limit; j++)
 	{
-		int best_uncorr_partition = 0;
-		int best_samechroma_partition = 0;
-		float best_uncorr_error = 1e30f;
-		float best_samechroma_error = 1e30f;
-
-		for (int j = 0; j <= defacto_search_limit; j++)
+		if (uncorr_errors[j] < best_uncorr_error)
 		{
-			if (uncorr_errors[j] < best_uncorr_error)
-			{
-				best_uncorr_partition = j;
-				best_uncorr_error = uncorr_errors[j];
-			}
+			best_uncorr_partition = j;
+			best_uncorr_error = uncorr_errors[j];
 		}
-
-		best_partitions_uncorrelated[i] = partition_sequence[best_uncorr_partition];
-		uncorr_errors[best_uncorr_partition] = 1e30f;
-		samechroma_errors[best_uncorr_partition] = 1e30f;
-
-		for (int j = 0; j <= defacto_search_limit; j++)
-		{
-			if (samechroma_errors[j] < best_samechroma_error)
-			{
-				best_samechroma_partition = j;
-				best_samechroma_error = samechroma_errors[j];
-			}
-		}
-
-		best_partitions_samechroma[i] = partition_sequence[best_samechroma_partition];
-		samechroma_errors[best_samechroma_partition] = 1e30f;
-		uncorr_errors[best_samechroma_partition] = 1e30f;
 	}
 
-	for (int i = 0; i < 2 * candidates_to_return; i++)
+	*best_partitions_uncorrelated = partition_sequence[best_uncorr_partition];
+	uncorr_errors[best_uncorr_partition] = 1e30f;
+	samechroma_errors[best_uncorr_partition] = 1e30f;
+
+	for (int j = 0; j <= defacto_search_limit; j++)
 	{
-		int best_partition = 0;
-		int best_component = 0;
-		float best_partition_error = 1e30f;
-
-		for (int j = 0; j <= defacto_search_limit; j++)
+		if (samechroma_errors[j] < best_samechroma_error)
 		{
-			if (separate_errors[j].x < best_partition_error)
-			{
-				best_component = 0;
-				best_partition = j;
-				best_partition_error = separate_errors[j].x;
-			}
-
-			if (separate_errors[j].y < best_partition_error)
-			{
-				best_component = 1;
-				best_partition = j;
-				best_partition_error = separate_errors[j].y;
-			}
-
-			if (separate_errors[j].z < best_partition_error)
-			{
-				best_component = 2;
-				best_partition = j;
-				best_partition_error = separate_errors[j].z;
-			}
-
-			if (uses_alpha)
-			{
-				if (separate_errors[j].w < best_partition_error)
-				{
-					best_component = 3;
-					best_partition = j;
-					best_partition_error = separate_errors[j].w;
-				}
-			}
+			best_samechroma_partition = j;
+			best_samechroma_error = samechroma_errors[j];
 		}
-
-		switch(best_component)
-		{
-		case 0:
-			separate_errors[best_partition].x = 1e30f;
-			break;
-		case 1:
-			separate_errors[best_partition].y = 1e30f;
-			break;
-		case 2:
-			separate_errors[best_partition].z = 1e30f;
-			break;
-		case 3:
-			separate_errors[best_partition].w = 1e30f;
-			break;
-		}
-
-		best_partition = (best_component << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
-		best_partitions_dual_weight_planes[i] = best_partition;
 	}
+
+	*best_partitions_samechroma = partition_sequence[best_samechroma_partition];
+	samechroma_errors[best_samechroma_partition] = 1e30f;
+	uncorr_errors[best_samechroma_partition] = 1e30f;
+
+	int best_partition = 0;
+	int best_component = 0;
+	float best_partition_error = 1e30f;
+
+	for (int j = 0; j <= defacto_search_limit; j++)
+	{
+		if (separate_errors[j].x < best_partition_error)
+		{
+			best_component = 0;
+			best_partition = j;
+			best_partition_error = separate_errors[j].x;
+		}
+
+		if (separate_errors[j].y < best_partition_error)
+		{
+			best_component = 1;
+			best_partition = j;
+			best_partition_error = separate_errors[j].y;
+		}
+
+		if (separate_errors[j].z < best_partition_error)
+		{
+			best_component = 2;
+			best_partition = j;
+			best_partition_error = separate_errors[j].z;
+		}
+
+		if (uses_alpha)
+		{
+			if (separate_errors[j].w < best_partition_error)
+			{
+				best_component = 3;
+				best_partition = j;
+				best_partition_error = separate_errors[j].w;
+			}
+		}
+	}
+
+	switch(best_component)
+	{
+	case 0:
+		separate_errors[best_partition].x = 1e30f;
+		break;
+	case 1:
+		separate_errors[best_partition].y = 1e30f;
+		break;
+	case 2:
+		separate_errors[best_partition].z = 1e30f;
+		break;
+	case 3:
+		separate_errors[best_partition].w = 1e30f;
+		break;
+	}
+
+	best_partition = (best_component << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
+	*best_partitions_dual_weight_planes = best_partition;
 }
 
 #endif
