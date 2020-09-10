@@ -62,6 +62,9 @@
 // Compile-time tuning parameters
 static const int TUNE_MIN_TEXELS_MODE0_FASTPATH { 25 };
 
+// A high default error value
+static const float ERROR_CALC_DEFAULT { 1e30f };
+
 // uncomment this macro to enable checking for inappropriate NaNs;
 // works on Linux only, and slows down encoding significantly.
 // #define DEBUG_CAPTURE_NAN
@@ -774,17 +777,27 @@ void compute_partition_error_color_weightings(
 	float4 error_weightings[4],
 	float4 color_scalefactors[4]);
 
-// function to find the best partitioning for a given block.
-
+/**
+ * \brief Find the best set of partitions to trial for a given block.
+ *
+ * On return \c best_partition_uncorrelated contains the best partition
+ * assuming the data has noncorrelated chroma, \c best_partition_samechroma
+ * contains the best partition assuming the data has corelated chroma, and
+ * \c best_partition_dualplane contains the best partition assuming the data
+ * has one uncorrelated color component.
+ *
+ * \c best_partition_dualplane is stored packed; bits [9:0] contain the
+ * best partition, bits [11:10] contain the best color component.
+ */
 void find_best_partitionings(
-	int partition_search_limit,
 	const block_size_descriptor* bsd,
-	int partition_count,
-	const imageblock* pb,
+	const imageblock* blk,
 	const error_weight_block* ewb,
-	int* best_partitions_uncorrelated,
-	int* best_partitions_samechroma,
-	int* best_partitions_dual_weight_planes);
+	int partition_count,
+	int partition_search_limit,
+	int* best_partition_uncorrelated,
+	int* best_partition_samechroma,
+	int* best_partition_dualplane);
 
 // use k-means clustering to compute a partition ordering for a block.
 void kmeans_compute_partition_ordering(

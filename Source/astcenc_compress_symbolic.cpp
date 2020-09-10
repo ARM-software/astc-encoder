@@ -1356,11 +1356,11 @@ float compress_symbolic_block(
 		int partition_indices_1plane[2];
 		int partition_index_2planes;
 
-		find_best_partitionings(ctx.config.tune_partition_limit,
-								bsd, partition_count, blk, ewb,
-								&(partition_indices_1plane[0]),
-								&(partition_indices_1plane[1]),
-								&partition_index_2planes);
+		find_best_partitionings(bsd, blk, ewb, partition_count,
+		                        ctx.config.tune_partition_limit,
+		                        &(partition_indices_1plane[0]),
+		                        &(partition_indices_1plane[1]),
+		                        &partition_index_2planes);
 
 		for (int i = 0; i < 2; i++)
 		{
