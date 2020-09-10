@@ -1246,8 +1246,7 @@ float compress_symbolic_block(
 
 	float best_errorval_in_mode;
 
-
-	int start_trial = bsd->texel_count < 25 ? 1 : 0;
+	int start_trial = bsd->texel_count < TUNE_MIN_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
 	{
 		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
