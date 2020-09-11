@@ -218,14 +218,14 @@ void compute_partition_error_color_weightings(
 
 /* main function to identify the best partitioning for a given number of texels */
 void find_best_partitionings(
-	int partition_search_limit,
 	const block_size_descriptor* bsd,
-	int partition_count,
-	const imageblock* pb,
+	const imageblock* blk,
 	const error_weight_block* ewb,
-	int* best_partitions_uncorrelated,
-	int* best_partitions_samechroma,
-	int* best_partitions_dual_weight_planes
+	int partition_count,
+	int partition_search_limit,
+	int* best_partition_uncorrelated,
+	int* best_partition_samechroma,
+	int* best_partition_dualplane
 ) {
 	// constant used to estimate quantization error for a given partitioning;
 	// the optimal value for this constant depends on bitrate.
@@ -251,50 +251,39 @@ void find_best_partitionings(
 
 	int partition_sequence[PARTITION_COUNT];
 
-	kmeans_compute_partition_ordering(bsd, partition_count, pb, partition_sequence);
+	kmeans_compute_partition_ordering(bsd, partition_count, blk, partition_sequence);
 
 	float weight_imprecision_estim_squared = weight_imprecision_estim * weight_imprecision_estim;
 
-	int uses_alpha = imageblock_uses_alpha(pb);
+	int uses_alpha = imageblock_uses_alpha(blk);
 
 	const partition_info* ptab = get_partition_table(bsd, partition_count);
 
-	// partitioning errors assuming uncorrelated-chrominance endpoints
-	float uncorr_errors[PARTITION_COUNT];
-	// partitioning errors assuming same-chrominance endpoints
-	float samechroma_errors[PARTITION_COUNT];
+	// Partitioning errors assuming uncorrelated-chrominance endpoints
+	float uncorr_best_error { ERROR_CALC_DEFAULT };
+	int uncorr_best_partition { 0 };
 
-	// partitioning errors assuming that one of the color channels
-	// is uncorrelated from all the other ones
-	float4 separate_errors[PARTITION_COUNT];
+	// Partitioning errors assuming same-chrominance endpoints
+	// Store two so we can always return one different to uncorr
+	float samechroma_best_errors[2] { ERROR_CALC_DEFAULT, ERROR_CALC_DEFAULT };
+	int samechroma_best_partitions[2] { 0, 0 };
 
-	int defacto_search_limit = PARTITION_COUNT - 1;
+	// Partitioning errors assuming that one color component is uncorrelated
+	float separate_best_error { ERROR_CALC_DEFAULT };
+	int separate_best_partition { 0 };
+	int separate_best_component { 0 };
 
 	if (uses_alpha)
 	{
 
-		for (int i = 0; i < PARTITION_COUNT; i++)
+		for (int i = 0; i < partition_search_limit; i++)
 		{
 			int partition = partition_sequence[i];
-			int bk_partition_count = ptab[partition].partition_count;
 
+			int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
-				uncorr_errors[i] = 1e35f;
-				samechroma_errors[i] = 1e35f;
-				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
 				continue;
-			}
-
-			// the sentinel value for partitions above the search limit must be smaller
-			// than the sentinel value for invalid partitions
-			if (i >= partition_search_limit)
-			{
-				defacto_search_limit = i;
-				uncorr_errors[i] = 1e34f;
-				samechroma_errors[i] = 1e34f;
-				separate_errors[i] = float4(1e34f, 1e34f, 1e34f, 1e34f);
-				break;
 			}
 
 			// compute the weighting to give to each color channel
@@ -315,7 +304,7 @@ void find_best_partitionings(
 			float4 averages[4];
 			float4 directions_rgba[4];
 
-			compute_averages_and_directions_rgba(ptab + partition, pb, ewb,
+			compute_averages_and_directions_rgba(ptab + partition, blk, ewb,
 			                                     color_scalefactors, averages,
 			                                     directions_rgba);
 
@@ -434,7 +423,7 @@ void find_best_partitionings(
 			float samechroma_error = 0.0f;
 			float4 separate_error = float4(0.0f, 0.0f, 0.0f, 0.0f);
 			compute_error_squared_rgba(ptab + partition,
-			                           pb,
+			                           blk,
 			                           ewb,
 			                           proc_uncorr_lines,
 			                           proc_samechroma_lines,
@@ -453,8 +442,8 @@ void find_best_partitionings(
 			float3 rgb_range[4];
 			float alpha_range[4];
 
-			compute_alpha_range(bsd->texel_count, ptab + partition, pb, ewb, alpha_range);
-			compute_rgb_range(bsd->texel_count, ptab + partition, pb, ewb, rgb_range);
+			compute_alpha_range(bsd->texel_count, ptab + partition, blk, ewb, alpha_range);
+			compute_rgb_range(bsd->texel_count, ptab + partition, blk, ewb, rgb_range);
 
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
@@ -502,35 +491,65 @@ void find_best_partitionings(
 				separate_error.w += alpha_range[j] * alpha_range[j] * error_weights.w;
 			}
 
-			uncorr_errors[i] = uncorr_error;
-			samechroma_errors[i] = samechroma_error;
-			separate_errors[i] = separate_error;
+			if (uncorr_error < uncorr_best_error)
+			{
+				uncorr_best_error = uncorr_error;
+				uncorr_best_partition = partition;
+			}
+
+			if (samechroma_error < samechroma_best_errors[0])
+			{
+				samechroma_best_errors[1] = samechroma_best_errors[0];
+				samechroma_best_partitions[1] = samechroma_best_partitions[0];
+
+				samechroma_best_errors[0] = samechroma_error;
+				samechroma_best_partitions[0] = partition;
+			}
+			else if (samechroma_error < samechroma_best_errors[1])
+			{
+				samechroma_best_errors[1] = samechroma_error;
+				samechroma_best_partitions[1] = partition;
+			}
+
+			if (separate_error.x < separate_best_error)
+			{
+				separate_best_error = separate_error.x;
+				separate_best_partition = partition;
+				separate_best_component = 0;
+			}
+
+			if (separate_error.y < separate_best_error)
+			{
+				separate_best_error = separate_error.y;
+				separate_best_partition = partition;
+				separate_best_component = 1;
+			}
+
+			if (separate_error.z < separate_best_error)
+			{
+				separate_best_error = separate_error.z;
+				separate_best_partition = partition;
+				separate_best_component = 2;
+			}
+
+			if (separate_error.w < separate_best_error)
+			{
+				separate_best_error = separate_error.w;
+				separate_best_partition = partition;
+				separate_best_component = 3;
+			}
 		}
 	}
 	else
 	{
-		for (int i = 0; i < PARTITION_COUNT; i++)
+		for (int i = 0; i < partition_search_limit; i++)
 		{
 			int partition = partition_sequence[i];
 
 			int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
-				uncorr_errors[i] = 1e35f;
-				samechroma_errors[i] = 1e35f;
-				separate_errors[i] = float4(1e35f, 1e35f, 1e35f, 1e35f);
 				continue;
-			}
-
-			// the sentinel value for valid partitions above the search limit must be smaller
-			// than the sentinel value for invalid partitions
-			if (i >= partition_search_limit)
-			{
-				defacto_search_limit = i;
-				uncorr_errors[i] = 1e34f;
-				samechroma_errors[i] = 1e34f;
-				separate_errors[i] = float4(1e34f, 1e34f, 1e34f, 1e34f);
-				break;
 			}
 
 			// compute the weighting to give to each color channel
@@ -552,7 +571,7 @@ void find_best_partitionings(
 			float3 averages[4];
 			float3 directions_rgb[4];
 
-			compute_averages_and_directions_rgb(ptab + partition, pb, ewb, color_scalefactors, averages, directions_rgb);
+			compute_averages_and_directions_rgb(ptab + partition, blk, ewb, color_scalefactors, averages, directions_rgb);
 
 			line3 uncorr_lines[4];
 			line3 samechroma_lines[4];
@@ -652,7 +671,7 @@ void find_best_partitionings(
 			float3 separate_error = float3(0.0f, 0.0f, 0.0f);
 
 			compute_error_squared_rgb(ptab + partition,
-			                          pb,
+			                          blk,
 			                          ewb,
 			                          proc_uncorr_lines,
 			                          proc_samechroma_lines,
@@ -667,7 +686,7 @@ void find_best_partitionings(
 			                          &separate_error);
 
 			float3 rgb_range[4];
-			compute_rgb_range(bsd->texel_count, ptab + partition, pb, ewb, rgb_range);
+			compute_rgb_range(bsd->texel_count, ptab + partition, blk, ewb, rgb_range);
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.
@@ -712,99 +731,56 @@ void find_best_partitionings(
 				separate_error.z += rgb_range[j].z * rgb_range[j].z * error_weights.z;
 			}
 
-			uncorr_errors[i] = uncorr_error;
-			samechroma_errors[i] = samechroma_error;
-			separate_errors[i] = float4(separate_error.x, separate_error.y, separate_error.z, 0.0f);
-		}
-	}
-
-	int best_uncorr_partition = 0;
-	int best_samechroma_partition = 0;
-	float best_uncorr_error = 1e30f;
-	float best_samechroma_error = 1e30f;
-
-	for (int j = 0; j <= defacto_search_limit; j++)
-	{
-		if (uncorr_errors[j] < best_uncorr_error)
-		{
-			best_uncorr_partition = j;
-			best_uncorr_error = uncorr_errors[j];
-		}
-	}
-
-	*best_partitions_uncorrelated = partition_sequence[best_uncorr_partition];
-	uncorr_errors[best_uncorr_partition] = 1e30f;
-	samechroma_errors[best_uncorr_partition] = 1e30f;
-
-	for (int j = 0; j <= defacto_search_limit; j++)
-	{
-		if (samechroma_errors[j] < best_samechroma_error)
-		{
-			best_samechroma_partition = j;
-			best_samechroma_error = samechroma_errors[j];
-		}
-	}
-
-	*best_partitions_samechroma = partition_sequence[best_samechroma_partition];
-	samechroma_errors[best_samechroma_partition] = 1e30f;
-	uncorr_errors[best_samechroma_partition] = 1e30f;
-
-	int best_partition = 0;
-	int best_component = 0;
-	float best_partition_error = 1e30f;
-
-	for (int j = 0; j <= defacto_search_limit; j++)
-	{
-		if (separate_errors[j].x < best_partition_error)
-		{
-			best_component = 0;
-			best_partition = j;
-			best_partition_error = separate_errors[j].x;
-		}
-
-		if (separate_errors[j].y < best_partition_error)
-		{
-			best_component = 1;
-			best_partition = j;
-			best_partition_error = separate_errors[j].y;
-		}
-
-		if (separate_errors[j].z < best_partition_error)
-		{
-			best_component = 2;
-			best_partition = j;
-			best_partition_error = separate_errors[j].z;
-		}
-
-		if (uses_alpha)
-		{
-			if (separate_errors[j].w < best_partition_error)
+			if (uncorr_error < uncorr_best_error)
 			{
-				best_component = 3;
-				best_partition = j;
-				best_partition_error = separate_errors[j].w;
+				uncorr_best_error = uncorr_error;
+				uncorr_best_partition = partition;
+			}
+
+			if (samechroma_error < samechroma_best_errors[0])
+			{
+				samechroma_best_errors[1] = samechroma_best_errors[0];
+				samechroma_best_partitions[1] = samechroma_best_partitions[0];
+
+				samechroma_best_errors[0] = samechroma_error;
+				samechroma_best_partitions[0] = partition;
+			}
+			else if (samechroma_error < samechroma_best_errors[1])
+			{
+				samechroma_best_errors[1] = samechroma_error;
+				samechroma_best_partitions[1] = partition;
+			}
+
+			if (separate_error.x < separate_best_error)
+			{
+				separate_best_error = separate_error.x;
+				separate_best_partition = partition;
+				separate_best_component = 0;
+			}
+
+			if (separate_error.y < separate_best_error)
+			{
+				separate_best_error = separate_error.y;
+				separate_best_partition = partition;
+				separate_best_component = 1;
+			}
+
+			if (separate_error.z < separate_best_error)
+			{
+				separate_best_error = separate_error.z;
+				separate_best_partition = partition;
+				separate_best_component = 2;
 			}
 		}
 	}
 
-	switch(best_component)
-	{
-	case 0:
-		separate_errors[best_partition].x = 1e30f;
-		break;
-	case 1:
-		separate_errors[best_partition].y = 1e30f;
-		break;
-	case 2:
-		separate_errors[best_partition].z = 1e30f;
-		break;
-	case 3:
-		separate_errors[best_partition].w = 1e30f;
-		break;
-	}
+	*best_partition_uncorrelated = uncorr_best_partition;
 
-	best_partition = (best_component << PARTITION_BITS) | partition_sequence[best_partition & (PARTITION_COUNT - 1)];
-	*best_partitions_dual_weight_planes = best_partition;
+	int index { samechroma_best_partitions[0] != uncorr_best_partition ? 0 : 1 };
+	*best_partition_samechroma = samechroma_best_partitions[index];
+
+	*best_partition_dualplane = (separate_best_component << PARTITION_BITS) |
+	                            (separate_best_partition);
 }
 
 #endif
