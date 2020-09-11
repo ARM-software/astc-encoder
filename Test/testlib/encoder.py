@@ -249,7 +249,7 @@ class Encoder2x(EncoderBase):
         dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
         dstDir = os.path.dirname(dstPath)
         dstFile = os.path.basename(dstPath)
-        dstPath = os.path.join(dstDir, self.name, blockSize, dstFile)
+        dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
 
         dstDir = os.path.dirname(dstPath)
         os.makedirs(dstDir, exist_ok=True)
@@ -288,7 +288,6 @@ class Encoder2x(EncoderBase):
         return r"\s*Coding time:\s*([0-9.]*) s"
 
 
-
 class Encoder2_0(Encoder2x):
     """
     This class wraps the 2.0 series binaries.
@@ -302,6 +301,7 @@ class Encoder2_0(Encoder2x):
             binary = "./Binaries/2.0/astcenc-%s" % variant
 
         super().__init__(variant, binary)
+
 
 class Encoder1_7(EncoderBase):
     """
@@ -337,7 +337,7 @@ class Encoder1_7(EncoderBase):
         dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
         dstDir = os.path.dirname(dstPath)
         dstFile = os.path.basename(dstPath)
-        dstPath = os.path.join(dstDir, self.name, blockSize, dstFile)
+        dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
 
         dstDir = os.path.dirname(dstPath)
         os.makedirs(dstDir, exist_ok=True)

@@ -41,22 +41,9 @@ import testlib.testset as tts
 import testlib.resultset as trs
 
 
-# Set the reference comparison against either 1.7 or latest 2.0 build
-COMPARE_WITH_1_7 = False
-
-# If we are comparing with 1.7 then allow some relaxed thresholds, note that
-# some failures are expected here as some images degrade by more than others
-if COMPARE_WITH_1_7:
-    RESULT_THRESHOLD_WARN = -0.1
-    RESULT_THRESHOLD_FAIL = -0.2
-    RESULT_THRESHOLD_3D_FAIL = -0.6
-    RESULT_REF_NAME = "reference-1.7"
-else:
-    RESULT_THRESHOLD_WARN = -0.01
-    RESULT_THRESHOLD_FAIL = -0.05
-    RESULT_THRESHOLD_3D_FAIL = -0.02
-    RESULT_REF_NAME = "reference-2.0-avx2"
-
+RESULT_THRESHOLD_WARN = -0.01
+RESULT_THRESHOLD_FAIL = -0.05
+RESULT_THRESHOLD_3D_FAIL = -0.02
 
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
@@ -241,12 +228,13 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
     return resultSet
 
 
-def get_encoder_params(encoderName, imageSet):
+def get_encoder_params(encoderName, referenceName, imageSet):
     """
     The the encoder and image set parameters for a test run.
 
     Args:
         encoderName (str): The encoder name.
+        referenceName (str): The reference encoder name.
         imageSet (str): The test image set.
 
     Returns:
@@ -260,18 +248,23 @@ def get_encoder_params(encoderName, imageSet):
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "ref-2.0":
-        # Note this option rebuilds a new reference test set using the
-        # user's locally build encoder.
+    elif encoderName == "ref-2.0-avx2":
         encoder = te.Encoder2_0("avx2")
         name = "reference-2.0-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-master-avx2":
+        # Warning: this option rebuilds a new reference test result for the
+        # master branch using the user's locally build encoder in ./Source.
+        encoder = te.Encoder2x("avx2")
+        name = "reference-master-avx2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     else:
         encoder = te.Encoder2x(encoderName)
         name = "develop-%s" % encoderName
         outDir = "TestOutput/%s" % imageSet
-        refName = RESULT_REF_NAME
+        refName = referenceName.replace("ref", "reference")
 
     return (encoder, name, outDir, refName)
 
@@ -285,11 +278,14 @@ def parse_command_line():
     """
     parser = argparse.ArgumentParser()
 
-    refcoders = ["ref-1.7", "ref-2.0"]
+    refcoders = ["ref-1.7", "ref-2.0-avx2", "ref-master-avx2"]
     testcoders = ["sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
+
+    parser.add_argument("--reference", dest="reference", default="ref-2.0-avx2",
+                        choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
     parser.add_argument("--color-profile", dest="profiles", default="all",
@@ -367,7 +363,7 @@ def main():
         for imageSet in args.testSets:
             for encoderName in args.encoders:
                 (encoder, name, outDir, refName) = \
-                    get_encoder_params(encoderName, imageSet)
+                    get_encoder_params(encoderName, args.reference, imageSet)
 
                 testDir = "Test/Images/%s" % imageSet
                 testRes = "%s/astc_%s_%s_results.csv" % (outDir, name, quality)
