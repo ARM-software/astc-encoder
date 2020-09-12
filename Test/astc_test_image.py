@@ -193,7 +193,8 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
     curCount = 0
     maxCount = count_test_set(testSet, blockSizes)
 
-    title = "Test Set: %s / Encoder: %s -%s" % (testSet.name, encoder.name, quality)
+    dat = (testSet.name, encoder.name, quality)
+    title = "Test Set: %s / Encoder: %s -%s" % dat
     print(title)
     print("=" * len(title))
 
@@ -370,7 +371,8 @@ def main():
 
                 testRef = None
                 if refName:
-                    testRefPath = "%s/astc_%s_%s_results.csv" % (testDir, refName, quality)
+                    dat = (testDir, refName, quality)
+                    testRefPath = "%s/astc_%s_%s_results.csv" % dat
                     testRef = trs.ResultSet(imageSet)
                     testRef.load_from_file(testRefPath)
 
@@ -379,7 +381,7 @@ def main():
                                       args.profiles, args.formats, args.testImage)
 
                 resultSet = run_test_set(encoder, testRef, testSet, quality,
-                                        args.blockSizes, args.testRepeats)
+                                         args.blockSizes, args.testRepeats)
 
                 resultSet.save_to_file(testRes)
 
