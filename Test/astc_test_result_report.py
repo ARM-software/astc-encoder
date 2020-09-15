@@ -235,9 +235,9 @@ def print_result_set(imageSet, quality, encoders, results, printHeader):
 
         dr = DeltaRecord(imageSet, quality, encoders, recordSet)
 
-        if first:
+        if printHeader:
             print(dr.get_full_row_header_csv())
-            first = False
+            printHeader = False
 
         print(dr.get_full_row_csv())
 
@@ -260,7 +260,7 @@ def main():
         qualitySet = sorted(qualityTree.keys())
 
         for qual in qualitySet:
-            encoderTree = qualityTree[quality]
+            encoderTree = qualityTree[qual]
             encoderSet = sorted(encoderTree.keys())
 
             if len(encoderSet) > 1:
