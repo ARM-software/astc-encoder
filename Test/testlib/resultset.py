@@ -119,15 +119,16 @@ class ResultSummary():
         dat = (overall, self.passes, self.warnings, self.fails)
         result = ["\nSet Status: %s (Pass: %u | Warn: %u | Fail: %u)" % dat]
 
-        # Performance summaries
-        dat = (np.mean(self.tTimes), np.std(self.tTimes))
-        result.append("\nTotal time:     Mean: %+0.2fx    Std: %0.2fx" % dat)
+        if (self.tTimes):
+            # Performance summaries
+            dat = (np.mean(self.tTimes), np.std(self.tTimes))
+            result.append("\nTotal time:     Mean: %+0.2fx    Std: %0.2fx" % dat)
 
-        dat = (np.mean(self.cTimes), np.std(self.cTimes))
-        result.append("Coding time:    Mean: %+0.2fx    Std: %0.2fx" % dat)
+            dat = (np.mean(self.cTimes), np.std(self.cTimes))
+            result.append("Coding time:    Mean: %+0.2fx    Std: %0.2fx" % dat)
 
-        dat = (np.mean(self.psnrs), np.std(self.psnrs))
-        result.append("Image quality:  Mean: %+0.2f dB  Std: %0.2f dB" % dat)
+            dat = (np.mean(self.psnrs), np.std(self.psnrs))
+            result.append("Image quality:  Mean: %+0.2f dB  Std: %0.2f dB" % dat)
 
         return "\n".join(result)
 
