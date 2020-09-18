@@ -161,7 +161,7 @@ OpenGL ES shader code for reconstruction of the Z value is:
 
     vec3 nml;
     nml.xy = texture(...).ga;                // Load normals (range 0 to 1)
-    nml.xy = nml.xy * 2.0f - 1.0f;           // Unpack normals (range -1 to +1)
+    nml.xy = nml.xy * 2.0 - 1.0;             // Unpack normals (range -1 to +1)
     nml.z = sqrt(1 - dot(nml.xy, nml.xy));   // Compute Z, given unit length
 
 In addition to this it is useful to optimize for angular error in the resulting
