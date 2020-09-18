@@ -159,9 +159,10 @@ To encode this we therefore want to store two input channels and should
 therefore use the `rrrg` coding swizzle, and the `.ga` sampling swizzle. The
 OpenGL ES shader code for reconstruction of the Z value is:
 
-    vec3 normal;
-    normal.xy = texture(...).ga;
-    normal.z = sqrt(1 - dot(normal.xy, normal.xy));
+    vec3 nml;
+    nml.xy = texture(...).ga;                // Load normals (range 0 to 1)
+    nml.xy = nml.xy * 2.0f - 1.0f;           // Unpack normals (range -1 to +1)
+    nml.z = sqrt(1 - dot(nml.xy, nml.xy));   // Compute Z, given unit length
 
 In addition to this it is useful to optimize for angular error in the resulting
 vector rather than for absolute color error in the data, which improves the
