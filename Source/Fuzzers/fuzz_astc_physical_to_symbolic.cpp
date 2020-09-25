@@ -16,18 +16,14 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Fuzz target for physical_to_symbolic.
+ * @brief Fuzz target for physical_to_symbolic().
  *
- * This function is the main entrypoint for decompressing a 16 byte block of
+ * This function is the first entrypoint for decompressing a 16 byte block of
  * input ASTC data from disk. The 16 bytes can contain arbitrary data; they
  * are read from an external source, but the block size used must be a valid
  * ASTC block footprint.
- *
- * Fuzz design improvements - this function itself is quite small, but it
- * requires use to create a BSD, which actually takes quite a bit of time
- * compared to physical_to_symbolic function we want to fuzz. Possible to
- * avoid that?
  */
+
 
 #include "astcenc_internal.h"
 
@@ -47,9 +43,42 @@ std::array<BlockSizes, 3> testSz {{
 	{6,  6,  6}  // Largest 3D block
 }};
 
+std::array<block_size_descriptor, 3> testBSD;
+
+/**
+ * @brief Utility function to create all of the block size descriptors needed.
+ *
+ * This is triggered once via a static initializer.
+ *
+ * Triggering once is important so that we only create a single BSD per block
+ * size we need, rather than one per fuzzer iteration (it's expensive). This
+ * improves fuzzer throughput by ~ 1000x!
+ *
+ * Triggering via a static initializer, rather than a lazy init in the fuzzer
+ * function, is important because is means that the BSD is allocated before
+ * fuzzing starts. This means that leaksanitizer will ignore the fact that we
+ * "leak" the dynamic allocations inside the BSD (we never call term()).
+ */
+bool bsd_initializer()
+{
+	for (int i = 0; i < testSz.size(); i++)
+	{
+		init_block_size_descriptor(
+		    testSz[i].x,
+		    testSz[i].y,
+		    testSz[i].z,
+		    &(testBSD[i]));
+	}
+
+	return true;
+}
+
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
-	// Must have 4 (int - block size select) and 16 (blob - payload) bytes
+	// Preinitialize the block size descriptors we need
+	static bool init = bsd_initializer();
+
+	// Must have 4 (select block size) and 16 (payload) bytes
 	if (size < 4 + 16)
 	{
 		return 0;
@@ -58,19 +87,17 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	FuzzedDataProvider stream(data, size);
 
 	// Select a block size to test
-	// TODO - building a BSD is slow compared to the physical_to_symbolic step.
-	//        Is it possible to cache these without triggering leaksanitizer?
-	block_size_descriptor bsd;
 	int i = stream.ConsumeIntegralInRange<int>(0, testSz.size() - 1);
-	init_block_size_descriptor(testSz[i].x, testSz[i].y, testSz[i].z, &bsd);
+	block_size_descriptor* bsd = &(testBSD[i]);
 
+	// Populate the physical block
 	physical_compressed_block pcb;
 	std::vector<uint8_t> buffer = stream.ConsumeBytes<uint8_t>(16);
 	std::memcpy(&pcb, buffer.data(), 16);
 
+	// Call the function under test
 	symbolic_compressed_block scb;
-	physical_to_symbolic(&bsd, pcb, &scb);
+	physical_to_symbolic(bsd, pcb, &scb);
 
-	term_block_size_descriptor(&bsd);
 	return 0;
 }
