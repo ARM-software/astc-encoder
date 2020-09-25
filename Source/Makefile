@@ -97,10 +97,12 @@ OBJECTS = $(SOURCES:.cpp=-$(BINARY).o)
 EXTERNAL_OBJECTS = $(EXTERNAL_SOURCES:.h=-$(BINARY).o)
 
 # ==================================================
-# CXXFLAGS setup (and input validation)
+# CXXFLAGS setup (and input validation). This appends on top of whatever
+# CXXFLAGS are set on the command line, which is useful for integration
+# with the oss-fuzz build infrastructure for fuzz testing
 
-CXXFLAGS = -std=c++14 -fvisibility=hidden \
-           -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
+CXXFLAGS += -std=c++14 -fvisibility=hidden \
+            -Wall -Wextra -Wpedantic -Werror -Werror=shadow -Wdouble-promotion
 
 # Validate that the APP parameter is a supported value, and patch CXXFLAGS
 ifeq ($(APP),astcenc)
