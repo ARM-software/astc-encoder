@@ -1,3 +1,3 @@
-@Library('hive-infra-library@changes/18/246018/1') _
+@Library('hive-infra-library@master') _
 
 dockerBuildImage('jenkins/build.Dockerfile', 'astcenc')
