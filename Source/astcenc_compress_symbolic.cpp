@@ -1140,15 +1140,17 @@ static void prepare_block_statistics(
 	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
 }
 
-void compress_symbolic_block(
+void compress_block(
 	const astcenc_context& ctx,
 	const astcenc_image& input_image,
-	astcenc_profile decode_mode,
-	const block_size_descriptor* bsd,
 	const imageblock* blk,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
+	physical_compressed_block& pcb,
 	compress_symbolic_block_buffers* tmpbuf)
 {
+	astcenc_profile decode_mode = ctx.config.profile;
+	const block_size_descriptor* bsd = ctx.bsd;
+
 	int xpos = blk->xpos;
 	int ypos = blk->ypos;
 	int zpos = blk->zpos;
@@ -1156,23 +1158,23 @@ void compress_symbolic_block(
 	if (blk->red_min == blk->red_max && blk->green_min == blk->green_max && blk->blue_min == blk->blue_max && blk->alpha_min == blk->alpha_max)
 	{
 		// detected a constant-color block. Encode as FP16 if using HDR
-		scb->error_block = 0;
+		scb.error_block = 0;
 
 		if ((decode_mode == ASTCENC_PRF_HDR) ||
 		    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
 		{
-			scb->block_mode = -1;
-			scb->partition_count = 0;
-			scb->constant_color[0] = float_to_sf16(blk->orig_data[0], SF_NEARESTEVEN);
-			scb->constant_color[1] = float_to_sf16(blk->orig_data[1], SF_NEARESTEVEN);
-			scb->constant_color[2] = float_to_sf16(blk->orig_data[2], SF_NEARESTEVEN);
-			scb->constant_color[3] = float_to_sf16(blk->orig_data[3], SF_NEARESTEVEN);
+			scb.block_mode = -1;
+			scb.partition_count = 0;
+			scb.constant_color[0] = float_to_sf16(blk->orig_data[0], SF_NEARESTEVEN);
+			scb.constant_color[1] = float_to_sf16(blk->orig_data[1], SF_NEARESTEVEN);
+			scb.constant_color[2] = float_to_sf16(blk->orig_data[2], SF_NEARESTEVEN);
+			scb.constant_color[3] = float_to_sf16(blk->orig_data[3], SF_NEARESTEVEN);
 		}
 		else
 		{
 			// Encode as UNORM16 if NOT using HDR.
-			scb->block_mode = -2;
-			scb->partition_count = 0;
+			scb.block_mode = -2;
+			scb.partition_count = 0;
 			float red = blk->orig_data[0];
 			float green = blk->orig_data[1];
 			float blue = blk->orig_data[2];
@@ -1198,15 +1200,13 @@ void compress_symbolic_block(
 			else if (alpha > 1)
 				alpha = 1;
 
-			scb->constant_color[0] = astc::flt2int_rtn(red * 65535.0f);
-			scb->constant_color[1] = astc::flt2int_rtn(green * 65535.0f);
-			scb->constant_color[2] = astc::flt2int_rtn(blue * 65535.0f);
-			scb->constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
+			scb.constant_color[0] = astc::flt2int_rtn(red * 65535.0f);
+			scb.constant_color[1] = astc::flt2int_rtn(green * 65535.0f);
+			scb.constant_color[2] = astc::flt2int_rtn(blue * 65535.0f);
+			scb.constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
 
-		physical_compressed_block pcb;
-		symbolic_to_physical(*bsd, *scb, pcb);
-		physical_to_symbolic(*bsd, pcb, *scb);
+		symbolic_to_physical(*bsd, scb, pcb);
 		return;
 	}
 
@@ -1272,7 +1272,7 @@ void compress_symbolic_block(
 			if (errorval < error_of_best_block)
 			{
 				error_of_best_block = errorval;
-				*scb = tempblocks[j];
+				scb = tempblocks[j];
 			}
 		}
 
@@ -1337,7 +1337,7 @@ void compress_symbolic_block(
 			if (errorval < error_of_best_block)
 			{
 				error_of_best_block = errorval;
-				*scb = tempblocks[j];
+				scb = tempblocks[j];
 			}
 
 			// Modes 1-4
@@ -1386,7 +1386,7 @@ void compress_symbolic_block(
 				if (errorval < error_of_best_block)
 				{
 					error_of_best_block = errorval;
-					*scb = tempblocks[j];
+					scb = tempblocks[j];
 				}
 			}
 
@@ -1446,7 +1446,7 @@ void compress_symbolic_block(
 				if (errorval < error_of_best_block)
 				{
 					error_of_best_block = errorval;
-					*scb = tempblocks[j];
+					scb = tempblocks[j];
 				}
 			}
 
@@ -1462,9 +1462,7 @@ void compress_symbolic_block(
 
 END_OF_TESTS:
 	// compress/decompress to a physical block
-	physical_compressed_block pcb;
-	symbolic_to_physical(*bsd, *scb, pcb);
-	physical_to_symbolic(*bsd, pcb, *scb);
+	symbolic_to_physical(*bsd, scb, pcb);
 }
 
 #endif

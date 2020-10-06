@@ -1107,13 +1107,12 @@ void compute_angular_endpoints_2planes(
 
 /* *********************************** high-level encode and decode functions ************************************ */
 
-void compress_symbolic_block(
+void compress_block(
 	const astcenc_context& ctx,
 	const astcenc_image& image,
-	astcenc_profile decode_mode,
-	const block_size_descriptor* bsd,
 	const imageblock* blk,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
+	physical_compressed_block& pcb,
 	compress_symbolic_block_buffers* tmpbuf);
 
 void decompress_symbolic_block(

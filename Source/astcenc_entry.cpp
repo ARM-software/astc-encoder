@@ -600,13 +600,12 @@ static void compress_image(
 			// Decompress
 			fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 
-			symbolic_compressed_block scb;
-			compress_symbolic_block(ctx, image, decode_mode, bsd, &pb, &scb, temp_buffers);
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
 			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
-			symbolic_to_physical(*bsd, scb, *pcb);
+			symbolic_compressed_block scb;
+			compress_block(ctx, image, &pb, scb, *pcb, temp_buffers);
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);
