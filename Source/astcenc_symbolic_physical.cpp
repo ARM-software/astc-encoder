@@ -65,13 +65,12 @@ static inline int bitrev8(int p)
 	return p;
 }
 
-physical_compressed_block symbolic_to_physical(
-	const block_size_descriptor* bsd,
-	const symbolic_compressed_block* sc
+void symbolic_to_physical(
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	physical_compressed_block& pcb
 ) {
-	physical_compressed_block res;
-
-	if (sc->block_mode == -2)
+	if (scb.block_mode == -2)
 	{
 		// UNORM16 constant-color block.
 		// This encodes separate constant-color blocks. There is currently
@@ -80,19 +79,19 @@ physical_compressed_block symbolic_to_physical(
 		static const uint8_t cbytes[8] = { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
-			res.data[i] = cbytes[i];
+			pcb.data[i] = cbytes[i];
 		}
 
 		for (int i = 0; i < 4; i++)
 		{
-			res.data[2 * i + 8] = sc->constant_color[i] & 0xFF;
-			res.data[2 * i + 9] = (sc->constant_color[i] >> 8) & 0xFF;
+			pcb.data[2 * i + 8] = scb.constant_color[i] & 0xFF;
+			pcb.data[2 * i + 9] = (scb.constant_color[i] >> 8) & 0xFF;
 		}
 
-		return res;
+		return;
 	}
 
-	if (sc->block_mode == -1)
+	if (scb.block_mode == -1)
 	{
 		// FP16 constant-color block.
 		// This encodes separate constant-color blocks. There is currently
@@ -101,19 +100,19 @@ physical_compressed_block symbolic_to_physical(
 		static const uint8_t cbytes[8] = { 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
-			res.data[i] = cbytes[i];
+			pcb.data[i] = cbytes[i];
 		}
 
 		for (int i = 0; i < 4; i++)
 		{
-			res.data[2 * i + 8] = sc->constant_color[i] & 0xFF;
-			res.data[2 * i + 9] = (sc->constant_color[i] >> 8) & 0xFF;
+			pcb.data[2 * i + 8] = scb.constant_color[i] & 0xFF;
+			pcb.data[2 * i + 9] = (scb.constant_color[i] >> 8) & 0xFF;
 		}
 
-		return res;
+		return;
 	}
 
-	int partition_count = sc->partition_count;
+	int partition_count = scb.partition_count;
 
 	// first, compress the weights. They are encoded as an ordinary
 	// integer-sequence, then bit-reversed
@@ -123,11 +122,11 @@ physical_compressed_block symbolic_to_physical(
 		weightbuf[i] = 0;
 	}
 
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *ixtab2 = bsd.decimation_tables;
 
-	int weight_count = ixtab2[bsd->block_modes[sc->block_mode].decimation_mode]->num_weights;
-	int weight_quantization_method = bsd->block_modes[sc->block_mode].quantization_mode;
-	int is_dual_plane = bsd->block_modes[sc->block_mode].is_dual_plane;
+	int weight_count = ixtab2[bsd.block_modes[scb.block_mode].decimation_mode]->num_weights;
+	int weight_quantization_method = bsd.block_modes[scb.block_mode].quantization_mode;
+	int is_dual_plane = bsd.block_modes[scb.block_mode].is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
@@ -139,23 +138,23 @@ physical_compressed_block symbolic_to_physical(
 		uint8_t weights[64];
 		for (int i = 0; i < weight_count; i++)
 		{
-			weights[2 * i] = sc->plane1_weights[i];
-			weights[2 * i + 1] = sc->plane2_weights[i];
+			weights[2 * i] = scb.plane1_weights[i];
+			weights[2 * i + 1] = scb.plane2_weights[i];
 		}
 		encode_ise(weight_quantization_method, real_weight_count, weights, weightbuf, 0);
 	}
 	else
 	{
-		encode_ise(weight_quantization_method, weight_count, sc->plane1_weights, weightbuf, 0);
+		encode_ise(weight_quantization_method, weight_count, scb.plane1_weights, weightbuf, 0);
 	}
 
 	for (int i = 0; i < 16; i++)
 	{
-		res.data[i] = bitrev8(weightbuf[15 - i]);
+		pcb.data[i] = bitrev8(weightbuf[15 - i]);
 	}
 
-	write_bits(sc->block_mode, 11, 0, res.data);
-	write_bits(partition_count - 1, 2, 11, res.data);
+	write_bits(scb.block_mode, 11, 0, pcb.data);
+	write_bits(partition_count - 1, 2, 11, pcb.data);
 
 	int below_weights_pos = 128 - bits_for_weights;
 
@@ -163,12 +162,12 @@ physical_compressed_block symbolic_to_physical(
 	// 2 or more partitions.
 	if (partition_count > 1)
 	{
-		write_bits(sc->partition_index, 6, 13, res.data);
-		write_bits(sc->partition_index >> 6, PARTITION_BITS - 6, 19, res.data);
+		write_bits(scb.partition_index, 6, 13, pcb.data);
+		write_bits(scb.partition_index >> 6, PARTITION_BITS - 6, 19, pcb.data);
 
-		if (sc->color_formats_matched)
+		if (scb.color_formats_matched)
 		{
-			write_bits(sc->color_formats[0] << 2, 6, 13 + PARTITION_BITS, res.data);
+			write_bits(scb.color_formats[0] << 2, 6, 13 + PARTITION_BITS, pcb.data);
 		}
 		else
 		{
@@ -178,7 +177,7 @@ physical_compressed_block symbolic_to_physical(
 
 			for (int i = 0; i < partition_count; i++)
 			{
-				int class_of_format = sc->color_formats[i] >> 2;
+				int class_of_format = scb.color_formats[i] >> 2;
 				if (class_of_format < low_class)
 				{
 					low_class = class_of_format;
@@ -195,14 +194,14 @@ physical_compressed_block symbolic_to_physical(
 
 			for (int i = 0; i < partition_count; i++)
 			{
-				int classbit_of_format = (sc->color_formats[i] >> 2) - low_class;
+				int classbit_of_format = (scb.color_formats[i] >> 2) - low_class;
 				encoded_type |= classbit_of_format << bitpos;
 				bitpos++;
 			}
 
 			for (int i = 0; i < partition_count; i++)
 			{
-				int lowbits_of_format = sc->color_formats[i] & 3;
+				int lowbits_of_format = scb.color_formats[i] & 3;
 				encoded_type |= lowbits_of_format << bitpos;
 				bitpos += 2;
 			}
@@ -211,56 +210,54 @@ physical_compressed_block symbolic_to_physical(
 			int encoded_type_highpart = encoded_type >> 6;
 			int encoded_type_highpart_size = (3 * partition_count) - 4;
 			int encoded_type_highpart_pos = 128 - bits_for_weights - encoded_type_highpart_size;
-			write_bits(encoded_type_lowpart, 6, 13 + PARTITION_BITS, res.data);
-			write_bits(encoded_type_highpart, encoded_type_highpart_size, encoded_type_highpart_pos, res.data);
+			write_bits(encoded_type_lowpart, 6, 13 + PARTITION_BITS, pcb.data);
+			write_bits(encoded_type_highpart, encoded_type_highpart_size, encoded_type_highpart_pos, pcb.data);
 			below_weights_pos -= encoded_type_highpart_size;
 		}
 	}
 	else
 	{
-		write_bits(sc->color_formats[0], 4, 13, res.data);
+		write_bits(scb.color_formats[0], 4, 13, pcb.data);
 	}
 
 	// in dual-plane mode, encode the color component of the second plane of weights
 	if (is_dual_plane)
 	{
-		write_bits(sc->plane2_color_component, 2, below_weights_pos - 2, res.data);
+		write_bits(scb.plane2_color_component, 2, below_weights_pos - 2, pcb.data);
 	}
 
 	// finally, encode the color bits
 	// first, get hold of all the color components to encode
 	uint8_t values_to_encode[32];
 	int valuecount_to_encode = 0;
-	for (int i = 0; i < sc->partition_count; i++)
+	for (int i = 0; i < scb.partition_count; i++)
 	{
-		int vals = 2 * (sc->color_formats[i] >> 2) + 2;
+		int vals = 2 * (scb.color_formats[i] >> 2) + 2;
 		for (int j = 0; j < vals; j++)
 		{
-			values_to_encode[j + valuecount_to_encode] = sc->color_values[i][j];
+			values_to_encode[j + valuecount_to_encode] = scb.color_values[i][j];
 		}
 		valuecount_to_encode += vals;
 	}
 
 	// then, encode an ISE based on them.
-	encode_ise(sc->color_quantization_level, valuecount_to_encode, values_to_encode, res.data, (sc->partition_count == 1 ? 17 : 19 + PARTITION_BITS));
-
-	return res;
+	encode_ise(scb.color_quantization_level, valuecount_to_encode, values_to_encode, pcb.data, (scb.partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 }
 
 void physical_to_symbolic(
-	const block_size_descriptor* bsd,
-	physical_compressed_block pb,
-	symbolic_compressed_block* res
+	const block_size_descriptor& bsd,
+	const physical_compressed_block& pcb,
+	symbolic_compressed_block& scb
 ) {
 	uint8_t bswapped[16];
 
-	res->error_block = 0;
+	scb.error_block = 0;
 
 	// get hold of the decimation tables.
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *ixtab2 = bsd.decimation_tables;
 
 	// extract header fields
-	int block_mode = read_bits(11, 0, pb.data);
+	int block_mode = read_bits(11, 0, pcb.data);
 	if ((block_mode & 0x1FF) == 0x1FC)
 	{
 		// void-extent block!
@@ -268,82 +265,82 @@ void physical_to_symbolic(
 		// check what format the data has
 		if (block_mode & 0x200)
 		{
-			res->block_mode = -1;	// floating-point
+			scb.block_mode = -1;	// floating-point
 		}
 		else
 		{
-			res->block_mode = -2;	// unorm16.
+			scb.block_mode = -2;	// unorm16.
 		}
 
-		res->partition_count = 0;
+		scb.partition_count = 0;
 		for (int i = 0; i < 4; i++)
 		{
-			res->constant_color[i] = pb.data[2 * i + 8] | (pb.data[2 * i + 9] << 8);
+			scb.constant_color[i] = pcb.data[2 * i + 8] | (pcb.data[2 * i + 9] << 8);
 		}
 
 		// additionally, check that the void-extent
-		if (bsd->zdim == 1)
+		if (bsd.zdim == 1)
 		{
 			// 2D void-extent
-			int rsvbits = read_bits(2, 10, pb.data);
+			int rsvbits = read_bits(2, 10, pcb.data);
 			if (rsvbits != 3)
 			{
-				res->error_block = 1;
+				scb.error_block = 1;
 			}
 
-			int vx_low_s = read_bits(8, 12, pb.data) | (read_bits(5, 12 + 8, pb.data) << 8);
-			int vx_high_s = read_bits(8, 25, pb.data) | (read_bits(5, 25 + 8, pb.data) << 8);
-			int vx_low_t = read_bits(8, 38, pb.data) | (read_bits(5, 38 + 8, pb.data) << 8);
-			int vx_high_t = read_bits(8, 51, pb.data) | (read_bits(5, 51 + 8, pb.data) << 8);
+			int vx_low_s = read_bits(8, 12, pcb.data) | (read_bits(5, 12 + 8, pcb.data) << 8);
+			int vx_high_s = read_bits(8, 25, pcb.data) | (read_bits(5, 25 + 8, pcb.data) << 8);
+			int vx_low_t = read_bits(8, 38, pcb.data) | (read_bits(5, 38 + 8, pcb.data) << 8);
+			int vx_high_t = read_bits(8, 51, pcb.data) | (read_bits(5, 51 + 8, pcb.data) << 8);
 
 			int all_ones = vx_low_s == 0x1FFF && vx_high_s == 0x1FFF && vx_low_t == 0x1FFF && vx_high_t == 0x1FFF;
 
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t) && !all_ones)
 			{
-				res->error_block = 1;
+				scb.error_block = 1;
 			}
 		}
 		else
 		{
 			// 3D void-extent
-			int vx_low_s = read_bits(9, 10, pb.data);
-			int vx_high_s = read_bits(9, 19, pb.data);
-			int vx_low_t = read_bits(9, 28, pb.data);
-			int vx_high_t = read_bits(9, 37, pb.data);
-			int vx_low_p = read_bits(9, 46, pb.data);
-			int vx_high_p = read_bits(9, 55, pb.data);
+			int vx_low_s = read_bits(9, 10, pcb.data);
+			int vx_high_s = read_bits(9, 19, pcb.data);
+			int vx_low_t = read_bits(9, 28, pcb.data);
+			int vx_high_t = read_bits(9, 37, pcb.data);
+			int vx_low_p = read_bits(9, 46, pcb.data);
+			int vx_high_p = read_bits(9, 55, pcb.data);
 
 			int all_ones = vx_low_s == 0x1FF && vx_high_s == 0x1FF && vx_low_t == 0x1FF && vx_high_t == 0x1FF && vx_low_p == 0x1FF && vx_high_p == 0x1FF;
 
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t || vx_low_p >= vx_high_p) && !all_ones)
 			{
-				res->error_block = 1;
+				scb.error_block = 1;
 			}
 		}
 
 		return;
 	}
 
-	if (bsd->block_modes[block_mode].permit_decode == 0)
+	if (bsd.block_modes[block_mode].permit_decode == 0)
 	{
-		res->error_block = 1;
+		scb.error_block = 1;
 		return;
 	}
 
-	int weight_count = ixtab2[bsd->block_modes[block_mode].decimation_mode]->num_weights;
-	int weight_quantization_method = bsd->block_modes[block_mode].quantization_mode;
-	int is_dual_plane = bsd->block_modes[block_mode].is_dual_plane;
+	int weight_count = ixtab2[bsd.block_modes[block_mode].decimation_mode]->num_weights;
+	int weight_quantization_method = bsd.block_modes[block_mode].quantization_mode;
+	int is_dual_plane = bsd.block_modes[block_mode].is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
-	int partition_count = read_bits(2, 11, pb.data) + 1;
+	int partition_count = read_bits(2, 11, pcb.data) + 1;
 
-	res->block_mode = block_mode;
-	res->partition_count = partition_count;
+	scb.block_mode = block_mode;
+	scb.partition_count = partition_count;
 
 	for (int i = 0; i < 16; i++)
 	{
-		bswapped[i] = bitrev8(pb.data[15 - i]);
+		bswapped[i] = bitrev8(pcb.data[15 - i]);
 	}
 
 	int bits_for_weights = compute_ise_bitcount(real_weight_count,
@@ -357,35 +354,35 @@ void physical_to_symbolic(
 		decode_ise(weight_quantization_method, real_weight_count, bswapped, indices, 0);
 		for (int i = 0; i < weight_count; i++)
 		{
-			res->plane1_weights[i] = indices[2 * i];
-			res->plane2_weights[i] = indices[2 * i + 1];
+			scb.plane1_weights[i] = indices[2 * i];
+			scb.plane2_weights[i] = indices[2 * i + 1];
 		}
 	}
 	else
 	{
-		decode_ise(weight_quantization_method, weight_count, bswapped, res->plane1_weights, 0);
+		decode_ise(weight_quantization_method, weight_count, bswapped, scb.plane1_weights, 0);
 	}
 
 	if (is_dual_plane && partition_count == 4)
 	{
-		res->error_block = 1;
+		scb.error_block = 1;
 	}
 
-	res->color_formats_matched = 0;
+	scb.color_formats_matched = 0;
 
 	// then, determine the format of each endpoint pair
 	int color_formats[4];
 	int encoded_type_highpart_size = 0;
 	if (partition_count == 1)
 	{
-		color_formats[0] = read_bits(4, 13, pb.data);
-		res->partition_index = 0;
+		color_formats[0] = read_bits(4, 13, pcb.data);
+		scb.partition_index = 0;
 	}
 	else
 	{
 		encoded_type_highpart_size = (3 * partition_count) - 4;
 		below_weights_pos -= encoded_type_highpart_size;
-		int encoded_type = read_bits(6, 13 + PARTITION_BITS, pb.data) | (read_bits(encoded_type_highpart_size, below_weights_pos, pb.data) << 6);
+		int encoded_type = read_bits(6, 13 + PARTITION_BITS, pcb.data) | (read_bits(encoded_type_highpart_size, below_weights_pos, pcb.data) << 6);
 		int baseclass = encoded_type & 0x3;
 		if (baseclass == 0)
 		{
@@ -395,7 +392,7 @@ void physical_to_symbolic(
 			}
 
 			below_weights_pos += encoded_type_highpart_size;
-			res->color_formats_matched = 1;
+			scb.color_formats_matched = 1;
 			encoded_type_highpart_size = 0;
 		}
 		else
@@ -415,12 +412,12 @@ void physical_to_symbolic(
 				bitpos += 2;
 			}
 		}
-		res->partition_index = read_bits(6, 13, pb.data) | (read_bits(PARTITION_BITS - 6, 19, pb.data) << 6);
+		scb.partition_index = read_bits(6, 13, pcb.data) | (read_bits(PARTITION_BITS - 6, 19, pcb.data) << 6);
 	}
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		res->color_formats[i] = color_formats[i];
+		scb.color_formats[i] = color_formats[i];
 	}
 
 	// then, determine the number of integers we need to unpack for the endpoint pairs
@@ -433,7 +430,7 @@ void physical_to_symbolic(
 
 	if (color_integer_count > 18)
 	{
-		res->error_block = 1;
+		scb.error_block = 1;
 	}
 
 	// then, determine the color endpoint format to use for these integers
@@ -450,15 +447,15 @@ void physical_to_symbolic(
 	}
 
 	int color_quantization_level = quantization_mode_table[color_integer_count >> 1][color_bits];
-	res->color_quantization_level = color_quantization_level;
+	scb.color_quantization_level = color_quantization_level;
 	if (color_quantization_level < 4)
 	{
-		res->error_block = 1;
+		scb.error_block = 1;
 	}
 
 	// then unpack the integer-bits
 	uint8_t values_to_decode[32];
-	decode_ise(color_quantization_level, color_integer_count, pb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
+	decode_ise(color_quantization_level, color_integer_count, pcb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 
 	// and distribute them over the endpoint types
 	int valuecount_to_decode = 0;
@@ -468,7 +465,7 @@ void physical_to_symbolic(
 		int vals = 2 * (color_formats[i] >> 2) + 2;
 		for (int j = 0; j < vals; j++)
 		{
-			res->color_values[i][j] = values_to_decode[j + valuecount_to_decode];
+			scb.color_values[i][j] = values_to_decode[j + valuecount_to_decode];
 		}
 		valuecount_to_decode += vals;
 	}
@@ -476,6 +473,6 @@ void physical_to_symbolic(
 	// get hold of color component for second-plane in the case of dual plane of weights.
 	if (is_dual_plane)
 	{
-		res->plane2_color_component = read_bits(2, below_weights_pos - 2, pb.data);
+		scb.plane2_color_component = read_bits(2, below_weights_pos - 2, pcb.data);
 	}
 }

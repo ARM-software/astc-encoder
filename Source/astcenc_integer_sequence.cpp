@@ -329,7 +329,7 @@ static const uint8_t integer_of_trits[3][3][3][3][3] = {
 	}
 };
 
-void find_number_of_bits_trits_quints(
+static void find_number_of_bits_trits_quints(
 	int quantization_level,
 	int* bits,
 	int* trits,

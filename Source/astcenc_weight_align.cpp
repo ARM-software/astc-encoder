@@ -314,7 +314,7 @@ static void compute_lowest_and_highest_weight(
 }
 
 // main function for running the angular algorithm.
-void compute_angular_endpoints_for_quantization_levels(
+static void compute_angular_endpoints_for_quantization_levels(
 	int samplecount,
 	const float* samples,
 	const float* sample_weights,

@@ -25,7 +25,7 @@
 #include "astcenc_internal.h"
 
 // conversion functions between the LNS representation and the FP16 representation.
-float float_to_lns(float p)
+static float float_to_lns(float p)
 {
 	if (astc::isnan(p) || p <= 1.0f / 67108864.0f)
 	{
@@ -66,7 +66,7 @@ float float_to_lns(float p)
 	return p1 + 1.0f;
 }
 
-uint16_t lns_to_sf16(uint16_t p)
+static uint16_t lns_to_sf16(uint16_t p)
 {
 	uint16_t mc = p & 0x7FF;
 	uint16_t ec = p >> 11;

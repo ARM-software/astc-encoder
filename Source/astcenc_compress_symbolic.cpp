@@ -1204,6 +1204,9 @@ void compress_symbolic_block(
 			scb->constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
 
+		physical_compressed_block pcb;
+		symbolic_to_physical(*bsd, *scb, pcb);
+		physical_to_symbolic(*bsd, pcb, *scb);
 		return;
 	}
 
@@ -1447,7 +1450,6 @@ void compress_symbolic_block(
 				}
 			}
 
-
 			// Modes 7, 10 (13 is unreachable)
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
 
@@ -1460,8 +1462,9 @@ void compress_symbolic_block(
 
 END_OF_TESTS:
 	// compress/decompress to a physical block
-	physical_compressed_block psb = symbolic_to_physical(bsd, scb);
-	physical_to_symbolic(bsd, psb, scb);
+	physical_compressed_block pcb;
+	symbolic_to_physical(*bsd, *scb, pcb);
+	physical_to_symbolic(*bsd, pcb, *scb);
 }
 
 #endif

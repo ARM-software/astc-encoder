@@ -598,12 +598,15 @@ static void compress_image(
 			int x = rem - (y * row_blocks);
 
 			// Decompress
-			int offset = ((z * yblocks + y) * xblocks + x) * 16;
-			const uint8_t *bp = buffer + offset;
 			fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+
 			symbolic_compressed_block scb;
 			compress_symbolic_block(ctx, image, decode_mode, bsd, &pb, &scb, temp_buffers);
-			*(physical_compressed_block*) bp = symbolic_to_physical(bsd, &scb);
+
+			int offset = ((z * yblocks + y) * xblocks + x) * 16;
+			uint8_t *bp = buffer + offset;
+			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
+			symbolic_to_physical(*bsd, scb, *pcb);
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);
@@ -773,10 +776,13 @@ astcenc_error astcenc_decompress_image(
 				const uint8_t* bp = data + offset;
 				physical_compressed_block pcb = *(physical_compressed_block *) bp;
 				symbolic_compressed_block scb;
-				physical_to_symbolic(context->bsd, pcb, &scb);
+
+				physical_to_symbolic(*context->bsd, pcb, scb);
+
 				decompress_symbolic_block(context->config.profile, context->bsd,
 				                          x * block_x, y * block_y, z * block_z,
 				                          &scb, &pb);
+
 				write_imageblock(image_out, &pb, context->bsd,
 				                 x * block_x, y * block_y, z * block_z, swizzle);
 			}

@@ -1125,21 +1125,18 @@ void decompress_symbolic_block(
 	const symbolic_compressed_block* scb,
 	imageblock* blk);
 
-physical_compressed_block symbolic_to_physical(
-	const block_size_descriptor* bsd,
-	const symbolic_compressed_block* sc);
+void symbolic_to_physical(
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	physical_compressed_block& pcb);
 
 void physical_to_symbolic(
-	const block_size_descriptor* bsd,
-	physical_compressed_block pb,
-	symbolic_compressed_block* res);
+	const block_size_descriptor& bsd,
+	const physical_compressed_block& pcb,
+	symbolic_compressed_block& scb);
 
 uint16_t unorm16_to_sf16(
 	uint16_t p);
-
-uint16_t lns_to_sf16(
-	uint16_t p);
-
 
 struct astcenc_context
 {
