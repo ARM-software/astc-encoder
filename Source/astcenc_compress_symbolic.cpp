@@ -1140,7 +1140,7 @@ static void prepare_block_statistics(
 	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
 }
 
-float compress_symbolic_block(
+void compress_symbolic_block(
 	const astcenc_context& ctx,
 	const astcenc_image& input_image,
 	astcenc_profile decode_mode,
@@ -1204,10 +1204,7 @@ float compress_symbolic_block(
 			scb->constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
 
-		physical_compressed_block psb = symbolic_to_physical(bsd, scb);
-		physical_to_symbolic(bsd, psb, scb);
-
-		return 0.0f;
+		return;
 	}
 
 	error_weight_block *ewb = &tmpbuf->ewb;
@@ -1465,9 +1462,6 @@ END_OF_TESTS:
 	// compress/decompress to a physical block
 	physical_compressed_block psb = symbolic_to_physical(bsd, scb);
 	physical_to_symbolic(bsd, psb, scb);
-
-	// mean squared error per color component.
-	return error_of_best_block / ((float)(bsd->xdim * bsd->ydim * bsd->zdim));
 }
 
 #endif

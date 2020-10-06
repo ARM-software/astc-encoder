@@ -1107,7 +1107,7 @@ void compute_angular_endpoints_2planes(
 
 /* *********************************** high-level encode and decode functions ************************************ */
 
-float compress_symbolic_block(
+void compress_symbolic_block(
 	const astcenc_context& ctx,
 	const astcenc_image& image,
 	astcenc_profile decode_mode,
