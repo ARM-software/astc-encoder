@@ -337,9 +337,8 @@ void fetch_imageblock(
 			}
 		}
 	}
-	else // if (img.data_type == ASTCENC_TYPE_F16)
+	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		assert(img.data_type == ASTCENC_TYPE_F16);
 		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
@@ -384,6 +383,53 @@ void fetch_imageblock(
 					data[1] = gf;
 					data[2] = bf;
 					data[3] = af;
+
+					fptr[0] = data[swz.r];
+					fptr[1] = data[swz.g];
+					fptr[2] = data[swz.b];
+					fptr[3] = data[swz.a];
+					fptr += 4;
+				}
+			}
+		}
+	}
+	else // if (img.data_type == ASTCENC_TYPE_F32)
+	{
+		assert(img.data_type == ASTCENC_TYPE_F32);
+		float*** data32 = static_cast<float***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
+		{
+			for (int y = 0; y < bsd->ydim; y++)
+			{
+				for (int x = 0; x < bsd->xdim; x++)
+				{
+					int xi = xpos + x;
+					int yi = ypos + y;
+					int zi = zpos + z;
+					// clamp XY coordinates to the picture.
+					if (xi < 0)
+						xi = 0;
+					if (yi < 0)
+						yi = 0;
+					if (zi < 0)
+						zi = 0;
+					if (xi >= xsize)
+						xi = xsize - 1;
+					if (yi >= ysize)
+						yi = ysize - 1;
+					if (zi >= ysize)
+						zi = zsize - 1;
+
+					float r = data32[zi][yi][4 * xi    ];
+					float g = data32[zi][yi][4 * xi + 1];
+					float b = data32[zi][yi][4 * xi + 2];
+					float a = data32[zi][yi][4 * xi + 3];
+
+					// equalize the color components somewhat, and get rid of negative values.
+					data[0] = MAX(r, 1e-8f);
+					data[1] = MAX(g, 1e-8f);
+					data[2] = MAX(b, 1e-8f);
+					data[3] = MAX(a, 1e-8f);
 
 					fptr[0] = data[swz.r];
 					fptr[1] = data[swz.g];
@@ -508,9 +554,8 @@ void write_imageblock(
 			}
 		}
 	}
-	else // if (img.data_type == ASTCENC_TYPE_F16)
+	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		assert(img.data_type == ASTCENC_TYPE_F16);
 		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
@@ -531,7 +576,6 @@ void write_imageblock(
 							data16[zi][yi][4 * xi + 2] = 0xFFFF;
 							data16[zi][yi][4 * xi + 3] = 0xFFFF;
 						}
-
 						else
 						{
 							data[0] = fptr[0];
@@ -556,6 +600,57 @@ void write_imageblock(
 							data16[zi][yi][4 * xi + 1] = g;
 							data16[zi][yi][4 * xi + 2] = b;
 							data16[zi][yi][4 * xi + 3] = a;
+						}
+					}
+					fptr += 4;
+					nptr++;
+				}
+			}
+		}
+	}
+	else // if (img.data_type == ASTCENC_TYPE_F32)
+	{
+		assert(img.data_type == ASTCENC_TYPE_F32);
+		float*** data32 = static_cast<float***>(img.data);
+		for (int z = 0; z < bsd->zdim; z++)
+		{
+			for (int y = 0; y < bsd->ydim; y++)
+			{
+				for (int x = 0; x < bsd->xdim; x++)
+				{
+					int xi = xpos + x;
+					int yi = ypos + y;
+					int zi = zpos + z;
+
+					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
+					{
+						if (*nptr)
+						{
+							data32[zi][yi][4 * xi]     = std::numeric_limits<float>::quiet_NaN();
+							data32[zi][yi][4 * xi + 1] = std::numeric_limits<float>::quiet_NaN();
+							data32[zi][yi][4 * xi + 2] = std::numeric_limits<float>::quiet_NaN();
+							data32[zi][yi][4 * xi + 3] = std::numeric_limits<float>::quiet_NaN();
+						}
+						else
+						{
+							data[0] = fptr[0];
+							data[1] = fptr[1];
+							data[2] = fptr[2];
+							data[3] = fptr[3];
+
+							float xN = (data[0] * 2.0f) - 1.0f;
+							float yN = (data[3] * 2.0f) - 1.0f;
+							float zN = 1.0f - xN * xN - yN * yN;
+							if (zN < 0.0f)
+							{
+								zN = 0.0f;
+							}
+							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
+
+							data32[zi][yi][4 * xi]     = data[swz.r];
+							data32[zi][yi][4 * xi + 1] = data[swz.g];
+							data32[zi][yi][4 * xi + 2] = data[swz.b];
+							data32[zi][yi][4 * xi + 3] = data[swz.a];
 						}
 					}
 					fptr += 4;

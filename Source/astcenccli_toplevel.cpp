@@ -247,6 +247,7 @@ static astcenc_image* load_uncomp_file(
 		{
 			unsigned int dim_x = slices[0]->dim_x;
 			unsigned int dim_y = slices[0]->dim_y;
+			// TODO: Make this 32 to use direct pass though as float
 			int bitness = is_hdr ? 16 : 8;
 			int slice_size = (dim_x + (2 * dim_pad)) * (dim_y + (2 * dim_pad));
 
@@ -262,13 +263,20 @@ static astcenc_image* load_uncomp_file(
 					size_t copy_size = slice_size * 4 * sizeof(uint8_t);
 					memcpy(*data8[z], *data8src[0], copy_size);
 				}
-				else // if (image->data_type == ASTCENC_TYPE_F16)
+				else if (image->data_type == ASTCENC_TYPE_F16)
 				{
-					assert(image->data_type == ASTCENC_TYPE_F16);
 					uint16_t*** data16 = static_cast<uint16_t***>(image->data);
 					uint16_t*** data16src = static_cast<uint16_t***>(slices[z - dim_pad]->data);
 					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
 					memcpy(*data16[z], *data16src[0], copy_size);
+				}
+				else // if (image->data_type == ASTCENC_TYPE_F32)
+				{
+					assert(image->data_type == ASTCENC_TYPE_F32);
+					float*** data32 = static_cast<float***>(image->data);
+					float*** data32src = static_cast<float***>(slices[z - dim_pad]->data);
+					size_t copy_size = slice_size * 4 * sizeof(float);
+					memcpy(*data32[z], *data32src[0], copy_size);
 				}
 			}
 
@@ -1123,6 +1131,7 @@ int main(
 		if (out_bitness == -1)
 		{
 			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) || (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
+			// TODO: Make this 32 to use direct passthrough as float
 			out_bitness = is_hdr ? 16 : 8;
 		}
 

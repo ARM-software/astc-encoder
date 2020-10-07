@@ -186,15 +186,24 @@ void compute_error_metrics(
 					    data8[ze1][ye1][xe1 + 2] * (1.0f / 255.0f),
 					    data8[ze1][ye1][xe1 + 3] * (1.0f / 255.0f));
 				}
-				else // if (img1->data_type == ASTCENC_TYPE_F16)
+				else if (img1->data_type == ASTCENC_TYPE_F16)
 				{
-					assert(img1->data_type == ASTCENC_TYPE_F16);
 					uint16_t*** data16 = static_cast<uint16_t***>(img1->data);
 					color1 = float4(
-					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1    ])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 1])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 2])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze1][ye1][xe1 + 3])));
+				}
+				else // if (img1->data_type == ASTCENC_TYPE_F32)
+				{
+					assert(img1->data_type == ASTCENC_TYPE_F32);
+					float*** data32 = static_cast<float***>(img1->data);
+					color1 = float4(
+					    astc::clamp64Kf(data32[ze1][ye1][xe1    ]),
+					    astc::clamp64Kf(data32[ze1][ye1][xe1 + 1]),
+					    astc::clamp64Kf(data32[ze1][ye1][xe1 + 2]),
+					    astc::clamp64Kf(data32[ze1][ye1][xe1 + 3]));
 				}
 
 				if (img2->data_type == ASTCENC_TYPE_U8)
@@ -206,15 +215,24 @@ void compute_error_metrics(
 					    data8[ze2][ye2][xe2 + 2] * (1.0f / 255.0f),
 					    data8[ze2][ye2][xe2 + 3] * (1.0f / 255.0f));
 				}
-				else // if (img2->data_type == ASTCENC_TYPE_F16)
+				else if (img2->data_type == ASTCENC_TYPE_F16)
 				{
-					assert(img2->data_type == ASTCENC_TYPE_F16);
 					uint16_t*** data16 = static_cast<uint16_t***>(img2->data);
 					color2 = float4(
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 1])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 2])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 3])));
+				}
+				else // if (img2->data_type == ASTCENC_TYPE_F32)
+				{
+					assert(img2->data_type == ASTCENC_TYPE_F32);
+					float*** data16 = static_cast<float***>(img2->data);
+					color2 = float4(
+					    astc::clamp64Kf(data16[ze2][ye2][xe2]),
+					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 1]),
+					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 2]),
+					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 3]));
 				}
 
 				rgb_peak = MAX(MAX(color1.x, color1.y), MAX(color1.z, rgb_peak));

@@ -216,9 +216,8 @@ static void compute_pixel_region_variance(
 			}
 		}
 	}
-	else //if (img->data_type == ASTCENC_TYPE_F16)
+	else if (img->data_type == ASTCENC_TYPE_F16)
 	{
-		assert(img->data_type == ASTCENC_TYPE_F16);
 		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
 
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
@@ -250,6 +249,52 @@ static void compute_pixel_region_variance(
 					                  sf16_to_float(g),
 					                  sf16_to_float(b),
 					                  sf16_to_float(a));
+
+					if (!are_powers_1)
+					{
+						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
+						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
+						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
+						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
+					}
+
+					VARBUF1(z, y, x) = d;
+					VARBUF2(z, y, x) = d * d;
+				}
+			}
+		}
+	}
+	else // if (img->data_type == ASTCENC_TYPE_F32)
+	{
+		assert(img->data_type == ASTCENC_TYPE_F32);
+		float*** data32 = static_cast<float***>(img->data);
+
+		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
+		float data[6];
+		data[ASTCENC_SWZ_0] = 0.0f;
+		data[ASTCENC_SWZ_1] = 1.0f;
+
+		for (int z = zd_start; z < padsize_z; z++)
+		{
+			int z_src = (z - zd_start) + src_offset_z - kernel_radius_z;
+
+			for (int y = 1; y < padsize_y; y++)
+			{
+				int y_src = (y - 1) + src_offset_y - kernel_radius_xy;
+				for (int x = 1; x < padsize_x; x++)
+				{
+					int x_src = (x - 1) + src_offset_x - kernel_radius_xy;
+					data[0] = data32[z_src][y_src][4 * x_src    ];
+					data[1] = data32[z_src][y_src][4 * x_src + 1];
+					data[2] = data32[z_src][y_src][4 * x_src + 2];
+					data[3] = data32[z_src][y_src][4 * x_src + 3];
+
+					float r = data[swz.r];
+					float g = data[swz.g];
+					float b = data[swz.b];
+					float a = data[swz.a];
+
+					float4 d = float4(r, g, b, a);
 
 					if (!are_powers_1)
 					{
