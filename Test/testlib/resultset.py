@@ -305,8 +305,8 @@ class ResultSet():
                record.blkSz,
                record.name,
                "%0.5f" % record.psnr,
-               "%0.3f" % record.tTime,
-               "%0.3f" % record.cTime]
+               "%0.4f" % record.tTime,
+               "%0.4f" % record.cTime]
         writer.writerow(row)
 
     def load_from_file(self, filePath):

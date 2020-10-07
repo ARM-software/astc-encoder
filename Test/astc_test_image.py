@@ -133,10 +133,10 @@ def format_solo_result(image, result):
 
     name = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB" % result.psnr
-    tTTime = "%.2f s" % result.tTime
-    tCTime = "%.2f s" % result.cTime
+    tTTime = "%.3f s" % result.tTime
+    tCTime = "%.3f s" % result.cTime
 
-    return "%-32s | %8s | %8s | %8s | %10s" % \
+    return "%-32s | %8s | %9s | %9s | %10s" % \
         (name, tPSNR, tTTime, tCTime, tCMPS)
 
 
@@ -165,11 +165,11 @@ def format_result(image, reference, result):
 
     name = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
-    tTTime = "%.2f s (%1.2fx)" % (result.tTime, sTTime)
-    tCTime = "%.2f s (%1.2fx)" % (result.cTime, sCTime)
+    tTTime = "%.3f s (%1.2fx)" % (result.tTime, sTTime)
+    tCTime = "%.3f s (%1.2fx)" % (result.cTime, sCTime)
     result = determine_result(image, reference, result)
 
-    return "%-32s | %22s | %14s | %14s | %10s | %s" % \
+    return "%-32s | %22s | %15s | %15s | %10s | %s" % \
            (name, tPSNR, tTTime, tCTime, tCMPS, result.name)
 
 
@@ -281,7 +281,7 @@ def parse_command_line():
 
     refcoders = ["ref-1.7", "ref-2.0-avx2", "ref-master-avx2"]
     testcoders = ["sse2", "sse4.2", "avx2"]
-    coders = refcoders + testcoders + ["all"]
+    coders = refcoders + testcoders + ["all", "all-ref"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
@@ -326,8 +326,12 @@ def parse_command_line():
     args = parser.parse_args()
 
     # Turn things into canonical format lists
-    args.encoders = testcoders if args.encoders == "all" \
-        else [args.encoders]
+    if args.encoders == "all":
+        args.encoders = testcoders
+    elif args.encoders == "all-ref":
+        args.encoders = refcoders
+    else:
+        args.encoders = [args.encoders]
 
     args.testQual = TEST_QUALITIES if args.testQual == "all" \
         else [args.testQual]

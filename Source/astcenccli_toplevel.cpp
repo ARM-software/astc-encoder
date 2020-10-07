@@ -1203,8 +1203,8 @@ int main(
 	{
 		printf("Coding time\n");
 		printf("===========\n\n");
-		printf("    Total time:                %6.2f s\n", end_time - start_time);
-		printf("    Coding time:               %6.2f s\n", end_coding_time - start_coding_time);
+		printf("    Total time:                %6.4f s\n", end_time - start_time);
+		printf("    Coding time:               %6.4f s\n", end_coding_time - start_coding_time);
 	}
 
 	return 0;
