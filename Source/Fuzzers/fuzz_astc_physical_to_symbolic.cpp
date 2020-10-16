@@ -88,7 +88,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	// Select a block size to test
 	int i = stream.ConsumeIntegralInRange<int>(0, testSz.size() - 1);
-	block_size_descriptor* bsd = &(testBSD[i]);
 
 	// Populate the physical block
 	physical_compressed_block pcb;
@@ -97,7 +96,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	// Call the function under test
 	symbolic_compressed_block scb;
-	physical_to_symbolic(bsd, pcb, &scb);
+	physical_to_symbolic(testBSD[i], pcb, scb);
 
 	return 0;
 }
