@@ -34,11 +34,91 @@
 #define SIMD_INLINE __attribute__((unused, always_inline, nodebug)) inline
 #endif
 
-#if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
+#if ASTCENC_AVX >= 2
+    #define ASTCENC_SIMD_ISA_AVX2
+#elif ASTCENC_SSE >= 20
     #define ASTCENC_SIMD_ISA_SSE
 #else
     #define ASTCENC_SIMD_ISA_SCALAR
 #endif
+
+
+// ----------------------------------------------------------------------------
+// AVX2 8-wide implementation
+
+#ifdef ASTCENC_SIMD_ISA_AVX2
+
+#define ASTCENC_SIMD_WIDTH 8
+
+struct vfloat
+{
+    SIMD_INLINE vfloat() {}
+    SIMD_INLINE explicit vfloat(const float *p) { m = _mm256_loadu_ps(p); }
+    SIMD_INLINE explicit vfloat(float v) { m = _mm256_set1_ps(v); }
+    SIMD_INLINE explicit vfloat(__m256 v) { m = v; }
+    static vfloat zero() { return vfloat(_mm256_setzero_ps()); }
+    __m256 m;
+};
+
+struct vint
+{
+    SIMD_INLINE vint() {}
+    SIMD_INLINE explicit vint(const int *p) { m = _mm256_loadu_si256((const __m256i*)p); }
+    SIMD_INLINE explicit vint(int v) { m = _mm256_set1_epi32(v); }
+    SIMD_INLINE explicit vint(__m256i v) { m = v; }
+    __m256i m;
+};
+
+SIMD_INLINE vfloat load1a(const float* p) { return vfloat(_mm256_broadcast_ss(p)); }
+SIMD_INLINE vfloat loada(const float* p) { return vfloat(_mm256_load_ps(p)); }
+
+SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = _mm256_add_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = _mm256_sub_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = _mm256_mul_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator==(vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_EQ_OQ); return a; }
+SIMD_INLINE vfloat operator!=(vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_NEQ_OQ); return a; }
+SIMD_INLINE vfloat operator< (vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_LT_OQ); return a; }
+SIMD_INLINE vfloat operator> (vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_GT_OQ); return a; }
+SIMD_INLINE vfloat operator<=(vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_LE_OQ); return a; }
+SIMD_INLINE vfloat operator>=(vfloat a, vfloat b) { a.m = _mm256_cmp_ps(a.m, b.m, _CMP_GE_OQ); return a; }
+
+SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = _mm256_min_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = _mm256_max_ps(a.m, b.m); return a; }
+
+SIMD_INLINE vfloat round(vfloat v)
+{
+    return vfloat(_mm256_round_ps(v.m, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+}
+
+SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvtps_epi32(v.m)); }
+
+SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
+
+SIMD_INLINE vint operator~ (vint a) { return vint(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1))); }
+SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm256_add_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm256_sub_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator<(vint a, vint b) { a.m = _mm256_cmpgt_epi32(b.m, a.m); return a; }
+SIMD_INLINE vint operator>(vint a, vint b) { a.m = _mm256_cmpgt_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator==(vint a, vint b) { a.m = _mm256_cmpeq_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator!=(vint a, vint b) { a.m = _mm256_cmpeq_epi32(a.m, b.m); return ~a; }
+SIMD_INLINE vint min(vint a, vint b) { a.m = _mm256_min_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint max(vint a, vint b) { a.m = _mm256_max_epi32(a.m, b.m); return a; }
+
+SIMD_INLINE void store(vfloat v, float* ptr) { _mm256_store_ps(ptr, v.m); }
+SIMD_INLINE void store(vint v, int* ptr) { _mm256_store_si256((__m256i*)ptr, v.m); }
+
+
+// "select", i.e. highbit(cond) ? b : a
+SIMD_INLINE vfloat select(vfloat a, vfloat b, vfloat cond)
+{
+    return vfloat(_mm256_blendv_ps(a.m, b.m, cond.m));
+}
+SIMD_INLINE vint select(vint a, vint b, vint cond)
+{
+    return vint(_mm256_blendv_epi8(a.m, b.m, cond.m));
+}
+
+#endif // #ifdef ASTCENC_SIMD_ISA_AVX2
 
 
 // ----------------------------------------------------------------------------
@@ -62,6 +142,7 @@ struct vfloat
 struct vint
 {
     SIMD_INLINE vint() {}
+    SIMD_INLINE explicit vint(const int *p) { m = _mm_load_si128((const __m128i*)p); }
     SIMD_INLINE explicit vint(int v) { m = _mm_set1_epi32(v); }
     SIMD_INLINE explicit vint(__m128i v) { m = v; }
     __m128i m;
@@ -79,7 +160,6 @@ SIMD_INLINE vfloat operator< (vfloat a, vfloat b) { a.m = _mm_cmplt_ps(a.m, b.m)
 SIMD_INLINE vfloat operator> (vfloat a, vfloat b) { a.m = _mm_cmpgt_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator<=(vfloat a, vfloat b) { a.m = _mm_cmple_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator>=(vfloat a, vfloat b) { a.m = _mm_cmpge_ps(a.m, b.m); return a; }
-SIMD_INLINE vfloat operator- (vfloat a) { a.m = _mm_xor_ps(a.m, _mm_set1_ps(-0.0f)); return a; }
 
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = _mm_min_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = _mm_max_ps(a.m, b.m); return a; }
@@ -169,6 +249,7 @@ struct vfloat
 struct vint
 {
     SIMD_INLINE vint() {}
+    SIMD_INLINE explicit vint(const int *p) { m = *p; }
     SIMD_INLINE explicit vint(int v) { m = v; }
     int m;
 };
@@ -185,7 +266,6 @@ SIMD_INLINE vfloat operator< (vfloat a, vfloat b) { a.m = a.m < b.m; return a; }
 SIMD_INLINE vfloat operator> (vfloat a, vfloat b) { a.m = a.m > b.m; return a; }
 SIMD_INLINE vfloat operator<=(vfloat a, vfloat b) { a.m = a.m <= b.m; return a; }
 SIMD_INLINE vfloat operator>=(vfloat a, vfloat b) { a.m = a.m >= b.m; return a; }
-SIMD_INLINE vfloat operator- (vfloat a) { a.m = -a.m; return a; }
 
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = a.m < b.m ? a.m : b.m; return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = a.m > b.m ? a.m : b.m; return a; }

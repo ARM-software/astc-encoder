@@ -50,7 +50,17 @@
 #include <stdio.h>
 #include <cassert>
 
-static const float angular_steppings[44] = {
+#if ASTCENC_SIMD_WIDTH <= 4
+    #define ANGULAR_STEPS 44
+#elif ASTCENC_SIMD_WIDTH == 8
+    // AVX code path loops over these tables 8 elements at a time,
+    // so make sure to have their size a multiple of 8.
+    #define ANGULAR_STEPS 48
+#else
+    #error Unknown SIMD width
+#endif
+
+static const float angular_steppings[ANGULAR_STEPS] = {
 	 1.0f, 1.25f, 1.5f, 1.75f,
 
 	 2.0f,  2.5f, 3.0f, 3.5f,
@@ -63,10 +73,11 @@ static const float angular_steppings[44] = {
 	20.0f, 21.0f, 22.0f, 23.0f,
 	24.0f, 25.0f, 26.0f, 27.0f,
 	28.0f, 29.0f, 30.0f, 31.0f,
-	32.0f, 33.0f, 34.0f, 35.0f
+	32.0f, 33.0f, 34.0f, 35.0f,
+#if ANGULAR_STEPS >= 48
+    32.0f, 33.0f, 34.0f, 35.0f,
+#endif
 };
-
-#define ANGULAR_STEPS ((int)(sizeof(angular_steppings)/sizeof(angular_steppings[0])))
 
 static float stepsizes[ANGULAR_STEPS];
 static float stepsizes_sqr[ANGULAR_STEPS];
@@ -175,10 +186,7 @@ static void compute_lowest_and_highest_weight(
 	float *cut_low_weight_error,
 	float *cut_high_weight_error
 ) {
-	// TODO: Add AVX2 version of this. Might need to change the length of max_angular
-	// steps to be a multiple of 8 though ...
-	
-	// Arrays are always multiple of 4, so this is safe even if overshoot max
+	// Arrays are always multiple of SIMD width (ANGULAR_STEPS), so this is safe even if overshoot max
 	for (int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
 		vint minidx(128);
