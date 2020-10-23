@@ -75,6 +75,9 @@ static const float angular_steppings[ANGULAR_STEPS] = {
 	28.0f, 29.0f, 30.0f, 31.0f,
 	32.0f, 33.0f, 34.0f, 35.0f,
 #if ANGULAR_STEPS >= 48
+    // This is "redundant" and only used in more-than-4-wide
+    // SIMD code paths, to make the steps table size
+    // be a multiple of SIMD width.
     32.0f, 33.0f, 34.0f, 35.0f,
 #endif
 };
