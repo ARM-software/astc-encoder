@@ -333,6 +333,7 @@ astcenc_image* astc_img_from_floatx4_array(
 
 	for (unsigned int y = 0; y < dim_y; y++)
 	{
+#if 0
 		float*** data32 = static_cast<float***>(img->data);
 		unsigned int y_dst = y + dim_pad;
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
@@ -346,6 +347,21 @@ astcenc_image* astc_img_from_floatx4_array(
 			data32[0][y_dst][4 * x_dst + 2] = src[4 * x + 2];
 			data32[0][y_dst][4 * x_dst + 3] = src[4 * x + 3];
 		}
+#else
+		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
+		unsigned int y_dst = y + dim_pad;
+		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
+		const float* src = data + 4 * dim_y * y_src;
+
+		for (unsigned int x = 0; x < dim_x; x++)
+		{
+			unsigned int x_dst = x + dim_pad;
+			data16[0][y_dst][4 * x_dst]     = float_to_sf16(src[4 * x],     SF_NEARESTEVEN);
+			data16[0][y_dst][4 * x_dst + 1] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
+			data16[0][y_dst][4 * x_dst + 2] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
+			data16[0][y_dst][4 * x_dst + 3] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
+		}
+#endif
 	}
 
 	fill_image_padding_area(img);
