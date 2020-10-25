@@ -127,6 +127,22 @@ SIMD_INLINE vfloat round(vfloat v)
     return vfloat(_mm256_round_ps(v.m, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
+SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvtps_epi32(v.m)); }
+
+SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
+
+SIMD_INLINE vint operator~ (vint a) { return vint(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1))); }
+SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm256_xor_si256(_mm256_castps_si256(a.m), _mm256_set1_epi32(-1))); }
+
+SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm256_add_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm256_sub_epi32(a.m, b.m); return a; }
+SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(b.m, a.m)); }
+SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(a.m, b.m)); }
+SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
+SIMD_INLINE vmask operator!=(vint a, vint b) { return ~vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
+SIMD_INLINE vint min(vint a, vint b) { a.m = _mm256_min_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint max(vint a, vint b) { a.m = _mm256_max_epi32(a.m, b.m); return a; }
+
 SIMD_INLINE vfloat hmin(vfloat v)
 {
     __m128 vlow  = _mm256_castps256_ps128(v.m);
@@ -143,21 +159,15 @@ SIMD_INLINE vfloat hmin(vfloat v)
     return vmin;
 }
 
-SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvtps_epi32(v.m)); }
-
-SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
-
-SIMD_INLINE vint operator~ (vint a) { return vint(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1))); }
-SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm256_xor_si256(_mm256_castps_si256(a.m), _mm256_set1_epi32(-1))); }
-
-SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm256_add_epi32(a.m, b.m); return a; }
-SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm256_sub_epi32(a.m, b.m); return a; }
-SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(b.m, a.m)); }
-SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(a.m, b.m)); }
-SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
-SIMD_INLINE vmask operator!=(vint a, vint b) { return ~vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
-SIMD_INLINE vint min(vint a, vint b) { a.m = _mm256_min_epi32(a.m, b.m); return a; }
-SIMD_INLINE vint max(vint a, vint b) { a.m = _mm256_max_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint hmin(vint v)
+{
+	__m128i m = _mm_min_epi32(_mm256_extracti128_si256(v.m, 0), _mm256_extracti128_si256(v.m, 1));
+	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
+	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
+	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
+    vint vmin(_mm256_set_m128i(m, m));
+    return vmin;
+}
 
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm256_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm256_store_si256((__m256i*)ptr, v.m); }
@@ -294,15 +304,6 @@ SIMD_INLINE vfloat round(vfloat v)
 #endif
 }
 
-#define ASTCENC_SHUFFLE4(V, X,Y,Z,W) vfloat(_mm_shuffle_ps((V).m, (V).m, _MM_SHUFFLE(W,Z,Y,X)))
-
-SIMD_INLINE vfloat hmin(vfloat v)
-{
-    v = min(v, ASTCENC_SHUFFLE4(v, 2, 3, 0, 0));
-    v = min(v, ASTCENC_SHUFFLE4(v, 1, 0, 0, 0));
-    return v;
-}
-
 SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm_cvtps_epi32(v.m)); }
 
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm_castsi128_ps(v.m)); }
@@ -334,6 +335,22 @@ SIMD_INLINE vint max(vint a, vint b) {
 	a.m = _mm_or_si128(_mm_and_si128(_mm_castps_si128(d.m), a.m), _mm_andnot_si128(_mm_castps_si128(d.m), b.m));
 #endif
 	return a;
+}
+
+#define ASTCENC_SHUFFLE4F(V, X,Y,Z,W) vfloat(_mm_shuffle_ps((V).m, (V).m, _MM_SHUFFLE(W,Z,Y,X)))
+#define ASTCENC_SHUFFLE4I(V, X,Y,Z,W) vint(_mm_shuffle_epi32((V).m, _MM_SHUFFLE(W,Z,Y,X)))
+
+SIMD_INLINE vfloat hmin(vfloat v)
+{
+    v = min(v, ASTCENC_SHUFFLE4F(v, 2, 3, 0, 0));
+    v = min(v, ASTCENC_SHUFFLE4F(v, 1, 0, 0, 0));
+    return ASTCENC_SHUFFLE4F(v, 0,0,0,0);
+}
+SIMD_INLINE vint hmin(vint v)
+{
+    v = min(v, ASTCENC_SHUFFLE4I(v, 2, 3, 0, 0));
+    v = min(v, ASTCENC_SHUFFLE4I(v, 1, 0, 0, 0));
+    return ASTCENC_SHUFFLE4I(v, 0,0,0,0);
 }
 
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm_store_ps(ptr, v.m); }
@@ -446,8 +463,6 @@ SIMD_INLINE vfloat round(vfloat v)
 {
     return vfloat(std::floor(v.m + 0.5f));
 }
-SIMD_INLINE vfloat hmin(vfloat v) { return v; }
-
 
 SIMD_INLINE vint floatToInt(vfloat v) { return vint(v.m); }
 
@@ -462,6 +477,9 @@ SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(a.m = a.m == b.m); }
 SIMD_INLINE vmask operator!=(vint a, vint b) { return vmask(a.m = a.m != b.m); }
 SIMD_INLINE vint min(vint a, vint b) { a.m = a.m < b.m ? a.m : b.m; return a; }
 SIMD_INLINE vint max(vint a, vint b) { a.m = a.m > b.m ? a.m : b.m; return a; }
+
+SIMD_INLINE vfloat hmin(vfloat v) { return v; }
+SIMD_INLINE vint hmin(vint v) { return v; }
 
 SIMD_INLINE void store(vfloat v, float* ptr) { *ptr = v.m; }
 SIMD_INLINE void store(vint v, int* ptr) { *ptr = v.m; }

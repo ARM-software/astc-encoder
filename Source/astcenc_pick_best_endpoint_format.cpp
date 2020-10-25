@@ -22,6 +22,7 @@
  */
 
 #include "astcenc_internal.h"
+#include "astcenc_vecmathlib.h"
 
 /*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
@@ -958,6 +959,8 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int best_error_weights[4];
 	for (int i = 0; i < 4; i++)
 	{
+#if 0
+		// reference; scalar code
 		float best_ep_error = 1e30f;
 		int best_error_index = -1;
 		for (int j = 0; j < MAX_WEIGHT_MODES; j++)
@@ -968,6 +971,33 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				best_error_index = j;
 			}
 		}
+#else
+        // find best mode, SIMD N-wide way
+        vint vbest_error_index(-1);
+        vfloat vbest_ep_error(1e30f);
+        vint lane_ids = vint::lane_id();
+		for (int j = 0; j < MAX_WEIGHT_MODES; j += ASTCENC_SIMD_WIDTH)
+		{
+            vfloat err = vfloat(&errors_of_best_combination[j]);
+            vmask mask1 = err < vbest_ep_error;
+            vmask mask2 = vint(&best_quantization_levels[j]) > vint(4);
+            vmask mask = mask1 & mask2;
+            vbest_ep_error = select(vbest_ep_error, err, mask);
+            vbest_error_index = select(vbest_error_index, lane_ids, mask);
+            lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
+		}
+        
+        // pick final best mode from the SIMD result.
+		// note that if multiple SIMD lanes have "best" score,
+		// we want to pick one with the lowest index, i.e. what
+		// would happen if code was purely scalar.
+		vmask lanes_with_min_error = vbest_ep_error == hmin(vbest_ep_error);
+		// take smallest index from the SIMD lanes that had the best score
+		vbest_error_index = select(vint(0x7fffffff), vbest_error_index, lanes_with_min_error);
+		vbest_error_index = hmin(vbest_error_index);
+		int best_error_index = vbest_error_index.lane(0);
+#endif
+
 		best_error_weights[i] = best_error_index;
 
 		if (best_error_index >= 0)
