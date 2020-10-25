@@ -172,7 +172,7 @@ SIMD_INLINE vfloat round(vfloat v)
     __m128 V = v.m;
     __m128 negZero = _mm_castsi128_ps(_mm_set1_epi32(0x80000000));
     __m128 noFraction = _mm_set_ps1(8388608.0f);
-    __m128i absMask = _mm_set1_epi32(0x7FFFFFFF);
+    __m128 absMask = _mm_castsi128_ps(_mm_set1_epi32(0x7FFFFFFF));
     __m128 sign = _mm_and_ps(V, negZero);
     __m128 sMagic = _mm_or_ps(noFraction, sign);
     __m128 R1 = _mm_add_ps(V, sMagic);
