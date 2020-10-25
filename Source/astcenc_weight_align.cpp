@@ -85,7 +85,7 @@ alignas(ASTCENC_VECALIGN) static const float angular_steppings[ANGULAR_STEPS] = 
 };
 
 alignas(ASTCENC_VECALIGN) static float stepsizes[ANGULAR_STEPS];
-static float stepsizes_sqr[ANGULAR_STEPS];
+alignas(ASTCENC_VECALIGN) static float stepsizes_sqr[ANGULAR_STEPS];
 
 static int max_angular_steps_needed_for_quant_level[13];
 
