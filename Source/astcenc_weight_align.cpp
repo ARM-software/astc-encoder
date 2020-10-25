@@ -60,7 +60,7 @@
     #error Unknown SIMD width
 #endif
 
-static const float angular_steppings[ANGULAR_STEPS] = {
+alignas(ASTCENC_VECALIGN) static const float angular_steppings[ANGULAR_STEPS] = {
 	 1.0f, 1.25f, 1.5f, 1.75f,
 
 	 2.0f,  2.5f, 3.0f, 3.5f,
@@ -77,12 +77,14 @@ static const float angular_steppings[ANGULAR_STEPS] = {
 #if ANGULAR_STEPS >= 48
     // This is "redundant" and only used in more-than-4-wide
     // SIMD code paths, to make the steps table size
-    // be a multiple of SIMD width.
+    // be a multiple of SIMD width. Values are replicated
+    // from previous row so that AVX2 and SSE code paths
+    // return the same results.
     32.0f, 33.0f, 34.0f, 35.0f,
 #endif
 };
 
-static float stepsizes[ANGULAR_STEPS];
+alignas(ASTCENC_VECALIGN) static float stepsizes[ANGULAR_STEPS];
 static float stepsizes_sqr[ANGULAR_STEPS];
 
 static int max_angular_steps_needed_for_quant_level[13];
@@ -226,12 +228,12 @@ static void compute_lowest_and_highest_weight(
 			maxidx = select(maxidx, idxv, mask);
 			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), intAsFloat(mask));
 			
-			// Accuulate on max hit.
+			// Accumulate on max hit.
 			mask = idxv == maxidx;
 			accum = cut_high_weight_err + wt + vfloat(2.0f) * dwt;
 			cut_high_weight_err = select(cut_high_weight_err, accum, intAsFloat(mask));
 		}
-		
+
 		// Write out min weight and weight span; clamp span to a usable range
 		vint span = maxidx - minidx + vint(1);
 		span = min(span, vint(max_quantization_steps + 3));
