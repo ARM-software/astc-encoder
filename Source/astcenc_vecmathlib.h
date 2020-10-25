@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2019-2020 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -118,6 +118,23 @@ SIMD_INLINE vint select(vint a, vint b, vint cond)
     return vint(_mm256_blendv_epi8(a.m, b.m, cond.m));
 }
 
+SIMD_INLINE void print(vfloat a)
+{
+	alignas(ASTCENC_VECALIGN) float v[8];
+	store(a, v);
+	printf("v8_f32:\n  %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f\n",
+	       (double)v[0], (double)v[1], (double)v[2], (double)v[3],
+	       (double)v[4], (double)v[5], (double)v[6], (double)v[7]);
+}
+
+SIMD_INLINE void print(vint a)
+{
+	alignas(ASTCENC_VECALIGN) int v[8];
+	store(a, v);
+	printf("v8_i32:\n  %8u %8u %8u %8u %8u %8u %8u %8u\n",
+	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+}
+
 #endif // #ifdef ASTCENC_SIMD_ISA_AVX2
 
 
@@ -134,7 +151,7 @@ struct vfloat
     SIMD_INLINE vfloat() {}
     SIMD_INLINE explicit vfloat(const float *p) { m = _mm_loadu_ps(p); }
     SIMD_INLINE explicit vfloat(float v) { m = _mm_set_ps1(v); }
-    SIMD_INLINE explicit vfloat(__m128 v) { m = v; }    
+    SIMD_INLINE explicit vfloat(__m128 v) { m = v; }
     static vfloat zero() { return vfloat(_mm_setzero_ps()); }
     __m128 m;
 };
@@ -196,8 +213,26 @@ SIMD_INLINE vint operator<(vint a, vint b) { a.m = _mm_cmplt_epi32(a.m, b.m); re
 SIMD_INLINE vint operator>(vint a, vint b) { a.m = _mm_cmpgt_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint operator==(vint a, vint b) { a.m = _mm_cmpeq_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint operator!=(vint a, vint b) { a.m = _mm_cmpeq_epi32(a.m, b.m); return ~a; }
-SIMD_INLINE vint min(vint a, vint b) { a.m = _mm_min_epi32(a.m, b.m); return a; }
-SIMD_INLINE vint max(vint a, vint b) { a.m = _mm_max_epi32(a.m, b.m); return a; }
+
+SIMD_INLINE vint min(vint a, vint b) {
+#if ASTCENC_SSE >= 41
+	a.m = _mm_min_epi32(a.m, b.m);
+#else
+	vint d = a < b;
+	a.m = _mm_or_si128(_mm_and_si128(d.m, a.m), _mm_andnot_si128(d.m, b.m));
+#endif
+	return a;
+}
+
+SIMD_INLINE vint max(vint a, vint b) {
+#if ASTCENC_SSE >= 41
+	a.m = _mm_max_epi32(a.m, b.m);
+#else
+	vint d = a > b;
+	a.m = _mm_or_si128(_mm_and_si128(d.m, a.m), _mm_andnot_si128(d.m, b.m));
+#endif
+	return a;
+}
 
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm_store_si128((__m128i*)ptr, v.m); }
@@ -217,6 +252,7 @@ SIMD_INLINE vfloat select(vfloat a, vfloat b, vfloat cond)
 #endif
     return a;
 }
+
 SIMD_INLINE vint select(vint a, vint b, vint cond)
 {
 #if ASTCENC_SSE >= 41
@@ -226,6 +262,23 @@ SIMD_INLINE vint select(vint a, vint b, vint cond)
     return vint(_mm_or_si128(_mm_and_si128(d, b.m), _mm_andnot_si128(d, a.m)));
 #endif
 }
+
+SIMD_INLINE void print(vfloat a)
+{
+	alignas(ASTCENC_VECALIGN) float v[4];
+	store(a, v);
+	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
+	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
+}
+
+SIMD_INLINE void print(vint a)
+{
+	alignas(ASTCENC_VECALIGN) int v[4];
+	store(a, v);
+	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	       v[0], v[1], v[2], v[3]);
+}
+
 
 #endif // #ifdef ASTCENC_SIMD_ISA_SSE
 

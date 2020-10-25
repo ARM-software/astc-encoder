@@ -85,6 +85,7 @@ HEADERS = \
     astcenc.h \
     astcenc_internal.h \
     astcenc_mathlib.h \
+    astcenc_vecmathlib.h \
     astcenccli_internal.h \
     stb_image.h \
     stb_image_write.h \
