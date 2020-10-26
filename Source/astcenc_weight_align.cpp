@@ -213,25 +213,25 @@ static void compute_lowest_and_highest_weight(
 			errval = errval + dwt * dif;
 
 			// Reset tracker on min hit.
-			vint mask = idxv < minidx;
+			vmask mask = idxv < minidx;
 			minidx = select(minidx, idxv, mask);
-			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), intAsFloat(mask));
+			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), mask);
 			
 			// Accumulate on min hit.
 			mask = idxv == minidx;
 			minidx = select(minidx, idxv, mask);
 			vfloat accum = cut_low_weight_err + wt - vfloat(2.0f) * dwt;
-			cut_low_weight_err = select(cut_low_weight_err, accum, intAsFloat(mask));
+			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
 			
 			// Reset tracker on max hit.
 			mask = idxv > maxidx;
 			maxidx = select(maxidx, idxv, mask);
-			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), intAsFloat(mask));
+			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), mask);
 			
 			// Accumulate on max hit.
 			mask = idxv == maxidx;
 			accum = cut_high_weight_err + wt + vfloat(2.0f) * dwt;
-			cut_high_weight_err = select(cut_high_weight_err, accum, intAsFloat(mask));
+			cut_high_weight_err = select(cut_high_weight_err, accum, mask);
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
