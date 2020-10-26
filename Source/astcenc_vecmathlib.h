@@ -50,12 +50,19 @@
 
 #define ASTCENC_SIMD_WIDTH 8
 
+// N-wide float
 struct vfloat
 {
     SIMD_INLINE vfloat() {}
+	// Initialize with N floats from an unaligned memory address.
+	// Using loada() when address is aligned might be more optimal.
     SIMD_INLINE explicit vfloat(const float *p) { m = _mm256_loadu_ps(p); }
+	// Initialize with the same given float value in all lanes.
     SIMD_INLINE explicit vfloat(float v) { m = _mm256_set1_ps(v); }
+
     SIMD_INLINE explicit vfloat(__m256 v) { m = v; }
+
+	// Get SIMD lane #i value.
     SIMD_INLINE float lane(int i) const
     {
         #ifdef _MSC_VER
@@ -66,17 +73,28 @@ struct vfloat
         return cvt.f[i];
         #endif
     }
+	
+	// Float vector with all zero values
     static SIMD_INLINE vfloat zero() { return vfloat(_mm256_setzero_ps()); }
+	
+	// Float vector with each lane having the lane index (0, 1, 2, ...)
     static SIMD_INLINE vfloat lane_id() { return vfloat(_mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0)); }
+
     __m256 m;
 };
 
+// N-wide integer (32 bit in each lane)
 struct vint
 {
     SIMD_INLINE vint() {}
+	// Initialize with N ints from an unaligned memory address.
     SIMD_INLINE explicit vint(const int *p) { m = _mm256_loadu_si256((const __m256i*)p); }
+	// Initialize with the same given integer value in all lanes.
     SIMD_INLINE explicit vint(int v) { m = _mm256_set1_epi32(v); }
+
     SIMD_INLINE explicit vint(__m256i v) { m = v; }
+
+	// Get SIMD lane #i value
     SIMD_INLINE int lane(int i) const
     {
         #ifdef _MSC_VER
@@ -87,10 +105,15 @@ struct vint
         return cvt.f[i];
         #endif
     }
+
+	// Integer vector with each lane having the lane index (0, 1, 2, ...)
     static SIMD_INLINE vint lane_id() { return vint(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0)); }
+
     __m256i m;
 };
 
+// N-wide comparison mask. vmask is a result of comparison operators,
+// and an argument for select() function below.
 struct vmask
 {
     SIMD_INLINE explicit vmask(__m256 v) { m = v; }
@@ -98,30 +121,41 @@ struct vmask
     __m256 m;
 };
 
+// Initialize with one float in all SIMD lanes, from an aligned memory address.
 SIMD_INLINE vfloat load1a(const float* p) { return vfloat(_mm256_broadcast_ss(p)); }
+// Initialize with N floats from an aligned memory address.
 SIMD_INLINE vfloat loada(const float* p) { return vfloat(_mm256_load_ps(p)); }
 
+// Per-lane float arithmetic operations
 SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = _mm256_add_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = _mm256_sub_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = _mm256_mul_ps(a.m, b.m); return a; }
+
+// Per-lane float comparison operations
 SIMD_INLINE vmask operator==(vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_EQ_OQ)); }
 SIMD_INLINE vmask operator!=(vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_NEQ_OQ)); }
 SIMD_INLINE vmask operator< (vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_LT_OQ)); }
 SIMD_INLINE vmask operator> (vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_GT_OQ)); }
 SIMD_INLINE vmask operator<=(vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_LE_OQ)); }
 SIMD_INLINE vmask operator>=(vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_GE_OQ)); }
+
+// Logical operations on comparison mask values
 SIMD_INLINE vmask operator| (vmask a, vmask b) { return vmask(_mm256_or_ps(a.m, b.m)); }
 SIMD_INLINE vmask operator& (vmask a, vmask b) { return vmask(_mm256_and_ps(a.m, b.m)); }
 SIMD_INLINE vmask operator^ (vmask a, vmask b) { return vmask(_mm256_xor_ps(a.m, b.m)); }
+
 // Returns a 8-bit code where bit0..bit7 map to lanes
 SIMD_INLINE unsigned mask(vmask v) { return _mm256_movemask_ps(v.m); }
+// Whether any lane in the comparison mask is set
 SIMD_INLINE bool any(vmask v) { return mask(v) != 0; }
+// Whether all lanes in the comparison mask are set
 SIMD_INLINE bool all(vmask v) { return mask(v) == 0xFF; }
 
-
+// Per-lane float min & max
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = _mm256_min_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = _mm256_max_ps(a.m, b.m); return a; }
 
+// Per-lane clamp to 0..1 range
 SIMD_INLINE vfloat saturate(vfloat a)
 {
     __m256 zero = _mm256_setzero_ps();
@@ -129,27 +163,37 @@ SIMD_INLINE vfloat saturate(vfloat a)
     return vfloat(_mm256_min_ps(_mm256_max_ps(a.m, zero), one));
 }
 
+// Round to nearest integer (nearest even for .5 cases)
 SIMD_INLINE vfloat round(vfloat v)
 {
     return vfloat(_mm256_round_ps(v.m, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
+// Per-lane convert to integer (truncate)
 SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvttps_epi32(v.m)); }
 
+// Reinterpret-bitcast integer vector as a float vector (this is basically a no-op on the CPU)
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
 
 SIMD_INLINE vint operator~ (vint a) { return vint(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1))); }
 SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm256_xor_si256(_mm256_castps_si256(a.m), _mm256_set1_epi32(-1))); }
 
+// Per-lane arithmetic integer operations
 SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm256_add_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm256_sub_epi32(a.m, b.m); return a; }
+
+// Per-lane integer comparison operations
 SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(b.m, a.m)); }
 SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(a.m, b.m)); }
 SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
 SIMD_INLINE vmask operator!=(vint a, vint b) { return ~vmask(_mm256_cmpeq_epi32(a.m, b.m)); }
+
+// Per-lane integer min & max
 SIMD_INLINE vint min(vint a, vint b) { a.m = _mm256_min_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint max(vint a, vint b) { a.m = _mm256_max_epi32(a.m, b.m); return a; }
 
+// Horizontal minimum - returns vector with all lanes
+// set to the minimum value of the input vector.
 SIMD_INLINE vfloat hmin(vfloat v)
 {
     __m128 vlow  = _mm256_castps256_ps128(v.m);
@@ -176,11 +220,15 @@ SIMD_INLINE vint hmin(vint v)
     return vmin;
 }
 
+// Store float vector into an aligned address.
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm256_store_ps(ptr, v.m); }
+// Store integer vector into an aligned address.
 SIMD_INLINE void store(vint v, int* ptr) { _mm256_store_si256((__m256i*)ptr, v.m); }
 
+// Store lowest N (simd width) bytes of integer vector into an unaligned address.
 SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0)); }
 
+// SIMD "gather" - load each lane with base[indices[i]]
 SIMD_INLINE vfloat gatherf(const float* base, vint indices)
 {
     return vfloat(_mm256_i32gather_ps(base, indices.m, 4));
@@ -190,7 +238,7 @@ SIMD_INLINE vint gatheri(const int* base, vint indices)
     return vint(_mm256_i32gather_epi32(base, indices.m, 4));
 }
 
-// packs low 8 bits of each lane into low 64 bits of result
+// Pack low 8 bits of each lane into low 64 bits of result.
 SIMD_INLINE vint pack_low_bytes(vint v)
 {
     __m256i shuf = _mm256_set_epi8(0,0,0,0,0,0,0,0, 0,0,0,0,28,24,20,16, 0,0,0,0,0,0,0,0, 0,0,0,0,12,8,4,0);
@@ -200,7 +248,6 @@ SIMD_INLINE vint pack_low_bytes(vint v)
 	__m128i b = _mm_unpacklo_epi32(a0, a1);
     return vint(_mm256_set_m128i(b, b));
 }
-
 
 // "select", i.e. highbit(cond) ? b : a
 SIMD_INLINE vfloat select(vfloat a, vfloat b, vmask cond)

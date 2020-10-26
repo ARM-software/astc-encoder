@@ -1117,14 +1117,14 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	int i = 0;
 
 #if ASTCENC_SIMD_WIDTH > 1
-    // SIMD loop
+    // SIMD loop; process weights in SIMD width batches while we can.
     int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
     vfloat scalev(scale);
     vfloat scaled_low_boundv(scaled_low_bound);
     vfloat quant_level_m1v(quant_level_m1);
     vfloat rscalev(rscale);
     vfloat low_boundv(low_bound);
-    for (; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+    for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
     {
         vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
         ix = saturate(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
@@ -1146,9 +1146,9 @@ void compute_ideal_quantized_weights_for_decimation_table(
         vint scn = pack_low_bytes(scm);
         store_nbytes(scn, &quantized_weight_set[i]);
     }
-	
-#endif
+#endif // #if ASTCENC_SIMD_WIDTH > 1
 
+	// Process remaining weights in a scalar way.
 	for (/*Loop tail */; i < weight_count; i++)
 	{
 		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
