@@ -1117,35 +1117,35 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	int i = 0;
 
 #if ASTCENC_SIMD_WIDTH > 1
-    // SIMD loop; process weights in SIMD width batches while we can.
-    int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
-    vfloat scalev(scale);
-    vfloat scaled_low_boundv(scaled_low_bound);
-    vfloat quant_level_m1v(quant_level_m1);
-    vfloat rscalev(rscale);
-    vfloat low_boundv(low_bound);
-    for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
-    {
-        vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
-        ix = saturate(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
-        
-        // look up the two closest indexes and return the one that was closest.
-        vfloat ix1 = ix * quant_level_m1v;
-        vint weight = floatToInt(ix1);
-        vint weight1 = weight+vint(1);
-        vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
-        vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
-        
-        vmask mask = ixl + ixh < vfloat(128.0f) * ix;
-        weight = select(weight, weight1, mask);
-        ixl = select(ixl, ixh, mask);
-        
-        // Invert the weight-scaling that was done initially
-        store(ixl * rscalev + low_boundv, &weight_set_out[i]);
-        vint scm = gatheri(qat->scramble_map, weight);
-        vint scn = pack_low_bytes(scm);
-        store_nbytes(scn, &quantized_weight_set[i]);
-    }
+	// SIMD loop; process weights in SIMD width batches while we can.
+	int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
+	vfloat scalev(scale);
+	vfloat scaled_low_boundv(scaled_low_bound);
+	vfloat quant_level_m1v(quant_level_m1);
+	vfloat rscalev(rscale);
+	vfloat low_boundv(low_bound);
+	for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
+		ix = saturate(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
+
+		// look up the two closest indexes and return the one that was closest.
+		vfloat ix1 = ix * quant_level_m1v;
+		vint weight = floatToInt(ix1);
+		vint weight1 = weight+vint(1);
+		vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
+		vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
+
+		vmask mask = ixl + ixh < vfloat(128.0f) * ix;
+		weight = select(weight, weight1, mask);
+		ixl = select(ixl, ixh, mask);
+
+		// Invert the weight-scaling that was done initially
+		store(ixl * rscalev + low_boundv, &weight_set_out[i]);
+		vint scm = gatheri(qat->scramble_map, weight);
+		vint scn = pack_low_bytes(scm);
+		store_nbytes(scn, &quantized_weight_set[i]);
+	}
 #endif // #if ASTCENC_SIMD_WIDTH > 1
 
 	// Process remaining weights in a scalar way.

@@ -972,22 +972,22 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 			}
 		}
 #else
-        // find best mode, SIMD N-wide way
-        vint vbest_error_index(-1);
-        vfloat vbest_ep_error(1e30f);
-        vint lane_ids = vint::lane_id();
+		// find best mode, SIMD N-wide way
+		vint vbest_error_index(-1);
+		vfloat vbest_ep_error(1e30f);
+		vint lane_ids = vint::lane_id();
 		for (int j = 0; j < MAX_WEIGHT_MODES; j += ASTCENC_SIMD_WIDTH)
 		{
-            vfloat err = vfloat(&errors_of_best_combination[j]);
-            vmask mask1 = err < vbest_ep_error;
-            vmask mask2 = vint(&best_quantization_levels[j]) > vint(4);
-            vmask mask = mask1 & mask2;
-            vbest_ep_error = select(vbest_ep_error, err, mask);
-            vbest_error_index = select(vbest_error_index, lane_ids, mask);
-            lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
+			vfloat err = vfloat(&errors_of_best_combination[j]);
+			vmask mask1 = err < vbest_ep_error;
+			vmask mask2 = vint(&best_quantization_levels[j]) > vint(4);
+			vmask mask = mask1 & mask2;
+			vbest_ep_error = select(vbest_ep_error, err, mask);
+			vbest_error_index = select(vbest_error_index, lane_ids, mask);
+			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
 		}
-        
-        // pick final best mode from the SIMD result.
+
+		// pick final best mode from the SIMD result.
 		// note that if multiple SIMD lanes have "best" score,
 		// we want to pick one with the lowest index, i.e. what
 		// would happen if code was purely scalar.
