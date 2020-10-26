@@ -813,7 +813,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		    format_of_choice[i]);
 	}
 
-	float errors_of_best_combination[MAX_WEIGHT_MODES];
+	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[MAX_WEIGHT_MODES];
 	int best_quantization_levels[MAX_WEIGHT_MODES];
 	int best_quantization_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
@@ -973,6 +973,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 #else
 		// find best mode, SIMD N-wide way
+		static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0, "MAX_WEIGHT_MODES should be multiple of ASTCENC_SIMD_WIDTH");
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(1e30f);
 		vint lane_ids = vint::lane_id();

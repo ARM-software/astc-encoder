@@ -196,9 +196,9 @@ SIMD_INLINE vint max(vint a, vint b) { a.m = _mm256_max_epi32(a.m, b.m); return 
 // set to the minimum value of the input vector.
 SIMD_INLINE vfloat hmin(vfloat v)
 {
-	__m128 vlow  = _mm256_castps256_ps128(v.m);
+	__m128 vlow = _mm256_castps256_ps128(v.m);
 	__m128 vhigh = _mm256_extractf128_ps(v.m, 1);
-		   vlow  = _mm_min_ps(vlow, vhigh);
+    vlow  = _mm_min_ps(vlow, vhigh);
 
 	// First do an horizontal reduction.                                // v = [ D C | B A ]
 	__m128 shuf = _mm_shuffle_ps(vlow, vlow, _MM_SHUFFLE(2, 3, 0, 1));  //     [ C D | A B ]
