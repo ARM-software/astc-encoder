@@ -122,12 +122,19 @@ SIMD_INLINE bool all(vmask v) { return mask(v) == 0xFF; }
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = _mm256_min_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = _mm256_max_ps(a.m, b.m); return a; }
 
+SIMD_INLINE vfloat saturate(vfloat a)
+{
+    __m256 zero = _mm256_setzero_ps();
+    __m256 one = _mm256_set1_ps(1.0f);
+    return vfloat(_mm256_min_ps(_mm256_max_ps(a.m, zero), one));
+}
+
 SIMD_INLINE vfloat round(vfloat v)
 {
     return vfloat(_mm256_round_ps(v.m, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 }
 
-SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvtps_epi32(v.m)); }
+SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvttps_epi32(v.m)); }
 
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
 
@@ -171,6 +178,28 @@ SIMD_INLINE vint hmin(vint v)
 
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm256_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm256_store_si256((__m256i*)ptr, v.m); }
+
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0)); }
+
+SIMD_INLINE vfloat gatherf(const float* base, vint indices)
+{
+    return vfloat(_mm256_i32gather_ps(base, indices.m, 4));
+}
+SIMD_INLINE vint gatheri(const int* base, vint indices)
+{
+    return vint(_mm256_i32gather_epi32(base, indices.m, 4));
+}
+
+// packs low 8 bits of each lane into low 64 bits of result
+SIMD_INLINE vint pack_low_bytes(vint v)
+{
+    __m256i shuf = _mm256_set_epi8(0,0,0,0,0,0,0,0, 0,0,0,0,28,24,20,16, 0,0,0,0,0,0,0,0, 0,0,0,0,12,8,4,0);
+	__m256i a = _mm256_shuffle_epi8(v.m, shuf);
+	__m128i a0 = _mm256_extracti128_si256(a, 0);
+	__m128i a1 = _mm256_extracti128_si256(a, 1);
+	__m128i b = _mm_unpacklo_epi32(a0, a1);
+    return vint(_mm256_set_m128i(b, b));
+}
 
 
 // "select", i.e. highbit(cond) ? b : a
@@ -282,6 +311,12 @@ SIMD_INLINE bool all(vmask v) { return mask(v) == 0xF; }
 
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = _mm_min_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = _mm_max_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat saturate(vfloat a)
+{
+    __m128 zero = _mm_setzero_ps();
+    __m128 one = _mm_set1_ps(1.0f);
+    return vfloat(_mm_min_ps(_mm_max_ps(a.m, zero), one));
+}
 
 SIMD_INLINE vfloat round(vfloat v)
 {
@@ -304,7 +339,7 @@ SIMD_INLINE vfloat round(vfloat v)
 #endif
 }
 
-SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm_cvtps_epi32(v.m)); }
+SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm_cvttps_epi32(v.m)); }
 
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm_castsi128_ps(v.m)); }
 
@@ -356,6 +391,34 @@ SIMD_INLINE vint hmin(vint v)
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm_store_si128((__m128i*)ptr, v.m); }
 
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { _mm_storeu_si32(ptr, v.m); }
+
+SIMD_INLINE vfloat gatherf(const float* base, vint indices)
+{
+    int idx[4];
+    store(indices, idx);
+    return vfloat(_mm_set_ps(base[idx[3]], base[idx[2]], base[idx[1]], base[idx[0]]));
+}
+
+SIMD_INLINE vint gatheri(const int* base, vint indices)
+{
+    int idx[4];
+    store(indices, idx);
+    return vint(_mm_set_epi32(base[idx[3]], base[idx[2]], base[idx[1]], base[idx[0]]));
+}
+
+// packs low 8 bits of each lane into low 32 bits of result
+SIMD_INLINE vint pack_low_bytes(vint v)
+{
+    #if ASTCENC_SSE >= 41
+    __m128i shuf = _mm_set_epi8(0,0,0,0, 0,0,0,0, 0,0,0,0, 12,8,4,0);
+    return vint(_mm_shuffle_epi8(v.m, shuf));
+    #else
+    __m128i va = _mm_unpacklo_epi8(v.m, _mm_shuffle_epi32(v.m, _MM_SHUFFLE(1,1,1,1)));
+    __m128i vb = _mm_unpackhi_epi8(v.m, _mm_shuffle_epi32(v.m, _MM_SHUFFLE(3,3,3,3)));
+    return vint(_mm_unpacklo_epi16(va, vb));
+    #endif
+}
 
 // "select", i.e. highbit(cond) ? b : a
 // on SSE4.1 and up this can be done easily via "blend" instruction;
@@ -458,6 +521,7 @@ SIMD_INLINE bool all(vmask v) { return mask(v) != 0; }
 
 SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = a.m < b.m ? a.m : b.m; return a; }
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = a.m > b.m ? a.m : b.m; return a; }
+SIMD_INLINE vfloat saturate(vfloat a) { return vfloat(std::min(std::max(a.m,0.0f), 1.0f)); }
 
 SIMD_INLINE vfloat round(vfloat v)
 {
@@ -483,6 +547,23 @@ SIMD_INLINE vint hmin(vint v) { return v; }
 
 SIMD_INLINE void store(vfloat v, float* ptr) { *ptr = v.m; }
 SIMD_INLINE void store(vint v, int* ptr) { *ptr = v.m; }
+
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { *ptr = (uint8_t)v.m; }
+
+SIMD_INLINE vfloat gatherf(const float* base, vint indices)
+{
+    return vfloat(base[indices.m]);
+}
+SIMD_INLINE vint gatheri(const int* base, vint indices)
+{
+    return vint(base[indices.m]);
+}
+
+// packs low 8 bits of each lane into low 8 bits of result (a no-op in scalar code path)
+SIMD_INLINE vint pack_low_bytes(vint v)
+{
+    return v;
+}
 
 
 // "select", i.e. highbit(cond) ? b : a

@@ -24,6 +24,7 @@
 #include <cassert>
 
 #include "astcenc_internal.h"
+#include "astcenc_vecmathlib.h"
 
 #ifdef DEBUG_CAPTURE_NAN
 	#ifndef _GNU_SOURCE
@@ -1115,46 +1116,37 @@ void compute_ideal_quantized_weights_for_decimation_table(
 
 	int i = 0;
 
-#if ASTCENC_AVX >= 2
-	//  TODO: This is currently 4-wide. Could try 8?
-	int clipped_weight_count = weight_count & ~3;
-	__m128i shuf = _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1,
-	                            -1, -1, -1, -1, 12,  8,  4,  0);
-	__m128 scalev = _mm_set1_ps(scale);
-	__m128 scaled_low_boundv = _mm_set1_ps(scaled_low_bound);
-	for (/* Loop vector */; i < clipped_weight_count; i += 4)
-	{
-		__m128 ix = _mm_load_ps(&weight_set_in[i]);
-		ix = _mm_mul_ps(ix, scalev);
-		ix = _mm_sub_ps(ix, scaled_low_boundv);
-
-		ix = _mm_max_ps(ix, _mm_setzero_ps());
-		ix = _mm_min_ps(ix, _mm_set1_ps(1.0f));
-
-		__m128 ix1 = _mm_mul_ps(ix, _mm_set1_ps(quant_level_m1));
-		__m128i weight = _mm_cvtps_epi32(ix1);
-		__m128 ixl = _mm_i32gather_ps(qat->unquantized_value_unsc, weight, 4);
-
-		__m128i weight1 = _mm_add_epi32(weight, _mm_set1_epi32(1));
-		__m128 ixh = _mm_i32gather_ps(qat->unquantized_value_unsc, weight1, 4);
-
-		__m128 lhs = _mm_add_ps(ixl, ixh);
-		__m128 rhs = _mm_mul_ps(ix, _mm_set1_ps(128.0f));
-		__m128i mask = _mm_castps_si128(_mm_cmplt_ps(lhs, rhs));
-		weight = _mm_blendv_epi8(weight, weight1, mask);
-		ixl = _mm_blendv_ps(ixl, ixh, _mm_castsi128_ps(mask));
-
-		// Invert the weight-scaling that was done initially
-		__m128 wso = _mm_mul_ps(ixl, _mm_set1_ps(rscale));
-		wso = _mm_add_ps(wso, _mm_set1_ps(low_bound));
-		_mm_storeu_ps(&weight_set_out[i], wso);
-
-		__m128i scm = _mm_i32gather_epi32(qat->scramble_map, weight, 4);
-		__m128i scn = _mm_shuffle_epi8(scm, shuf);
-
-		// This is a hack because _mm_storeu_si32 is still not implemented ...
-		_mm_store_ss((float*)&quantized_weight_set[i], _mm_castsi128_ps(scn));
-	}
+#if ASTCENC_SIMD_WIDTH > 1
+    // SIMD loop
+    int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
+    vfloat scalev(scale);
+    vfloat scaled_low_boundv(scaled_low_bound);
+    vfloat quant_level_m1v(quant_level_m1);
+    vfloat rscalev(rscale);
+    vfloat low_boundv(low_bound);
+    for (; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+    {
+        vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
+        ix = saturate(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
+        
+        // look up the two closest indexes and return the one that was closest.
+        vfloat ix1 = ix * quant_level_m1v;
+        vint weight = floatToInt(ix1);
+        vint weight1 = weight+vint(1);
+        vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
+        vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
+        
+        vmask mask = ixl + ixh < vfloat(128.0f) * ix;
+        weight = select(weight, weight1, mask);
+        ixl = select(ixl, ixh, mask);
+        
+        // Invert the weight-scaling that was done initially
+        store(ixl * rscalev + low_boundv, &weight_set_out[i]);
+        vint scm = gatheri(qat->scramble_map, weight);
+        vint scn = pack_low_bytes(scm);
+        store_nbytes(scn, &quantized_weight_set[i]);
+    }
+	
 #endif
 
 	for (/*Loop tail */; i < weight_count; i++)
