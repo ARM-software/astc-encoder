@@ -814,7 +814,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	}
 
 	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[MAX_WEIGHT_MODES];
-	int best_quantization_levels[MAX_WEIGHT_MODES];
+	alignas(ASTCENC_VECALIGN) int best_quantization_levels[MAX_WEIGHT_MODES];
 	int best_quantization_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
 
