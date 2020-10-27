@@ -93,8 +93,8 @@ static int max_angular_steps_needed_for_quant_level[13];
 // slight quality loss compared to using sin() and cos() directly. Must be 2^N.
 #define SINCOS_STEPS 64
 
-static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
-static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
+alignas(ASTCENC_VECALIGN) static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
+alignas(ASTCENC_VECALIGN) static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
 void prepare_angular_tables()
 {
@@ -135,15 +135,11 @@ static void compute_angular_offsets(
 	int max_angular_steps,
 	float* offsets
 ) {
-	float anglesum_x[ANGULAR_STEPS];
-	float anglesum_y[ANGULAR_STEPS];
-
-	for (int i = 0; i < max_angular_steps; i++)
-	{
-		anglesum_x[i] = 0;
-		anglesum_y[i] = 0;
-	}
-
+	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS];
+	memset(anglesum_x, 0, max_angular_steps*sizeof(anglesum_x[0]));
+	memset(anglesum_y, 0, max_angular_steps*sizeof(anglesum_y[0]));
+	
 	// compute the angle-sums.
 	for (int i = 0; i < samplecount; i++)
 	{
@@ -156,21 +152,25 @@ static void compute_angular_offsets(
 		const float *sinptr = sin_table[isample];
 		const float *cosptr = cos_table[isample];
 
-		for (int j = 0; j < max_angular_steps; j++)
+		vfloat sample_weightv(sample_weight);
+		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 		{
-			float cp = cosptr[j];
-			float sp = sinptr[j];
-
-			anglesum_x[j] += cp * sample_weight;
-			anglesum_y[j] += sp * sample_weight;
+			vfloat cp = loada(&cosptr[j]);
+			vfloat sp = loada(&sinptr[j]);
+			vfloat ax = loada(&anglesum_x[j]) + cp * sample_weightv;
+			vfloat ay = loada(&anglesum_y[j]) + sp * sample_weightv;
+			store(ax, &anglesum_x[j]);
+			store(ay, &anglesum_y[j]);
 		}
 	}
 
 	// post-process the angle-sums
-	for (int i = 0; i < max_angular_steps; i++)
+	vfloat mult = vfloat(1.0f / (2.0f * (float)M_PI));
+	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	{
-		float angle = astc::atan2(anglesum_y[i], anglesum_x[i]);
-		offsets[i] = angle * (stepsizes[i] * (1.0f / (2.0f * (float)M_PI)));
+		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));
+		vfloat ofs = angle * (loada(&stepsizes[i]) * mult);
+		store(ofs, &offsets[i]);
 	}
 }
 

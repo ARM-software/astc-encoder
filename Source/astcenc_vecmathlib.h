@@ -130,6 +130,7 @@ SIMD_INLINE vfloat loada(const float* p) { return vfloat(_mm256_load_ps(p)); }
 SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = _mm256_add_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = _mm256_sub_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = _mm256_mul_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator/ (vfloat a, vfloat b) { a.m = _mm256_div_ps(a.m, b.m); return a; }
 
 // Per-lane float comparison operations
 SIMD_INLINE vmask operator==(vfloat a, vfloat b) { return vmask(_mm256_cmp_ps(a.m, b.m, _CMP_EQ_OQ)); }
@@ -163,6 +164,12 @@ SIMD_INLINE vfloat saturate(vfloat a)
 	return vfloat(_mm256_min_ps(_mm256_max_ps(a.m, zero), one));
 }
 
+SIMD_INLINE vfloat abs(vfloat x)
+{
+	__m256 msk = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff));
+	return vfloat(_mm256_and_ps(x.m, msk));
+}
+
 // Round to nearest integer (nearest even for .5 cases)
 SIMD_INLINE vfloat round(vfloat v)
 {
@@ -174,6 +181,8 @@ SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm256_cvttps_epi32(v.m)); }
 
 // Reinterpret-bitcast integer vector as a float vector (this is basically a no-op on the CPU)
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm256_castsi256_ps(v.m)); }
+// Reinterpret-bitcast float vector as an integer vector (this is basically a no-op on the CPU)
+SIMD_INLINE vint floatAsInt(vfloat v) { return vint(_mm256_castps_si256(v.m)); }
 
 SIMD_INLINE vint operator~ (vint a) { return vint(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1))); }
 SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm256_xor_si256(_mm256_castps_si256(a.m), _mm256_set1_epi32(-1))); }
@@ -181,6 +190,11 @@ SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm256_xor_si256(_mm256_cas
 // Per-lane arithmetic integer operations
 SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm256_add_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm256_sub_epi32(a.m, b.m); return a; }
+
+// Per-lane logical bit operations
+SIMD_INLINE vint operator| (vint a, vint b) { return vint(_mm256_or_si256(a.m, b.m)); }
+SIMD_INLINE vint operator& (vint a, vint b) { return vint(_mm256_and_si256(a.m, b.m)); }
+SIMD_INLINE vint operator^ (vint a, vint b) { return vint(_mm256_xor_si256(a.m, b.m)); }
 
 // Per-lane integer comparison operations
 SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(_mm256_cmpgt_epi32(b.m, a.m)); }
@@ -342,6 +356,7 @@ SIMD_INLINE vfloat loada(const float* p) { return vfloat(_mm_load_ps(p)); }
 SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = _mm_add_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = _mm_sub_ps(a.m, b.m); return a; }
 SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = _mm_mul_ps(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator/ (vfloat a, vfloat b) { a.m = _mm_div_ps(a.m, b.m); return a; }
 SIMD_INLINE vmask operator==(vfloat a, vfloat b) { return vmask(_mm_cmpeq_ps(a.m, b.m)); }
 SIMD_INLINE vmask operator!=(vfloat a, vfloat b) { return vmask(_mm_cmpneq_ps(a.m, b.m)); }
 SIMD_INLINE vmask operator< (vfloat a, vfloat b) { return vmask(_mm_cmplt_ps(a.m, b.m)); }
@@ -363,6 +378,12 @@ SIMD_INLINE vfloat saturate(vfloat a)
 	__m128 zero = _mm_setzero_ps();
 	__m128 one = _mm_set1_ps(1.0f);
 	return vfloat(_mm_min_ps(_mm_max_ps(a.m, zero), one));
+}
+
+SIMD_INLINE vfloat abs(vfloat x)
+{
+	__m128 msk = _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff));
+	return vfloat(_mm_and_ps(x.m, msk));
 }
 
 SIMD_INLINE vfloat round(vfloat v)
@@ -389,12 +410,16 @@ SIMD_INLINE vfloat round(vfloat v)
 SIMD_INLINE vint floatToInt(vfloat v) { return vint(_mm_cvttps_epi32(v.m)); }
 
 SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(_mm_castsi128_ps(v.m)); }
+SIMD_INLINE vint floatAsInt(vfloat v) { return vint(_mm_castps_si128(v.m)); }
 
 SIMD_INLINE vint operator~ (vint a) { return vint(_mm_xor_si128(a.m, _mm_set1_epi32(-1))); }
 SIMD_INLINE vmask operator~ (vmask a) { return vmask(_mm_xor_si128(_mm_castps_si128(a.m), _mm_set1_epi32(-1))); }
 
 SIMD_INLINE vint operator+ (vint a, vint b) { a.m = _mm_add_epi32(a.m, b.m); return a; }
 SIMD_INLINE vint operator- (vint a, vint b) { a.m = _mm_sub_epi32(a.m, b.m); return a; }
+SIMD_INLINE vint operator| (vint a, vint b) { return vint(_mm_or_si128(a.m, b.m)); }
+SIMD_INLINE vint operator& (vint a, vint b) { return vint(_mm_and_si128(a.m, b.m)); }
+SIMD_INLINE vint operator^ (vint a, vint b) { return vint(_mm_xor_si128(a.m, b.m)); }
 SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(_mm_cmplt_epi32(a.m, b.m)); }
 SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(_mm_cmpgt_epi32(a.m, b.m)); }
 SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(_mm_cmpeq_epi32(a.m, b.m)); }
@@ -553,6 +578,7 @@ SIMD_INLINE vfloat loada(const float* p) { return vfloat(*p); }
 SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = a.m + b.m; return a; }
 SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = a.m - b.m; return a; }
 SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = a.m * b.m; return a; }
+SIMD_INLINE vfloat operator/ (vfloat a, vfloat b) { a.m = a.m / b.m; return a; }
 SIMD_INLINE vmask operator==(vfloat a, vfloat b) { return vmask(a.m = a.m == b.m); }
 SIMD_INLINE vmask operator!=(vfloat a, vfloat b) { return vmask(a.m = a.m != b.m); }
 SIMD_INLINE vmask operator< (vfloat a, vfloat b) { return vmask(a.m = a.m < b.m); }
@@ -570,6 +596,8 @@ SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = a.m < b.m ? a.m : b.m; return
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = a.m > b.m ? a.m : b.m; return a; }
 SIMD_INLINE vfloat saturate(vfloat a) { return vfloat(std::min(std::max(a.m,0.0f), 1.0f)); }
 
+SIMD_INLINE vfloat abs(vfloat x) { return vfloat(std::abs(a.m)); }
+
 SIMD_INLINE vfloat round(vfloat v)
 {
 	return vfloat(std::floor(v.m + 0.5f));
@@ -578,10 +606,14 @@ SIMD_INLINE vfloat round(vfloat v)
 SIMD_INLINE vint floatToInt(vfloat v) { return vint(v.m); }
 
 SIMD_INLINE vfloat intAsFloat(vint v) { vfloat r; memcpy(&r.m, &v.m, 4); return r; }
+SIMD_INLINE vint floatAsInt(vfloat v) { vint r; memcpy(&r.m, &v.m, 4); return r; }
 
 SIMD_INLINE vint operator~ (vint a) { a.m = ~a.m; return a; }
 SIMD_INLINE vint operator+ (vint a, vint b) { a.m = a.m + b.m; return a; }
 SIMD_INLINE vint operator- (vint a, vint b) { a.m = a.m - b.m; return a; }
+SIMD_INLINE vint operator| (vint a, vint b) { return vint(a.m | b.m); }
+SIMD_INLINE vint operator& (vint a, vint b) { return vint(a.m & b.m); }
+SIMD_INLINE vint operator^ (vint a, vint b) { return vint(a.m ^ b.m); }
 SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(a.m = a.m < b.m); }
 SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(a.m = a.m > b.m); }
 SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(a.m = a.m == b.m); }
@@ -625,5 +657,53 @@ SIMD_INLINE vint select(vint a, vint b, vmask cond)
 
 
 #endif // #ifdef ASTCENC_SIMD_ISA_SCALAR
+
+
+// ----------------------------------------------------------------------------
+
+// Return x, with each lane having its sign flipped where the corresponding y lane is negative, i.e. msb(y) ? -x : x
+SIMD_INLINE vfloat changesign(vfloat x, vfloat y)
+{
+	vint ix = floatAsInt(x);
+	vint iy = floatAsInt(y);
+	vint signMask((int)0x80000000);
+	vint r = ix ^ (iy & signMask);
+	return intAsFloat(r);
+}
+
+#define ASTCENC_PI_OVER_TWO (1.57079632679489661923f) // pi/2
+#define ASTCENC_PI (3.14159265358979323846f)
+
+SIMD_INLINE vfloat atan(vfloat x)
+{
+	vmask c = abs(x) > vfloat(1.0f);
+	vfloat z = changesign(vfloat(ASTCENC_PI_OVER_TWO), x);
+	vfloat y = select(x, vfloat(1.0f) / x, c);
+
+	// max error 0.000167
+	/*
+	vfloat c1(0.999802172f);
+	vfloat c3(-0.325227708f);
+	vfloat c5(0.153163940f);
+	vfloat c7(-0.042340223f);
+	vfloat y2 = y * y;
+	vfloat y4 = y2 * y2;
+	vfloat y6 = y4 * y2;
+	y = y * (c7 * y6 + (c5 * y4 + (c3 * y2 + c1)));
+	 */
+	// max error 0.004883, matches astc::atan2 approximation
+	vfloat y2 = y * y;
+	y = y / (y2 * vfloat(0.28f) + vfloat(1.0f));
+
+	return select(y, z - y, c);
+}
+
+SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
+{
+	vfloat z = atan(abs(y / x));
+	vmask xmask = vmask(floatAsInt(x).m);
+	return changesign(select(z, vfloat(ASTCENC_PI) - z, xmask), y);
+}
+
 
 #endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED
