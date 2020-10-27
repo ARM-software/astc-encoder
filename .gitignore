@@ -1,19 +1,34 @@
+# Editor and engineering scratch files
 .vs
 .vscode
 *.log
 *.diff
 *.user
 __pycache__
+
+# Precompiled reference binaries for comparison tests
 Binaries
+
+# Build artifacts on Linux/macOS
 Source/*.o
 Source/*.so
 Source/astcdec-*
 Source/astcenc-*
+
+# Build artifacts on Windows
 Source/VS2019/*Release
 Source/VS2019/*Debug
 Source/VS2019/*.exe
+
+# General build artifacts
 Test/DocOut
-Test/Images/Kodak*
+
+# Test images we download from other sources
+Test/Images/Kodak*/**/*.png
 Test/Images/Scratch*
+
+# Test output
 TestOutput
-Docs/Profiling.md
+/*.png
+/*.exr
+/*.astc
