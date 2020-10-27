@@ -49,6 +49,7 @@
 
 #include <stdio.h>
 #include <cassert>
+#include <cstring>
 
 #if ASTCENC_SIMD_WIDTH <= 4
     #define ANGULAR_STEPS 44
@@ -138,9 +139,9 @@ static void compute_angular_offsets(
 ) {
 	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS];
-	memset(anglesum_x, 0, max_angular_steps*sizeof(anglesum_x[0]));
-	memset(anglesum_y, 0, max_angular_steps*sizeof(anglesum_y[0]));
-	
+	std::memset(anglesum_x, 0, max_angular_steps*sizeof(anglesum_x[0]));
+	std::memset(anglesum_y, 0, max_angular_steps*sizeof(anglesum_y[0]));
+
 	// compute the angle-sums.
 	for (int i = 0; i < samplecount; i++)
 	{
@@ -217,18 +218,18 @@ static void compute_lowest_and_highest_weight(
 			vmask mask = idxv < minidx;
 			minidx = select(minidx, idxv, mask);
 			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), mask);
-			
+
 			// Accumulate on min hit.
 			mask = idxv == minidx;
 			minidx = select(minidx, idxv, mask);
 			vfloat accum = cut_low_weight_err + wt - vfloat(2.0f) * dwt;
 			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
-			
+
 			// Reset tracker on max hit.
 			mask = idxv > maxidx;
 			maxidx = select(maxidx, idxv, mask);
 			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), mask);
-			
+
 			// Accumulate on max hit.
 			mask = idxv == maxidx;
 			accum = cut_high_weight_err + wt + vfloat(2.0f) * dwt;
