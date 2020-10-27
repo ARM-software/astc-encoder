@@ -542,6 +542,10 @@ SIMD_INLINE void print(vint a)
 
 #ifdef ASTCENC_SIMD_ISA_SCALAR
 
+#include <algorithm>
+#include <math.h>
+#include <string.h>
+
 #define ASTCENC_SIMD_WIDTH 1
 
 struct vfloat
@@ -596,7 +600,7 @@ SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = a.m < b.m ? a.m : b.m; return
 SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = a.m > b.m ? a.m : b.m; return a; }
 SIMD_INLINE vfloat saturate(vfloat a) { return vfloat(std::min(std::max(a.m,0.0f), 1.0f)); }
 
-SIMD_INLINE vfloat abs(vfloat x) { return vfloat(std::abs(a.m)); }
+SIMD_INLINE vfloat abs(vfloat x) { return vfloat(std::abs(x.m)); }
 
 SIMD_INLINE vfloat round(vfloat v)
 {

@@ -59,6 +59,7 @@
 #else
     #error Unknown SIMD width
 #endif
+static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0, "ANGULAR_STEPS should be multiple of ASTCENC_SIMD_WIDTH");
 
 alignas(ASTCENC_VECALIGN) static const float angular_steppings[ANGULAR_STEPS] = {
 	 1.0f, 1.25f, 1.5f, 1.75f,
