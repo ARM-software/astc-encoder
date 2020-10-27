@@ -108,8 +108,8 @@ void prepare_angular_tables()
 
 		for (int j = 0; j < SINCOS_STEPS; j++)
 		{
-			sin_table[j][i] = static_cast<float>(sinf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
-			cos_table[j][i] = static_cast<float>(cosf((2.0f * (float)M_PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
+			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
+			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
 		}
 
 		int p = astc::flt2int_rd(angular_steppings[i]) + 1;
@@ -167,7 +167,7 @@ static void compute_angular_offsets(
 	}
 
 	// post-process the angle-sums
-	vfloat mult = vfloat(1.0f / (2.0f * (float)M_PI));
+	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
 	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	{
 		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));

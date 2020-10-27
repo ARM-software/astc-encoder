@@ -686,30 +686,13 @@ SIMD_INLINE vfloat changesign(vfloat x, vfloat y)
 	return intAsFloat(r);
 }
 
-#define ASTCENC_PI_OVER_TWO (1.57079632679489661923f) // pi/2
-#define ASTCENC_PI (3.14159265358979323846f)
-
+// Fast atan implementation, with max error of 0.004883, matches astc::atan2
 SIMD_INLINE vfloat atan(vfloat x)
 {
 	vmask c = abs(x) > vfloat(1.0f);
-	vfloat z = changesign(vfloat(ASTCENC_PI_OVER_TWO), x);
+	vfloat z = changesign(vfloat(astc::PI_OVER_TWO), x);
 	vfloat y = select(x, vfloat(1.0f) / x, c);
-
-	// max error 0.000167
-	/*
-	vfloat c1(0.999802172f);
-	vfloat c3(-0.325227708f);
-	vfloat c5(0.153163940f);
-	vfloat c7(-0.042340223f);
-	vfloat y2 = y * y;
-	vfloat y4 = y2 * y2;
-	vfloat y6 = y4 * y2;
-	y = y * (c7 * y6 + (c5 * y4 + (c3 * y2 + c1)));
-	 */
-	// max error 0.004883, matches astc::atan2 approximation
-	vfloat y2 = y * y;
-	y = y / (y2 * vfloat(0.28f) + vfloat(1.0f));
-
+	y = y / (y * y * vfloat(0.28f) + vfloat(1.0f));
 	return select(y, z - y, c);
 }
 
@@ -717,8 +700,7 @@ SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 {
 	vfloat z = atan(abs(y / x));
 	vmask xmask = vmask(floatAsInt(x).m);
-	return changesign(select(z, vfloat(ASTCENC_PI) - z, xmask), y);
+	return changesign(select(z, vfloat(astc::PI) - z, xmask), y);
 }
-
 
 #endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED

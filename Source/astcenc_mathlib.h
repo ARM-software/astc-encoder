@@ -30,11 +30,6 @@
 	#include <immintrin.h>
 #endif
 
-
-#ifndef M_PI
-	#define M_PI 3.14159265358979323846
-#endif
-
 /* ============================================================================
   Fast math library; note that many of the higher-order functions in this set
   use approximations which are less accurate, but faster, than <cmath> standard
@@ -62,6 +57,9 @@
 // These are namespaced to avoid colliding with C standard library functions.
 namespace astc
 {
+
+static const float PI          = 3.14159265358979323846f;
+static const float PI_OVER_TWO = 1.57079632679489661923f;
 
 /**
  * @brief Fast approximation of log2(x)

@@ -64,21 +64,18 @@ float astc::atan2(
 	float y,
 	float x
 ) {
-	const float PI = (float)M_PI;
-	const float PI_2 = PI / 2.0f;
-
 	// Handle the discontinuity at x == 0
 	if (x == 0.0f)
 	{
 		if (y > 0.0f)
 		{
-			return PI_2;
+			return astc::PI_OVER_TWO;
 		}
 		else if (y == 0.0f)
 		{
 			return 0.0f;
 		}
-		return -PI_2;
+		return -astc::PI_OVER_TWO;
 	}
 
 	float z = y / x;
@@ -90,21 +87,21 @@ float astc::atan2(
 		{
 			if (y < 0.0f)
 			{
-				return atan - PI;
+				return atan - astc::PI;
 			}
 			else
 			{
-				return atan + PI;
+				return atan + astc::PI;
 			}
 		}
 		return atan;
 	}
 	else
 	{
-		float atan = PI_2 - (z / (z2 + 0.28f));
+		float atan = astc::PI_OVER_TWO - (z / (z2 + 0.28f));
 		if (y < 0.0f)
 		{
-			return atan - PI;
+			return atan - astc::PI;
 		}
 		else
 		{
