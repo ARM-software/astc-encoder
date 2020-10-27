@@ -27,6 +27,9 @@
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
 #endif
+#if ASTCENC_NEON != 0
+	#include <arm_neon.h>
+#endif
 
 #if defined(_MSC_VER)
 	#define SIMD_INLINE __forceinline
@@ -38,6 +41,8 @@
 	#define ASTCENC_SIMD_ISA_AVX2
 #elif ASTCENC_SSE >= 20
 	#define ASTCENC_SIMD_ISA_SSE
+#elif ASTCENC_NEON > 0
+	#define ASTCENC_SIMD_ISA_NEON
 #else
 	#define ASTCENC_SIMD_ISA_SCALAR
 #endif
@@ -511,6 +516,200 @@ SIMD_INLINE void print(vint a)
 
 #endif // #ifdef ASTCENC_SIMD_ISA_SSE
 
+
+// ----------------------------------------------------------------------------
+// NEON 4-wide implementation
+
+#ifdef ASTCENC_SIMD_ISA_NEON
+
+#define ASTCENC_SIMD_WIDTH 4
+
+struct vfloat
+{
+	SIMD_INLINE vfloat() {}
+	SIMD_INLINE explicit vfloat(const float *p) { m = vld1q_f32(p); }
+	SIMD_INLINE explicit vfloat(float v) { m = vdupq_n_f32(v); }
+	SIMD_INLINE explicit vfloat(float32x4_t v) { m = v; }
+	SIMD_INLINE float lane(int i) const
+	{
+		union { float32x4_t m; float f[ASTCENC_SIMD_WIDTH]; } cvt;
+		cvt.m = m;
+		return cvt.f[i];
+	}
+	static SIMD_INLINE vfloat zero() { return vfloat(vdupq_n_f32(0.0f)); }
+	static SIMD_INLINE vfloat lane_id()
+	{
+		alignas(16) float data[4] = { 0, 1, 2, 3 };
+		return vfloat(vld1q_f32(data));
+	}
+	float32x4_t m;
+};
+
+struct vint
+{
+	SIMD_INLINE vint() {}
+	SIMD_INLINE explicit vint(const int *p) { m = vld1q_s32(p); }
+	SIMD_INLINE explicit vint(int v) { m = vdupq_n_s32(v); }
+	SIMD_INLINE explicit vint(int32x4_t v) { m = v; }
+	SIMD_INLINE int lane(int i) const
+	{
+		union { int32x4_t m; int f[ASTCENC_SIMD_WIDTH]; } cvt;
+		cvt.m = m;
+		return cvt.f[i];
+	}
+	static SIMD_INLINE vint lane_id()
+	{
+		alignas(16) int data[4] = { 0, 1, 2, 3 };
+		return vint(vld1q_s32(data));
+	}
+	int32x4_t m;
+};
+
+struct vmask
+{
+	SIMD_INLINE explicit vmask(uint32x4_t v) { m = v; }
+	uint32x4_t m;
+};
+
+
+SIMD_INLINE vfloat load1a(const float* p) { return vfloat(vld1q_dup_f32(p)); }
+SIMD_INLINE vfloat loada(const float* p) { return vfloat(vld1q_f32(p)); }
+
+SIMD_INLINE vfloat operator+ (vfloat a, vfloat b) { a.m = vaddq_f32(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator- (vfloat a, vfloat b) { a.m = vsubq_f32(a.m, b.m); return a; }
+SIMD_INLINE vfloat operator* (vfloat a, vfloat b) { a.m = vmulq_f32(a.m, b.m); return a; }
+SIMD_INLINE vmask operator==(vfloat a, vfloat b) { return vmask(vceqq_f32(a.m, b.m)); }
+SIMD_INLINE vmask operator!=(vfloat a, vfloat b) { return vmask(vmvnq_u32(vceqq_f32(a.m, b.m))); }
+SIMD_INLINE vmask operator< (vfloat a, vfloat b) { return vmask(vcltq_f32(a.m, b.m)); }
+SIMD_INLINE vmask operator> (vfloat a, vfloat b) { return vmask(vcgtq_f32(a.m, b.m)); }
+SIMD_INLINE vmask operator<=(vfloat a, vfloat b) { return vmask(vcleq_f32(a.m, b.m)); }
+SIMD_INLINE vmask operator>=(vfloat a, vfloat b) { return vmask(vcgeq_f32(a.m, b.m)); }
+SIMD_INLINE vmask operator| (vmask a, vmask b) { return vmask(vorrq_u32(a.m, b.m)); }
+SIMD_INLINE vmask operator& (vmask a, vmask b) { return vmask(vandq_u32(a.m, b.m)); }
+SIMD_INLINE vmask operator^ (vmask a, vmask b) { return vmask(veorq_u32(a.m, b.m)); }
+// Returns a 4-bit code where bit0..bit3 is X..W
+SIMD_INLINE unsigned mask(vmask v)
+{
+    static const uint32x4_t movemask = { 1, 2, 4, 8 };
+    static const uint32x4_t highbit = { 0x80000000, 0x80000000, 0x80000000, 0x80000000 };
+    uint32x4_t t0 = vreinterpretq_u32_f32(v.m);
+    uint32x4_t t1 = vtstq_u32(t0, highbit);
+    uint32x4_t t2 = vandq_u32(t1, movemask);
+    uint32x2_t t3 = vorr_u32(vget_low_u32(t2), vget_high_u32(t2));
+    return vget_lane_u32(t3, 0) | vget_lane_u32(t3, 1);
+}
+SIMD_INLINE bool any(vmask v) { return mask(v) != 0; }
+SIMD_INLINE bool all(vmask v) { return mask(v) == 0xF; }
+
+SIMD_INLINE vfloat min(vfloat a, vfloat b) { a.m = vminq_f32(a.m, b.m); return a; }
+SIMD_INLINE vfloat max(vfloat a, vfloat b) { a.m = vmaxq_f32(a.m, b.m); return a; }
+SIMD_INLINE vfloat saturate(vfloat a)
+{
+	float32x4_t zero = vdupq_n_f32(0.0f);
+	float32x4_t one = vdupq_n_f32(1.0f);
+	return vfloat(vminq_f32(vmaxq_f32(a.m, zero), one));
+}
+
+SIMD_INLINE vfloat round(vfloat v)
+{
+	return vfloat(vrndnq_f32(v.m));
+}
+
+SIMD_INLINE vint floatToInt(vfloat v) { return vint(vcvtq_s32_f32(v.m)); }
+
+SIMD_INLINE vfloat intAsFloat(vint v) { return vfloat(vreinterpretq_f32_s32(v.m)); }
+
+SIMD_INLINE vint operator~ (vint a) { return vint(vmvnq_u32(a.m)); }
+SIMD_INLINE vmask operator~ (vmask a) { return vmask(vmvnq_u32(a.m)); }
+
+SIMD_INLINE vint operator+ (vint a, vint b) { a.m = vaddq_s32(a.m, b.m); return a; }
+SIMD_INLINE vint operator- (vint a, vint b) { a.m = vsubq_s32(a.m, b.m); return a; }
+SIMD_INLINE vmask operator< (vint a, vint b) { return vmask(vcltq_s32(a.m, b.m)); }
+SIMD_INLINE vmask operator> (vint a, vint b) { return vmask(vcgtq_s32(a.m, b.m)); }
+SIMD_INLINE vmask operator==(vint a, vint b) { return vmask(vceqq_s32(a.m, b.m)); }
+SIMD_INLINE vmask operator!=(vint a, vint b) { return vmask(vmvnq_u32(vceqq_s32(a.m, b.m))); }
+SIMD_INLINE vint min(vint a, vint b) { return vint(vminq_s32(a.m, b.m)); }
+SIMD_INLINE vint max(vint a, vint b) { return vint(vmaxq_s32(a.m, b.m)); }
+
+SIMD_INLINE vfloat hmin(vfloat v)
+{
+	float32x2_t m2 = vpmin_f32(vget_low_f32(v.m), vget_high_f32(v.m));
+	float32x2_t m1 = vpmin_f32(m2, m2);
+	return vfloat(vdupq_lane_f32(m1, 0));
+}
+SIMD_INLINE vint hmin(vint v)
+{
+	int32x2_t m2 = vpmin_s32(vget_low_s32(v.m), vget_high_s32(v.m));
+	int32x2_t m1 = vpmin_s32(m2, m2);
+	return vint(vdupq_lane_s32(m1, 0));
+}
+
+SIMD_INLINE void store(vfloat v, float* ptr) { vst1q_f32(ptr, v.m); }
+SIMD_INLINE void store(vint v, int* ptr) { vst1q_s32(ptr, v.m); }
+
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { vst1q_lane_u32((uint32_t*)ptr, v.m, 0); }
+
+SIMD_INLINE vfloat gatherf(const float* base, vint indices)
+{
+	alignas(16) int idx[4];
+	store(indices, idx);
+	alignas(16) float vals[4];
+	vals[0] = base[idx[0]];
+	vals[1] = base[idx[1]];
+	vals[2] = base[idx[2]];
+	vals[3] = base[idx[3]];
+	return vfloat(vals);
+}
+
+SIMD_INLINE vint gatheri(const int* base, vint indices)
+{
+	alignas(16) int idx[4];
+	store(indices, idx);
+	alignas(16) int vals[4];
+	vals[0] = base[idx[0]];
+	vals[1] = base[idx[1]];
+	vals[2] = base[idx[2]];
+	vals[3] = base[idx[3]];
+	return vint(vals);
+}
+
+// packs low 8 bits of each lane into low 32 bits of result
+SIMD_INLINE vint pack_low_bytes(vint v)
+{
+	int8x16_t v8 = v.m;
+	v8 = __builtin_shufflevector(v8, v8, 0,4,8,12, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1);
+	v.m = v8;
+	return v;
+}
+
+SIMD_INLINE vfloat select(vfloat a, vfloat b, vmask cond)
+{
+	return vfloat(vbslq_f32(cond.m, b.m, a.m));
+}
+
+SIMD_INLINE vint select(vint a, vint b, vmask cond)
+{
+	return vint(vbslq_s32(cond.m, b.m, a.m));
+}
+
+SIMD_INLINE void print(vfloat a)
+{
+	alignas(ASTCENC_VECALIGN) float v[4];
+	store(a, v);
+	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
+	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
+}
+
+SIMD_INLINE void print(vint a)
+{
+	alignas(ASTCENC_VECALIGN) int v[4];
+	store(a, v);
+	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	       v[0], v[1], v[2], v[3]);
+}
+
+
+#endif // #ifdef ASTCENC_SIMD_ISA_NEON
 
 // ----------------------------------------------------------------------------
 // Pure scalar, 1-wide implementation
