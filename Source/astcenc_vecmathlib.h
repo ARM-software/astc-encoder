@@ -16,9 +16,18 @@
 // ----------------------------------------------------------------------------
 
 /*
- * This module implements N-wide float and integer vectors and common
- * operations on them; with N depending on underlying ISA (e.g. 4 for SSE, 1 for
- * pure scalar).
+ * This module implements flexible N-wide float and integer vectors, where the
+ * width can be selected at compile time depending on the underlying ISA. It
+ * is not possible to mix different ISAs (or vector widths) in a single file -
+ * the ISA is statically selected when the header is first included.
+ *
+ * ISA support is provided for:
+ *
+ *     * 1-wide for scalar reference.
+ *     * 4-wide for SSE2.
+ *     * 4-wide for SSE4.2.
+ *     * 8-wide for AVX2.
+ *
  */
 
 #ifndef ASTC_VECMATHLIB_H_INCLUDED
@@ -30,6 +39,8 @@
 
 #if defined(_MSC_VER)
 	#define SIMD_INLINE __forceinline
+#elif defined(__GNUC__) && !defined(__clang__)
+	#define SIMD_INLINE __attribute__((unused, always_inline)) inline
 #else
 	#define SIMD_INLINE __attribute__((unused, always_inline, nodebug)) inline
 #endif
