@@ -79,9 +79,9 @@ alignas(ASTCENC_VECALIGN) static const float angular_steppings[ANGULAR_STEPS] = 
     // This is "redundant" and only used in more-than-4-wide
     // SIMD code paths, to make the steps table size
     // be a multiple of SIMD width. Values are replicated
-    // from previous row so that AVX2 and SSE code paths
+    // from last entry so that AVX2 and SSE code paths
     // return the same results.
-    32.0f, 33.0f, 34.0f, 35.0f,
+    35.0f, 35.0f, 35.0f, 35.0f,
 #endif
 };
 
