@@ -916,9 +916,9 @@ static float prepare_error_weight_block(
 						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
 
 						float4 stdev = float4(astc::sqrt(MAX(variance.x, 0.0f)),
-											  astc::sqrt(MAX(variance.y, 0.0f)),
-											  astc::sqrt(MAX(variance.z, 0.0f)),
-											  astc::sqrt(MAX(variance.w, 0.0f)));
+						                      astc::sqrt(MAX(variance.y, 0.0f)),
+						                      astc::sqrt(MAX(variance.z, 0.0f)),
+						                      astc::sqrt(MAX(variance.w, 0.0f)));
 
 						avg.x *= ctx.config.v_rgb_mean;
 						avg.y *= ctx.config.v_rgb_mean;

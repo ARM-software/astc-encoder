@@ -41,19 +41,6 @@
   to future vectorization.
 ============================================================================ */
 
-// We support scalar versions of many maths functions which use SSE intrinsics
-// as an "optimized" path, using just one lane from the SIMD hardware. In
-// reality these are often slower than standard C due to setup and scheduling
-// overheads, and the fact that we're not offsetting that cost with any actual
-// vectorization.
-//
-// These variants are only included as a means to test that the accuracy of an
-// SSE implementation would be acceptable before refactoring code paths to use
-// an actual vectorized implementation which gets some advantage from SSE. It
-// is therefore expected that the code will go *slower* with this macro
-// set to 1 ...
-#define USE_SCALAR_SSE 0
-
 // These are namespaced to avoid colliding with C standard library functions.
 namespace astc
 {
@@ -98,15 +85,7 @@ float atan2(float y, float x);
  */
 static inline float fabs(float val)
 {
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-	static const union {
-		uint32_t u[4];
-		__m128 v;
-	} mask = { { 0x7fffffff, 0x7fffffff, 0x7fffffff, 0x7fffffff } };
-	return _mm_cvtss_f32(_mm_and_ps(_mm_set_ss(val), mask.v));
-#else
 	return std::fabs(val);
-#endif
 }
 
 /**
@@ -123,11 +102,7 @@ static inline float fabs(float val)
  */
 static inline float fmin(float p, float q)
 {
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-	return _mm_cvtss_f32(_mm_min_ss(_mm_set_ss(p),_mm_set_ss(q)));
-#else
 	return p < q ? p : q;
-#endif
 }
 
 /**
@@ -144,11 +119,7 @@ static inline float fmin(float p, float q)
  */
 static inline float fmax(float p, float q)
 {
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-    return _mm_cvtss_f32(_mm_max_ss(_mm_set_ss(p),_mm_set_ss(q)));
-#else
-    return q < p ? p : q;
-#endif
+	return q < p ? p : q;
 }
 
 /**
@@ -240,14 +211,7 @@ static inline int clampi(int val, int low, int high)
  */
 static inline float flt_rte(float val)
 {
-#if (ASTCENC_SSE >= 42)
-	const int flag = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
-	__m128 tmp = _mm_set_ss(val);
-	tmp = _mm_round_ss(tmp, tmp, flag);
-	return _mm_cvtss_f32(tmp);
-#else
 	return std::floor(val + 0.5f);
-#endif
 }
 
 /**
@@ -259,14 +223,7 @@ static inline float flt_rte(float val)
  */
 static inline float flt_rd(float val)
 {
-#if (ASTCENC_SSE >= 42)
-	const int flag = _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC;
-	__m128 tmp = _mm_set_ss(val);
-	tmp = _mm_round_ss(tmp, tmp, flag);
-	return _mm_cvtss_f32(tmp);
-#else
 	return std::floor(val);
-#endif
 }
 
 /**
@@ -278,11 +235,8 @@ static inline float flt_rd(float val)
  */
 static inline int flt2int_rtn(float val)
 {
-#if (ASTCENC_SSE >= 42) && USE_SCALAR_SSE
-	return _mm_cvt_ss2si(_mm_set_ss(val));
-#else
+
 	return (int)(val + 0.5f);
-#endif
 }
 
 /**
@@ -294,11 +248,7 @@ static inline int flt2int_rtn(float val)
  */
 static inline int flt2int_rd(float val)
 {
-#if (ASTCENC_SSE >= 42) && USE_SCALAR_SSE
-	return _mm_cvt_ss2si(_mm_set_ss(val));
-#else
 	return (int)(val);
-#endif
 }
 
 /**
@@ -335,12 +285,7 @@ static inline int popcount(uint64_t p)
  */
 static inline float rsqrt(float val)
 {
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-	// FIXME: setting val = 99 causes a crash, which it really shouldn't.
-	return _mm_cvtss_f32(_mm_rsqrt_ss(_mm_set_ss(val)));
-#else
 	return 1.0f / std::sqrt(val);
-#endif
 }
 
 /**
@@ -352,27 +297,7 @@ static inline float rsqrt(float val)
  */
 static inline float sqrt(float val)
 {
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-	return 1.0f * astc::rsqrt(val);
-#else
 	return std::sqrt(val);
-#endif
-}
-
-/**
- * @brief Fast approximation of 1.0 / val.
- *
- * @param val The input value.
- *
- * @return The approximated result.
- */
-static inline float recip(float val)
-{
-#if (ASTCENC_SSE >= 20) && USE_SCALAR_SSE
-	return _mm_cvtss_f32(_mm_rcp_ss(_mm_set_ss(val)));
-#else
-	return 1.0f / val;
-#endif
 }
 
 /**
@@ -509,9 +434,9 @@ static inline float dot(float2 p, float2 q)  { return p.x * q.x + p.y * q.y; }
 static inline float dot(float3 p, float3 q)  { return p.x * q.x + p.y * q.y + p.z * q.z; }
 static inline float dot(float4 p, float4 q)  {
 #if ASTCENC_SSE >= 42
-	__m128 pv =  _mm_load_ps((float*)&p);
-	__m128 qv =  _mm_load_ps((float*)&q);
-	__m128 t  =  _mm_dp_ps(pv, qv, 0xFF);
+	__m128 pv = _mm_load_ps((float*)&p);
+	__m128 qv = _mm_load_ps((float*)&q);
+	__m128 t  = _mm_dp_ps(pv, qv, 0xFF);
 	return _mm_cvtss_f32(t);
 #else
 	return p.x * q.x + p.y * q.y + p.z * q.z  + p.w * q.w;
@@ -521,6 +446,21 @@ static inline float dot(float4 p, float4 q)  {
 static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }
 static inline float4 normalize(float4 p) { return p * astc::rsqrt(dot(p, p)); }
+
+static inline float4 sqrt(float4 p) {
+	float4 r;
+#if ASTCENC_SSE >= 20
+	__m128 pv = _mm_load_ps((float*)&p);
+	__m128 t  = _mm_sqrt_ps(pv);
+	_mm_store_ps((float*)&r, t);
+#else
+	r.x = std::sqrt(p.x);
+	r.y = std::sqrt(p.y);
+	r.z = std::sqrt(p.z);
+	r.w = std::sqrt(p.w);
+#endif
+	return r;
+}
 
 #ifndef MIN
 	#define MIN(x,y) ((x)<(y)?(x):(y))
@@ -573,7 +513,7 @@ float sf16_to_float(sf16);
 /*********************************
   Declaration of line types
 *********************************/
-// parametric line, 2D: The line is given by line = a + b*t.
+// parametric line, 2D: The line is given by line = a + b * t.
 
 struct line2
 {
