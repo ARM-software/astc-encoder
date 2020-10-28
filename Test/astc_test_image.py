@@ -34,16 +34,25 @@ Attributes:
 
 import argparse
 import os
+import platform
 import sys
 
 import testlib.encoder as te
 import testlib.testset as tts
 import testlib.resultset as trs
 
+# Some behavior is CPU specific (precision of frcp is implementation-defined)
+# so only require very tight thresholds on the reference test machine. Other
+# machines must pass within 0.1dB of the reference scores.
+if "BSE2NGQ" in platform.node():
+    RESULT_THRESHOLD_WARN = -0.01
+    RESULT_THRESHOLD_FAIL = -0.05
+    RESULT_THRESHOLD_3D_FAIL = -0.02
+else:
+    RESULT_THRESHOLD_WARN = -0.05
+    RESULT_THRESHOLD_FAIL = -0.1
+    RESULT_THRESHOLD_3D_FAIL = -0.1
 
-RESULT_THRESHOLD_WARN = -0.01
-RESULT_THRESHOLD_FAIL = -0.05
-RESULT_THRESHOLD_3D_FAIL = -0.02
 
 TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
                     "3x3x3", "6x6x6"]
