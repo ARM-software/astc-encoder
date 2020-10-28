@@ -223,7 +223,7 @@ SIMD_INLINE vfloat hmin(vfloat v)
 {
 	__m128 vlow = _mm256_castps256_ps128(v.m);
 	__m128 vhigh = _mm256_extractf128_ps(v.m, 1);
-    vlow  = _mm_min_ps(vlow, vhigh);
+	vlow  = _mm_min_ps(vlow, vhigh);
 
 	// First do an horizontal reduction.                                // v = [ D C | B A ]
 	__m128 shuf = _mm_shuffle_ps(vlow, vlow, _MM_SHUFFLE(2, 3, 0, 1));  //     [ C D | A B ]
@@ -231,7 +231,13 @@ SIMD_INLINE vfloat hmin(vfloat v)
 	shuf        = _mm_movehl_ps(shuf, mins);                         //        [   C   D | D+C C+D ]
 	mins        = _mm_min_ss(mins, shuf);
 
-	vfloat vmin(_mm256_permute_ps(_mm256_set_m128(mins, mins), 0)); // _MM256_PERMUTE(0, 0, 0, 0, 0, 0, 0, 0)
+
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	//__m256i r = _mm256_set_m128(m, m)
+	__m256 r = _mm256_insertf128_ps(_mm256_castps128_ps256(mins), mins, 1);
+
+	vfloat vmin(_mm256_permute_ps(r, 0));
 	return vmin;
 }
 
@@ -241,7 +247,12 @@ SIMD_INLINE vint hmin(vint v)
 	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
 	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
 	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
-	vint vmin(_mm256_set_m128i(m, m));
+
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	//__m256i r = _mm256_set_m128i(m, m)
+	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(m), m, 1);
+	vint vmin(r);
 	return vmin;
 }
 
@@ -251,7 +262,13 @@ SIMD_INLINE void store(vfloat v, float* ptr) { _mm256_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm256_store_si256((__m256i*)ptr, v.m); }
 
 // Store lowest N (simd width) bytes of integer vector into an unaligned address.
-SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0)); }
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr)
+{
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	// _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0))
+	_mm_storel_epi64((__m128i*)ptr, _mm256_extracti128_si256(v.m, 0));
+}
 
 // SIMD "gather" - load each lane with base[indices[i]]
 SIMD_INLINE vfloat gatherf(const float* base, vint indices)
@@ -266,12 +283,20 @@ SIMD_INLINE vint gatheri(const int* base, vint indices)
 // Pack low 8 bits of each lane into low 64 bits of result.
 SIMD_INLINE vint pack_low_bytes(vint v)
 {
-	__m256i shuf = _mm256_set_epi8(0,0,0,0,0,0,0,0, 0,0,0,0,28,24,20,16, 0,0,0,0,0,0,0,0, 0,0,0,0,12,8,4,0);
+	__m256i shuf = _mm256_set_epi8(0, 0, 0, 0,  0,  0,  0,  0,
+	                               0, 0, 0, 0, 28, 24, 20, 16,
+	                               0, 0, 0, 0,  0,  0,  0,  0,
+	                               0, 0, 0, 0, 12,  8,  4,  0);
 	__m256i a = _mm256_shuffle_epi8(v.m, shuf);
 	__m128i a0 = _mm256_extracti128_si256(a, 0);
 	__m128i a1 = _mm256_extracti128_si256(a, 1);
 	__m128i b = _mm_unpacklo_epi32(a0, a1);
-	return vint(_mm256_set_m128i(b, b));
+
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	//__m256i r = _mm256_set_m128i(b, b)
+	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(b), b, 1);
+	return vint(r);
 }
 
 // "select", i.e. highbit(cond) ? b : a
@@ -474,7 +499,13 @@ SIMD_INLINE vint hmin(vint v)
 SIMD_INLINE void store(vfloat v, float* ptr) { _mm_store_ps(ptr, v.m); }
 SIMD_INLINE void store(vint v, int* ptr) { _mm_store_si128((__m128i*)ptr, v.m); }
 
-SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr) { _mm_storeu_si32(ptr, v.m); }
+SIMD_INLINE void store_nbytes(vint v, uint8_t* ptr)
+{
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	// _mm_storeu_si32(ptr, v.m);
+	_mm_store_ss((float*)ptr, _mm_castsi128_ps(v.m));
+}
 
 SIMD_INLINE vfloat gatherf(const float* base, vint indices)
 {
