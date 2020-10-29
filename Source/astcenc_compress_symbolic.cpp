@@ -57,15 +57,18 @@ static int realign_weights(
 	pt += scb->partition_index;
 
 	// Get the quantization table
-	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
+	const int packed_index = bsd->block_mode_to_packed[scb->block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_packed_count);
+	const block_mode& bm = bsd->block_modes_packed[packed_index];
+	int weight_quantization_level = bm.quantization_mode;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
 	// Get the decimation table
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
-	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
+	const decimation_table *it = ixtab2[bm.decimation_mode];
 	int weight_count = it->num_weights;
 
-	int max_plane = bsd->block_modes[scb->block_mode].is_dual_plane;
+	int max_plane = bm.is_dual_plane;
 	int plane2_component = max_plane ? scb->plane2_color_component : 0;
 	int plane_mask = max_plane ? 1 << plane2_component : 0;
 
@@ -306,9 +309,10 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
 
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
-		if (bsd->block_modes[i].permit_encode == 0 || bsd->block_modes[i].is_dual_plane != 0 || bsd->block_modes[i].percentile > mode_cutoff)
+		const block_mode& bm = bsd->block_modes_packed[i];
+		if (bm.is_dual_plane != 0 || bm.percentile > mode_cutoff)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -319,11 +323,11 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			weight_high_value[i] = 1.0f;
 		}
 
-		int decimation_mode = bsd->block_modes[i].decimation_mode;
+		int decimation_mode = bm.decimation_mode;
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = compute_ise_bitcount(ixtab2[decimation_mode]->num_weights,
-														(quantization_method) bsd->block_modes[i].quantization_mode);
+														(quantization_method) bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
@@ -338,7 +342,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 															 decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
 															 flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
 															 u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
-															 bsd->block_modes[i].quantization_mode);
+															 bm.quantization_mode);
 
 		// then, compute weight-errors for the weight mode.
 		qwt_errors[i] = compute_error_of_weight_set(&(eix[decimation_mode]), ixtab2[decimation_mode], flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
@@ -361,17 +365,21 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		uint8_t *u8_weight_src;
 		int weights_to_copy;
 
-		if (quantized_weight[i] < 0)
+		const int qw_packed_index = quantized_weight[i];
+		if (qw_packed_index < 0)
 		{
 			scb->error_block = 1;
 			scb++;
 			continue;
 		}
 
-		int decimation_mode = bsd->block_modes[quantized_weight[i]].decimation_mode;
-		int weight_quantization_mode = bsd->block_modes[quantized_weight[i]].quantization_mode;
+		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_packed_count);
+		const block_mode& qw_bm = bsd->block_modes_packed[qw_packed_index];
+
+		int decimation_mode = qw_bm.decimation_mode;
+		int weight_quantization_mode = qw_bm.quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
-		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * quantized_weight[i];
+		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
 
 		weights_to_copy = it->num_weights;
 
@@ -434,7 +442,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			scb->partition_count = partition_count;
 			scb->partition_index = partition_index;
 			scb->color_quantization_level = scb->color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
-			scb->block_mode = quantized_weight[i];
+			scb->block_mode = qw_bm.mode_index;
 			scb->error_block = 0;
 
 			if (scb->color_quantization_level < 4)
@@ -617,15 +625,16 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
-		if (bsd->block_modes[i].permit_encode == 0 || bsd->block_modes[i].is_dual_plane != 1 || bsd->block_modes[i].percentile > mode_cutoff)
+		const block_mode& bm = bsd->block_modes_packed[i];
+		if (bm.is_dual_plane != 1 || bm.percentile > mode_cutoff)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
 		}
 
-		int decimation_mode = bsd->block_modes[i].decimation_mode;
+		int decimation_mode = bm.decimation_mode;
 
 		if (weight_high_value1[i] > 1.02f * min_wt_cutoff1)
 		{
@@ -639,7 +648,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = compute_ise_bitcount(2 * ixtab2[decimation_mode]->num_weights,
-														(quantization_method) bsd->block_modes[i].quantization_mode);
+														(quantization_method) bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
@@ -655,7 +664,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		    weight_high_value1[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode),
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
-		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bsd->block_modes[i].quantization_mode);
+		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quantization_mode);
 
 		compute_ideal_quantized_weights_for_decimation_table(
 		    ixtab2[decimation_mode],
@@ -663,7 +672,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		    weight_high_value2[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode + 1),
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1),
-		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1), bsd->block_modes[i].quantization_mode);
+		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1), bm.quantization_mode);
 
 
 		// then, compute quantization errors for the block mode.
@@ -694,7 +703,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 	for (int i = 0; i < 4; i++)
 	{
-		if (quantized_weight[i] < 0)
+		const int qw_packed_index = quantized_weight[i];
+		if (qw_packed_index < 0)
 		{
 			scb->error_block = 1;
 			scb++;
@@ -705,12 +715,15 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		uint8_t *u8_weight2_src;
 		int weights_to_copy;
 
-		int decimation_mode = bsd->block_modes[quantized_weight[i]].decimation_mode;
-		int weight_quantization_mode = bsd->block_modes[quantized_weight[i]].quantization_mode;
+		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_packed_count);
+		const block_mode& qw_bm = bsd->block_modes_packed[qw_packed_index];
+		
+		int decimation_mode = qw_bm.decimation_mode;
+		int weight_quantization_mode = qw_bm.quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
 
-		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * quantized_weight[i]);
-		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * quantized_weight[i] + 1);
+		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
+		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
 
 		weights_to_copy = it->num_weights;
 
@@ -777,7 +790,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 			scb->partition_count = partition_count;
 			scb->partition_index = partition_index;
 			scb->color_quantization_level = scb->color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
-			scb->block_mode = quantized_weight[i];
+			scb->block_mode = qw_bm.mode_index;
 			scb->plane2_color_component = separate_component;
 			scb->error_block = 0;
 

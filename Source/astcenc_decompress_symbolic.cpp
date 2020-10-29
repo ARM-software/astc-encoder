@@ -22,6 +22,7 @@
 #include "astcenc_internal.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 static int compute_value_of_texel_int(
 	int texel_to_get,
@@ -206,11 +207,14 @@ void decompress_symbolic_block(
 	// get the appropriate block descriptor
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
-	const decimation_table *it = ixtab2[bsd->block_modes[scb->block_mode].decimation_mode];
+	const int packed_index = bsd->block_mode_to_packed[scb->block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_packed_count);
+	const block_mode& bm = bsd->block_modes_packed[packed_index];
+	const decimation_table *it = ixtab2[bm.decimation_mode];
 
-	int is_dual_plane = bsd->block_modes[scb->block_mode].is_dual_plane;
+	int is_dual_plane = bm.is_dual_plane;
 
-	int weight_quantization_level = bsd->block_modes[scb->block_mode].quantization_mode;
+	int weight_quantization_level = bm.quantization_mode;
 
 	// decode the color endpoints
 	uint4 color_endpoint0[4];

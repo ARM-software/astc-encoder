@@ -345,8 +345,7 @@ struct block_mode
 	int8_t decimation_mode;
 	int8_t quantization_mode;
 	int8_t is_dual_plane;
-	int8_t permit_encode;
-	int8_t permit_decode;
+	int16_t mode_index;
 	float percentile;
 };
 
@@ -364,7 +363,16 @@ struct block_size_descriptor
 	float decimation_mode_percentile[MAX_DECIMATION_MODES];
 	int permit_encode[MAX_DECIMATION_MODES];
 	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
-	block_mode block_modes[MAX_WEIGHT_MODES];
+
+	// out of all possible 2048 weight modes, only a subset is
+	// actually valid for the current configuration (e.g. 6x6
+	// 2D LDR has 370 valid modes); the valid ones are packed into
+	// block_modes_packed array.
+	block_mode block_modes_packed[MAX_WEIGHT_MODES];
+	int block_mode_packed_count;
+	// get index of block mode inside the block_modes_packed array,
+	// or -1 if mode is not valid for the current configuration.
+	int16_t block_mode_to_packed[MAX_WEIGHT_MODES];
 
 	// for the k-means bed bitmap partitioning algorithm, we don't
 	// want to consider more than 64 texels; this array specifies

@@ -21,6 +21,8 @@
 
 #include "astcenc_internal.h"
 
+#include <assert.h>
+
 // routine to write up to 8 bits
 static inline void write_bits(
 	int value,
@@ -123,10 +125,14 @@ void symbolic_to_physical(
 	}
 
 	const decimation_table *const *ixtab2 = bsd.decimation_tables;
+	
+	const int packed_index = bsd.block_mode_to_packed[scb.block_mode];
+	assert(packed_index >= 0 && packed_index < bsd.block_mode_packed_count);
+	const block_mode& bm = bsd.block_modes_packed[packed_index];
 
-	int weight_count = ixtab2[bsd.block_modes[scb.block_mode].decimation_mode]->num_weights;
-	int weight_quantization_method = bsd.block_modes[scb.block_mode].quantization_mode;
-	int is_dual_plane = bsd.block_modes[scb.block_mode].is_dual_plane;
+	int weight_count = ixtab2[bm.decimation_mode]->num_weights;
+	int weight_quantization_method = bm.quantization_mode;
+	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
@@ -321,15 +327,18 @@ void physical_to_symbolic(
 		return;
 	}
 
-	if (bsd.block_modes[block_mode].permit_decode == 0)
+	const int packed_index = bsd.block_mode_to_packed[block_mode];
+	if (packed_index < 0)
 	{
 		scb.error_block = 1;
 		return;
 	}
+	assert(packed_index >= 0 && packed_index < bsd.block_mode_packed_count);
+	const struct block_mode& bm = bsd.block_modes_packed[packed_index];
 
-	int weight_count = ixtab2[bsd.block_modes[block_mode].decimation_mode]->num_weights;
-	int weight_quantization_method = bsd.block_modes[block_mode].quantization_mode;
-	int is_dual_plane = bsd.block_modes[block_mode].is_dual_plane;
+	int weight_count = ixtab2[bm.decimation_mode]->num_weights;
+	int weight_quantization_method = bm.quantization_mode;
+	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 

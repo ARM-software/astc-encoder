@@ -22,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "astcenc_internal.h"
 
@@ -2069,6 +2070,7 @@ int pack_color_endpoints(
 	int* output,
 	int quantization_level
 ) {
+	assert(quantization_level >= 0 && quantization_level < 21);
 	// we do not support negative colors.
 	color0.x = MAX(color0.x, 0.0f);
 	color0.y = MAX(color0.y, 0.0f);
