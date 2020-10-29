@@ -62,21 +62,6 @@ static const float PI_OVER_TWO = 1.57079632679489661923f;
 float log2(float val);
 
 /**
- * @brief Fast approximation of atan2.
- *
- * TODO: This implementation is reasonably accurate and a lot faster than the
- * standard library, but quite branch heavy which makes it difficult to
- * vectorize effectively. If we need to vectorize in future, consider using a
- * different approximation algorithm.
- *
- * @param y The proportion of the Y coordinate.
- * @param x The proportion of the X coordinate.
- *
- * @return The approximation of atan2().
- */
-float atan2(float y, float x);
-
-/**
  * @brief SP float absolute value.
  *
  * @param val The value to make absolute.

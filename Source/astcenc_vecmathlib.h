@@ -717,7 +717,7 @@ SIMD_INLINE vfloat changesign(vfloat x, vfloat y)
 	return intAsFloat(r);
 }
 
-// Fast atan implementation, with max error of 0.004883, matches astc::atan2
+// Fast atan implementation, with max error of 0.004883
 SIMD_INLINE vfloat atan(vfloat x)
 {
 	vmask c = abs(x) > vfloat(1.0f);
