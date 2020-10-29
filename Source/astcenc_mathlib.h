@@ -76,10 +76,6 @@ static inline float fabs(float val)
 /**
  * @brief SP float min.
  *
- * Note: GCC versions prior to 7.x assume input arguments to the intrinsics are
- * commutative, which isn't true for NaN handling, so it's best not to rely on
- * argument order unless you are very sure about the compiler ...
- *
  * @param valA The first value to compare.
  * @param valB The second value to compare.
  *
@@ -92,10 +88,6 @@ static inline float fmin(float p, float q)
 
 /**
  * @brief SP float max.
- *
- * Note: GCC versions prior to 7.x assume input arguments to the intrinsics are
- * commutative, which isn't true for NaN handling, so it's best not to rely on
- * argument order unless you are very sure about the compiler ...
  *
  * @param valA The first value to compare.
  * @param valB The second value to compare.
