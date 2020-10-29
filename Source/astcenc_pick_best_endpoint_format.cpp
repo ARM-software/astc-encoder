@@ -978,7 +978,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		// reference; scalar code
 		float best_ep_error = 1e30f;
 		int best_error_index = -1;
-		for (int j = 0, npack = bsd->block_mode_packed_count; j != npack; ++j)
+		for (int j = 0, npack = bsd->block_mode_packed_count; j < npack; ++j)
 		{
 			if (errors_of_best_combination[j] < best_ep_error && best_quantization_levels[j] >= 5)
 			{
