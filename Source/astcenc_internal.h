@@ -389,11 +389,11 @@ struct block_size_descriptor
 // on conversions to/from uint8_t (this also allows us to handle HDR textures easily)
 struct imageblock
 {
-	float orig_data[MAX_TEXELS_PER_BLOCK * 4];  // original input data
 	float data_r[MAX_TEXELS_PER_BLOCK];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
 	float data_g[MAX_TEXELS_PER_BLOCK];
 	float data_b[MAX_TEXELS_PER_BLOCK];
 	float data_a[MAX_TEXELS_PER_BLOCK];
+	float4 origin_texel;
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
@@ -924,11 +924,12 @@ void write_imageblock(
 int imageblock_uses_alpha(
 	const imageblock * pb);
 
-float compute_imageblock_difference(
+float compute_symbolic_block_difference(
+	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
-	const imageblock * p1,
-	const imageblock * p2,
-	const error_weight_block * ewb);
+	const symbolic_compressed_block* scb,
+	const imageblock* pb,
+	const error_weight_block *ewb) ;
 
 // ***********************************************************
 // functions pertaining to computing texel weights for a block
@@ -1043,7 +1044,6 @@ struct compress_symbolic_block_buffers
 	error_weight_block ewb;
 	error_weight_block_orig ewbo;
 	symbolic_compressed_block tempblocks[4];
-	imageblock temp;
 	compress_fixed_partition_buffers planes;
 };
 
