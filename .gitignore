@@ -5,6 +5,8 @@
 *.diff
 *.user
 __pycache__
+Scratch
+Proto
 
 # Precompiled reference binaries for comparison tests
 Binaries
