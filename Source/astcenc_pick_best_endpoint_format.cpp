@@ -24,6 +24,8 @@
 #include "astcenc_internal.h"
 #include "astcenc_vecmathlib.h"
 
+#include <assert.h>
+
 /*
    functions to determine, for a given partitioning, which color endpoint formats are the best to use.
  */
@@ -817,6 +819,19 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	alignas(ASTCENC_VECALIGN) int best_quantization_levels[MAX_WEIGHT_MODES];
 	int best_quantization_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
+	
+#if ASTCENC_SIMD_WIDTH > 1
+	// have to ensure that the "overstep" of the last iteration in the vectorized
+	// loop will contain data that will never be picked as best candidate
+	const int packed_mode_count = bsd->block_mode_packed_count;
+	const int packed_mode_count_simd_up = (packed_mode_count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH * ASTCENC_SIMD_WIDTH;
+	for (int i = packed_mode_count; i < packed_mode_count_simd_up; ++i)
+	{
+		errors_of_best_combination[i] = 1e30f;
+		best_quantization_levels[i] = 0;
+		best_quantization_levels_mod[i] = 0;
+	}
+#endif // #if ASTCENC_SIMD_WIDTH > 1
 
 	// code for the case where the block contains 1 partition
 	if (partition_count == 1)
@@ -824,7 +839,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		int best_quantization_level;
 		int best_format;
 		float error_of_best_combination;
-		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+		for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -858,7 +873,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 
-		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+		for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -894,7 +909,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+		for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -931,7 +946,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+		for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -963,7 +978,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		// reference; scalar code
 		float best_ep_error = 1e30f;
 		int best_error_index = -1;
-		for (int j = 0; j < MAX_WEIGHT_MODES; j++)
+		for (int j = 0, npack = bsd->block_mode_packed_count; j != npack; ++j)
 		{
 			if (errors_of_best_combination[j] < best_ep_error && best_quantization_levels[j] >= 5)
 			{
@@ -977,7 +992,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(1e30f);
 		vint lane_ids = vint::lane_id();
-		for (int j = 0; j < MAX_WEIGHT_MODES; j += ASTCENC_SIMD_WIDTH)
+		for (int j = 0, npack = bsd->block_mode_packed_count; j < npack; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat err = vfloat(&errors_of_best_combination[j]);
 			vmask mask1 = err < vbest_ep_error;
@@ -1013,6 +1028,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		if (quantized_weight[i] >= 0)
 		{
 			quantization_level[i] = best_quantization_levels[best_error_weights[i]];
+			assert(quantization_level[i] >= 0 && quantization_level[i] < 21);
 			quantization_level_mod[i] = best_quantization_levels_mod[best_error_weights[i]];
 			for (int j = 0; j < partition_count; j++)
 			{

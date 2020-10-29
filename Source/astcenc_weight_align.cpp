@@ -396,15 +396,16 @@ void compute_angular_endpoints_1plane(
 		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values[i], high_values[i]);
 	}
 
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
-		if (bsd->block_modes[i].is_dual_plane != 0 || bsd->block_modes[i].percentile > mode_cutoff)
+		const block_mode& bm = bsd->block_modes_packed[i];
+		if (bm.is_dual_plane != 0 || bm.percentile > mode_cutoff)
 		{
 			continue;
 		}
 
-		int quant_mode = bsd->block_modes[i].quantization_mode;
-		int decim_mode = bsd->block_modes[i].decimation_mode;
+		int quant_mode = bm.quantization_mode;
+		int decim_mode = bm.decimation_mode;
 
 		low_value[i] = low_values[decim_mode][quant_mode];
 		high_value[i] = high_values[decim_mode][quant_mode];
@@ -448,15 +449,16 @@ void compute_angular_endpoints_2planes(
 		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values2[i], high_values2[i]);
 	}
 
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
-		if (bsd->block_modes[i].is_dual_plane != 1 || bsd->block_modes[i].percentile > mode_cutoff)
+		const block_mode& bm = bsd->block_modes_packed[i];
+		if (bm.is_dual_plane != 1 || bm.percentile > mode_cutoff)
 		{
 			continue;
 		}
 
-		int quant_mode = bsd->block_modes[i].quantization_mode;
-		int decim_mode = bsd->block_modes[i].decimation_mode;
+		int quant_mode = bm.quantization_mode;
+		int decim_mode = bm.decimation_mode;
 
 		low_value1[i] = low_values1[decim_mode][quant_mode];
 		high_value1[i] = high_values1[decim_mode][quant_mode];

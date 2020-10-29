@@ -659,12 +659,12 @@ static void construct_block_size_descriptor_2d(
 #endif
 
 	// then construct the list of block formats
+	int idx = 0;
 	for (int i = 0; i < 2048; i++)
 	{
 		int x_weights, y_weights;
 		int is_dual_plane;
 		int quantization_mode;
-		int fail = 0;
 		int permit_encode = 1;
 
 		if (decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quantization_mode))
@@ -676,39 +676,31 @@ static void construct_block_size_descriptor_2d(
 		}
 		else
 		{
-			fail = 1;
 			permit_encode = 0;
 		}
 
-		if (fail)
-		{
-			bsd->block_modes[i].decimation_mode = -1;
-			bsd->block_modes[i].quantization_mode = -1;
-			bsd->block_modes[i].is_dual_plane = -1;
-			bsd->block_modes[i].permit_encode = 0;
-			bsd->block_modes[i].permit_decode = 0;
-			bsd->block_modes[i].percentile = 1.0f;
-		}
-		else
-		{
-			int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
-			bsd->block_modes[i].decimation_mode = decimation_mode;
-			bsd->block_modes[i].quantization_mode = quantization_mode;
-			bsd->block_modes[i].is_dual_plane = is_dual_plane;
-			bsd->block_modes[i].permit_encode = permit_encode;
-			bsd->block_modes[i].permit_decode = permit_encode;	// disallow decode of grid size larger than block size.
+		bsd->block_mode_to_packed[i] = -1;
+		if (!permit_encode) // also disallow decode of grid size larger than block size.
+			continue;
+		int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
+		bsd->block_modes_packed[idx].decimation_mode = decimation_mode;
+		bsd->block_modes_packed[idx].quantization_mode = quantization_mode;
+		bsd->block_modes_packed[idx].is_dual_plane = is_dual_plane;
+		bsd->block_modes_packed[idx].mode_index = i;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-			bsd->block_modes[i].percentile = percentiles[i];
-			if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
-			{
-				bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
-			}
-#else
-			bsd->block_modes[i].percentile = 0.0f;
-#endif
+		bsd->block_modes_packed[idx].percentile = percentiles[i];
+		if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
+		{
+			bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
 		}
+#else
+		bsd->block_modes_packed[idx].percentile = 0.0f;
+#endif
+		bsd->block_mode_to_packed[i] = idx;
+		++idx;
 	}
+	bsd->block_mode_packed_count = idx;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	delete[] percentiles;
@@ -849,12 +841,12 @@ static void construct_block_size_descriptor_3d(
 	bsd->decimation_mode_count = decimation_mode_count;
 
 	// then construct the list of block formats
+	int idx = 0;
 	for (int i = 0; i < 2048; i++)
 	{
 		int x_weights, y_weights, z_weights;
 		int is_dual_plane;
 		int quantization_mode;
-		int fail = 0;
 		int permit_encode = 1;
 
 		if (decode_block_mode_3d(i, &x_weights, &y_weights, &z_weights, &is_dual_plane, &quantization_mode))
@@ -866,34 +858,27 @@ static void construct_block_size_descriptor_3d(
 		}
 		else
 		{
-			fail = 1;
 			permit_encode = 0;
 		}
-		if (fail)
-		{
-			bsd->block_modes[i].decimation_mode = -1;
-			bsd->block_modes[i].quantization_mode = -1;
-			bsd->block_modes[i].is_dual_plane = -1;
-			bsd->block_modes[i].permit_encode = 0;
-			bsd->block_modes[i].permit_decode = 0;
-			bsd->block_modes[i].percentile = 1.0f;
-		}
-		else
-		{
-			int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
-			bsd->block_modes[i].decimation_mode = decimation_mode;
-			bsd->block_modes[i].quantization_mode = quantization_mode;
-			bsd->block_modes[i].is_dual_plane = is_dual_plane;
-			bsd->block_modes[i].permit_encode = permit_encode;
-			bsd->block_modes[i].permit_decode = permit_encode;
+		bsd->block_mode_to_packed[i] = -1;
+		if (!permit_encode)
+			continue;
+		
+		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
+		bsd->block_modes_packed[idx].decimation_mode = decimation_mode;
+		bsd->block_modes_packed[idx].quantization_mode = quantization_mode;
+		bsd->block_modes_packed[idx].is_dual_plane = is_dual_plane;
+		bsd->block_modes_packed[idx].mode_index = i;
 
-			bsd->block_modes[i].percentile = 0.0f; // No percentile table
-			if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
-			{
-				bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
-			}
+		bsd->block_modes_packed[idx].percentile = 0.0f; // No percentile table
+		if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
+		{
+			bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
 		}
+		bsd->block_mode_to_packed[i] = idx;
+		++idx;
 	}
+	bsd->block_mode_packed_count = idx;
 
 	if (xdim * ydim * zdim <= 64)
 	{
