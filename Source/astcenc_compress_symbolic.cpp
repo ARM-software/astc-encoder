@@ -1043,12 +1043,10 @@ static float prepare_error_weight_block(
 	return dot(error_weight_sum, float4(1.0f, 1.0f, 1.0f, 1.0f));
 }
 
-static void prepare_block_statistics(
+static float prepare_block_statistics(
 	int texels_per_block,
 	const imageblock * blk,
-	const error_weight_block* ewb,
-	int* is_normal_map,
-	float* lowest_correl
+	const error_weight_block* ewb
 ) {
 	// compute covariance matrix, as a collection of 10 scalars
 	// (that form the upper-triangular row of the matrix; the matrix is
@@ -1139,31 +1137,7 @@ static void prepare_block_statistics(
 	lowest_correlation = MIN(lowest_correlation, fabsf(gb_cov));
 	lowest_correlation = MIN(lowest_correlation, fabsf(ga_cov));
 	lowest_correlation = MIN(lowest_correlation, fabsf(ba_cov));
-	*lowest_correl = lowest_correlation;
-
-	// TODO: This looks like a broken attempt to have a heuristic for RGB
-	// three channel normals - check we actually handle this (later heuristics
-	// will treat them as X..Y which is not how the data is encoded).
-
-	// compute a "normal-map" factor
-	// this factor should be exactly 0.0 for a normal map, while it may be all over the
-	// place for anything that is NOT a normal map. We can probably assume that a factor
-	// of less than 0.2f represents a normal map.
-
-	float nf_sum = 0.0f;
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		float3 val = float3(blk->data_r[i],
-		                    blk->data_g[i],
-		                    blk->data_b[i]);
-		val = val * (1.0f / 65535.0f);
-		val = (val - float3(0.5f, 0.5f, 0.5f)) * 2.0f;
-		float length_squared = dot(val, val);
-		float nf = fabsf(length_squared - 1.0f);
-		nf_sum += nf;
-	}
-
-	*is_normal_map = nf_sum < (0.2f * (float)texels_per_block);
+	return lowest_correlation;
 }
 
 void compress_block(
@@ -1266,6 +1240,7 @@ void compress_block(
 	modecutoffs[0] = 0;
 	modecutoffs[1] = mode_cutoff;
 
+	float lowest_correl;
 	float best_errorval_in_mode;
 
 	int start_trial = bsd->texel_count < TUNE_MIN_TEXELS_MODE0_FASTPATH ? 1 : 0;
@@ -1305,14 +1280,7 @@ void compress_block(
 		}
 	}
 
-	int is_normal_map;
-	float lowest_correl;
-	prepare_block_statistics(bsd->texel_count, blk, ewb, &is_normal_map, &lowest_correl);
-
-	if (is_normal_map && lowest_correl < 0.99f)
-	{
-		lowest_correl = 0.99f;
-	}
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 
 	// next, test the four possible 1-partition, 2-planes modes
 	for (int i = 0; i < 4; i++)
@@ -1416,7 +1384,7 @@ void compress_block(
 			}
 		}
 
-		if (partition_count == 2 && !is_normal_map && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
+		if (partition_count == 2 && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
 		{
 			goto END_OF_TESTS;
 		}
