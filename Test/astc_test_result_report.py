@@ -30,6 +30,25 @@ import testlib.resultset as trs
 from collections import defaultdict as ddict
 
 
+CONFIG_FILTER = [
+    re.compile(r"^.*1\.7.*$"),
+    re.compile(r"^.*sse.*$")
+]
+
+TESTSET_FILTER = [
+    re.compile(r"^Small$")
+]
+
+QUALITY_FILTER = [
+    re.compile(r"^medium$"),
+    re.compile(r"^thorough$")
+]
+
+BLOCKSIZE_FILTER = [
+    re.compile(r"^12x12$")
+]
+
+
 def find_reference_results():
     """
     Scrape the Test/Images directory for result CSV files and return an
@@ -55,16 +74,39 @@ def find_reference_results():
         for name in files:
             match = filePat.match(name)
             if match:
+
+                # Skip results set in the filter
+                skip = [1 for filt in CONFIG_FILTER if filt.match(name)]
+                if skip:
+                    continue
+
                 fullPath = os.path.join(root, name)
 
                 encoder = match.group(1)
                 quality = match.group(2)
                 imageSet = os.path.basename(root)
 
+                # Skip results set in the filter
+                skip = [1 for filt in TESTSET_FILTER if filt.match(imageSet)]
+                if skip:
+                    continue
+
+                # Skip results set in the filter
+                skip = [1 for filt in QUALITY_FILTER if filt.match(quality)]
+                if skip:
+                    continue
+
                 testRef = trs.ResultSet(imageSet)
                 testRef.load_from_file(fullPath)
 
-                results[imageSet][quality]["ref-%s" % encoder] = testRef
+                patchedRef = trs.ResultSet(imageSet)
+
+                for result in testRef.records:
+                    skip = [1 for filt in BLOCKSIZE_FILTER if filt.match(result.blkSz)]
+                    if not skip:
+                        patchedRef.add_record(result)
+
+                results[imageSet][quality]["ref-%s" % encoder] = patchedRef
 
     return results
 
