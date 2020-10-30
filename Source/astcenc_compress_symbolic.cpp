@@ -954,8 +954,8 @@ static float prepare_error_weight_block(
 					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
 					{
 						// Convert from 0 to 1 to -1 to +1 range.
-						float xN = (blk->data_r[idx] - 0.5f) * 2.0f;
-						float yN = (blk->data_a[idx] - 0.5f) * 2.0f;
+						float xN = ((blk->data_r[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
+						float yN = ((blk->data_a[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
 
 						float denom = 1.0f - xN * xN - yN * yN;
 						if (denom < 0.1f)
@@ -974,7 +974,7 @@ static float prepare_error_weight_block(
 						}
 						else
 						{
-							alpha_scale = blk->data_a[idx];
+							alpha_scale = blk->data_a[idx] * (1.0f / 65535.0f);
 						}
 
 						if (alpha_scale < 0.0001f)
@@ -1173,6 +1173,8 @@ void compress_block(
 	physical_compressed_block& pcb,
 	compress_symbolic_block_buffers* tmpbuf)
 {
+	bool print = false;
+	if (print) printf("START\n");
 	astcenc_profile decode_mode = ctx.config.profile;
 	const block_size_descriptor* bsd = ctx.bsd;
 
@@ -1230,6 +1232,7 @@ void compress_block(
 		}
 
 		symbolic_to_physical(*bsd, scb, pcb);
+		if (print) printf("END CC\n");
 		return;
 	}
 
@@ -1284,6 +1287,7 @@ void compress_block(
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			errorval *= errorval_mult[i];
+			if (print) printf("A: %g\n", (double)errorval);
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1347,6 +1351,7 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+			if (print) printf("B: %g\n", (double)errorval);
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1394,6 +1399,7 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+				if (print) printf("C: %g\n", (double)errorval);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
@@ -1451,6 +1457,7 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+				if (print) printf("D: %g\n", (double)errorval);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
@@ -1476,6 +1483,7 @@ void compress_block(
 END_OF_TESTS:
 	// compress/decompress to a physical block
 	symbolic_to_physical(*bsd, scb, pcb);
+	if (print) printf("END\n");
 }
 
 #endif

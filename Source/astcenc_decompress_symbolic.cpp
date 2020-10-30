@@ -415,6 +415,11 @@ float compute_symbolic_block_difference(
 
 		float4 error = oldColor - newColor;
 
+		error.x = MIN(fabsf(error.x), 1e15f);
+		error.y = MIN(fabsf(error.y), 1e15f);
+		error.z = MIN(fabsf(error.z), 1e15f);
+		error.w = MIN(fabsf(error.w), 1e15f);
+
 		error = error * error;
 
 		float4 errorWeight = float4(ewb->error_weights[i].x,
@@ -422,9 +427,30 @@ float compute_symbolic_block_difference(
 		                            ewb->error_weights[i].z,
 		                            ewb->error_weights[i].w);
 
+#if 0
+		printf("[%2d] Old color: %g %g %g %g\n", i, (double)oldColor.x,
+		                                            (double)oldColor.y,
+		                                            (double)oldColor.z,
+		                                            (double)oldColor.w);
+
+		printf("[%2d] New color: %g %g %g %g\n", i, (double)newColor.x,
+		                                            (double)newColor.y,
+		                                            (double)newColor.z,
+		                                            (double)newColor.w);
+
+		printf("[%2d] Err weght: %g %g %g %g\n", i, (double)ewb->error_weights[i].x,
+		                                            (double)ewb->error_weights[i].y,
+		                                            (double)ewb->error_weights[i].z,
+		                                            (double)ewb->error_weights[i].w);
+#endif
+
 		float metric = dot(error, errorWeight);
 		if (metric >= 1e30f) metric = 1e30f;
 		if (metric != metric) metric = 0.0f;
+
+#if 0
+		printf("[%2d] Metric: %g\n", i, (double)metric);
+#endif
 
 		summa += metric;
 	}
