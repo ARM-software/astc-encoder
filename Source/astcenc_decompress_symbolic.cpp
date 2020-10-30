@@ -427,30 +427,9 @@ float compute_symbolic_block_difference(
 		                            ewb->error_weights[i].z,
 		                            ewb->error_weights[i].w);
 
-#if 0
-		printf("[%2d] Old color: %g %g %g %g\n", i, (double)oldColor.x,
-		                                            (double)oldColor.y,
-		                                            (double)oldColor.z,
-		                                            (double)oldColor.w);
-
-		printf("[%2d] New color: %g %g %g %g\n", i, (double)newColor.x,
-		                                            (double)newColor.y,
-		                                            (double)newColor.z,
-		                                            (double)newColor.w);
-
-		printf("[%2d] Err weght: %g %g %g %g\n", i, (double)ewb->error_weights[i].x,
-		                                            (double)ewb->error_weights[i].y,
-		                                            (double)ewb->error_weights[i].z,
-		                                            (double)ewb->error_weights[i].w);
-#endif
-
 		float metric = dot(error, errorWeight);
 		if (metric >= 1e30f) metric = 1e30f;
 		if (metric != metric) metric = 0.0f;
-
-#if 0
-		printf("[%2d] Metric: %g\n", i, (double)metric);
-#endif
 
 		summa += metric;
 	}

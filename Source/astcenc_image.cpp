@@ -31,13 +31,13 @@ static float float_to_lns(float p)
 	{
 		// underflow or NaN value, return 0.
 		// We count underflow if the input value is smaller than 2^-26.
-		return 0;
+		return 0.0f;
 	}
 
 	if (fabsf(p) >= 65536.0f)
 	{
 		// overflow, return a +INF value
-		return 65535;
+		return 65535.0f;
 	}
 
 	int expo;
@@ -62,7 +62,7 @@ static float float_to_lns(float p)
 	else
 		p1 = (p1 + 512.0f) * (4.0f / 5.0f);
 
-	p1 += expo * 2048.0f;
+	p1 += ((float)expo) * 2048.0f;
 	return p1 + 1.0f;
 }
 
@@ -112,9 +112,14 @@ void imageblock_initialize_deriv(
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
-			float r = MAX(pb->data_r[i], 6e-5f);
-			float g = MAX(pb->data_g[i], 6e-5f);
-			float b = MAX(pb->data_b[i], 6e-5f);
+            float3 fdata = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
+            fdata.x = sf16_to_float(lns_to_sf16((uint16_t)fdata.x));
+            fdata.y = sf16_to_float(lns_to_sf16((uint16_t)fdata.y));
+            fdata.z = sf16_to_float(lns_to_sf16((uint16_t)fdata.z));
+
+			float r = MAX(fdata.x, 6e-5f);
+			float g = MAX(fdata.y, 6e-5f);
+			float b = MAX(fdata.z, 6e-5f);
 
 			float rderiv = (float_to_lns(r * 1.05f) - float_to_lns(r)) / (r * 0.05f);
 			float gderiv = (float_to_lns(g * 1.05f) - float_to_lns(g)) / (g * 0.05f);
@@ -163,7 +168,10 @@ void imageblock_initialize_deriv(
 		// then compute derivatives for Alpha
 		if (pb->alpha_lns[i])
 		{
-			float a = MAX(pb->data_a[i], 6e-5f);
+            float fdata = pb->data_a[i];
+            fdata = sf16_to_float(lns_to_sf16((uint16_t)fdata));
+
+			float a = MAX(fdata, 6e-5f);
 			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
@@ -361,7 +369,7 @@ void fetch_imageblock(
 					if (zi >= ysize)
 						zi = zsize - 1;
 
-					int r = data16[zi][yi][4 * x     ];
+					int r = data16[zi][yi][4 * xi    ];
 					int g = data16[zi][yi][4 * xi + 1];
 					int b = data16[zi][yi][4 * xi + 2];
 					int a = data16[zi][yi][4 * xi + 3];
@@ -450,7 +458,7 @@ void fetch_imageblock(
 		pb->nan_texel[i] = 0;
 	}
 
-	imageblock_initialize_work_from_orig(pb,bsd->texel_count);
+	imageblock_initialize_work_from_orig(pb, bsd->texel_count);
 	update_imageblock_flags(pb, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 

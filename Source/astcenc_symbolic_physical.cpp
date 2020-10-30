@@ -125,7 +125,7 @@ void symbolic_to_physical(
 	}
 
 	const decimation_table *const *ixtab2 = bsd.decimation_tables;
-	
+
 	const int packed_index = bsd.block_mode_to_packed[scb.block_mode];
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_packed_count);
 	const block_mode& bm = bsd.block_modes_packed[packed_index];

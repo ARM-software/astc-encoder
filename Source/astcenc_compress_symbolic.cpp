@@ -1156,6 +1156,7 @@ static void prepare_block_statistics(
 		float3 val = float3(blk->data_r[i],
 							blk->data_g[i],
 							blk->data_b[i]);
+		val = val * (1.0f / 65535.0f);
 		val = (val - float3(0.5f, 0.5f, 0.5f)) * 2.0f;
 		float length_squared = dot(val, val);
 		float nf = fabsf(length_squared - 1.0f);
@@ -1173,8 +1174,6 @@ void compress_block(
 	physical_compressed_block& pcb,
 	compress_symbolic_block_buffers* tmpbuf)
 {
-	bool print = false;
-	if (print) printf("START\n");
 	astcenc_profile decode_mode = ctx.config.profile;
 	const block_size_descriptor* bsd = ctx.bsd;
 
@@ -1232,7 +1231,6 @@ void compress_block(
 		}
 
 		symbolic_to_physical(*bsd, scb, pcb);
-		if (print) printf("END CC\n");
 		return;
 	}
 
@@ -1287,7 +1285,6 @@ void compress_block(
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			errorval *= errorval_mult[i];
-			if (print) printf("A: %g\n", (double)errorval);
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1351,7 +1348,6 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			if (print) printf("B: %g\n", (double)errorval);
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1399,7 +1395,6 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				if (print) printf("C: %g\n", (double)errorval);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
@@ -1457,7 +1452,6 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				if (print) printf("D: %g\n", (double)errorval);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
@@ -1483,7 +1477,6 @@ void compress_block(
 END_OF_TESTS:
 	// compress/decompress to a physical block
 	symbolic_to_physical(*bsd, scb, pcb);
-	if (print) printf("END\n");
 }
 
 #endif

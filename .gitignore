@@ -6,6 +6,7 @@
 *.user
 __pycache__
 Scratch
+SourceOrig
 Proto
 
 # Precompiled reference binaries for comparison tests
