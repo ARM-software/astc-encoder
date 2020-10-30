@@ -112,10 +112,10 @@ void imageblock_initialize_deriv(
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
-            float3 fdata = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
-            fdata.x = sf16_to_float(lns_to_sf16((uint16_t)fdata.x));
-            fdata.y = sf16_to_float(lns_to_sf16((uint16_t)fdata.y));
-            fdata.z = sf16_to_float(lns_to_sf16((uint16_t)fdata.z));
+			float3 fdata = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
+			fdata.x = sf16_to_float(lns_to_sf16((uint16_t)fdata.x));
+			fdata.y = sf16_to_float(lns_to_sf16((uint16_t)fdata.y));
+			fdata.z = sf16_to_float(lns_to_sf16((uint16_t)fdata.z));
 
 			float r = MAX(fdata.x, 6e-5f);
 			float g = MAX(fdata.y, 6e-5f);
@@ -168,8 +168,8 @@ void imageblock_initialize_deriv(
 		// then compute derivatives for Alpha
 		if (pb->alpha_lns[i])
 		{
-            float fdata = pb->data_a[i];
-            fdata = sf16_to_float(lns_to_sf16((uint16_t)fdata));
+			float fdata = pb->data_a[i];
+			fdata = sf16_to_float(lns_to_sf16((uint16_t)fdata));
 
 			float a = MAX(fdata, 6e-5f);
 			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
@@ -206,7 +206,7 @@ void imageblock_initialize_work_from_orig(
 	for (int i = 0; i < pixelcount; i++)
 	{
 		float4 inc = float4(pb->data_r[i], pb->data_g[i],
-	                        pb->data_b[i], pb->data_a[i]);
+		                    pb->data_b[i], pb->data_a[i]);
 
 		if (pb->rgb_lns[i])
 		{
@@ -240,7 +240,7 @@ void imageblock_initialize_orig_from_work(
 	for (int i = 0; i < pixelcount; i++)
 	{
 		float4 inc = float4(pb->data_r[i], pb->data_g[i],
-	                        pb->data_b[i], pb->data_a[i]);
+		                    pb->data_b[i], pb->data_a[i]);
 
 		if (pb->rgb_lns[i])
 		{

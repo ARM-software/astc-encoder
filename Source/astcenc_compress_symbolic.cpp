@@ -1154,8 +1154,8 @@ static void prepare_block_statistics(
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		float3 val = float3(blk->data_r[i],
-							blk->data_g[i],
-							blk->data_b[i]);
+		                    blk->data_g[i],
+		                    blk->data_b[i]);
 		val = val * (1.0f / 65535.0f);
 		val = (val - float3(0.5f, 0.5f, 0.5f)) * 2.0f;
 		float length_squared = dot(val, val);

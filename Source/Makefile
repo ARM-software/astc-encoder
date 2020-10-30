@@ -118,7 +118,7 @@ endif
 
 # Validate that the BUILD parameter is a supported value, and patch CXXFLAGS
 ifeq ($(BUILD),release)
-CXXFLAGS += -O3 -DNDEBUG -flto -g
+CXXFLAGS += -O3 -DNDEBUG -flto
 else
 ifeq ($(BUILD),profile)
 CXXFLAGS += -O2 -g
