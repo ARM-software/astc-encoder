@@ -1619,7 +1619,7 @@ void recompute_ideal_colors(
 				#endif
 
 				// otherwise, complete the analytic calculation of ideal-endpoint-values
-				// for the given set of texel weigths and pixel colors.
+				// for the given set of texel weights and pixel colors.
 				float4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
 				float4 color_rdet2 = float4(1.0f / color_det2.x,
 				                            1.0f / color_det2.y,
