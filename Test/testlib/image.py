@@ -195,7 +195,7 @@ class Image():
     """
 
     # TODO: We don't support KTX yet, as ImageMagick doesn't.
-    SUPPORTED_LDR = ["bmp", "dds", "jpg", "png", "tga"]
+    SUPPORTED_LDR = ["bmp", "jpg", "png", "tga"]
     SUPPORTED_HDR = ["exr", "hdr"]
 
     @classmethod

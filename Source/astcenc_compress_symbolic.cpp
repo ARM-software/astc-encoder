@@ -717,7 +717,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_packed_count);
 		const block_mode& qw_bm = bsd->block_modes_packed[qw_packed_index];
-		
+
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quantization_mode = qw_bm.quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
@@ -954,8 +954,8 @@ static float prepare_error_weight_block(
 					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
 					{
 						// Convert from 0 to 1 to -1 to +1 range.
-						float xN = (blk->orig_data[4 * idx] - 0.5f) * 2.0f;
-						float yN = (blk->orig_data[4 * idx + 3] - 0.5f) * 2.0f;
+						float xN = ((blk->data_r[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
+						float yN = ((blk->data_a[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
 
 						float denom = 1.0f - xN * xN - yN * yN;
 						if (denom < 0.1f)
@@ -969,12 +969,18 @@ static float prepare_error_weight_block(
 					{
 						float alpha_scale;
 						if (ctx.config.a_scale_radius != 0)
+						{
 							alpha_scale = ctx.input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
+						}
 						else
-							alpha_scale = blk->orig_data[4 * idx + 3];
+						{
+							alpha_scale = blk->data_a[idx] * (1.0f / 65535.0f);
+						}
 
 						if (alpha_scale < 0.0001f)
+						{
 							alpha_scale = 0.0001f;
+						}
 
 						alpha_scale *= alpha_scale;
 						error_weight.x *= alpha_scale;
@@ -1002,7 +1008,9 @@ static float prepare_error_weight_block(
 
 					ewb->error_weights[idx] = error_weight;
 					if (dot(error_weight, float4(1.0f, 1.0f, 1.0f, 1.0f)) < 1e-10f)
+					{
 						ewb->contains_zeroweight_texels = 1;
+					}
 				}
 				idx++;
 			}
@@ -1133,6 +1141,10 @@ static void prepare_block_statistics(
 	lowest_correlation = MIN(lowest_correlation, fabsf(ba_cov));
 	*lowest_correl = lowest_correlation;
 
+	// TODO: This looks like a broken attempt to have a heuristic for RGB
+	// three channel normals - check we actually handle this (later heuristics
+	// will treat them as X..Y which is not how the data is encoded).
+
 	// compute a "normal-map" factor
 	// this factor should be exactly 0.0 for a normal map, while it may be all over the
 	// place for anything that is NOT a normal map. We can probably assume that a factor
@@ -1141,9 +1153,10 @@ static void prepare_block_statistics(
 	float nf_sum = 0.0f;
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		float3 val = float3(blk->orig_data[4 * i],
-							blk->orig_data[4 * i + 1],
-							blk->orig_data[4 * i + 2]);
+		float3 val = float3(blk->data_r[i],
+		                    blk->data_g[i],
+		                    blk->data_b[i]);
+		val = val * (1.0f / 65535.0f);
 		val = (val - float3(0.5f, 0.5f, 0.5f)) * 2.0f;
 		float length_squared = dot(val, val);
 		float nf = fabsf(length_squared - 1.0f);
@@ -1164,10 +1177,6 @@ void compress_block(
 	astcenc_profile decode_mode = ctx.config.profile;
 	const block_size_descriptor* bsd = ctx.bsd;
 
-	int xpos = blk->xpos;
-	int ypos = blk->ypos;
-	int zpos = blk->zpos;
-
 	if (blk->red_min == blk->red_max && blk->green_min == blk->green_max && blk->blue_min == blk->blue_max && blk->alpha_min == blk->alpha_max)
 	{
 		// detected a constant-color block. Encode as FP16 if using HDR
@@ -1178,20 +1187,22 @@ void compress_block(
 		{
 			scb.block_mode = -1;
 			scb.partition_count = 0;
-			scb.constant_color[0] = float_to_sf16(blk->orig_data[0], SF_NEARESTEVEN);
-			scb.constant_color[1] = float_to_sf16(blk->orig_data[1], SF_NEARESTEVEN);
-			scb.constant_color[2] = float_to_sf16(blk->orig_data[2], SF_NEARESTEVEN);
-			scb.constant_color[3] = float_to_sf16(blk->orig_data[3], SF_NEARESTEVEN);
+			float4 orig_color = blk->origin_texel;
+			scb.constant_color[0] = float_to_sf16(orig_color.x, SF_NEARESTEVEN);
+			scb.constant_color[1] = float_to_sf16(orig_color.y, SF_NEARESTEVEN);
+			scb.constant_color[2] = float_to_sf16(orig_color.z, SF_NEARESTEVEN);
+			scb.constant_color[3] = float_to_sf16(orig_color.w, SF_NEARESTEVEN);
 		}
 		else
 		{
 			// Encode as UNORM16 if NOT using HDR.
 			scb.block_mode = -2;
 			scb.partition_count = 0;
-			float red = blk->orig_data[0];
-			float green = blk->orig_data[1];
-			float blue = blk->orig_data[2];
-			float alpha = blk->orig_data[3];
+			float4 orig_color = blk->origin_texel;
+			float red   = orig_color.x;
+			float green = orig_color.y;
+			float blue  = orig_color.z;
+			float alpha = orig_color.w;
 
 			if (red < 0)
 				red = 0;
@@ -1231,8 +1242,6 @@ void compress_block(
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
 	float error_of_best_block = 1e20f;
-
-	imageblock *temp = &tmpbuf->temp;
 
 	float best_errorvals_in_modes[13];
 	for (int i = 0; i < 13; i++)
@@ -1274,9 +1283,8 @@ void compress_block(
 				continue;
 			}
 
-			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb) * errorval_mult[i];
-
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+			errorval *= errorval_mult[i];
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1339,9 +1347,7 @@ void compress_block(
 				continue;
 			}
 
-			decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-			float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
-
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			if (errorval < best_errorval_in_mode)
 			{
 				best_errorval_in_mode = errorval;
@@ -1388,9 +1394,7 @@ void compress_block(
 					continue;
 				}
 
-				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
-
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
@@ -1447,10 +1451,7 @@ void compress_block(
 					continue;
 				}
 
-				decompress_symbolic_block(decode_mode, bsd, xpos, ypos, zpos, tempblocks + j, temp);
-
-				float errorval = compute_imageblock_difference(bsd, blk, temp, ewb);
-
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 				if (errorval < best_errorval_in_mode)
 				{
 					best_errorval_in_mode = errorval;
