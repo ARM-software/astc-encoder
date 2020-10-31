@@ -15,8 +15,9 @@ of performance optimizations and new features.
     modes was inverted. They now match the documentation; use `-*H` for HDR
     RGBA, and `-*h` for HDR RGB with LDR alpha.
   * **Feature:** A new `-fastest` quality preset is now available. This is
-    designed for fast roughing out of new content, and sacrifices significant
-    image quality compared to `-fast`.
+    designed for fast "roughing out" of new content, and sacrifices significant
+    image quality compared to `-fast`. We do not recommend it's use for
+    production builds.
   * **Feature:** A new `-candidatelimit` compression tuning option is now
     available. This is a power-user control to determine how many candidates
     are returned for each block mode encoding trial. This feature is used
