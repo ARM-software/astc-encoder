@@ -856,8 +856,7 @@ static float prepare_error_weight_block(
 	const astcenc_image& input_image,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
-	error_weight_block* ewb,
-	error_weight_block_orig* ewbo
+	error_weight_block* ewb
 ) {
 	int idx = 0;
 	int any_mean_stdev_weight =
@@ -998,8 +997,6 @@ static float prepare_error_weight_block(
 					// error weights by the derivative of the inverse of the transfer function,
 					// which is equivalent to dividing by the derivative of the transfer
 					// function.
-
-					ewbo->error_weights[idx] = error_weight;
 
 					error_weight.x /= (derv[idx].x * derv[idx].x * 1e-10f);
 					error_weight.y /= (derv[idx].y * derv[idx].y * 1e-10f);
@@ -1209,9 +1206,7 @@ void compress_block(
 	}
 
 	error_weight_block *ewb = &tmpbuf->ewb;
-	error_weight_block_orig *ewbo = &tmpbuf->ewbo;
-
-	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb, ewbo);
+	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 

@@ -1042,7 +1042,6 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 struct compress_symbolic_block_buffers
 {
 	error_weight_block ewb;
-	error_weight_block_orig ewbo;
 	symbolic_compressed_block tempblocks[4];
 	compress_fixed_partition_buffers planes;
 };
