@@ -139,12 +139,17 @@ COMPRESSION
        image quality at the expense of compression time. The available
        presets are:
 
+           -fastest
            -fast
            -medium
            -thorough
            -exhaustive
 
-       Note that using -exhaustive significantly increases compression
+       Using the -fastest setting throws away a lot of image quality
+       compared. It is useful for quickly roughing-out new content, but
+       we recommend using higher quality settings for production builds.
+
+       Using the -exhaustive setting significantly increases compression
        time, but typically only gives minor quality improvements over
        using -thorough.
 
@@ -274,6 +279,7 @@ ADVANCED COMPRESSION
            better quality, however large values give diminishing returns
            especially for smaller block sizes. Preset defaults are:
 
+               -fastest    :    2
                -fast       :    4
                -medium     :   25
                -thorough   :  100
@@ -284,6 +290,7 @@ ADVANCED COMPRESSION
            empirically determined distribution of block mode frequency.
            This option is ineffective for 3D textures. Preset defaults are:
 
+               -fastest    :  25
                -fast       :  50
                -medium     :  75
                -thorough   :  95
@@ -293,6 +300,7 @@ ADVANCED COMPRESSION
            Iterate only <value> refinement iterations on colors and
            weights. Minimum value is 1. Preset defaults are:
 
+               -fastest    : 1
                -fast       : 1
                -medium     : 2
                -thorough   : 4
@@ -301,6 +309,7 @@ ADVANCED COMPRESSION
        -candidatelimit <value>
            Trial only <value> candidate encodings for each block mode:
 
+               -fastest    : 1
                -fast       : 2
                -medium     : 2
                -thorough   : 3
@@ -312,10 +321,11 @@ ADVANCED COMPRESSION
            ineffective for HDR textures. Preset defaults, where N is the
            number of texels in a block, are:
 
-               -fast       : dblimit = MAX(63-19*log10(N),  85-35*log10(N))
-               -medium     : dblimit = MAX(70-19*log10(N),  95-35*log10(N))
-               -thorough   : dblimit = MAX(77-19*log10(N), 105-35*log10(N))
-               -exhaustive : dblimit = 999
+               -fastest    : MAX(53-19*log10(N),  70-35*log10(N))
+               -fast       : MAX(63-19*log10(N),  85-35*log10(N))
+               -medium     : MAX(70-19*log10(N),  95-35*log10(N))
+               -thorough   : MAX(77-19*log10(N), 105-35*log10(N))
+               -exhaustive : 999
 
        -partitionearlylimit <factor>
            Stop compression work on a block after only testing blocks with
@@ -324,6 +334,7 @@ ADVANCED COMPRESSION
            with one partition by more than the specified factor. This
            option is ineffective for normal maps. Preset defaults are:
 
+               -fastest    :    1.0
                -fast       :    1.0
                -medium     :    1.2
                -thorough   :    2.5
@@ -335,6 +346,7 @@ ADVANCED COMPRESSION
            color channels is below this factor. This option is ineffective
            for normal maps. Preset defaults are:
 
+               -fastest    : 0.50
                -fast       : 0.50
                -medium     : 0.75
                -thorough   : 0.95

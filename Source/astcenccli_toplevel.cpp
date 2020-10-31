@@ -396,7 +396,11 @@ int init_astcenc_config(
 			return 1;
 		}
 
-		if (!strcmp(argv[5], "-fast"))
+		if (!strcmp(argv[5], "-fastest"))
+		{
+			preset = ASTCENC_PRE_FASTEST;
+		}
+		else if (!strcmp(argv[5], "-fast"))
 		{
 			preset = ASTCENC_PRE_FAST;
 		}

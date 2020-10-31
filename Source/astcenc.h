@@ -212,13 +212,15 @@ enum astcenc_profile {
  * @brief A codec quality preset.
  */
 enum astcenc_preset {
-	/** @brief The fast, lowest quality, search preset. */
-	ASTCENC_PRE_FAST = 0,
+	/** @brief The fastest, lowest quality, search preset. */
+	ASTCENC_PRE_FASTEST = 0,
+	/** @brief The fast search preset. */
+	ASTCENC_PRE_FAST,
 	/** @brief The medium quality search preset. */
 	ASTCENC_PRE_MEDIUM,
 	/** @brief The throrough quality search preset. */
 	ASTCENC_PRE_THOROUGH,
-	/** @brief The exhaustive quality search preset. */
+	/** @brief The exhaustive, highest quality, search preset. */
 	ASTCENC_PRE_EXHAUSTIVE
 };
 

@@ -308,6 +308,15 @@ astcenc_error astcenc_config_init(
 	// may replace some of these settings with more use case tuned values
 	switch(preset)
 	{
+	case ASTCENC_PRE_FASTEST:
+		config.tune_partition_limit = 2;
+		config.tune_block_mode_limit = 25;
+		config.tune_refinement_limit = 1;
+		config.tune_candidate_limit = MIN(1, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = MAX(70 - 35 * ltexels, 53 - 19 * ltexels);
+		config.tune_partition_early_out_limit = 1.0f;
+		config.tune_two_plane_early_out_limit = 0.5f;
+		break;
 	case ASTCENC_PRE_FAST:
 		config.tune_partition_limit = 4;
 		config.tune_block_mode_limit = 50;
