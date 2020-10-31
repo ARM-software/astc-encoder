@@ -757,7 +757,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 	The determine_optimal_set_of_endpoint_formats_to_use() function.
 
 	It identifies, for each mode, which set of color endpoint encodings
-	produces the best overall result. It then reports back which 4 modes
+	produces the best overall result. It then reports back which TUNE_TRIAL_CANDIDATES modes
 	look best, along with the ideal color encoding combination for each.
 
 	It takes as input:
@@ -766,7 +766,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 		for each mode, the number of bits available for color encoding and the error incurred by quantization.
 		in case of 2 plane of weights, a specifier for which color component to use for the second plane of weights.
 
-	It delivers as output for each of the 4 selected modes:
+	It delivers as output for each of the TUNE_TRIAL_CANDIDATES selected modes:
 		format specifier
 		for each partition
 			quantization level to use
@@ -784,10 +784,10 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	// output data
-	int partition_format_specifiers[4][4],
-	int quantized_weight[4],
-	int quantization_level[4],
-	int quantization_level_mod[4]
+	int partition_format_specifiers[TUNE_TRIAL_CANDIDATES][4],
+	int quantized_weight[TUNE_TRIAL_CANDIDATES],
+	int quantization_level[TUNE_TRIAL_CANDIDATES],
+	int quantization_level_mod[TUNE_TRIAL_CANDIDATES]
 ) {
 	int partition_count = pt->partition_count;
 
@@ -819,7 +819,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	alignas(ASTCENC_VECALIGN) int best_quantization_levels[MAX_WEIGHT_MODES];
 	int best_quantization_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
-	
+
 #if ASTCENC_SIMD_WIDTH > 1
 	// have to ensure that the "overstep" of the last iteration in the vectorized
 	// loop will contain data that will never be picked as best candidate
@@ -953,6 +953,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				errors_of_best_combination[i] = 1e30f;
 				continue;
 			}
+
 			four_partitions_find_best_combination_for_bitcount(
 			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
 			    &best_quantization_level, &best_quantization_level_mod,
@@ -970,9 +971,9 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 	}
 
-	// finally, go through the results and pick the 4 best-looking modes.
-	int best_error_weights[4];
-	for (int i = 0; i < 4; i++)
+	// finally, go through the results and pick the TUNE_TRIAL_CANDIDATES best-looking modes.
+	int best_error_weights[TUNE_TRIAL_CANDIDATES];
+	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
 	{
 #if 0
 		// reference; scalar code
@@ -1022,7 +1023,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 	}
 
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
 	{
 		quantized_weight[i] = best_error_weights[i];
 		if (quantized_weight[i] >= 0)

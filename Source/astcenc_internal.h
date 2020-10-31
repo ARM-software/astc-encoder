@@ -46,7 +46,9 @@
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 
-// ASTC parameters
+/* ============================================================================
+  Constants
+============================================================================ */
 #define MAX_TEXELS_PER_BLOCK 216
 #define MAX_WEIGHTS_PER_BLOCK 64
 #define MIN_WEIGHT_BITS_PER_BLOCK 24
@@ -59,14 +61,25 @@
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
 
-// Compile-time tuning parameters
-static const int TUNE_MIN_TEXELS_MODE0_FASTPATH { 25 };
-
 // A high default error value
 static const float ERROR_CALC_DEFAULT { 1e30f };
 
-// uncomment this macro to enable checking for inappropriate NaNs;
-// works on Linux only, and slows down encoding significantly.
+/* ============================================================================
+  Compile-time tuning parameters
+============================================================================ */
+// The max texel count in a block which can try the one partition fast path.
+// Default: enabled for 4x4 and 5x4 blocks.
+static const int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
+
+// The number of candidate encodings returned for each encoding mode.
+// Default: 2, which sacrifices ~0.05dB vs 4 to gain ~10% performance
+static const int TUNE_TRIAL_CANDIDATES { 2 };
+
+/* ============================================================================
+  Other configuration parameters
+============================================================================ */
+
+// Uncomment to enable checking for inappropriate NaNs; Linux only, and slow!
 // #define DEBUG_CAPTURE_NAN
 
 /* ============================================================================
@@ -1037,7 +1050,7 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 struct compress_symbolic_block_buffers
 {
 	error_weight_block ewb;
-	symbolic_compressed_block tempblocks[4];
+	symbolic_compressed_block tempblocks[TUNE_TRIAL_CANDIDATES];
 	compress_fixed_partition_buffers planes;
 };
 
