@@ -1206,12 +1206,21 @@ int main(
 		int store_result = -1;
 		const char *format_string = "";
 
-		store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
-		                             &format_string, cli_config.y_flip);
-		if (store_result < 0)
+#if defined(_WIN32)
+		bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+		bool is_null = output_filename == "/dev/null";
+#endif
+
+		if (!is_null)
 		{
-			printf("ERROR: Failed to write output image %s\n", output_filename.c_str());
-			return 1;
+			store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
+			                             &format_string, cli_config.y_flip);
+			if (store_result < 0)
+			{
+				printf("ERROR: Failed to write output image %s\n", output_filename.c_str());
+				return 1;
+			}
 		}
 	}
 
