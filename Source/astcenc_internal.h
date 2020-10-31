@@ -470,11 +470,6 @@ struct error_weight_block
 	int contains_zeroweight_texels;
 };
 
-struct error_weight_block_orig
-{
-	float4 error_weights[MAX_TEXELS_PER_BLOCK];
-};
-
 // enumeration of all the quantization methods we support under this format.
 enum quantization_method
 {
