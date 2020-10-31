@@ -1091,7 +1091,6 @@ class CLIPTest(CLITestBase):
         inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
         decompFile = self.get_tmp_image_path("LDR", "decomp")
 
-        # Compute the basic image without any channel weights
         command = [
             self.binary, "-tl",
             inputFile, decompFile, "4x4", "-medium"]
@@ -1100,6 +1099,27 @@ class CLIPTest(CLITestBase):
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
         command += ["-refinementlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_candidate_limit(self):
+        """
+        Test candidate limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-candidatelimit", "1"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 

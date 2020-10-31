@@ -71,9 +71,9 @@ static const float ERROR_CALC_DEFAULT { 1e30f };
 // Default: enabled for 4x4 and 5x4 blocks.
 static const int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
 
-// The number of candidate encodings returned for each encoding mode.
-// Default: 2, which sacrifices ~0.05dB vs 4 to gain ~10% performance
-static const int TUNE_TRIAL_CANDIDATES { 2 };
+// The maximum number of candidate encodings returned for each encoding mode.
+// Default: depends on quality preset
+static const int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 
 /* ============================================================================
   Other configuration parameters
@@ -1050,7 +1050,7 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 struct compress_symbolic_block_buffers
 {
 	error_weight_block ewb;
-	symbolic_compressed_block tempblocks[TUNE_TRIAL_CANDIDATES];
+	symbolic_compressed_block tempblocks[TUNE_MAX_TRIAL_CANDIDATES];
 	compress_fixed_partition_buffers planes;
 };
 
@@ -1072,6 +1072,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
+	int tune_candidate_limit,
 	// output data
 	int partition_format_specifiers[4][4],
 	int quantized_weight[4],

@@ -434,6 +434,13 @@ struct astcenc_config {
 	unsigned int tune_refinement_limit;
 
 	/**
+	 * @brief The number of trial candidates per mode search (-candidatelimit).
+	 *
+	 * Valid values are between 1 and TUNE_MAX_TRIAL_CANDIDATES (default 4).
+	 */
+	unsigned int tune_candidate_limit;
+
+	/**
 	 * @brief The dB threshold for stopping block search (-dblimit).
 	 *
 	 * This option is ineffective for HDR textures.

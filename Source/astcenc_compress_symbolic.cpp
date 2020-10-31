@@ -213,6 +213,7 @@ static int realign_weights(
 static void compress_symbolic_block_fixed_partition_1_plane(
 	astcenc_profile decode_mode,
 	float mode_cutoff,
+	int tune_candidate_limit,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count, int partition_index,
@@ -351,16 +352,18 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	// for each weighting mode, determine the optimal combination of color endpoint encodings
 	// and weight encodings; return results for the 4 best-looking modes.
 
-	int partition_format_specifiers[TUNE_TRIAL_CANDIDATES][4];
-	int quantized_weight[TUNE_TRIAL_CANDIDATES];
-	int color_quantization_level[TUNE_TRIAL_CANDIDATES];
-	int color_quantization_level_mod[TUNE_TRIAL_CANDIDATES];
-	determine_optimal_set_of_endpoint_formats_to_use(bsd, pi, blk, ewb, &(ei->ep), -1,	// used to flag that we are in single-weight mode
-													 qwt_bitcounts, qwt_errors, partition_format_specifiers, quantized_weight, color_quantization_level, color_quantization_level_mod);
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
+	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quantization_level[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+	determine_optimal_set_of_endpoint_formats_to_use(
+	    bsd, pi, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
+	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
+	    color_quantization_level, color_quantization_level_mod);
 
-	// then iterate over the 4 believed-to-be-best modes to find out which one is
-	// actually best.
-	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
+	// then iterate over the tune_candidate_limit believed-to-be-best modes to
+	// find out which one is actually best.
+	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		uint8_t *u8_weight_src;
 		int weights_to_copy;
@@ -472,6 +475,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 static void compress_symbolic_block_fixed_partition_2_planes(
 	astcenc_profile decode_mode,
 	float mode_cutoff,
+	int tune_candidate_limit,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count,
@@ -687,21 +691,20 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	}
 
 	// decide the optimal combination of color endpoint encodings and weight encodings.
-	int partition_format_specifiers[TUNE_TRIAL_CANDIDATES][4];
-	int quantized_weight[TUNE_TRIAL_CANDIDATES];
-	int color_quantization_level[TUNE_TRIAL_CANDIDATES];
-	int color_quantization_level_mod[TUNE_TRIAL_CANDIDATES];
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
+	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quantization_level[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
 	merge_endpoints(&(ei1->ep), &(ei2->ep), separate_component, &epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pi, blk, ewb,
-	    &epm, separate_component, qwt_bitcounts, qwt_errors,
-	    partition_format_specifiers, quantized_weight,
+	    bsd, pi, blk, ewb, &epm, separate_component, qwt_bitcounts, qwt_errors,
+	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quantization_level, color_quantization_level_mod);
 
-	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
+	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		const int qw_packed_index = quantized_weight[i];
 		if (qw_packed_index < 0)
@@ -1241,12 +1244,14 @@ void compress_block(
 	int start_trial = bsd->texel_count < TUNE_MAX_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
 	{
-		compress_symbolic_block_fixed_partition_1_plane(decode_mode, modecutoffs[i], ctx.config.tune_refinement_limit, bsd, 1,	// partition count
-														0,	// partition index
-														blk, ewb, tempblocks, &tmpbuf->planes);
+		compress_symbolic_block_fixed_partition_1_plane(
+		    decode_mode, modecutoffs[i],
+		    ctx.config.tune_candidate_limit,
+		    ctx.config.tune_refinement_limit,
+		    bsd, 1, 0, blk, ewb, tempblocks, &tmpbuf->planes);
 
 		best_errorval_in_mode = 1e30f;
-		for (int j = 0; j < TUNE_TRIAL_CANDIDATES; j++)
+		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
 		{
 			if (tempblocks[j].error_block)
 			{
@@ -1296,14 +1301,17 @@ void compress_block(
 			continue;
 		}
 
-		compress_symbolic_block_fixed_partition_2_planes(decode_mode, mode_cutoff, ctx.config.tune_refinement_limit,
-														 bsd, 1,	// partition count
-														 0,	// partition index
-														 i,	// the color component to test a separate plane of weights for.
-														 blk, ewb, tempblocks, &tmpbuf->planes);
+		compress_symbolic_block_fixed_partition_2_planes(
+		    decode_mode, mode_cutoff,
+		    ctx.config.tune_candidate_limit,
+		    ctx.config.tune_refinement_limit,
+		    bsd, 1,	// partition count
+		    0,	// partition index
+		    i,	// the color component to test a separate plane of weights for.
+		    blk, ewb, tempblocks, &tmpbuf->planes);
 
 		best_errorval_in_mode = 1e30f;
-		for (int j = 0; j < TUNE_TRIAL_CANDIDATES; j++)
+		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
 		{
 			if (tempblocks[j].error_block)
 			{
@@ -1346,11 +1354,15 @@ void compress_block(
 
 		for (int i = 0; i < 2; i++)
 		{
-			compress_symbolic_block_fixed_partition_1_plane(decode_mode, mode_cutoff, ctx.config.tune_refinement_limit,
-															bsd, partition_count, partition_indices_1plane[i], blk, ewb, tempblocks, &tmpbuf->planes);
+			compress_symbolic_block_fixed_partition_1_plane(
+			    decode_mode, mode_cutoff,
+			    ctx.config.tune_candidate_limit,
+			    ctx.config.tune_refinement_limit,
+			    bsd, partition_count, partition_indices_1plane[i],
+			    blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
-			for (int j = 0; j < TUNE_TRIAL_CANDIDATES; j++)
+			for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
 			{
 				if (tempblocks[j].error_block)
 				{
@@ -1398,16 +1410,19 @@ void compress_block(
 
 		if (lowest_correl <= ctx.config.tune_two_plane_early_out_limit)
 		{
-			compress_symbolic_block_fixed_partition_2_planes(decode_mode,
-															 mode_cutoff,
-															 ctx.config.tune_refinement_limit,
-															 bsd,
-															 partition_count,
-															 partition_index_2planes & (PARTITION_COUNT - 1), partition_index_2planes >> PARTITION_BITS,
-															 blk, ewb, tempblocks, &tmpbuf->planes);
+			compress_symbolic_block_fixed_partition_2_planes(
+			    decode_mode,
+			    mode_cutoff,
+			    ctx.config.tune_candidate_limit,
+			    ctx.config.tune_refinement_limit,
+			    bsd,
+			    partition_count,
+			    partition_index_2planes & (PARTITION_COUNT - 1),
+			    partition_index_2planes >> PARTITION_BITS,
+			    blk, ewb, tempblocks, &tmpbuf->planes);
 
 			best_errorval_in_mode = 1e30f;
-			for (int j = 0; j < TUNE_TRIAL_CANDIDATES; j++)
+			for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
 			{
 				if (tempblocks[j].error_block)
 				{

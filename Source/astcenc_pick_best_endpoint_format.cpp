@@ -757,8 +757,9 @@ static void four_partitions_find_best_combination_for_bitcount(
 	The determine_optimal_set_of_endpoint_formats_to_use() function.
 
 	It identifies, for each mode, which set of color endpoint encodings
-	produces the best overall result. It then reports back which TUNE_TRIAL_CANDIDATES modes
-	look best, along with the ideal color encoding combination for each.
+	produces the best overall result. It then reports back which
+	tune_candidate_limit,  modes look best, along with the ideal color encoding
+	combination for each.
 
 	It takes as input:
 		a partitioning an imageblock,
@@ -766,7 +767,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 		for each mode, the number of bits available for color encoding and the error incurred by quantization.
 		in case of 2 plane of weights, a specifier for which color component to use for the second plane of weights.
 
-	It delivers as output for each of the TUNE_TRIAL_CANDIDATES selected modes:
+	It delivers as output for each of the tune_candidate_limit selected modes:
 		format specifier
 		for each partition
 			quantization level to use
@@ -783,11 +784,12 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
+	int tune_candidate_limit,
 	// output data
-	int partition_format_specifiers[TUNE_TRIAL_CANDIDATES][4],
-	int quantized_weight[TUNE_TRIAL_CANDIDATES],
-	int quantization_level[TUNE_TRIAL_CANDIDATES],
-	int quantization_level_mod[TUNE_TRIAL_CANDIDATES]
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4],
+	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES],
+	int quantization_level[TUNE_MAX_TRIAL_CANDIDATES],
+	int quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES]
 ) {
 	int partition_count = pt->partition_count;
 
@@ -971,9 +973,9 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 	}
 
-	// finally, go through the results and pick the TUNE_TRIAL_CANDIDATES best-looking modes.
-	int best_error_weights[TUNE_TRIAL_CANDIDATES];
-	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
+	// finally, go through the results and pick the best-looking modes.
+	int best_error_weights[TUNE_MAX_TRIAL_CANDIDATES];
+	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 #if 0
 		// reference; scalar code
@@ -1023,7 +1025,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		}
 	}
 
-	for (int i = 0; i < TUNE_TRIAL_CANDIDATES; i++)
+	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		quantized_weight[i] = best_error_weights[i];
 		if (quantized_weight[i] >= 0)

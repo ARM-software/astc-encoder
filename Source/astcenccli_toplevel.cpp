@@ -765,6 +765,17 @@ int edit_astcenc_config(
 
 			config.tune_refinement_limit = atoi(argv[argidx - 1]);
 		}
+		else if (!strcmp(argv[argidx], "-candidatelimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -candidatelimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_candidate_limit = atoi(argv[argidx - 1]);
+		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
 			argidx += 2;

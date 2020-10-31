@@ -298,6 +298,14 @@ ADVANCED COMPRESSION
                -thorough   : 4
                -exhaustive : 4
 
+       -candidatelimit <value>
+           Trial only <value> candidate encodings for each block mode:
+
+               -fast       : 2
+               -medium     : 2
+               -thorough   : 3
+               -exhaustive : 4
+
        -dblimit <number>
            Stop compression work on a block as soon as the PSNR of the
            block, measured in dB, exceeds <number>. This option is
