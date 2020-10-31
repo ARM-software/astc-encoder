@@ -27,6 +27,7 @@ compared against a set of reference results created by an earlier test run.
 import csv
 import enum
 import numpy as np
+import os
 
 
 @enum.unique
@@ -275,6 +276,10 @@ class ResultSet():
         Args:
             filePath (str): The output file path.
         """
+        dirName = os.path.dirname(filePath)
+        if not os.path.exists(dirName):
+            os.makedirs(dirName)
+
         with open(filePath, "w") as csvfile:
             writer = csv.writer(csvfile)
             self._save_header(writer)

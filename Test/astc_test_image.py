@@ -182,7 +182,8 @@ def format_result(image, reference, result):
            (name, tPSNR, tTTime, tCTime, tCMPS, result.name)
 
 
-def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
+def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
+                 keepOutput):
     """
     Execute all tests in the test set.
 
@@ -193,6 +194,9 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
         quality (str): The quality level to execute the test against.
         blockSizes (list(str)): The block sizes to execute each test against.
         testRuns (int): The number of test repeats to run for each image test.
+        keepOutput (bool): Should the test preserve output images? This is
+            only a hint and discarding output may be ignored if the encoder
+            version used can't do it natively.
 
     Returns:
         ResultSet: The test results.
@@ -217,7 +221,8 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns):
 
             dat = (curCount, maxCount, blkSz, image.testFile)
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
-            res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns)
+            res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns,
+                                   keepOutput)
             res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2])
             resultSet.add_record(res)
 
@@ -358,6 +363,9 @@ def parse_command_line():
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
+    parser.add_argument("--keep-output", dest="keepOutput", default=False,
+                        action="store_true", help="keep image output")
+
     args = parser.parse_args()
 
     # Turn things into canonical format lists
@@ -420,7 +428,8 @@ def main():
                                       args.profiles, args.formats, args.testImage)
 
                 resultSet = run_test_set(encoder, testRef, testSet, quality,
-                                         args.blockSizes, args.testRepeats)
+                                         args.blockSizes, args.testRepeats,
+                                         args.keepOutput)
 
                 resultSet.save_to_file(testRes)
 

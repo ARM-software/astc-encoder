@@ -62,7 +62,7 @@ class TestImage():
         FORMATS: Tuple of valid color format values.
         FLAGS: Map of valid flags (key) and their meaning (value).
     """
-    TEST_EXTS = (".jpg", ".png", ".dds", ".hdr")
+    TEST_EXTS = (".jpg", ".png", ".tga", ".dds", ".hdr")
 
     PROFILES = ("ldr", "ldrs", "hdr")
 

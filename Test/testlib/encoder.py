@@ -60,7 +60,8 @@ class EncoderBase():
         self.variant = variant
         self.binary = binary
 
-    def build_cli(self, image, blockSize="6x6", preset="-thorough"):
+    def build_cli(self, image, blockSize="6x6", preset="-thorough",
+                  keepOutput=True):
         """
         Build the command line needed for the given test.
 
@@ -68,6 +69,9 @@ class EncoderBase():
             image (TestImage): The test image to compress.
             blockSize (str): The block size to use.
             preset (str): The quality-performance preset to use.
+            keepOutput (bool): Should the test preserve output images? This is
+                only a hint and discarding output may be ignored if the encoder
+                version used can't do it natively.
 
         Returns:
             list(str): A list of command line arguments.
@@ -175,7 +179,7 @@ class EncoderBase():
         # pylint: disable=unused-argument,no-self-use,redundant-returns-doc
         assert False, "Missing subclass implementation"
 
-    def run_test(self, image, blockSize, preset, testRuns):
+    def run_test(self, image, blockSize, preset, testRuns, keepOutput=True):
         """
         Run the test N times.
 
@@ -184,6 +188,9 @@ class EncoderBase():
             blockSize (str): The block size to use.
             preset (str): The quality-performance preset to use.
             testRuns (int): The number of test runs.
+            keepOutput (bool): Should the test preserve output images? This is
+                only a hint and discarding output may be ignored if the encoder
+                version used can't do it natively.
 
         Returns:
             tuple(float, float, float): Returns the best results from the N
@@ -191,7 +198,7 @@ class EncoderBase():
             (seconds).
         """
         # pylint: disable=assignment-from-no-return
-        command = self.build_cli(image, blockSize, preset)
+        command = self.build_cli(image, blockSize, preset, keepOutput)
 
         # Execute test runs
         bestPSNR = 0
@@ -242,17 +249,23 @@ class Encoder2x(EncoderBase):
 
         super().__init__(name, variant, binary)
 
-    def build_cli(self, image, blockSize="6x6", preset="-thorough"):
+    def build_cli(self, image, blockSize="6x6", preset="-thorough",
+                  keepOutput=True):
         opmode = self.SWITCHES[image.colorProfile]
         srcPath = image.filePath
 
-        dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
-        dstDir = os.path.dirname(dstPath)
-        dstFile = os.path.basename(dstPath)
-        dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
+        if keepOutput:
+            dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
+            dstDir = os.path.dirname(dstPath)
+            dstFile = os.path.basename(dstPath)
+            dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
 
-        dstDir = os.path.dirname(dstPath)
-        os.makedirs(dstDir, exist_ok=True)
+            dstDir = os.path.dirname(dstPath)
+            os.makedirs(dstDir, exist_ok=True)
+        elif sys.platform == "win32":
+            dstPath = "nul"
+        else:
+            dstPath = "/dev/null"
 
         command = [
             self.binary, opmode, srcPath, dstPath,
@@ -330,7 +343,8 @@ class Encoder1_7(EncoderBase):
 
         super().__init__(name, None, binary)
 
-    def build_cli(self, image, blockSize="6x6", preset="-thorough"):
+    def build_cli(self, image, blockSize="6x6", preset="-thorough",
+                  keepOutput=True):
         opmode = self.SWITCHES[image.colorProfile]
         srcPath = image.filePath
 
