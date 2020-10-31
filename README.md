@@ -36,7 +36,8 @@ dynamic range (BMP, PNG, TGA), high dynamic range (EXR, HDR), or DDS and KTX
 wrapped output images.
 
 The encoder allows control over the compression time/quality tradeoff with
-`exhaustive`, `thorough`, `medium`, and `fast` encoding quality presets.
+`exhaustive`, `thorough`, `medium`, `fast`, and `fastest` encoding quality
+presets.
 
 The encoder allows compression time and quality analysis by reporting the
 compression time, and the Peak Signal-to-Noise Ratio (PSNR) between the input
@@ -172,10 +173,15 @@ recommend experimenting with the block footprint to find the optimum balance
 between size and quality, as the finely adjustable compression ratio is one of
 major strengths of the ASTC format.
 
-The compression speed can be controlled from `-fast`, through `-medium` and
-`-thorough`, up to `-exhaustive`. In general, the more time the encoder has to
-spend looking for good encodings the better the results, but it does result in
-increasingly small improvements for the amount of time required.
+The compression speed can be controlled from `-fastest`, through `-fast`,
+`-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the
+encoder has to spend looking for good encodings the better the results, but it
+does result in increasingly small improvements for the amount of time required.
+
+:warning: The `-fastest` quality preset is designed for quickly roughing-out
+new content. It is tuned to give the fastest possible compression, often at the
+expense of significant image quality loss compared to `-fast`. We do not
+recommend using it for production builds.
 
 There are many other command line options for tuning the encoder parameters
 which can be used to fine tune the compression algorithm. See the command line
