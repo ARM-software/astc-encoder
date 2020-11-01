@@ -1,6 +1,6 @@
 Image Set,Block Size,Name,PSNR,Total Time,Coding Time
-KodakMnt,4x4,ldr-rgb-montage.png,44.84878,44.6941,42.5697
-KodakMnt,5x5,ldr-rgb-montage.png,40.81516,46.2619,44.1829
-KodakMnt,6x6,ldr-rgb-montage.png,37.67279,51.8168,49.7819
-KodakMnt,8x8,ldr-rgb-montage.png,33.72579,39.7797,37.7972
-KodakMnt,12x12,ldr-rgb-montage.png,29.77221,34.0304,32.2370
+KodakMnt,4x4,ldr-rgb-montage.png,44.86244,41.5851,41.1127
+KodakMnt,5x5,ldr-rgb-montage.png,40.80734,43.7871,43.3106
+KodakMnt,6x6,ldr-rgb-montage.png,37.65787,49.2253,48.7495
+KodakMnt,8x8,ldr-rgb-montage.png,33.70780,37.3488,36.8630
+KodakMnt,12x12,ldr-rgb-montage.png,29.75791,31.4272,30.9470
