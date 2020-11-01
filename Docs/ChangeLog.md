@@ -8,6 +8,11 @@ This page summarizes the major changes in each release of the 2.x series.
 
 The 2.1 release is the second release in the 2.x series. It includes a number
 of performance optimizations and new features.
+
+Reminder for users of the library interface - the API is not designed to be
+stable across versions, and this release is not compatible with 2.0. Please
+recompile the client-side using the updated `astcenc.h` header.
+
 ### Features:
 
 * **Command line:**
