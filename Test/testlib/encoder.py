@@ -118,11 +118,13 @@ class EncoderBase():
         patternPSNR = re.compile(self.get_psnr_pattern(image))
         patternTTime = re.compile(self.get_total_time_pattern())
         patternCTime = re.compile(self.get_coding_time_pattern())
+        patternCRate = re.compile(self.get_coding_rate_pattern())
 
         # Extract results from the log
         runPSNR = None
         runTTime = None
         runCTime = None
+        runCRate = None
 
         for line in output:
             match = patternPSNR.match(line)
@@ -137,11 +139,16 @@ class EncoderBase():
             if match:
                 runCTime = float(match.group(1))
 
+            match = patternCRate.match(line)
+            if match:
+                runCRate = float(match.group(1))
+
         stdout = "\n".join(output)
         assert runPSNR is not None, "No coding PSNR found %s" % stdout
         assert runTTime is not None, "No total time found %s" % stdout
         assert runCTime is not None, "No coding time found %s" % stdout
-        return (runPSNR, runTTime, runCTime)
+        assert runCRate is not None, "No coding rate found %s" % stdout
+        return (runPSNR, runTTime, runCTime, runCRate)
 
     def get_psnr_pattern(self, image):
         """
@@ -193,9 +200,9 @@ class EncoderBase():
                 version used can't do it natively.
 
         Returns:
-            tuple(float, float, float): Returns the best results from the N
-            test runs, as PSNR (dB), total time (seconds), and coding time
-            (seconds).
+            tuple(float, float, float, float): Returns the best results from
+            the N test runs, as PSNR (dB), total time (seconds), coding time
+            (seconds), and coding rate (M pixels/s).
         """
         # pylint: disable=assignment-from-no-return
         command = self.build_cli(image, blockSize, preset, keepOutput)
@@ -204,17 +211,19 @@ class EncoderBase():
         bestPSNR = 0
         bestTTime = sys.float_info.max
         bestCTime = sys.float_info.max
+        bestCRate = 0
 
         for _ in range(0, testRuns):
             output = self.execute(command)
             result = self.parse_output(image, output)
 
-            # Keep the best results (highest PSNR, lowest times)
+            # Keep the best results (highest PSNR, lowest times, highest rate)
             bestPSNR = max(bestPSNR, result[0])
             bestTTime = min(bestTTime, result[1])
             bestCTime = min(bestCTime, result[2])
+            bestCRate = max(bestCRate, result[3])
 
-        return (bestPSNR, bestTTime, bestCTime)
+        return (bestPSNR, bestTTime, bestCTime, bestCRate)
 
 
 class Encoder2x(EncoderBase):
@@ -299,6 +308,9 @@ class Encoder2x(EncoderBase):
 
     def get_coding_time_pattern(self):
         return r"\s*Coding time:\s*([0-9.]*) s"
+
+    def get_coding_rate_pattern(self):
+        return r"\s*Coding rate:\s*([0-9.]*) MT/s"
 
 
 class Encoder2_0(Encoder2x):
@@ -386,7 +398,15 @@ class Encoder1_7(EncoderBase):
         return patternPSNR
 
     def get_total_time_pattern(self):
-        return r"Elapsed time:\s*([0-9.]*) seconds.*"
+        # Pattern match on a new pattern for a 2.1 compatible variant
+        # return r"Elapsed time:\s*([0-9.]*) seconds.*"
+        return r"\s*Total time:\s*([0-9.]*) s"
 
     def get_coding_time_pattern(self):
-        return r".* coding time: \s*([0-9.]*) seconds"
+        # Pattern match on a new pattern for a 2.1 compatible variant
+        # return r".* coding time: \s*([0-9.]*) seconds"
+        return r"\s*Coding time:\s*([0-9.]*) s"
+
+    def get_coding_rate_pattern(self):
+        # Pattern match on a new pattern for a 2.1 compatible variant
+        return r"\s*Coding rate:\s*([0-9.]*) MT/s"

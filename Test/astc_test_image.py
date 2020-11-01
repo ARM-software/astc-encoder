@@ -133,20 +133,14 @@ def format_solo_result(image, result):
     Returns:
         str: The metrics string.
     """
-    imSize = image.get_size()
-    if imSize:
-        mpix = float(imSize[0] * imSize[1]) / 1000000.0
-        tCMPS = "%3.3f MP/s" % (mpix / result.cTime)
-    else:
-        tCMPS = "?"
-
     name = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB" % result.psnr
     tTTime = "%.3f s" % result.tTime
     tCTime = "%.3f s" % result.cTime
+    tCMTS = "%.3f MT/s" % result.cRate
 
     return "%-32s | %8s | %9s | %9s | %10s" % \
-        (name, tPSNR, tTTime, tCTime, tCMPS)
+        (name, tPSNR, tTTime, tCTime, tCMTS)
 
 
 def format_result(image, reference, result):
@@ -161,25 +155,19 @@ def format_result(image, reference, result):
     Returns:
         str: The metrics string.
     """
-    imSize = image.get_size()
-    if imSize:
-        mpix = float(imSize[0] * imSize[1]) / 1000000.0
-        tCMPS = "%3.3f MP/s" % (mpix / result.cTime)
-    else:
-        tCMPS = "?"
-
     dPSNR = result.psnr - reference.psnr
     sTTime = reference.tTime / result.tTime
     sCTime = reference.cTime / result.cTime
 
-    name = "%5s %s" % (result.blkSz, result.name)
+    name  = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
     tTTime = "%.3f s (%1.2fx)" % (result.tTime, sTTime)
     tCTime = "%.3f s (%1.2fx)" % (result.cTime, sCTime)
+    tCMTS = "%.3f MT/s" % (result.cRate)
     result = determine_result(image, reference, result)
 
     return "%-32s | %22s | %15s | %15s | %10s | %s" % \
-           (name, tPSNR, tTTime, tCTime, tCMPS, result.name)
+           (name, tPSNR, tTTime, tCTime, tCMTS, result.name)
 
 
 def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
@@ -223,7 +211,7 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
             res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns,
                                    keepOutput)
-            res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2])
+            res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2], res[3])
             resultSet.add_record(res)
 
             if testRef:

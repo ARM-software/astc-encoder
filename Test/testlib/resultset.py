@@ -144,10 +144,11 @@ class Record():
         psnr: The image quality (PSNR dB)
         tTime: The total compression time.
         cTime: The coding compression time.
+        cRate: The coding compression rate.
         status: The test Result.
     """
 
-    def __init__(self, blkSz, name, psnr, tTime, cTime):
+    def __init__(self, blkSz, name, psnr, tTime, cTime, cRate):
         """
         Create a result record, initially in the NOTRUN status.
 
@@ -157,8 +158,10 @@ class Record():
             psnr (float): The image quality PSNR, in dB.
             tTime (float): The total compression time, in seconds.
             cTime (float): The coding compression time, in seconds.
+            cRate (float): The coding compression rate, in MPix/s.
             tTimeRel (float): The relative total time speedup vs reference.
             cTimeRel (float): The relative coding time speedup vs reference.
+            cRateRel (float): The relative rate speedup vs reference.
             psnrRel (float): The relative PSNR dB vs reference.
         """
         self.blkSz = blkSz
@@ -166,10 +169,12 @@ class Record():
         self.psnr = psnr
         self.tTime = tTime
         self.cTime = cTime
+        self.cRate = cRate
         self.status = Result.NOTRUN
 
         self.tTimeRel = None
         self.cTimeRel = None
+        self.cRateRel = None
         self.psnrRel = None
 
     def set_status(self, result):
@@ -295,7 +300,7 @@ class ResultSet():
             writer (csv.writer): The CSV writer.
         """
         row = ["Image Set", "Block Size", "Name",
-               "PSNR", "Total Time", "Coding Time"]
+               "PSNR", "Total Time", "Coding Time", "Coding Rate"]
         writer.writerow(row)
 
     def _save_record(self, writer, record):
@@ -309,9 +314,10 @@ class ResultSet():
         row = [self.testSet,
                record.blkSz,
                record.name,
-               "%0.5f" % record.psnr,
+               "%0.4f" % record.psnr,
                "%0.4f" % record.tTime,
-               "%0.4f" % record.cTime]
+               "%0.4f" % record.cTime,
+               "%0.4f" % record.cRate]
         writer.writerow(row)
 
     def load_from_file(self, filePath):
@@ -328,5 +334,6 @@ class ResultSet():
             for row in reader:
                 assert row[0] == self.testSet
                 record = Record(row[1], row[2],
-                                float(row[3]), float(row[4]), float(row[5]))
+                                float(row[3]), float(row[4]),
+                                float(row[5]), float(row[6]))
                 self.add_record(record)
