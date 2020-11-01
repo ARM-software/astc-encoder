@@ -1093,6 +1093,10 @@ int main(
 
 	double start_coding_time = get_time();
 
+	double image_size = (double)image_uncomp_in->dim_x *
+	                    (double)image_uncomp_in->dim_y *
+	                    (double)image_uncomp_in->dim_z;
+
 	// Compress an image
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
@@ -1196,6 +1200,7 @@ int main(
 		else
 		{
 			printf("ERROR: Unknown compressed output file type\n");
+
 			return 1;
 		}
 	}
@@ -1232,12 +1237,16 @@ int main(
 
 	double end_time = get_time();
 
+	double tex_rate = image_size / (end_coding_time - start_coding_time);
+	tex_rate = tex_rate / 1000000.0;
+
 	if ((operation & ASTCENC_STAGE_COMPARE) || (!cli_config.silentmode))
 	{
-		printf("Coding time\n");
-		printf("===========\n\n");
-		printf("    Total time:                %6.4f s\n", end_time - start_time);
-		printf("    Coding time:               %6.4f s\n", end_coding_time - start_coding_time);
+		printf("Performance metrics\n");
+		printf("===================\n\n");
+		printf("    Total time:                %8.4f s\n", end_time - start_time);
+		printf("    Coding time:               %8.4f s\n", end_coding_time - start_coding_time);
+		printf("    Coding rate:               %8.4f MT/s\n", tex_rate);
 	}
 
 	return 0;
