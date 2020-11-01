@@ -22,6 +22,8 @@ of performance optimizations and new features.
     available. This is a power-user control to determine how many candidates
     are returned for each block mode encoding trial. This feature is used
 	automatically by the search presets; see `-help` for details.
+  * **Improvement:** The compression test modes (`-tl\ts\th\tH`) now emit a
+    MTex/s performance metric, in addition to coding time.
 * **Core API:**
   * **Feature:** A new quality preset `ASTCENC_PRE_FASTEST` is available. See
     `-fastest` above for details.
