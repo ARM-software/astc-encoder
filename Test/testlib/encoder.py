@@ -327,6 +327,28 @@ class Encoder2_0(Encoder2x):
 
         super().__init__(variant, binary)
 
+    def build_cli(self, image, blockSize="6x6", preset="-thorough",
+                  keepOutput=True):
+        if preset == "-fastest":
+            preset = "-fast"
+
+        return super().build_cli(image, blockSize, preset, keepOutput)
+
+
+class Encoder2_1(Encoder2x):
+    """
+    This class wraps the 2.0 series binaries.
+    """
+    VERSION = "2.1"
+
+    def __init__(self, variant):
+        if os.name == 'nt':
+            binary = "./Binaries/2.1/astcenc-%s.exe" % variant
+        else:
+            binary = "./Binaries/2.1/astcenc-%s" % variant
+
+        super().__init__(variant, binary)
+
 
 class Encoder1_7(EncoderBase):
     """
@@ -357,6 +379,10 @@ class Encoder1_7(EncoderBase):
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough",
                   keepOutput=True):
+
+        if preset == "-fastest":
+            preset = "-fast"
+
         opmode = self.SWITCHES[image.colorProfile]
         srcPath = image.filePath
 

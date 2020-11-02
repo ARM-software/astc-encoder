@@ -246,11 +246,13 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         class, the output data name, the output result directory, and the
         reference to use.
     """
+    # 1.7 variants
     if encoderName == "ref-1.7":
         encoder = te.Encoder1_7()
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
+    # 2.0 variants
     elif encoderName == "ref-2.0-sse2":
         encoder = te.Encoder2_0("sse2")
         name = "reference-2.0-sse2"
@@ -266,6 +268,23 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-2.0-avx2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
+    # 2.1 variants
+    elif encoderName == "ref-2.1-sse2":
+        encoder = te.Encoder2_1("sse2")
+        name = "reference-2.1-sse2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.1-sse4.2":
+        encoder = te.Encoder2_1("sse4.2")
+        name = "reference-2.1-sse4.2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.1-avx2":
+        encoder = te.Encoder2_1("avx2")
+        name = "reference-2.1-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    # Latest master
     elif encoderName == "ref-master-sse2":
         # Warning: this option rebuilds a new reference test result for the
         # master branch using the user's locally build encoder in ./Source.
@@ -307,6 +326,7 @@ def parse_command_line():
 
     refcoders = ["ref-1.7",
                  "ref-2.0-sse2", "ref-2.0-sse4.2", "ref-2.0-avx2",
+                 "ref-2.1-sse2", "ref-2.1-sse4.2", "ref-2.1-avx2",
                  "ref-master-sse2", "ref-master-sse4.2", "ref-master-avx2"]
     testcoders = ["sse2", "sse4.2", "avx2"]
     coders = refcoders + testcoders + ["all", "all-ref"]
