@@ -74,6 +74,7 @@ def get_series(results, tgtEncoder, tgtQuality, resFilter=lambda x: True):
     psnrData = []
     mtsData = []
     marker = []
+    records = []
 
     for imageSet, iResults in results.items():
 
@@ -87,6 +88,7 @@ def get_series(results, tgtEncoder, tgtQuality, resFilter=lambda x: True):
 
                 for record in eResults.records:
                     if resFilter(record):
+                        records.append(record)
                         psnrData.append(record.psnr)
                         mtsData.append(record.cRate)
 
@@ -102,12 +104,12 @@ def get_series(results, tgtEncoder, tgtQuality, resFilter=lambda x: True):
                             marker.append('$?$')
 
 
-    return mtsData, psnrData, marker
+    return mtsData, psnrData, marker, records
 
 
 def get_series_rel(results, refEncoder, refQuality, tgtEncoder, tgtQuality, resFilter=lambda x: True):
 
-    mts1, psnr1, marker1 = get_series(results, tgtEncoder, tgtQuality, resFilter)
+    mts1, psnr1, marker1, rec1 = get_series(results, tgtEncoder, tgtQuality, resFilter)
 
     if refEncoder is None:
         refEncoder = tgtEncoder
@@ -115,12 +117,12 @@ def get_series_rel(results, refEncoder, refQuality, tgtEncoder, tgtQuality, resF
     if refQuality is None:
         refQuality = tgtQuality
 
-    mts2, psnr2, marker2 = get_series(results, refEncoder, refQuality, resFilter)
+    mts2, psnr2, marker2, rec2 = get_series(results, refEncoder, refQuality, resFilter)
 
     mtsm  = [x/mts2[i] for i, x in enumerate(mts1)]
     psnrm = [x - psnr2[i] for i, x in enumerate(psnr1)]
 
-    return mtsm, psnrm, marker1
+    return mtsm, psnrm, marker1, rec1
 
 
 def get_human_eq_name(encoder, quality):
@@ -161,7 +163,10 @@ def plot(results, chartRows, chartCols, blockSizes,
     for i, row in enumerate(chartRows):
         for j, col in enumerate(chartCols):
             if row == "fastest" and "ref-2.1" not in col:
-                fig.delaxes(axs[i][j])
+                if len(chartCols) == 1:
+                    fig.delaxes(axs[i])
+                else:
+                    fig.delaxes(axs[i][j])
                 continue
 
             if len(chartCols) == 1:
@@ -192,10 +197,10 @@ def plot(results, chartRows, chartCols, blockSizes,
                 fn = lambda x: x.blkSz == series
 
                 if not relative:
-                    x, y, m = get_series(results, col, row, fn)
+                    x, y, m, r = get_series(results, col, row, fn)
                 else:
-                    x, y, m = get_series_rel(results, pivotEncoder, pivotQuality,
-                                             col, row, fn)
+                    x, y, m, r = get_series_rel(results, pivotEncoder, pivotQuality,
+                                                col, row, fn)
 
                 color = None
                 label = "%s blocks" % series
@@ -236,34 +241,66 @@ def main():
 
     charts = [
         [
-            # Plot absolute scores
+            # --------------------------------------------------------
+            # Plot all absolute scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-1.7", "ref-2.0-avx2", "ref-2.1-avx2"],
+            ["ref-2.0-avx2", "ref-2.1-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             False,
             None,
             None,
-            "absolute-vs-ref-1.7.png",
+            "absolute-all.png",
             (30, None)
         ], [
-            # Plot relative scores of all vs 1.7
+            # Plot 1.7 to 2.0 absolute scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-1.7", "ref-2.0-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-1.7-to-2.0.png",
+            (30, None)
+        ], [
+            # Plot 2.0 to 2.1 absolute scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.0-avx2", "ref-2.1-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-2.0-to-2.1.png",
+            (30, None)
+        ], [
+            # --------------------------------------------------------
+            # Plot all relative scores
             ["thorough", "medium", "fast"],
             ["ref-2.0-avx2", "ref-2.1-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-vs-ref-1.7.png",
+            "relative-all.png",
             (None, None)
         ], [
-            # Plot relative scores of all vs 2.0
+            # Plot 1.7 to 2.0 relative scores
+            ["thorough", "medium", "fast"],
+            ["ref-2.0-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            True,
+            "ref-1.7",
+            None,
+            "relative-1.7-to-2.0.png",
+            (None, None)
+        ], [
+            # Plot 2.0 to 2.1 relative scores
             ["thorough", "medium", "fast"],
             ["ref-2.1-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-2.0-avx2",
             None,
-            "relative-vs-ref-2.0.png",
+            "relative-2.0-to-2.1.png",
             (None, None)
         ], [
             # Plot relative scores of ISAs of latest
@@ -273,17 +310,7 @@ def main():
             True,
             "ref-2.1-sse2",
             None,
-            "relative-vs-self-isa.png",
-            (None, None)
-        ], [
-            # Plot relative scores of ISAs of latest
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.1-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            True,
-            "ref-2.1-sse4.2",
-            None,
-            "relative-vs-self-isa-sse4.2.png",
+            "relative-2.1-isas.png",
             (None, None)
         ], [
             # Plot relative scores of qualities of latest
@@ -293,7 +320,7 @@ def main():
             True,
             None,
             "thorough",
-            "relative-vs-self-quality.png",
+            "relative-2.1-qualities.png",
             (None, None)
         ]
     ]

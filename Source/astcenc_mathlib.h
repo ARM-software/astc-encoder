@@ -410,7 +410,7 @@ static inline uint4   operator*(uint32_t p, uint4 q)   { return q * p; }
 static inline float dot(float2 p, float2 q)  { return p.x * q.x + p.y * q.y; }
 static inline float dot(float3 p, float3 q)  { return p.x * q.x + p.y * q.y + p.z * q.z; }
 static inline float dot(float4 p, float4 q)  {
-#if ASTCENC_SSE >= 42
+#if (ASTCENC_SSE >= 42) && (ASTCENC_ISA_INVARIANCE == 0)
 	__m128 pv = _mm_load_ps((float*)&p);
 	__m128 qv = _mm_load_ps((float*)&q);
 	__m128 t  = _mm_dp_ps(pv, qv, 0xFF);

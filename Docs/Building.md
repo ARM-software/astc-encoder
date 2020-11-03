@@ -80,3 +80,9 @@ non-optimized build (`-O0`) with symbols included (`-g`).
 For easier profiling, add `BUILD=profile` to the Make command line. This will
 build a moderately optimized build (`-O2`) with symbols include (`-g`), but
 without link-time optimization (no `-flto`).
+
+Normal builds are not ISA invariant, builds for different instruction sets on
+the same CPU hardware can produce subtly different outputs. To build an ISA
+invariant build set `-DASTCENC_ISA_INVARIANCE=1`. For make builds this can be
+achieved by setting `ISA_INV=1` on the command line. This will reduce
+performance, as optimizations will be disabled to keep alignment with SSE2.

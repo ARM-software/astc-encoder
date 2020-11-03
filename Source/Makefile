@@ -41,6 +41,17 @@ VEC ?= avx2
 #   * debug   - build an unoptimized build with symbols
 BUILD ?= release
 
+# Configure the build for ISA invariant output; valid values are:
+#
+#   * 0 - ISA invariance is off (default)
+#   * 1 - ISA invariance is on
+#
+# Enabling ISA invariant output will give bit-exact compression across SSE2,
+# SSE4.2, and AVX2. Thi will disable some optimizations for newer ISAs which
+# cannot be reasonably implemented by the older ones, and will therefore reduce
+# performance.
+ISA_INV ?= 0
+
 # ==================================================
 # File listings
 
@@ -148,6 +159,17 @@ else
 $(error Unsupported VEC target, use VEC=neon/sse2/sse4.2/avx2)
 endif
 endif
+endif
+endif
+
+# Validate that the ISA_ENV option is a valid option
+ifeq ($(ISA_INV),0)
+CXXFLAGS += -DASTCENC_ISA_INVARIANCE=0
+else
+ifeq ($(ISA_INV),1)
+CXXFLAGS += -DASTCENC_ISA_INVARIANCE=1
+else
+$(error Unsupported ISA invariance, use ISA_INV=0/1)
 endif
 endif
 

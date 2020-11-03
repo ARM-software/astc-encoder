@@ -43,6 +43,10 @@
 #error ERROR: ASTCENC_AVX not defined
 #endif
 
+#ifndef ASTCENC_ISA_INVARIANCE
+#error ERROR: ASTCENC_ISA_INVARIANCE not defined
+#endif
+
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 

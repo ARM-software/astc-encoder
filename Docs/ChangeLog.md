@@ -1,6 +1,7 @@
 # 2.x series change log
 
-This page summarizes the major changes in each release of the 2.x series.
+This page summarizes the major functional and performance changes in each
+release of the 2.x series.
 
 ## 2.1
 
@@ -36,15 +37,26 @@ recompile the client-side using the updated `astcenc.h` header.
     the config structure. See `-candidatelimit` above for details.
   * **Feature:** Image input/output can now use `ASTCENC_TYPE_F32` data types.
 * **Stability:**
-  * **Improvement:** The SSE and AVX variants now produce identical output when
-    run on the same CPU.
+  * **Feature:** The SSE2, SSE4.2, and AVX2 variants now produce identical
+    compressed output when run on the same CPU when compiled with the option
+    `ASTCENC_ISA_INVARIANCE=1`. For Make builds this can be set on the command
+    line by setting `ISA_INV=1`. ISA invariance is off by default; it reduces
+    performance by 1-3%.
 
 ### Performance
 
-* Average compression performance is 1.2x - 2x faster than version 2.0,
-  depending on search preset and block size.
-* Average image quality is similar to 2.0, with only minor differences of
-  up to 0.05dB in either direction.
+Key for performance charts
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
+
+**Absolute performance:**
+
+![Absolute scores 2.1 vs 2.0](./ChangeLogImg/absolute-2.0-to-2.1.png)
+
+**Relative performance vs 1.7 release:**
+
+![Relative scores 2.1 vs 2.0](./ChangeLogImg/relative-2.0-to-2.1.png)
 
 ## 2.0
 
@@ -61,5 +73,15 @@ major changes over the earlier 1.7 series, and is not command-line compatible.
 
 ### Performance:
 
-* Average compression performance is between 2 and 3x faster than version 1.7.
-* Average image quality is lower by up to 0.1dB than version 1.7.
+Key for performance charts
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
+
+**Absolute performance:**
+
+![Absolute scores 2.0 vs 1.7](./ChangeLogImg/absolute-1.7-to-2.0.png)
+
+**Relative performance vs 1.7 release:**
+
+![Relative scores 2.0 vs 1.7](./ChangeLogImg/relative-1.7-to-2.0.png)
