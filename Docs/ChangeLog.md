@@ -3,6 +3,9 @@
 This page summarizes the major functional and performance changes in each
 release of the 2.x series.
 
+All performance data on this page is measured on an Intel Core i5-9600K
+clocked at 4.2 GHz, running astcenc using 6 threads.
+
 ## 2.1
 
 **Status:** :warning: In development (ETA November 2020)
@@ -45,16 +48,16 @@ recompile the client-side using the updated `astcenc.h` header.
 
 ### Performance
 
-Key for performance charts
+Key for performance charts:
 
 * Color = block size (see legend).
 * Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
 
-**Absolute performance:**
+**Absolute performance vs 2.0 release:**
 
 ![Absolute scores 2.1 vs 2.0](./ChangeLogImg/absolute-2.0-to-2.1.png)
 
-**Relative performance vs 1.7 release:**
+**Relative performance vs 2.0 release:**
 
 ![Relative scores 2.1 vs 2.0](./ChangeLogImg/relative-2.0-to-2.1.png)
 
@@ -78,7 +81,7 @@ Key for performance charts
 * Color = block size (see legend).
 * Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
 
-**Absolute performance:**
+**Absolute performance vs 1.7 release:**
 
 ![Absolute scores 2.0 vs 1.7](./ChangeLogImg/absolute-1.7-to-2.0.png)
 
