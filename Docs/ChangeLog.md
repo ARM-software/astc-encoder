@@ -25,7 +25,7 @@ recompile the client-side using the updated `astcenc.h` header.
     RGBA, and `-*h` for HDR RGB with LDR alpha.
   * **Feature:** A new `-fastest` quality preset is now available. This is
     designed for fast "roughing out" of new content, and sacrifices significant
-    image quality compared to `-fast`. We do not recommend it's use for
+    image quality compared to `-fast`. We do not recommend its use for
     production builds.
   * **Feature:** A new `-candidatelimit` compression tuning option is now
     available. This is a power-user control to determine how many candidates
