@@ -41,10 +41,10 @@ recompile the client-side using the updated `astcenc.h` header.
   * **Feature:** Image input/output can now use `ASTCENC_TYPE_F32` data types.
 * **Stability:**
   * **Feature:** The SSE2, SSE4.2, and AVX2 variants now produce identical
-    compressed output when run on the same CPU when compiled with the option
-    `ASTCENC_ISA_INVARIANCE=1`. For Make builds this can be set on the command
-    line by setting `ISA_INV=1`. ISA invariance is off by default; it reduces
-    performance by 1-3%.
+    compressed output when run on the same CPU when compiled with the 
+    preprocessor define `ASTCENC_ISA_INVARIANCE=1`. For Make builds this can
+    be set on the command line by setting `ISA_INV=1`. ISA invariance is off
+    by default; it reduces performance by 1-3%.
 
 ### Performance
 
