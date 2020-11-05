@@ -27,7 +27,11 @@ ar -qc libastcenc.a  *.o
 # Build project local fuzzers
 for fuzzer in $SRC/astc-encoder/Source/Fuzzers/fuzz_*.cpp; do
   $CXX $CXXFLAGS \
-      -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0 -DASTCENC_VECALIGN=16 \
+      -DASTCENC_SSE=0 \
+      -DASTCENC_AVX=0 \
+      -DASTCENC_POPCNT=0 \
+      -DASTCENC_VECALIGN=16 \
+      -DASTCENC_ISA_INVARIANCE=0 \
       -I. -std=c++14 $fuzzer $LIB_FUZZING_ENGINE $SRC/astc-encoder/Source/libastcenc.a \
       -o $OUT/$(basename -s .cpp $fuzzer)
 done
