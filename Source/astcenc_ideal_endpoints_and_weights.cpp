@@ -1149,7 +1149,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 #endif // #if ASTCENC_SIMD_WIDTH > 1
 
 	// Process remaining weights in a scalar way.
-	for (/*Loop tail */; i < weight_count; i++)
+	for (/* Loop tail */; i < weight_count; i++)
 	{
 		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
 		if (ix < 0.0f)

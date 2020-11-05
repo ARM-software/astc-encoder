@@ -29,8 +29,66 @@ Only runs on Linux and requires the following tools available on the PATH:
 
 import argparse
 import os
+import re
 import subprocess as sp
 import sys
+
+def postprocess_cga(logfile, outfile):
+    """
+    Postprocess the output of callgrind_annotate.
+
+    Args:
+        logfile (str): The output of callgrind_annotate.
+        outfile (str): The output file path to write.
+    """
+    pattern = re.compile("^\s*([0-9,]+)\s+Source/(\S+):(\S+)\(.*\).*$")
+
+    lines = logfile.splitlines()
+
+    totalCost = 0.0
+    functionTable = []
+    functionMap = {}
+
+    for line in lines:
+        match = pattern.match(line)
+        if not match:
+            continue
+
+        cost = float(match.group(1).replace(",", ""))
+        sourceFile = match.group(2)
+        function = match.group(3)
+
+        # Filter out library code we don't want to change
+        if function.startswith("stbi__"):
+            continue
+
+        totalCost += cost
+
+        # Accumulate the scores from functions in multiple call chains
+        if function in functionMap:
+            index = functionMap[function]
+            functionTable[index][1] += cost
+            functionTable[index][2] += cost
+        # Else add new functions to the end of the table
+        else:
+            functionMap[function] = len(functionTable)
+            functionTable.append([function, cost, cost])
+
+    # Sort the table by accumulated cost
+    functionTable.sort(key=lambda x: 101.0 - x[2])
+
+    for function in functionTable:
+        function[2] /= totalCost
+        function[2] *= 100.0
+
+    with open(outfile, "w") as fileHandle:
+        for function in functionTable:
+            # Omit entries less than 1% load
+            if function[2] < 1:
+                break
+
+            fileHandle.write("%5.2f%%  %s\n" % (function[2], function[0]))
+
 
 def run_pass(image, encoder, blocksize, quality):
     """
@@ -50,20 +108,24 @@ def run_pass(image, encoder, blocksize, quality):
     args = ["valgrind", "--tool=callgrind", "--callgrind-out-file=callgrind.txt",
             binary, "-cl", image, "out.astc", blocksize, qualityFlag, "-j", "1"]
 
-    print(" ".join(args))
     result = sp.run(args, check=True, universal_newlines=True)
+
+    args = ["callgrind_annotate", "callgrind.txt"]
+    ret = sp.run(args, stdout=sp.PIPE, check=True, encoding="utf-8")
+    postprocess_cga(ret.stdout, "perf_%s.txt" % quality)
 
     args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
             "-s", "-z", "compress_block(astcenc_context const&, astcenc_image const&, imageblock const*, symbolic_compressed_block&, physical_compressed_block&, compress_symbolic_block_buffers*)"]
 
     result = sp.run(args, check=True, universal_newlines=True)
 
-    args = ["dot", "-Tpng", "out.dot", "-o", "%s.png" % quality]
+    args = ["dot", "-Tpng", "out.dot", "-o", "perf_%s.png" % quality]
     result = sp.run(args, check=True, universal_newlines=True)
 
     os.remove("out.astc")
     os.remove("out.dot")
     os.remove("callgrind.txt")
+
 
 def parse_command_line():
     """
@@ -82,7 +144,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=encoders, help="select encoder variant")
 
-    testqualities = ["fast", "medium", "thorough"]
+    testqualities = ["fastest", "fast", "medium", "thorough"]
     qualities = testqualities + ["all"]
     parser.add_argument("--test-quality", dest="qualities", default="medium",
                         choices=qualities, help="select compression quality")
