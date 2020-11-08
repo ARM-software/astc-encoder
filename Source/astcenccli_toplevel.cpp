@@ -1199,9 +1199,16 @@ int main(
 		}
 		else
 		{
-			printf("ERROR: Unknown compressed output file type\n");
-
-			return 1;
+#if defined(_WIN32)
+			bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+			bool is_null = output_filename == "/dev/null";
+#endif
+			if (!is_null)
+			{
+				printf("ERROR: Unknown compressed output file type\n");
+				return 1;
+			}
 		}
 	}
 
