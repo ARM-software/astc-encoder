@@ -1093,9 +1093,19 @@ int main(
 
 	double start_coding_time = get_time();
 
-	double image_size = (double)image_uncomp_in->dim_x *
-	                    (double)image_uncomp_in->dim_y *
-	                    (double)image_uncomp_in->dim_z;
+	double image_size = 0.0;
+	if (image_uncomp_in)
+	{
+		image_size = (double)image_uncomp_in->dim_x *
+		             (double)image_uncomp_in->dim_y *
+		             (double)image_uncomp_in->dim_z;
+	}
+	else
+	{
+		image_size = (double)image_comp.dim_x *
+		             (double)image_comp.dim_y *
+		             (double)image_comp.dim_z;
+	}
 
 	// Compress an image
 	if (operation & ASTCENC_STAGE_COMPRESS)
@@ -1242,13 +1252,12 @@ int main(
 
 	delete[] image_comp.data;
 
-	double end_time = get_time();
-
-	double tex_rate = image_size / (end_coding_time - start_coding_time);
-	tex_rate = tex_rate / 1000000.0;
-
 	if ((operation & ASTCENC_STAGE_COMPARE) || (!cli_config.silentmode))
 	{
+		double end_time = get_time();
+		double tex_rate = image_size / (end_coding_time - start_coding_time);
+		tex_rate = tex_rate / 1000000.0;
+
 		printf("Performance metrics\n");
 		printf("===================\n\n");
 		printf("    Total time:                %8.4f s\n", end_time - start_time);
