@@ -46,9 +46,10 @@ pipeline {
             }
             stage('Test') {
               steps {
-                sh 'python3 ./Test/astc_test_image.py --encoder=all --test-set Small'
-                //perfReport(sourceDataFiles:'TestOutput/results.xml')
-                //junit(testResults: 'TestOutput/results.xml')
+                sh '''
+                  python3 ./Test/astc_test_functional.py
+                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small
+                '''
               }
             }
           }
@@ -80,7 +81,7 @@ pipeline {
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Debug /p:Platform=x64
                   call msbuild .\\Source\\VS2019\\astcenc-sse4.2.vcxproj /p:Configuration=Debug /p:Platform=x64
-				  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Debug /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Debug /p:Platform=x64
                 '''
               }
             }
@@ -95,10 +96,9 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
+                  call python ./Test/astc_test_functional.py
                   call python ./Test/astc_test_image.py --test-set Small
                 '''
-                //perfReport(sourceDataFiles:'TestOutput\\results.xml')
-                //junit(testResults: 'TestOutput\\results.xml')
               }
             }
           }
@@ -135,10 +135,9 @@ pipeline {
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
+                  python3 ./Test/astc_test_functional.py
                   python3 ./Test/astc_test_image.py --test-set Small
                 '''
-                //perfReport(sourceDataFiles:'TestOutput/results.xml')
-                //junit(testResults: 'TestOutput/results.xml')
               }
             }
           }
