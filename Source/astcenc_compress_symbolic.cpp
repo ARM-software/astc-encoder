@@ -948,9 +948,9 @@ static float prepare_error_weight_block(
 						error_weight = error_weight + avg + stdev;
 
 						error_weight = float4(1.0f / error_weight.r,
-											  1.0f / error_weight.g,
-											  1.0f / error_weight.b,
-											  1.0f / error_weight.a);
+						                      1.0f / error_weight.g,
+						                      1.0f / error_weight.b,
+						                      1.0f / error_weight.a);
 					}
 
 					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
