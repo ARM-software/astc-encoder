@@ -14,7 +14,7 @@ pipeline {
         stage('Linux') {
           agent {
             docker {
-              image 'astcenc:2.0.0'
+              image 'astcenc:2.1.0'
               registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
               registryCredentialsId 'cepe-artifactory-jenkins'
               label 'docker'
@@ -96,14 +96,13 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
-                  call python ./Test/astc_test_functional.py
                   call python ./Test/astc_test_image.py --test-set Small
                 '''
               }
             }
           }
         }
-        /* Build for Mac on x86_64 */
+        /* Build for macOS on x86_64 */
         stage('macOS') {
           agent {
             label 'mac && x86_64'
@@ -135,7 +134,6 @@ pipeline {
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
-                  python3 ./Test/astc_test_functional.py
                   python3 ./Test/astc_test_image.py --test-set Small
                 '''
               }
@@ -147,7 +145,7 @@ pipeline {
     stage('Artifactory') {
       agent {
         docker {
-          image 'astcenc:2.0.0'
+          image 'astcenc:2.1.0'
           registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
           registryCredentialsId 'cepe-artifactory-jenkins'
           label 'docker'
