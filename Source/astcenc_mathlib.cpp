@@ -17,13 +17,6 @@
 
 #include "astcenc_mathlib.h"
 
-float3 cross(float3 p, float3 q)
-{
-	return float3(p.y * q.z - p.z * q.y,
-	              p.z * q.x - p.x * q.z,
-	              p.x * q.y - p.y * q.x);
-}
-
 /* Public function, see header file for detailed documentation */
 float astc::log2(float val)
 {

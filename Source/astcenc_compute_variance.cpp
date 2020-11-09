@@ -119,17 +119,17 @@ static void compute_pixel_region_variance(
 	astcenc_swizzle swz = arg->swz;
 	int have_z = arg->have_z;
 
-	int size_x = arg->size.x;
-	int size_y = arg->size.y;
-	int size_z = arg->size.z;
+	int size_x = arg->size.r;
+	int size_y = arg->size.g;
+	int size_z = arg->size.b;
 
-	int src_offset_x = arg->src_offset.x;
-	int src_offset_y = arg->src_offset.y;
-	int src_offset_z = arg->src_offset.z;
+	int src_offset_x = arg->src_offset.r;
+	int src_offset_y = arg->src_offset.g;
+	int src_offset_z = arg->src_offset.b;
 
-	int dst_offset_x = arg->dst_offset.x;
-	int dst_offset_y = arg->dst_offset.y;
-	int dst_offset_z = arg->dst_offset.z;
+	int dst_offset_x = arg->dst_offset.r;
+	int dst_offset_y = arg->dst_offset.g;
+	int dst_offset_z = arg->dst_offset.b;
 
 	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
 	int alpha_kernel_radius = arg->alpha_kernel_radius;
@@ -204,10 +204,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
-						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
-						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
-						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
+						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
+						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
+						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
+						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -252,10 +252,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
-						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
-						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
-						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
+						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
+						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
+						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
+						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -298,10 +298,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.x = powf(MAX(d.x, 1e-6f), rgb_power);
-						d.y = powf(MAX(d.y, 1e-6f), rgb_power);
-						d.z = powf(MAX(d.z, 1e-6f), rgb_power);
-						d.w = powf(MAX(d.w, 1e-6f), alpha_power);
+						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
+						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
+						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
+						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -428,14 +428,14 @@ static void compute_pixel_region_variance(
 					int z_high = z_src + alpha_kernel_radius + 1;
 
 					// Summed-area table lookups for alpha average
-					float vasum = (  VARBUF1(z_high, y_low,  x_low).w
-					               - VARBUF1(z_high, y_low,  x_high).w
-					               - VARBUF1(z_high, y_high, x_low).w
-					               + VARBUF1(z_high, y_high, x_high).w) -
-					              (  VARBUF1(z_low,  y_low,  x_low).w
-					               - VARBUF1(z_low,  y_low,  x_high).w
-					               - VARBUF1(z_low,  y_high, x_low).w
-					               + VARBUF1(z_low,  y_high, x_high).w);
+					float vasum = (  VARBUF1(z_high, y_low,  x_low).a
+					               - VARBUF1(z_high, y_low,  x_high).a
+					               - VARBUF1(z_high, y_high, x_low).a
+					               + VARBUF1(z_high, y_high, x_high).a) -
+					              (  VARBUF1(z_low,  y_low,  x_low).a
+					               - VARBUF1(z_low,  y_low,  x_high).a
+					               - VARBUF1(z_low,  y_high, x_low).a
+					               + VARBUF1(z_low,  y_high, x_high).a);
 
 					int out_index = z_dst * zdt + y_dst * ydt + x_dst;
 					input_alpha_averages[out_index] = (vasum * alpha_rsamples);
@@ -495,10 +495,10 @@ static void compute_pixel_region_variance(
 				int y_high = y_src + alpha_kernel_radius + 1;
 
 				// Summed-area table lookups for alpha average
-				float vasum = VARBUF1(0, y_low,  x_low).w
-				            - VARBUF1(0, y_low,  x_high).w
-				            - VARBUF1(0, y_high, x_low).w
-				            + VARBUF1(0, y_high, x_high).w;
+				float vasum = VARBUF1(0, y_low,  x_low).a
+				            - VARBUF1(0, y_low,  x_high).a
+				            - VARBUF1(0, y_high, x_low).a
+				            + VARBUF1(0, y_high, x_high).a;
 
 				int out_index = y_dst * ydt + x_dst;
 				input_alpha_averages[out_index] = (vasum * alpha_rsamples);
@@ -538,13 +538,13 @@ void compute_averages_and_variances(
 	pixel_region_variance_args arg = ag.arg;
 	arg.work_memory = new float4[ag.work_memory_size];
 
-	int size_x = ag.img_size.x;
-	int size_y = ag.img_size.y;
-	int size_z = ag.img_size.z;
+	int size_x = ag.img_size.r;
+	int size_y = ag.img_size.g;
+	int size_z = ag.img_size.b;
 
-	int step_x = ag.blk_size.x;
-	int step_y = ag.blk_size.y;
-	int step_z = ag.blk_size.z;
+	int step_x = ag.blk_size.r;
+	int step_y = ag.blk_size.g;
+	int step_z = ag.blk_size.b;
 
 	int padding_xy = arg.img->dim_pad;
 	int padding_z = arg.have_z ? padding_xy : 0;
@@ -565,19 +565,19 @@ void compute_averages_and_variances(
 		int z = (base / (y_tasks)) * step_z;
 		int y = (base - (z * y_tasks)) * step_y;
 
-		arg.size.z = MIN(step_z, size_z - z);
-		arg.dst_offset.z = z;
-		arg.src_offset.z = z + padding_z;
+		arg.size.b = MIN(step_z, size_z - z);
+		arg.dst_offset.b = z;
+		arg.src_offset.b = z + padding_z;
 
-		arg.size.y = MIN(step_y, size_y - y);
-		arg.dst_offset.y = y;
-		arg.src_offset.y = y + padding_xy;
+		arg.size.g = MIN(step_y, size_y - y);
+		arg.dst_offset.g = y;
+		arg.src_offset.g = y + padding_xy;
 
 		for (int x = 0; x < size_x; x += step_x)
 		{
-			arg.size.x = MIN(step_x, size_x - x);
-			arg.dst_offset.x = x;
-			arg.src_offset.x = x + padding_xy;
+			arg.size.r = MIN(step_x, size_x - x);
+			arg.dst_offset.r = x;
+			arg.src_offset.r = x + padding_xy;
 			compute_pixel_region_variance(ctx, &arg);
 		}
 

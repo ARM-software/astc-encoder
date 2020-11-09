@@ -73,12 +73,12 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	float4 ep0 = ep->endpt0[partition_index];
 	float4 ep1 = ep->endpt1[partition_index];
 
-	float ep1_min = MIN(MIN(ep1.x, ep1.y), ep1.z);
+	float ep1_min = MIN(MIN(ep1.r, ep1.g), ep1.b);
 	ep1_min = MAX(ep1_min, 0.0f);
 
 	float4 error_weight = error_weightings[partition_index];
 
-	float error_weight_rgbsum = error_weight.x + error_weight.y + error_weight.z;
+	float error_weight_rgbsum = error_weight.r + error_weight.g + error_weight.b;
 
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
@@ -91,59 +91,61 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	float4 ep0_range_error_low;
 	float4 ep1_range_error_low;
 
-	ep0_range_error_high.x = MAX(0.0f, ep0.x - range_upper_limit_rgb);
-	ep0_range_error_high.y = MAX(0.0f, ep0.y - range_upper_limit_rgb);
-	ep0_range_error_high.z = MAX(0.0f, ep0.z - range_upper_limit_rgb);
-	ep0_range_error_high.w = MAX(0.0f, ep0.w - range_upper_limit_alpha);
-	ep1_range_error_high.x = MAX(0.0f, ep1.x - range_upper_limit_rgb);
-	ep1_range_error_high.y = MAX(0.0f, ep1.y - range_upper_limit_rgb);
-	ep1_range_error_high.z = MAX(0.0f, ep1.z - range_upper_limit_rgb);
-	ep1_range_error_high.w = MAX(0.0f, ep1.w - range_upper_limit_alpha);
+	ep0_range_error_high.r = MAX(0.0f, ep0.r - range_upper_limit_rgb);
+	ep0_range_error_high.g = MAX(0.0f, ep0.g - range_upper_limit_rgb);
+	ep0_range_error_high.b = MAX(0.0f, ep0.b - range_upper_limit_rgb);
+	ep0_range_error_high.a = MAX(0.0f, ep0.a - range_upper_limit_alpha);
 
-	ep0_range_error_low.x = MIN(0.0f, ep0.x);
-	ep0_range_error_low.y = MIN(0.0f, ep0.y);
-	ep0_range_error_low.z = MIN(0.0f, ep0.z);
-	ep0_range_error_low.w = MIN(0.0f, ep0.w);
-	ep1_range_error_low.x = MIN(0.0f, ep1.x);
-	ep1_range_error_low.y = MIN(0.0f, ep1.y);
-	ep1_range_error_low.z = MIN(0.0f, ep1.z);
-	ep1_range_error_low.w = MIN(0.0f, ep1.w);
+	ep1_range_error_high.r = MAX(0.0f, ep1.r - range_upper_limit_rgb);
+	ep1_range_error_high.g = MAX(0.0f, ep1.g - range_upper_limit_rgb);
+	ep1_range_error_high.b = MAX(0.0f, ep1.b - range_upper_limit_rgb);
+	ep1_range_error_high.a = MAX(0.0f, ep1.a - range_upper_limit_alpha);
+
+	ep0_range_error_low.r = MIN(0.0f, ep0.r);
+	ep0_range_error_low.g = MIN(0.0f, ep0.g);
+	ep0_range_error_low.b = MIN(0.0f, ep0.b);
+	ep0_range_error_low.a = MIN(0.0f, ep0.a);
+
+	ep1_range_error_low.r = MIN(0.0f, ep1.r);
+	ep1_range_error_low.g = MIN(0.0f, ep1.g);
+	ep1_range_error_low.b = MIN(0.0f, ep1.b);
+	ep1_range_error_low.a = MIN(0.0f, ep1.a);
 
 	float4 sum_range_error =
 		(ep0_range_error_low * ep0_range_error_low) +
 		(ep1_range_error_low * ep1_range_error_low) +
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
-	float rgb_range_error = dot(float3(sum_range_error.x, sum_range_error.y, sum_range_error.z),
-	                            float3(error_weight.x, error_weight.y, error_weight.z)) * 0.5f * partition_size;
-	float alpha_range_error = sum_range_error.w * error_weight.w * 0.5f * partition_size;
+	float rgb_range_error = dot(float3(sum_range_error.r, sum_range_error.g, sum_range_error.b),
+	                            float3(error_weight.r, error_weight.g, error_weight.b)) * 0.5f * partition_size;
+	float alpha_range_error = sum_range_error.a * error_weight.a * 0.5f * partition_size;
 
 	if (encode_hdr_rgb)
 	{
 
 		// collect some statistics
 		float af, cf;
-		if (ep1.x > ep1.y && ep1.x > ep1.z)
+		if (ep1.r > ep1.g && ep1.r > ep1.b)
 		{
-			af = ep1.x;
-			cf = ep1.x - ep0.x;
+			af = ep1.r;
+			cf = ep1.r - ep0.r;
 		}
-		else if (ep1.y > ep1.z)
+		else if (ep1.g > ep1.b)
 		{
-			af = ep1.y;
-			cf = ep1.y - ep0.y;
+			af = ep1.g;
+			cf = ep1.g - ep0.g;
 		}
 		else
 		{
-			af = ep1.z;
-			cf = ep1.z - ep0.z;
+			af = ep1.b;
+			cf = ep1.b - ep0.b;
 		}
 
 		float bf = af - ep1_min;	// estimate of color-component spread in high endpoint color
-		float3 prd = float3(ep1.x, ep1.y, ep1.z) - float3(cf, cf, cf);
-		float3 pdif = prd - float3(ep0.x, ep0.y, ep0.z);
+		float3 prd = float3(ep1.r, ep1.g, ep1.b) - float3(cf, cf, cf);
+		float3 pdif = prd - float3(ep0.r, ep0.g, ep0.b);
 		// estimate of color-component spread in low endpoint color
-		float df = MAX(MAX(fabsf(pdif.x), fabsf(pdif.y)), fabsf(pdif.z));
+		float df = MAX(MAX(fabsf(pdif.r), fabsf(pdif.g)), fabsf(pdif.b));
 
 		int b = (int)bf;
 		int c = (int)cf;
@@ -241,8 +243,8 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;	// empirically determined ....
 
 
-		float lum_high = (ep1.x + ep1.y + ep1.z) * (1.0f / 3.0f);
-		float lum_low = (ep0.x + ep0.y + ep0.z) * (1.0f / 3.0f);
+		float lum_high = (ep1.r + ep1.g + ep1.b) * (1.0f / 3.0f);
+		float lum_low = (ep0.r + ep0.g + ep0.b) * (1.0f / 3.0f);
 		float lumdif = lum_high - lum_low;
 		float mode23mult = lumdif < 960 ? 4.0f : lumdif < 3968 ? 16.0f : 128.0f;
 
@@ -268,7 +270,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 
 			float base_quant_error = baseline_quant_error[i] * partition_size * 1.0f;
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
-			float alpha_quantization_error = error_weight.w * base_quant_error * 2.0f;
+			float alpha_quantization_error = error_weight.a * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
 			// for 8 integers, we have two encodings: one with HDR alpha and another one
@@ -315,7 +317,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		{
 			float base_quant_error = baseline_quant_error[i] * partition_size * 1.0f;
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
-			float alpha_quantization_error = error_weight.w * base_quant_error;
+			float alpha_quantization_error = error_weight.a * base_quant_error;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
 			// for 8 integers, the available encodings are:

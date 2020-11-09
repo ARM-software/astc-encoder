@@ -123,15 +123,15 @@ static int rgb_delta_unpack(
 	else if (b1e > 255)
 		b1e = 255;
 
-	output0->x = r0e;
-	output0->y = g0e;
-	output0->z = b0e;
-	output0->w = 0xFF;
+	output0->r = r0e;
+	output0->g = g0e;
+	output0->b = b0e;
+	output0->a = 0xFF;
 
-	output1->x = r1e;
-	output1->y = g1e;
-	output1->z = b1e;
-	output1->w = 0xFF;
+	output1->r = r1e;
+	output1->g = g1e;
+	output1->b = b1e;
+	output1->a = 0xFF;
 
 	return retval;
 }
@@ -157,28 +157,28 @@ static int rgb_unpack(
 		ri1b = (ri1b + bi1b) >> 1;
 		gi1b = (gi1b + bi1b) >> 1;
 
-		output0->x = ri1b;
-		output0->y = gi1b;
-		output0->z = bi1b;
-		output0->w = 255;
+		output0->r = ri1b;
+		output0->g = gi1b;
+		output0->b = bi1b;
+		output0->a = 255;
 
-		output1->x = ri0b;
-		output1->y = gi0b;
-		output1->z = bi0b;
-		output1->w = 255;
+		output1->r = ri0b;
+		output1->g = gi0b;
+		output1->b = bi0b;
+		output1->a = 255;
 		return 1;
 	}
 	else
 	{
-		output0->x = ri0b;
-		output0->y = gi0b;
-		output0->z = bi0b;
-		output0->w = 255;
+		output0->r = ri0b;
+		output0->g = gi0b;
+		output0->b = bi0b;
+		output0->a = 255;
 
-		output1->x = ri1b;
-		output1->y = gi1b;
-		output1->z = bi1b;
-		output1->w = 255;
+		output1->r = ri1b;
+		output1->g = gi1b;
+		output1->b = bi1b;
+		output1->a = 255;
 		return 0;
 	}
 }
@@ -192,13 +192,13 @@ static void rgba_unpack(
 	int order = rgb_unpack(input, quantization_level, output0, output1);
 	if (order == 0)
 	{
-		output0->w = color_unquantization_tables[quantization_level][input[6]];
-		output1->w = color_unquantization_tables[quantization_level][input[7]];
+		output0->a = color_unquantization_tables[quantization_level][input[6]];
+		output1->a = color_unquantization_tables[quantization_level][input[7]];
 	}
 	else
 	{
-		output0->w = color_unquantization_tables[quantization_level][input[7]];
-		output1->w = color_unquantization_tables[quantization_level][input[6]];
+		output0->a = color_unquantization_tables[quantization_level][input[7]];
+		output1->a = color_unquantization_tables[quantization_level][input[6]];
 	}
 }
 
@@ -226,13 +226,13 @@ static void rgba_delta_unpack(
 	int order = rgb_delta_unpack(input, quantization_level, output0, output1);
 	if (order == 0)
 	{
-		output0->w = a0;
-		output1->w = a1;
+		output0->a = a0;
+		output1->a = a1;
 	}
 	else
 	{
-		output0->w = a1;
-		output1->w = a0;
+		output0->a = a1;
+		output1->a = a0;
 	}
 }
 
@@ -259,8 +259,8 @@ static void rgb_scale_alpha_unpack(
 	uint4* output1
 ) {
 	rgb_scale_unpack(input, quantization_level, output0, output1);
-	output0->w = color_unquantization_tables[quantization_level][input[4]];
-	output1->w = color_unquantization_tables[quantization_level][input[5]];
+	output0->a = color_unquantization_tables[quantization_level][input[4]];
+	output1->a = color_unquantization_tables[quantization_level][input[5]];
 }
 
 static void luminance_unpack(
@@ -681,8 +681,8 @@ static void hdr_rgb_ldr_alpha_unpack3(
 
 	int v6 = color_unquantization_tables[quantization_level][input[6]];
 	int v7 = color_unquantization_tables[quantization_level][input[7]];
-	output0->w = v6;
-	output1->w = v7;
+	output0->a = v6;
+	output1->a = v7;
 }
 
 static void hdr_luminance_small_range_unpack(
@@ -790,8 +790,8 @@ static void hdr_rgb_hdr_alpha_unpack3(
 	int alpha0, alpha1;
 	hdr_alpha_unpack(input + 6, quantization_level, &alpha0, &alpha1);
 
-	output0->w = alpha0;
-	output1->w = alpha1;
+	output0->a = alpha0;
+	output1->a = alpha1;
 }
 
 void unpack_color_endpoints(
@@ -911,14 +911,14 @@ void unpack_color_endpoints(
 	{
 		if (decode_mode == ASTCENC_PRF_HDR)
 		{
-			output0->w = 0x7800;
-			output1->w = 0x7800;
+			output0->a = 0x7800;
+			output1->a = 0x7800;
 			*alpha_hdr = 1;
 		}
 		else
 		{
-			output0->w = 0x00FF;
-			output1->w = 0x00FF;
+			output0->a = 0x00FF;
+			output1->a = 0x00FF;
 			*alpha_hdr = 0;
 		}
 	}
@@ -928,25 +928,27 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_LDR_SRGB:
 		if (*rgb_hdr == 1)
 		{
-			output0->x = 0xFF00;
-			output0->y = 0x0000;
-			output0->z = 0xFF00;
-			output0->w = 0xFF00;
-			output1->x = 0xFF00;
-			output1->y = 0x0000;
-			output1->z = 0xFF00;
-			output1->w = 0xFF00;
+			output0->r = 0xFF00;
+			output0->g = 0x0000;
+			output0->b = 0xFF00;
+			output0->a = 0xFF00;
+
+			output1->r = 0xFF00;
+			output1->g = 0x0000;
+			output1->b = 0xFF00;
+			output1->a = 0xFF00;
 		}
 		else
 		{
-			output0->x *= 257;
-			output0->y *= 257;
-			output0->z *= 257;
-			output0->w *= 257;
-			output1->x *= 257;
-			output1->y *= 257;
-			output1->z *= 257;
-			output1->w *= 257;
+			output0->r *= 257;
+			output0->g *= 257;
+			output0->b *= 257;
+			output0->a *= 257;
+
+			output1->r *= 257;
+			output1->g *= 257;
+			output1->b *= 257;
+			output1->a *= 257;
 		}
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
@@ -955,26 +957,28 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_LDR:
 		if (*rgb_hdr == 1)
 		{
-			output0->x = 0xFFFF;
-			output0->y = 0xFFFF;
-			output0->z = 0xFFFF;
-			output0->w = 0xFFFF;
-			output1->x = 0xFFFF;
-			output1->y = 0xFFFF;
-			output1->z = 0xFFFF;
-			output1->w = 0xFFFF;
+			output0->r = 0xFFFF;
+			output0->g = 0xFFFF;
+			output0->b = 0xFFFF;
+			output0->a = 0xFFFF;
+
+			output1->r = 0xFFFF;
+			output1->g = 0xFFFF;
+			output1->b = 0xFFFF;
+			output1->a = 0xFFFF;
 			*nan_endpoint = 1;
 		}
 		else
 		{
-			output0->x *= 257;
-			output0->y *= 257;
-			output0->z *= 257;
-			output0->w *= 257;
-			output1->x *= 257;
-			output1->y *= 257;
-			output1->z *= 257;
-			output1->w *= 257;
+			output0->r *= 257;
+			output0->g *= 257;
+			output0->b *= 257;
+			output0->a *= 257;
+
+			output1->r *= 257;
+			output1->g *= 257;
+			output1->b *= 257;
+			output1->a *= 257;
 		}
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
@@ -984,17 +988,18 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_HDR:
 		if (*rgb_hdr == 0)
 		{
-			output0->x *= 257;
-			output0->y *= 257;
-			output0->z *= 257;
-			output1->x *= 257;
-			output1->y *= 257;
-			output1->z *= 257;
+			output0->r *= 257;
+			output0->g *= 257;
+			output0->b *= 257;
+
+			output1->r *= 257;
+			output1->g *= 257;
+			output1->b *= 257;
 		}
 		if (*alpha_hdr == 0)
 		{
-			output0->w *= 257;
-			output1->w *= 257;
+			output0->a *= 257;
+			output1->a *= 257;
 		}
 		break;
 	}

@@ -105,14 +105,14 @@ static int realign_weights(
 			// Compute the endpoint delta for all channels in current plane
 			int4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
 
-			if (plane_mask & 1) epd.x = 0;
-			if (plane_mask & 2) epd.y = 0;
-			if (plane_mask & 4) epd.z = 0;
-			if (plane_mask & 8) epd.w = 0;
+			if (plane_mask & 1) epd.r = 0;
+			if (plane_mask & 2) epd.g = 0;
+			if (plane_mask & 4) epd.b = 0;
+			if (plane_mask & 8) epd.a = 0;
 
-			endpnt0f[pa_idx] = float4((float)endpnt0[pa_idx].x, (float)endpnt0[pa_idx].y,
-			                          (float)endpnt0[pa_idx].z, (float)endpnt0[pa_idx].w);
-			offset[pa_idx] = float4((float)epd.x, (float)epd.y, (float)epd.z, (float)epd.w);
+			endpnt0f[pa_idx] = float4((float)endpnt0[pa_idx].r, (float)endpnt0[pa_idx].g,
+			                          (float)endpnt0[pa_idx].b, (float)endpnt0[pa_idx].a);
+			offset[pa_idx] = float4((float)epd.r, (float)epd.g, (float)epd.b, (float)epd.a);
 			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
 		}
 
@@ -265,29 +265,29 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 
 		float4 ep = float4(
-			(1.0f - ei->ep.endpt0[i].x) / (ei->ep.endpt1[i].x - ei->ep.endpt0[i].x),
-			(1.0f - ei->ep.endpt0[i].y) / (ei->ep.endpt1[i].y - ei->ep.endpt0[i].y),
-			(1.0f - ei->ep.endpt0[i].z) / (ei->ep.endpt1[i].z - ei->ep.endpt0[i].z),
-			(1.0f - ei->ep.endpt0[i].w) / (ei->ep.endpt1[i].w - ei->ep.endpt0[i].w));
+			(1.0f - ei->ep.endpt0[i].r) / (ei->ep.endpt1[i].r - ei->ep.endpt0[i].r),
+			(1.0f - ei->ep.endpt0[i].g) / (ei->ep.endpt1[i].g - ei->ep.endpt0[i].g),
+			(1.0f - ei->ep.endpt0[i].b) / (ei->ep.endpt1[i].b - ei->ep.endpt0[i].b),
+			(1.0f - ei->ep.endpt0[i].a) / (ei->ep.endpt1[i].a - ei->ep.endpt0[i].a));
 
-		if (ep.x > 0.5f && ep.x < min_ep.x)
+		if (ep.r > 0.5f && ep.r < min_ep.r)
 		{
-			min_ep.x = ep.x;
+			min_ep.r = ep.r;
 		}
 
-		if (ep.y > 0.5f && ep.y < min_ep.y)
+		if (ep.g > 0.5f && ep.g < min_ep.g)
 		{
-			min_ep.y = ep.y;
+			min_ep.g = ep.g;
 		}
 
-		if (ep.z > 0.5f && ep.z < min_ep.z)
+		if (ep.b > 0.5f && ep.b < min_ep.b)
 		{
-			min_ep.z = ep.z;
+			min_ep.b = ep.b;
 		}
 
-		if (ep.w > 0.5f && ep.w < min_ep.w)
+		if (ep.a > 0.5f && ep.a < min_ep.a)
 		{
-			min_ep.w = ep.w;
+			min_ep.a = ep.a;
 		}
 
 		#ifdef DEBUG_CAPTURE_NAN
@@ -295,7 +295,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 	}
 
-	float min_wt_cutoff = MIN(MIN(min_ep.x, min_ep.y), MIN(min_ep.z, min_ep.w));
+	float min_wt_cutoff = MIN(MIN(min_ep.r, min_ep.g), MIN(min_ep.b, min_ep.a));
 
 	// for each mode, use the angular method to compute a shift.
 	float weight_low_value[MAX_WEIGHT_MODES];
@@ -534,55 +534,55 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		#endif
 
 		float4 ep1 = float4(
-			(1.0f - ei1->ep.endpt0[i].x) / (ei1->ep.endpt1[i].x - ei1->ep.endpt0[i].x),
-			(1.0f - ei1->ep.endpt0[i].y) / (ei1->ep.endpt1[i].y - ei1->ep.endpt0[i].y),
-			(1.0f - ei1->ep.endpt0[i].z) / (ei1->ep.endpt1[i].z - ei1->ep.endpt0[i].z),
-			(1.0f - ei1->ep.endpt0[i].w) / (ei1->ep.endpt1[i].w - ei1->ep.endpt0[i].w));
+			(1.0f - ei1->ep.endpt0[i].r) / (ei1->ep.endpt1[i].r - ei1->ep.endpt0[i].r),
+			(1.0f - ei1->ep.endpt0[i].g) / (ei1->ep.endpt1[i].g - ei1->ep.endpt0[i].g),
+			(1.0f - ei1->ep.endpt0[i].b) / (ei1->ep.endpt1[i].b - ei1->ep.endpt0[i].b),
+			(1.0f - ei1->ep.endpt0[i].a) / (ei1->ep.endpt1[i].a - ei1->ep.endpt0[i].a));
 
-		if (ep1.x > 0.5f && ep1.x < min_ep1.x)
+		if (ep1.r > 0.5f && ep1.r < min_ep1.r)
 		{
-			min_ep1.x = ep1.x;
+			min_ep1.r = ep1.r;
 		}
 
-		if (ep1.y > 0.5f && ep1.y < min_ep1.y)
+		if (ep1.g > 0.5f && ep1.g < min_ep1.g)
 		{
-			min_ep1.y = ep1.y;
+			min_ep1.g = ep1.g;
 		}
 
-		if (ep1.z > 0.5f && ep1.z < min_ep1.z)
+		if (ep1.b > 0.5f && ep1.b < min_ep1.b)
 		{
-			min_ep1.z = ep1.z;
+			min_ep1.b = ep1.b;
 		}
 
-		if (ep1.w > 0.5f && ep1.w < min_ep1.w)
+		if (ep1.a > 0.5f && ep1.a < min_ep1.a)
 		{
-			min_ep1.w = ep1.w;
+			min_ep1.a = ep1.a;
 		}
 
 		float4 ep2 = float4(
-			(1.0f - ei2->ep.endpt0[i].x) / (ei2->ep.endpt1[i].x - ei2->ep.endpt0[i].x),
-			(1.0f - ei2->ep.endpt0[i].y) / (ei2->ep.endpt1[i].y - ei2->ep.endpt0[i].y),
-			(1.0f - ei2->ep.endpt0[i].z) / (ei2->ep.endpt1[i].z - ei2->ep.endpt0[i].z),
-			(1.0f - ei2->ep.endpt0[i].w) / (ei2->ep.endpt1[i].w - ei2->ep.endpt0[i].w));
+			(1.0f - ei2->ep.endpt0[i].r) / (ei2->ep.endpt1[i].r - ei2->ep.endpt0[i].r),
+			(1.0f - ei2->ep.endpt0[i].g) / (ei2->ep.endpt1[i].g - ei2->ep.endpt0[i].g),
+			(1.0f - ei2->ep.endpt0[i].b) / (ei2->ep.endpt1[i].b - ei2->ep.endpt0[i].b),
+			(1.0f - ei2->ep.endpt0[i].a) / (ei2->ep.endpt1[i].a - ei2->ep.endpt0[i].a));
 
-		if (ep2.x > 0.5f && ep2.x < min_ep2.x)
+		if (ep2.r > 0.5f && ep2.r < min_ep2.r)
 		{
-			min_ep2.x = ep2.x;
+			min_ep2.r = ep2.r;
 		}
 
-		if (ep2.y > 0.5f && ep2.y < min_ep2.y)
+		if (ep2.g > 0.5f && ep2.g < min_ep2.g)
 		{
-			min_ep2.y = ep2.y;
+			min_ep2.g = ep2.g;
 		}
 
-		if (ep2.z > 0.5f && ep2.z < min_ep2.z)
+		if (ep2.b > 0.5f && ep2.b < min_ep2.b)
 		{
-			min_ep2.z = ep2.z;
+			min_ep2.b = ep2.b;
 		}
 
-		if (ep2.w > 0.5f && ep2.w < min_ep2.w)
+		if (ep2.a > 0.5f && ep2.a < min_ep2.a)
 		{
-			min_ep2.w = ep2.w;
+			min_ep2.a = ep2.a;
 		}
 
 		#ifdef DEBUG_CAPTURE_NAN
@@ -594,26 +594,26 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	switch (separate_component)
 	{
 	case 0:
-		min_wt_cutoff2 = min_ep2.x;
-		min_ep1.x = 1e30f;
+		min_wt_cutoff2 = min_ep2.r;
+		min_ep1.r = 1e30f;
 		break;
 	case 1:
-		min_wt_cutoff2 = min_ep2.y;
-		min_ep1.y = 1e30f;
+		min_wt_cutoff2 = min_ep2.g;
+		min_ep1.g = 1e30f;
 		break;
 	case 2:
-		min_wt_cutoff2 = min_ep2.z;
-		min_ep1.z = 1e30f;
+		min_wt_cutoff2 = min_ep2.b;
+		min_ep1.b = 1e30f;
 		break;
 	case 3:
-		min_wt_cutoff2 = min_ep2.w;
-		min_ep1.w = 1e30f;
+		min_wt_cutoff2 = min_ep2.a;
+		min_ep1.a = 1e30f;
 		break;
 	default:
 		min_wt_cutoff2 = 1e30f;
 	}
 
-	min_wt_cutoff1 = MIN(MIN(min_ep1.x, min_ep1.y), MIN(min_ep1.z, min_ep1.w));
+	min_wt_cutoff1 = MIN(MIN(min_ep1.r, min_ep1.g), MIN(min_ep1.b, min_ep1.a));
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
@@ -904,53 +904,53 @@ static float prepare_error_weight_block(
 					if (any_mean_stdev_weight)
 					{
 						float4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
-						if (avg.x < 6e-5f)
-							avg.x = 6e-5f;
-						if (avg.y < 6e-5f)
-							avg.y = 6e-5f;
-						if (avg.z < 6e-5f)
-							avg.z = 6e-5f;
-						if (avg.w < 6e-5f)
-							avg.w = 6e-5f;
+						if (avg.r < 6e-5f)
+							avg.r = 6e-5f;
+						if (avg.g < 6e-5f)
+							avg.g = 6e-5f;
+						if (avg.b < 6e-5f)
+							avg.b = 6e-5f;
+						if (avg.a < 6e-5f)
+							avg.a = 6e-5f;
 
 						avg = avg * avg;
 
 						float4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
 						variance = variance * variance;
 
-						float favg = (avg.x + avg.y + avg.z) * (1.0f / 3.0f);
-						float fvar = (variance.x + variance.y + variance.z) * (1.0f / 3.0f);
+						float favg = (avg.r + avg.g + avg.b) * (1.0f / 3.0f);
+						float fvar = (variance.r + variance.g + variance.b) * (1.0f / 3.0f);
 
 						float mixing = ctx.config.v_rgba_mean_stdev_mix;
-						avg.x = favg * mixing + avg.x * (1.0f - mixing);
-						avg.y = favg * mixing + avg.y * (1.0f - mixing);
-						avg.z = favg * mixing + avg.z * (1.0f - mixing);
+						avg.r = favg * mixing + avg.r * (1.0f - mixing);
+						avg.g = favg * mixing + avg.g * (1.0f - mixing);
+						avg.b = favg * mixing + avg.b * (1.0f - mixing);
 
-						variance.x = fvar * mixing + variance.x * (1.0f - mixing);
-						variance.y = fvar * mixing + variance.y * (1.0f - mixing);
-						variance.z = fvar * mixing + variance.z * (1.0f - mixing);
+						variance.r = fvar * mixing + variance.r * (1.0f - mixing);
+						variance.g = fvar * mixing + variance.g * (1.0f - mixing);
+						variance.b = fvar * mixing + variance.b * (1.0f - mixing);
 
-						float4 stdev = float4(astc::sqrt(MAX(variance.x, 0.0f)),
-						                      astc::sqrt(MAX(variance.y, 0.0f)),
-						                      astc::sqrt(MAX(variance.z, 0.0f)),
-						                      astc::sqrt(MAX(variance.w, 0.0f)));
+						float4 stdev = float4(astc::sqrt(MAX(variance.r, 0.0f)),
+						                      astc::sqrt(MAX(variance.g, 0.0f)),
+						                      astc::sqrt(MAX(variance.b, 0.0f)),
+						                      astc::sqrt(MAX(variance.a, 0.0f)));
 
-						avg.x *= ctx.config.v_rgb_mean;
-						avg.y *= ctx.config.v_rgb_mean;
-						avg.z *= ctx.config.v_rgb_mean;
-						avg.w *= ctx.config.v_a_mean;
+						avg.r *= ctx.config.v_rgb_mean;
+						avg.g *= ctx.config.v_rgb_mean;
+						avg.b *= ctx.config.v_rgb_mean;
+						avg.a *= ctx.config.v_a_mean;
 
-						stdev.x *= ctx.config.v_rgb_stdev;
-						stdev.y *= ctx.config.v_rgb_stdev;
-						stdev.z *= ctx.config.v_rgb_stdev;
-						stdev.w *= ctx.config.v_a_stdev;
+						stdev.r *= ctx.config.v_rgb_stdev;
+						stdev.g *= ctx.config.v_rgb_stdev;
+						stdev.b *= ctx.config.v_rgb_stdev;
+						stdev.a *= ctx.config.v_a_stdev;
 
 						error_weight = error_weight + avg + stdev;
 
-						error_weight = float4(1.0f / error_weight.x,
-											  1.0f / error_weight.y,
-											  1.0f / error_weight.z,
-											  1.0f / error_weight.w);
+						error_weight = float4(1.0f / error_weight.r,
+											  1.0f / error_weight.g,
+											  1.0f / error_weight.b,
+											  1.0f / error_weight.a);
 					}
 
 					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
@@ -963,8 +963,8 @@ static float prepare_error_weight_block(
 						if (denom < 0.1f)
 							denom = 0.1f;
 						denom = 1.0f / denom;
-						error_weight.x *= 1.0f + xN * xN * denom;
-						error_weight.w *= 1.0f + yN * yN * denom;
+						error_weight.r *= 1.0f + xN * xN * denom;
+						error_weight.a *= 1.0f + yN * yN * denom;
 					}
 
 					if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
@@ -985,9 +985,9 @@ static float prepare_error_weight_block(
 						}
 
 						alpha_scale *= alpha_scale;
-						error_weight.x *= alpha_scale;
-						error_weight.y *= alpha_scale;
-						error_weight.z *= alpha_scale;
+						error_weight.r *= alpha_scale;
+						error_weight.g *= alpha_scale;
+						error_weight.b *= alpha_scale;
 					}
 
 					error_weight = error_weight * color_weights;
@@ -1001,10 +1001,10 @@ static float prepare_error_weight_block(
 					// which is equivalent to dividing by the derivative of the transfer
 					// function.
 
-					error_weight.x /= (derv[idx].x * derv[idx].x * 1e-10f);
-					error_weight.y /= (derv[idx].y * derv[idx].y * 1e-10f);
-					error_weight.z /= (derv[idx].z * derv[idx].z * 1e-10f);
-					error_weight.w /= (derv[idx].w * derv[idx].w * 1e-10f);
+					error_weight.r /= (derv[idx].r * derv[idx].r * 1e-10f);
+					error_weight.g /= (derv[idx].g * derv[idx].g * 1e-10f);
+					error_weight.b /= (derv[idx].b * derv[idx].b * 1e-10f);
+					error_weight.a /= (derv[idx].a * derv[idx].a * 1e-10f);
 
 					ewb->error_weights[idx] = error_weight;
 					if (dot(error_weight, float4(1.0f, 1.0f, 1.0f, 1.0f)) < 1e-10f)
@@ -1023,21 +1023,22 @@ static float prepare_error_weight_block(
 	{
 		error_weight_sum = error_weight_sum + ewb->error_weights[i];
 
-		ewb->texel_weight_r[i] = ewb->error_weights[i].x;
-		ewb->texel_weight_g[i] = ewb->error_weights[i].y;
-		ewb->texel_weight_b[i] = ewb->error_weights[i].z;
-		ewb->texel_weight_a[i] = ewb->error_weights[i].w;
+		ewb->texel_weight_r[i] = ewb->error_weights[i].r;
+		ewb->texel_weight_g[i] = ewb->error_weights[i].g;
+		ewb->texel_weight_b[i] = ewb->error_weights[i].b;
+		ewb->texel_weight_a[i] = ewb->error_weights[i].a;
 
-		ewb->texel_weight_rg[i] = (ewb->error_weights[i].x + ewb->error_weights[i].y) * 0.5f;
-		ewb->texel_weight_rb[i] = (ewb->error_weights[i].x + ewb->error_weights[i].z) * 0.5f;
-		ewb->texel_weight_gb[i] = (ewb->error_weights[i].y + ewb->error_weights[i].z) * 0.5f;
-		ewb->texel_weight_ra[i] = (ewb->error_weights[i].x + ewb->error_weights[i].w) * 0.5f;
+		ewb->texel_weight_rg[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g) * 0.5f;
+		ewb->texel_weight_rb[i] = (ewb->error_weights[i].r + ewb->error_weights[i].b) * 0.5f;
+		ewb->texel_weight_gb[i] = (ewb->error_weights[i].g + ewb->error_weights[i].b) * 0.5f;
+		ewb->texel_weight_ra[i] = (ewb->error_weights[i].r + ewb->error_weights[i].a) * 0.5f;
 
-		ewb->texel_weight_gba[i] = (ewb->error_weights[i].y + ewb->error_weights[i].z + ewb->error_weights[i].w) * 0.333333f;
-		ewb->texel_weight_rba[i] = (ewb->error_weights[i].x + ewb->error_weights[i].z + ewb->error_weights[i].w) * 0.333333f;
-		ewb->texel_weight_rga[i] = (ewb->error_weights[i].x + ewb->error_weights[i].y + ewb->error_weights[i].w) * 0.333333f;
-		ewb->texel_weight_rgb[i] = (ewb->error_weights[i].x + ewb->error_weights[i].y + ewb->error_weights[i].z) * 0.333333f;
-		ewb->texel_weight[i] = (ewb->error_weights[i].x + ewb->error_weights[i].y + ewb->error_weights[i].z + ewb->error_weights[i].w) * 0.25f;
+		ewb->texel_weight_gba[i] = (ewb->error_weights[i].g + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.333333f;
+		ewb->texel_weight_rba[i] = (ewb->error_weights[i].r + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.333333f;
+		ewb->texel_weight_rga[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].a) * 0.333333f;
+		ewb->texel_weight_rgb[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].b) * 0.333333f;
+
+		ewb->texel_weight[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.25f;
 	}
 
 	return dot(error_weight_sum, float4(1.0f, 1.0f, 1.0f, 1.0f));
@@ -1162,10 +1163,10 @@ void compress_block(
 			scb.block_mode = -1;
 			scb.partition_count = 0;
 			float4 orig_color = blk->origin_texel;
-			scb.constant_color[0] = float_to_sf16(orig_color.x, SF_NEARESTEVEN);
-			scb.constant_color[1] = float_to_sf16(orig_color.y, SF_NEARESTEVEN);
-			scb.constant_color[2] = float_to_sf16(orig_color.z, SF_NEARESTEVEN);
-			scb.constant_color[3] = float_to_sf16(orig_color.w, SF_NEARESTEVEN);
+			scb.constant_color[0] = float_to_sf16(orig_color.r, SF_NEARESTEVEN);
+			scb.constant_color[1] = float_to_sf16(orig_color.g, SF_NEARESTEVEN);
+			scb.constant_color[2] = float_to_sf16(orig_color.b, SF_NEARESTEVEN);
+			scb.constant_color[3] = float_to_sf16(orig_color.a, SF_NEARESTEVEN);
 		}
 		else
 		{
@@ -1173,10 +1174,10 @@ void compress_block(
 			scb.block_mode = -2;
 			scb.partition_count = 0;
 			float4 orig_color = blk->origin_texel;
-			float red   = orig_color.x;
-			float green = orig_color.y;
-			float blue  = orig_color.z;
-			float alpha = orig_color.w;
+			float red   = orig_color.r;
+			float green = orig_color.g;
+			float blue  = orig_color.b;
+			float alpha = orig_color.a;
 
 			if (red < 0)
 				red = 0;

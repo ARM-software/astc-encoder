@@ -58,13 +58,13 @@ static void quantize_rgb(
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float r0 = astc::clamp255f(color0.x * scale);
-	float g0 = astc::clamp255f(color0.y * scale);
-	float b0 = astc::clamp255f(color0.z * scale);
+	float r0 = astc::clamp255f(color0.r * scale);
+	float g0 = astc::clamp255f(color0.g * scale);
+	float b0 = astc::clamp255f(color0.b * scale);
 
-	float r1 = astc::clamp255f(color1.x * scale);
-	float g1 = astc::clamp255f(color1.y * scale);
-	float b1 = astc::clamp255f(color1.z * scale);
+	float r1 = astc::clamp255f(color1.r * scale);
+	float g1 = astc::clamp255f(color1.g * scale);
+	float b1 = astc::clamp255f(color1.b * scale);
 
 	int ri0, gi0, bi0, ri1, gi1, bi1;
 	int ri0b, gi0b, bi0b, ri1b, gi1b, bi1b;
@@ -107,11 +107,11 @@ static void quantize_rgba(
 	int output[8],
 	int quantization_level
 ) {
-	color0.w *= (1.0f / 257.0f);
-	color1.w *= (1.0f / 257.0f);
+	color0.a *= (1.0f / 257.0f);
+	color1.a *= (1.0f / 257.0f);
 
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 	int ai0 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a0)];
 	int ai1 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a1)];
 
@@ -128,21 +128,21 @@ static int try_quantize_rgb_blue_contract(
 	int output[6],
 	int quantization_level
 ) {
-	color0.x *= (1.0f / 257.0f);
-	color0.y *= (1.0f / 257.0f);
-	color0.z *= (1.0f / 257.0f);
+	color0.r *= (1.0f / 257.0f);
+	color0.g *= (1.0f / 257.0f);
+	color0.b *= (1.0f / 257.0f);
 
-	color1.x *= (1.0f / 257.0f);
-	color1.y *= (1.0f / 257.0f);
-	color1.z *= (1.0f / 257.0f);
+	color1.r *= (1.0f / 257.0f);
+	color1.g *= (1.0f / 257.0f);
+	color1.b *= (1.0f / 257.0f);
 
-	float r0 = color0.x;
-	float g0 = color0.y;
-	float b0 = color0.z;
+	float r0 = color0.r;
+	float g0 = color0.g;
+	float b0 = color0.b;
 
-	float r1 = color1.x;
-	float g1 = color1.y;
-	float b1 = color1.z;
+	float r1 = color1.r;
+	float g1 = color1.g;
+	float b1 = color1.b;
 
 	// inverse blue-contraction. This can produce an overflow;
 	// just bail out immediately if this is the case.
@@ -198,11 +198,11 @@ static int try_quantize_rgba_blue_contract(
 	int output[8],
 	int quantization_level
 ) {
-	color0.w *= (1.0f / 257.0f);
-	color1.w *= (1.0f / 257.0f);
+	color0.a *= (1.0f / 257.0f);
+	color1.a *= (1.0f / 257.0f);
 
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 
 	output[7] = color_quantization_tables[quantization_level][astc::flt2int_rtn(a0)];
 	output[6] = color_quantization_tables[quantization_level][astc::flt2int_rtn(a1)];
@@ -224,21 +224,21 @@ static int try_quantize_rgb_delta(
 	int output[6],
 	int quantization_level
 ) {
-	color0.x *= (1.0f / 257.0f);
-	color0.y *= (1.0f / 257.0f);
-	color0.z *= (1.0f / 257.0f);
+	color0.r *= (1.0f / 257.0f);
+	color0.g *= (1.0f / 257.0f);
+	color0.b *= (1.0f / 257.0f);
 
-	color1.x *= (1.0f / 257.0f);
-	color1.y *= (1.0f / 257.0f);
-	color1.z *= (1.0f / 257.0f);
+	color1.r *= (1.0f / 257.0f);
+	color1.g *= (1.0f / 257.0f);
+	color1.b *= (1.0f / 257.0f);
 
-	float r0 = astc::clamp255f(color0.x);
-	float g0 = astc::clamp255f(color0.y);
-	float b0 = astc::clamp255f(color0.z);
+	float r0 = astc::clamp255f(color0.r);
+	float g0 = astc::clamp255f(color0.g);
+	float b0 = astc::clamp255f(color0.b);
 
-	float r1 = astc::clamp255f(color1.x);
-	float g1 = astc::clamp255f(color1.y);
-	float b1 = astc::clamp255f(color1.z);
+	float r1 = astc::clamp255f(color1.r);
+	float g1 = astc::clamp255f(color1.g);
+	float b1 = astc::clamp255f(color1.b);
 
 	// transform r0 to unorm9
 	int r0a = astc::flt2int_rtn(r0);
@@ -361,22 +361,22 @@ static int try_quantize_rgb_delta_blue_contract(
 	int output[6],
 	int quantization_level
 ) {
-	color0.x *= (1.0f / 257.0f);
-	color0.y *= (1.0f / 257.0f);
-	color0.z *= (1.0f / 257.0f);
+	color0.r *= (1.0f / 257.0f);
+	color0.g *= (1.0f / 257.0f);
+	color0.b *= (1.0f / 257.0f);
 
-	color1.x *= (1.0f / 257.0f);
-	color1.y *= (1.0f / 257.0f);
-	color1.z *= (1.0f / 257.0f);
+	color1.r *= (1.0f / 257.0f);
+	color1.g *= (1.0f / 257.0f);
+	color1.b *= (1.0f / 257.0f);
 
 	// switch around endpoint colors already at start.
-	float r0 = color1.x;
-	float g0 = color1.y;
-	float b0 = color1.z;
+	float r0 = color1.r;
+	float g0 = color1.g;
+	float b0 = color1.b;
 
-	float r1 = color0.x;
-	float g1 = color0.y;
-	float b1 = color0.z;
+	float r1 = color0.r;
+	float g1 = color0.g;
+	float b1 = color0.b;
 
 	// inverse blue-contraction. This step can perform an overflow, in which case
 	// we will bail out immediately.
@@ -514,13 +514,13 @@ static int try_quantize_alpha_delta(
 	int output[8],
 	int quantization_level
 ) {
-	color0.w *= (1.0f / 257.0f);
-	color1.w *= (1.0f / 257.0f);
+	color0.a *= (1.0f / 257.0f);
+	color1.a *= (1.0f / 257.0f);
 
 	// the calculation for alpha-delta is exactly the same as for RGB-delta; see
 	// the RGB-delta function for comments.
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 
 	int a0a = astc::flt2int_rtn(a0);
 	a0a <<= 1;
@@ -564,10 +564,10 @@ int try_quantize_luminance_alpha_delta(
 	int output[8],
 	int quantization_level
 ) {
-	float l0 = astc::clamp255f((color0.x + color0.y + color0.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float l1 = astc::clamp255f((color1.x + color1.y + color1.z) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float a0 = astc::clamp255f(color0.w * (1.0f / 257.0f));
-	float a1 = astc::clamp255f(color1.w * (1.0f / 257.0f));
+	float l0 = astc::clamp255f((color0.r + color0.g + color0.b) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
+	float l1 = astc::clamp255f((color1.r + color1.g + color1.b) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
+	float a0 = astc::clamp255f(color0.a * (1.0f / 257.0f));
+	float a1 = astc::clamp255f(color1.a * (1.0f / 257.0f));
 
 	int l0a = astc::flt2int_rtn(l0);
 	int a0a = astc::flt2int_rtn(a0);
@@ -679,13 +679,13 @@ static void quantize_rgbs_new(
 	int output[4],
 	int quantization_level
 ) {
-	rgbs_color.x *= (1.0f / 257.0f);
-	rgbs_color.y *= (1.0f / 257.0f);
-	rgbs_color.z *= (1.0f / 257.0f);
+	rgbs_color.r *= (1.0f / 257.0f);
+	rgbs_color.g *= (1.0f / 257.0f);
+	rgbs_color.b *= (1.0f / 257.0f);
 
-	float r = astc::clamp255f(rgbs_color.x);
-	float g = astc::clamp255f(rgbs_color.y);
-	float b = astc::clamp255f(rgbs_color.z);
+	float r = astc::clamp255f(rgbs_color.r);
+	float g = astc::clamp255f(rgbs_color.g);
+	float b = astc::clamp255f(rgbs_color.b);
 
 	int ri = color_quantization_tables[quantization_level][astc::flt2int_rtn(r)];
 	int gi = color_quantization_tables[quantization_level][astc::flt2int_rtn(g)];
@@ -695,10 +695,10 @@ static void quantize_rgbs_new(
 	int gu = color_unquantization_tables[quantization_level][gi];
 	int bu = color_unquantization_tables[quantization_level][bi];
 
-	float oldcolorsum = rgbs_color.x + rgbs_color.y + rgbs_color.z;
+	float oldcolorsum = rgbs_color.r + rgbs_color.g + rgbs_color.b;
 	float newcolorsum = (float)(ru + gu + bu);
 
-	float scale = astc::clamp1f(rgbs_color.w * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
+	float scale = astc::clamp1f(rgbs_color.a * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
 	int scale_idx = astc::flt2int_rtn(scale * 256.0f);
 	scale_idx = astc::clampi(scale_idx, 0, 255);
 
@@ -715,11 +715,11 @@ static void quantize_rgbs_alpha_new(
 	int output[6],
 	int quantization_level
 ) {
-	color0.w *= (1.0f / 257.0f);
-	color1.w *= (1.0f / 257.0f);
+	color0.a *= (1.0f / 257.0f);
+	color1.a *= (1.0f / 257.0f);
 
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 
 	int ai0 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a0)];
 	int ai1 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a1)];
@@ -736,16 +736,16 @@ static void quantize_luminance(
 	int output[2],
 	int quantization_level
 ) {
-	color0.x *= (1.0f / 257.0f);
-	color0.y *= (1.0f / 257.0f);
-	color0.z *= (1.0f / 257.0f);
+	color0.r *= (1.0f / 257.0f);
+	color0.g *= (1.0f / 257.0f);
+	color0.b *= (1.0f / 257.0f);
 
-	color1.x *= (1.0f / 257.0f);
-	color1.y *= (1.0f / 257.0f);
-	color1.z *= (1.0f / 257.0f);
+	color1.r *= (1.0f / 257.0f);
+	color1.g *= (1.0f / 257.0f);
+	color1.b *= (1.0f / 257.0f);
 
-	float lum0 = astc::clamp255f((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
+	float lum0 = astc::clamp255f((color0.r + color0.g + color0.b) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((color1.r + color1.g + color1.b) * (1.0f / 3.0f));
 
 	if (lum0 > lum1)
 	{
@@ -767,10 +767,10 @@ static void quantize_luminance_alpha(
 	color0 = color0 * (1.0f / 257.0f);
 	color1 = color1 * (1.0f / 257.0f);
 
-	float lum0 = astc::clamp255f((color0.x + color0.y + color0.z) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((color1.x + color1.y + color1.z) * (1.0f / 3.0f));
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float lum0 = astc::clamp255f((color0.r + color0.g + color0.b) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((color1.r + color1.g + color1.b) * (1.0f / 3.0f));
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 
 	// if the endpoints are *really* close, then pull them apart slightly;
 	// this affords for >8 bits precision for normal maps.
@@ -891,35 +891,35 @@ static void quantize_hdr_rgbo3(
 	int output[4],
 	int quantization_level
 ) {
-	color.x += color.w;
-	color.y += color.w;
-	color.z += color.w;
+	color.r += color.a;
+	color.g += color.a;
+	color.b += color.a;
 
-	if (!(color.x > 0.0f))
-		color.x = 0.0f;
-	else if (color.x > 65535.0f)
-		color.x = 65535.0f;
+	if (!(color.r > 0.0f))
+		color.r = 0.0f;
+	else if (color.r > 65535.0f)
+		color.r = 65535.0f;
 
-	if (!(color.y > 0.0f))
-		color.y = 0.0f;
-	else if (color.y > 65535.0f)
-		color.y = 65535.0f;
+	if (!(color.g > 0.0f))
+		color.g = 0.0f;
+	else if (color.g > 65535.0f)
+		color.g = 65535.0f;
 
-	if (!(color.z > 0.0f))
-		color.z = 0.0f;
-	else if (color.z > 65535.0f)
-		color.z = 65535.0f;
+	if (!(color.b > 0.0f))
+		color.b = 0.0f;
+	else if (color.b > 65535.0f)
+		color.b = 65535.0f;
 
-	if (!(color.w > 0.0f))
-		color.w = 0.0f;
-	else if (color.w > 65535.0f)
-		color.w = 65535.0f;
+	if (!(color.a > 0.0f))
+		color.a = 0.0f;
+	else if (color.a > 65535.0f)
+		color.a = 65535.0f;
 
 	float4 color_bak = color;
 	int majcomp;
-	if (color.x > color.y && color.x > color.z)
+	if (color.r > color.g && color.r > color.b)
 		majcomp = 0;			// red is largest component
-	else if (color.y > color.z)
+	else if (color.g > color.b)
 		majcomp = 1;			// green is largest component
 	else
 		majcomp = 2;			// blue is largest component
@@ -928,10 +928,10 @@ static void quantize_hdr_rgbo3(
 	switch (majcomp)
 	{
 	case 1:
-		color = float4(color.y, color.x, color.z, color.w);
+		color = float4(color.g, color.r, color.b, color.a);
 		break;
 	case 2:
-		color = float4(color.z, color.y, color.x, color.w);
+		color = float4(color.b, color.g, color.r, color.a);
 		break;
 	default:
 		break;
@@ -969,10 +969,10 @@ static void quantize_hdr_rgbo3(
 		1.0f / 256.0f,
 	};
 
-	float r_base = color.x;
-	float g_base = color.x - color.y;
-	float b_base = color.x - color.z;
-	float s_base = color.w;
+	float r_base = color.r;
+	float g_base = color.r - color.g;
+	float b_base = color.r - color.b;
+	float s_base = color.a;
 
 	for (int mode = 0; mode < 5; mode++)
 	{
@@ -1005,8 +1005,8 @@ static void quantize_hdr_rgbo3(
 		float r_fval = r_intval * mode_rscale;
 
 		// next, recompute G and B, then quantize and unquantize them.
-		float g_fval = r_fval - color.y;
-		float b_fval = r_fval - color.z;
+		float g_fval = r_fval - color.g;
+		float b_fval = r_fval - color.b;
 		if (g_fval < 0.0f)
 		{
 			g_fval = 0.0f;
@@ -1130,7 +1130,7 @@ static void quantize_hdr_rgbo3(
 
 		// If the error is positive, then the R,G,B errors combined have raised the color
 		// value overall; as such, the scale value needs to be increased.
-		float rgb_errorsum = (r_fval - color.x) + (r_fval - g_fval - color.y) + (r_fval - b_fval - color.z);
+		float rgb_errorsum = (r_fval - color.r) + (r_fval - g_fval - color.g) + (r_fval - b_fval - color.b);
 
 		float s_fval = s_base + rgb_errorsum * (1.0f / 3.0f);
 		if (s_fval < 0.0f)
@@ -1206,10 +1206,10 @@ static void quantize_hdr_rgbo3(
 	// encode using mode #5.
 	float vals[4];
 	int ivals[4];
-	vals[0] = color_bak.x;
-	vals[1] = color_bak.y;
-	vals[2] = color_bak.z;
-	vals[3] = color_bak.w;
+	vals[0] = color_bak.r;
+	vals[1] = color_bak.g;
+	vals[2] = color_bak.b;
+	vals[3] = color_bak.a;
 
 	float cvals[3];
 
@@ -1264,69 +1264,69 @@ static void quantize_hdr_rgb3(
 	int output[6],
 	int quantization_level
 ) {
-	if (!(color0.x > 0.0f))
+	if (!(color0.r > 0.0f))
 	{
-		color0.x = 0.0f;
+		color0.r = 0.0f;
 	}
-	else if (color0.x > 65535.0f)
+	else if (color0.r > 65535.0f)
 	{
-		color0.x = 65535.0f;
-	}
-
-	if (!(color0.y > 0.0f))
-	{
-		color0.y = 0.0f;
-	}
-	else if (color0.y > 65535.0f)
-	{
-		color0.y = 65535.0f;
+		color0.r = 65535.0f;
 	}
 
-	if (!(color0.z > 0.0f))
+	if (!(color0.g > 0.0f))
 	{
-		color0.z = 0.0f;
+		color0.g = 0.0f;
 	}
-	else if (color0.z > 65535.0f)
+	else if (color0.g > 65535.0f)
 	{
-		color0.z = 65535.0f;
-	}
-
-	if (!(color1.x > 0.0f))
-	{
-		color1.x = 0.0f;
-	}
-	else if (color1.x > 65535.0f)
-	{
-		color1.x = 65535.0f;
+		color0.g = 65535.0f;
 	}
 
-	if (!(color1.y > 0.0f))
+	if (!(color0.b > 0.0f))
 	{
-		color1.y = 0.0f;
+		color0.b = 0.0f;
 	}
-	else if (color1.y > 65535.0f)
+	else if (color0.b > 65535.0f)
 	{
-		color1.y = 65535.0f;
+		color0.b = 65535.0f;
 	}
 
-	if (!(color1.z > 0.0f))
+	if (!(color1.r > 0.0f))
 	{
-		color1.z = 0.0f;
+		color1.r = 0.0f;
 	}
-	else if (color1.z > 65535.0f)
+	else if (color1.r > 65535.0f)
 	{
-		color1.z = 65535.0f;
+		color1.r = 65535.0f;
+	}
+
+	if (!(color1.g > 0.0f))
+	{
+		color1.g = 0.0f;
+	}
+	else if (color1.g > 65535.0f)
+	{
+		color1.g = 65535.0f;
+	}
+
+	if (!(color1.b > 0.0f))
+	{
+		color1.b = 0.0f;
+	}
+	else if (color1.b > 65535.0f)
+	{
+		color1.b = 65535.0f;
 	}
 
 	float4 color0_bak = color0;
 	float4 color1_bak = color1;
 
 	int majcomp;
-	if (color1.x > color1.y && color1.x > color1.z)
+	if (color1.r > color1.g && color1.r > color1.b)
 	{
 		majcomp = 0;			// red is largest
 	}
-	else if (color1.y > color1.z)
+	else if (color1.g > color1.b)
 	{
 		majcomp = 1;			// green is largest
 	}
@@ -1339,18 +1339,18 @@ static void quantize_hdr_rgb3(
 	switch (majcomp)
 	{
 	case 1:					// red-green swap
-		color0 = float4(color0.y, color0.x, color0.z, color0.w);
-		color1 = float4(color1.y, color1.x, color1.z, color1.w);
+		color0 = float4(color0.g, color0.r, color0.b, color0.a);
+		color1 = float4(color1.g, color1.r, color1.b, color1.a);
 		break;
 	case 2:					// red-blue swap
-		color0 = float4(color0.z, color0.y, color0.x, color0.w);
-		color1 = float4(color1.z, color1.y, color1.x, color1.w);
+		color0 = float4(color0.b, color0.g, color0.r, color0.a);
+		color1 = float4(color1.b, color1.g, color1.r, color1.a);
 		break;
 	default:
 		break;
 	}
 
-	float a_base = color1.x;
+	float a_base = color1.r;
 	if (a_base < 0.0f)
 	{
 		a_base = 0.0f;
@@ -1360,11 +1360,11 @@ static void quantize_hdr_rgb3(
 		a_base = 65535.0f;
 	}
 
-	float b0_base = a_base - color1.y;
-	float b1_base = a_base - color1.z;
-	float c_base = a_base - color0.x;
-	float d0_base = a_base - b0_base - c_base - color0.y;
-	float d1_base = a_base - b1_base - c_base - color0.z;
+	float b0_base = a_base - color1.g;
+	float b1_base = a_base - color1.b;
+	float c_base = a_base - color0.r;
+	float d0_base = a_base - b0_base - c_base - color0.g;
+	float d1_base = a_base - b1_base - c_base - color0.b;
 
 	// number of bits in the various fields in the various modes
 	static const int mode_bits[8][4] = {
@@ -1446,7 +1446,7 @@ static void quantize_hdr_rgb3(
 		float a_fval = a_intval * mode_rscale;
 
 		// next, recompute C, then quantize and unquantize it
-		float c_fval = a_fval - color0.x;
+		float c_fval = a_fval - color0.r;
 		if (c_fval < 0.0f)
 			c_fval = 0.0f;
 		else if (c_fval > 65535.0f)
@@ -1471,8 +1471,8 @@ static void quantize_hdr_rgb3(
 		c_fval = c_intval * mode_rscale;
 
 		// next, recompute B0 and B1, then quantize and unquantize them
-		float b0_fval = a_fval - color1.y;
-		float b1_fval = a_fval - color1.z;
+		float b0_fval = a_fval - color1.g;
+		float b1_fval = a_fval - color1.b;
 		if (b0_fval < 0.0f)
 		{
 			b0_fval = 0.0f;
@@ -1559,8 +1559,8 @@ static void quantize_hdr_rgb3(
 		b1_fval = b1_intval * mode_rscale;
 
 		// finally, recompute D0 and D1, then quantize and unquantize them
-		float d0_fval = a_fval - b0_fval - c_fval - color0.y;
-		float d1_fval = a_fval - b1_fval - c_fval - color0.z;
+		float d0_fval = a_fval - b0_fval - c_fval - color0.g;
+		float d1_fval = a_fval - b1_fval - c_fval - color0.b;
 
 		if (d0_fval < -65535.0f)
 		{
@@ -1679,12 +1679,12 @@ static void quantize_hdr_rgb3(
 	// but usable. This representation is used if the light color is more than 4x the
 	// color value of the dark color.
 	float vals[6];
-	vals[0] = color0_bak.x;
-	vals[1] = color1_bak.x;
-	vals[2] = color0_bak.y;
-	vals[3] = color1_bak.y;
-	vals[4] = color0_bak.z;
-	vals[5] = color1_bak.z;
+	vals[0] = color0_bak.r;
+	vals[1] = color1_bak.r;
+	vals[2] = color0_bak.g;
+	vals[3] = color1_bak.g;
+	vals[4] = color0_bak.b;
+	vals[5] = color1_bak.b;
 
 	for (int i = 0; i < 6; i++)
 	{
@@ -1720,13 +1720,13 @@ static void quantize_hdr_rgb_ldr_alpha3(
 	int output[8],
 	int quantization_level
 ) {
-	color0.w *= (1.0f / 257.0f);
-	color1.w *= (1.0f / 257.0f);
+	color0.a *= (1.0f / 257.0f);
+	color1.a *= (1.0f / 257.0f);
 
 	quantize_hdr_rgb3(color0, color1, output, quantization_level);
 
-	float a0 = astc::clamp255f(color0.w);
-	float a1 = astc::clamp255f(color1.w);
+	float a0 = astc::clamp255f(color0.a);
+	float a1 = astc::clamp255f(color1.a);
 	int ai0 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a0)];
 	int ai1 = color_quantization_tables[quantization_level][astc::flt2int_rtn(a1)];
 
@@ -1741,8 +1741,8 @@ static void quantize_hdr_luminance_large_range3(
 	int quantization_level
 ) {
 
-	float lum1 = (color1.x + color1.y + color1.z) * (1.0f / 3.0f);
-	float lum0 = (color0.x + color0.y + color0.z) * (1.0f / 3.0f);
+	float lum1 = (color1.r + color1.g + color1.b) * (1.0f / 3.0f);
+	float lum0 = (color0.r + color0.g + color0.b) * (1.0f / 3.0f);
 
 	if (lum1 < lum0)
 	{
@@ -1835,8 +1835,8 @@ static int try_quantize_hdr_luminance_small_range3(
 	int output[2],
 	int quantization_level
 ) {
-	float lum1 = (color1.x + color1.y + color1.z) * (1.0f / 3.0f);
-	float lum0 = (color0.x + color0.y + color0.z) * (1.0f / 3.0f);
+	float lum1 = (color1.r + color1.g + color1.b) * (1.0f / 3.0f);
+	float lum0 = (color0.r + color0.g + color0.b) * (1.0f / 3.0f);
 
 	if (lum1 < lum0)
 	{
@@ -2054,7 +2054,7 @@ static void quantize_hdr_rgb_alpha3(
 	int quantization_level
 ) {
 	quantize_hdr_rgb3(color0, color1, output, quantization_level);
-	quantize_hdr_alpha3(color0.w, color1.w, output + 6, quantization_level);
+	quantize_hdr_alpha3(color0.a, color1.a, output + 6, quantization_level);
 }
 
 /*
@@ -2072,14 +2072,15 @@ int pack_color_endpoints(
 ) {
 	assert(quantization_level >= 0 && quantization_level < 21);
 	// we do not support negative colors.
-	color0.x = MAX(color0.x, 0.0f);
-	color0.y = MAX(color0.y, 0.0f);
-	color0.z = MAX(color0.z, 0.0f);
-	color0.w = MAX(color0.w, 0.0f);
-	color1.x = MAX(color1.x, 0.0f);
-	color1.y = MAX(color1.y, 0.0f);
-	color1.z = MAX(color1.z, 0.0f);
-	color1.w = MAX(color1.w, 0.0f);
+	color0.r = MAX(color0.r, 0.0f);
+	color0.g = MAX(color0.g, 0.0f);
+	color0.b = MAX(color0.b, 0.0f);
+	color0.a = MAX(color0.a, 0.0f);
+
+	color1.r = MAX(color1.r, 0.0f);
+	color1.g = MAX(color1.g, 0.0f);
+	color1.b = MAX(color1.b, 0.0f);
+	color1.a = MAX(color1.a, 0.0f);
 
 	int retval = 0;
 

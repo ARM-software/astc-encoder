@@ -56,16 +56,16 @@ static uint4 lerp_color_int(
 
 	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
-		color0 = uint4(color0.x >> 8, color0.y >> 8, color0.z >> 8, color0.w >> 8);
-		color1 = uint4(color1.x >> 8, color1.y >> 8, color1.z >> 8, color1.w >> 8);
+		color0 = uint4(color0.r >> 8, color0.g >> 8, color0.b >> 8, color0.a >> 8);
+		color1 = uint4(color1.r >> 8, color1.g >> 8, color1.b >> 8, color1.a >> 8);
 	}
 
 	uint4 color = (color0 * weight0) + (color1 * weight1) + uint4(32, 32, 32, 32);
-	color = uint4(color.x >> 6, color.y >> 6, color.z >> 6, color.w >> 6);
+	color = uint4(color.r >> 6, color.g >> 6, color.b >> 6, color.a >> 6);
 
 	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
-		color = color * 257;
+		color = color * 257u;
 	}
 
 	return color;
@@ -288,10 +288,10 @@ void decompress_symbolic_block(
 		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
 		blk->nan_texel[i] = nan_endpoint[partition];
 
-		blk->data_r[i] = (float)color.x;
-		blk->data_g[i] = (float)color.y;
-		blk->data_b[i] = (float)color.z;
-		blk->data_a[i] = (float)color.w;
+		blk->data_r[i] = (float)color.r;
+		blk->data_g[i] = (float)color.g;
+		blk->data_b[i] = (float)color.b;
+		blk->data_a[i] = (float)color.a;
 	}
 
 	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
@@ -403,10 +403,10 @@ float compute_symbolic_block_difference(
 		                             plane2_weights[i],
 		                             is_dual_plane ? plane2_color_component : -1);
 
-		float4 newColor = float4((float)color.x,
-		                         (float)color.y,
-		                         (float)color.z,
-		                         (float)color.w);
+		float4 newColor = float4((float)color.r,
+		                         (float)color.g,
+		                         (float)color.b,
+		                         (float)color.a);
 
 		float4 oldColor = float4(pb->data_r[i],
 		                         pb->data_g[i],
@@ -415,17 +415,17 @@ float compute_symbolic_block_difference(
 
 		float4 error = oldColor - newColor;
 
-		error.x = MIN(fabsf(error.x), 1e15f);
-		error.y = MIN(fabsf(error.y), 1e15f);
-		error.z = MIN(fabsf(error.z), 1e15f);
-		error.w = MIN(fabsf(error.w), 1e15f);
+		error.r = MIN(fabsf(error.r), 1e15f);
+		error.g = MIN(fabsf(error.g), 1e15f);
+		error.b = MIN(fabsf(error.b), 1e15f);
+		error.a = MIN(fabsf(error.a), 1e15f);
 
 		error = error * error;
 
-		float4 errorWeight = float4(ewb->error_weights[i].x,
-		                            ewb->error_weights[i].y,
-		                            ewb->error_weights[i].z,
-		                            ewb->error_weights[i].w);
+		float4 errorWeight = float4(ewb->error_weights[i].r,
+		                            ewb->error_weights[i].g,
+		                            ewb->error_weights[i].b,
+		                            ewb->error_weights[i].a);
 
 		float metric = dot(error, errorWeight);
 		if (metric >= 1e30f) metric = 1e30f;

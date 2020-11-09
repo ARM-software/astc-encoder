@@ -61,29 +61,29 @@ void merge_endpoints(
 	case 0:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].x = ep2->endpt0[i].x;
-			res->endpt1[i].x = ep2->endpt1[i].x;
+			res->endpt0[i].r = ep2->endpt0[i].r;
+			res->endpt1[i].r = ep2->endpt1[i].r;
 		}
 		break;
 	case 1:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].y = ep2->endpt0[i].y;
-			res->endpt1[i].y = ep2->endpt1[i].y;
+			res->endpt0[i].g = ep2->endpt0[i].g;
+			res->endpt1[i].g = ep2->endpt1[i].g;
 		}
 		break;
 	case 2:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].z = ep2->endpt0[i].z;
-			res->endpt1[i].z = ep2->endpt1[i].z;
+			res->endpt0[i].b = ep2->endpt0[i].b;
+			res->endpt1[i].b = ep2->endpt1[i].b;
 		}
 		break;
 	case 3:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].w = ep2->endpt0[i].w;
-			res->endpt1[i].w = ep2->endpt1[i].w;
+			res->endpt0[i].a = ep2->endpt0[i].a;
+			res->endpt1[i].a = ep2->endpt1[i].a;
 		}
 		break;
 	}
@@ -130,13 +130,13 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		inverse_color_scalefactors[i].x = 1.0f / MAX(color_scalefactors[i].x, 1e-7f);
-		inverse_color_scalefactors[i].y = 1.0f / MAX(color_scalefactors[i].y, 1e-7f);
-		inverse_color_scalefactors[i].z = 1.0f / MAX(color_scalefactors[i].z, 1e-7f);
-		inverse_color_scalefactors[i].w = 1.0f / MAX(color_scalefactors[i].w, 1e-7f);
+		inverse_color_scalefactors[i].r = 1.0f / MAX(color_scalefactors[i].r, 1e-7f);
+		inverse_color_scalefactors[i].g = 1.0f / MAX(color_scalefactors[i].g, 1e-7f);
+		inverse_color_scalefactors[i].b = 1.0f / MAX(color_scalefactors[i].b, 1e-7f);
+		inverse_color_scalefactors[i].a = 1.0f / MAX(color_scalefactors[i].a, 1e-7f);
 
-		float3 csf = float3(color_scalefactors[i].x, color_scalefactors[i].y, color_scalefactors[i].z);
-		float3 icsf = float3(inverse_color_scalefactors[i].x, inverse_color_scalefactors[i].y, inverse_color_scalefactors[i].z);
+		float3 csf = float3(color_scalefactors[i].r, color_scalefactors[i].g, color_scalefactors[i].b);
+		float3 icsf = float3(inverse_color_scalefactors[i].r, inverse_color_scalefactors[i].g, inverse_color_scalefactors[i].b);
 
 		uncorr_rgb_lines[i].a = averages[i];
 		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)
@@ -214,11 +214,14 @@ void compute_encoding_choice_errors(
 		float default_alpha = pb->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
 
 		float omalpha = alpha - default_alpha;
-		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].w;
+		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].a;
+
 		float red = pb->data_r[i];
 		float green = pb->data_g[i];
 		float blue = pb->data_b[i];
-		rgb_drop_error[partition] += red * red * ewb->error_weights[i].x + green * green * ewb->error_weights[i].y + blue * blue * ewb->error_weights[i].z;
+		rgb_drop_error[partition] += red * red * ewb->error_weights[i].r +
+		                             green * green * ewb->error_weights[i].g +
+		                             blue * blue * ewb->error_weights[i].b;
 	}
 
 	// check if we are eligible for blue-contraction and offset-encoding
@@ -245,9 +248,9 @@ void compute_encoding_choice_errors(
 		float4 endpt1 = ep.endpt1[i];
 
 		float4 endpt_dif = endpt1 - endpt0;
-		if (fabsf(endpt_dif.x) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.y) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.z) < (0.12f * 65535.0f))
+		if (fabsf(endpt_dif.r) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.g) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.b) < (0.12f * 65535.0f))
 		{
 			eligible_for_offset_encode[i] = 1;
 		}
@@ -256,14 +259,14 @@ void compute_encoding_choice_errors(
 			eligible_for_offset_encode[i] = 0;
 		}
 
-		endpt0.x += (endpt0.x - endpt0.z);
-		endpt0.y += (endpt0.y - endpt0.z);
-		endpt1.x += (endpt1.x - endpt1.z);
-		endpt1.y += (endpt1.y - endpt1.z);
-		if (endpt0.x > (0.01f * 65535.0f) && endpt0.x < (0.99f * 65535.0f) &&
-		    endpt1.x > (0.01f * 65535.0f) && endpt1.x < (0.99f * 65535.0f) &&
-		    endpt0.y > (0.01f * 65535.0f) && endpt0.y < (0.99f * 65535.0f) &&
-		    endpt1.y > (0.01f * 65535.0f) && endpt1.y < (0.99f * 65535.0f))
+		endpt0.r += (endpt0.r - endpt0.b);
+		endpt0.g += (endpt0.g - endpt0.b);
+		endpt1.r += (endpt1.r - endpt1.b);
+		endpt1.g += (endpt1.g - endpt1.b);
+		if (endpt0.r > (0.01f * 65535.0f) && endpt0.r < (0.99f * 65535.0f) &&
+		    endpt1.r > (0.01f * 65535.0f) && endpt1.r < (0.99f * 65535.0f) &&
+		    endpt0.g > (0.01f * 65535.0f) && endpt0.g < (0.99f * 65535.0f) &&
+		    endpt1.g > (0.01f * 65535.0f) && endpt1.g < (0.99f * 65535.0f))
 		{
 			eligible_for_blue_contraction[i] = 1;
 		}

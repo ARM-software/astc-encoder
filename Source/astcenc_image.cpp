@@ -113,13 +113,13 @@ void imageblock_initialize_deriv(
 		if (pb->rgb_lns[i])
 		{
 			float3 fdata = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
-			fdata.x = sf16_to_float(lns_to_sf16((uint16_t)fdata.x));
-			fdata.y = sf16_to_float(lns_to_sf16((uint16_t)fdata.y));
-			fdata.z = sf16_to_float(lns_to_sf16((uint16_t)fdata.z));
+			fdata.r = sf16_to_float(lns_to_sf16((uint16_t)fdata.r));
+			fdata.g = sf16_to_float(lns_to_sf16((uint16_t)fdata.g));
+			fdata.b = sf16_to_float(lns_to_sf16((uint16_t)fdata.b));
 
-			float r = MAX(fdata.x, 6e-5f);
-			float g = MAX(fdata.y, 6e-5f);
-			float b = MAX(fdata.z, 6e-5f);
+			float r = MAX(fdata.r, 6e-5f);
+			float g = MAX(fdata.g, 6e-5f);
+			float b = MAX(fdata.b, 6e-5f);
 
 			float rderiv = (float_to_lns(r * 1.05f) - float_to_lns(r)) / (r * 0.05f);
 			float gderiv = (float_to_lns(g * 1.05f) - float_to_lns(g)) / (g * 0.05f);
@@ -154,15 +154,15 @@ void imageblock_initialize_deriv(
 				bderiv = 33554432.0f;
 			}
 
-			dptr->x = rderiv;
-			dptr->y = gderiv;
-			dptr->z = bderiv;
+			dptr->r = rderiv;
+			dptr->g = gderiv;
+			dptr->b = bderiv;
 		}
 		else
 		{
-			dptr->x = 65535.0f;
-			dptr->y = 65535.0f;
-			dptr->z = 65535.0f;
+			dptr->r = 65535.0f;
+			dptr->g = 65535.0f;
+			dptr->b = 65535.0f;
 		}
 
 		// then compute derivatives for Alpha
@@ -184,11 +184,11 @@ void imageblock_initialize_deriv(
 				aderiv = 33554432.0f;
 			}
 
-			dptr->w = aderiv;
+			dptr->a = aderiv;
 		}
 		else
 		{
-			dptr->w = 65535.0f;
+			dptr->a = 65535.0f;
 		}
 
 		dptr++;
@@ -210,24 +210,24 @@ void imageblock_initialize_work_from_orig(
 
 		if (pb->rgb_lns[i])
 		{
-			pb->data_r[i] = float_to_lns(inc.x);
-			pb->data_g[i] = float_to_lns(inc.y);
-			pb->data_b[i] = float_to_lns(inc.z);
+			pb->data_r[i] = float_to_lns(inc.r);
+			pb->data_g[i] = float_to_lns(inc.g);
+			pb->data_b[i] = float_to_lns(inc.b);
 		}
 		else
 		{
-			pb->data_r[i] = inc.x * 65535.0f;
-			pb->data_g[i] = inc.y * 65535.0f;
-			pb->data_b[i] = inc.z * 65535.0f;
+			pb->data_r[i] = inc.r * 65535.0f;
+			pb->data_g[i] = inc.g * 65535.0f;
+			pb->data_b[i] = inc.b * 65535.0f;
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			pb->data_a[i] = float_to_lns(inc.w);
+			pb->data_a[i] = float_to_lns(inc.a);
 		}
 		else
 		{
-			pb->data_a[i] = inc.w * 65535.0f;
+			pb->data_a[i] = inc.a * 65535.0f;
 		}
 	}
 }
@@ -244,24 +244,24 @@ void imageblock_initialize_orig_from_work(
 
 		if (pb->rgb_lns[i])
 		{
-			pb->data_r[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.x));
-			pb->data_g[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.y));
-			pb->data_b[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.z));
+			pb->data_r[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.r));
+			pb->data_g[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.g));
+			pb->data_b[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.b));
 		}
 		else
 		{
-			pb->data_r[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.x));
-			pb->data_g[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.y));
-			pb->data_b[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.z));
+			pb->data_r[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.r));
+			pb->data_g[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.g));
+			pb->data_b[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.b));
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			pb->data_a[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.w));
+			pb->data_a[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.a));
 		}
 		else
 		{
-			pb->data_a[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.w));
+			pb->data_a[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.a));
 		}
 	}
 }

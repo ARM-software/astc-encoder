@@ -146,20 +146,20 @@ static void compute_endpoints_and_ideal_weights_1_component(
 		switch (component)
 		{
 		case 0:				// red/x
-			ei->ep.endpt0[i].x = lowvalues[i];
-			ei->ep.endpt1[i].x = highvalues[i];
+			ei->ep.endpt0[i].r = lowvalues[i];
+			ei->ep.endpt1[i].r = highvalues[i];
 			break;
 		case 1:				// green/y
-			ei->ep.endpt0[i].y = lowvalues[i];
-			ei->ep.endpt1[i].y = highvalues[i];
+			ei->ep.endpt0[i].g = lowvalues[i];
+			ei->ep.endpt1[i].g = highvalues[i];
 			break;
 		case 2:				// blue/z
-			ei->ep.endpt0[i].z = lowvalues[i];
-			ei->ep.endpt1[i].z = highvalues[i];
+			ei->ep.endpt0[i].b = lowvalues[i];
+			ei->ep.endpt1[i].b = highvalues[i];
 			break;
 		case 3:				// alpha/w
-			ei->ep.endpt0[i].w = lowvalues[i];
-			ei->ep.endpt1[i].w = highvalues[i];
+			ei->ep.endpt0[i].a = lowvalues[i];
+			ei->ep.endpt1[i].a = highvalues[i];
 			break;
 		}
 	}
@@ -214,32 +214,32 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component1)
 		{
 		case 0:
-			s1 = color_scalefactors[i].x;
+			s1 = color_scalefactors[i].r;
 			break;
 		case 1:
-			s1 = color_scalefactors[i].y;
+			s1 = color_scalefactors[i].g;
 			break;
 		case 2:
-			s1 = color_scalefactors[i].z;
+			s1 = color_scalefactors[i].b;
 			break;
 		case 3:
-			s1 = color_scalefactors[i].w;
+			s1 = color_scalefactors[i].a;
 			break;
 		}
 
 		switch (component2)
 		{
 		case 0:
-			s2 = color_scalefactors[i].x;
+			s2 = color_scalefactors[i].r;
 			break;
 		case 1:
-			s2 = color_scalefactors[i].y;
+			s2 = color_scalefactors[i].g;
 			break;
 		case 2:
-			s2 = color_scalefactors[i].z;
+			s2 = color_scalefactors[i].b;
 			break;
 		case 3:
-			s2 = color_scalefactors[i].w;
+			s2 = color_scalefactors[i].a;
 			break;
 		}
 		scalefactors[i] = normalize(float2(s1, s2)) * 1.41421356f;
@@ -265,7 +265,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float2 egv = directions[i];
-		if (egv.x + egv.y < 0.0f)
+		if (egv.r + egv.g < 0.0f)
 			directions[i] = float2(0.0f, 0.0f) - egv;
 	}
 
@@ -334,11 +334,11 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		float2 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float2 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.x /= scalefactors[i].x;
-		ep0.y /= scalefactors[i].y;
+		ep0.r /= scalefactors[i].r;
+		ep0.g /= scalefactors[i].g;
 
-		ep1.x /= scalefactors[i].x;
-		ep1.y /= scalefactors[i].y;
+		ep1.r /= scalefactors[i].r;
+		ep1.g /= scalefactors[i].g;
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -355,40 +355,40 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component1)
 		{
 		case 0:
-			ei->ep.endpt0[i].x = ep0.x;
-			ei->ep.endpt1[i].x = ep1.x;
+			ei->ep.endpt0[i].r = ep0.r;
+			ei->ep.endpt1[i].r = ep1.r;
 			break;
 		case 1:
-			ei->ep.endpt0[i].y = ep0.x;
-			ei->ep.endpt1[i].y = ep1.x;
+			ei->ep.endpt0[i].g = ep0.r;
+			ei->ep.endpt1[i].g = ep1.r;
 			break;
 		case 2:
-			ei->ep.endpt0[i].z = ep0.x;
-			ei->ep.endpt1[i].z = ep1.x;
+			ei->ep.endpt0[i].b = ep0.r;
+			ei->ep.endpt1[i].b = ep1.r;
 			break;
 		case 3:
-			ei->ep.endpt0[i].w = ep0.x;
-			ei->ep.endpt1[i].w = ep1.x;
+			ei->ep.endpt0[i].a = ep0.r;
+			ei->ep.endpt1[i].a = ep1.r;
 			break;
 		}
 
 		switch (component2)
 		{
 		case 0:
-			ei->ep.endpt0[i].x = ep0.y;
-			ei->ep.endpt1[i].x = ep1.y;
+			ei->ep.endpt0[i].r = ep0.g;
+			ei->ep.endpt1[i].r = ep1.g;
 			break;
 		case 1:
-			ei->ep.endpt0[i].y = ep0.y;
-			ei->ep.endpt1[i].y = ep1.y;
+			ei->ep.endpt0[i].g = ep0.g;
+			ei->ep.endpt1[i].g = ep1.g;
 			break;
 		case 2:
-			ei->ep.endpt0[i].z = ep0.y;
-			ei->ep.endpt1[i].z = ep1.y;
+			ei->ep.endpt0[i].b = ep0.g;
+			ei->ep.endpt1[i].b = ep1.g;
 			break;
 		case 3:
-			ei->ep.endpt0[i].w = ep0.y;
-			ei->ep.endpt1[i].w = ep1.y;
+			ei->ep.endpt0[i].a = ep0.g;
+			ei->ep.endpt1[i].a = ep1.g;
 			break;
 		}
 	}
@@ -471,24 +471,24 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		switch (omittedComponent)
 		{
 		case 0:
-			s1 = color_scalefactors[i].y;
-			s2 = color_scalefactors[i].z;
-			s3 = color_scalefactors[i].w;
+			s1 = color_scalefactors[i].g;
+			s2 = color_scalefactors[i].b;
+			s3 = color_scalefactors[i].a;
 			break;
 		case 1:
-			s1 = color_scalefactors[i].x;
-			s2 = color_scalefactors[i].z;
-			s3 = color_scalefactors[i].w;
+			s1 = color_scalefactors[i].r;
+			s2 = color_scalefactors[i].b;
+			s3 = color_scalefactors[i].a;
 			break;
 		case 2:
-			s1 = color_scalefactors[i].x;
-			s2 = color_scalefactors[i].y;
-			s3 = color_scalefactors[i].w;
+			s1 = color_scalefactors[i].r;
+			s2 = color_scalefactors[i].g;
+			s3 = color_scalefactors[i].a;
 			break;
 		case 3:
-			s1 = color_scalefactors[i].x;
-			s2 = color_scalefactors[i].y;
-			s3 = color_scalefactors[i].z;
+			s1 = color_scalefactors[i].r;
+			s2 = color_scalefactors[i].g;
+			s3 = color_scalefactors[i].b;
 			break;
 		}
 
@@ -515,7 +515,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float3 direc = directions[i];
-		if (direc.x + direc.y + direc.z < 0.0f)
+		if (direc.r + direc.g + direc.b < 0.0f)
 		{
 			directions[i] = float3(0.0f, 0.0f, 0.0f) - direc;
 		}
@@ -586,12 +586,13 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		float3 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float3 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.x /= scalefactors[i].x;
-		ep0.y /= scalefactors[i].y;
-		ep0.z /= scalefactors[i].z;
-		ep1.x /= scalefactors[i].x;
-		ep1.y /= scalefactors[i].y;
-		ep1.z /= scalefactors[i].z;
+		ep0.r /= scalefactors[i].r;
+		ep0.g /= scalefactors[i].g;
+		ep0.b /= scalefactors[i].b;
+
+		ep1.r /= scalefactors[i].r;
+		ep1.g /= scalefactors[i].g;
+		ep1.b /= scalefactors[i].b;
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -608,36 +609,40 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		switch (omittedComponent)
 		{
 			case 0:
-				ei->ep.endpt0[i].y = ep0.x;
-				ei->ep.endpt0[i].z = ep0.y;
-				ei->ep.endpt0[i].w = ep0.z;
-				ei->ep.endpt1[i].y = ep1.x;
-				ei->ep.endpt1[i].z = ep1.y;
-				ei->ep.endpt1[i].w = ep1.z;
+				ei->ep.endpt0[i].g = ep0.r;
+				ei->ep.endpt0[i].b = ep0.g;
+				ei->ep.endpt0[i].a = ep0.b;
+
+				ei->ep.endpt1[i].g = ep1.r;
+				ei->ep.endpt1[i].b = ep1.g;
+				ei->ep.endpt1[i].a = ep1.b;
 				break;
 			case 1:
-				ei->ep.endpt0[i].x = ep0.x;
-				ei->ep.endpt0[i].z = ep0.y;
-				ei->ep.endpt0[i].w = ep0.z;
-				ei->ep.endpt1[i].x = ep1.x;
-				ei->ep.endpt1[i].z = ep1.y;
-				ei->ep.endpt1[i].w = ep1.z;
+				ei->ep.endpt0[i].r = ep0.r;
+				ei->ep.endpt0[i].b = ep0.g;
+				ei->ep.endpt0[i].a = ep0.b;
+
+				ei->ep.endpt1[i].r = ep1.r;
+				ei->ep.endpt1[i].b = ep1.g;
+				ei->ep.endpt1[i].a = ep1.b;
 				break;
 			case 2:
-				ei->ep.endpt0[i].x = ep0.x;
-				ei->ep.endpt0[i].y = ep0.y;
-				ei->ep.endpt0[i].w = ep0.z;
-				ei->ep.endpt1[i].x = ep1.x;
-				ei->ep.endpt1[i].y = ep1.y;
-				ei->ep.endpt1[i].w = ep1.z;
+				ei->ep.endpt0[i].r = ep0.r;
+				ei->ep.endpt0[i].g = ep0.g;
+				ei->ep.endpt0[i].a = ep0.b;
+
+				ei->ep.endpt1[i].r = ep1.r;
+				ei->ep.endpt1[i].g = ep1.g;
+				ei->ep.endpt1[i].a = ep1.b;
 				break;
 			case 3:
-				ei->ep.endpt0[i].x = ep0.x;
-				ei->ep.endpt0[i].y = ep0.y;
-				ei->ep.endpt0[i].z = ep0.z;
-				ei->ep.endpt1[i].x = ep1.x;
-				ei->ep.endpt1[i].y = ep1.y;
-				ei->ep.endpt1[i].z = ep1.z;
+				ei->ep.endpt0[i].r = ep0.r;
+				ei->ep.endpt0[i].g = ep0.g;
+				ei->ep.endpt0[i].b = ep0.b;
+
+				ei->ep.endpt1[i].r = ep1.r;
+				ei->ep.endpt1[i].g = ep1.g;
+				ei->ep.endpt1[i].b = ep1.b;
 				break;
 		}
 	}
@@ -706,7 +711,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float4 direc = directions_rgba[i];
-		if (direc.x + direc.y + direc.z < 0.0f)
+		if (direc.r + direc.g + direc.b < 0.0f)
 		{
 			directions_rgba[i] = float4(0.0f, 0.0f, 0.0f, 0.0f) - direc;
 		}
@@ -776,15 +781,15 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		float4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.x /= scalefactors[i].x;
-		ep0.y /= scalefactors[i].y;
-		ep0.z /= scalefactors[i].z;
-		ep0.w /= scalefactors[i].w;
+		ep0.r /= scalefactors[i].r;
+		ep0.g /= scalefactors[i].g;
+		ep0.b /= scalefactors[i].b;
+		ep0.a /= scalefactors[i].a;
 
-		ep1.x /= scalefactors[i].x;
-		ep1.y /= scalefactors[i].y;
-		ep1.z /= scalefactors[i].z;
-		ep1.w /= scalefactors[i].w;
+		ep1.r /= scalefactors[i].r;
+		ep1.g /= scalefactors[i].g;
+		ep1.b /= scalefactors[i].b;
+		ep1.a /= scalefactors[i].a;
 
 		ei->ep.endpt0[i] = ep0;
 		ei->ep.endpt1[i] = ep1;
@@ -1198,12 +1203,12 @@ static inline float4 compute_rgbovec(
 	// mat[3] = float4(wght_ws.x, wght_ws.y, wght_ws.z,      psum);
 	// mat = invert(mat);
 
-	float X = rgba_weight_sum.x;
-	float Y = rgba_weight_sum.y;
-	float Z = rgba_weight_sum.z;
-	float P = weight_weight_sum.x;
-	float Q = weight_weight_sum.y;
-	float R = weight_weight_sum.z;
+	float X = rgba_weight_sum.r;
+	float Y = rgba_weight_sum.g;
+	float Z = rgba_weight_sum.b;
+	float P = weight_weight_sum.r;
+	float Q = weight_weight_sum.g;
+	float R = weight_weight_sum.b;
 	float S = psum;
 
 	float PP = P * P;
@@ -1296,9 +1301,9 @@ void recompute_ideal_colors(
 		}
 
 		float3 scale_direction = normalize(float3(
-		        rgba_sum.x * (1.0f / rgba_weight_sum.x),
-		        rgba_sum.y * (1.0f / rgba_weight_sum.y),
-		        rgba_sum.z * (1.0f / rgba_weight_sum.z)));
+		        rgba_sum.r * (1.0f / rgba_weight_sum.r),
+		        rgba_sum.g * (1.0f / rgba_weight_sum.g),
+		        rgba_sum.b * (1.0f / rgba_weight_sum.b)));
 
 		float scale_max = 0.0f;
 		float scale_min = 1e10f;
@@ -1334,11 +1339,11 @@ void recompute_ideal_colors(
 			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
 			float4 color_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			float3 color_weight3 = float3(color_weight.x, color_weight.y, color_weight.z);
-			float3 rgb = float3(rgba.x, rgba.y, rgba.z);
+			float3 color_weight3 = float3(color_weight.r, color_weight.g, color_weight.b);
+			float3 rgb = float3(rgba.r, rgba.g, rgba.b);
 
 			// FIXME: move this calculation out to the color block.
-			float ls_weight = (color_weight.x + color_weight.y + color_weight.z);
+			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
 
 			const uint8_t *texel_weights = it->texel_weights[tix];
 			const float *texel_weights_float = it->texel_weights_float[tix];
@@ -1418,7 +1423,7 @@ void recompute_ideal_colors(
 			                          (plane2_color_component == 2) ? idx1 : idx0,
 			                          (plane2_color_component == 3) ? idx1 : idx0);
 
-			float3 color_idx3 = float3(color_idx.x, color_idx.y, color_idx.z);
+			float3 color_idx3 = float3(color_idx.r, color_idx.g, color_idx.b);
 
 			float4 cwprod = color_weight * rgba;
 			float4 cwiprod = cwprod * color_idx;
@@ -1435,10 +1440,10 @@ void recompute_ideal_colors(
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
 		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.x + color_vec_y.x;
-		float green_sum = color_vec_x.y + color_vec_y.y;
-		float blue_sum  = color_vec_x.z + color_vec_y.z;
-		float qsum = color_vec_y.x + color_vec_y.y + color_vec_y.z;
+		float red_sum   = color_vec_x.r + color_vec_y.r;
+		float green_sum = color_vec_x.g + color_vec_y.g;
+		float blue_sum  = color_vec_x.b + color_vec_y.b;
+		float qsum = color_vec_y.r + color_vec_y.g + color_vec_y.b;
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1478,39 +1483,39 @@ void recompute_ideal_colors(
 
 		float3 sds = scale_direction * scale_max;
 
-		rgbs_vectors[i] = float4(sds.x, sds.y, sds.z, scalediv);
+		rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, scalediv);
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
 			float4 avg = (color_vec_x + color_vec_y) *
-			             float4(1.0f / rgba_weight_sum.x,
-			                    1.0f / rgba_weight_sum.y,
-			                    1.0f / rgba_weight_sum.z,
-			                    1.0f / rgba_weight_sum.w);
+			             float4(1.0f / rgba_weight_sum.r,
+			                    1.0f / rgba_weight_sum.g,
+			                    1.0f / rgba_weight_sum.b,
+			                    1.0f / rgba_weight_sum.a);
 
-			if (plane2_color_component != 0 && avg.x == avg.x)
+			if (plane2_color_component != 0 && avg.r == avg.r)
 			{
-				ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
+				ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
 			}
 
-			if (plane2_color_component != 1 && avg.y == avg.y)
+			if (plane2_color_component != 1 && avg.g == avg.g)
 			{
-				ep->endpt0[i].y = ep->endpt1[i].y = avg.y;
+				ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
 			}
 
-			if (plane2_color_component != 2 && avg.z == avg.z)
+			if (plane2_color_component != 2 && avg.b == avg.b)
 			{
-				ep->endpt0[i].z = ep->endpt1[i].z = avg.z;
+				ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
 			}
 
-			if (plane2_color_component != 3 && avg.w == avg.w)
+			if (plane2_color_component != 3 && avg.a == avg.a)
 			{
-				ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
+				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
 			}
 
-			rgbs_vectors[i] = float4( sds.x, sds.y, sds.z, 1.0f);
+			rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, 1.0f);
 		}
 		else
 		{
@@ -1522,57 +1527,57 @@ void recompute_ideal_colors(
 			#endif
 
 			float4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
-			float4 color_rdet1 = float4(1.0f / color_det1.x,
-			                            1.0f / color_det1.y,
-			                            1.0f / color_det1.z,
-			                            1.0f / color_det1.w );
+			float4 color_rdet1 = float4(1.0f / color_det1.r,
+			                            1.0f / color_det1.g,
+			                            1.0f / color_det1.b,
+			                            1.0f / color_det1.a );
 
-			float ls_det1  = (lmrs_sum.x * lmrs_sum.z) - (lmrs_sum.y * lmrs_sum.y);
+			float ls_det1  = (lmrs_sum.r * lmrs_sum.b) - (lmrs_sum.g * lmrs_sum.g);
 			float ls_rdet1 = 1.0f / ls_det1;
 
 			float4 color_mss1 = (left_sum * left_sum)
 			                  + (2.0f * middle_sum * middle_sum)
 			                  + (right_sum * right_sum);
 
-			float ls_mss1 = (lmrs_sum.x * lmrs_sum.x)
-			              + (2.0f * lmrs_sum.y * lmrs_sum.y)
-			              + (lmrs_sum.z * lmrs_sum.z);
+			float ls_mss1 = (lmrs_sum.r * lmrs_sum.r)
+			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
+			              + (lmrs_sum.b * lmrs_sum.b);
 
 			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
 			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
-			float scale_ep0 = (lmrs_sum.z * scale_vec.x - lmrs_sum.y * scale_vec.y) * ls_rdet1;
-			float scale_ep1 = (lmrs_sum.x * scale_vec.y - lmrs_sum.y * scale_vec.x) * ls_rdet1;
+			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
+			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
 
-			if (plane2_color_component != 0 && fabsf(color_det1.x) > (color_mss1.x * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+			if (plane2_color_component != 0 && fabsf(color_det1.r) > (color_mss1.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
 			{
-				ep->endpt0[i].x = ep0.x;
-				ep->endpt1[i].x = ep1.x;
+				ep->endpt0[i].r = ep0.r;
+				ep->endpt1[i].r = ep1.r;
 			}
 
-			if (plane2_color_component != 1 && fabsf(color_det1.y) > (color_mss1.y * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+			if (plane2_color_component != 1 && fabsf(color_det1.g) > (color_mss1.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
 			{
-				ep->endpt0[i].y = ep0.y;
-				ep->endpt1[i].y = ep1.y;
+				ep->endpt0[i].g = ep0.g;
+				ep->endpt1[i].g = ep1.g;
 			}
 
-			if (plane2_color_component != 2 && fabsf(color_det1.z) > (color_mss1.z * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+			if (plane2_color_component != 2 && fabsf(color_det1.b) > (color_mss1.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
 			{
-				ep->endpt0[i].z = ep0.z;
-				ep->endpt1[i].z = ep1.z;
+				ep->endpt0[i].b = ep0.b;
+				ep->endpt1[i].b = ep1.b;
 			}
 
-			if (plane2_color_component != 3 && fabsf(color_det1.w) > (color_mss1.w * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+			if (plane2_color_component != 3 && fabsf(color_det1.a) > (color_mss1.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
 			{
-				ep->endpt0[i].w = ep0.w;
-				ep->endpt1[i].w = ep1.w;
+				ep->endpt0[i].a = ep0.a;
+				ep->endpt1[i].a = ep1.a;
 			}
 
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
 				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
 				float3 sdsm = scale_direction * scale_ep1;
-				rgbs_vectors[i] = float4(sdsm.x, sdsm.y, sdsm.z, scalediv2);
+				rgbs_vectors[i] = float4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
 			}
 
 			#ifdef DEBUG_CAPTURE_NAN
@@ -1587,29 +1592,29 @@ void recompute_ideal_colors(
 				// if all weights in the partition were equal, then just take average
 				// of all colors in the partition and use that as both endpoint colors.
 				float4 avg = (color_vec_x + color_vec_y)
-				           * float4(1.0f / rgba_weight_sum.x,
-				                    1.0f / rgba_weight_sum.y,
-				                    1.0f / rgba_weight_sum.z,
-				                    1.0f / rgba_weight_sum.w);
+				           * float4(1.0f / rgba_weight_sum.r,
+				                    1.0f / rgba_weight_sum.g,
+				                    1.0f / rgba_weight_sum.b,
+				                    1.0f / rgba_weight_sum.a);
 
-				if (plane2_color_component == 0 && avg.x == avg.x)
+				if (plane2_color_component == 0 && avg.r == avg.r)
 				{
-					ep->endpt0[i].x = ep->endpt1[i].x = avg.x;
+					ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
 				}
 
-				if (plane2_color_component == 1 && avg.y == avg.y)
+				if (plane2_color_component == 1 && avg.g == avg.g)
 				{
-					ep->endpt0[i].y = ep->endpt1[i].y = avg.y;
+					ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
 				}
 
-				if (plane2_color_component == 2 && avg.z == avg.z)
+				if (plane2_color_component == 2 && avg.b == avg.b)
 				{
-					ep->endpt0[i].z = ep->endpt1[i].z = avg.z;
+					ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
 				}
 
-				if (plane2_color_component == 3 && avg.w == avg.w)
+				if (plane2_color_component == 3 && avg.a == avg.a)
 				{
-					ep->endpt0[i].w = ep->endpt1[i].w = avg.w;
+					ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
 				}
 			}
 			else
@@ -1621,10 +1626,10 @@ void recompute_ideal_colors(
 				// otherwise, complete the analytic calculation of ideal-endpoint-values
 				// for the given set of texel weights and pixel colors.
 				float4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
-				float4 color_rdet2 = float4(1.0f / color_det2.x,
-				                            1.0f / color_det2.y,
-				                            1.0f / color_det2.z,
-				                            1.0f / color_det2.w);
+				float4 color_rdet2 = float4(1.0f / color_det2.r,
+				                            1.0f / color_det2.g,
+				                            1.0f / color_det2.b,
+				                            1.0f / color_det2.a);
 
 				float4 color_mss2 = (left2_sum * left2_sum)
 				                  + (2.0f * middle2_sum * middle2_sum)
@@ -1633,28 +1638,28 @@ void recompute_ideal_colors(
 				float4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 				float4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
-				if (plane2_color_component == 0 && fabsf(color_det2.x) > (color_mss2.x * 1e-4f) && ep0.x == ep0.x && ep1.x == ep1.x)
+				if (plane2_color_component == 0 && fabsf(color_det2.r) > (color_mss2.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
 				{
-					ep->endpt0[i].x = ep0.x;
-					ep->endpt1[i].x = ep1.x;
+					ep->endpt0[i].r = ep0.r;
+					ep->endpt1[i].r = ep1.r;
 				}
 
-				if (plane2_color_component == 1 && fabsf(color_det2.y) > (color_mss2.y * 1e-4f) && ep0.y == ep0.y && ep1.y == ep1.y)
+				if (plane2_color_component == 1 && fabsf(color_det2.g) > (color_mss2.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
 				{
-					ep->endpt0[i].y = ep0.y;
-					ep->endpt1[i].y = ep1.y;
+					ep->endpt0[i].g = ep0.g;
+					ep->endpt1[i].g = ep1.g;
 				}
 
-				if (plane2_color_component == 2 && fabsf(color_det2.z) > (color_mss2.z * 1e-4f) && ep0.z == ep0.z && ep1.z == ep1.z)
+				if (plane2_color_component == 2 && fabsf(color_det2.b) > (color_mss2.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
 				{
-					ep->endpt0[i].z = ep0.z;
-					ep->endpt1[i].z = ep1.z;
+					ep->endpt0[i].b = ep0.b;
+					ep->endpt1[i].b = ep1.b;
 				}
 
-				if (plane2_color_component == 3 && fabsf(color_det2.w) > (color_mss2.w * 1e-4f) && ep0.w == ep0.w && ep1.w == ep1.w)
+				if (plane2_color_component == 3 && fabsf(color_det2.a) > (color_mss2.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
 				{
-					ep->endpt0[i].w = ep0.w;
-					ep->endpt1[i].w = ep1.w;
+					ep->endpt0[i].a = ep0.a;
+					ep->endpt1[i].a = ep1.a;
 				}
 
 				#ifdef DEBUG_CAPTURE_NAN
@@ -1669,7 +1674,7 @@ void recompute_ideal_colors(
 		{
 			float4 v0 = ep->endpt0[i];
 			float4 v1 = ep->endpt1[i];
-			float avgdif = ((v1.x - v0.x) + (v1.y - v0.y) + (v1.z - v0.z)) * (1.0f / 3.0f);
+			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
 
 			if (avgdif <= 0.0f)
 			{
@@ -1679,7 +1684,7 @@ void recompute_ideal_colors(
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
 
-			rgbo_vectors[i] = float4(ep0.x, ep0.y, ep0.z, avgdif);
+			rgbo_vectors[i] = float4(ep0.r, ep0.g, ep0.b, avgdif);
 		}
 	}
 }

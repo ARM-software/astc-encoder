@@ -328,47 +328,173 @@ uint64_t rand(uint64_t state[2]);
 template <typename T> class vtype2
 {
 public:
-	T x, y;
+	// Data storage
+	T r, g;
+
+	// Default constructor
 	vtype2() {}
-	vtype2(T p, T q)         : x(p),   y(q)   {}
-	vtype2(const vtype2 & p) : x(p.x), y(p.y) {}
-	vtype2 &operator =(const vtype2 &s) {
-		this->x = s.x;
-		this->y = s.y;
+
+	// Initialize from 1 scalar
+	vtype2(T p) : r(p), g(p) {}
+
+	// Initialize from N scalars
+	vtype2(T p, T q) : r(p), g(q) {}
+
+	// Initialize from another vector
+	vtype2(const vtype2 & p) : r(p.r), g(p.g) {}
+
+	// Assignment operator
+	vtype2& operator=(const vtype2 &s) {
+		this->r = s.r;
+		this->g = s.g;
 		return *this;
 	}
 };
+
+// Vector by vector addition
+template <typename T>
+vtype2<T> operator+(vtype2<T> p, vtype2<T> q) {
+	return vtype2<T> { p.r + q.r, p.g + q.g };
+}
+
+// Vector by vector subtraction
+template <typename T>
+vtype2<T> operator-(vtype2<T> p, vtype2<T> q) {
+	return vtype2<T> { p.r - q.r, p.g - q.g };
+}
+
+// Vector by vector multiplication operator
+template <typename T>
+vtype2<T> operator*(vtype2<T> p, vtype2<T> q) {
+	return vtype2<T> { p.r * q.r, p.g * q.g };
+}
+
+// Vector by scalar multiplication operator
+template <typename T>
+vtype2<T> operator*(vtype2<T> p, T q) {
+	return vtype2<T> { p.r * q, p.g * q };
+}
+
+// Scalar by vector multiplication operator
+template <typename T>
+vtype2<T> operator*(T p, vtype2<T> q){
+	return vtype2<T> { p * q.r, p * q.g };
+}
 
 template <typename T> class vtype3
 {
 public:
-	T x, y, z;
+	// Data storage
+	T r, g, b;
+
+	// Default constructor
 	vtype3() {}
-	vtype3(T p, T q, T r)    : x(p),   y(q),   z(r)   {}
-	vtype3(const vtype3 & p) : x(p.x), y(p.y), z(p.z) {}
-	vtype3 &operator =(const vtype3 &s) {
-		this->x = s.x;
-		this->y = s.y;
-		this->z = s.z;
+
+	// Initialize from 1 scalar
+	vtype3(T p) : r(p), g(p), b(p) {}
+
+	// Initialize from N scalars
+	vtype3(T p, T q, T s) : r(p), g(q), b(s) {}
+
+	// Initialize from another vector
+	vtype3(const vtype3 & p) : r(p.r), g(p.g), b(p.b) {}
+
+	// Assignment operator
+	vtype3 &operator=(const vtype3 &s) {
+		this->r = s.r;
+		this->g = s.g;
+		this->b = s.b;
 		return *this;
 	}
 };
 
+// Vector by vector addition
+template <typename T>
+vtype3<T> operator+(vtype3<T> p, vtype3<T> q) {
+	return vtype3<T> { p.r + q.r, p.g + q.g, p.b + q.b };
+}
+
+// Vector by vector subtraction
+template <typename T>
+vtype3<T> operator-(vtype3<T> p, vtype3<T> q) {
+	return vtype3<T> { p.r - q.r, p.g - q.g, p.b - q.b };
+}
+
+// Vector by vector multiplication operator
+template <typename T>
+vtype3<T> operator*(vtype3<T> p, vtype3<T> q) {
+	return vtype3<T> { p.r * q.r, p.g * q.g, p.b * q.b };
+}
+
+// Vector by scalar multiplication operator
+template <typename T>
+vtype3<T> operator*(vtype3<T> p, T q) {
+	return vtype3<T> { p.r * q, p.g * q, p.b * q };
+}
+
+// Scalar by vector multiplication operator
+template <typename T>
+vtype3<T> operator*(T p, vtype3<T> q){
+	return vtype3<T> { p * q.r, p * q.g, p * q.b };
+}
+
 template <typename T> class alignas(16) vtype4
 {
 public:
-	T x, y, z, w;
+	// Data storage
+	T r, g, b, a;
+
+	// Default constructor
 	vtype4() {}
-	vtype4(T p, T q, T r, T s) : x(p),   y(q),   z(r),   w(s)   {}
-	vtype4(const vtype4 & p)   : x(p.x), y(p.y), z(p.z), w(p.w) {}
-	vtype4 &operator =(const vtype4 &s) {
-		this->x = s.x;
-		this->y = s.y;
-		this->z = s.z;
-		this->w = s.w;
+
+	// Initialize from 1 scalar
+	vtype4(T p) : r(p), g(p), b(p), a(p) {}
+
+	// Initialize from N scalars
+	vtype4(T p, T q, T s, T t) : r(p), g(q), b(s), a(t) {}
+
+	// Initialize from another vector
+	vtype4(const vtype4 & p) : r(p.r), g(p.g), b(p.b), a(p.a) {}
+
+	// Assignment operator
+	vtype4 &operator=(const vtype4 &s) {
+		this->r = s.r;
+		this->g = s.g;
+		this->b = s.b;
+		this->a = s.a;
 		return *this;
 	}
 };
+
+// Vector by vector addition
+template <typename T>
+vtype4<T> operator+(vtype4<T> p, vtype4<T> q) {
+	return vtype4<T> { p.r + q.r, p.g + q.g, p.b + q.b, p.a + q.a };
+}
+
+// Vector by vector subtraction
+template <typename T>
+vtype4<T> operator-(vtype4<T> p, vtype4<T> q) {
+	return vtype4<T> { p.r - q.r, p.g - q.g, p.b - q.b, p.a - q.a };
+}
+
+// Vector by vector multiplication operator
+template <typename T>
+vtype4<T> operator*(vtype4<T> p, vtype4<T> q) {
+	return vtype4<T> { p.r * q.r, p.g * q.g, p.b * q.b, p.a * q.a };
+}
+
+// Vector by scalar multiplication operator
+template <typename T>
+vtype4<T> operator*(vtype4<T> p, T q) {
+	return vtype4<T> { p.r * q, p.g * q, p.b * q, p.a * q };
+}
+
+// Scalar by vector multiplication operator
+template <typename T>
+vtype4<T> operator*(T p, vtype4<T> q){
+	return vtype4<T> { p * q.r, p * q.g, p * q.b, p * q.a };
+}
 
 typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
@@ -377,38 +503,8 @@ typedef vtype3<int>          int3;
 typedef vtype4<int>          int4;
 typedef vtype4<unsigned int> uint4;
 
-static inline float2  operator+(float2 p,  float2 q)   { return float2(  p.x + q.x, p.y + q.y ); }
-static inline float3  operator+(float3 p,  float3 q)   { return float3(  p.x + q.x, p.y + q.y, p.z + q.z ); }
-static inline float4  operator+(float4 p,  float4 q)   { return float4(  p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
-static inline int4    operator+(int4 p,    int4 q)     { return int4(    p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
-static inline uint4   operator+(uint4 p,   uint4 q)    { return uint4(   p.x + q.x, p.y + q.y, p.z + q.z, p.w + q.w ); }
-
-static inline float2  operator-(float2 p,  float2 q)   { return float2(  p.x - q.x, p.y - q.y ); }
-static inline float3  operator-(float3 p,  float3 q)   { return float3(  p.x - q.x, p.y - q.y, p.z - q.z ); }
-static inline float4  operator-(float4 p,  float4 q)   { return float4(  p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
-static inline int4    operator-(int4 p,    int4 q)     { return int4(    p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
-static inline uint4   operator-(uint4 p,   uint4 q)    { return uint4(   p.x - q.x, p.y - q.y, p.z - q.z, p.w - q.w ); }
-
-static inline float2  operator*(float2 p,  float2 q)   { return float2(  p.x * q.x, p.y * q.y ); }
-static inline float3  operator*(float3 p,  float3 q)   { return float3(  p.x * q.x, p.y * q.y, p.z * q.z ); }
-static inline float4  operator*(float4 p,  float4 q)   { return float4(  p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
-static inline int4    operator*(int4 p,    int4 q)     { return int4(    p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
-static inline uint4   operator*(uint4 p,   uint4 q)    { return uint4(   p.x * q.x, p.y * q.y, p.z * q.z, p.w * q.w ); }
-
-static inline float2  operator*(float2 p,  float q)    { return float2(  p.x * q, p.y * q ); }
-static inline float3  operator*(float3 p,  float q)    { return float3(  p.x * q, p.y * q, p.z * q ); }
-static inline float4  operator*(float4 p,  float q)    { return float4(  p.x * q, p.y * q, p.z * q, p.w * q ); }
-static inline int4    operator*(int4 p,    int q)      { return int4(    p.x * q, p.y * q, p.z * q, p.w * q ); }
-static inline uint4   operator*(uint4 p,   uint32_t q) { return uint4(   p.x * q, p.y * q, p.z * q, p.w * q ); }
-
-static inline float2  operator*(float p,    float2 q)  { return q * p; }
-static inline float3  operator*(float p,    float3 q)  { return q * p; }
-static inline float4  operator*(float p,    float4 q)  { return q * p; }
-static inline int4    operator*(int p,      int4 q)    { return q * p; }
-static inline uint4   operator*(uint32_t p, uint4 q)   { return q * p; }
-
-static inline float dot(float2 p, float2 q)  { return p.x * q.x + p.y * q.y; }
-static inline float dot(float3 p, float3 q)  { return p.x * q.x + p.y * q.y + p.z * q.z; }
+static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
+static inline float dot(float3 p, float3 q)  { return p.r * q.r + p.g * q.g + p.b * q.b; }
 static inline float dot(float4 p, float4 q)  {
 #if (ASTCENC_SSE >= 42) && (ASTCENC_ISA_INVARIANCE == 0)
 	__m128 pv = _mm_load_ps((float*)&p);
@@ -416,7 +512,7 @@ static inline float dot(float4 p, float4 q)  {
 	__m128 t  = _mm_dp_ps(pv, qv, 0xFF);
 	return _mm_cvtss_f32(t);
 #else
-	return p.x * q.x + p.y * q.y + p.z * q.z  + p.w * q.w;
+	return p.r * q.r + p.g * q.g + p.b * q.b  + p.a * q.a;
 #endif
 }
 
@@ -431,10 +527,10 @@ static inline float4 sqrt(float4 p) {
 	__m128 t  = _mm_sqrt_ps(pv);
 	_mm_store_ps((float*)&r, t);
 #else
-	r.x = std::sqrt(p.x);
-	r.y = std::sqrt(p.y);
-	r.z = std::sqrt(p.z);
-	r.w = std::sqrt(p.w);
+	r.r = std::sqrt(p.r);
+	r.g = std::sqrt(p.g);
+	r.b = std::sqrt(p.b);
+	r.a = std::sqrt(p.a);
 #endif
 	return r;
 }
