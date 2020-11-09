@@ -45,8 +45,8 @@ public:
 	 * @brief Create a new Kahan accumulator
 	 */
 	kahan_accum4() {
-		sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		comp = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		sum = float4(0.0f);
+		comp = float4(0.0f);
 	}
 };
 
@@ -181,7 +181,7 @@ void compute_error_metrics(
 				{
 					uint8_t*** data8 = static_cast<uint8_t***>(img1->data);
 					color1 = float4(
-					    data8[ze1][ye1][xe1]     * (1.0f / 255.0f),
+					    data8[ze1][ye1][xe1    ] * (1.0f / 255.0f),
 					    data8[ze1][ye1][xe1 + 1] * (1.0f / 255.0f),
 					    data8[ze1][ye1][xe1 + 2] * (1.0f / 255.0f),
 					    data8[ze1][ye1][xe1 + 3] * (1.0f / 255.0f));
@@ -210,7 +210,7 @@ void compute_error_metrics(
 				{
 					uint8_t*** data8 = static_cast<uint8_t***>(img2->data);
 					color2 = float4(
-					    data8[ze2][ye2][xe2]     * (1.0f / 255.0f),
+					    data8[ze2][ye2][xe2    ] * (1.0f / 255.0f),
 					    data8[ze2][ye2][xe2 + 1] * (1.0f / 255.0f),
 					    data8[ze2][ye2][xe2 + 2] * (1.0f / 255.0f),
 					    data8[ze2][ye2][xe2 + 3] * (1.0f / 255.0f));
@@ -219,7 +219,7 @@ void compute_error_metrics(
 				{
 					uint16_t*** data16 = static_cast<uint16_t***>(img2->data);
 					color2 = float4(
-					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2])),
+					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2    ])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 1])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 2])),
 					    astc::clamp64Kf(sf16_to_float(data16[ze2][ye2][xe2 + 3])));
@@ -229,7 +229,7 @@ void compute_error_metrics(
 					assert(img2->data_type == ASTCENC_TYPE_F32);
 					float*** data16 = static_cast<float***>(img2->data);
 					color2 = float4(
-					    astc::clamp64Kf(data16[ze2][ye2][xe2]),
+					    astc::clamp64Kf(data16[ze2][ye2][xe2    ]),
 					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 1]),
 					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 2]),
 					    astc::clamp64Kf(data16[ze2][ye2][xe2 + 3]));

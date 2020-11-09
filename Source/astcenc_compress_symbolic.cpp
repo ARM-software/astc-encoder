@@ -257,7 +257,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	// compute maximum colors for the endpoints and ideal weights.
 	// for each endpoint-and-ideal-weight pair, compute the smallest weight value
 	// that will result in a color value greater than 1.
-	float4 min_ep = float4(10, 10, 10, 10);
+	float4 min_ep = float4(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
 		#ifdef DEBUG_CAPTURE_NAN
@@ -525,8 +525,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	// for each endpoint-and-ideal-weight pair, compute the smallest weight value
 	// that will result in a color value greater than 1.
 
-	float4 min_ep1 = float4(10, 10, 10, 10);
-	float4 min_ep2 = float4(10, 10, 10, 10);
+	float4 min_ep1 = float4(10.0f);
+	float4 min_ep2 = float4(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
 		#ifdef DEBUG_CAPTURE_NAN
@@ -887,7 +887,7 @@ static float prepare_error_weight_block(
 
 				if (xpos >= input_image.dim_x || ypos >= input_image.dim_y || zpos >= input_image.dim_z)
 				{
-					float4 weights = float4(1e-11f, 1e-11f, 1e-11f, 1e-11f);
+					float4 weights = float4(1e-11f);
 					ewb->error_weights[idx] = weights;
 					ewb->contains_zeroweight_texels = 1;
 				}

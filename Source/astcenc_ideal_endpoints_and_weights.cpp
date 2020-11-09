@@ -266,7 +266,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	{
 		float2 egv = directions[i];
 		if (egv.r + egv.g < 0.0f)
-			directions[i] = float2(0.0f, 0.0f) - egv;
+			directions[i] = float2(0.0f) - egv;
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -274,7 +274,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
 		{
-			lines[i].b = normalize(float2(1.0f, 1.0f));
+			lines[i].b = normalize(float2(1.0f));
 		}
 		else
 		{
@@ -517,7 +517,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		float3 direc = directions[i];
 		if (direc.r + direc.g + direc.b < 0.0f)
 		{
-			directions[i] = float3(0.0f, 0.0f, 0.0f) - direc;
+			directions[i] = float3(0.0f) - direc;
 		}
 	}
 
@@ -526,7 +526,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		lines[i].a = averages[i];
 		if (dot(directions[i], directions[i]) == 0.0f)
 		{
-			lines[i].b = normalize(float3(1.0f, 1.0f, 1.0f));
+			lines[i].b = normalize(float3(1.0f));
 		}
 		else
 		{
@@ -713,7 +713,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		float4 direc = directions_rgba[i];
 		if (direc.r + direc.g + direc.b < 0.0f)
 		{
-			directions_rgba[i] = float4(0.0f, 0.0f, 0.0f, 0.0f) - direc;
+			directions_rgba[i] = float4(0.0f) - direc;
 		}
 	}
 
@@ -722,7 +722,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		lines[i].a = averages[i];
 		if (dot(directions_rgba[i], directions_rgba[i]) == 0.0f)
 		{
-			lines[i].b = normalize(float4(1.0f, 1.0f, 1.0f, 1.0f));
+			lines[i].b = normalize(float4(1.0f));
 		}
 		else
 		{
@@ -1284,8 +1284,8 @@ void recompute_ideal_colors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 rgba_sum        = float4(1e-17f, 1e-17f, 1e-17f, 1e-17f);
-		float4 rgba_weight_sum = float4(1e-17f, 1e-17f, 1e-17f, 1e-17f);
+		float4 rgba_sum        = float4(1e-17f);
+		float4 rgba_weight_sum = float4(1e-17f);
 
 		int texelcount = pi->texels_per_partition[i];
 		const uint8_t *texel_indexes = pi->texels_of_partition[i];
@@ -1313,22 +1313,22 @@ void recompute_ideal_colors(
 		float wmin2 = 1.0f;
 		float wmax2 = 0.0f;
 
-		float4 left_sum    = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 middle_sum  = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 right_sum   = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 left_sum    = float4(0.0f);
+		float4 middle_sum  = float4(0.0f);
+		float4 right_sum   = float4(0.0f);
 
-		float4 left2_sum   = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 middle2_sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 right2_sum  = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 left2_sum   = float4(0.0f);
+		float4 middle2_sum = float4(0.0f);
+		float4 right2_sum  = float4(0.0f);
 
-		float3 lmrs_sum = float3(0.0f, 0.0f, 0.0f);
+		float3 lmrs_sum = float3(0.0f);
 
-		float4 color_vec_x = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 color_vec_y = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 color_vec_x = float4(0.0f);
+		float4 color_vec_y = float4(0.0f);
 
-		float2 scale_vec = float2(0.0f, 0.0f);
+		float2 scale_vec = float2(0.0f);
 
-		float3 weight_weight_sum = float3(1e-17f, 1e-17f, 1e-17f);
+		float3 weight_weight_sum = float3(1e-17f);
 		float psum = 1e-17f;
 
 		// FIXME: the loop below has too many responsibilities, making it inefficient.

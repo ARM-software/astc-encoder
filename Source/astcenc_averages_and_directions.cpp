@@ -51,7 +51,7 @@ void compute_averages_and_directions_rgba(
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float4 base_sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 base_sum = float4(0.0f);
 		float partition_weight = 0.0f;
 
 		for (int i = 0; i < texelcount; i++)
@@ -70,10 +70,10 @@ void compute_averages_and_directions_rgba(
 		float4 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * color_scalefactors[partition];
 
-		float4 sum_xp = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 sum_yp = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 sum_zp = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		float4 sum_wp = float4(0.0f, 0.0f, 0.0f, 0.0f);
+		float4 sum_xp = float4(0.0f);
+		float4 sum_yp = float4(0.0f);
+		float4 sum_zp = float4(0.0f);
+		float4 sum_wp = float4(0.0f);
 
 		for (int i = 0; i < texelcount; i++)
 		{
@@ -170,9 +170,9 @@ void compute_averages_and_directions_rgb(
 		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.r, csf.g, csf.b);
 
-		float3 sum_xp = float3(0.0f, 0.0f, 0.0f);
-		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
-		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_xp = float3(0.0f);
+		float3 sum_yp = float3(0.0f);
+		float3 sum_zp = float3(0.0f);
 
 		for (int i = 0; i < texelcount; i++)
 		{
@@ -271,7 +271,7 @@ void compute_averages_and_directions_3_components(
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
+		float3 base_sum = float3(0.0f);
 		float partition_weight = 0.0f;
 
 		for (int i = 0; i < texelcount; i++)
@@ -291,9 +291,9 @@ void compute_averages_and_directions_3_components(
 		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.r, csf.g, csf.b);
 
-		float3 sum_xp = float3(0.0f, 0.0f, 0.0f);
-		float3 sum_yp = float3(0.0f, 0.0f, 0.0f);
-		float3 sum_zp = float3(0.0f, 0.0f, 0.0f);
+		float3 sum_xp = float3(0.0f);
+		float3 sum_yp = float3(0.0f);
+		float3 sum_zp = float3(0.0f);
 
 		for (int i = 0; i < texelcount; i++)
 		{
@@ -388,7 +388,7 @@ void compute_averages_and_directions_2_components(
 		const uint8_t *weights = pt->texels_of_partition[partition];
 		int texelcount = pt->texels_per_partition[partition];
 
-		float2 base_sum = float2(0.0f, 0.0f);
+		float2 base_sum = float2(0.0f);
 		float partition_weight = 0.0f;
 
 		for (int i = 0; i < texelcount; i++)
@@ -406,8 +406,8 @@ void compute_averages_and_directions_2_components(
 		float2 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
 		averages[partition] = average * float2(csf.r, csf.g);
 
-		float2 sum_xp = float2(0.0f, 0.0f);
-		float2 sum_yp = float2(0.0f, 0.0f);
+		float2 sum_xp = float2(0.0f);
+		float2 sum_yp = float2(0.0f);
 
 		for (int i = 0; i < texelcount; i++)
 		{
@@ -479,8 +479,8 @@ void compute_error_squared_rgba(
 		float samechroma_lowparam = 1e10f;
 		float samechroma_highparam = -1e10f;
 
-		float4 separate_lowparam = float4(1e10f, 1e10f, 1e10f, 1e10f);
-		float4 separate_highparam = float4(-1e10f, -1e10f, -1e10f, -1e10f);
+		float4 separate_lowparam = float4(1e10f);
+		float4 separate_highparam = float4(-1e10f);
 
 		processed_line4 l_uncorr = plines_uncorr[partition];
 		processed_line4 l_samechroma = plines_samechroma[partition];
@@ -633,8 +633,8 @@ void compute_error_squared_rgb(
 		float samechroma_lowparam = 1e10f;
 		float samechroma_highparam = -1e10f;
 
-		float3 separate_lowparam = float3(1e10f, 1e10f, 1e10f);
-		float3 separate_highparam = float3(-1e10f, -1e10f, -1e10f);
+		float3 separate_lowparam = float3(1e10f);
+		float3 separate_highparam = float3(-1e10f);
 
 		processed_line3 l_uncorr = plines_uncorr[partition];
 		processed_line3 l_samechroma = plines_samechroma[partition];

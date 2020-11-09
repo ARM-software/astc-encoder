@@ -312,7 +312,7 @@ static void compute_pixel_region_variance(
 	}
 
 	// Pad with an extra layer of 0s; this forms the edge of the SAT tables
-	float4 vbz = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float4 vbz = float4(0.0f);
 	for (int z = 0; z < padsize_z; z++)
 	{
 		for (int y = 0; y < padsize_y; y++)

@@ -148,7 +148,7 @@ void compute_encoding_choice_errors(
 			uncorr_rgb_lines[i].b = normalize(directions_rgb[i]);
 		}
 
-		samechroma_rgb_lines[i].a = float3(0.0f, 0.0f, 0.0f);
+		samechroma_rgb_lines[i].a = float3(0.0f);
 		if (dot(averages[i], averages[i]) < 1e-20f)
 		{
 			samechroma_rgb_lines[i].b = normalize(csf);
@@ -161,7 +161,7 @@ void compute_encoding_choice_errors(
 		rgb_luma_lines[i].a = averages[i];
 		rgb_luma_lines[i].b = normalize(csf);
 
-		luminance_lines[i].a = float3(0.0f, 0.0f, 0.0f);
+		luminance_lines[i].a = float3(0.0f);
 		luminance_lines[i].b = normalize(csf);
 
 		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
