@@ -190,13 +190,6 @@ static int realign_weights(
 				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
 				adjustments++;
 			}
-
-			// IQ loss: The v1 compressor iterated here multiple times, trying
-			// multiple increments or decrements until the error stopped
-			// improving. This was very expensive (~15% of the v1 compressor
-			// coding time) for very small improvements in quality (typically
-			// less than 0.005 dB PSNR), so we now only check one step in
-			// either direction
 		}
 
 		// Prepare iteration for plane 2
