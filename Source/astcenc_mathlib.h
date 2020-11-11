@@ -23,6 +23,7 @@
 #ifndef ASTC_MATHLIB_H_INCLUDED
 #define ASTC_MATHLIB_H_INCLUDED
 
+#include <cassert>
 #include <cstdint>
 #include <cmath>
 
@@ -400,7 +401,7 @@ public:
 	vtype3(const vtype3 & p) : r(p.r), g(p.g), b(p.b) {}
 
 	// Assignment operator
-	vtype3 &operator=(const vtype3 &s) {
+	vtype3& operator=(const vtype3 &s) {
 		this->r = s.r;
 		this->g = s.g;
 		this->b = s.b;
@@ -457,7 +458,7 @@ public:
 	vtype4(const vtype4 & p) : r(p.r), g(p.g), b(p.b), a(p.a) {}
 
 	// Assignment operator
-	vtype4 &operator=(const vtype4 &s) {
+	vtype4& operator=(const vtype4 &s) {
 		this->r = s.r;
 		this->g = s.g;
 		this->b = s.b;

@@ -169,7 +169,9 @@ def plot(results, chartRows, chartCols, blockSizes,
                     fig.delaxes(axs[i][j])
                 continue
 
-            if len(chartCols) == 1:
+            if len(chartRows) == 1 and len(chartCols) == 1:
+                ax = axs
+            elif len(chartCols) == 1:
                 ax = axs[i]
             else:
                 ax = axs[i, j]
@@ -215,7 +217,9 @@ def plot(results, chartRows, chartCols, blockSizes,
     for i, row in enumerate(chartRows):
         for j, col in enumerate(chartCols):
 
-            if len(chartCols) == 1:
+            if len(chartRows) == 1 and len(chartCols) == 1:
+                ax = axs
+            elif len(chartCols) == 1:
                 ax = axs[i]
             else:
                 ax = axs[i, j]
@@ -241,6 +245,16 @@ def main():
 
     charts = [
         [
+            # Plot headline 1.7 to 2.1 scores
+            ["medium"],
+            ["ref-2.1-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            "ref-1.7",
+            None,
+            "relative-1.7-to-2.1.png",
+            (8, None)
+        ], [
             # --------------------------------------------------------
             # Plot all absolute scores
             ["thorough", "medium", "fast", "fastest"],
