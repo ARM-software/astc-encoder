@@ -293,13 +293,17 @@ void fetch_imageblock(
 		zpos += img.dim_pad;
 	}
 
-	float data[6];
-	data[4] = 0;
-	data[5] = 1;
+	// True if any non-identity swizzle
+	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
+	                 (swz.b != ASTCENC_SWZ_B) || (swz.a != ASTCENC_SWZ_A);
 
 	int idx = 0;
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
+		uint8_t data[6];
+		data[ASTCENC_SWZ_0] = 0x00;
+		data[ASTCENC_SWZ_1] = 0xFF;
+
 		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
@@ -329,15 +333,23 @@ void fetch_imageblock(
 					int b = data8[zi][yi][4 * xi + 2];
 					int a = data8[zi][yi][4 * xi + 3];
 
-					data[0] = r / 255.0f;
-					data[1] = g / 255.0f;
-					data[2] = b / 255.0f;
-					data[3] = a / 255.0f;
+					if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = r;
+						data[ASTCENC_SWZ_G] = g;
+						data[ASTCENC_SWZ_B] = b;
+						data[ASTCENC_SWZ_A] = a;
 
-					pb->data_r[idx] = data[swz.r];
-					pb->data_g[idx] = data[swz.g];
-					pb->data_b[idx] = data[swz.b];
-					pb->data_a[idx] = data[swz.a];
+						r = data[swz.r];
+						g = data[swz.g];
+						b = data[swz.b];
+						a = data[swz.a];
+					}
+
+					pb->data_r[idx] = r / 255.0f;
+					pb->data_g[idx] = g / 255.0f;
+					pb->data_b[idx] = b / 255.0f;
+					pb->data_a[idx] = a / 255.0f;
 					idx++;
 				}
 			}
@@ -345,6 +357,10 @@ void fetch_imageblock(
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
+		uint16_t data[6];
+		data[ASTCENC_SWZ_0] = 0x0000;
+		data[ASTCENC_SWZ_1] = 0x3C00;
+
 		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
@@ -374,26 +390,23 @@ void fetch_imageblock(
 					int b = data16[zi][yi][4 * xi + 2];
 					int a = data16[zi][yi][4 * xi + 3];
 
-					float rf = sf16_to_float(r);
-					float gf = sf16_to_float(g);
-					float bf = sf16_to_float(b);
-					float af = sf16_to_float(a);
+					if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = r;
+						data[ASTCENC_SWZ_G] = g;
+						data[ASTCENC_SWZ_B] = b;
+						data[ASTCENC_SWZ_A] = a;
 
-					// equalize the color components somewhat, and get rid of negative values.
-					rf = MAX(rf, 1e-8f);
-					gf = MAX(gf, 1e-8f);
-					bf = MAX(bf, 1e-8f);
-					af = MAX(af, 1e-8f);
+						r = data[swz.r];
+						g = data[swz.g];
+						b = data[swz.b];
+						a = data[swz.a];
+					}
 
-					data[0] = rf;
-					data[1] = gf;
-					data[2] = bf;
-					data[3] = af;
-
-					pb->data_r[idx] = data[swz.r];
-					pb->data_g[idx] = data[swz.g];
-					pb->data_b[idx] = data[swz.b];
-					pb->data_a[idx] = data[swz.a];
+					pb->data_r[idx] = MAX(sf16_to_float(r), 1e-8f);
+					pb->data_g[idx] = MAX(sf16_to_float(g), 1e-8f);
+					pb->data_b[idx] = MAX(sf16_to_float(b), 1e-8f);
+					pb->data_a[idx] = MAX(sf16_to_float(a), 1e-8f);
 					idx++;
 				}
 			}
@@ -402,6 +415,11 @@ void fetch_imageblock(
 	else // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
+
+		float data[6];
+		data[ASTCENC_SWZ_0] = 0.0f;
+		data[ASTCENC_SWZ_1] = 1.0f;
+
 		float*** data32 = static_cast<float***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
@@ -431,16 +449,23 @@ void fetch_imageblock(
 					float b = data32[zi][yi][4 * xi + 2];
 					float a = data32[zi][yi][4 * xi + 3];
 
-					// equalize the color components somewhat, and get rid of negative values.
-					data[0] = MAX(r, 1e-8f);
-					data[1] = MAX(g, 1e-8f);
-					data[2] = MAX(b, 1e-8f);
-					data[3] = MAX(a, 1e-8f);
+					if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = r;
+						data[ASTCENC_SWZ_G] = g;
+						data[ASTCENC_SWZ_B] = b;
+						data[ASTCENC_SWZ_A] = a;
 
-					pb->data_r[idx] = data[swz.r];
-					pb->data_g[idx] = data[swz.g];
-					pb->data_b[idx] = data[swz.b];
-					pb->data_a[idx] = data[swz.a];
+						r = data[swz.r];
+						g = data[swz.g];
+						b = data[swz.b];
+						a = data[swz.a];
+					}
+
+					pb->data_r[idx] = MAX(r, 1e-8f);
+					pb->data_g[idx] = MAX(g, 1e-8f);
+					pb->data_b[idx] = MAX(b, 1e-8f);
+					pb->data_a[idx] = MAX(a, 1e-8f);
 					idx++;
 				}
 			}
@@ -478,8 +503,16 @@ void write_imageblock(
 	int zsize = img.dim_z;
 
 	float data[7];
-	data[4] = 0.0f;
-	data[5] = 1.0f;
+	data[ASTCENC_SWZ_0] = 0.0f;
+	data[ASTCENC_SWZ_1] = 1.0f;
+
+	// True if any non-identity swizzle
+	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
+	                 (swz.b != ASTCENC_SWZ_B) || (swz.a != ASTCENC_SWZ_A);
+
+	// True if any swizzle uses Z reconstruct
+	bool needs_z = (swz.r == ASTCENC_SWZ_Z) || (swz.g == ASTCENC_SWZ_Z) ||
+	               (swz.b == ASTCENC_SWZ_Z) || (swz.a == ASTCENC_SWZ_Z);
 
 	int idx = 0;
 	if (img.data_type == ASTCENC_TYPE_U8)
@@ -497,62 +530,52 @@ void write_imageblock(
 
 					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
 					{
+						int ri, gi, bi, ai;
+
 						if (*nptr)
 						{
 							// NaN-pixel, but we can't display it. Display purple instead.
-							data8[zi][yi][4 * xi    ] = 0xFF;
-							data8[zi][yi][4 * xi + 1] = 0x00;
-							data8[zi][yi][4 * xi + 2] = 0xFF;
-							data8[zi][yi][4 * xi + 3] = 0xFF;
+							ri = 0xFF;
+							gi = 0x00;
+							bi = 0xFF;
+							ai = 0xFF;
+						}
+						else if (needs_swz)
+						{
+							data[ASTCENC_SWZ_R] = pb->data_r[idx];
+							data[ASTCENC_SWZ_G] = pb->data_g[idx];
+							data[ASTCENC_SWZ_B] = pb->data_b[idx];
+							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+
+							if (needs_z)
+							{
+								float xcoord = (data[0] * 2.0f) - 1.0f;
+								float ycoord = (data[3] * 2.0f) - 1.0f;
+								float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
+								if (zcoord < 0.0f)
+								{
+									zcoord = 0.0f;
+								}
+								data[ASTCENC_SWZ_Z] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
+							}
+
+							ri = astc::flt2int_rtn(MIN(data[swz.r], 1.0f) * 255.0f);
+							gi = astc::flt2int_rtn(MIN(data[swz.g], 1.0f) * 255.0f);
+							bi = astc::flt2int_rtn(MIN(data[swz.b], 1.0f) * 255.0f);
+							ai = astc::flt2int_rtn(MIN(data[swz.a], 1.0f) * 255.0f);
 						}
 						else
 						{
-							data[0] = pb->data_r[idx];
-							data[1] = pb->data_g[idx];
-							data[2] = pb->data_b[idx];
-							data[3] = pb->data_a[idx];
-
-							float xcoord = (data[0] * 2.0f) - 1.0f;
-							float ycoord = (data[3] * 2.0f) - 1.0f;
-							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
-							if (zcoord < 0.0f)
-							{
-								zcoord = 0.0f;
-							}
-							data[6] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
-
-							// clamp to [0,1]
-							if (data[0] > 1.0f)
-							{
-								data[0] = 1.0f;
-							}
-
-							if (data[1] > 1.0f)
-							{
-								data[1] = 1.0f;
-							}
-
-							if (data[2] > 1.0f)
-							{
-								data[2] = 1.0f;
-							}
-
-							if (data[3] > 1.0f)
-							{
-								data[3] = 1.0f;
-							}
-
-							// pack the data
-							int ri = astc::flt2int_rtn(data[swz.r] * 255.0f);
-							int gi = astc::flt2int_rtn(data[swz.g] * 255.0f);
-							int bi = astc::flt2int_rtn(data[swz.b] * 255.0f);
-							int ai = astc::flt2int_rtn(data[swz.a] * 255.0f);
-
-							data8[zi][yi][4 * xi    ] = ri;
-							data8[zi][yi][4 * xi + 1] = gi;
-							data8[zi][yi][4 * xi + 2] = bi;
-							data8[zi][yi][4 * xi + 3] = ai;
+							ri = astc::flt2int_rtn(MIN(pb->data_r[idx], 1.0f) * 255.0f);
+							gi = astc::flt2int_rtn(MIN(pb->data_g[idx], 1.0f) * 255.0f);
+							bi = astc::flt2int_rtn(MIN(pb->data_b[idx], 1.0f) * 255.0f);
+							ai = astc::flt2int_rtn(MIN(pb->data_a[idx], 1.0f) * 255.0f);
 						}
+
+						data8[zi][yi][4 * xi    ] = ri;
+						data8[zi][yi][4 * xi + 1] = gi;
+						data8[zi][yi][4 * xi + 2] = bi;
+						data8[zi][yi][4 * xi + 3] = ai;
 					}
 					idx++;
 					nptr++;
@@ -575,39 +598,51 @@ void write_imageblock(
 
 					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
 					{
+						int ri, gi, bi, ai;
+
 						if (*nptr)
 						{
-							data16[zi][yi][4 * xi    ] = 0xFFFF;
-							data16[zi][yi][4 * xi + 1] = 0xFFFF;
-							data16[zi][yi][4 * xi + 2] = 0xFFFF;
-							data16[zi][yi][4 * xi + 3] = 0xFFFF;
+							ri = 0xFFFF;
+							gi = 0xFFFF;
+							bi = 0xFFFF;
+							ai = 0xFFFF;
+						}
+						else if (needs_swz)
+						{
+							data[ASTCENC_SWZ_R] = pb->data_r[idx];
+							data[ASTCENC_SWZ_G] = pb->data_g[idx];
+							data[ASTCENC_SWZ_B] = pb->data_b[idx];
+							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+
+							if (needs_z)
+							{
+								float xN = (data[0] * 2.0f) - 1.0f;
+								float yN = (data[3] * 2.0f) - 1.0f;
+								float zN = 1.0f - xN * xN - yN * yN;
+								if (zN < 0.0f)
+								{
+									zN = 0.0f;
+								}
+								data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
+							}
+
+							ri = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
+							gi = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
+							bi = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
+							ai = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
 						}
 						else
 						{
-							data[0] = pb->data_r[idx];
-							data[1] = pb->data_g[idx];
-							data[2] = pb->data_b[idx];
-							data[3] = pb->data_a[idx];
-
-							float xN = (data[0] * 2.0f) - 1.0f;
-							float yN = (data[3] * 2.0f) - 1.0f;
-							float zN = 1.0f - xN * xN - yN * yN;
-							if (zN < 0.0f)
-							{
-								zN = 0.0f;
-							}
-							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
-
-							int r = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
-							int g = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
-							int b = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
-							int a = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
-
-							data16[zi][yi][4 * xi    ] = r;
-							data16[zi][yi][4 * xi + 1] = g;
-							data16[zi][yi][4 * xi + 2] = b;
-							data16[zi][yi][4 * xi + 3] = a;
+							ri = float_to_sf16(pb->data_r[idx], SF_NEARESTEVEN);
+							gi = float_to_sf16(pb->data_g[idx], SF_NEARESTEVEN);
+							bi = float_to_sf16(pb->data_b[idx], SF_NEARESTEVEN);
+							ai = float_to_sf16(pb->data_a[idx], SF_NEARESTEVEN);
 						}
+
+						data16[zi][yi][4 * xi    ] = ri;
+						data16[zi][yi][4 * xi + 1] = gi;
+						data16[zi][yi][4 * xi + 2] = bi;
+						data16[zi][yi][4 * xi + 3] = ai;
 					}
 					idx++;
 					nptr++;
@@ -631,34 +666,51 @@ void write_imageblock(
 
 					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
 					{
+						float rf, gf, bf, af;
+
 						if (*nptr)
 						{
-							data32[zi][yi][4 * xi    ] = std::numeric_limits<float>::quiet_NaN();
-							data32[zi][yi][4 * xi + 1] = std::numeric_limits<float>::quiet_NaN();
-							data32[zi][yi][4 * xi + 2] = std::numeric_limits<float>::quiet_NaN();
-							data32[zi][yi][4 * xi + 3] = std::numeric_limits<float>::quiet_NaN();
+							rf = std::numeric_limits<float>::quiet_NaN();
+							gf = std::numeric_limits<float>::quiet_NaN();
+							bf = std::numeric_limits<float>::quiet_NaN();
+							af = std::numeric_limits<float>::quiet_NaN();
+						}
+						else if (needs_swz)
+						{
+							data[ASTCENC_SWZ_R] = pb->data_r[idx];
+							data[ASTCENC_SWZ_G] = pb->data_g[idx];
+							data[ASTCENC_SWZ_B] = pb->data_b[idx];
+							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+
+							if (needs_z)
+							{
+								float xN = (data[0] * 2.0f) - 1.0f;
+								float yN = (data[3] * 2.0f) - 1.0f;
+								float zN = 1.0f - xN * xN - yN * yN;
+								if (zN < 0.0f)
+								{
+									zN = 0.0f;
+								}
+								data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
+							}
+
+							rf = data[swz.r];
+							gf = data[swz.g];
+							bf = data[swz.b];
+							af = data[swz.a];
 						}
 						else
 						{
-							data[0] = pb->data_r[idx];
-							data[1] = pb->data_g[idx];
-							data[2] = pb->data_b[idx];
-							data[3] = pb->data_a[idx];
-
-							float xN = (data[0] * 2.0f) - 1.0f;
-							float yN = (data[3] * 2.0f) - 1.0f;
-							float zN = 1.0f - xN * xN - yN * yN;
-							if (zN < 0.0f)
-							{
-								zN = 0.0f;
-							}
-							data[6] = (astc::sqrt(zN) * 0.5f) + 0.5f;
-
-							data32[zi][yi][4 * xi    ] = data[swz.r];
-							data32[zi][yi][4 * xi + 1] = data[swz.g];
-							data32[zi][yi][4 * xi + 2] = data[swz.b];
-							data32[zi][yi][4 * xi + 3] = data[swz.a];
+							rf = pb->data_r[idx];
+							gf = pb->data_g[idx];
+							bf = pb->data_b[idx];
+							af = pb->data_a[idx];
 						}
+
+						data32[zi][yi][4 * xi    ] = rf;
+						data32[zi][yi][4 * xi + 1] = gf;
+						data32[zi][yi][4 * xi + 2] = bf;
+						data32[zi][yi][4 * xi + 3] = af;
 					}
 					idx++;
 					nptr++;
