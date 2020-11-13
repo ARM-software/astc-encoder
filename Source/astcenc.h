@@ -92,17 +92,6 @@
  *     data8[z_coord][y_coord][x_coord * 4 + 2]   // Blue
  *     data8[z_coord][y_coord][x_coord * 4 + 3]   // Alpha
  *
- * If a region-based error heuristic is used for compression, the input image
- * must be padded on all sides by pad_dim texels in x and y dimensions (and z
- * dimensions for 3D images). The padding region must be filled by
- * extrapolating the nearest edge color. The required padding size is given by
- * the following config settings:
- *
- *     max(config.v_rgba_radius, config.a_scale_radius)
- *
- * This can be programatically determined by reading the config containing the
- * values passed into astcenc_context_alloc().
- *
  * Common compressor usage
  * =======================
  *
@@ -479,8 +468,6 @@ struct astcenc_image {
 	unsigned int dim_y;
 	/** @brief The X dimension of the image, in texels. */
 	unsigned int dim_z;
-	/** @brief The border padding dimensions, in texels. */
-	unsigned int dim_pad;
 	/** @brief The data type per channel. */
 	astcenc_type data_type;
 	/** @brief The data; actually of type <t>***. */

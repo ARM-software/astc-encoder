@@ -677,8 +677,7 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	if (image.dim_pad > 0 ||
-	    ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
+	if (ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
 	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f)
 	{
 		// First thread to enter will do setup, other threads will subsequently

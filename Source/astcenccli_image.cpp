@@ -28,37 +28,31 @@ astcenc_image *alloc_image(
 	unsigned int bitness,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_z,
-	unsigned int dim_pad
+	unsigned int dim_z
 ) {
 	astcenc_image *img = new astcenc_image;
 	img->dim_x = dim_x;
 	img->dim_y = dim_y;
 	img->dim_z = dim_z;
-	img->dim_pad = dim_pad;
-
-	unsigned int dim_ex = dim_x + 2 * dim_pad;
-	unsigned int dim_ey = dim_y + 2 * dim_pad;
-	unsigned int dim_ez = (dim_z == 1) ? 1 : dim_z + 2 * dim_pad;
 
 	if (bitness == 8)
 	{
-		uint8_t*** data8 = new uint8_t **[dim_ez];
-		data8[0] = new uint8_t *[dim_ez * dim_ey];
-		data8[0][0] = new uint8_t[4 * dim_ez * dim_ey * dim_ex];
-		memset(data8[0][0], 0, 4 * dim_ez * dim_ey * dim_ex);
+		uint8_t*** data8 = new uint8_t **[dim_z];
+		data8[0] = new uint8_t *[dim_z * dim_y];
+		data8[0][0] = new uint8_t[4 * dim_z * dim_y * dim_x];
+		memset(data8[0][0], 0, 4 * dim_z * dim_y * dim_x);
 
-		for (unsigned int z = 1; z < dim_ez; z++)
+		for (unsigned int z = 1; z < dim_z; z++)
 		{
-			data8[z] = data8[0] + z * dim_ey;
-			data8[z][0] = data8[0][0] + 4 * z * dim_ex * dim_ey;
+			data8[z] = data8[0] + z * dim_y;
+			data8[z][0] = data8[0][0] + 4 * z * dim_x * dim_y;
 		}
 
-		for (unsigned int z = 0; z < dim_ez; z++)
+		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_ey; y++)
+			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				data8[z][y] = data8[z][0] + 4 * y * dim_ex;
+				data8[z][y] = data8[z][0] + 4 * y * dim_x;
 			}
 		}
 
@@ -67,22 +61,22 @@ astcenc_image *alloc_image(
 	}
 	else if (bitness == 16)
 	{
-		uint16_t*** data16 = new uint16_t **[dim_ez];
-		data16[0] = new uint16_t *[dim_ez * dim_ey];
-		data16[0][0] = new uint16_t[4 * dim_ez * dim_ey * dim_ex];
-		memset(data16[0][0], 0, 8 * dim_ez * dim_ey * dim_ex);
+		uint16_t*** data16 = new uint16_t **[dim_z];
+		data16[0] = new uint16_t *[dim_z * dim_y];
+		data16[0][0] = new uint16_t[4 * dim_z * dim_y * dim_x];
+		memset(data16[0][0], 0, 8 * dim_z * dim_y * dim_x);
 
-		for (unsigned int z = 1; z < dim_ez; z++)
+		for (unsigned int z = 1; z < dim_z; z++)
 		{
-			data16[z] = data16[0] + z * dim_ey;
-			data16[z][0] = data16[0][0] + 4 * z * dim_ex * dim_ey;
+			data16[z] = data16[0] + z * dim_y;
+			data16[z][0] = data16[0][0] + 4 * z * dim_x * dim_y;
 		}
 
-		for (unsigned int z = 0; z < dim_ez; z++)
+		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_ey; y++)
+			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				data16[z][y] = data16[z][0] + 4 * y * dim_ex;
+				data16[z][y] = data16[z][0] + 4 * y * dim_x;
 			}
 		}
 
@@ -92,22 +86,22 @@ astcenc_image *alloc_image(
 	else // if (bitness == 32)
 	{
 		assert(bitness == 32);
-		float*** data32 = new float**[dim_ez];
-		data32[0] = new float*[dim_ez * dim_ey];
-		data32[0][0] = new float[4 * dim_ez * dim_ey * dim_ex];
-		memset(data32[0][0], 0, 8 * dim_ez * dim_ey * dim_ex);
+		float*** data32 = new float**[dim_z];
+		data32[0] = new float*[dim_z * dim_y];
+		data32[0][0] = new float[4 * dim_z * dim_y * dim_x];
+		memset(data32[0][0], 0, 8 * dim_z * dim_y * dim_x);
 
-		for (unsigned int z = 1; z < dim_ez; z++)
+		for (unsigned int z = 1; z < dim_z; z++)
 		{
-			data32[z] = data32[0] + z * dim_ey;
-			data32[z][0] = data32[0][0] + 4 * z * dim_ex * dim_ey;
+			data32[z] = data32[0] + z * dim_y;
+			data32[z][0] = data32[0][0] + 4 * z * dim_x * dim_y;
 		}
 
-		for (unsigned int z = 0; z < dim_ez; z++)
+		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_ey; y++)
+			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				data32[z][y] = data32[z][0] + 4 * y * dim_ex;
+				data32[z][y] = data32[z][0] + 4 * y * dim_x;
 			}
 		}
 
@@ -149,95 +143,6 @@ void free_image(astcenc_image * img)
 	}
 
 	delete img;
-}
-
-
-// fill the padding area of the input-file buffer with clamp-to-edge data
-// Done inefficiently, in that it will overwrite all the interior data at least once;
-// this is not considered a problem, since this makes up a very small part of total
-// running time.
-void fill_image_padding_area(astcenc_image * img)
-{
-	if (img->dim_pad == 0)
-	{
-		return;
-	}
-
-	unsigned int dim_ex = img->dim_x + 2 * img->dim_pad;
-	unsigned int dim_ey = img->dim_y + 2 * img->dim_pad;
-	unsigned int dim_ez = (img->dim_z == 1) ? 1 : (img->dim_z + 2 * img->dim_pad);
-
-	unsigned int xmin = img->dim_pad;
-	unsigned int ymin = img->dim_pad;
-	unsigned int zmin = (img->dim_z == 1) ? 0 : img->dim_pad;
-	unsigned int xmax = img->dim_x + img->dim_pad - 1;
-	unsigned int ymax = img->dim_y + img->dim_pad - 1;
-	unsigned int zmax = (img->dim_z == 1) ? 0 : img->dim_z + img->dim_pad - 1;
-
-	// This is a very simple implementation. Possible optimizations include:
-	// * Testing if texel is outside the edge.
-	// * Looping over texels that we know are outside the edge.
-	if (img->data_type == ASTCENC_TYPE_U8)
-	{
-		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
-		for (unsigned int z = 0; z < dim_ez; z++)
-		{
-			int zc = MIN(MAX(z, zmin), zmax);
-			for (unsigned int y = 0; y < dim_ey; y++)
-			{
-				int yc = MIN(MAX(y, ymin), ymax);
-				for (unsigned int x = 0; x < dim_ex; x++)
-				{
-					int xc = MIN(MAX(x, xmin), xmax);
-					for (unsigned int i = 0; i < 4; i++)
-					{
-						data8[z][y][4 * x + i] = data8[zc][yc][4 * xc + i];
-					}
-				}
-			}
-		}
-	}
-	else if (img->data_type == ASTCENC_TYPE_F16)
-	{
-		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
-		for (unsigned int z = 0; z < dim_ez; z++)
-		{
-			int zc = MIN(MAX(z, zmin), zmax);
-			for (unsigned int y = 0; y < dim_ey; y++)
-			{
-				int yc = MIN(MAX(y, ymin), ymax);
-				for (unsigned int x = 0; x < dim_ex; x++)
-				{
-					int xc = MIN(MAX(x, xmin), xmax);
-					for (unsigned int i = 0; i < 4; i++)
-					{
-						data16[z][y][4 * x + i] = data16[zc][yc][4 * xc + i];
-					}
-				}
-			}
-		}
-	}
-	else // if (img->data_type == ASTCENC_TYPE_F32)
-	{
-		assert(img->data_type == ASTCENC_TYPE_F32);
-		float*** data32 = static_cast<float***>(img->data);
-		for (unsigned int z = 0; z < dim_ez; z++)
-		{
-			int zc = MIN(MAX(z, zmin), zmax);
-			for (unsigned int y = 0; y < dim_ey; y++)
-			{
-				int yc = MIN(MAX(y, ymin), ymax);
-				for (unsigned int x = 0; x < dim_ex; x++)
-				{
-					int xc = MIN(MAX(x, xmin), xmax);
-					for (unsigned int i = 0; i < 4; i++)
-					{
-						data32[z][y][4 * x + i] = data32[zc][yc][4 * xc + i];
-					}
-				}
-			}
-		}
-	}
 }
 
 int determine_image_channels(const astcenc_image * img)
@@ -325,46 +230,40 @@ astcenc_image* astc_img_from_floatx4_array(
 	const float* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_pad,
 	bool y_flip
 ) {
 	// TODO: Make this 32 to use direct passthough as float
-	astcenc_image* img = alloc_image(16, dim_x, dim_y, 1, dim_pad);
+	astcenc_image* img = alloc_image(16, dim_x, dim_y, 1);
 
 	for (unsigned int y = 0; y < dim_y; y++)
 	{
 #if 0
 		float*** data32 = static_cast<float***>(img->data);
-		unsigned int y_dst = y + dim_pad;
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
 		const float* src = data + 4 * dim_y * y_src;
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{
-			unsigned int x_dst = x + dim_pad;
-			data32[0][y_dst][4 * x_dst    ] = src[4 * x    ];
-			data32[0][y_dst][4 * x_dst + 1] = src[4 * x + 1];
-			data32[0][y_dst][4 * x_dst + 2] = src[4 * x + 2];
-			data32[0][y_dst][4 * x_dst + 3] = src[4 * x + 3];
+			data32[0][y][4 * x    ] = src[4 * x    ];
+			data32[0][y][4 * x + 1] = src[4 * x + 1];
+			data32[0][y][4 * x + 2] = src[4 * x + 2];
+			data32[0][y][4 * x + 3] = src[4 * x + 3];
 		}
 #else
 		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
-		unsigned int y_dst = y + dim_pad;
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
 		const float* src = data + 4 * dim_y * y_src;
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{
-			unsigned int x_dst = x + dim_pad;
-			data16[0][y_dst][4 * x_dst]     = float_to_sf16(src[4 * x],     SF_NEARESTEVEN);
-			data16[0][y_dst][4 * x_dst + 1] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
-			data16[0][y_dst][4 * x_dst + 2] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
-			data16[0][y_dst][4 * x_dst + 3] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
+			data16[0][y][4 * x    ] = float_to_sf16(src[4 * x    ], SF_NEARESTEVEN);
+			data16[0][y][4 * x + 1] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
+			data16[0][y][4 * x + 2] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
+			data16[0][y][4 * x + 3] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
 		}
 #endif
 	}
 
-	fill_image_padding_area(img);
 	return img;
 }
 
@@ -373,29 +272,25 @@ astcenc_image* astc_img_from_unorm8x4_array(
 	const uint8_t* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_pad,
 	bool y_flip
 ) {
-	astcenc_image* img = alloc_image(8, dim_x, dim_y, 1, dim_pad);
+	astcenc_image* img = alloc_image(8, dim_x, dim_y, 1);
 
 	for (unsigned int y = 0; y < dim_y; y++)
 	{
 		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
-		unsigned int y_dst = y + dim_pad;
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
 		const uint8_t* src = data + 4 * dim_x * y_src;
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{
-			unsigned int x_dst = x + dim_pad;
-			data8[0][y_dst][4 * x_dst    ] = src[4 * x    ];
-			data8[0][y_dst][4 * x_dst + 1] = src[4 * x + 1];
-			data8[0][y_dst][4 * x_dst + 2] = src[4 * x + 2];
-			data8[0][y_dst][4 * x_dst + 3] = src[4 * x + 3];
+			data8[0][y][4 * x    ] = src[4 * x    ];
+			data8[0][y][4 * x + 1] = src[4 * x + 1];
+			data8[0][y][4 * x + 2] = src[4 * x + 2];
+			data8[0][y][4 * x + 3] = src[4 * x + 3];
 		}
 	}
 
-	fill_image_padding_area(img);
 	return img;
 }
 
@@ -407,7 +302,6 @@ float* floatx4_array_from_astc_img(
 ) {
 	unsigned int dim_x = img->dim_x;
 	unsigned int dim_y = img->dim_y;
-	unsigned int dim_pad = img->dim_pad;
 	float *buf = new float[4 * dim_x * dim_y];
 
 	if (img->data_type == ASTCENC_TYPE_U8)
@@ -416,7 +310,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const uint8_t* src = data8[0][ymod + dim_pad] + (4 * dim_pad);
+			const uint8_t* src = data8[0][ymod];
 			float* dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
@@ -434,7 +328,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const uint16_t *src = data16[0][ymod + dim_pad] + (4 * dim_pad);
+			const uint16_t *src = data16[0][ymod];
 			float *dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
@@ -453,7 +347,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const float *src = data32[0][ymod + dim_pad] + (4 * dim_pad);
+			const float *src = data32[0][ymod];
 			float *dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
@@ -477,7 +371,6 @@ uint8_t* unorm8x4_array_from_astc_img(
 ) {
 	unsigned int dim_x = img->dim_x;
 	unsigned int dim_y = img->dim_y;
-	unsigned int dim_pad = img->dim_pad;
 	uint8_t* buf = new uint8_t[4 * dim_x * dim_y];
 
 	if (img->data_type == ASTCENC_TYPE_U8)
@@ -486,12 +379,12 @@ uint8_t* unorm8x4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const uint8_t* src = data8[0][ymod + dim_pad] + (4 * dim_pad);
+			const uint8_t* src = data8[0][ymod];
 			uint8_t* dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				dst[4 * x]     = src[4 * x];
+				dst[4 * x    ] = src[4 * x    ];
 				dst[4 * x + 1] = src[4 * x + 1];
 				dst[4 * x + 2] = src[4 * x + 2];
 				dst[4 * x + 3] = src[4 * x + 3];
@@ -504,15 +397,15 @@ uint8_t* unorm8x4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const uint16_t* src = data16[0][ymod + dim_pad] + (4 * dim_pad);
+			const uint16_t* src = data16[0][ymod];
 			uint8_t* dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				dst[4 * x]     = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4*x]))   * 255.0f);
-				dst[4 * x + 1] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4*x+1])) * 255.0f);
-				dst[4 * x + 2] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4*x+2])) * 255.0f);
-				dst[4 * x + 3] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4*x+3])) * 255.0f);
+				dst[4 * x   ]  = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4 * x    ])) * 255.0f);
+				dst[4 * x + 1] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4 * x + 1])) * 255.0f);
+				dst[4 * x + 2] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4 * x + 2])) * 255.0f);
+				dst[4 * x + 3] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(src[4 * x + 3])) * 255.0f);
 			}
 		}
 	}
@@ -523,15 +416,15 @@ uint8_t* unorm8x4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			const float* src = data32[0][ymod + dim_pad] + (4 * dim_pad);
+			const float* src = data32[0][ymod];
 			uint8_t* dst = buf + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				dst[4 * x]     = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4*x  ]) * 255.0f);
-				dst[4 * x + 1] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4*x+1]) * 255.0f);
-				dst[4 * x + 2] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4*x+2]) * 255.0f);
-				dst[4 * x + 3] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4*x+3]) * 255.0f);
+				dst[4 * x    ] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4 * x    ]) * 255.0f);
+				dst[4 * x + 1] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4 * x + 1]) * 255.0f);
+				dst[4 * x + 2] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4 * x + 2]) * 255.0f);
+				dst[4 * x + 3] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(src[4 * x + 3]) * 255.0f);
 			}
 		}
 	}

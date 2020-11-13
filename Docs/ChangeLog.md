@@ -6,12 +6,23 @@ release of the 2.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running astcenc using 6 threads.
 
+<!-- ---------------------------------------------------------------------- -->
 ## 2.2
 
 **Status:** :warning: In development (ETA February 2021)
 
 The 2.2 release is the third release in the 2.x series. It includes ...
 
+Reminder for users of the library interface - the API is not designed to be
+stable across versions, and this release is not compatible with 2.1. Please
+recompile your client-side code using the updated `astcenc.h` header.
+
+* **Core API:**
+  * **API Change:** Images using region-based metrics no longer need to include
+    padding; all input images should be tightly packed and `dim_pad` is removed
+    from the `astcenc_image` structure.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 2.1
 
 **Status:** Released, November 2020
@@ -21,7 +32,7 @@ of performance optimizations and new features.
 
 Reminder for users of the library interface - the API is not designed to be
 stable across versions, and this release is not compatible with 2.0. Please
-recompile the client-side using the updated `astcenc.h` header.
+recompile your client-side code using the updated `astcenc.h` header.
 
 ### Features:
 
@@ -67,6 +78,7 @@ Key for performance charts:
 
 ![Relative scores 2.1 vs 2.0](./ChangeLogImg/relative-2.0-to-2.1.png)
 
+<!-- ---------------------------------------------------------------------- -->
 ## 2.0
 
 **Status:** Released, August 2020

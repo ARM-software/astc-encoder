@@ -149,6 +149,27 @@ static inline float clamp255f(float val)
 }
 
 /**
+ * @brief Clamp a value value between mn and mx
+ *
+ * For floats, NaNs are turned into mn.
+ *
+ * @param val The value clamp.
+ * @param mn  The min value (inclusive).
+ * @param mx  The max value (inclusive).
+ *
+ * @return The clamped value.
+ */
+template<typename T>
+inline T clamp(T val, T mn, T mx)
+{
+	// Do not reorder; correct NaN handling relies on the fact that comparison
+	// with NaN returns false and will fall-though to the "min" value.
+	if (val > mx) return mx;
+	if (val > mn) return val;
+	return mn;
+}
+
+/**
  * @brief Clamp a float value between 0.0f and 65504.0f.
  *
  * NaNs are turned into 0.0f.

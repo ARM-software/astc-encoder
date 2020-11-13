@@ -278,20 +278,13 @@ void fetch_imageblock(
 	int zpos,
 	astcenc_swizzle swz
 ) {
-	int xsize = img.dim_x + 2 * img.dim_pad;
-	int ysize = img.dim_y + 2 * img.dim_pad;
-	int zsize = (img.dim_z == 1) ? 1 : img.dim_z + 2 * img.dim_pad;
+	int xsize = img.dim_x;
+	int ysize = img.dim_y;
+	int zsize = img.dim_z;
 
 	pb->xpos = xpos;
 	pb->ypos = ypos;
 	pb->zpos = zpos;
-
-	xpos += img.dim_pad;
-	ypos += img.dim_pad;
-	if (img.dim_z > 1)
-	{
-		zpos += img.dim_pad;
-	}
 
 	// True if any non-identity swizzle
 	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||

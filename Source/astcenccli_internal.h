@@ -68,7 +68,6 @@ struct cli_config_options
  */
 astcenc_image* load_ncimage(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components);
@@ -87,13 +86,9 @@ astcenc_image* alloc_image(
 	unsigned int bitness,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_z,
-	unsigned int dim_pad);
+	unsigned int dim_z);
 
 void free_image(
-	astcenc_image* img);
-
-void fill_image_padding_area(
 	astcenc_image* img);
 
 int determine_image_channels(
@@ -123,14 +118,12 @@ astcenc_image* astc_img_from_floatx4_array(
 	const float* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_pad,
 	bool y_flip);
 
 astcenc_image*astc_img_from_unorm8x4_array(
 	const uint8_t* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
-	unsigned int dim_pad,
 	bool y_flip);
 
 // helper functions to prepare a flat array from an ASTC image object.

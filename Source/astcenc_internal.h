@@ -854,10 +854,8 @@ struct pixel_region_variance_args
 	int alpha_kernel_radius;
 	/** The size of the working data to process. */
 	int3 size;
-	/** The position of first src data in the data set. */
-	int3 src_offset;
-	/** The position of first dst data in the data set. */
-	int3 dst_offset;
+	/** The position of first src and dst data in the data set. */
+	int3 offset;
 	/** The working memory buffer. */
 	float4 *work_memory;
 };

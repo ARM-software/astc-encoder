@@ -53,7 +53,6 @@ Image load and store through the stb_iamge and tinyexr libraries
 
 static astcenc_image* load_image_with_tinyexr(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -70,7 +69,7 @@ static astcenc_image* load_image_with_tinyexr(
 		return nullptr;
 	}
 
-	astcenc_image* res_img = astc_img_from_floatx4_array(image, dim_x, dim_y, dim_pad, y_flip);
+	astcenc_image* res_img = astc_img_from_floatx4_array(image, dim_x, dim_y, y_flip);
 	free(image);
 
 	is_hdr = true;
@@ -80,7 +79,6 @@ static astcenc_image* load_image_with_tinyexr(
 
 static astcenc_image* load_image_with_stb(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -92,7 +90,7 @@ static astcenc_image* load_image_with_stb(
 		float* data = stbi_loadf(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
 		if (data)
 		{
-			astcenc_image* img = astc_img_from_floatx4_array(data, dim_x, dim_y, dim_pad, y_flip);
+			astcenc_image* img = astc_img_from_floatx4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = true;
 			num_components = 4;
@@ -104,7 +102,7 @@ static astcenc_image* load_image_with_stb(
 		uint8_t* data = stbi_load(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
 		if (data)
 		{
-			astcenc_image* img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, dim_pad, y_flip);
+			astcenc_image* img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = false;
 			num_components = 4;
@@ -737,7 +735,6 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 
 static astcenc_image* load_ktx_uncompressed_image(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -1029,28 +1026,28 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
-	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z, dim_pad);
+	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
 	{
-		unsigned int zdst = (dim_z == 1) ? z : z + dim_pad;
+		unsigned int zdst = z;
 
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod + dim_pad;
+			unsigned int ydst = ymod;
 			void *dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t*** data8 = static_cast<uint8_t***>(astc_img->data);
-				dst = static_cast<void*>(data8[zdst][ydst] + 4 * dim_pad);
+				dst = static_cast<void*>(data8[zdst][ydst]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t*** data16 = static_cast<uint16_t***>(astc_img->data);
-				dst = static_cast<void*>(data16[zdst][ydst] + 4 * dim_pad);
+				dst = static_cast<void*>(data16[zdst][ydst]);
 			}
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
@@ -1059,7 +1056,6 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	delete[] buf;
-	fill_image_padding_area(astc_img);
 	is_hdr = bitness == 32;
 	num_components = components;
 	return astc_img;
@@ -1496,7 +1492,6 @@ struct dds_header_dx10
 
 astcenc_image* load_dds_uncompressed_image(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -1741,28 +1736,28 @@ astcenc_image* load_dds_uncompressed_image(
 	}
 
 	// then transfer data from the surface to our own image-data-structure.
-	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z, dim_pad);
+	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
 	{
-		unsigned int zdst = dim_z == 1 ? z : z + dim_pad;
+		unsigned int zdst = dim_z == 1 ? z : z;
 
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod + dim_pad;
+			unsigned int ydst = ymod;
 			void* dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t*** data8 = static_cast<uint8_t***>(astc_img->data);
-				dst = static_cast<void*>(data8[zdst][ydst] + 4 * dim_pad);
+				dst = static_cast<void*>(data8[zdst][ydst]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t*** data16 = static_cast<uint16_t***>(astc_img->data);
-				dst = static_cast<void*>(data16[zdst][ydst] + 4 * dim_pad);
+				dst = static_cast<void*>(data16[zdst][ydst]);
 			}
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
@@ -1771,7 +1766,6 @@ astcenc_image* load_dds_uncompressed_image(
 	}
 
 	delete[] buf;
-	fill_image_padding_area(astc_img);
 	is_hdr = bitness == 16;
 	num_components = components;
 	return astc_img;
@@ -2054,7 +2048,7 @@ we use tinyexr; for TGA, BMP and PNG, we use stb_image_write.
 static const struct {
 	const char* ending1;
 	const char* ending2;
-	astcenc_image* (*loader_func)(const char*, unsigned int, bool, bool&, unsigned int&);
+	astcenc_image* (*loader_func)(const char*, bool, bool&, unsigned int&);
 } loader_descs[] = {
 	// HDR formats
 	{".exr",   ".EXR",  load_image_with_tinyexr },
@@ -2124,7 +2118,6 @@ int get_output_filename_enforced_bitness(
 
 astcenc_image* load_ncimage(
 	const char* filename,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -2143,7 +2136,7 @@ astcenc_image* load_ncimage(
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			return loader_descs[i].loader_func(filename, dim_pad, y_flip, is_hdr, num_components);
+			return loader_descs[i].loader_func(filename, y_flip, is_hdr, num_components);
 		}
 	}
 

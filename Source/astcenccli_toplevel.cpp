@@ -162,7 +162,6 @@ static std::string get_slice_filename(
  *
  * @param filename            The file to load, or a pattern for array loads.
  * @param dim_z               The number of slices to load.
- * @param padding             The number of texels of padding.
  * @param y_flip              Should this image be Y flipped?
  * @param[out] is_hdr         Is the loaded image HDR?
  * @param[out] num_components The number of components in the loaded image.
@@ -172,7 +171,6 @@ static std::string get_slice_filename(
 static astcenc_image* load_uncomp_file(
 	const char* filename,
 	unsigned int dim_z,
-	unsigned int dim_pad,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& num_components
@@ -182,7 +180,7 @@ static astcenc_image* load_uncomp_file(
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = load_ncimage(filename, dim_pad, y_flip, is_hdr, num_components);
+		image = load_ncimage(filename, y_flip, is_hdr, num_components);
 	}
 	else
 	{
@@ -202,7 +200,7 @@ static astcenc_image* load_uncomp_file(
 				break;
 			}
 
-			slice = load_ncimage(slice_name.c_str(), dim_pad, y_flip,
+			slice = load_ncimage(slice_name.c_str(), y_flip,
 			                     slice_is_hdr, slice_num_components);
 			if (!slice)
 			{
@@ -249,24 +247,24 @@ static astcenc_image* load_uncomp_file(
 			unsigned int dim_y = slices[0]->dim_y;
 			// TODO: Make this 32 to use direct pass though as float
 			int bitness = is_hdr ? 16 : 8;
-			int slice_size = (dim_x + (2 * dim_pad)) * (dim_y + (2 * dim_pad));
+			int slice_size = dim_x * dim_y;
 
-			image = alloc_image(bitness, dim_x, dim_y, dim_z, dim_pad);
+			image = alloc_image(bitness, dim_x, dim_y, dim_z);
 
-			// Combine 2D source images into one 3D image; skipping padding slices
-			for (unsigned int z = dim_pad; z < dim_z + dim_pad; z++)
+			// Combine 2D source images into one 3D image
+			for (unsigned int z = 0; z < dim_z; z++)
 			{
 				if (image->data_type == ASTCENC_TYPE_U8)
 				{
 					uint8_t*** data8 = static_cast<uint8_t***>(image->data);
-					uint8_t*** data8src = static_cast<uint8_t***>(slices[z - dim_pad]->data);
+					uint8_t*** data8src = static_cast<uint8_t***>(slices[z]->data);
 					size_t copy_size = slice_size * 4 * sizeof(uint8_t);
 					memcpy(*data8[z], *data8src[0], copy_size);
 				}
 				else if (image->data_type == ASTCENC_TYPE_F16)
 				{
 					uint16_t*** data16 = static_cast<uint16_t***>(image->data);
-					uint16_t*** data16src = static_cast<uint16_t***>(slices[z - dim_pad]->data);
+					uint16_t*** data16src = static_cast<uint16_t***>(slices[z]->data);
 					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
 					memcpy(*data16[z], *data16src[0], copy_size);
 				}
@@ -274,14 +272,11 @@ static astcenc_image* load_uncomp_file(
 				{
 					assert(image->data_type == ASTCENC_TYPE_F32);
 					float*** data32 = static_cast<float***>(image->data);
-					float*** data32src = static_cast<float***>(slices[z - dim_pad]->data);
+					float*** data32src = static_cast<float***>(slices[z]->data);
 					size_t copy_size = slice_size * 4 * sizeof(float);
 					memcpy(*data32[z], *data32src[0], copy_size);
 				}
 			}
-
-			// Fill in the padding slices with clamped data
-			fill_image_padding_area(image);
 		}
 
 		for (auto &i : slices)
@@ -302,7 +297,7 @@ static astcenc_image* load_uncomp_file(
  * @param operation            ASTC operation mode
  * @param profile              ASTC profile
  *
- * @return 0 if everything is Okay, 1 if there is some error
+ * @return 0 if everything is okay, 1 if there is some error
  */
 int parse_commandline_options(
 	int argc,
@@ -344,7 +339,7 @@ int parse_commandline_options(
  * @param comp_image
  * @param config           The astcenc configuration
  *
- * @return 0 if everything is Okay, 1 if there is some error
+ * @return 0 if everything is okay, 1 if there is some error
  */
 int init_astcenc_config(
 	int argc,
@@ -1043,7 +1038,6 @@ int main(
 		return 1;
 	}
 
-	int padding = MAX(config.v_rgba_radius, config.a_scale_radius);
 	astcenc_image* image_uncomp_in = nullptr ;
 	unsigned int image_uncomp_in_num_chan = 0;
 	bool image_uncomp_in_is_hdr = false;
@@ -1063,7 +1057,7 @@ int main(
 	// Load the uncompressed input file if needed
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
 	{
-		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size, padding,
+		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size,
 		                                   cli_config.y_flip, image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
 		if (!image_uncomp_in)
 		{
@@ -1165,7 +1159,7 @@ int main(
 		}
 
 		image_decomp_out = alloc_image(
-		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z, 0);
+		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
 
 		codec_status = astcenc_decompress_image(codec_context, image_comp.data, image_comp.data_len,
 		                                        *image_decomp_out, cli_config.swz_decode);
