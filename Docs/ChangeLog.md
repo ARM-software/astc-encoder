@@ -6,9 +6,15 @@ release of the 2.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running astcenc using 6 threads.
 
+## 2.2
+
+**Status:** :warning: In development (ETA February 2021)
+
+The 2.2 release is the third release in the 2.x series. It includes ...
+
 ## 2.1
 
-**Status:** :warning: In development (ETA November 2020)
+**Status:** Released, November 2020
 
 The 2.1 release is the second release in the 2.x series. It includes a number
 of performance optimizations and new features.
@@ -41,7 +47,7 @@ recompile the client-side using the updated `astcenc.h` header.
   * **Feature:** Image input/output can now use `ASTCENC_TYPE_F32` data types.
 * **Stability:**
   * **Feature:** The SSE2, SSE4.2, and AVX2 variants now produce identical
-    compressed output when run on the same CPU when compiled with the 
+    compressed output when run on the same CPU when compiled with the
     preprocessor define `ASTCENC_ISA_INVARIANCE=1`. For Make builds this can
     be set on the command line by setting `ISA_INV=1`. ISA invariance is off
     by default; it reduces performance by 1-3%.

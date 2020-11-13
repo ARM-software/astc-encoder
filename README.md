@@ -62,7 +62,7 @@ Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
-* Latest stable release: 2.0.
+* Latest stable release: 2.1.
 * Change log: [2.x series](./Docs/ChangeLog.md)
 
 ## astcenc 2.x binaries
