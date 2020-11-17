@@ -363,9 +363,17 @@ ADVANCED COMPRESSION
            zero or one. For example to swap the RG channels, and replace
            alpha with 1, the swizzle 'grb1' should be used.
 
-           Note that the input swizzle is assumed to take place before any
-           compression, and all error weighting applies to the post-swizzle
-           channel ordering.
+           The input swizzle takes place before any compression, and all
+           error weighting applied using the -cw option is applied to the
+           post-swizzle channel ordering.
+
+           By default all 4 post-swizzle channels are included in the error
+           metrics during compression. When using -esw to map two channel
+           data to the L+A endpoint (e.g. -esw rrrg) the luminance data
+           stored in the rgb channels will be weighted three times more
+           strongly than the alpha channel. This can be corrected using the
+           -cw option to zero the weights of unused channels; e.g. using
+           -cw 1 0 0 1.
 
        -dsw <swizzle>
            Swizzle the color components after decompression. The swizzle is
