@@ -32,7 +32,7 @@ pipeline {
                 sh '''
                   cd ./Source/
                   make CXX=clang++ VEC=avx2
-                  make CXX=clang++ VEC=sse4.2
+                  make CXX=clang++ VEC=sse4.1
                   make CXX=clang++ VEC=sse2
                 '''
               }
@@ -70,7 +70,7 @@ pipeline {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Release /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse4.2.vcxproj /p:Configuration=Release /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse4.1.vcxproj /p:Configuration=Release /p:Platform=x64
                   call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Release /p:Platform=x64
                 '''
               }
@@ -80,7 +80,7 @@ pipeline {
                 bat '''
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Debug /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse4.2.vcxproj /p:Configuration=Debug /p:Platform=x64
+                  call msbuild .\\Source\\VS2019\\astcenc-sse4.1.vcxproj /p:Configuration=Debug /p:Platform=x64
                   call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Debug /p:Platform=x64
                 '''
               }
@@ -118,7 +118,7 @@ pipeline {
                 sh '''
                   cd ./Source/
                   make VEC=avx2
-                  make VEC=sse4.2
+                  make VEC=sse4.1
                   make VEC=sse2
                 '''
               }
