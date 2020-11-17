@@ -25,7 +25,7 @@
 
 #include "astcenc_internal.h"
 
-static int g_cpu_has_sse42 = -1;
+static int g_cpu_has_sse41 = -1;
 static int g_cpu_has_avx2 = -1;
 static int g_cpu_has_popcnt = -1;
 
@@ -42,13 +42,13 @@ static void detect_cpu_isa()
 	__cpuid(data, 0);
 	int num_id = data[0];
 
-	g_cpu_has_sse42 = 0;
+	g_cpu_has_sse41 = 0;
 	g_cpu_has_popcnt = 0;
 	if (num_id >= 1)
 	{
 		__cpuidex(data, 1, 0);
-		// SSE42 = Bank 1, ECX, bit 20
-		g_cpu_has_sse42 = data[2] & (1 << 20) ? 1 : 0;
+		// SSE41 = Bank 1, ECX, bit 19
+		g_cpu_has_sse41 = data[2] & (1 << 19) ? 1 : 0;
 		// POPCNT = Bank 1, ECX, bit 23
 		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
 	}
@@ -72,12 +72,12 @@ static void detect_cpu_isa()
 {
 	unsigned int data[4];
 
-	g_cpu_has_sse42 = 0;
+	g_cpu_has_sse41 = 0;
 	g_cpu_has_popcnt = 0;
 	if (__get_cpuid_count(1, 0, &data[0], &data[1], &data[2], &data[3]))
 	{
-		// SSE42 = Bank 1, ECX, bit 20
-		g_cpu_has_sse42 = data[2] & (1 << 20) ? 1 : 0;
+		// SSE41 = Bank 1, ECX, bit 19
+		g_cpu_has_sse41 = data[2] & (1 << 19) ? 1 : 0;
 		// POPCNT = Bank 1, ECX, bit 23
 		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
 	}
@@ -92,14 +92,14 @@ static void detect_cpu_isa()
 #endif
 
 /* Public function, see header file for detailed documentation */
-int cpu_supports_sse42()
+int cpu_supports_sse41()
 {
-	if (g_cpu_has_sse42 == -1)
+	if (g_cpu_has_sse41 == -1)
 	{
 		detect_cpu_isa();
 	}
 
-	return g_cpu_has_sse42;
+	return g_cpu_has_sse41;
 }
 
 /* Public function, see header file for detailed documentation */

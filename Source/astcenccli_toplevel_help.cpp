@@ -487,8 +487,8 @@ void astcenc_print_header()
 {
 #if (ASTCENC_AVX == 2)
 	const char* simdtype = "avx2";
-#elif (ASTCENC_SSE == 42)
-	const char* simdtype = "sse4.2";
+#elif (ASTCENC_SSE == 41)
+	const char* simdtype = "sse4.1";
 #else
 	const char* simdtype = "sse2";
 #endif

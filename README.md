@@ -72,7 +72,8 @@ each tuned for a specific SIMD instruction set. We provide, in order of
 increasing performance:
 
 * `astcenc-sse2` - uses SSE2
-* `astcenc-sse4.2` - uses SSE4.2 and POPCNT
+* `astcenc-sse4.1` - uses SSE4.1 and POPCNT
+* `astcenc-sse4.2` - uses SSE4.2 and POPCNT (deprecated)
 * `astcenc-avx2` - uses SSE4.2, POPCNT, and AVX2
 
 The SSE2 builds will work on all x86-64 host machines, but it is the slowest of

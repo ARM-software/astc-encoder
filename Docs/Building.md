@@ -2,7 +2,7 @@
 
 This page provides instructions for building `astcenc` from the sources in
 this repository. The current `master` branch is configured to statically build
-binaries which each use a specific level of SIMD support (SSE2, SSE4.2,
+binaries which each use a specific level of SIMD support (SSE2, SSE4.1,
 or AVX2) selected at compile time. Binaries are produced with a name postfix
 indicating the SIMD type in use; e.g. `astcenc-avx2` for the AVX2 binary.
 
@@ -42,13 +42,13 @@ out-performs GCC by 15-20% in benchmarked test runs.
 To compile a single SIMD variant compile with:
 
 ```
-make -C Source CXX=clang++ VEC=[sse2|sse4.2|avx2] -j8
+make -C Source CXX=clang++ VEC=[sse2|sse4.1|avx2] -j8
 ```
 
 ... and use:
 
 ```
-make -C Source CXX=clang++ VEC=[sse2|sse4.2|avx2] clean
+make -C Source CXX=clang++ VEC=[sse2|sse4.1|avx2] clean
 ```
 
 ... to clean the build.

@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29509.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "astcenc-sse2", "astcenc-sse2.vcxproj", "{D6D60D86-0502-446A-8498-888F78B869C2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "astcenc-sse4.2", "astcenc-sse4.2.vcxproj", "{9FB06FB7-F57D-4B12-9AE9-91CD50FD4879}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "astcenc-sse4.1", "astcenc-sse4.1.vcxproj", "{9FB06FB7-F57D-4B12-9AE9-91CD50FD4879}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "astcenc-avx2", "astcenc-avx2.vcxproj", "{BCA178CD-C714-484E-A02A-0489DC3C49B2}"
 EndProject

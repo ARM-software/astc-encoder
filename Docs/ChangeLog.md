@@ -17,10 +17,14 @@ Reminder for users of the library interface - the API is not designed to be
 stable across versions, and this release is not compatible with 2.1. Please
 recompile your client-side code using the updated `astcenc.h` header.
 
-* **Core API:**
+** **General:**
+  * **Improvement:** SSE4.2 profile changed to SSE4.1, which more accurately
+    reflects the feature set used as we were not using any SSE4.2 intrinsics.
+** **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
     from the `astcenc_image` structure.
+
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1

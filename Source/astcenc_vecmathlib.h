@@ -25,7 +25,7 @@
  *
  *     * 1-wide for scalar reference.
  *     * 4-wide for SSE2.
- *     * 4-wide for SSE4.2.
+ *     * 4-wide for SSE4.1.
  *     * 8-wide for AVX2.
  *
  */

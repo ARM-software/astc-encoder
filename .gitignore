@@ -31,6 +31,10 @@ Test/Images/Scratch*
 
 # Test output
 TestOutput
+/*.log
+/*.txt
 /*.png
 /*.exr
 /*.astc
+astc_reference-master*
+Docs/Profiling.md

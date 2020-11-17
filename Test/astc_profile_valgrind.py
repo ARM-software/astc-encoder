@@ -139,7 +139,7 @@ def parse_command_line():
     parser.add_argument("img", type=argparse.FileType("r"),
                         help="The image file to test")
 
-    testencoders = ["sse2", "sse4.2", "avx2"]
+    testencoders = ["sse2", "sse4.1", "avx2"]
     encoders = testencoders + ["all"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=encoders, help="select encoder variant")

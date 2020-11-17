@@ -48,8 +48,8 @@ static astcenc_error validate_cpu_float()
 
 static astcenc_error validate_cpu_isa()
 {
-	#if ASTCENC_SSE >= 42
-		if (!cpu_supports_sse42())
+	#if ASTCENC_SSE >= 41
+		if (!cpu_supports_sse41())
 		{
 			return ASTCENC_ERR_BAD_CPU_ISA;
 		}

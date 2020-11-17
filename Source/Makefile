@@ -30,8 +30,8 @@ APP ?= astcenc
 #
 #   * neon   - compile for Arm aarch64 + NEON
 #   * sse2   - allow use of x86-64 + sse2
-#   * sse4.2 - allow use of x86-64 + sse4.2 and popcnt
-#   * avx2   - allow use of x86-64 + avx2, sse4.2, and popcnt
+#   * sse4.1 - allow use of x86-64 + sse4.1 and popcnt
+#   * avx2   - allow use of x86-64 + avx2, sse4.1, and popcnt
 VEC ?= avx2
 
 # Configure the build type; valid values are:
@@ -47,7 +47,7 @@ BUILD ?= release
 #   * 1 - ISA invariance is on
 #
 # Enabling ISA invariant output will give bit-exact compression across SSE2,
-# SSE4.2, and AVX2. Thi will disable some optimizations for newer ISAs which
+# SSE4.1, and AVX2. Thi will disable some optimizations for newer ISAs which
 # cannot be reasonably implemented by the older ones, and will therefore reduce
 # performance.
 ISA_INV ?= 0
@@ -150,13 +150,13 @@ else
 ifeq ($(VEC),sse2)
 CXXFLAGS += -mfpmath=sse -msse2 -DASTCENC_SSE=20 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0 -DASTCENC_VECALIGN=16
 else
-ifeq ($(VEC),sse4.2)
-CXXFLAGS += -mfpmath=sse -msse4.2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=16
+ifeq ($(VEC),sse4.1)
+CXXFLAGS += -mfpmath=sse -msse4.1 -mpopcnt -DASTCENC_SSE=41 -DASTCENC_AVX=0 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=16
 else
 ifeq ($(VEC),avx2)
-CXXFLAGS += -mfpmath=sse -mavx2 -mpopcnt -DASTCENC_SSE=42 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=32
+CXXFLAGS += -mfpmath=sse -mavx2 -mpopcnt -DASTCENC_SSE=41 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=32
 else
-$(error Unsupported VEC target, use VEC=neon/sse2/sse4.2/avx2)
+$(error Unsupported VEC target, use VEC=neon/sse2/sse4.1/avx2)
 endif
 endif
 endif
@@ -227,11 +227,11 @@ clean:
 batchbuild:
 	# NEON is deliberately not here - needs a different CXX setting
 	@+$(MAKE) -s VEC=sse2
-	@+$(MAKE) -s VEC=sse4.2
+	@+$(MAKE) -s VEC=sse4.1
 	@+$(MAKE) -s VEC=avx2
 
 batchclean:
 	@+$(MAKE) -s clean VEC=neon
 	@+$(MAKE) -s clean VEC=sse2
-	@+$(MAKE) -s clean VEC=sse4.2
+	@+$(MAKE) -s clean VEC=sse4.1
 	@+$(MAKE) -s clean VEC=avx2

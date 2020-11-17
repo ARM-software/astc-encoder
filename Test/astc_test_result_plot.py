@@ -319,7 +319,7 @@ def main():
         ], [
             # Plot relative scores of ISAs of latest
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.1-sse4.2", "ref-2.1-avx2"],
+            ["ref-2.1-sse4.1", "ref-2.1-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-2.1-sse2",
