@@ -28,7 +28,7 @@ APP ?= astcenc
 
 # Configure the SIMD ISA and intrinsics support; valid values are:
 #
-#   * neon   - compile for Arm aarch64 + NEON
+#   * none   - compile for generic C++ (set compiler using CXX)
 #   * sse2   - allow use of x86-64 + sse2
 #   * sse4.1 - allow use of x86-64 + sse4.1 and popcnt
 #   * avx2   - allow use of x86-64 + avx2, sse4.1, and popcnt
@@ -97,6 +97,9 @@ HEADERS = \
     astcenc_internal.h \
     astcenc_mathlib.h \
     astcenc_vecmathlib.h \
+    astcenc_vecmathlib_none_1.h \
+	astcenc_vecmathlib_sse_4.h \
+	astcenc_vecmathlib_avx2_8.h \
     astcenccli_internal.h \
     stb_image.h \
     stb_image_write.h \
@@ -143,7 +146,7 @@ endif
 endif
 
 # Validate that the VEC parameter is a supported value, and patch CXXFLAGS
-ifeq ($(VEC),neon)
+ifeq ($(VEC),none)
 # NEON is on by default; no enabled needed
 CXXFLAGS += -DASTCENC_SSE=0 -DASTCENC_AVX=0 -DASTCENC_POPCNT=0 -DASTCENC_VECALIGN=16
 else
@@ -156,7 +159,7 @@ else
 ifeq ($(VEC),avx2)
 CXXFLAGS += -mfpmath=sse -mavx2 -mpopcnt -DASTCENC_SSE=41 -DASTCENC_AVX=2 -DASTCENC_POPCNT=1 -DASTCENC_VECALIGN=32
 else
-$(error Unsupported VEC target, use VEC=neon/sse2/sse4.1/avx2)
+$(error Unsupported VEC target, use VEC=none/sse2/sse4.1/avx2)
 endif
 endif
 endif
@@ -225,13 +228,13 @@ clean:
 	@echo "[Clean] Removing $(VEC) build outputs"
 
 batchbuild:
-	# NEON is deliberately not here - needs a different CXX setting
+	@+$(MAKE) -s VEC=none
 	@+$(MAKE) -s VEC=sse2
 	@+$(MAKE) -s VEC=sse4.1
 	@+$(MAKE) -s VEC=avx2
 
 batchclean:
-	@+$(MAKE) -s clean VEC=neon
+	@+$(MAKE) -s clean VEC=none
 	@+$(MAKE) -s clean VEC=sse2
 	@+$(MAKE) -s clean VEC=sse4.1
 	@+$(MAKE) -s clean VEC=avx2

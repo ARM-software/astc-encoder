@@ -328,7 +328,7 @@ def parse_command_line():
                  "ref-2.0-sse2", "ref-2.0-sse4.1", "ref-2.0-avx2",
                  "ref-2.1-sse2", "ref-2.1-sse4.1", "ref-2.1-avx2",
                  "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
-    testcoders = ["sse2", "sse4.1", "avx2"]
+    testcoders = ["none", "sse2", "sse4.1", "avx2"]
     coders = refcoders + testcoders + ["all", "all-ref"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
