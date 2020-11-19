@@ -1132,11 +1132,11 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
-		ix = saturate(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
+		ix = clampzo(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
 
 		// look up the two closest indexes and return the one that was closest.
 		vfloat ix1 = ix * quant_level_m1v;
-		vint weight = floatToInt(ix1);
+		vint weight = float_to_int(ix1);
 		vint weight1 = weight+vint(1);
 		vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
 		vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
@@ -1146,7 +1146,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 		ixl = select(ixl, ixh, mask);
 
 		// Invert the weight-scaling that was done initially
-		store(ixl * rscalev + low_boundv, &weight_set_out[i]);
+		storea(ixl * rscalev + low_boundv, &weight_set_out[i]);
 		vint scm = gatheri(qat->scramble_map, weight);
 		vint scn = pack_low_bytes(scm);
 		store_nbytes(scn, &quantized_weight_set[i]);

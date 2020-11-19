@@ -1016,7 +1016,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		// take smallest index from the SIMD lanes that had the best score
 		vbest_error_index = select(vint(0x7fffffff), vbest_error_index, lanes_with_min_error);
 		vbest_error_index = hmin(vbest_error_index);
-		int best_error_index = vbest_error_index.lane(0);
+		int best_error_index = vbest_error_index.lane<0>();
 #endif
 
 		best_error_weights[i] = best_error_index;

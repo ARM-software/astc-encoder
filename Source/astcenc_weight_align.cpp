@@ -161,8 +161,8 @@ static void compute_angular_offsets(
 			vfloat sp = loada(&sinptr[j]);
 			vfloat ax = loada(&anglesum_x[j]) + cp * sample_weightv;
 			vfloat ay = loada(&anglesum_y[j]) + sp * sample_weightv;
-			store(ax, &anglesum_x[j]);
-			store(ay, &anglesum_y[j]);
+			storea(ax, &anglesum_x[j]);
+			storea(ay, &anglesum_y[j]);
 		}
 	}
 
@@ -172,7 +172,7 @@ static void compute_angular_offsets(
 	{
 		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));
 		vfloat ofs = angle * (loada(&stepsizes[i]) * mult);
-		store(ofs, &offsets[i]);
+		storea(ofs, &offsets[i]);
 	}
 }
 
@@ -206,10 +206,10 @@ static void compute_lowest_and_highest_weight(
 		vfloat scaled_offset = rcp_stepsize * offset;
 		for (int j = 0; j < samplecount; ++j)
 		{
-			vfloat wt = load1a(&sample_weights[j]);
-			vfloat sval = load1a(&samples[j]) * rcp_stepsize - scaled_offset;
+			vfloat wt = load1(&sample_weights[j]);
+			vfloat sval = load1(&samples[j]) * rcp_stepsize - scaled_offset;
 			vfloat svalrte = round(sval);
-			vint idxv = floatToInt(svalrte);
+			vint idxv = float_to_int(svalrte);
 			vfloat dif = sval - svalrte;
 			vfloat dwt = dif * wt;
 			errval = errval + dwt * dif;
@@ -240,16 +240,16 @@ static void compute_lowest_and_highest_weight(
 		vint span = maxidx - minidx + vint(1);
 		span = min(span, vint(max_quantization_steps + 3));
 		span = max(span, vint(2));
-		store(minidx, &lowest_weight[sp]);
-		store(span, &weight_span[sp]);
+		storea(minidx, &lowest_weight[sp]);
+		storea(span, &weight_span[sp]);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that
 		// results from  forcing samples that should have had the weight value
 		// one step (up/down).
 		vfloat errscale = loada(&stepsizes_sqr[sp]);
-		store(errval * errscale, &error[sp]);
-		store(cut_low_weight_err * errscale, &cut_low_weight_error[sp]);
-		store(cut_high_weight_err * errscale, &cut_high_weight_error[sp]);
+		storea(errval * errscale, &error[sp]);
+		storea(cut_low_weight_err * errscale, &cut_low_weight_error[sp]);
+		storea(cut_high_weight_err * errscale, &cut_high_weight_error[sp]);
 	}
 }
 
