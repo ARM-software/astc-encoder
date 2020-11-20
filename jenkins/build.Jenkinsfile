@@ -34,6 +34,7 @@ pipeline {
                   make CXX=clang++ VEC=avx2
                   make CXX=clang++ VEC=sse4.1
                   make CXX=clang++ VEC=sse2
+                  make CXX=clang++ VEC=none
                 '''
               }
             }
@@ -120,6 +121,7 @@ pipeline {
                   make VEC=avx2
                   make VEC=sse4.1
                   make VEC=sse2
+                  make VEC=none
                 '''
               }
             }
