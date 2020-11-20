@@ -494,12 +494,18 @@ ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
 }
 
 /**
- * @brief Return lanes from @c b if @c cond, else @c a.
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 {
 #if ASTCENC_SSE >= 41
-	return vint4(_mm_blendv_epi8(a.m, b.m, _mm_castps_si128(cond.m)));
+	// Don't use _mm_blendv_epi8 directly, as it doesn't give the select on
+	// float sign-bit in the mask behavior which is useful. Performance is the
+	// same, these casts are free.
+	__m128i mask = _mm_castps_si128(cond.m);
+	__m128 av = _mm_castsi128_ps(a.m);
+	__m128 bv = _mm_castsi128_ps(b.m);
+	return vint4(_mm_castps_si128(_mm_blendv_ps(av, bv, mask)));
 #else
 	__m128i d = _mm_srai_epi32(_mm_castps_si128(cond.m), 31);
 	return vint4(_mm_or_si128(_mm_and_si128(d, b.m), _mm_andnot_si128(d, a.m)));
@@ -734,7 +740,7 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 }
 
 /**
- * @brief Return lanes from @c b if @c cond, else @c a.
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 {

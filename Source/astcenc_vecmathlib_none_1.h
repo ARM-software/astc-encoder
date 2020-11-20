@@ -23,6 +23,11 @@
  * debugging VLA algorithms without the complexity of handling SIMD. Only the
  * baseline level of functionality needed to support VLA is provided.
  *
+ * Note that the vector conditional operators implemented by this module are
+ * designed to behave like SIMD conditional operators that generate lane masks.
+ * Rather than returning 0/1 booleans like normal C++ code they will return
+ * 0/-1 to give a full lane-width bitmask.
+ *
  * Note that the documentation for this module still talks about "vectors" to
  * help developers think about the implied VLA behavior when writing optimized
  * paths.
@@ -187,7 +192,7 @@ struct vmask1
 	/**
 	 * @brief Construct from an existing mask value.
 	 */
-	ASTCENC_SIMD_INLINE explicit vmask1(bool v)
+	ASTCENC_SIMD_INLINE explicit vmask1(int v)
 	{
 		m = v;
 	}
@@ -195,7 +200,7 @@ struct vmask1
 	/**
 	 * @brief The vector ...
 	 */
-	bool m;
+	int m;
 };
 
 // ============================================================================
@@ -207,7 +212,7 @@ struct vmask1
  */
 ASTCENC_SIMD_INLINE vmask1 operator|(vmask1 a, vmask1 b)
 {
-	return vmask1(a.m || b.m);
+	return vmask1(a.m | b.m);
 }
 
 /**
@@ -215,7 +220,7 @@ ASTCENC_SIMD_INLINE vmask1 operator|(vmask1 a, vmask1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator&(vmask1 a, vmask1 b)
 {
-	return vmask1(a.m && b.m);
+	return vmask1(a.m & b.m);
 }
 
 /**
@@ -241,7 +246,7 @@ ASTCENC_SIMD_INLINE vmask1 operator~(vmask1 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask1 a)
 {
-	return a.m;
+	return (a.m >> 31) & 0x1;
 }
 
 /**
@@ -317,7 +322,7 @@ ASTCENC_SIMD_INLINE vint1 operator^(vint1 a, vint1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator==(vint1 a, vint1 b)
 {
-	return vmask1(a.m == b.m);
+	return vmask1(a.m == b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -325,7 +330,7 @@ ASTCENC_SIMD_INLINE vmask1 operator==(vint1 a, vint1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator!=(vint1 a, vint1 b)
 {
-	return vmask1(a.m != b.m);
+	return vmask1(a.m != b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -333,7 +338,7 @@ ASTCENC_SIMD_INLINE vmask1 operator!=(vint1 a, vint1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator<(vint1 a, vint1 b)
 {
-	return vmask1(a.m < b.m);
+	return vmask1(a.m < b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -341,7 +346,7 @@ ASTCENC_SIMD_INLINE vmask1 operator<(vint1 a, vint1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator>(vint1 a, vint1 b)
 {
-	return vmask1(a.m > b.m);
+	return vmask1(a.m > b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -401,11 +406,11 @@ ASTCENC_SIMD_INLINE vint1 pack_low_bytes(vint1 a)
 }
 
 /**
- * @brief Return lanes from @c b if @c cond, else @c a.
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vint1 select(vint1 a, vint1 b, vmask1 cond)
 {
-	return cond.m ? b : a;
+	return vint1((cond.m & 0x80000000) ? b : a);
 }
 
 // ============================================================================
@@ -465,7 +470,7 @@ ASTCENC_SIMD_INLINE vfloat1 operator/(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator==(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m == b.m);
+	return vmask1(a.m == b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -473,7 +478,7 @@ ASTCENC_SIMD_INLINE vmask1 operator==(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator!=(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m != b.m);
+	return vmask1(a.m != b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -481,7 +486,7 @@ ASTCENC_SIMD_INLINE vmask1 operator!=(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator<(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m < b.m);
+	return vmask1(a.m < b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -489,7 +494,7 @@ ASTCENC_SIMD_INLINE vmask1 operator<(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator>(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m > b.m);
+	return vmask1(a.m > b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -497,7 +502,7 @@ ASTCENC_SIMD_INLINE vmask1 operator>(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator<=(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m <= b.m);
+	return vmask1(a.m <= b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -505,7 +510,7 @@ ASTCENC_SIMD_INLINE vmask1 operator<=(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vmask1 operator>=(vfloat1 a, vfloat1 b)
 {
-	return vmask1(a.m >= b.m);
+	return vmask1(a.m >= b.m ? 0xFFFFFFFF : 0);
 }
 
 /**
@@ -585,11 +590,11 @@ ASTCENC_SIMD_INLINE vfloat1 hmin(vfloat1 a)
 }
 
 /**
- * @brief Return lanes from @c b if @c cond, else @c a.
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat1 select(vfloat1 a, vfloat1 b, vmask1 cond)
 {
-	return cond.m ? b : a;
+	return vfloat1((cond.m & 0x80000000) ? b : a);
 }
 
 /**
