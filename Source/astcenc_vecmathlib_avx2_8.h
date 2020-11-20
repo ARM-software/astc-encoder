@@ -183,7 +183,7 @@ struct vint8
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
 	#ifdef _MSC_VER
-		return m.m256i_i32[i];
+		return m.m256i_i32[l];
 	#else
 		union { __m256i m; int f[8]; } cvt;
 		cvt.m = m;

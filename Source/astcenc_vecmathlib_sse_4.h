@@ -213,7 +213,7 @@ struct vint4
 	/**
 	 * @brief Get the scalar from a single lane.
 	 */
-	template <int l> ASTCENC_SIMD_INLINE float lane() const
+	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
 		return _mm_cvtsi128_si32(_mm_shuffle_epi32(m, l));
 	}
