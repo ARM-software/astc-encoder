@@ -471,10 +471,9 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 	// Don't use _mm256_blendv_epi8 directly, as it doesn't give the select on
 	// float sign-bit in the mask behavior which is useful. Performance is the
 	// same, these casts are free.
-	__m256i mask = _mm256_castps_si256(cond.m);
 	__m256 av = _mm256_castsi256_ps(a.m);
 	__m256 bv = _mm256_castsi256_ps(b.m);
-	return vint8(_mm256_castps_si256(_mm256_blendv_ps(av, bv, mask)));
+	return vint8(_mm256_castps_si256(_mm256_blendv_ps(av, bv, cond.m)));
 }
 
 /**
