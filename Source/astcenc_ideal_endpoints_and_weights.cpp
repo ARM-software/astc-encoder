@@ -1141,7 +1141,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 		vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
 		vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
 
-		vmask mask = ixl + ixh < vfloat(128.0f) * ix;
+		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
 		weight = select(weight, weight1, mask);
 		ixl = select(ixl, ixh, mask);
 
