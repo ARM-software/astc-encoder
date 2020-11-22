@@ -64,8 +64,9 @@
 #endif
 
 #if ASTCENC_AVX >= 2
-	/* If we have AVX2 expose 8-wide VLA. */
+	/* If we have AVX2 expose 8-wide VLA, and 4-wide fixed width. */
 	#include "astcenc_vecmathlib_avx2_8.h"
+	#include "astcenc_vecmathlib_sse_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 8
 

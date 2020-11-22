@@ -739,6 +739,39 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 }
 
 /**
+ * @brief Return the dot product for the full 4 lanes, returning scalar.
+ */
+static inline float dot(vfloat4 a, vfloat4 b)
+{
+#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
+	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0xFF));
+#else
+	alignas(16) float av[4];
+	alignas(16) float bv[4];
+	storea(a, av);
+	storea(b, bv);
+	return av[0] * bv[0] + av[1] * bv[1] + av[2] * bv[2] + av[3] * bv[3];
+#endif
+}
+
+/**
+ * @brief Return the dot product for the full 4 lanes, returning vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 dotv(vfloat4 a, vfloat4 b)
+{
+#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
+	return vfloat4(_mm_dp_ps(a.m, b.m, 0xFF));
+#else
+	alignas(16) float av[4];
+	alignas(16) float bv[4];
+	storea(a, av);
+	storea(b, bv);
+	float s = av[0] * bv[0] + av[1] * bv[1] + av[2] * bv[2] + av[3] * bv[3];
+	return vfloat4(s);
+#endif
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
