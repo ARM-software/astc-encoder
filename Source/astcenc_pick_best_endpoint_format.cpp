@@ -37,9 +37,9 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	int encode_hdr_alpha,
 	int partition_index,
 	const partition_info* pi,
-	const encoding_choice_errors * eci,	// pointer to the structure for the CURRENT partition.
-	 const endpoints * ep,
-	 float4 error_weightings[4],
+	const encoding_choice_errors* eci,	// pointer to the structure for the CURRENT partition.
+	const endpoints* ep,
+	float4 error_weightings[4],
 	// arrays to return results back through.
 	float best_error[21][4],
 	int format_of_choice[21][4]
