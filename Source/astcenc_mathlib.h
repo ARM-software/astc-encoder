@@ -80,9 +80,9 @@ static inline float fabs(float val)
  * @param valA The first value to compare.
  * @param valB The second value to compare.
  *
- * @return The smallest value.
+ * @return The smallest value (q if either is NaN).
  */
-static inline float fmin(float p, float q)
+static inline float min(float p, float q)
 {
 	return p < q ? p : q;
 }
@@ -93,11 +93,11 @@ static inline float fmin(float p, float q)
  * @param valA The first value to compare.
  * @param valB The second value to compare.
  *
- * @return The largest value.
+ * @return The largest value (q if either is NaN).
  */
-static inline float fmax(float p, float q)
+static inline float max(float p, float q)
 {
-	return q < p ? p : q;
+	return p > q ? p : q;
 }
 
 /**
