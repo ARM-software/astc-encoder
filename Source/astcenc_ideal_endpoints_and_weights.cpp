@@ -124,15 +124,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 		int partition = pt->partition_of_texel[i];
 		value -= lowvalues[partition];
 		value *= linelengths_rcp[partition];
-
-		if (value > 1.0f)
-		{
-			value = 1.0f;
-		}
-		else if (!(value > 0.0f))
-		{
-			value = 0.0f;
-		}
+		value = astc::clamp1f(value);
 
 		ei->weights[i] = value;
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
@@ -397,14 +389,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
-		if (idx > 1.0f)
-		{
-			idx = 1.0f;
-		}
-		else if (!(idx > 0.0f))
-		{
-			idx = 0.0f;
-		}
+		idx = astc::clamp1f(idx);
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
@@ -651,14 +636,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
-		if (idx > 1.0f)
-		{
-			idx = 1.0f;
-		}
-		else if (!(idx > 0.0f))
-		{
-			idx = 0.0f;
-		}
+		idx = astc::clamp1f(idx);
 
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
@@ -799,14 +777,8 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	{
 		int partition = pt->partition_of_texel[i];
 		float idx = (ei->weights[i] - lowparam[partition]) * scale[partition];
-		if (idx > 1.0f)
-		{
-			idx = 1.0f;
-		}
-		else if (!(idx > 0.0f))
-		{
-			idx = 0.0f;
-		}
+		idx = astc::clamp1f(idx);
+
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
@@ -1467,15 +1439,7 @@ void recompute_ideal_colors(
 		#endif
 
 		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
-		if (!(scalediv > 0.0f))
-		{
-			scalediv = 0.0f;    // set to zero if scalediv is negative, or NaN.
-		}
-
-		if (scalediv > 1.0f)
-		{
-			scalediv = 1.0f;
-		}
+		scalediv = astc::clamp1f(scalediv);
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);

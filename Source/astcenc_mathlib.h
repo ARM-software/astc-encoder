@@ -113,42 +113,6 @@ static inline int isnan(float val)
 }
 
 /**
- * @brief Clamp a float value between 0.0f and 1.0f.
- *
- * NaNs are turned into 0.0f.
- *
- * @param val The value clamp.
- *
- * @return The clamped value.
- */
-static inline float clamp1f(float val)
-{
-	// Do not reorder these, correct NaN handling relies on the fact that
-	// any comparison with NaN returns false so will fall-though to the 0.0f.
-	if (val > 1.0f) return 1.0f;
-	if (val > 0.0f) return val;
-	return 0.0f;
-}
-
-/**
- * @brief Clamp a float value between 0.0f and 255.0f.
- *
- * NaNs are turned into 0.0f.
- *
- * @param val The value clamp.
- *
- * @return The clamped value.
- */
-static inline float clamp255f(float val)
-{
-	// Do not reorder these, correct NaN handling relies on the fact that
-	// any comparison with NaN returns false so will fall-though to the 0.0f.
-	if (val > 255.0f) return 255.0f;
-	if (val > 0.0f) return val;
-	return 0.0f;
-}
-
-/**
  * @brief Clamp a value value between mn and mx
  *
  * For floats, NaNs are turned into mn.
@@ -170,6 +134,34 @@ inline T clamp(T val, T mn, T mx)
 }
 
 /**
+ * @brief Clamp a float value between 0.0f and 1.0f.
+ *
+ * NaNs are turned into 0.0f.
+ *
+ * @param val The value clamp.
+ *
+ * @return The clamped value.
+ */
+static inline float clamp1f(float val)
+{
+	return astc::clamp(val, 0.0f, 1.0f);
+}
+
+/**
+ * @brief Clamp a float value between 0.0f and 255.0f.
+ *
+ * NaNs are turned into 0.0f.
+ *
+ * @param val The value clamp.
+ *
+ * @return The clamped value.
+ */
+static inline float clamp255f(float val)
+{
+	return astc::clamp(val, 0.0f, 255.0f);
+}
+
+/**
  * @brief Clamp a float value between 0.0f and 65504.0f.
  *
  * NaNs are turned into 0.0f.
@@ -180,26 +172,9 @@ inline T clamp(T val, T mn, T mx)
  */
 static inline float clamp64Kf(float val)
 {
-	// Do not reorder these, correct NaN handling relies on the fact that
-	// any comparison with NaN returns false so will fall-though to the 0.0f.
-	if (val > 65504.0f) return 65504.0f;
-	if (val > 0.0f) return val;
-	return 0.0f;
+	return astc::clamp(val, 0.0f, 65504.0f);
 }
 
-/**
- * @brief Clamp an integer between two specified limits.
- *
- * @param val The value clamp.
- *
- * @return The clamped value.
- */
-static inline int clampi(int val, int low, int high)
-{
-	if (val < low) return low;
-	if (val > high) return high;
-	return val;
-}
 
 /**
  * @brief SP float round-to-nearest.

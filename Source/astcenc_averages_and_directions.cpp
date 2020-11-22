@@ -558,35 +558,12 @@ void compute_error_squared_rgba(
 		float4 separate_linelen = separate_highparam - separate_lowparam;
 
 		// Turn very small numbers and NaNs into a small number
-		if (!(uncorr_linelen > 1e-7f))
-		{
-			uncorr_linelen = 1e-7f;
-		}
-
-		if (!(samechroma_linelen > 1e-7f))
-		{
-			samechroma_linelen = 1e-7f;
-		}
-
-		if (!(separate_linelen.r > 1e-7f))
-		{
-			separate_linelen.r = 1e-7f;
-		}
-
-		if (!(separate_linelen.g > 1e-7f))
-		{
-			separate_linelen.g = 1e-7f;
-		}
-
-		if (!(separate_linelen.b > 1e-7f))
-		{
-			separate_linelen.b = 1e-7f;
-		}
-
-		if (!(separate_linelen.a > 1e-7f))
-		{
-			separate_linelen.a = 1e-7f;
-		}
+		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
+		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
+		separate_linelen.r = astc::max(separate_linelen.r, 1e-7f);
+		separate_linelen.g = astc::max(separate_linelen.g, 1e-7f);
+		separate_linelen.b = astc::max(separate_linelen.b, 1e-7f);
+		separate_linelen.a = astc::max(separate_linelen.a, 1e-7f);
 
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
@@ -707,30 +684,11 @@ void compute_error_squared_rgb(
 		float3 separate_linelen = separate_highparam - separate_lowparam;
 
 		// Turn very small numbers and NaNs into a small number
-		if (!(uncorr_linelen > 1e-7f))
-		{
-			uncorr_linelen = 1e-7f;
-		}
-
-		if (!(samechroma_linelen > 1e-7f))
-		{
-			samechroma_linelen = 1e-7f;
-		}
-
-		if (!(separate_linelen.r > 1e-7f))
-		{
-			separate_linelen.r = 1e-7f;
-		}
-
-		if (!(separate_linelen.g > 1e-7f))
-		{
-			separate_linelen.g = 1e-7f;
-		}
-
-		if (!(separate_linelen.b > 1e-7f))
-		{
-			separate_linelen.b = 1e-7f;
-		}
+		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
+		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
+		separate_linelen.r = astc::max(separate_linelen.r, 1e-7f);
+		separate_linelen.g = astc::max(separate_linelen.g, 1e-7f);
+		separate_linelen.b = astc::max(separate_linelen.b, 1e-7f);
 
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
@@ -740,43 +698,6 @@ void compute_error_squared_rgb(
 		*samechroma_errors = samechroma_errorsum;
 		*separate_color_errors = float3(red_errorsum, green_errorsum, blue_errorsum);
 	}
-}
-
-// function to compute the error across a tile when using a particular line for
-// a particular partition.
-float compute_error_squared_rgb_single_partition(
-	int partition_to_test,
-	const block_size_descriptor* bsd,
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* lin	// the line for the partition.
-) {
-	int texels_per_block = bsd->texel_count;
-	float errorsum = 0.0f;
-
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		int partition = pt->partition_of_texel[i];
-		float texel_weight = ewb->texel_weight_rgb[i];
-
-		if (partition != partition_to_test || texel_weight < 1e-20f)
-		{
-			continue;
-		}
-
-		float3 point = float3(blk->data_r[i],
-		                      blk->data_g[i],
-		                      blk->data_b[i]);
-		float param = dot(point, lin->bs);
-		float3 rp1 = lin->amod + param * lin->bis;
-		float3 dist = rp1 - point;
-		float4 ews = ewb->error_weights[i];
-		float3 ews3 = float3(ews.r, ews.g, ews.b);
-		errorsum += dot(ews3, dist * dist);
-	}
-
-	return errorsum;
 }
 
 #endif

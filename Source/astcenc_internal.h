@@ -73,11 +73,11 @@ static const float ERROR_CALC_DEFAULT { 1e30f };
 ============================================================================ */
 // The max texel count in a block which can try the one partition fast path.
 // Default: enabled for 4x4 and 5x4 blocks.
-static const int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
+static const unsigned int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
 
 // The maximum number of candidate encodings returned for each encoding mode.
 // Default: depends on quality preset
-static const int TUNE_MAX_TRIAL_CANDIDATES { 4 };
+static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 
 /* ============================================================================
   Other configuration parameters

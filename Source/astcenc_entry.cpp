@@ -246,10 +246,10 @@ static astcenc_error validate_config(
 
 	config.b_deblock_weight = MAX(config.b_deblock_weight, 0.0f);
 
-	config.tune_partition_limit = astc::clampi(config.tune_partition_limit, 1, PARTITION_COUNT);
-	config.tune_block_mode_limit = astc::clampi(config.tune_block_mode_limit, 1, 100);
+	config.tune_partition_limit = astc::clamp(config.tune_partition_limit, 1u, (unsigned int)PARTITION_COUNT);
+	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
 	config.tune_refinement_limit = MAX(config.tune_refinement_limit, 1);
-	config.tune_candidate_limit = astc::clampi(config.tune_candidate_limit, 1, TUNE_MAX_TRIAL_CANDIDATES);
+	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
 	config.tune_db_limit = MAX(config.tune_db_limit, 0.0f);
 	config.tune_partition_early_out_limit = MAX(config.tune_partition_early_out_limit, 0.0f);
 	config.tune_two_plane_early_out_limit = MAX(config.tune_two_plane_early_out_limit, 0.0f);

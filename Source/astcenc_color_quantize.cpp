@@ -700,7 +700,7 @@ static void quantize_rgbs_new(
 
 	float scale = astc::clamp1f(rgbs_color.a * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
 	int scale_idx = astc::flt2int_rtn(scale * 256.0f);
-	scale_idx = astc::clampi(scale_idx, 0, 255);
+	scale_idx = astc::clamp(scale_idx, 0, 255);
 
 	output[0] = ri;
 	output[1] = gi;
@@ -895,25 +895,10 @@ static void quantize_hdr_rgbo3(
 	color.g += color.a;
 	color.b += color.a;
 
-	if (!(color.r > 0.0f))
-		color.r = 0.0f;
-	else if (color.r > 65535.0f)
-		color.r = 65535.0f;
-
-	if (!(color.g > 0.0f))
-		color.g = 0.0f;
-	else if (color.g > 65535.0f)
-		color.g = 65535.0f;
-
-	if (!(color.b > 0.0f))
-		color.b = 0.0f;
-	else if (color.b > 65535.0f)
-		color.b = 65535.0f;
-
-	if (!(color.a > 0.0f))
-		color.a = 0.0f;
-	else if (color.a > 65535.0f)
-		color.a = 65535.0f;
+	color.r = astc::clamp(color.r, 0.0f, 65535.0f);
+	color.g = astc::clamp(color.g, 0.0f, 65535.0f);
+	color.b = astc::clamp(color.b, 0.0f, 65535.0f);
+	color.a = astc::clamp(color.a, 0.0f, 65535.0f);
 
 	float4 color_bak = color;
 	int majcomp;
@@ -1264,59 +1249,14 @@ static void quantize_hdr_rgb3(
 	int output[6],
 	int quantization_level
 ) {
-	if (!(color0.r > 0.0f))
-	{
-		color0.r = 0.0f;
-	}
-	else if (color0.r > 65535.0f)
-	{
-		color0.r = 65535.0f;
-	}
+	color0.r = astc::clamp(color0.r, 0.0f, 65535.0f);
+	color0.g = astc::clamp(color0.g, 0.0f, 65535.0f);
+	color0.b = astc::clamp(color0.b, 0.0f, 65535.0f);
 
-	if (!(color0.g > 0.0f))
-	{
-		color0.g = 0.0f;
-	}
-	else if (color0.g > 65535.0f)
-	{
-		color0.g = 65535.0f;
-	}
+	color1.r = astc::clamp(color1.r, 0.0f, 65535.0f);
+	color1.g = astc::clamp(color1.g, 0.0f, 65535.0f);
+	color1.b = astc::clamp(color1.b, 0.0f, 65535.0f);
 
-	if (!(color0.b > 0.0f))
-	{
-		color0.b = 0.0f;
-	}
-	else if (color0.b > 65535.0f)
-	{
-		color0.b = 65535.0f;
-	}
-
-	if (!(color1.r > 0.0f))
-	{
-		color1.r = 0.0f;
-	}
-	else if (color1.r > 65535.0f)
-	{
-		color1.r = 65535.0f;
-	}
-
-	if (!(color1.g > 0.0f))
-	{
-		color1.g = 0.0f;
-	}
-	else if (color1.g > 65535.0f)
-	{
-		color1.g = 65535.0f;
-	}
-
-	if (!(color1.b > 0.0f))
-	{
-		color1.b = 0.0f;
-	}
-	else if (color1.b > 65535.0f)
-	{
-		color1.b = 65535.0f;
-	}
 
 	float4 color0_bak = color0;
 	float4 color1_bak = color1;
@@ -1351,14 +1291,7 @@ static void quantize_hdr_rgb3(
 	}
 
 	float a_base = color1.r;
-	if (a_base < 0.0f)
-	{
-		a_base = 0.0f;
-	}
-	else if (a_base > 65535.0f)
-	{
-		a_base = 65535.0f;
-	}
+	a_base = astc::clamp(a_base, 0.0f, 65535.0f);
 
 	float b0_base = a_base - color1.g;
 	float b1_base = a_base - color1.b;
