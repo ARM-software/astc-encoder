@@ -89,6 +89,43 @@ void merge_endpoints(
 	}
 }
 
+// function to compute the error across a tile when using a particular line for
+// a particular partition.
+static float compute_error_squared_rgb_single_partition(
+	int partition_to_test,
+	const block_size_descriptor* bsd,
+	const partition_info* pt,	// the partition that we use when computing the squared-error.
+	const imageblock* blk,
+	const error_weight_block* ewb,
+	const processed_line3* lin	// the line for the partition.
+) {
+	int texels_per_block = bsd->texel_count;
+	float errorsum = 0.0f;
+
+	for (int i = 0; i < texels_per_block; i++)
+	{
+		int partition = pt->partition_of_texel[i];
+		float texel_weight = ewb->texel_weight_rgb[i];
+
+		if (partition != partition_to_test || texel_weight < 1e-20f)
+		{
+			continue;
+		}
+
+		float3 point = float3(blk->data_r[i],
+		                      blk->data_g[i],
+		                      blk->data_b[i]);
+		float param = dot(point, lin->bs);
+		float3 rp1 = lin->amod + param * lin->bis;
+		float3 dist = rp1 - point;
+		float4 ews = ewb->error_weights[i];
+		float3 ews3 = float3(ews.r, ews.g, ews.b);
+		errorsum += dot(ews3, dist * dist);
+	}
+
+	return errorsum;
+}
+
 /*
    for a given set of input colors and a given partitioning, determine: color error that results
    from RGB-scale encoding (relevant for LDR only) color error that results from RGB-lumashift encoding

@@ -778,17 +778,6 @@ void compute_error_squared_rgb(
 	float* samechroma_error,
 	float3* separate_color_error);
 
-// functions to compute error value across a tile for a particular line function
-// for a single partition.
-float compute_error_squared_rgb_single_partition(
-	int partition_to_test,
-	const block_size_descriptor* bsd,
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* lin	// the line for the partition.
-);
-
 // for each partition, compute its color weightings.
 void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
