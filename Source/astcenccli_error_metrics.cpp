@@ -156,6 +156,8 @@ void compute_error_metrics(
 	}
 
 	float rgb_peak = 0.0f;
+	unsigned int xsize1 = img1->dim_x;
+	unsigned int xsize2 = img2->dim_x;
 
 	for (unsigned int z = 0; z < dim_z; z++)
 	{
@@ -168,60 +170,60 @@ void compute_error_metrics(
 
 				if (img1->data_type == ASTCENC_TYPE_U8)
 				{
-					uint8_t*** data8 = static_cast<uint8_t***>(img1->data);
+					uint8_t* data8 = static_cast<uint8_t*>(img1->data[z]);
 					color1 = float4(
-					    data8[z][y][4 * x    ] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 1] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 2] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 3] * (1.0f / 255.0f));
+					    data8[(4 * xsize1 * y) + (4 * x    )] * (1.0f / 255.0f),
+					    data8[(4 * xsize1 * y) + (4 * x + 1)] * (1.0f / 255.0f),
+					    data8[(4 * xsize1 * y) + (4 * x + 2)] * (1.0f / 255.0f),
+					    data8[(4 * xsize1 * y) + (4 * x + 3)] * (1.0f / 255.0f));
 				}
 				else if (img1->data_type == ASTCENC_TYPE_F16)
 				{
-					uint16_t*** data16 = static_cast<uint16_t***>(img1->data);
+					uint16_t* data16 = static_cast<uint16_t*>(img1->data[z]);
 					color1 = float4(
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x    ])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 1])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 2])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 3])));
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x    )])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x + 1)])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x + 2)])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x + 3)])));
 				}
 				else // if (img1->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img1->data_type == ASTCENC_TYPE_F32);
-					float*** data32 = static_cast<float***>(img1->data);
+					float* data32 = static_cast<float*>(img1->data[z]);
 					color1 = float4(
-					    astc::clamp64Kf(data32[z][y][4 * x    ]),
-					    astc::clamp64Kf(data32[z][y][4 * x + 1]),
-					    astc::clamp64Kf(data32[z][y][4 * x + 2]),
-					    astc::clamp64Kf(data32[z][y][4 * x + 3]));
+					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x    )]),
+					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x + 1)]),
+					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x + 2)]),
+					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x + 3)]));
 				}
 
 				if (img2->data_type == ASTCENC_TYPE_U8)
 				{
-					uint8_t*** data8 = static_cast<uint8_t***>(img2->data);
+					uint8_t* data8 = static_cast<uint8_t*>(img2->data[z]);
 					color2 = float4(
-					    data8[z][y][4 * x    ] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 1] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 2] * (1.0f / 255.0f),
-					    data8[z][y][4 * x + 3] * (1.0f / 255.0f));
+					    data8[(4 * xsize2 * y) + (4 * x    )] * (1.0f / 255.0f),
+					    data8[(4 * xsize2 * y) + (4 * x + 1)] * (1.0f / 255.0f),
+					    data8[(4 * xsize2 * y) + (4 * x + 2)] * (1.0f / 255.0f),
+					    data8[(4 * xsize2 * y) + (4 * x + 3)] * (1.0f / 255.0f));
 				}
 				else if (img2->data_type == ASTCENC_TYPE_F16)
 				{
-					uint16_t*** data16 = static_cast<uint16_t***>(img2->data);
+					uint16_t* data16 = static_cast<uint16_t*>(img2->data[z]);
 					color2 = float4(
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x    ])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 1])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 2])),
-					    astc::clamp64Kf(sf16_to_float(data16[z][y][4 * x + 3])));
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x    )])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x + 1)])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x + 2)])),
+					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x + 3)])));
 				}
 				else // if (img2->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img2->data_type == ASTCENC_TYPE_F32);
-					float*** data16 = static_cast<float***>(img2->data);
+					float* data16 = static_cast<float*>(img2->data[z]);
 					color2 = float4(
-					    astc::clamp64Kf(data16[z][y][4 * x    ]),
-					    astc::clamp64Kf(data16[z][y][4 * x + 1]),
-					    astc::clamp64Kf(data16[z][y][4 * x + 2]),
-					    astc::clamp64Kf(data16[z][y][4 * x + 3]));
+					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x    )]),
+					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 1)]),
+					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 2)]),
+					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 3)]));
 				}
 
 				rgb_peak = MAX(MAX(color1.r, color1.g), MAX(color1.b, rgb_peak));

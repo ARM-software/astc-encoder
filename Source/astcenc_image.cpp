@@ -297,34 +297,23 @@ void fetch_imageblock(
 		data[ASTCENC_SWZ_0] = 0x00;
 		data[ASTCENC_SWZ_1] = 0xFF;
 
-		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			uint8_t* data8 = static_cast<uint8_t*>(img.data[zi]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
+				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
-					// clamp XY coordinates to the picture.
-					if (xi < 0)
-						xi = 0;
-					if (yi < 0)
-						yi = 0;
-					if (zi < 0)
-						zi = 0;
-					if (xi >= xsize)
-						xi = xsize - 1;
-					if (yi >= ysize)
-						yi = ysize - 1;
-					if (zi >= zsize)
-						zi = zsize - 1;
+					int xi = astc::clamp(xpos + x, 0, xsize - 1);
 
-					int r = data8[zi][yi][4 * xi    ];
-					int g = data8[zi][yi][4 * xi + 1];
-					int b = data8[zi][yi][4 * xi + 2];
-					int a = data8[zi][yi][4 * xi + 3];
+					int r = data8[(4 * xsize * yi) + (4 * xi    )];
+					int g = data8[(4 * xsize * yi) + (4 * xi + 1)];
+					int b = data8[(4 * xsize * yi) + (4 * xi + 2)];
+					int a = data8[(4 * xsize * yi) + (4 * xi + 3)];
 
 					if (needs_swz)
 					{
@@ -354,34 +343,23 @@ void fetch_imageblock(
 		data[ASTCENC_SWZ_0] = 0x0000;
 		data[ASTCENC_SWZ_1] = 0x3C00;
 
-		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			uint16_t* data16 = static_cast<uint16_t*>(img.data[zi]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
+				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
-					// clamp XY coordinates to the picture.
-					if (xi < 0)
-						xi = 0;
-					if (yi < 0)
-						yi = 0;
-					if (zi < 0)
-						zi = 0;
-					if (xi >= xsize)
-						xi = xsize - 1;
-					if (yi >= ysize)
-						yi = ysize - 1;
-					if (zi >= ysize)
-						zi = zsize - 1;
+					int xi = astc::clamp(xpos + x, 0, xsize - 1);
 
-					int r = data16[zi][yi][4 * xi    ];
-					int g = data16[zi][yi][4 * xi + 1];
-					int b = data16[zi][yi][4 * xi + 2];
-					int a = data16[zi][yi][4 * xi + 3];
+					int r = data16[(4 * xsize * yi) + (4 * xi    )];
+					int g = data16[(4 * xsize * yi) + (4 * xi + 1)];
+					int b = data16[(4 * xsize * yi) + (4 * xi + 2)];
+					int a = data16[(4 * xsize * yi) + (4 * xi + 3)];
 
 					if (needs_swz)
 					{
@@ -413,34 +391,23 @@ void fetch_imageblock(
 		data[ASTCENC_SWZ_0] = 0.0f;
 		data[ASTCENC_SWZ_1] = 1.0f;
 
-		float*** data32 = static_cast<float***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			float* data32 = static_cast<float*>(img.data[zi]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
+				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
-					// clamp XY coordinates to the picture.
-					if (xi < 0)
-						xi = 0;
-					if (yi < 0)
-						yi = 0;
-					if (zi < 0)
-						zi = 0;
-					if (xi >= xsize)
-						xi = xsize - 1;
-					if (yi >= ysize)
-						yi = ysize - 1;
-					if (zi >= ysize)
-						zi = zsize - 1;
+					int xi = astc::clamp(xpos + x, 0, xsize - 1);
 
-					float r = data32[zi][yi][4 * xi    ];
-					float g = data32[zi][yi][4 * xi + 1];
-					float b = data32[zi][yi][4 * xi + 2];
-					float a = data32[zi][yi][4 * xi + 3];
+					float r = data32[(4 * xsize * yi) + (4 * xi    )];
+					float g = data32[(4 * xsize * yi) + (4 * xi + 1)];
+					float b = data32[(4 * xsize * yi) + (4 * xi + 2)];
+					float a = data32[(4 * xsize * yi) + (4 * xi + 3)];
 
 					if (needs_swz)
 					{
@@ -510,9 +477,11 @@ void write_imageblock(
 	int idx = 0;
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
-		uint8_t*** data8 = static_cast<uint8_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			uint8_t* data8 = static_cast<uint8_t*>(img.data[zc]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
 				for (int x = 0; x < bsd->xdim; x++)
@@ -565,10 +534,10 @@ void write_imageblock(
 							ai = astc::flt2int_rtn(MIN(pb->data_a[idx], 1.0f) * 255.0f);
 						}
 
-						data8[zi][yi][4 * xi    ] = ri;
-						data8[zi][yi][4 * xi + 1] = gi;
-						data8[zi][yi][4 * xi + 2] = bi;
-						data8[zi][yi][4 * xi + 3] = ai;
+						data8[(4 * xsize * yi) + (4 * xi    )] = ri;
+						data8[(4 * xsize * yi) + (4 * xi + 1)] = gi;
+						data8[(4 * xsize * yi) + (4 * xi + 2)] = bi;
+						data8[(4 * xsize * yi) + (4 * xi + 3)] = ai;
 					}
 					idx++;
 					nptr++;
@@ -578,9 +547,11 @@ void write_imageblock(
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		uint16_t*** data16 = static_cast<uint16_t***>(img.data);
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			uint16_t* data16 = static_cast<uint16_t*>(img.data[zc]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
 				for (int x = 0; x < bsd->xdim; x++)
@@ -632,10 +603,10 @@ void write_imageblock(
 							ai = float_to_sf16(pb->data_a[idx], SF_NEARESTEVEN);
 						}
 
-						data16[zi][yi][4 * xi    ] = ri;
-						data16[zi][yi][4 * xi + 1] = gi;
-						data16[zi][yi][4 * xi + 2] = bi;
-						data16[zi][yi][4 * xi + 3] = ai;
+						data16[(4 * xsize * yi) + (4 * xi    )] = ri;
+						data16[(4 * xsize * yi) + (4 * xi + 1)] = gi;
+						data16[(4 * xsize * yi) + (4 * xi + 2)] = bi;
+						data16[(4 * xsize * yi) + (4 * xi + 3)] = ai;
 					}
 					idx++;
 					nptr++;
@@ -646,9 +617,12 @@ void write_imageblock(
 	else // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
-		float*** data32 = static_cast<float***>(img.data);
+
 		for (int z = 0; z < bsd->zdim; z++)
 		{
+			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			float* data32 = static_cast<float*>(img.data[zc]);
+
 			for (int y = 0; y < bsd->ydim; y++)
 			{
 				for (int x = 0; x < bsd->xdim; x++)
@@ -700,10 +674,10 @@ void write_imageblock(
 							af = pb->data_a[idx];
 						}
 
-						data32[zi][yi][4 * xi    ] = rf;
-						data32[zi][yi][4 * xi + 1] = gf;
-						data32[zi][yi][4 * xi + 2] = bf;
-						data32[zi][yi][4 * xi + 3] = af;
+						data32[(4 * xsize * yi) + (4 * xi    )] = rf;
+						data32[(4 * xsize * yi) + (4 * xi + 1)] = gf;
+						data32[(4 * xsize * yi) + (4 * xi + 2)] = bf;
+						data32[(4 * xsize * yi) + (4 * xi + 3)] = af;
 					}
 					idx++;
 					nptr++;
