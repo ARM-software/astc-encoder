@@ -539,7 +539,7 @@ astcenc_error astcenc_context_alloc(
  * @param[out]    data_out       Pointer to output data array.
  * @param         data_len       Length of the output data array.
  * @param         thread_index   Thread index [0..N-1] of calling thread.
-
+ *
  * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
 astcenc_error astcenc_compress_image(
