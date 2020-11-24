@@ -24,7 +24,9 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
     from the `astcenc_image` structure.
-
+  * **API Change:** Image `data` is no longer a 3D array accessed using
+    `data[z][y][x]` indexing, it's an array of 2D slices. This makes it easier
+	to directly use images loaded from other libraries.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1
