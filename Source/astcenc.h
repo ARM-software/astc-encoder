@@ -76,21 +76,21 @@
  * Images
  * ======
  *
- * Images are passed in as a astcenc_image structure. Inputs can be either
- * 8-bit unorm inputs (passed in via the data8 pointer), or 16-bit floating
- * point inputs (passed in via the data16 pointer). The unused pointer should
- * be set to nullptr.
+ * Images are passed in as an astcenc_image structure. Inputs can be either
+ * 8-bit unorm, 16-bit half-float, or 32-bit float, as indicated by the
+ * data_type field.
  *
  * Images can be any dimension; there is no requirement for them to be a
  * multiple of the ASTC block size.
  *
- * Data is always passed in as 4 color channels, and accessed as 3D array
- * indexed using e.g.
+ * Data is always passed in as 4 color channels, and accessed as an array of
+ * 2D image slices. Data within an image slice is always tightly packed without
+ * padding. Addresing looks like this:
  *
- *     data8[z_coord][y_coord][x_coord * 4    ]   // Red
- *     data8[z_coord][y_coord][x_coord * 4 + 1]   // Green
- *     data8[z_coord][y_coord][x_coord * 4 + 2]   // Blue
- *     data8[z_coord][y_coord][x_coord * 4 + 3]   // Alpha
+ *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4    ]   // Red
+ *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4 + 1]   // Green
+ *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4 + 2]   // Blue
+ *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4 + 3]   // Alpha
  *
  * Common compressor usage
  * =======================
@@ -456,22 +456,20 @@ struct astcenc_config {
 /**
  * @brief An uncompressed 2D or 3D image.
  *
- * Inputs can be either 8-bit unorm inputs (passed in via the data8 pointer),
- * or 16-bit floating point inputs (passed in via the data16 pointer). The
- * unused pointer must be set to nullptr. Data is always passed in as 4 color
- * channels, and accessed as 3D array indexed using [Z][Y][(X * 4) + (0..3)].
+ * 3D image are passed in as an array of 2D slices. Each slice has identical
+ * size and color format.
  */
 struct astcenc_image {
 	/** @brief The X dimension of the image, in texels. */
 	unsigned int dim_x;
 	/** @brief The Y dimension of the image, in texels. */
 	unsigned int dim_y;
-	/** @brief The X dimension of the image, in texels. */
+	/** @brief The Z dimension of the image, in texels. */
 	unsigned int dim_z;
 	/** @brief The data type per channel. */
 	astcenc_type data_type;
-	/** @brief The data; actually of type <t>***. */
-	void *data;
+	/** @brief The array of 2D slices, of length dim_z. */
+	void** data;
 };
 
 /**
@@ -536,7 +534,7 @@ astcenc_error astcenc_context_alloc(
  * available. Each thread must have a unique thread_index.
  *
  * @param         context        Codec context.
- * @param[in,out] image          Input image.
+ * @param[in,out] image          An input image, in 2D slices.
  * @param         swizzle        Compression data swizzle.
  * @param[out]    data_out       Pointer to output data array.
  * @param         data_len       Length of the output data array.

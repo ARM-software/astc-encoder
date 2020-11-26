@@ -167,8 +167,6 @@ static void compute_pixel_region_variance(
 	// Load N and N^2 values into the work buffers
 	if (img->data_type == ASTCENC_TYPE_U8)
 	{
-		uint8_t*** data8 = static_cast<uint8_t***>(img->data);
-
 		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -178,6 +176,7 @@ static void compute_pixel_region_variance(
 		{
 			int z_src = (z - zd_start) + offset_z - kernel_radius_z;
 			z_src = astc::clamp(z_src, 0, (int)(img->dim_z - 1));
+			uint8_t* data8 = static_cast<uint8_t*>(img->data[z_src]);
 
 			for (int y = 1; y < padsize_y; y++)
 			{
@@ -189,10 +188,10 @@ static void compute_pixel_region_variance(
 					int x_src = (x - 1) + offset_x - kernel_radius_xy;
 					x_src = astc::clamp(x_src, 0, (int)(img->dim_x - 1));
 
-					data[0] = data8[z_src][y_src][4 * x_src    ];
-					data[1] = data8[z_src][y_src][4 * x_src + 1];
-					data[2] = data8[z_src][y_src][4 * x_src + 2];
-					data[3] = data8[z_src][y_src][4 * x_src + 3];
+					data[0] = data8[(4 * img->dim_x * y_src) + (4 * x_src    )];
+					data[1] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
+					data[2] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
+					data[3] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
 
 					uint8_t r = data[swz.r];
 					uint8_t g = data[swz.g];
@@ -220,8 +219,6 @@ static void compute_pixel_region_variance(
 	}
 	else if (img->data_type == ASTCENC_TYPE_F16)
 	{
-		uint16_t*** data16 = static_cast<uint16_t***>(img->data);
-
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		uint16_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -231,6 +228,7 @@ static void compute_pixel_region_variance(
 		{
 			int z_src = (z - zd_start) + offset_z - kernel_radius_z;
 			z_src = astc::clamp(z_src, 0, (int)(img->dim_z - 1));
+			uint16_t* data16 = static_cast<uint16_t*>(img->data[z_src]);
 
 			for (int y = 1; y < padsize_y; y++)
 			{
@@ -242,10 +240,10 @@ static void compute_pixel_region_variance(
 					int x_src = (x - 1) + offset_x - kernel_radius_xy;
 					x_src = astc::clamp(x_src, 0, (int)(img->dim_x - 1));
 
-					data[0] = data16[z_src][y_src][4 * x_src    ];
-					data[1] = data16[z_src][y_src][4 * x_src + 1];
-					data[2] = data16[z_src][y_src][4 * x_src + 2];
-					data[3] = data16[z_src][y_src][4 * x_src + 3];
+					data[0] = data16[(4 * img->dim_x * y_src) + (4 * x_src    )];
+					data[1] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
+					data[2] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
+					data[3] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
 
 					uint16_t r = data[swz.r];
 					uint16_t g = data[swz.g];
@@ -274,7 +272,6 @@ static void compute_pixel_region_variance(
 	else // if (img->data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
-		float*** data32 = static_cast<float***>(img->data);
 
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		float data[6];
@@ -285,6 +282,7 @@ static void compute_pixel_region_variance(
 		{
 			int z_src = (z - zd_start) + offset_z - kernel_radius_z;
 			z_src = astc::clamp(z_src, 0, (int)(img->dim_z - 1));
+			float* data32 = static_cast<float*>(img->data[z_src]);
 
 			for (int y = 1; y < padsize_y; y++)
 			{
@@ -296,10 +294,10 @@ static void compute_pixel_region_variance(
 					int x_src = (x - 1) + offset_x - kernel_radius_xy;
 					x_src = astc::clamp(x_src, 0, (int)(img->dim_x - 1));
 
-					data[0] = data32[z_src][y_src][4 * x_src    ];
-					data[1] = data32[z_src][y_src][4 * x_src + 1];
-					data[2] = data32[z_src][y_src][4 * x_src + 2];
-					data[3] = data32[z_src][y_src][4 * x_src + 3];
+					data[0] = data32[(4 * img->dim_x * y_src) + (4 * x_src    )];
+					data[1] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
+					data[2] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
+					data[3] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
 
 					float r = data[swz.r];
 					float g = data[swz.g];
