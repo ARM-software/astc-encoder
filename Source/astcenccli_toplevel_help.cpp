@@ -159,19 +159,21 @@ COMPRESSION
 
        -mask
            The input texture is a mask texture with unrelated data stored
-           in the various color channels. This improves image quality by
-           trying to minimize the effect of error cross-talk across the
-           color channels.
+           in the various color channels, so enable error heuristics that
+           aim to improve perceptual quality by minimizing the effect of
+           error cross-talk across the color channels.
 
        -normal
-           The input texture is a three channel normal map, storing unit
-           length normals as R=X, G=Y, and B=Z, optimized for angular PSNR.
-           The compressor will compress this data as a two channel X+Y
-           normal map with the following channel layout (RGB=X, A=Y). The
-           Z component can be recovered programatically in shader core by
+           The input texture is a three channel linear LDR normal map
+           storing unit length normals as (R=X, G=Y, B=Z). The output
+           will be a two channel X+Y normal map stored as (RGB=X, A=Y),
+           optimized for angular error instead of simple PSNR. The Z
+           component can be recovered programatically in shader code by
            using the equation:
 
-               Z = sqrt(1 - X^2 - Y^2).
+               nml.xy = texture(...).ga;              // Load in [0,1]
+               nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
+               nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
 
        -perceptual
            The codec should optimize perceptual error, instead of direct
