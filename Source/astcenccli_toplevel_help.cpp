@@ -168,7 +168,7 @@ COMPRESSION
            storing unit length normals as (R=X, G=Y, B=Z). The output
            will be a two channel X+Y normal map stored as (RGB=X, A=Y),
            optimized for angular error instead of simple PSNR. The Z
-           component can be recovered programatically in shader code by
+           component can be recovered programmatically in shader code by
            using the equation:
 
                nml.xy = texture(...).ga;              // Load in [0,1]
@@ -418,7 +418,7 @@ DECOMPRESSION
        the FILE FORMATS section for the list of supported formats.
 
        The -dsw options documented in ADVANCED COMPRESSION option documentation
-	   are relevent to decompression.
+	   are relevant to decompression.
 
 TEST
        To perform a compression test which round-trips a single image
