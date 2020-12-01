@@ -20,6 +20,14 @@ recompile your client-side code using the updated `astcenc.h` header.
 * **General:**
   * **Improvement:** SSE4.2 profile changed to SSE4.1, which more accurately
     reflects the feature set used as we were not using any SSE4.2 intrinsics.
+* **Command Line:**
+  * New image preprocess `-pp-normalize` option added. This forces normal
+    vectors to be unit length, which is useful when compressing source textures
+    that use normal length to encode an NDF, which is incompatible with ASTC's
+    two channel encoding.
+  * New image preprocess `-pp-premultiply` option added. This scales RGB values
+    by the alpha value. This can be useful to minimize cross-channel color
+    bleed caused by GPU post-multiply filtering/blending.
 * **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
