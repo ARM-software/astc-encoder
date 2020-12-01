@@ -1179,19 +1179,19 @@ struct astcenc_context
 ============================================================================ */
 /**
  * @brief Run-time detection if the host CPU supports SSE 4.1.
- * @returns Zero if not supported, positive value if it is.
+ * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_sse41();
 
 /**
  * @brief Run-time detection if the host CPU supports popcnt.
- * @returns Zero if not supported, positive value if it is.
+ * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_popcnt();
 
 /**
  * @brief Run-time detection if the host CPU supports avx2.
- * @returns Zero if not supported, positive value if it is.
+ * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_avx2();
 
@@ -1204,7 +1204,7 @@ int cpu_supports_avx2();
  * @param size    The desired buffer size.
  * @param align   The desired buffer alignment; must be 2^N.
  *
- * @returns The memory buffer pointer or nullptr on allocation failure.
+ * @return The memory buffer pointer or nullptr on allocation failure.
  */
 template<typename T>
 T* aligned_malloc(size_t size, size_t align)

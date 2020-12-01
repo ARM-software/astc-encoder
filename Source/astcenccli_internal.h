@@ -167,14 +167,14 @@ void compute_error_metrics(
 /**
  * @brief Get the current time.
  *
- * @returns The current time in seconds since arbitrary epoch.
+ * @return The current time in seconds since arbitrary epoch.
  */
 double get_time();
 
 /**
  * @brief Get the number of CPU cores.
  *
- * @returns The number of online or onlineable CPU cores in the system.
+ * @return The number of online or onlineable CPU cores in the system.
  */
 int get_cpu_count();
 
