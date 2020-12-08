@@ -414,7 +414,10 @@ ADVANCED COMPRESSION
            Error messages will always be printed, as will mandatory outputs
            for the selected operation mode. For example, the test mode
            will always output image quality metrics and compression time
-           but will suppress all other output.
+           but will suppress all other output.)"
+// This split in the literals is needed for Visual Studio; the compiler
+// will concatenate these two strings together ...
+R"(
 
 DECOMPRESSION
        To decompress an image stored in the ASTC format you must specify
@@ -444,10 +447,7 @@ TEST
 
        This operation mode will print error metrics suitable for either
        LDR and HDR images, allowing some assessment of the compression
-       image quality.)"
-// This split in the literals is needed for Visual Studio; the compiler
-// will concatenate these two strings together ...
-R"(
+       image quality.
 
 COMPRESSION FILE FORMATS
        The following formats are supported as compression inputs:
