@@ -187,6 +187,18 @@ COMPRESSION
            "_<slice>" to find the file to load. For example, an input
            named "input.png" would load as input_0.png, input_1.png, etc.
 
+       -pp-normalize
+            Run a preprocess over the image that forces normal vectors to
+            be unit length. Preprocessing applies before any codec
+            encoding swizzle, so normal data must be in the RGB channels
+            in the source image.
+
+       -pp-premultiply
+            Run a preprocess over the image that scales RGB components
+            in the image by the alpha value. Preprocessing applies before any
+            codec encoding swizzle, so color data must be in the RGB
+            channels in the source image.
+
 COMPRESSION TIPS & TRICKS
        ASTC is a block-based format that can be prone to block artifacts.
        If block artifacts are a problem when compressing a given texture,

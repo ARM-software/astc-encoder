@@ -74,6 +74,19 @@ static const astcenc_operation ASTCENC_OP_TEST =
                                ASTCENC_STAGE_COMPARE |
                                ASTCENC_STAGE_ST_NCOMP;
 
+/**
+ * @brief Image preprocesing tasks prior to encoding.
+ */
+enum astcenc_preprocess
+{
+	/** @brief No image preprocessing. */
+	ASTCENC_PP_NONE = 0,
+	/** @brief Normal vector unit-length normalization. */
+	ASTCENC_PP_NORMALIZE,
+	/** @brief Color data alpha premultiplication. */
+	ASTCENC_PP_PREMULTIPLY
+};
+
 static const mode_entry modes[] = {
 	{"-cl",      ASTCENC_OP_COMPRESS,   ASTCENC_PRF_LDR},
 	{"-dl",      ASTCENC_OP_DECOMPRESS, ASTCENC_PRF_LDR},
@@ -348,6 +361,7 @@ int init_astcenc_config(
 	astcenc_profile profile,
 	astcenc_operation operation,
 	astc_compressed_image& comp_image,
+	astcenc_preprocess& preprocess,
 	astcenc_config& config
 ) {
 	unsigned int block_x = 0;
@@ -363,6 +377,7 @@ int init_astcenc_config(
 	}
 
 	astcenc_preset preset = ASTCENC_PRE_FAST;
+	preprocess = ASTCENC_PP_NONE;
 
 	// parse the command line's encoding options.
 	int argidx = 4;
@@ -444,6 +459,24 @@ int init_astcenc_config(
 		{
 
 			flags |= ASTCENC_FLG_MAP_MASK;
+		}
+		else if (!strcmp(argv[argidx], "-pp-normalize"))
+		{
+			if (preprocess != ASTCENC_PP_NONE)
+			{
+				printf("ERROR: Only a single image preprocess can be used\n");
+				return 1;
+			}
+			preprocess = ASTCENC_PP_NORMALIZE;
+		}
+		else if (!strcmp(argv[argidx], "-pp-premultiply"))
+		{
+			if (preprocess != ASTCENC_PP_NONE)
+			{
+				printf("ERROR: Only a single image preprocess can be used\n");
+				return 1;
+			}
+			preprocess = ASTCENC_PP_PREMULTIPLY;
 		}
 		argidx ++;
 	}
@@ -696,6 +729,14 @@ int edit_astcenc_config(
 		{
 			argidx++;
 		}
+		else if (!strcmp(argv[argidx], "-pp-normalize"))
+		{
+			argidx++;
+		}
+		else if (!strcmp(argv[argidx], "-pp-premultiply"))
+		{
+			argidx++;
+		}
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
 			argidx += 2;
@@ -927,6 +968,224 @@ int edit_astcenc_config(
 	return 0;
 }
 
+/**
+ * @brief Get the value of a single pixel in an image.
+ *
+ * Note, this implementation is not particularly optimal as it puts format
+ * checks in the inner-most loop. For the CLI preprocess passes this is deemed
+ * acceptable as these are not performance critical paths.
+ *
+ * @param[in] img     The output image.
+ * @param     x       The pixel x coordinate.
+ * @param     y       The pixel y coordinate.
+ * @param     x       The pixel z coordinate.
+ *
+ * @return      pixel   The pixel color value to write.
+ */
+static float4 image_get_pixel(
+	const astcenc_image& img,
+	unsigned int x,
+	unsigned int y,
+	unsigned int z
+) {
+	// We should never escape bounds
+	assert(x < img.dim_x);
+	assert(y < img.dim_y);
+	assert(z < img.dim_z);
+
+	if (img.data_type == ASTCENC_TYPE_U8)
+	{
+		uint8_t* data = static_cast<uint8_t*>(img.data[z]);
+
+		float r = data[(4 * img.dim_x * y) + (4 * x    )] / 255.0f;
+		float g = data[(4 * img.dim_x * y) + (4 * x + 1)] / 255.0f;
+		float b = data[(4 * img.dim_x * y) + (4 * x + 2)] / 255.0f;
+		float a = data[(4 * img.dim_x * y) + (4 * x + 3)] / 255.0f;
+
+		return float4(r, g, b, a);
+	}
+	else if (img.data_type == ASTCENC_TYPE_F16)
+	{
+		uint16_t* data = static_cast<uint16_t*>(img.data[z]);
+
+		float r = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x    )]);
+		float g = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 1)]);
+		float b = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 2)]);
+		float a = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 3)]);
+
+		return float4(r, g, b, a);
+	}
+	else // if (img.data_type == ASTCENC_TYPE_F32)
+	{
+		assert(img.data_type == ASTCENC_TYPE_F32);
+		float* data = static_cast<float*>(img.data[z]);
+
+		float r = data[(4 * img.dim_x * y) + (4 * x    )];
+		float g = data[(4 * img.dim_x * y) + (4 * x + 1)];
+		float b = data[(4 * img.dim_x * y) + (4 * x + 2)];
+		float a = data[(4 * img.dim_x * y) + (4 * x + 3)];
+
+		return float4(r, g, b, a);
+	}
+}
+
+/**
+ * @brief Set the value of a single pixel in an image.
+ *
+ * @param[out] img     The output image; must use F32 texture channels.
+ * @param      x       The pixel x coordinate.
+ * @param      y       The pixel y coordinate.
+ * @param      x       The pixel z coordinate.
+ * @param      pixel   The pixel color value to write.
+ */
+static void image_set_pixel(
+	astcenc_image& img,
+	unsigned int x,
+	unsigned int y,
+	unsigned int z,
+	float4 pixel
+) {
+	// We should never escape bounds
+	assert(x < img.dim_x);
+	assert(y < img.dim_y);
+	assert(z < img.dim_z);
+	assert(img.data_type == ASTCENC_TYPE_F32);
+
+	float* data = static_cast<float*>(img.data[z]);
+
+	data[(4 * img.dim_x * y) + (4 * x    )] = pixel.r;
+	data[(4 * img.dim_x * y) + (4 * x + 1)] = pixel.g;
+	data[(4 * img.dim_x * y) + (4 * x + 2)] = pixel.b;
+	data[(4 * img.dim_x * y) + (4 * x + 3)] = pixel.a;
+}
+
+/**
+ * @brief Create a copy of @c input with forced unit-length normal vectors.
+ *
+ * It is assumed that all normal vectors are stored in the RGB components, and
+ * stored in a packed unsigned range of [0,1] which must be unpacked prior
+ * normalization. Data must then be repacked into this form for handing over to
+ * the core codec.
+ *
+ * @param[in]  input    The input image.
+ * @param[out] output   The output image, must use F32 channels.
+ */
+static void image_preprocess_normalize(
+	const astcenc_image& input,
+	astcenc_image& output
+) {
+	for (unsigned int z = 0; z < input.dim_z; z++)
+	{
+		for (unsigned int y = 0; y < input.dim_y; y++)
+		{
+			for (unsigned int x = 0; x < input.dim_x; x++)
+			{
+				float4 pixel = image_get_pixel(input, x, y, z);
+
+				// Stash alpha channel and zero
+				float a = pixel.a;
+				pixel.a = 0.0f;
+
+				// Decode [0,1] normals to [-1,1]
+				pixel.r = (pixel.r * 2.0f) - 1.0f;
+				pixel.g = (pixel.g * 2.0f) - 1.0f;
+				pixel.b = (pixel.b * 2.0f) - 1.0f;
+
+				// Normalize pixel and restore alpha
+				pixel = normalize(pixel);
+				pixel.a = a;
+
+				// Encode [-1,1] normals to [0,1]
+				pixel.r = (pixel.r + 1.0f) / 2.0f;
+				pixel.g = (pixel.g + 1.0f) / 2.0f;
+				pixel.b = (pixel.b + 1.0f) / 2.0f;
+
+				image_set_pixel(output, x, y, z, pixel);
+			}
+		}
+	}
+}
+
+/**
+ * @brief Linearize an sRGB value.
+ * @return The linearized value.
+ */
+static float srgb_to_linear(
+	float a
+) {
+	if (a <= 0.04045f)
+	{
+		return a * (1.0f / 12.92f);
+	}
+
+	return powf((a + 0.055f) * (1.0f / 1.055f), 2.4f);
+}
+
+/**
+ * @brief sRGB gamma-encode a linear value.
+ * @return The gamma encoded value.
+ */
+static float linear_to_srgb(
+	float a
+) {
+	if (a <= 0.0031308f)
+	{
+		return a * 12.92f;
+	}
+
+	return 1.055f * powf(a, 1.0f / 2.4f) - 0.055f;
+}
+
+/**
+ * @brief Create a copy of @c input with premultiplied color data.
+ *
+ * If we are compressing sRGB data we linearize the data prior to
+ * premultiplication and re-gamma-encode afterwards.
+ *
+ * @param[in]  input     The input image.
+ * @param[out] output    The output image, must use F32 channels.
+ * @param      profile   The encoding profile.
+ */
+static void image_preprocess_premultiply(
+	const astcenc_image& input,
+	astcenc_image& output,
+	astcenc_profile profile
+) {
+	for (unsigned int z = 0; z < input.dim_z; z++)
+	{
+		for (unsigned int y = 0; y < input.dim_y; y++)
+		{
+			for (unsigned int x = 0; x < input.dim_x; x++)
+			{
+				float4 pixel = image_get_pixel(input, x, y, z);
+
+				// Linearize sRGB
+				if (profile == ASTCENC_PRF_LDR_SRGB)
+				{
+					pixel.r = srgb_to_linear(pixel.r);
+					pixel.g = srgb_to_linear(pixel.g);
+					pixel.b = srgb_to_linear(pixel.b);
+				}
+
+				// Premultiply pixel in linear-space
+				pixel.r = pixel.r * pixel.a;
+				pixel.g = pixel.g * pixel.a;
+				pixel.b = pixel.b * pixel.a;
+
+				// Gamma-encode sRGB
+				if (profile == ASTCENC_PRF_LDR_SRGB)
+				{
+					pixel.r = linear_to_srgb(pixel.r);
+					pixel.g = linear_to_srgb(pixel.g);
+					pixel.b = linear_to_srgb(pixel.b);
+				}
+
+				image_set_pixel(output, x, y, z, pixel);
+			}
+		}
+	}
+}
+
 int main(
 	int argc,
 	char **argv
@@ -1022,7 +1281,8 @@ int main(
 	}
 
 	astcenc_config config {};
-	error = init_astcenc_config(argc, argv, profile, operation, image_comp, config);
+	astcenc_preprocess preprocess;
+	error = init_astcenc_config(argc, argv, profile, operation, image_comp, preprocess, config);
 	if (error)
 	{
 		return 1;
@@ -1064,6 +1324,37 @@ int main(
 		{
 			printf ("ERROR: Failed to load uncompressed image file\n");
 			return 1;
+		}
+
+
+		if (preprocess != ASTCENC_PP_NONE)
+		{
+			// Allocate a float image so we can avoid additional quantization,
+			// as e.g. premultiplication can result in fractional color values
+			astcenc_image* image_pp = alloc_image(32,
+			                                      image_uncomp_in->dim_x,
+			                                      image_uncomp_in->dim_y,
+			                                      image_uncomp_in->dim_z);
+			if (!image_pp)
+			{
+				printf ("ERROR: Failed to allocate preprocessed image\n");
+				return 1;
+			}
+
+			if (preprocess == ASTCENC_PP_NORMALIZE)
+			{
+				image_preprocess_normalize(*image_uncomp_in, *image_pp);
+			}
+
+			if (preprocess == ASTCENC_PP_PREMULTIPLY)
+			{
+				image_preprocess_premultiply(*image_uncomp_in, *image_pp,
+				                             config.profile);
+			}
+
+			// Delete the original as we no longer need it
+			free_image(image_uncomp_in);
+			image_uncomp_in = image_pp;
 		}
 
 		if (!cli_config.silentmode)
