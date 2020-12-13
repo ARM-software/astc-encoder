@@ -32,15 +32,35 @@
 #include <mutex>
 
 #ifndef ASTCENC_SSE
-#error ERROR: ASTCENC_SSE not defined
+#if defined(__SSE4_2__)
+#define ASTCENC_SSE 42
+#elif defined(__SSE4_1__)
+#define ASTCENC_SSE 41
+#elif defined(__SSE3__)
+#define ASTCENC_SSE 30
+#elif defined(__SSE2__)
+#define ASTCENC_SSE 20
+#else
+#define ASTCENC_SSE 0
+#endif
 #endif
 
 #ifndef ASTCENC_POPCNT
-#error ERROR: ASTCENC_POPCNT not defined
+#if defined(__POPCNT__)
+#define ASTCENC_POPCNT 1
+#else
+#define ASTCENC_POPCNT 0
+#endif
 #endif
 
 #ifndef ASTCENC_AVX
-#error ERROR: ASTCENC_AVX not defined
+#if defined(__AVX2__)
+#define ASTCENC_AVX 2
+#elif defined(__AVX__)
+#define ASTCENC_AVX 1
+#else
+#define ASTCENC_AVX 0
+#endif
 #endif
 
 #ifndef ASTCENC_ISA_INVARIANCE
