@@ -17,9 +17,9 @@
 
 project(astcenc)
 
-add_executable(astcenc-${VEC})
+add_executable(astcenc-${ISA_SIMD})
 
-target_sources(astcenc-${VEC}
+target_sources(astcenc-${ISA_SIMD}
     PRIVATE
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes2.cpp
@@ -53,18 +53,18 @@ target_sources(astcenc-${VEC}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_compile_features(astcenc-${VEC}
+target_compile_features(astcenc-${ISA_SIMD}
     PRIVATE
         cxx_std_14)
 
-target_compile_definitions(astcenc-${VEC}
+target_compile_definitions(astcenc-${ISA_SIMD}
     PRIVATE
         # Common defines
-        ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INV}>
+        ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INVARIANCE}>
         # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
-target_compile_options(astcenc-${VEC}
+target_compile_options(astcenc-${ISA_SIMD}
     PRIVATE
         # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
@@ -76,20 +76,20 @@ target_compile_options(astcenc-${VEC}
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>)
 
-target_include_directories(astcenc-${VEC}
+target_include_directories(astcenc-${ISA_SIMD}
     PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR})
 
-target_link_libraries(astcenc-${VEC}
+target_link_libraries(astcenc-${ISA_SIMD}
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang>:pthread>)
 
 # Enable LTO on release builds
-set_property(TARGET astcenc-${VEC} PROPERTY
+set_property(TARGET astcenc-${ISA_SIMD} PROPERTY
              INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
 
 # Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
-set_property(TARGET astcenc-${VEC} PROPERTY
+set_property(TARGET astcenc-${ISA_SIMD} PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -103,54 +103,54 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Set up configuration for SIMD ISA builds
-if(${VEC} MATCHES "none")
-    target_compile_definitions(astcenc-${VEC}
+if(${ISA_SIMD} MATCHES "none")
+    target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
             ASTCENC_VECALIGN=16)
 
-    target_compile_options(astcenc-${VEC}
+    target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
             $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
 
-elseif(${VEC} MATCHES "sse2")
-    target_compile_definitions(astcenc-${VEC}
+elseif(${ISA_SIMD} MATCHES "sse2")
+    target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
             ASTCENC_SSE=20
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
             ASTCENC_VECALIGN=16)
 
-    target_compile_options(astcenc-${VEC}
+    target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
             $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
 
-elseif(${VEC} MATCHES "sse4.1")
-    target_compile_definitions(astcenc-${VEC}
+elseif(${ISA_SIMD} MATCHES "sse4.1")
+    target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
             ASTCENC_SSE=41
             ASTCENC_AVX=0
             ASTCENC_POPCNT=1
             ASTCENC_VECALIGN=16)
 
-    target_compile_options(astcenc-${VEC}
+    target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
             $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse4.1 -mpopcnt>)
 
-elseif(${VEC} MATCHES "avx2")
-    target_compile_definitions(astcenc-${VEC}
+elseif(${ISA_SIMD} MATCHES "avx2")
+    target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
             ASTCENC_SSE=41
             ASTCENC_AVX=2
             ASTCENC_POPCNT=1
             ASTCENC_VECALIGN=32)
 
-    target_compile_options(astcenc-${VEC}
+    target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
             $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -mavx2 -mpopcnt>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
 
-install(TARGETS astcenc-${VEC} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS astcenc-${ISA_SIMD} DESTINATION ${PACKAGE_ROOT})

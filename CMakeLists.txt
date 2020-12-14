@@ -32,16 +32,22 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(PACKAGE_ROOT astcenc)
 
 # Validate command line parameters
-set(simdVectorTypes none sse2 sse4.1 avx2)
-set(VEC "avx2" CACHE STRING "SIMD instruction set")
-message("-- SIMD ISA is set to ${VEC}")
-list(FIND simdVectorTypes ${VEC} index)
+set(ISA_SIMD "avx2" CACHE STRING "SIMD instruction set")
+message("-- ISA SIMD is set to ${ISA_SIMD}")
+set(VALID_ISA_SIMD none sse2 sse4.1 avx2)
+list(FIND VALID_ISA_SIMD ${ISA_SIMD} index)
 if(index EQUAL -1)
-    message(FATAL_ERROR "VEC must be one of ${simdVectorTypes}")
+    message(FATAL_ERROR "ISA_SIMD must be one of ${VALID_ISA_SIMD}")
 endif()
 
-set(ISA_INV OFF CACHE BOOL "ISA invariance")
-message("-- ISA invariance is set to ${ISA_INV}")
+set(ISA_INVARIANCE OFF CACHE BOOL "ISA invariance")
+message("-- ISA invariance is set to ${ISA_INVARIANCE}")
+set(VALID_ISA_INVARIANCE ON OFF)
+list(FIND VALID_ISA_INVARIANCE ${ISA_INVARIANCE} index)
+if(index EQUAL -1)
+    message(FATAL_ERROR "ISA_INVARIANCE must be one of ${VALID_ISA_INVARIANCE}")
+endif()
+
 
 # Include subcomponenets
 add_subdirectory(Source)
