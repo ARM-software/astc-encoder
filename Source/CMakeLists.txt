@@ -1,11 +1,19 @@
+#  SPDX-License-Identifier: Apache-2.0
+#  ----------------------------------------------------------------------------
+#  Copyright 2020 Arm Limited
 #
-# This confidential and proprietary software may be used only as
-# authorised by a licensing agreement from Arm Limited.
-#    Copyright 2014-2020 Arm Ltd. All Rights Reserved.
-# The entire notice above must be reproduced on all authorised
-# copies and copies may only be made to the extent permitted
-# by a licensing agreement from Arm Limited.
+#  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+#  use this file except in compliance with the License. You may obtain a copy
+#  of the License at:
 #
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  License for the specific language governing permissions and limitations
+#  under the License.
+#  ----------------------------------------------------------------------------
 
 project(astcenc)
 
@@ -51,19 +59,22 @@ target_compile_features(astcenc-${VEC}
 
 target_compile_definitions(astcenc-${VEC}
     PRIVATE
+        # Common defines
         ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INV}>
+        # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 target_compile_options(astcenc-${VEC}
     PRIVATE
+        # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
-
+        # G++ and Clang++ defines
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wpedantic>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>)
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>)
 
 target_include_directories(astcenc-${VEC}
     PRIVATE
@@ -141,7 +152,5 @@ elseif(${VEC} MATCHES "avx2")
             $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -mavx2 -mpopcnt>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
-
-sign_target(astcenc-${VEC})
 
 install(TARGETS astcenc-${VEC} DESTINATION ${PACKAGE_ROOT})
