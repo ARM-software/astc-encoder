@@ -1,0 +1,147 @@
+#
+# This confidential and proprietary software may be used only as
+# authorised by a licensing agreement from Arm Limited.
+#    Copyright 2014-2020 Arm Ltd. All Rights Reserved.
+# The entire notice above must be reproduced on all authorised
+# copies and copies may only be made to the extent permitted
+# by a licensing agreement from Arm Limited.
+#
+
+project(astcenc)
+
+add_executable(astcenc-${VEC})
+
+target_sources(astcenc-${VEC}
+    PRIVATE
+        astcenc_averages_and_directions.cpp
+        astcenc_block_sizes2.cpp
+        astcenc_color_quantize.cpp
+        astcenc_color_unquantize.cpp
+        astcenc_compress_symbolic.cpp
+        astcenc_compute_variance.cpp
+        astcenc_decompress_symbolic.cpp
+        astcenc_encoding_choice_error.cpp
+        astcenc_entry.cpp
+        astcenc_find_best_partitioning.cpp
+        astcenc_ideal_endpoints_and_weights.cpp
+        astcenc_image.cpp
+        astcenc_integer_sequence.cpp
+        astcenc_kmeans_partitioning.cpp
+        astcenc_mathlib.cpp
+        astcenc_mathlib_softfloat.cpp
+        astcenc_partition_tables.cpp
+        astcenc_percentile_tables.cpp
+        astcenc_pick_best_endpoint_format.cpp
+        astcenc_platform_isa_detection.cpp
+        astcenc_quantization.cpp
+        astcenc_symbolic_physical.cpp
+        astcenc_weight_align.cpp
+        astcenc_weight_quant_xfer_tables.cpp
+        astcenccli_error_metrics.cpp
+        astcenccli_image.cpp
+        astcenccli_image_external.cpp
+        astcenccli_image_load_store.cpp
+        astcenccli_platform_dependents.cpp
+        astcenccli_toplevel.cpp
+        astcenccli_toplevel_help.cpp)
+
+target_compile_features(astcenc-${VEC}
+    PRIVATE
+        cxx_std_14)
+
+target_compile_definitions(astcenc-${VEC}
+    PRIVATE
+        ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INV}>
+        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
+
+target_compile_options(astcenc-${VEC}
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wpedantic>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>)
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>
+
+target_include_directories(astcenc-${VEC}
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR})
+
+target_link_libraries(astcenc-${VEC}
+    PRIVATE
+        $<$<CXX_COMPILER_ID:GNU,Clang>:pthread>)
+
+# Enable LTO on release builds
+set_property(TARGET astcenc-${VEC} PROPERTY
+             INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
+
+# Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
+set_property(TARGET astcenc-${VEC} PROPERTY
+             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
+    string(CONCAT EXTERNAL_CXX_FLAGS "-Wno-unused-parameter"
+                                     " -Wno-double-promotion"
+                                     " -fno-strict-aliasing")
+
+    set_source_files_properties(astcenccli_image_external.cpp
+        PROPERTIES COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
+endif()
+
+# Set up configuration for SIMD ISA builds
+if(${VEC} MATCHES "none")
+    target_compile_definitions(astcenc-${VEC}
+        PRIVATE
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_VECALIGN=16)
+
+    target_compile_options(astcenc-${VEC}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
+
+elseif(${VEC} MATCHES "sse2")
+    target_compile_definitions(astcenc-${VEC}
+        PRIVATE
+            ASTCENC_SSE=20
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_VECALIGN=16)
+
+    target_compile_options(astcenc-${VEC}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
+
+elseif(${VEC} MATCHES "sse4.1")
+    target_compile_definitions(astcenc-${VEC}
+        PRIVATE
+            ASTCENC_SSE=41
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=1
+            ASTCENC_VECALIGN=16)
+
+    target_compile_options(astcenc-${VEC}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse4.1 -mpopcnt>)
+
+elseif(${VEC} MATCHES "avx2")
+    target_compile_definitions(astcenc-${VEC}
+        PRIVATE
+            ASTCENC_SSE=41
+            ASTCENC_AVX=2
+            ASTCENC_POPCNT=1
+            ASTCENC_VECALIGN=32)
+
+    target_compile_options(astcenc-${VEC}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -mavx2 -mpopcnt>
+            $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
+endif()
+
+sign_target(astcenc-${VEC})
+
+install(TARGETS astcenc-${VEC} DESTINATION ${PACKAGE_ROOT})

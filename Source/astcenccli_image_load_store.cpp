@@ -28,20 +28,7 @@
 
 #include "astcenccli_internal.h"
 
-// on windows/msvc, compile stb and tinyexr together with this file;
-// on other systems, use makefile to compile them separately.
-#ifdef _MSC_VER
-	#define STB_IMAGE_IMPLEMENTATION
-	#define STB_IMAGE_WRITE_IMPLEMENTATION
-	#define STBI_MSC_SECURE_CRT
-	#define TINYEXR_IMPLEMENTATION
-	#define STBI_NO_GIF
-	#define STBI_NO_PIC
-	#define STBI_NO_PNM
-	#define STBI_NO_PSD
-#else
-	#define STBI_HEADER_FILE_ONLY
-#endif
+#define STBI_HEADER_FILE_ONLY
 
 #include "stb_image.h"
 #include "stb_image_write.h"
