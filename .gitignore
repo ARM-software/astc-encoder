@@ -12,10 +12,8 @@ Proto
 Binaries
 
 # Build artifacts
-build
-build_lin
-build_win
-build_mac
+astcenc*
+build*
 
 # General build artifacts
 Test/DocOut

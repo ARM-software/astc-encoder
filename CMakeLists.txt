@@ -29,7 +29,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
-set(PACKAGE_ROOT astcenc)
+# To make packaging builds work as expected set -DCMAKE_INSTALL_PREFIX=../
+# to set the install directory outside of the build directory. This allows
+# multiple builds of different configurations to contribute binaries
+set(PACKAGE_ROOT astcenc)  # Package dir
 
 # Validate command line parameters
 set(ISA_SIMD "avx2" CACHE STRING "SIMD instruction set")
@@ -48,18 +51,25 @@ if(index EQUAL -1)
     message(FATAL_ERROR "ISA_INVARIANCE must be one of ${VALID_ISA_INVARIANCE}")
 endif()
 
-
 # Include subcomponenets
 add_subdirectory(Source)
 
 # Configure package archive
+
+# This forces CPack to pick up the directory containing all binaries from all
+# configs run up to this point, not just the current config
+install(DIRECTORY ${PACKAGE_ROOT}/
+        DESTINATION ${PACKAGE_ROOT})
+
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-    set(PACKAGE_PLATFORM "macOS")
+    string(TOLOWER "macOS" PKG_OS)
 else()
-    set(PACKAGE_PLATFORM ${CMAKE_SYSTEM_NAME})
+    string(TOLOWER ${CMAKE_SYSTEM_NAME} PKG_OS)
 endif()
 
-set(CPACK_PACKAGE_FILE_NAME "astcenc_${PACKAGE_PLATFORM}_x64")
+set(PKG_VER ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR})
+
+set(CPACK_PACKAGE_FILE_NAME "astcenc-${PKG_VER}-${PKG_OS}-x64")
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY FALSE)
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
     set(CPACK_GENERATOR ZIP)
