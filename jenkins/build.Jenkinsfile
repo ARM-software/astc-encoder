@@ -82,7 +82,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  nmake package -j1
+                  nmake package
                 '''
               }
             }
@@ -93,7 +93,7 @@ pipeline {
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  nmake install -j1
+                  nmake install
                 '''
               }
             }
