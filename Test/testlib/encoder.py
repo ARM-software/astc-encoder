@@ -251,10 +251,9 @@ class Encoder2x(EncoderBase):
         name = "astcenc-%s-%s" % (variant, self.VERSION)
         if binary is None:
             if os.name == 'nt':
-                dat = (variant, variant)
-                binary = "./Source/VS2019/astcenc-%s-Release/astcenc-%s.exe" % dat
+                binary = "./astcenc/astcenc-%s.exe" % variant
             else:
-                binary = "./Source/astcenc-%s" % variant
+                binary = "./astcenc/astcenc-%s" % variant
 
         super().__init__(name, variant, binary)
 

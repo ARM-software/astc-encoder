@@ -11,16 +11,9 @@ Proto
 # Precompiled reference binaries for comparison tests
 Binaries
 
-# Build artifacts on Linux/macOS
-Source/*.o
-Source/*.so
-Source/astcdec-*
-Source/astcenc-*
-
-# Build artifacts on Windows
-Source/VS2019/*Release
-Source/VS2019/*Debug
-Source/VS2019/*.exe
+# Build artifacts
+astcenc*
+build*
 
 # General build artifacts
 Test/DocOut
