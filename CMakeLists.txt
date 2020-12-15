@@ -28,39 +28,49 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(PACKAGE_ROOT astcenc)
 
-# To make packaging builds work as expected set -DCMAKE_INSTALL_PREFIX=../
-# to set the install directory outside of the build directory. This allows
-# multiple builds of different configurations to contribute binaries
-set(PACKAGE_ROOT astcenc)  # Package dir
+# Command line configuration
+option(ISA_AVX2 "Enable builds for AVX2 SIMD")
 
-# Validate command line parameters
-set(ISA_SIMD "avx2" CACHE STRING "SIMD instruction set")
-message("-- ISA SIMD is set to ${ISA_SIMD}")
-set(VALID_ISA_SIMD none sse2 sse4.1 avx2)
-list(FIND VALID_ISA_SIMD ${ISA_SIMD} index)
-if(index EQUAL -1)
-    message(FATAL_ERROR "ISA_SIMD must be one of ${VALID_ISA_SIMD}")
+message("-- Selecting backend build type(s)")
+set(ANY_ISA 0)
+if(${ISA_AVX2})
+    set(ANY_ISA 1)
+    message("  -- AVX2 backend: ON")
 endif()
 
-set(ISA_INVARIANCE OFF CACHE BOOL "ISA invariance")
-message("-- ISA invariance is set to ${ISA_INVARIANCE}")
-set(VALID_ISA_INVARIANCE ON OFF)
-list(FIND VALID_ISA_INVARIANCE ${ISA_INVARIANCE} index)
-if(index EQUAL -1)
-    message(FATAL_ERROR "ISA_INVARIANCE must be one of ${VALID_ISA_INVARIANCE}")
+option(ISA_SSE41 "Enable builds for SSE4.1 SIMD")
+if(${ISA_SSE41})
+    set(ANY_ISA 1)
+    message("  -- SSE4.1 backend: ON")
 endif()
 
-# Include subcomponenets
+option(ISA_SSE2 "Enable builds for SSE2 SIMD")
+if(${ISA_SSE2})
+    set(ANY_ISA 1)
+    message("  -- SSE2 backend: ON")
+endif()
+
+option(ISA_NONE "Enable builds for noSIMD")
+if(${ISA_NONE})
+    set(ANY_ISA 1)
+    message("  -- No SIMD backend: ON")
+endif()
+
+option(ISA_INVARIANCE "Enable builds for ISA invariance")
+if(${ISA_INVARIANCE})
+    message("  -- ISA invariance: ON")
+endif()
+
+if(NOT ${ANY_ISA})
+    message(FATAL_ERROR "At least one backend ISA must be enabled")
+endif()
+
+# Subcomponents
 add_subdirectory(Source)
 
 # Configure package archive
-
-# This forces CPack to pick up the directory containing all binaries from all
-# configs run up to this point, not just the current config
-install(DIRECTORY ${PACKAGE_ROOT}/
-        DESTINATION ${PACKAGE_ROOT})
-
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     string(TOLOWER "macOS" PKG_OS)
 else()
