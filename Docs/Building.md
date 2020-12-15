@@ -1,88 +1,141 @@
 # Building ASTC Encoder
 
 This page provides instructions for building `astcenc` from the sources in
-this repository. The current `master` branch is configured to statically build
-binaries which each use a specific level of SIMD support (SSE2, SSE4.1,
-or AVX2) selected at compile time. Binaries are produced with a name postfix
-indicating the SIMD type in use; e.g. `astcenc-avx2` for the AVX2 binary.
+this repository.
+
+Builds use CMake 3.15 or higher as the build system generator. The examples on
+this page only show how to use it to target NMake (Windows) and Make
+(Linux and macOS), but CMake supports other build system backends.
 
 ## Windows
 
-Builds for Windows use Visual Studio 2019, using the solution and/or project
-files located in the `Source/VS2019/` directory.
+Builds for Windows are tested with CMake 3.17 and Visual Studio 2019.
 
-### Single variants
+### Configuring the build
 
-To compile a single SIMD variant from the command line, it is possible to use
-the `msbuild` utility from the Visual Studio installation, targeting the
-specific project for the variant desired.
+To use CMake you must first configure the build. Create a build directory
+in the root of the astenc checkout, and then run `cmake` inside that directory
+to generate the build system.
 
+```shell
+# Create a build directory
+mkdir build
+cd build
+
+# Create the build system
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 ```
-msbuild astcenc-<variant>.vcxproj /p:Configuration=Release /p:Platform=x64
-```
 
-### Multiple variants
+This example shows all SIMD variants being enabled. It is possible to build a
+subset of the supported variants by enabling only the ones you require. At
+least one variant must be enabled.
 
-To compile all supported SIMD variants from the command line, it is possible
-to use the `msbuild` utility from the Visual Studio installation, targeting the
-solution.
+### Building
 
-```
-msbuild astcenc.sln /p:Configuration=Release /p:Platform=x64
+Once you have configured the build you can use NMake to compile the project
+from your build dir, and install to your target install directory.
+
+```shell
+# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/astcenc/`
+cd build
+nmake install -j16
 ```
 
 ## macOS and Linux
 
-Builds for macOS and Linux use GCC or Clang and Make. They are tested using
-Clang 9.0, GCC 7.4, and Make 3.82. Using Clang 9.0 is recommended, as it
-out-performs GCC by 15-20% in benchmarked test runs.
+Builds for macOS and Linux are tested with CMake 3.17 and clang++ 9.0.
 
-### Single variants
+> Compiling using g++ is supported, but clang++ builds are faster by ~15%.
 
-To compile a single SIMD variant compile with:
+### Configuring the build
 
-```
-make -C Source CXX=clang++ VEC=[sse2|sse4.1|avx2] -j8
-```
+To use CMake you must first configure the build. Create a build directory
+in the root of the astenc checkout, and then run `cmake` inside that directory
+to generate the build system.
 
-... and use:
+```shell
+# Select your compiler (clang++ recommended, but g++ works)
+export CXX=clang++
 
-```
-make -C Source CXX=clang++ VEC=[sse2|sse4.1|avx2] clean
-```
+# Create a build directory
+mkdir build
+cd build
 
-... to clean the build.
-
-### All variants
-
-To compile all supported SIMD variants compile with:
-
-```
-make -sC Source CXX=clang++ batchbuild -j8
+# Create the build system
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON
 ```
 
-... and use:
+This example shows all SIMD variants being enabled. It is possible to build a
+subset of the supported variants by enabling only the ones you require. At
+least one variant must be enabled.
 
+### Building
+
+Once you have configured the build you can use Make to compile the project from
+your build dir, and install to your target install directory.
+
+```shell
+# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/astcenc/`
+cd build
+make install -j16
 ```
-make -sC Source batchclean -j8
+
+## Advanced build options
+
+For codec developers there are a number of useful features in the build system.
+
+### No intrinsics build
+
+All normal builds will use SIMD accelerated code paths using instrinsics, as
+x86-64 guarantees availability of at least SSE2. For development purposes it
+is possible to build an intrinsic-free build which uses no explicit SIMD
+acceleration (the compiler may still auto-vectorize).
+
+To enable this binary variant add `-DISA_NONE=ON` to the CMake command line
+when configuring. It is NOT
+
+### ISA Invariance
+
+Normal builds are not ISA invariant, meaning that builds for different
+instruction sets on the same CPU hardware can produce subtly different outputs.
+This is caused by precision differences between, e.g, FMA and DOT hardware
+instructions and their equivalent C code.
+
+To build an ISA invariant build add `-DISA_INVARIANCE=ON` to the CMake command
+line when configuring. Note that this will reduce performance, as it will
+disable use of hardware instructions that cannot be matched by the reference
+functionality available in SSE2.
+
+Note that even with ISA invariance enabled we do not guarantee invariant output
+across CPU implementations or compilers. The C specification does not require
+bit-exact implementations for many maths library functions (`sin()`, `cos()`,
+etc) and there are known precision differences across vendors.
+
+### Build Types
+
+We support and test the following `CMAKE_BUILD_TYPE` options.
+
+| Value            | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| Release          | Optimized release build                                  |
+| RelWithDebInfo   | Optimized release build with debug info                  |
+| Debug            | Unoptimized debug build with debug info                  |
+
+Note that optimized release builds are compiled with link-time optimization,
+which can make profiling more challenging ...
+
+### Packaging
+
+We support building a release bundle of all enabled binary configurations in
+the current CMake configuration using the `package` build target
+
+```bash
+# Run a build and package build outputs in `./astcenc-<ver>-<os>-<arch>.<fmt>`
+cd build
+make package -j16
 ```
 
-... to clean the build.
-
-### Developer build options
-
-The default build, `BUILD=release`, is heavily optimized using link-time
-optimization (`-O3 -flto`) and does not include symbols.
-
-For debugging, add `BUILD=debug` to the Make command line. This will build a
-non-optimized build (`-O0`) with symbols included (`-g`).
-
-For easier profiling, add `BUILD=profile` to the Make command line. This will
-build a moderately optimized build (`-O2`) with symbols include (`-g`), but
-without link-time optimization (no `-flto`).
-
-Normal builds are not ISA invariant, builds for different instruction sets on
-the same CPU hardware can produce subtly different outputs. To build an ISA
-invariant build set `-DASTCENC_ISA_INVARIANCE=1`. For make builds this can be
-achieved by setting `ISA_INV=1` on the command line. This will reduce
-performance, as optimizations will be disabled to keep alignment with SSE2.
+Windows packages will use the `.zip` format, other packages will use the
+`.tar.gz` format.
