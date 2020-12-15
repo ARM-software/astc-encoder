@@ -30,6 +30,7 @@ pipeline {
             stage('Build R') {
               steps {
                 sh '''
+                  export CXX=clang++-9
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
@@ -40,6 +41,7 @@ pipeline {
             stage('Build D') {
               steps {
                 sh '''
+                  export CXX=clang++-9
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
