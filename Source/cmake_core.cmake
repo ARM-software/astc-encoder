@@ -17,6 +17,8 @@
 
 project(astcenc-${ISA_SIMD})
 
+set(GNU_LIKE "GNU,Clang,AppleClang")
+
 add_executable(astcenc-${ISA_SIMD})
 
 target_sources(astcenc-${ISA_SIMD}
@@ -73,12 +75,12 @@ target_compile_options(astcenc-${ISA_SIMD}
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
 
         # G++ and Clang++ compiler defines
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wpedantic>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>
-        $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>)
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>)
 
 target_link_options(astcenc-${ISA_SIMD}
     PRIVATE
@@ -114,7 +116,7 @@ if(${ISA_SIMD} MATCHES "none")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
+            $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
 
 elseif(${ISA_SIMD} MATCHES "sse2")
     target_compile_definitions(astcenc-${ISA_SIMD}
@@ -126,7 +128,7 @@ elseif(${ISA_SIMD} MATCHES "sse2")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse2>)
+        $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
 
 elseif(${ISA_SIMD} MATCHES "sse4.1")
     target_compile_definitions(astcenc-${ISA_SIMD}
@@ -138,7 +140,7 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -msse4.1 -mpopcnt>)
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -msse4.1 -mpopcnt>)
 
 elseif(${ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(astcenc-${ISA_SIMD}
@@ -150,7 +152,7 @@ elseif(${ISA_SIMD} MATCHES "avx2")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<CXX_COMPILER_ID:GNU,Clang>:-mfpmath=sse -mavx2 -mpopcnt>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
 
