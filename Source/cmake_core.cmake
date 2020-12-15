@@ -66,9 +66,13 @@ target_compile_definitions(astcenc-${ISA_SIMD}
 
 target_compile_options(astcenc-${ISA_SIMD}
     PRIVATE
-        # MSVC defines
+        # Use pthreads on Linux/macOS
+        $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
+
+        # MSVC compiler defines
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
-        # G++ and Clang++ defines
+
+        # G++ and Clang++ compiler defines
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wextra>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wpedantic>
@@ -76,13 +80,10 @@ target_compile_options(astcenc-${ISA_SIMD}
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wshadow>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Wdouble-promotion>)
 
-target_include_directories(astcenc-${ISA_SIMD}
+target_link_options(astcenc-${ISA_SIMD}
     PRIVATE
-        ${CMAKE_CURRENT_BINARY_DIR})
-
-target_link_libraries(astcenc-${ISA_SIMD}
-    PRIVATE
-        $<$<CXX_COMPILER_ID:GNU,Clang>:pthread>)
+        # Use pthreads on Linux/macOS
+        $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
 # Enable LTO on release builds
 set_property(TARGET astcenc-${ISA_SIMD} PROPERTY
