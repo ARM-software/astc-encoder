@@ -5,6 +5,7 @@ LABEL build.environment.version="2.2.0"
 RUN useradd -u 1001 -U -m -c Jenkins jenkins
 
 RUN apt update && apt-get install -y \
+    software-properties-common \
     clang \
     clang++-9 \
     gcc \
