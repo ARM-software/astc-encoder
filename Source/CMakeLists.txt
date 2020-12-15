@@ -15,6 +15,12 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
+# Overwrite the LTO flags to force fat LTO; worth 3-4% performance
+# See https://gitlab.kitware.com/cmake/cmake/-/issues/16808
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto")
+endif()
+
 if (${ISA_AVX2})
     set(ISA_SIMD avx2)
     include(cmake_core.cmake)
