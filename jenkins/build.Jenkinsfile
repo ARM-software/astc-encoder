@@ -32,8 +32,8 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  make package -j4
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
+                  make install package -j1
                 '''
               }
             }
@@ -43,7 +43,7 @@ pipeline {
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make install -j4
+                  make -j1
                 '''
               }
             }
@@ -58,7 +58,7 @@ pipeline {
               steps {
                 sh '''
                   python3 ./Test/astc_test_functional.py
-                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small
+                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small --test-quality medium
                 '''
               }
             }
@@ -82,7 +82,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  nmake package
+                  nmake install package
                 '''
               }
             }
@@ -93,7 +93,7 @@ pipeline {
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  nmake install
+                  nmake
                 '''
               }
             }
@@ -108,7 +108,7 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
-                  call python ./Test/astc_test_image.py --test-set Small
+                  call python ./Test/astc_test_image.py --test-set Small --test-quality medium
                 '''
               }
             }
@@ -131,7 +131,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  make package -j1
+                  make install package -j1
                 '''
               }
             }
@@ -141,7 +141,7 @@ pipeline {
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make install -j1
+                  make -j1
                 '''
               }
             }
@@ -156,7 +156,7 @@ pipeline {
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
-                  python3 ./Test/astc_test_image.py --test-set Small
+                  python3 ./Test/astc_test_image.py --test-set Small --test-quality medium
                 '''
               }
             }
@@ -181,13 +181,13 @@ pipeline {
         stage('Unstash') {
           steps {
             deleteDir()
-            dir('upload/Linux-x86_64') {
+            dir('upload/linux-x64') {
               unstash 'astcenc-linux'
             }
-            dir('upload/Windows-x86_64') {
+            dir('upload/windows-x64') {
               unstash 'astcenc-windows'
             }
-            dir('upload/MacOS-x86_64') {
+            dir('upload/macos-x64') {
               unstash 'astcenc-macos'
             }
           }
@@ -195,7 +195,7 @@ pipeline {
         stage('Upload') {
           steps {
             zip zipFile: 'astcenc.zip', dir: 'upload', archive: false
-            cepeArtifactoryUpload(sourcePattern: '*.zip')
+            cepeArtifactoryUpload(sourcePattern: 'astcenc.zip')
           }
         }
       }
