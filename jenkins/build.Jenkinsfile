@@ -32,7 +32,7 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   make package -j4
                 '''
               }
@@ -42,7 +42,7 @@ pipeline {
                 sh '''
                   mkdir build_dbg
                   cd build_dbg
-                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make install -j4
                 '''
               }
@@ -80,7 +80,7 @@ pipeline {
                 bat '''
                   mkdir build_rel
                   cd build_rel
-                  make -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   nmake package -j4
                 '''
               }
@@ -90,7 +90,7 @@ pipeline {
                 bat '''
                   mkdir build_dbg
                   cd build_dbg
-                  make -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   nmake install -j4
                 '''
               }
@@ -128,7 +128,7 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   make package -j4
                 '''
               }
@@ -138,7 +138,7 @@ pipeline {
                 sh '''
                   mkdir build_dbg
                   cd build_dbg
-                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make install -j4
                 '''
               }
