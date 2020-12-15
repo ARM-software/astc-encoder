@@ -14,7 +14,7 @@ pipeline {
         stage('Linux') {
           agent {
             docker {
-              image 'astcenc:2.1.0'
+              image 'astcenc:2.2.0'
               registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
               registryCredentialsId 'cepe-artifactory-jenkins'
               label 'docker'
@@ -27,21 +27,30 @@ pipeline {
                 sh 'git clean -fdx'
               }
             }
-            stage('Build') {
+            stage('Build R') {
               steps {
                 sh '''
-                  cd ./Source/
-                  make CXX=clang++ VEC=avx2
-                  make CXX=clang++ VEC=sse4.1
-                  make CXX=clang++ VEC=sse2
-                  make CXX=clang++ VEC=none
+                  mkdir build_rel
+                  cd build_rel
+                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  make package -j4
+                '''
+              }
+            }
+            stage('Build D') {
+              steps {
+                sh '''
+                  mkdir build_dbg
+                  cd build_dbg
+                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  make install -j4
                 '''
               }
             }
             stage('Stash') {
               steps {
-                dir('Source') {
-                  stash name: 'astcenc-linux', includes: 'astcenc-*'
+                dir('build_rel') {
+                  stash name: 'astcenc-linux', includes: '*.tar.gz'
                 }
               }
             }
@@ -69,27 +78,27 @@ pipeline {
             stage('Build R') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Release /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse4.1.vcxproj /p:Configuration=Release /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Release /p:Platform=x64
+                  mkdir build_rel
+                  cd build_rel
+                  make -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  nmake package -j4
                 '''
               }
             }
             stage('Build D') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  call msbuild .\\Source\\VS2019\\astcenc-avx2.vcxproj /p:Configuration=Debug /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse4.1.vcxproj /p:Configuration=Debug /p:Platform=x64
-                  call msbuild .\\Source\\VS2019\\astcenc-sse2.vcxproj /p:Configuration=Debug /p:Platform=x64
+                  mkdir build_dbg
+                  cd build_dbg
+                  make -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  nmake install -j4
                 '''
               }
             }
             stage('Stash') {
               steps {
-                dir('Source\\VS2019\\') {
-                  stash name: 'astcenc-win-release', includes: '*.exe'
+                dir('build_rel') {
+                  stash name: 'astcenc-windows', includes: '*.zip'
                 }
               }
             }
@@ -114,21 +123,30 @@ pipeline {
                 sh 'git clean -fdx'
               }
             }
-            stage('Build') {
+            stage('Build R') {
               steps {
                 sh '''
-                  cd ./Source/
-                  make VEC=avx2
-                  make VEC=sse4.1
-                  make VEC=sse2
-                  make VEC=none
+                  mkdir build_rel
+                  cd build_rel
+                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  make package -j4
+                '''
+              }
+            }
+            stage('Build D') {
+              steps {
+                sh '''
+                  mkdir build_dbg
+                  cd build_dbg
+                  make -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  make install -j4
                 '''
               }
             }
             stage('Stash') {
               steps {
-                dir('Source') {
-                  stash name: 'astcenc-mac', includes: 'astcenc-*'
+                dir('build_rel') {
+                  stash name: 'astcenc-macos', includes: '*.tar.gz'
                 }
               }
             }
@@ -147,7 +165,7 @@ pipeline {
     stage('Artifactory') {
       agent {
         docker {
-          image 'astcenc:2.1.0'
+          image 'astcenc:2.2.0'
           registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
           registryCredentialsId 'cepe-artifactory-jenkins'
           label 'docker'
@@ -165,10 +183,10 @@ pipeline {
               unstash 'astcenc-linux'
             }
             dir('upload/Windows-x86_64') {
-              unstash 'astcenc-win-release'
+              unstash 'astcenc-windows'
             }
             dir('upload/MacOS-x86_64') {
-              unstash 'astcenc-mac'
+              unstash 'astcenc-macos'
             }
           }
         }
