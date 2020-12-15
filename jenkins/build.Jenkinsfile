@@ -32,7 +32,7 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
                   make install package -j1
                 '''
               }
@@ -42,7 +42,7 @@ pipeline {
                 sh '''
                   mkdir build_dbg
                   cd build_dbg
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make -j1
                 '''
               }
@@ -81,7 +81,7 @@ pipeline {
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   nmake install package
                 '''
               }
@@ -92,7 +92,7 @@ pipeline {
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_dbg
                   cd build_dbg
-                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   nmake
                 '''
               }
@@ -130,7 +130,7 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   make install package -j1
                 '''
               }
@@ -140,7 +140,7 @@ pipeline {
                 sh '''
                   mkdir build_dbg
                   cd build_dbg
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make -j1
                 '''
               }
