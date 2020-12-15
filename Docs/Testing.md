@@ -8,7 +8,11 @@ bitrate of the standard.
 # Required software
 
 Running the tests requires Python 3.7 to be installed on the host machine, and
-an `astcenc-avx2` release build to have been previously compiled.
+an `astcenc-avx2` release build to have been previously compiled and installed
+into an directory called `astcenc` in the root of the git checkout. This
+can be achieved by configuring the CMake build using the install prefix
+`-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build
+target.
 
 # Running unit tests
 

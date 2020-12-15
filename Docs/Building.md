@@ -64,7 +64,7 @@ cd build
 
 # Create the build system
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON
+    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 ```
 
 This example shows all SIMD variants being enabled. It is possible to build a
