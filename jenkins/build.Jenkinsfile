@@ -33,7 +33,7 @@ pipeline {
                   export CXX=clang++-9
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON  -DISA_NONE=ON ..
                   make install package -j1
                 '''
               }
