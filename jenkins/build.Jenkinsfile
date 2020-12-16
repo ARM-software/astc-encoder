@@ -15,7 +15,7 @@ pipeline {
         stage('Linux') {
           agent {
             docker {
-              image 'astcenc:2.2.0'
+              image 'astcenc:2.3.0'
               registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
               registryCredentialsId 'cepe-artifactory-jenkins'
               label 'docker'
@@ -173,7 +173,7 @@ pipeline {
     stage('Artifactory') {
       agent {
         docker {
-          image 'astcenc:2.2.0'
+          image 'astcenc:2.3.0'
           registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
           registryCredentialsId 'cepe-artifactory-jenkins'
           label 'docker'

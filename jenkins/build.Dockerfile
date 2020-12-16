@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-LABEL build.environment.version="2.2.0"
+LABEL build.environment.version="2.3.0"
 
 RUN useradd -u 1001 -U -m -c Jenkins jenkins
 
@@ -14,11 +14,15 @@ RUN apt update && apt-get install -y \
     imagemagick \
     make \
     python3 \
+    python3-pip \
+    python3-venv \
     python3-numpy \
     python3-pil \
     ca-certificates \
     gnupg \
     wget
+
+RUN pip3 install requests
 
 # Install up-to-date CMake, as standard Ubuntu 18.04 package is too old
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
