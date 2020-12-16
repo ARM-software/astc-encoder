@@ -52,7 +52,8 @@ pipeline {
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-linux', includes: '*.tar.gz'
+                  stash name: 'astcenc-linux-x64', includes: '*.tar.gz'
+                  stash name: 'astcenc-linux-x64-hash', includes: '*.tar.gz.sha256'
                 }
               }
             }
@@ -102,7 +103,8 @@ pipeline {
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-windows', includes: '*.zip'
+                  stash name: 'astcenc-windows-x64', includes: '*.zip'
+                  stash name: 'astcenc-windows-x64-hash', includes: '*.zip.sha256'
                 }
               }
             }
@@ -150,7 +152,8 @@ pipeline {
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-macos', includes: '*.tar.gz'
+                  stash name: 'astcenc-macos-x64', includes: '*.tar.gz'
+                  stash name: 'astcenc-macos-x64-hash', includes: '*.tar.gz.sha256'
                 }
               }
             }
@@ -184,13 +187,18 @@ pipeline {
           steps {
             deleteDir()
             dir('upload/linux-x64') {
-              unstash 'astcenc-linux'
+              unstash 'astcenc-linux-x64'
             }
             dir('upload/windows-x64') {
-              unstash 'astcenc-windows'
+              unstash 'astcenc-windows-x64'
             }
             dir('upload/macos-x64') {
-              unstash 'astcenc-macos'
+              unstash 'astcenc-macos-x64'
+            }
+            dir('upload') {
+              unstash 'astcenc-linux-x64-hash'
+              unstash 'astcenc-windows-x64-hash'
+              unstash 'astcenc-macos-x64-hash'
             }
           }
         }
