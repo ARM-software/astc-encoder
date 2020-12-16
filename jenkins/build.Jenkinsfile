@@ -193,11 +193,11 @@ pipeline {
               unstash 'astcenc-windows-x64'
               withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
                                                  keyFileVariable: 'SSH_AUTH_FILE')]) {
-                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
               }
               withCredentials([usernamePassword(credentialsId: 'win-signing',
-                                               usernameVariable: 'USERNAME',
-                                               passwordVariable: 'PASSWORD')]) {
+                                                usernameVariable: 'USERNAME',
+                                                passwordVariable: 'PASSWORD')]) {
                 sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
               }
             }
