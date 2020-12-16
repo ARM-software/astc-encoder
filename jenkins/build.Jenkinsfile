@@ -200,6 +200,7 @@ pipeline {
                                                 passwordVariable: 'PASSWORD')]) {
                 sh 'python3 ./signing/authenticode-client.py -u ${USERNAME} *.zip'
               }
+              deleteDir(signing)
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
