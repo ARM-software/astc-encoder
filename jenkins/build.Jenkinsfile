@@ -191,11 +191,12 @@ pipeline {
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
-              //sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-              //sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
-              sh "echo Test"
-              sh "pwd"
-              sh "ls -al"
+              withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                               usernameVariable: 'USERNAME',
+                                               passwordVariable: 'PASSWORD')]) {
+                sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
+              }
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
