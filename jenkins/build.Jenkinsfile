@@ -2,6 +2,7 @@
 
 pipeline {
   agent none
+
   options {
     ansiColor('xterm')
     timestamps()
@@ -208,6 +209,14 @@ pipeline {
             cepeArtifactoryUpload(sourcePattern: 'astcenc.zip')
           }
         }
+      }
+    }
+  }
+
+  post {
+    failure {
+      script {
+        slackSend channel: '#dsg-eng-astcenc', color: 'danger', message: "Build ${JOB_NAME} ${BUILD_NUMBER} failed. (<${BUILD_URL}|Open>)", teamDomain: 'arm-dsg', tokenCredentialId: 'jenkins-slack', username: 'jenkins'
       }
     }
   }
