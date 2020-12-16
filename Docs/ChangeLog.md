@@ -18,23 +18,28 @@ stable across versions, and this release is not compatible with 2.1. Please
 recompile your client-side code using the updated `astcenc.h` header.
 
 * **General:**
-  * **Improvement:** SSE4.2 profile changed to SSE4.1, which more accurately
-    reflects the feature set used as we were not using any SSE4.2 intrinsics.
+  * **Improvement:** SSE4.2 feature profile changed to SSE4.1, which more
+    accurately reflects the feature set used.
+  * **Improvement:** Build system changed to use CMake for all platforms.
+* **Binary releases:**
+  * **Improvement:** Linux binaries changed to use use Clang 9.0, which gives
+    up to 15% performance improvement.
 * **Command Line:**
-  * New image preprocess `-pp-normalize` option added. This forces normal
-    vectors to be unit length, which is useful when compressing source textures
-    that use normal length to encode an NDF, which is incompatible with ASTC's
-    two channel encoding.
-  * New image preprocess `-pp-premultiply` option added. This scales RGB values
-    by the alpha value. This can be useful to minimize cross-channel color
-    bleed caused by GPU post-multiply filtering/blending.
+  * **Feature:** New image preprocess `-pp-normalize` option added. This forces
+    normal vectors to be unit length, which is useful when compressing source
+    textures that use normal length to encode an NDF, which is incompatible
+    with ASTC's two channel encoding.
+  * **Feature:** New image preprocess `-pp-premultiply` option added. This
+    scales RGB values by the alpha value. This can be useful to minimize
+    cross-channel color bleed caused by GPU post-multiply filtering/blending.
 * **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
-    from the `astcenc_image` structure.
+    from the `astcenc_image` structure. This makes it easier to directly use
+    images loaded from other libraries.
   * **API Change:** Image `data` is no longer a 3D array accessed using
     `data[z][y][x]` indexing, it's an array of 2D slices. This makes it easier
-	to directly use images loaded from other libraries.
+    to directly use images loaded from other libraries.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1
