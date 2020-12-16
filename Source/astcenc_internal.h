@@ -32,39 +32,45 @@
 #include <mutex>
 
 #ifndef ASTCENC_SSE
-#if defined(__SSE4_2__)
-#define ASTCENC_SSE 42
-#elif defined(__SSE4_1__)
-#define ASTCENC_SSE 41
-#elif defined(__SSE3__)
-#define ASTCENC_SSE 30
-#elif defined(__SSE2__)
-#define ASTCENC_SSE 20
-#else
-#define ASTCENC_SSE 0
-#endif
+  #if defined(__SSE4_2__)
+    #define ASTCENC_SSE 42
+  #elif defined(__SSE4_1__)
+    #define ASTCENC_SSE 41
+  #elif defined(__SSE3__)
+    #define ASTCENC_SSE 30
+  #elif defined(__SSE2__)
+    #define ASTCENC_SSE 20
+  #else
+    #define ASTCENC_SSE 0
+  #endif
 #endif
 
 #ifndef ASTCENC_POPCNT
-#if defined(__POPCNT__)
-#define ASTCENC_POPCNT 1
-#else
-#define ASTCENC_POPCNT 0
-#endif
+  #if defined(__POPCNT__)
+    #define ASTCENC_POPCNT 1
+  #else
+    #define ASTCENC_POPCNT 0
+  #endif
 #endif
 
 #ifndef ASTCENC_AVX
-#if defined(__AVX2__)
-#define ASTCENC_AVX 2
-#elif defined(__AVX__)
-#define ASTCENC_AVX 1
-#else
-#define ASTCENC_AVX 0
+  #if defined(__AVX2__)
+    #define ASTCENC_AVX 2
+  #elif defined(__AVX__)
+    #define ASTCENC_AVX 1
+  #else
+    #define ASTCENC_AVX 0
+  #endif
 #endif
+
+#if ASTCENC_AVX
+  #define ASTCENC_VECALIGN 32
+#else
+  #define ASTCENC_VECALIGN 16
 #endif
 
 #ifndef ASTCENC_ISA_INVARIANCE
-#error ERROR: ASTCENC_ISA_INVARIANCE not defined
+  #define ASTCENC_ISA_INVARIANCE 0
 #endif
 
 #include "astcenc.h"

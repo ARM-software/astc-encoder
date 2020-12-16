@@ -111,8 +111,7 @@ if(${ISA_SIMD} MATCHES "none")
         PRIVATE
             ASTCENC_SSE=0
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=0
-            ASTCENC_VECALIGN=16)
+            ASTCENC_POPCNT=0)
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
@@ -123,8 +122,7 @@ elseif(${ISA_SIMD} MATCHES "sse2")
         PRIVATE
             ASTCENC_SSE=20
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=0
-            ASTCENC_VECALIGN=16)
+            ASTCENC_POPCNT=0)
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
@@ -135,8 +133,7 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
         PRIVATE
             ASTCENC_SSE=41
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=1
-            ASTCENC_VECALIGN=16)
+            ASTCENC_POPCNT=1)
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
@@ -147,8 +144,7 @@ elseif(${ISA_SIMD} MATCHES "avx2")
         PRIVATE
             ASTCENC_SSE=41
             ASTCENC_AVX=2
-            ASTCENC_POPCNT=1
-            ASTCENC_VECALIGN=32)
+            ASTCENC_POPCNT=1)
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
