@@ -198,7 +198,7 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
+                sh 'python3 ./signing/authenticode-client.py -u ${USERNAME} *.zip'
               }
             }
             dir('upload/macos-x64') {
