@@ -187,11 +187,17 @@ pipeline {
         stage('Unstash') {
           steps {
             deleteDir()
+            sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
             dir('upload/linux-x64') {
               unstash 'astcenc-linux-x64'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
+              withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                                usernameVariable: 'USERNAME',
+                                                passwordVariable: 'PASSWORD')]) {
+                sh 'python3 ../../signing/authenticode-client.py -v -u ${USERNAME} *.zip'
+              }
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
