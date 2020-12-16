@@ -53,8 +53,8 @@ pipeline {
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-linux-x64', includes: '*.tar.gz'
-                  stash name: 'astcenc-linux-x64-hash', includes: '*.tar.gz.sha256'
+                  stash name: 'astcenc-linux-x64', includes: '*.zip'
+                  stash name: 'astcenc-linux-x64-hash', includes: '*.zip.sha256'
                 }
               }
             }
@@ -153,8 +153,8 @@ pipeline {
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-macos-x64', includes: '*.tar.gz'
-                  stash name: 'astcenc-macos-x64-hash', includes: '*.tar.gz.sha256'
+                  stash name: 'astcenc-macos-x64', includes: '*.zip'
+                  stash name: 'astcenc-macos-x64-hash', includes: '*.zip.sha256'
                 }
               }
             }
@@ -199,11 +199,21 @@ pipeline {
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
                 sh 'python3 ./signing/authenticode-client.py -u ${USERNAME} *.zip'
-                sh ' rm -rf ./signing'
+                sh 'rm -rf ./signing'
               }
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
+              withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
+                                                 keyFileVariable: 'SSH_AUTH_FILE')]) {
+                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+              }
+              withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                                usernameVariable: 'USERNAME',
+                                                passwordVariable: 'PASSWORD')]) {
+                sh 'python3 ./signing/macos-client.py -t mach-o --timestamp-server default --signature-flag runtime --deep ${USERNAME} *.zip *.zip'
+                sh 'rm -rf ./signing'
+              }
             }
             dir('upload') {
               unstash 'astcenc-linux-x64-hash'
