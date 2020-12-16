@@ -207,7 +207,8 @@ pipeline {
             }
             dir('upload') {
               unstash 'astcenc-linux-x64-hash'
-              unstash 'astcenc-windows-x64-hash'
+              // Don't keep Windows hash - we have signed binaries now
+              // unstash 'astcenc-windows-x64-hash'
               unstash 'astcenc-macos-x64-hash'
             }
           }
