@@ -195,8 +195,11 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-                sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
+                //sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                //sh 'python3 ./signing/authenticode-client.py -v -u ${USERNAME} *.zip'
+                sh "echo Test"
+                sh "pwd"
+                sh "ls -al"
               }
             }
             dir('upload/macos-x64') {
