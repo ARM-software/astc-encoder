@@ -24,7 +24,7 @@ pushd tmp
 popd
 
 echo "Building image"
-docker build -f Dockerfile \
+docker build -f build.dockerfile \
     -t $IMAGE_NAME:latest \
     -t $IMAGE_NAME:$IMAGE_VERSION \
     -t $DOCKER_REGISTRY/$IMAGE_NAME:latest \
