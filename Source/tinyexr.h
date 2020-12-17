@@ -12552,6 +12552,7 @@ int SaveEXRImageToFile(const EXRImage *exr_image, const EXRHeader *exr_header,
   unsigned char *mem = NULL;
   size_t mem_size = SaveEXRImageToMemory(exr_image, exr_header, &mem, err);
   if (mem_size == 0) {
+    fclose(fp);
     return TINYEXR_ERROR_SERIALZATION_FAILED;
   }
 
