@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-LABEL build.environment.version="2.3.0"
+LABEL build.environment.version="2.4.0"
 
 RUN useradd -u 1001 -U -m -c Jenkins jenkins
 
@@ -22,7 +22,13 @@ RUN apt update && apt-get install -y \
     gnupg \
     wget
 
+# Install python modules
 RUN pip3 install requests
+
+# Install Coverity static analysis tools
+COPY cov-analysis-linux64-2019.09 /coverity/
+RUN chmod -R a+rw /coverity
+ENV PATH="/coverity/bin:$PATH"
 
 # Install up-to-date CMake, as standard Ubuntu 18.04 package is too old
 RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null \
