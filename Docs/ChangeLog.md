@@ -32,6 +32,9 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **Feature:** New image preprocess `-pp-premultiply` option added. This
     scales RGB values by the alpha value. This can be useful to minimize
     cross-channel color bleed caused by GPU post-multiply filtering/blending.
+  * **Improvements:** Command line tool cleanly traps and reports errors for
+    corrupt input images rather than relying on hard standard library
+    `assert()` calls.
 * **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
