@@ -28,6 +28,51 @@ pipeline {
   stages {
     stage('Build All') {
       parallel {
+        /* Run static analysis on Linux */
+        stage('Coverity') {
+          agent {
+            docker {
+              image 'astcenc:2.4.0'
+              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
+              registryCredentialsId 'cepe-artifactory-jenkins'
+              label 'docker'
+              alwaysPull true
+            }
+          }
+          stages {
+            stage('Clean') {
+              steps {
+                sh 'git clean -fdx'
+              }
+            }
+            stage('Coverity') {
+              steps {
+                withCredentials([usernamePassword(credentialsId: 'jenkins-password',
+                                                  usernameVariable: 'USERNAME',
+                                                  passwordVariable: 'PASSWORD')]) {
+                  sh script: '''#!/bin/bash
+                    mkdir -p ${WORKSPACE}/occonfig
+
+                    mkdir build_cov
+                    cd build_cov
+
+                    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON ..
+
+                    cov-configure --template --compiler cc --comptype gcc
+                    cov-configure --template --compiler c++ --comptype g++
+                    cov-build --dir ${WORKSPACE}/intermediate make install
+                    cov-analyze --dir ${WORKSPACE}/intermediate
+                    cov-commit-defects --dir ${WORKSPACE}/intermediate \\
+                                       --stream astcenc-master \\
+                                       --url https://coverity.cambridge.arm.com \\
+                                       --user jenkins@arm.com --password ${PASSWORD} \\
+                                       --strip-path ${WORKSPACE}
+                  '''
+                }
+              }
+            }
+          }
+        }
         /* Build for Linux on x86-64 using Clang */
         stage('Linux') {
           agent {
