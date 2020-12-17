@@ -49,7 +49,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make install -j4
+                  make install package -j4
                 '''
               }
             }
@@ -98,7 +98,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  nmake install
+                  nmake install package
                 '''
               }
             }
@@ -147,7 +147,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-                  make install -j4
+                  make install package -j4
                 '''
               }
             }
