@@ -25,12 +25,17 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
-#define TINYEXR_IMPLEMENTATION
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_PNM
 #define STBI_NO_PSD
+
+#define TINYEXR_IMPLEMENTATION
+
+// For both libraries force asserts (which can be triggered by corrupt input
+// images) to be handled at runtime in release builds to avoid security issues.
 #define STBI_ASSERT(x) astcenc_runtime_assert(x)
+#define TEXR_ASSERT(x) astcenc_runtime_assert(x)
 
 static void astcenc_runtime_assert(bool condition)
 {
