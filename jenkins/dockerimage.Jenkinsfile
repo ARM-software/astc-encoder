@@ -12,7 +12,10 @@ pipeline {
   stages {
     stage('Build and Push Image') {
       steps {
-        sh './jenkins/build-image.sh push'
+        sh '''
+          chmod u+x ./jenkins/build-image.sh
+          ./jenkins/build-image.sh push
+        '''
       }
     }
   }
