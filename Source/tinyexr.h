@@ -13289,6 +13289,7 @@ int ParseEXRVersionFromFile(EXRVersion *version, const char *filename) {
   fseek(fp, 0, SEEK_SET);
 
   if (file_size < tinyexr::kEXRVersionSize) {
+    fclose(fp);
     return TINYEXR_ERROR_INVALID_FILE;
   }
 
