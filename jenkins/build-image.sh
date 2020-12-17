@@ -24,7 +24,7 @@ pushd tmp
 popd
 
 echo "Building image"
-docker build -f build.Dockerfile \
+docker build -f jenkins/build.Dockerfile \
     -t $IMAGE_NAME:latest \
     -t $IMAGE_NAME:$IMAGE_VERSION \
     -t $DOCKER_REGISTRY/$IMAGE_NAME:latest \
