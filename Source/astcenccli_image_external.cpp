@@ -19,6 +19,9 @@
  * @brief Functions for building the implementation of stb_image and tinyexr
  */
 
+#include <cstdlib>
+#include <cstdio>
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_MSC_SECURE_CRT
@@ -27,6 +30,16 @@
 #define STBI_NO_PIC
 #define STBI_NO_PNM
 #define STBI_NO_PSD
+#define STBI_ASSERT(x) astcenc_runtime_assert(x)
+
+static void astcenc_runtime_assert(bool condition)
+{
+    if (!condition)
+    {
+        printf("ERROR: Corrupt input image\n");
+        exit(1);
+    }
+}
 
 #include "stb_image.h"
 #include "stb_image_write.h"
