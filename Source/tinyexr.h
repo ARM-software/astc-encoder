@@ -13244,10 +13244,6 @@ int ParseEXRVersionFromMemory(EXRVersion *version, const unsigned char *memory,
       return TINYEXR_ERROR_INVALID_EXR_VERSION;
     }
 
-    if (version == NULL) {
-      return TINYEXR_SUCCESS;  // May OK
-    }
-
     version->version = 2;
 
     if (marker[1] & 0x2) {  // 9th bit
