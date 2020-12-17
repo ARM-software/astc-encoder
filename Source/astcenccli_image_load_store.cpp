@@ -1179,6 +1179,11 @@ bool store_ktx_compressed_image(
 	size_t actual = 0;
 
 	FILE *wf = fopen(filename, "wb");
+	if (!wf)
+	{
+		return true;
+	}
+
 	actual += fwrite(&hdr, 1, sizeof(ktx_header), wf);
 	actual += fwrite(&img.data_len, 1, 4, wf);
 	actual += fwrite(img.data, 1, img.data_len, wf);
