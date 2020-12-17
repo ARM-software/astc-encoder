@@ -1105,6 +1105,7 @@ bool load_ktx_compressed_image(
 	{
 		printf("Failed to skip key-value pairs in %s\n", filename);
 		fclose(f);
+		return true;
 	}
 
 	// Read the length of the data and endianess convert
@@ -1146,6 +1147,7 @@ bool load_ktx_compressed_image(
 
 	is_srgb = fmt->srgb;
 
+	fclose(f);
 	return false;
 }
 
