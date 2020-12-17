@@ -11965,6 +11965,7 @@ int LoadEXRImageFromFile(EXRImage *exr_image, const EXRHeader *exr_header,
   fseek(fp, 0, SEEK_SET);
 
   if (filesize < 16) {
+    fclose(fp);
     tinyexr::SetErrorMessage("File size too short " + std::string(filename),
                              err);
     return TINYEXR_ERROR_INVALID_FILE;
