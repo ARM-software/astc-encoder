@@ -1,3 +1,20 @@
+/* This pipeline is used for release testing, so it runs rarely.
+ *
+ * Test objectives for this pipeline are:
+ *
+ *   - Run the entire pipeline in less than 60 minutes.
+ *   - Test builds on all supported operating systems.
+ *   - Test builds on optimized compiler choices (i.e. prefer Clang over GCC).
+ *   - Build only release variants.
+ *   - Run full functional tests.
+ *   - Run full image quality tests.
+ *   - Code sign the binaries on supported operating systems.
+ *   - Build the release package.
+ *
+ * The test matrix is not fully covered; e.g. we can assume compilers behave
+ * similarly on different operating systems, so we test one compiler per OS.
+ */
+
 @Library('hive-infra-library@master') _
 
 pipeline {
@@ -11,7 +28,7 @@ pipeline {
   stages {
     stage('Build All') {
       parallel {
-        /* Build for Linux on x86_64 */
+        /* Build for Linux on x86-64 using Clang */
         stage('Linux') {
           agent {
             docker {
@@ -35,18 +52,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make install package -j1
-                '''
-              }
-            }
-            stage('Build D') {
-              steps {
-                sh '''
-                  export CXX=clang++-9
-                  mkdir build_dbg
-                  cd build_dbg
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make -j1
+                  make install package -j4
                 '''
               }
             }
@@ -62,13 +68,13 @@ pipeline {
               steps {
                 sh '''
                   python3 ./Test/astc_test_functional.py
-                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small --test-quality medium
+                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small
                 '''
               }
             }
           }
         }
-        /* Build for Windows on x86_64 */
+        /* Build for Windows on x86-64 using MSVC */
         stage('Windows') {
           agent {
             label 'Windows && x86_64'
@@ -90,17 +96,6 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
-              steps {
-                bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
-                  mkdir build_dbg
-                  cd build_dbg
-                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  nmake
-                '''
-              }
-            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
@@ -113,13 +108,13 @@ pipeline {
               steps {
                 bat '''
                   set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
-                  call python ./Test/astc_test_image.py --test-set Small --test-quality medium
+                  call python ./Test/astc_test_image.py --test-set Small
                 '''
               }
             }
           }
         }
-        /* Build for macOS on x86_64 */
+        /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
             label 'mac && x86_64'
@@ -140,16 +135,6 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
-              steps {
-                sh '''
-                  mkdir build_dbg
-                  cd build_dbg
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
-                  make -j1
-                '''
-              }
-            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
@@ -162,7 +147,7 @@ pipeline {
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
-                  python3 ./Test/astc_test_image.py --test-set Small --test-quality medium
+                  python3 ./Test/astc_test_image.py --test-set Small
                 '''
               }
             }
