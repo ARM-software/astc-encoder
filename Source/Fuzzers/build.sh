@@ -18,19 +18,34 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-# Build the core project
-make -j$(nproc) BUILD=debug VEC=sse2
+# This script is invoked by oss-fuzz from <root>/Source/
 
-# Package up a library for fuzzers to link against
+# Build the core project for fuzz tests to link against
+for source in ./*.cpp; do
+  BASE="${source##*/}"
+  BASE="${BASE%.cpp}"
+  echo ${BASE}
+
+  $CXX $CXXFLAGS \
+      -c \
+      -DASTCENC_SSE=0 \
+      -DASTCENC_AVX=0 \
+      -DASTCENC_POPCNT=0 \
+      -DASTCENC_ISA_INVARIANCE=0 \
+      -I. -std=c++14 -mfpmath=sse -msse2 -fno-strict-aliasing -O0 -g \
+      $source \
+      -o ${BASE}.o
+done
+
 ar -qc libastcenc.a  *.o
 
 # Build project local fuzzers
-for fuzzer in $SRC/astc-encoder/Source/Fuzzers/fuzz_*.cpp; do
+for fuzzer in ./Fuzzers/fuzz_*.cpp; do
   $CXX $CXXFLAGS \
       -DASTCENC_SSE=0 \
       -DASTCENC_AVX=0 \
       -DASTCENC_POPCNT=0 \
       -DASTCENC_ISA_INVARIANCE=0 \
-      -I. -std=c++14 $fuzzer $LIB_FUZZING_ENGINE $SRC/astc-encoder/Source/libastcenc.a \
+      -I. -std=c++14 $fuzzer $LIB_FUZZING_ENGINE ./libastcenc.a \
       -o $OUT/$(basename -s .cpp $fuzzer)
 done
