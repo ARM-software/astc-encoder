@@ -108,7 +108,7 @@ struct vfloat4
 	 */
 	template <int l> ASTCENC_SIMD_INLINE void set_lane(float a)
 	{
-		m = vld1q_lane_f32(&a, m, a);
+		m = vld1q_lane_f32(&a, m, s);
 	}
 
 	/**
