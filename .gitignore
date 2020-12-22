@@ -12,7 +12,7 @@ Proto
 Binaries
 
 # Build artifacts
-astcenc*
+astcenc
 build*
 
 # General build artifacts

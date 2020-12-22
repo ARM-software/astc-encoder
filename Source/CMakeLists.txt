@@ -21,6 +21,25 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto")
 endif()
 
+# - - - - - - - - - - - - - - - - - -
+# No architecture-specific SIMD
+
+if (${ISA_NONE})
+    set(ISA_SIMD none)
+    include(cmake_core.cmake)
+endif()
+
+# - - - - - - - - - - - - - - - - - -
+# Armv8-A architecture-specific SIMD
+
+if (${ISA_NEON})
+    set(ISA_SIMD neon)
+    include(cmake_core.cmake)
+endif()
+
+# - - - - - - - - - - - - - - - - - -
+# x86-64 architecture-specific SIMD
+
 if (${ISA_AVX2})
     set(ISA_SIMD avx2)
     include(cmake_core.cmake)
@@ -36,7 +55,4 @@ if (${ISA_SSE2})
     include(cmake_core.cmake)
 endif()
 
-if (${ISA_NONE})
-    set(ISA_SIMD none)
-    include(cmake_core.cmake)
-endif()
+

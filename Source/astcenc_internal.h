@@ -63,6 +63,14 @@
   #endif
 #endif
 
+#ifndef ASTCENC_NEON
+  #if defined(__aarch64__)
+    #define ASTCENC_NEON 1
+  #else
+    #define ASTCENC_NEON 0
+  #endif
+#endif
+
 #if ASTCENC_AVX
   #define ASTCENC_VECALIGN 32
 #else
