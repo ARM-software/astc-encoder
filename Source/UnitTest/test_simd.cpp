@@ -15,11 +15,11 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-#include "gtest/gtest.h"
-
 #include <limits>
 
-#include "../astcenc_mathlib.h"
+#include "gtest/gtest.h"
+
+#include "../astcenc_internal.h"
 #include "../astcenc_vecmathlib.h"
 
 static const float qnan = std::numeric_limits<float>::quiet_NaN();
