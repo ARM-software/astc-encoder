@@ -479,7 +479,9 @@ ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
  */
 ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 {
-	return vint4(vbslq_s32(cond.m, b.m, a.m));
+	static const uint32x4_t msb = vdupq_n_u32(0x80000000u);
+	uint32x4_t mask = vcgeq_u32(cond.m, msb);
+	return vint4(vbslq_s32(mask, b.m, a.m));
 }
 
 /**
@@ -698,7 +700,9 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 {
-    return vfloat4(vbslq_f32(cond.m, b.m, a.m));
+	static const uint32x4_t msb = vdupq_n_u32(0x80000000u);
+	uint32x4_t mask = vcgeq_u32(cond.m, msb);
+	return vfloat4(vbslq_f32(mask, b.m, a.m));
 }
 
 /**
