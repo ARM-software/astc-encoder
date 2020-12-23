@@ -14,10 +14,27 @@ can be achieved by configuring the CMake build using the install prefix
 `-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build
 target.
 
-# Running unit tests
+# Running C++ unit tests
 
-To run the command line unit tests, which aim to get coverage of the command
-line options and core codec stability without testing the compression quality
+We support a small (but growing) number of C++ unit tests, which are written
+using the `googletest` framework and integrated in the CMake "CTest" test
+framework.
+
+To build unit tests pull the `googletest` git submodule and add `-DUNITTEST=ON`
+to the CMake command line when configuring.
+
+To run unit tests use the CMake `ctest` utility from your build directory after
+you have built the tests.
+
+```shell
+cd build
+ctest --verbose
+```
+
+# Running command line tests
+
+To run the command line tests, which aim to get coverage of the command line
+options and core codec stability without testing the compression quality
 itself, run the command line:
 
     python3 -m unittest discover -s Test -p astc_test*.py -v

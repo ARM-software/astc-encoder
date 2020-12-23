@@ -22,8 +22,14 @@ to generate the build system.
 mkdir build
 cd build
 
-# Create the build system
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+# Configure your build of choice, for example:
+
+# Arm arch64
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+    -DARCH=aarch64 -DISA_NEON=ON ..
+
+# x86-64
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 ```
 
@@ -62,7 +68,13 @@ export CXX=clang++
 mkdir build
 cd build
 
-# Create the build system
+# Configure your build of choice, for example:
+
+# Arm arch64
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+    -DARCH=aarch64 -DISA_NEON=ON ..
+
+# x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 ```
@@ -88,13 +100,14 @@ For codec developers there are a number of useful features in the build system.
 
 ### No intrinsics build
 
-All normal builds will use SIMD accelerated code paths using instrinsics, as
-x86-64 guarantees availability of at least SSE2. For development purposes it
-is possible to build an intrinsic-free build which uses no explicit SIMD
-acceleration (the compiler may still auto-vectorize).
+All normal builds will use SIMD accelerated code paths using intrinsics, as all
+target architectures (x86-64 and aarch64) guarantee SIMD availability. For
+development purposes it is possible to build an intrinsic-free build which uses
+no explicit SIMD acceleration (the compiler may still auto-vectorize).
 
 To enable this binary variant add `-DISA_NONE=ON` to the CMake command line
-when configuring. It is NOT
+when configuring. It is NOT recommended to use this for production; it is
+significantly slower than the vectorized SIMD builds.
 
 ### ISA Invariance
 
@@ -126,12 +139,35 @@ We support and test the following `CMAKE_BUILD_TYPE` options.
 Note that optimized release builds are compiled with link-time optimization,
 which can make profiling more challenging ...
 
+### Testing
+
+We support building unit tests.
+
+These builds use the `googletest` framework, which is pulled in though a git
+submodule. On first use, you must fetch the submodule dependency:
+
+```shell
+git submodule init
+git submodule update
+```
+
+To build unit tests add `-DUNITTEST=ON` to the CMake command line when
+configuring.
+
+To run unit tests use the CMake `ctest` utility from your build directory after
+you have built the tests.
+
+```shell
+cd build
+ctest --verbose
+```
+
 ### Packaging
 
 We support building a release bundle of all enabled binary configurations in
 the current CMake configuration using the `package` build target
 
-```bash
+```shell
 # Run a build and package build outputs in `./astcenc-<ver>-<os>-<arch>.<fmt>`
 cd build
 make package -j16
