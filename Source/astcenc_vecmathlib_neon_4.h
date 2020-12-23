@@ -698,7 +698,7 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 {
-    return vfloat4(vbslq_f32(cond.m, a.m, b.m));
+    return vfloat4(vbslq_f32(cond.m, b.m, a.m));
 }
 
 /**
