@@ -28,6 +28,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(PACKAGE_ROOT astcenc)
+include(CTest)
 
 # Command line configuration
 function(printopt optName optVal optArch tgtArch)
@@ -89,6 +90,15 @@ endif()
 option(ISA_INVARIANCE "Enable builds for ISA invariance")
 if(${ISA_INVARIANCE})
     message("  -- ISA invariant backend - ON")
+else()
+    message("  -- ISA invariant backend - OFF")
+endif()
+
+option(UNITTEST "Enable builds for unit tests")
+if(${UNITTEST})
+    message("  -- Unit tests - ON")
+else()
+    message("  -- Unit tests - OFF")
 endif()
 
 if(NOT ${ANY_ISA})

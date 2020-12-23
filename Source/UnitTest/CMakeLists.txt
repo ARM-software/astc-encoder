@@ -15,12 +15,6 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-# Overwrite the LTO flags to force fat LTO; worth 3-4% performance
-# See https://gitlab.kitware.com/cmake/cmake/-/issues/16808
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto")
-endif()
-
 # - - - - - - - - - - - - - - - - - -
 # No architecture-specific SIMD
 
@@ -53,13 +47,4 @@ endif()
 if (${ISA_SSE2})
     set(ISA_SIMD sse2)
     include(cmake_core.cmake)
-endif()
-
-# - - - - - - - - - - - - - - - - - -
-# Unit testing
-if (${UNITTEST})
-    add_subdirectory(GoogleTest)
-    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-    enable_testing()
-    add_subdirectory(UnitTest)
 endif()
