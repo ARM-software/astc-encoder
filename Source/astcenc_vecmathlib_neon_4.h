@@ -603,7 +603,7 @@ ASTCENC_SIMD_INLINE vmask4 operator>=(vfloat4 a, vfloat4 b)
 ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 {
 	// Do not reorder - second operand will return if either is NaN
-	return vfloat4(vminq_f32(a.m, b.m));
+	return vfloat4(vminnmq_f32(a.m, b.m));
 }
 
 /**
@@ -614,7 +614,7 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 {
 	// Do not reorder - second operand will return if either is NaN
-	return vfloat4(vmaxq_f32(a.m, b.m));
+	return vfloat4(vmaxnmq_f32(a.m, b.m));
 }
 
 /**
@@ -627,7 +627,7 @@ ASTCENC_SIMD_INLINE vfloat4 clamp(float min, float max, vfloat4 a)
 {
 	float32x4_t minv = vdupq_n_f32(min);
 	float32x4_t maxv = vdupq_n_f32(max);
-	return vfloat4(vminq_f32(vmaxq_f32(a.m, minv), maxv));
+	return vfloat4(vminnmq_f32(vmaxnmq_f32(a.m, minv), maxv));
 }
 
 /**
@@ -641,7 +641,7 @@ ASTCENC_SIMD_INLINE vfloat4 clampz(float max, vfloat4 a)
 	// Do not reorder - second operand will return if either is NaN
 	float32x4_t minv = vdupq_n_f32(0.0f);
 	float32x4_t maxv = vdupq_n_f32(max);
-	return vfloat4(vminq_f32(vmaxq_f32(a.m, minv), maxv));
+	return vfloat4(vminnmq_f32(vmaxnmq_f32(a.m, minv), maxv));
 }
 
 /**
@@ -653,7 +653,7 @@ ASTCENC_SIMD_INLINE vfloat4 clampzo(vfloat4 a)
 {
 	float32x4_t minv = vdupq_n_f32(0.0f);
 	float32x4_t maxv = vdupq_n_f32(1.0f);
-	return vfloat4(vminq_f32(vmaxq_f32(a.m, minv), maxv));
+	return vfloat4(vminnmq_f32(vmaxnmq_f32(a.m, minv), maxv));
 }
 
 /**
