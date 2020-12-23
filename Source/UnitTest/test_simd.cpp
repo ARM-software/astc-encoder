@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+// TODO: select on sign-bit only
+
 #include <limits>
 
 #include "gtest/gtest.h"
@@ -28,6 +30,47 @@ alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
 
 namespace astcenc
 {
+
+#if ASTCENC_SIMD_WIDTH == 4
+
+// VLA (4-wide) tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** \brief Test VLA change_sign. */
+TEST(vfloat, ChangeSign)
+{
+	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f);
+	vfloat b(-1.0f, -1.0f,  3.12f, 3.12f);
+	vfloat r = change_sign(a, b);
+	EXPECT_EQ(r.lane<0>(),  1.0f);
+	EXPECT_EQ(r.lane<1>(), -1.0f);
+	EXPECT_EQ(r.lane<2>(), -3.12f);
+	EXPECT_EQ(r.lane<3>(),  3.12f);
+}
+
+/** \brief Test VLA atan. */
+TEST(vfloat, Atan)
+{
+	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat r = atan(a);
+	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
+	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
+	EXPECT_NEAR(r.lane<2>(),  0.733616f, 0.005f);
+	EXPECT_NEAR(r.lane<3>(),  1.123040f, 0.005f);
+}
+
+/** \brief Test VLA atan2. */
+TEST(vfloat, Atan2)
+{
+	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat b(1.15f, -3.0f, -0.9f, 1.1f);
+	vfloat r = atan2(a, b);
+	EXPECT_NEAR(r.lane<0>(), -0.129816f, 0.005f);
+	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
+	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
+	EXPECT_NEAR(r.lane<3>(),  1.084357f, 0.005f);
+}
+
+#endif
 
 #if ASTCENC_SIMD_WIDTH >= 4
 
@@ -484,7 +527,6 @@ TEST(vfloat4, store)
 	alignas(16) float out[5];
 	vfloat4 a(f32x4_data);
 	store(a, &(out[1]));
-
 	EXPECT_EQ(out[1], 0.0f);
 	EXPECT_EQ(out[2], 1.0f);
 	EXPECT_EQ(out[3], 2.0f);
@@ -497,7 +539,6 @@ TEST(vfloat4, storea)
 	alignas(16) float out[4];
 	vfloat4 a(f32x4_data);
 	store(a, out);
-
 	EXPECT_EQ(out[0], 0.0f);
 	EXPECT_EQ(out[1], 1.0f);
 	EXPECT_EQ(out[2], 2.0f);
@@ -590,6 +631,318 @@ TEST(vint4, LaneID)
 	EXPECT_EQ(a.lane<1>(), 1);
 	EXPECT_EQ(a.lane<2>(), 2);
 	EXPECT_EQ(a.lane<3>(), 3);
+}
+
+/** \brief Test vint4 add. */
+TEST(vint4, vadd)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(2, 3, 4, 5);
+	a = a + b;
+	EXPECT_EQ(a.lane<0>(), 1 + 2);
+	EXPECT_EQ(a.lane<1>(), 2 + 3);
+	EXPECT_EQ(a.lane<2>(), 3 + 4);
+	EXPECT_EQ(a.lane<3>(), 4 + 5);
+}
+
+/** \brief Test vint4 sub. */
+TEST(vint4, vsub)
+{
+	vint4 a(1, 2, 4, 4);
+	vint4 b(2, 3, 3, 5);
+	a = a - b;
+	EXPECT_EQ(a.lane<0>(), 1 - 2);
+	EXPECT_EQ(a.lane<1>(), 2 - 3);
+	EXPECT_EQ(a.lane<2>(), 4 - 3);
+	EXPECT_EQ(a.lane<3>(), 4 - 5);
+}
+
+/** \brief Test vint4 bitwise invert. */
+TEST(vint4, bit_invert)
+{
+	vint4 a(-1, 0, 1, 2);
+	a = ~a;
+	EXPECT_EQ(a.lane<0>(), ~-1);
+	EXPECT_EQ(a.lane<1>(), ~0);
+	EXPECT_EQ(a.lane<2>(), ~1);
+	EXPECT_EQ(a.lane<3>(), ~2);
+}
+
+/** \brief Test vint4 bitwise or. */
+TEST(vint4, bit_vor)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(2, 3, 4, 5);
+	a = a | b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 3);
+	EXPECT_EQ(a.lane<2>(), 7);
+	EXPECT_EQ(a.lane<3>(), 5);
+}
+
+/** \brief Test vint4 bitwise and. */
+TEST(vint4, bit_vand)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(2, 3, 4, 5);
+	a = a & b;
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 4);
+}
+
+/** \brief Test vint4 bitwise xor. */
+TEST(vint4, bit_vxor)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(2, 3, 4, 5);
+	a = a ^ b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 7);
+	EXPECT_EQ(a.lane<3>(), 1);
+}
+
+/** \brief Test vint4 ceq. */
+TEST(vint4, ceq)
+{
+	vint4 a1(1, 2, 3, 4);
+	vint4 b1(0, 1, 2, 3);
+	vmask r1 = a1 == b1;
+	EXPECT_EQ(0, mask(r1));
+	EXPECT_EQ(false, any(r1));
+	EXPECT_EQ(false, all(r1));
+
+	vint4 a2(1, 2, 3, 4);
+	vint4 b2(1, 0, 0, 0);
+	vmask r2 = a2 == b2;
+	EXPECT_EQ(0x1, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vint4 a3(1, 2, 3, 4);
+	vint4 b3(1, 0, 3, 0);
+	vmask r3 = a3 == b3;
+	EXPECT_EQ(0x5, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vint4 a4(1, 2, 3, 4);
+	vmask r4 = a4 == a4;
+	EXPECT_EQ(0xF, mask(r4));
+	EXPECT_EQ(true, any(r4));
+	EXPECT_EQ(true, all(r4));
+}
+
+/** \brief Test vint4 cne. */
+TEST(vint4, cne)
+{
+	vint4 a1(1, 2, 3, 4);
+	vint4 b1(0, 1, 2, 3);
+	vmask r1 = a1 != b1;
+	EXPECT_EQ(0xF, mask(r1));
+	EXPECT_EQ(true, any(r1));
+	EXPECT_EQ(true, all(r1));
+
+	vint4 a2(1, 2, 3, 4);
+	vint4 b2(1, 0, 0, 0);
+	vmask r2 = a2 != b2;
+	EXPECT_EQ(0xE, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vint4 a3(1, 2, 3, 4);
+	vint4 b3(1, 0, 3, 0);
+	vmask r3 = a3 != b3;
+	EXPECT_EQ(0xA, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vint4 a4(1, 2, 3, 4);
+	vmask r4 = a4 != a4;
+	EXPECT_EQ(0, mask(r4));
+	EXPECT_EQ(false, any(r4));
+	EXPECT_EQ(false, all(r4));
+}
+
+/** \brief Test vint4 clt. */
+TEST(vint4, clt)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(0, 3, 3, 5);
+	vmask r = a < b;
+	EXPECT_EQ(0xA, mask(r));
+}
+
+/** \brief Test vint4 cgt. */
+TEST(vint4, cle)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(0, 3, 3, 5);
+	vmask r = a > b;
+	EXPECT_EQ(0x1, mask(r));
+}
+
+/** \brief Test vint4 min. */
+TEST(vint4, min)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(0, 3, 3, 5);
+	vint4 r = min(a, b);
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 2);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 4);
+}
+
+/** \brief Test vint4 max. */
+TEST(vint4, max)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(0, 3, 3, 5);
+	vint4 r = max(a, b);
+	EXPECT_EQ(r.lane<0>(), 1);
+	EXPECT_EQ(r.lane<1>(), 3);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 5);
+}
+
+/** \brief Test vint4 hmin. */
+TEST(vint4, hmin)
+{
+	vint4 a1(1, 2, 1, 2);
+	vint4 r1 = hmin(a1);
+	EXPECT_EQ(r1.lane<0>(), 1);
+	EXPECT_EQ(r1.lane<1>(), 1);
+	EXPECT_EQ(r1.lane<2>(), 1);
+	EXPECT_EQ(r1.lane<3>(), 1);
+
+	vint4 a2(1, 2, -1, 5);
+	vint4 r2 = hmin(a2);
+	EXPECT_EQ(r2.lane<0>(), -1);
+	EXPECT_EQ(r2.lane<1>(), -1);
+	EXPECT_EQ(r2.lane<2>(), -1);
+	EXPECT_EQ(r2.lane<3>(), -1);
+}
+
+/** \brief Test vint4 storea. */
+TEST(vint4, storea)
+{
+	alignas(16) int out[4];
+	vint4 a(s32x4_data);
+	storea(a, out);
+	EXPECT_EQ(out[0], 0);
+	EXPECT_EQ(out[1], 1);
+	EXPECT_EQ(out[2], 2);
+	EXPECT_EQ(out[3], 3);
+}
+
+/** \brief Test vint4 store_nbytes. */
+TEST(vint4, store_nbytes)
+{
+	alignas(16) int out;
+	vint4 a(42, 314, 75, 90);
+	store_nbytes(a, (uint8_t*)&out);
+	EXPECT_EQ(out, 42);
+}
+
+/** \brief Test vint4 gatheri. */
+TEST(vint4, gatheri)
+{
+	vint4 indices(0, 4, 3, 2);
+	vint4 r = gatheri(s32x4_data, indices);
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 4);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 2);
+}
+
+/** \brief Test vint4 pack_low_bytes. */
+TEST(vint4, pack_low_bytes)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 r = pack_low_bytes(a);
+	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
+}
+
+/** \brief Test vint4 select. */
+TEST(vint4, select)
+{
+	vint4 m1(1, 1, 1, 1);
+	vint4 m2(1, 2, 1, 2);
+	vmask4 cond = m1 == m2;
+
+	vint4 a(1, 3, 3, 1);
+	vint4 b(4, 2, 2, 4);
+
+	vint4 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 2);
+	EXPECT_EQ(r1.lane<3>(), 1);
+
+	vint4 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1);
+	EXPECT_EQ(r2.lane<1>(), 2);
+	EXPECT_EQ(r2.lane<2>(), 3);
+	EXPECT_EQ(r2.lane<3>(), 4);
+}
+
+// VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** \brief Test vmask4 or. */
+TEST(vmask4, or)
+{
+	vfloat4 m1a(0, 1, 0, 1);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1 = m1a == m1b;
+
+	vfloat4 m2a(1, 1, 0, 0);
+	vfloat4 m2b(1, 1, 1, 1);
+	vmask4 m2 = m2a == m2b;
+
+	vmask4 r = m1 | m2;
+	EXPECT_EQ(mask(r), 0xB);
+}
+
+/** \brief Test vmask4 and. */
+TEST(vmask4, and)
+{
+	vfloat4 m1a(0, 1, 0, 1);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1 = m1a == m1b;
+
+	vfloat4 m2a(1, 1, 0, 0);
+	vfloat4 m2b(1, 1, 1, 1);
+	vmask4 m2 = m2a == m2b;
+
+	vmask4 r = m1 & m2;
+	EXPECT_EQ(mask(r), 0x2);
+}
+
+/** \brief Test vmask4 xor. */
+TEST(vmask4, xor)
+{
+	vfloat4 m1a(0, 1, 0, 1);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1 = m1a == m1b;
+
+	vfloat4 m2a(1, 1, 0, 0);
+	vfloat4 m2b(1, 1, 1, 1);
+	vmask4 m2 = m2a == m2b;
+
+	vmask4 r = m1 ^ m2;
+	EXPECT_EQ(mask(r), 0x9);
+}
+
+/** \brief Test vmask4 not. */
+TEST(vmask4, not)
+{
+	vfloat4 m1a(0, 1, 0, 1);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1 = m1a == m1b;
+	vmask r = ~m1;
+	EXPECT_EQ(mask(r), 0x5);
 }
 
 #endif
