@@ -15,7 +15,13 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-// TODO: select on sign-bit only
+/**
+ * @brief Unit tests for the vectorized SIMD functionality.
+ *
+ * This test suite is a partial implementation, focussing on 4-wide vectors.
+ * We're adding things as we touch related parts of the code, but there is some
+ * technical debt to catch up on to get full coverage.
+ */
 
 #include <limits>
 
@@ -497,12 +503,38 @@ TEST(vfloat4, select)
 	vfloat4 a(1.0f, 3.0f, 3.0f, 1.0f);
 	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
 
+	// Select in one direction
 	vfloat4 r1 = select(a, b, cond);
 	EXPECT_EQ(r1.lane<0>(), 4.0f);
 	EXPECT_EQ(r1.lane<1>(), 3.0f);
 	EXPECT_EQ(r1.lane<2>(), 2.0f);
 	EXPECT_EQ(r1.lane<3>(), 1.0f);
 
+	// Select in the other
+	vfloat4 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1.0f);
+	EXPECT_EQ(r2.lane<1>(), 2.0f);
+	EXPECT_EQ(r2.lane<2>(), 3.0f);
+	EXPECT_EQ(r2.lane<3>(), 4.0f);
+}
+
+/** \brief Test vfloat4 select MSB only. */
+TEST(vfloat4, select_msb)
+{
+	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
+	vmask4 cond(msb.m);
+
+	vfloat4 a(1.0f, 3.0f, 3.0f, 1.0f);
+	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
+
+	// Select in one direction
+	vfloat4 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4.0f);
+	EXPECT_EQ(r1.lane<1>(), 3.0f);
+	EXPECT_EQ(r1.lane<2>(), 2.0f);
+	EXPECT_EQ(r1.lane<3>(), 1.0f);
+
+	// Select in the other
 	vfloat4 r2 = select(b, a, cond);
 	EXPECT_EQ(r2.lane<0>(), 1.0f);
 	EXPECT_EQ(r2.lane<1>(), 2.0f);
@@ -872,6 +904,28 @@ TEST(vint4, select)
 	vint4 m1(1, 1, 1, 1);
 	vint4 m2(1, 2, 1, 2);
 	vmask4 cond = m1 == m2;
+
+	vint4 a(1, 3, 3, 1);
+	vint4 b(4, 2, 2, 4);
+
+	vint4 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 2);
+	EXPECT_EQ(r1.lane<3>(), 1);
+
+	vint4 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1);
+	EXPECT_EQ(r2.lane<1>(), 2);
+	EXPECT_EQ(r2.lane<2>(), 3);
+	EXPECT_EQ(r2.lane<3>(), 4);
+}
+
+/** \brief Test vint4 select MSB. */
+TEST(vint4, select_msb)
+{
+	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
+	vmask4 cond(msb.m);
 
 	vint4 a(1, 3, 3, 1);
 	vint4 b(4, 2, 2, 4);
