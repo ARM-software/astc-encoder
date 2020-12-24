@@ -58,8 +58,8 @@ endif()
 # - - - - - - - - - - - - - - - - - -
 # Unit testing
 if (${UNITTEST})
-    add_subdirectory(GoogleTest)
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    add_subdirectory(GoogleTest)
     enable_testing()
     add_subdirectory(UnitTest)
 endif()

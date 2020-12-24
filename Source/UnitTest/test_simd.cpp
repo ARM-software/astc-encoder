@@ -30,10 +30,6 @@
 #include "../astcenc_internal.h"
 #include "../astcenc_vecmathlib.h"
 
-static const float qnan = std::numeric_limits<float>::quiet_NaN();
-alignas(16) static const float f32x4_data[5] { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
-
 namespace astcenc
 {
 
@@ -79,6 +75,10 @@ TEST(vfloat, Atan2)
 #endif
 
 #if ASTCENC_SIMD_WIDTH >= 4
+
+static const float qnan = std::numeric_limits<float>::quiet_NaN();
+alignas(16) static const float f32x4_data[5] { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
+alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
 
 // VFLOAT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
