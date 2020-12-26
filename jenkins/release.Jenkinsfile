@@ -247,7 +247,7 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/authenticode-client.py -u ${USERNAME} *.zip'
+                sh 'python3 ./signing/windows-client-wrapper.py -u ${USERNAME} *.zip'
                 sh 'rm -rf ./signing'
               }
             }
@@ -256,8 +256,7 @@ pipeline {
             }
             dir('upload') {
               unstash 'astcenc-linux-x64-hash'
-              // Don't keep Windows hash - we have signed binaries now
-              // unstash 'astcenc-windows-x64-hash'
+              unstash 'astcenc-windows-x64-hash'
               unstash 'astcenc-macos-x64-hash'
             }
           }
