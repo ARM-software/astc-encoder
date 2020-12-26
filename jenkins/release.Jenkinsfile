@@ -242,6 +242,7 @@ pipeline {
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
                 sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
+                sh 'rm -rf ./signing'
               }
             }
             dir('upload') {
