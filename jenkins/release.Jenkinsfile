@@ -87,7 +87,7 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                sh 'git clean -fdx'
+                sh 'git clean -ffdx'
               }
             }
             stage('Build R') {
@@ -127,7 +127,7 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                bat 'git clean -fdx'
+                bat 'git clean -ffdx'
               }
             }
             stage('Build R') {
@@ -167,7 +167,7 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                sh 'git clean -fdx'
+                sh 'git clean -ffdx'
               }
             }
             stage('Build R') {
