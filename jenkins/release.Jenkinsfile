@@ -162,7 +162,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac && x86_64'
+            label 'mac && x86_64 && notarizer'
           }
           stages {
             stage('Clean') {
@@ -180,7 +180,10 @@ pipeline {
                 '''
               }
             }
-            stage('Sign') {
+            stage('Sign and notarize') {
+              environment {
+                NOTARIZATION_CREDS = credentials('notarization-account')
+              }
               steps {
                 dir('build_rel') {
                   withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
