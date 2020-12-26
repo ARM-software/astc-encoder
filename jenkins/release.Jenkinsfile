@@ -247,7 +247,7 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/windows-client-wrapper.py -u ${USERNAME} *.zip'
+                sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
                 sh 'rm -rf ./signing'
               }
             }
