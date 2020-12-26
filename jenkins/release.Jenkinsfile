@@ -235,8 +235,15 @@ pipeline {
       stages {
         stage('Unstash') {
           steps {
+            dir('upload') {
+              unstash 'astcenc-linux-x64-hash'
+              unstash 'astcenc-macos-x64-hash'
+            }
             dir('upload/linux-x64') {
               unstash 'astcenc-linux-x64'
+            }
+            dir('upload/macos-x64') {
+              unstash 'astcenc-macos-x64'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
@@ -248,16 +255,13 @@ pipeline {
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
                 sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
+                sh 'mv *.zip.sha256 ../'
                 sh 'rm -rf ./signing'
               }
             }
-            dir('upload/macos-x64') {
-              unstash 'astcenc-macos-x64'
-            }
             dir('upload') {
-              unstash 'astcenc-linux-x64-hash'
-              unstash 'astcenc-windows-x64-hash'
-              unstash 'astcenc-macos-x64-hash'
+              sh 'cat *.sha256 > release-sha256.txt'
+              sh 'rm *.sha256'
             }
           }
         }
