@@ -180,6 +180,22 @@ pipeline {
                 '''
               }
             }
+            stage('Sign') {
+              steps {
+                dir('build_rel') {
+                  withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
+                                                     keyFileVariable: 'SSH_AUTH_FILE')]) {
+                    sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                  }
+                  withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                                    usernameVariable: 'USERNAME',
+                                                    passwordVariable: 'PASSWORD')]) {
+                    sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
+                    sh 'rm -rf ./signing'
+                  }
+                }
+              }
+            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
@@ -234,16 +250,6 @@ pipeline {
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
-              withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
-                                                 keyFileVariable: 'SSH_AUTH_FILE')]) {
-                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-              }
-              withCredentials([usernamePassword(credentialsId: 'win-signing',
-                                                usernameVariable: 'USERNAME',
-                                                passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
-                sh 'rm -rf ./signing'
-              }
             }
             dir('upload') {
               unstash 'astcenc-linux-x64-hash'
