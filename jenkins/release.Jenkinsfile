@@ -241,8 +241,7 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/macos-client.py -t mach-o --timestamp-server default --signature-flag runtime --deep ${USERNAME} *.zip *.zip'
-                sh 'rm -rf ./signing'
+                sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
               }
             }
             dir('upload') {
