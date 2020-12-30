@@ -78,7 +78,7 @@
 	constexpr auto load1 = vfloat8::load1;
 
 #elif ASTCENC_SSE >= 20
-	/* If we have SSE expose 4-wide VLA. */
+	/* If we have SSE expose 4-wide VLA, and 4-wide fixed width. */
 	#include "astcenc_vecmathlib_sse_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 4
@@ -90,8 +90,9 @@
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
 #else
-	/* If we have nothing expose 1-wide VLA. */
+	/* If we have nothing expose 1-wide VLA, and 4-wide fixed width. */
 	#include "astcenc_vecmathlib_none_1.h"
+	#include "astcenc_vecmathlib_none_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 1
 
