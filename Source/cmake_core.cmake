@@ -80,7 +80,8 @@ target_compile_options(astcenc-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>)
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>
+        $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
 target_link_options(astcenc-${ISA_SIMD}
     PRIVATE

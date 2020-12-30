@@ -179,36 +179,36 @@ static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 class ParallelManager
 {
 private:
-	/** \brief Lock used for critical section and condition synchronization. */
+	/** @brief Lock used for critical section and condition synchronization. */
 	std::mutex m_lock;
 
-	/** \brief True if the stage init() step has been executed. */
+	/** @brief True if the stage init() step has been executed. */
 	bool m_init_done;
 
-	/** \brief True if the stage term() step has been executed. */
+	/** @brief True if the stage term() step has been executed. */
 	bool m_term_done;
 
-	/** \brief Contition variable for tracking stage processing completion. */
+	/** @brief Contition variable for tracking stage processing completion. */
 	std::condition_variable m_complete;
 
-	/** \brief Number of tasks started, but not necessarily finished. */
+	/** @brief Number of tasks started, but not necessarily finished. */
 	unsigned int m_start_count;
 
-	/** \brief Number of tasks finished. */
+	/** @brief Number of tasks finished. */
 	unsigned int m_done_count;
 
-	/** \brief Number of tasks that need to be processed. */
+	/** @brief Number of tasks that need to be processed. */
 	unsigned int m_task_count;
 
 public:
-	/** \brief Create a new ParallelManager. */
+	/** @brief Create a new ParallelManager. */
 	ParallelManager()
 	{
 		reset();
 	}
 
 	/**
-	 * \brief Reset the tracker for a new processing batch.
+	 * @brief Reset the tracker for a new processing batch.
 	 *
 	 * This must be called from single-threaded code before starting the
 	 * multi-threaded procesing operations.
@@ -223,14 +223,14 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage init step.
+	 * @brief Trigger the pipeline stage init step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the initialization. Other threads will block
 	 * and wait for it to complete.
 	 *
-	 * \param init_func    Callable which executes the stage initialization.
-	 *                     Must return the number of tasks in the stage.
+	 * @param init_func   Callable which executes the stage initialization.
+	 *                    Must return the number of tasks in the stage.
 	 */
 	void init(std::function<unsigned int(void)> init_func)
 	{
@@ -243,13 +243,13 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage init step.
+	 * @brief Trigger the pipeline stage init step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the initialization. Other threads will block
 	 * and wait for it to complete.
 	 *
-	 * \param task_count   Total number of tasks needing processing.
+	 * @param task_count   Total number of tasks needing processing.
 	 */
 	void init(unsigned int task_count)
 	{
@@ -262,12 +262,12 @@ public:
 	}
 
 	/**
-	 * \brief Request a task assignment.
+	 * @brief Request a task assignment.
 	 *
-	 * Assign up to \c granule tasks to the caller for processing.
+	 * Assign up to @c granule tasks to the caller for processing.
 	 *
-	 * \param      granule   Maximum number of tasks that can be assigned.
-	 * \param[out] count     Actual number of tasks assigned, or zero if
+	 * @param      granule   Maximum number of tasks that can be assigned.
+	 * @param[out] count     Actual number of tasks assigned, or zero if
 	 *                       no tasks were assigned.
 	 *
 	 * \return Task index of the first assigned task; assigned tasks
@@ -283,12 +283,12 @@ public:
 	}
 
 	/**
-	 * \brief Complete a task assignment.
+	 * @brief Complete a task assignment.
 	 *
-	 * Mark \c count tasks as complete. This will notify all threads blocked
-	 * on \c wait() if this completes the processing of the stage.
+	 * Mark @c count tasks as complete. This will notify all threads blocked
+	 * on @c wait() if this completes the processing of the stage.
 	 *
-	 * \param count   The number of completed tasks.
+	 * @param count   The number of completed tasks.
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
@@ -302,7 +302,7 @@ public:
 	}
 
 	/**
-	 * \brief Wait for stage processing to complete.
+	 * @brief Wait for stage processing to complete.
 	 */
 	void wait()
 	{
@@ -311,13 +311,13 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage term step.
+	 * @brief Trigger the pipeline stage term step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the thread termintion. Caller must have called
 	 * wait() prior to calling this function to ensure processing is complete.
 	 *
-	 * \param term_func   Callable which executes the stage termination.
+	 * @param term_func   Callable which executes the stage termination.
 	 */
 	void term(std::function<void(void)> term_func)
 	{
@@ -813,15 +813,15 @@ void compute_partition_error_color_weightings(
 	float4 color_scalefactors[4]);
 
 /**
- * \brief Find the best set of partitions to trial for a given block.
+ * @brief Find the best set of partitions to trial for a given block.
  *
- * On return \c best_partition_uncorrelated contains the best partition
- * assuming the data has noncorrelated chroma, \c best_partition_samechroma
+ * On return @c best_partition_uncorrelated contains the best partition
+ * assuming the data has noncorrelated chroma, @c best_partition_samechroma
  * contains the best partition assuming the data has corelated chroma, and
- * \c best_partition_dualplane contains the best partition assuming the data
+ * @c best_partition_dualplane contains the best partition assuming the data
  * has one uncorrelated color component.
  *
- * \c best_partition_dualplane is stored packed; bits [9:0] contain the
+ * @c best_partition_dualplane is stored packed; bits [9:0] contain the
  * best partition, bits [11:10] contain the best color component.
  */
 void find_best_partitionings(
@@ -902,7 +902,8 @@ struct avg_var_args
  * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
  * @param swz                   Input data channel swizzle.
- * @param thread_count          The number of threads to use.
+ * @param arg                   The pixel region arguments for this thread.
+ * @param ag                    The average variance arguments for this thread.
  *
  * @return The number of tasks in the processing stage.
  */
