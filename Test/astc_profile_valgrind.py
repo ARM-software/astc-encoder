@@ -90,12 +90,13 @@ def postprocess_cga(logfile, outfile):
             fileHandle.write("%5.2f%%  %s\n" % (function[2], function[0]))
 
 
-def run_pass(image, encoder, blocksize, quality):
+def run_pass(image, noStartup, encoder, blocksize, quality):
     """
     Run Valgrind on a single binary.
 
     Args:
         image (str): The path of the image to compress.
+        noStartup (bool): Exclude startup from reported data.
         encoder (str): The name of the encoder variant to run.
         blocksize (str): The block size to use.
         quality (str): The encoding quality to use.
@@ -114,8 +115,12 @@ def run_pass(image, encoder, blocksize, quality):
     ret = sp.run(args, stdout=sp.PIPE, check=True, encoding="utf-8")
     postprocess_cga(ret.stdout, "perf_%s.txt" % quality)
 
-    args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
-            "-s", "-z", "compress_block(astcenc_context const&, astcenc_image const&, imageblock const*, symbolic_compressed_block&, physical_compressed_block&, compress_symbolic_block_buffers*)"]
+    if noStartup:
+        args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
+                "-s", "-z", "compress_block(astcenc_context const&, astcenc_image const&, imageblock const*, symbolic_compressed_block&, physical_compressed_block&, compress_symbolic_block_buffers*)"]
+    else:
+        args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
+                "-s",  "-z", "main"]
 
     result = sp.run(args, check=True, universal_newlines=True)
 
@@ -149,6 +154,9 @@ def parse_command_line():
     parser.add_argument("--test-quality", dest="qualities", default="medium",
                         choices=qualities, help="select compression quality")
 
+    parser.add_argument("--no-startup", dest="noStartup", default=False,
+                        action="store_true", help="Exclude init")
+
     args = parser.parse_args()
 
     if args.encoders == "all":
@@ -175,7 +183,7 @@ def main():
 
     for quality in args.qualities:
         for encoder in args.encoders:
-            run_pass(args.img.name, encoder, "6x6", quality)
+            run_pass(args.img.name, args.noStartup, encoder, "6x6", quality)
 
     return 0
 
