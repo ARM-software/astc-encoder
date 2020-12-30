@@ -104,6 +104,15 @@ struct vfloat4
 		return m[l];
 	}
 
+
+	/**
+	 * @brief Set the scalar value of a single lane.
+	 */
+	template <int l> ASTCENC_SIMD_INLINE void set_lane(float a)
+	{
+		m[l] = a;
+	}
+
 	/**
 	 * @brief Factory that returns a vector of zeros.
 	 */
