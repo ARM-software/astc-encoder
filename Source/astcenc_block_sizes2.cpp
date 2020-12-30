@@ -643,9 +643,9 @@ static void construct_block_size_descriptor_2d(
 				}
 			}
 
-			bsd->decimation_mode_maxprec_1plane[decimation_mode_count] = maxprec_1plane;
-			bsd->decimation_mode_maxprec_2planes[decimation_mode_count] = maxprec_2planes;
-			bsd->decimation_mode_percentile[decimation_mode_count] = 1.0f;
+			bsd->decimation_modes[decimation_mode_count].maxprec_1plane = maxprec_1plane;
+			bsd->decimation_modes[decimation_mode_count].maxprec_2planes = maxprec_2planes;
+			bsd->decimation_modes[decimation_mode_count].percentile = 1.0f;
 			bsd->decimation_tables[decimation_mode_count] = dt;
 
 			decimation_mode_count++;
@@ -655,9 +655,9 @@ static void construct_block_size_descriptor_2d(
 	// Ensure the end of the array contains valid data (should never get read)
 	for (int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
-		bsd->decimation_mode_percentile[i] = 1.0f;
-		bsd->decimation_mode_maxprec_1plane[i] = -1;
-		bsd->decimation_mode_maxprec_2planes[i] = -1;
+		bsd->decimation_modes[i].maxprec_1plane = -1;
+		bsd->decimation_modes[i].maxprec_2planes = -1;
+		bsd->decimation_modes[i].percentile = 1.0f;
 		bsd->decimation_tables[i] = nullptr;
 	}
 
@@ -700,9 +700,9 @@ static void construct_block_size_descriptor_2d(
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 		bsd->block_modes_packed[packed_idx].percentile = percentiles[i];
-		if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
+		if (bsd->decimation_modes[decimation_mode].percentile > percentiles[i])
 		{
-			bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
+			bsd->decimation_modes[decimation_mode].percentile = percentiles[i];
 		}
 #else
 		bsd->block_modes_packed[packed_idx].percentile = 0.0f;
@@ -823,10 +823,10 @@ static void construct_block_size_descriptor_3d(
 					maxprec_2planes = -1;
 				}
 
-				bsd->decimation_mode_maxprec_1plane[decimation_mode_count] = maxprec_1plane;
-				bsd->decimation_mode_maxprec_2planes[decimation_mode_count] = maxprec_2planes;
+				bsd->decimation_modes[decimation_mode_count].maxprec_1plane = maxprec_1plane;
+				bsd->decimation_modes[decimation_mode_count].maxprec_2planes = maxprec_2planes;
+				bsd->decimation_modes[decimation_mode_count].percentile = 1.0f;
 				bsd->decimation_tables[decimation_mode_count] = dt;
-				bsd->decimation_mode_percentile[decimation_mode_count] = 1.0f;
 				decimation_mode_count++;
 			}
 		}
@@ -834,9 +834,9 @@ static void construct_block_size_descriptor_3d(
 
 	for (int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
-		bsd->decimation_mode_percentile[i] = 1.0f;
-		bsd->decimation_mode_maxprec_1plane[i] = -1;
-		bsd->decimation_mode_maxprec_2planes[i] = -1;
+		bsd->decimation_modes[i].maxprec_1plane = -1;
+		bsd->decimation_modes[i].maxprec_2planes = -1;
+		bsd->decimation_modes[i].percentile = 1.0f;
 		bsd->decimation_tables[i] = nullptr;
 	}
 
@@ -871,12 +871,7 @@ static void construct_block_size_descriptor_3d(
 		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
 		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane;
 		bsd->block_modes_packed[packed_idx].mode_index = i;
-
 		bsd->block_modes_packed[packed_idx].percentile = 0.0f; // No percentile table
-		if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
-		{
-			bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
-		}
 
 		bsd->block_mode_to_packed[i] = packed_idx;
 		++packed_idx;

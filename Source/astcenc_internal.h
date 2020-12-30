@@ -380,16 +380,26 @@ struct decimation_table
 	float texel_weights_float_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 };
 
-/*
-   data structure describing information that pertains to a block size and its associated block modes.
-*/
+/**
+ * @brief Metadata for single block mode for a specific BSD.
+ */
 struct block_mode
 {
 	int8_t decimation_mode;
 	int8_t quantization_mode;
-	int8_t is_dual_plane;
+	int8_t is_dual_plane;  // TODO: Replace this with a bit.
 	int16_t mode_index;
-	float percentile;
+	float percentile;      // TODO: Replace this with a bit.
+};
+
+/**
+ * @brief Metadata for single decimation mode for a specific BSD.
+ */
+struct decimation_mode
+{
+	int8_t maxprec_1plane;
+	int8_t maxprec_2planes;
+	float percentile;       // TODO: Replace this with a bit.
 };
 
 struct block_size_descriptor
@@ -400,9 +410,7 @@ struct block_size_descriptor
 	int texel_count;
 
 	int decimation_mode_count;
-	int decimation_mode_maxprec_1plane[MAX_DECIMATION_MODES];
-	int decimation_mode_maxprec_2planes[MAX_DECIMATION_MODES];
-	float decimation_mode_percentile[MAX_DECIMATION_MODES];
+	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
 	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
 
 	// out of all possible 2048 weight modes, only a subset is

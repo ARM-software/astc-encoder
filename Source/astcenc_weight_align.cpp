@@ -383,8 +383,8 @@ void compute_angular_endpoints_1plane(
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_tables[i]->num_weights;
-		int quant_mode = bsd->decimation_mode_maxprec_1plane[i];
-		float percentile = bsd->decimation_mode_percentile[i];
+		int quant_mode = bsd->decimation_modes[i].maxprec_1plane;
+		float percentile = bsd->decimation_modes[i].percentile;
 		if (quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
@@ -430,8 +430,8 @@ void compute_angular_endpoints_2planes(
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_tables[i]->num_weights;
-		int quant_mode = bsd->decimation_mode_maxprec_2planes[i];
-		float percentile = bsd->decimation_mode_percentile[i];
+		int quant_mode = bsd->decimation_modes[i].maxprec_2planes;
+		float percentile = bsd->decimation_modes[i].percentile;
 		if (quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
