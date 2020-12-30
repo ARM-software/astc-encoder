@@ -1145,7 +1145,7 @@ void compress_block(
 	astcenc_profile decode_mode = ctx.config.profile;
 	const block_size_descriptor* bsd = ctx.bsd;
 
-	if (blk->red_min == blk->red_max && blk->green_min == blk->green_max && blk->blue_min == blk->blue_max && blk->alpha_min == blk->alpha_max)
+	if (all(blk->data_min == blk->data_max))
 	{
 		// detected a constant-color block. Encode as FP16 if using HDR
 		scb.error_block = 0;

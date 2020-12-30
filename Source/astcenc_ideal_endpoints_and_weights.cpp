@@ -133,8 +133,8 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
-		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
+		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
+		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
 		switch (component)
 		{
 		case 0:				// red/x
@@ -338,8 +338,8 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
-		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
+		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
+		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
 
 		float2 ep0 = lowvalues[i];
 		float2 ep1 = highvalues[i];
@@ -585,8 +585,8 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->red_min, blk->green_min, blk->blue_min, blk->alpha_min);
-		ei->ep.endpt1[i] = float4(blk->red_max, blk->green_max, blk->blue_max, blk->alpha_max);
+		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
+		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
 
 		float3 ep0 = lowvalues[i];
 		float3 ep1 = highvalues[i];

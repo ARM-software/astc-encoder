@@ -75,6 +75,7 @@
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
+#include "astcenc_vecmathlib.h"
 
 /* ============================================================================
   Constants
@@ -442,31 +443,23 @@ struct imageblock
 	float data_g[MAX_TEXELS_PER_BLOCK];
 	float data_b[MAX_TEXELS_PER_BLOCK];
 	float data_a[MAX_TEXELS_PER_BLOCK];
+
+	// TODO: Migrate to vfloat4
 	float4 origin_texel;
+	vfloat4 data_min;
+	vfloat4 data_max;
+	bool    grayscale;
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
 	uint8_t nan_texel[MAX_TEXELS_PER_BLOCK];    // 1 if the texel is a NaN-texel.
-
-	float red_min, red_max;
-	float green_min, green_max;
-	float blue_min, blue_max;
-	float alpha_min, alpha_max;
-	int grayscale;				// 1 if R=G=B for every pixel, 0 otherwise
-
 	int xpos, ypos, zpos;
 };
 
 static inline int imageblock_uses_alpha(const imageblock * pb)
 {
-	return pb->alpha_max != pb->alpha_min;
+	return pb->data_min.lane<3>() != pb->data_max.lane<3>();
 }
-
-void update_imageblock_flags(
-	imageblock* pb,
-	int xdim,
-	int ydim,
-	int zdim);
 
 void imageblock_initialize_orig_from_work(
 	imageblock * pb,
