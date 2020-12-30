@@ -382,10 +382,10 @@ void compute_angular_endpoints_1plane(
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		// TODO: Do this at build time and cache the result
-		int samplecount = bsd->decimation_mode_samples[i];
+		int samplecount = bsd->decimation_tables[i]->num_weights;
 		int quant_mode = bsd->decimation_mode_maxprec_1plane[i];
 		float percentile = bsd->decimation_mode_percentile[i];
-		if (samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		if (quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
 		}
@@ -429,10 +429,10 @@ void compute_angular_endpoints_2planes(
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		// TODO: Do this at build time and cache the result
-		int samplecount = bsd->decimation_mode_samples[i];
+		int samplecount = bsd->decimation_tables[i]->num_weights;
 		int quant_mode = bsd->decimation_mode_maxprec_2planes[i];
 		float percentile = bsd->decimation_mode_percentile[i];
-		if (samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		if (quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
 		}

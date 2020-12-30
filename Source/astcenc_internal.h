@@ -400,7 +400,6 @@ struct block_size_descriptor
 	int texel_count;
 
 	int decimation_mode_count;
-	int decimation_mode_samples[MAX_DECIMATION_MODES];
 	int decimation_mode_maxprec_1plane[MAX_DECIMATION_MODES];
 	int decimation_mode_maxprec_2planes[MAX_DECIMATION_MODES];
 	float decimation_mode_percentile[MAX_DECIMATION_MODES];
