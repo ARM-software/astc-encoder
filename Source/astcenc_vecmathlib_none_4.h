@@ -104,7 +104,6 @@ struct vfloat4
 		return m[l];
 	}
 
-
 	/**
 	 * @brief Set the scalar value of a single lane.
 	 */
