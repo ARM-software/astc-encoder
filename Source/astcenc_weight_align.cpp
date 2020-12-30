@@ -379,14 +379,13 @@ void compute_angular_endpoints_1plane(
 	float low_values[MAX_DECIMATION_MODES][12];
 	float high_values[MAX_DECIMATION_MODES][12];
 
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
 		int quant_mode = bsd->decimation_mode_maxprec_1plane[i];
 		float percentile = bsd->decimation_mode_percentile[i];
-		int permit_encode = bsd->permit_encode[i];
-		if (permit_encode == 0 || samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		if (samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
 		}
@@ -427,15 +426,13 @@ void compute_angular_endpoints_2planes(
 	float low_values2[MAX_DECIMATION_MODES][12];
 	float high_values2[MAX_DECIMATION_MODES][12];
 
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		// TODO: Do this at build time and cache the result
 		int samplecount = bsd->decimation_mode_samples[i];
 		int quant_mode = bsd->decimation_mode_maxprec_2planes[i];
 		float percentile = bsd->decimation_mode_percentile[i];
-		int permit_encode = bsd->permit_encode[i];
-
-		if (permit_encode == 0 || samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
+		if (samplecount < 1 || quant_mode < 0 || percentile > mode_cutoff)
 		{
 			continue;
 		}

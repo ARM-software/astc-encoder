@@ -404,7 +404,6 @@ struct block_size_descriptor
 	int decimation_mode_maxprec_1plane[MAX_DECIMATION_MODES];
 	int decimation_mode_maxprec_2planes[MAX_DECIMATION_MODES];
 	float decimation_mode_percentile[MAX_DECIMATION_MODES];
-	int permit_encode[MAX_DECIMATION_MODES];
 	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
 
 	// out of all possible 2048 weight modes, only a subset is
@@ -629,15 +628,17 @@ struct physical_compressed_block
  * This will also initialize the partition table metadata, which is stored
  * as part of the BSD structure.
  *
- * @param xdim The x axis size of the block.
- * @param ydim The y axis size of the block.
- * @param zdim The z axis size of the block.
- * @param bsd  The structure to populate.
+ * @param xdim        The x axis size of the block.
+ * @param ydim        The y axis size of the block.
+ * @param zdim        The z axis size of the block.
+ * @param mode_cutoff The block mode percentil cutoff [0-1].
+ * @param bsd         The structure to populate.
  */
 void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
+	float mode_cutoff,
 	block_size_descriptor* bsd);
 
 void term_block_size_descriptor(

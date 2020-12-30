@@ -236,9 +236,9 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 	// for each decimation mode, compute an ideal set of weights
 	// (that is, weights computed with the assumption that they are not quantized)
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		if (bsd->permit_encode[i] == 0 || bsd->decimation_mode_maxprec_1plane[i] < 0 || bsd->decimation_mode_percentile[i] > mode_cutoff)
+		if (bsd->decimation_mode_maxprec_1plane[i] < 0 || bsd->decimation_mode_percentile[i] > mode_cutoff)
 		{
 			continue;
 		}
@@ -501,9 +501,9 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	uint8_t *u8_quantized_decimated_quantized_weights = tmpbuf->u8_quantized_decimated_quantized_weights;
 
 	// for each decimation mode, compute an ideal set of weights
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
+	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		if (bsd->permit_encode[i] == 0 || bsd->decimation_mode_maxprec_2planes[i] < 0 || bsd->decimation_mode_percentile[i] > mode_cutoff)
+		if (bsd->decimation_mode_maxprec_2planes[i] < 0 || bsd->decimation_mode_percentile[i] > mode_cutoff)
 		{
 			continue;
 		}
