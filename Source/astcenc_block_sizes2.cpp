@@ -871,7 +871,10 @@ static void construct_block_size_descriptor_3d(
 		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
 		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane;
 		bsd->block_modes_packed[packed_idx].mode_index = i;
-		bsd->block_modes_packed[packed_idx].percentile = 0.0f; // No percentile table
+
+		// No percentile table, so enable everything legal and used ...
+		bsd->block_modes_packed[packed_idx].percentile = 0.0f;
+		bsd->decimation_modes[decimation_mode].percentile = 0.0f;
 
 		bsd->block_mode_to_packed[i] = packed_idx;
 		++packed_idx;
