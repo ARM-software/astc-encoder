@@ -205,7 +205,7 @@ static int realign_weights(
 */
 static void compress_symbolic_block_fixed_partition_1_plane(
 	astcenc_profile decode_mode,
-	float mode_cutoff,
+	bool only_always,
 	int tune_candidate_limit,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
@@ -238,7 +238,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	// (that is, weights computed with the assumption that they are not quantized)
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		if (bsd->decimation_modes[i].maxprec_1plane < 0 || bsd->decimation_modes[i].percentile > mode_cutoff)
+		const decimation_mode& dm = bsd->decimation_modes[i];
+		if (dm.maxprec_1plane < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -294,7 +295,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	float weight_low_value[MAX_WEIGHT_MODES];
 	float weight_high_value[MAX_WEIGHT_MODES];
 
-	compute_angular_endpoints_1plane(mode_cutoff, bsd, decimated_quantized_weights, decimated_weights, weight_low_value, weight_high_value);
+	compute_angular_endpoints_1plane(only_always, bsd, decimated_quantized_weights, decimated_weights, weight_low_value, weight_high_value);
 
 	// for each mode (which specifies a decimation and a quantization):
 	// * compute number of bits needed for the quantized weights.
@@ -306,7 +307,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
 		const block_mode& bm = bsd->block_modes_packed[i];
-		if (bm.is_dual_plane != 0 || bm.percentile > mode_cutoff)
+		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -467,7 +468,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 static void compress_symbolic_block_fixed_partition_2_planes(
 	astcenc_profile decode_mode,
-	float mode_cutoff,
+	bool only_always,
 	int tune_candidate_limit,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
@@ -503,7 +504,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	// for each decimation mode, compute an ideal set of weights
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		if (bsd->decimation_modes[i].maxprec_2planes < 0 || bsd->decimation_modes[i].percentile > mode_cutoff)
+		const decimation_mode& dm = bsd->decimation_modes[i];
+		if (dm.maxprec_2planes < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -613,7 +615,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	float weight_low_value2[MAX_WEIGHT_MODES];
 	float weight_high_value2[MAX_WEIGHT_MODES];
 
-	compute_angular_endpoints_2planes(mode_cutoff, bsd, decimated_quantized_weights, decimated_weights, weight_low_value1, weight_high_value1, weight_low_value2, weight_high_value2);
+	compute_angular_endpoints_2planes(only_always, bsd, decimated_quantized_weights, decimated_weights, weight_low_value1, weight_high_value1, weight_low_value2, weight_high_value2);
 
 	// for each mode (which specifies a decimation and a quantization):
 	// * generate an optimized set of quantized weights.
@@ -625,7 +627,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
 		const block_mode& bm = bsd->block_modes_packed[i];
-		if (bm.is_dual_plane != 1 || bm.percentile > mode_cutoff)
+		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -1217,8 +1219,6 @@ void compress_block(
 
 	int uses_alpha = imageblock_uses_alpha(blk);
 
-	float mode_cutoff = ctx.config.tune_block_mode_limit / 100.0f;
-
 	// Trial using 1 plane of weights and 1 partition.
 
 	// Most of the time we test it twice, first with a mode cutoff of 0 and
@@ -1227,10 +1227,8 @@ void compress_block(
 	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
 	// compression and slightly reduces image quality.
 
-	float modecutoffs[2];
-	float errorval_mult[2] = { 2.5, 1 };
-	modecutoffs[0] = 0;
-	modecutoffs[1] = mode_cutoff;
+	bool modecutoffs[2] = { true, false };
+	float errorval_mult[2] = { 2.5f, 1.0f };
 
 	float lowest_correl;
 	float best_errorval_in_mode;
@@ -1296,7 +1294,7 @@ void compress_block(
 		}
 
 		compress_symbolic_block_fixed_partition_2_planes(
-		    decode_mode, mode_cutoff,
+		    decode_mode, false,
 		    ctx.config.tune_candidate_limit,
 		    ctx.config.tune_refinement_limit,
 		    bsd, 1,	// partition count
@@ -1349,7 +1347,7 @@ void compress_block(
 		for (int i = 0; i < 2; i++)
 		{
 			compress_symbolic_block_fixed_partition_1_plane(
-			    decode_mode, mode_cutoff,
+			    decode_mode, false,
 			    ctx.config.tune_candidate_limit,
 			    ctx.config.tune_refinement_limit,
 			    bsd, partition_count, partition_indices_1plane[i],
@@ -1406,7 +1404,7 @@ void compress_block(
 		{
 			compress_symbolic_block_fixed_partition_2_planes(
 			    decode_mode,
-			    mode_cutoff,
+			    false,
 			    ctx.config.tune_candidate_limit,
 			    ctx.config.tune_refinement_limit,
 			    bsd,

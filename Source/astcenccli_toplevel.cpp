@@ -484,6 +484,19 @@ int init_astcenc_config(
 
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
+#else
+	// Decompression can skip some memory allocation, but need full tables
+	if (operation == ASTCENC_OP_DECOMPRESS)
+	{
+		flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
+	}
+	// Compression and test passes can skip some decimation initialization
+	// as we know we are decompressing images that were compressed using the
+	// same settings and heuristics ...
+	else
+	{
+		flags |= ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+	}
 #endif
 
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
@@ -897,6 +910,11 @@ int edit_astcenc_config(
 
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	cli_config.thread_count = 1;
+#else
+	if (operation == ASTCENC_OP_DECOMPRESS)
+	{
+		cli_config.thread_count = 1;
+	}
 #endif
 
 	if (operation & ASTCENC_STAGE_COMPRESS)

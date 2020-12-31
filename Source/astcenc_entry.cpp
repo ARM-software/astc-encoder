@@ -503,7 +503,8 @@ astcenc_error astcenc_context_alloc(
 	}
 
 	bsd = new block_size_descriptor;
-	init_block_size_descriptor(config.block_x, config.block_y, config.block_z, config.tune_block_mode_limit / 100.0f, bsd);
+	bool can_omit_modes = config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+	init_block_size_descriptor(config.block_x, config.block_y, config.block_z, can_omit_modes, config.tune_block_mode_limit / 100.0f, bsd);
 	ctx->bsd = bsd;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)

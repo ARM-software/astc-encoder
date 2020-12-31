@@ -43,6 +43,13 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **API Change:** Image `data` is no longer a 3D array accessed using
     `data[z][y][x]` indexing, it's an array of 2D slices. This makes it easier
     to directly use images loaded from other libraries.
+  * **API Change:** Added new `ASTCENC_FLG_SELF_DECOMPRESS_ONLY` flag to the
+    codec config. Using this flag enables additional optimizations that
+    aggressively exploit implementation- and configuration-specific, behavior
+	to gain performance. When using this flag the codec can only reliably
+	decompress images that were compressed in the same context session. Images
+	produced via other means may fail to decompress correctly, even if they are
+	otherwise valid ASTC files.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1

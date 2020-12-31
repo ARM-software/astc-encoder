@@ -388,9 +388,11 @@ struct block_mode
 {
 	int8_t decimation_mode;
 	int8_t quantization_mode;
-	int8_t is_dual_plane;  // TODO: Replace this with a bit.
+	uint8_t is_dual_plane : 1;
+	uint8_t percentile_hit : 1;
+	uint8_t percentile_always : 1;
 	int16_t mode_index;
-	float percentile;      // TODO: Replace this with a bit.
+
 };
 
 /**
@@ -400,7 +402,8 @@ struct decimation_mode
 {
 	int8_t maxprec_1plane;
 	int8_t maxprec_2planes;
-	float percentile;       // TODO: Replace this with a bit.
+	uint8_t percentile_hit : 1;
+	uint8_t percentile_always : 1;
 };
 
 struct block_size_descriptor
@@ -638,6 +641,7 @@ void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
+	bool can_omit_modes,
 	float mode_cutoff,
 	block_size_descriptor* bsd);
 
@@ -1123,7 +1127,7 @@ void imageblock_initialize_deriv(
 	float4* dptr);
 
 void compute_angular_endpoints_1plane(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor* bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
@@ -1131,7 +1135,7 @@ void compute_angular_endpoints_1plane(
 	float high_value[MAX_WEIGHT_MODES]);
 
 void compute_angular_endpoints_2planes(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor * bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,

@@ -369,7 +369,7 @@ static void compute_angular_endpoints_for_quantization_levels(
 // helper functions that will compute ideal angular-endpoints
 // for a given set of weights and a given block size descriptors
 void compute_angular_endpoints_1plane(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor* bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
@@ -381,24 +381,22 @@ void compute_angular_endpoints_1plane(
 
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		// TODO: Do this at build time and cache the result
-		int samplecount = bsd->decimation_tables[i]->num_weights;
-		int quant_mode = bsd->decimation_modes[i].maxprec_1plane;
-		float percentile = bsd->decimation_modes[i].percentile;
-		if (quant_mode < 0 || percentile > mode_cutoff)
+		const decimation_mode& dm = bsd->decimation_modes[i];
+		if (dm.maxprec_1plane < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
 		{
 			continue;
 		}
 
+		int samplecount = bsd->decimation_tables[i]->num_weights;
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 		                                                  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
-		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values[i], high_values[i]);
+		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
 	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
 		const block_mode& bm = bsd->block_modes_packed[i];
-		if (bm.is_dual_plane != 0 || bm.percentile > mode_cutoff)
+		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			continue;
 		}
@@ -412,7 +410,7 @@ void compute_angular_endpoints_1plane(
 }
 
 void compute_angular_endpoints_2planes(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor* bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
@@ -428,28 +426,27 @@ void compute_angular_endpoints_2planes(
 
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		// TODO: Do this at build time and cache the result
-		int samplecount = bsd->decimation_tables[i]->num_weights;
-		int quant_mode = bsd->decimation_modes[i].maxprec_2planes;
-		float percentile = bsd->decimation_modes[i].percentile;
-		if (quant_mode < 0 || percentile > mode_cutoff)
+		const decimation_mode& dm = bsd->decimation_modes[i];
+		if (dm.maxprec_2planes < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
 		{
 			continue;
 		}
 
+		int samplecount = bsd->decimation_tables[i]->num_weights;
+
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 		                                                  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
-		                                                  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values1[i], high_values1[i]);
+		                                                  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 		                                                  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
-		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, quant_mode, low_values2[i], high_values2[i]);
+		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
 	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
 	{
 		const block_mode& bm = bsd->block_modes_packed[i];
-		if (bm.is_dual_plane != 1 || bm.percentile > mode_cutoff)
+		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			continue;
 		}
