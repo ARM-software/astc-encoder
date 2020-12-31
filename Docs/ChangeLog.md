@@ -24,6 +24,8 @@ recompile your client-side code using the updated `astcenc.h` header.
 * **Binary releases:**
   * **Improvement:** Linux binaries changed to use use Clang 9.0, which gives
     up to 15% performance improvement.
+  * **Improvement:** Windows binaries are now signed, and macOS binaries are
+    signed and notarized.
 * **Command Line:**
   * **Feature:** New image preprocess `-pp-normalize` option added. This forces
     normal vectors to be unit length, which is useful when compressing source
