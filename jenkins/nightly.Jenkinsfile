@@ -40,7 +40,11 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                sh 'git clean -fdx'
+                sh '''
+                    git clean -fdx
+                    git submodule init
+                    git submodule update
+                '''
               }
             }
             stage('Build R') {
@@ -48,7 +52,7 @@ pipeline {
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DUNITEST=ON..
                   make install package -j4
                 '''
               }
@@ -76,6 +80,9 @@ pipeline {
                   python3 ./Test/astc_test_functional.py
                   python3 ./Test/astc_test_image.py --encoder=all --test-set Small --test-quality medium
                 '''
+                dir('build_rel') {
+                  sh 'ctest'
+                }
               }
             }
           }
