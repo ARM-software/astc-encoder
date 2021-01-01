@@ -60,6 +60,7 @@ HDR images are an 8x8 image containing 4 4x4 constant color blocks. Assuming
 * (7, 7) BR = LDR Green, trans  = (0.25, 0.75, 0.00, 0.87)
 """
 
+import argparse
 import filecmp
 import os
 import re
@@ -107,6 +108,7 @@ ASTCENC_TEST_PATTERN_HDR = {
 
 LDR_RGB_PSNR_PATTERN = re.compile(r"\s*PSNR \(LDR-RGB\): (.*) dB")
 
+g_TestEncoder = "avx2"
 
 class CLITestBase(unittest.TestCase):
     """
@@ -120,7 +122,7 @@ class CLITestBase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        encoder = te.Encoder2x("avx2")
+        encoder = te.Encoder2x(g_TestEncoder)
         self.binary = encoder.binary
 
     def setUp(self):
@@ -2071,6 +2073,21 @@ def main():
     Returns:
         int: The process return code.
     """
+    global g_TestEncoder
+
+    parser = argparse.ArgumentParser()
+
+    coders = ["none", "neon", "sse2", "sse4.1", "avx2"]
+    parser.add_argument("--encoder", dest="encoder", default="avx2",
+                        choices=coders, help="test encoder variant")
+    args = parser.parse_known_args()
+
+    # Set the encoder for this test run
+    g_TestEncoder = args[0].encoder
+
+    # Set the sys.argv to remaining args (leave sys.argv[0] alone)
+    sys.argv[1:] = args[1]
+
     results = unittest.main(exit=False)
     return 0 if results.result.wasSuccessful() else 1
 
