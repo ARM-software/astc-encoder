@@ -679,7 +679,8 @@ astcenc_error astcenc_compress_image(
 	}
 
 	if (ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
-	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f)
+	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f ||
+	    ctx->config.a_scale_radius != 0)
 	{
 		// First thread to enter will do setup, other threads will subsequently
 		// enter the critical section but simply skip over the initialization
