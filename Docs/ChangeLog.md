@@ -18,6 +18,9 @@ stable across versions, and this release is not compatible with 2.1. Please
 recompile your client-side code using the updated `astcenc.h` header.
 
 * **General:**
+  * **Feature:** New Arm aarch64 NEON accelerated vector library. Note that at
+    this time Arm builds must be built from source; pre-built binaries are not
+	provided in this release.
   * **Improvement:** SSE4.2 feature profile changed to SSE4.1, which more
     accurately reflects the feature set used.
   * **Improvement:** Build system changed to use CMake for all platforms.
@@ -35,8 +38,8 @@ recompile your client-side code using the updated `astcenc.h` header.
     scales RGB values by the alpha value. This can be useful to minimize
     cross-channel color bleed caused by GPU post-multiply filtering/blending.
   * **Improvements:** Command line tool cleanly traps and reports errors for
-    corrupt input images rather than relying on hard standard library
-    `assert()` calls.
+    corrupt input images rather than relying on standard library `assert()`
+	calls in release builds.
 * **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed

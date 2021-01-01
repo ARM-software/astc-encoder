@@ -28,11 +28,45 @@ The directory path is structured:
 
 from collections.abc import Iterable
 import os
+import re
 import subprocess as sp
 
 from PIL import Image as PILImage
 
 import testlib.misc as misc
+
+
+CONVERT_BINARY = ["convert"]
+
+
+g_ConvertVersion = None
+
+
+def get_convert_version():
+    """
+    Get the major/minor version of ImageMagick on the system.
+    """
+    global g_ConvertVersion
+
+    if g_ConvertVersion is None:
+        command = list(CONVERT_BINARY)
+        command += ["--version"]
+        result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
+                        check=True, universal_newlines=True)
+
+        # Version is top row
+        version = result.stdout.splitlines()[0]
+        # ... third token
+        version = re.split(" ", version)[2]
+        # ... major/minor/patch/subpatch
+        version = re.split("\\.|-", version)
+
+        numericVersion = float(version[0])
+        numericVersion += float(version[1]) / 10.0
+
+        g_ConvertVersion = numericVersion
+
+    return g_ConvertVersion
 
 
 class ImageException(Exception):
@@ -228,6 +262,14 @@ class Image():
         Args:
             filePath (str): The path to the image on disk.
         """
+        convert = get_convert_version()
+
+        # ImageMagick 7 started to use .tga file origin information. By default
+        # TGA files store data from bottom up, and define the origin as bottom
+        # left. We want our color samples to always use a top left origin, even
+        # if the data is stored in alternative layout.
+        self.invertYCoords = (convert >= 7.0) and filePath.endswith(".tga")
+
         self.filePath = filePath
         self.proxyPath = None
 
@@ -256,8 +298,14 @@ class Image():
             coords = [coords]
 
         for (x, y) in coords:
-            command = [
-                "convert", self.filePath,
+            command = list(CONVERT_BINARY)
+            command += [self.filePath]
+
+            # Invert coordinates if the format needs it
+            if self.invertYCoords:
+                command += ["-flip"]
+
+            command += [
                 "-format", "%%[pixel:p{%u,%u}]" % (x, y),
                 "info:"
             ]

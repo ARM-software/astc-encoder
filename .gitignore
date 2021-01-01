@@ -1,6 +1,7 @@
 # Editor and engineering scratch files
 .vs
 .vscode
+.DS_Store
 *.log
 *.diff
 *.user
@@ -12,7 +13,7 @@ Proto
 Binaries
 
 # Build artifacts
-astcenc*
+astcenc
 build*
 
 # General build artifacts

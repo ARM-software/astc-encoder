@@ -285,23 +285,30 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         outDir = "Test/Images/%s" % imageSet
         refName = None
     # Latest master
+    elif encoderName == "ref-master-neon":
+        # Warning: this option rebuilds a new reference test result for the
+        # master branch using the user's locally build encoder.
+        encoder = te.Encoder2x("neon")
+        name = "reference-master-neon"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
     elif encoderName == "ref-master-sse2":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder in ./Source.
+        # master branch using the user's locally build encoder.
         encoder = te.Encoder2x("sse2")
         name = "reference-master-sse2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     elif encoderName == "ref-master-sse4.1":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder in ./Source.
+        # master branch using the user's locally build encoder.
         encoder = te.Encoder2x("sse4.1")
         name = "reference-master-sse4.1"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     elif encoderName == "ref-master-avx2":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder in ./Source.
+        # master branch using the user's locally build encoder.
         encoder = te.Encoder2x("avx2")
         name = "reference-master-avx2"
         outDir = "Test/Images/%s" % imageSet
@@ -327,8 +334,8 @@ def parse_command_line():
     refcoders = ["ref-1.7",
                  "ref-2.0-sse2", "ref-2.0-sse4.1", "ref-2.0-avx2",
                  "ref-2.1-sse2", "ref-2.1-sse4.1", "ref-2.1-avx2",
-                 "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
-    testcoders = ["none", "sse2", "sse4.1", "avx2"]
+                 "ref-master-neon", "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
+    testcoders = ["none", "neon", "sse2", "sse4.1", "avx2"]
     coders = refcoders + testcoders + ["all", "all-ref"]
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")

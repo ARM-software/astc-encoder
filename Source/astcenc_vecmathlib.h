@@ -32,7 +32,7 @@
  * Explicit 4-wide types are accessible via the vint4, vfloat4, and vmask4
  * types. These are provided for use by VLA code, but are also expected to be
  * used as a fixed-width type and will supported a reference C++ fallback for
- * use on platforms without SIMD intrinsics (TODO: not yet implemented).
+ * use on platforms without SIMD intrinsics.
  *
  * Explicit 8-wide types are accessible via the vint8, vfloat8, and vmask8
  * types. These are provide for use by VLA code, and are not expected to be
@@ -42,9 +42,10 @@
  * With the current implementation ISA support is provided for:
  *
  *     * 1-wide for scalar reference.
- *     * 4-wide for SSE2.
- *     * 4-wide for SSE4.1.
- *     * 8-wide for AVX2.
+ *     * 4-wide for Armv8-A NEON.
+ *     * 4-wide for x86-64 SSE2.
+ *     * 4-wide for x86-64 SSE4.1.
+ *     * 8-wide for x86-64 AVX2.
  *
  */
 
@@ -53,6 +54,8 @@
 
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
+#elif ASTCENC_NEON != 0
+	#include <arm_neon.h>
 #endif
 
 #if defined(_MSC_VER)
@@ -64,7 +67,7 @@
 #endif
 
 #if ASTCENC_AVX >= 2
-	/* If we have AVX2 expose 8-wide VLA, and 4-wide fixed width. */
+	/* If we have AVX2 expose 8-wide VLA. */
 	#include "astcenc_vecmathlib_avx2_8.h"
 	#include "astcenc_vecmathlib_sse_4.h"
 
@@ -89,6 +92,20 @@
 
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
+
+#elif ASTCENC_NEON > 0
+	/* If we have NEON expose 4-wide VLA. */
+	#include "astcenc_vecmathlib_neon_4.h"
+
+	#define ASTCENC_SIMD_WIDTH 4
+
+	using vfloat = vfloat4;
+	using vint = vint4;
+	using vmask = vmask4;
+
+	constexpr auto loada = vfloat4::loada;
+	constexpr auto load1 = vfloat4::load1;
+
 #else
 	/* If we have nothing expose 1-wide VLA, and 4-wide fixed width. */
 	#include "astcenc_vecmathlib_none_1.h"

@@ -110,17 +110,29 @@ endif()
 if(${ISA_SIMD} MATCHES "none")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
+            ASTCENC_NEON=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0)
 
-    target_compile_options(astcenc-${ISA_SIMD}
+    if (${ARCH} MATCHES x64)
+        target_compile_options(astcenc-${ISA_SIMD}
+            PRIVATE
+                $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
+    endif()
+
+elseif(${ISA_SIMD} MATCHES "neon")
+    target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
+            ASTCENC_NEON=1
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0)
 
 elseif(${ISA_SIMD} MATCHES "sse2")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
+            ASTCENC_NEON=0
             ASTCENC_SSE=20
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0)
@@ -132,6 +144,7 @@ elseif(${ISA_SIMD} MATCHES "sse2")
 elseif(${ISA_SIMD} MATCHES "sse4.1")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
+            ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=0
             ASTCENC_POPCNT=1)
@@ -143,6 +156,7 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
 elseif(${ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
+            ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=2
             ASTCENC_POPCNT=1)

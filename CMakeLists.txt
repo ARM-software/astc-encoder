@@ -15,7 +15,6 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-
 # CMake configuration
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0069 NEW)  # LTO support
@@ -29,38 +28,77 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(PACKAGE_ROOT astcenc)
+include(CTest)
 
 # Command line configuration
-option(ISA_AVX2 "Enable builds for AVX2 SIMD")
+function(printopt optName optVal optArch tgtArch)
+    if(${optVal})
+        if(${optArch} MATCHES ${tgtArch})
+            message("  -- ${optName} backend - ON")
+        else()
+            message("  -- ${optName} backend - SKIPPED (${optArch} only)")
+        endif()
+    else()
+        message("  -- ${optName} backend - OFF")
+    endif()
+endfunction()
 
-message("-- Selecting backend build type(s)")
+set(VALID_ARCH aarch64 x64)
+set(ARCH x64 CACHE STRING "Target architecture")
+set_property(CACHE ARCH PROPERTY STRINGS ${VALID_ARCH})
+
+message("-- Selecting target astcenc backends:")
+list(FIND VALID_ARCH ${ARCH} index)
+if(index EQUAL -1)
+    message(FATAL_ERROR "ARCH must be one of ${VALID_ARCH}")
+endif()
+
 set(ANY_ISA 0)
-if(${ISA_AVX2})
+
+option(ISA_AVX2 "Enable builds for AVX2 SIMD")
+printopt("AVX2" ${ISA_AVX2} "x64" ${ARCH})
+if(${ISA_AVX2} AND ${ARCH} MATCHES "x64")
     set(ANY_ISA 1)
-    message("  -- AVX2 backend: ON")
 endif()
 
 option(ISA_SSE41 "Enable builds for SSE4.1 SIMD")
-if(${ISA_SSE41})
+printopt("SSE4.1" ${ISA_SSE41} "x64" ${ARCH})
+if(${ISA_SSE41} AND ${ARCH} MATCHES "x64")
     set(ANY_ISA 1)
-    message("  -- SSE4.1 backend: ON")
 endif()
 
 option(ISA_SSE2 "Enable builds for SSE2 SIMD")
-if(${ISA_SSE2})
+printopt("SSE2" ${ISA_SSE2} "x64" ${ARCH})
+if(${ISA_SSE2} AND ${ARCH} MATCHES "x64")
     set(ANY_ISA 1)
-    message("  -- SSE2 backend: ON")
 endif()
 
-option(ISA_NONE "Enable builds for noSIMD")
+option(ISA_NEON "Enable builds for NEON SIMD")
+printopt("NEON" ${ISA_NEON} "aarch64" ${ARCH})
+if(${ISA_NEON} AND ${ARCH} MATCHES "aarch64")
+    set(ANY_ISA 1)
+endif()
+
+option(ISA_NONE "Enable builds for no SIMD")
 if(${ISA_NONE})
     set(ANY_ISA 1)
-    message("  -- No SIMD backend: ON")
+    message("  -- No SIMD backend - ON")
+else()
+    message("  -- No SIMD backend - OFF")
 endif()
 
 option(ISA_INVARIANCE "Enable builds for ISA invariance")
 if(${ISA_INVARIANCE})
-    message("  -- ISA invariance: ON")
+    message("  -- ISA invariant backend - ON")
+else()
+    message("  -- ISA invariant backend - OFF")
+endif()
+
+option(UNITTEST "Enable builds for unit tests")
+if(${UNITTEST})
+    message("  -- Unit tests - ON")
+else()
+    message("  -- Unit tests - OFF")
 endif()
 
 if(NOT ${ANY_ISA})
