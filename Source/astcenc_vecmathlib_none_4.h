@@ -772,6 +772,17 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
+{
+	return vfloat4(std::sqrt(a.m[0]),
+	               std::sqrt(a.m[1]),
+	               std::sqrt(a.m[2]),
+	               std::sqrt(a.m[3]));
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
@@ -794,6 +805,17 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 }
 
 /**
+ * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vfloat4 v, float* ptr)
+{
+	ptr[0] = v.m[0];
+	ptr[1] = v.m[1];
+	ptr[2] = v.m[2];
+	ptr[3] = v.m[3];
+}
+
+/**
  * @brief Store a vector to an aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vfloat4 v, float* ptr)
@@ -813,6 +835,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 	          a.m[1] * b.m[1] +
 	          a.m[2] * b.m[2] +
 	          a.m[3] * b.m[3];
+
 	return vfloat4(s);
 }
 
@@ -825,6 +848,17 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 v)
 	             v.m[1],
 	             v.m[2],
 	             v.m[3]);
+}
+
+/**
+ * @brief Return a integer value for a float vector, using truncation.
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 v)
+{
+	return vint4((int)(v.m[0] + 0.5f),
+	             (int)(v.m[1] + 0.5f),
+	             (int)(v.m[2] + 0.5f),
+	             (int)(v.m[3] + 0.5f));
 }
 
 /**

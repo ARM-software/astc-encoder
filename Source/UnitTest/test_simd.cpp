@@ -74,8 +74,6 @@ TEST(vfloat, Atan2)
 
 #endif
 
-#if ASTCENC_SIMD_WIDTH >= 4
-
 static const float qnan = std::numeric_limits<float>::quiet_NaN();
 alignas(16) static const float f32x4_data[5] { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
 alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
@@ -271,27 +269,27 @@ TEST(vfloat4, ceq)
 {
 	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b1(0.1f, 0.2f, 0.3f, 0.4f);
-	vmask r1 = a1 == b1;
+	vmask4 r1 = a1 == b1;
 	EXPECT_EQ(0, mask(r1));
 	EXPECT_EQ(false, any(r1));
 	EXPECT_EQ(false, all(r1));
 
 	vfloat4 a2(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b2(1.0f, 0.2f, 0.3f, 0.4f);
-	vmask r2 = a2 == b2;
+	vmask4 r2 = a2 == b2;
 	EXPECT_EQ(0x1, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
 	vfloat4 a3(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b3(1.0f, 0.2f, 3.0f, 0.4f);
-	vmask r3 = a3 == b3;
+	vmask4 r3 = a3 == b3;
 	EXPECT_EQ(0x5, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
 	vfloat4 a4(1.0f, 2.0f, 3.0f, 4.0f);
-	vmask r4 = a4 == a4;
+	vmask4 r4 = a4 == a4;
 	EXPECT_EQ(0xF, mask(r4));
 	EXPECT_EQ(true, any(r4));
 	EXPECT_EQ(true, all(r4));
@@ -302,27 +300,27 @@ TEST(vfloat4, cne)
 {
 	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b1(0.1f, 0.2f, 0.3f, 0.4f);
-	vmask r1 = a1 != b1;
+	vmask4 r1 = a1 != b1;
 	EXPECT_EQ(0xF, mask(r1));
 	EXPECT_EQ(true, any(r1));
 	EXPECT_EQ(true, all(r1));
 
 	vfloat4 a2(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b2(1.0f, 0.2f, 0.3f, 0.4f);
-	vmask r2 = a2 != b2;
+	vmask4 r2 = a2 != b2;
 	EXPECT_EQ(0xE, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
 	vfloat4 a3(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b3(1.0f, 0.2f, 3.0f, 0.4f);
-	vmask r3 = a3 != b3;
+	vmask4 r3 = a3 != b3;
 	EXPECT_EQ(0xA, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
 	vfloat4 a4(1.0f, 2.0f, 3.0f, 4.0f);
-	vmask r4 = a4 != a4;
+	vmask4 r4 = a4 != a4;
 	EXPECT_EQ(0, mask(r4));
 	EXPECT_EQ(false, any(r4));
 	EXPECT_EQ(false, all(r4));
@@ -333,7 +331,7 @@ TEST(vfloat4, clt)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b(0.9f, 2.1f, 3.0f, 4.1f);
-	vmask r = a < b;
+	vmask4 r = a < b;
 	EXPECT_EQ(0xA, mask(r));
 }
 
@@ -342,7 +340,7 @@ TEST(vfloat4, cle)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b(0.9f, 2.1f, 3.0f, 4.1f);
-	vmask r = a <= b;
+	vmask4 r = a <= b;
 	EXPECT_EQ(0xE, mask(r));
 }
 
@@ -351,7 +349,7 @@ TEST(vfloat4, cgt)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b(0.9f, 2.1f, 3.0f, 4.1f);
-	vmask r = a > b;
+	vmask4 r = a > b;
 	EXPECT_EQ(0x1, mask(r));
 }
 
@@ -360,7 +358,7 @@ TEST(vfloat4, cge)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat4 b(0.9f, 2.1f, 3.0f, 4.1f);
-	vmask r = a >= b;
+	vmask4 r = a >= b;
 	EXPECT_EQ(0x5, mask(r));
 }
 
@@ -741,27 +739,27 @@ TEST(vint4, ceq)
 {
 	vint4 a1(1, 2, 3, 4);
 	vint4 b1(0, 1, 2, 3);
-	vmask r1 = a1 == b1;
+	vmask4 r1 = a1 == b1;
 	EXPECT_EQ(0, mask(r1));
 	EXPECT_EQ(false, any(r1));
 	EXPECT_EQ(false, all(r1));
 
 	vint4 a2(1, 2, 3, 4);
 	vint4 b2(1, 0, 0, 0);
-	vmask r2 = a2 == b2;
+	vmask4 r2 = a2 == b2;
 	EXPECT_EQ(0x1, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
 	vint4 a3(1, 2, 3, 4);
 	vint4 b3(1, 0, 3, 0);
-	vmask r3 = a3 == b3;
+	vmask4 r3 = a3 == b3;
 	EXPECT_EQ(0x5, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
 	vint4 a4(1, 2, 3, 4);
-	vmask r4 = a4 == a4;
+	vmask4 r4 = a4 == a4;
 	EXPECT_EQ(0xF, mask(r4));
 	EXPECT_EQ(true, any(r4));
 	EXPECT_EQ(true, all(r4));
@@ -772,27 +770,27 @@ TEST(vint4, cne)
 {
 	vint4 a1(1, 2, 3, 4);
 	vint4 b1(0, 1, 2, 3);
-	vmask r1 = a1 != b1;
+	vmask4 r1 = a1 != b1;
 	EXPECT_EQ(0xF, mask(r1));
 	EXPECT_EQ(true, any(r1));
 	EXPECT_EQ(true, all(r1));
 
 	vint4 a2(1, 2, 3, 4);
 	vint4 b2(1, 0, 0, 0);
-	vmask r2 = a2 != b2;
+	vmask4 r2 = a2 != b2;
 	EXPECT_EQ(0xE, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
 	vint4 a3(1, 2, 3, 4);
 	vint4 b3(1, 0, 3, 0);
-	vmask r3 = a3 != b3;
+	vmask4 r3 = a3 != b3;
 	EXPECT_EQ(0xA, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
 	vint4 a4(1, 2, 3, 4);
-	vmask r4 = a4 != a4;
+	vmask4 r4 = a4 != a4;
 	EXPECT_EQ(0, mask(r4));
 	EXPECT_EQ(false, any(r4));
 	EXPECT_EQ(false, all(r4));
@@ -803,7 +801,7 @@ TEST(vint4, clt)
 {
 	vint4 a(1, 2, 3, 4);
 	vint4 b(0, 3, 3, 5);
-	vmask r = a < b;
+	vmask4 r = a < b;
 	EXPECT_EQ(0xA, mask(r));
 }
 
@@ -812,7 +810,7 @@ TEST(vint4, cle)
 {
 	vint4 a(1, 2, 3, 4);
 	vint4 b(0, 3, 3, 5);
-	vmask r = a > b;
+	vmask4 r = a > b;
 	EXPECT_EQ(0x1, mask(r));
 }
 
@@ -995,10 +993,8 @@ TEST(vmask4, not)
 	vfloat4 m1a(0, 1, 0, 1);
 	vfloat4 m1b(1, 1, 1, 1);
 	vmask4 m1 = m1a == m1b;
-	vmask r = ~m1;
+	vmask4 r = ~m1;
 	EXPECT_EQ(mask(r), 0x5);
 }
-
-#endif
 
 }
