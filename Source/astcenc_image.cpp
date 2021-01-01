@@ -203,33 +203,57 @@ void imageblock_initialize_work_from_orig(
 	pb->origin_texel = float4(pb->data_r[0], pb->data_g[0],
 	                          pb->data_b[0], pb->data_a[0]);
 
+	vfloat4 data_min(1e38f);
+	vfloat4 data_max(-1e38f);
+	bool grayscale = true;
+
 	for (int i = 0; i < pixelcount; i++)
 	{
-		float4 inc = float4(pb->data_r[i], pb->data_g[i],
-		                    pb->data_b[i], pb->data_a[i]);
+		vfloat4 data = vfloat4(pb->data_r[i], pb->data_g[i],
+		                       pb->data_b[i], pb->data_a[i]);
 
 		if (pb->rgb_lns[i])
 		{
-			pb->data_r[i] = float_to_lns(inc.r);
-			pb->data_g[i] = float_to_lns(inc.g);
-			pb->data_b[i] = float_to_lns(inc.b);
+			data.set_lane<0>(float_to_lns(data.lane<0>()));
+			data.set_lane<1>(float_to_lns(data.lane<1>()));
+			data.set_lane<2>(float_to_lns(data.lane<2>()));
 		}
 		else
 		{
-			pb->data_r[i] = inc.r * 65535.0f;
-			pb->data_g[i] = inc.g * 65535.0f;
-			pb->data_b[i] = inc.b * 65535.0f;
+			data.set_lane<0>(data.lane<0>() * 65535.0f);
+			data.set_lane<1>(data.lane<1>() * 65535.0f);
+			data.set_lane<2>(data.lane<2>() * 65535.0f);
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			pb->data_a[i] = float_to_lns(inc.a);
+			data.set_lane<3>(float_to_lns(data.lane<3>()));
 		}
 		else
 		{
-			pb->data_a[i] = inc.a * 65535.0f;
+			data.set_lane<3>(data.lane<3>() * 65535.0f);
 		}
+
+		// Compute block metadata
+		data_min = min(data_min, data);
+		data_max = max(data_max, data);
+
+		if (grayscale && (data.lane<0>() != data.lane<1>() || data.lane<0>() != data.lane<2>()))
+		{
+			grayscale = false;
+		}
+
+		// Store block data
+		pb->data_r[i] = data.lane<0>();
+		pb->data_g[i] = data.lane<1>();
+		pb->data_b[i] = data.lane<2>();
+		pb->data_a[i] = data.lane<3>();
 	}
+
+	// Store block metadata
+	pb->data_min = data_min;
+	pb->data_max = data_max;
+	pb->grayscale = grayscale;
 }
 
 // helper function to initialize the orig-data from the work-data
@@ -237,33 +261,57 @@ void imageblock_initialize_orig_from_work(
 	imageblock* pb,
 	int pixelcount
 ) {
+	vfloat4 data_min(1e38f);
+	vfloat4 data_max(-1e38f);
+	bool grayscale = true;
+
 	for (int i = 0; i < pixelcount; i++)
 	{
-		float4 inc = float4(pb->data_r[i], pb->data_g[i],
-		                    pb->data_b[i], pb->data_a[i]);
+		vfloat4 data = vfloat4(pb->data_r[i], pb->data_g[i],
+		                       pb->data_b[i], pb->data_a[i]);
 
 		if (pb->rgb_lns[i])
 		{
-			pb->data_r[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.r));
-			pb->data_g[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.g));
-			pb->data_b[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.b));
+			data.set_lane<0>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<0>())));
+			data.set_lane<1>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<1>())));
+			data.set_lane<2>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<2>())));
 		}
 		else
 		{
-			pb->data_r[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.r));
-			pb->data_g[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.g));
-			pb->data_b[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.b));
+			data.set_lane<0>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<0>())));
+			data.set_lane<1>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<1>())));
+			data.set_lane<2>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<2>())));
 		}
 
 		if (pb->alpha_lns[i])
 		{
-			pb->data_a[i] = sf16_to_float(lns_to_sf16((uint16_t)inc.a));
+			data.set_lane<3>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<3>())));
 		}
 		else
 		{
-			pb->data_a[i] = sf16_to_float(unorm16_to_sf16((uint16_t)inc.a));
+			data.set_lane<3>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<3>())));
 		}
+
+		// Compute block metadata
+		data_min = min(data_min, data);
+		data_max = max(data_max, data);
+
+		if (grayscale && (data.lane<0>() != data.lane<1>() || data.lane<0>() != data.lane<2>()))
+		{
+			grayscale = false;
+		}
+
+		// Store block data
+		pb->data_r[i] = data.lane<0>();
+		pb->data_g[i] = data.lane<1>();
+		pb->data_b[i] = data.lane<2>();
+		pb->data_a[i] = data.lane<3>();
 	}
+
+	// Store block metadata
+	pb->data_min = data_min;
+	pb->data_max = data_max;
+	pb->grayscale = grayscale;
 }
 
 // fetch an imageblock from the input file.
@@ -444,7 +492,6 @@ void fetch_imageblock(
 	}
 
 	imageblock_initialize_work_from_orig(pb, bsd->texel_count);
-	update_imageblock_flags(pb, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
 void write_imageblock(
@@ -685,63 +732,4 @@ void write_imageblock(
 			}
 		}
 	}
-}
-
-/*
-   For an imageblock, update its flags.
-   The updating is done based on data, not orig_data.
-*/
-void update_imageblock_flags(
-	imageblock* pb,
-	int xdim,
-	int ydim,
-	int zdim
-) {
-	float red_min = 1e38f, red_max = -1e38f;
-	float green_min = 1e38f, green_max = -1e38f;
-	float blue_min = 1e38f, blue_max = -1e38f;
-	float alpha_min = 1e38f, alpha_max = -1e38f;
-
-	int texels_per_block = xdim * ydim * zdim;
-
-	int grayscale = 1;
-
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		float red = pb->data_r[i];
-		float green = pb->data_g[i];
-		float blue = pb->data_b[i];
-		float alpha = pb->data_a[i];
-		if (red < red_min)
-			red_min = red;
-		if (red > red_max)
-			red_max = red;
-		if (green < green_min)
-			green_min = green;
-		if (green > green_max)
-			green_max = green;
-		if (blue < blue_min)
-			blue_min = blue;
-		if (blue > blue_max)
-			blue_max = blue;
-		if (alpha < alpha_min)
-			alpha_min = alpha;
-		if (alpha > alpha_max)
-			alpha_max = alpha;
-
-		if (grayscale == 1 && (red != green || red != blue))
-		{
-			grayscale = 0;
-		}
-	}
-
-	pb->red_min = red_min;
-	pb->red_max = red_max;
-	pb->green_min = green_min;
-	pb->green_max = green_max;
-	pb->blue_min = blue_min;
-	pb->blue_max = blue_max;
-	pb->alpha_min = alpha_min;
-	pb->alpha_max = alpha_max;
-	pb->grayscale = grayscale;
 }

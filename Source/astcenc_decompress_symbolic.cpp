@@ -271,8 +271,7 @@ void decompress_symbolic_block(
 
 	int plane2_color_component = scb->plane2_color_component;
 
-	// now that we have endpoint colors and weights, we can unpack actual colors for
-	// each texel.
+	// Now that we have endpoint colors and weights, we can unpack actual colors for each texel.
 	for (int i = 0; i < bsd->texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
@@ -295,7 +294,6 @@ void decompress_symbolic_block(
 	}
 
 	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
-	update_imageblock_flags(blk, bsd->xdim, bsd->ydim, bsd->zdim);
 }
 
 float compute_symbolic_block_difference(

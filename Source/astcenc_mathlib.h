@@ -50,7 +50,7 @@ static const float PI          = 3.14159265358979323846f;
 static const float PI_OVER_TWO = 1.57079632679489661923f;
 
 /**
- * @brief Fast approximation of log2(x)
+ * @brief Fast approximation of log2(v).
  *
  * This does not produce correct results for special cases such as
  * zero/inf/nan/denormal/negative inputs:
@@ -59,26 +59,30 @@ static const float PI_OVER_TWO = 1.57079632679489661923f;
  *     resulting in a logarithm of -126.
  *   * +Inf and +NaN get treated as an extension of largest-finite values,
  *     which should result in a logarithm value between 128 and 129.
+ *
+ * @param v   The input value.
+ *
+ * @return The approximate log2(v).
  */
-float log2(float val);
+float log2(float v);
 
 /**
  * @brief SP float absolute value.
  *
- * @param val The value to make absolute.
+ * @param v   The value to make absolute.
  *
  * @return The absolute value.
  */
-static inline float fabs(float val)
+static inline float fabs(float v)
 {
-	return std::fabs(val);
+	return std::fabs(v);
 }
 
 /**
  * @brief SP float min.
  *
- * @param valA The first value to compare.
- * @param valB The second value to compare.
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
  *
  * @return The smallest value (q if either is NaN).
  */
@@ -90,8 +94,8 @@ static inline float min(float p, float q)
 /**
  * @brief SP float max.
  *
- * @param valA The first value to compare.
- * @param valB The second value to compare.
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
  *
  * @return The largest value (q if either is NaN).
  */
@@ -103,33 +107,34 @@ static inline float max(float p, float q)
 /**
  * @brief Test if a float value is a nan.
  *
- * @param val The value test.
+ * @param v    The value test.
  *
  * @return Zero is not a NaN, non-zero otherwise.
  */
-static inline int isnan(float val)
+static inline int isnan(float v)
 {
-	return val != val;
+	// TODO: Make this a boolean.
+	return v != v;
 }
 
 /**
- * @brief Clamp a value value between mn and mx
+ * @brief Clamp a value value between @c mn and @c mx.
  *
- * For floats, NaNs are turned into mn.
+ * For floats, NaNs are turned into @c mn.
  *
- * @param val The value clamp.
- * @param mn  The min value (inclusive).
- * @param mx  The max value (inclusive).
+ * @param v      The value to clamp.
+ * @param mn     The min value (inclusive).
+ * @param mx     The max value (inclusive).
  *
  * @return The clamped value.
  */
 template<typename T>
-inline T clamp(T val, T mn, T mx)
+inline T clamp(T v, T mn, T mx)
 {
 	// Do not reorder; correct NaN handling relies on the fact that comparison
 	// with NaN returns false and will fall-though to the "min" value.
-	if (val > mx) return mx;
-	if (val > mn) return val;
+	if (v > mx) return mx;
+	if (v > mn) return v;
 	return mn;
 }
 
@@ -138,13 +143,13 @@ inline T clamp(T val, T mn, T mx)
  *
  * NaNs are turned into 0.0f.
  *
- * @param val The value clamp.
+ * @param v   The value to clamp.
  *
  * @return The clamped value.
  */
-static inline float clamp1f(float val)
+static inline float clamp1f(float v)
 {
-	return astc::clamp(val, 0.0f, 1.0f);
+	return astc::clamp(v, 0.0f, 1.0f);
 }
 
 /**
@@ -152,13 +157,13 @@ static inline float clamp1f(float val)
  *
  * NaNs are turned into 0.0f.
  *
- * @param val The value clamp.
+ * @param v  The value to clamp.
  *
  * @return The clamped value.
  */
-static inline float clamp255f(float val)
+static inline float clamp255f(float v)
 {
-	return astc::clamp(val, 0.0f, 255.0f);
+	return astc::clamp(v, 0.0f, 255.0f);
 }
 
 /**
@@ -166,130 +171,131 @@ static inline float clamp255f(float val)
  *
  * NaNs are turned into 0.0f.
  *
- * @param val The value to clamp
+ * @param v   The value to clamp
  *
  * @return The clamped value
  */
-static inline float clamp64Kf(float val)
+static inline float clamp64Kf(float v)
 {
-	return astc::clamp(val, 0.0f, 65504.0f);
+	return astc::clamp(v, 0.0f, 65504.0f);
 }
 
 
 /**
  * @brief SP float round-to-nearest.
  *
- * @param val The value to round.
+ * @param v   The value to round.
  *
  * @return The rounded value.
  */
-static inline float flt_rte(float val)
+static inline float flt_rte(float v)
 {
-	return std::floor(val + 0.5f);
+	return std::floor(v + 0.5f);
 }
 
 /**
  * @brief SP float round-down.
  *
- * @param val The value to round.
+ * @param v   The value to round.
  *
  * @return The rounded value.
  */
-static inline float flt_rd(float val)
+static inline float flt_rd(float v)
 {
-	return std::floor(val);
+	return std::floor(v);
 }
 
 /**
  * @brief SP float round-to-nearest and convert to integer.
  *
- * @param val The value to round.
+ * @param v   The value to round.
  *
  * @return The rounded value.
  */
-static inline int flt2int_rtn(float val)
+static inline int flt2int_rtn(float v)
 {
 
-	return (int)(val + 0.5f);
+	return (int)(v + 0.5f);
 }
 
 /**
  * @brief SP float round down and convert to integer.
  *
- * @param val The value to round.
+ * @param v   The value to round.
  *
  * @return The rounded value.
  */
-static inline int flt2int_rd(float val)
+static inline int flt2int_rd(float v)
 {
-	return (int)(val);
+	return (int)(v);
 }
 
 /**
  * @brief Population bit count.
  *
- * @param val The value to count.
+ * @param v   The value to population count.
  *
  * @return The number of 1 bits.
  */
-static inline int popcount(uint64_t p)
+static inline int popcount(uint64_t v)
 {
 #if ASTCENC_POPCNT >= 1
-	return (int)_mm_popcnt_u64(p);
+	return (int)_mm_popcnt_u64(v);
 #else
 	uint64_t mask1 = 0x5555555555555555ULL;
 	uint64_t mask2 = 0x3333333333333333ULL;
 	uint64_t mask3 = 0x0F0F0F0F0F0F0F0FULL;
-	p -= (p >> 1) & mask1;
-	p = (p & mask2) + ((p >> 2) & mask2);
-	p += p >> 4;
-	p &= mask3;
-	p *= 0x0101010101010101ULL;
-	p >>= 56;
-	return (int)p;
+	v -= (v >> 1) & mask1;
+	v = (v & mask2) + ((v >> 2) & mask2);
+	v += v >> 4;
+	v &= mask3;
+	v *= 0x0101010101010101ULL;
+	v >>= 56;
+	return (int)v;
 #endif
 }
 
 /**
  * @brief Fast approximation of 1.0 / sqrt(val).
  *
- * @param val The input value.
+ * @param v   The input value.
  *
  * @return The approximated result.
  */
-static inline float rsqrt(float val)
+static inline float rsqrt(float v)
 {
-	return 1.0f / std::sqrt(val);
+	return 1.0f / std::sqrt(v);
 }
 
 /**
  * @brief Fast approximation of sqrt(val).
  *
- * @param val The input value.
+ * @param v   The input value.
  *
  * @return The approximated result.
  */
-static inline float sqrt(float val)
+static inline float sqrt(float v)
 {
-	return std::sqrt(val);
+	return std::sqrt(v);
 }
 
 /**
  * @brief Log base 2, linearized from 2^-14.
  *
- * @param val The value to log2.
+ * @param v   The value to log2.
  *
  * @return The approximated result.
  */
-static inline float xlog2(float val)
+static inline float xlog2(float v)
 {
-	if (val >= 0.00006103515625f)
+	if (v >= 0.00006103515625f)
 	{
-		return astc::log2(val);
+		return astc::log2(v);
 	}
 
 	// Linearized region
-	return -15.44269504088896340735f + val * 23637.11554992477646609062f;
+	return -15.442694664f + v * 23637.115234375f;
+
 }
 
 /**

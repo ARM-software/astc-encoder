@@ -574,9 +574,14 @@ static void initialize_decimation_table_3d(
 static void construct_block_size_descriptor_2d(
 	int xdim,
 	int ydim,
+	bool can_omit_modes,
+	float mode_cutoff,
 	block_size_descriptor* bsd
 ) {
-	int decimation_mode_index[256];	// for each of the 256 entries in the decim_table_array, its index
+	// Store a remap table for storing packed decimation modes.
+	// Indexing uses [Y * 16 + X] and max block size for each axis is 12.
+	static const int MAX_DMI = 12 * 16 + 12;
+	int decimation_mode_index[MAX_DMI];
 	int decimation_mode_count = 0;
 
 	bsd->xdim = xdim;
@@ -584,72 +589,80 @@ static void construct_block_size_descriptor_2d(
 	bsd->zdim = 1;
 	bsd->texel_count = xdim * ydim;
 
-	for (int i = 0; i < 256; i++)
+	for (int i = 0; i < MAX_DMI; i++)
 	{
 		decimation_mode_index[i] = -1;
 	}
 
-	// gather all the infill-modes that can be used with the current block size
-	for (int x_weights = 2; x_weights <= 12; x_weights++)
+	// Gather all the decimation grids that can be used with the current block.
+
+	// ASSUMPTION: No compressor will use more weights in any dimension than
+	// the block has actual texels, because it wastes bits. Decompression of an
+	// image which violates this assumption will fail, even though it is
+	// technically permitted by the specification.
+
+	// TODO: Many of these decimation options may be unused for any given
+	// compression due to use of percentile heuristics, but they are needed for
+	// arbitrary image decompression, so we don't filter them out. We could
+	// make the compressor startup faster if we have compress-only contexts,
+	// where we know there is no arbitrary image decompression.
+	for (int x_weights = 2; x_weights <= xdim; x_weights++)
 	{
-		for (int y_weights = 2; y_weights <= 12; y_weights++)
+		for (int y_weights = 2; y_weights <= ydim; y_weights++)
 		{
-			if (x_weights * y_weights > MAX_WEIGHTS_PER_BLOCK)
+			int weight_count = x_weights * y_weights;
+			if (weight_count > MAX_WEIGHTS_PER_BLOCK)
 			{
 				continue;
 			}
 
+			bool try_2planes = (2 * weight_count) <= MAX_WEIGHTS_PER_BLOCK;
+
 			decimation_table *dt = new decimation_table;
 			decimation_mode_index[y_weights * 16 + x_weights] = decimation_mode_count;
 			initialize_decimation_table_2d(xdim, ydim, x_weights, y_weights, dt);
-
-			int weight_count = x_weights * y_weights;
 
 			int maxprec_1plane = -1;
 			int maxprec_2planes = -1;
 			for (int i = 0; i < 12; i++)
 			{
 				int bits_1plane = compute_ise_bitcount(weight_count, (quantization_method) i);
-				int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
-
 				if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
 				{
 					maxprec_1plane = i;
 				}
 
-				if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
+				if (try_2planes)
 				{
-					maxprec_2planes = i;
+					int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
+					if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
+					{
+						maxprec_2planes = i;
+					}
 				}
 			}
 
-			if (2 * x_weights * y_weights > MAX_WEIGHTS_PER_BLOCK)
-			{
-				maxprec_2planes = -1;
-			}
+			// TODO: For fast modes are many of these unused because they
+			// are only used by percentil skipped block modes?
 
-			bsd->permit_encode[decimation_mode_count] = (x_weights <= xdim && y_weights <= ydim);
-
-			bsd->decimation_mode_samples[decimation_mode_count] = weight_count;
-			bsd->decimation_mode_maxprec_1plane[decimation_mode_count] = maxprec_1plane;
-			bsd->decimation_mode_maxprec_2planes[decimation_mode_count] = maxprec_2planes;
+			bsd->decimation_modes[decimation_mode_count].maxprec_1plane = maxprec_1plane;
+			bsd->decimation_modes[decimation_mode_count].maxprec_2planes = maxprec_2planes;
+			bsd->decimation_modes[decimation_mode_count].percentile_hit = false;
+			bsd->decimation_modes[decimation_mode_count].percentile_always = false;
 			bsd->decimation_tables[decimation_mode_count] = dt;
 
 			decimation_mode_count++;
 		}
 	}
 
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
-	{
-		bsd->decimation_mode_percentile[i] = 1.0f;
-	}
-
+	// Ensure the end of the array contains valid data (should never get read)
 	for (int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
-		bsd->permit_encode[i] = 0;
-		bsd->decimation_mode_samples[i] = 0;
-		bsd->decimation_mode_maxprec_1plane[i] = -1;
-		bsd->decimation_mode_maxprec_2planes[i] = -1;
+		bsd->decimation_modes[i].maxprec_1plane = -1;
+		bsd->decimation_modes[i].maxprec_2planes = -1;
+		bsd->decimation_modes[i].percentile_hit = false;
+		bsd->decimation_modes[i].percentile_always = false;
+		bsd->decimation_tables[i] = nullptr;
 	}
 
 	bsd->decimation_mode_count = decimation_mode_count;
@@ -658,45 +671,56 @@ static void construct_block_size_descriptor_2d(
 	const float *percentiles = get_2d_percentile_table(xdim, ydim);
 #endif
 
-	// then construct the list of block formats
+	// Construct the list of block formats referencing the decimation tables
 	int packed_idx = 0;
 	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
 	{
 		int x_weights, y_weights;
 		int is_dual_plane;
 		int quantization_mode;
-		int permit_encode = 1;
 
-		if (decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quantization_mode))
-		{
-			if (x_weights > xdim || y_weights > ydim)
-			{
-				permit_encode = 0;
-			}
-		}
-		else
-		{
-			permit_encode = 0;
-		}
-
-		bsd->block_mode_to_packed[i] = -1;
-		if (!permit_encode) // also disallow decode of grid size larger than block size.
-			continue;
-		int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
-		bsd->block_modes_packed[packed_idx].decimation_mode = decimation_mode;
-		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
-		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane;
-		bsd->block_modes_packed[packed_idx].mode_index = i;
+		bool valid = decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quantization_mode);
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-		bsd->block_modes_packed[packed_idx].percentile = percentiles[i];
-		if (bsd->decimation_mode_percentile[decimation_mode] > percentiles[i])
-		{
-			bsd->decimation_mode_percentile[decimation_mode] = percentiles[i];
-		}
+		float percentile = percentiles[i];
+		(void)can_omit_modes;
+		bool selected = (percentile <= mode_cutoff) || !can_omit_modes;
 #else
-		bsd->block_modes_packed[packed_idx].percentile = 0.0f;
+		bool selected == true;
 #endif
+
+		// Skip modes that are invalid, too large, or not selected by heuristic
+		if (!valid || !selected || (x_weights > xdim) || (y_weights > ydim))
+		{
+			bsd->block_mode_to_packed[i] = -1;
+			continue;
+		}
+
+		int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
+
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+		// Flatten the block mode heuristic into some precomputed flags
+		if (percentile == 0.0f)
+		{
+			bsd->block_modes_packed[packed_idx].percentile_always = true;
+			bsd->decimation_modes[decimation_mode].percentile_always = true;
+
+			bsd->block_modes_packed[packed_idx].percentile_hit = true;
+			bsd->decimation_modes[decimation_mode].percentile_hit = true;
+		}
+		else if (percentile <= mode_cutoff)
+		{
+			bsd->block_modes_packed[packed_idx].percentile_always = false;
+
+			bsd->block_modes_packed[packed_idx].percentile_hit = true;
+			bsd->decimation_modes[decimation_mode].percentile_hit = true;
+		}
+#endif
+
+		bsd->block_modes_packed[packed_idx].decimation_mode = decimation_mode;
+		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
+		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
+		bsd->block_modes_packed[packed_idx].mode_index = i;
 		bsd->block_mode_to_packed[i] = packed_idx;
 		++packed_idx;
 	}
@@ -706,6 +730,7 @@ static void construct_block_size_descriptor_2d(
 	delete[] percentiles;
 #endif
 
+	// Determine the texels to use for kmeans clustering.
 	if (xdim * ydim <= 64)
 	{
 		bsd->texelcount_for_bitmap_partitioning = xdim * ydim;
@@ -773,13 +798,14 @@ static void construct_block_size_descriptor_3d(
 	}
 
 	// gather all the infill-modes that can be used with the current block size
-	for (int x_weights = 2; x_weights <= 6; x_weights++)
+	for (int x_weights = 2; x_weights <= xdim; x_weights++)
 	{
-		for (int y_weights = 2; y_weights <= 6; y_weights++)
+		for (int y_weights = 2; y_weights <= ydim; y_weights++)
 		{
-			for (int z_weights = 2; z_weights <= 6; z_weights++)
+			for (int z_weights = 2; z_weights <= zdim; z_weights++)
 			{
-				if ((x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
+				int weight_count = x_weights * y_weights * z_weights;
+				if (weight_count > MAX_WEIGHTS_PER_BLOCK)
 				{
 					continue;
 				}
@@ -787,8 +813,6 @@ static void construct_block_size_descriptor_3d(
 				decimation_table *dt = new decimation_table;
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
 				initialize_decimation_table_3d(xdim, ydim, zdim, x_weights, y_weights, z_weights, dt);
-
-				int weight_count = x_weights * y_weights * z_weights;
 
 				int maxprec_1plane = -1;
 				int maxprec_2planes = -1;
@@ -813,29 +837,23 @@ static void construct_block_size_descriptor_3d(
 					maxprec_2planes = -1;
 				}
 
-				bsd->permit_encode[decimation_mode_count] = (x_weights <= xdim && y_weights <= ydim && z_weights <= zdim);
-
-				bsd->decimation_mode_samples[decimation_mode_count] = weight_count;
-				bsd->decimation_mode_maxprec_1plane[decimation_mode_count] = maxprec_1plane;
-				bsd->decimation_mode_maxprec_2planes[decimation_mode_count] = maxprec_2planes;
+				bsd->decimation_modes[decimation_mode_count].maxprec_1plane = maxprec_1plane;
+				bsd->decimation_modes[decimation_mode_count].maxprec_2planes = maxprec_2planes;
+				bsd->decimation_modes[decimation_mode_count].percentile_hit = false;
+				bsd->decimation_modes[decimation_mode_count].percentile_always = false;
 				bsd->decimation_tables[decimation_mode_count] = dt;
-
 				decimation_mode_count++;
 			}
 		}
 	}
 
-	for (int i = 0; i < MAX_DECIMATION_MODES; i++)
-	{
-		bsd->decimation_mode_percentile[i] = 1.0f;
-	}
-
 	for (int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
-		bsd->permit_encode[i] = 0;
-		bsd->decimation_mode_samples[i] = 0;
-		bsd->decimation_mode_maxprec_1plane[i] = -1;
-		bsd->decimation_mode_maxprec_2planes[i] = -1;
+		bsd->decimation_modes[i].maxprec_1plane = -1;
+		bsd->decimation_modes[i].maxprec_2planes = -1;
+		bsd->decimation_modes[i].percentile_hit = false;
+		bsd->decimation_modes[i].percentile_always = false;
+		bsd->decimation_tables[i] = nullptr;
 	}
 
 	bsd->decimation_mode_count = decimation_mode_count;
@@ -863,18 +881,19 @@ static void construct_block_size_descriptor_3d(
 		bsd->block_mode_to_packed[i] = -1;
 		if (!permit_encode)
 			continue;
-		
+
 		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
 		bsd->block_modes_packed[packed_idx].decimation_mode = decimation_mode;
 		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
-		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane;
+		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
 		bsd->block_modes_packed[packed_idx].mode_index = i;
 
-		bsd->block_modes_packed[packed_idx].percentile = 0.0f; // No percentile table
-		if (bsd->decimation_mode_percentile[decimation_mode] > 0.0f)
-		{
-			bsd->decimation_mode_percentile[decimation_mode] = 0.0f;
-		}
+		// No percentile table, so enable everything all the time ...
+		bsd->block_modes_packed[packed_idx].percentile_hit = true;
+		bsd->block_modes_packed[packed_idx].percentile_always = true;
+		bsd->decimation_modes[decimation_mode].percentile_hit = true;
+		bsd->decimation_modes[decimation_mode].percentile_always = true;
+
 		bsd->block_mode_to_packed[i] = packed_idx;
 		++packed_idx;
 	}
@@ -931,6 +950,8 @@ void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
+	bool can_omit_modes,
+	float mode_cutoff,
 	block_size_descriptor* bsd
 ) {
 	if (zdim > 1)
@@ -939,7 +960,7 @@ void init_block_size_descriptor(
 	}
 	else
 	{
-		construct_block_size_descriptor_2d(xdim, ydim, bsd);
+		construct_block_size_descriptor_2d(xdim, ydim, can_omit_modes, mode_cutoff, bsd);
 	}
 
 	init_partition_tables(bsd);

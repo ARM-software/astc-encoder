@@ -27,6 +27,8 @@ recompile your client-side code using the updated `astcenc.h` header.
 * **Binary releases:**
   * **Improvement:** Linux binaries changed to use use Clang 9.0, which gives
     up to 15% performance improvement.
+  * **Improvement:** Windows binaries are now signed, and macOS binaries are
+    signed and notarized.
 * **Command Line:**
   * **Feature:** New image preprocess `-pp-normalize` option added. This forces
     normal vectors to be unit length, which is useful when compressing source
@@ -46,6 +48,13 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **API Change:** Image `data` is no longer a 3D array accessed using
     `data[z][y][x]` indexing, it's an array of 2D slices. This makes it easier
     to directly use images loaded from other libraries.
+  * **API Change:** New `ASTCENC_FLG_SELF_DECOMPRESS_ONLY` flag added to the
+    codec config. Using this flag enables additional optimizations that
+    aggressively exploit implementation- and configuration-specific, behavior
+	to gain performance. When using this flag the codec can only reliably
+	decompress images that were compressed in the same context session. Images
+	produced via other means may fail to decompress correctly, even if they are
+	otherwise valid ASTC files.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1

@@ -87,7 +87,7 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                sh 'git clean -fdx'
+                sh 'git clean -ffdx'
               }
             }
             stage('Build R') {
@@ -127,7 +127,7 @@ pipeline {
           stages {
             stage('Clean') {
               steps {
-                bat 'git clean -fdx'
+                bat 'git clean -ffdx'
               }
             }
             stage('Build R') {
@@ -162,12 +162,12 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac && x86_64'
+            label 'mac && x86_64 && notarizer'
           }
           stages {
             stage('Clean') {
               steps {
-                sh 'git clean -fdx'
+                sh 'git clean -ffdx'
               }
             }
             stage('Build R') {
@@ -178,6 +178,25 @@ pipeline {
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   make install package -j1
                 '''
+              }
+            }
+            stage('Sign and notarize') {
+              environment {
+                NOTARIZATION_CREDS = credentials('notarization-account')
+              }
+              steps {
+                dir('build_rel') {
+                  withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
+                                                     keyFileVariable: 'SSH_AUTH_FILE')]) {
+                    sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                  }
+                  withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                                    usernameVariable: 'USERNAME',
+                                                    passwordVariable: 'PASSWORD')]) {
+                    sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
+                    sh 'rm -rf ./signing'
+                  }
+                }
               }
             }
             stage('Stash') {
@@ -216,8 +235,15 @@ pipeline {
       stages {
         stage('Unstash') {
           steps {
+            dir('upload') {
+              unstash 'astcenc-linux-x64-hash'
+              unstash 'astcenc-macos-x64-hash'
+            }
             dir('upload/linux-x64') {
               unstash 'astcenc-linux-x64'
+            }
+            dir('upload/macos-x64') {
+              unstash 'astcenc-macos-x64'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
@@ -228,28 +254,14 @@ pipeline {
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/authenticode-client.py -u ${USERNAME} *.zip'
-                sh 'rm -rf ./signing'
-              }
-            }
-            dir('upload/macos-x64') {
-              unstash 'astcenc-macos-x64'
-              withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
-                                                 keyFileVariable: 'SSH_AUTH_FILE')]) {
-                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-              }
-              withCredentials([usernamePassword(credentialsId: 'win-signing',
-                                                usernameVariable: 'USERNAME',
-                                                passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/macos-client.py -t mach-o --timestamp-server default --signature-flag runtime --deep ${USERNAME} *.zip *.zip'
+                sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
+                sh 'mv *.zip.sha256 ../'
                 sh 'rm -rf ./signing'
               }
             }
             dir('upload') {
-              unstash 'astcenc-linux-x64-hash'
-              // Don't keep Windows hash - we have signed binaries now
-              // unstash 'astcenc-windows-x64-hash'
-              unstash 'astcenc-macos-x64-hash'
+              sh 'cat *.sha256 > release-sha256.txt'
+              sh 'rm *.sha256'
             }
           }
         }

@@ -83,6 +83,7 @@
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
+#include "astcenc_vecmathlib.h"
 
 /* ============================================================================
   Constants
@@ -187,36 +188,36 @@ static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 class ParallelManager
 {
 private:
-	/** \brief Lock used for critical section and condition synchronization. */
+	/** @brief Lock used for critical section and condition synchronization. */
 	std::mutex m_lock;
 
-	/** \brief True if the stage init() step has been executed. */
+	/** @brief True if the stage init() step has been executed. */
 	bool m_init_done;
 
-	/** \brief True if the stage term() step has been executed. */
+	/** @brief True if the stage term() step has been executed. */
 	bool m_term_done;
 
-	/** \brief Contition variable for tracking stage processing completion. */
+	/** @brief Contition variable for tracking stage processing completion. */
 	std::condition_variable m_complete;
 
-	/** \brief Number of tasks started, but not necessarily finished. */
+	/** @brief Number of tasks started, but not necessarily finished. */
 	unsigned int m_start_count;
 
-	/** \brief Number of tasks finished. */
+	/** @brief Number of tasks finished. */
 	unsigned int m_done_count;
 
-	/** \brief Number of tasks that need to be processed. */
+	/** @brief Number of tasks that need to be processed. */
 	unsigned int m_task_count;
 
 public:
-	/** \brief Create a new ParallelManager. */
+	/** @brief Create a new ParallelManager. */
 	ParallelManager()
 	{
 		reset();
 	}
 
 	/**
-	 * \brief Reset the tracker for a new processing batch.
+	 * @brief Reset the tracker for a new processing batch.
 	 *
 	 * This must be called from single-threaded code before starting the
 	 * multi-threaded procesing operations.
@@ -231,14 +232,14 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage init step.
+	 * @brief Trigger the pipeline stage init step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the initialization. Other threads will block
 	 * and wait for it to complete.
 	 *
-	 * \param init_func    Callable which executes the stage initialization.
-	 *                     Must return the number of tasks in the stage.
+	 * @param init_func   Callable which executes the stage initialization.
+	 *                    Must return the number of tasks in the stage.
 	 */
 	void init(std::function<unsigned int(void)> init_func)
 	{
@@ -251,13 +252,13 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage init step.
+	 * @brief Trigger the pipeline stage init step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the initialization. Other threads will block
 	 * and wait for it to complete.
 	 *
-	 * \param task_count   Total number of tasks needing processing.
+	 * @param task_count   Total number of tasks needing processing.
 	 */
 	void init(unsigned int task_count)
 	{
@@ -270,12 +271,12 @@ public:
 	}
 
 	/**
-	 * \brief Request a task assignment.
+	 * @brief Request a task assignment.
 	 *
-	 * Assign up to \c granule tasks to the caller for processing.
+	 * Assign up to @c granule tasks to the caller for processing.
 	 *
-	 * \param      granule   Maximum number of tasks that can be assigned.
-	 * \param[out] count     Actual number of tasks assigned, or zero if
+	 * @param      granule   Maximum number of tasks that can be assigned.
+	 * @param[out] count     Actual number of tasks assigned, or zero if
 	 *                       no tasks were assigned.
 	 *
 	 * \return Task index of the first assigned task; assigned tasks
@@ -291,12 +292,12 @@ public:
 	}
 
 	/**
-	 * \brief Complete a task assignment.
+	 * @brief Complete a task assignment.
 	 *
-	 * Mark \c count tasks as complete. This will notify all threads blocked
-	 * on \c wait() if this completes the processing of the stage.
+	 * Mark @c count tasks as complete. This will notify all threads blocked
+	 * on @c wait() if this completes the processing of the stage.
 	 *
-	 * \param count   The number of completed tasks.
+	 * @param count   The number of completed tasks.
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
@@ -310,7 +311,7 @@ public:
 	}
 
 	/**
-	 * \brief Wait for stage processing to complete.
+	 * @brief Wait for stage processing to complete.
 	 */
 	void wait()
 	{
@@ -319,13 +320,13 @@ public:
 	}
 
 	/**
-	 * \brief Trigger the pipeline stage term step.
+	 * @brief Trigger the pipeline stage term step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to
 	 * hit this will process the thread termintion. Caller must have called
 	 * wait() prior to calling this function to ensure processing is complete.
 	 *
-	 * \param term_func   Callable which executes the stage termination.
+	 * @param term_func   Callable which executes the stage termination.
 	 */
 	void term(std::function<void(void)> term_func)
 	{
@@ -388,16 +389,29 @@ struct decimation_table
 	float texel_weights_float_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 };
 
-/*
-   data structure describing information that pertains to a block size and its associated block modes.
-*/
+/**
+ * @brief Metadata for single block mode for a specific BSD.
+ */
 struct block_mode
 {
 	int8_t decimation_mode;
 	int8_t quantization_mode;
-	int8_t is_dual_plane;
+	uint8_t is_dual_plane : 1;
+	uint8_t percentile_hit : 1;
+	uint8_t percentile_always : 1;
 	int16_t mode_index;
-	float percentile;
+
+};
+
+/**
+ * @brief Metadata for single decimation mode for a specific BSD.
+ */
+struct decimation_mode
+{
+	int8_t maxprec_1plane;
+	int8_t maxprec_2planes;
+	uint8_t percentile_hit : 1;
+	uint8_t percentile_always : 1;
 };
 
 struct block_size_descriptor
@@ -408,11 +422,7 @@ struct block_size_descriptor
 	int texel_count;
 
 	int decimation_mode_count;
-	int decimation_mode_samples[MAX_DECIMATION_MODES];
-	int decimation_mode_maxprec_1plane[MAX_DECIMATION_MODES];
-	int decimation_mode_maxprec_2planes[MAX_DECIMATION_MODES];
-	float decimation_mode_percentile[MAX_DECIMATION_MODES];
-	int permit_encode[MAX_DECIMATION_MODES];
+	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
 	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
 
 	// out of all possible 2048 weight modes, only a subset is
@@ -444,31 +454,23 @@ struct imageblock
 	float data_g[MAX_TEXELS_PER_BLOCK];
 	float data_b[MAX_TEXELS_PER_BLOCK];
 	float data_a[MAX_TEXELS_PER_BLOCK];
+
+	// TODO: Migrate to vfloat4
 	float4 origin_texel;
+	vfloat4 data_min;
+	vfloat4 data_max;
+	bool    grayscale;
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
 	uint8_t nan_texel[MAX_TEXELS_PER_BLOCK];    // 1 if the texel is a NaN-texel.
-
-	float red_min, red_max;
-	float green_min, green_max;
-	float blue_min, blue_max;
-	float alpha_min, alpha_max;
-	int grayscale;				// 1 if R=G=B for every pixel, 0 otherwise
-
 	int xpos, ypos, zpos;
 };
 
 static inline int imageblock_uses_alpha(const imageblock * pb)
 {
-	return pb->alpha_max != pb->alpha_min;
+	return pb->data_min.lane<3>() != pb->data_max.lane<3>();
 }
-
-void update_imageblock_flags(
-	imageblock* pb,
-	int xdim,
-	int ydim,
-	int zdim);
 
 void imageblock_initialize_orig_from_work(
 	imageblock * pb,
@@ -637,15 +639,18 @@ struct physical_compressed_block
  * This will also initialize the partition table metadata, which is stored
  * as part of the BSD structure.
  *
- * @param xdim The x axis size of the block.
- * @param ydim The y axis size of the block.
- * @param zdim The z axis size of the block.
- * @param bsd  The structure to populate.
+ * @param xdim        The x axis size of the block.
+ * @param ydim        The y axis size of the block.
+ * @param zdim        The z axis size of the block.
+ * @param mode_cutoff The block mode percentil cutoff [0-1].
+ * @param bsd         The structure to populate.
  */
 void init_block_size_descriptor(
 	int xdim,
 	int ydim,
 	int zdim,
+	bool can_omit_modes,
+	float mode_cutoff,
 	block_size_descriptor* bsd);
 
 void term_block_size_descriptor(
@@ -821,15 +826,15 @@ void compute_partition_error_color_weightings(
 	float4 color_scalefactors[4]);
 
 /**
- * \brief Find the best set of partitions to trial for a given block.
+ * @brief Find the best set of partitions to trial for a given block.
  *
- * On return \c best_partition_uncorrelated contains the best partition
- * assuming the data has noncorrelated chroma, \c best_partition_samechroma
+ * On return @c best_partition_uncorrelated contains the best partition
+ * assuming the data has noncorrelated chroma, @c best_partition_samechroma
  * contains the best partition assuming the data has corelated chroma, and
- * \c best_partition_dualplane contains the best partition assuming the data
+ * @c best_partition_dualplane contains the best partition assuming the data
  * has one uncorrelated color component.
  *
- * \c best_partition_dualplane is stored packed; bits [9:0] contain the
+ * @c best_partition_dualplane is stored packed; bits [9:0] contain the
  * best partition, bits [11:10] contain the best color component.
  */
 void find_best_partitionings(
@@ -910,7 +915,8 @@ struct avg_var_args
  * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
  * @param swz                   Input data channel swizzle.
- * @param thread_count          The number of threads to use.
+ * @param arg                   The pixel region arguments for this thread.
+ * @param ag                    The average variance arguments for this thread.
  *
  * @return The number of tasks in the processing stage.
  */
@@ -1129,7 +1135,7 @@ void imageblock_initialize_deriv(
 	float4* dptr);
 
 void compute_angular_endpoints_1plane(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor* bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
@@ -1137,7 +1143,7 @@ void compute_angular_endpoints_1plane(
 	float high_value[MAX_WEIGHT_MODES]);
 
 void compute_angular_endpoints_2planes(
-	float mode_cutoff,
+	bool only_always,
 	const block_size_descriptor * bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,

@@ -276,7 +276,7 @@ static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
  * the color channels to be treated independently for the purposes of error
  * analysis.
  */
-static const unsigned int ASTCENC_FLG_MAP_MASK            = 1 << 1;
+static const unsigned int ASTCENC_FLG_MAP_MASK             = 1 << 1;
 
 /**
  * @brief Enable alpha weighting.
@@ -286,7 +286,7 @@ static const unsigned int ASTCENC_FLG_MAP_MASK            = 1 << 1;
  * more accurately encode the alpha value in areas where the color value
  * is less significant.
  */
-static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
+static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
 
 /**
  * @brief Enable perceptual error metrics.
@@ -295,15 +295,26 @@ static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT    = 1 << 2;
  * perceptual error rather than best PSNR. Only some input modes support
  * perceptual error metrics.
  */
-static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL      = 1 << 3;
+static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
 
 /**
  * @brief Create a decompression-only context.
  *
- * This mode enables context allocation to skip some transient buffer
- * allocation, resulting in a lower-memory footprint.
+ * This mode disables support for compression. This enables context allocation
+ * to skip some transient buffer allocation, resulting in lower memory usage.
  */
-static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY     = 1 << 4;
+static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
+
+/**
+ * @brief Create a self-decompression context.
+ *
+ * This mode configures the compressor so that it is only guaranteed to be
+ * able to decompress images that were actually created using the current
+ * context. This is the common case for compression use cases, and setting this
+ * flag enables additional optimizations, but does mean that the context cannot
+ * reliably decompress arbitrary ASTC images.
+ */
+static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
 
 /**
  * @brief The bit mask of all valid flags.
@@ -313,7 +324,8 @@ static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
                               ASTCENC_FLG_USE_PERCEPTUAL |
-                              ASTCENC_FLG_DECOMPRESS_ONLY;
+                              ASTCENC_FLG_DECOMPRESS_ONLY |
+                              ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 
 /**
  * @brief The config structure.

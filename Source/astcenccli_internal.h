@@ -59,7 +59,6 @@ struct cli_config_options
  * Functions to load image from file.
  *
  * @param filename            The file path on disk.
- * @param padding             The texel padding needed around the image.
  * @param y_flip              Should this image be Y flipped?
  * @param[out] is_hdr         Is the loaded image HDR?
  * @param[out] num_components The number of components in the loaded image.
@@ -154,7 +153,6 @@ void astcenc_print_longhelp();
  * @param img2                The compressed image.
  * @param fstop_lo            The low exposure fstop (HDR only).
  * @param fstop_hi            The high exposure fstop (HDR only).
- * @param show_psnr           Non-zero if metrics should be logged to stdout.
  */
 void compute_error_metrics(
 	int compute_hdr_metrics,

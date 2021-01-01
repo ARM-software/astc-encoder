@@ -303,13 +303,12 @@ static astcenc_image* load_uncomp_file(
 }
 
 /**
- * @brief Parse the command line and read operation, profile
- *        input and output file names
+ * @brief Parse the command line.
  *
- * @param argc
- * @param argv
- * @param operation            ASTC operation mode
- * @param profile              ASTC profile
+ * @param argc             Command line argument count.
+ * @param[in] argv         Command line argument vector.
+ * @param[out] operation   Codec operation mode.
+ * @param[out] profile     Codec color profile.
  *
  * @return 0 if everything is okay, 1 if there is some error
  */
@@ -347,11 +346,13 @@ int parse_commandline_options(
 /**
  * @brief Initialize the astcenc_config
  *
- * @param argc
- * @param argv
- * @param operation          ASTC operation mode
- * @param comp_image
- * @param config           The astcenc configuration
+ * @param      argc         Command line argument count.
+ * @param[in]  argv         Command line argument vector.
+ * @param      operation    Codec operation mode.
+ * @param[out] profile      Codec color profile.
+ * @param      comp_image   Compressed image if a decompress operation.
+ * @param[out] preprocess   Image preprocess operation.
+ * @param[out] config       Codec configuration.
  *
  * @return 0 if everything is okay, 1 if there is some error
  */
@@ -483,6 +484,19 @@ int init_astcenc_config(
 
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
+#else
+	// Decompression can skip some memory allocation, but need full tables
+	if (operation == ASTCENC_OP_DECOMPRESS)
+	{
+		flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
+	}
+	// Compression and test passes can skip some decimation initialization
+	// as we know we are decompressing images that were compressed using the
+	// same settings and heuristics ...
+	else
+	{
+		flags |= ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+	}
 #endif
 
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
@@ -513,11 +527,11 @@ int init_astcenc_config(
 /**
  * @brief Edit the astcenc_config
  *
- * @param argc
- * @param argv
- * @param operation               ASTC operation mode
- * @param cli_config            Command line config options
- * @param config                The astcenc configuration
+ * @param         argc         Command line argument count.
+ * @param[in]     argv         Command line argument vector.
+ * @param         operation    Codec operation.
+ * @param[out]    cli_config   Command line config.
+ * @param[in,out] config       Codec configuration.
  *
  * @return 0 if everything is Okay, 1 if there is some error
  */
@@ -896,6 +910,11 @@ int edit_astcenc_config(
 
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	cli_config.thread_count = 1;
+#else
+	if (operation == ASTCENC_OP_DECOMPRESS)
+	{
+		cli_config.thread_count = 1;
+	}
 #endif
 
 	if (operation & ASTCENC_STAGE_COMPRESS)
@@ -975,10 +994,10 @@ int edit_astcenc_config(
  * checks in the inner-most loop. For the CLI preprocess passes this is deemed
  * acceptable as these are not performance critical paths.
  *
- * @param[in] img     The output image.
- * @param     x       The pixel x coordinate.
- * @param     y       The pixel y coordinate.
- * @param     x       The pixel z coordinate.
+ * @param[in] img   The output image.
+ * @param     x     The pixel x coordinate.
+ * @param     y     The pixel y coordinate.
+ * @param     z     The pixel z coordinate.
  *
  * @return      pixel   The pixel color value to write.
  */
@@ -1035,7 +1054,7 @@ static float4 image_get_pixel(
  * @param[out] img     The output image; must use F32 texture channels.
  * @param      x       The pixel x coordinate.
  * @param      y       The pixel y coordinate.
- * @param      x       The pixel z coordinate.
+ * @param      z       The pixel z coordinate.
  * @param      pixel   The pixel color value to write.
  */
 static void image_set_pixel(
