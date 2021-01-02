@@ -52,7 +52,7 @@ def get_convert_version():
         command = list(CONVERT_BINARY)
         command += ["--version"]
         result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
-                        check=True, universal_newlines=True)
+                        check=True, encoding="utf-8")
 
         # Version is top row
         version = result.stdout.splitlines()[0]
