@@ -11,6 +11,13 @@ are a few gems in here =)
 
 This section lists specific optimization ideas.
 
+### Exploit 1:1 weight modes
+
+The current code is generic and assumes reconstruction from multiple weighted
+color values, due to use of decimated weight grids. For the 4x4 block size
+we actually get a high percentage of 1:1 weight grids, so it might be worth
+including a fast-path which can exploit this simplification.
+
 ### Postpone full iterative refinement
 
 Iterative refinement is expensive, and not always beneficial. We currently
