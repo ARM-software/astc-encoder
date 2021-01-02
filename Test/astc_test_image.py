@@ -331,12 +331,19 @@ def parse_command_line():
     """
     parser = argparse.ArgumentParser()
 
+    # All reference encoders
     refcoders = ["ref-1.7",
                  "ref-2.0-sse2", "ref-2.0-sse4.1", "ref-2.0-avx2",
                  "ref-2.1-sse2", "ref-2.1-sse4.1", "ref-2.1-avx2",
                  "ref-master-neon", "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
+
+    # All test encoders
     testcoders = ["none", "neon", "sse2", "sse4.1", "avx2"]
-    coders = refcoders + testcoders + ["all", "all-ref"]
+    testcodersAArch64 = ["none", "neon"]
+    testcodersX86 = ["none", "sse2", "sse4.1", "avx2"]
+
+    coders = refcoders + testcoders + ["all-aarch64", "all-x86"]
+
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
@@ -384,10 +391,10 @@ def parse_command_line():
     args = parser.parse_args()
 
     # Turn things into canonical format lists
-    if args.encoders == "all":
-        args.encoders = testcoders
-    elif args.encoders == "all-ref":
-        args.encoders = refcoders
+    if args.encoders == "all-aarch64":
+        args.encoders = testcodersAArch64
+    elif args.encoders == "all-x86":
+        args.encoders = testcodersX86
     else:
         args.encoders = [args.encoders]
 

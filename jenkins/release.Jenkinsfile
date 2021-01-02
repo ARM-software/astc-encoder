@@ -113,7 +113,7 @@ pipeline {
               steps {
                 sh '''
                   python3 ./Test/astc_test_functional.py
-                  python3 ./Test/astc_test_image.py --encoder=all --test-set Small
+                  python3 ./Test/astc_test_image.py --encoder=all-x86 --test-set Small
                 '''
               }
             }
