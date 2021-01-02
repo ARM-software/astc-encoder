@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -868,8 +868,6 @@ static float prepare_error_weight_block(
 	                              ctx.config.cw_b_weight,
 	                              ctx.config.cw_a_weight);
 
-	ewb->contains_zeroweight_texels = 0;
-
 	for (int z = 0; z < bsd->zdim; z++)
 	{
 		for (int y = 0; y < bsd->ydim; y++)
@@ -884,7 +882,6 @@ static float prepare_error_weight_block(
 				{
 					float4 weights = float4(1e-11f);
 					ewb->error_weights[idx] = weights;
-					ewb->contains_zeroweight_texels = 1;
 				}
 				else
 				{
@@ -1002,10 +999,6 @@ static float prepare_error_weight_block(
 					error_weight.a /= (derv[idx].a * derv[idx].a * 1e-10f);
 
 					ewb->error_weights[idx] = error_weight;
-					if (dot(error_weight, float4(1.0f, 1.0f, 1.0f, 1.0f)) < 1e-10f)
-					{
-						ewb->contains_zeroweight_texels = 1;
-					}
 				}
 				idx++;
 			}

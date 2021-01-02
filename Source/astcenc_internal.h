@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -519,8 +519,6 @@ struct error_weight_block
 	float texel_weight_g[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_b[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_a[MAX_TEXELS_PER_BLOCK];
-
-	int contains_zeroweight_texels;
 };
 
 // enumeration of all the quantization methods we support under this format.
