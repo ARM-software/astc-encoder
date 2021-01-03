@@ -1221,7 +1221,7 @@ static inline float4 compute_rgbovec(
 }
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
-void recompute_ideal_colors(
+void recompute_ideal_colors_2planes(
 	int weight_quantization_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
@@ -1630,6 +1630,303 @@ void recompute_ideal_colors(
 					feenableexcept(FE_DIVBYZERO | FE_INVALID);
 				#endif
 			}
+		}
+
+		// if the calculation of an RGB-offset vector failed, try to compute
+		// a somewhat-sensible value anyway
+		if (rgbo_fail)
+		{
+			float4 v0 = ep->endpt0[i];
+			float4 v1 = ep->endpt1[i];
+			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
+
+			if (avgdif <= 0.0f)
+			{
+				avgdif = 0.0f;
+			}
+
+			float4 avg = (v0 + v1) * 0.5f;
+			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
+
+			rgbo_vectors[i] = float4(ep0.r, ep0.g, ep0.b, avgdif);
+		}
+	}
+}
+
+/* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
+void recompute_ideal_colors_1plane(
+	int weight_quantization_mode,
+	endpoints* ep,	// contains the endpoints we wish to update
+	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	float4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
+	const uint8_t* weight_set8,	// the current set of weight values
+	const partition_info* pi,
+	const decimation_table* it,
+	const imageblock* pb,	// picture-block containing the actual data.
+	const error_weight_block* ewb
+) {
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
+
+	float weight_set[MAX_WEIGHTS_PER_BLOCK];
+	for (int i = 0; i < it->num_weights; i++)
+	{
+		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
+	}
+
+	int partition_count = pi->partition_count;
+	for (int i = 0; i < partition_count; i++)
+	{
+		float4 rgba_sum        = float4(1e-17f);
+		float4 rgba_weight_sum = float4(1e-17f);
+
+		int texelcount = pi->texels_per_partition[i];
+		const uint8_t *texel_indexes = pi->texels_of_partition[i];
+		for (int j = 0; j < texelcount; j++)
+		{
+			int tix = texel_indexes[j];
+
+			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			float4 error_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+
+			rgba_sum = rgba_sum + (rgba * error_weight);
+			rgba_weight_sum = rgba_weight_sum + error_weight;
+		}
+
+		float3 scale_direction = normalize(float3(
+		        rgba_sum.r * (1.0f / rgba_weight_sum.r),
+		        rgba_sum.g * (1.0f / rgba_weight_sum.g),
+		        rgba_sum.b * (1.0f / rgba_weight_sum.b)));
+
+		float scale_max = 0.0f;
+		float scale_min = 1e10f;
+
+		float wmin1 = 1.0f;
+		float wmax1 = 0.0f;
+
+		float4 left_sum    = float4(0.0f);
+		float4 middle_sum  = float4(0.0f);
+		float4 right_sum   = float4(0.0f);
+
+		float3 lmrs_sum = float3(0.0f);
+
+		float4 color_vec_x = float4(0.0f);
+		float4 color_vec_y = float4(0.0f);
+
+		float2 scale_vec = float2(0.0f);
+
+		float3 weight_weight_sum = float3(1e-17f);
+		float psum = 1e-17f;
+
+		// FIXME: the loop below has too many responsibilities, making it inefficient.
+		for (int j = 0; j < texelcount; j++)
+		{
+			int tix = texel_indexes[j];
+
+			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			float4 color_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+
+			float3 color_weight3 = float3(color_weight.r, color_weight.g, color_weight.b);
+			float3 rgb = float3(rgba.r, rgba.g, rgba.b);
+
+			// FIXME: move this calculation out to the color block.
+			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
+
+			const uint8_t *texel_weights = it->texel_weights[tix];
+			const float *texel_weights_float = it->texel_weights_float[tix];
+			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
+			            + weight_set[texel_weights[1]] * texel_weights_float[1])
+			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
+			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
+
+			float om_idx0 = 1.0f - idx0;
+			if (idx0 > wmax1)
+			{
+				wmax1 = idx0;
+			}
+
+			if (idx0 < wmin1)
+			{
+				wmin1 = idx0;
+			}
+
+			float scale = dot(scale_direction, rgb);
+			if (scale < scale_min)
+			{
+				scale_min = scale;
+			}
+
+			if (scale > scale_max)
+			{
+				scale_max = scale;
+			}
+
+			float4 left   = color_weight * (om_idx0 * om_idx0);
+			float4 middle = color_weight * (om_idx0 * idx0);
+			float4 right  = color_weight * (idx0 * idx0);
+
+			float3 lmrs = float3(om_idx0 * om_idx0,
+			                     om_idx0 * idx0,
+			                     idx0 * idx0) * ls_weight;
+
+			left_sum   = left_sum + left;
+			middle_sum = middle_sum + middle;
+			right_sum  = right_sum + right;
+
+			lmrs_sum = lmrs_sum + lmrs;
+
+			float4 color_idx = float4(idx0);
+			float3 color_idx3 = float3(idx0);
+
+			float4 cwprod = color_weight * rgba;
+			float4 cwiprod = cwprod * color_idx;
+
+			color_vec_y = color_vec_y + cwiprod;
+			color_vec_x = color_vec_x + (cwprod - cwiprod);
+
+			scale_vec = scale_vec + float2(om_idx0, idx0) * (ls_weight * scale);
+
+			weight_weight_sum = weight_weight_sum + (color_weight3 * color_idx3);
+
+			psum += dot(color_weight3 * color_idx3, color_idx3);
+		}
+
+		// calculations specific to mode #7, the HDR RGB-scale mode.
+		// FIXME: Can we skip this for LDR textures?
+		float red_sum   = color_vec_x.r + color_vec_y.r;
+		float green_sum = color_vec_x.g + color_vec_y.g;
+		float blue_sum  = color_vec_x.b + color_vec_y.b;
+		float qsum = color_vec_y.r + color_vec_y.g + color_vec_y.b;
+
+		#ifdef DEBUG_CAPTURE_NAN
+		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+		#endif
+
+		float4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
+		                                 red_sum, green_sum, blue_sum, psum, qsum);
+		rgbo_vectors[i] = rgbovec;
+
+		// We will occasionally get a failure due to the use of a singular
+		// (non-invertible) matrix. Record whether such a failure has taken
+		// place; if it did, compute rgbo_vectors[] with a different method
+		// later on.
+		float chkval = dot(rgbovec, rgbovec);
+		int rgbo_fail = chkval != chkval;
+
+		// Initialize the luminance and scale vectors with a reasonable
+		//  default, just in case the subsequent calculation blows up.
+		#ifdef DEBUG_CAPTURE_NAN
+			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+		#endif
+
+		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
+		scalediv = astc::clamp1f(scalediv);
+
+		#ifdef DEBUG_CAPTURE_NAN
+			feenableexcept(FE_DIVBYZERO | FE_INVALID);
+		#endif
+
+		float3 sds = scale_direction * scale_max;
+
+		rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, scalediv);
+
+		if (wmin1 >= wmax1 * 0.999f)
+		{
+			// if all weights in the partition were equal, then just take average
+			// of all colors in the partition and use that as both endpoint colors.
+			float4 avg = (color_vec_x + color_vec_y) *
+			             float4(1.0f / rgba_weight_sum.r,
+			                    1.0f / rgba_weight_sum.g,
+			                    1.0f / rgba_weight_sum.b,
+			                    1.0f / rgba_weight_sum.a);
+
+			if (avg.r == avg.r)
+			{
+				ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
+			}
+
+			if (avg.g == avg.g)
+			{
+				ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
+			}
+
+			if (avg.b == avg.b)
+			{
+				ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
+			}
+
+			if (avg.a == avg.a)
+			{
+				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
+			}
+
+			rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, 1.0f);
+		}
+		else
+		{
+			// otherwise, complete the analytic calculation of ideal-endpoint-values
+			// for the given set of texel weights and pixel colors.
+
+			#ifdef DEBUG_CAPTURE_NAN
+			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+			#endif
+
+			float4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
+			float4 color_rdet1 = float4(1.0f / color_det1.r,
+			                            1.0f / color_det1.g,
+			                            1.0f / color_det1.b,
+			                            1.0f / color_det1.a );
+
+			float ls_det1  = (lmrs_sum.r * lmrs_sum.b) - (lmrs_sum.g * lmrs_sum.g);
+			float ls_rdet1 = 1.0f / ls_det1;
+
+			float4 color_mss1 = (left_sum * left_sum)
+			                  + (2.0f * middle_sum * middle_sum)
+			                  + (right_sum * right_sum);
+
+			float ls_mss1 = (lmrs_sum.r * lmrs_sum.r)
+			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
+			              + (lmrs_sum.b * lmrs_sum.b);
+
+			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
+			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
+
+			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
+			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
+
+			if (fabsf(color_det1.r) > (color_mss1.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
+			{
+				ep->endpt0[i].r = ep0.r;
+				ep->endpt1[i].r = ep1.r;
+			}
+
+			if (fabsf(color_det1.g) > (color_mss1.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
+			{
+				ep->endpt0[i].g = ep0.g;
+				ep->endpt1[i].g = ep1.g;
+			}
+
+			if (fabsf(color_det1.b) > (color_mss1.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
+			{
+				ep->endpt0[i].b = ep0.b;
+				ep->endpt1[i].b = ep1.b;
+			}
+
+			if (fabsf(color_det1.a) > (color_mss1.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
+			{
+				ep->endpt0[i].a = ep0.a;
+				ep->endpt1[i].a = ep1.a;
+			}
+
+			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
+			{
+				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
+				float3 sdsm = scale_direction * scale_ep1;
+				rgbs_vectors[i] = float4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
+			}
+
+			#ifdef DEBUG_CAPTURE_NAN
+				feenableexcept(FE_DIVBYZERO | FE_INVALID);
+			#endif
 		}
 
 		// if the calculation of an RGB-offset vector failed, try to compute

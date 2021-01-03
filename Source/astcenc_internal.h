@@ -1113,11 +1113,22 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int quantization_level[4],
 	int quantization_level_mod[4]);
 
-void recompute_ideal_colors(
+void recompute_ideal_colors_1plane(
 	int weight_quantization_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
-	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
-	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7
+	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
+	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
+	const uint8_t* weight_set8,	// the current set of weight values
+	const partition_info* pi,
+	const decimation_table* it,
+	const imageblock* pb,	// picture-block containing the actual data.
+	const error_weight_block* ewb);
+
+void recompute_ideal_colors_2planes(
+	int weight_quantization_mode,
+	endpoints* ep,	// contains the endpoints we wish to update
+	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
+	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present

@@ -386,7 +386,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, nullptr, -1, pi, it, blk, ewb);
+			recompute_ideal_colors_1plane(weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, pi, it, blk, ewb);
 
 			// quantize the chosen color
 
@@ -733,7 +733,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
-			recompute_ideal_colors(
+			recompute_ideal_colors_2planes(
 			    weight_quantization_mode, &epm, rgbs_colors, rgbo_colors,
 			    u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
 
