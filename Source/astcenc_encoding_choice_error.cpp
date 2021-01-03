@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -234,16 +234,8 @@ void compute_encoding_choice_errors(
 		luminance_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_luminance_lines[i]));
 	}
 
-	// compute the error that arises from just ditching alpha and RGB
-	float alpha_drop_error[4];
-	float rgb_drop_error[4];
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		alpha_drop_error[i] = 0;
-		rgb_drop_error[i] = 0;
-	}
-
+	// Compute the error that arises from just ditching alpha
+	float alpha_drop_error[4] = { 0 };
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pi->partition_of_texel[i];
@@ -252,13 +244,6 @@ void compute_encoding_choice_errors(
 
 		float omalpha = alpha - default_alpha;
 		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].a;
-
-		float red = pb->data_r[i];
-		float green = pb->data_g[i];
-		float blue = pb->data_b[i];
-		rgb_drop_error[partition] += red * red * ewb->error_weights[i].r +
-		                             green * green * ewb->error_weights[i].g +
-		                             blue * blue * ewb->error_weights[i].b;
 	}
 
 	// check if we are eligible for blue-contraction and offset-encoding
@@ -273,12 +258,11 @@ void compute_encoding_choice_errors(
 	{
 		endpoints_and_weights ei1, ei2;
 		compute_endpoints_and_ideal_weights_2_planes(bsd, pi, pb, ewb, separate_component, &ei1, &ei2);
-
 		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
 	}
 
-	int eligible_for_offset_encode[4];
-	int eligible_for_blue_contraction[4];
+	bool can_offset_encode[4] = { 0 };
+	bool can_blue_contract[4] = { 0 };
 	for (int i = 0; i < partition_count; i++)
 	{
 		float4 endpt0 = ep.endpt0[i];
@@ -289,11 +273,7 @@ void compute_encoding_choice_errors(
 		    fabsf(endpt_dif.g) < (0.12f * 65535.0f) &&
 		    fabsf(endpt_dif.b) < (0.12f * 65535.0f))
 		{
-			eligible_for_offset_encode[i] = 1;
-		}
-		else
-		{
-			eligible_for_offset_encode[i] = 0;
+			can_offset_encode[i] = true;
 		}
 
 		endpt0.r += (endpt0.r - endpt0.b);
@@ -305,11 +285,7 @@ void compute_encoding_choice_errors(
 		    endpt0.g > (0.01f * 65535.0f) && endpt0.g < (0.99f * 65535.0f) &&
 		    endpt1.g > (0.01f * 65535.0f) && endpt1.g < (0.99f * 65535.0f))
 		{
-			eligible_for_blue_contraction[i] = 1;
-		}
-		else
-		{
-			eligible_for_blue_contraction[i] = 0;
+			can_blue_contract[i] = true;
 		}
 	}
 
@@ -320,9 +296,8 @@ void compute_encoding_choice_errors(
 		eci[i].rgb_luma_error = (rgb_luma_error[i] - uncorr_rgb_error[i]) * 1.5f;	// wild guess
 		eci[i].luminance_error = (luminance_rgb_error[i] - uncorr_rgb_error[i]) * 3.0f;	// empirical
 		eci[i].alpha_drop_error = alpha_drop_error[i] * 3.0f;
-		eci[i].rgb_drop_error = rgb_drop_error[i] * 3.0f;
-		eci[i].can_offset_encode = eligible_for_offset_encode[i];
-		eci[i].can_blue_contract = eligible_for_blue_contraction[i];
+		eci[i].can_offset_encode = can_offset_encode[i];
+		eci[i].can_blue_contract = can_blue_contract[i];
 	}
 }
 

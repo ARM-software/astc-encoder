@@ -1054,13 +1054,18 @@ void unpack_color_endpoints(
 
 struct encoding_choice_errors
 {
-	float rgb_scale_error;		// error of using LDR RGB-scale instead of complete endpoints.
-	float rgb_luma_error;		// error of using HDR RGB-scale instead of complete endpoints.
-	float luminance_error;		// error of using luminance instead of RGB
-	float alpha_drop_error;		// error of discarding alpha
-	float rgb_drop_error;		// error of discarding RGB
-	int can_offset_encode;
-	int can_blue_contract;
+	// Error of using LDR RGB-scale instead of complete endpoints.
+	float rgb_scale_error;
+	// Error of using HDR RGB-scale instead of complete endpoints.
+	float rgb_luma_error;
+	// Error of using luminance instead of RGB.
+	float luminance_error;
+	// Error of discarding alpha.
+	float alpha_drop_error;
+	// Validity of using offset encoding.
+	bool can_offset_encode;
+	// Validity of using blue contraction encoding.
+	bool can_blue_contract;
 };
 
 // buffers used to store intermediate data in compress_symbolic_block_fixed_partition_*()
