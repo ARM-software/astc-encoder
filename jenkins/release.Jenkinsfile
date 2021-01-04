@@ -217,6 +217,57 @@ pipeline {
             }
           }
         }
+        /* Build for macOS on x86-64 using Clang */
+        stage('macOS arm64') {
+          agent {
+            label 'mac && x86_64 && notarizer'
+          }
+          stages {
+            stage('Clean') {
+              steps {
+                sh 'git clean -ffdx'
+              }
+            }
+            stage('Build R') {
+              steps {
+                sh '''
+                  mkdir build_rel
+                  cd build_rel
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_NEON=ON -DARCH=aarch64 ..
+                  make install package -j1
+                '''
+              }
+            }
+            stage('Sign and notarize') {
+              environment {
+                NOTARIZATION_CREDS = credentials('notarization-account')
+              }
+              steps {
+                dir('build_rel') {
+                  withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
+                                                     keyFileVariable: 'SSH_AUTH_FILE')]) {
+                    sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
+                  }
+                  withCredentials([usernamePassword(credentialsId: 'win-signing',
+                                                    usernameVariable: 'USERNAME',
+                                                    passwordVariable: 'PASSWORD')]) {
+                    sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
+                    sh 'rm -rf ./signing'
+                  }
+                }
+              }
+            }
+            stage('Stash') {
+              steps {
+                dir('build_rel') {
+                  stash name: 'astcenc-macos-aarch64', includes: '*.zip'
+                  stash name: 'astcenc-macos-aarch64-hash', includes: '*.zip.sha256'
+                }
+              }
+            }
+            // TODO: Currently can't test automatically
+          }
+        }
       }
     }
     stage('Artifactory') {
@@ -244,6 +295,9 @@ pipeline {
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
+            }
+            dir('upload/macos-aarch64') {
+              unstash 'astcenc-macos-aarch64'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
@@ -279,7 +333,6 @@ pipeline {
       }
     }
   }
-
   post {
     failure {
       script {
