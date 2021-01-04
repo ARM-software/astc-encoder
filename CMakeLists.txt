@@ -20,6 +20,8 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0069 NEW)  # LTO support
 cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
 
+project(astcenc VERSION 2.2.0)
+
 # Command line configuration
 function(printopt optName optVal optArch tgtArch)
     if(${optVal})
@@ -77,12 +79,6 @@ else()
     message("  -- No SIMD backend - OFF")
 endif()
 
-if(${ARCH} MATCHES "aarch64")
-    set(CMAKE_OSX_ARCHITECTURES arm64)
-else()
-    set(CMAKE_OSX_ARCHITECTURES x86_64)
-endif()
-
 option(ISA_INVARIANCE "Enable builds for ISA invariance")
 if(${ISA_INVARIANCE})
     message("  -- ISA invariant backend - ON")
@@ -102,8 +98,14 @@ if(NOT ${ANY_ISA})
 endif()
 
 # Project configuration
-# Must be done after setting CMAKE_OSX_ARCHITECTURES
-project(astcenc VERSION 2.2.0)
+
+# Must be done after project() but before compiler settings
+# or it gets overriden (this contradicts the official docs)
+if(${ARCH} MATCHES "aarch64")
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+else()
+    set(CMAKE_OSX_ARCHITECTURES "x86_64")
+endif()
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
