@@ -238,6 +238,7 @@ pipeline {
                 '''
               }
             }
+            /*
             stage('Sign and notarize') {
               environment {
                 NOTARIZATION_CREDS = credentials('notarization-account')
@@ -257,6 +258,7 @@ pipeline {
                 }
               }
             }
+            */
             stage('Stash') {
               steps {
                 dir('build_rel') {

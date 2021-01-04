@@ -9,26 +9,26 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 2.2
 
-**Status:** :warning: In development (ETA February 2021)
+**Status:** Released, January 2021
 
-The 2.2 release is the third release in the 2.x series. It includes ...
+The 2.2 release is the third release in the 2.x series. It includes a number
+of performance improvements and new features.
 
 Reminder for users of the library interface - the API is not designed to be
 stable across versions, and this release is not compatible with 2.1. Please
 recompile your client-side code using the updated `astcenc.h` header.
 
 * **General:**
-  * **Feature:** New Arm aarch64 NEON accelerated vector library. Note that at
-    this time Arm builds must be built from source; pre-built binaries are not
-	provided in this release.
+  * **Feature:** New Arm aarch64 NEON accelerated vector library support.
+  * **Improvement:** New CMake build system for all platforms.
   * **Improvement:** SSE4.2 feature profile changed to SSE4.1, which more
     accurately reflects the feature set used.
-  * **Improvement:** Build system changed to use CMake for all platforms.
 * **Binary releases:**
-  * **Improvement:** Linux binaries changed to use use Clang 9.0, which gives
+  * **Improvement:** Linux binaries changed to use Clang 9.0, which gives
     up to 15% performance improvement.
-  * **Improvement:** Windows binaries are now signed, and macOS binaries are
-    signed and notarized.
+  * **Improvement:** Windows binaries are now code signed.
+  * **Improvement:** macOS binaries for arm64 platforms now provided.
+  * **Improvement:** macOS binaries are now code signed and notarized.
 * **Command Line:**
   * **Feature:** New image preprocess `-pp-normalize` option added. This forces
     normal vectors to be unit length, which is useful when compressing source
@@ -39,7 +39,7 @@ recompile your client-side code using the updated `astcenc.h` header.
     cross-channel color bleed caused by GPU post-multiply filtering/blending.
   * **Improvements:** Command line tool cleanly traps and reports errors for
     corrupt input images rather than relying on standard library `assert()`
-	calls in release builds.
+    calls in release builds.
 * **Core API:**
   * **API Change:** Images using region-based metrics no longer need to include
     padding; all input images should be tightly packed and `dim_pad` is removed
@@ -51,10 +51,28 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **API Change:** New `ASTCENC_FLG_SELF_DECOMPRESS_ONLY` flag added to the
     codec config. Using this flag enables additional optimizations that
     aggressively exploit implementation- and configuration-specific, behavior
-	to gain performance. When using this flag the codec can only reliably
-	decompress images that were compressed in the same context session. Images
-	produced via other means may fail to decompress correctly, even if they are
-	otherwise valid ASTC files.
+    to gain performance. When using this flag the codec can only reliably
+    decompress images that were compressed in the same context session. Images
+    produced via other means may fail to decompress correctly, even if they are
+    otherwise valid ASTC files.
+
+### Performance
+
+There is one major set of optimizations in this release, related to the new
+`ASTCENC_FLG_SELF_DECOMPRESS_ONLY` mode. These allow the compressor to only
+create data tables it knows that it is going to use, based on its current set
+of heuristics, rather than needing the full set the format allows.
+
+The first benefit of these changes is a reduced context creation time, which
+can be reduced by up to 250ms on our test machine. This is a significant
+percentage of the command line utility runtime for a small image when using a
+quick search preset. Compressing the whole Kodak test suite using the command
+line utility and the `-fastest` preset is ~30% faster with this release, which
+is mostly due to faster startup.
+
+The reduction in the data table size in this mode also improve the core codec
+speed. Our test sets show an average of 12% improvement in the codec for
+`-fastest` mode, and an average of 3% for `-medium` mode.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1
