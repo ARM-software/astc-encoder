@@ -511,8 +511,12 @@ void astcenc_print_header()
 	const char* simdtype = "avx2";
 #elif (ASTCENC_SSE == 41)
 	const char* simdtype = "sse4.1";
-#else
+#elif (ASTCENC_SSE == 20)
 	const char* simdtype = "sse2";
+#elif (ASTCENC_NEON == 1)
+	const char* simdtype = "neon";
+#else
+	const char* simdtype = "none";
 #endif
 
 #if (ASTCENC_POPCNT == 1)
