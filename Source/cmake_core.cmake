@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020 Arm Limited
+#  Copyright 2020-2021 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -115,12 +115,6 @@ if(${ISA_SIMD} MATCHES "none")
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0)
 
-    if (${ARCH} MATCHES x64)
-        target_compile_options(astcenc-${ISA_SIMD}
-            PRIVATE
-                $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
-    endif()
-
 elseif(${ISA_SIMD} MATCHES "neon")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
@@ -137,10 +131,6 @@ elseif(${ISA_SIMD} MATCHES "sse2")
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0)
 
-    target_compile_options(astcenc-${ISA_SIMD}
-        PRIVATE
-        $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
-
 elseif(${ISA_SIMD} MATCHES "sse4.1")
     target_compile_definitions(astcenc-${ISA_SIMD}
         PRIVATE
@@ -151,7 +141,7 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -msse4.1 -mpopcnt>)
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
 
 elseif(${ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(astcenc-${ISA_SIMD}
@@ -163,7 +153,7 @@ elseif(${ISA_SIMD} MATCHES "avx2")
 
     target_compile_options(astcenc-${ISA_SIMD}
         PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
 
