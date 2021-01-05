@@ -692,7 +692,7 @@ static void construct_block_size_descriptor_2d(
 		// Skip modes that are invalid, too large, or not selected by heuristic
 		if (!valid || !selected || (x_weights > x_dim) || (y_weights > y_dim))
 		{
-			bsd.block_mode_to_packed[i] = -1;
+			bsd.block_mode_packed_index[i] = -1;
 			continue;
 		}
 
@@ -708,29 +708,29 @@ static void construct_block_size_descriptor_2d(
 		// Flatten the block mode heuristic into some precomputed flags
 		if (percentile == 0.0f)
 		{
-			bsd.block_modes_packed[packed_idx].percentile_always = true;
+			bsd.block_modes[packed_idx].percentile_always = true;
 			bsd.decimation_modes[decimation_mode].percentile_always = true;
 
-			bsd.block_modes_packed[packed_idx].percentile_hit = true;
+			bsd.block_modes[packed_idx].percentile_hit = true;
 			bsd.decimation_modes[decimation_mode].percentile_hit = true;
 		}
 		else if (percentile <= mode_cutoff)
 		{
-			bsd.block_modes_packed[packed_idx].percentile_always = false;
+			bsd.block_modes[packed_idx].percentile_always = false;
 
-			bsd.block_modes_packed[packed_idx].percentile_hit = true;
+			bsd.block_modes[packed_idx].percentile_hit = true;
 			bsd.decimation_modes[decimation_mode].percentile_hit = true;
 		}
 #endif
 
-		bsd.block_modes_packed[packed_idx].decimation_mode = decimation_mode;
-		bsd.block_modes_packed[packed_idx].quantization_mode = quantization_mode;
-		bsd.block_modes_packed[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
-		bsd.block_modes_packed[packed_idx].mode_index = i;
-		bsd.block_mode_to_packed[i] = packed_idx;
+		bsd.block_modes[packed_idx].decimation_mode = decimation_mode;
+		bsd.block_modes[packed_idx].quantization_mode = quantization_mode;
+		bsd.block_modes[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
+		bsd.block_modes[packed_idx].mode_index = i;
+		bsd.block_mode_packed_index[i] = packed_idx;
 		++packed_idx;
 	}
-	bsd.block_mode_packed_count = packed_idx;
+	bsd.block_mode_count = packed_idx;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	delete[] percentiles;
@@ -749,10 +749,10 @@ static void construct_block_size_descriptor_2d(
 	// Determine the texels to use for kmeans clustering.
 	if (x_dim * y_dim <= 64)
 	{
-		bsd.texelcount_for_bitmap_partitioning = x_dim * y_dim;
+		bsd.kmeans_texel_count = x_dim * y_dim;
 		for (int i = 0; i < x_dim * y_dim; i++)
 		{
-			bsd.texels_for_bitmap_partitioning[i] = i;
+			bsd.kmeans_texels[i] = i;
 		}
 	}
 	else
@@ -785,12 +785,12 @@ static void construct_block_size_descriptor_2d(
 		{
 			if (arr[idx])
 			{
-				bsd.texels_for_bitmap_partitioning[texel_weights_written++] = idx;
+				bsd.kmeans_texels[texel_weights_written++] = idx;
 			}
 			idx++;
 		}
 
-		bsd.texelcount_for_bitmap_partitioning = 64;
+		bsd.kmeans_texel_count = 64;
 	}
 }
 
@@ -894,33 +894,33 @@ static void construct_block_size_descriptor_3d(
 		{
 			permit_encode = 0;
 		}
-		bsd->block_mode_to_packed[i] = -1;
+		bsd->block_mode_packed_index[i] = -1;
 		if (!permit_encode)
 			continue;
 
 		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
-		bsd->block_modes_packed[packed_idx].decimation_mode = decimation_mode;
-		bsd->block_modes_packed[packed_idx].quantization_mode = quantization_mode;
-		bsd->block_modes_packed[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
-		bsd->block_modes_packed[packed_idx].mode_index = i;
+		bsd->block_modes[packed_idx].decimation_mode = decimation_mode;
+		bsd->block_modes[packed_idx].quantization_mode = quantization_mode;
+		bsd->block_modes[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
+		bsd->block_modes[packed_idx].mode_index = i;
 
 		// No percentile table, so enable everything all the time ...
-		bsd->block_modes_packed[packed_idx].percentile_hit = true;
-		bsd->block_modes_packed[packed_idx].percentile_always = true;
+		bsd->block_modes[packed_idx].percentile_hit = true;
+		bsd->block_modes[packed_idx].percentile_always = true;
 		bsd->decimation_modes[decimation_mode].percentile_hit = true;
 		bsd->decimation_modes[decimation_mode].percentile_always = true;
 
-		bsd->block_mode_to_packed[i] = packed_idx;
+		bsd->block_mode_packed_index[i] = packed_idx;
 		++packed_idx;
 	}
-	bsd->block_mode_packed_count = packed_idx;
+	bsd->block_mode_count = packed_idx;
 
 	if (xdim * ydim * zdim <= 64)
 	{
-		bsd->texelcount_for_bitmap_partitioning = xdim * ydim * zdim;
+		bsd->kmeans_texel_count = xdim * ydim * zdim;
 		for (int i = 0; i < xdim * ydim * zdim; i++)
 		{
-			bsd->texels_for_bitmap_partitioning[i] = i;
+			bsd->kmeans_texels[i] = i;
 		}
 	}
 	else
@@ -953,11 +953,11 @@ static void construct_block_size_descriptor_3d(
 		{
 			if (arr[idx])
 			{
-				bsd->texels_for_bitmap_partitioning[texel_weights_written++] = idx;
+				bsd->kmeans_texels[texel_weights_written++] = idx;
 			}
 			idx++;
 		}
-		bsd->texelcount_for_bitmap_partitioning = 64;
+		bsd->kmeans_texel_count = 64;
 	}
 }
 

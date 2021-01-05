@@ -393,9 +393,9 @@ void compute_angular_endpoints_1plane(
 		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
-	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
+	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes_packed[i];
+		const block_mode& bm = bsd->block_modes[i];
 		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			continue;
@@ -443,9 +443,9 @@ void compute_angular_endpoints_2planes(
 		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
-	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
+	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes_packed[i];
+		const block_mode& bm = bsd->block_modes[i];
 		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			continue;

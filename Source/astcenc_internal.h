@@ -279,7 +279,7 @@ public:
 	 * @param[out] count     Actual number of tasks assigned, or zero if
 	 *                       no tasks were assigned.
 	 *
-	 * \return Task index of the first assigned task; assigned tasks
+	 * @return Task index of the first assigned task; assigned tasks
 	 *         increment from this.
 	 */
 	unsigned int get_task_assignment(unsigned int granule, unsigned int& count)
@@ -414,34 +414,71 @@ struct decimation_mode
 	uint8_t percentile_always : 1;
 };
 
+/**
+ * @brief Data tables for a single block size.
+ *
+ * The decimation tables store the information to apply weight grid dimension
+ * reductions. We only store the decimation modes that are actually needed by
+ * the current context; many of the possible modes will be unused (too many
+ * weights for the current block size or disabled by heuristics). The actual
+ * number of weights stored is @c decimation_mode_count, and the
+ * @c decimation_modes and @c decimation_tables arrays store the active modes
+ * contiguously at the start of the array. These entries are not stored in any
+ * particuar order.
+ *
+ * The block mode tables store the unpacked block mode settings. Block modes
+ * are stored in the compressed block as an 11 bit field, but for any given
+ * block size and set of compressor heuristics, only a subset of the block
+ * modes will be used. The actual number of block modes stored is indicated in
+ * @c block_mode_count, and the @c block_modes array store the active modes
+ * contiguously at the start of the array. These entries are stored in 
+ * incrementing "packed" value order, which doesn't mean much once unpacked. 
+ * To allow decompressors to reference the packed data efficiently the
+ * @c block_mode_packed_index array stores the mapping between physical ID and
+ * the actual remapped array index. 
+ */
 struct block_size_descriptor
 {
+	/**< The block X dimension, in texels. */
 	int xdim;
+
+	/**< The block Y dimension, in texels. */
 	int ydim;
+
+	/**< The block Z dimension, in texels. */
 	int zdim;
+
+	/**< The block total texel count. */
 	int texel_count;
 
+
+	/**< The number of stored decimation modes. */
 	int decimation_mode_count;
+	
+	/**< The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
+
+	/**< The active decimation tables, stored in low indices. */
 	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
 
-	// out of all possible 2048 weight modes, only a subset is
-	// actually valid for the current configuration (e.g. 6x6
-	// 2D LDR has 370 valid modes); the valid ones are packed into
-	// block_modes_packed array.
-	block_mode block_modes_packed[MAX_WEIGHT_MODES];
-	int block_mode_packed_count;
-	// get index of block mode inside the block_modes_packed array,
-	// or -1 if mode is not valid for the current configuration.
-	int16_t block_mode_to_packed[MAX_WEIGHT_MODES];
 
-	// for the k-means bed bitmap partitioning algorithm, we don't
-	// want to consider more than 64 texels; this array specifies
-	// which 64 texels (if that many) to consider.
-	int texelcount_for_bitmap_partitioning;
-	int texels_for_bitmap_partitioning[64];
+	/**< The number of stored block modes. */
+	int block_mode_count;
 
-	// All the partitioning information for this block size
+	/**< The active block modes, stored in low indices. */
+	block_mode block_modes[MAX_WEIGHT_MODES];
+
+	/**< The block mode array index, or -1 if not valid in current config. */
+	int16_t block_mode_packed_index[MAX_WEIGHT_MODES];
+
+
+	/**< The texel count for k-means partition selection (max 64). */
+	int kmeans_texel_count;
+
+	/**< The active texels for k-means partition selection. */
+	int kmeans_texels[64];
+
+	/**< The partion tables for all of the possible partitions. */
 	partition_info partitions[(3*PARTITION_COUNT)+1];
 };
 

@@ -57,9 +57,9 @@ static int realign_weights(
 	pt += scb->partition_index;
 
 	// Get the quantization table
-	const int packed_index = bsd->block_mode_to_packed[scb->block_mode];
-	assert(packed_index >= 0 && packed_index < bsd->block_mode_packed_count);
-	const block_mode& bm = bsd->block_modes_packed[packed_index];
+	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
+	const block_mode& bm = bsd->block_modes[packed_index];
 	int weight_quantization_level = bm.quantization_mode;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
@@ -304,9 +304,9 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
 
-	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
+	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes_packed[i];
+		const block_mode& bm = bsd->block_modes[i];
 		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			qwt_errors[i] = 1e38f;
@@ -370,8 +370,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			continue;
 		}
 
-		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_packed_count);
-		const block_mode& qw_bm = bsd->block_modes_packed[qw_packed_index];
+		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_count);
+		const block_mode& qw_bm = bsd->block_modes[qw_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quantization_mode = qw_bm.quantization_mode;
@@ -624,9 +624,9 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
-	for (int i = 0, ni = bsd->block_mode_packed_count; i < ni; ++i)
+	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes_packed[i];
+		const block_mode& bm = bsd->block_modes[i];
 		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			qwt_errors[i] = 1e38f;
@@ -713,8 +713,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		uint8_t *u8_weight2_src;
 		int weights_to_copy;
 
-		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_packed_count);
-		const block_mode& qw_bm = bsd->block_modes_packed[qw_packed_index];
+		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_count);
+		const block_mode& qw_bm = bsd->block_modes[qw_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quantization_mode = qw_bm.quantization_mode;

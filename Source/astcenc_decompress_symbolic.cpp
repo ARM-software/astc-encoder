@@ -203,9 +203,9 @@ void decompress_symbolic_block(
 	// get the appropriate block descriptor
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
-	const int packed_index = bsd->block_mode_to_packed[scb->block_mode];
-	assert(packed_index >= 0 && packed_index < bsd->block_mode_packed_count);
-	const block_mode& bm = bsd->block_modes_packed[packed_index];
+	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
+	const block_mode& bm = bsd->block_modes[packed_index];
 	const decimation_table *it = ixtab2[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;
@@ -319,9 +319,9 @@ float compute_symbolic_block_difference(
 	// get the appropriate block descriptor
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 
-	const int packed_index = bsd->block_mode_to_packed[scb->block_mode];
-	assert(packed_index >= 0 && packed_index < bsd->block_mode_packed_count);
-	const block_mode& bm = bsd->block_modes_packed[packed_index];
+	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
+	const block_mode& bm = bsd->block_modes[packed_index];
 	const decimation_table *it = ixtab2[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;

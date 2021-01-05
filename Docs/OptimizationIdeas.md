@@ -13,10 +13,17 @@ This section lists specific optimization ideas.
 
 ### Exploit 1:1 weight modes
 
-The current code is generic and assumes reconstruction from multiple weighted
-color values, due to use of decimated weight grids. For the 4x4 block size
-we actually get a high percentage of 1:1 weight grids, so it might be worth
-including a fast-path which can exploit this simplification.
+The current code is generic and assumes bilinear texel reconstruction from
+multiple weighted color values, due to use of decimated weight grids. For the
+4x4 block size we actually get a high percentage of 1:1 weight grids, so it
+might be worth including a fast-path which can exploit this simplification.
+
+### Get bsd to store only useful partitions
+
+The current BSD stores full partition tables, but at smaller block sizes a high
+percentage are degenerate. For other data tables we now only store the active
+ones, so we should consider doing something similar there too to improve 
+cache locality.
 
 ### Postpone full iterative refinement
 

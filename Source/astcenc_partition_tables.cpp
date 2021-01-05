@@ -304,10 +304,10 @@ static void generate_one_partition_table(
 		pt->coverage_bitmaps[i] = 0ULL;
 	}
 
-	int texels_to_process = bsd->texelcount_for_bitmap_partitioning;
+	int texels_to_process = bsd->kmeans_texel_count;
 	for (int i = 0; i < texels_to_process; i++)
 	{
-		int idx = bsd->texels_for_bitmap_partitioning[i];
+		int idx = bsd->kmeans_texels[i];
 		pt->coverage_bitmaps[pt->partition_of_texel[idx]] |= 1ULL << i;
 	}
 }
