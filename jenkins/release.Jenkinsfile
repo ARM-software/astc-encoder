@@ -307,11 +307,10 @@ pipeline {
                 sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
                 sh 'mv *.zip.sha256 ../'
                 sh 'mv *.zip ../'
-                sh 'cd ..'
-                sh 'rm -rf ./windows-x64'
               }
             }
             dir('upload') {
+              sh 'rm -rf ./windows-x64'
               sh 'cat *.sha256 > release-sha256.txt'
               sh 'rm *.sha256'
             }
