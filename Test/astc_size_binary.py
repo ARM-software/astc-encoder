@@ -36,12 +36,13 @@ like this:
 
 
 import argparse
+import platform
 import shutil
 import subprocess as sp
 import sys
 
 
-def run_size(binary):
+def run_size_linux(binary):
     """
     Run size on a single binary.
 
@@ -70,6 +71,64 @@ def run_size(binary):
                 data[key] = size
 
     return (data["Code"], data["RO"], data["ZI"])
+
+
+def run_size_macos(binary):
+    """
+    Run size on a single binary.
+
+    Args:
+        binary (str): The path of the binary file to process.
+
+    Returns:
+        tuple(int, int, int): A triplet of code size, read-only data size, and
+        zero-init data size, all in bytes.
+
+    Raises:
+        CalledProcessException: The ``size`` subprocess failed for any reason.
+    """
+    args = ["size", "-m", binary]
+    result = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE,
+                    check=True, universal_newlines=True)
+
+    code = 0
+    dataRO = 0
+    dataZI = 0
+
+    currentSegment = None
+
+    lines = result.stdout.splitlines()
+    for line in lines:
+        line = line.strip()
+
+        if line.startswith("Segment"):
+            parts = line.split()
+            assert(len(parts) == 3)
+
+            currentSegment = parts[1]
+            size = int(parts[2])
+
+            if currentSegment == "__TEXT:":
+                code += size
+
+            if currentSegment == "__DATA_CONST:":
+                dataRO += size
+
+            if currentSegment == "__DATA:":
+                dataZI += size
+
+        if line.startswith("Section"):
+            parts = line.split()
+            assert(len(parts) == 3)
+
+            section = parts[1]
+            size = int(parts[2])
+
+            if currentSegment == "__TEXT:" and section == "__const:":
+                code -= size
+                dataRO += size
+
+    return (code, dataRO, dataZI)
 
 
 def parse_command_line():
@@ -105,6 +164,11 @@ def main():
     if not path:
         print("ERROR: The 'size' utility is not installed on the PATH")
         return 1
+
+    if platform.system() == "Darwin":
+        run_size = run_size_macos
+    else:
+        run_size = run_size_linux
 
     # Collect the data
     try:
