@@ -162,7 +162,7 @@ def plot(results, chartRows, chartCols, blockSizes,
 
     for i, row in enumerate(chartRows):
         for j, col in enumerate(chartCols):
-            if row == "fastest" and "ref-2.1" not in col:
+            if row == "fastest" and (("1.7" in col) or ("2.0" in col)):
                 if len(chartCols) == 1:
                     fig.delaxes(axs[i])
                 else:
@@ -258,7 +258,7 @@ def main():
             # --------------------------------------------------------
             # Plot all absolute scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.0-avx2", "ref-2.1-avx2"],
+            ["ref-2.0-avx2", "ref-2.1-avx2", "ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             False,
             None,
@@ -286,10 +286,20 @@ def main():
             "absolute-2.0-to-2.1.png",
             (30, None)
         ], [
+            # Plot 2.1 to 2.2 absolute scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.1-avx2", "ref-2.2-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-2.1-to-2.2.png",
+            (30, None)
+        ], [
             # --------------------------------------------------------
             # Plot all relative scores
             ["thorough", "medium", "fast"],
-            ["ref-2.0-avx2", "ref-2.1-avx2"],
+            ["ref-2.0-avx2", "ref-2.1-avx2", "ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-1.7",
@@ -317,31 +327,59 @@ def main():
             "relative-2.0-to-2.1.png",
             (None, None)
         ], [
-            # Plot relative scores of ISAs of latest
+            # Plot 2.1 to 2.2 relative scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.1-sse4.1", "ref-2.1-avx2"],
+            ["ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
-            "ref-2.1-sse2",
+            "ref-2.1-avx2",
             None,
-            "relative-2.1-isas.png",
+            "relative-2.1-to-2.2.png",
+            (None, None),
+        ], [
+            # Plot relative scores of ISAs of latest
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.2-sse4.1", "ref-2.2-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            True,
+            "ref-2.2-sse2",
+            None,
+            "relative-2.2-isas.png",
             (None, None)
         ], [
             # Plot relative scores of qualities of latest
             ["medium", "fast", "fastest"],
-            ["ref-2.1-avx2"],
+            ["ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             None,
             "thorough",
-            "relative-2.1-qualities.png",
+            "relative-2.2-qualities.png",
             (None, None)
         ]
     ]
 
     results = find_reference_results()
 
+    # Force select is triggered by adding a trailing entry to the argument list
+    # of the charts that you want rendered; designed for debugging use cases
+    maxIndex = 0
+    expectedLength = 8
     for chart in charts:
+        maxIndex = max(maxIndex, len(chart))
+
+    for chart in charts:
+        # If force select is enabled then only keep the forced ones
+        if len(chart) != maxIndex:
+            print("Skipping %s" % chart[6])
+            continue
+        else:
+            print("Generating %s" % chart[6])
+
+        # If force select is enabled then strip the dummy force option
+        if maxIndex != expectedLength:
+            chart = chart[:expectedLength]
+
         plot(results, *chart)
 
     return 0

@@ -290,6 +290,11 @@ class Encoder2x(EncoderBase):
             command.append("-a")
             command.append("1")
 
+        # Limit core count on NEON builds to avoid test device throttling
+        if self.variant == "neon":
+            command.append("-j")
+            command.append("2")
+
         return command
 
     def get_psnr_pattern(self, image):
@@ -336,7 +341,7 @@ class Encoder2_0(Encoder2x):
 
 class Encoder2_1(Encoder2x):
     """
-    This class wraps the 2.0 series binaries.
+    This class wraps the 2.1 series binaries.
     """
     VERSION = "2.1"
 
@@ -345,6 +350,21 @@ class Encoder2_1(Encoder2x):
             binary = "./Binaries/2.1/astcenc-%s.exe" % variant
         else:
             binary = "./Binaries/2.1/astcenc-%s" % variant
+
+        super().__init__(variant, binary)
+
+
+class Encoder2_2(Encoder2x):
+    """
+    This class wraps the 2.2 series binaries.
+    """
+    VERSION = "2.2"
+
+    def __init__(self, variant):
+        if os.name == 'nt':
+            binary = "./Binaries/2.2/astcenc-%s.exe" % variant
+        else:
+            binary = "./Binaries/2.2/astcenc-%s" % variant
 
         super().__init__(variant, binary)
 

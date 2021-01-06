@@ -284,6 +284,27 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-2.1-avx2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
+    # 2.2 variants
+    elif encoderName == "ref-2.2-sse2":
+        encoder = te.Encoder2_2("sse2")
+        name = "reference-2.2-sse2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.2-sse4.1":
+        encoder = te.Encoder2_2("sse4.1")
+        name = "reference-2.2-sse4.1"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.2-avx2":
+        encoder = te.Encoder2_2("avx2")
+        name = "reference-2.2-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.2-neon":
+        encoder = te.Encoder2_2("neon")
+        name = "reference-2.2-neon"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
     # Latest master
     elif encoderName == "ref-master-neon":
         # Warning: this option rebuilds a new reference test result for the
@@ -335,6 +356,7 @@ def parse_command_line():
     refcoders = ["ref-1.7",
                  "ref-2.0-sse2", "ref-2.0-sse4.1", "ref-2.0-avx2",
                  "ref-2.1-sse2", "ref-2.1-sse4.1", "ref-2.1-avx2",
+                 "ref-2.2-neon", "ref-2.2-sse2", "ref-2.2-sse4.1", "ref-2.2-avx2",
                  "ref-master-neon", "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
 
     # All test encoders
