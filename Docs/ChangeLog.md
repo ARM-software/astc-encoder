@@ -74,6 +74,20 @@ The reduction in the data table size in this mode also improve the core codec
 speed. Our test sets show an average of 12% improvement in the codec for
 `-fastest` mode, and an average of 3% for `-medium` mode.
 
+Key for performance charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
+
+**Absolute performance vs 2.1 release:**
+
+![Absolute scores 2.2 vs 2.1](./ChangeLogImg/absolute-2.1-to-2.2.png)
+
+**Relative performance vs 2.1 release:**
+
+![Relative scores 2.2 vs 2.1](./ChangeLogImg/relative-2.1-to-2.2.png)
+
+
 <!-- ---------------------------------------------------------------------- -->
 ## 2.1
 
