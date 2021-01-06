@@ -62,6 +62,9 @@ def find_reference_results():
                 quality = match.group(2)
                 imageSet = os.path.basename(root)
 
+                if imageSet == "Small":
+                    continue
+
                 testRef = trs.ResultSet(imageSet)
                 testRef.load_from_file(fullPath)
 
@@ -243,16 +246,18 @@ def main():
         int: The process return code.
     """
 
+    absoluteXLimit = 35
+
     charts = [
         [
-            # Plot headline 1.7 to 2.1 scores
+            # Plot headline 1.7 to 2.2 scores
             ["medium"],
-            ["ref-2.1-avx2"],
+            ["ref-2.2-avx2"],
             ["4x4", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-1.7-to-2.1.png",
+            "relative-1.7-to-2.2.png",
             (8, None)
         ], [
             # --------------------------------------------------------
@@ -264,27 +269,7 @@ def main():
             None,
             None,
             "absolute-all.png",
-            (30, None)
-        ], [
-            # Plot 1.7 to 2.0 absolute scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-1.7", "ref-2.0-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            False,
-            None,
-            None,
-            "absolute-1.7-to-2.0.png",
-            (30, None)
-        ], [
-            # Plot 2.0 to 2.1 absolute scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.0-avx2", "ref-2.1-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            False,
-            None,
-            None,
-            "absolute-2.0-to-2.1.png",
-            (30, None)
+            (absoluteXLimit, None)
         ], [
             # Plot 2.1 to 2.2 absolute scores
             ["thorough", "medium", "fast", "fastest"],
@@ -294,37 +279,37 @@ def main():
             None,
             None,
             "absolute-2.1-to-2.2.png",
-            (30, None)
+            (absoluteXLimit, None)
         ], [
             # --------------------------------------------------------
-            # Plot all relative scores
+            # Plot all relative scores vs 1.7
             ["thorough", "medium", "fast"],
             ["ref-2.0-avx2", "ref-2.1-avx2", "ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-all.png",
+            "relative-allv1.7.png",
             (None, None)
         ], [
-            # Plot 1.7 to 2.0 relative scores
-            ["thorough", "medium", "fast"],
-            ["ref-2.0-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            True,
-            "ref-1.7",
-            None,
-            "relative-1.7-to-2.0.png",
-            (None, None)
-        ], [
-            # Plot 2.0 to 2.1 relative scores
-            ["thorough", "medium", "fast"],
-            ["ref-2.1-avx2"],
+            # Plot all relative scores vs 2.0
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.1-avx2", "ref-2.2-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-2.0-avx2",
             None,
-            "relative-2.0-to-2.1.png",
+            "relative-allv2.0.png",
+            (None, None)
+        ], [
+            # Plot 1.7 to 2.2 relative scores
+            ["thorough", "medium", "fast"],
+            ["ref-2.2-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            True,
+            "ref-1.7",
+            None,
+            "relative-1.7-to-2.2.png",
             (None, None)
         ], [
             # Plot 2.1 to 2.2 relative scores
