@@ -42,7 +42,7 @@ static astcenc_image* load_image_with_tinyexr(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	int dim_x, dim_y;
 	float* image;
@@ -60,7 +60,7 @@ static astcenc_image* load_image_with_tinyexr(
 	free(image);
 
 	is_hdr = true;
-	num_components = 4;
+	component_count = 4;
 	return res_img;
 }
 
@@ -68,7 +68,7 @@ static astcenc_image* load_image_with_stb(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	int dim_x, dim_y;
 
@@ -80,7 +80,7 @@ static astcenc_image* load_image_with_stb(
 			astcenc_image* img = astc_img_from_floatx4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = true;
-			num_components = 4;
+			component_count = 4;
 			return img;
 		}
 	}
@@ -92,7 +92,7 @@ static astcenc_image* load_image_with_stb(
 			astcenc_image* img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = false;
-			num_components = 4;
+			component_count = 4;
 			return img;
 		}
 	}
@@ -724,7 +724,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	FILE *f = fopen(filename, "rb");
 	if (!f)
@@ -1042,7 +1042,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	delete[] buf;
 	is_hdr = bitness == 32;
-	num_components = components;
+	component_count = components;
 	return astc_img;
 }
 
@@ -1486,7 +1486,7 @@ astcenc_image* load_dds_uncompressed_image(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	FILE *f = fopen(filename, "rb");
 	if (!f)
@@ -1757,7 +1757,7 @@ astcenc_image* load_dds_uncompressed_image(
 
 	delete[] buf;
 	is_hdr = bitness == 16;
-	num_components = components;
+	component_count = components;
 	return astc_img;
 }
 
@@ -2112,7 +2112,7 @@ astcenc_image* load_ncimage(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	// Get the file extension
 	const char* eptr = strrchr(filename, '.');
@@ -2128,7 +2128,7 @@ astcenc_image* load_ncimage(
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			return loader_descs[i].loader_func(filename, y_flip, is_hdr, num_components);
+			return loader_descs[i].loader_func(filename, y_flip, is_hdr, component_count);
 		}
 	}
 

@@ -66,7 +66,7 @@ static int realign_weights(
 	// Get the decimation table
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
 	const decimation_table *it = ixtab2[bm.decimation_mode];
-	int weight_count = it->num_weights;
+	int weight_count = it->weight_count;
 
 	int max_plane = bm.is_dual_plane;
 	int plane2_component = max_plane ? scb->plane2_color_component : 0;
@@ -143,7 +143,7 @@ static int realign_weights(
 			float down_error = 0.0f;
 
 			// Interpolate the colors to create the diffs
-			int texels_to_evaluate = it->weight_num_texels[we_idx];
+			int texels_to_evaluate = it->weight_texel_count[we_idx];
 			promise(texels_to_evaluate > 0);
 			for (int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
@@ -326,7 +326,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		int decimation_mode = bm.decimation_mode;
 
 		// compute weight bitcount for the mode
-		int bits_used_by_weights = compute_ise_bitcount(ixtab2[decimation_mode]->num_weights,
+		int bits_used_by_weights = compute_ise_bitcount(ixtab2[decimation_mode]->weight_count,
 														(quantization_method) bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
@@ -383,7 +383,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		const decimation_table *it = ixtab2[decimation_mode];
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
 
-		weights_to_copy = it->num_weights;
+		weights_to_copy = it->weight_count;
 
 		// recompute the ideal color endpoints before storing them.
 		float4 rgbs_colors[4];
@@ -651,7 +651,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		}
 
 		// compute weight bitcount for the mode
-		int bits_used_by_weights = compute_ise_bitcount(2 * ixtab2[decimation_mode]->num_weights,
+		int bits_used_by_weights = compute_ise_bitcount(2 * ixtab2[decimation_mode]->weight_count,
 														(quantization_method) bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
@@ -728,7 +728,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
 		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
 
-		weights_to_copy = it->num_weights;
+		weights_to_copy = it->weight_count;
 
 		// recompute the ideal color endpoints before storing them.
 		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), separate_component, &epm);

@@ -177,7 +177,7 @@ static std::string get_slice_filename(
  * @param dim_z               The number of slices to load.
  * @param y_flip              Should this image be Y flipped?
  * @param[out] is_hdr         Is the loaded image HDR?
- * @param[out] num_components The number of components in the loaded image.
+ * @param[out] component_count The number of components in the loaded image.
  *
  * @return The astc image file, or nullptr on error.
  */
@@ -186,19 +186,19 @@ static astcenc_image* load_uncomp_file(
 	unsigned int dim_z,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& num_components
+	unsigned int& component_count
 ) {
 	astcenc_image *image = nullptr;
 
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = load_ncimage(filename, y_flip, is_hdr, num_components);
+		image = load_ncimage(filename, y_flip, is_hdr, component_count);
 	}
 	else
 	{
 		bool slice_is_hdr;
-		unsigned int slice_num_components;
+		unsigned int slice_component_count;
 		astcenc_image* slice = nullptr;
 		std::vector<astcenc_image*> slices;
 
@@ -214,7 +214,7 @@ static astcenc_image* load_uncomp_file(
 			}
 
 			slice = load_ncimage(slice_name.c_str(), y_flip,
-			                     slice_is_hdr, slice_num_components);
+			                     slice_is_hdr, slice_component_count);
 			if (!slice)
 			{
 				break;
@@ -232,7 +232,7 @@ static astcenc_image* load_uncomp_file(
 			// Check slices are consistent with each other
 			if (image_index != 0)
 			{
-				if ((is_hdr != slice_is_hdr) || (num_components != slice_num_components))
+				if ((is_hdr != slice_is_hdr) || (component_count != slice_component_count))
 				{
 					printf("ERROR: Image array[0] and [%d] are different formats\n", image_index);
 					break;
@@ -249,7 +249,7 @@ static astcenc_image* load_uncomp_file(
 			else
 			{
 				is_hdr = slice_is_hdr;
-				num_components = slice_num_components;
+				component_count = slice_component_count;
 			}
 		}
 
@@ -1319,7 +1319,7 @@ int main(
 	}
 
 	astcenc_image* image_uncomp_in = nullptr ;
-	unsigned int image_uncomp_in_num_chan = 0;
+	unsigned int image_uncomp_in_channel_count = 0;
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image* image_decomp_out = nullptr;
 
@@ -1338,7 +1338,7 @@ int main(
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
 	{
 		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size,
-		                                   cli_config.y_flip, image_uncomp_in_is_hdr, image_uncomp_in_num_chan);
+		                                   cli_config.y_flip, image_uncomp_in_is_hdr, image_uncomp_in_channel_count);
 		if (!image_uncomp_in)
 		{
 			printf ("ERROR: Failed to load uncompressed image file\n");
@@ -1392,7 +1392,7 @@ int main(
 				printf("    Dimensions:                 2D, %ux%u\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
-			printf("    Channels:                   %d\n\n", image_uncomp_in_num_chan);
+			printf("    Channels:                   %d\n\n", image_uncomp_in_channel_count);
 		}
 	}
 
@@ -1486,7 +1486,7 @@ int main(
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
-		compute_error_metrics(image_uncomp_in_is_hdr, image_uncomp_in_num_chan, image_uncomp_in,
+		compute_error_metrics(image_uncomp_in_is_hdr, image_uncomp_in_channel_count, image_uncomp_in,
 		                      image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
 	}
 

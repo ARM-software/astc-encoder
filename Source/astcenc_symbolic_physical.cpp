@@ -130,7 +130,7 @@ void symbolic_to_physical(
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 
-	int weight_count = ixtab2[bm.decimation_mode]->num_weights;
+	int weight_count = ixtab2[bm.decimation_mode]->weight_count;
 	int weight_quantization_method = bm.quantization_mode;
 	int is_dual_plane = bm.is_dual_plane;
 
@@ -336,7 +336,7 @@ void physical_to_symbolic(
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const struct block_mode& bm = bsd.block_modes[packed_index];
 
-	int weight_count = ixtab2[bm.decimation_mode]->num_weights;
+	int weight_count = ixtab2[bm.decimation_mode]->weight_count;
 	int weight_quantization_method = bm.quantization_mode;
 	int is_dual_plane = bm.is_dual_plane;
 

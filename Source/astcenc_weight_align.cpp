@@ -394,7 +394,7 @@ void compute_angular_endpoints_1plane(
 			continue;
 		}
 
-		int samplecount = bsd->decimation_tables[i]->num_weights;
+		int samplecount = bsd->decimation_tables[i]->weight_count;
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 		                                                  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
 		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_1plane, low_values[i], high_values[i]);
@@ -439,7 +439,7 @@ void compute_angular_endpoints_2planes(
 			continue;
 		}
 
-		int samplecount = bsd->decimation_tables[i]->num_weights;
+		int samplecount = bsd->decimation_tables[i]->weight_count;
 
 		compute_angular_endpoints_for_quantization_levels(samplecount,
 		                                                  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,

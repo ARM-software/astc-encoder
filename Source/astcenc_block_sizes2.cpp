@@ -300,7 +300,7 @@ static void initialize_decimation_table_2d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt->texel_num_weights[i] = weightcount_of_texel[i];
+		dt->texel_weight_count[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
@@ -321,7 +321,7 @@ static void initialize_decimation_table_2d(
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		dt->weight_num_texels[i] = texelcount_of_weight[i];
+		dt->weight_texel_count[i] = texelcount_of_weight[i];
 
 		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
@@ -358,8 +358,8 @@ static void initialize_decimation_table_2d(
 		}
 	}
 
-	dt->num_texels = texels_per_block;
-	dt->num_weights = weights_per_block;
+	dt->texel_count = texels_per_block;
+	dt->weight_count = weights_per_block;
 }
 
 static void initialize_decimation_table_3d(
@@ -510,7 +510,7 @@ static void initialize_decimation_table_3d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt->texel_num_weights[i] = weightcount_of_texel[i];
+		dt->texel_weight_count[i] = weightcount_of_texel[i];
 
 		// ensure that all 4 entries are actually initialized.
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
@@ -531,7 +531,7 @@ static void initialize_decimation_table_3d(
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		dt->weight_num_texels[i] = texelcount_of_weight[i];
+		dt->weight_texel_count[i] = texelcount_of_weight[i];
 		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			int texel = texels_of_weight[i][j];
@@ -567,8 +567,8 @@ static void initialize_decimation_table_3d(
 		}
 	}
 
-	dt->num_texels = texels_per_block;
-	dt->num_weights = weights_per_block;
+	dt->texel_count = texels_per_block;
+	dt->weight_count = weights_per_block;
 }
 
 /**

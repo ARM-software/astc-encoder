@@ -30,7 +30,7 @@ static int compute_value_of_texel_int(
 	const int* weights
 ) {
 	int summed_value = 8;
-	int weights_to_evaluate = it->texel_num_weights[texel_to_get];
+	int weights_to_evaluate = it->texel_weight_count[texel_to_get];
 	for (int i = 0; i < weights_to_evaluate; i++)
 	{
 		summed_value += weights[it->texel_weights[texel_to_get][i]] * it->texel_weights_int[texel_to_get][i];
@@ -235,7 +235,7 @@ void decompress_symbolic_block(
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = it->num_weights;
+	int weight_count = it->weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
@@ -327,7 +327,7 @@ float compute_symbolic_block_difference(
 	int is_dual_plane = bm.is_dual_plane;
 	int weight_quantization_level = bm.quantization_mode;
 
-	int weight_count = it->num_weights;
+	int weight_count = it->weight_count;
 	int texel_count = bsd->texel_count;
 
 	promise(partition_count > 0);

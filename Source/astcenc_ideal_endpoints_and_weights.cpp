@@ -934,7 +934,7 @@ float compute_error_of_weight_set(
 	const decimation_table* it,
 	const float* weights
 ) {
-	int texel_count = it->num_texels;
+	int texel_count = it->texel_count;
 	float error_summa = 0.0;
 	for (int i = 0; i < texel_count; i++)
 	{
@@ -954,16 +954,16 @@ void compute_ideal_weights_for_decimation_table(
 	float* weight_set,
 	float* weights
 ) {
-	int texels_per_block = it->num_texels;
-	int weight_count = it->num_weights;
+	int texel_count = it->texel_count;
+	int weight_count = it->weight_count;
 
-	promise(texels_per_block > 0);
+	promise(texel_count > 0);
 	promise(weight_count > 0);
 
 	// perform a shortcut in the case of a complete decimation table
-	if (texels_per_block == weight_count)
+	if (texel_count == weight_count)
 	{
-		for (int i = 0; i < texels_per_block; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int texel = it->weight_texel[i][0];
 			weight_set[i] = eai->weights[texel];
@@ -982,9 +982,9 @@ void compute_ideal_weights_for_decimation_table(
 		float weight_weight = 1e-10f;	// to avoid 0/0 later on
 		float initial_weight = 0.0f;
 
-		int texel_count = it->weight_num_texels[i];
-		promise(texel_count > 0);
-		for (int j = 0; j < texel_count; j++)
+		int weight_texel_count = it->weight_texel_count[i];
+		promise(weight_texel_count > 0);
+		for (int j = 0; j < weight_texel_count; j++)
 		{
 			int texel = it->weight_texel[i][j];
 			float weight = it->weights_flt[i][j];
@@ -997,7 +997,7 @@ void compute_ideal_weights_for_decimation_table(
 		weight_set[i] = initial_weight / weight_weight;	// this is the 0/0 that is to be avoided.
 	}
 
-	for (int i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texel_count; i++)
 	{
 		const uint8_t *texel_weights = it->texel_weights[i];
 		const float *texel_weights_float = it->texel_weights_float[i];
@@ -1024,9 +1024,9 @@ void compute_ideal_weights_for_decimation_table(
 		float error_change1 = 0.0f;
 
 		// compute the two error changes that can occur from perturbing the current index.
-		int num_weights = it->weight_num_texels[i];
-		promise(num_weights > 0);
-		for (int k = 0; k < num_weights; k++)
+		int weight_texel_count = it->weight_texel_count[i];
+		promise(weight_texel_count > 0);
+		for (int k = 0; k < weight_texel_count; k++)
 		{
 			uint8_t weight_texel = weight_texel_ptr[k];
 			float weights2 = weights_ptr[k];
@@ -1075,7 +1075,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	uint8_t* quantized_weight_set,
 	int quantization_level
 ) {
-	int weight_count = it->num_weights;
+	int weight_count = it->weight_count;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quantization_level]);
 
 	static const int quant_levels[12] = { 2,3,4,5,6,8,10,12,16,20,24,32 };
@@ -1247,14 +1247,14 @@ void recompute_ideal_colors_2planes(
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
 
-	for (int i = 0; i < it->num_weights; i++)
+	for (int i = 0; i < it->weight_count; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
 	}
 
 	if (plane2_weight_set8)
 	{
-		for (int i = 0; i < it->num_weights; i++)
+		for (int i = 0; i < it->weight_count; i++)
 		{
 			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
 		}
@@ -1673,16 +1673,16 @@ void recompute_ideal_colors_1plane(
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
-	int num_weights = it->num_weights;
+	int weight_count = it->weight_count;
 	int partition_count = pi->partition_count;
 
-	promise(num_weights > 0);
+	promise(weight_count > 0);
 	promise(partition_count > 0);
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
 
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
-	for (int i = 0; i < num_weights; i++)
+	for (int i = 0; i < weight_count; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
 	}
