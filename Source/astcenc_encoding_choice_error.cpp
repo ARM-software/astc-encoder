@@ -146,6 +146,9 @@ void compute_encoding_choice_errors(
 	int partition_count = pi->partition_count;
 	int texels_per_block = bsd->texel_count;
 
+	promise(partition_count > 0);
+	promise(texels_per_block > 0);
+
 	float3 averages[4];
 	float3 directions_rgb[4];
 	float4 error_weightings[4];

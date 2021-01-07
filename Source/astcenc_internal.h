@@ -826,7 +826,7 @@ void compute_averages_and_directions_3_components(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const float3 * color_scalefactors,
-	int omittedComponent,
+	int omitted_component,
 	float3* averages,
 	float3* directions);
 

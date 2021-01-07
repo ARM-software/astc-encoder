@@ -469,6 +469,7 @@ void encode_ise(
 	int bits, trits, quints;
 	find_number_of_bits_trits_quints(quantization_level, &bits, &trits, &quints);
 
+	promise(elements > 0);
 	for (int i = 0; i < elements; i++)
 	{
 		lowparts[i] = input_data[i] & ((1 << bits) - 1);

@@ -325,8 +325,14 @@ float compute_symbolic_block_difference(
 	const decimation_table *it = ixtab2[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;
-
 	int weight_quantization_level = bm.quantization_mode;
+
+	int weight_count = it->num_weights;
+	int texel_count = bsd->texel_count;
+
+	promise(partition_count > 0);
+	promise(weight_count > 0);
+	promise(texel_count > 0);
 
 	// decode the color endpoints
 	uint4 color_endpoint0[4];
@@ -351,7 +357,6 @@ float compute_symbolic_block_difference(
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = it->num_weights;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
@@ -372,14 +377,14 @@ float compute_symbolic_block_difference(
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
 
-	for (int i = 0; i < bsd->texel_count; i++)
+	for (int i = 0; i < texel_count; i++)
 	{
 		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
 	}
 
 	if (is_dual_plane)
 	{
-		for (int i = 0; i < bsd->texel_count; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
 		}
@@ -390,7 +395,7 @@ float compute_symbolic_block_difference(
 	// now that we have endpoint colors and weights, we can unpack actual colors for
 	// each texel.
 	float summa = 0.0f;
-	for (int i = 0; i < bsd->texel_count; i++)
+	for (int i = 0; i < texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 

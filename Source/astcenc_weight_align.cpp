@@ -91,6 +91,13 @@ alignas(ASTCENC_VECALIGN) static float stepsizes_sqr[ANGULAR_STEPS];
 
 static int max_angular_steps_needed_for_quant_level[13];
 
+// yes, the next-to-last entry is supposed to have the value 33. This because under
+// ASTC, the 32-weight mode leaves a double-sized hole in the middle of the
+// weight space, so we are better off matching 33 weights than 32.
+static const int quantization_steps_for_level[13] = {
+	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36
+};
+
 // Store a reduced sin/cos table for 64 possible weight values; this causes
 // slight quality loss compared to using sin() and cos() directly. Must be 2^N.
 #define SINCOS_STEPS 64
@@ -116,14 +123,9 @@ void prepare_angular_tables()
 		max_angular_steps_needed_for_quant_steps[p] = MIN(i + 1, ANGULAR_STEPS - 1);
 	}
 
-	// yes, the next-to-last entry is supposed to have the value 33. This because under
-	// ASTC, the 32-weight mode leaves a double-sized hole in the middle of the
-	// weight space, so we are better off matching 33 weights than 32.
-	static const int steps_of_level[] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36 };
-
 	for (int i = 0; i < 13; i++)
 	{
-		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[steps_of_level[i]];
+		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[quantization_steps_for_level[i]];
 	}
 }
 
@@ -141,6 +143,9 @@ static void compute_angular_offsets(
 	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS];
 	std::memset(anglesum_x, 0, max_angular_steps*sizeof(anglesum_x[0]));
 	std::memset(anglesum_y, 0, max_angular_steps*sizeof(anglesum_y[0]));
+
+	promise(samplecount > 0);
+	promise(max_angular_steps > 0);
 
 	// compute the angle-sums.
 	for (int i = 0; i < samplecount; i++)
@@ -193,6 +198,9 @@ static void compute_lowest_and_highest_weight(
 	float *cut_low_weight_error,
 	float *cut_high_weight_error
 ) {
+	promise(samplecount > 0);
+	promise(max_angular_steps > 0);
+
 	// Arrays are always multiple of SIMD width (ANGULAR_STEPS), so this is safe even if overshoot max
 	for (int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
@@ -262,8 +270,6 @@ static void compute_angular_endpoints_for_quantization_levels(
 	float low_value[12],
 	float high_value[12]
 ) {
-	static const int quantization_steps_for_level[13] = { 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36 };
-
 	int max_quantization_steps = quantization_steps_for_level[max_quantization_level + 1];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
@@ -292,6 +298,7 @@ static void compute_angular_endpoints_for_quantization_levels(
 		cut_low_weight[i] = 0;
 	}
 
+	promise(max_angular_steps > 0);
 	for (int i = 0; i < max_angular_steps; i++)
 	{
 		int idx_span = weight_span[i];

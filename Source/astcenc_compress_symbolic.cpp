@@ -81,6 +81,10 @@ static int realign_weights(
 	float4 endpnt0f[4];
 	float4 offset[4];
 
+	promise(partition_count > 0);
+	promise(weight_count > 0);
+	promise(max_plane >= 0);
+
 	for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 	{
 		unpack_color_endpoints(decode_mode,
@@ -140,6 +144,7 @@ static int realign_weights(
 
 			// Interpolate the colors to create the diffs
 			int texels_to_evaluate = it->weight_num_texels[we_idx];
+			promise(texels_to_evaluate > 0);
 			for (int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
 				int texel = it->weight_texel[we_idx][te_idx];
