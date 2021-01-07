@@ -46,15 +46,19 @@ void compute_averages_and_directions_rgba(
 	float4* directions_rgba
 ) {
 	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
+
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float4 base_sum = float4(0.0f);
 		float partition_weight = 0.0f;
 
-		for (int i = 0; i < texelcount; i++)
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
+
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
@@ -75,7 +79,7 @@ void compute_averages_and_directions_rgba(
 		float4 sum_zp = float4(0.0f);
 		float4 sum_wp = float4(0.0f);
 
-		for (int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
@@ -143,18 +147,22 @@ void compute_averages_and_directions_rgb(
 	float3* averages,
 	float3* directions_rgb
 ) {
-	int partition_count = pt->partition_count;
 	const float *texel_weights = ewb->texel_weight_rgb;
+
+	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float3 base_sum = float3(0.0f, 0.0f, 0.0f);
 		float partition_weight = 0.0f;
 
-		for (int i = 0; i < texelcount; i++)
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
+
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -174,7 +182,7 @@ void compute_averages_and_directions_rgb(
 		float3 sum_yp = float3(0.0f);
 		float3 sum_zp = float3(0.0f);
 
-		for (int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -266,15 +274,19 @@ void compute_averages_and_directions_3_components(
 	}
 
 	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
+
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float3 base_sum = float3(0.0f);
 		float partition_weight = 0.0f;
 
-		for (int i = 0; i < texelcount; i++)
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
+
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -295,7 +307,7 @@ void compute_averages_and_directions_3_components(
 		float3 sum_yp = float3(0.0f);
 		float3 sum_zp = float3(0.0f);
 
-		for (int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -383,15 +395,19 @@ void compute_averages_and_directions_2_components(
 	}
 
 	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
+
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float2 base_sum = float2(0.0f);
 		float partition_weight = 0.0f;
 
-		for (int i = 0; i < texelcount; i++)
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
+
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -409,7 +425,7 @@ void compute_averages_and_directions_2_components(
 		float2 sum_xp = float2(0.0f);
 		float2 sum_yp = float2(0.0f);
 
-		for (int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
@@ -466,12 +482,14 @@ void compute_error_squared_rgba(
 	float blue_errorsum = 0.0f;
 	float alpha_errorsum = 0.0f;
 
-	for (int partition = 0; partition < pt->partition_count; partition++)
+	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
+
+	for (int partition = 0; partition < partition_count; partition++)
 	{
 		// TODO: sort partitions by number of texels. For warp-architectures,
 		// this can reduce the running time by about 25-50%.
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float uncorr_lowparam = 1e10f;
 		float uncorr_highparam = -1e10f;
@@ -491,7 +509,10 @@ void compute_error_squared_rgba(
 
 		// TODO: split up this loop due to too many temporaries; in particular,
 		// the six line functions will consume 18 vector registers
-		for (int i = 0; i < texelcount; i++)
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
+
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 
@@ -597,12 +618,14 @@ void compute_error_squared_rgb(
 	float green_errorsum = 0.0f;
 	float blue_errorsum = 0.0f;
 
-	for (int partition = 0; partition < pt->partition_count; partition++)
+	int partition_count = pt->partition_count;
+	promise(partition_count > 0);
+
+	for (int partition = 0; partition < partition_count; partition++)
 	{
 		// TODO: sort partitions by number of texels. For warp-architectures,
 		// this can reduce the running time by about 25-50%.
 		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texelcount = pt->texels_per_partition[partition];
 
 		float uncorr_lowparam = 1e10f;
 		float uncorr_highparam = -1e10f;
@@ -621,8 +644,10 @@ void compute_error_squared_rgb(
 
 		// TODO: split up this loop due to too many temporaries; in
 		// particular, the six line functions will consume 18 vector registers
+		int texel_count = pt->texels_per_partition[partition];
+		promise(texel_count > 0);
 
-		for (int i = 0; i < texelcount; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 

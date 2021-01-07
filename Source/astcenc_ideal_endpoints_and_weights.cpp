@@ -934,8 +934,10 @@ float compute_error_of_weight_set(
 	const decimation_table* it,
 	const float* weights
 ) {
-	int texel_count = it->texel_count;
 	float error_summa = 0.0;
+
+	int texel_count = it->texel_count;
+	promise(texel_count > 0);
 	for (int i = 0; i < texel_count; i++)
 	{
 		error_summa += compute_error_of_texel(eai, i, it, weights);
