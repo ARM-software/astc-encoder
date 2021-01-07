@@ -110,50 +110,32 @@ static void compute_rgb_range(
 	float3 rgb_max[4];
 
 	int partition_count = pt->partition_count;
+
+	promise(partition_count > 0);
 	for (int i = 0; i < partition_count; i++)
 	{
 		rgb_min[i] = float3(1e38f);
 		rgb_max[i] = float3(-1e38f);
 	}
 
+	promise(texels_per_block > 0);
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
 
-			float redval = blk->data_r[i];
-			if (redval > rgb_max[partition].r)
-			{
-				rgb_max[partition].r = redval;
-			}
+			float data_r = blk->data_r[i];
+			float data_g = blk->data_g[i];
+			float data_b = blk->data_b[i];
 
-			if (redval < rgb_min[partition].r)
-			{
-				rgb_min[partition].r = redval;
-			}
+			rgb_min[partition].r = astc::min(data_r, rgb_min[partition].r);
+			rgb_min[partition].g = astc::min(data_g, rgb_min[partition].g);
+			rgb_min[partition].b = astc::min(data_b, rgb_min[partition].b);
 
-			float greenval = blk->data_g[i];
-			if (greenval > rgb_max[partition].g)
-			{
-				rgb_max[partition].g = greenval;
-			}
-
-			if (greenval < rgb_min[partition].g)
-			{
-				rgb_min[partition].g = greenval;
-			}
-
-			float blueval = blk->data_b[i];
-			if (blueval > rgb_max[partition].b)
-			{
-				rgb_max[partition].b = blueval;
-			}
-
-			if (blueval < rgb_min[partition].b)
-			{
-				rgb_min[partition].b = blueval;
-			}
+			rgb_max[partition].r = astc::max(data_r, rgb_max[partition].r);
+			rgb_max[partition].g = astc::max(data_g, rgb_max[partition].g);
+			rgb_max[partition].b = astc::max(data_b, rgb_max[partition].b);
 		}
 	}
 
@@ -161,23 +143,9 @@ static void compute_rgb_range(
 	// to avoid divide by zeros later ...
 	for (int i = 0; i < partition_count; i++)
 	{
-		rgb_range[i].r = rgb_max[i].r - rgb_min[i].r;
-		if (rgb_range[i].r <= 0.0f)
-		{
-			rgb_range[i].r = 1e-10f;
-		}
-
-		rgb_range[i].g = rgb_max[i].g - rgb_min[i].g;
-		if (rgb_range[i].g <= 0.0f)
-		{
-			rgb_range[i].g = 1e-10f;
-		}
-
-		rgb_range[i].b = rgb_max[i].b - rgb_min[i].b;
-		if (rgb_range[i].b <= 0.0f)
-		{
-			rgb_range[i].b = 1e-10f;
-		}
+		rgb_range[i].r = astc::max(rgb_max[i].r - rgb_min[i].r, 1e-10f);
+		rgb_range[i].g = astc::max(rgb_max[i].g - rgb_min[i].g, 1e-10f);
+		rgb_range[i].b = astc::max(rgb_max[i].b - rgb_min[i].b, 1e-10f);
 	}
 }
 

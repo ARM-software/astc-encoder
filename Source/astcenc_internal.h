@@ -85,6 +85,27 @@
 #include "astcenc_mathlib.h"
 #include "astcenc_vecmathlib.h"
 
+/**
+ * @brief Make a promise to the compiler's optimizer.
+ *
+ * A promise is an expression that the optimizer is can assume is true for to
+ * help it generate faster code. Common use cases for this are to promise that
+ * a for loop will iterate more than once, or that the loop iteration count is
+ * a multiple of a vector length, which avoids pre-loop checks and can avoid
+ * loop tails if loops are unrolled by the auto-vectorizer.
+ */
+#if defined(NDEBUG)
+	#if defined(_MSC_VER)
+		#define promise(cond) __assume(cond);
+	#elif __has_builtin(__builtin_assume)
+		#define promise(cond) __builtin_assume(cond);
+	#elif __has_builtin(__builtin_unreachable)
+		#define promise(cond) __builtin_unreachable(!(cond));
+	#endif
+#else
+	#define promise(cond) assert(cond);
+#endif
+
 /* ============================================================================
   Constants
 ============================================================================ */
@@ -431,11 +452,11 @@ struct decimation_mode
  * block size and set of compressor heuristics, only a subset of the block
  * modes will be used. The actual number of block modes stored is indicated in
  * @c block_mode_count, and the @c block_modes array store the active modes
- * contiguously at the start of the array. These entries are stored in 
- * incrementing "packed" value order, which doesn't mean much once unpacked. 
+ * contiguously at the start of the array. These entries are stored in
+ * incrementing "packed" value order, which doesn't mean much once unpacked.
  * To allow decompressors to reference the packed data efficiently the
  * @c block_mode_packed_index array stores the mapping between physical ID and
- * the actual remapped array index. 
+ * the actual remapped array index.
  */
 struct block_size_descriptor
 {
@@ -454,7 +475,7 @@ struct block_size_descriptor
 
 	/**< The number of stored decimation modes. */
 	int decimation_mode_count;
-	
+
 	/**< The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
 
