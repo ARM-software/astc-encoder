@@ -27,7 +27,7 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **Improvement:** Linux binaries changed to use Clang 9.0, which gives
     up to 15% performance improvement.
   * **Improvement:** Windows binaries are now code signed.
-  * **Improvement:** macOS binaries for arm64 platforms now provided.
+  * **Improvement:** macOS binaries for Apple Silicon platforms now provided.
   * **Improvement:** macOS binaries are now code signed and notarized.
 * **Command Line:**
   * **Feature:** New image preprocess `-pp-normalize` option added. This forces
