@@ -247,15 +247,21 @@ TEST(vfloat, Atan2)
 #endif
 
 static const float qnan = std::numeric_limits<float>::quiet_NaN();
-alignas(16) static const float f32x4_data[5] { 0.0f, 1.0f, 2.0f, 3.0f, 4.0f };
-alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
+
+alignas(32) static const float f32_data[9] {
+	0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f
+};
+
+alignas(32) static const int s32_data[9] {
+	0, 1, 2, 3, 4, 5 , 6, 7, 8
+};
 
 // VFLOAT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /** @brief Test unaligned vfloat4 data load. */
 TEST(vfloat4, UnalignedLoad)
 {
-	vfloat4 a(&(f32x4_data[1]));
+	vfloat4 a(&(f32_data[1]));
 	EXPECT_EQ(a.lane<0>(), 1.0f);
 	EXPECT_EQ(a.lane<1>(), 2.0f);
 	EXPECT_EQ(a.lane<2>(), 3.0f);
@@ -347,7 +353,7 @@ TEST(vfloat4, Load1)
 /** @brief Test vfloat4 loada. */
 TEST(vfloat4, Loada)
 {
-	vfloat4 a(&(f32x4_data[0]));
+	vfloat4 a(&(f32_data[0]));
 	EXPECT_EQ(a.lane<0>(), 0.0f);
 	EXPECT_EQ(a.lane<1>(), 1.0f);
 	EXPECT_EQ(a.lane<2>(), 2.0f);
@@ -716,7 +722,7 @@ TEST(vfloat4, select_msb)
 TEST(vfloat4, gatherf)
 {
 	vint4 indices(0, 4, 3, 2);
-	vfloat4 r = gatherf(f32x4_data, indices);
+	vfloat4 r = gatherf(f32_data, indices);
 	EXPECT_EQ(r.lane<0>(), 0.0f);
 	EXPECT_EQ(r.lane<1>(), 4.0f);
 	EXPECT_EQ(r.lane<2>(), 3.0f);
@@ -727,7 +733,7 @@ TEST(vfloat4, gatherf)
 TEST(vfloat4, store)
 {
 	alignas(16) float out[5];
-	vfloat4 a(f32x4_data);
+	vfloat4 a(f32_data);
 	store(a, &(out[1]));
 	EXPECT_EQ(out[1], 0.0f);
 	EXPECT_EQ(out[2], 1.0f);
@@ -739,7 +745,7 @@ TEST(vfloat4, store)
 TEST(vfloat4, storea)
 {
 	alignas(16) float out[4];
-	vfloat4 a(f32x4_data);
+	vfloat4 a(f32_data);
 	store(a, out);
 	EXPECT_EQ(out[0], 0.0f);
 	EXPECT_EQ(out[1], 1.0f);
@@ -787,7 +793,7 @@ TEST(vfloat4, float_to_int_rtn)
 /** @brief Test unaligned vint4 data load. */
 TEST(vint4, UnalignedLoad)
 {
-	vint4 a(&(s32x4_data[1]));
+	vint4 a(&(s32_data[1]));
 	EXPECT_EQ(a.lane<0>(), 1);
 	EXPECT_EQ(a.lane<1>(), 2);
 	EXPECT_EQ(a.lane<2>(), 3);
@@ -1032,7 +1038,7 @@ TEST(vint4, hmin)
 TEST(vint4, storea)
 {
 	alignas(16) int out[4];
-	vint4 a(s32x4_data);
+	vint4 a(s32_data);
 	storea(a, out);
 	EXPECT_EQ(out[0], 0);
 	EXPECT_EQ(out[1], 1);
@@ -1053,7 +1059,7 @@ TEST(vint4, store_nbytes)
 TEST(vint4, gatheri)
 {
 	vint4 indices(0, 4, 3, 2);
-	vint4 r = gatheri(s32x4_data, indices);
+	vint4 r = gatheri(s32_data, indices);
 	EXPECT_EQ(r.lane<0>(), 0);
 	EXPECT_EQ(r.lane<1>(), 4);
 	EXPECT_EQ(r.lane<2>(), 3);
@@ -1168,5 +1174,1096 @@ TEST(vmask4, not)
 	vmask4 r = ~m1;
 	EXPECT_EQ(mask(r), 0x5);
 }
+
+# if ASTCENC_SIMD_WIDTH == 8
+
+// VFLOAT8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** @brief Test unaligned vfloat8 data load. */
+TEST(vfloat8, UnalignedLoad)
+{
+	vfloat8 a(&(f32_data[1]));
+	EXPECT_EQ(a.lane<0>(), 1.0f);
+	EXPECT_EQ(a.lane<1>(), 2.0f);
+	EXPECT_EQ(a.lane<2>(), 3.0f);
+	EXPECT_EQ(a.lane<3>(), 4.0f);
+	EXPECT_EQ(a.lane<4>(), 5.0f);
+	EXPECT_EQ(a.lane<5>(), 6.0f);
+	EXPECT_EQ(a.lane<6>(), 7.0f);
+	EXPECT_EQ(a.lane<7>(), 8.0f);
+}
+
+/** @brief Test scalar duplicated vfloat8 load. */
+TEST(vfloat8, ScalarDupLoad)
+{
+	vfloat8 a(1.1f);
+	EXPECT_EQ(a.lane<0>(), 1.1f);
+	EXPECT_EQ(a.lane<1>(), 1.1f);
+	EXPECT_EQ(a.lane<2>(), 1.1f);
+	EXPECT_EQ(a.lane<3>(), 1.1f);
+	EXPECT_EQ(a.lane<4>(), 1.1f);
+	EXPECT_EQ(a.lane<5>(), 1.1f);
+	EXPECT_EQ(a.lane<6>(), 1.1f);
+	EXPECT_EQ(a.lane<7>(), 1.1f);
+}
+
+/** @brief Test scalar vfloat8 load. */
+TEST(vfloat8, ScalarLoad)
+{
+	vfloat8 a(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
+	EXPECT_EQ(a.lane<0>(), 1.1f);
+	EXPECT_EQ(a.lane<1>(), 2.2f);
+	EXPECT_EQ(a.lane<2>(), 3.3f);
+	EXPECT_EQ(a.lane<3>(), 4.4f);
+	EXPECT_EQ(a.lane<4>(), 5.5f);
+	EXPECT_EQ(a.lane<5>(), 6.6f);
+	EXPECT_EQ(a.lane<6>(), 7.7f);
+	EXPECT_EQ(a.lane<7>(), 8.8f);
+}
+
+/** @brief Test copy vfloat8 load. */
+TEST(vfloat8, CopyLoad)
+{
+	vfloat8 s(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
+	vfloat8 a(s.m);
+	EXPECT_EQ(a.lane<0>(), 1.1f);
+	EXPECT_EQ(a.lane<1>(), 2.2f);
+	EXPECT_EQ(a.lane<2>(), 3.3f);
+	EXPECT_EQ(a.lane<3>(), 4.4f);
+	EXPECT_EQ(a.lane<4>(), 5.5f);
+	EXPECT_EQ(a.lane<5>(), 6.6f);
+	EXPECT_EQ(a.lane<6>(), 7.7f);
+	EXPECT_EQ(a.lane<7>(), 8.8f);
+}
+
+/** @brief Test vfloat8 zero. */
+TEST(vfloat8, Zero)
+{
+	vfloat8 a = vfloat8::zero();
+	EXPECT_EQ(a.lane<0>(), 0.0f);
+	EXPECT_EQ(a.lane<1>(), 0.0f);
+	EXPECT_EQ(a.lane<2>(), 0.0f);
+	EXPECT_EQ(a.lane<3>(), 0.0f);
+	EXPECT_EQ(a.lane<4>(), 0.0f);
+	EXPECT_EQ(a.lane<5>(), 0.0f);
+	EXPECT_EQ(a.lane<6>(), 0.0f);
+	EXPECT_EQ(a.lane<7>(), 0.0f);
+}
+
+/** @brief Test vfloat8 load1. */
+TEST(vfloat8, Load1)
+{
+	float s = 3.14f;
+	vfloat8 a = vfloat8::load1(&s);
+	EXPECT_EQ(a.lane<0>(), 3.14f);
+	EXPECT_EQ(a.lane<1>(), 3.14f);
+	EXPECT_EQ(a.lane<2>(), 3.14f);
+	EXPECT_EQ(a.lane<3>(), 3.14f);
+	EXPECT_EQ(a.lane<4>(), 3.14f);
+	EXPECT_EQ(a.lane<5>(), 3.14f);
+	EXPECT_EQ(a.lane<6>(), 3.14f);
+	EXPECT_EQ(a.lane<7>(), 3.14f);
+}
+
+/** @brief Test vfloat8 loada. */
+TEST(vfloat8, Loada)
+{
+	vfloat8 a(&(f32_data[0]));
+	EXPECT_EQ(a.lane<0>(), 0.0f);
+	EXPECT_EQ(a.lane<1>(), 1.0f);
+	EXPECT_EQ(a.lane<2>(), 2.0f);
+	EXPECT_EQ(a.lane<3>(), 3.0f);
+	EXPECT_EQ(a.lane<4>(), 4.0f);
+	EXPECT_EQ(a.lane<5>(), 5.0f);
+	EXPECT_EQ(a.lane<6>(), 6.0f);
+	EXPECT_EQ(a.lane<7>(), 7.0f);
+}
+
+/** @brief Test vfloat8 lane_id. */
+TEST(vfloat8, LaneID)
+{
+	vfloat8 a = vfloat8::lane_id();
+	EXPECT_EQ(a.lane<0>(), 0.0f);
+	EXPECT_EQ(a.lane<1>(), 1.0f);
+	EXPECT_EQ(a.lane<2>(), 2.0f);
+	EXPECT_EQ(a.lane<3>(), 3.0f);
+	EXPECT_EQ(a.lane<4>(), 4.0f);
+	EXPECT_EQ(a.lane<5>(), 5.0f);
+	EXPECT_EQ(a.lane<6>(), 6.0f);
+	EXPECT_EQ(a.lane<7>(), 7.0f);
+}
+
+/** @brief Test vfloat8 add. */
+TEST(vfloat8, vadd)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	a = a + b;
+	EXPECT_EQ(a.lane<0>(), 1.0f + 0.1f);
+	EXPECT_EQ(a.lane<1>(), 2.0f + 0.2f);
+	EXPECT_EQ(a.lane<2>(), 3.0f + 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f + 0.4f);
+	EXPECT_EQ(a.lane<4>(), 5.0f + 0.5f);
+	EXPECT_EQ(a.lane<5>(), 6.0f + 0.6f);
+	EXPECT_EQ(a.lane<6>(), 7.0f + 0.7f);
+	EXPECT_EQ(a.lane<7>(), 8.0f + 0.8f);
+}
+
+/** @brief Test vfloat8 sub. */
+TEST(vfloat8, vsub)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	a = a - b;
+	EXPECT_EQ(a.lane<0>(), 1.0f - 0.1f);
+	EXPECT_EQ(a.lane<1>(), 2.0f - 0.2f);
+	EXPECT_EQ(a.lane<2>(), 3.0f - 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f - 0.4f);
+	EXPECT_EQ(a.lane<4>(), 5.0f - 0.5f);
+	EXPECT_EQ(a.lane<5>(), 6.0f - 0.6f);
+	EXPECT_EQ(a.lane<6>(), 7.0f - 0.7f);
+	EXPECT_EQ(a.lane<7>(), 8.0f - 0.8f);
+}
+
+/** @brief Test vfloat8 mul. */
+TEST(vfloat8, vmul)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	a = a * b;
+	EXPECT_EQ(a.lane<0>(), 1.0f * 0.1f);
+	EXPECT_EQ(a.lane<1>(), 2.0f * 0.2f);
+	EXPECT_EQ(a.lane<2>(), 3.0f * 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f * 0.4f);
+	EXPECT_EQ(a.lane<4>(), 5.0f * 0.5f);
+	EXPECT_EQ(a.lane<5>(), 6.0f * 0.6f);
+	EXPECT_EQ(a.lane<6>(), 7.0f * 0.7f);
+	EXPECT_EQ(a.lane<7>(), 8.0f * 0.8f);
+}
+
+/** @brief Test vfloat8 mul. */
+TEST(vfloat8, vsmul)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	float b = 3.14f;
+	a = a * b;
+	EXPECT_EQ(a.lane<0>(), 1.0f * 3.14f);
+	EXPECT_EQ(a.lane<1>(), 2.0f * 3.14f);
+	EXPECT_EQ(a.lane<2>(), 3.0f * 3.14f);
+	EXPECT_EQ(a.lane<3>(), 4.0f * 3.14f);
+	EXPECT_EQ(a.lane<4>(), 5.0f * 3.14f);
+	EXPECT_EQ(a.lane<5>(), 6.0f * 3.14f);
+	EXPECT_EQ(a.lane<6>(), 7.0f * 3.14f);
+	EXPECT_EQ(a.lane<7>(), 8.0f * 3.14f);
+}
+
+/** @brief Test vfloat8 mul. */
+TEST(vfloat8, svmul)
+{
+	float a = 3.14f;
+	vfloat8 b(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	b = a * b;
+	EXPECT_EQ(b.lane<0>(), 3.14f * 1.0f);
+	EXPECT_EQ(b.lane<1>(), 3.14f * 2.0f);
+	EXPECT_EQ(b.lane<2>(), 3.14f * 3.0f);
+	EXPECT_EQ(b.lane<3>(), 3.14f * 4.0f);
+	EXPECT_EQ(b.lane<4>(), 3.14f * 5.0f);
+	EXPECT_EQ(b.lane<5>(), 3.14f * 6.0f);
+	EXPECT_EQ(b.lane<6>(), 3.14f * 7.0f);
+	EXPECT_EQ(b.lane<7>(), 3.14f * 8.0f);
+}
+
+/** @brief Test vfloat8 div. */
+TEST(vfloat8, vdiv)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	a = a / b;
+	EXPECT_EQ(a.lane<0>(), 1.0f / 0.1f);
+	EXPECT_EQ(a.lane<1>(), 2.0f / 0.2f);
+	EXPECT_EQ(a.lane<2>(), 3.0f / 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f / 0.4f);
+	EXPECT_EQ(a.lane<4>(), 5.0f / 0.5f);
+	EXPECT_EQ(a.lane<5>(), 6.0f / 0.6f);
+	EXPECT_EQ(a.lane<6>(), 7.0f / 0.7f);
+	EXPECT_EQ(a.lane<7>(), 8.0f / 0.8f);
+}
+
+/** @brief Test vfloat8 ceq. */
+TEST(vfloat8, ceq)
+{
+	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b1(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r1 = a1 == b1;
+	EXPECT_EQ(0, mask(r1));
+	EXPECT_EQ(false, any(r1));
+	EXPECT_EQ(false, all(r1));
+
+	vfloat8 a2(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b2(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r2 = a2 == b2;
+	EXPECT_EQ(0x1, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vfloat8 a3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b3(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r3 = a3 == b3;
+	EXPECT_EQ(0x5, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vfloat8 a4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vmask8 r4 = a4 == a4;
+	EXPECT_EQ(0xFF, mask(r4));
+	EXPECT_EQ(true, any(r4));
+	EXPECT_EQ(true, all(r4));
+}
+
+/** @brief Test vfloat8 cne. */
+TEST(vfloat8, cne)
+{
+	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b1(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r1 = a1 != b1;
+	EXPECT_EQ(0xFF, mask(r1));
+	EXPECT_EQ(true, any(r1));
+	EXPECT_EQ(true, all(r1));
+
+	vfloat8 a2(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b2(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r2 = a2 != b2;
+	EXPECT_EQ(0xFE, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vfloat8 a3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b3(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vmask8 r3 = a3 != b3;
+	EXPECT_EQ(0xFA, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vfloat8 a4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vmask8 r4 = a4 != a4;
+	EXPECT_EQ(0, mask(r4));
+	EXPECT_EQ(false, any(r4));
+	EXPECT_EQ(false, all(r4));
+}
+
+/** @brief Test vfloat8 clt. */
+TEST(vfloat8, clt)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vmask8 r = a < b;
+	EXPECT_EQ(0xAA, mask(r));
+}
+
+/** @brief Test vfloat8 cle. */
+TEST(vfloat8, cle)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vmask8 r = a <= b;
+	EXPECT_EQ(0xEE, mask(r));
+}
+
+/** @brief Test vfloat8 cgt. */
+TEST(vfloat8, cgt)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vmask8 r = a > b;
+	EXPECT_EQ(0x11, mask(r));
+}
+
+/** @brief Test vfloat8 cge. */
+TEST(vfloat8, cge)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vmask8 r = a >= b;
+	EXPECT_EQ(0x55, mask(r));
+}
+
+/** @brief Test vfloat8 min. */
+TEST(vfloat8, min)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 r = min(a, b);
+	EXPECT_EQ(r.lane<0>(), 0.9f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 4.0f);
+	EXPECT_EQ(r.lane<4>(), 0.9f);
+	EXPECT_EQ(r.lane<5>(), 2.0f);
+	EXPECT_EQ(r.lane<6>(), 3.0f);
+	EXPECT_EQ(r.lane<7>(), 4.0f);
+}
+
+/** @brief Test vfloat8 max. */
+TEST(vfloat8, max)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 r = max(a, b);
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 2.1f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 4.1f);
+	EXPECT_EQ(r.lane<4>(), 1.0f);
+	EXPECT_EQ(r.lane<5>(), 2.1f);
+	EXPECT_EQ(r.lane<6>(), 3.0f);
+	EXPECT_EQ(r.lane<7>(), 4.1f);
+}
+
+/** @brief Test vfloat8 clamp. */
+TEST(vfloat8, clamp)
+{
+	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 r1 = clamp(2.1f, 3.0f, a1);
+	EXPECT_EQ(r1.lane<0>(), 2.1f);
+	EXPECT_EQ(r1.lane<1>(), 2.1f);
+	EXPECT_EQ(r1.lane<2>(), 3.0f);
+	EXPECT_EQ(r1.lane<3>(), 3.0f);
+	EXPECT_EQ(r1.lane<4>(), 2.1f);
+	EXPECT_EQ(r1.lane<5>(), 2.1f);
+	EXPECT_EQ(r1.lane<6>(), 3.0f);
+	EXPECT_EQ(r1.lane<7>(), 3.0f);
+
+	vfloat8 a2(1.0f, 2.0f, qnan, 4.0f, 1.0f, 2.0f, qnan, 4.0f);
+	vfloat8 r2 = clamp(2.1f, 3.0f, a2);
+	EXPECT_EQ(r2.lane<0>(), 2.1f);
+	EXPECT_EQ(r2.lane<1>(), 2.1f);
+	EXPECT_EQ(r2.lane<2>(), 2.1f);
+	EXPECT_EQ(r2.lane<3>(), 3.0f);
+	EXPECT_EQ(r2.lane<4>(), 2.1f);
+	EXPECT_EQ(r2.lane<5>(), 2.1f);
+	EXPECT_EQ(r2.lane<6>(), 2.1f);
+	EXPECT_EQ(r2.lane<7>(), 3.0f);
+}
+
+/** @brief Test vfloat8 clampz. */
+TEST(vfloat8, clampz)
+{
+	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
+	vfloat8 r1 = clampz(3.0f, a1);
+	EXPECT_EQ(r1.lane<0>(), 0.0f);
+	EXPECT_EQ(r1.lane<1>(), 0.0f);
+	EXPECT_EQ(r1.lane<2>(), 0.1f);
+	EXPECT_EQ(r1.lane<3>(), 3.0f);
+	EXPECT_EQ(r1.lane<4>(), 0.0f);
+	EXPECT_EQ(r1.lane<5>(), 0.0f);
+	EXPECT_EQ(r1.lane<6>(), 0.1f);
+	EXPECT_EQ(r1.lane<7>(), 3.0f);
+
+	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
+	vfloat8 r2 = clampz(3.0f, a2);
+	EXPECT_EQ(r2.lane<0>(), 0.0f);
+	EXPECT_EQ(r2.lane<1>(), 0.0f);
+	EXPECT_EQ(r2.lane<2>(), 0.0f);
+	EXPECT_EQ(r2.lane<3>(), 3.0f);
+	EXPECT_EQ(r2.lane<4>(), 0.0f);
+	EXPECT_EQ(r2.lane<5>(), 0.0f);
+	EXPECT_EQ(r2.lane<6>(), 0.0f);
+	EXPECT_EQ(r2.lane<7>(), 3.0f);
+}
+
+/** @brief Test vfloat8 clampz. */
+TEST(vfloat8, clampzo)
+{
+	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
+	vfloat8 r1 = clampzo(a1);
+	EXPECT_EQ(r1.lane<0>(), 0.0f);
+	EXPECT_EQ(r1.lane<1>(), 0.0f);
+	EXPECT_EQ(r1.lane<2>(), 0.1f);
+	EXPECT_EQ(r1.lane<3>(), 1.0f);
+	EXPECT_EQ(r1.lane<4>(), 0.0f);
+	EXPECT_EQ(r1.lane<5>(), 0.0f);
+	EXPECT_EQ(r1.lane<6>(), 0.1f);
+	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
+	vfloat8 r2 = clampzo(a2);
+	EXPECT_EQ(r2.lane<0>(), 0.0f);
+	EXPECT_EQ(r2.lane<1>(), 0.0f);
+	EXPECT_EQ(r2.lane<2>(), 0.0f);
+	EXPECT_EQ(r2.lane<3>(), 1.0f);
+	EXPECT_EQ(r2.lane<4>(), 0.0f);
+	EXPECT_EQ(r2.lane<5>(), 0.0f);
+	EXPECT_EQ(r2.lane<6>(), 0.0f);
+	EXPECT_EQ(r2.lane<7>(), 1.0f);
+}
+
+/** @brief Test vfloat8 abs. */
+TEST(vfloat8, abs)
+{
+	vfloat8 a(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
+	vfloat8 r = abs(a);
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 0.0f);
+	EXPECT_EQ(r.lane<2>(), 0.1f);
+	EXPECT_EQ(r.lane<3>(), 4.0f);
+	EXPECT_EQ(r.lane<4>(), 1.0f);
+	EXPECT_EQ(r.lane<5>(), 0.0f);
+	EXPECT_EQ(r.lane<6>(), 0.1f);
+	EXPECT_EQ(r.lane<7>(), 4.0f);
+}
+
+/** @brief Test vfloat8 round. */
+TEST(vfloat8, round)
+{
+	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 r = round(a);
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 2.0f);
+	EXPECT_EQ(r.lane<3>(), 4.0f);
+	EXPECT_EQ(r.lane<4>(), 1.0f);
+	EXPECT_EQ(r.lane<5>(), 2.0f);
+	EXPECT_EQ(r.lane<6>(), 2.0f);
+	EXPECT_EQ(r.lane<7>(), 4.0f);
+}
+
+/** @brief Test vfloat8 hmin. */
+TEST(vfloat8, hmin)
+{
+	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 r1 = hmin(a1);
+	EXPECT_EQ(r1.lane<0>(), 1.1f);
+	EXPECT_EQ(r1.lane<1>(), 1.1f);
+	EXPECT_EQ(r1.lane<2>(), 1.1f);
+	EXPECT_EQ(r1.lane<3>(), 1.1f);
+	EXPECT_EQ(r1.lane<4>(), 1.1f);
+	EXPECT_EQ(r1.lane<5>(), 1.1f);
+	EXPECT_EQ(r1.lane<6>(), 1.1f);
+	EXPECT_EQ(r1.lane<7>(), 1.1f);
+
+	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 r2 = hmin(a2);
+	EXPECT_EQ(r2.lane<0>(), 0.2f);
+	EXPECT_EQ(r2.lane<1>(), 0.2f);
+	EXPECT_EQ(r2.lane<2>(), 0.2f);
+	EXPECT_EQ(r2.lane<3>(), 0.2f);
+	EXPECT_EQ(r2.lane<4>(), 0.2f);
+	EXPECT_EQ(r2.lane<5>(), 0.2f);
+	EXPECT_EQ(r2.lane<6>(), 0.2f);
+	EXPECT_EQ(r2.lane<7>(), 0.2f);
+}
+
+/** @brief Test vfloat8 sqrt. */
+TEST(vfloat8, sqrt)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 r = sqrt(a);
+	EXPECT_EQ(r.lane<0>(), std::sqrt(1.0f));
+	EXPECT_EQ(r.lane<1>(), std::sqrt(2.0f));
+	EXPECT_EQ(r.lane<2>(), std::sqrt(3.0f));
+	EXPECT_EQ(r.lane<3>(), std::sqrt(4.0f));
+	EXPECT_EQ(r.lane<4>(), std::sqrt(1.0f));
+	EXPECT_EQ(r.lane<5>(), std::sqrt(2.0f));
+	EXPECT_EQ(r.lane<6>(), std::sqrt(3.0f));
+	EXPECT_EQ(r.lane<7>(), std::sqrt(4.0f));
+}
+
+/** @brief Test vfloat8 select. */
+TEST(vfloat8, select)
+{
+	vfloat8 m1(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	vfloat8 m2(1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f);
+	vmask8 cond = m1 == m2;
+
+	vfloat8 a(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0);
+	vfloat8 b(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0);
+
+	// Select in one direction
+	vfloat8 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4.0f);
+	EXPECT_EQ(r1.lane<1>(), 3.0f);
+	EXPECT_EQ(r1.lane<2>(), 2.0f);
+	EXPECT_EQ(r1.lane<3>(), 1.0f);
+	EXPECT_EQ(r1.lane<4>(), 4.0f);
+	EXPECT_EQ(r1.lane<5>(), 3.0f);
+	EXPECT_EQ(r1.lane<6>(), 2.0f);
+	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+	// Select in the other
+	vfloat8 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1.0f);
+	EXPECT_EQ(r2.lane<1>(), 2.0f);
+	EXPECT_EQ(r2.lane<2>(), 3.0f);
+	EXPECT_EQ(r2.lane<3>(), 4.0f);
+	EXPECT_EQ(r2.lane<4>(), 1.0f);
+	EXPECT_EQ(r2.lane<5>(), 2.0f);
+	EXPECT_EQ(r2.lane<6>(), 3.0f);
+	EXPECT_EQ(r2.lane<7>(), 4.0f);
+}
+
+/** @brief Test vfloat8 select MSB only. */
+TEST(vfloat8, select_msb)
+{
+	vint8 msb(0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0);
+	vmask8 cond(msb.m);
+
+	vfloat8 a(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
+	vfloat8 b(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
+
+	// Select in one direction
+	vfloat8 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4.0f);
+	EXPECT_EQ(r1.lane<1>(), 3.0f);
+	EXPECT_EQ(r1.lane<2>(), 2.0f);
+	EXPECT_EQ(r1.lane<3>(), 1.0f);
+	EXPECT_EQ(r1.lane<4>(), 4.0f);
+	EXPECT_EQ(r1.lane<5>(), 3.0f);
+	EXPECT_EQ(r1.lane<6>(), 2.0f);
+	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+
+	// Select in the other
+	vfloat8 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1.0f);
+	EXPECT_EQ(r2.lane<1>(), 2.0f);
+	EXPECT_EQ(r2.lane<2>(), 3.0f);
+	EXPECT_EQ(r2.lane<3>(), 4.0f);
+	EXPECT_EQ(r2.lane<4>(), 1.0f);
+	EXPECT_EQ(r2.lane<5>(), 2.0f);
+	EXPECT_EQ(r2.lane<6>(), 3.0f);
+	EXPECT_EQ(r2.lane<7>(), 4.0f);
+}
+
+/** @brief Test vfloat8 gatherf. */
+TEST(vfloat8, gatherf)
+{
+	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
+	vfloat8 r = gatherf(f32_data, indices);
+	EXPECT_EQ(r.lane<0>(), 0.0f);
+	EXPECT_EQ(r.lane<1>(), 4.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 2.0f);
+	EXPECT_EQ(r.lane<4>(), 7.0f);
+	EXPECT_EQ(r.lane<5>(), 4.0f);
+	EXPECT_EQ(r.lane<6>(), 3.0f);
+	EXPECT_EQ(r.lane<7>(), 2.0f);
+}
+
+/** @brief Test vfloat8 store. */
+TEST(vfloat8, store)
+{
+	alignas(32) float out[9];
+	vfloat8 a(f32_data);
+	store(a, &(out[1]));
+	EXPECT_EQ(out[1], 0.0f);
+	EXPECT_EQ(out[2], 1.0f);
+	EXPECT_EQ(out[3], 2.0f);
+	EXPECT_EQ(out[4], 3.0f);
+	EXPECT_EQ(out[5], 4.0f);
+	EXPECT_EQ(out[6], 5.0f);
+	EXPECT_EQ(out[7], 6.0f);
+	EXPECT_EQ(out[8], 7.0f);
+}
+
+/** @brief Test vfloat8 storea. */
+TEST(vfloat8, storea)
+{
+	alignas(32) float out[9];
+	vfloat8 a(f32_data);
+	store(a, out);
+	EXPECT_EQ(out[0], 0.0f);
+	EXPECT_EQ(out[1], 1.0f);
+	EXPECT_EQ(out[2], 2.0f);
+	EXPECT_EQ(out[3], 3.0f);
+	EXPECT_EQ(out[4], 4.0f);
+	EXPECT_EQ(out[5], 5.0f);
+	EXPECT_EQ(out[6], 6.0f);
+	EXPECT_EQ(out[7], 7.0f);
+}
+
+/** @brief Test vfloat8 float_to_int. */
+TEST(vfloat8, float_to_int)
+{
+	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vint8 r = float_to_int(a);
+	EXPECT_EQ(r.lane<0>(), 1);
+	EXPECT_EQ(r.lane<1>(), 1);
+	EXPECT_EQ(r.lane<2>(), 1);
+	EXPECT_EQ(r.lane<3>(), 4);
+	EXPECT_EQ(r.lane<4>(), 1);
+	EXPECT_EQ(r.lane<5>(), 1);
+	EXPECT_EQ(r.lane<6>(), 1);
+	EXPECT_EQ(r.lane<7>(), 4);
+}
+
+// vint8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** @brief Test unaligned vint8 data load. */
+TEST(vint8, UnalignedLoad)
+{
+	vint8 a(&(s32_data[1]));
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 4);
+	EXPECT_EQ(a.lane<4>(), 5);
+	EXPECT_EQ(a.lane<5>(), 6);
+	EXPECT_EQ(a.lane<6>(), 7);
+	EXPECT_EQ(a.lane<7>(), 8);
+}
+
+/** @brief Test scalar duplicated vint8 load. */
+TEST(vint8, ScalarDupLoad)
+{
+	vint8 a(42);
+	EXPECT_EQ(a.lane<0>(), 42);
+	EXPECT_EQ(a.lane<1>(), 42);
+	EXPECT_EQ(a.lane<2>(), 42);
+	EXPECT_EQ(a.lane<3>(), 42);
+	EXPECT_EQ(a.lane<4>(), 42);
+	EXPECT_EQ(a.lane<5>(), 42);
+	EXPECT_EQ(a.lane<6>(), 42);
+	EXPECT_EQ(a.lane<7>(), 42);
+}
+
+/** @brief Test scalar vint8 load. */
+TEST(vint8, ScalarLoad)
+{
+	vint8 a(11, 22, 33, 44, 55, 66, 77, 88);
+	EXPECT_EQ(a.lane<0>(), 11);
+	EXPECT_EQ(a.lane<1>(), 22);
+	EXPECT_EQ(a.lane<2>(), 33);
+	EXPECT_EQ(a.lane<3>(), 44);
+	EXPECT_EQ(a.lane<4>(), 55);
+	EXPECT_EQ(a.lane<5>(), 66);
+	EXPECT_EQ(a.lane<6>(), 77);
+	EXPECT_EQ(a.lane<7>(), 88);
+}
+
+/** @brief Test copy vint8 load. */
+TEST(vint8, CopyLoad)
+{
+	vint8 s(11, 22, 33, 44, 55, 66, 77, 88);
+	vint8 a(s.m);
+	EXPECT_EQ(a.lane<0>(), 11);
+	EXPECT_EQ(a.lane<1>(), 22);
+	EXPECT_EQ(a.lane<2>(), 33);
+	EXPECT_EQ(a.lane<3>(), 44);
+	EXPECT_EQ(a.lane<4>(), 55);
+	EXPECT_EQ(a.lane<5>(), 66);
+	EXPECT_EQ(a.lane<6>(), 77);
+	EXPECT_EQ(a.lane<7>(), 88);
+}
+
+/** @brief Test vint8 lane_id. */
+TEST(vint8, LaneID)
+{
+	vint8 a = vint8::lane_id();
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 2);
+	EXPECT_EQ(a.lane<3>(), 3);
+	EXPECT_EQ(a.lane<4>(), 4);
+	EXPECT_EQ(a.lane<5>(), 5);
+	EXPECT_EQ(a.lane<6>(), 6);
+	EXPECT_EQ(a.lane<7>(), 7);
+}
+
+/** @brief Test vint8 add. */
+TEST(vint8, vadd)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	a = a + b;
+	EXPECT_EQ(a.lane<0>(), 1 + 2);
+	EXPECT_EQ(a.lane<1>(), 2 + 3);
+	EXPECT_EQ(a.lane<2>(), 3 + 4);
+	EXPECT_EQ(a.lane<3>(), 4 + 5);
+	EXPECT_EQ(a.lane<4>(), 1 + 2);
+	EXPECT_EQ(a.lane<5>(), 2 + 3);
+	EXPECT_EQ(a.lane<6>(), 3 + 4);
+	EXPECT_EQ(a.lane<7>(), 4 + 5);
+}
+
+/** @brief Test vint8 sub. */
+TEST(vint8, vsub)
+{
+	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
+	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
+	a = a - b;
+	EXPECT_EQ(a.lane<0>(), 1 - 2);
+	EXPECT_EQ(a.lane<1>(), 2 - 3);
+	EXPECT_EQ(a.lane<2>(), 4 - 3);
+	EXPECT_EQ(a.lane<3>(), 4 - 5);
+	EXPECT_EQ(a.lane<4>(), 1 - 2);
+	EXPECT_EQ(a.lane<5>(), 2 - 3);
+	EXPECT_EQ(a.lane<6>(), 4 - 3);
+	EXPECT_EQ(a.lane<7>(), 4 - 5);
+}
+
+/** @brief Test vint8 bitwise invert. */
+TEST(vint8, bit_invert)
+{
+	vint8 a(-1, 0, 1, 2, -1, 0, 1, 2);
+	a = ~a;
+	EXPECT_EQ(a.lane<0>(), ~-1);
+	EXPECT_EQ(a.lane<1>(), ~0);
+	EXPECT_EQ(a.lane<2>(), ~1);
+	EXPECT_EQ(a.lane<3>(), ~2);
+	EXPECT_EQ(a.lane<4>(), ~-1);
+	EXPECT_EQ(a.lane<5>(), ~0);
+	EXPECT_EQ(a.lane<6>(), ~1);
+	EXPECT_EQ(a.lane<7>(), ~2);
+}
+
+/** @brief Test vint8 bitwise or. */
+TEST(vint8, bit_vor)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	a = a | b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 3);
+	EXPECT_EQ(a.lane<2>(), 7);
+	EXPECT_EQ(a.lane<3>(), 5);
+	EXPECT_EQ(a.lane<4>(), 3);
+	EXPECT_EQ(a.lane<5>(), 3);
+	EXPECT_EQ(a.lane<6>(), 7);
+	EXPECT_EQ(a.lane<7>(), 5);
+}
+
+/** @brief Test vint8 bitwise and. */
+TEST(vint8, bit_vand)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	a = a & b;
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 4);
+	EXPECT_EQ(a.lane<4>(), 0);
+	EXPECT_EQ(a.lane<5>(), 2);
+	EXPECT_EQ(a.lane<6>(), 0);
+	EXPECT_EQ(a.lane<7>(), 4);
+}
+
+/** @brief Test vint8 bitwise xor. */
+TEST(vint8, bit_vxor)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	a = a ^ b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 7);
+	EXPECT_EQ(a.lane<3>(), 1);
+	EXPECT_EQ(a.lane<4>(), 3);
+	EXPECT_EQ(a.lane<5>(), 1);
+	EXPECT_EQ(a.lane<6>(), 7);
+	EXPECT_EQ(a.lane<7>(), 1);
+}
+
+/** @brief Test vint8 ceq. */
+TEST(vint8, ceq)
+{
+	vint8 a1(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b1(0, 1, 2, 3, 0, 1, 2, 3);
+	vmask8 r1 = a1 == b1;
+	EXPECT_EQ(0, mask(r1));
+	EXPECT_EQ(false, any(r1));
+	EXPECT_EQ(false, all(r1));
+
+	vint8 a2(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b2(1, 0, 0, 0, 1, 0, 0, 0);
+	vmask8 r2 = a2 == b2;
+	EXPECT_EQ(0x11, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vint8 a3(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b3(1, 0, 3, 0, 1, 0, 3, 0);
+	vmask8 r3 = a3 == b3;
+	EXPECT_EQ(0x55, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vint8 a4(1, 2, 3, 4, 1, 2, 3, 4);
+	vmask8 r4 = a4 == a4;
+	EXPECT_EQ(0xFF, mask(r4));
+	EXPECT_EQ(true, any(r4));
+	EXPECT_EQ(true, all(r4));
+}
+
+/** @brief Test vint8 cne. */
+TEST(vint8, cne)
+{
+	vint8 a1(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b1(0, 1, 2, 3, 0, 1, 2, 3);
+	vmask8 r1 = a1 != b1;
+	EXPECT_EQ(0xFF, mask(r1));
+	EXPECT_EQ(true, any(r1));
+	EXPECT_EQ(true, all(r1));
+
+	vint8 a2(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b2(1, 0, 0, 0, 1, 0, 0, 0);
+	vmask8 r2 = a2 != b2;
+	EXPECT_EQ(0xEE, mask(r2));
+	EXPECT_EQ(true, any(r2));
+	EXPECT_EQ(false, all(r2));
+
+	vint8 a3(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b3(1, 0, 3, 0, 1, 0, 3, 0);
+	vmask8 r3 = a3 != b3;
+	EXPECT_EQ(0xAA, mask(r3));
+	EXPECT_EQ(true, any(r3));
+	EXPECT_EQ(false, all(r3));
+
+	vint8 a4(1, 2, 3, 4, 1, 2, 3, 4);
+	vmask8 r4 = a4 != a4;
+	EXPECT_EQ(0, mask(r4));
+	EXPECT_EQ(false, any(r4));
+	EXPECT_EQ(false, all(r4));
+}
+
+/** @brief Test vint8 clt. */
+TEST(vint8, clt)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vmask8 r = a < b;
+	EXPECT_EQ(0xAA, mask(r));
+}
+
+/** @brief Test vint8 cgt. */
+TEST(vint8, cle)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vmask8 r = a > b;
+	EXPECT_EQ(0x11, mask(r));
+}
+
+/** @brief Test vint8 min. */
+TEST(vint8, min)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 r = min(a, b);
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 2);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 4);
+	EXPECT_EQ(r.lane<4>(), 0);
+	EXPECT_EQ(r.lane<5>(), 2);
+	EXPECT_EQ(r.lane<6>(), 3);
+	EXPECT_EQ(r.lane<7>(), 4);
+}
+
+/** @brief Test vint8 max. */
+TEST(vint8, max)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 r = max(a, b);
+	EXPECT_EQ(r.lane<0>(), 1);
+	EXPECT_EQ(r.lane<1>(), 3);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 5);
+	EXPECT_EQ(r.lane<4>(), 1);
+	EXPECT_EQ(r.lane<5>(), 3);
+	EXPECT_EQ(r.lane<6>(), 3);
+	EXPECT_EQ(r.lane<7>(), 5);
+}
+
+/** @brief Test vint8 hmin. */
+TEST(vint8, hmin)
+{
+	vint8 a1(1, 2, 1, 2, 1, 2, 1, 2);
+	vint8 r1 = hmin(a1);
+	EXPECT_EQ(r1.lane<0>(), 1);
+	EXPECT_EQ(r1.lane<1>(), 1);
+	EXPECT_EQ(r1.lane<2>(), 1);
+	EXPECT_EQ(r1.lane<3>(), 1);
+	EXPECT_EQ(r1.lane<4>(), 1);
+	EXPECT_EQ(r1.lane<5>(), 1);
+	EXPECT_EQ(r1.lane<6>(), 1);
+	EXPECT_EQ(r1.lane<7>(), 1);
+
+	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
+	vint8 r2 = hmin(a2);
+	EXPECT_EQ(r2.lane<0>(), -1);
+	EXPECT_EQ(r2.lane<1>(), -1);
+	EXPECT_EQ(r2.lane<2>(), -1);
+	EXPECT_EQ(r2.lane<3>(), -1);
+	EXPECT_EQ(r2.lane<4>(), -1);
+	EXPECT_EQ(r2.lane<5>(), -1);
+	EXPECT_EQ(r2.lane<6>(), -1);
+	EXPECT_EQ(r2.lane<7>(), -1);
+}
+
+/** @brief Test vint8 storea. */
+TEST(vint8, storea)
+{
+	alignas(16) int out[4];
+	vint8 a(s32_data);
+	storea(a, out);
+	EXPECT_EQ(out[0], 0);
+	EXPECT_EQ(out[1], 1);
+	EXPECT_EQ(out[2], 2);
+	EXPECT_EQ(out[3], 3);
+}
+
+/** @brief Test vint8 store_nbytes. */
+TEST(vint8, store_nbytes)
+{
+	alignas(16) int out;
+	vint8 a(42, 314, 75, 90, 42, 314, 75, 90);
+	store_nbytes(a, (uint8_t*)&out);
+	EXPECT_EQ(out, 42);
+}
+
+/** @brief Test vint8 gatheri. */
+TEST(vint8, gatheri)
+{
+	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
+	vint8 r = gatheri(s32_data, indices);
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 4);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 2);
+	EXPECT_EQ(r.lane<4>(), 7);
+	EXPECT_EQ(r.lane<5>(), 4);
+	EXPECT_EQ(r.lane<6>(), 3);
+	EXPECT_EQ(r.lane<7>(), 2);
+}
+
+/** @brief Test vint8 pack_low_bytes. */
+TEST(vint8, pack_low_bytes)
+{
+	vint8 a(1, 2, 3, 4, 2, 3, 4, 5);
+	vint8 r = pack_low_bytes(a);
+	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
+	EXPECT_EQ(r.lane<1>(), (5 << 24) | (4 << 16) | (3  << 8) | (2 << 0));
+}
+
+/** @brief Test vint8 select. */
+TEST(vint8, select)
+{
+	vint8 m1(1, 1, 1, 1, 1, 1, 1, 1);
+	vint8 m2(1, 2, 1, 2, 1, 2, 1, 2);
+	vmask8 cond = m1 == m2;
+
+	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);
+	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);
+
+	vint8 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 2);
+	EXPECT_EQ(r1.lane<3>(), 1);
+	EXPECT_EQ(r1.lane<4>(), 4);
+	EXPECT_EQ(r1.lane<5>(), 3);
+	EXPECT_EQ(r1.lane<6>(), 2);
+	EXPECT_EQ(r1.lane<7>(), 1);
+
+	vint8 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1);
+	EXPECT_EQ(r2.lane<1>(), 2);
+	EXPECT_EQ(r2.lane<2>(), 3);
+	EXPECT_EQ(r2.lane<3>(), 4);
+	EXPECT_EQ(r2.lane<4>(), 1);
+	EXPECT_EQ(r2.lane<5>(), 2);
+	EXPECT_EQ(r2.lane<6>(), 3);
+	EXPECT_EQ(r2.lane<7>(), 4);
+}
+
+/** @brief Test vint8 select MSB. */
+TEST(vint8, select_msb)
+{
+	vint8 msb(0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0);
+	vmask8 cond(msb.m);
+
+	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);
+	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);
+
+	vint8 r1 = select(a, b, cond);
+	EXPECT_EQ(r1.lane<0>(), 4);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 2);
+	EXPECT_EQ(r1.lane<3>(), 1);
+	EXPECT_EQ(r1.lane<4>(), 4);
+	EXPECT_EQ(r1.lane<5>(), 3);
+	EXPECT_EQ(r1.lane<6>(), 2);
+	EXPECT_EQ(r1.lane<7>(), 1);
+
+	vint8 r2 = select(b, a, cond);
+	EXPECT_EQ(r2.lane<0>(), 1);
+	EXPECT_EQ(r2.lane<1>(), 2);
+	EXPECT_EQ(r2.lane<2>(), 3);
+	EXPECT_EQ(r2.lane<3>(), 4);
+	EXPECT_EQ(r2.lane<4>(), 1);
+	EXPECT_EQ(r2.lane<5>(), 2);
+	EXPECT_EQ(r2.lane<6>(), 3);
+	EXPECT_EQ(r2.lane<7>(), 4);
+}
+
+// vmask8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** @brief Test vmask8 or. */
+TEST(vmask8, or)
+{
+	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m1 = m1a == m1b;
+
+	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m2 = m2a == m2b;
+
+	vmask8 r = m1 | m2;
+	EXPECT_EQ(mask(r), 0xBB);
+}
+
+/** @brief Test vmask8 and. */
+TEST(vmask8, and)
+{
+	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m1 = m1a == m1b;
+
+	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m2 = m2a == m2b;
+
+	vmask8 r = m1 & m2;
+	EXPECT_EQ(mask(r), 0x22);
+}
+
+/** @brief Test vmask8 xor. */
+TEST(vmask8, xor)
+{
+	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m1 = m1a == m1b;
+
+	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m2 = m2a == m2b;
+
+	vmask8 r = m1 ^ m2;
+	EXPECT_EQ(mask(r), 0x99);
+}
+
+/** @brief Test vmask8 not. */
+TEST(vmask8, not)
+{
+	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vmask8 m1 = m1a == m1b;
+	vmask8 r = ~m1;
+	EXPECT_EQ(mask(r), 0x55);
+}
+
+#endif
 
 }

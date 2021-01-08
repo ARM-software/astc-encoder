@@ -755,6 +755,14 @@ ASTCENC_SIMD_INLINE float hadd(vfloat8 a)
 }
 
 /**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
+{
+	return vfloat8(_mm256_sqrt_ps(a.m));
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
@@ -772,6 +780,14 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
+{
+	_mm256_storeu_ps(p, a.m);
+}
+
+/**
+ * @brief Store a vector to a 32B aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
 {
