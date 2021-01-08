@@ -213,6 +213,30 @@ struct vint4
 	}
 
 	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 zero()
+	{
+		return vint4(0);
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
 	 * @brief Factory that returns a vector containing the lane IDs.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 lane_id()
@@ -692,7 +716,7 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
 {
-	float32x2_t r = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
+	float32x2_t t = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
 	return vget_lane_f32(vpadd_f32(t, t), 0);
 }
 
