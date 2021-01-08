@@ -33,7 +33,7 @@ static int compute_value_of_texel_int(
 	int weights_to_evaluate = it->texel_weight_count[texel_to_get];
 	for (int i = 0; i < weights_to_evaluate; i++)
 	{
-		summed_value += weights[it->texel_weights[texel_to_get][i]] * it->texel_weights_int[texel_to_get][i];
+		summed_value += weights[it->texel_weights[i][texel_to_get]] * it->texel_weights_int[texel_to_get][i];
 	}
 	return summed_value >> 4;
 }

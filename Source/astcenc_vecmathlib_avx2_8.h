@@ -192,6 +192,31 @@ struct vint8
 	}
 
 	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 zero()
+	{
+		return vint8(_mm256_setzero_si256());
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 load1(const int* p)
+	{
+		__m128i a = _mm_set1_epi32(*p);
+		return vint8(_mm256_broadcastd_epi32(a));
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 32B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)
+	{
+		return vint8(_mm256_load_si256((const __m256i*)p));
+	}
+
+	/**
 	 * @brief Factory that returns a vector containing the lane IDs.
 	 */
 	static ASTCENC_SIMD_INLINE vint8 lane_id()
@@ -686,6 +711,21 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 
 	vfloat8 vmin(_mm256_permute_ps(r, 0));
 	return vmin;
+}
+
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat8 a)
+{
+    /* ( x3+x7, x2+x6, x1+x5, x0+x4 ) */
+    const __m128 x128 = _mm_add_ps(_mm256_extractf128_ps(a.m, 1), _mm256_castps256_ps128(a.m));
+    /* ( -, -, x1+x3+x5+x7, x0+x2+x4+x6 ) */
+    const __m128 x64 = _mm_add_ps(x128, _mm_movehl_ps(x128, x128));
+    /* ( -, -, -, x0+x1+x2+x3+x4+x5+x6+x7 ) */
+    const __m128 x32 = _mm_add_ss(x64, _mm_shuffle_ps(x64, x64, 0x55));
+    /* Conversion to float is a no-op on x86-64 */
+    return _mm_cvtss_f32(x32);
 }
 
 /**

@@ -904,43 +904,74 @@ void compute_endpoints_and_ideal_weights_2_planes(
      go into a given texel.
 */
 
-static float compute_value_of_texel_flt(
-	int texel_to_get,
-	const decimation_table* it,
-	const float* weights
-) {
-	const uint8_t *texel_weights = it->texel_weights[texel_to_get];
-	const float *texel_weights_float = it->texel_weights_float[texel_to_get];
-
-	return (weights[texel_weights[0]] * texel_weights_float[0] +
-	        weights[texel_weights[1]] * texel_weights_float[1]) +
-	       (weights[texel_weights[2]] * texel_weights_float[2] +
-	        weights[texel_weights[3]] * texel_weights_float[3]);
-}
-
-static inline float compute_error_of_texel(
-	const endpoints_and_weights * eai,
-	int texel_to_get,
-	const decimation_table* it,
-	const float *weights
-) {
-	float current_value = compute_value_of_texel_flt(texel_to_get, it, weights);
-	float valuedif = current_value - eai->weights[texel_to_get];
-	return valuedif * valuedif * eai->weight_error_scale[texel_to_get];
-}
-
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
 	const decimation_table* it,
 	const float* weights
 ) {
-	float error_summa = 0.0;
+	vfloat verror_summa(0.0f);
+	float error_summa = 0.0f;
 
 	int texel_count = it->texel_count;
-	promise(texel_count > 0);
-	for (int i = 0; i < texel_count; i++)
+
+	int i = 0;
+
+#if ASTCENC_SIMD_WIDTH > 1
+	// Process eight texel coordinates at at time while we can
+	int clipped_texel_count = texel_count & ~(ASTCENC_SIMD_WIDTH - 1);
+	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		error_summa += compute_error_of_texel(eai, i, it, weights);
+		// Load the bilinear filter texel weight indexes
+		vint weight_idx0 = vint::loada(&(it->texel_weights[0][i]));
+		vint weight_idx1 = vint::loada(&(it->texel_weights[1][i]));
+		vint weight_idx2 = vint::loada(&(it->texel_weights[2][i]));
+		vint weight_idx3 = vint::loada(&(it->texel_weights[3][i]));
+
+		// Load the bilinear filter texel weights
+		vfloat weight_val0 = gatherf(weights, weight_idx0);
+		vfloat weight_val1 = gatherf(weights, weight_idx1);
+		vfloat weight_val2 = gatherf(weights, weight_idx2);
+		vfloat weight_val3 = gatherf(weights, weight_idx3);
+
+		// Load the weight contributions for each texel
+		// TODO: Should we rename this it->texel_weights_float field?
+		vfloat tex_weight_float0 = loada(&(it->texel_weights_float[0][i]));
+		vfloat tex_weight_float1 = loada(&(it->texel_weights_float[1][i]));
+		vfloat tex_weight_float2 = loada(&(it->texel_weights_float[2][i]));
+		vfloat tex_weight_float3 = loada(&(it->texel_weights_float[3][i]));
+
+		// Compute the bilinear interpolation
+		vfloat current_values = (weight_val0 * tex_weight_float0 +
+		                         weight_val1 * tex_weight_float1) +
+		                        (weight_val2 * tex_weight_float2 +
+		                         weight_val3 * tex_weight_float3);
+
+		// Compute the error between this value and the ideal weight
+		vfloat actual_values = loada(&(eai->weights[i]));
+		vfloat diff = current_values - actual_values;
+		vfloat significance = loada(&(eai->weight_error_scale[i]));
+		vfloat error = diff * diff * significance;
+
+		verror_summa = verror_summa + error;
+	}
+
+	// Accumulate the error vectors into a single error sum
+	error_summa += hadd(verror_summa);
+
+#endif
+
+	// Loop tail
+	for (/* */; i < texel_count; i++)
+	{
+		float current_value = (weights[it->texel_weights[0][i]] * it->texel_weights_float[0][i] +
+		                       weights[it->texel_weights[1][i]] * it->texel_weights_float[1][i]) +
+		                      (weights[it->texel_weights[2][i]] * it->texel_weights_float[2][i] +
+		                       weights[it->texel_weights[3][i]] * it->texel_weights_float[3][i]);
+
+		float valuedif = current_value - eai->weights[i];
+		float error = valuedif * valuedif * eai->weight_error_scale[i];
+
+		error_summa += error;
 	}
 	return error_summa;
 }
@@ -999,14 +1030,13 @@ void compute_ideal_weights_for_decimation_table(
 		weight_set[i] = initial_weight / weight_weight;	// this is the 0/0 that is to be avoided.
 	}
 
+	// TODO: Unroll this - it's bad to run new SOA code as AOS code
 	for (int i = 0; i < texel_count; i++)
 	{
-		const uint8_t *texel_weights = it->texel_weights[i];
-		const float *texel_weights_float = it->texel_weights_float[i];
-		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
-		                     + weight_set[texel_weights[1]] * texel_weights_float[1])
-		                    + (weight_set[texel_weights[2]] * texel_weights_float[2]
-		                     + weight_set[texel_weights[3]] * texel_weights_float[3]);
+		infilled_weights[i] = (weight_set[it->texel_weights[0][i]] * it->texel_weights_float[0][i]
+		                     + weight_set[it->texel_weights[1][i]] * it->texel_weights_float[1][i])
+		                    + (weight_set[it->texel_weights[2][i]] * it->texel_weights_float[2][i]
+		                     + weight_set[it->texel_weights[3][i]] * it->texel_weights_float[3][i]);
 	}
 
 	constexpr float stepsize = 0.25f;
@@ -1327,12 +1357,11 @@ void recompute_ideal_colors_2planes(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
 
-			const uint8_t *texel_weights = it->texel_weights[tix];
-			const float *texel_weights_float = it->texel_weights_float[tix];
-			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
-			            + weight_set[texel_weights[1]] * texel_weights_float[1])
-			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
-			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
+			// TODO: Unroll this - it's bad to run new SOA code as AOS code
+			float idx0 = (weight_set[it->texel_weights[0][tix]] * it->texel_weights_float[0][tix]
+			            + weight_set[it->texel_weights[1][tix]] * it->texel_weights_float[1][tix])
+			           + (weight_set[it->texel_weights[2][tix]] * it->texel_weights_float[2][tix]
+			            + weight_set[it->texel_weights[3][tix]] * it->texel_weights_float[3][tix]);
 
 			float om_idx0 = 1.0f - idx0;
 			if (idx0 > wmax1)
@@ -1375,10 +1404,11 @@ void recompute_ideal_colors_2planes(
 
 			if (plane2_weight_set8)
 			{
-				idx1 = (plane2_weight_set[texel_weights[0]] * texel_weights_float[0]
-				      + plane2_weight_set[texel_weights[1]] * texel_weights_float[1])
-				     + (plane2_weight_set[texel_weights[2]] * texel_weights_float[2]
-				      + plane2_weight_set[texel_weights[3]] * texel_weights_float[3]);
+				// TODO: Unroll this - it's bad to run new SOA code as AOS code
+				idx1 = (plane2_weight_set[it->texel_weights[0][tix]] * it->texel_weights_float[0][tix]
+				      + plane2_weight_set[it->texel_weights[1][tix]] * it->texel_weights_float[1][tix])
+				     + (plane2_weight_set[it->texel_weights[2][tix]] * it->texel_weights_float[2][tix]
+				      + plane2_weight_set[it->texel_weights[3][tix]] * it->texel_weights_float[3][tix]);
 
 				om_idx1 = 1.0f - idx1;
 				if (idx1 > wmax2)
@@ -1748,12 +1778,11 @@ void recompute_ideal_colors_1plane(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
 
-			const uint8_t *texel_weights = it->texel_weights[tix];
-			const float *texel_weights_float = it->texel_weights_float[tix];
-			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
-			            + weight_set[texel_weights[1]] * texel_weights_float[1])
-			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
-			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
+			// TODO: Unroll this - it's bad to run new SOA code as AOS code
+			float idx0 = (weight_set[it->texel_weights[0][tix]] * it->texel_weights_float[0][tix]
+			            + weight_set[it->texel_weights[1][tix]] * it->texel_weights_float[1][tix])
+			           + (weight_set[it->texel_weights[2][tix]] * it->texel_weights_float[2][tix]
+			            + weight_set[it->texel_weights[3][tix]] * it->texel_weights_float[3][tix]);
 
 			float om_idx0 = 1.0f - idx0;
 			if (idx0 > wmax1)
