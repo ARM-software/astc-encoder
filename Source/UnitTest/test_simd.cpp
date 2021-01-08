@@ -706,7 +706,7 @@ TEST(vfloat4, select)
 /** @brief Test vfloat4 select MSB only. */
 TEST(vfloat4, select_msb)
 {
-	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
+	vint4 msb(0x80000000, 0, 0x80000000, 0);
 	vmask4 cond(msb.m);
 
 	vfloat4 a(1.0f, 3.0f, 3.0f, 1.0f);
@@ -1141,7 +1141,7 @@ TEST(vint4, select)
 /** @brief Test vint4 select MSB. */
 TEST(vint4, select_msb)
 {
-	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
+	vint4 msb(0x80000000, 0, 0x80000000, 0);
 	vmask4 cond(msb.m);
 
 	vint4 a(1, 3, 3, 1);
@@ -1754,7 +1754,7 @@ TEST(vfloat8, select)
 /** @brief Test vfloat8 select MSB only. */
 TEST(vfloat8, select_msb)
 {
-	vint8 msb(0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0);
+	vint8 msb(0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0);
 	vmask8 cond(msb.m);
 
 	vfloat8 a(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
@@ -2198,22 +2198,27 @@ TEST(vint8, hmin)
 /** @brief Test vint8 storea. */
 TEST(vint8, storea)
 {
-	alignas(16) int out[4];
+	alignas(32) int out[8];
 	vint8 a(s32_data);
 	storea(a, out);
 	EXPECT_EQ(out[0], 0);
 	EXPECT_EQ(out[1], 1);
 	EXPECT_EQ(out[2], 2);
 	EXPECT_EQ(out[3], 3);
+	EXPECT_EQ(out[4], 4);
+	EXPECT_EQ(out[5], 5);
+	EXPECT_EQ(out[6], 6);
+	EXPECT_EQ(out[7], 7);
 }
 
 /** @brief Test vint8 store_nbytes. */
 TEST(vint8, store_nbytes)
 {
-	alignas(16) int out;
+	alignas(32) int out[2];
 	vint8 a(42, 314, 75, 90, 42, 314, 75, 90);
 	store_nbytes(a, (uint8_t*)&out);
-	EXPECT_EQ(out, 42);
+	EXPECT_EQ(out[0], 42);
+	EXPECT_EQ(out[1], 314);
 }
 
 /** @brief Test vint8 gatheri. */
@@ -2274,7 +2279,7 @@ TEST(vint8, select)
 /** @brief Test vint8 select MSB. */
 TEST(vint8, select_msb)
 {
-	vint8 msb(0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0, 0x80000000u, 0);
+	vint8 msb(0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0);
 	vmask8 cond(msb.m);
 
 	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);

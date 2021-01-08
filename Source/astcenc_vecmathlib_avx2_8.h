@@ -185,8 +185,8 @@ struct vint8
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(
-		float a, float b, float c, float d,
-		float e, float f, float g, float h)
+		int a, int b, int c, int d,
+		int e, int f, int g, int h)
 	{
 		m = _mm256_set_epi32(h, g, f, e, d, c, b, a);
 	}
