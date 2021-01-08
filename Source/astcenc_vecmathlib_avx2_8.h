@@ -72,6 +72,18 @@ struct vfloat8
 	}
 
 	/**
+	 * @brief Construct from 8 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vfloat8(
+		float a, float b, float c, float d,
+		float e, float f, float g, float h)
+	{
+		m = _mm256_set_ps(h, g, f, e, d, c, b, a);
+	}
+
+	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(__m256 a) {
@@ -165,6 +177,18 @@ struct vint8
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
 		m = _mm256_set1_epi32(a);
+	}
+
+	/**
+	 * @brief Construct from 8 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint8(
+		float a, float b, float c, float d,
+		float e, float f, float g, float h)
+	{
+		m = _mm256_set_epi32(h, g, f, e, d, c, b, a);
 	}
 
 	/**

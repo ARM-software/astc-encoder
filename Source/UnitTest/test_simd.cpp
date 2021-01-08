@@ -82,7 +82,79 @@ TEST(misc, RoundUpVLA)
 	EXPECT_EQ(round_up_to_simd_multiple_vla(231), round_up(231));
 }
 
-#if ASTCENC_SIMD_WIDTH == 4
+#if ASTCENC_SIMD_WIDTH == 1
+
+// VLA (1-wide) tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** @brief Test VLA change_sign. */
+TEST(vfloat, ChangeSign)
+{
+	vfloat a0(-1.0f);
+	vfloat b0(-1.0f);
+	vfloat r0 = change_sign(a0, b0);
+	EXPECT_EQ(r0.lane<0>(), 1.0f);
+
+	vfloat a1( 1.0f);
+	vfloat b1(-1.0f);
+	vfloat r1 = change_sign(a1, b1);
+	EXPECT_EQ(r1.lane<0>(), -1.0f);
+
+	vfloat a2(-3.12f);
+	vfloat b2( 3.12f);
+	vfloat r2 = change_sign(a2, b2);
+	EXPECT_EQ(r2.lane<0>(), -3.12f);
+
+	vfloat a3( 3.12f);
+	vfloat b3( 3.12f);
+	vfloat r3 = change_sign(a3, b3);
+	EXPECT_EQ(r3.lane<0>(), 3.12f);
+}
+
+/** @brief Test VLA atan. */
+TEST(vfloat, Atan)
+{
+	vfloat a0(-0.15f);
+	vfloat r0 = atan(a0);
+	EXPECT_NEAR(r0.lane<0>(), -0.149061f, 0.005f);
+
+	vfloat a1(0.0f);
+	vfloat r1 = atan(a1);
+	EXPECT_NEAR(r1.lane<0>(),  0.000000f, 0.005f);
+
+	vfloat a2(0.9f);
+	vfloat r2 = atan(a2);
+	EXPECT_NEAR(r2.lane<0>(),  0.733616f, 0.005f);
+
+	vfloat a3(2.1f);
+	vfloat r3 = atan(a3);
+	EXPECT_NEAR(r3.lane<0>(),  1.123040f, 0.005f);
+}
+
+/** @brief Test VLA atan2. */
+TEST(vfloat, Atan2)
+{
+	vfloat a0(-0.15f);
+	vfloat b0( 1.15f);
+	vfloat r0 = atan2(a0, b0);
+	EXPECT_NEAR(r0.lane<0>(), -0.129816f, 0.005f);
+
+	vfloat a1( 0.0f);
+	vfloat b1(-3.0f);
+	vfloat r1 = atan2(a1, b1);
+	EXPECT_NEAR(r1.lane<0>(),  3.141592f, 0.005f);
+
+	vfloat a2( 0.9f);
+	vfloat b2(-0.9f);
+	vfloat r2 = atan2(a2, b2);
+	EXPECT_NEAR(r2.lane<0>(),  2.360342f, 0.005f);
+
+	vfloat a3( 2.1f);
+	vfloat b3( 1.1f);
+	vfloat r3 = atan2(a3, b3);
+	EXPECT_NEAR(r3.lane<0>(),  1.084357f, 0.005f);
+}
+
+#elif ASTCENC_SIMD_WIDTH == 4
 
 // VLA (4-wide) tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -119,6 +191,57 @@ TEST(vfloat, Atan2)
 	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
 	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
 	EXPECT_NEAR(r.lane<3>(),  1.084357f, 0.005f);
+}
+
+#elif ASTCENC_SIMD_WIDTH == 8
+
+// VLA (8-wide) tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** @brief Test VLA change_sign. */
+TEST(vfloat, ChangeSign)
+{
+	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f, -1.0f,  1.0f, -3.12f, 3.12f);
+	vfloat b(-1.0f, -1.0f,  3.12f, 3.12f, -1.0f, -1.0f,  3.12f, 3.12f);
+	vfloat r = change_sign(a, b);
+	EXPECT_EQ(r.lane<0>(),  1.0f);
+	EXPECT_EQ(r.lane<1>(), -1.0f);
+	EXPECT_EQ(r.lane<2>(), -3.12f);
+	EXPECT_EQ(r.lane<3>(),  3.12f);
+	EXPECT_EQ(r.lane<4>(),  1.0f);
+	EXPECT_EQ(r.lane<5>(), -1.0f);
+	EXPECT_EQ(r.lane<6>(), -3.12f);
+	EXPECT_EQ(r.lane<7>(),  3.12f);
+}
+
+/** @brief Test VLA atan. */
+TEST(vfloat, Atan)
+{
+	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat r = atan(a);
+	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
+	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
+	EXPECT_NEAR(r.lane<2>(),  0.733616f, 0.005f);
+	EXPECT_NEAR(r.lane<3>(),  1.123040f, 0.005f);
+	EXPECT_NEAR(r.lane<4>(), -0.149061f, 0.005f);
+	EXPECT_NEAR(r.lane<5>(),  0.000000f, 0.005f);
+	EXPECT_NEAR(r.lane<6>(),  0.733616f, 0.005f);
+	EXPECT_NEAR(r.lane<7>(),  1.123040f, 0.005f);
+}
+
+/** @brief Test VLA atan2. */
+TEST(vfloat, Atan2)
+{
+	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat b(1.15f, -3.0f, -0.9f, 1.1f, 1.15f, -3.0f, -0.9f, 1.1f);
+	vfloat r = atan2(a, b);
+	EXPECT_NEAR(r.lane<0>(), -0.129816f, 0.005f);
+	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
+	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
+	EXPECT_NEAR(r.lane<3>(),  1.084357f, 0.005f);
+	EXPECT_NEAR(r.lane<4>(), -0.129816f, 0.005f);
+	EXPECT_NEAR(r.lane<5>(),  3.141592f, 0.005f);
+	EXPECT_NEAR(r.lane<6>(),  2.360342f, 0.005f);
+	EXPECT_NEAR(r.lane<7>(),  1.084357f, 0.005f);
 }
 
 #endif
