@@ -33,11 +33,60 @@
 namespace astcenc
 {
 
+// Misc utility tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+static int round_down(int x)
+{
+	int remainder = x % ASTCENC_SIMD_WIDTH;
+	return x - remainder;
+}
+
+static int round_up(int x)
+{
+	int remainder = x % ASTCENC_SIMD_WIDTH;
+	if (!remainder)
+	{
+		return x;
+	}
+
+	return x - remainder + ASTCENC_SIMD_WIDTH;
+}
+
+/** @brief Test VLA loop limit round down. */
+TEST(misc, RoundDownVLA)
+{
+	// Static ones which are valid for all VLA widths
+	EXPECT_EQ(round_down_to_simd_multiple_vla(0),  0);
+	EXPECT_EQ(round_down_to_simd_multiple_vla(8),  8);
+	EXPECT_EQ(round_down_to_simd_multiple_vla(16), 16);
+
+	// Variable ones which depend on VLA width
+	EXPECT_EQ(round_down_to_simd_multiple_vla(3),   round_down(3));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(5),   round_down(5));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(7),   round_down(7));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(231), round_down(231));
+}
+
+/** @brief Test VLA loop limit round up. */
+TEST(misc, RoundUpVLA)
+{
+	// Static ones which are valid for all VLA widths
+	EXPECT_EQ(round_up_to_simd_multiple_vla(0),  0);
+	EXPECT_EQ(round_up_to_simd_multiple_vla(8),  8);
+	EXPECT_EQ(round_up_to_simd_multiple_vla(16), 16);
+
+	// Variable ones which depend on VLA width
+	EXPECT_EQ(round_up_to_simd_multiple_vla(3),   round_up(3));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(5),   round_up(5));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(7),   round_up(7));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(231), round_up(231));
+}
+
 #if ASTCENC_SIMD_WIDTH == 4
 
 // VLA (4-wide) tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/** \brief Test VLA change_sign. */
+/** @brief Test VLA change_sign. */
 TEST(vfloat, ChangeSign)
 {
 	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f);
@@ -49,7 +98,7 @@ TEST(vfloat, ChangeSign)
 	EXPECT_EQ(r.lane<3>(),  3.12f);
 }
 
-/** \brief Test VLA atan. */
+/** @brief Test VLA atan. */
 TEST(vfloat, Atan)
 {
 	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
@@ -60,7 +109,7 @@ TEST(vfloat, Atan)
 	EXPECT_NEAR(r.lane<3>(),  1.123040f, 0.005f);
 }
 
-/** \brief Test VLA atan2. */
+/** @brief Test VLA atan2. */
 TEST(vfloat, Atan2)
 {
 	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
@@ -80,7 +129,7 @@ alignas(16) static const int s32x4_data[5] {      0,    1,    2,    3,    4 };
 
 // VFLOAT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/** \brief Test unaligned vfloat4 data load. */
+/** @brief Test unaligned vfloat4 data load. */
 TEST(vfloat4, UnalignedLoad)
 {
 	vfloat4 a(&(f32x4_data[1]));
@@ -90,7 +139,7 @@ TEST(vfloat4, UnalignedLoad)
 	EXPECT_EQ(a.lane<3>(), 4.0f);
 }
 
-/** \brief Test scalar duplicated vfloat4 load. */
+/** @brief Test scalar duplicated vfloat4 load. */
 TEST(vfloat4, ScalarDupLoad)
 {
 	vfloat4 a(1.1f);
@@ -100,7 +149,7 @@ TEST(vfloat4, ScalarDupLoad)
 	EXPECT_EQ(a.lane<3>(), 1.1f);
 }
 
-/** \brief Test scalar vfloat4 load. */
+/** @brief Test scalar vfloat4 load. */
 TEST(vfloat4, ScalarLoad)
 {
 	vfloat4 a(1.1f, 2.2f, 3.3f, 4.4f);
@@ -110,7 +159,7 @@ TEST(vfloat4, ScalarLoad)
 	EXPECT_EQ(a.lane<3>(), 4.4f);
 }
 
-/** \brief Test copy vfloat4 load. */
+/** @brief Test copy vfloat4 load. */
 TEST(vfloat4, CopyLoad)
 {
 	vfloat4 s(1.1f, 2.2f, 3.3f, 4.4f);
@@ -121,7 +170,7 @@ TEST(vfloat4, CopyLoad)
 	EXPECT_EQ(a.lane<3>(), 4.4f);
 }
 
-/** \brief Test vfloat4 scalar lane set. */
+/** @brief Test vfloat4 scalar lane set. */
 TEST(vfloat4, SetLane)
 {
 	vfloat4 a(0.0f);
@@ -151,7 +200,7 @@ TEST(vfloat4, SetLane)
 	EXPECT_EQ(a.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 zero. */
+/** @brief Test vfloat4 zero. */
 TEST(vfloat4, Zero)
 {
 	vfloat4 a = vfloat4::zero();
@@ -161,7 +210,7 @@ TEST(vfloat4, Zero)
 	EXPECT_EQ(a.lane<3>(), 0.0f);
 }
 
-/** \brief Test vfloat4 load1. */
+/** @brief Test vfloat4 load1. */
 TEST(vfloat4, Load1)
 {
 	float s = 3.14f;
@@ -172,7 +221,7 @@ TEST(vfloat4, Load1)
 	EXPECT_EQ(a.lane<3>(), 3.14f);
 }
 
-/** \brief Test vfloat4 loada. */
+/** @brief Test vfloat4 loada. */
 TEST(vfloat4, Loada)
 {
 	vfloat4 a(&(f32x4_data[0]));
@@ -182,7 +231,7 @@ TEST(vfloat4, Loada)
 	EXPECT_EQ(a.lane<3>(), 3.0f);
 }
 
-/** \brief Test vfloat4 lane_id. */
+/** @brief Test vfloat4 lane_id. */
 TEST(vfloat4, LaneID)
 {
 	vfloat4 a = vfloat4::lane_id();
@@ -192,7 +241,7 @@ TEST(vfloat4, LaneID)
 	EXPECT_EQ(a.lane<3>(), 3.0f);
 }
 
-/** \brief Test vfloat4 add. */
+/** @brief Test vfloat4 add. */
 TEST(vfloat4, vadd)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -204,7 +253,7 @@ TEST(vfloat4, vadd)
 	EXPECT_EQ(a.lane<3>(), 4.0f + 0.4f);
 }
 
-/** \brief Test vfloat4 sub. */
+/** @brief Test vfloat4 sub. */
 TEST(vfloat4, vsub)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -216,7 +265,7 @@ TEST(vfloat4, vsub)
 	EXPECT_EQ(a.lane<3>(), 4.0f - 0.4f);
 }
 
-/** \brief Test vfloat4 mul. */
+/** @brief Test vfloat4 mul. */
 TEST(vfloat4, vmul)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -228,7 +277,7 @@ TEST(vfloat4, vmul)
 	EXPECT_EQ(a.lane<3>(), 4.0f * 0.4f);
 }
 
-/** \brief Test vfloat4 mul. */
+/** @brief Test vfloat4 mul. */
 TEST(vfloat4, vsmul)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -240,7 +289,7 @@ TEST(vfloat4, vsmul)
 	EXPECT_EQ(a.lane<3>(), 4.0f * 3.14f);
 }
 
-/** \brief Test vfloat4 mul. */
+/** @brief Test vfloat4 mul. */
 TEST(vfloat4, svmul)
 {
 	float a = 3.14f;
@@ -252,7 +301,7 @@ TEST(vfloat4, svmul)
 	EXPECT_EQ(b.lane<3>(), 3.14f * 4.0f);
 }
 
-/** \brief Test vfloat4 div. */
+/** @brief Test vfloat4 div. */
 TEST(vfloat4, vdiv)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -264,7 +313,7 @@ TEST(vfloat4, vdiv)
 	EXPECT_EQ(a.lane<3>(), 4.0f / 0.4f);
 }
 
-/** \brief Test vfloat4 ceq. */
+/** @brief Test vfloat4 ceq. */
 TEST(vfloat4, ceq)
 {
 	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
@@ -295,7 +344,7 @@ TEST(vfloat4, ceq)
 	EXPECT_EQ(true, all(r4));
 }
 
-/** \brief Test vfloat4 cne. */
+/** @brief Test vfloat4 cne. */
 TEST(vfloat4, cne)
 {
 	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
@@ -326,7 +375,7 @@ TEST(vfloat4, cne)
 	EXPECT_EQ(false, all(r4));
 }
 
-/** \brief Test vfloat4 clt. */
+/** @brief Test vfloat4 clt. */
 TEST(vfloat4, clt)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -335,7 +384,7 @@ TEST(vfloat4, clt)
 	EXPECT_EQ(0xA, mask(r));
 }
 
-/** \brief Test vfloat4 cle. */
+/** @brief Test vfloat4 cle. */
 TEST(vfloat4, cle)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -344,7 +393,7 @@ TEST(vfloat4, cle)
 	EXPECT_EQ(0xE, mask(r));
 }
 
-/** \brief Test vfloat4 cgt. */
+/** @brief Test vfloat4 cgt. */
 TEST(vfloat4, cgt)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -353,7 +402,7 @@ TEST(vfloat4, cgt)
 	EXPECT_EQ(0x1, mask(r));
 }
 
-/** \brief Test vfloat4 cge. */
+/** @brief Test vfloat4 cge. */
 TEST(vfloat4, cge)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -362,7 +411,7 @@ TEST(vfloat4, cge)
 	EXPECT_EQ(0x5, mask(r));
 }
 
-/** \brief Test vfloat4 min. */
+/** @brief Test vfloat4 min. */
 TEST(vfloat4, min)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -374,7 +423,7 @@ TEST(vfloat4, min)
 	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 max. */
+/** @brief Test vfloat4 max. */
 TEST(vfloat4, max)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -386,7 +435,7 @@ TEST(vfloat4, max)
 	EXPECT_EQ(r.lane<3>(), 4.1f);
 }
 
-/** \brief Test vfloat4 clamp. */
+/** @brief Test vfloat4 clamp. */
 TEST(vfloat4, clamp)
 {
 	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
@@ -404,7 +453,7 @@ TEST(vfloat4, clamp)
 	EXPECT_EQ(r2.lane<3>(), 3.0f);
 }
 
-/** \brief Test vfloat4 clampz. */
+/** @brief Test vfloat4 clampz. */
 TEST(vfloat4, clampz)
 {
 	vfloat4 a1(-1.0f, 0.0f, 0.1f, 4.0f);
@@ -422,7 +471,7 @@ TEST(vfloat4, clampz)
 	EXPECT_EQ(r2.lane<3>(), 3.0f);
 }
 
-/** \brief Test vfloat4 clampz. */
+/** @brief Test vfloat4 clampz. */
 TEST(vfloat4, clampzo)
 {
 	vfloat4 a1(-1.0f, 0.0f, 0.1f, 4.0f);
@@ -440,7 +489,7 @@ TEST(vfloat4, clampzo)
 	EXPECT_EQ(r2.lane<3>(), 1.0f);
 }
 
-/** \brief Test vfloat4 abs. */
+/** @brief Test vfloat4 abs. */
 TEST(vfloat4, abs)
 {
 	vfloat4 a(-1.0f, 0.0f, 0.1f, 4.0f);
@@ -451,7 +500,7 @@ TEST(vfloat4, abs)
 	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 round. */
+/** @brief Test vfloat4 round. */
 TEST(vfloat4, round)
 {
 	vfloat4 a(1.1f, 1.5f, 1.6f, 4.0f);
@@ -462,7 +511,7 @@ TEST(vfloat4, round)
 	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 hmin. */
+/** @brief Test vfloat4 hmin. */
 TEST(vfloat4, hmin)
 {
 	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
@@ -480,7 +529,7 @@ TEST(vfloat4, hmin)
 	EXPECT_EQ(r2.lane<3>(), 0.2f);
 }
 
-/** \brief Test vfloat4 sqrt. */
+/** @brief Test vfloat4 sqrt. */
 TEST(vfloat4, sqrt)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
@@ -491,7 +540,7 @@ TEST(vfloat4, sqrt)
 	EXPECT_EQ(r.lane<3>(), std::sqrt(4.0f));
 }
 
-/** \brief Test vfloat4 select. */
+/** @brief Test vfloat4 select. */
 TEST(vfloat4, select)
 {
 	vfloat4 m1(1.0f, 1.0f, 1.0f, 1.0f);
@@ -516,7 +565,7 @@ TEST(vfloat4, select)
 	EXPECT_EQ(r2.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 select MSB only. */
+/** @brief Test vfloat4 select MSB only. */
 TEST(vfloat4, select_msb)
 {
 	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
@@ -540,7 +589,7 @@ TEST(vfloat4, select_msb)
 	EXPECT_EQ(r2.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 gatherf. */
+/** @brief Test vfloat4 gatherf. */
 TEST(vfloat4, gatherf)
 {
 	vint4 indices(0, 4, 3, 2);
@@ -551,7 +600,7 @@ TEST(vfloat4, gatherf)
 	EXPECT_EQ(r.lane<3>(), 2.0f);
 }
 
-/** \brief Test vfloat4 store. */
+/** @brief Test vfloat4 store. */
 TEST(vfloat4, store)
 {
 	alignas(16) float out[5];
@@ -563,7 +612,7 @@ TEST(vfloat4, store)
 	EXPECT_EQ(out[4], 3.0f);
 }
 
-/** \brief Test vfloat4 storea. */
+/** @brief Test vfloat4 storea. */
 TEST(vfloat4, storea)
 {
 	alignas(16) float out[4];
@@ -575,7 +624,7 @@ TEST(vfloat4, storea)
 	EXPECT_EQ(out[3], 3.0f);
 }
 
-/** \brief Test vfloat4 dot. */
+/** @brief Test vfloat4 dot. */
 TEST(vfloat4, dot)
 {
 	vfloat4 a(1.0f, 2.0f, 4.0f, 8.0f);
@@ -587,7 +636,7 @@ TEST(vfloat4, dot)
 	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
-/** \brief Test vfloat4 float_to_int. */
+/** @brief Test vfloat4 float_to_int. */
 TEST(vfloat4, float_to_int)
 {
 	vfloat4 a(1.1f, 1.5f, 1.6f, 4.0f);
@@ -598,7 +647,7 @@ TEST(vfloat4, float_to_int)
 	EXPECT_EQ(r.lane<3>(), 4);
 }
 
-/** \brief Test vfloat4 round. */
+/** @brief Test vfloat4 round. */
 TEST(vfloat4, float_to_int_rtn)
 {
 	vfloat4 a(1.1f, 1.5f, 1.6f, 4.0f);
@@ -612,7 +661,7 @@ TEST(vfloat4, float_to_int_rtn)
 
 // VINT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/** \brief Test unaligned vint4 data load. */
+/** @brief Test unaligned vint4 data load. */
 TEST(vint4, UnalignedLoad)
 {
 	vint4 a(&(s32x4_data[1]));
@@ -622,7 +671,7 @@ TEST(vint4, UnalignedLoad)
 	EXPECT_EQ(a.lane<3>(), 4);
 }
 
-/** \brief Test scalar duplicated vint4 load. */
+/** @brief Test scalar duplicated vint4 load. */
 TEST(vint4, ScalarDupLoad)
 {
 	vint4 a(42);
@@ -632,7 +681,7 @@ TEST(vint4, ScalarDupLoad)
 	EXPECT_EQ(a.lane<3>(), 42);
 }
 
-/** \brief Test scalar vint4 load. */
+/** @brief Test scalar vint4 load. */
 TEST(vint4, ScalarLoad)
 {
 	vint4 a(11, 22, 33, 44);
@@ -642,7 +691,7 @@ TEST(vint4, ScalarLoad)
 	EXPECT_EQ(a.lane<3>(), 44);
 }
 
-/** \brief Test copy vint4 load. */
+/** @brief Test copy vint4 load. */
 TEST(vint4, CopyLoad)
 {
 	vint4 s(11, 22, 33, 44);
@@ -653,7 +702,7 @@ TEST(vint4, CopyLoad)
 	EXPECT_EQ(a.lane<3>(), 44);
 }
 
-/** \brief Test vint4 lane_id. */
+/** @brief Test vint4 lane_id. */
 TEST(vint4, LaneID)
 {
 	vint4 a = vint4::lane_id();
@@ -663,7 +712,7 @@ TEST(vint4, LaneID)
 	EXPECT_EQ(a.lane<3>(), 3);
 }
 
-/** \brief Test vint4 add. */
+/** @brief Test vint4 add. */
 TEST(vint4, vadd)
 {
 	vint4 a(1, 2, 3, 4);
@@ -675,7 +724,7 @@ TEST(vint4, vadd)
 	EXPECT_EQ(a.lane<3>(), 4 + 5);
 }
 
-/** \brief Test vint4 sub. */
+/** @brief Test vint4 sub. */
 TEST(vint4, vsub)
 {
 	vint4 a(1, 2, 4, 4);
@@ -687,7 +736,7 @@ TEST(vint4, vsub)
 	EXPECT_EQ(a.lane<3>(), 4 - 5);
 }
 
-/** \brief Test vint4 bitwise invert. */
+/** @brief Test vint4 bitwise invert. */
 TEST(vint4, bit_invert)
 {
 	vint4 a(-1, 0, 1, 2);
@@ -698,7 +747,7 @@ TEST(vint4, bit_invert)
 	EXPECT_EQ(a.lane<3>(), ~2);
 }
 
-/** \brief Test vint4 bitwise or. */
+/** @brief Test vint4 bitwise or. */
 TEST(vint4, bit_vor)
 {
 	vint4 a(1, 2, 3, 4);
@@ -710,7 +759,7 @@ TEST(vint4, bit_vor)
 	EXPECT_EQ(a.lane<3>(), 5);
 }
 
-/** \brief Test vint4 bitwise and. */
+/** @brief Test vint4 bitwise and. */
 TEST(vint4, bit_vand)
 {
 	vint4 a(1, 2, 3, 4);
@@ -722,7 +771,7 @@ TEST(vint4, bit_vand)
 	EXPECT_EQ(a.lane<3>(), 4);
 }
 
-/** \brief Test vint4 bitwise xor. */
+/** @brief Test vint4 bitwise xor. */
 TEST(vint4, bit_vxor)
 {
 	vint4 a(1, 2, 3, 4);
@@ -734,7 +783,7 @@ TEST(vint4, bit_vxor)
 	EXPECT_EQ(a.lane<3>(), 1);
 }
 
-/** \brief Test vint4 ceq. */
+/** @brief Test vint4 ceq. */
 TEST(vint4, ceq)
 {
 	vint4 a1(1, 2, 3, 4);
@@ -765,7 +814,7 @@ TEST(vint4, ceq)
 	EXPECT_EQ(true, all(r4));
 }
 
-/** \brief Test vint4 cne. */
+/** @brief Test vint4 cne. */
 TEST(vint4, cne)
 {
 	vint4 a1(1, 2, 3, 4);
@@ -796,7 +845,7 @@ TEST(vint4, cne)
 	EXPECT_EQ(false, all(r4));
 }
 
-/** \brief Test vint4 clt. */
+/** @brief Test vint4 clt. */
 TEST(vint4, clt)
 {
 	vint4 a(1, 2, 3, 4);
@@ -805,7 +854,7 @@ TEST(vint4, clt)
 	EXPECT_EQ(0xA, mask(r));
 }
 
-/** \brief Test vint4 cgt. */
+/** @brief Test vint4 cgt. */
 TEST(vint4, cle)
 {
 	vint4 a(1, 2, 3, 4);
@@ -814,7 +863,7 @@ TEST(vint4, cle)
 	EXPECT_EQ(0x1, mask(r));
 }
 
-/** \brief Test vint4 min. */
+/** @brief Test vint4 min. */
 TEST(vint4, min)
 {
 	vint4 a(1, 2, 3, 4);
@@ -826,7 +875,7 @@ TEST(vint4, min)
 	EXPECT_EQ(r.lane<3>(), 4);
 }
 
-/** \brief Test vint4 max. */
+/** @brief Test vint4 max. */
 TEST(vint4, max)
 {
 	vint4 a(1, 2, 3, 4);
@@ -838,7 +887,7 @@ TEST(vint4, max)
 	EXPECT_EQ(r.lane<3>(), 5);
 }
 
-/** \brief Test vint4 hmin. */
+/** @brief Test vint4 hmin. */
 TEST(vint4, hmin)
 {
 	vint4 a1(1, 2, 1, 2);
@@ -856,7 +905,7 @@ TEST(vint4, hmin)
 	EXPECT_EQ(r2.lane<3>(), -1);
 }
 
-/** \brief Test vint4 storea. */
+/** @brief Test vint4 storea. */
 TEST(vint4, storea)
 {
 	alignas(16) int out[4];
@@ -868,7 +917,7 @@ TEST(vint4, storea)
 	EXPECT_EQ(out[3], 3);
 }
 
-/** \brief Test vint4 store_nbytes. */
+/** @brief Test vint4 store_nbytes. */
 TEST(vint4, store_nbytes)
 {
 	alignas(16) int out;
@@ -877,7 +926,7 @@ TEST(vint4, store_nbytes)
 	EXPECT_EQ(out, 42);
 }
 
-/** \brief Test vint4 gatheri. */
+/** @brief Test vint4 gatheri. */
 TEST(vint4, gatheri)
 {
 	vint4 indices(0, 4, 3, 2);
@@ -888,7 +937,7 @@ TEST(vint4, gatheri)
 	EXPECT_EQ(r.lane<3>(), 2);
 }
 
-/** \brief Test vint4 pack_low_bytes. */
+/** @brief Test vint4 pack_low_bytes. */
 TEST(vint4, pack_low_bytes)
 {
 	vint4 a(1, 2, 3, 4);
@@ -896,7 +945,7 @@ TEST(vint4, pack_low_bytes)
 	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
 }
 
-/** \brief Test vint4 select. */
+/** @brief Test vint4 select. */
 TEST(vint4, select)
 {
 	vint4 m1(1, 1, 1, 1);
@@ -919,7 +968,7 @@ TEST(vint4, select)
 	EXPECT_EQ(r2.lane<3>(), 4);
 }
 
-/** \brief Test vint4 select MSB. */
+/** @brief Test vint4 select MSB. */
 TEST(vint4, select_msb)
 {
 	vint4 msb(0x80000000u, 0, 0x80000000u, 0);
@@ -942,7 +991,7 @@ TEST(vint4, select_msb)
 }
 
 // VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** \brief Test vmask4 or. */
+/** @brief Test vmask4 or. */
 TEST(vmask4, or)
 {
 	vfloat4 m1a(0, 1, 0, 1);
@@ -957,7 +1006,7 @@ TEST(vmask4, or)
 	EXPECT_EQ(mask(r), 0xB);
 }
 
-/** \brief Test vmask4 and. */
+/** @brief Test vmask4 and. */
 TEST(vmask4, and)
 {
 	vfloat4 m1a(0, 1, 0, 1);
@@ -972,7 +1021,7 @@ TEST(vmask4, and)
 	EXPECT_EQ(mask(r), 0x2);
 }
 
-/** \brief Test vmask4 xor. */
+/** @brief Test vmask4 xor. */
 TEST(vmask4, xor)
 {
 	vfloat4 m1a(0, 1, 0, 1);
@@ -987,7 +1036,7 @@ TEST(vmask4, xor)
 	EXPECT_EQ(mask(r), 0x9);
 }
 
-/** \brief Test vmask4 not. */
+/** @brief Test vmask4 not. */
 TEST(vmask4, not)
 {
 	vfloat4 m1a(0, 1, 0, 1);

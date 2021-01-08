@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -917,8 +917,9 @@ float compute_error_of_weight_set(
 	int i = 0;
 
 #if ASTCENC_SIMD_WIDTH > 1
+
 	// Process eight texel coordinates at at time while we can
-	int clipped_texel_count = texel_count & ~(ASTCENC_SIMD_WIDTH - 1);
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Load the bilinear filter texel weight indexes
@@ -946,7 +947,7 @@ float compute_error_of_weight_set(
 		                        (weight_val2 * tex_weight_float2 +
 		                         weight_val3 * tex_weight_float3);
 
-		// Compute the error between this value and the ideal weight
+		// Compute the error between the computed value and the ideal weight
 		vfloat actual_values = loada(&(eai->weights[i]));
 		vfloat diff = current_values - actual_values;
 		vfloat significance = loada(&(eai->weight_error_scale[i]));
@@ -1135,12 +1136,13 @@ void compute_ideal_quantized_weights_for_decimation_table(
 
 #if ASTCENC_SIMD_WIDTH > 1
 	// SIMD loop; process weights in SIMD width batches while we can.
-	int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
 	vfloat scalev(scale);
 	vfloat scaled_low_boundv(scaled_low_bound);
 	vfloat quant_level_m1v(quant_level_m1);
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
+
+	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
 	for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;

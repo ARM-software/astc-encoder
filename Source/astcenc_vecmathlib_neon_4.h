@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -685,6 +685,15 @@ ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 {
 	return vfloat4(vminvq_f32(a.m));
+}
+
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+{
+	float32x2_t r = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
+	return vget_lane_f32(vpadd_f32(t, t), 0);
 }
 
 /**

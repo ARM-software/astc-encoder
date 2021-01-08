@@ -219,6 +219,30 @@ struct vint4
 	}
 
 	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 zero()
+	{
+		return vint4(_mm_setzero_si128());
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
+	{
+		return vint4(_mm_load_si128((const __m128i*)p));
+	}
+
+	/**
 	 * @brief Factory that returns a vector containing the lane IDs.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 lane_id()
@@ -728,6 +752,20 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 	a = min(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = min(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+{
+	// Add top and bottom halves, lane 1/0
+	__m128 t = _mm_add_ps(a.m, _mm_movehl_ps(a.m, a.m));
+
+	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
+	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
+
+	return _mm_cvtss_f32(t);
 }
 
 /**

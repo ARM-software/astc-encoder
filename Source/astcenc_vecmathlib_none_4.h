@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -214,6 +214,30 @@ struct vint4
 	}
 
 	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 zero()
+	{
+		return vint4(0);
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
+	{
+		return vint4(p);
+	}
+
+	/**
 	 * @brief Factory that returns a vector containing the lane IDs.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 lane_id()
@@ -239,12 +263,12 @@ struct vmask4
 	/**
 	 * @brief Construct from an existing mask value.
 	 */
-	ASTCENC_SIMD_INLINE explicit vmask4(int* v)
+	ASTCENC_SIMD_INLINE explicit vmask4(int* p)
 	{
-		m[0] = v[0];
-		m[1] = v[1];
-		m[2] = v[2];
-		m[3] = v[3];
+		m[0] = p[0];
+		m[1] = p[1];
+		m[2] = p[2];
+		m[3] = p[3];
 	}
 
 	/**
@@ -482,11 +506,11 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 /**
  * @brief Return the horizontal minimum of a single vector.
  */
-ASTCENC_SIMD_INLINE vint4 hmin(vint4 v)
+ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
 {
-	int a = std::min(v.m[0], v.m[1]);
-	int b = std::min(v.m[2], v.m[3]);
-	return vint4(std::min(a, b));
+	int b = std::min(a.m[0], a.m[1]);
+	int c = std::min(a.m[2], a.m[3]);
+	return vint4(std::min(b, c));
 }
 
 /**
@@ -772,6 +796,14 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+{
+	return (a.m[0] + a.m[1]) + (a.m[2] + a.m[3]);
+}
+
+/**
  * @brief Return the sqrt of the lanes in the vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
@@ -807,23 +839,23 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 /**
  * @brief Store a vector to an unaligned memory address.
  */
-ASTCENC_SIMD_INLINE void store(vfloat4 v, float* ptr)
+ASTCENC_SIMD_INLINE void store(vfloat4 a, float* ptr)
 {
-	ptr[0] = v.m[0];
-	ptr[1] = v.m[1];
-	ptr[2] = v.m[2];
-	ptr[3] = v.m[3];
+	ptr[0] = a.m[0];
+	ptr[1] = a.m[1];
+	ptr[2] = a.m[2];
+	ptr[3] = a.m[3];
 }
 
 /**
  * @brief Store a vector to an aligned memory address.
  */
-ASTCENC_SIMD_INLINE void storea(vfloat4 v, float* ptr)
+ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* ptr)
 {
-	ptr[0] = v.m[0];
-	ptr[1] = v.m[1];
-	ptr[2] = v.m[2];
-	ptr[3] = v.m[3];
+	ptr[0] = a.m[0];
+	ptr[1] = a.m[1];
+	ptr[2] = a.m[2];
+	ptr[3] = a.m[3];
 }
 
 /**
@@ -842,23 +874,23 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 /**
  * @brief Return a integer value for a float vector, using truncation.
  */
-ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 v)
+ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 {
-	return vint4(v.m[0],
-	             v.m[1],
-	             v.m[2],
-	             v.m[3]);
+	return vint4(a.m[0],
+	             a.m[1],
+	             a.m[2],
+	             a.m[3]);
 }
 
 /**
  * @brief Return a integer value for a float vector, using truncation.
  */
-ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 v)
+ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
-	return vint4((int)(v.m[0] + 0.5f),
-	             (int)(v.m[1] + 0.5f),
-	             (int)(v.m[2] + 0.5f),
-	             (int)(v.m[3] + 0.5f));
+	return vint4((int)(a.m[0] + 0.5f),
+	             (int)(a.m[1] + 0.5f),
+	             (int)(a.m[2] + 0.5f),
+	             (int)(a.m[3] + 0.5f));
 }
 
 /**
@@ -868,10 +900,10 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 v)
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the first half of that flip.
  */
-ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 v)
+ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 {
 	vint4 r;
-	memcpy(r.m, v.m, 4 * 4);
+	memcpy(r.m, a.m, 4 * 4);
 	return r;
 }
 
@@ -882,11 +914,11 @@ ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 v)
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the second half of that flip.
  */
-ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
+ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 a)
 {
 	vfloat4 r;
-	memcpy(r.m, v.m, 4 * 4);
+	memcpy(r.m, a.m, 4 * 4);
 	return r;
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_NONE_1_H_INCLUDED
+#endif // #ifndef ASTC_VECMATHLIB_NONE_4_H_INCLUDED

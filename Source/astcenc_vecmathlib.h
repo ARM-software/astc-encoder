@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -120,6 +120,35 @@
 	constexpr auto loada = vfloat1::loada;
 	constexpr auto load1 = vfloat1::load1;
 #endif
+
+/**
+ * @brief Round a count down to the largest multiple of the SIMD width.
+ *
+ * Assumption that the vector width is a power of two ...
+ *
+ * @param count   The unrounded value.
+ *
+ * @return The rounded value.
+ */
+ASTCENC_SIMD_INLINE int round_down_to_simd_multiple_vla(int count)
+{
+	return count & ~(ASTCENC_SIMD_WIDTH - 1);
+}
+
+/**
+ * @brief Round a count up to the largest multiple of the SIMD width.
+ *
+ * Assumption that the vector width is a power of two ...
+ *
+ * @param count   The unrounded value.
+ *
+ * @return The rounded value.
+ */
+ASTCENC_SIMD_INLINE int round_up_to_simd_multiple_vla(int count)
+{
+	int multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
+	return multiples * ASTCENC_SIMD_WIDTH;
+}
 
 /**
  * @brief Return @c a with lanes negated if the @c b lane is negative.
