@@ -179,7 +179,7 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const int *p)
 	{
-		m = _mm_load_si128((const __m128i*)p);
+		m = _mm_loadu_si128((const __m128i*)p);
 	}
 
 	/**
