@@ -658,6 +658,15 @@ TEST(vfloat4, hmin)
 	EXPECT_EQ(r2.lane<3>(), 0.2f);
 }
 
+/** @brief Test vfloat4 hadd. */
+TEST(vfloat4, hadd)
+{
+	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
+	float sum = 1.1f + 1.5f + 1.6f + 4.0f;
+	float r = hadd(a1);
+	EXPECT_NEAR(r, sum, 0.005f);
+}
+
 /** @brief Test vfloat4 sqrt. */
 TEST(vfloat4, sqrt)
 {
@@ -829,6 +838,38 @@ TEST(vint4, CopyLoad)
 	EXPECT_EQ(a.lane<1>(), 22);
 	EXPECT_EQ(a.lane<2>(), 33);
 	EXPECT_EQ(a.lane<3>(), 44);
+}
+
+
+/** @brief Test vint4 zero. */
+TEST(vint4, Zero)
+{
+	vint4 a = vint4::zero();
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 0);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 0);
+}
+
+/** @brief Test vint4 load1. */
+TEST(vint4, Load1)
+{
+	int s = 42;
+	vint4 a = vint4::load1(&s);
+	EXPECT_EQ(a.lane<0>(), 42);
+	EXPECT_EQ(a.lane<1>(), 42);
+	EXPECT_EQ(a.lane<2>(), 42);
+	EXPECT_EQ(a.lane<3>(), 42);
+}
+
+/** @brief Test vint4 loada. */
+TEST(vint4, Loada)
+{
+	vint4 a(&(s32_data[0]));
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 2);
+	EXPECT_EQ(a.lane<3>(), 3);
 }
 
 /** @brief Test vint4 lane_id. */
@@ -1653,6 +1694,15 @@ TEST(vfloat8, hmin)
 	EXPECT_EQ(r2.lane<7>(), 0.2f);
 }
 
+/** @brief Test vfloat8 hadd. */
+TEST(vfloat8, hadd)
+{
+	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	float sum = 1.1f + 1.5f + 1.6f + 4.0f + 1.1f + 1.5f + 1.6f + 4.0f;
+	float r = hadd(a1);
+	EXPECT_NEAR(r, sum, 0.005f);
+}
+
 /** @brief Test vfloat8 sqrt. */
 TEST(vfloat8, sqrt)
 {
@@ -1853,6 +1903,49 @@ TEST(vint8, CopyLoad)
 	EXPECT_EQ(a.lane<5>(), 66);
 	EXPECT_EQ(a.lane<6>(), 77);
 	EXPECT_EQ(a.lane<7>(), 88);
+}
+
+/** @brief Test vint8 zero. */
+TEST(vint8, Zero)
+{
+	vint8 a = vint8::zero();
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 0);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 0);
+	EXPECT_EQ(a.lane<4>(), 0);
+	EXPECT_EQ(a.lane<5>(), 0);
+	EXPECT_EQ(a.lane<6>(), 0);
+	EXPECT_EQ(a.lane<7>(), 0);
+}
+
+/** @brief Test vint8 load1. */
+TEST(vint8, Load1)
+{
+	int s = 42;
+	vint8 a = vint8::load1(&s);
+	EXPECT_EQ(a.lane<0>(), 42);
+	EXPECT_EQ(a.lane<1>(), 42);
+	EXPECT_EQ(a.lane<2>(), 42);
+	EXPECT_EQ(a.lane<3>(), 42);
+	EXPECT_EQ(a.lane<4>(), 42);
+	EXPECT_EQ(a.lane<5>(), 42);
+	EXPECT_EQ(a.lane<6>(), 42);
+	EXPECT_EQ(a.lane<7>(), 42);
+}
+
+/** @brief Test vint8 loada. */
+TEST(vint8, Loada)
+{
+	vint8 a(&(s32_data[0]));
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 2);
+	EXPECT_EQ(a.lane<3>(), 3);
+	EXPECT_EQ(a.lane<4>(), 4);
+	EXPECT_EQ(a.lane<5>(), 5);
+	EXPECT_EQ(a.lane<6>(), 6);
+	EXPECT_EQ(a.lane<7>(), 7);
 }
 
 /** @brief Test vint8 lane_id. */
