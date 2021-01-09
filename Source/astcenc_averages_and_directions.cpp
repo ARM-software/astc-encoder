@@ -585,11 +585,11 @@ void compute_error_squared_rgba(
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
 		lengths_separate[partition] = separate_linelen;
-
-		*uncorr_errors = uncorr_errorsum;
-		*samechroma_errors = samechroma_errorsum;
-		*separate_color_errors = float4(red_errorsum, green_errorsum, blue_errorsum, alpha_errorsum);
 	}
+
+	*uncorr_errors = uncorr_errorsum;
+	*samechroma_errors = samechroma_errorsum;
+	*separate_color_errors = float4(red_errorsum, green_errorsum, blue_errorsum, alpha_errorsum);
 }
 
 void compute_error_squared_rgb(
@@ -710,11 +710,11 @@ void compute_error_squared_rgb(
 		lengths_uncorr[partition] = uncorr_linelen;
 		lengths_samechroma[partition] = samechroma_linelen;
 		lengths_separate[partition] = separate_linelen;
-
-		*uncorr_errors = uncorr_errorsum;
-		*samechroma_errors = samechroma_errorsum;
-		*separate_color_errors = float3(red_errorsum, green_errorsum, blue_errorsum);
 	}
+
+	*uncorr_errors = uncorr_errorsum;
+	*samechroma_errors = samechroma_errorsum;
+	*separate_color_errors = float3(red_errorsum, green_errorsum, blue_errorsum);
 }
 
 #endif
