@@ -187,7 +187,7 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
-		__m128 t = _mm_loadu_si32(p);
+		__m128i t = _mm_loadu_si32(p);
 
 #if ASTCENC_SSE >= 41
 		m = _mm_cvtepu8_epi32(t);
