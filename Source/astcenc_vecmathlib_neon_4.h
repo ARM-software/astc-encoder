@@ -180,10 +180,10 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
-		uint32x4_t t8;
-		vld1_lane_u32(p, t8, 0);
+		uint32x2_t t8 {};
+		t8 = vld1_lane_u32(p, t8, 0);
 		uint16x4_t t16 = vget_low_u16(vmovl_u8(vreinterpret_u8_u32(t8)));
-		m = vreinterpret_s32_u32(vmovl_u16(t16));
+		m = vreinterpretq_s32_u32(vmovl_u16(t16));
 	}
 
 	/**
