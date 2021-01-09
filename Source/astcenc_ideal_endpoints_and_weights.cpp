@@ -911,14 +911,13 @@ float compute_error_of_weight_set(
 ) {
 	vfloat verror_summa(0.0f);
 	float error_summa = 0.0f;
-
 	int texel_count = it->texel_count;
 
 	int i = 0;
 
 #if ASTCENC_SIMD_WIDTH > 1
 
-	// Process eight texel coordinates at at time while we can
+	// Process SIMD-width texel coordinates at at time while we can
 	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
@@ -964,6 +963,8 @@ float compute_error_of_weight_set(
 	// Loop tail
 	for (/* */; i < texel_count; i++)
 	{
+		// This isn't the ideal access pattern, but the cache lines are probably
+		// already in the cache due to the vector loop above, so go with it ...
 		float current_value = (weights[it->texel_weights_4t[0][i]] * it->texel_weights_float_4t[0][i] +
 		                       weights[it->texel_weights_4t[1][i]] * it->texel_weights_float_4t[1][i]) +
 		                      (weights[it->texel_weights_4t[2][i]] * it->texel_weights_float_4t[2][i] +
@@ -974,6 +975,7 @@ float compute_error_of_weight_set(
 
 		error_summa += error;
 	}
+
 	return error_summa;
 }
 
