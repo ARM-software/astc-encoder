@@ -71,7 +71,7 @@ void compute_averages_and_directions_rgba(
 			base_sum = base_sum + texel_datum;
 		}
 
-		float4 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		float4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * color_scalefactors[partition];
 
 		float4 sum_xp = float4(0.0f);
@@ -175,7 +175,7 @@ void compute_averages_and_directions_rgb(
 		}
 
 		float4 csf = color_scalefactors[partition];
-		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		float3 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.r, csf.g, csf.b);
 
 		float3 sum_xp = float3(0.0f);
@@ -300,7 +300,7 @@ void compute_averages_and_directions_3_components(
 
 		float3 csf = color_scalefactors[partition];
 
-		float3 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		float3 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.r, csf.g, csf.b);
 
 		float3 sum_xp = float3(0.0f);
@@ -419,7 +419,7 @@ void compute_averages_and_directions_2_components(
 
 		float2 csf = color_scalefactors[partition];
 
-		float2 average = base_sum * (1.0f / MAX(partition_weight, 1e-7f));
+		float2 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * float2(csf.r, csf.g);
 
 		float2 sum_xp = float2(0.0f);
@@ -524,27 +524,27 @@ void compute_error_squared_rgba(
 			float4 ews = ewb->error_weights[iwt];
 
 			float uncorr_param = dot(dat, l_uncorr.bs);
-			uncorr_lowparam = MIN(uncorr_param, uncorr_lowparam);
-			uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
+			uncorr_lowparam = astc::min(uncorr_param, uncorr_lowparam);
+			uncorr_highparam = astc::max(uncorr_param, uncorr_highparam);
 
 			float samechroma_param = dot(dat, l_samechroma.bs);
-			samechroma_lowparam = MIN(samechroma_param, samechroma_lowparam);
-			samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
+			samechroma_lowparam = astc::min(samechroma_param, samechroma_lowparam);
+			samechroma_highparam = astc::max(samechroma_param, samechroma_highparam);
 
 			float4 separate_param = float4(dot(float3(dat.g, dat.b, dat.a), l_red.bs),
-											dot(float3(dat.r, dat.b, dat.a), l_green.bs),
-											dot(float3(dat.r, dat.g, dat.a), l_blue.bs),
-											dot(float3(dat.r, dat.g, dat.b), l_alpha.bs));
+			                               dot(float3(dat.r, dat.b, dat.a), l_green.bs),
+			                               dot(float3(dat.r, dat.g, dat.a), l_blue.bs),
+			                               dot(float3(dat.r, dat.g, dat.b), l_alpha.bs));
 
-			separate_lowparam = float4(MIN(separate_param.r, separate_lowparam.r),
-										MIN(separate_param.g, separate_lowparam.g),
-										MIN(separate_param.b, separate_lowparam.b),
-										MIN(separate_param.a, separate_lowparam.a));
+			separate_lowparam = float4(astc::min(separate_param.r, separate_lowparam.r),
+			                           astc::min(separate_param.g, separate_lowparam.g),
+			                           astc::min(separate_param.b, separate_lowparam.b),
+			                           astc::min(separate_param.a, separate_lowparam.a));
 
-			separate_highparam = float4(MAX(separate_param.r, separate_highparam.r),
-										MAX(separate_param.g, separate_highparam.g),
-										MAX(separate_param.b, separate_highparam.b),
-										MAX(separate_param.a, separate_highparam.a));
+			separate_highparam = float4(astc::max(separate_param.r, separate_highparam.r),
+			                            astc::max(separate_param.g, separate_highparam.g),
+			                            astc::max(separate_param.b, separate_highparam.b),
+			                            astc::max(separate_param.a, separate_highparam.a));
 
 			float4 uncorr_dist  = (l_uncorr.amod - dat) + (uncorr_param * l_uncorr.bis);
 			uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
@@ -656,24 +656,24 @@ void compute_error_squared_rgb(
 								ewb->error_weights[iwt].b);
 
 			float uncorr_param = dot(dat, l_uncorr.bs);
-			uncorr_lowparam  = MIN(uncorr_param, uncorr_lowparam);
-			uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
+			uncorr_lowparam  = astc::min(uncorr_param, uncorr_lowparam);
+			uncorr_highparam = astc::max(uncorr_param, uncorr_highparam);
 
 			float samechroma_param = dot(dat, l_samechroma.bs);
-			samechroma_lowparam  = MIN(samechroma_param, samechroma_lowparam);
-			samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
+			samechroma_lowparam  = astc::min(samechroma_param, samechroma_lowparam);
+			samechroma_highparam = astc::max(samechroma_param, samechroma_highparam);
 
 			float3 separate_param = float3(dot(float2(dat.g, dat.b), l_red.bs),
-											dot(float2(dat.r, dat.b), l_green.bs),
-											dot(float2(dat.r, dat.g), l_blue.bs));
+			                               dot(float2(dat.r, dat.b), l_green.bs),
+			                               dot(float2(dat.r, dat.g), l_blue.bs));
 
-			separate_lowparam  = float3(MIN(separate_param.r, separate_lowparam.r),
-										MIN(separate_param.g, separate_lowparam.g),
-										MIN(separate_param.b, separate_lowparam.b));
+			separate_lowparam  = float3(astc::min(separate_param.r, separate_lowparam.r),
+			                            astc::min(separate_param.g, separate_lowparam.g),
+			                            astc::min(separate_param.b, separate_lowparam.b));
 
-			separate_highparam  = float3(MAX(separate_param.r, separate_highparam.r),
-											MAX(separate_param.g, separate_highparam.g),
-											MAX(separate_param.b, separate_highparam.b));
+			separate_highparam  = float3(astc::max(separate_param.r, separate_highparam.r),
+			                             astc::max(separate_param.g, separate_highparam.g),
+			                             astc::max(separate_param.b, separate_highparam.b));
 
 			float3 uncorr_dist  = (l_uncorr.amod - dat) +
 									(uncorr_param * l_uncorr.bis);

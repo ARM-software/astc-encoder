@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -117,9 +117,9 @@ void imageblock_initialize_deriv(
 			fdata.g = sf16_to_float(lns_to_sf16((uint16_t)fdata.g));
 			fdata.b = sf16_to_float(lns_to_sf16((uint16_t)fdata.b));
 
-			float r = MAX(fdata.r, 6e-5f);
-			float g = MAX(fdata.g, 6e-5f);
-			float b = MAX(fdata.b, 6e-5f);
+			float r = astc::max(fdata.r, 6e-5f);
+			float g = astc::max(fdata.g, 6e-5f);
+			float b = astc::max(fdata.b, 6e-5f);
 
 			float rderiv = (float_to_lns(r * 1.05f) - float_to_lns(r)) / (r * 0.05f);
 			float gderiv = (float_to_lns(g * 1.05f) - float_to_lns(g)) / (g * 0.05f);
@@ -171,7 +171,7 @@ void imageblock_initialize_deriv(
 			float fdata = pb->data_a[i];
 			fdata = sf16_to_float(lns_to_sf16((uint16_t)fdata));
 
-			float a = MAX(fdata, 6e-5f);
+			float a = astc::max(fdata, 6e-5f);
 			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
@@ -422,10 +422,10 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = MAX(sf16_to_float(r), 1e-8f);
-					pb->data_g[idx] = MAX(sf16_to_float(g), 1e-8f);
-					pb->data_b[idx] = MAX(sf16_to_float(b), 1e-8f);
-					pb->data_a[idx] = MAX(sf16_to_float(a), 1e-8f);
+					pb->data_r[idx] = astc::max(sf16_to_float(r), 1e-8f);
+					pb->data_g[idx] = astc::max(sf16_to_float(g), 1e-8f);
+					pb->data_b[idx] = astc::max(sf16_to_float(b), 1e-8f);
+					pb->data_a[idx] = astc::max(sf16_to_float(a), 1e-8f);
 					idx++;
 				}
 			}
@@ -470,10 +470,10 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = MAX(r, 1e-8f);
-					pb->data_g[idx] = MAX(g, 1e-8f);
-					pb->data_b[idx] = MAX(b, 1e-8f);
-					pb->data_a[idx] = MAX(a, 1e-8f);
+					pb->data_r[idx] = astc::max(r, 1e-8f);
+					pb->data_g[idx] = astc::max(g, 1e-8f);
+					pb->data_b[idx] = astc::max(b, 1e-8f);
+					pb->data_a[idx] = astc::max(a, 1e-8f);
 					idx++;
 				}
 			}
@@ -568,17 +568,17 @@ void write_imageblock(
 								data[ASTCENC_SWZ_Z] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
 							}
 
-							ri = astc::flt2int_rtn(MIN(data[swz.r], 1.0f) * 255.0f);
-							gi = astc::flt2int_rtn(MIN(data[swz.g], 1.0f) * 255.0f);
-							bi = astc::flt2int_rtn(MIN(data[swz.b], 1.0f) * 255.0f);
-							ai = astc::flt2int_rtn(MIN(data[swz.a], 1.0f) * 255.0f);
+							ri = astc::flt2int_rtn(astc::min(data[swz.r], 1.0f) * 255.0f);
+							gi = astc::flt2int_rtn(astc::min(data[swz.g], 1.0f) * 255.0f);
+							bi = astc::flt2int_rtn(astc::min(data[swz.b], 1.0f) * 255.0f);
+							ai = astc::flt2int_rtn(astc::min(data[swz.a], 1.0f) * 255.0f);
 						}
 						else
 						{
-							ri = astc::flt2int_rtn(MIN(pb->data_r[idx], 1.0f) * 255.0f);
-							gi = astc::flt2int_rtn(MIN(pb->data_g[idx], 1.0f) * 255.0f);
-							bi = astc::flt2int_rtn(MIN(pb->data_b[idx], 1.0f) * 255.0f);
-							ai = astc::flt2int_rtn(MIN(pb->data_a[idx], 1.0f) * 255.0f);
+							ri = astc::flt2int_rtn(astc::min(pb->data_r[idx], 1.0f) * 255.0f);
+							gi = astc::flt2int_rtn(astc::min(pb->data_g[idx], 1.0f) * 255.0f);
+							bi = astc::flt2int_rtn(astc::min(pb->data_b[idx], 1.0f) * 255.0f);
+							ai = astc::flt2int_rtn(astc::min(pb->data_a[idx], 1.0f) * 255.0f);
 						}
 
 						data8[(4 * xsize * yi) + (4 * xi    )] = ri;

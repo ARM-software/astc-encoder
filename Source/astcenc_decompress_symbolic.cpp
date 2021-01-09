@@ -418,10 +418,10 @@ float compute_symbolic_block_difference(
 
 		float4 error = oldColor - newColor;
 
-		error.r = MIN(fabsf(error.r), 1e15f);
-		error.g = MIN(fabsf(error.g), 1e15f);
-		error.b = MIN(fabsf(error.b), 1e15f);
-		error.a = MIN(fabsf(error.a), 1e15f);
+		error.r = astc::min(fabsf(error.r), 1e15f);
+		error.g = astc::min(fabsf(error.g), 1e15f);
+		error.b = astc::min(fabsf(error.b), 1e15f);
+		error.a = astc::min(fabsf(error.a), 1e15f);
 
 		error = error * error;
 

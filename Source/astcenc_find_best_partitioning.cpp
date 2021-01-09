@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -260,10 +260,10 @@ void find_best_partitionings(
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				inverse_color_scalefactors[j].r = 1.0f / MAX(color_scalefactors[j].r, 1e-7f);
-				inverse_color_scalefactors[j].g = 1.0f / MAX(color_scalefactors[j].g, 1e-7f);
-				inverse_color_scalefactors[j].b = 1.0f / MAX(color_scalefactors[j].b, 1e-7f);
-				inverse_color_scalefactors[j].a = 1.0f / MAX(color_scalefactors[j].a, 1e-7f);
+				inverse_color_scalefactors[j].r = 1.0f / astc::max(color_scalefactors[j].r, 1e-7f);
+				inverse_color_scalefactors[j].g = 1.0f / astc::max(color_scalefactors[j].g, 1e-7f);
+				inverse_color_scalefactors[j].b = 1.0f / astc::max(color_scalefactors[j].b, 1e-7f);
+				inverse_color_scalefactors[j].a = 1.0f / astc::max(color_scalefactors[j].a, 1e-7f);
 			}
 
 			float4 averages[4];
@@ -527,10 +527,10 @@ void find_best_partitionings(
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				inverse_color_scalefactors[j].r = 1.0f / MAX(color_scalefactors[j].r, 1e-7f);
-				inverse_color_scalefactors[j].g = 1.0f / MAX(color_scalefactors[j].g, 1e-7f);
-				inverse_color_scalefactors[j].b = 1.0f / MAX(color_scalefactors[j].b, 1e-7f);
-				inverse_color_scalefactors[j].a = 1.0f / MAX(color_scalefactors[j].a, 1e-7f);
+				inverse_color_scalefactors[j].r = 1.0f / astc::max(color_scalefactors[j].r, 1e-7f);
+				inverse_color_scalefactors[j].g = 1.0f / astc::max(color_scalefactors[j].g, 1e-7f);
+				inverse_color_scalefactors[j].b = 1.0f / astc::max(color_scalefactors[j].b, 1e-7f);
+				inverse_color_scalefactors[j].a = 1.0f / astc::max(color_scalefactors[j].a, 1e-7f);
 			}
 
 			float3 averages[4];

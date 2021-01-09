@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -234,36 +234,36 @@ static astcenc_error validate_config(
 	}
 #endif
 
-	config.v_rgba_mean_stdev_mix = MAX(config.v_rgba_mean_stdev_mix, 0.0f);
-	config.v_rgb_power = MAX(config.v_rgb_power, 0.0f);
-	config.v_rgb_base = MAX(config.v_rgb_base, 0.0f);
-	config.v_rgb_mean = MAX(config.v_rgb_mean, 0.0f);
-	config.v_rgb_stdev = MAX(config.v_rgb_stdev, 0.0f);
-	config.v_a_power = MAX(config.v_a_power, 0.0f);
-	config.v_a_base = MAX(config.v_a_base, 0.0f);
-	config.v_a_mean = MAX(config.v_a_mean, 0.0f);
-	config.v_a_stdev = MAX(config.v_a_stdev, 0.0f);
+	config.v_rgba_mean_stdev_mix = astc::max(config.v_rgba_mean_stdev_mix, 0.0f);
+	config.v_rgb_power = astc::max(config.v_rgb_power, 0.0f);
+	config.v_rgb_base = astc::max(config.v_rgb_base, 0.0f);
+	config.v_rgb_mean = astc::max(config.v_rgb_mean, 0.0f);
+	config.v_rgb_stdev = astc::max(config.v_rgb_stdev, 0.0f);
+	config.v_a_power = astc::max(config.v_a_power, 0.0f);
+	config.v_a_base = astc::max(config.v_a_base, 0.0f);
+	config.v_a_mean = astc::max(config.v_a_mean, 0.0f);
+	config.v_a_stdev = astc::max(config.v_a_stdev, 0.0f);
 
-	config.b_deblock_weight = MAX(config.b_deblock_weight, 0.0f);
+	config.b_deblock_weight = astc::max(config.b_deblock_weight, 0.0f);
 
 	config.tune_partition_limit = astc::clamp(config.tune_partition_limit, 1u, (unsigned int)PARTITION_COUNT);
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
-	config.tune_refinement_limit = MAX(config.tune_refinement_limit, 1);
+	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
-	config.tune_db_limit = MAX(config.tune_db_limit, 0.0f);
-	config.tune_partition_early_out_limit = MAX(config.tune_partition_early_out_limit, 0.0f);
-	config.tune_two_plane_early_out_limit = MAX(config.tune_two_plane_early_out_limit, 0.0f);
+	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
+	config.tune_partition_early_out_limit = astc::max(config.tune_partition_early_out_limit, 0.0f);
+	config.tune_two_plane_early_out_limit = astc::max(config.tune_two_plane_early_out_limit, 0.0f);
 
 	// Specifying a zero weight color component is not allowed; force to small value
-	float max_weight = MAX(MAX(config.cw_r_weight, config.cw_g_weight),
-	                       MAX(config.cw_b_weight, config.cw_a_weight));
+	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
+	                       astc::max(config.cw_b_weight, config.cw_a_weight));
 	if (max_weight > 0.0f)
 	{
 		max_weight /= 1000.0f;
-		config.cw_r_weight = MAX(config.cw_r_weight, max_weight);
-		config.cw_g_weight = MAX(config.cw_g_weight, max_weight);
-		config.cw_b_weight = MAX(config.cw_b_weight, max_weight);
-		config.cw_a_weight = MAX(config.cw_a_weight, max_weight);
+		config.cw_r_weight = astc::max(config.cw_r_weight, max_weight);
+		config.cw_g_weight = astc::max(config.cw_g_weight, max_weight);
+		config.cw_b_weight = astc::max(config.cw_b_weight, max_weight);
+		config.cw_a_weight = astc::max(config.cw_a_weight, max_weight);
 	}
 	// If all color components error weights are zero then return an error
 	else
@@ -289,7 +289,7 @@ astcenc_error astcenc_config_init(
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
-	block_z = MAX(block_z, 1); // For 2D blocks Z==0 is accepted, but convert to 1
+	block_z = astc::max(block_z, 1); // For 2D blocks Z==0 is accepted, but convert to 1
 	status = validate_block_size(block_x, block_y, block_z);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -312,8 +312,8 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 2;
 		config.tune_block_mode_limit = 25;
 		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = MIN(1, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = MAX(70 - 35 * ltexels, 53 - 19 * ltexels);
+		config.tune_candidate_limit = astc::min(1, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(70 - 35 * ltexels, 53 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
 		break;
@@ -321,8 +321,8 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 4;
 		config.tune_block_mode_limit = 50;
 		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = MIN(2, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = MAX(85 - 35 * ltexels, 63 - 19 * ltexels);
+		config.tune_candidate_limit = astc::min(2, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(85 - 35 * ltexels, 63 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
 		break;
@@ -330,8 +330,8 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 25;
 		config.tune_block_mode_limit = 75;
 		config.tune_refinement_limit = 2;
-		config.tune_candidate_limit = MIN(2, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = MAX(95 - 35 * ltexels, 70 - 19 * ltexels);
+		config.tune_candidate_limit = astc::min(2, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(95 - 35 * ltexels, 70 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.2f;
 		config.tune_two_plane_early_out_limit = 0.75f;
 		break;
@@ -339,8 +339,8 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 100;
 		config.tune_block_mode_limit = 95;
 		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = MIN(3, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = MAX(105 - 35 * ltexels, 77 - 19 * ltexels);
+		config.tune_candidate_limit = astc::min(3, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(105 - 35 * ltexels, 77 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 2.5f;
 		config.tune_two_plane_early_out_limit = 0.95f;
 		break;
@@ -348,7 +348,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 1024;
 		config.tune_block_mode_limit = 100;
 		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = MIN(4, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(4, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = 999.0f;
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;

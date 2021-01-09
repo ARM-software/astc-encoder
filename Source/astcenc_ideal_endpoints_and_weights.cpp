@@ -1484,7 +1484,7 @@ void recompute_ideal_colors_2planes(
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
+		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
 
 		#ifdef DEBUG_CAPTURE_NAN
@@ -1871,7 +1871,7 @@ void recompute_ideal_colors_1plane(
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float scalediv = scale_min * (1.0f / MAX(scale_max, 1e-10f));
+		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
 
 		#ifdef DEBUG_CAPTURE_NAN

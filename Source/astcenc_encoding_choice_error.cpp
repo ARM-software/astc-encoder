@@ -170,10 +170,10 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		inverse_color_scalefactors[i].r = 1.0f / MAX(color_scalefactors[i].r, 1e-7f);
-		inverse_color_scalefactors[i].g = 1.0f / MAX(color_scalefactors[i].g, 1e-7f);
-		inverse_color_scalefactors[i].b = 1.0f / MAX(color_scalefactors[i].b, 1e-7f);
-		inverse_color_scalefactors[i].a = 1.0f / MAX(color_scalefactors[i].a, 1e-7f);
+		inverse_color_scalefactors[i].r = 1.0f / astc::max(color_scalefactors[i].r, 1e-7f);
+		inverse_color_scalefactors[i].g = 1.0f / astc::max(color_scalefactors[i].g, 1e-7f);
+		inverse_color_scalefactors[i].b = 1.0f / astc::max(color_scalefactors[i].b, 1e-7f);
+		inverse_color_scalefactors[i].a = 1.0f / astc::max(color_scalefactors[i].a, 1e-7f);
 
 		float3 csf = float3(color_scalefactors[i].r, color_scalefactors[i].g, color_scalefactors[i].b);
 		float3 icsf = float3(inverse_color_scalefactors[i].r, inverse_color_scalefactors[i].g, inverse_color_scalefactors[i].b);

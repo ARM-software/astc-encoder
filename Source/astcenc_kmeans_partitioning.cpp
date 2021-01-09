@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -124,7 +124,7 @@ static void kpp_initialize(
 			                      blk->data_a[i]);
 			float4 diff = color - center_color;
 			float distance = dot(diff, diff);
-			distance = MIN(distance, distances[i]);
+			distance = astc::min(distance, distances[i]);
 			distance_sum += distance;
 			distances[i] = distance;
 		}
@@ -271,7 +271,7 @@ static inline int partition_mismatch2(
 ) {
 	int v1 = astc::popcount(a0 ^ b0) + astc::popcount(a1 ^ b1);
 	int v2 = astc::popcount(a0 ^ b1) + astc::popcount(a1 ^ b0);
-	return MIN(v1, v2);
+	return astc::min(v1, v2);
 }
 
 // compute the bit-mismatch for a partitioning in 3-partition mode
@@ -297,15 +297,15 @@ static inline int partition_mismatch3(
 
 	int s0 = p11 + p22;
 	int s1 = p12 + p21;
-	int v0 = MIN(s0, s1) + p00;
+	int v0 = astc::min(s0, s1) + p00;
 
 	int s2 = p10 + p22;
 	int s3 = p12 + p20;
-	int v1 = MIN(s2, s3) + p01;
+	int v1 = astc::min(s2, s3) + p01;
 
 	int s4 = p10 + p21;
 	int s5 = p11 + p20;
-	int v2 = MIN(s4, s5) + p02;
+	int v2 = astc::min(s4, s5) + p02;
 
 	if (v1 < v0)
 		v0 = v1;
@@ -320,8 +320,8 @@ static inline int MIN3(
 	int b,
 	int c
 ) {
-	int d = MIN(a, b);
-	return MIN(c, d);
+	int d = astc::min(a, b);
+	return astc::min(c, d);
 }
 
 // compute the bit-mismatch for a partitioning in 4-partition mode
@@ -355,21 +355,21 @@ static inline int partition_mismatch4(
 	int p32 = astc::popcount(a3 ^ b2);
 	int p33 = astc::popcount(a3 ^ b3);
 
-	int mx23 = MIN(p22 + p33, p23 + p32);
-	int mx13 = MIN(p21 + p33, p23 + p31);
-	int mx12 = MIN(p21 + p32, p22 + p31);
-	int mx03 = MIN(p20 + p33, p23 + p30);
-	int mx02 = MIN(p20 + p32, p22 + p30);
-	int mx01 = MIN(p21 + p30, p20 + p31);
+	int mx23 = astc::min(p22 + p33, p23 + p32);
+	int mx13 = astc::min(p21 + p33, p23 + p31);
+	int mx12 = astc::min(p21 + p32, p22 + p31);
+	int mx03 = astc::min(p20 + p33, p23 + p30);
+	int mx02 = astc::min(p20 + p32, p22 + p30);
+	int mx01 = astc::min(p21 + p30, p20 + p31);
 
 	int v0 = p00 + MIN3(p11 + mx23, p12 + mx13, p13 + mx12);
 	int v1 = p01 + MIN3(p10 + mx23, p12 + mx03, p13 + mx02);
 	int v2 = p02 + MIN3(p11 + mx03, p10 + mx13, p13 + mx01);
 	int v3 = p03 + MIN3(p11 + mx02, p12 + mx01, p10 + mx12);
 
-	int x0 = MIN(v0, v1);
-	int x1 = MIN(v2, v3);
-	return MIN(x0, x1);
+	int x0 = astc::min(v0, v1);
+	int x1 = astc::min(v2, v3);
+	return astc::min(x0, x1);
 }
 
 static void count_partition_mismatch_bits(
