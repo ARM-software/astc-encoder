@@ -41,7 +41,7 @@ from your build dir, and install to your target install directory.
 ```shell
 # Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/astcenc/`
 cd build
-nmake install -j16
+nmake install
 ```
 
 ## macOS and Linux
