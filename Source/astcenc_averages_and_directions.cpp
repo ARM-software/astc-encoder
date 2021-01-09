@@ -516,62 +516,58 @@ void compute_error_squared_rgba(
 		{
 			int iwt = weights[i];
 
-			float texel_weight_rgba = ewb->texel_weight[iwt];
-			if (texel_weight_rgba > 1e-20f)
-			{
-				float4 dat = float4(blk->data_r[iwt],
-				                    blk->data_g[iwt],
-				                    blk->data_b[iwt],
-				                    blk->data_a[iwt]);
+			float4 dat = float4(blk->data_r[iwt],
+								blk->data_g[iwt],
+								blk->data_b[iwt],
+								blk->data_a[iwt]);
 
-				float4 ews = ewb->error_weights[iwt];
+			float4 ews = ewb->error_weights[iwt];
 
-				float uncorr_param = dot(dat, l_uncorr.bs);
-				uncorr_lowparam = MIN(uncorr_param, uncorr_lowparam);
-				uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
+			float uncorr_param = dot(dat, l_uncorr.bs);
+			uncorr_lowparam = MIN(uncorr_param, uncorr_lowparam);
+			uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
 
-				float samechroma_param = dot(dat, l_samechroma.bs);
-				samechroma_lowparam = MIN(samechroma_param, samechroma_lowparam);
-				samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
+			float samechroma_param = dot(dat, l_samechroma.bs);
+			samechroma_lowparam = MIN(samechroma_param, samechroma_lowparam);
+			samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
 
-				float4 separate_param = float4(dot(float3(dat.g, dat.b, dat.a), l_red.bs),
-				                               dot(float3(dat.r, dat.b, dat.a), l_green.bs),
-				                               dot(float3(dat.r, dat.g, dat.a), l_blue.bs),
-				                               dot(float3(dat.r, dat.g, dat.b), l_alpha.bs));
+			float4 separate_param = float4(dot(float3(dat.g, dat.b, dat.a), l_red.bs),
+											dot(float3(dat.r, dat.b, dat.a), l_green.bs),
+											dot(float3(dat.r, dat.g, dat.a), l_blue.bs),
+											dot(float3(dat.r, dat.g, dat.b), l_alpha.bs));
 
-				separate_lowparam = float4(MIN(separate_param.r, separate_lowparam.r),
-				                           MIN(separate_param.g, separate_lowparam.g),
-				                           MIN(separate_param.b, separate_lowparam.b),
-				                           MIN(separate_param.a, separate_lowparam.a));
+			separate_lowparam = float4(MIN(separate_param.r, separate_lowparam.r),
+										MIN(separate_param.g, separate_lowparam.g),
+										MIN(separate_param.b, separate_lowparam.b),
+										MIN(separate_param.a, separate_lowparam.a));
 
-				separate_highparam = float4(MAX(separate_param.r, separate_highparam.r),
-				                            MAX(separate_param.g, separate_highparam.g),
-				                            MAX(separate_param.b, separate_highparam.b),
-				                            MAX(separate_param.a, separate_highparam.a));
+			separate_highparam = float4(MAX(separate_param.r, separate_highparam.r),
+										MAX(separate_param.g, separate_highparam.g),
+										MAX(separate_param.b, separate_highparam.b),
+										MAX(separate_param.a, separate_highparam.a));
 
-				float4 uncorr_dist  = (l_uncorr.amod - dat) + (uncorr_param * l_uncorr.bis);
-				uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
+			float4 uncorr_dist  = (l_uncorr.amod - dat) + (uncorr_param * l_uncorr.bis);
+			uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
-				float4 samechroma_dist = (l_samechroma.amod - dat) +
-				                         (samechroma_param * l_samechroma.bis);
-				samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
+			float4 samechroma_dist = (l_samechroma.amod - dat) +
+										(samechroma_param * l_samechroma.bis);
+			samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 
-				float3 red_dist = (l_red.amod - float3(dat.g, dat.b, dat.a)) +
-				                  (separate_param.r * l_red.bis);
-				red_errorsum += dot(float3(ews.g, ews.b, ews.a), red_dist * red_dist);
+			float3 red_dist = (l_red.amod - float3(dat.g, dat.b, dat.a)) +
+								(separate_param.r * l_red.bis);
+			red_errorsum += dot(float3(ews.g, ews.b, ews.a), red_dist * red_dist);
 
-				float3 green_dist  = (l_green.amod - float3(dat.r, dat.b, dat.a)) +
-				                     (separate_param.g * l_green.bis);
-				green_errorsum += dot(float3(ews.r, ews.b, ews.a), green_dist * green_dist);
+			float3 green_dist  = (l_green.amod - float3(dat.r, dat.b, dat.a)) +
+									(separate_param.g * l_green.bis);
+			green_errorsum += dot(float3(ews.r, ews.b, ews.a), green_dist * green_dist);
 
-				float3 blue_dist  = (l_blue.amod - float3(dat.r, dat.g, dat.a)) +
-				                    (separate_param.b * l_blue.bis);
-				blue_errorsum += dot(float3(ews.r, ews.g, ews.a), blue_dist * blue_dist);
+			float3 blue_dist  = (l_blue.amod - float3(dat.r, dat.g, dat.a)) +
+								(separate_param.b * l_blue.bis);
+			blue_errorsum += dot(float3(ews.r, ews.g, ews.a), blue_dist * blue_dist);
 
-				float3 alpha_dist  = (l_alpha.amod - float3(dat.r, dat.g, dat.b)) +
-				                     (separate_param.a * l_alpha.bis);
-				alpha_errorsum += dot(float3(ews.r, ews.g, ews.b), alpha_dist * alpha_dist);
-			}
+			float3 alpha_dist  = (l_alpha.amod - float3(dat.r, dat.g, dat.b)) +
+									(separate_param.a * l_alpha.bis);
+			alpha_errorsum += dot(float3(ews.r, ews.g, ews.b), alpha_dist * alpha_dist);
 		}
 
 		float uncorr_linelen = uncorr_highparam - uncorr_lowparam;
@@ -651,57 +647,53 @@ void compute_error_squared_rgb(
 		{
 			int iwt = weights[i];
 
-			float texel_weight_rgb = ewb->texel_weight_rgb[iwt];
-			if (texel_weight_rgb > 1e-20f)
-			{
-				float3 dat = float3(blk->data_r[iwt],
-				                    blk->data_g[iwt],
-				                    blk->data_b[iwt]);
+			float3 dat = float3(blk->data_r[iwt],
+								blk->data_g[iwt],
+								blk->data_b[iwt]);
 
-				float3 ews = float3(ewb->error_weights[iwt].r,
-				                    ewb->error_weights[iwt].g,
-				                    ewb->error_weights[iwt].b);
+			float3 ews = float3(ewb->error_weights[iwt].r,
+								ewb->error_weights[iwt].g,
+								ewb->error_weights[iwt].b);
 
-				float uncorr_param = dot(dat, l_uncorr.bs);
-				uncorr_lowparam  = MIN(uncorr_param, uncorr_lowparam);
-				uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
+			float uncorr_param = dot(dat, l_uncorr.bs);
+			uncorr_lowparam  = MIN(uncorr_param, uncorr_lowparam);
+			uncorr_highparam = MAX(uncorr_param, uncorr_highparam);
 
-				float samechroma_param = dot(dat, l_samechroma.bs);
-				samechroma_lowparam  = MIN(samechroma_param, samechroma_lowparam);
-				samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
+			float samechroma_param = dot(dat, l_samechroma.bs);
+			samechroma_lowparam  = MIN(samechroma_param, samechroma_lowparam);
+			samechroma_highparam = MAX(samechroma_param, samechroma_highparam);
 
-				float3 separate_param = float3(dot(float2(dat.g, dat.b), l_red.bs),
-				                               dot(float2(dat.r, dat.b), l_green.bs),
-				                               dot(float2(dat.r, dat.g), l_blue.bs));
+			float3 separate_param = float3(dot(float2(dat.g, dat.b), l_red.bs),
+											dot(float2(dat.r, dat.b), l_green.bs),
+											dot(float2(dat.r, dat.g), l_blue.bs));
 
-				separate_lowparam  = float3(MIN(separate_param.r, separate_lowparam.r),
-				                            MIN(separate_param.g, separate_lowparam.g),
-				                            MIN(separate_param.b, separate_lowparam.b));
+			separate_lowparam  = float3(MIN(separate_param.r, separate_lowparam.r),
+										MIN(separate_param.g, separate_lowparam.g),
+										MIN(separate_param.b, separate_lowparam.b));
 
-				separate_highparam  = float3(MAX(separate_param.r, separate_highparam.r),
-				                             MAX(separate_param.g, separate_highparam.g),
-				                             MAX(separate_param.b, separate_highparam.b));
+			separate_highparam  = float3(MAX(separate_param.r, separate_highparam.r),
+											MAX(separate_param.g, separate_highparam.g),
+											MAX(separate_param.b, separate_highparam.b));
 
-				float3 uncorr_dist  = (l_uncorr.amod - dat) +
-				                      (uncorr_param * l_uncorr.bis);
-				uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
+			float3 uncorr_dist  = (l_uncorr.amod - dat) +
+									(uncorr_param * l_uncorr.bis);
+			uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
-				float3 samechroma_dist = (l_samechroma.amod - dat) +
-				                         (samechroma_param * l_samechroma.bis);
-				samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
+			float3 samechroma_dist = (l_samechroma.amod - dat) +
+										(samechroma_param * l_samechroma.bis);
+			samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 
-				float2 red_dist = (l_red.amod - float2(dat.g, dat.b)) +
-				                  (separate_param.r * l_red.bis);
-				red_errorsum += dot(float2(ews.g, ews.b), red_dist * red_dist);
+			float2 red_dist = (l_red.amod - float2(dat.g, dat.b)) +
+								(separate_param.r * l_red.bis);
+			red_errorsum += dot(float2(ews.g, ews.b), red_dist * red_dist);
 
-				float2 green_dist = (l_green.amod - float2(dat.r, dat.b)) +
-				                    (separate_param.g * l_green.bis);
-				green_errorsum += dot(float2(ews.r, ews.b), green_dist * green_dist);
+			float2 green_dist = (l_green.amod - float2(dat.r, dat.b)) +
+								(separate_param.g * l_green.bis);
+			green_errorsum += dot(float2(ews.r, ews.b), green_dist * green_dist);
 
-				float2 blue_dist = (l_blue.amod - float2(dat.r, dat.g)) +
-				                   (separate_param.b * l_blue.bis);
-				blue_errorsum += dot(float2(ews.r, ews.g), blue_dist * blue_dist);
-			}
+			float2 blue_dist = (l_blue.amod - float2(dat.r, dat.g)) +
+								(separate_param.b * l_blue.bis);
+			blue_errorsum += dot(float2(ews.r, ews.g), blue_dist * blue_dist);
 		}
 
 		float uncorr_linelen = uncorr_highparam - uncorr_lowparam;
