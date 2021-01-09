@@ -25,7 +25,7 @@ cd build
 # Configure your build of choice, for example:
 
 # x86-64
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=.\ ^
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 ```
 
