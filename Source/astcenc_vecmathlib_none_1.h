@@ -149,6 +149,14 @@ struct vint1
 	}
 
 	/**
+	 * @brief Construct from 1 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint1(const uint8_t *p)
+	{
+		m = *p;
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vint1::zero() for constexpr zeros.

@@ -256,6 +256,10 @@ alignas(32) static const int s32_data[9] {
 	0, 1, 2, 3, 4, 5 , 6, 7, 8
 };
 
+alignas(32) static const uint8_t u8_data[9] {
+	0, 1, 2, 3, 4, 5 , 6, 7, 8
+};
+
 // VFLOAT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /** @brief Test unaligned vfloat4 data load. */
@@ -803,6 +807,16 @@ TEST(vfloat4, float_to_int_rtn)
 TEST(vint4, UnalignedLoad)
 {
 	vint4 a(&(s32_data[1]));
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 4);
+}
+
+/** @brief Test unaligned vint4 data load. */
+TEST(vint4, UnalignedLoad8)
+{
+	vint4 a(&(u8_data[1]));
 	EXPECT_EQ(a.lane<0>(), 1);
 	EXPECT_EQ(a.lane<1>(), 2);
 	EXPECT_EQ(a.lane<2>(), 3);
@@ -1861,6 +1875,21 @@ TEST(vint8, UnalignedLoad)
 	EXPECT_EQ(a.lane<6>(), 7);
 	EXPECT_EQ(a.lane<7>(), 8);
 }
+
+/** @brief Test unaligned vint8 data load. */
+TEST(vint8, UnalignedLoad8)
+{
+	vint8 a(&(u8_data[1]));
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 4);
+	EXPECT_EQ(a.lane<4>(), 5);
+	EXPECT_EQ(a.lane<5>(), 6);
+	EXPECT_EQ(a.lane<6>(), 7);
+	EXPECT_EQ(a.lane<7>(), 8);
+}
+
 
 /** @brief Test scalar duplicated vint8 load. */
 TEST(vint8, ScalarDupLoad)

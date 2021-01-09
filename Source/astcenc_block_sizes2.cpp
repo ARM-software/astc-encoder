@@ -307,15 +307,22 @@ static void initialize_decimation_table_2d(
 		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
-			dt->texel_weights_float[j][i] = 0.0f;
-			dt->texel_weights[j][i] = 0;
+			dt->texel_weights_float_4t[j][i] = 0.0f;
+			dt->texel_weights_4t[j][i] = 0;
+			dt->texel_weights_float_t4[i][j] = 0.0f;
+			dt->texel_weights_t4[i][j] = 0;
 		}
 
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
+			// TODO: Why the uint8_t casts? Can we make these smaller?
 			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
-			dt->texel_weights_float[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[j][i] = (uint8_t)grid_weights_of_texel[i][j];
+
+			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_4t[j][i] = (uint8_t)grid_weights_of_texel[i][j];
+
+			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_t4[i][j] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -336,8 +343,8 @@ static void initialize_decimation_table_2d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				int dttw = dt->texel_weights[k][texel];
-				float dttwf = dt->texel_weights_float[k][texel];
+				int dttw = dt->texel_weights_t4[texel][k];
+				float dttwf = dt->texel_weights_float_t4[texel][k];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
@@ -517,15 +524,19 @@ static void initialize_decimation_table_3d(
 		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int[i][j] = 0;
-			dt->texel_weights_float[j][i] = 0.0f;
-			dt->texel_weights[j][i] = 0;
+			dt->texel_weights_float_4t[j][i] = 0.0f;
+			dt->texel_weights_4t[j][i] = 0;
+			dt->texel_weights_float_t4[i][j] = 0.0f;
+			dt->texel_weights_t4[i][j] = 0;
 		}
 
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
 			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
-			dt->texel_weights_float[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[j][i] = (uint8_t)grid_weights_of_texel[i][j];
+			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_4t[j][i] = (uint8_t)grid_weights_of_texel[i][j];
+			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_t4[i][j] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -545,8 +556,8 @@ static void initialize_decimation_table_3d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				int dttw = dt->texel_weights[k][texel];
-				float dttwf = dt->texel_weights_float[k][texel];
+				int dttw = dt->texel_weights_t4[texel][k];
+				float dttwf = dt->texel_weights_float_t4[texel][k];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;

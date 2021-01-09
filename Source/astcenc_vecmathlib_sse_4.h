@@ -183,6 +183,21 @@ struct vint4
 	}
 
 	/**
+	 * @brief Construct from 4 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
+	{
+		__m128 t = _mm_loadu_si32(p);
+
+#if ASTCENC_SSE >= 41
+		m = _mm_cvtepu8_epi32(t);
+#else
+		t = _mm_unpacklo_epi8(t, _mm_setzero_si128());
+		m = _mm_unpacklo_epi16(t, _mm_setzero_si128());
+#endif
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vfloat4::zero() for constexpr zeros.

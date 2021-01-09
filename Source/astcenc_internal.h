@@ -396,12 +396,15 @@ struct decimation_table
 	int texel_count;
 	int weight_count;
 	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
+
+	// The 4t and t4 tables are the same data, but transposed to allow optimal
+	// data access patterns depending on how we can unroll loops
+	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
+	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
+
+	float texel_weights_float_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
 	uint8_t texel_weights_int[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
-
-	alignas(ASTCENC_VECALIGN) float texel_weights_float[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
-
-	// TODO: Make this (u)int8_t again ...
-	alignas(ASTCENC_VECALIGN) int texel_weights[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
+	uint8_t texel_weights_t4[MAX_TEXELS_PER_BLOCK][4];	// the weights that go into a texel calculation
 
 	uint8_t weight_texel_count[MAX_WEIGHTS_PER_BLOCK];	// the number of texels that a given weight contributes to
 	uint8_t weight_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];	// the texels that the weight contributes to
@@ -410,7 +413,7 @@ struct decimation_table
 
 	// folded data structures:
 	//  * texel_weights_texel[i][j] = texel_weights[weight_texel[i][j]];
-	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]
+	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]]
 	uint8_t texel_weights_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 	float texel_weights_float_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 };

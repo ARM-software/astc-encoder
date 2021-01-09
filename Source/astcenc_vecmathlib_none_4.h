@@ -179,6 +179,17 @@ struct vint4
 	}
 
 	/**
+	 * @brief Construct from 4 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
+	{
+		m[0] = p[0];
+		m[1] = p[1];
+		m[2] = p[2];
+		m[3] = p[3];
+	}
+
+	/**
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.

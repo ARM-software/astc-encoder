@@ -159,7 +159,7 @@ struct vint8
 	ASTCENC_SIMD_INLINE vint8() {}
 
 	/**
-	 * @brief Construct from 4 values loaded from an unaligned address.
+	 * @brief Construct from 8 values loaded from an unaligned address.
 	 *
 	 * Consider using loada() which is better with vectors if data is aligned
 	 * to vector length.
@@ -167,6 +167,14 @@ struct vint8
 	ASTCENC_SIMD_INLINE explicit vint8(const int *p)
 	{
 		m = _mm256_loadu_si256((const __m256i*)p);
+	}
+
+	/**
+	 * @brief Construct from 8 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
+	{
+		m = _mm256_cvtepu8_epi32(_mm_loadu_si64(p));
 	}
 
 	/**
