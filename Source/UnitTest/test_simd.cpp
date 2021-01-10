@@ -662,6 +662,24 @@ TEST(vfloat4, hmin)
 	EXPECT_EQ(r2.lane<3>(), 0.2f);
 }
 
+/** @brief Test vfloat4 hmax. */
+TEST(vfloat4, hmax)
+{
+	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat4 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 4.0f);
+	EXPECT_EQ(r1.lane<1>(), 4.0f);
+	EXPECT_EQ(r1.lane<2>(), 4.0f);
+	EXPECT_EQ(r1.lane<3>(), 4.0f);
+
+	vfloat4 a2(1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat4 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 1.6f);
+	EXPECT_EQ(r2.lane<1>(), 1.6f);
+	EXPECT_EQ(r2.lane<2>(), 1.6f);
+	EXPECT_EQ(r2.lane<3>(), 1.6f);
+}
+
 /** @brief Test vfloat4 hadd. */
 TEST(vfloat4, hadd)
 {
@@ -1706,6 +1724,32 @@ TEST(vfloat8, hmin)
 	EXPECT_EQ(r2.lane<5>(), 0.2f);
 	EXPECT_EQ(r2.lane<6>(), 0.2f);
 	EXPECT_EQ(r2.lane<7>(), 0.2f);
+}
+
+/** @brief Test vfloat8 hmax. */
+TEST(vfloat8, hmax)
+{
+	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 4.0f);
+	EXPECT_EQ(r1.lane<1>(), 4.0f);
+	EXPECT_EQ(r1.lane<2>(), 4.0f);
+	EXPECT_EQ(r1.lane<3>(), 4.0f);
+	EXPECT_EQ(r1.lane<4>(), 4.0f);
+	EXPECT_EQ(r1.lane<5>(), 4.0f);
+	EXPECT_EQ(r1.lane<6>(), 4.0f);
+	EXPECT_EQ(r1.lane<7>(), 4.0f);
+
+	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 1.6f);
+	EXPECT_EQ(r2.lane<1>(), 1.6f);
+	EXPECT_EQ(r2.lane<2>(), 1.6f);
+	EXPECT_EQ(r2.lane<3>(), 1.6f);
+	EXPECT_EQ(r2.lane<4>(), 1.6f);
+	EXPECT_EQ(r2.lane<5>(), 1.6f);
+	EXPECT_EQ(r2.lane<6>(), 1.6f);
+	EXPECT_EQ(r2.lane<7>(), 1.6f);
 }
 
 /** @brief Test vfloat8 hadd. */

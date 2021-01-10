@@ -807,6 +807,16 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
+{
+	float tmp1 = std::max(a.m[0], a.m[1]);
+	float tmp2 = std::max(a.m[2], a.m[3]);
+	return vfloat4(std::max(tmp1, tmp2));
+}
+
+/**
  * @brief Return the horizontal sum of a vector.
  */
 ASTCENC_SIMD_INLINE float hadd(vfloat4 a)

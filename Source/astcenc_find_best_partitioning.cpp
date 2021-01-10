@@ -289,7 +289,6 @@ void find_best_partitionings(
 
 			float uncorr_linelengths[4];
 			float samechroma_linelengths[4];
-			float4 separate_linelengths[4];
 
 			for (int j = 0; j < partition_count; j++)
 			{
@@ -392,16 +391,10 @@ void find_best_partitionings(
 			                           ewb,
 			                           proc_uncorr_lines,
 			                           proc_samechroma_lines,
-			                           proc_separate_red_lines,
-			                           proc_separate_green_lines,
-			                           proc_separate_blue_lines,
-			                           proc_separate_alpha_lines,
 			                           uncorr_linelengths,
 			                           samechroma_linelengths,
-			                           separate_linelengths,
 			                           &uncorr_error,
-			                           &samechroma_error,
-			                           &separate_error);
+			                           &samechroma_error);
 
 			// compute minimum & maximum alpha values in each partition
 			float3 rgb_range[4];
@@ -431,10 +424,10 @@ void find_best_partitionings(
 
 				float4 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float4 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
-				float3 separate_red_vector = (separate_red_lines[j].b * separate_linelengths[j].r) * float3(ics.g, ics.b, ics.a);
-				float3 separate_green_vector = (separate_green_lines[j].b * separate_linelengths[j].g) * float3(ics.r, ics.b, ics.a);
-				float3 separate_blue_vector = (separate_blue_lines[j].b * separate_linelengths[j].b) * float3(ics.r, ics.g, ics.a);
-				float3 separate_alpha_vector = (separate_alpha_lines[j].b * separate_linelengths[j].a) * float3(ics.r, ics.g, ics.b);
+				float3 separate_red_vector = separate_red_lines[j].b * float3(ics.g, ics.b, ics.a);
+				float3 separate_green_vector = separate_green_lines[j].b * float3(ics.r, ics.b, ics.a);
+				float3 separate_blue_vector = separate_blue_lines[j].b * float3(ics.r, ics.g, ics.a);
+				float3 separate_alpha_vector = separate_alpha_lines[j].b * float3(ics.r, ics.g, ics.b);
 
 				uncorr_vector = uncorr_vector * uncorr_vector;
 				samechroma_vector = samechroma_vector * samechroma_vector;
@@ -640,15 +633,10 @@ void find_best_partitionings(
 			                          ewb,
 			                          proc_uncorr_lines,
 			                          proc_samechroma_lines,
-			                          proc_separate_red_lines,
-			                          proc_separate_green_lines,
-			                          proc_separate_blue_lines,
 			                          uncorr_linelengths,
 			                          samechroma_linelengths,
-			                          separate_linelengths,
 			                          &uncorr_error,
-			                          &samechroma_error,
-			                          &separate_error);
+			                          &samechroma_error);
 
 			float3 rgb_range[4];
 			compute_rgb_range(bsd->texel_count, ptab + partition, blk, ewb, rgb_range);
@@ -675,9 +663,9 @@ void find_best_partitionings(
 				float3 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float3 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
 
-				float2 separate_red_vector = (separate_red_lines[j].b * separate_linelengths[j].r) * float2(ics.g, ics.b);
-				float2 separate_green_vector = (separate_green_lines[j].b * separate_linelengths[j].g) * float2(ics.r, ics.b);
-				float2 separate_blue_vector = (separate_blue_lines[j].b * separate_linelengths[j].b) * float2(ics.r, ics.g);
+				float2 separate_red_vector = separate_red_lines[j].b * float2(ics.g, ics.b);
+				float2 separate_green_vector = separate_green_lines[j].b * float2(ics.r, ics.b);
+				float2 separate_blue_vector = separate_blue_lines[j].b * float2(ics.r, ics.g);
 
 				uncorr_vector = uncorr_vector * uncorr_vector;
 				samechroma_vector = samechroma_vector * samechroma_vector;

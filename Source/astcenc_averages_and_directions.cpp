@@ -462,25 +462,15 @@ void compute_error_squared_rgba(
 	const partition_info* pt,    // the partition that we use when computing the squared-error.
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const processed_line4* plines_uncorr,
-	const processed_line4* plines_samechroma,
-	const processed_line3* plines_separate_red,
-	const processed_line3* plines_separate_green,
-	const processed_line3* plines_separate_blue,
-	const processed_line3* plines_separate_alpha,
-	float* lengths_uncorr,
-	float* lengths_samechroma,
-	float4* lengths_separate,
-	float* uncorr_errors,
-	float* samechroma_errors,
-	float4* separate_color_errors
+	const processed_line4* uncor_plines,
+	const processed_line4* samec_plines,
+	float* uncor_lengths,
+	float* samec_lengths,
+	float* uncor_errors,
+	float* samec_errors
 ) {
-	float uncorr_errorsum = 0.0f;
-	float samechroma_errorsum = 0.0f;
-	float red_errorsum = 0.0f;
-	float green_errorsum = 0.0f;
-	float blue_errorsum = 0.0f;
-	float alpha_errorsum = 0.0f;
+	float uncor_errorsum = 0.0f;
+	float samec_errorsum = 0.0f;
 
 	int partition_count = pt->partition_count;
 	promise(partition_count > 0);
@@ -491,28 +481,143 @@ void compute_error_squared_rgba(
 		// this can reduce the running time by about 25-50%.
 		const uint8_t *weights = pt->texels_of_partition[partition];
 
-		float uncorr_lowparam = 1e10f;
-		float uncorr_highparam = -1e10f;
+		float uncor_loparam = 1e10f;
+		float uncor_hiparam = -1e10f;
 
-		float samechroma_lowparam = 1e10f;
-		float samechroma_highparam = -1e10f;
+		float samec_loparam = 1e10f;
+		float samec_hiparam = -1e10f;
 
-		float4 separate_lowparam = float4(1e10f);
-		float4 separate_highparam = float4(-1e10f);
-
-		processed_line4 l_uncorr = plines_uncorr[partition];
-		processed_line4 l_samechroma = plines_samechroma[partition];
-		processed_line3 l_red = plines_separate_red[partition];
-		processed_line3 l_green = plines_separate_green[partition];
-		processed_line3 l_blue = plines_separate_blue[partition];
-		processed_line3 l_alpha = plines_separate_alpha[partition];
+		processed_line4 l_uncor = uncor_plines[partition];
+		processed_line4 l_samec = samec_plines[partition];
 
 		// TODO: split up this loop due to too many temporaries; in particular,
 		// the six line functions will consume 18 vector registers
 		int texel_count = pt->texels_per_partition[partition];
 		promise(texel_count > 0);
 
-		for (int i = 0; i < texel_count; i++)
+		int i = 0;
+
+#if ASTCENC_SIMD_WIDTH > 1
+		// This implementation is an example vectorization of this function.
+		// It works for - the codec is a 2-4% faster than not vectorizing - but
+		// the benefit is limited by the use of gathers and register pressure
+
+		// Vectorize some useful scalar inputs
+		vfloat l_uncor_bs0(l_uncor.bs.r);
+		vfloat l_uncor_bs1(l_uncor.bs.g);
+		vfloat l_uncor_bs2(l_uncor.bs.b);
+		vfloat l_uncor_bs3(l_uncor.bs.a);
+
+		vfloat l_uncor_amod0(l_uncor.amod.r);
+		vfloat l_uncor_amod1(l_uncor.amod.g);
+		vfloat l_uncor_amod2(l_uncor.amod.b);
+		vfloat l_uncor_amod3(l_uncor.amod.a);
+
+		vfloat l_uncor_bis0(l_uncor.bis.r);
+		vfloat l_uncor_bis1(l_uncor.bis.g);
+		vfloat l_uncor_bis2(l_uncor.bis.b);
+		vfloat l_uncor_bis3(l_uncor.bis.a);
+
+		vfloat l_samec_bs0(l_samec.bs.r);
+		vfloat l_samec_bs1(l_samec.bs.g);
+		vfloat l_samec_bs2(l_samec.bs.b);
+		vfloat l_samec_bs3(l_samec.bs.a);
+
+		vfloat l_samec_amod0(l_samec.amod.r);
+		vfloat l_samec_amod1(l_samec.amod.g);
+		vfloat l_samec_amod2(l_samec.amod.b);
+		vfloat l_samec_amod3(l_samec.amod.a);
+
+		vfloat l_samec_bis0(l_samec.bis.r);
+		vfloat l_samec_bis1(l_samec.bis.g);
+		vfloat l_samec_bis2(l_samec.bis.b);
+		vfloat l_samec_bis3(l_samec.bis.a);
+
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
+		vfloat uncor_errorsumv = vfloat::zero();
+
+		vfloat samec_loparamv(1e10f);
+		vfloat samec_hiparamv(-1e10f);
+		vfloat samec_errorsumv = vfloat::zero();
+
+		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vint texel_idxs(&(weights[i]));
+
+			vfloat data_r = gatherf(blk->data_r, texel_idxs);
+			vfloat data_g = gatherf(blk->data_g, texel_idxs);
+			vfloat data_b = gatherf(blk->data_b, texel_idxs);
+			vfloat data_a = gatherf(blk->data_a, texel_idxs);
+
+			vfloat ew_r = gatherf(ewb->texel_weight_r, texel_idxs);
+			vfloat ew_g = gatherf(ewb->texel_weight_g, texel_idxs);
+			vfloat ew_b = gatherf(ewb->texel_weight_b, texel_idxs);
+			vfloat ew_a = gatherf(ewb->texel_weight_a, texel_idxs);
+
+			vfloat uncor_param  = (data_r * l_uncor_bs0)
+			                    + (data_g * l_uncor_bs1)
+			                    + (data_b * l_uncor_bs2)
+			                    + (data_a * l_uncor_bs3);
+
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
+
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
+			                   + (uncor_param * l_uncor_bis0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
+			                   + (uncor_param * l_uncor_bis1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
+			                   + (uncor_param * l_uncor_bis2);
+			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
+			                   + (uncor_param * l_uncor_bis3);
+
+			vfloat uncor_error = (ew_r * uncor_dist0 * uncor_dist0)
+			                   + (ew_g * uncor_dist1 * uncor_dist1)
+			                   + (ew_b * uncor_dist2 * uncor_dist2)
+			                   + (ew_a * uncor_dist3 * uncor_dist3);
+
+			uncor_errorsumv = uncor_errorsumv + uncor_error;
+
+			// Process samechroma data
+			vfloat samec_param = (data_r * l_samec_bs0)
+			                   + (data_g * l_samec_bs1)
+			                   + (data_b * l_samec_bs2)
+			                   + (data_a * l_samec_bs3);
+
+			samec_loparamv = min(samec_param, samec_loparamv);
+			samec_hiparamv = max(samec_param, samec_hiparamv);
+
+
+			vfloat samec_dist0 = (l_samec_amod0 - data_r)
+			                   + (samec_param * l_samec_bis0);
+			vfloat samec_dist1 = (l_samec_amod1 - data_g)
+			                   + (samec_param * l_samec_bis1);
+			vfloat samec_dist2 = (l_samec_amod2 - data_b)
+			                   + (samec_param * l_samec_bis2);
+			vfloat samec_dist3 = (l_samec_amod3 - data_a)
+			                   + (samec_param * l_samec_bis3);
+
+			vfloat samec_error = (ew_r * samec_dist0 * samec_dist0)
+			                   + (ew_g * samec_dist1 * samec_dist1)
+			                   + (ew_b * samec_dist2 * samec_dist2)
+			                   + (ew_a * samec_dist3 * samec_dist3);
+
+			samec_errorsumv = samec_errorsumv + samec_error;
+		}
+
+		uncor_loparam = hmin(uncor_loparamv).lane<0>();
+		uncor_hiparam = hmax(uncor_hiparamv).lane<0>();
+		uncor_errorsum += hadd(uncor_errorsumv);
+
+		samec_loparam = hmin(samec_loparamv).lane<0>();
+		samec_hiparam = hmax(samec_hiparamv).lane<0>();
+		samec_errorsum += hadd(samec_errorsumv);
+#endif
+
+		// Loop tail
+		for (/* */; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 
@@ -523,127 +628,179 @@ void compute_error_squared_rgba(
 
 			float4 ews = ewb->error_weights[iwt];
 
-			float uncorr_param = dot(dat, l_uncorr.bs);
-			uncorr_lowparam = astc::min(uncorr_param, uncorr_lowparam);
-			uncorr_highparam = astc::max(uncorr_param, uncorr_highparam);
+			float uncor_param = dot(dat, l_uncor.bs);
+			uncor_loparam = astc::min(uncor_param, uncor_loparam);
+			uncor_hiparam = astc::max(uncor_param, uncor_hiparam);
 
-			float samechroma_param = dot(dat, l_samechroma.bs);
-			samechroma_lowparam = astc::min(samechroma_param, samechroma_lowparam);
-			samechroma_highparam = astc::max(samechroma_param, samechroma_highparam);
+			float samec_param = dot(dat, l_samec.bs);
+			samec_loparam = astc::min(samec_param, samec_loparam);
+			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
-			float4 separate_param = float4(dot(float3(dat.g, dat.b, dat.a), l_red.bs),
-			                               dot(float3(dat.r, dat.b, dat.a), l_green.bs),
-			                               dot(float3(dat.r, dat.g, dat.a), l_blue.bs),
-			                               dot(float3(dat.r, dat.g, dat.b), l_alpha.bs));
+			float4 uncorr_dist  = (l_uncor.amod - dat) + (uncor_param * l_uncor.bis);
+			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
-			separate_lowparam = float4(astc::min(separate_param.r, separate_lowparam.r),
-			                           astc::min(separate_param.g, separate_lowparam.g),
-			                           astc::min(separate_param.b, separate_lowparam.b),
-			                           astc::min(separate_param.a, separate_lowparam.a));
-
-			separate_highparam = float4(astc::max(separate_param.r, separate_highparam.r),
-			                            astc::max(separate_param.g, separate_highparam.g),
-			                            astc::max(separate_param.b, separate_highparam.b),
-			                            astc::max(separate_param.a, separate_highparam.a));
-
-			float4 uncorr_dist  = (l_uncorr.amod - dat) + (uncorr_param * l_uncorr.bis);
-			uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
-
-			float4 samechroma_dist = (l_samechroma.amod - dat) +
-										(samechroma_param * l_samechroma.bis);
-			samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
-
-			float3 red_dist = (l_red.amod - float3(dat.g, dat.b, dat.a)) +
-								(separate_param.r * l_red.bis);
-			red_errorsum += dot(float3(ews.g, ews.b, ews.a), red_dist * red_dist);
-
-			float3 green_dist  = (l_green.amod - float3(dat.r, dat.b, dat.a)) +
-									(separate_param.g * l_green.bis);
-			green_errorsum += dot(float3(ews.r, ews.b, ews.a), green_dist * green_dist);
-
-			float3 blue_dist  = (l_blue.amod - float3(dat.r, dat.g, dat.a)) +
-								(separate_param.b * l_blue.bis);
-			blue_errorsum += dot(float3(ews.r, ews.g, ews.a), blue_dist * blue_dist);
-
-			float3 alpha_dist  = (l_alpha.amod - float3(dat.r, dat.g, dat.b)) +
-									(separate_param.a * l_alpha.bis);
-			alpha_errorsum += dot(float3(ews.r, ews.g, ews.b), alpha_dist * alpha_dist);
+			float4 samechroma_dist = (l_samec.amod - dat) +
+										(samec_param * l_samec.bis);
+			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 		}
 
-		float uncorr_linelen = uncorr_highparam - uncorr_lowparam;
-		float samechroma_linelen = samechroma_highparam - samechroma_lowparam;
-		float4 separate_linelen = separate_highparam - separate_lowparam;
+		float uncorr_linelen = uncor_hiparam - uncor_loparam;
+		float samechroma_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
 		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
 		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
-		separate_linelen.r = astc::max(separate_linelen.r, 1e-7f);
-		separate_linelen.g = astc::max(separate_linelen.g, 1e-7f);
-		separate_linelen.b = astc::max(separate_linelen.b, 1e-7f);
-		separate_linelen.a = astc::max(separate_linelen.a, 1e-7f);
 
-		lengths_uncorr[partition] = uncorr_linelen;
-		lengths_samechroma[partition] = samechroma_linelen;
-		lengths_separate[partition] = separate_linelen;
+		uncor_lengths[partition] = uncorr_linelen;
+		samec_lengths[partition] = samechroma_linelen;
 	}
 
-	*uncorr_errors = uncorr_errorsum;
-	*samechroma_errors = samechroma_errorsum;
-	*separate_color_errors = float4(red_errorsum, green_errorsum, blue_errorsum, alpha_errorsum);
+	*uncor_errors = uncor_errorsum;
+	*samec_errors = samec_errorsum;
 }
 
 void compute_error_squared_rgb(
 	const partition_info *pt,    // the partition that we use when computing the squared-error.
 	const imageblock *blk,
 	const error_weight_block *ewb,
-	const processed_line3 *plines_uncorr,
-	const processed_line3 *plines_samechroma,
-	const processed_line2 *plines_separate_red,
-	const processed_line2 *plines_separate_green,
-	const processed_line2 *plines_separate_blue,
-	float *lengths_uncorr,
-	float *lengths_samechroma,
-	float3 *lengths_separate,
-	float *uncorr_errors,
-	float *samechroma_errors,
-	float3 *separate_color_errors
+	const processed_line3 *uncor_plines, // Uncorrelated channels
+	const processed_line3 *samec_plines, // Same chroma channels
+	float *uncor_lengths,
+	float *samec_lengths,
+	float *uncor_errors,
+	float *samec_errors
 ) {
-	float uncorr_errorsum = 0.0f;
-	float samechroma_errorsum = 0.0f;
-	float red_errorsum = 0.0f;
-	float green_errorsum = 0.0f;
-	float blue_errorsum = 0.0f;
+	float uncor_errorsum = 0.0f;
+	float samec_errorsum = 0.0f;
 
 	int partition_count = pt->partition_count;
 	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		// TODO: sort partitions by number of texels. For warp-architectures,
-		// this can reduce the running time by about 25-50%.
 		const uint8_t *weights = pt->texels_of_partition[partition];
 
-		float uncorr_lowparam = 1e10f;
-		float uncorr_highparam = -1e10f;
+		float uncor_loparam = 1e10f;
+		float uncor_hiparam = -1e10f;
 
-		float samechroma_lowparam = 1e10f;
-		float samechroma_highparam = -1e10f;
+		float samec_loparam = 1e10f;
+		float samec_hiparam = -1e10f;
 
-		float3 separate_lowparam = float3(1e10f);
-		float3 separate_highparam = float3(-1e10f);
-
-		processed_line3 l_uncorr = plines_uncorr[partition];
-		processed_line3 l_samechroma = plines_samechroma[partition];
-		processed_line2 l_red = plines_separate_red[partition];
-		processed_line2 l_green = plines_separate_green[partition];
-		processed_line2 l_blue = plines_separate_blue[partition];
+		processed_line3 l_uncor = uncor_plines[partition];
+		processed_line3 l_samec = samec_plines[partition];
 
 		// TODO: split up this loop due to too many temporaries; in
 		// particular, the six line functions will consume 18 vector registers
 		int texel_count = pt->texels_per_partition[partition];
 		promise(texel_count > 0);
 
-		for (int i = 0; i < texel_count; i++)
+		int i = 0;
+
+#if ASTCENC_SIMD_WIDTH > 1
+		// This implementation is an example vectorization of this function.
+		// It works for - the codec is a 2-4% faster than not vectorizing - but
+		// the benefit is limited by the use of gathers and register pressure
+
+		// Vectorize some useful scalar inputs
+		vfloat l_uncor_bs0(l_uncor.bs.r);
+		vfloat l_uncor_bs1(l_uncor.bs.g);
+		vfloat l_uncor_bs2(l_uncor.bs.b);
+
+		vfloat l_uncor_amod0(l_uncor.amod.r);
+		vfloat l_uncor_amod1(l_uncor.amod.g);
+		vfloat l_uncor_amod2(l_uncor.amod.b);
+
+		vfloat l_uncor_bis0(l_uncor.bis.r);
+		vfloat l_uncor_bis1(l_uncor.bis.g);
+		vfloat l_uncor_bis2(l_uncor.bis.b);
+
+		vfloat l_samec_bs0(l_samec.bs.r);
+		vfloat l_samec_bs1(l_samec.bs.g);
+		vfloat l_samec_bs2(l_samec.bs.b);
+
+		vfloat l_samec_amod0(l_samec.amod.r);
+		vfloat l_samec_amod1(l_samec.amod.g);
+		vfloat l_samec_amod2(l_samec.amod.b);
+
+		vfloat l_samec_bis0(l_samec.bis.r);
+		vfloat l_samec_bis1(l_samec.bis.g);
+		vfloat l_samec_bis2(l_samec.bis.b);
+
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
+		vfloat uncor_errorsumv = vfloat::zero();
+
+		vfloat samec_loparamv(1e10f);
+		vfloat samec_hiparamv(-1e10f);
+		vfloat samec_errorsumv = vfloat::zero();
+
+		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vint texel_idxs(&(weights[i]));
+
+			vfloat data_r = gatherf(blk->data_r, texel_idxs);
+			vfloat data_g = gatherf(blk->data_g, texel_idxs);
+			vfloat data_b = gatherf(blk->data_b, texel_idxs);
+
+			vfloat ew_r = gatherf(ewb->texel_weight_r, texel_idxs);
+			vfloat ew_g = gatherf(ewb->texel_weight_g, texel_idxs);
+			vfloat ew_b = gatherf(ewb->texel_weight_b, texel_idxs);
+
+			vfloat uncor_param  = (data_r * l_uncor_bs0)
+			                     + (data_g * l_uncor_bs1)
+			                     + (data_b * l_uncor_bs2);
+
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
+
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
+			                   + (uncor_param * l_uncor_bis0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
+			                   + (uncor_param * l_uncor_bis1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
+			                   + (uncor_param * l_uncor_bis2);
+
+			vfloat uncor_error = (ew_r * uncor_dist0 * uncor_dist0)
+			                   + (ew_g * uncor_dist1 * uncor_dist1)
+			                   + (ew_b * uncor_dist2 * uncor_dist2);
+
+			uncor_errorsumv = uncor_errorsumv + uncor_error;
+
+			// Process samechroma data
+			vfloat samec_param = (data_r * l_samec_bs0)
+			                   + (data_g * l_samec_bs1)
+			                   + (data_b * l_samec_bs2);
+
+			samec_loparamv = min(samec_param, samec_loparamv);
+			samec_hiparamv = max(samec_param, samec_hiparamv);
+
+
+			vfloat samec_dist0 = (l_samec_amod0 - data_r)
+			                   + (samec_param * l_samec_bis0);
+			vfloat samec_dist1 = (l_samec_amod1 - data_g)
+			                   + (samec_param * l_samec_bis1);
+			vfloat samec_dist2 = (l_samec_amod2 - data_b)
+			                   + (samec_param * l_samec_bis2);
+
+			vfloat samec_error = (ew_r * samec_dist0 * samec_dist0)
+			                   + (ew_g * samec_dist1 * samec_dist1)
+			                   + (ew_b * samec_dist2 * samec_dist2);
+
+			samec_errorsumv = samec_errorsumv + samec_error;
+		}
+
+		uncor_loparam = hmin(uncor_loparamv).lane<0>();
+		uncor_hiparam = hmax(uncor_hiparamv).lane<0>();
+		uncor_errorsum += hadd(uncor_errorsumv);
+
+		samec_loparam = hmin(samec_loparamv).lane<0>();
+		samec_hiparam = hmax(samec_hiparamv).lane<0>();
+		samec_errorsum += hadd(samec_errorsumv);
+#endif
+
+		// Loop tail
+		for (/* */; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 
@@ -655,66 +812,36 @@ void compute_error_squared_rgb(
 								ewb->error_weights[iwt].g,
 								ewb->error_weights[iwt].b);
 
-			float uncorr_param = dot(dat, l_uncorr.bs);
-			uncorr_lowparam  = astc::min(uncorr_param, uncorr_lowparam);
-			uncorr_highparam = astc::max(uncorr_param, uncorr_highparam);
+			float uncor_param = dot(dat, l_uncor.bs);
+			uncor_loparam  = astc::min(uncor_param, uncor_loparam);
+			uncor_hiparam = astc::max(uncor_param, uncor_hiparam);
 
-			float samechroma_param = dot(dat, l_samechroma.bs);
-			samechroma_lowparam  = astc::min(samechroma_param, samechroma_lowparam);
-			samechroma_highparam = astc::max(samechroma_param, samechroma_highparam);
+			float samec_param = dot(dat, l_samec.bs);
+			samec_loparam  = astc::min(samec_param, samec_loparam);
+			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
-			float3 separate_param = float3(dot(float2(dat.g, dat.b), l_red.bs),
-			                               dot(float2(dat.r, dat.b), l_green.bs),
-			                               dot(float2(dat.r, dat.g), l_blue.bs));
+			float3 uncorr_dist  = (l_uncor.amod - dat) +
+									(uncor_param * l_uncor.bis);
+			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
-			separate_lowparam  = float3(astc::min(separate_param.r, separate_lowparam.r),
-			                            astc::min(separate_param.g, separate_lowparam.g),
-			                            astc::min(separate_param.b, separate_lowparam.b));
-
-			separate_highparam  = float3(astc::max(separate_param.r, separate_highparam.r),
-			                             astc::max(separate_param.g, separate_highparam.g),
-			                             astc::max(separate_param.b, separate_highparam.b));
-
-			float3 uncorr_dist  = (l_uncorr.amod - dat) +
-									(uncorr_param * l_uncorr.bis);
-			uncorr_errorsum += dot(ews, uncorr_dist * uncorr_dist);
-
-			float3 samechroma_dist = (l_samechroma.amod - dat) +
-										(samechroma_param * l_samechroma.bis);
-			samechroma_errorsum += dot(ews, samechroma_dist * samechroma_dist);
-
-			float2 red_dist = (l_red.amod - float2(dat.g, dat.b)) +
-								(separate_param.r * l_red.bis);
-			red_errorsum += dot(float2(ews.g, ews.b), red_dist * red_dist);
-
-			float2 green_dist = (l_green.amod - float2(dat.r, dat.b)) +
-								(separate_param.g * l_green.bis);
-			green_errorsum += dot(float2(ews.r, ews.b), green_dist * green_dist);
-
-			float2 blue_dist = (l_blue.amod - float2(dat.r, dat.g)) +
-								(separate_param.b * l_blue.bis);
-			blue_errorsum += dot(float2(ews.r, ews.g), blue_dist * blue_dist);
+			float3 samechroma_dist = (l_samec.amod - dat) +
+										(samec_param * l_samec.bis);
+			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 		}
 
-		float uncorr_linelen = uncorr_highparam - uncorr_lowparam;
-		float samechroma_linelen = samechroma_highparam - samechroma_lowparam;
-		float3 separate_linelen = separate_highparam - separate_lowparam;
+		float uncorr_linelen = uncor_hiparam - uncor_loparam;
+		float samechroma_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
 		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
 		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
-		separate_linelen.r = astc::max(separate_linelen.r, 1e-7f);
-		separate_linelen.g = astc::max(separate_linelen.g, 1e-7f);
-		separate_linelen.b = astc::max(separate_linelen.b, 1e-7f);
 
-		lengths_uncorr[partition] = uncorr_linelen;
-		lengths_samechroma[partition] = samechroma_linelen;
-		lengths_separate[partition] = separate_linelen;
+		uncor_lengths[partition] = uncorr_linelen;
+		samec_lengths[partition] = samechroma_linelen;
 	}
 
-	*uncorr_errors = uncorr_errorsum;
-	*samechroma_errors = samechroma_errorsum;
-	*separate_color_errors = float3(red_errorsum, green_errorsum, blue_errorsum);
+	*uncor_errors = uncor_errorsum;
+	*samec_errors = samec_errorsum;
 }
 
 #endif
