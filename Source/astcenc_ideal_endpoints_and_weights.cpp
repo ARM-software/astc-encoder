@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -904,44 +904,78 @@ void compute_endpoints_and_ideal_weights_2_planes(
      go into a given texel.
 */
 
-static float compute_value_of_texel_flt(
-	int texel_to_get,
-	const decimation_table* it,
-	const float* weights
-) {
-	const uint8_t *texel_weights = it->texel_weights[texel_to_get];
-	const float *texel_weights_float = it->texel_weights_float[texel_to_get];
-
-	return (weights[texel_weights[0]] * texel_weights_float[0] +
-	        weights[texel_weights[1]] * texel_weights_float[1]) +
-	       (weights[texel_weights[2]] * texel_weights_float[2] +
-	        weights[texel_weights[3]] * texel_weights_float[3]);
-}
-
-static inline float compute_error_of_texel(
-	const endpoints_and_weights * eai,
-	int texel_to_get,
-	const decimation_table* it,
-	const float *weights
-) {
-	float current_value = compute_value_of_texel_flt(texel_to_get, it, weights);
-	float valuedif = current_value - eai->weights[texel_to_get];
-	return valuedif * valuedif * eai->weight_error_scale[texel_to_get];
-}
-
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
 	const decimation_table* it,
 	const float* weights
 ) {
-	float error_summa = 0.0;
-
+	vfloat verror_summa(0.0f);
+	float error_summa = 0.0f;
 	int texel_count = it->texel_count;
-	promise(texel_count > 0);
-	for (int i = 0; i < texel_count; i++)
+
+	int i = 0;
+
+#if ASTCENC_SIMD_WIDTH > 1
+
+	// Process SIMD-width texel coordinates at at time while we can
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		error_summa += compute_error_of_texel(eai, i, it, weights);
+		// Load the bilinear filter texel weight indexes
+		vint weight_idx0 = vint(&(it->texel_weights_4t[0][i]));
+		vint weight_idx1 = vint(&(it->texel_weights_4t[1][i]));
+		vint weight_idx2 = vint(&(it->texel_weights_4t[2][i]));
+		vint weight_idx3 = vint(&(it->texel_weights_4t[3][i]));
+
+		// Load the bilinear filter texel weights
+		vfloat weight_val0 = gatherf(weights, weight_idx0);
+		vfloat weight_val1 = gatherf(weights, weight_idx1);
+		vfloat weight_val2 = gatherf(weights, weight_idx2);
+		vfloat weight_val3 = gatherf(weights, weight_idx3);
+
+		// Load the weight contributions for each texel
+		// TODO: Should we rename this it->texel_weights_float field?
+		vfloat tex_weight_float0 = loada(&(it->texel_weights_float_4t[0][i]));
+		vfloat tex_weight_float1 = loada(&(it->texel_weights_float_4t[1][i]));
+		vfloat tex_weight_float2 = loada(&(it->texel_weights_float_4t[2][i]));
+		vfloat tex_weight_float3 = loada(&(it->texel_weights_float_4t[3][i]));
+
+		// Compute the bilinear interpolation
+		vfloat current_values = (weight_val0 * tex_weight_float0 +
+		                         weight_val1 * tex_weight_float1) +
+		                        (weight_val2 * tex_weight_float2 +
+		                         weight_val3 * tex_weight_float3);
+
+		// Compute the error between the computed value and the ideal weight
+		vfloat actual_values = loada(&(eai->weights[i]));
+		vfloat diff = current_values - actual_values;
+		vfloat significance = loada(&(eai->weight_error_scale[i]));
+		vfloat error = diff * diff * significance;
+
+		verror_summa = verror_summa + error;
 	}
+
+	// Accumulate the error vectors into a single error sum
+	error_summa += hadd(verror_summa);
+
+#endif
+
+	// Loop tail
+	for (/* */; i < texel_count; i++)
+	{
+		// This isn't the ideal access pattern, but the cache lines are probably
+		// already in the cache due to the vector loop above, so go with it ...
+		float current_value = (weights[it->texel_weights_4t[0][i]] * it->texel_weights_float_4t[0][i] +
+		                       weights[it->texel_weights_4t[1][i]] * it->texel_weights_float_4t[1][i]) +
+		                      (weights[it->texel_weights_4t[2][i]] * it->texel_weights_float_4t[2][i] +
+		                       weights[it->texel_weights_4t[3][i]] * it->texel_weights_float_4t[3][i]);
+
+		float valuedif = current_value - eai->weights[i];
+		float error = valuedif * valuedif * eai->weight_error_scale[i];
+
+		error_summa += error;
+	}
+
 	return error_summa;
 }
 
@@ -999,10 +1033,11 @@ void compute_ideal_weights_for_decimation_table(
 		weight_set[i] = initial_weight / weight_weight;	// this is the 0/0 that is to be avoided.
 	}
 
+	// TODO: Unroll this using the new SOA _t4 layout?
 	for (int i = 0; i < texel_count; i++)
 	{
-		const uint8_t *texel_weights = it->texel_weights[i];
-		const float *texel_weights_float = it->texel_weights_float[i];
+		const uint8_t *texel_weights = it->texel_weights_t4[i];
+		const float *texel_weights_float = it->texel_weights_float_t4[i];
 		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
 		                     + weight_set[texel_weights[1]] * texel_weights_float[1])
 		                    + (weight_set[texel_weights[2]] * texel_weights_float[2]
@@ -1105,12 +1140,13 @@ void compute_ideal_quantized_weights_for_decimation_table(
 
 #if ASTCENC_SIMD_WIDTH > 1
 	// SIMD loop; process weights in SIMD width batches while we can.
-	int clipped_weight_count = weight_count & ~(ASTCENC_SIMD_WIDTH-1);
 	vfloat scalev(scale);
 	vfloat scaled_low_boundv(scaled_low_bound);
 	vfloat quant_level_m1v(quant_level_m1);
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
+
+	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
 	for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
@@ -1327,8 +1363,8 @@ void recompute_ideal_colors_2planes(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
 
-			const uint8_t *texel_weights = it->texel_weights[tix];
-			const float *texel_weights_float = it->texel_weights_float[tix];
+			const uint8_t *texel_weights = it->texel_weights_t4[tix];
+			const float *texel_weights_float = it->texel_weights_float_t4[tix];
 			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
 			            + weight_set[texel_weights[1]] * texel_weights_float[1])
 			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
@@ -1748,8 +1784,8 @@ void recompute_ideal_colors_1plane(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
 
-			const uint8_t *texel_weights = it->texel_weights[tix];
-			const float *texel_weights_float = it->texel_weights_float[tix];
+			const uint8_t *texel_weights = it->texel_weights_t4[tix];
+			const float *texel_weights_float = it->texel_weights_float_t4[tix];
 			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
 			            + weight_set[texel_weights[1]] * texel_weights_float[1])
 			           + (weight_set[texel_weights[2]] * texel_weights_float[2]

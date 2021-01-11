@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -33,7 +33,7 @@ static int compute_value_of_texel_int(
 	int weights_to_evaluate = it->texel_weight_count[texel_to_get];
 	for (int i = 0; i < weights_to_evaluate; i++)
 	{
-		summed_value += weights[it->texel_weights[texel_to_get][i]] * it->texel_weights_int[texel_to_get][i];
+		summed_value += weights[it->texel_weights_t4[texel_to_get][i]] * it->texel_weights_int_t4[texel_to_get][i];
 	}
 	return summed_value >> 4;
 }

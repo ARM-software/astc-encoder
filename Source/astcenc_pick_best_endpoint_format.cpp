@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -828,7 +828,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	// have to ensure that the "overstep" of the last iteration in the vectorized
 	// loop will contain data that will never be picked as best candidate
 	const int packed_mode_count = bsd->block_mode_count;
-	const int packed_mode_count_simd_up = (packed_mode_count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH * ASTCENC_SIMD_WIDTH;
+	const int packed_mode_count_simd_up = round_up_to_simd_multiple_vla(packed_mode_count);
 	for (int i = packed_mode_count; i < packed_mode_count_simd_up; ++i)
 	{
 		errors_of_best_combination[i] = 1e30f;

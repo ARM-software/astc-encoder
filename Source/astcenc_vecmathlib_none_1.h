@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -149,6 +149,14 @@ struct vint1
 	}
 
 	/**
+	 * @brief Construct from 1 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint1(const uint8_t *p)
+	{
+		m = *p;
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vint1::zero() for constexpr zeros.
@@ -164,6 +172,30 @@ struct vint1
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
 		return m;
+	}
+
+	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint1 zero()
+	{
+		return vint1(0);
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint1 load1(const int* p)
+	{
+		return vint1(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 4B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint1 loada(const int* p)
+	{
+		return vint1(*p);
 	}
 
 	/**
@@ -192,9 +224,9 @@ struct vmask1
 	/**
 	 * @brief Construct from an existing mask value.
 	 */
-	ASTCENC_SIMD_INLINE explicit vmask1(int v)
+	ASTCENC_SIMD_INLINE explicit vmask1(int a)
 	{
-		m = v;
+		m = a;
 	}
 
 	/**
@@ -368,9 +400,9 @@ ASTCENC_SIMD_INLINE vint1 max(vint1 a, vint1 b)
 /**
  * @brief Return the horizontal minimum of a single vector.
  */
-ASTCENC_SIMD_INLINE vint1 hmin(vint1 v)
+ASTCENC_SIMD_INLINE vint1 hmin(vint1 a)
 {
-	return v;
+	return a;
 }
 
 /**
@@ -590,6 +622,14 @@ ASTCENC_SIMD_INLINE vfloat1 hmin(vfloat1 a)
 }
 
 /**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat1 a)
+{
+	return a.m;
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat1 select(vfloat1 a, vfloat1 b, vmask1 cond)
@@ -608,17 +648,17 @@ ASTCENC_SIMD_INLINE vfloat1 gatherf(const float* base, vint1 indices)
 /**
  * @brief Store a vector to an aligned memory address.
  */
-ASTCENC_SIMD_INLINE void storea(vfloat1 v, float* ptr)
+ASTCENC_SIMD_INLINE void storea(vfloat1 a, float* ptr)
 {
-	*ptr = v.m;
+	*ptr = a.m;
 }
 
 /**
  * @brief Return a integer value for a float vector, using truncation.
  */
-ASTCENC_SIMD_INLINE vint1 float_to_int(vfloat1 v)
+ASTCENC_SIMD_INLINE vint1 float_to_int(vfloat1 a)
 {
-	return vint1(v.m);
+	return vint1(a.m);
 }
 
 /**
@@ -628,10 +668,10 @@ ASTCENC_SIMD_INLINE vint1 float_to_int(vfloat1 v)
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the first half of that flip.
  */
-ASTCENC_SIMD_INLINE vint1 float_as_int(vfloat1 v)
+ASTCENC_SIMD_INLINE vint1 float_as_int(vfloat1 a)
 {
 	vint1 r;
-	memcpy(&r.m, &v.m, 4);
+	memcpy(&r.m, &a.m, 4);
 	return r;
 }
 
@@ -642,10 +682,10 @@ ASTCENC_SIMD_INLINE vint1 float_as_int(vfloat1 v)
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the second half of that flip.
  */
-ASTCENC_SIMD_INLINE vfloat1 int_as_float(vint1 v)
+ASTCENC_SIMD_INLINE vfloat1 int_as_float(vint1 a)
 {
 	vfloat1 r;
-	memcpy(&r.m, &v.m, 4);
+	memcpy(&r.m, &a.m, 4);
 	return r;
 }
 

@@ -306,16 +306,24 @@ static void initialize_decimation_table_2d(
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
 		for (int j = 0; j < 4; j++)
 		{
-			dt->texel_weights_int[i][j] = 0;
-			dt->texel_weights_float[i][j] = 0.0f;
-			dt->texel_weights[i][j] = 0;
+			dt->texel_weights_int_t4[i][j] = 0;
+			dt->texel_weights_float_t4[i][j] = 0.0f;
+			dt->texel_weights_t4[i][j] = 0;
+
+			dt->texel_weights_float_4t[j][i] = 0.0f;
+			dt->texel_weights_4t[j][i] = 0;
+
 		}
 
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
-			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
-			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[i][j] = (uint8_t)grid_weights_of_texel[i][j];
+			// TODO: Why the uint8_t casts? Can we make these smaller?
+			dt->texel_weights_int_t4[i][j] = (uint8_t)weights_of_texel[i][j];
+			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_t4[i][j] = (uint8_t)grid_weights_of_texel[i][j];
+
+			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_4t[j][i] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -336,8 +344,8 @@ static void initialize_decimation_table_2d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				int dttw = dt->texel_weights[texel][k];
-				float dttwf = dt->texel_weights_float[texel][k];
+				int dttw = dt->texel_weights_t4[texel][k];
+				float dttwf = dt->texel_weights_float_t4[texel][k];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
@@ -516,16 +524,22 @@ static void initialize_decimation_table_3d(
 		// This allows a branch-free implementation of compute_value_of_texel_flt()
 		for (int j = 0; j < 4; j++)
 		{
-			dt->texel_weights_int[i][j] = 0;
-			dt->texel_weights_float[i][j] = 0.0f;
-			dt->texel_weights[i][j] = 0;
+			dt->texel_weights_int_t4[i][j] = 0;
+			dt->texel_weights_float_t4[i][j] = 0.0f;
+			dt->texel_weights_t4[i][j] = 0;
+
+			dt->texel_weights_float_4t[j][i] = 0.0f;
+			dt->texel_weights_4t[j][i] = 0;
 		}
 
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
-			dt->texel_weights_int[i][j] = (uint8_t)weights_of_texel[i][j];
-			dt->texel_weights_float[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights[i][j] = (uint8_t)grid_weights_of_texel[i][j];
+			dt->texel_weights_int_t4[i][j] = (uint8_t)weights_of_texel[i][j];
+			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_t4[i][j] = (uint8_t)grid_weights_of_texel[i][j];
+
+			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			dt->texel_weights_4t[j][i] = (uint8_t)grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -545,8 +559,8 @@ static void initialize_decimation_table_3d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				int dttw = dt->texel_weights[texel][k];
-				float dttwf = dt->texel_weights_float[texel][k];
+				int dttw = dt->texel_weights_t4[texel][k];
+				float dttwf = dt->texel_weights_float_t4[texel][k];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
@@ -594,7 +608,7 @@ static int construct_dt_entry_2d(
 
 	bool try_2planes = (2 * weight_count) <= MAX_WEIGHTS_PER_BLOCK;
 
-	decimation_table *dt = new decimation_table;
+	decimation_table *dt = aligned_malloc<decimation_table>(sizeof(decimation_table), ASTCENC_VECALIGN);
 	initialize_decimation_table_2d(x_dim, y_dim, x_weights, y_weights, dt);
 
 	int maxprec_1plane = -1;
@@ -826,7 +840,7 @@ static void construct_block_size_descriptor_3d(
 					continue;
 				}
 
-				decimation_table *dt = new decimation_table;
+				decimation_table *dt = aligned_malloc<decimation_table>(sizeof(decimation_table), ASTCENC_VECALIGN);
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
 				initialize_decimation_table_3d(xdim, ydim, zdim, x_weights, y_weights, z_weights, dt);
 
@@ -987,6 +1001,6 @@ void term_block_size_descriptor(
 {
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
-		delete bsd->decimation_tables[i];
+		aligned_free<const decimation_table>(bsd->decimation_tables[i]);
 	}
 }

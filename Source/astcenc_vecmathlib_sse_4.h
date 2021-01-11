@@ -183,6 +183,21 @@ struct vint4
 	}
 
 	/**
+	 * @brief Construct from 4 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
+	{
+		__m128i t = _mm_loadu_si32(p);
+
+#if ASTCENC_SSE >= 41
+		m = _mm_cvtepu8_epi32(t);
+#else
+		t = _mm_unpacklo_epi8(t, _mm_setzero_si128());
+		m = _mm_unpacklo_epi16(t, _mm_setzero_si128());
+#endif
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vfloat4::zero() for constexpr zeros.
@@ -216,6 +231,30 @@ struct vint4
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
 		return _mm_cvtsi128_si32(_mm_shuffle_epi32(m, l));
+	}
+
+	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 zero()
+	{
+		return vint4(_mm_setzero_si128());
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
+	{
+		return vint4(_mm_load_si128((const __m128i*)p));
 	}
 
 	/**
@@ -728,6 +767,20 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 	a = min(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = min(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+{
+	// Add top and bottom halves, lane 1/0
+	__m128 t = _mm_add_ps(a.m, _mm_movehl_ps(a.m, a.m));
+
+	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
+	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
+
+	return _mm_cvtss_f32(t);
 }
 
 /**

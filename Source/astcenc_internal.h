@@ -30,6 +30,7 @@
 #include <condition_variable>
 #include <functional>
 #include <mutex>
+#include <type_traits>
 
 #ifndef ASTCENC_SSE
   #if defined(__SSE4_2__)
@@ -395,9 +396,17 @@ struct decimation_table
 	int texel_count;
 	int weight_count;
 	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
-	uint8_t texel_weights_int[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
-	float texel_weights_float[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
-	uint8_t texel_weights[MAX_TEXELS_PER_BLOCK][4];	// the weights that go into a texel calculation
+
+	// The 4t and t4 tables are the same data, but transposed to allow optimal
+	// data access patterns depending on how we can unroll loops
+	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
+	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
+
+	float texel_weights_float_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
+	uint8_t texel_weights_t4[MAX_TEXELS_PER_BLOCK][4];	// the weights that go into a texel calculation
+
+	uint8_t texel_weights_int_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
+
 	uint8_t weight_texel_count[MAX_WEIGHTS_PER_BLOCK];	// the number of texels that a given weight contributes to
 	uint8_t weight_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];	// the texels that the weight contributes to
 	uint8_t weights_int[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];	// the weights that the weight contributes to a texel.
@@ -405,7 +414,7 @@ struct decimation_table
 
 	// folded data structures:
 	//  * texel_weights_texel[i][j] = texel_weights[weight_texel[i][j]];
-	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]
+	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]]
 	uint8_t texel_weights_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 	float texel_weights_float_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
 };
@@ -1039,8 +1048,8 @@ struct endpoints
 struct endpoints_and_weights
 {
 	endpoints ep;
-	float weights[MAX_TEXELS_PER_BLOCK];
-	float weight_error_scale[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float weights[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
 };
 
 void compute_endpoints_and_ideal_weights_1_plane(
@@ -1347,9 +1356,9 @@ template<typename T>
 void aligned_free(T* ptr)
 {
 #if defined(_WIN32)
-	_aligned_free(ptr);
+	_aligned_free((void*)ptr);
 #else
-	free(ptr);
+	free((void*)ptr);
 #endif
 }
 

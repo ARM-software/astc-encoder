@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -69,6 +69,18 @@ struct vfloat8
 	ASTCENC_SIMD_INLINE explicit vfloat8(float a)
 	{
 		m = _mm256_set1_ps(a);
+	}
+
+	/**
+	 * @brief Construct from 8 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vfloat8(
+		float a, float b, float c, float d,
+		float e, float f, float g, float h)
+	{
+		m = _mm256_set_ps(h, g, f, e, d, c, b, a);
 	}
 
 	/**
@@ -147,7 +159,7 @@ struct vint8
 	ASTCENC_SIMD_INLINE vint8() {}
 
 	/**
-	 * @brief Construct from 4 values loaded from an unaligned address.
+	 * @brief Construct from 8 values loaded from an unaligned address.
 	 *
 	 * Consider using loada() which is better with vectors if data is aligned
 	 * to vector length.
@@ -158,6 +170,14 @@ struct vint8
 	}
 
 	/**
+	 * @brief Construct from 8 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
+	{
+		m = _mm256_cvtepu8_epi32(_mm_loadu_si64(p));
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vfloat4::zero() for constexpr zeros.
@@ -165,6 +185,18 @@ struct vint8
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
 		m = _mm256_set1_epi32(a);
+	}
+
+	/**
+	 * @brief Construct from 8 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint8(
+		int a, int b, int c, int d,
+		int e, int f, int g, int h)
+	{
+		m = _mm256_set_epi32(h, g, f, e, d, c, b, a);
 	}
 
 	/**
@@ -189,6 +221,31 @@ struct vint8
 		cvt.m = m;
 		return cvt.f[l];
 	#endif
+	}
+
+	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 zero()
+	{
+		return vint8(_mm256_setzero_si256());
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 load1(const int* p)
+	{
+		__m128i a = _mm_set1_epi32(*p);
+		return vint8(_mm256_broadcastd_epi32(a));
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 32B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)
+	{
+		return vint8(_mm256_load_si256((const __m256i*)p));
 	}
 
 	/**
@@ -689,6 +746,31 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 }
 
 /**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat8 a)
+{
+	// Add top and bottom halves, lane 3/2/1/0
+	__m128 t = _mm_add_ps(_mm256_extractf128_ps(a.m, 1), _mm256_castps256_ps128(a.m));
+
+	// Add top and bottom halves, lane 1/0
+	t = _mm_add_ps(t, _mm_movehl_ps(t, t));
+
+	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
+	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
+
+	return _mm_cvtss_f32(t);
+}
+
+/**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
+{
+	return vfloat8(_mm256_sqrt_ps(a.m));
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
@@ -706,6 +788,14 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
+{
+	_mm256_storeu_ps(p, a.m);
+}
+
+/**
+ * @brief Store a vector to a 32B aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
 {

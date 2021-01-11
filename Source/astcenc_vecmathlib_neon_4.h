@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2020 Arm Limited
+// Copyright 2019-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -176,6 +176,17 @@ struct vint4
 	}
 
 	/**
+	 * @brief Construct from 4 uint8_t loaded from an unaligned address.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
+	{
+		uint32x2_t t8 {};
+		t8 = vld1_lane_u32(p, t8, 0);
+		uint16x4_t t16 = vget_low_u16(vmovl_u8(vreinterpret_u8_u32(t8)));
+		m = vreinterpretq_s32_u32(vmovl_u16(t16));
+	}
+
+	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using vfloat4::zero() for constexpr zeros.
@@ -210,6 +221,30 @@ struct vint4
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
 		return vgetq_lane_s32(m, l);
+	}
+
+	/**
+	 * @brief Factory that returns a vector of zeros.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 zero()
+	{
+		return vint4(0);
+	}
+
+	/**
+	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
+	{
+		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
+	{
+		return vint4(*p);
 	}
 
 	/**
@@ -685,6 +720,15 @@ ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 {
 	return vfloat4(vminvq_f32(a.m));
+}
+
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+{
+	float32x2_t t = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
+	return vget_lane_f32(vpadd_f32(t, t), 0);
 }
 
 /**
