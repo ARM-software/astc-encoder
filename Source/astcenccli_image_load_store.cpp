@@ -957,8 +957,8 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 
 	unsigned int dim_x = hdr.pixel_width;
-	unsigned int dim_y = astc::max(hdr.pixel_height, 1);
-	unsigned int dim_z = astc::max(hdr.pixel_depth, 1);
+	unsigned int dim_y = astc::max(hdr.pixel_height, 1u);
+	unsigned int dim_z = astc::max(hdr.pixel_depth, 1u);
 
 	// ignore the key/value data
 	fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
@@ -2219,9 +2219,9 @@ int load_cimage(
 	}
 
 	// Ensure these are not zero to avoid div by zero
-	unsigned int block_x = astc::max(hdr.block_x, 1);
-	unsigned int block_y = astc::max(hdr.block_y, 1);
-	unsigned int block_z = astc::max(hdr.block_z, 1);
+	unsigned int block_x = astc::max((unsigned int)hdr.block_x, 1u);
+	unsigned int block_y = astc::max((unsigned int)hdr.block_y, 1u);
+	unsigned int block_z = astc::max((unsigned int)hdr.block_z, 1u);
 
 	unsigned int dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
 	unsigned int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);

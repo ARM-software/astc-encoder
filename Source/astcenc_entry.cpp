@@ -248,7 +248,7 @@ static astcenc_error validate_config(
 
 	config.tune_partition_limit = astc::clamp(config.tune_partition_limit, 1u, (unsigned int)PARTITION_COUNT);
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
-	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1);
+	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
 	config.tune_partition_early_out_limit = astc::max(config.tune_partition_early_out_limit, 0.0f);
@@ -289,7 +289,7 @@ astcenc_error astcenc_config_init(
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
-	block_z = astc::max(block_z, 1); // For 2D blocks Z==0 is accepted, but convert to 1
+	block_z = astc::max(block_z, 1u); // For 2D blocks Z==0 is accepted, but convert to 1
 	status = validate_block_size(block_x, block_y, block_z);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -312,7 +312,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 2;
 		config.tune_block_mode_limit = 25;
 		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = astc::min(1, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(1u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(70 - 35 * ltexels, 53 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
@@ -321,7 +321,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 4;
 		config.tune_block_mode_limit = 50;
 		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = astc::min(2, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(85 - 35 * ltexels, 63 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
@@ -330,7 +330,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 25;
 		config.tune_block_mode_limit = 75;
 		config.tune_refinement_limit = 2;
-		config.tune_candidate_limit = astc::min(2, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(95 - 35 * ltexels, 70 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 1.2f;
 		config.tune_two_plane_early_out_limit = 0.75f;
@@ -339,7 +339,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 100;
 		config.tune_block_mode_limit = 95;
 		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = astc::min(3, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(3u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(105 - 35 * ltexels, 77 - 19 * ltexels);
 		config.tune_partition_early_out_limit = 2.5f;
 		config.tune_two_plane_early_out_limit = 0.95f;
@@ -348,7 +348,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_limit = 1024;
 		config.tune_block_mode_limit = 100;
 		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = astc::min(4, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_candidate_limit = astc::min(4u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = 999.0f;
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;

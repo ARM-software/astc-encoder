@@ -431,10 +431,7 @@ float compute_symbolic_block_difference(
 		                            ewb->error_weights[i].a);
 
 		float metric = dot(error, errorWeight);
-		if (metric >= 1e30f) metric = 1e30f;
-		if (metric != metric) metric = 0.0f;
-
-		summa += metric;
+		summa += astc::clamp(metric, 0.0f, 1e30f);
 	}
 
 	return summa;
