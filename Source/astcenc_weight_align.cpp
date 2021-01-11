@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -120,7 +120,7 @@ void prepare_angular_tables()
 		}
 
 		int p = astc::flt2int_rd(angular_steppings[i]) + 1;
-		max_angular_steps_needed_for_quant_steps[p] = MIN(i + 1, ANGULAR_STEPS - 1);
+		max_angular_steps_needed_for_quant_steps[p] = astc::min(i + 1, ANGULAR_STEPS - 1);
 	}
 
 	for (int i = 0; i < 13; i++)
@@ -222,23 +222,23 @@ static void compute_lowest_and_highest_weight(
 			vfloat dwt = dif * wt;
 			errval = errval + dwt * dif;
 
-			// Reset tracker on min hit.
+			// Reset tracker on min hit
 			vmask mask = idxv < minidx;
 			minidx = select(minidx, idxv, mask);
 			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), mask);
 
-			// Accumulate on min hit.
+			// Accumulate on min hit
 			mask = idxv == minidx;
 			minidx = select(minidx, idxv, mask);
 			vfloat accum = cut_low_weight_err + wt - vfloat(2.0f) * dwt;
 			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
 
-			// Reset tracker on max hit.
+			// Reset tracker on max hit
 			mask = idxv > maxidx;
 			maxidx = select(maxidx, idxv, mask);
 			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), mask);
 
-			// Accumulate on max hit.
+			// Accumulate on max hit
 			mask = idxv == maxidx;
 			accum = cut_high_weight_err + wt + vfloat(2.0f) * dwt;
 			cut_high_weight_err = select(cut_high_weight_err, accum, mask);

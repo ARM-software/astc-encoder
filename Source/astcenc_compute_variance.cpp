@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -136,7 +136,7 @@ static void compute_pixel_region_variance(
 	float4 *work_memory = arg->work_memory;
 
 	// Compute memory sizes and dimensions that we need
-	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);
+	int kernel_radius = astc::max(avg_var_kernel_radius, alpha_kernel_radius);
 	int kerneldim = 2 * kernel_radius + 1;
 	int kernel_radius_xy = kernel_radius;
 	int kernel_radius_z = have_z ? kernel_radius : 0;
@@ -205,10 +205,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
-						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
-						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
-						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
+						d.r = powf(astc::max(d.r, 1e-6f), rgb_power);
+						d.g = powf(astc::max(d.g, 1e-6f), rgb_power);
+						d.b = powf(astc::max(d.b, 1e-6f), rgb_power);
+						d.a = powf(astc::max(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -257,10 +257,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
-						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
-						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
-						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
+						d.r = powf(astc::max(d.r, 1e-6f), rgb_power);
+						d.g = powf(astc::max(d.g, 1e-6f), rgb_power);
+						d.b = powf(astc::max(d.b, 1e-6f), rgb_power);
+						d.a = powf(astc::max(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -308,10 +308,10 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.r = powf(MAX(d.r, 1e-6f), rgb_power);
-						d.g = powf(MAX(d.g, 1e-6f), rgb_power);
-						d.b = powf(MAX(d.b, 1e-6f), rgb_power);
-						d.a = powf(MAX(d.a, 1e-6f), alpha_power);
+						d.r = powf(astc::max(d.r, 1e-6f), rgb_power);
+						d.g = powf(astc::max(d.g, 1e-6f), rgb_power);
+						d.b = powf(astc::max(d.b, 1e-6f), rgb_power);
+						d.a = powf(astc::max(d.a, 1e-6f), alpha_power);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -580,15 +580,15 @@ void compute_averages_and_variances(
 		int z = (base / (y_tasks)) * step_z;
 		int y = (base - (z * y_tasks)) * step_y;
 
-		arg.size.b = MIN(step_z, size_z - z);
+		arg.size.b = astc::min(step_z, size_z - z);
 		arg.offset.b = z;
 
-		arg.size.g = MIN(step_y, size_y - y);
+		arg.size.g = astc::min(step_y, size_y - y);
 		arg.offset.g = y;
 
 		for (int x = 0; x < size_x; x += step_x)
 		{
-			arg.size.r = MIN(step_x, size_x - x);
+			arg.size.r = astc::min(step_x, size_x - x);
 			arg.offset.r = x;
 			compute_pixel_region_variance(ctx, &arg);
 		}
@@ -615,12 +615,12 @@ unsigned int init_compute_averages_and_variances(
 	int size_z = img.dim_z;
 
 	// Compute maximum block size and from that the working memory buffer size
-	int kernel_radius = MAX(avg_var_kernel_radius, alpha_kernel_radius);
+	int kernel_radius = astc::max(avg_var_kernel_radius, alpha_kernel_radius);
 	int kerneldim = 2 * kernel_radius + 1;
 
 	int have_z = (size_z > 1);
 	int max_blk_size_xy = have_z ? 16 : 32;
-	int max_blk_size_z = MIN(size_z, have_z ? 16 : 1);
+	int max_blk_size_z = astc::min(size_z, have_z ? 16 : 1);
 
 	int max_padsize_xy = max_blk_size_xy + kerneldim;
 	int max_padsize_z = max_blk_size_z + (have_z ? kerneldim : 0);

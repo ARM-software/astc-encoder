@@ -73,8 +73,8 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	float4 ep0 = ep->endpt0[partition_index];
 	float4 ep1 = ep->endpt1[partition_index];
 
-	float ep1_min = MIN(MIN(ep1.r, ep1.g), ep1.b);
-	ep1_min = MAX(ep1_min, 0.0f);
+	float ep1_min = astc::min(astc::min(ep1.r, ep1.g), ep1.b);
+	ep1_min = astc::max(ep1_min, 0.0f);
 
 	float4 error_weight = error_weightings[partition_index];
 
@@ -91,25 +91,25 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 	float4 ep0_range_error_low;
 	float4 ep1_range_error_low;
 
-	ep0_range_error_high.r = MAX(0.0f, ep0.r - range_upper_limit_rgb);
-	ep0_range_error_high.g = MAX(0.0f, ep0.g - range_upper_limit_rgb);
-	ep0_range_error_high.b = MAX(0.0f, ep0.b - range_upper_limit_rgb);
-	ep0_range_error_high.a = MAX(0.0f, ep0.a - range_upper_limit_alpha);
+	ep0_range_error_high.r = astc::max(0.0f, ep0.r - range_upper_limit_rgb);
+	ep0_range_error_high.g = astc::max(0.0f, ep0.g - range_upper_limit_rgb);
+	ep0_range_error_high.b = astc::max(0.0f, ep0.b - range_upper_limit_rgb);
+	ep0_range_error_high.a = astc::max(0.0f, ep0.a - range_upper_limit_alpha);
 
-	ep1_range_error_high.r = MAX(0.0f, ep1.r - range_upper_limit_rgb);
-	ep1_range_error_high.g = MAX(0.0f, ep1.g - range_upper_limit_rgb);
-	ep1_range_error_high.b = MAX(0.0f, ep1.b - range_upper_limit_rgb);
-	ep1_range_error_high.a = MAX(0.0f, ep1.a - range_upper_limit_alpha);
+	ep1_range_error_high.r = astc::max(0.0f, ep1.r - range_upper_limit_rgb);
+	ep1_range_error_high.g = astc::max(0.0f, ep1.g - range_upper_limit_rgb);
+	ep1_range_error_high.b = astc::max(0.0f, ep1.b - range_upper_limit_rgb);
+	ep1_range_error_high.a = astc::max(0.0f, ep1.a - range_upper_limit_alpha);
 
-	ep0_range_error_low.r = MIN(0.0f, ep0.r);
-	ep0_range_error_low.g = MIN(0.0f, ep0.g);
-	ep0_range_error_low.b = MIN(0.0f, ep0.b);
-	ep0_range_error_low.a = MIN(0.0f, ep0.a);
+	ep0_range_error_low.r = astc::min(0.0f, ep0.r);
+	ep0_range_error_low.g = astc::min(0.0f, ep0.g);
+	ep0_range_error_low.b = astc::min(0.0f, ep0.b);
+	ep0_range_error_low.a = astc::min(0.0f, ep0.a);
 
-	ep1_range_error_low.r = MIN(0.0f, ep1.r);
-	ep1_range_error_low.g = MIN(0.0f, ep1.g);
-	ep1_range_error_low.b = MIN(0.0f, ep1.b);
-	ep1_range_error_low.a = MIN(0.0f, ep1.a);
+	ep1_range_error_low.r = astc::min(0.0f, ep1.r);
+	ep1_range_error_low.g = astc::min(0.0f, ep1.g);
+	ep1_range_error_low.b = astc::min(0.0f, ep1.b);
+	ep1_range_error_low.a = astc::min(0.0f, ep1.a);
 
 	float4 sum_range_error =
 		(ep0_range_error_low * ep0_range_error_low) +
@@ -145,7 +145,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		float3 prd = float3(ep1.r, ep1.g, ep1.b) - float3(cf, cf, cf);
 		float3 pdif = prd - float3(ep0.r, ep0.g, ep0.b);
 		// estimate of color-component spread in low endpoint color
-		float df = MAX(MAX(fabsf(pdif.r), fabsf(pdif.g)), fabsf(pdif.b));
+		float df = astc::max(astc::max(fabsf(pdif.r), fabsf(pdif.g)), fabsf(pdif.b));
 
 		int b = (int)bf;
 		int c = (int)cf;
@@ -458,15 +458,15 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 		{
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
-				int low2 = MIN(i, j);
-				int high2 = MAX(i, j);
+				int low2 = astc::min(i, j);
+				int high2 = astc::max(i, j);
 				if ((high2 - low2) > 1)
 				{
 					continue;
 				}
 
 				int intcnt = i + j;
-				float errorterm = MIN(best_error[0][quant][i] + best_error[1][quant][j], 1e10f);
+				float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j], 1e10f);
 				if (errorterm <= combined_best_error[quant][intcnt])
 				{
 					combined_best_error[quant][intcnt] = errorterm;
@@ -553,8 +553,8 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 		{
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
-				int low2 = MIN(i, j);
-				int high2 = MAX(i, j);
+				int low2 = astc::min(i, j);
+				int high2 = astc::max(i, j);
 				if ((high2 - low2) > 1)
 				{
 					continue;
@@ -562,15 +562,15 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 
 				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
 				{
-					int low3 = MIN(k, low2);
-					int high3 = MAX(k, high2);
+					int low3 = astc::min(k, low2);
+					int high3 = astc::max(k, high2);
 					if ((high3 - low3) > 1)
 					{
 						continue;
 					}
 
 					int intcnt = i + j + k;
-					float errorterm = MIN(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k], 1e10f);
+					float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k], 1e10f);
 					if (errorterm <= combined_best_error[quant][intcnt])
 					{
 						combined_best_error[quant][intcnt] = errorterm;
@@ -659,8 +659,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 		{
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
-				int low2 = MIN(i, j);
-				int high2 = MAX(i, j);
+				int low2 = astc::min(i, j);
+				int high2 = astc::max(i, j);
 				if ((high2 - low2) > 1)
 				{
 					continue;
@@ -668,8 +668,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
 				{
-					int low3 = MIN(k, low2);
-					int high3 = MAX(k, high2);
+					int low3 = astc::min(k, low2);
+					int high3 = astc::max(k, high2);
 					if ((high3 - low3) > 1)
 					{
 						continue;
@@ -677,15 +677,15 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 					for (int l = 0; l < 4; l++)	// integer-count for fourth endpoint-pair
 					{
-						int low4 = MIN(l, low3);
-						int high4 = MAX(l, high3);
+						int low4 = astc::min(l, low3);
+						int high4 = astc::max(l, high3);
 						if ((high4 - low4) > 1)
 						{
 							continue;
 						}
 
 						int intcnt = i + j + k + l;
-						float errorterm = MIN(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k] + best_error[3][quant][l], 1e10f);
+						float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k] + best_error[3][quant][l], 1e10f);
 						if (errorterm <= combined_best_error[quant][intcnt])
 						{
 							combined_best_error[quant][intcnt] = errorterm;

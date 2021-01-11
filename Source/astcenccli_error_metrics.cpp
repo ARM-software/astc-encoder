@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -140,9 +140,9 @@ void compute_error_metrics(
 	kahan_accum4 log_errorsum;
 	kahan_accum4 mpsnr_errorsum;
 
-	unsigned int dim_x = MIN(img1->dim_x, img2->dim_x);
-	unsigned int dim_y = MIN(img1->dim_y, img2->dim_y);
-	unsigned int dim_z = MIN(img1->dim_z, img2->dim_z);
+	unsigned int dim_x = astc::min(img1->dim_x, img2->dim_x);
+	unsigned int dim_y = astc::min(img1->dim_y, img2->dim_y);
+	unsigned int dim_z = astc::min(img1->dim_z, img2->dim_z);
 
 	if (img1->dim_x != img2->dim_x ||
 	    img1->dim_y != img2->dim_y ||
@@ -226,7 +226,7 @@ void compute_error_metrics(
 					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 3)]));
 				}
 
-				rgb_peak = MAX(MAX(color1.r, color1.g), MAX(color1.b, rgb_peak));
+				rgb_peak = astc::max(astc::max(color1.r, color1.g), astc::max(color1.b, rgb_peak));
 
 				float4 diffcolor = color1 - color2;
 				errorsum += diffcolor * diffcolor;

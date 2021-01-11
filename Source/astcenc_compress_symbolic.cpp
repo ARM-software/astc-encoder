@@ -294,7 +294,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 	}
 
-	float min_wt_cutoff = MIN(MIN(min_ep.r, min_ep.g), MIN(min_ep.b, min_ep.a));
+	float min_wt_cutoff = astc::min(astc::min(min_ep.r, min_ep.g),
+	                                astc::min(min_ep.b, min_ep.a));
 
 	// for each mode, use the angular method to compute a shift.
 	float weight_low_value[MAX_WEIGHT_MODES];
@@ -613,7 +614,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		min_wt_cutoff2 = 1e30f;
 	}
 
-	min_wt_cutoff1 = MIN(MIN(min_ep1.r, min_ep1.g), MIN(min_ep1.b, min_ep1.a));
+	min_wt_cutoff1 = astc::min(astc::min(min_ep1.r, min_ep1.g),
+	                           astc::min(min_ep1.b, min_ep1.a));
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
@@ -927,10 +929,10 @@ static float prepare_error_weight_block(
 						variance.g = fvar * mixing + variance.g * (1.0f - mixing);
 						variance.b = fvar * mixing + variance.b * (1.0f - mixing);
 
-						float4 stdev = float4(astc::sqrt(MAX(variance.r, 0.0f)),
-						                      astc::sqrt(MAX(variance.g, 0.0f)),
-						                      astc::sqrt(MAX(variance.b, 0.0f)),
-						                      astc::sqrt(MAX(variance.a, 0.0f)));
+						float4 stdev = float4(astc::sqrt(astc::max(variance.r, 0.0f)),
+						                      astc::sqrt(astc::max(variance.g, 0.0f)),
+						                      astc::sqrt(astc::max(variance.b, 0.0f)),
+						                      astc::sqrt(astc::max(variance.a, 0.0f)));
 
 						avg.r *= ctx.config.v_rgb_mean;
 						avg.g *= ctx.config.v_rgb_mean;
@@ -1096,7 +1098,7 @@ static float prepare_block_statistics(
 		aa_var += a * aw;
 	}
 
-	float rpt = 1.0f / MAX(weight_sum, 1e-7f);
+	float rpt = 1.0f / astc::max(weight_sum, 1e-7f);
 
 	rr_var -= rs * (rs * rpt);
 	rg_cov -= gs * (rs * rpt);
@@ -1112,12 +1114,12 @@ static float prepare_block_statistics(
 
 	aa_var -= as * (as * rpt);
 
-	rg_cov *= astc::rsqrt(MAX(rr_var * gg_var, 1e-30f));
-	rb_cov *= astc::rsqrt(MAX(rr_var * bb_var, 1e-30f));
-	ra_cov *= astc::rsqrt(MAX(rr_var * aa_var, 1e-30f));
-	gb_cov *= astc::rsqrt(MAX(gg_var * bb_var, 1e-30f));
-	ga_cov *= astc::rsqrt(MAX(gg_var * aa_var, 1e-30f));
-	ba_cov *= astc::rsqrt(MAX(bb_var * aa_var, 1e-30f));
+	rg_cov *= astc::rsqrt(astc::max(rr_var * gg_var, 1e-30f));
+	rb_cov *= astc::rsqrt(astc::max(rr_var * bb_var, 1e-30f));
+	ra_cov *= astc::rsqrt(astc::max(rr_var * aa_var, 1e-30f));
+	gb_cov *= astc::rsqrt(astc::max(gg_var * bb_var, 1e-30f));
+	ga_cov *= astc::rsqrt(astc::max(gg_var * aa_var, 1e-30f));
+	ba_cov *= astc::rsqrt(astc::max(bb_var * aa_var, 1e-30f));
 
 	if (astc::isnan(rg_cov)) rg_cov = 1.0f;
 	if (astc::isnan(rb_cov)) rb_cov = 1.0f;
@@ -1126,11 +1128,11 @@ static float prepare_block_statistics(
 	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
 	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
-	float lowest_correlation = MIN(fabsf(rg_cov), fabsf(rb_cov));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ra_cov));
-	lowest_correlation = MIN(lowest_correlation, fabsf(gb_cov));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ga_cov));
-	lowest_correlation = MIN(lowest_correlation, fabsf(ba_cov));
+	float lowest_correlation = astc::min(fabsf(rg_cov), fabsf(rb_cov));
+	lowest_correlation       = astc::min(lowest_correlation, fabsf(ra_cov));
+	lowest_correlation       = astc::min(lowest_correlation, fabsf(gb_cov));
+	lowest_correlation       = astc::min(lowest_correlation, fabsf(ga_cov));
+	lowest_correlation       = astc::min(lowest_correlation, fabsf(ba_cov));
 	return lowest_correlation;
 }
 
@@ -1381,7 +1383,7 @@ void compress_block(
 			}
 		}
 
-		if (partition_count == 2 && MIN(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
+		if (partition_count == 2 && astc::min(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
 		{
 			goto END_OF_TESTS;
 		}

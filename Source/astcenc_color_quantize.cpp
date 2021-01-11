@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -2005,15 +2005,15 @@ int pack_color_endpoints(
 ) {
 	assert(quantization_level >= 0 && quantization_level < 21);
 	// we do not support negative colors.
-	color0.r = MAX(color0.r, 0.0f);
-	color0.g = MAX(color0.g, 0.0f);
-	color0.b = MAX(color0.b, 0.0f);
-	color0.a = MAX(color0.a, 0.0f);
+	color0.r = astc::max(color0.r, 0.0f);
+	color0.g = astc::max(color0.g, 0.0f);
+	color0.b = astc::max(color0.b, 0.0f);
+	color0.a = astc::max(color0.a, 0.0f);
 
-	color1.r = MAX(color1.r, 0.0f);
-	color1.g = MAX(color1.g, 0.0f);
-	color1.b = MAX(color1.b, 0.0f);
-	color1.a = MAX(color1.a, 0.0f);
+	color1.r = astc::max(color1.r, 0.0f);
+	color1.g = astc::max(color1.g, 0.0f);
+	color1.b = astc::max(color1.b, 0.0f);
+	color1.a = astc::max(color1.a, 0.0f);
 
 	int retval = 0;
 
