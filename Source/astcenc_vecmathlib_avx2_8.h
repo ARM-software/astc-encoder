@@ -792,6 +792,31 @@ ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 }
 
 /**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hadd(vfloat8 a)
+{
+	// Add top and bottom halves, lane 3/2/1/0
+	__m128 t = _mm_add_ps(_mm256_extractf128_ps(a.m, 1), _mm256_castps256_ps128(a.m));
+
+	// Add top and bottom halves, lane 1/0
+	t = _mm_add_ps(t, _mm_movehl_ps(t, t));
+
+	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
+	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
+
+	return _mm_cvtss_f32(t);
+}
+
+/**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
+{
+	return vfloat8(_mm256_sqrt_ps(a.m));
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)

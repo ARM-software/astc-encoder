@@ -730,7 +730,6 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 	return vfloat4(vmaxvq_f32(a.m));
 }
 
-
 /**
  * @brief Return the horizontal sum of a vector.
  */

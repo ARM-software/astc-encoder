@@ -679,7 +679,7 @@ TEST(vfloat4, hmax)
 	EXPECT_EQ(r2.lane<2>(), 1.6f);
 	EXPECT_EQ(r2.lane<3>(), 1.6f);
 }
-
+  
 /** @brief Test vfloat4 hadd. */
 TEST(vfloat4, hadd)
 {
