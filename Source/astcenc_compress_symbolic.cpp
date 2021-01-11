@@ -903,14 +903,10 @@ static float prepare_error_weight_block(
 					if (any_mean_stdev_weight)
 					{
 						float4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
-						if (avg.r < 6e-5f)
-							avg.r = 6e-5f;
-						if (avg.g < 6e-5f)
-							avg.g = 6e-5f;
-						if (avg.b < 6e-5f)
-							avg.b = 6e-5f;
-						if (avg.a < 6e-5f)
-							avg.a = 6e-5f;
+						avg.r = astc::max(avg.r, 6e-5f);
+						avg.g = astc::max(avg.g, 6e-5f);
+						avg.b = astc::max(avg.b, 6e-5f);
+						avg.a = astc::max(avg.a, 6e-5f);
 
 						avg = avg * avg;
 
@@ -959,8 +955,7 @@ static float prepare_error_weight_block(
 						float yN = ((blk->data_a[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
 
 						float denom = 1.0f - xN * xN - yN * yN;
-						if (denom < 0.1f)
-							denom = 0.1f;
+						denom = astc::max(denom, 0.1f);
 						denom = 1.0f / denom;
 						error_weight.r *= 1.0f + xN * xN * denom;
 						error_weight.a *= 1.0f + yN * yN * denom;
@@ -978,10 +973,7 @@ static float prepare_error_weight_block(
 							alpha_scale = blk->data_a[idx] * (1.0f / 65535.0f);
 						}
 
-						if (alpha_scale < 0.0001f)
-						{
-							alpha_scale = 0.0001f;
-						}
+						alpha_scale = astc::max(alpha_scale, 0.0001f);
 
 						alpha_scale *= alpha_scale;
 						error_weight.r *= alpha_scale;
@@ -1174,25 +1166,10 @@ void compress_block(
 			float blue  = orig_color.b;
 			float alpha = orig_color.a;
 
-			if (red < 0)
-				red = 0;
-			else if (red > 1)
-				red = 1;
-
-			if (green < 0)
-				green = 0;
-			else if (green > 1)
-				green = 1;
-
-			if (blue < 0)
-				blue = 0;
-			else if (blue > 1)
-				blue = 1;
-
-			if (alpha < 0)
-				alpha = 0;
-			else if (alpha > 1)
-				alpha = 1;
+			red = astc::clamp(red, 0.0f, 1.0f);
+			green = astc::clamp(green, 0.0f, 1.0f);
+			blue = astc::clamp(blue, 0.0f, 1.0f);
+			alpha = astc::clamp(alpha, 0.0f, 1.0f);
 
 			scb.constant_color[0] = astc::flt2int_rtn(red * 65535.0f);
 			scb.constant_color[1] = astc::flt2int_rtn(green * 65535.0f);
@@ -1252,10 +1229,7 @@ void compress_block(
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			errorval *= errorval_mult[i];
-			if (errorval < best_errorval_in_mode)
-			{
-				best_errorval_in_mode = errorval;
-			}
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
 			{
@@ -1311,10 +1285,7 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			if (errorval < best_errorval_in_mode)
-			{
-				best_errorval_in_mode = errorval;
-			}
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
 			{
@@ -1362,10 +1333,7 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				if (errorval < best_errorval_in_mode)
-				{
-					best_errorval_in_mode = errorval;
-				}
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 				if (errorval < error_of_best_block)
 				{
@@ -1422,10 +1390,7 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				if (errorval < best_errorval_in_mode)
-				{
-					best_errorval_in_mode = errorval;
-				}
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 				if (errorval < error_of_best_block)
 				{

@@ -862,7 +862,7 @@ static void construct_block_size_descriptor_3d(
 					}
 				}
 
-				if ((2 * x_weights * y_weights * z_weights) > MAX_WEIGHTS_PER_BLOCK)
+				if ((2 * weight_count) > MAX_WEIGHTS_PER_BLOCK)
 				{
 					maxprec_2planes = -1;
 				}

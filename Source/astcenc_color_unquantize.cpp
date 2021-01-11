@@ -93,35 +93,13 @@ static int rgb_delta_unpack(
 		retval = 1;
 	}
 
-	if (r0e < 0)
-		r0e = 0;
-	else if (r0e > 255)
-		r0e = 255;
+	r0e = astc::clamp(r0e, 0, 255);
+	g0e = astc::clamp(g0e, 0, 255);
+	b0e = astc::clamp(b0e, 0, 255);
 
-	if (g0e < 0)
-		g0e = 0;
-	else if (g0e > 255)
-		g0e = 255;
-
-	if (b0e < 0)
-		b0e = 0;
-	else if (b0e > 255)
-		b0e = 255;
-
-	if (r1e < 0)
-		r1e = 0;
-	else if (r1e > 255)
-		r1e = 255;
-
-	if (g1e < 0)
-		g1e = 0;
-	else if (g1e > 255)
-		g1e = 255;
-
-	if (b1e < 0)
-		b1e = 0;
-	else if (b1e > 255)
-		b1e = 255;
+	r1e = astc::clamp(r1e, 0, 255);
+	g1e = astc::clamp(g1e, 0, 255);
+	b1e = astc::clamp(b1e, 0, 255);
 
 	output0->r = r0e;
 	output0->g = g0e;
@@ -218,10 +196,7 @@ static void rgba_delta_unpack(
 	a1 >>= 1;
 	a1 += a0;
 
-	if (a1 < 0)
-		a1 = 0;
-	else if (a1 > 255)
-		a1 = 255;
+	a1 = astc::clamp(a1, 0, 255);
 
 	int order = rgb_delta_unpack(input, quantization_level, output0, output1);
 	if (order == 0)
@@ -286,8 +261,7 @@ static void luminance_delta_unpack(
 	int l0 = (v0 >> 2) | (v1 & 0xC0);
 	int l1 = l0 + (v1 & 0x3F);
 
-	if (l1 > 255)
-		l1 = 255;
+	l1 = astc::min(l1, 255);
 
 	*output0 = uint4(l0, l0, l0, 255);
 	*output1 = uint4(l1, l1, l1, 255);
@@ -334,15 +308,8 @@ static void luminance_alpha_delta_unpack(
 	lum1 += lum0;
 	alpha1 += alpha0;
 
-	if (lum1 < 0)
-		lum1 = 0;
-	else if (lum1 > 255)
-		lum1 = 255;
-
-	if (alpha1 < 0)
-		alpha1 = 0;
-	else if (alpha1 > 255)
-		alpha1 = 255;
+	lum1 = astc::clamp(lum1, 0, 255);
+	alpha1 = astc::clamp(alpha1, 0, 255);
 
 	*output0 = uint4(lum0, lum0, lum0, alpha0);
 	*output1 = uint4(lum1, lum1, lum1, alpha1);
@@ -613,35 +580,13 @@ static void hdr_rgb_unpack3(
 	int blue0 = a - b1 - c - d1;
 
 	// clamp the color components to [0,2^12 - 1]
-	if (red0 < 0)
-		red0 = 0;
-	else if (red0 > 0xFFF)
-		red0 = 0xFFF;
+	red0 = astc::clamp(red0, 0, 4095);
+	green0 = astc::clamp(green0, 0, 4095);
+	blue0 = astc::clamp(blue0, 0, 4095);
 
-	if (green0 < 0)
-		green0 = 0;
-	else if (green0 > 0xFFF)
-		green0 = 0xFFF;
-
-	if (blue0 < 0)
-		blue0 = 0;
-	else if (blue0 > 0xFFF)
-		blue0 = 0xFFF;
-
-	if (red1 < 0)
-		red1 = 0;
-	else if (red1 > 0xFFF)
-		red1 = 0xFFF;
-
-	if (green1 < 0)
-		green1 = 0;
-	else if (green1 > 0xFFF)
-		green1 = 0xFFF;
-
-	if (blue1 < 0)
-		blue1 = 0;
-	else if (blue1 > 0xFFF)
-		blue1 = 0xFFF;
+	red1 = astc::clamp(red1, 0, 4095);
+	green1 = astc::clamp(green1, 0, 4095);
+	blue1 = astc::clamp(blue1, 0, 4095);
 
 	// switch around the color components
 	int temp0, temp1;

@@ -38,15 +38,8 @@ static inline int cqt_lookup(
 	int quantization_level,
 	int value
 ) {
-	if (value < 0)
-	{
-		value = 0;
-	}
-	else if (value > 255)
-	{
-		value = 255;
-	}
-
+	// TODO: Make this unsigned and avoid the low clamp
+	value = astc::clamp(value, 0, 255);
 	return color_quantization_tables[quantization_level][value];
 }
 
@@ -992,27 +985,12 @@ static void quantize_hdr_rgbo3(
 		// next, recompute G and B, then quantize and unquantize them.
 		float g_fval = r_fval - color.g;
 		float b_fval = r_fval - color.b;
-		if (g_fval < 0.0f)
-		{
-			g_fval = 0.0f;
-		}
-		else if (g_fval > 65535.0f)
-		{
-			g_fval = 65535.0f;
-		}
 
-		if (b_fval < 0.0f)
-		{
-			b_fval = 0.0f;
-		}
-		else if (b_fval > 65535.0f)
-		{
-			b_fval = 65535.0f;
-		}
+		g_fval = astc::clamp(g_fval, 0.0f, 65535.0f);
+		b_fval = astc::clamp(b_fval, 0.0f, 65535.0f);
 
 		int g_intval = astc::flt2int_rtn(g_fval * mode_scale);
 		int b_intval = astc::flt2int_rtn(b_fval * mode_scale);
-
 
 		if (g_intval >= gb_intcutoff || b_intval >= gb_intcutoff)
 		{
@@ -1118,14 +1096,7 @@ static void quantize_hdr_rgbo3(
 		float rgb_errorsum = (r_fval - color.r) + (r_fval - g_fval - color.g) + (r_fval - b_fval - color.b);
 
 		float s_fval = s_base + rgb_errorsum * (1.0f / 3.0f);
-		if (s_fval < 0.0f)
-		{
-			s_fval = 0.0f;
-		}
-		else if (s_fval > 1e9f)
-		{
-			s_fval = 1e9f;
-		}
+		s_fval = astc::clamp(s_fval, 0.0f, 1e9f);
 
 		int s_intval = astc::flt2int_rtn(s_fval * mode_scale);
 
@@ -1190,25 +1161,17 @@ static void quantize_hdr_rgbo3(
 	// failed to encode any of the modes above? In that case,
 	// encode using mode #5.
 	float vals[4];
-	int ivals[4];
 	vals[0] = color_bak.r;
 	vals[1] = color_bak.g;
 	vals[2] = color_bak.b;
 	vals[3] = color_bak.a;
 
+	int ivals[4];
 	float cvals[3];
 
 	for (int i = 0; i < 3; i++)
 	{
-		if (vals[i] < 0.0f)
-		{
-			vals[i] = 0.0f;
-		}
-		else if (vals[i] > 65020.0f)
-		{
-			vals[i] = 65020.0f;
-		}
-
+		vals[i] = astc::clamp(vals[i], 0.0f, 65020.0f);
 		ivals[i] = astc::flt2int_rtn(vals[i] * (1.0f / 512.0f));
 		cvals[i] = ivals[i] * 512.0f;
 	}
@@ -1216,19 +1179,10 @@ static void quantize_hdr_rgbo3(
 	float rgb_errorsum = (cvals[0] - vals[0]) + (cvals[1] - vals[1]) + (cvals[2] - vals[2]);
 	vals[3] += rgb_errorsum * (1.0f / 3.0f);
 
-	if (vals[3] < 0.0f)
-	{
-		vals[3] = 0.0f;
-	}
-	else if (vals[3] > 65020.0f)
-	{
-		vals[3] = 65020.0f;
-	}
-
+	vals[3] = astc::clamp(vals[3], 0.0f, 65020.0f);
 	ivals[3] = astc::flt2int_rtn(vals[3] * (1.0f / 512.0f));
 
 	int encvals[4];
-
 	encvals[0] = (ivals[0] & 0x3f) | 0xC0;
 	encvals[1] = (ivals[1] & 0x7f) | 0x80;
 	encvals[2] = (ivals[2] & 0x7f) | 0x80;
@@ -1256,7 +1210,6 @@ static void quantize_hdr_rgb3(
 	color1.r = astc::clamp(color1.r, 0.0f, 65535.0f);
 	color1.g = astc::clamp(color1.g, 0.0f, 65535.0f);
 	color1.b = astc::clamp(color1.b, 0.0f, 65535.0f);
-
 
 	float4 color0_bak = color0;
 	float4 color1_bak = color1;
@@ -1380,10 +1333,7 @@ static void quantize_hdr_rgb3(
 
 		// next, recompute C, then quantize and unquantize it
 		float c_fval = a_fval - color0.r;
-		if (c_fval < 0.0f)
-			c_fval = 0.0f;
-		else if (c_fval > 65535.0f)
-			c_fval = 65535.0f;
+		c_fval = astc::clamp(c_fval, 0.0f, 65535.0f);
 
 		int c_intval = astc::flt2int_rtn(c_fval * mode_scale);
 
@@ -1406,24 +1356,9 @@ static void quantize_hdr_rgb3(
 		// next, recompute B0 and B1, then quantize and unquantize them
 		float b0_fval = a_fval - color1.g;
 		float b1_fval = a_fval - color1.b;
-		if (b0_fval < 0.0f)
-		{
-			b0_fval = 0.0f;
-		}
-		else if (b0_fval > 65535.0f)
-		{
-			b0_fval = 65535.0f;
-		}
 
-		if (b1_fval < 0.0f)
-		{
-			b1_fval = 0.0f;
-		}
-		else if (b1_fval > 65535.0f)
-		{
-			b1_fval = 65535.0f;
-		}
-
+		b0_fval = astc::clamp(b0_fval, 0.0f, 65535.0f);
+		b1_fval = astc::clamp(b1_fval, 0.0f, 65535.0f);
 		int b0_intval = astc::flt2int_rtn(b0_fval * mode_scale);
 		int b1_intval = astc::flt2int_rtn(b1_fval * mode_scale);
 
@@ -1495,23 +1430,8 @@ static void quantize_hdr_rgb3(
 		float d0_fval = a_fval - b0_fval - c_fval - color0.g;
 		float d1_fval = a_fval - b1_fval - c_fval - color0.b;
 
-		if (d0_fval < -65535.0f)
-		{
-			d0_fval = -65535.0f;
-		}
-		else if (d0_fval > 65535.0f)
-		{
-			d0_fval = 65535.0f;
-		}
-
-		if (d1_fval < -65535.0f)
-		{
-			d1_fval = -65535.0f;
-		}
-		else if (d1_fval > 65535.0f)
-		{
-			d1_fval = 65535.0f;
-		}
+		d0_fval = astc::clamp(d0_fval, -65535.0f, 65535.0f);
+		d1_fval = astc::clamp(d1_fval, -65535.0f, 65535.0f);
 
 		int d0_intval = astc::flt2int_rtn(d0_fval * mode_scale);
 		int d1_intval = astc::flt2int_rtn(d1_fval * mode_scale);
@@ -1621,14 +1541,7 @@ static void quantize_hdr_rgb3(
 
 	for (int i = 0; i < 6; i++)
 	{
-		if (vals[i] < 0.0f)
-		{
-			vals[i] = 0.0f;
-		}
-		else if (vals[i] > 65020.0f)
-		{
-			vals[i] = 65020.0f;
-		}
+		vals[i] = astc::clamp(vals[i], 0.0f, 65020.0f);
 	}
 
 	for (int i = 0; i < 4; i++)
@@ -1691,45 +1604,15 @@ static void quantize_hdr_luminance_large_range3(
 	int upper_v0 = (ilum0 + 128) >> 8;
 	int upper_v1 = (ilum1 + 128) >> 8;
 
-	if (upper_v0 < 0)
-	{
-		upper_v0 = 0;
-	}
-	else if (upper_v0 > 255)
-	{
-		upper_v0 = 255;
-	}
-
-	if (upper_v1 < 0)
-	{
-		upper_v1 = 0;
-	}
-	else if (upper_v1 > 255)
-	{
-		upper_v1 = 255;
-	}
+	upper_v0 = astc::clamp(upper_v0, 0, 255);
+	upper_v1 = astc::clamp(upper_v1, 0, 255);
 
 	// find the closest encodable point in the lower half of the code-point space
 	int lower_v0 = (ilum1 + 256) >> 8;
 	int lower_v1 = ilum0 >> 8;
 
-	if (lower_v0 < 0)
-	{
-		lower_v0 = 0;
-	}
-	else if (lower_v0 > 255)
-	{
-		lower_v0 = 255;
-	}
-
-	if (lower_v1 < 0)
-	{
-		lower_v1 = 0;
-	}
-	else if (lower_v1 > 255)
-	{
-		lower_v1 = 255;
-	}
+	lower_v0 = astc::clamp(lower_v0, 0, 255);
+	lower_v1 = astc::clamp(lower_v1, 0, 255);
 
 	// determine the distance between the point in code-point space and the input value
 	int upper0_dec = upper_v0 << 8;
@@ -1796,23 +1679,8 @@ static int try_quantize_hdr_luminance_small_range3(
 	lowval = (ilum0 + 16) >> 5;
 	highval = (ilum1 + 16) >> 5;
 
-	if (lowval < 0)
-	{
-		lowval = 0;
-	}
-	else if (lowval > 2047)
-	{
-		lowval = 2047;
-	}
-
-	if (highval < 0)
-	{
-		highval = 0;
-	}
-	else if (highval > 2047)
-	{
-		highval = 2047;
-	}
+	lowval = astc::clamp(lowval, 0, 2047);
+	highval = astc::clamp(highval, 0, 2047);
 
 	v0 = lowval & 0x7F;
 	v0e = color_quantization_tables[quantization_level][v0];
@@ -1847,23 +1715,9 @@ LOW_PRECISION_SUBMODE:
 
 	lowval = (ilum0 + 32) >> 6;
 	highval = (ilum1 + 32) >> 6;
-	if (lowval < 0)
-	{
-		lowval = 0;
-	}
-	else if (lowval > 1023)
-	{
-		lowval = 1023;
-	}
 
-	if (highval < 0)
-	{
-		highval = 0;
-	}
-	else if (highval > 1023)
-	{
-		highval = 1023;
-	}
+	lowval = astc::clamp(lowval, 0, 1023);
+	highval = astc::clamp(highval, 0, 1023);
 
 	v0 = (lowval & 0x7F) | 0x80;
 	v0e = color_quantization_tables[quantization_level][v0];
@@ -1899,23 +1753,8 @@ static void quantize_hdr_alpha3(
 	int output[2],
 	int quantization_level
 ) {
-	if (alpha0 < 0)
-	{
-		alpha0 = 0;
-	}
-	else if (alpha0 > 65280)
-	{
-		alpha0 = 65280;
-	}
-
-	if (alpha1 < 0)
-	{
-		alpha1 = 0;
-	}
-	else if (alpha1 > 65280)
-	{
-		alpha1 = 65280;
-	}
+	alpha0 = astc::clamp(alpha0, 0.0f, 65280.0f);
+	alpha1 = astc::clamp(alpha1, 0.0f, 65280.0f);
 
 	int ialpha0 = astc::flt2int_rtn(alpha0);
 	int ialpha1 = astc::flt2int_rtn(alpha1);

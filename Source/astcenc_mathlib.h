@@ -79,32 +79,6 @@ static inline float fabs(float v)
 }
 
 /**
- * @brief SP float min.
- *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- *
- * @return The smallest value (q if either is NaN).
- */
-static inline float min(float p, float q)
-{
-	return p < q ? p : q;
-}
-
-/**
- * @brief SP float max.
- *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- *
- * @return The largest value (q if either is NaN).
- */
-static inline float max(float p, float q)
-{
-	return p > q ? p : q;
-}
-
-/**
  * @brief Test if a float value is a nan.
  *
  * @param v    The value test.
@@ -115,6 +89,38 @@ static inline int isnan(float v)
 {
 	// TODO: Make this a boolean.
 	return v != v;
+}
+
+/**
+ * @brief Return the minimum of two values.
+ *
+ * For floats, NaNs are turned into @c q.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ *
+ * @return The smallest value.
+ */
+template<typename T>
+static inline T min(T p, T q)
+{
+	return p < q ? p : q;
+}
+
+/**
+ * @brief Return the maximum of two values.
+ *
+ * For floats, NaNs are turned into @c q.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ *
+ * @return The largest value.
+ */
+template<typename T>
+static inline T max(T p, T q)
+{
+	return p > q ? p : q;
 }
 
 /**

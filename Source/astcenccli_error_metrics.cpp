@@ -87,11 +87,7 @@ static float mpsnr_operator(
 	val = powf(val, (1.0f / 2.2f));
 	val *= 255.0f;
 
-	// Do not reorder these, correct NaN handling relies on the fact that
-	// any comparison with NaN returns false so will fall-though to the 0.0f.
-	if (val > 255.0f) return 255.0f;
-	if (val > 0.0f) return val;
-	return 0.0f;
+	return astc::clamp(val, 0.0f, 255.0f);
 }
 
 /**
