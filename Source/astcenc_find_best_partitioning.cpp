@@ -77,25 +77,14 @@ static void compute_alpha_range(
 			int partition = pt->partition_of_texel[i];
 			float alphaval = blk->data_a[i];
 
-			if (alphaval > alpha_max[partition])
-			{
-				alpha_max[partition] = alphaval;
-			}
-
-			if (alphaval < alpha_min[partition])
-			{
-				alpha_min[partition] = alphaval;
-			}
+			alpha_min[partition] = astc::min(alphaval, alpha_min[partition]);
+			alpha_max[partition] = astc::max(alphaval, alpha_max[partition]);
 		}
 	}
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		alpha_range[i] = alpha_max[i] - alpha_min[i];
-		if (alpha_range[i] <= 0.0f)
-		{
-			alpha_range[i] = 1e-10f;
-		}
+		alpha_range[i] = astc::max(alpha_max[i] - alpha_min[i], 1e-10f);
 	}
 }
 

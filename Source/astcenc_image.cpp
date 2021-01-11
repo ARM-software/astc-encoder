@@ -27,14 +27,14 @@
 // conversion functions between the LNS representation and the FP16 representation.
 static float float_to_lns(float p)
 {
-	if (astc::isnan(p) || p <= 1.0f / 67108864.0f)
+	if (!(p > (1.0f / 67108864.0f)))
 	{
 		// underflow or NaN value, return 0.
 		// We count underflow if the input value is smaller than 2^-26.
 		return 0.0f;
 	}
 
-	if (fabsf(p) >= 65536.0f)
+	if (p >= 65536.0f)
 	{
 		// overflow, return a +INF value
 		return 65535.0f;
@@ -79,7 +79,7 @@ static uint16_t lns_to_sf16(uint16_t p)
 		mt = 5 * mc - 2048;
 
 	uint16_t res = (ec << 10) | (mt >> 3);
-	if (res >= 0x7BFF)
+	if (res > 0x7BFF)
 		res = 0x7BFF;
 	return res;
 }
@@ -91,7 +91,8 @@ static uint16_t lns_to_sf16(uint16_t p)
 uint16_t unorm16_to_sf16(uint16_t p)
 {
 	if (p == 0xFFFF)
-		return 0x3C00;			// value of 1.0 .
+		return 0x3C00;			// value of 1.0
+
 	if (p < 4)
 		return p << 8;
 
@@ -127,32 +128,9 @@ void imageblock_initialize_deriv(
 
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
-			if (rderiv < (1.0f / 32.0f))
-			{
-				rderiv = (1.0f / 32.0f);
-			}
-			else if (rderiv > 33554432.0f)
-			{
-				rderiv = 33554432.0f;
-			}
-
-			if (gderiv < (1.0f / 32.0f))
-			{
-				gderiv = (1.0f / 32.0f);
-			}
-			else if (gderiv > 33554432.0f)
-			{
-				gderiv = 33554432.0f;
-			}
-
-			if (bderiv < (1.0f / 32.0f))
-			{
-				bderiv = (1.0f / 32.0f);
-			}
-			else if (bderiv > 33554432.0f)
-			{
-				bderiv = 33554432.0f;
-			}
+			rderiv = astc::clamp(rderiv, 1.0f / 32.0f, 33554432.0f);
+			gderiv = astc::clamp(gderiv, 1.0f / 32.0f, 33554432.0f);
+			bderiv = astc::clamp(bderiv, 1.0f / 32.0f, 33554432.0f);
 
 			dptr->r = rderiv;
 			dptr->g = gderiv;
@@ -175,14 +153,7 @@ void imageblock_initialize_deriv(
 			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
-			if (aderiv < (1.0f / 32.0f))
-			{
-				aderiv = (1.0f / 32.0f);
-			}
-			else if (aderiv > 33554432.0f)
-			{
-				aderiv = 33554432.0f;
-			}
+			aderiv = astc::clamp(aderiv, 1.0f / 32.0f, 33554432.0f);
 
 			dptr->a = aderiv;
 		}

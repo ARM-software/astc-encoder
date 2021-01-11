@@ -86,15 +86,8 @@ static void compute_endpoints_and_ideal_weights_1_component(
 			float value = data_vr[i];
 			int partition = pt->partition_of_texel[i];
 
-			if (value < lowvalues[partition])
-			{
-				lowvalues[partition] = value;
-			}
-
-			if (value > highvalues[partition])
-			{
-				highvalues[partition] = value;
-			}
+			lowvalues[partition] = astc::min(value, lowvalues[partition]);
+			highvalues[partition] = astc::max(value, highvalues[partition]);
 		}
 	}
 
@@ -108,10 +101,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 			highvalues[i] = 0.0f;
 		}
 
-		if (diff < 1e-7f)
-		{
-			diff = 1e-7f;
-		}
+		diff = astc::max(diff, 1e-7f);
 
 		partition_error_scale[i] = diff * diff;
 		linelengths_rcp[i] = 1.0f / diff;
@@ -258,7 +248,9 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	{
 		float2 egv = directions[i];
 		if (egv.r + egv.g < 0.0f)
+		{
 			directions[i] = float2(0.0f) - egv;
+		}
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -284,15 +276,8 @@ static void compute_endpoints_and_ideal_weights_2_components(
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
 
-			if (param < lowparam[partition])
-			{
-				lowparam[partition] = param;
-			}
-
-			if (param > highparam[partition])
-			{
-				highparam[partition] = param;
-			}
+			lowparam[partition] = astc::min(param, lowparam[partition]);
+			highparam[partition] = astc::max(param, highparam[partition]);
 		}
 		else
 		{
@@ -309,17 +294,13 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		if (length < 0.0f)			// case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
-			highparam[i] = 1e-7f;
+			highparam[i] = 1e-7f; // TODO: Why is this 1e-7; similar code above is zero
 		}
 
 		// it is possible for a uniform-color partition to produce length=0; this
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
-		if (length < 1e-7f)
-		{
-			length = 1e-7f;
-		}
-
+		length = astc::max(length, 1e-7f);
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
@@ -530,15 +511,8 @@ static void compute_endpoints_and_ideal_weights_3_components(
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
 
-			if (param < lowparam[partition])
-			{
-				lowparam[partition] = param;
-			}
-
-			if (param > highparam[partition])
-			{
-				highparam[partition] = param;
-			}
+			lowparam[partition] = astc::min(param, lowparam[partition]);
+			highparam[partition] = astc::max(param, highparam[partition]);
 		}
 		else
 		{
@@ -561,10 +535,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		// it is possible for a uniform-color partition to produce length=0; this
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
-		if (length < 1e-7f)
-		{
-			length = 1e-7f;
-		}
+		length = astc::max(length, 1e-7f);
 
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -694,10 +665,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		{
 			directions_rgba[i] = float4(0.0f) - direc;
 		}
-	}
 
-	for (int i = 0; i < partition_count; i++)
-	{
 		lines[i].a = averages[i];
 		if (dot(directions_rgba[i], directions_rgba[i]) == 0.0f)
 		{
@@ -721,15 +689,8 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
 
-			if (param < lowparam[partition])
-			{
-				lowparam[partition] = param;
-			}
-
-			if (param > highparam[partition])
-			{
-				highparam[partition] = param;
-			}
+			lowparam[partition] = astc::min(param, lowparam[partition]);
+			highparam[partition] = astc::max(param, highparam[partition]);
 		}
 		else
 		{
@@ -749,10 +710,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		// it is possible for a uniform-color partition to produce length=0; this
 		// causes NaN-production and NaN-propagation later on. Set length to
 		// a small value to avoid this problem.
-		if (length < 1e-7f)
-		{
-			length = 1e-7f;
-		}
+		length = astc::max(length, 1e-7f);
 
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -1077,15 +1035,7 @@ void compute_ideal_weights_for_decimation_table(
 		}
 
 		float step = (error_change1 * chd_scale) / error_change0;
-		// clamp the step-value.
-		if (step < -stepsize)
-		{
-			step = -stepsize;
-		}
-		else if (step > stepsize)
-		{
-			step = stepsize;
-		}
+		step = astc::clamp(step, -stepsize, stepsize);
 
 		// update the weight
 		weight_set[i] = weight_val + step;
@@ -1175,14 +1125,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	for (/* Loop tail */; i < weight_count; i++)
 	{
 		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
-		if (ix < 0.0f)
-		{
-			ix = 0.0f;
-		}
-		if (ix > 1.0f) // upper bound must be smaller than 1 to avoid an array overflow below.
-		{
-			ix = 1.0f;
-		}
+		ix = astc::clamp1f(ix);
 
 		// look up the two closest indexes and return the one that was closest.
 		float ix1 = ix * quant_level_m1;
@@ -1371,26 +1314,12 @@ void recompute_ideal_colors_2planes(
 			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
 
 			float om_idx0 = 1.0f - idx0;
-			if (idx0 > wmax1)
-			{
-				wmax1 = idx0;
-			}
-
-			if (idx0 < wmin1)
-			{
-				wmin1 = idx0;
-			}
+			wmin1 = astc::min(idx0, wmin1);
+			wmax1 = astc::max(idx0, wmax1);
 
 			float scale = dot(scale_direction, rgb);
-			if (scale < scale_min)
-			{
-				scale_min = scale;
-			}
-
-			if (scale > scale_max)
-			{
-				scale_max = scale;
-			}
+			scale_min = astc::min(scale, scale_min);
+			scale_max = astc::max(scale, scale_max);
 
 			float4 left   = color_weight * (om_idx0 * om_idx0);
 			float4 middle = color_weight * (om_idx0 * idx0);
@@ -1417,15 +1346,8 @@ void recompute_ideal_colors_2planes(
 				      + plane2_weight_set[texel_weights[3]] * texel_weights_float[3]);
 
 				om_idx1 = 1.0f - idx1;
-				if (idx1 > wmax2)
-				{
-					wmax2 = idx1;
-				}
-
-				if (idx1 < wmin2)
-				{
-					wmin2 = idx1;
-				}
+				wmin2 = astc::min(idx1, wmin2);
+				wmax2 = astc::max(idx1, wmax2);
 
 				float4 left2   = color_weight * (om_idx1 * om_idx1);
 				float4 middle2 = color_weight * (om_idx1 * idx1);
@@ -1686,10 +1608,7 @@ void recompute_ideal_colors_2planes(
 			float4 v1 = ep->endpt1[i];
 			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
 
-			if (avgdif <= 0.0f)
-			{
-				avgdif = 0.0f;
-			}
+			avgdif = astc::max(avgdif, 0.0f);
 
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
@@ -1792,26 +1711,12 @@ void recompute_ideal_colors_1plane(
 			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
 
 			float om_idx0 = 1.0f - idx0;
-			if (idx0 > wmax1)
-			{
-				wmax1 = idx0;
-			}
-
-			if (idx0 < wmin1)
-			{
-				wmin1 = idx0;
-			}
+			wmin1 = astc::min(idx0, wmin1);
+			wmax1 = astc::max(idx0, wmax1);
 
 			float scale = dot(scale_direction, rgb);
-			if (scale < scale_min)
-			{
-				scale_min = scale;
-			}
-
-			if (scale > scale_max)
-			{
-				scale_max = scale;
-			}
+			scale_min = astc::min(scale, scale_min);
+			scale_max = astc::max(scale, scale_max);
 
 			float4 left   = color_weight * (om_idx0 * om_idx0);
 			float4 middle = color_weight * (om_idx0 * idx0);
@@ -1989,11 +1894,7 @@ void recompute_ideal_colors_1plane(
 			float4 v0 = ep->endpt0[i];
 			float4 v1 = ep->endpt1[i];
 			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
-
-			if (avgdif <= 0.0f)
-			{
-				avgdif = 0.0f;
-			}
+			avgdif = astc::max(avgdif, 0.0f);
 
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;

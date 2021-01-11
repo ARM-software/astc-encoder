@@ -184,10 +184,7 @@ void symbolic_to_physical(
 			for (int i = 0; i < partition_count; i++)
 			{
 				int class_of_format = scb.color_formats[i] >> 2;
-				if (class_of_format < low_class)
-				{
-					low_class = class_of_format;
-				}
+				low_class = astc::min(class_of_format, low_class);
 			}
 
 			if (low_class == 3)
