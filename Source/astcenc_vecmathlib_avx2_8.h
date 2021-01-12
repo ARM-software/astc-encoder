@@ -98,7 +98,7 @@ struct vfloat8
 	template <int l> ASTCENC_SIMD_INLINE float lane() const
 	{
 	#ifdef _MSC_VER
-		return m.m256_f32[i];
+		return m.m256_f32[l];
 	#else
 		union { __m256 m; float f[8]; } cvt;
 		cvt.m = m;
