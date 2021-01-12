@@ -315,15 +315,6 @@ static inline int partition_mismatch3(
 	return v0;
 }
 
-static inline int MIN3(
-	int a,
-	int b,
-	int c
-) {
-	int d = astc::min(a, b);
-	return astc::min(c, d);
-}
-
 // compute the bit-mismatch for a partitioning in 4-partition mode
 static inline int partition_mismatch4(
 	uint64_t a0,
@@ -362,14 +353,12 @@ static inline int partition_mismatch4(
 	int mx02 = astc::min(p20 + p32, p22 + p30);
 	int mx01 = astc::min(p21 + p30, p20 + p31);
 
-	int v0 = p00 + MIN3(p11 + mx23, p12 + mx13, p13 + mx12);
-	int v1 = p01 + MIN3(p10 + mx23, p12 + mx03, p13 + mx02);
-	int v2 = p02 + MIN3(p11 + mx03, p10 + mx13, p13 + mx01);
-	int v3 = p03 + MIN3(p11 + mx02, p12 + mx01, p10 + mx12);
+	int v0 = p00 + astc::min(p11 + mx23, p12 + mx13, p13 + mx12);
+	int v1 = p01 + astc::min(p10 + mx23, p12 + mx03, p13 + mx02);
+	int v2 = p02 + astc::min(p11 + mx03, p10 + mx13, p13 + mx01);
+	int v3 = p03 + astc::min(p11 + mx02, p12 + mx01, p10 + mx12);
 
-	int x0 = astc::min(v0, v1);
-	int x1 = astc::min(v2, v3);
-	return astc::min(x0, x1);
+	return astc::min(v0, v1, v2, v3);
 }
 
 static void count_partition_mismatch_bits(

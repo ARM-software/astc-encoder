@@ -640,7 +640,7 @@ void compute_error_squared_rgba(
 			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
 			float4 samechroma_dist = (l_samec.amod - dat) +
-										(samec_param * l_samec.bis);
+			                         (samec_param * l_samec.bis);
 			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 		}
 
@@ -805,12 +805,12 @@ void compute_error_squared_rgb(
 			int iwt = weights[i];
 
 			float3 dat = float3(blk->data_r[iwt],
-								blk->data_g[iwt],
-								blk->data_b[iwt]);
+			                    blk->data_g[iwt],
+			                    blk->data_b[iwt]);
 
 			float3 ews = float3(ewb->error_weights[iwt].r,
-								ewb->error_weights[iwt].g,
-								ewb->error_weights[iwt].b);
+			                    ewb->error_weights[iwt].g,
+			                    ewb->error_weights[iwt].b);
 
 			float uncor_param = dot(dat, l_uncor.bs);
 			uncor_loparam  = astc::min(uncor_param, uncor_loparam);
@@ -821,11 +821,11 @@ void compute_error_squared_rgb(
 			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
 			float3 uncorr_dist  = (l_uncor.amod - dat) +
-									(uncor_param * l_uncor.bis);
+			                      (uncor_param * l_uncor.bis);
 			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
 
 			float3 samechroma_dist = (l_samec.amod - dat) +
-										(samec_param * l_samec.bis);
+			                         (samec_param * l_samec.bis);
 			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
 		}
 
