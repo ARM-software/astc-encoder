@@ -382,12 +382,12 @@ static void initialize_decimation_table_3d(
 	int texels_per_block = xdim * ydim * zdim;
 	int weights_per_block = x_weights * y_weights * z_weights;
 
-	int weightcount_of_texel[MAX_TEXELS_PER_BLOCK];
-	int grid_weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
-	int weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
+	uint8_t weightcount_of_texel[MAX_TEXELS_PER_BLOCK];
+	uint8_t grid_weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
+	uint8_t weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
 
-	int texelcount_of_weight[MAX_WEIGHTS_PER_BLOCK];
-	int texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
+	uint8_t texelcount_of_weight[MAX_WEIGHTS_PER_BLOCK];
+	uint8_t texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < weights_per_block; i++)
@@ -533,12 +533,12 @@ static void initialize_decimation_table_3d(
 
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
-			dt->texel_weights_int_t4[i][j] = (uint8_t)weights_of_texel[i][j];
+			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
 			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights_t4[i][j] = (uint8_t)grid_weights_of_texel[i][j];
+			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
 
 			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt->texel_weights_4t[j][i] = (uint8_t)grid_weights_of_texel[i][j];
+			dt->texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
 		}
 	}
 
@@ -548,8 +548,8 @@ static void initialize_decimation_table_3d(
 		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			int texel = texels_of_weight[i][j];
-			dt->weight_texel[i][j] = (uint8_t)texel;
-			dt->weights_int[i][j] = (uint8_t)texelweights_of_weight[i][j];
+			dt->weight_texel[i][j] = texel;
+			dt->weights_int[i][j] = texelweights_of_weight[i][j];
 			dt->weights_flt[i][j] = (float)texelweights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
@@ -558,23 +558,23 @@ static void initialize_decimation_table_3d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				int dttw = dt->texel_weights_t4[texel][k];
+				uint8_t dttw = dt->texel_weights_t4[texel][k];
 				float dttwf = dt->texel_weights_float_t4[texel][k];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
 				}
-				dt->texel_weights_texel[i][j][k] = (uint8_t)dttw;
+				dt->texel_weights_texel[i][j][k] = dttw;
 				dt->texel_weights_float_texel[i][j][k] = dttwf;
 			}
 
 			if (swap_idx != 0)
 			{
-				int vi = dt->texel_weights_texel[i][j][0];
+				uint8_t vi = dt->texel_weights_texel[i][j][0];
 				float vf = dt->texel_weights_float_texel[i][j][0];
 				dt->texel_weights_texel[i][j][0] = dt->texel_weights_texel[i][j][swap_idx];
 				dt->texel_weights_float_texel[i][j][0] = dt->texel_weights_float_texel[i][j][swap_idx];
-				dt->texel_weights_texel[i][j][swap_idx] = (uint8_t)vi;
+				dt->texel_weights_texel[i][j][swap_idx] = vi;
 				dt->texel_weights_float_texel[i][j][swap_idx] = vf;
 			}
 		}
