@@ -1685,33 +1685,27 @@ static int try_quantize_hdr_luminance_small_range3(
 	v0 = lowval & 0x7F;
 	v0e = color_quantization_tables[quantization_level][v0];
 	v0d = color_unquantization_tables[quantization_level][v0e];
-	if ((v0d & 0x80) == 0x80)
-	{
-		goto LOW_PRECISION_SUBMODE;
-	}
 
-	lowval = (lowval & ~0x7F) | (v0d & 0x7F);
-	diffval = highval - lowval;
-	if (diffval < 0 || diffval > 15)
+	if (v0d < 0x80)
 	{
-		goto LOW_PRECISION_SUBMODE;
+		lowval = (lowval & ~0x7F) | v0d;
+		diffval = highval - lowval;
+		if (diffval >= 0 && diffval <= 15)
+		{
+			v1 = ((lowval >> 3) & 0xF0) | diffval;
+			v1e = color_quantization_tables[quantization_level][v1];
+			v1d = color_unquantization_tables[quantization_level][v1e];
+			if ((v1d & 0xF0) == (v1 & 0xF0))
+			{
+				output[0] = v0e;
+				output[1] = v1e;
+				return 1;
+			}
+		}
 	}
-
-	v1 = ((lowval >> 3) & 0xF0) | diffval;
-	v1e = color_quantization_tables[quantization_level][v1];
-	v1d = color_unquantization_tables[quantization_level][v1e];
-	if ((v1d & 0xF0) != (v1 & 0xF0))
-	{
-		goto LOW_PRECISION_SUBMODE;
-	}
-
-	output[0] = v0e;
-	output[1] = v1e;
-	return 1;
 
 	// failed to encode the high-precision submode; well, then try to encode the
 	// low-precision submode.
-LOW_PRECISION_SUBMODE:
 
 	lowval = (ilum0 + 32) >> 6;
 	highval = (ilum1 + 32) >> 6;
