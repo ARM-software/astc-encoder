@@ -551,7 +551,7 @@ static int try_quantize_alpha_delta(
 	return 1;
 }
 
-int try_quantize_luminance_alpha_delta(
+static int try_quantize_luminance_alpha_delta(
 	float4 color0,
 	float4 color1,
 	int output[8],
