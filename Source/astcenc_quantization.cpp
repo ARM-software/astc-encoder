@@ -533,11 +533,10 @@ const uint8_t color_unquantization_tables[21][256] = {
 	}
 };
 
-// quantization_mode_table[integercount/2][bits] gives
-// us the quantization level for a given integer count and number of bits that
-// the integer may fit into. This is needed for color decoding,
-// and for the color encoding.
-int quantization_mode_table[17][128];
+// The quantization_mode_table[integercount/2][bits] gives us the quantization
+// level for a given integer count and number of bits that the integer may fit
+// into. This is needed for color decoding, and for the color encoding.
+int8_t quantization_mode_table[17][128];
 
 void build_quantization_mode_table()
 {
@@ -553,7 +552,7 @@ void build_quantization_mode_table()
 	{
 		for (int j = 1; j <= 16; j++)
 		{
-			int p = compute_ise_bitcount(2 * j, (quantization_method) i);
+			int p = compute_ise_bitcount(2 * j, (quantization_method)i);
 			if (p < 128)
 			{
 				quantization_mode_table[j][p] = i;

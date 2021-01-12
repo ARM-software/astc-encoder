@@ -785,7 +785,7 @@ int is_legal_3d_block_size(
 
 extern const uint8_t color_quantization_tables[21][256];
 extern const uint8_t color_unquantization_tables[21][256];
-extern int quantization_mode_table[17][128];
+extern int8_t quantization_mode_table[17][128];
 
 void encode_ise(
 	int quantization_level,
