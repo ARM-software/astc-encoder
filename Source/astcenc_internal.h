@@ -112,6 +112,7 @@
 ============================================================================ */
 #define MAX_TEXELS_PER_BLOCK 216
 #define MAX_WEIGHTS_PER_BLOCK 64
+#define PLANE2_WEIGHTS_OFFSET (MAX_WEIGHTS_PER_BLOCK/2)
 #define MIN_WEIGHT_BITS_PER_BLOCK 24
 #define MAX_WEIGHT_BITS_PER_BLOCK 96
 #define PARTITION_BITS 10
@@ -633,10 +634,8 @@ struct quantization_and_transfer_table
 	/** The quantization level used */
 	quantization_method method;
 	/** The unscrambled unquantized value. */
-	// TODO: Converted to floats to support AVX gathers
 	float unquantized_value_unsc[33];
 	/** The scrambling order: value[map[i]] == value_unsc[i] */
-	// TODO: Converted to u32 to support AVX gathers
 	int32_t scramble_map[32];
 	/** The scrambled unquantized values. */
 	uint8_t unquantized_value[32];
@@ -681,12 +680,13 @@ struct symbolic_compressed_block
 	int partition_index;		// 0 to 1023
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
-	int color_values[4][12];	// quantized endpoint color pairs.
 	int color_quantization_level;
-	uint8_t plane1_weights[MAX_WEIGHTS_PER_BLOCK];	// quantized and decimated weights
-	uint8_t plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 	int plane2_color_component;	// color component for the secondary plane of weights
+	int color_values[4][12];	// quantized endpoint color pairs.
 	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
+	// Quantized and decimated weights. In the case of dual plane, the second
+	// index plane starts at weights[PLANE2_WEIGHTS_OFFSET]
+	uint8_t weights[MAX_WEIGHTS_PER_BLOCK];
 };
 
 struct physical_compressed_block
@@ -1352,3 +1352,4 @@ void aligned_free(T* ptr)
 }
 
 #endif
+

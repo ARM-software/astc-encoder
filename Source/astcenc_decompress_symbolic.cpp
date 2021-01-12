@@ -241,14 +241,14 @@ void decompress_symbolic_block(
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		uq_plane1_weights[i] = qat->unquantized_value[scb->plane1_weights[i]];
+		uq_plane1_weights[i] = qat->unquantized_value[scb->weights[i]];
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			uq_plane2_weights[i] = qat->unquantized_value[scb->plane2_weights[i]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
 		}
 	}
 
@@ -362,14 +362,14 @@ float compute_symbolic_block_difference(
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		uq_plane1_weights[i] = qat->unquantized_value[scb->plane1_weights[i]];
+		uq_plane1_weights[i] = qat->unquantized_value[scb->weights[i]];
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			uq_plane2_weights[i] = qat->unquantized_value[scb->plane2_weights[i]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
 		}
 	}
 

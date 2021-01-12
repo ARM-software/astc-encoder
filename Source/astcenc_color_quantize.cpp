@@ -1850,7 +1850,6 @@ int pack_color_endpoints(
 
 	int retval = 0;
 
-	// TODO: Make format an endpoint_fmt enum type
 	switch (format)
 	{
 	case FMT_RGB:

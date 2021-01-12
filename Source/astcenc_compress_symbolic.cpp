@@ -465,7 +465,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 		for (int j = 0; j < weights_to_copy; j++)
 		{
-			scb->plane1_weights[j] = u8_weight_src[j];
+			scb->weights[j] = u8_weight_src[j];
 		}
 
 		scb++;
@@ -815,8 +815,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 		for (int j = 0; j < weights_to_copy; j++)
 		{
-			scb->plane1_weights[j] = u8_weight1_src[j];
-			scb->plane2_weights[j] = u8_weight2_src[j];
+			scb->weights[j] = u8_weight1_src[j];
+			scb->weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 		}
 
 		scb++;

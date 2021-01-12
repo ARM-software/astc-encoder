@@ -144,14 +144,14 @@ void symbolic_to_physical(
 		uint8_t weights[64];
 		for (int i = 0; i < weight_count; i++)
 		{
-			weights[2 * i] = scb.plane1_weights[i];
-			weights[2 * i + 1] = scb.plane2_weights[i];
+			weights[2 * i] = scb.weights[i];
+			weights[2 * i + 1] = scb.weights[i + PLANE2_WEIGHTS_OFFSET];
 		}
 		encode_ise(weight_quantization_method, real_weight_count, weights, weightbuf, 0);
 	}
 	else
 	{
-		encode_ise(weight_quantization_method, weight_count, scb.plane1_weights, weightbuf, 0);
+		encode_ise(weight_quantization_method, weight_count, scb.weights, weightbuf, 0);
 	}
 
 	for (int i = 0; i < 16; i++)
@@ -360,13 +360,13 @@ void physical_to_symbolic(
 		decode_ise(weight_quantization_method, real_weight_count, bswapped, indices, 0);
 		for (int i = 0; i < weight_count; i++)
 		{
-			scb.plane1_weights[i] = indices[2 * i];
-			scb.plane2_weights[i] = indices[2 * i + 1];
+			scb.weights[i] = indices[2 * i];
+			scb.weights[i + PLANE2_WEIGHTS_OFFSET] = indices[2 * i + 1];
 		}
 	}
 	else
 	{
-		decode_ise(weight_quantization_method, weight_count, bswapped, scb.plane1_weights, 0);
+		decode_ise(weight_quantization_method, weight_count, bswapped, scb.weights, 0);
 	}
 
 	if (is_dual_plane && partition_count == 4)
