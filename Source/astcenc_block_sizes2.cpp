@@ -774,7 +774,7 @@ static void construct_block_size_descriptor_2d(
 		astc::rand_init(rng_state);
 
 		// pick 64 random texels for use with bitmap partitioning.
-		int arr[MAX_TEXELS_PER_BLOCK];
+		uint8_t arr[MAX_TEXELS_PER_BLOCK];
 		for (int i = 0; i < x_dim * y_dim; i++)
 		{
 			arr[i] = 0;
@@ -942,7 +942,7 @@ static void construct_block_size_descriptor_3d(
 		astc::rand_init(rng_state);
 
 		// pick 64 random texels for use with bitmap partitioning.
-		int arr[MAX_TEXELS_PER_BLOCK];
+		uint8_t arr[MAX_TEXELS_PER_BLOCK];
 		for (int i = 0; i < xdim * ydim * zdim; i++)
 		{
 			arr[i] = 0;
