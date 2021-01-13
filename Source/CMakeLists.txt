@@ -21,6 +21,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto")
 endif()
 
+if (${DECOMPRESSOR})
+    set(CODEC dec)
+else()
+    set(CODEC enc)
+endif()
+
 # - - - - - - - - - - - - - - - - - -
 # No architecture-specific SIMD
 

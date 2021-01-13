@@ -86,6 +86,13 @@ else()
     message("  -- ISA invariant backend - OFF")
 endif()
 
+option(DECOMPRESSOR "Enable builds for decompression only")
+if(${DECOMPRESSOR})
+    message("  -- Decompress-only backend - ON")
+else()
+    message("  -- Decompress-only backend - OFF")
+endif()
+
 option(UNITTEST "Enable builds for unit tests")
 if(${UNITTEST})
     message("  -- Unit tests - ON")

@@ -15,13 +15,13 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-project(astcenc-${ISA_SIMD})
+project(astc${CODEC}-${ISA_SIMD})
 
 set(GNU_LIKE "GNU,Clang,AppleClang")
 
-add_executable(astcenc-${ISA_SIMD})
+add_executable(astc${CODEC}-${ISA_SIMD})
 
-target_sources(astcenc-${ISA_SIMD}
+target_sources(astc${CODEC}-${ISA_SIMD}
     PRIVATE
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes2.cpp
@@ -55,18 +55,24 @@ target_sources(astcenc-${ISA_SIMD}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_compile_features(astcenc-${ISA_SIMD}
+target_compile_features(astc${CODEC}-${ISA_SIMD}
     PRIVATE
         cxx_std_14)
 
-target_compile_definitions(astcenc-${ISA_SIMD}
+target_compile_definitions(astc${CODEC}-${ISA_SIMD}
     PRIVATE
         # Common defines
         ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INVARIANCE}>
         # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
-target_compile_options(astcenc-${ISA_SIMD}
+if(${DECOMPRESSOR})
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
+        PRIVATE
+            ASTCENC_DECOMPRESS_ONLY)
+endif()
+
+target_compile_options(astc${CODEC}-${ISA_SIMD}
     PRIVATE
         # Use pthreads on Linux/macOS
         $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
@@ -83,17 +89,17 @@ target_compile_options(astcenc-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>
         $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
-target_link_options(astcenc-${ISA_SIMD}
+target_link_options(astc${CODEC}-${ISA_SIMD}
     PRIVATE
         # Use pthreads on Linux/macOS
         $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
 # Enable LTO on release builds
-set_property(TARGET astcenc-${ISA_SIMD} PROPERTY
+set_property(TARGET astc${CODEC}-${ISA_SIMD} PROPERTY
              INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
 
 # Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
-set_property(TARGET astcenc-${ISA_SIMD} PROPERTY
+set_property(TARGET astc${CODEC}-${ISA_SIMD} PROPERTY
              MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -108,7 +114,7 @@ endif()
 
 # Set up configuration for SIMD ISA builds
 if(${ISA_SIMD} MATCHES "none")
-    target_compile_definitions(astcenc-${ISA_SIMD}
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SSE=0
@@ -116,7 +122,7 @@ if(${ISA_SIMD} MATCHES "none")
             ASTCENC_POPCNT=0)
 
 elseif(${ISA_SIMD} MATCHES "neon")
-    target_compile_definitions(astcenc-${ISA_SIMD}
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_NEON=1
             ASTCENC_SSE=0
@@ -124,7 +130,7 @@ elseif(${ISA_SIMD} MATCHES "neon")
             ASTCENC_POPCNT=0)
 
 elseif(${ISA_SIMD} MATCHES "sse2")
-    target_compile_definitions(astcenc-${ISA_SIMD}
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SSE=20
@@ -132,29 +138,29 @@ elseif(${ISA_SIMD} MATCHES "sse2")
             ASTCENC_POPCNT=0)
 
 elseif(${ISA_SIMD} MATCHES "sse4.1")
-    target_compile_definitions(astcenc-${ISA_SIMD}
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=0
             ASTCENC_POPCNT=1)
 
-    target_compile_options(astcenc-${ISA_SIMD}
+    target_compile_options(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
 
 elseif(${ISA_SIMD} MATCHES "avx2")
-    target_compile_definitions(astcenc-${ISA_SIMD}
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=2
             ASTCENC_POPCNT=1)
 
-    target_compile_options(astcenc-${ISA_SIMD}
+    target_compile_options(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
 
-install(TARGETS astcenc-${ISA_SIMD} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS astc${CODEC}-${ISA_SIMD} DESTINATION ${PACKAGE_ROOT})
