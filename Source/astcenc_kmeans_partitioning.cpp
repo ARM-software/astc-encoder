@@ -151,7 +151,7 @@ static void basic_kmeans_assign_pass(
 	int partition_count,
 	const imageblock* blk,
 	const float4* cluster_centers,
-	uint8_t* partition_of_texel
+	int* partition_of_texel
 ) {
 	int texels_per_block = xdim * ydim * zdim;
 
@@ -230,7 +230,7 @@ static void basic_kmeans_update(
 	int zdim,
 	int partition_count,
 	const imageblock* blk,
-	const uint8_t* partition_of_texel,
+	const int* partition_of_texel,
 	float4* cluster_centers
 ) {
 	int texels_per_block = xdim * ydim * zdim;
@@ -465,7 +465,7 @@ void kmeans_compute_partition_ordering(
 	int* ordering
 ) {
 	float4 cluster_centers[4];
-	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
+	int partition_of_texel[MAX_TEXELS_PER_BLOCK];
 
 	// 3 passes of plain k-means partitioning
 	for (int i = 0; i < 3; i++)

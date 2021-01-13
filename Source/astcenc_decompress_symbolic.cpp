@@ -27,7 +27,7 @@
 static int compute_value_of_texel_int(
 	int texel_to_get,
 	const decimation_table* it,
-	const uint8_t* weights
+	const int* weights
 ) {
 	int summed_value = 8;
 	int weights_to_evaluate = it->texel_weight_count[texel_to_get];
@@ -233,36 +233,39 @@ void decompress_symbolic_block(
 	}
 
 	// first unquantize the weights
-	uint8_t uq_weights[MAX_WEIGHTS_PER_BLOCK];
+	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
+	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 	int weight_count = it->weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		uq_weights[i] = qat->unquantized_value[scb->weights[i]];
+		uq_plane1_weights[i] = qat->unquantized_value[scb->weights[i]];
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			uq_weights[i + PLANE2_WEIGHTS_OFFSET] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
 		}
 	}
 
 	// then undecimate them.
-	uint8_t weights[MAX_TEXELS_PER_BLOCK];
+	int weights[MAX_TEXELS_PER_BLOCK];
+	int plane2_weights[MAX_TEXELS_PER_BLOCK];
+
 	for (int i = 0; i < bsd->texel_count; i++)
 	{
-		weights[i] = compute_value_of_texel_int(i, it, uq_weights);
+		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < bsd->texel_count; i++)
 		{
-			weights[i + PLANE2_WEIGHTS_OFFSET] = compute_value_of_texel_int(i, it, uq_weights + PLANE2_WEIGHTS_OFFSET);
+			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
 		}
 	}
 
@@ -277,7 +280,7 @@ void decompress_symbolic_block(
 		                             color_endpoint0[partition],
 		                             color_endpoint1[partition],
 		                             weights[i],
-		                             weights[i + PLANE2_WEIGHTS_OFFSET],
+		                             plane2_weights[i],
 		                             is_dual_plane ? plane2_color_component : -1);
 
 		blk->rgb_lns[i] = rgb_hdr_endpoint[partition];
@@ -352,36 +355,38 @@ float compute_symbolic_block_difference(
 	}
 
 	// first unquantize the weights
-	uint8_t uq_weights[MAX_WEIGHTS_PER_BLOCK];
+	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
+	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		uq_weights[i] = qat->unquantized_value[scb->weights[i]];
+		uq_plane1_weights[i] = qat->unquantized_value[scb->weights[i]];
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			uq_weights[i + PLANE2_WEIGHTS_OFFSET] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb->weights[i + PLANE2_WEIGHTS_OFFSET]];
 		}
 	}
 
 	// then undecimate them.
-	uint8_t weights[MAX_TEXELS_PER_BLOCK];
+	int weights[MAX_TEXELS_PER_BLOCK];
+	int plane2_weights[MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < texel_count; i++)
 	{
-		weights[i] = compute_value_of_texel_int(i, it, uq_weights);
+		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < texel_count; i++)
 		{
-			weights[i + PLANE2_WEIGHTS_OFFSET] = compute_value_of_texel_int(i, it, uq_weights + PLANE2_WEIGHTS_OFFSET);
+			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
 		}
 	}
 
@@ -398,7 +403,7 @@ float compute_symbolic_block_difference(
 		                             color_endpoint0[partition],
 		                             color_endpoint1[partition],
 		                             weights[i],
-		                             weights[i + PLANE2_WEIGHTS_OFFSET],
+		                             plane2_weights[i],
 		                             is_dual_plane ? plane2_color_component : -1);
 
 		float4 newColor = float4((float)color.r,
