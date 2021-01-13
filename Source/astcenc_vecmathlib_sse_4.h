@@ -770,6 +770,14 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
+{
+	return hmin(a).lane<0>();
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -780,9 +788,17 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 }
 
 /**
- * @brief Return the horizontal sum of a vector.
+ * @brief Return the horizontal maximum of a vector.
  */
-ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
+{
+	return hmax(a).lane<0>();
+}
+
+/**
+ * @brief Return the horizontal sum of a vector as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
 	// Add top and bottom halves, lane 1/0
 	__m128 t = _mm_add_ps(a.m, _mm_movehl_ps(a.m, a.m));
@@ -848,13 +864,35 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 #if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
 	return vfloat4(_mm_dp_ps(a.m, b.m, 0xFF));
 #else
-	alignas(16) float av[4];
-	alignas(16) float bv[4];
-	storea(a, av);
-	storea(b, bv);
-	float s = av[0] * bv[0] + av[1] * bv[1] + av[2] * bv[2] + av[3] * bv[3];
-	return vfloat4(s);
+	vfloat4 m = a * b;
+	return vfloat4(hadd_s(m));
 #endif
+}
+
+/**
+ * @brief Return the dot product for the full 4 lanes, returning scalar.
+ */
+ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
+{
+#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
+	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0xFF));
+#else
+	vfloat4 m = a * b;
+	return hadd_s(m);
+#endif
+}
+
+/**
+ * @brief Normalize a vector to unit length.
+ */
+ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
+{
+	// Compute 1/divisor using fast rsqrt with no NR iterations
+	vfloat4 length = dot(a, a);
+	__m128 raw = _mm_rsqrt_ps(length.m);
+
+	// Apply scaling factor
+	return vfloat4(_mm_mul_ps(a.m, raw));
 }
 
 /**

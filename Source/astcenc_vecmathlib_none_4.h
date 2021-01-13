@@ -807,6 +807,14 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
+{
+	return hmin(a).lane<0>();
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -817,9 +825,17 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
+{
+	return hmax(a).lane<0>();
+}
+
+/**
  * @brief Return the horizontal sum of a vector.
  */
-ASTCENC_SIMD_INLINE float hadd(vfloat4 a)
+ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
 	return (a.m[0] + a.m[1]) + (a.m[2] + a.m[3]);
 }
@@ -890,6 +906,27 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 	          a.m[3] * b.m[3];
 
 	return vfloat4(s);
+}
+
+/**
+ * @brief Return the dot product for the full 4 lanes, returning scalar.
+ */
+ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
+{
+	return a.m[0] * b.m[0] +
+	       a.m[1] * b.m[1] +
+	       a.m[2] * b.m[2] +
+	       a.m[3] * b.m[3];
+}
+
+/**
+ * @brief Normalize a vector to unit length.
+ */
+ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
+{
+	vfloat4 length = dot(a, a);
+	vfloat4 divisor = sqrt(length);
+	return a / divisor;
 }
 
 /**

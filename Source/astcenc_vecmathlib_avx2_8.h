@@ -745,6 +745,14 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
+{
+	return hmin(a).lane<0>();
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
@@ -767,9 +775,17 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
+{
+	return hmax(a).lane<0>();
+}
+
+/**
  * @brief Return the horizontal sum of a vector.
  */
-ASTCENC_SIMD_INLINE float hadd(vfloat8 a)
+ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 {
 	// Add top and bottom halves, lane 3/2/1/0
 	__m128 t = _mm_add_ps(_mm256_extractf128_ps(a.m, 1), _mm256_castps256_ps128(a.m));

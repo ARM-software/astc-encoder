@@ -914,7 +914,7 @@ float compute_error_of_weight_set(
 	}
 
 	// Accumulate the error vectors into a single error sum
-	error_summa += hadd(verror_summa);
+	error_summa += hadd_s(verror_summa);
 
 #endif
 

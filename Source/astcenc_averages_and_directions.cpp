@@ -607,13 +607,13 @@ void compute_error_squared_rgba(
 			samec_errorsumv = samec_errorsumv + samec_error;
 		}
 
-		uncor_loparam = hmin(uncor_loparamv).lane<0>();
-		uncor_hiparam = hmax(uncor_hiparamv).lane<0>();
-		uncor_errorsum += hadd(uncor_errorsumv);
+		uncor_loparam = hmin_s(uncor_loparamv);
+		uncor_hiparam = hmax_s(uncor_hiparamv);
+		uncor_errorsum += hadd_s(uncor_errorsumv);
 
-		samec_loparam = hmin(samec_loparamv).lane<0>();
-		samec_hiparam = hmax(samec_hiparamv).lane<0>();
-		samec_errorsum += hadd(samec_errorsumv);
+		samec_loparam = hmin_s(samec_loparamv);
+		samec_hiparam = hmax_s(samec_hiparamv);
+		samec_errorsum += hadd_s(samec_errorsumv);
 #endif
 
 		// Loop tail
@@ -790,13 +790,13 @@ void compute_error_squared_rgb(
 			samec_errorsumv = samec_errorsumv + samec_error;
 		}
 
-		uncor_loparam = hmin(uncor_loparamv).lane<0>();
-		uncor_hiparam = hmax(uncor_hiparamv).lane<0>();
-		uncor_errorsum += hadd(uncor_errorsumv);
+		uncor_loparam = hmin_s(uncor_loparamv);
+		uncor_hiparam = hmax_s(uncor_hiparamv);
+		uncor_errorsum += hadd_s(uncor_errorsumv);
 
-		samec_loparam = hmin(samec_loparamv).lane<0>();
-		samec_hiparam = hmax(samec_hiparamv).lane<0>();
-		samec_errorsum += hadd(samec_errorsumv);
+		samec_loparam = hmin_s(samec_loparamv);
+		samec_hiparam = hmax_s(samec_hiparamv);
+		samec_errorsum += hadd_s(samec_errorsumv);
 #endif
 
 		// Loop tail

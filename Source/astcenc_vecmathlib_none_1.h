@@ -622,6 +622,14 @@ ASTCENC_SIMD_INLINE vfloat1 hmin(vfloat1 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmin_s(vfloat1 a)
+{
+	return a.m;
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat1 hmax(vfloat1 a)
@@ -630,9 +638,17 @@ ASTCENC_SIMD_INLINE vfloat1 hmax(vfloat1 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE float hmax_s(vfloat1 a)
+{
+	return a.m;
+}
+
+/**
  * @brief Return the horizontal sum of a vector.
  */
-ASTCENC_SIMD_INLINE float hadd(vfloat1 a)
+ASTCENC_SIMD_INLINE float hadd_s(vfloat1 a)
 {
 	return a.m;
 }
