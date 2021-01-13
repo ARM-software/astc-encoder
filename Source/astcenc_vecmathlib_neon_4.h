@@ -589,7 +589,7 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
 {
-	return vfloat4(vdivq_f32(a.m, vld1q_dup_f32(&b));
+	return vfloat4(vdivq_f32(a.m, vld1q_dup_f32(&b)));
 }
 
 /**
@@ -597,7 +597,7 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
 {
-	return vfloat4(vdivq_f32(vld1q_dup_f32(&a), b.m);
+	return vfloat4(vdivq_f32(vld1q_dup_f32(&a), b.m));
 }
 
 /**
@@ -667,7 +667,7 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
 {
 	// Do not reorder - second operand will return if either is NaN
-	return vfloat4(vminnmq_f32(a.m, vld1q_dup_f32(&b));
+	return vfloat4(vminnmq_f32(a.m, vld1q_dup_f32(&b)));
 }
 
 /**
@@ -873,7 +873,7 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
 {
 	vfloat4 length = dot(a, a);
-	vfloat4 divisor = sqrt(length)
+	vfloat4 divisor = sqrt(length);
 	return a / divisor;
 }
 
