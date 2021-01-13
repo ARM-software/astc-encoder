@@ -678,6 +678,10 @@ static void construct_block_size_descriptor_2d(
 	// Gather all the decimation grids that can be used with the current block.
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	const float *percentiles = get_2d_percentile_table(x_dim, y_dim);
+#else
+	// Unused in decompress-only builds
+	(void)can_omit_modes;
+	(void)mode_cutoff;
 #endif
 
 	// Construct the list of block formats referencing the decimation tables
@@ -692,10 +696,11 @@ static void construct_block_size_descriptor_2d(
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 		float percentile = percentiles[i];
-		(void)can_omit_modes;
 		bool selected = (percentile <= mode_cutoff) || !can_omit_modes;
 #else
-		bool selected == true;
+		// Decompressor builds can never discard modes, as we cannot make any
+		// assumptions about the modes the original compressor used
+		bool selected = true;
 #endif
 
 		// ASSUMPTION: No compressor will use more weights in a dimension than

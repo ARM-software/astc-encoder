@@ -528,7 +528,11 @@ astcenc_error astcenc_context_alloc(
 		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
 		if (!ctx->working_buffers)
 		{
-			goto error_oom;
+			term_block_size_descriptor(bsd);
+			delete bsd;
+			delete ctx;
+			*context = nullptr;
+			return ASTCENC_ERR_OUT_OF_MEM;
 		}
 	}
 #endif
@@ -542,13 +546,6 @@ astcenc_error astcenc_context_alloc(
 	build_quantization_mode_table();
 
 	return ASTCENC_SUCCESS;
-
-error_oom:
-	term_block_size_descriptor(bsd);
-	delete bsd;
-	delete ctx;
-	*context = nullptr;
-	return ASTCENC_ERR_OUT_OF_MEM;
 }
 
 void astcenc_context_free(
