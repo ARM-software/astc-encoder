@@ -90,7 +90,7 @@ pipeline {
                 sh 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build astcenc R') {
               steps {
                 sh '''
                   export CXX=clang++-9
@@ -98,6 +98,17 @@ pipeline {
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make install package -j4
+                '''
+              }
+            }
+            stage('Build astcdec R') {
+              steps {
+                sh '''
+                  export CXX=clang++-9
+                  mkdir build_reldec
+                  cd build_reldec
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DDECOMPRESSOR=ON ..
+                  make -j4
                 '''
               }
             }
