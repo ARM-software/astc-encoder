@@ -369,7 +369,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-2.2-avx2",
+    parser.add_argument("--reference", dest="reference", default="ref-master-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
@@ -471,8 +471,16 @@ def main():
                 testSet = tts.TestSet(imageSet, testDir,
                                       args.profiles, args.formats, args.testImage)
 
+                # The fast and fastest presets are now sufficiently fast that
+                # the results are noisy without more repeats
+                testRepeats = args.testRepeats
+                if quality == "fast":
+                    testRepeats *= 2
+                elif quality == "fastest":
+                    testRepeats *= 4
+
                 resultSet = run_test_set(encoder, testRef, testSet, quality,
-                                         args.blockSizes, args.testRepeats,
+                                         args.blockSizes, testRepeats,
                                          args.keepOutput)
 
                 resultSet.save_to_file(testRes)
