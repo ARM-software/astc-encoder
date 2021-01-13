@@ -585,6 +585,22 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar division.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
+{
+	return vfloat4(vdivq_f32(a.m, vld1q_dup_f32(&b));
+}
+
+/**
+ * @brief Overload: scalar by vector division.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
+{
+	return vfloat4(vdivq_f32(vld1q_dup_f32(&a), b.m);
+}
+
+/**
  * @brief Overload: vector by vector equality.
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
@@ -644,6 +660,17 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Return the min vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
+{
+	// Do not reorder - second operand will return if either is NaN
+	return vfloat4(vminnmq_f32(a.m, vld1q_dup_f32(&b));
+}
+
+/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -652,6 +679,17 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 {
 	// Do not reorder - second operand will return if either is NaN
 	return vfloat4(vmaxnmq_f32(a.m, b.m));
+}
+
+/**
+ * @brief Return the max vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
+{
+	// Do not reorder - second operand will return if either is NaN
+	return vfloat4(vmaxnmq_f32(a.m, vld1q_dup_f32(&b)));
 }
 
 /**
@@ -818,6 +856,15 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
 	return dot(a, b).lane<0>();
+}
+
+/**
+ * @brief Generate a reciprocal of a a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
+{
+	// TODO: Is there a faster approximation we can use here?
+	return 1.0f / b;
 }
 
 /**

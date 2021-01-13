@@ -446,6 +446,30 @@ TEST(vfloat4, vdiv)
 	EXPECT_EQ(a.lane<3>(), 4.0f / 0.4f);
 }
 
+/** @brief Test vfloat4 div. */
+TEST(vfloat4, vsdiv)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	float b = 0.3f;
+	a = a / b;
+	EXPECT_EQ(a.lane<0>(), 1.0f / 0.3f);
+	EXPECT_EQ(a.lane<1>(), 2.0f / 0.3f);
+	EXPECT_EQ(a.lane<2>(), 3.0f / 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f / 0.3f);
+}
+
+/** @brief Test vfloat4 div. */
+TEST(vfloat4, svdiv)
+{
+	float a = 3.0f;
+	vfloat4 b(0.1f, 0.2f, 0.3f, 0.4f);
+	b = a / b;
+	EXPECT_EQ(b.lane<0>(), 3.0f / 0.1f);
+	EXPECT_EQ(b.lane<1>(), 3.0f / 0.2f);
+	EXPECT_EQ(b.lane<2>(), 3.0f / 0.3f);
+	EXPECT_EQ(b.lane<3>(), 3.0f / 0.4f);
+}
+
 /** @brief Test vfloat4 ceq. */
 TEST(vfloat4, ceq)
 {
@@ -554,6 +578,20 @@ TEST(vfloat4, min)
 	EXPECT_EQ(r.lane<1>(), 2.0f);
 	EXPECT_EQ(r.lane<2>(), 3.0f);
 	EXPECT_EQ(r.lane<3>(), 4.0f);
+
+	float c = 0.3f;
+	r = min(a, c);
+	EXPECT_EQ(r.lane<0>(), 0.3f);
+	EXPECT_EQ(r.lane<1>(), 0.3f);
+	EXPECT_EQ(r.lane<2>(), 0.3f);
+	EXPECT_EQ(r.lane<3>(), 0.3f);
+
+	float d = 1.5f;
+	r = min(a, d);
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 1.5f);
+	EXPECT_EQ(r.lane<2>(), 1.5f);
+	EXPECT_EQ(r.lane<3>(), 1.5f);
 }
 
 /** @brief Test vfloat4 max. */
@@ -566,6 +604,20 @@ TEST(vfloat4, max)
 	EXPECT_EQ(r.lane<1>(), 2.1f);
 	EXPECT_EQ(r.lane<2>(), 3.0f);
 	EXPECT_EQ(r.lane<3>(), 4.1f);
+
+	float c = 4.3f;
+	r = max(a, c);
+	EXPECT_EQ(r.lane<0>(), 4.3f);
+	EXPECT_EQ(r.lane<1>(), 4.3f);
+	EXPECT_EQ(r.lane<2>(), 4.3f);
+	EXPECT_EQ(r.lane<3>(), 4.3f);
+
+	float d = 1.5f;
+	r = max(a, d);
+	EXPECT_EQ(r.lane<0>(), 1.5f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
 /** @brief Test vfloat4 clamp. */
@@ -827,6 +879,17 @@ TEST(vfloat4, dot_s)
 	vfloat4 b(1.0f, 0.5f, 0.25f, 0.125f);
 	float r = dot_s(a, b);
 	EXPECT_EQ(r, 4.0f);
+}
+
+/** @brief Test vfloat4 reciprocal. */
+TEST(vfloat4, recip)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat4 r = recip(a);
+	EXPECT_NEAR(r.lane<0>(), 1.0f / 1.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<1>(), 1.0f / 2.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<2>(), 1.0f / 3.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<3>(), 1.0f / 4.0f, 0.0005f);
 }
 
 /** @brief Test vfloat4 normalize. */

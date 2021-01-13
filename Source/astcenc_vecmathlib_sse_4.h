@@ -614,6 +614,22 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar division.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
+{
+	return vfloat4(_mm_div_ps(a.m, _mm_set1_ps(b)));
+}
+
+/**
+ * @brief Overload: scalar by vector division.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
+{
+	return vfloat4(_mm_div_ps(_mm_set1_ps(a), b.m));
+}
+
+/**
  * @brief Overload: vector by vector equality.
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
@@ -673,6 +689,16 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Return the min vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
+{
+	return vfloat4(_mm_min_ps(a.m, _mm_set1_ps(b)));
+}
+
+/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -681,6 +707,16 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 {
 	// Do not reorder - second operand will return if either is NaN
 	return vfloat4(_mm_max_ps(a.m, b.m));
+}
+
+/**
+ * @brief Return the min vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
+{
+	return vfloat4(_mm_max_ps(a.m, _mm_set1_ps(b)));
 }
 
 /**
@@ -880,6 +916,17 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 	vfloat4 m = a * b;
 	return hadd_s(m);
 #endif
+}
+
+/**
+ * @brief Generate a reciprocal of a a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
+{
+	// Reciprocal with a single NR iteration
+	__m128 t1 = _mm_rcp_ps(b.m);
+	__m128 t2 = _mm_mul_ps(b.m, _mm_mul_ps(t1, t1));
+	return vfloat4(_mm_sub_ps(_mm_add_ps(t1, t1), t2));
 }
 
 /**
