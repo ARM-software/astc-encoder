@@ -97,11 +97,17 @@
  */
 #if defined(NDEBUG)
 	#if defined(_MSC_VER)
-		#define promise(cond) __assume(cond);
-	#elif __has_builtin(__builtin_assume)
-		#define promise(cond) __builtin_assume(cond);
-	#elif __has_builtin(__builtin_unreachable)
-		#define promise(cond) __builtin_unreachable(!(cond));
+		#define promise(cond) __assume(cond)
+	#elif defined(__clang__)
+		#if __has_builtin(__builtin_assume)
+			#define promise(cond) __builtin_assume(cond)
+		#elif __has_builtin(__builtin_unreachable)
+			#define promise(cond) if(!(cond)) { __builtin_unreachable(); }
+		#else
+			#define promise(cond)
+		#endif
+	#else // Assume GCC
+		#define promise(cond) if(!(cond)) { __builtin_unreachable(); }
 	#endif
 #else
 	#define promise(cond) assert(cond);
