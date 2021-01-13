@@ -535,7 +535,6 @@ void find_best_partitionings(
 
 			float uncorr_linelengths[4];
 			float samechroma_linelengths[4];
-			float3 separate_linelengths[4];
 
 			for (int j = 0; j < partition_count; j++)
 			{
