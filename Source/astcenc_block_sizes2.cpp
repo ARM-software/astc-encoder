@@ -668,6 +668,7 @@ static void construct_block_size_descriptor_2d(
 	bsd.ydim = y_dim;
 	bsd.zdim = 1;
 	bsd.texel_count = x_dim * y_dim;
+	bsd.decimation_mode_count = 0;
 
 	for (int i = 0; i < MAX_DMI; i++)
 	{
