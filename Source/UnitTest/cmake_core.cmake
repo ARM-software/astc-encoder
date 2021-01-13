@@ -51,7 +51,7 @@ if(${ISA_SIMD} MATCHES "none")
             ASTCENC_POPCNT=0)
 
     if (${ARCH} MATCHES x64)
-        target_compile_options(astcenc-${ISA_SIMD}
+        target_compile_options(test-simd-${ISA_SIMD}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
     endif()
