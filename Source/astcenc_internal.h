@@ -856,26 +856,26 @@ void compute_averages_and_directions_2_components(
 	float2* directions);
 
 void compute_error_squared_rgba(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
+	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const processed_line4* plines_uncorr,
-	const processed_line4* plines_samechroma,
-	float* length_uncorr,
-	float* length_samechroma,
-	float* uncorr_error,
-	float* samechroma_error);
+	const processed_line4* uncor_plines,
+	const processed_line4* samec_plines,
+	float* uncor_lengths,
+	float* samec_lengths,
+	float* uncor_errors,
+	float* samec_errors);
 
 void compute_error_squared_rgb(
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* plines_uncorr,
-	const processed_line3* plines_samechroma,
-	float* length_uncorr,
-	float* length_samechroma,
-	float* uncorr_error,
-	float* samechroma_error);
+	const partition_info *pt,
+	const imageblock *blk,
+	const error_weight_block *ewb,
+	const processed_line3 *uncor_plines,
+	const processed_line3 *samec_plines,
+	float *uncor_lengths,
+	float *samec_lengths,
+	float *uncor_errors,
+	float *samec_errors);
 
 // for each partition, compute its color weightings.
 void compute_partition_error_color_weightings(

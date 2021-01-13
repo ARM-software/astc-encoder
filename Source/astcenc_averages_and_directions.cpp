@@ -459,7 +459,7 @@ void compute_averages_and_directions_2_components(
 }
 
 void compute_error_squared_rgba(
-	const partition_info* pt,    // the partition that we use when computing the squared-error.
+	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const processed_line4* uncor_plines,
@@ -622,9 +622,9 @@ void compute_error_squared_rgba(
 			int iwt = weights[i];
 
 			float4 dat = float4(blk->data_r[iwt],
-								blk->data_g[iwt],
-								blk->data_b[iwt],
-								blk->data_a[iwt]);
+			                    blk->data_g[iwt],
+			                    blk->data_b[iwt],
+			                    blk->data_a[iwt]);
 
 			float4 ews = ewb->error_weights[iwt];
 
@@ -636,23 +636,24 @@ void compute_error_squared_rgba(
 			samec_loparam = astc::min(samec_param, samec_loparam);
 			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
-			float4 uncorr_dist  = (l_uncor.amod - dat) + (uncor_param * l_uncor.bis);
-			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
+			float4 uncor_dist  = (l_uncor.amod - dat)
+			                   + (uncor_param * l_uncor.bis);
+			uncor_errorsum += dot(ews, uncor_dist * uncor_dist);
 
-			float4 samechroma_dist = (l_samec.amod - dat) +
-			                         (samec_param * l_samec.bis);
-			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
+			float4 samec_dist = (l_samec.amod - dat)
+			                  + (samec_param * l_samec.bis);
+			samec_errorsum += dot(ews, samec_dist * samec_dist);
 		}
 
-		float uncorr_linelen = uncor_hiparam - uncor_loparam;
-		float samechroma_linelen = samec_hiparam - samec_loparam;
+		float uncor_linelen = uncor_hiparam - uncor_loparam;
+		float samec_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
-		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
-		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
+		uncor_linelen = astc::max(uncor_linelen, 1e-7f);
+		samec_linelen = astc::max(samec_linelen, 1e-7f);
 
-		uncor_lengths[partition] = uncorr_linelen;
-		samec_lengths[partition] = samechroma_linelen;
+		uncor_lengths[partition] = uncor_linelen;
+		samec_lengths[partition] = samec_linelen;
 	}
 
 	*uncor_errors = uncor_errorsum;
@@ -660,7 +661,7 @@ void compute_error_squared_rgba(
 }
 
 void compute_error_squared_rgb(
-	const partition_info *pt,    // the partition that we use when computing the squared-error.
+	const partition_info *pt,
 	const imageblock *blk,
 	const error_weight_block *ewb,
 	const processed_line3 *uncor_plines, // Uncorrelated channels
@@ -820,24 +821,24 @@ void compute_error_squared_rgb(
 			samec_loparam  = astc::min(samec_param, samec_loparam);
 			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
-			float3 uncorr_dist  = (l_uncor.amod - dat) +
-			                      (uncor_param * l_uncor.bis);
-			uncor_errorsum += dot(ews, uncorr_dist * uncorr_dist);
+			float3 uncor_dist  = (l_uncor.amod - dat)
+			                   + (uncor_param * l_uncor.bis);
+			uncor_errorsum += dot(ews, uncor_dist * uncor_dist);
 
-			float3 samechroma_dist = (l_samec.amod - dat) +
-			                         (samec_param * l_samec.bis);
-			samec_errorsum += dot(ews, samechroma_dist * samechroma_dist);
+			float3 samec_dist = (l_samec.amod - dat)
+			                  + (samec_param * l_samec.bis);
+			samec_errorsum += dot(ews, samec_dist * samec_dist);
 		}
 
-		float uncorr_linelen = uncor_hiparam - uncor_loparam;
-		float samechroma_linelen = samec_hiparam - samec_loparam;
+		float uncor_linelen = uncor_hiparam - uncor_loparam;
+		float samec_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
-		uncorr_linelen     = astc::max(uncorr_linelen,     1e-7f);
-		samechroma_linelen = astc::max(samechroma_linelen, 1e-7f);
+		uncor_linelen = astc::max(uncor_linelen, 1e-7f);
+		samec_linelen = astc::max(samec_linelen, 1e-7f);
 
-		uncor_lengths[partition] = uncorr_linelen;
-		samec_lengths[partition] = samechroma_linelen;
+		uncor_lengths[partition] = uncor_linelen;
+		samec_lengths[partition] = samec_linelen;
 	}
 
 	*uncor_errors = uncor_errorsum;
