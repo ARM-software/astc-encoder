@@ -30,6 +30,7 @@ target_sources(astc${CODEC}-${ISA_SIMD}
         astcenc_compress_symbolic.cpp
         astcenc_compute_variance.cpp
         astcenc_decompress_symbolic.cpp
+        astcenc_diagnostic_trace.cpp
         astcenc_encoding_choice_error.cpp
         astcenc_entry.cpp
         astcenc_find_best_partitioning.cpp
@@ -70,6 +71,12 @@ if(${DECOMPRESSOR})
     target_compile_definitions(astc${CODEC}-${ISA_SIMD}
         PRIVATE
             ASTCENC_DECOMPRESS_ONLY)
+endif()
+
+if(${DIAGNOSTICS})
+    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
+        PRIVATE
+            ASTCENC_DIAGNOSTICS)
 endif()
 
 target_compile_options(astc${CODEC}-${ISA_SIMD}

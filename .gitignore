@@ -25,6 +25,7 @@ Test/Images/Scratch*
 
 # Test output
 TestOutput
+/*.json
 /*.log
 /*.txt
 /*.png

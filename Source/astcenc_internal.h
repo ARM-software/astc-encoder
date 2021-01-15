@@ -1260,6 +1260,10 @@ void physical_to_symbolic(
 uint16_t unorm16_to_sf16(
 	uint16_t p);
 
+#if defined(ASTCENC_DIAGNOSTICS)
+class TraceLog; // See astcenc_diagnostic_trace for details.
+#endif
+
 struct astcenc_context
 {
 	astcenc_config config;
@@ -1287,6 +1291,10 @@ struct astcenc_context
 
 	ParallelManager manage_avg_var;
 	ParallelManager manage_compress;
+#endif
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	TraceLog* trace_log;
 #endif
 };
 

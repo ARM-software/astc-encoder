@@ -22,6 +22,7 @@
  */
 
 #include "astcenc_internal.h"
+#include "astcenc_diagnostic_trace.h"
 
 #include <cassert>
 #include <cstring>
@@ -1120,11 +1121,30 @@ static float prepare_block_statistics(
 	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
 	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
+
+
 	float lowest_correlation = astc::min(fabsf(rg_cov), fabsf(rb_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ra_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(gb_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ga_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ba_cov));
+
+	// Diagnostic trace points
+	trace_add_data("r_min", blk->data_min.lane<0>());
+	trace_add_data("r_max", blk->data_max.lane<0>());
+	trace_add_data("g_min", blk->data_min.lane<1>());
+	trace_add_data("g_max", blk->data_max.lane<1>());
+	trace_add_data("b_min", blk->data_min.lane<2>());
+	trace_add_data("b_max", blk->data_max.lane<2>());
+	trace_add_data("a_min", blk->data_min.lane<3>());
+	trace_add_data("a_max", blk->data_max.lane<3>());
+	trace_add_data("rg_cov", rg_cov);
+	trace_add_data("rb_cov", rb_cov);
+	trace_add_data("ra_cov", ra_cov);
+	trace_add_data("gb_cov", gb_cov);
+	trace_add_data("ga_cov", ga_cov);
+	trace_add_data("ba_cov", ba_cov);
+
 	return lowest_correlation;
 }
 
@@ -1137,10 +1157,27 @@ void compress_block(
 	compress_symbolic_block_buffers* tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
+	error_weight_block *ewb = &tmpbuf->ewb;
 	const block_size_descriptor* bsd = ctx.bsd;
+
+	TRACE_NODE(node0, "block");
+	trace_add_data("x_pos", blk->xpos);
+	trace_add_data("y_pos", blk->ypos);
+	trace_add_data("z_pos", blk->zpos);
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	// Do this early in diagnostic builds so we can dump uniform metrics
+	// for every block, do it later in release builds to avoid wasting time!
+	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
+	float lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+#endif
 
 	if (all(blk->data_min == blk->data_max))
 	{
+		TRACE_NODE(node1, "pass");
+		trace_add_data("partition_count", 0);
+		trace_add_data("plane_count", 1);
+
 		// detected a constant-color block. Encode as FP16 if using HDR
 		scb.error_block = 0;
 
@@ -1181,8 +1218,10 @@ void compress_block(
 		return;
 	}
 
+#if !defined(ASTCENC_DIAGNOSTICS)
 	error_weight_block *ewb = &tmpbuf->ewb;
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
+#endif
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
@@ -1207,12 +1246,16 @@ void compress_block(
 	bool modecutoffs[2] = { true, false };
 	float errorval_mult[2] = { 2.5f, 1.0f };
 
-	float lowest_correl;
 	float best_errorval_in_mode;
 
 	int start_trial = bsd->texel_count < (int)TUNE_MAX_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
 	{
+		TRACE_NODE(node1, "pass");
+		trace_add_data("partition_count", 1);
+		trace_add_data("plane_count", 1);
+		trace_add_data("search_mode", i);
+
 		compress_symbolic_block_fixed_partition_1_plane(
 		    decode_mode, modecutoffs[i],
 		    ctx.config.tune_candidate_limit,
@@ -1229,6 +1272,8 @@ void compress_block(
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			errorval *= errorval_mult[i];
+			trace_add_data("trial_errorval", errorval);
+
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
@@ -1242,28 +1287,38 @@ void compress_block(
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
 		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 		{
+			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
 		}
 	}
 
-	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+#if !defined(ASTCENC_DIAGNOSTICS)
+	float lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+#endif
 
 	// next, test the four possible 1-partition, 2-planes modes
 	for (int i = 0; i < 4; i++)
 	{
+		TRACE_NODE(node1, "pass");
+		trace_add_data("partition_count", 1);
+		trace_add_data("plane_count", 2);
+		trace_add_data("plane_channel", i);
 
 		if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
 		{
+			trace_add_data("skip", "tune_two_plane_early_out_limit");
 			continue;
 		}
 
 		if (blk->grayscale && i != 3)
 		{
+			trace_add_data("skip", "grayscale block");
 			continue;
 		}
 
 		if (!uses_alpha && i == 3)
 		{
+			trace_add_data("skip", "no alpha channel");
 			continue;
 		}
 
@@ -1285,6 +1340,8 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+			trace_add_data("trial_errorval", errorval);
+
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
@@ -1299,6 +1356,7 @@ void compress_block(
 
 		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 		{
+			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
 		}
 	}
@@ -1317,6 +1375,11 @@ void compress_block(
 
 		for (int i = 0; i < 2; i++)
 		{
+			TRACE_NODE(node1, "pass");
+			trace_add_data("partition_count", partition_count);
+			trace_add_data("plane_count", 1);
+			trace_add_data("search_mode", i);
+
 			compress_symbolic_block_fixed_partition_1_plane(
 			    decode_mode, false,
 			    ctx.config.tune_candidate_limit,
@@ -1333,6 +1396,8 @@ void compress_block(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+				trace_add_data("trial_errorval", errorval);
+
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 				if (errorval < error_of_best_block)
@@ -1347,67 +1412,86 @@ void compress_block(
 
 			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
 			{
+				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
 			}
 		}
 
 		if (partition_count == 2 && astc::min(best_errorvals_in_modes[5], best_errorvals_in_modes[6]) > (best_errorvals_in_modes[0] * ctx.config.tune_partition_early_out_limit))
 		{
+			trace_add_data("skip", "tune_partition_early_out_limit 1");
 			goto END_OF_TESTS;
 		}
 
 		// Skip testing dual weight planes for:
 		// * 4 partitions (can't be encoded by the format)
-		// * Luminance only blocks (never need for a second plane)
-		// * Blocks with higher component correlation than the tuning cutoff
-		if ((partition_count == 4) ||
-		    (blk->grayscale && !uses_alpha) ||
-		    (lowest_correl > ctx.config.tune_two_plane_early_out_limit))
+		if (partition_count == 4)
 		{
 			continue;
 		}
 
-
-		if (lowest_correl <= ctx.config.tune_two_plane_early_out_limit)
+		// * Luminance only blocks (never need for a second plane)
+		if (blk->grayscale && !uses_alpha)
 		{
-			compress_symbolic_block_fixed_partition_2_planes(
-			    decode_mode,
-			    false,
-			    ctx.config.tune_candidate_limit,
-			    ctx.config.tune_refinement_limit,
-			    bsd,
-			    partition_count,
-			    partition_index_2planes & (PARTITION_COUNT - 1),
-			    partition_index_2planes >> PARTITION_BITS,
-			    blk, ewb, tempblocks, &tmpbuf->planes);
+			trace_add_data("skip", "grayscale no alpha block ");
+			continue;
+		}
 
-			best_errorval_in_mode = 1e30f;
-			for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
+		// * Blocks with higher component correlation than the tuning cutoff
+		if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
+		{
+			trace_add_data("skip", "tune_two_plane_early_out_limit");
+			continue;
+		}
+
+
+		TRACE_NODE(node1, "pass");
+		trace_add_data("partition_count", partition_count);
+		trace_add_data("plane_count", 2);
+		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
+
+		compress_symbolic_block_fixed_partition_2_planes(
+			decode_mode,
+			false,
+			ctx.config.tune_candidate_limit,
+			ctx.config.tune_refinement_limit,
+			bsd,
+			partition_count,
+			partition_index_2planes & (PARTITION_COUNT - 1),
+			partition_index_2planes >> PARTITION_BITS,
+			blk, ewb, tempblocks, &tmpbuf->planes);
+
+		best_errorval_in_mode = 1e30f;
+		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
+		{
+			if (tempblocks[j].error_block)
 			{
-				if (tempblocks[j].error_block)
-				{
-					continue;
-				}
-
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-				if (errorval < error_of_best_block)
-				{
-					error_of_best_block = errorval;
-					scb = tempblocks[j];
-				}
+				continue;
 			}
 
-			// Modes 7, 10 (13 is unreachable)
-			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+			trace_add_data("trial_errorval", errorval);
 
-			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+			if (errorval < error_of_best_block)
 			{
-				goto END_OF_TESTS;
+				error_of_best_block = errorval;
+				scb = tempblocks[j];
 			}
 		}
+
+		// Modes 7, 10 (13 is unreachable)
+		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+
+		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		{
+			trace_add_data("exit", "quality hit");
+			goto END_OF_TESTS;
+		}
 	}
+
+	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
 	// compress/decompress to a physical block
