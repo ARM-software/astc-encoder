@@ -1159,6 +1159,7 @@ void compress_block(
 	astcenc_profile decode_mode = ctx.config.profile;
 	error_weight_block *ewb = &tmpbuf->ewb;
 	const block_size_descriptor* bsd = ctx.bsd;
+	float lowest_correl;
 
 	TRACE_NODE(node0, "block");
 	trace_add_data("x_pos", blk->xpos);
@@ -1169,7 +1170,7 @@ void compress_block(
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block, do it later in release builds to avoid wasting time!
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
-	float lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 #endif
 
 	if (all(blk->data_min == blk->data_max))
@@ -1219,7 +1220,6 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	error_weight_block *ewb = &tmpbuf->ewb;
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
 #endif
 
@@ -1293,7 +1293,7 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	float lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 #endif
 
 	// next, test the four possible 1-partition, 2-planes modes
