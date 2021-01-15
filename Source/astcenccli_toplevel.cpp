@@ -908,7 +908,7 @@ int edit_astcenc_config(
 		cli_config.thread_count = get_cpu_count();
 	}
 
-#if defined(ASTCENC_DECOMPRESS_ONLY)
+#if defined(ASTCENC_DECOMPRESS_ONLY) || defined(ASTCENC_DIAGNOSTICS)
 	cli_config.thread_count = 1;
 #else
 	if (operation == ASTCENC_OP_DECOMPRESS)
