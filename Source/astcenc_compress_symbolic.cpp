@@ -1367,45 +1367,41 @@ void compress_block(
 			continue;
 		}
 
+		compress_symbolic_block_fixed_partition_2_planes(
+		    decode_mode,
+		    false,
+		    ctx.config.tune_candidate_limit,
+		    ctx.config.tune_refinement_limit,
+		    bsd,
+		    partition_count,
+		    partition_index_2planes & (PARTITION_COUNT - 1),
+		    partition_index_2planes >> PARTITION_BITS,
+		    blk, ewb, tempblocks, &tmpbuf->planes);
 
-		if (lowest_correl <= ctx.config.tune_two_plane_early_out_limit)
+		best_errorval_in_mode = 1e30f;
+		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
 		{
-			compress_symbolic_block_fixed_partition_2_planes(
-			    decode_mode,
-			    false,
-			    ctx.config.tune_candidate_limit,
-			    ctx.config.tune_refinement_limit,
-			    bsd,
-			    partition_count,
-			    partition_index_2planes & (PARTITION_COUNT - 1),
-			    partition_index_2planes >> PARTITION_BITS,
-			    blk, ewb, tempblocks, &tmpbuf->planes);
-
-			best_errorval_in_mode = 1e30f;
-			for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
+			if (tempblocks[j].error_block)
 			{
-				if (tempblocks[j].error_block)
-				{
-					continue;
-				}
-
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-				if (errorval < error_of_best_block)
-				{
-					error_of_best_block = errorval;
-					scb = tempblocks[j];
-				}
+				continue;
 			}
 
-			// Modes 7, 10 (13 is unreachable)
-			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+			if (errorval < error_of_best_block)
 			{
-				goto END_OF_TESTS;
+				error_of_best_block = errorval;
+				scb = tempblocks[j];
 			}
+		}
+
+		// Modes 7, 10 (13 is unreachable)
+		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
+
+		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		{
+			goto END_OF_TESTS;
 		}
 	}
 
