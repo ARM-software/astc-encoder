@@ -132,7 +132,7 @@ void TraceNode::add_attrib(
 	out << '\n';
 	out << std::string(indent, ' ') << "[ "
 	                                << "\"" << key << "\", "
-	                                << value << "]";
+	                                << value << " ]";
 }
 
 TraceNode::~TraceNode()

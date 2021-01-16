@@ -366,12 +366,15 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	// find out which one is actually best.
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
+		TRACE_NODE(node0, "candidate");
+
 		uint8_t *u8_weight_src;
 		int weights_to_copy;
 
 		const int qw_packed_index = quantized_weight[i];
 		if (qw_packed_index < 0)
 		{
+			trace_add_data("failed", "error_block");
 			scb->error_block = 1;
 			scb++;
 			continue;
@@ -390,9 +393,10 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		// recompute the ideal color endpoints before storing them.
 		float4 rgbs_colors[4];
 		float4 rgbo_colors[4];
-
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
+			TRACE_NODE(node1, "refinement %u", l);
+
 			recompute_ideal_colors_1plane(weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, pi, it, blk, ewb);
 
 			// quantize the chosen color
@@ -454,6 +458,18 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 				scb->error_block = 1;	// should never happen, but cannot prove it impossible.
 			}
 
+			#if defined(ASTCENC_DIAGNOSTICS)
+			{
+				for (int j = 0; j < weights_to_copy; j++)
+				{
+					scb->weights[j] = u8_weight_src[j];
+				}
+
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+				trace_add_data("error_prerealign", errorval);
+			}
+			#endif
+
 			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
 				decode_mode, bsd, blk, ewb, scb, u8_weight_src, nullptr);
@@ -468,6 +484,13 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		{
 			scb->weights[j] = u8_weight_src[j];
 		}
+
+		#if defined(ASTCENC_DIAGNOSTICS)
+		{
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
+		}
+		#endif
 
 		scb++;
 	}
@@ -1138,12 +1161,12 @@ static float prepare_block_statistics(
 	trace_add_data("b_max", blk->data_max.lane<2>());
 	trace_add_data("a_min", blk->data_min.lane<3>());
 	trace_add_data("a_max", blk->data_max.lane<3>());
-	trace_add_data("rg_cov", rg_cov);
-	trace_add_data("rb_cov", rb_cov);
-	trace_add_data("ra_cov", ra_cov);
-	trace_add_data("gb_cov", gb_cov);
-	trace_add_data("ga_cov", ga_cov);
-	trace_add_data("ba_cov", ba_cov);
+	trace_add_data("rg_cov", fabsf(rg_cov));
+	trace_add_data("rb_cov", fabsf(rb_cov));
+	trace_add_data("ra_cov", fabsf(ra_cov));
+	trace_add_data("gb_cov", fabsf(gb_cov));
+	trace_add_data("ga_cov", fabsf(ga_cov));
+	trace_add_data("ba_cov", fabsf(ba_cov));
 
 	return lowest_correlation;
 }
@@ -1168,9 +1191,12 @@ void compress_block(
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
-	// for every block, do it later in release builds to avoid wasting time!
+	// for every block. Do it later in release builds to avoid redundant work!
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
+	float tune_error_limit = ctx.config.tune_db_limit * error_weight_sum;
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+
+	trace_add_data("tune_error_limit", tune_error_limit);
 #endif
 
 	if (all(blk->data_min == blk->data_max))
@@ -1221,6 +1247,7 @@ void compress_block(
 
 #if !defined(ASTCENC_DIAGNOSTICS)
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
+	float tune_error_limit = ctx.config.tune_db_limit * error_weight_sum;
 #endif
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
@@ -1288,7 +1315,7 @@ void compress_block(
 
 		// Mode 0
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block < tune_error_limit)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1360,7 +1387,7 @@ void compress_block(
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
 
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block < tune_error_limit)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1419,7 +1446,7 @@ void compress_block(
 			// Modes 5, 6, 8, 9, 11, 12
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
-			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+			if (error_of_best_block < tune_error_limit)
 			{
 				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
@@ -1496,7 +1523,7 @@ void compress_block(
 		// Modes 7, 10 (13 is unreachable)
 		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
 
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block < tune_error_limit)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
