@@ -442,7 +442,6 @@ struct block_mode
 	uint8_t percentile_hit : 1;
 	uint8_t percentile_always : 1;
 	int16_t mode_index;
-
 };
 
 /**
