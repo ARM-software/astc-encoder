@@ -368,6 +368,9 @@ static void initialize_decimation_table_2d(
 
 	dt->texel_count = texels_per_block;
 	dt->weight_count = weights_per_block;
+	dt->weight_x = x_weights;
+	dt->weight_y = y_weights;
+	dt->weight_z = 1;
 }
 
 static void initialize_decimation_table_3d(
@@ -582,6 +585,9 @@ static void initialize_decimation_table_3d(
 
 	dt->texel_count = texels_per_block;
 	dt->weight_count = weights_per_block;
+	dt->weight_x = x_weights;
+	dt->weight_y = y_weights;
+	dt->weight_z = z_weights;
 }
 
 /**

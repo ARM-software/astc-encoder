@@ -400,8 +400,13 @@ struct partition_info
 */
 struct decimation_table
 {
+	// TODO: Make these byte values
 	int texel_count;
 	int weight_count;
+	int weight_x;
+	int weight_y;
+	int weight_z;
+
 	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
 
 	// The 4t and t4 tables are the same data, but transposed to allow optimal

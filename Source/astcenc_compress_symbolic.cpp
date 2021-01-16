@@ -215,7 +215,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	int tune_candidate_limit,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
-	int partition_count, int partition_index,
+	int partition_count,
+	int partition_index,
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	symbolic_compressed_block* scb,
@@ -402,6 +403,11 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		int weight_quantization_mode = qw_bm.quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
+
+		trace_add_data("weight_x", it->weight_x);
+		trace_add_data("weight_y", it->weight_y);
+		trace_add_data("weight_z", it->weight_z);
+		trace_add_data("weight_quant", weight_quantization_mode);
 
 		weights_to_copy = it->weight_count;
 
@@ -1482,6 +1488,7 @@ void compress_block(
 		{
 			TRACE_NODE(node1, "pass");
 			trace_add_data("partition_count", partition_count);
+			trace_add_data("partition_index", partition_indices_1plane[i]);
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
@@ -1555,6 +1562,7 @@ void compress_block(
 
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", partition_count);
+		trace_add_data("partition_index", partition_index_2planes & (PARTITION_COUNT - 1));
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
 
