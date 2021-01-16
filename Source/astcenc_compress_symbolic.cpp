@@ -251,7 +251,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		}
 		eix[i] = *ei;
 		compute_ideal_weights_for_decimation_table(&(eix[i]), ixtab2[i], decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK, decimated_weights + i * MAX_WEIGHTS_PER_BLOCK);
-
 	}
 
 	// compute maximum colors for the endpoints and ideal weights.
@@ -357,6 +356,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quantization_level[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+
 	determine_optimal_set_of_endpoint_formats_to_use(
 	    bsd, pi, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
@@ -395,8 +395,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		float4 rgbo_colors[4];
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
-			TRACE_NODE(node1, "refinement %u", l);
-
 			recompute_ideal_colors_1plane(weight_quantization_mode, &(eix[decimation_mode].ep), rgbs_colors, rgbo_colors, u8_weight_src, pi, it, blk, ewb);
 
 			// quantize the chosen color
@@ -732,9 +730,12 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
+		TRACE_NODE(node0, "candidate");
+
 		const int qw_packed_index = quantized_weight[i];
 		if (qw_packed_index < 0)
 		{
+			trace_add_data("failed", "error_block");
 			scb->error_block = 1;
 			scb++;
 			continue;
@@ -828,6 +829,19 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 				scb->error_block = 1;	// should never happen, but cannot prove it impossible
 			}
 
+			#if defined(ASTCENC_DIAGNOSTICS)
+			{
+				for (int j = 0; j < weights_to_copy; j++)
+				{
+					scb->weights[j] = u8_weight1_src[j];
+					scb->weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+				}
+
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+				trace_add_data("error_prerealign", errorval);
+			}
+			#endif
+
 			int adjustments = realign_weights(
 				decode_mode, bsd, blk, ewb, scb, u8_weight1_src, u8_weight2_src);
 
@@ -842,6 +856,14 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 			scb->weights[j] = u8_weight1_src[j];
 			scb->weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 		}
+
+
+		#if defined(ASTCENC_DIAGNOSTICS)
+		{
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
+		}
+		#endif
 
 		scb++;
 	}
