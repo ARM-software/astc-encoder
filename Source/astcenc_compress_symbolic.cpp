@@ -250,7 +250,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		}
 		eix[i] = *ei;
 		compute_ideal_weights_for_decimation_table(&(eix[i]), ixtab2[i], decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK, decimated_weights + i * MAX_WEIGHTS_PER_BLOCK);
-
 	}
 
 	// compute maximum colors for the endpoints and ideal weights.
