@@ -27,24 +27,45 @@
 
 #include "astcenc_diagnostic_trace.h"
 
-
 /** @brief The global trace logger. */
-static TraceLog* g_TraceLog;
+static TraceLog* g_TraceLog = nullptr;
 
-TraceLog::TraceLog(const char* file_name): m_file(file_name)
+/** @brief The JSON indentation level. */
+static const int g_trace_indent = 2;
+
+TraceLog::TraceLog(const char* file_name):
+	m_file(file_name, std::ofstream::out | std::ofstream::binary)
 {
 	assert(!g_TraceLog);
 	g_TraceLog = this;
+	m_root = new TraceNode("root");
+}
+
+TraceNode* TraceLog::get_current_leaf()
+{
+	if (m_stack.size())
+	{
+		return m_stack.back();
+	}
+
+	return nullptr;
+}
+
+int TraceLog::get_depth()
+{
+	return m_stack.size();
 }
 
 TraceLog::~TraceLog()
 {
 	assert(g_TraceLog == this);
+	delete m_root;
 	g_TraceLog = nullptr;
 }
 
 TraceNode::TraceNode(const char* format, ...)
 {
+	// Format the name string
 	constexpr size_t bufsz = 256;
 	char buffer[bufsz];
 
@@ -56,12 +77,88 @@ TraceNode::TraceNode(const char* format, ...)
 	// Guarantee there is a nul termintor
 	buffer[bufsz - 1] = 0;
 
-	printf("%s\n", buffer);
+	// Generate the node
+	TraceNode* parent = g_TraceLog->get_current_leaf();
+	int depth = g_TraceLog->get_depth();
+	g_TraceLog->m_stack.push_back(this);
+
+	bool comma = parent && parent->m_attrib_count;
+	auto& out = g_TraceLog->m_file;
+
+	if (parent) {
+		parent->m_attrib_count++;
+	}
+
+	if (comma)
+	{
+		out << ',';
+	}
+
+	out << '\n';
+
+	int out_indent = (depth * 2) * g_trace_indent;
+	int in_indent = (depth * 2 + 1) * g_trace_indent;
+
+	std::string out_indents("");
+	if (out_indent)
+	{
+		out_indents = std::string(out_indent, ' ');
+	}
+
+	std::string in_indents(in_indent, ' ');
+
+	out << out_indents << "[ \"node\", \"" << buffer << "\",\n";
+	out << in_indents << "[";
+}
+
+void TraceNode::add_attrib(
+	std::string type,
+	std::string key,
+	std::string value
+) {
+	(void)type;
+
+	int depth = g_TraceLog->get_depth();
+	int indent = (depth * 2) * g_trace_indent;
+	auto& out = g_TraceLog->m_file;
+	bool comma = m_attrib_count;
+	m_attrib_count++;
+
+	if (comma)
+	{
+		out << ',';
+	}
+
+	out << '\n';
+	out << std::string(indent, ' ') << "[ "
+	                                << "\"" << key << "\", "
+	                                << value << "]";
 }
 
 TraceNode::~TraceNode()
 {
+	g_TraceLog->m_stack.pop_back();
 
+	auto& out = g_TraceLog->m_file;
+	int depth = g_TraceLog->get_depth();
+	int out_indent = (depth * 2) * g_trace_indent;
+	int in_indent = (depth * 2 + 1) * g_trace_indent;
+
+	std::string out_indents("");
+	if (out_indent)
+	{
+		out_indents = std::string(out_indent, ' ');
+	}
+
+	std::string in_indents(in_indent, ' ');
+
+	if (m_attrib_count)
+	{
+		out << "\n" << in_indents;
+	}
+	out << "]\n";
+
+	out << out_indents << "]";
 }
 
 void trace_add_data(const char* key, const char* format, ...)
@@ -77,22 +174,28 @@ void trace_add_data(const char* key, const char* format, ...)
 	// Guarantee there is a nul termintor
 	buffer[bufsz - 1] = 0;
 
-	printf("%s => %s\n", key, buffer);
+	std::string value = "\"" + std::string(buffer) + "\"";
+
+	TraceNode* node = g_TraceLog->get_current_leaf();
+	node->add_attrib("str", key, value);
 }
 
 void trace_add_data(const char* key, float value)
 {
-	printf("%s => %g\n", key, (double)value);
+	TraceNode* node = g_TraceLog->get_current_leaf();
+	node->add_attrib("float", key, std::to_string(value));
 }
 
 void trace_add_data(const char* key, int value)
 {
-	printf("%s => %d\n", key, value);
+	TraceNode* node = g_TraceLog->get_current_leaf();
+	node->add_attrib("int", key, std::to_string(value));
 }
 
 void trace_add_data(const char* key, unsigned int value)
 {
-	printf("%s => %u\n", key, value);
+	TraceNode* node = g_TraceLog->get_current_leaf();
+	node->add_attrib("int", key, std::to_string(value));
 }
 
 #endif

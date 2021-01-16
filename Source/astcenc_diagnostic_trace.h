@@ -26,22 +26,30 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+
+class TraceNode
+{
+public:
+	TraceNode(const char* format, ...);
+	void add_attrib(std::string type, std::string key, std::string value);
+	~TraceNode();
+	unsigned int m_attrib_count { 0 };
+};
+
 
 class TraceLog
 {
 public:
 	TraceLog(const char* file_name);
 	~TraceLog();
-private:
- 	std::ofstream m_file;
-};
 
-class TraceNode
-{
-public:
-	TraceNode(const char* format, ...);
-	~TraceNode();
-private:
+	TraceNode* get_current_leaf();
+	int get_depth();
+
+ 	std::ofstream m_file;
+	std::vector<TraceNode*> m_stack;
+	TraceNode* m_root;
 };
 
 #define TRACE_NODE(name, ...) TraceNode name(__VA_ARGS__);

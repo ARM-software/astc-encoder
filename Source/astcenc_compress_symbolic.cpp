@@ -1270,9 +1270,12 @@ void compress_block(
 				continue;
 			}
 
+			TRACE_NODE(node2, "trial");
+
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
 			errorval *= errorval_mult[i];
-			trace_add_data("trial_errorval", errorval);
+
+			trace_add_data("final_errorval", errorval);
 
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -1339,8 +1342,11 @@ void compress_block(
 				continue;
 			}
 
+			TRACE_NODE(node2, "trial");
+
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			trace_add_data("trial_errorval", errorval);
+
+			trace_add_data("final_errorval", errorval);
 
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -1395,8 +1401,11 @@ void compress_block(
 					continue;
 				}
 
+				TRACE_NODE(node2, "trial");
+
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-				trace_add_data("trial_errorval", errorval);
+
+				trace_add_data("final_errorval", errorval);
 
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -1469,8 +1478,11 @@ void compress_block(
 				continue;
 			}
 
+			TRACE_NODE(node2, "trial");
+
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			trace_add_data("trial_errorval", errorval);
+
+			trace_add_data("final_errorval", errorval);
 
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
