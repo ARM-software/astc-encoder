@@ -1225,8 +1225,6 @@ static float prepare_block_statistics(
 	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
 	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
-
-
 	float lowest_correlation = astc::min(fabsf(rg_cov), fabsf(rb_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ra_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(gb_cov));
@@ -1234,20 +1232,20 @@ static float prepare_block_statistics(
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ba_cov));
 
 	// Diagnostic trace points
-	trace_add_data("r_min", blk->data_min.lane<0>());
-	trace_add_data("r_max", blk->data_max.lane<0>());
-	trace_add_data("g_min", blk->data_min.lane<1>());
-	trace_add_data("g_max", blk->data_max.lane<1>());
-	trace_add_data("b_min", blk->data_min.lane<2>());
-	trace_add_data("b_max", blk->data_max.lane<2>());
-	trace_add_data("a_min", blk->data_min.lane<3>());
-	trace_add_data("a_max", blk->data_max.lane<3>());
-	trace_add_data("rg_cov", fabsf(rg_cov));
-	trace_add_data("rb_cov", fabsf(rb_cov));
-	trace_add_data("ra_cov", fabsf(ra_cov));
-	trace_add_data("gb_cov", fabsf(gb_cov));
-	trace_add_data("ga_cov", fabsf(ga_cov));
-	trace_add_data("ba_cov", fabsf(ba_cov));
+	trace_add_data("min_r", blk->data_min.lane<0>());
+	trace_add_data("max_r", blk->data_max.lane<0>());
+	trace_add_data("min_g", blk->data_min.lane<1>());
+	trace_add_data("max_g", blk->data_max.lane<1>());
+	trace_add_data("min_b", blk->data_min.lane<2>());
+	trace_add_data("max_b", blk->data_max.lane<2>());
+	trace_add_data("min_a", blk->data_min.lane<3>());
+	trace_add_data("max_a", blk->data_max.lane<3>());
+	trace_add_data("cov_rg", fabsf(rg_cov));
+	trace_add_data("cov_rb", fabsf(rb_cov));
+	trace_add_data("cov_ra", fabsf(ra_cov));
+	trace_add_data("cov_gb", fabsf(gb_cov));
+	trace_add_data("cov_ga", fabsf(ga_cov));
+	trace_add_data("cov_ba", fabsf(ba_cov));
 
 	return lowest_correlation;
 }
