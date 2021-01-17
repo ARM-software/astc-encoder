@@ -69,7 +69,7 @@
 #ifndef ASTCENC_DIAGNOSTIC_TRACE_INCLUDED
 #define ASTCENC_DIAGNOSTIC_TRACE_INCLUDED
 
-#if defined(ASTCENC_DIAGNOSTICS) || 1
+#if defined(ASTCENC_DIAGNOSTICS)
 
 #include <iostream>
 #include <fstream>
