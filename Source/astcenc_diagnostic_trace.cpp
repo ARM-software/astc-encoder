@@ -33,7 +33,8 @@ static TraceLog* g_TraceLog = nullptr;
 /** @brief The JSON indentation level. */
 static const int g_trace_indent = 2;
 
-TraceLog::TraceLog(const char* file_name):
+TraceLog::TraceLog(
+	const char* file_name):
 	m_file(file_name, std::ofstream::out | std::ofstream::binary)
 {
 	assert(!g_TraceLog);
@@ -63,8 +64,10 @@ TraceLog::~TraceLog()
 	g_TraceLog = nullptr;
 }
 
-TraceNode::TraceNode(const char* format, ...)
-{
+TraceNode::TraceNode(
+	const char* format,
+	...
+) {
 	// Format the name string
 	constexpr size_t bufsz = 256;
 	char buffer[bufsz];
@@ -161,8 +164,11 @@ TraceNode::~TraceNode()
 	out << out_indents << "]";
 }
 
-void trace_add_data(const char* key, const char* format, ...)
-{
+void trace_add_data(
+	const char* key,
+	const char* format,
+	...
+) {
 	constexpr size_t bufsz = 256;
 	char buffer[bufsz];
 
@@ -180,20 +186,26 @@ void trace_add_data(const char* key, const char* format, ...)
 	node->add_attrib("str", key, value);
 }
 
-void trace_add_data(const char* key, float value)
-{
+void trace_add_data(
+	const char* key,
+	float value
+) {
 	TraceNode* node = g_TraceLog->get_current_leaf();
 	node->add_attrib("float", key, std::to_string(value));
 }
 
-void trace_add_data(const char* key, int value)
-{
+void trace_add_data(
+	const char* key,
+	int value
+) {
 	TraceNode* node = g_TraceLog->get_current_leaf();
 	node->add_attrib("int", key, std::to_string(value));
 }
 
-void trace_add_data(const char* key, unsigned int value)
-{
+void trace_add_data(
+	const char* key,
+	unsigned int value
+) {
 	TraceNode* node = g_TraceLog->get_current_leaf();
 	node->add_attrib("int", key, std::to_string(value));
 }
