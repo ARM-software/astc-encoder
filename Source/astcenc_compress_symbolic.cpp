@@ -1182,6 +1182,7 @@ void compress_block(
 
 	error_weight_block *ewb = &tmpbuf->ewb;
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
+	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
 
@@ -1227,7 +1228,6 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			errorval *= errorval_mult[i];
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
@@ -1239,7 +1239,7 @@ void compress_block(
 
 		// Mode 0
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block * errorval_mult[i] < error_threshold)
 		{
 			goto END_OF_TESTS;
 		}
@@ -1296,7 +1296,7 @@ void compress_block(
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
 
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block < error_threshold)
 		{
 			goto END_OF_TESTS;
 		}
@@ -1344,7 +1344,7 @@ void compress_block(
 			// Modes 5, 6, 8, 9, 11, 12
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
-			if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+			if (error_of_best_block < error_threshold)
 			{
 				goto END_OF_TESTS;
 			}
@@ -1398,7 +1398,7 @@ void compress_block(
 		// Modes 7, 10 (13 is unreachable)
 		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
 
-		if ((error_of_best_block / error_weight_sum) < ctx.config.tune_db_limit)
+		if (error_of_best_block < error_threshold)
 		{
 			goto END_OF_TESTS;
 		}
