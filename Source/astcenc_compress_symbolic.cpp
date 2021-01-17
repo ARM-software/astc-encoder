@@ -1274,10 +1274,10 @@ void compress_block(
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
-	float tune_error_limit = ctx.config.tune_db_limit * error_weight_sum;
+	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 
-	trace_add_data("tune_error_limit", tune_error_limit);
+	trace_add_data("tune_error_threshold", error_threshold);
 #endif
 
 	if (all(blk->data_min == blk->data_max))
@@ -1330,7 +1330,7 @@ void compress_block(
 
 #if !defined(ASTCENC_DIAGNOSTICS)
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
-	float tune_error_limit = ctx.config.tune_db_limit * error_weight_sum;
+	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
 #endif
 
 	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
@@ -1381,8 +1381,6 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			errorval *= errorval_mult[i];
-
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
@@ -1394,7 +1392,7 @@ void compress_block(
 
 		// Mode 0
 		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if (error_of_best_block < tune_error_limit)
+		if (error_of_best_block * errorval_mult[i] < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1462,7 +1460,7 @@ void compress_block(
 			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
 		}
 
-		if (error_of_best_block < tune_error_limit)
+		if (error_of_best_block < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1518,7 +1516,7 @@ void compress_block(
 			// Modes 5, 6, 8, 9, 11, 12
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
 
-			if (error_of_best_block < tune_error_limit)
+			if (error_of_best_block < error_threshold)
 			{
 				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
@@ -1579,7 +1577,6 @@ void compress_block(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			if (errorval < error_of_best_block)
@@ -1592,7 +1589,7 @@ void compress_block(
 		// Modes 7, 10 (13 is unreachable)
 		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
 
-		if (error_of_best_block < tune_error_limit)
+		if (error_of_best_block < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
