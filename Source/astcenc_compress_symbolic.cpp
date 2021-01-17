@@ -403,13 +403,12 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		int weight_quantization_mode = qw_bm.quantization_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
+		weights_to_copy = it->weight_count;
 
 		trace_add_data("weight_x", it->weight_x);
 		trace_add_data("weight_y", it->weight_y);
 		trace_add_data("weight_z", it->weight_z);
 		trace_add_data("weight_quant", weight_quantization_mode);
-
-		weights_to_copy = it->weight_count;
 
 		// recompute the ideal color endpoints before storing them.
 		float4 rgbs_colors[4];
@@ -807,8 +806,12 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
 		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
-
 		weights_to_copy = it->weight_count;
+
+		trace_add_data("weight_x", it->weight_x);
+		trace_add_data("weight_y", it->weight_y);
+		trace_add_data("weight_z", it->weight_z);
+		trace_add_data("weight_quant", weight_quantization_mode);
 
 		// recompute the ideal color endpoints before storing them.
 		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), separate_component, &epm);
@@ -1318,6 +1321,8 @@ void compress_block(
 			scb.constant_color[2] = astc::flt2int_rtn(blue * 65535.0f);
 			scb.constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
 		}
+
+		trace_add_data("exit", "quality hit");
 
 		symbolic_to_physical(*bsd, scb, pcb);
 		return;
