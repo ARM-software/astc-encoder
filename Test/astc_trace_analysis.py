@@ -203,10 +203,10 @@ def generate_database(data):
     dbStruct = Trace(bx, by, bz)
 
     for block in get_node(data, "block", True):
-        bx = get_attrib(block, "x_pos")
-        by = get_attrib(block, "y_pos")
-        bz = get_attrib(block, "z_pos")
-        blockStruct = Block(bx, by, bz)
+        px = get_attrib(block, "pos_x")
+        py = get_attrib(block, "pos_y")
+        pz = get_attrib(block, "pos_z")
+        blockStruct = Block(px, py, pz)
         dbStruct.add_block(blockStruct)
 
         for pas in get_node(block, "pass", True):

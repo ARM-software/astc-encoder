@@ -1266,9 +1266,9 @@ void compress_block(
 	float lowest_correl;
 
 	TRACE_NODE(node0, "block");
-	trace_add_data("x_pos", blk->xpos);
-	trace_add_data("y_pos", blk->ypos);
-	trace_add_data("z_pos", blk->zpos);
+	trace_add_data("pos_x", blk->xpos);
+	trace_add_data("pos_y", blk->ypos);
+	trace_add_data("pos_z", blk->zpos);
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
