@@ -26,6 +26,7 @@ significantly without notice.
 import argparse
 from collections import defaultdict as ddict
 import json
+import numpy as np
 import sys
 
 QUANT_TABLE = {
@@ -481,6 +482,8 @@ def generate_feature_statistics(data):
     could_have_count = 0
     success_count = 0
 
+    refinement_step = []
+
     for block, pas, candidate in foreach_candidate(data):
         # Ignore zero partition blocks - they don't use refinement
         if not candidate:
@@ -489,6 +492,10 @@ def generate_feature_statistics(data):
         target_error = block.error_target
         start_error = candidate.refinement_errors[0]
         end_error = candidate.refinement_errors[-1]
+
+        rpf = float(start_error - end_error) / float(len(candidate.refinement_errors))
+        rpf = abs(rpf)
+        refinement_step.append(rpf / start_error)
 
         total_count += 1
         if end_error <= start_error:
@@ -510,6 +517,8 @@ def generate_feature_statistics(data):
     print("  - %u refinements(s) worsened" % (total_count - better_count))
     print("  - %u refinements(s) could hit target, but didnt" % could_have_count)
     print("  - %u refinements(s) hit target" % success_count)
+    print("  - %f mean step improvement" % np.mean(refinement_step))
+
 
 
 def parse_command_line():

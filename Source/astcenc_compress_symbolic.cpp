@@ -500,25 +500,36 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			    decode_mode, bsd, blk, ewb, &workscb,
 			    u8_weight_src, nullptr);
 
+			// Post-realign test
+			for (int j = 0; j < weights_to_copy; j++)
+			{
+				workscb.weights[j] = u8_weight_src[j];
+			}
+
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+			// Average refinement improvement is 3.5% per iteration, so skip
+			// blocks that are unlikely to catch up with the best block we
+			// have already. Assume a 5% per step to give benefit of the doubt
+			int iters_remaining = max_refinement_iters - 1 - l;
+			float threshold = (0.05f * iters_remaining) + 1.0f;
+			if (errorval > (threshold * best_errorval_in_scb))
+			{
+				break;
+			}
+
+			if (errorval < best_errorval_in_scb)
+			{
+				best_errorval_in_scb = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
 			if (adjustments == 0)
 			{
 				break;
 			}
-		}
-
-		// Post-realign test
-		for (int j = 0; j < weights_to_copy; j++)
-		{
-			workscb.weights[j] = u8_weight_src[j];
-		}
-
-		float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
-		best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-		if (errorval < best_errorval_in_scb)
-		{
-			best_errorval_in_scb = errorval;
-			workscb.errorval = errorval;
-			scb = workscb;
 		}
 	}
 
@@ -895,26 +906,37 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			    decode_mode, bsd, blk, ewb, &workscb,
 			    u8_weight1_src, u8_weight2_src);
 
+			// Post-realign test
+			for (int j = 0; j < weights_to_copy; j++)
+			{
+				workscb.weights[j] = u8_weight1_src[j];
+				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+			}
+
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+			// Average refinement improvement is 3.5% per iteration, so skip
+			// blocks that are unlikely to catch up with the best block we
+			// have already. Assume a 5% per step to give benefit of the doubt
+			int iters_remaining = max_refinement_iters - 1 - l;
+			float threshold = (0.05f * iters_remaining) + 1.0f;
+			if (errorval > (threshold * best_errorval_in_scb))
+			{
+				break;
+			}
+
+			if (errorval < best_errorval_in_scb)
+			{
+				best_errorval_in_scb = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
 			if (adjustments == 0)
 			{
 				break;
 			}
-		}
-
-		// Post-realign test
-		for (int j = 0; j < weights_to_copy; j++)
-		{
-			workscb.weights[j] = u8_weight1_src[j];
-			workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
-		}
-
-		float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
-		best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-		if (errorval < best_errorval_in_scb)
-		{
-			best_errorval_in_scb = errorval;
-			workscb.errorval = errorval;
-			scb = workscb;
 		}
 	}
 
