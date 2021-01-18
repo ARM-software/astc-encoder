@@ -80,7 +80,6 @@ int store_ncimage(
 int get_output_filename_enforced_bitness(
 	const char* filename);
 
-
 astcenc_image* alloc_image(
 	unsigned int bitness,
 	unsigned int dim_x,

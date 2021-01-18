@@ -135,7 +135,8 @@ static void compression_workload_runner(
 
 	// This is a racy update, so which error gets returned is a random, but it
 	// will reliably report an error if an error occurs
-	if (error != ASTCENC_SUCCESS) {
+	if (error != ASTCENC_SUCCESS)
+	{
 		work->error = error;
 	}
 }
@@ -896,6 +897,19 @@ int edit_astcenc_config(
 			}
 			argidx++;
 		}
+#if defined(ASTCENC_DIAGNOSTICS)
+		else if (!strcmp(argv[argidx], "-dtrace-out"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -dtrace-out switch with no argument\n");
+				return 1;
+			}
+
+			config.trace_file_path = argv[argidx - 1];
+		}
+#endif
 		else // check others as well
 		{
 			printf("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -908,12 +922,20 @@ int edit_astcenc_config(
 		cli_config.thread_count = get_cpu_count();
 	}
 
-#if defined(ASTCENC_DECOMPRESS_ONLY)
+#if defined(ASTCENC_DECOMPRESS_ONLY) || defined(ASTCENC_DIAGNOSTICS)
 	cli_config.thread_count = 1;
 #else
 	if (operation == ASTCENC_OP_DECOMPRESS)
 	{
 		cli_config.thread_count = 1;
+	}
+#endif
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	if (!config.trace_file_path)
+	{
+		printf("ERROR: Diagnostics builds must set -dtrace-out\n");
+		return 1;
 	}
 #endif
 

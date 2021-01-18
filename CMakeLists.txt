@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020 Arm Limited
+#  Copyright 2020-2021 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -91,6 +91,13 @@ if(${DECOMPRESSOR})
     message("  -- Decompress-only backend - ON")
 else()
     message("  -- Decompress-only backend - OFF")
+endif()
+
+option(DIAGNOSTICS "Enable builds for diagnostic trace")
+if(${DIAGNOSTICS})
+    message("  -- Diagnostic tracing - ON")
+else()
+    message("  -- Diagnostic tracing - OFF")
 endif()
 
 option(UNITTEST "Enable builds for unit tests")

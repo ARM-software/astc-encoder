@@ -24,6 +24,7 @@
 
 #include "astcenc.h"
 #include "astcenc_internal.h"
+#include "astcenc_diagnostic_trace.h"
 
 // The ASTC codec is written with the assumption that a float threaded through
 // the "if32" union will in fact be stored and reloaded as a 32-bit IEEE-754 single-precision
@@ -484,6 +485,14 @@ astcenc_error astcenc_context_alloc(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
+#if defined(ASTCENC_DIAGNOSTICS)
+	// Force single threaded compressor use in diagnostic mode.
+	if (thread_count != 1)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+#endif
+
 	ctx = new astcenc_context;
 	ctx->thread_count = thread_count;
 	ctx->config = config;
@@ -537,6 +546,18 @@ astcenc_error astcenc_context_alloc(
 	}
 #endif
 
+#if defined(ASTCENC_DIAGNOSTICS)
+	ctx->trace_log = new TraceLog(ctx->config.trace_file_path);
+	if(!ctx->trace_log->m_file)
+	{
+		return ASTCENC_ERR_DTRACE_FAILURE;
+	}
+
+	trace_add_data("block_x", config.block_x);
+	trace_add_data("block_y", config.block_y);
+	trace_add_data("block_z", config.block_z);
+#endif
+
 	*context = ctx;
 
 	// TODO: Currently static memory; should move to context memory
@@ -555,6 +576,9 @@ void astcenc_context_free(
 	{
 		aligned_free<compress_symbolic_block_buffers>(ctx->working_buffers);
 		term_block_size_descriptor(ctx->bsd);
+#if defined(ASTCENC_DIAGNOSTICS)
+		delete ctx->trace_log;
+#endif
 		delete ctx->bsd;
 		delete ctx;
 	}
@@ -830,6 +854,10 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_BAD_CONTEXT";
 	case ASTCENC_ERR_NOT_IMPLEMENTED:
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
+#if defined(ASTCENC_DIAGNOSTICS)
+	case ASTCENC_ERR_DTRACE_FAILURE:
+		return "ASTCENC_ERR_DTRACE_FAILURE";
+#endif
 	default:
 		return nullptr;
 	}

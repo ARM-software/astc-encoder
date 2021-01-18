@@ -529,12 +529,14 @@ void astcenc_print_header()
 	printf(astcenc_copyright_string, bits, simdtype, pcnttype);
 }
 
-void astcenc_print_shorthelp() {
+void astcenc_print_shorthelp()
+{
 	astcenc_print_header();
 	printf("%s", astcenc_short_help);
 }
 
-void astcenc_print_longhelp() {
+void astcenc_print_longhelp()
+{
 	astcenc_print_header();
 	printf("%s", astcenc_long_help);
 }

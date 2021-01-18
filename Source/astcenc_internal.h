@@ -400,8 +400,13 @@ struct partition_info
 */
 struct decimation_table
 {
+	// TODO: Make these byte values
 	int texel_count;
 	int weight_count;
+	int weight_x;
+	int weight_y;
+	int weight_z;
+
 	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
 
 	// The 4t and t4 tables are the same data, but transposed to allow optimal
@@ -437,7 +442,6 @@ struct block_mode
 	uint8_t percentile_hit : 1;
 	uint8_t percentile_always : 1;
 	int16_t mode_index;
-
 };
 
 /**
@@ -1260,6 +1264,10 @@ void physical_to_symbolic(
 uint16_t unorm16_to_sf16(
 	uint16_t p);
 
+#if defined(ASTCENC_DIAGNOSTICS)
+class TraceLog; // See astcenc_diagnostic_trace for details.
+#endif
+
 struct astcenc_context
 {
 	astcenc_config config;
@@ -1287,6 +1295,10 @@ struct astcenc_context
 
 	ParallelManager manage_avg_var;
 	ParallelManager manage_compress;
+#endif
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	TraceLog* trace_log;
 #endif
 };
 

@@ -421,7 +421,7 @@ vtype2<T> operator*(vtype2<T> p, T q) {
 
 // Scalar by vector multiplication operator
 template <typename T>
-vtype2<T> operator*(T p, vtype2<T> q){
+vtype2<T> operator*(T p, vtype2<T> q) {
 	return vtype2<T> { p * q.r, p * q.g };
 }
 
@@ -478,7 +478,7 @@ vtype3<T> operator*(vtype3<T> p, T q) {
 
 // Scalar by vector multiplication operator
 template <typename T>
-vtype3<T> operator*(T p, vtype3<T> q){
+vtype3<T> operator*(T p, vtype3<T> q) {
 	return vtype3<T> { p * q.r, p * q.g, p * q.b };
 }
 
@@ -536,7 +536,7 @@ vtype4<T> operator*(vtype4<T> p, T q) {
 
 // Scalar by vector multiplication operator
 template <typename T>
-vtype4<T> operator*(T p, vtype4<T> q){
+vtype4<T> operator*(T p, vtype4<T> q) {
 	return vtype4<T> { p * q.r, p * q.g, p * q.b, p * q.a };
 }
 
