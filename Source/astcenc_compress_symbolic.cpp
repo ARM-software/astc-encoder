@@ -504,6 +504,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 				// Average refinement improvement is 3.5% per iteration
@@ -538,6 +539,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			// Average refinement improvement is 3.5% per iteration, so skip
@@ -942,6 +944,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 				// Average refinement improvement is 3.5% per iteration
@@ -977,6 +980,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			// Average refinement improvement is 3.5% per iteration, so skip
