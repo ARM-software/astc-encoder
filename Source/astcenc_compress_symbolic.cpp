@@ -495,6 +495,37 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				workscb.error_block = 1; // should never happen, but cannot prove it impossible.
 			}
 
+			// Pre-realign test
+			if (l == 0)
+			{
+				for (int j = 0; j < weights_to_copy; j++)
+				{
+					workscb.weights[j] = u8_weight_src[j];
+				}
+
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+				// Average refinement improvement is 3.5% per iteration
+				// (allow 5%), but the first iteration can help more so we give
+				// it a extra 10% leeway. Use this knowledge to drive a
+				// heuristic to skip blocks that are unlikely to catch up with
+				// the best block we have already.
+				int iters_remaining = max_refinement_iters - l;
+				float threshold = (0.05f * iters_remaining) + 1.1f;
+				if (errorval > (threshold * best_errorval_in_scb))
+				{
+					break;
+				}
+
+				if (errorval < best_errorval_in_scb)
+				{
+					best_errorval_in_scb = errorval;
+					workscb.errorval = errorval;
+					scb = workscb;
+				}
+			}
+
 			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
 			    decode_mode, bsd, blk, ewb, &workscb,
@@ -899,6 +930,38 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			if (workscb.color_quantization_level < 4)
 			{
 				workscb.error_block = 1;	// should never happen, but cannot prove it impossible
+			}
+
+			// Pre-realign test
+			if (l == 0)
+			{
+				for (int j = 0; j < weights_to_copy; j++)
+				{
+					workscb.weights[j] = u8_weight1_src[j];
+					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+				}
+
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+				// Average refinement improvement is 3.5% per iteration
+				// (allow 5%), but the first iteration can help more so we give
+				// it a extra 10% leeway. Use this knowledge to drive a
+				// heuristic to skip blocks that are unlikely to catch up with
+				// the best block we have already.
+				int iters_remaining = max_refinement_iters - l;
+				float threshold = (0.05f * iters_remaining) + 1.1f;
+				if (errorval > (threshold * best_errorval_in_scb))
+				{
+					break;
+				}
+
+				if (errorval < best_errorval_in_scb)
+				{
+					best_errorval_in_scb = errorval;
+					workscb.errorval = errorval;
+					scb = workscb;
+				}
 			}
 
 			// perform a final pass over the weights to try to improve them.
