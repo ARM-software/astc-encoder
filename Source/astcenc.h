@@ -180,7 +180,11 @@ enum astcenc_error {
 	/** @brief The call failed due to the context not supporting the operation. */
 	ASTCENC_ERR_BAD_CONTEXT,
 	/** @brief The call failed due to unimplemented functionality. */
-	ASTCENC_ERR_NOT_IMPLEMENTED
+	ASTCENC_ERR_NOT_IMPLEMENTED,
+#if defined(ASTCENC_DIAGNOSTICS)
+	/** @brief The call failed due to an issue with diagnostic tracing. */
+	ASTCENC_ERR_DTRACE_FAILURE,
+#endif
 };
 
 /**
@@ -463,6 +467,16 @@ struct astcenc_config {
 	 * This option is ineffective for normal maps.
 	 */
 	float tune_two_plane_early_out_limit;
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	/**
+	 * @brief The path to save the diagnostic trace data to.
+	 *
+	 * This option is not part of the public API, and requires special builds
+	 * of the library.
+	 */
+	const char* trace_file_path;
+#endif
 };
 
 /**

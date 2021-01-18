@@ -547,7 +547,12 @@ astcenc_error astcenc_context_alloc(
 #endif
 
 #if defined(ASTCENC_DIAGNOSTICS)
-	ctx->trace_log = new TraceLog("astcenc_trace.json");
+	ctx->trace_log = new TraceLog(ctx->config.trace_file_path);
+	if(!ctx->trace_log->m_file)
+	{
+		return ASTCENC_ERR_DTRACE_FAILURE;
+	}
+
 	trace_add_data("block_x", config.block_x);
 	trace_add_data("block_y", config.block_y);
 	trace_add_data("block_z", config.block_z);
@@ -849,6 +854,10 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_BAD_CONTEXT";
 	case ASTCENC_ERR_NOT_IMPLEMENTED:
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
+#if defined(ASTCENC_DIAGNOSTICS)
+	case ASTCENC_ERR_DTRACE_FAILURE:
+		return "ASTCENC_ERR_DTRACE_FAILURE";
+#endif
 	default:
 		return nullptr;
 	}

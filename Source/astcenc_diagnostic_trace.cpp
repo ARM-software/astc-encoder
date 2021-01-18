@@ -88,7 +88,8 @@ TraceNode::TraceNode(
 	bool comma = parent && parent->m_attrib_count;
 	auto& out = g_TraceLog->m_file;
 
-	if (parent) {
+	if (parent)
+	{
 		parent->m_attrib_count++;
 	}
 
@@ -97,7 +98,10 @@ TraceNode::TraceNode(
 		out << ',';
 	}
 
-	out << '\n';
+	if (depth)
+	{
+		out << '\n';
+	}
 
 	int out_indent = (depth * 2) * g_trace_indent;
 	int in_indent = (depth * 2 + 1) * g_trace_indent;

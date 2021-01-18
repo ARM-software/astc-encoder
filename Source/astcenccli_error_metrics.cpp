@@ -44,7 +44,8 @@ public:
 	/**
 	 * @brief Create a new Kahan accumulator
 	 */
-	kahan_accum4() {
+	kahan_accum4()
+	{
 		sum = float4(0.0f);
 		comp = float4(0.0f);
 	}
