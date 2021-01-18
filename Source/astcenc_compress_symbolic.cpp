@@ -209,7 +209,7 @@ static int realign_weights(
 /*
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
-static void compress_symbolic_block_fixed_partition_1_plane(
+static float compress_symbolic_block_fixed_partition_1_plane(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
@@ -219,7 +219,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 	int partition_index,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
 	static const int free_bits_for_partition_count[5] = {
@@ -303,8 +303,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 	}
 
-	float min_wt_cutoff = astc::min(astc::min(min_ep.r, min_ep.g),
-	                                astc::min(min_ep.b, min_ep.a));
+	float min_wt_cutoff = astc::min(min_ep.r, min_ep.g, min_ep.b, min_ep.a);
 
 	// for each mode, use the angular method to compute a shift.
 	float weight_low_value[MAX_WEIGHT_MODES];
@@ -381,7 +380,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
 	// find out which one is actually best.
-	float best_errorval = 1e30f;
+	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_scb = scb.errorval;
 
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
@@ -513,16 +513,19 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		}
 
 		float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
-		if (errorval < best_errorval)
+		best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+		if (errorval < best_errorval_in_scb)
 		{
-			best_errorval = errorval;
+			best_errorval_in_scb = errorval;
 			workscb.errorval = errorval;
-			*scb = workscb;
+			scb = workscb;
 		}
 	}
+
+	return best_errorval_in_mode;
 }
 
-static void compress_symbolic_block_fixed_partition_2_planes(
+static float compress_symbolic_block_fixed_partition_2_planes(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
@@ -533,7 +536,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	int separate_component,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
 	static const int free_bits_for_partition_count[5] = {
@@ -675,8 +678,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		min_wt_cutoff2 = 1e30f;
 	}
 
-	min_wt_cutoff1 = astc::min(astc::min(min_ep1.r, min_ep1.g),
-	                           astc::min(min_ep1.b, min_ep1.a));
+	min_wt_cutoff1 = astc::min(min_ep1.r, min_ep1.g, min_ep1.b, min_ep1.a);
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
@@ -775,7 +777,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
 	// find out which one is actually best.
-	float best_errorval = 1e30f;
+	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_scb = scb.errorval;
 
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
@@ -906,13 +909,16 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		}
 
 		float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
-		if (errorval < best_errorval)
+		best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+		if (errorval < best_errorval_in_scb)
 		{
-			best_errorval = errorval;
+			best_errorval_in_scb = errorval;
 			workscb.errorval = errorval;
-			*scb = workscb;
+			scb = workscb;
 		}
 	}
+
+	return best_errorval_in_mode;
 }
 
 void expand_deblock_weights(
@@ -1318,10 +1324,8 @@ void compress_block(
 	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
 #endif
 
-	symbolic_compressed_block& work_scb = tmpbuf->scb;
-
-	float error_of_best_block = 1e20f;
-
+	// Set SCB and mode errors to a very high error value
+	scb.errorval = 1e30f;
 	float best_errorvals_in_modes[13];
 	for (int i = 0; i < 13; i++)
 	{
@@ -1349,23 +1353,11 @@ void compress_block(
 		trace_add_data("plane_count", 1);
 		trace_add_data("search_mode", i);
 
-		compress_symbolic_block_fixed_partition_1_plane(
+		float errorval = compress_symbolic_block_fixed_partition_1_plane(
 		    decode_mode, modecutoffs[i],
 		    ctx.config.tune_candidate_limit,
 		    ctx.config.tune_refinement_limit,
-		    bsd, 1, 0, blk, ewb, &work_scb, &tmpbuf->planes);
-
-		if (work_scb.error_block)
-		{
-			continue;
-		}
-
-		float errorval = work_scb.errorval;
-		if (errorval < error_of_best_block)
-		{
-			error_of_best_block = errorval;
-			scb = work_scb;
-		}
+		    bsd, 1, 0, blk, ewb, scb, &tmpbuf->planes);
 
 		// Mode 0
 		best_errorvals_in_modes[0] = errorval;
@@ -1406,29 +1398,16 @@ void compress_block(
 			continue;
 		}
 
-		compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 		    decode_mode, false,
 		    ctx.config.tune_candidate_limit,
 		    ctx.config.tune_refinement_limit,
 		    bsd, 1,	// partition count
 		    0,	// partition index
 		    i,	// the color component to test a separate plane of weights for.
-		    blk, ewb, &work_scb, &tmpbuf->planes);
-
-		if (work_scb.error_block)
-		{
-			continue;
-		}
-
-		float errorval = work_scb.errorval;
-		if (errorval < error_of_best_block)
-		{
-			error_of_best_block = errorval;
-			scb = work_scb;
-		}
+		    blk, ewb, scb, &tmpbuf->planes);
 
 		// Modes 7, 10 (13 is unreachable)
-		best_errorvals_in_modes[i + 1] = errorval;
 		if (errorval < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
@@ -1456,26 +1435,14 @@ void compress_block(
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
-			compress_symbolic_block_fixed_partition_1_plane(
+			float errorval = compress_symbolic_block_fixed_partition_1_plane(
 			    decode_mode, false,
 			    ctx.config.tune_candidate_limit,
 			    ctx.config.tune_refinement_limit,
 			    bsd, partition_count, partition_indices_1plane[i],
-			    blk, ewb, &work_scb, &tmpbuf->planes);
+			    blk, ewb, scb, &tmpbuf->planes);
 
-			if (work_scb.error_block)
-			{
-				continue;
-			}
-
-			float errorval = work_scb.errorval;
-			if (errorval < error_of_best_block)
-			{
-				error_of_best_block = errorval;
-				scb = work_scb;
-			}
-
-			// Mode 0
+			// Modes 5, 6, 8, 9, 11, 12
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = errorval;
 			if (errorval < error_threshold)
 			{
@@ -1518,7 +1485,7 @@ void compress_block(
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
 
-		compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 			decode_mode,
 			false,
 			ctx.config.tune_candidate_limit,
@@ -1527,22 +1494,9 @@ void compress_block(
 			partition_count,
 			partition_index_2planes & (PARTITION_COUNT - 1),
 			partition_index_2planes >> PARTITION_BITS,
-			blk, ewb, &work_scb, &tmpbuf->planes);
-
-		if (work_scb.error_block)
-		{
-			continue;
-		}
-
-		float errorval = work_scb.errorval;
-		if (errorval < error_of_best_block)
-		{
-			error_of_best_block = errorval;
-			scb = work_scb;
-		}
+			blk, ewb, scb, &tmpbuf->planes);
 
 		// Modes 7, 10 (13 is unreachable)
-		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = errorval;
 		if (errorval < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
