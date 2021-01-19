@@ -213,6 +213,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
+	float tune_errorval_threshold,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count,
@@ -524,6 +525,11 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 					best_errorval_in_scb = errorval;
 					workscb.errorval = errorval;
 					scb = workscb;
+
+					if (errorval < tune_errorval_threshold)
+					{
+						return errorval;
+					}
 				}
 			}
 
@@ -557,6 +563,11 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				best_errorval_in_scb = errorval;
 				workscb.errorval = errorval;
 				scb = workscb;
+
+				if (errorval < tune_errorval_threshold)
+				{
+					return errorval;
+				}
 			}
 
 			if (adjustments == 0)
@@ -573,6 +584,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
+	float tune_errorval_threshold,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count,
@@ -964,6 +976,11 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 					best_errorval_in_scb = errorval;
 					workscb.errorval = errorval;
 					scb = workscb;
+
+					if (errorval < tune_errorval_threshold)
+					{
+						return errorval;
+					}
 				}
 			}
 
@@ -998,6 +1015,11 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				best_errorval_in_scb = errorval;
 				workscb.errorval = errorval;
 				scb = workscb;
+
+				if (errorval < tune_errorval_threshold)
+				{
+					return errorval;
+				}
 			}
 
 			if (adjustments == 0)
@@ -1431,8 +1453,12 @@ void compress_block(
 	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
 	// compression and slightly reduces image quality.
 
-	bool modecutoffs[2] = { true, false };
-	float errorval_mult[2] = { 2.5f, 1.0f };
+	float errorval_mult[2] = {
+		1.0f / ctx.config.tune_mode0_mse_overshoot,
+		1.0f
+	};
+
+	static const float errorval_overshoot = 1.0f / ctx.config.tune_refinement_mse_overshoot;
 
 	int start_trial = bsd->texel_count < (int)TUNE_MAX_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
@@ -1443,14 +1469,15 @@ void compress_block(
 		trace_add_data("search_mode", i);
 
 		float errorval = compress_symbolic_block_fixed_partition_1_plane(
-		    decode_mode, modecutoffs[i],
+		    decode_mode, i == 0,
 		    ctx.config.tune_candidate_limit,
+		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
 		    bsd, 1, 0, blk, ewb, scb, &tmpbuf->planes);
 
 		// Mode 0
 		best_errorvals_in_modes[0] = errorval;
-		if (errorval * errorval_mult[i] < error_threshold)
+		if (errorval < (error_threshold * errorval_mult[i]))
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1490,6 +1517,7 @@ void compress_block(
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 		    decode_mode, false,
 		    ctx.config.tune_candidate_limit,
+		    error_threshold * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
 		    bsd, 1,	// partition count
 		    0,	// partition index
@@ -1527,6 +1555,7 @@ void compress_block(
 			float errorval = compress_symbolic_block_fixed_partition_1_plane(
 			    decode_mode, false,
 			    ctx.config.tune_candidate_limit,
+			    error_threshold * errorval_overshoot,
 			    ctx.config.tune_refinement_limit,
 			    bsd, partition_count, partition_indices_1plane[i],
 			    blk, ewb, scb, &tmpbuf->planes);
@@ -1578,6 +1607,7 @@ void compress_block(
 			decode_mode,
 			false,
 			ctx.config.tune_candidate_limit,
+			error_threshold * errorval_overshoot,
 			ctx.config.tune_refinement_limit,
 			bsd,
 			partition_count,
