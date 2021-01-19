@@ -166,6 +166,8 @@ def get_attrib(data, name, multiple=False, hard_fail=True):
         if hard_fail:
             print(json.dumps(data, indent=2))
             assert False, "Attribute %s not found" % name
+        if multiple:
+            return list()
         return None
 
     if not multiple:
@@ -310,14 +312,15 @@ def generate_database(data):
                 wy = get_attrib(candidate, "weight_y")
                 wz = get_attrib(candidate, "weight_z")
                 wq = QUANT_TABLE[get_attrib(candidate, "weight_quant")]
-                epre = get_attrib(candidate, "error_prerealign", True)
-                epst = get_attrib(candidate, "error_postrealign")
+                epre = get_attrib(candidate, "error_prerealign", True, False)
+                epst = get_attrib(candidate, "error_postrealign", True, False)
 
                 candStruct = Candidate(wx, wy, wz, wq)
                 passStruct.add_candidate(candStruct)
                 for value in epre:
                     candStruct.add_refinement(value)
-                candStruct.add_refinement(epst)
+                for value in epst:
+                    candStruct.add_refinement(value)
 
     return dbStruct
 
@@ -515,10 +518,9 @@ def generate_feature_statistics(data):
     print("  - %u refinements(s)" % total_count)
     print("  - %u refinements(s) improved" % better_count)
     print("  - %u refinements(s) worsened" % (total_count - better_count))
-    print("  - %u refinements(s) could hit target, but didnt" % could_have_count)
+    print("  - %u refinements(s) could hit target, but didn't" % could_have_count)
     print("  - %u refinements(s) hit target" % success_count)
     print("  - %f mean step improvement" % np.mean(refinement_step))
-
 
 
 def parse_command_line():
