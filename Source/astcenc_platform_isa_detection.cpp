@@ -32,7 +32,7 @@ static int g_cpu_has_popcnt = -1;
 /* ============================================================================
    Platform code for Visual Studio
 ============================================================================ */
-#if defined(_MSC_VER)
+#if !defined(__clang__) && defined(_MSC_VER)
 #include <intrin.h>
 
 static void detect_cpu_isa()

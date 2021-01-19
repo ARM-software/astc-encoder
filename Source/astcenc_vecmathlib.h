@@ -58,7 +58,7 @@
 	#include <arm_neon.h>
 #endif
 
-#if defined(_MSC_VER)
+#if !defined(__clang__) && defined(_MSC_VER)
 	#define ASTCENC_SIMD_INLINE __forceinline
 #elif defined(__GNUC__) && !defined(__clang__)
 	#define ASTCENC_SIMD_INLINE __attribute__((unused, always_inline)) inline

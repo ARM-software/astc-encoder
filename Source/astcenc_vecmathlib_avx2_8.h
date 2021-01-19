@@ -97,7 +97,7 @@ struct vfloat8
 	 */
 	template <int l> ASTCENC_SIMD_INLINE float lane() const
 	{
-	#ifdef _MSC_VER
+	#if !defined(__clang__) && defined(_MSC_VER)
 		return m.m256_f32[l];
 	#else
 		union { __m256 m; float f[8]; } cvt;
@@ -215,7 +215,7 @@ struct vint8
 	 */
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
-	#ifdef _MSC_VER
+	#if !defined(__clang__) && defined(_MSC_VER)
 		return m.m256i_i32[l];
 	#else
 		union { __m256i m; int f[8]; } cvt;
