@@ -28,8 +28,6 @@
 
 #include "astcenccli_internal.h"
 
-#define STBI_HEADER_FILE_ONLY
-
 #include "stb_image.h"
 #include "stb_image_write.h"
 #include "tinyexr.h"
@@ -234,7 +232,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_RG(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -248,7 +246,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_RGB(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -262,7 +260,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_BGR(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -276,7 +274,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_RGBX(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -290,7 +288,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_BGRX(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -304,7 +302,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_RGBA(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -318,7 +316,7 @@ static void copy_scanline(
 			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_BGRA(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -332,7 +330,7 @@ static void copy_scanline(
 			d[4*i+3] = convfunc(s[4*i+3]); \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_L(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -346,7 +344,7 @@ static void copy_scanline(
 			d[4*i+3] = oneval; \
 		} \
 	} while (0); \
-	break;
+	break
 
 #define COPY_LA(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -360,7 +358,7 @@ static void copy_scanline(
 			d[4*i+3] = convfunc(s[2*i+1]); \
 		} \
 	} while (0); \
-	break;
+	break
 
 	switch (method)
 	{
@@ -435,7 +433,7 @@ static void copy_scanline(
 		COPY_L(uint16_t, uint32_t, f32_sf16, 0x3C00);
 	case LA32F_TO_RGBA16F:
 		COPY_LA(uint16_t, uint32_t, f32_sf16, 0x3C00);
-	};
+	}
 }
 
 // perform endianness switch on raw data
@@ -697,7 +695,7 @@ struct ktx_header
 };
 
 // magic 12-byte sequence that must appear at the beginning of every KTX file.
-uint8_t ktx_magic[12] = {
+static uint8_t ktx_magic[12] = {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 };
 
@@ -799,7 +797,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		printf("KTX file %s has unsupported GL type\n", filename);
 		fclose(f);
 		return nullptr;
-	};
+	}
 
 	// Although these are set up later, we include a default initializer to remove warnings
 	int bytes_per_component = 1;	// bytes per component in the KTX file.
@@ -1482,7 +1480,7 @@ struct dds_header_dx10
 #define DDS_MAGIC 0x20534444
 #define DX10_MAGIC 0x30315844
 
-astcenc_image* load_dds_uncompressed_image(
+static astcenc_image* load_dds_uncompressed_image(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -1547,10 +1545,13 @@ astcenc_image* load_dds_uncompressed_image(
 	unsigned int dim_y = hdr.height;
 	unsigned int dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
 
-	int bitness;				// the bitcount that we will use internally in the codec
-	int bytes_per_component;	// the bytes per component in the DDS file itself
-	int components;
-	int copy_method;
+	// The bitcount that we will use internally in the codec
+	int bitness = 0;
+
+	// The bytes per component in the DDS file itself
+	int bytes_per_component = 0;
+	int components = 0;
+	int copy_method = 0;
 
 	// figure out the format actually used in the DDS file.
 	if (use_dx10_header)

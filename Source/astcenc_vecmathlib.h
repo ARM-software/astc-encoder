@@ -61,9 +61,9 @@
 #if !defined(__clang__) && defined(_MSC_VER)
 	#define ASTCENC_SIMD_INLINE __forceinline
 #elif defined(__GNUC__) && !defined(__clang__)
-	#define ASTCENC_SIMD_INLINE __attribute__((unused, always_inline)) inline
+	#define ASTCENC_SIMD_INLINE __attribute__((always_inline)) inline
 #else
-	#define ASTCENC_SIMD_INLINE __attribute__((unused, always_inline, nodebug)) inline
+	#define ASTCENC_SIMD_INLINE __attribute__((always_inline, nodebug)) inline
 #endif
 
 #if ASTCENC_AVX >= 2

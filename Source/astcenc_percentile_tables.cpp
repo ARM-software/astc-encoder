@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1108,7 +1108,7 @@ static const packed_percentile_table *get_packed_table(
 		case 0x0A0A: return &block_pcd_10x10;
 		case 0x0A0C: return &block_pcd_12x10;
 		case 0x0C0C: return &block_pcd_12x12;
-	};
+	}
 
 	// Should never hit this with a valid 2D block size
 	return nullptr;
@@ -1173,7 +1173,7 @@ int is_legal_2d_block_size(
 		case 0x0C0A:
 		case 0x0C0C:
 			return 1;
-	};
+	}
 
 	return 0;
 }

@@ -21,13 +21,12 @@
 
 #include "astcenccli_internal.h"
 
-const char *astcenc_copyright_string =
+static const char *astcenc_copyright_string =
 R"(ASTC codec v2.3-develop, %u-bit %s%s
 Copyright 2011-2021 Arm Limited, all rights reserved
 )";
 
-
-const char *astcenc_short_help =
+static const char *astcenc_short_help =
 R"(
 Basic usage:
 
@@ -67,8 +66,7 @@ The -*H options configure the compressor for full HDR across all channels.
 For full help documentation run 'astcenc -help'.
 )";
 
-
-const char *astcenc_long_help = R"(
+static const char *astcenc_long_help = R"(
 NAME
        astcenc - compress or decompress images using the ASTC format
 

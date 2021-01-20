@@ -18,6 +18,7 @@
 project(astc${CODEC}-${ISA_SIMD})
 
 set(GNU_LIKE "GNU,Clang,AppleClang")
+set(CLANG_LIKE "Clang,AppleClang")
 
 add_executable(astc${CODEC}-${ISA_SIMD})
 
@@ -94,7 +95,29 @@ target_compile_options(astc${CODEC}-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>
+
+        # Hide noise thrown up by Clang 10 and clang-cl
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-compat-pedantic>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-switch-enum>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>
+
+        # Clang 10 also throws up warnings we need to investigate (ours)
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-old-style-cast>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-float-conversion>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-covered-switch-default>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-qual>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-float-conversion>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
+
         $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
+
 
 target_link_options(astc${CODEC}-${ISA_SIMD}
     PRIVATE
@@ -111,9 +134,20 @@ set_property(TARGET astc${CODEC}-${ISA_SIMD} PROPERTY
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 
-    string(CONCAT EXTERNAL_CXX_FLAGS "-Wno-unused-parameter"
-                                     " -Wno-double-promotion"
-                                     " -fno-strict-aliasing")
+    string(CONCAT EXTERNAL_CXX_FLAGS
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -fno-strict-aliasing>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-unused-parameter>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-double-promotion>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-zero-as-null-pointer-constant>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-disabled-macro-expansion>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-reserved-id-macro>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-extra-semi-stmt>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
+        " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>"
+    )
+
+
 
     set_source_files_properties(astcenccli_image_external.cpp
         PROPERTIES COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
