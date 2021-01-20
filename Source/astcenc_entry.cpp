@@ -845,7 +845,7 @@ astcenc_error astcenc_decompress_image(
 			{
 				unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
 				const uint8_t* bp = data + offset;
-				physical_compressed_block pcb = *(physical_compressed_block *) bp;
+				physical_compressed_block pcb = *(const physical_compressed_block*)bp;
 				symbolic_compressed_block scb;
 
 				physical_to_symbolic(*context->bsd, pcb, scb);

@@ -109,9 +109,7 @@ target_compile_options(astc${CODEC}-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-float-conversion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-covered-switch-default>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-qual>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-float-conversion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
@@ -144,6 +142,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-extra-semi-stmt>"
         " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
         " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
+        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
         " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>"
     )
 

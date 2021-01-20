@@ -222,8 +222,8 @@ static void copy_scanline(
 
 #define COPY_R(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[i]); \
@@ -236,8 +236,8 @@ static void copy_scanline(
 
 #define COPY_RG(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[2*i]); \
@@ -250,8 +250,8 @@ static void copy_scanline(
 
 #define COPY_RGB(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[3*i]); \
@@ -264,8 +264,8 @@ static void copy_scanline(
 
 #define COPY_BGR(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[3*i+2]); \
@@ -278,8 +278,8 @@ static void copy_scanline(
 
 #define COPY_RGBX(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i]); \
@@ -292,8 +292,8 @@ static void copy_scanline(
 
 #define COPY_BGRX(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i+2]); \
@@ -306,8 +306,8 @@ static void copy_scanline(
 
 #define COPY_RGBA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i]); \
@@ -320,8 +320,8 @@ static void copy_scanline(
 
 #define COPY_BGRA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[4*i+2]); \
@@ -334,8 +334,8 @@ static void copy_scanline(
 
 #define COPY_L(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[i]); \
@@ -348,8 +348,8 @@ static void copy_scanline(
 
 #define COPY_LA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		srctype *s = (srctype *)src; \
-		dsttype *d = (dsttype *)dst; \
+		const srctype* s = (const srctype*)src; \
+		dsttype* d = (dsttype*)dst; \
 		for (int i = 0; i < pixels; i++)\
 		{\
 			d[4*i] = convfunc(s[2*i]); \
