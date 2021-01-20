@@ -209,17 +209,18 @@ static int realign_weights(
 /*
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
-static void compress_symbolic_block_fixed_partition_1_plane(
+static float compress_symbolic_block_fixed_partition_1_plane(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
+	float tune_errorval_threshold,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count,
 	int partition_index,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
 	static const int free_bits_for_partition_count[5] = {
@@ -252,6 +253,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		{
 			continue;
 		}
+
 		eix[i] = *ei;
 
 		compute_ideal_weights_for_decimation_table(
@@ -302,8 +304,7 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 	}
 
-	float min_wt_cutoff = astc::min(astc::min(min_ep.r, min_ep.g),
-	                                astc::min(min_ep.b, min_ep.a));
+	float min_wt_cutoff = astc::min(min_ep.r, min_ep.g, min_ep.b, min_ep.a);
 
 	// for each mode, use the angular method to compute a shift.
 	float weight_low_value[MAX_WEIGHT_MODES];
@@ -380,6 +381,9 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
 	// find out which one is actually best.
+	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_scb = scb.errorval;
+
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		TRACE_NODE(node0, "candidate");
@@ -391,8 +395,6 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		if (qw_packed_index < 0)
 		{
 			trace_add_data("failed", "error_block");
-			scb->error_block = 1;
-			scb++;
 			continue;
 		}
 
@@ -414,6 +416,8 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 		float4 rgbs_colors[4];
 		float4 rgbo_colors[4];
 
+		// TODO: Can we ping-pong between two buffers and make this zero copy?
+		symbolic_compressed_block workscb;
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
 			recompute_ideal_colors_1plane(
@@ -425,13 +429,13 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)
 			{
-				scb->color_formats[j] = pack_color_endpoints(
+				workscb.color_formats[j] = pack_color_endpoints(
 				    eix[decimation_mode].ep.endpt0[j],
 				    eix[decimation_mode].ep.endpt1[j],
 				    rgbs_colors[j],
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
-				    scb->color_values[j],
+				    workscb.color_values[j],
 				    color_quantization_level[i]);
 			}
 
@@ -439,12 +443,12 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 			// bits to store colors; let's see if we can take advantage of this:
 			// requantize all the colors and see if the endpoint modes remain the same;
 			// if they do, then exploit it.
-			scb->color_formats_matched = 0;
+			workscb.color_formats_matched = 0;
 
-			if ((partition_count >= 2 && scb->color_formats[0] == scb->color_formats[1]
+			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
 			    && color_quantization_level[i] != color_quantization_level_mod[i])
-			    && (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2]
-			    && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
+			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
+			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
 				int colorvals[4][12];
 				int color_formats_mod[4] = { 0 };
@@ -459,80 +463,128 @@ static void compress_symbolic_block_fixed_partition_1_plane(
 					    colorvals[j],
 					    color_quantization_level_mod[i]);
 				}
+
 				if (color_formats_mod[0] == color_formats_mod[1]
 				    && (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2]
 				    && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
 				{
-					scb->color_formats_matched = 1;
+					workscb.color_formats_matched = 1;
 					for (int j = 0; j < 4; j++)
 					{
 						for (int k = 0; k < 12; k++)
 						{
-							scb->color_values[j][k] = colorvals[j][k];
+							workscb.color_values[j][k] = colorvals[j][k];
 						}
 					}
 
 					for (int j = 0; j < 4; j++)
 					{
-						scb->color_formats[j] = color_formats_mod[j];
+						workscb.color_formats[j] = color_formats_mod[j];
 					}
 				}
 			}
 
 			// store header fields
-			scb->partition_count = partition_count;
-			scb->partition_index = partition_index;
-			scb->color_quantization_level = scb->color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
-			scb->block_mode = qw_bm.mode_index;
-			scb->error_block = 0;
+			workscb.partition_count = partition_count;
+			workscb.partition_index = partition_index;
+			workscb.color_quantization_level = workscb.color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
+			workscb.block_mode = qw_bm.mode_index;
+			workscb.error_block = 0;
 
-			if (scb->color_quantization_level < 4)
+			if (workscb.color_quantization_level < 4)
 			{
-				scb->error_block = 1;	// should never happen, but cannot prove it impossible.
+				workscb.error_block = 1; // should never happen, but cannot prove it impossible.
 			}
 
-			#if defined(ASTCENC_DIAGNOSTICS)
+			// Pre-realign test
+			if (l == 0)
 			{
 				for (int j = 0; j < weights_to_copy; j++)
 				{
-					scb->weights[j] = u8_weight_src[j];
+					workscb.weights[j] = u8_weight_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
 				trace_add_data("error_prerealign", errorval);
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+				// Average refinement improvement is 3.5% per iteration
+				// (allow 5%), but the first iteration can help more so we give
+				// it a extra 10% leeway. Use this knowledge to drive a
+				// heuristic to skip blocks that are unlikely to catch up with
+				// the best block we have already.
+				int iters_remaining = max_refinement_iters - l;
+				float threshold = (0.05f * iters_remaining) + 1.1f;
+				if (errorval > (threshold * best_errorval_in_scb))
+				{
+					break;
+				}
+
+				if (errorval < best_errorval_in_scb)
+				{
+					best_errorval_in_scb = errorval;
+					workscb.errorval = errorval;
+					scb = workscb;
+
+					if (errorval < tune_errorval_threshold)
+					{
+						return errorval;
+					}
+				}
 			}
-			#endif
 
 			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
-				decode_mode, bsd, blk, ewb, scb, u8_weight_src, nullptr);
+			    decode_mode, bsd, blk, ewb, &workscb,
+			    u8_weight_src, nullptr);
+
+			// Post-realign test
+			for (int j = 0; j < weights_to_copy; j++)
+			{
+				workscb.weights[j] = u8_weight_src[j];
+			}
+
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+			// Average refinement improvement is 3.5% per iteration, so skip
+			// blocks that are unlikely to catch up with the best block we
+			// have already. Assume a 5% per step to give benefit of the doubt
+			int iters_remaining = max_refinement_iters - 1 - l;
+			float threshold = (0.05f * iters_remaining) + 1.0f;
+			if (errorval > (threshold * best_errorval_in_scb))
+			{
+				break;
+			}
+
+			if (errorval < best_errorval_in_scb)
+			{
+				best_errorval_in_scb = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+
+				if (errorval < tune_errorval_threshold)
+				{
+					return errorval;
+				}
+			}
 
 			if (adjustments == 0)
 			{
 				break;
 			}
 		}
-
-		for (int j = 0; j < weights_to_copy; j++)
-		{
-			scb->weights[j] = u8_weight_src[j];
-		}
-
-		#if defined(ASTCENC_DIAGNOSTICS)
-		{
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
-			trace_add_data("error_postrealign", errorval);
-		}
-		#endif
-
-		scb++;
 	}
+
+	return best_errorval_in_mode;
 }
 
-static void compress_symbolic_block_fixed_partition_2_planes(
+static float compress_symbolic_block_fixed_partition_2_planes(
 	astcenc_profile decode_mode,
 	bool only_always,
 	int tune_candidate_limit,
+	float tune_errorval_threshold,
 	int max_refinement_iters,
 	const block_size_descriptor* bsd,
 	int partition_count,
@@ -540,7 +592,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	int separate_component,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	symbolic_compressed_block* scb,
+	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
 	static const int free_bits_for_partition_count[5] = {
@@ -682,8 +734,7 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		min_wt_cutoff2 = 1e30f;
 	}
 
-	min_wt_cutoff1 = astc::min(astc::min(min_ep1.r, min_ep1.g),
-	                           astc::min(min_ep1.b, min_ep1.a));
+	min_wt_cutoff1 = astc::min(min_ep1.r, min_ep1.g, min_ep1.b, min_ep1.a);
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
@@ -780,6 +831,11 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quantization_level, color_quantization_level_mod);
 
+	// then iterate over the tune_candidate_limit believed-to-be-best modes to
+	// find out which one is actually best.
+	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_scb = scb.errorval;
+
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		TRACE_NODE(node0, "candidate");
@@ -788,8 +844,6 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		if (qw_packed_index < 0)
 		{
 			trace_add_data("failed", "error_block");
-			scb->error_block = 1;
-			scb++;
 			continue;
 		}
 
@@ -819,6 +873,8 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 		float4 rgbs_colors[4];
 		float4 rgbo_colors[4];
 
+		// TODO: Ping-pong between two buffers and make this zero copy
+		symbolic_compressed_block workscb;
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
 			recompute_ideal_colors_2planes(
@@ -828,19 +884,20 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)
 			{
-				scb->color_formats[j] = pack_color_endpoints(
+				workscb.color_formats[j] = pack_color_endpoints(
 				                            epm.endpt0[j], epm.endpt1[j],
 				                            rgbs_colors[j], rgbo_colors[j],
 				                            partition_format_specifiers[i][j],
-				                            scb->color_values[j],
+				                            workscb.color_values[j],
 				                            color_quantization_level[i]);
 			}
-			scb->color_formats_matched = 0;
 
-			if ((partition_count >= 2 && scb->color_formats[0] == scb->color_formats[1]
+			workscb.color_formats_matched = 0;
+
+			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
 			    && color_quantization_level[i] != color_quantization_level_mod[i])
-			    && (partition_count == 2 || (scb->color_formats[0] == scb->color_formats[2]
-			    && (partition_count == 3 || (scb->color_formats[0] == scb->color_formats[3])))))
+			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
+			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
 				int colorvals[4][12];
 				int color_formats_mod[4] = { 0 };
@@ -860,72 +917,119 @@ static void compress_symbolic_block_fixed_partition_2_planes(
 				    && (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2]
 				    && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
 				{
-					scb->color_formats_matched = 1;
+					workscb.color_formats_matched = 1;
 					for (int j = 0; j < 4; j++)
 					{
 						for (int k = 0; k < 12; k++)
 						{
-							scb->color_values[j][k] = colorvals[j][k];
+							workscb.color_values[j][k] = colorvals[j][k];
 						}
 					}
 
 					for (int j = 0; j < 4; j++)
 					{
-						scb->color_formats[j] = color_formats_mod[j];
+						workscb.color_formats[j] = color_formats_mod[j];
 					}
 				}
 			}
 
 			// store header fields
-			scb->partition_count = partition_count;
-			scb->partition_index = partition_index;
-			scb->color_quantization_level = scb->color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
-			scb->block_mode = qw_bm.mode_index;
-			scb->plane2_color_component = separate_component;
-			scb->error_block = 0;
+			workscb.partition_count = partition_count;
+			workscb.partition_index = partition_index;
+			workscb.color_quantization_level = workscb.color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
+			workscb.block_mode = qw_bm.mode_index;
+			workscb.plane2_color_component = separate_component;
+			workscb.error_block = 0;
 
-			if (scb->color_quantization_level < 4)
+			if (workscb.color_quantization_level < 4)
 			{
-				scb->error_block = 1;	// should never happen, but cannot prove it impossible
+				workscb.error_block = 1;	// should never happen, but cannot prove it impossible
 			}
 
-			#if defined(ASTCENC_DIAGNOSTICS)
+			// Pre-realign test
+			if (l == 0)
 			{
 				for (int j = 0; j < weights_to_copy; j++)
 				{
-					scb->weights[j] = u8_weight1_src[j];
-					scb->weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+					workscb.weights[j] = u8_weight1_src[j];
+					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
 				trace_add_data("error_prerealign", errorval);
-			}
-			#endif
+				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
+				// Average refinement improvement is 3.5% per iteration
+				// (allow 5%), but the first iteration can help more so we give
+				// it a extra 10% leeway. Use this knowledge to drive a
+				// heuristic to skip blocks that are unlikely to catch up with
+				// the best block we have already.
+				int iters_remaining = max_refinement_iters - l;
+				float threshold = (0.05f * iters_remaining) + 1.1f;
+				if (errorval > (threshold * best_errorval_in_scb))
+				{
+					break;
+				}
+
+				if (errorval < best_errorval_in_scb)
+				{
+					best_errorval_in_scb = errorval;
+					workscb.errorval = errorval;
+					scb = workscb;
+
+					if (errorval < tune_errorval_threshold)
+					{
+						return errorval;
+					}
+				}
+			}
+
+			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
-				decode_mode, bsd, blk, ewb, scb, u8_weight1_src, u8_weight2_src);
+			    decode_mode, bsd, blk, ewb, &workscb,
+			    u8_weight1_src, u8_weight2_src);
+
+			// Post-realign test
+			for (int j = 0; j < weights_to_copy; j++)
+			{
+				workscb.weights[j] = u8_weight1_src[j];
+				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+			}
+
+			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			trace_add_data("error_postrealign", errorval);
+			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
+
+			// Average refinement improvement is 3.5% per iteration, so skip
+			// blocks that are unlikely to catch up with the best block we
+			// have already. Assume a 5% per step to give benefit of the doubt
+			int iters_remaining = max_refinement_iters - 1 - l;
+			float threshold = (0.05f * iters_remaining) + 1.0f;
+			if (errorval > (threshold * best_errorval_in_scb))
+			{
+				break;
+			}
+
+			if (errorval < best_errorval_in_scb)
+			{
+				best_errorval_in_scb = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+
+				if (errorval < tune_errorval_threshold)
+				{
+					return errorval;
+				}
+			}
 
 			if (adjustments == 0)
 			{
 				break;
 			}
 		}
-
-		for (int j = 0; j < weights_to_copy; j++)
-		{
-			scb->weights[j] = u8_weight1_src[j];
-			scb->weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
-		}
-
-		#if defined(ASTCENC_DIAGNOSTICS)
-		{
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, scb, blk, ewb);
-			trace_add_data("error_postrealign", errorval);
-		}
-		#endif
-
-		scb++;
 	}
+
+	return best_errorval_in_mode;
 }
 
 void expand_deblock_weights(
@@ -1331,10 +1435,8 @@ void compress_block(
 	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
 #endif
 
-	symbolic_compressed_block *tempblocks = tmpbuf->tempblocks;
-
-	float error_of_best_block = 1e20f;
-
+	// Set SCB and mode errors to a very high error value
+	scb.errorval = 1e30f;
 	float best_errorvals_in_modes[13];
 	for (int i = 0; i < 13; i++)
 	{
@@ -1351,10 +1453,12 @@ void compress_block(
 	// disabled for 4x4 and 5x4 blocks where it nearly always slows down the
 	// compression and slightly reduces image quality.
 
-	bool modecutoffs[2] = { true, false };
-	float errorval_mult[2] = { 2.5f, 1.0f };
+	float errorval_mult[2] = {
+		1.0f / ctx.config.tune_mode0_mse_overshoot,
+		1.0f
+	};
 
-	float best_errorval_in_mode;
+	static const float errorval_overshoot = 1.0f / ctx.config.tune_refinement_mse_overshoot;
 
 	int start_trial = bsd->texel_count < (int)TUNE_MAX_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
@@ -1364,33 +1468,16 @@ void compress_block(
 		trace_add_data("plane_count", 1);
 		trace_add_data("search_mode", i);
 
-		compress_symbolic_block_fixed_partition_1_plane(
-		    decode_mode, modecutoffs[i],
+		float errorval = compress_symbolic_block_fixed_partition_1_plane(
+		    decode_mode, i == 0,
 		    ctx.config.tune_candidate_limit,
+		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
-		    bsd, 1, 0, blk, ewb, tempblocks, &tmpbuf->planes);
-
-		best_errorval_in_mode = 1e30f;
-		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
-		{
-			if (tempblocks[j].error_block)
-			{
-				continue;
-			}
-
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-			if (errorval < error_of_best_block)
-			{
-				error_of_best_block = errorval;
-				scb = tempblocks[j];
-			}
-		}
+		    bsd, 1, 0, blk, ewb, scb, &tmpbuf->planes);
 
 		// Mode 0
-		best_errorvals_in_modes[0] = best_errorval_in_mode;
-		if (error_of_best_block * errorval_mult[i] < error_threshold)
+		best_errorvals_in_modes[0] = errorval;
+		if (errorval < (error_threshold * errorval_mult[i]))
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1427,38 +1514,18 @@ void compress_block(
 			continue;
 		}
 
-		compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 		    decode_mode, false,
 		    ctx.config.tune_candidate_limit,
+		    error_threshold * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
 		    bsd, 1,	// partition count
 		    0,	// partition index
 		    i,	// the color component to test a separate plane of weights for.
-		    blk, ewb, tempblocks, &tmpbuf->planes);
+		    blk, ewb, scb, &tmpbuf->planes);
 
-		best_errorval_in_mode = 1e30f;
-		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
-		{
-			if (tempblocks[j].error_block)
-			{
-				continue;
-			}
-
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-
-			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-			if (errorval < error_of_best_block)
-			{
-				error_of_best_block = errorval;
-				scb = tempblocks[j];
-			}
-
-			// Modes 1-4
-			best_errorvals_in_modes[i + 1] = best_errorval_in_mode;
-		}
-
-		if (error_of_best_block < error_threshold)
+		// Modes 7, 10 (13 is unreachable)
+		if (errorval < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
@@ -1485,36 +1552,17 @@ void compress_block(
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
-			compress_symbolic_block_fixed_partition_1_plane(
+			float errorval = compress_symbolic_block_fixed_partition_1_plane(
 			    decode_mode, false,
 			    ctx.config.tune_candidate_limit,
+			    error_threshold * errorval_overshoot,
 			    ctx.config.tune_refinement_limit,
 			    bsd, partition_count, partition_indices_1plane[i],
-			    blk, ewb, tempblocks, &tmpbuf->planes);
-
-			best_errorval_in_mode = 1e30f;
-			for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
-			{
-				if (tempblocks[j].error_block)
-				{
-					continue;
-				}
-
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-
-				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-				if (errorval < error_of_best_block)
-				{
-					error_of_best_block = errorval;
-					scb = tempblocks[j];
-				}
-			}
+			    blk, ewb, scb, &tmpbuf->planes);
 
 			// Modes 5, 6, 8, 9, 11, 12
-			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = best_errorval_in_mode;
-
-			if (error_of_best_block < error_threshold)
+			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = errorval;
+			if (errorval < error_threshold)
 			{
 				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
@@ -1555,39 +1603,20 @@ void compress_block(
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
 
-		compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 			decode_mode,
 			false,
 			ctx.config.tune_candidate_limit,
+			error_threshold * errorval_overshoot,
 			ctx.config.tune_refinement_limit,
 			bsd,
 			partition_count,
 			partition_index_2planes & (PARTITION_COUNT - 1),
 			partition_index_2planes >> PARTITION_BITS,
-			blk, ewb, tempblocks, &tmpbuf->planes);
-
-		best_errorval_in_mode = 1e30f;
-		for (unsigned int j = 0; j < ctx.config.tune_candidate_limit; j++)
-		{
-			if (tempblocks[j].error_block)
-			{
-				continue;
-			}
-
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, tempblocks + j, blk, ewb);
-			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
-
-			if (errorval < error_of_best_block)
-			{
-				error_of_best_block = errorval;
-				scb = tempblocks[j];
-			}
-		}
+			blk, ewb, scb, &tmpbuf->planes);
 
 		// Modes 7, 10 (13 is unreachable)
-		best_errorvals_in_modes[3 * (partition_count - 2) + 5 + 2] = best_errorval_in_mode;
-
-		if (error_of_best_block < error_threshold)
+		if (errorval < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;

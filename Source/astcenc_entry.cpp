@@ -252,12 +252,14 @@ static astcenc_error validate_config(
 	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
+	config.tune_mode0_mse_overshoot = astc::max(config.tune_mode0_mse_overshoot, 1.0f);
+	config.tune_refinement_mse_overshoot = astc::max(config.tune_refinement_mse_overshoot, 1.0f);
 	config.tune_partition_early_out_limit = astc::max(config.tune_partition_early_out_limit, 0.0f);
 	config.tune_two_plane_early_out_limit = astc::max(config.tune_two_plane_early_out_limit, 0.0f);
 
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
-	                       astc::max(config.cw_b_weight, config.cw_a_weight));
+	                             astc::max(config.cw_b_weight, config.cw_a_weight));
 	if (max_weight > 0.0f)
 	{
 		max_weight /= 1000.0f;
@@ -307,6 +309,12 @@ astcenc_error astcenc_config_init(
 	// Process the performance preset; note that this must be done before we
 	// process any additional settings, such as color profile and flags, which
 	// may replace some of these settings with more use case tuned values
+
+	// Note that the mse_overshoot entries are scaling factors relative to the
+	// base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
+	// base db_limit, so we may actually use lower ratios for the more through
+	// search presets because the underlying db_limit is so much higher.
+
 	switch(preset)
 	{
 	case ASTCENC_PRE_FASTEST:
@@ -315,6 +323,12 @@ astcenc_error astcenc_config_init(
 		config.tune_refinement_limit = 1;
 		config.tune_candidate_limit = astc::min(1u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(70 - 35 * ltexels, 53 - 19 * ltexels);
+
+		// Fast and loose - exit as soon as we get a block within the target.
+		// This costs an average of around 0.7 dB PSNR ...
+		config.tune_mode0_mse_overshoot = 1.0f;
+		config.tune_refinement_mse_overshoot = 1.0f;
+
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
 		break;
@@ -324,6 +338,12 @@ astcenc_error astcenc_config_init(
 		config.tune_refinement_limit = 1;
 		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(85 - 35 * ltexels, 63 - 19 * ltexels);
+
+		// Allow some early outs if over threshold.
+		// This costs an average of around 0.1dB PSNR.
+		config.tune_mode0_mse_overshoot = 2.5f;
+		config.tune_refinement_mse_overshoot = 2.5f;
+
 		config.tune_partition_early_out_limit = 1.0f;
 		config.tune_two_plane_early_out_limit = 0.5f;
 		break;
@@ -333,6 +353,12 @@ astcenc_error astcenc_config_init(
 		config.tune_refinement_limit = 2;
 		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(95 - 35 * ltexels, 70 - 19 * ltexels);
+
+		// Allow some early outs if over threshold.
+		// This costs an average of around 0.05dB PSNR.
+		config.tune_mode0_mse_overshoot = 1.75f;
+		config.tune_refinement_mse_overshoot = 1.75f;
+
 		config.tune_partition_early_out_limit = 1.2f;
 		config.tune_two_plane_early_out_limit = 0.75f;
 		break;
@@ -342,6 +368,11 @@ astcenc_error astcenc_config_init(
 		config.tune_refinement_limit = 4;
 		config.tune_candidate_limit = astc::min(3u, TUNE_MAX_TRIAL_CANDIDATES);
 		config.tune_db_limit = astc::max(105 - 35 * ltexels, 77 - 19 * ltexels);
+
+		// Disable early outs (few blocks hit PSNR target anyway)
+		config.tune_mode0_mse_overshoot = 100.0f;
+		config.tune_refinement_mse_overshoot = 100.0f;
+
 		config.tune_partition_early_out_limit = 2.5f;
 		config.tune_two_plane_early_out_limit = 0.95f;
 		break;
@@ -350,6 +381,11 @@ astcenc_error astcenc_config_init(
 		config.tune_block_mode_limit = 100;
 		config.tune_refinement_limit = 4;
 		config.tune_candidate_limit = astc::min(4u, TUNE_MAX_TRIAL_CANDIDATES);
+
+		// Disable early outs (few blocks hit PSNR target anyway)
+		config.tune_mode0_mse_overshoot = 100.0f;
+		config.tune_refinement_mse_overshoot = 100.0f;
+
 		config.tune_db_limit = 999.0f;
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;

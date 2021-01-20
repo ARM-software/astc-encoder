@@ -696,6 +696,7 @@ struct symbolic_compressed_block
 	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 	// Quantized and decimated weights. In the case of dual plane, the second
 	// index plane starts at weights[PLANE2_WEIGHTS_OFFSET]
+	float errorval;             // The error of the current encoding
 	uint8_t weights[MAX_WEIGHTS_PER_BLOCK];
 };
 
@@ -1150,7 +1151,6 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 struct compress_symbolic_block_buffers
 {
 	error_weight_block ewb;
-	symbolic_compressed_block tempblocks[TUNE_MAX_TRIAL_CANDIDATES];
 	compress_fixed_partition_buffers planes;
 };
 
