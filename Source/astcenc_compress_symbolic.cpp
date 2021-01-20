@@ -153,17 +153,17 @@ static int realign_weights(
 				const float *texel_weights_float = it->texel_weights_float_texel[we_idx][te_idx];
 				float twf0 = texel_weights_float[0];
 				float weight_base =
-				    ((uqw * twf0
-				    + uq_pl_weights[texel_weights[1]]  * texel_weights_float[1])
-				    + (uq_pl_weights[texel_weights[2]] * texel_weights_float[2]
-				    + uq_pl_weights[texel_weights[3]]  * texel_weights_float[3]));
+				    ((static_cast<float>(uqw) * twf0
+				    + static_cast<float>(uq_pl_weights[texel_weights[1]])  * texel_weights_float[1])
+				    + (static_cast<float>(uq_pl_weights[texel_weights[2]]) * texel_weights_float[2]
+				    + static_cast<float>(uq_pl_weights[texel_weights[3]]) * texel_weights_float[3]));
 
 				int partition = pt->partition_of_texel[texel];
 
 				weight_base = weight_base + 0.5f;
 				float plane_weight = astc::flt_rd(weight_base);
-				float plane_up_weight = astc::flt_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
-				float plane_down_weight = astc::flt_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
+				float plane_up_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_next_dif) * twf0) - plane_weight;
+				float plane_down_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_prev_dif) * twf0) - plane_weight;
 
 				float4 color_offset = offset[partition];
 				float4 color_base   = endpnt0f[partition];
@@ -514,7 +514,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				// heuristic to skip blocks that are unlikely to catch up with
 				// the best block we have already.
 				int iters_remaining = max_refinement_iters - l;
-				float threshold = (0.05f * iters_remaining) + 1.1f;
+				float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.1f;
 				if (errorval > (threshold * best_errorval_in_scb))
 				{
 					break;
@@ -552,7 +552,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			// blocks that are unlikely to catch up with the best block we
 			// have already. Assume a 5% per step to give benefit of the doubt
 			int iters_remaining = max_refinement_iters - 1 - l;
-			float threshold = (0.05f * iters_remaining) + 1.0f;
+			float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
 			{
 				break;
@@ -965,7 +965,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				// heuristic to skip blocks that are unlikely to catch up with
 				// the best block we have already.
 				int iters_remaining = max_refinement_iters - l;
-				float threshold = (0.05f * iters_remaining) + 1.1f;
+				float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.1f;
 				if (errorval > (threshold * best_errorval_in_scb))
 				{
 					break;
@@ -1004,7 +1004,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			// blocks that are unlikely to catch up with the best block we
 			// have already. Assume a 5% per step to give benefit of the doubt
 			int iters_remaining = max_refinement_iters - 1 - l;
-			float threshold = (0.05f * iters_remaining) + 1.0f;
+			float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
 			{
 				break;
@@ -1039,9 +1039,9 @@ void expand_deblock_weights(
 	unsigned int ydim = ctx.config.block_y;
 	unsigned int zdim = ctx.config.block_z;
 
-	float centerpos_x = (xdim - 1) * 0.5f;
-	float centerpos_y = (ydim - 1) * 0.5f;
-	float centerpos_z = (zdim - 1) * 0.5f;
+	float centerpos_x = static_cast<float>(xdim - 1) * 0.5f;
+	float centerpos_y = static_cast<float>(ydim - 1) * 0.5f;
+	float centerpos_z = static_cast<float>(zdim - 1) * 0.5f;
 	float *bef = ctx.deblock_weights;
 
 	for (unsigned int z = 0; z < zdim; z++)
@@ -1050,9 +1050,9 @@ void expand_deblock_weights(
 		{
 			for (unsigned int x = 0; x < xdim; x++)
 			{
-				float xdif = (x - centerpos_x) / xdim;
-				float ydif = (y - centerpos_y) / ydim;
-				float zdif = (z - centerpos_z) / zdim;
+				float xdif = (static_cast<float>(x) - centerpos_x) / static_cast<float>(xdim);
+				float ydif = (static_cast<float>(y) - centerpos_y) / static_cast<float>(ydim);
+				float zdif = (static_cast<float>(z) - centerpos_z) / static_cast<float>(zdim);
 
 				float wdif = 0.36f;
 				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);

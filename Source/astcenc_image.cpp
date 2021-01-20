@@ -347,10 +347,10 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = r / 255.0f;
-					pb->data_g[idx] = g / 255.0f;
-					pb->data_b[idx] = b / 255.0f;
-					pb->data_a[idx] = a / 255.0f;
+					pb->data_r[idx] = static_cast<float>(r) / 255.0f;
+					pb->data_g[idx] = static_cast<float>(g) / 255.0f;
+					pb->data_b[idx] = static_cast<float>(b) / 255.0f;
+					pb->data_a[idx] = static_cast<float>(a) / 255.0f;
 					idx++;
 				}
 			}

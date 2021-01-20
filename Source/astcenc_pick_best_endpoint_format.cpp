@@ -117,8 +117,10 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
 	float rgb_range_error = dot(float3(sum_range_error.r, sum_range_error.g, sum_range_error.b),
-	                            float3(error_weight.r, error_weight.g, error_weight.b)) * 0.5f * partition_size;
-	float alpha_range_error = sum_range_error.a * error_weight.a * 0.5f * partition_size;
+	                            float3(error_weight.r, error_weight.g, error_weight.b))
+	                      * 0.5f * static_cast<float>(partition_size);
+	float alpha_range_error = sum_range_error.a * error_weight.a
+	                        * 0.5f * static_cast<float>(partition_size);
 
 	if (encode_hdr_rgb)
 	{
@@ -268,7 +270,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 			// base_quant_error should depend on the scale-factor that would be used
 			// during actual encode of the color value.
 
-			float base_quant_error = baseline_quant_error[i] * partition_size * 1.0f;
+			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
 			float alpha_quantization_error = error_weight.a * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
@@ -315,7 +317,7 @@ static void compute_color_error_for_every_integer_count_and_quantization_level(
 		// pick among the available LDR endpoint modes
 		for (int i = 4; i < 21; i++)
 		{
-			float base_quant_error = baseline_quant_error[i] * partition_size * 1.0f;
+			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
 			float alpha_quantization_error = error_weight.a * base_quant_error;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;

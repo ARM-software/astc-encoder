@@ -980,7 +980,7 @@ static void quantize_hdr_rgbo3(
 		quantize_and_unquantize_retain_top_two_bits(quantization_level, r_lowbits, &r_quantval, &r_uquantval);
 
 		r_intval = (r_intval & ~0x3f) | (r_uquantval & 0x3f);
-		float r_fval = r_intval * mode_rscale;
+		float r_fval = static_cast<float>(r_intval) * mode_rscale;
 
 		// next, recompute G and B, then quantize and unquantize them.
 		float g_fval = r_fval - color.g;
@@ -1085,8 +1085,8 @@ static void quantize_hdr_rgbo3(
 		g_intval = (g_intval & ~0x1f) | (g_uquantval & 0x1f);
 		b_intval = (b_intval & ~0x1f) | (b_uquantval & 0x1f);
 
-		g_fval = g_intval * mode_rscale;
-		b_fval = b_intval * mode_rscale;
+		g_fval = static_cast<float>(g_intval) * mode_rscale;
+		b_fval = static_cast<float>(b_intval) * mode_rscale;
 
 		// finally, recompute the scale value, based on the errors
 		// introduced to red, green and blue.
@@ -1173,7 +1173,7 @@ static void quantize_hdr_rgbo3(
 	{
 		vals[i] = astc::clamp(vals[i], 0.0f, 65020.0f);
 		ivals[i] = astc::flt2int_rtn(vals[i] * (1.0f / 512.0f));
-		cvals[i] = ivals[i] * 512.0f;
+		cvals[i] = static_cast<float>(ivals[i]) * 512.0f;
 	}
 
 	float rgb_errorsum = (cvals[0] - vals[0]) + (cvals[1] - vals[1]) + (cvals[2] - vals[2]);
@@ -1329,7 +1329,7 @@ static void quantize_hdr_rgb3(
 		int a_quantval = color_quantization_tables[quantization_level][a_lowbits];
 		int a_uquantval = color_unquantization_tables[quantization_level][a_quantval];
 		a_intval = (a_intval & ~0xFF) | a_uquantval;
-		float a_fval = a_intval * mode_rscale;
+		float a_fval = static_cast<float>(a_intval) * mode_rscale;
 
 		// next, recompute C, then quantize and unquantize it
 		float c_fval = a_fval - color0.r;
@@ -1351,7 +1351,7 @@ static void quantize_hdr_rgb3(
 		int c_uquantval;
 		quantize_and_unquantize_retain_top_two_bits(quantization_level, c_lowbits, &c_quantval, &c_uquantval);
 		c_intval = (c_intval & ~0x3F) | (c_uquantval & 0x3F);
-		c_fval = c_intval * mode_rscale;
+		c_fval = static_cast<float>(c_intval) * mode_rscale;
 
 		// next, recompute B0 and B1, then quantize and unquantize them
 		float b0_fval = a_fval - color1.g;
@@ -1423,8 +1423,8 @@ static void quantize_hdr_rgb3(
 
 		b0_intval = (b0_intval & ~0x3f) | (b0_uquantval & 0x3f);
 		b1_intval = (b1_intval & ~0x3f) | (b1_uquantval & 0x3f);
-		b0_fval = b0_intval * mode_rscale;
-		b1_fval = b1_intval * mode_rscale;
+		b0_fval = static_cast<float>(b0_intval) * mode_rscale;
+		b1_fval = static_cast<float>(b1_intval) * mode_rscale;
 
 		// finally, recompute D0 and D1, then quantize and unquantize them
 		float d0_fval = a_fval - b0_fval - c_fval - color0.g;

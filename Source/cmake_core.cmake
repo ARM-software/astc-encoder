@@ -108,7 +108,6 @@ target_compile_options(astc${CODEC}-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-float-conversion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
 

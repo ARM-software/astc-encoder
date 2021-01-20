@@ -80,8 +80,8 @@ void prepare_angular_tables()
 
 		for (int j = 0; j < SINCOS_STEPS; j++)
 		{
-			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * j));
-			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * j));
+			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
+			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
 		}
 
 		max_angular_steps_needed_for_quant_steps[i + 1] = astc::min(i + 1, ANGULAR_STEPS - 1);
@@ -335,8 +335,8 @@ static void compute_angular_endpoints_for_quantization_levels(
 		int hwi = lwi + q - 1;
 		float offset = angular_offsets[bsi];
 
-		low_value[i] = offset + lwi * stepsize;
-		high_value[i] = offset + hwi * stepsize;
+		low_value[i] = offset + static_cast<float>(lwi) * stepsize;
+		high_value[i] = offset + static_cast<float>(hwi) * stepsize;
 	}
 }
 
