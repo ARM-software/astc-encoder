@@ -100,7 +100,6 @@ target_compile_options(astc${CODEC}-${ISA_SIMD}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-compat-pedantic>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-switch-enum>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>
 

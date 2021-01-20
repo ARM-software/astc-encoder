@@ -128,7 +128,8 @@ static astcenc_error validate_flags(
 static astcenc_error validate_compression_swz(
 	astcenc_swz swizzle
 ) {
-	switch(swizzle)
+	// Not all enum values are handled; SWZ_Z is invalid for compression
+	switch(static_cast<int>(swizzle))
 	{
 	case ASTCENC_SWZ_R:
 	case ASTCENC_SWZ_G:
@@ -875,8 +876,12 @@ astcenc_error astcenc_decompress_image(
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {
-	switch(status)
+	// Values in this enum are from an external user, so not guaranteed to be
+	// bounded to the enum values
+	switch(static_cast<int>(status))
 	{
+	case ASTCENC_SUCCESS:
+		return "ASTCENC_SUCCESS";
 	case ASTCENC_ERR_OUT_OF_MEM:
 		return "ASTCENC_ERR_OUT_OF_MEM";
 	case ASTCENC_ERR_BAD_CPU_FLOAT:
