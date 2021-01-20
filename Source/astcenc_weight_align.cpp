@@ -51,49 +51,15 @@
 #include <cassert>
 #include <cstring>
 
-#if ASTCENC_SIMD_WIDTH <= 4
-    #define ANGULAR_STEPS 44
-#elif ASTCENC_SIMD_WIDTH == 8
-    // AVX code path loops over these tables 8 elements at a time,
-    // so make sure to have their size a multiple of 8.
-    #define ANGULAR_STEPS 48
-#else
-    #error Unknown SIMD width
-#endif
-static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0, "ANGULAR_STEPS should be multiple of ASTCENC_SIMD_WIDTH");
-
-alignas(ASTCENC_VECALIGN) static const float angular_steppings[ANGULAR_STEPS] = {
-	 1.0f, 1.25f, 1.5f, 1.75f,
-
-	 2.0f,  2.5f, 3.0f, 3.5f,
-	 4.0f,  4.5f, 5.0f, 5.5f,
-	 6.0f,  6.5f, 7.0f, 7.5f,
-
-	 8.0f,  9.0f, 10.0f, 11.0f,
-	12.0f, 13.0f, 14.0f, 15.0f,
-	16.0f, 17.0f, 18.0f, 19.0f,
-	20.0f, 21.0f, 22.0f, 23.0f,
-	24.0f, 25.0f, 26.0f, 27.0f,
-	28.0f, 29.0f, 30.0f, 31.0f,
-	32.0f, 33.0f, 34.0f, 35.0f,
-#if ANGULAR_STEPS >= 48
-    // This is "redundant" and only used in more-than-4-wide
-    // SIMD code paths, to make the steps table size
-    // be a multiple of SIMD width. Values are replicated
-    // from last entry so that AVX2 and SSE code paths
-    // return the same results.
-    35.0f, 35.0f, 35.0f, 35.0f,
-#endif
-};
-
-alignas(ASTCENC_VECALIGN) static float stepsizes[ANGULAR_STEPS];
-alignas(ASTCENC_VECALIGN) static float stepsizes_sqr[ANGULAR_STEPS];
+#define ANGULAR_STEPS 40
+static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
+              "ANGULAR_STEPS must be multiple of ASTCENC_SIMD_WIDTH");
 
 static int max_angular_steps_needed_for_quant_level[13];
 
-// yes, the next-to-last entry is supposed to have the value 33. This because under
-// ASTC, the 32-weight mode leaves a double-sized hole in the middle of the
-// weight space, so we are better off matching 33 weights than 32.
+// Yes, the next-to-last entry is supposed to have the value 33. This because
+// the 32-weight mode leaves a double-sized hole in the middle of the weight
+// space, so we are better off matching 33 weights than 32.
 static const int quantization_steps_for_level[13] = {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36
 };
@@ -110,17 +76,15 @@ void prepare_angular_tables()
 	int max_angular_steps_needed_for_quant_steps[40];
 	for (int i = 0; i < ANGULAR_STEPS; i++)
 	{
-		stepsizes[i] = 1.0f / angular_steppings[i];
-		stepsizes_sqr[i] = stepsizes[i] * stepsizes[i];
+		float angle_step = (float)(i + 1);
 
 		for (int j = 0; j < SINCOS_STEPS; j++)
 		{
-			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
-			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angular_steppings[i] * j));
+			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * j));
+			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * j));
 		}
 
-		int p = astc::flt2int_rd(angular_steppings[i]) + 1;
-		max_angular_steps_needed_for_quant_steps[p] = astc::min(i + 1, ANGULAR_STEPS - 1);
+		max_angular_steps_needed_for_quant_steps[i + 1] = astc::min(i + 1, ANGULAR_STEPS - 1);
 	}
 
 	for (int i = 0; i < 13; i++)
@@ -139,15 +103,11 @@ static void compute_angular_offsets(
 	int max_angular_steps,
 	float* offsets
 ) {
-	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS];
-	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS];
-	std::memset(anglesum_x, 0, max_angular_steps*sizeof(anglesum_x[0]));
-	std::memset(anglesum_y, 0, max_angular_steps*sizeof(anglesum_y[0]));
-
-	promise(samplecount > 0);
-	promise(max_angular_steps > 0);
+	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS] { 0 };
+	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS] { 0 };
 
 	// compute the angle-sums.
+	promise(samplecount > 0);
 	for (int i = 0; i < samplecount; i++)
 	{
 		float sample = samples[i];
@@ -160,6 +120,7 @@ static void compute_angular_offsets(
 		const float *cosptr = cos_table[isample];
 
 		vfloat sample_weightv(sample_weight);
+		promise(max_angular_steps > 0);
 		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 		{
 			vfloat cp = loada(&cosptr[j]);
@@ -173,10 +134,13 @@ static void compute_angular_offsets(
 
 	// post-process the angle-sums
 	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
+	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
 	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	{
+		vfloat ssize = fast_recip(rcp_stepsize);
+		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
 		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));
-		vfloat ofs = angle * (loada(&stepsizes[i]) * mult);
+		vfloat ofs = angle * ssize * mult;
 		storea(ofs, &offsets[i]);
 	}
 }
@@ -184,7 +148,6 @@ static void compute_angular_offsets(
 // for a given step-size and a given offset, compute the
 // lowest and highest weight that results from quantizing using the stepsize & offset.
 // also, compute the resulting error.
-
 static void compute_lowest_and_highest_weight(
 	int samplecount,
 	const float *samples,
@@ -201,6 +164,8 @@ static void compute_lowest_and_highest_weight(
 	promise(samplecount > 0);
 	promise(max_angular_steps > 0);
 
+	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
+
 	// Arrays are always multiple of SIMD width (ANGULAR_STEPS), so this is safe even if overshoot max
 	for (int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
@@ -209,7 +174,6 @@ static void compute_lowest_and_highest_weight(
 		vfloat errval = vfloat::zero();
 		vfloat cut_low_weight_err = vfloat::zero();
 		vfloat cut_high_weight_err = vfloat::zero();
-		vfloat rcp_stepsize = loada(&angular_steppings[sp]);
 		vfloat offset = loada(&offsets[sp]);
 		vfloat scaled_offset = rcp_stepsize * offset;
 		for (int j = 0; j < samplecount; ++j)
@@ -254,10 +218,13 @@ static void compute_lowest_and_highest_weight(
 		// The cut_(lowest/highest)_weight_error indicate the error that
 		// results from  forcing samples that should have had the weight value
 		// one step (up/down).
-		vfloat errscale = loada(&stepsizes_sqr[sp]);
+		vfloat ssize = fast_recip(rcp_stepsize);
+		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, &error[sp]);
 		storea(cut_low_weight_err * errscale, &cut_low_weight_error[sp]);
 		storea(cut_high_weight_err * errscale, &cut_high_weight_error[sp]);
+
+		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
 	}
 }
 
@@ -363,7 +330,7 @@ static void compute_angular_endpoints_for_quantization_levels(
 			bsi = 0;
 		}
 
-		float stepsize = stepsizes[bsi];
+		float stepsize = 1.0f / (1.0f + (float)bsi);
 		int lwi = lowest_weight[bsi] + cut_low_weight[q];
 		int hwi = lwi + q - 1;
 		float offset = angular_offsets[bsi];

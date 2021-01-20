@@ -920,7 +920,7 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Generate a reciprocal of a a vector.
+ * @brief Generate a reciprocal of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 {
@@ -928,6 +928,15 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 	__m128 t1 = _mm_rcp_ps(b.m);
 	__m128 t2 = _mm_mul_ps(b.m, _mm_mul_ps(t1, t1));
 	return vfloat4(_mm_sub_ps(_mm_add_ps(t1, t1), t2));
+}
+
+/**
+ * @brief Generate an approximate reciprocal of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
+{
+	// Reciprocal with no NR iteration
+	return vfloat4(_mm_rcp_ps(b.m));
 }
 
 /**

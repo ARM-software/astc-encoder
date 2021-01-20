@@ -498,6 +498,22 @@ ASTCENC_SIMD_INLINE vfloat1 operator/(vfloat1 a, vfloat1 b)
 }
 
 /**
+ * @brief Overload: vector by scalar division.
+ */
+ASTCENC_SIMD_INLINE vfloat1 operator/(vfloat1 a, float b)
+{
+	return vfloat1(a.m / b);
+}
+
+/**
+ * @brief Overload: scalar by vector division.
+ */
+ASTCENC_SIMD_INLINE vfloat1 operator/(float a, vfloat1 b)
+{
+	return vfloat1(a / b.m);
+}
+
+/**
  * @brief Overload: vector by vector equality.
  */
 ASTCENC_SIMD_INLINE vmask1 operator==(vfloat1 a, vfloat1 b)
@@ -651,6 +667,22 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat1 a)
 ASTCENC_SIMD_INLINE float hadd_s(vfloat1 a)
 {
 	return a.m;
+}
+
+/**
+ * @brief Generate a reciprocal of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat1 recip(vfloat1 b)
+{
+	return 1.0f / b;
+}
+
+/**
+ * @brief Generate an approximate reciprocal of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat1 fast_recip(vfloat1 b)
+{
+	return 1.0f / b;
 }
 
 /**

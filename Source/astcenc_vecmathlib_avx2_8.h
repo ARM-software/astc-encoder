@@ -809,6 +809,26 @@ ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 }
 
 /**
+ * @brief Generate a reciprocal of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 recip(vfloat8 b)
+{
+	// Reciprocal with a single NR iteration
+	__m256 t1 = _mm256_rcp_ps(b.m);
+	__m256 t2 = _mm256_mul_ps(b.m, _mm256_mul_ps(t1, t1));
+	return vfloat8(_mm256_sub_ps(_mm256_add_ps(t1, t1), t2));
+}
+
+/**
+ * @brief Generate an approximate reciprocal of a vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 fast_recip(vfloat8 b)
+{
+	// Reciprocal with a no NR iteration
+	return vfloat8(_mm256_rcp_ps(b.m));
+}
+
+/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)

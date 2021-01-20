@@ -892,6 +892,17 @@ TEST(vfloat4, recip)
 	EXPECT_NEAR(r.lane<3>(), 1.0f / 4.0f, 0.0005f);
 }
 
+/** @brief Test vfloat4 reciprocal. */
+TEST(vfloat4, fast_recip)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat4 r = fast_recip(a);
+	EXPECT_NEAR(r.lane<0>(), 1.0f / 1.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<1>(), 1.0f / 2.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<2>(), 1.0f / 3.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<3>(), 1.0f / 4.0f, 0.0005f);
+}
+
 /** @brief Test vfloat4 normalize. */
 TEST(vfloat4, normalize)
 {
@@ -1905,6 +1916,37 @@ TEST(vfloat8, sqrt)
 	EXPECT_EQ(r.lane<5>(), std::sqrt(2.0f));
 	EXPECT_EQ(r.lane<6>(), std::sqrt(3.0f));
 	EXPECT_EQ(r.lane<7>(), std::sqrt(4.0f));
+}
+
+
+/** @brief Test vfloat8 reciprocal. */
+TEST(vfloat8, recip)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 r = recip(a);
+	EXPECT_NEAR(r.lane<0>(), 1.0f / 1.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<1>(), 1.0f / 2.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<2>(), 1.0f / 3.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<3>(), 1.0f / 4.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<4>(), 1.0f / 5.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<5>(), 1.0f / 6.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<6>(), 1.0f / 7.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<7>(), 1.0f / 8.0f, 0.0005f);
+}
+
+/** @brief Test vfloat8 reciprocal. */
+TEST(vfloat8, fast_recip)
+{
+	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 r = fast_recip(a);
+	EXPECT_NEAR(r.lane<0>(), 1.0f / 1.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<1>(), 1.0f / 2.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<2>(), 1.0f / 3.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<3>(), 1.0f / 4.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<4>(), 1.0f / 5.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<5>(), 1.0f / 6.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<6>(), 1.0f / 7.0f, 0.0005f);
+	EXPECT_NEAR(r.lane<7>(), 1.0f / 8.0f, 0.0005f);
 }
 
 /** @brief Test vfloat8 select. */
