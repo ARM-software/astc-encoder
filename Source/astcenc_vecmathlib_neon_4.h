@@ -864,7 +864,6 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 {
-	// TODO: Is there a faster approximation we can use here?
 	return 1.0f / b;
 }
 
@@ -873,8 +872,7 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
 {
-	// TODO: Is there a faster approximation we can use here?
-	return 1.0f / b;
+	return vfloat4(vrecpeq_f32(b.m));
 }
 
 /**
