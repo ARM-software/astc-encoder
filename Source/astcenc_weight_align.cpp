@@ -73,7 +73,7 @@ alignas(ASTCENC_VECALIGN) static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
 void prepare_angular_tables()
 {
-	int max_angular_steps_needed_for_quant_steps[40];
+	int max_angular_steps_needed_for_quant_steps[ANGULAR_STEPS + 1];
 	for (int i = 0; i < ANGULAR_STEPS; i++)
 	{
 		float angle_step = (float)(i + 1);
