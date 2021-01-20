@@ -630,7 +630,9 @@ int compute_ise_bitcount(
 	int items,
 	quantization_method quant
 ) {
-	switch (quant)
+	// Values in this enum are from an external data source, so not guaranteed
+	// to be bounded to the enum values for invalid block encodings
+	switch (static_cast<int>(quant))
 	{
 	case QUANT_2:
 		return items;

@@ -76,7 +76,9 @@ static astcenc_error validate_cpu_isa()
 static astcenc_error validate_profile(
 	astcenc_profile profile
 ) {
-	switch(profile)
+	// Values in this enum are from an external user, so not guaranteed to be
+	// bounded to the enum values
+	switch(static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR_SRGB:
 	case ASTCENC_PRF_LDR:
@@ -158,7 +160,9 @@ static astcenc_error validate_compression_swizzle(
 static astcenc_error validate_decompression_swz(
 	astcenc_swz swizzle
 ) {
-	switch(swizzle)
+	// Values in this enum are from an external user, so not guaranteed to be
+	// bounded to the enum values
+	switch(static_cast<int>(swizzle))
 	{
 	case ASTCENC_SWZ_R:
 	case ASTCENC_SWZ_G:
@@ -315,7 +319,9 @@ astcenc_error astcenc_config_init(
 	// base db_limit, so we may actually use lower ratios for the more through
 	// search presets because the underlying db_limit is so much higher.
 
-	switch(preset)
+	// Values in this enum are from an external user, so not guaranteed to be
+	// bounded to the enum values
+	switch(static_cast<int>(preset))
 	{
 	case ASTCENC_PRE_FASTEST:
 		config.tune_partition_limit = 2;
@@ -408,7 +414,10 @@ astcenc_error astcenc_config_init(
 	config.b_deblock_weight = 0.0f;
 
 	config.profile = profile;
-	switch(profile)
+
+	// Values in this enum are from an external user, so not guaranteed to be
+	// bounded to the enum values
+	switch(static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR:
 	case ASTCENC_PRF_LDR_SRGB:
