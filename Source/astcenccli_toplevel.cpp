@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -34,7 +34,7 @@
 typedef unsigned int astcenc_operation;
 
 struct mode_entry {
-	std::string opt;
+	const char* opt;
 	astcenc_operation operation;
 	astcenc_profile decode_mode;
 };
@@ -313,7 +313,7 @@ static astcenc_image* load_uncomp_file(
  *
  * @return 0 if everything is okay, 1 if there is some error
  */
-int parse_commandline_options(
+static int parse_commandline_options(
 	int argc,
 	char **argv,
 	astcenc_operation& operation,
@@ -327,7 +327,7 @@ int parse_commandline_options(
 	int modes_count = sizeof(modes) / sizeof(modes[0]);
 	for (int i = 0; i < modes_count; i++)
 	{
-		if (modes[i].opt == argv[1])
+		if (!strcmp(modes[i].opt, argv[1]))
 		{
 			operation = modes[i].operation;
 			profile = modes[i].decode_mode;
@@ -357,7 +357,7 @@ int parse_commandline_options(
  *
  * @return 0 if everything is okay, 1 if there is some error
  */
-int init_astcenc_config(
+static int init_astcenc_config(
 	int argc,
 	char **argv,
 	astcenc_profile profile,
@@ -536,7 +536,7 @@ int init_astcenc_config(
  *
  * @return 0 if everything is Okay, 1 if there is some error
  */
-int edit_astcenc_config(
+static int edit_astcenc_config(
 	int argc,
 	char **argv,
 	const astcenc_operation operation,

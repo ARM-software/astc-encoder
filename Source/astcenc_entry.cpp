@@ -681,7 +681,7 @@ static void compress_image(
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);
-	};
+	}
 }
 #endif
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -38,7 +38,7 @@
 #if defined(_WIN32) && !defined(__CYGWIN__)
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <Windows.h>
 
 typedef HANDLE pthread_t;
 typedef int pthread_attr_t;
@@ -50,6 +50,7 @@ static int pthread_create(
 	void* (*threadfunc)(void*),
 	void* thread_arg
 ) {
+	(void)attribs;
 	LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)threadfunc;
 	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
 	return 0;
@@ -60,6 +61,7 @@ static int pthread_join(
 	pthread_t thread,
 	void** value
 ) {
+	(void)value;
 	WaitForSingleObject(thread, INFINITE);
 	return 0;
 }
@@ -80,13 +82,6 @@ double get_time()
 	unsigned long long ticks = tv.dwHighDateTime;
 	ticks = (ticks << 32) | tv.dwLowDateTime;
 	return ((double)ticks) / 1.0e7;
-}
-
-/* Public function, see header file for detailed documentation */
-int unlink_file(const char *filename)
-{
-	BOOL res = DeleteFileA(filename);
-	return (res ? 0 : -1);
 }
 
 /* ============================================================================
@@ -110,12 +105,6 @@ double get_time()
 	timeval tv;
 	gettimeofday(&tv, 0);
 	return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
-}
-
-/* Public function, see header file for detailed documentation */
-int unlink_file(const char *filename)
-{
-	return unlink(filename);
 }
 
 #endif

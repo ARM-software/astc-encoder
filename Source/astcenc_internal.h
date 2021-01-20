@@ -96,7 +96,7 @@
  * loop tails if loops are unrolled by the auto-vectorizer.
  */
 #if defined(NDEBUG)
-	#if defined(_MSC_VER)
+	#if !defined(__clang__) && defined(_MSC_VER)
 		#define promise(cond) __assume(cond)
 	#elif defined(__clang__)
 		#if __has_builtin(__builtin_assume)

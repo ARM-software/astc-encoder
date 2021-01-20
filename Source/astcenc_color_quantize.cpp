@@ -1733,7 +1733,7 @@ static int try_quantize_hdr_luminance_small_range3(
 	v1d = color_unquantization_tables[quantization_level][v1e];
 	if ((v1d & 0xE0) != (v1 & 0xE0))
 	{
-		return 0;;
+		return 0;
 	}
 
 	output[0] = v0e;

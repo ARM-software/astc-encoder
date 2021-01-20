@@ -55,7 +55,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	float partition_error_scale[4];
 	float linelengths_rcp[4];
 
-	const float *error_weights;
+	const float *error_weights = nullptr;
 	const float* data_vr = nullptr;
 
 	assert(component < 4);
