@@ -871,7 +871,7 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 /**
  * @brief Generate an approximate reciprocal of a vector.
  */
-ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat8 b)
+ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
 {
 	// TODO: Is there a faster approximation we can use here?
 	return 1.0f / b;
