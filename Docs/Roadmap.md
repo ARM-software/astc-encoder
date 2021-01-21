@@ -33,7 +33,7 @@ out for any given bitrate, especially for non-color data such as normal maps
 and PBR material textures. We'd like to produce a short training course or
 video series explaining the format, the compressor, and how to use them.
 
-This should align with the 3.0 release, so we cna release both together.
+This should align with the 3.0 release, so we can release both together.
 
 ## Normal maps and HDR texture performance
 
