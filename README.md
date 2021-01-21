@@ -62,8 +62,10 @@ Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
-* Latest stable release: 2.2.
+* Latest stable release: 2.2
 * Change log: [2.x series](./Docs/ChangeLog.md)
+* Roadmap: [2.x series and beyond](./Docs/Roadmap.md)
+
 
 ## astcenc 2.x binaries
 
@@ -73,7 +75,6 @@ increasing performance:
 
 * `astcenc-sse2` - uses SSE2
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
-* `astcenc-sse4.2` - uses SSE4.2 and POPCNT (deprecated)
 * `astcenc-avx2` - uses SSE4.2, POPCNT, and AVX2
 
 The SSE2 builds will work on all x86-64 host machines, but it is the slowest of
@@ -91,6 +92,9 @@ to be a stable branch, but as it is used for development expect it to change.
 
 The `1.x` branch is a maintenance branch for the 1.x release series. It is
 no longer under active development.
+
+Other branches are development branches for new features or optimizations, so
+might be interesting to play with, but should be considered unstable.
 
 # Getting started
 
@@ -220,4 +224,4 @@ Graphics forums](https://community.arm.com/graphics/).
 
 - - -
 
-_Copyright (c) 2013-2020, Arm Limited and contributors. All rights reserved._
+_Copyright (c) 2013-2021, Arm Limited and contributors. All rights reserved._
