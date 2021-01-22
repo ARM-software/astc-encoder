@@ -19,6 +19,7 @@
  * @brief Functions for the library entrypoint.
  */
 
+#include <array>
 #include <cstring>
 #include <new>
 
@@ -72,6 +73,52 @@ static astcenc_error validate_cpu_isa()
 
 	return ASTCENC_SUCCESS;
 }
+
+/**
+ * @brief Record of the quality tuning parameter values.
+ *
+ * See the @c astcenc_config structure for detailed parameter documentation.
+ *
+ * Note that the mse_overshoot entries are scaling factors relative to the
+ * base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
+ * base db_limit, so we may actually use lower ratios for the more through
+ * search presets because the underlying db_limit is so much higher.
+ */
+struct astcenc_preset_config {
+	float quality;
+	unsigned int tune_partition_limit;
+	unsigned int tune_block_mode_limit;
+	unsigned int tune_refinement_limit;
+	unsigned int tune_candidate_limit;
+	float tune_db_limit_a_base;
+	float tune_db_limit_b_base;
+	float tune_mode0_mse_overshoot;
+	float tune_refinement_mse_overshoot;
+	float tune_partition_early_out_limit;
+	float tune_two_plane_early_out_limit;
+};
+
+/**
+ * @brief The static quality presets that are built-in.
+ */
+static const std::array<astcenc_preset_config, 5> preset_configs {{
+	{
+		ASTCENC_PRE_FASTEST,
+		2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_FAST,
+		4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_MEDIUM,
+		25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+	}, {
+		ASTCENC_PRE_THOROUGH,
+		100, 95, 4, 3, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+	}, {
+		ASTCENC_PRE_EXHAUSTIVE,
+		1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
+	}
+}};
 
 static astcenc_error validate_profile(
 	astcenc_profile profile
@@ -287,7 +334,7 @@ astcenc_error astcenc_config_init(
 	unsigned int block_x,
 	unsigned int block_y,
 	unsigned int block_z,
-	astcenc_preset preset,
+	float quality,
 	unsigned int flags,
 	astcenc_config& config
 ) {
@@ -311,94 +358,84 @@ astcenc_error astcenc_config_init(
 	float texels = static_cast<float>(block_x * block_y * block_z);
 	float ltexels = logf(texels) / logf(10.0f);
 
-	// Process the performance preset; note that this must be done before we
-	// process any additional settings, such as color profile and flags, which
-	// may replace some of these settings with more use case tuned values
-
-	// Note that the mse_overshoot entries are scaling factors relative to the
-	// base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
-	// base db_limit, so we may actually use lower ratios for the more through
-	// search presets because the underlying db_limit is so much higher.
-
-	// Values in this enum are from an external user, so not guaranteed to be
-	// bounded to the enum values
-	switch(static_cast<int>(preset))
+	// Process the performance quality level or preset; note that this must be
+	// done before we process any additional settings, such as color profile
+	// and flags, which may replace some of these settings with more use case
+	// tuned values
+	if (quality < ASTCENC_PRE_FASTEST ||
+	    quality > ASTCENC_PRE_EXHAUSTIVE)
 	{
-	case ASTCENC_PRE_FASTEST:
-		config.tune_partition_limit = 2;
-		config.tune_block_mode_limit = 25;
-		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = astc::min(1u, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = astc::max(70 - 35 * ltexels, 53 - 19 * ltexels);
+		return ASTCENC_ERR_BAD_QUALITY;
+	}
+
+	// Determine which preset to use, or which pair to interpolate
+	size_t start;
+	size_t end;
+	for (end = 0; end < preset_configs.size(); end++)
+	{
+		if (preset_configs[end].quality >= quality)
+		{
+			break;
+		}
+	}
+
+	start = end == 0 ? 0 : end - 1;
+
+	// Start and end node are the same - so just transfer the values.
+	if (start == end)
+	{
+		config.tune_partition_limit = preset_configs[start].tune_partition_limit;
+		config.tune_block_mode_limit = preset_configs[start].tune_block_mode_limit;
+		config.tune_refinement_limit = preset_configs[start].tune_refinement_limit;
+		config.tune_candidate_limit = astc::min(preset_configs[start].tune_candidate_limit,
+		                                        TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(preset_configs[start].tune_db_limit_a_base - 35 * ltexels,
+		                                 preset_configs[start].tune_db_limit_b_base - 19 * ltexels);
 
 		// Fast and loose - exit as soon as we get a block within the target.
 		// This costs an average of around 0.7 dB PSNR ...
-		config.tune_mode0_mse_overshoot = 1.0f;
-		config.tune_refinement_mse_overshoot = 1.0f;
+		config.tune_mode0_mse_overshoot = preset_configs[start].tune_mode0_mse_overshoot;
+		config.tune_refinement_mse_overshoot = preset_configs[start].tune_refinement_mse_overshoot;
 
-		config.tune_partition_early_out_limit = 1.0f;
-		config.tune_two_plane_early_out_limit = 0.5f;
-		break;
-	case ASTCENC_PRE_FAST:
-		config.tune_partition_limit = 4;
-		config.tune_block_mode_limit = 50;
-		config.tune_refinement_limit = 1;
-		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = astc::max(85 - 35 * ltexels, 63 - 19 * ltexels);
+		config.tune_partition_early_out_limit = preset_configs[start].tune_partition_early_out_limit;
+		config.tune_two_plane_early_out_limit = preset_configs[start].tune_two_plane_early_out_limit;
+	}
+	// Start and end node are not the same - so interpolate between them
+	else
+	{
+		auto& node_a = preset_configs[start];
+		auto& node_b = preset_configs[end];
 
-		// Allow some early outs if over threshold.
-		// This costs an average of around 0.1dB PSNR.
-		config.tune_mode0_mse_overshoot = 2.5f;
-		config.tune_refinement_mse_overshoot = 2.5f;
+		float wt_range = node_b.quality - node_a.quality;
+		assert(wt_range > 0);
 
-		config.tune_partition_early_out_limit = 1.0f;
-		config.tune_two_plane_early_out_limit = 0.5f;
-		break;
-	case ASTCENC_PRE_MEDIUM:
-		config.tune_partition_limit = 25;
-		config.tune_block_mode_limit = 75;
-		config.tune_refinement_limit = 2;
-		config.tune_candidate_limit = astc::min(2u, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = astc::max(95 - 35 * ltexels, 70 - 19 * ltexels);
+		// Compute interpolation factors
+		float wt_node_a = (node_b.quality - quality) / wt_range;
+		float wt_node_b = (quality - node_a.quality) / wt_range;
 
-		// Allow some early outs if over threshold.
-		// This costs an average of around 0.05dB PSNR.
-		config.tune_mode0_mse_overshoot = 1.75f;
-		config.tune_refinement_mse_overshoot = 1.75f;
+		#define LERP(param) ((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
+		#define LERPI(param) astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
+		#define LERPUI(param) (unsigned int)astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
 
-		config.tune_partition_early_out_limit = 1.2f;
-		config.tune_two_plane_early_out_limit = 0.75f;
-		break;
-	case ASTCENC_PRE_THOROUGH:
-		config.tune_partition_limit = 100;
-		config.tune_block_mode_limit = 95;
-		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = astc::min(3u, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = astc::max(105 - 35 * ltexels, 77 - 19 * ltexels);
+		config.tune_partition_limit = LERPI(tune_partition_limit);
+		config.tune_block_mode_limit = LERPI(tune_block_mode_limit);
+		config.tune_refinement_limit = LERPI(tune_refinement_limit);
+		config.tune_candidate_limit = astc::min(LERPUI(tune_candidate_limit),
+		                                        TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_db_limit = astc::max(LERP(tune_db_limit_a_base) - 35 * ltexels,
+		                                 LERP(tune_db_limit_b_base) - 19 * ltexels);
 
-		// Disable early outs (few blocks hit PSNR target anyway)
-		config.tune_mode0_mse_overshoot = 100.0f;
-		config.tune_refinement_mse_overshoot = 100.0f;
+		// Fast and loose - exit as soon as we get a block within the target.
+		// This costs an average of around 0.7 dB PSNR ...
+		config.tune_mode0_mse_overshoot = LERP(tune_mode0_mse_overshoot);
+		config.tune_refinement_mse_overshoot = LERP(tune_refinement_mse_overshoot);
 
-		config.tune_partition_early_out_limit = 2.5f;
-		config.tune_two_plane_early_out_limit = 0.95f;
-		break;
-	case ASTCENC_PRE_EXHAUSTIVE:
-		config.tune_partition_limit = 1024;
-		config.tune_block_mode_limit = 100;
-		config.tune_refinement_limit = 4;
-		config.tune_candidate_limit = astc::min(4u, TUNE_MAX_TRIAL_CANDIDATES);
+		config.tune_partition_early_out_limit = LERP(tune_partition_early_out_limit);
+		config.tune_two_plane_early_out_limit = LERP(tune_two_plane_early_out_limit);
 
-		// Disable early outs (few blocks hit PSNR target anyway)
-		config.tune_mode0_mse_overshoot = 100.0f;
-		config.tune_refinement_mse_overshoot = 100.0f;
-
-		config.tune_db_limit = 999.0f;
-		config.tune_partition_early_out_limit = 1000.0f;
-		config.tune_two_plane_early_out_limit = 0.99f;
-		break;
-	default:
-		return ASTCENC_ERR_BAD_PRESET;
+		#undef LERP
+		#undef LERPI
+		#undef LERPUI
 	}
 
 	// Set heuristics to the defaults for each color profile
@@ -895,8 +932,8 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_BAD_BLOCK_SIZE";
 	case ASTCENC_ERR_BAD_PROFILE:
 		return "ASTCENC_ERR_BAD_PROFILE";
-	case ASTCENC_ERR_BAD_PRESET:
-		return "ASTCENC_ERR_BAD_PRESET";
+	case ASTCENC_ERR_BAD_QUALITY:
+		return "ASTCENC_ERR_BAD_QUALITY";
 	case ASTCENC_ERR_BAD_FLAGS:
 		return "ASTCENC_ERR_BAD_FLAGS";
 	case ASTCENC_ERR_BAD_SWIZZLE:

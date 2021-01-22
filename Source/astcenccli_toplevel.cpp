@@ -378,7 +378,7 @@ static int init_astcenc_config(
 		block_z = comp_image.block_z;
 	}
 
-	astcenc_preset preset = ASTCENC_PRE_FAST;
+	float quality = 0.0f;
 	preprocess = ASTCENC_PP_NONE;
 
 	// parse the command line's encoding options.
@@ -402,37 +402,36 @@ static int init_astcenc_config(
 			return 1;
 		}
 
-		// Read and decode search preset
+		// Read and decode search quality
 		if (argc < 6)
 		{
-			printf("ERROR: Search preset must be specified\n");
+			printf("ERROR: Search quality level must be specified\n");
 			return 1;
 		}
 
 		if (!strcmp(argv[5], "-fastest"))
 		{
-			preset = ASTCENC_PRE_FASTEST;
+			quality = ASTCENC_PRE_FASTEST;
 		}
 		else if (!strcmp(argv[5], "-fast"))
 		{
-			preset = ASTCENC_PRE_FAST;
+			quality = ASTCENC_PRE_FAST;
 		}
 		else if (!strcmp(argv[5], "-medium"))
 		{
-			preset = ASTCENC_PRE_MEDIUM;
+			quality = ASTCENC_PRE_MEDIUM;
 		}
 		else if (!strcmp(argv[5], "-thorough"))
 		{
-			preset = ASTCENC_PRE_THOROUGH;
+			quality = ASTCENC_PRE_THOROUGH;
 		}
 		else if (!strcmp(argv[5], "-exhaustive"))
 		{
-			preset = ASTCENC_PRE_EXHAUSTIVE;
+			quality = ASTCENC_PRE_EXHAUSTIVE;
 		}
 		else
 		{
-			printf("ERROR: Search preset '%s' is invalid\n", argv[5]);
-			return 1;
+			quality = static_cast<float>(atof(argv[5]));
 		}
 
 		argidx = 6;
@@ -500,7 +499,8 @@ static int init_astcenc_config(
 	}
 #endif
 
-	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, preset, flags, config);
+	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z,
+	                                           quality, flags, config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
 		printf("ERROR: Block size '%s' is invalid\n", argv[4]);

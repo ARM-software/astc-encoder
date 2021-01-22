@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020 Arm Limited
+// Copyright 2020-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -171,8 +171,8 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_BLOCK_SIZE,
 	/** @brief The call failed due to an out-of-spec color profile. */
 	ASTCENC_ERR_BAD_PROFILE,
-	/** @brief The call failed due to an out-of-spec quality preset. */
-	ASTCENC_ERR_BAD_PRESET,
+	/** @brief The call failed due to an out-of-spec quality value. */
+	ASTCENC_ERR_BAD_QUALITY,
 	/** @brief The call failed due to an out-of-spec channel swizzle. */
 	ASTCENC_ERR_BAD_SWIZZLE,
 	/** @brief The call failed due to an out-of-spec flag set. */
@@ -201,21 +201,20 @@ enum astcenc_profile {
 	ASTCENC_PRF_HDR
 };
 
-/**
- * @brief A codec quality preset.
- */
-enum astcenc_preset {
-	/** @brief The fastest, lowest quality, search preset. */
-	ASTCENC_PRE_FASTEST = 0,
-	/** @brief The fast search preset. */
-	ASTCENC_PRE_FAST,
-	/** @brief The medium quality search preset. */
-	ASTCENC_PRE_MEDIUM,
-	/** @brief The throrough quality search preset. */
-	ASTCENC_PRE_THOROUGH,
-	/** @brief The exhaustive, highest quality, search preset. */
-	ASTCENC_PRE_EXHAUSTIVE
-};
+/** @brief The fastest, lowest quality, search preset. */
+static const float ASTCENC_PRE_FASTEST = 0.0f;
+
+/** @brief The fast search preset. */
+static const float ASTCENC_PRE_FAST = 10.0f;
+
+/** @brief The medium quality search preset. */
+static const float ASTCENC_PRE_MEDIUM = 60.0f;
+
+/** @brief The throrough quality search preset. */
+static const float ASTCENC_PRE_THOROUGH = 98.0f;
+
+/** @brief The exhaustive, highest quality, search preset. */
+static const float ASTCENC_PRE_EXHAUSTIVE = 100.0f;
 
 /**
  * @brief A codec channel swizzle selector.
@@ -532,7 +531,10 @@ struct astcenc_image {
  * @param      block_x   ASTC block size X dimension.
  * @param      block_y   ASTC block size Y dimension.
  * @param      block_z   ASTC block size Z dimension.
- * @param      preset    Search quality preset.
+ * @param      quality   Search quality preset / effort level. Either an
+ *                       @c ASTCENC_PRE_* value, or a effort level between 0
+ *                       and 100. Performance is not linear between 0 and 100.
+
  * @param      flags     A valid set of ASTCENC_FLG_* flag bits.
  * @param[out] config    Output config struct to populate.
  *
@@ -544,7 +546,7 @@ astcenc_error astcenc_config_init(
 	unsigned int block_x,
 	unsigned int block_y,
 	unsigned int block_z,
-	astcenc_preset preset,
+	float quality,
 	unsigned int flags,
 	astcenc_config& config);
 

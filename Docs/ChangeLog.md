@@ -6,6 +6,36 @@ release of the 2.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running astcenc using 6 threads.
 
+
+<!-- ---------------------------------------------------------------------- -->
+## 2.3
+
+**Status:** In development
+
+The 2.3 release is the fourth release in the 2.x series. It includes a number
+of performance improvements and new features.
+
+Reminder for users of the library interface - the API is not designed to be
+stable across versions, and this release is not compatible with 2.2. Please
+recompile your client-side code using the updated `astcenc.h` header.
+
+* **Command Line:**
+  * **Feature:** Quality level now accepts either a preset (`-fast`, etc) or a
+    float value between 0 and 100, allowing more control over the compression
+    quality vs performance trade-off. The presets are not evenly spaced in the
+    float range; they have been spaced to give the best distribution of points
+    between the fast and through presets.
+
+    * `-fastest`: 0.0
+    * `-fast`: 10.0
+    * `-medium`: 60.0
+    * `-thorough`: 98.0
+    * `-exhaustive`: 100.0
+
+* **Core API:**
+  * **API Change:** Quality level preset enum replaced with a float value
+    between 0 (`-fastest`) and 100 (`-exhaustive`). See above for more info.
+
 <!-- ---------------------------------------------------------------------- -->
 ## 2.2
 
@@ -27,7 +57,7 @@ recompile your client-side code using the updated `astcenc.h` header.
   * **Improvement:** Linux binaries changed to use Clang 9.0, which gives
     up to 15% performance improvement.
   * **Improvement:** Windows binaries are now code signed.
-  * **Improvement:** macOS binaries for Apple Silicon platforms now provided.
+  * **Improvement:** macOS binaries for Apple silicon platforms now provided.
   * **Improvement:** macOS binaries are now code signed and notarized.
 * **Command Line:**
   * **Feature:** New image preprocess `-pp-normalize` option added. This forces
