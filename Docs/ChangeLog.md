@@ -24,7 +24,7 @@ recompile your client-side code using the updated `astcenc.h` header.
     float value between 0 and 100, allowing more control over the compression
     quality vs performance trade-off. The presets are not evenly spaced in the
     float range; they have been spaced to give the best distribution of points
-    between the fast and through presets.
+    between the fast and thorough presets.
 
     * `-fastest`: 0.0
     * `-fast`: 10.0

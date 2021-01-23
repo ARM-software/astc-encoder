@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cstring>
 #include <string>
+#include <sstream>
 #include <vector>
 
 /* ============================================================================
@@ -115,8 +116,29 @@ struct compression_workload {
 	astcenc_error error;
 };
 
-static bool ends_with(const std::string& str, const std::string& suffix)
-{
+/**
+ * @brief Test if a string argument is a well formed float.
+ */
+bool is_float(
+	std::string target
+) {
+	float test;
+	std::istringstream stream(target);
+
+	// Leading whitespace is an error
+	stream >> std::noskipws >> test;
+
+	// Ensure entire no remaining string in addition to parse failure
+	return stream.eof() && !stream.fail();
+}
+
+/**
+ * @brief Test if a string ends with a given suffix.
+ */
+static bool ends_with(
+	const std::string& str,
+	const std::string& suffix
+) {
 	return (str.size() >= suffix.size()) &&
 	       (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
 }
@@ -429,9 +451,14 @@ static int init_astcenc_config(
 		{
 			quality = ASTCENC_PRE_EXHAUSTIVE;
 		}
-		else
+		else if (is_float(argv[5]))
 		{
 			quality = static_cast<float>(atof(argv[5]));
+		}
+		else
+		{
+			printf("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
+			return 1;
 		}
 
 		argidx = 6;
