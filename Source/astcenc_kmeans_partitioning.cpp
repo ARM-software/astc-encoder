@@ -307,12 +307,7 @@ static inline int partition_mismatch3(
 	int s5 = p11 + p20;
 	int v2 = astc::min(s4, s5) + p02;
 
-	if (v1 < v0)
-		v0 = v1;
-	if (v2 < v0)
-		v0 = v2;
-
-	return v0;
+	return astc::min(v0, v1, v2);
 }
 
 // compute the bit-mismatch for a partitioning in 4-partition mode
