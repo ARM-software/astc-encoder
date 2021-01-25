@@ -37,16 +37,12 @@
 // algorithm similar to XKCD #221. (http://xkcd.com/221/)
 
 // cluster the texels using the k++ means clustering initialization algorithm.
-static void kpp_initialize(
-	int xdim,
-	int ydim,
-	int zdim,
+static void kmeans_init(
+	int texels_per_block,
 	int partition_count,
 	const imageblock* blk,
 	float4* cluster_centers
 ) {
-	int texels_per_block = xdim * ydim * zdim;
-
 	int cluster_center_samples[4];
 	// pick a random sample as first center-point.
 	cluster_center_samples[0] = 145897 /* number from random.org */  % texels_per_block;
@@ -144,17 +140,13 @@ static void kpp_initialize(
 
 // basic K-means clustering: given a set of cluster centers,
 // assign each texel to a partition
-static void basic_kmeans_assign_pass(
-	int xdim,
-	int ydim,
-	int zdim,
+static void kmeans_assign(
+	int texels_per_block,
 	int partition_count,
 	const imageblock* blk,
 	const float4* cluster_centers,
 	int* partition_of_texel
 ) {
-	int texels_per_block = xdim * ydim * zdim;
-
 	float distances[MAX_TEXELS_PER_BLOCK];
 
 	int texels_per_partition[4];
@@ -224,17 +216,13 @@ static void basic_kmeans_assign_pass(
 
 // basic k-means clustering: given a set of cluster assignments
 // for the texels, find the center position of each cluster.
-static void basic_kmeans_update(
-	int xdim,
-	int ydim,
-	int zdim,
+static void kmeans_update(
+	int texels_per_block,
 	int partition_count,
 	const imageblock* blk,
 	const int* partition_of_texel,
 	float4* cluster_centers
 ) {
-	int texels_per_block = xdim * ydim * zdim;
-
 	float4 color_sum[4];
 	int weight_sum[4];
 
@@ -421,23 +409,23 @@ static void count_partition_mismatch_bits(
 
 }
 
-// counting-sort on the mismatch-bits, thereby
-// sorting the partitions into an ordering.
+/**
+ * @brief Use counting sort on the mismatch array to sort partition candidates.
+ */
 static void get_partition_ordering_by_mismatch_bits(
 	const int mismatch_bits[PARTITION_COUNT],
 	int partition_ordering[PARTITION_COUNT]
 ) {
-	int mscount[256];
-	for (int i = 0; i < 256; i++)
-	{
-		mscount[i] = 0;
-	}
+	int mscount[256] { 0 };
 
+	// Create the histogram of mismatch counts
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
 		mscount[mismatch_bits[i]]++;
 	}
 
+	// Create a running sum from the histogram array
+	// Cells store previous values only; i.e. exclude self after sum
 	int summa = 0;
 	for (int i = 0; i < 256; i++)
 	{
@@ -446,6 +434,8 @@ static void get_partition_ordering_by_mismatch_bits(
 		summa += cnt;
 	}
 
+	// Use the running sum as the index, incrementing after read to allow
+	// sequential entries with the same count
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
 		int idx = mscount[mismatch_bits[i]]++;
@@ -462,30 +452,23 @@ void kmeans_compute_partition_ordering(
 	float4 cluster_centers[4];
 	int partition_of_texel[MAX_TEXELS_PER_BLOCK];
 
-	// 3 passes of plain k-means partitioning
+	// Use three passes of k-means clustering to partition the block data
 	for (int i = 0; i < 3; i++)
 	{
 		if (i == 0)
 		{
-			kpp_initialize(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, cluster_centers);
+			kmeans_init(bsd->texel_count, partition_count, blk, cluster_centers);
 		}
 		else
 		{
-			basic_kmeans_update(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, partition_of_texel, cluster_centers);
+			kmeans_update(bsd->texel_count, partition_count, blk, partition_of_texel, cluster_centers);
 		}
 
-		basic_kmeans_assign_pass(bsd->xdim, bsd->ydim, bsd->zdim, partition_count, blk, cluster_centers, partition_of_texel);
+		kmeans_assign(bsd->texel_count, partition_count, blk, cluster_centers, partition_of_texel);
 	}
 
-	// at this point, we have a near-ideal partitioning.
-
-	// construct bitmaps
-	uint64_t bitmaps[4];
-	for (int i = 0; i < 4; i++)
-	{
-		bitmaps[i] = 0ULL;
-	}
-
+	// Construct the block bitmaps of texel assignments to each partition
+	uint64_t bitmaps[4] { 0 };
 	int texels_to_process = bsd->kmeans_texel_count;
 	for (int i = 0; i < texels_to_process; i++)
 	{
@@ -493,12 +476,12 @@ void kmeans_compute_partition_ordering(
 		bitmaps[partition_of_texel[idx]] |= 1ULL << i;
 	}
 
-	int bitcounts[PARTITION_COUNT];
-	// for each entry in the partition table, count bits of partition-mismatch.
-	count_partition_mismatch_bits(bsd, partition_count, bitmaps, bitcounts);
+	// Count the mismatch between the block and the format's partition tables
+	int mismatch_counts[PARTITION_COUNT];
+	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
-	// finally, sort the partitions by bits-of-partition-mismatch
-	get_partition_ordering_by_mismatch_bits(bitcounts, ordering);
+	// Sort the partitions based on the number of mismatched bits
+	get_partition_ordering_by_mismatch_bits(mismatch_counts, ordering);
 }
 
 #endif
