@@ -117,6 +117,7 @@
   Constants
 ============================================================================ */
 #define MAX_TEXELS_PER_BLOCK 216
+#define MAX_KMEANS_TEXELS 64
 #define MAX_WEIGHTS_PER_BLOCK 64
 #define PLANE2_WEIGHTS_OFFSET (MAX_WEIGHTS_PER_BLOCK/2)
 #define MIN_WEIGHT_BITS_PER_BLOCK 24
@@ -513,14 +514,14 @@ struct block_size_descriptor
 	int16_t block_mode_packed_index[MAX_WEIGHT_MODES];
 
 
-	/**< The texel count for k-means partition selection (max 64). */
+	/**< The texel count for k-means partition selection. */
 	int kmeans_texel_count;
 
 	/**< The active texels for k-means partition selection. */
-	int kmeans_texels[64];
+	int kmeans_texels[MAX_KMEANS_TEXELS];
 
 	/**< The partion tables for all of the possible partitions. */
-	partition_info partitions[(3*PARTITION_COUNT)+1];
+	partition_info partitions[(3 * PARTITION_COUNT) + 1];
 };
 
 // data structure representing one block of an image.

@@ -591,6 +591,56 @@ static void initialize_decimation_table_3d(
 }
 
 /**
+ * @brief Assign the texels to use for kmeans clustering.
+ *
+ * The max limit is MAX_KMEANS_TEXELS; above this a random selection is used.
+ * The @c bsd.texel_count is an input and must be populated beforehand.
+ *
+ * @param bsd   The block size descriptor to populate.
+ */
+static void assign_kmeans_texels(
+	block_size_descriptor& bsd
+) {
+	// Use all texels for kmeans on a small block
+	if (bsd.texel_count <= MAX_KMEANS_TEXELS)
+	{
+		for (int i = 0; i < bsd.texel_count; i++)
+		{
+			bsd.kmeans_texels[i] = i;
+		}
+
+		bsd.kmeans_texel_count = bsd.texel_count;
+		return;
+	}
+
+	// Select a random subset of texels for kmeans on a large block
+	uint64_t rng_state[2];
+	astc::rand_init(rng_state);
+
+	// Pick 64 random texels for use with bitmap partitioning.
+	bool seen[MAX_TEXELS_PER_BLOCK];
+	for (int i = 0; i < bsd.texel_count; i++)
+	{
+		seen[i] = false;
+	}
+
+	// Assign 64 random indices, retrying if we see repeats
+	int arr_elements_set = 0;
+	while (arr_elements_set < MAX_KMEANS_TEXELS)
+	{
+		unsigned int idx = (unsigned int)astc::rand(rng_state);
+		idx %= bsd.texel_count;
+		if (!seen[idx])
+		{
+			bsd.kmeans_texels[arr_elements_set++] = idx;
+			seen[idx] = true;
+		}
+	}
+
+	bsd.kmeans_texel_count = MAX_KMEANS_TEXELS;
+}
+
+/**
  * @brief Allocate a single 2D decimation table entry.
  *
  * @param x_dim       The block X dimension.
@@ -772,58 +822,14 @@ static void construct_block_size_descriptor_2d(
 	}
 
 	// Determine the texels to use for kmeans clustering.
-	if (x_dim * y_dim <= 64)
-	{
-		bsd.kmeans_texel_count = x_dim * y_dim;
-		for (int i = 0; i < x_dim * y_dim; i++)
-		{
-			bsd.kmeans_texels[i] = i;
-		}
-	}
-	else
-	{
-		uint64_t rng_state[2];
-		astc::rand_init(rng_state);
-
-		// pick 64 random texels for use with bitmap partitioning.
-		int arr[MAX_TEXELS_PER_BLOCK];
-		for (int i = 0; i < x_dim * y_dim; i++)
-		{
-			arr[i] = 0;
-		}
-
-		int arr_elements_set = 0;
-		while (arr_elements_set < 64)
-		{
-			unsigned int idx = (unsigned int)astc::rand(rng_state);
-			idx %= x_dim * y_dim;
-			if (arr[idx] == 0)
-			{
-				arr_elements_set++;
-				arr[idx] = 1;
-			}
-		}
-
-		int texel_weights_written = 0;
-		int idx = 0;
-		while (texel_weights_written < 64)
-		{
-			if (arr[idx])
-			{
-				bsd.kmeans_texels[texel_weights_written++] = idx;
-			}
-			idx++;
-		}
-
-		bsd.kmeans_texel_count = 64;
-	}
+	assign_kmeans_texels(bsd);
 }
 
 static void construct_block_size_descriptor_3d(
 	int xdim,
 	int ydim,
 	int zdim,
-	block_size_descriptor * bsd
+	block_size_descriptor* bsd
 ) {
 	int decimation_mode_index[512];	// for each of the 512 entries in the decim_table_array, its index
 	int decimation_mode_count = 0;
@@ -940,50 +946,8 @@ static void construct_block_size_descriptor_3d(
 	}
 	bsd->block_mode_count = packed_idx;
 
-	if (xdim * ydim * zdim <= 64)
-	{
-		bsd->kmeans_texel_count = xdim * ydim * zdim;
-		for (int i = 0; i < xdim * ydim * zdim; i++)
-		{
-			bsd->kmeans_texels[i] = i;
-		}
-	}
-	else
-	{
-		uint64_t rng_state[2];
-		astc::rand_init(rng_state);
-
-		// pick 64 random texels for use with bitmap partitioning.
-		int arr[MAX_TEXELS_PER_BLOCK];
-		for (int i = 0; i < xdim * ydim * zdim; i++)
-		{
-			arr[i] = 0;
-		}
-
-		int arr_elements_set = 0;
-		while (arr_elements_set < 64)
-		{
-			unsigned int idx = (unsigned int)astc::rand(rng_state);
-			idx %= xdim * ydim * zdim;
-			if (arr[idx] == 0)
-			{
-				arr_elements_set++;
-				arr[idx] = 1;
-			}
-		}
-
-		int texel_weights_written = 0;
-		int idx = 0;
-		while (texel_weights_written < 64)
-		{
-			if (arr[idx])
-			{
-				bsd->kmeans_texels[texel_weights_written++] = idx;
-			}
-			idx++;
-		}
-		bsd->kmeans_texel_count = 64;
-	}
+	// Determine the texels to use for kmeans clustering.
+	assign_kmeans_texels(*bsd);
 }
 
 /* Public function, see header file for detailed documentation */
