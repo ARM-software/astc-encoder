@@ -162,10 +162,6 @@ void compute_partition_error_color_weightings(
 	for (int i = 0; i < pcnt; i++)
 	{
 		error_weightings[i] = error_weightings[i] * (1.0f / pi->texels_per_partition[i]);
-	}
-
-	for (int i = 0; i < pcnt; i++)
-	{
 		color_scalefactors[i] = sqrt(error_weightings[i]);
 	}
 }
