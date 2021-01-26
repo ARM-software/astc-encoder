@@ -339,7 +339,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		int decimation_mode = bm.decimation_mode;
 
 		// compute weight bitcount for the mode
-		int bits_used_by_weights = compute_ise_bitcount(
+		int bits_used_by_weights = get_ise_sequence_bitcount(
 		    ixtab2[decimation_mode]->weight_count,
 		    (quantization_method)bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
@@ -776,7 +776,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		}
 
 		// compute weight bitcount for the mode
-		int bits_used_by_weights = compute_ise_bitcount(
+		int bits_used_by_weights = get_ise_sequence_bitcount(
 			2 * ixtab2[decimation_mode]->weight_count,
 			(quantization_method)bm.quantization_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;

@@ -117,7 +117,7 @@ static int decode_block_mode_2d(
 	int weight_count = N * M * (D + 1);
 	int qmode = (base_quant_mode - 2) + 6 * H;
 
-	int weightbits = compute_ise_bitcount(weight_count, (quantization_method)qmode);
+	int weightbits = get_ise_sequence_bitcount(weight_count, (quantization_method)qmode);
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
 	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
 	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
@@ -213,7 +213,7 @@ static int decode_block_mode_3d(
 	int weight_count = N * M * Q * (D + 1);
 	int qmode = (base_quant_mode - 2) + 6 * H;
 
-	int weightbits = compute_ise_bitcount(weight_count, (quantization_method)qmode);
+	int weightbits = get_ise_sequence_bitcount(weight_count, (quantization_method)qmode);
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
 	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
 	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
@@ -670,7 +670,7 @@ static int construct_dt_entry_2d(
 	int maxprec_2planes = -1;
 	for (int i = 0; i < 12; i++)
 	{
-		int bits_1plane = compute_ise_bitcount(weight_count, (quantization_method) i);
+		int bits_1plane = get_ise_sequence_bitcount(weight_count, (quantization_method) i);
 		if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
 		{
 			maxprec_1plane = i;
@@ -678,7 +678,7 @@ static int construct_dt_entry_2d(
 
 		if (try_2planes)
 		{
-			int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
+			int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quantization_method) i);
 			if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
 			{
 				maxprec_2planes = i;
@@ -865,8 +865,8 @@ static void construct_block_size_descriptor_3d(
 				int maxprec_2planes = -1;
 				for (int i = 0; i < 12; i++)
 				{
-					int bits_1plane = compute_ise_bitcount(weight_count, (quantization_method) i);
-					int bits_2planes = compute_ise_bitcount(2 * weight_count, (quantization_method) i);
+					int bits_1plane = get_ise_sequence_bitcount(weight_count, (quantization_method) i);
+					int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quantization_method) i);
 
 					if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
 					{

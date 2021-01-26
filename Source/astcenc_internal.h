@@ -813,7 +813,17 @@ void decode_ise(
 	uint8_t* output_data,
 	int bit_offset);
 
-int compute_ise_bitcount(
+/**
+ * @brief Return the number of bits needed to encode an ISE sequence.
+ *
+ * This implementation assumes that the @c quant level is untrusted, given it
+ * may come from random data being decompressed, so we return an unencodable
+ * size if that is the case.
+ *
+ * @param items   The number of items in the sequence.
+ * @param quant   The desired quantization level.
+ */
+int get_ise_sequence_bitcount(
 	int items,
 	quantization_method quant);
 

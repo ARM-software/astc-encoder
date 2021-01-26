@@ -331,14 +331,27 @@ static const uint8_t integer_of_trits[3][3][3][3][3] = {
 	}
 };
 
+/**
+ * @brief The number of bits, trits, and quints needed for a quant level.
+ */
 struct btq_count {
+	/**< The quantization level. */
 	uint8_t quant;
+
+	/**< The number of bits. */
 	uint8_t bits;
+
+	/**< The number of trits. */
 	uint8_t trits;
+
+	/**< The number of quints. */
 	uint8_t quints;
 };
 
-static std::array<btq_count, 21> btq_counts = {{
+/**
+ * @brief The table of bits, trits, and quints needed for a quant encode.
+ */
+static const std::array<btq_count, 21> btq_counts = {{
 	{   QUANT_2, 1, 0, 0 },
 	{   QUANT_3, 0, 1, 0 },
 	{   QUANT_4, 2, 0, 0 },
@@ -361,6 +374,69 @@ static std::array<btq_count, 21> btq_counts = {{
 	{ QUANT_192, 6, 1, 0 },
 	{ QUANT_256, 8, 0, 0 }
 }};
+
+/**
+ * @brief The sequence scale, round, and divisors needed to compute sizing.
+ *
+ * The length of a quantized sequence in bits is:
+ *     (scale * <sequence_len> + round) / divisor
+ */
+struct ise_size {
+	/**< The quantization level. */
+	uint8_t quant;
+
+	/**< The scaling parameter. */
+	uint8_t scale;
+
+	/**< The rounding parameter. */
+	uint8_t round;
+
+	/**< The divisor parameter. */
+	uint8_t divisor;
+};
+
+/**
+ * @brief The table of scale, round, and divisors needed for quant sizing.
+ */
+static const std::array<ise_size, 21> ise_sizes = {{
+	{   QUANT_2,  1, 0, 1 },
+	{   QUANT_3,  8, 4, 5 },
+	{   QUANT_4,  2, 0, 1 },
+	{   QUANT_5,  7, 2, 3 },
+	{   QUANT_6, 13, 4, 5 },
+	{   QUANT_8,  3, 0, 1 },
+	{  QUANT_10, 10, 2, 3 },
+	{  QUANT_12, 18, 4, 5 },
+	{  QUANT_16,  4, 0, 1 },
+	{  QUANT_20, 13, 2, 3 },
+	{  QUANT_24, 23, 4, 5 },
+	{  QUANT_32,  5, 0, 1 },
+	{  QUANT_40, 16, 2, 3 },
+	{  QUANT_48, 28, 4, 5 },
+	{  QUANT_64,  6, 0, 1 },
+	{  QUANT_80, 19, 2, 3 },
+	{  QUANT_96, 33, 4, 5 },
+	{ QUANT_128,  7, 0, 1 },
+	{ QUANT_160, 22, 2, 3 },
+	{ QUANT_192, 38, 4, 5 },
+	{ QUANT_256,  8, 0, 1 }
+}};
+
+/* See header for documentation. */
+int get_ise_sequence_bitcount(
+	int items,
+	quantization_method quant
+) {
+	// Cope with out-of bounds values - input might be invalid
+	if (static_cast<size_t>(quant) >= ise_sizes.size())
+	{
+		// Arbitrary large number that's more than an ASTC block can hold
+		return 1024;
+	}
+
+	auto& entry = ise_sizes[quant];
+	return (entry.scale * items + entry.round) / entry.divisor;
+}
 
 // routine to write up to 8 bits
 static inline void write_bits(
@@ -455,7 +531,7 @@ void encode_ise(
 		if (trits)
 		{
 			static const int bits_to_write[5] = { 2, 2, 1, 2, 1 };
-			static const int block_shift[5] = { 0, 2, 4, 5, 7 };
+			static const int block_shift[5]   = { 0, 2, 4, 5, 7 };
 			static const int next_lcounter[5] = { 1, 2, 3, 4, 0 };
 			static const int hcounter_incr[5] = { 0, 0, 0, 0, 1 };
 			write_bits(tq_blocks[hcounter] >> block_shift[lcounter], bits_to_write[lcounter], bit_offset, output_data);
@@ -467,7 +543,7 @@ void encode_ise(
 		if (quints)
 		{
 			static const int bits_to_write[3] = { 3, 2, 2 };
-			static const int block_shift[3] = { 0, 3, 5 };
+			static const int block_shift[3]   = { 0, 3, 5 };
 			static const int next_lcounter[3] = { 1, 2, 0 };
 			static const int hcounter_incr[3] = { 0, 0, 1 };
 			write_bits(tq_blocks[hcounter] >> block_shift[lcounter], bits_to_write[lcounter], bit_offset, output_data);
@@ -513,8 +589,8 @@ void decode_ise(
 
 		if (trits)
 		{
-			static const int bits_to_read[5] = { 2, 2, 1, 2, 1 };
-			static const int block_shift[5] = { 0, 2, 4, 5, 7 };
+			static const int bits_to_read[5]  = { 2, 2, 1, 2, 1 };
+			static const int block_shift[5]   = { 0, 2, 4, 5, 7 };
 			static const int next_lcounter[5] = { 1, 2, 3, 4, 0 };
 			static const int hcounter_incr[5] = { 0, 0, 0, 0, 1 };
 			int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
@@ -526,8 +602,8 @@ void decode_ise(
 
 		if (quints)
 		{
-			static const int bits_to_read[3] = { 3, 2, 2 };
-			static const int block_shift[3] = { 0, 3, 5 };
+			static const int bits_to_read[3]  = { 3, 2, 2 };
+			static const int block_shift[3]   = { 0, 3, 5 };
 			static const int next_lcounter[3] = { 1, 2, 0 };
 			static const int hcounter_incr[3] = { 0, 0, 1 };
 			int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
@@ -545,7 +621,7 @@ void decode_ise(
 		for (int i = 0; i < trit_blocks; i++)
 		{
 			const uint8_t *tritptr = trits_of_integer[tq_blocks[i]];
-			results[5 * i] |= tritptr[0] << bits;
+			results[5 * i    ] |= tritptr[0] << bits;
 			results[5 * i + 1] |= tritptr[1] << bits;
 			results[5 * i + 2] |= tritptr[2] << bits;
 			results[5 * i + 3] |= tritptr[3] << bits;
@@ -559,7 +635,7 @@ void decode_ise(
 		for (int i = 0; i < quint_blocks; i++)
 		{
 			const uint8_t *quintptr = quints_of_integer[tq_blocks[i]];
-			results[3 * i] |= quintptr[0] << bits;
+			results[3 * i    ] |= quintptr[0] << bits;
 			results[3 * i + 1] |= quintptr[1] << bits;
 			results[3 * i + 2] |= quintptr[2] << bits;
 		}
@@ -568,60 +644,5 @@ void decode_ise(
 	for (int i = 0; i < elements; i++)
 	{
 		output_data[i] = results[i];
-	}
-}
-
-int compute_ise_bitcount(
-	int items,
-	quantization_method quant
-) {
-	// Values in this enum are from an external data source, so not guaranteed
-	// to be bounded to the enum values for invalid block encodings
-	switch (static_cast<int>(quant))
-	{
-	case QUANT_2:
-		return items;
-	case QUANT_3:
-		return (8 * items + 4) / 5;
-	case QUANT_4:
-		return 2 * items;
-	case QUANT_5:
-		return (7 * items + 2) / 3;
-	case QUANT_6:
-		return (13 * items + 4) / 5;
-	case QUANT_8:
-		return 3 * items;
-	case QUANT_10:
-		return (10 * items + 2) / 3;
-	case QUANT_12:
-		return (18 * items + 4) / 5;
-	case QUANT_16:
-		return items * 4;
-	case QUANT_20:
-		return (13 * items + 2) / 3;
-	case QUANT_24:
-		return (23 * items + 4) / 5;
-	case QUANT_32:
-		return 5 * items;
-	case QUANT_40:
-		return (16 * items + 2) / 3;
-	case QUANT_48:
-		return (28 * items + 4) / 5;
-	case QUANT_64:
-		return 6 * items;
-	case QUANT_80:
-		return (19 * items + 2) / 3;
-	case QUANT_96:
-		return (33 * items + 4) / 5;
-	case QUANT_128:
-		return 7 * items;
-	case QUANT_160:
-		return (22 * items + 2) / 3;
-	case QUANT_192:
-		return (38 * items + 4) / 5;
-	case QUANT_256:
-		return 8 * items;
-	default:
-		return 100000;
 	}
 }

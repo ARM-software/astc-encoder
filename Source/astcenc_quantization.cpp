@@ -552,7 +552,7 @@ void build_quantization_mode_table()
 	{
 		for (int j = 1; j <= 16; j++)
 		{
-			int p = compute_ise_bitcount(2 * j, (quantization_method)i);
+			int p = get_ise_sequence_bitcount(2 * j, (quantization_method)i);
 			if (p < 128)
 			{
 				quantization_mode_table[j][p] = i;

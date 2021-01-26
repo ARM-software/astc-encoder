@@ -136,7 +136,7 @@ void symbolic_to_physical(
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
-	int bits_for_weights = compute_ise_bitcount(real_weight_count,
+	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count,
 	                                            (quantization_method) weight_quantization_method);
 
 	if (is_dual_plane)
@@ -349,7 +349,7 @@ void physical_to_symbolic(
 		bswapped[i] = bitrev8(pcb.data[15 - i]);
 	}
 
-	int bits_for_weights = compute_ise_bitcount(real_weight_count,
+	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count,
 												(quantization_method) weight_quantization_method);
 
 	int below_weights_pos = 128 - bits_for_weights;
