@@ -210,7 +210,7 @@ void decompress_symbolic_block(
 
 	int is_dual_plane = bm.is_dual_plane;
 
-	int weight_quantization_level = bm.quantization_mode;
+	int weight_quant_level = bm.quant_mode;
 
 	// decode the color endpoints
 	uint4 color_endpoint0[4];
@@ -223,7 +223,7 @@ void decompress_symbolic_block(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb->color_formats[i],
-		                       scb->color_quantization_level,
+		                       scb->color_quant_level,
 		                       scb->color_values[i],
 		                       &(rgb_hdr_endpoint[i]),
 		                       &(alpha_hdr_endpoint[i]),
@@ -237,7 +237,7 @@ void decompress_symbolic_block(
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 	int weight_count = it->weight_count;
 
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
 	for (int i = 0; i < weight_count; i++)
 	{
@@ -325,7 +325,7 @@ float compute_symbolic_block_difference(
 	const decimation_table *it = ixtab2[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;
-	int weight_quantization_level = bm.quantization_mode;
+	int weight_quant_level = bm.quant_mode;
 
 	int weight_count = it->weight_count;
 	int texel_count = bsd->texel_count;
@@ -345,7 +345,7 @@ float compute_symbolic_block_difference(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb->color_formats[i],
-		                       scb->color_quantization_level,
+		                       scb->color_quant_level,
 		                       scb->color_values[i],
 		                       &(rgb_hdr_endpoint[i]),
 		                       &(alpha_hdr_endpoint[i]),
@@ -358,7 +358,7 @@ float compute_symbolic_block_difference(
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
 
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
 	for (int i = 0; i < weight_count; i++)
 	{

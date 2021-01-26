@@ -117,7 +117,7 @@ static int decode_block_mode_2d(
 	int weight_count = N * M * (D + 1);
 	int qmode = (base_quant_mode - 2) + 6 * H;
 
-	int weightbits = get_ise_sequence_bitcount(weight_count, (quantization_method)qmode);
+	int weightbits = get_ise_sequence_bitcount(weight_count, (quant_method)qmode);
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
 	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
 	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
@@ -213,7 +213,7 @@ static int decode_block_mode_3d(
 	int weight_count = N * M * Q * (D + 1);
 	int qmode = (base_quant_mode - 2) + 6 * H;
 
-	int weightbits = get_ise_sequence_bitcount(weight_count, (quantization_method)qmode);
+	int weightbits = get_ise_sequence_bitcount(weight_count, (quant_method)qmode);
 	if (weight_count > MAX_WEIGHTS_PER_BLOCK ||
 	    weightbits < MIN_WEIGHT_BITS_PER_BLOCK ||
 	    weightbits > MAX_WEIGHT_BITS_PER_BLOCK)
@@ -670,7 +670,7 @@ static int construct_dt_entry_2d(
 	int maxprec_2planes = -1;
 	for (int i = 0; i < 12; i++)
 	{
-		int bits_1plane = get_ise_sequence_bitcount(weight_count, (quantization_method) i);
+		int bits_1plane = get_ise_sequence_bitcount(weight_count, (quant_method)i);
 		if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
 		{
 			maxprec_1plane = i;
@@ -678,7 +678,7 @@ static int construct_dt_entry_2d(
 
 		if (try_2planes)
 		{
-			int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quantization_method) i);
+			int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quant_method)i);
 			if (bits_2planes >= MIN_WEIGHT_BITS_PER_BLOCK && bits_2planes <= MAX_WEIGHT_BITS_PER_BLOCK)
 			{
 				maxprec_2planes = i;
@@ -746,9 +746,9 @@ static void construct_block_size_descriptor_2d(
 	{
 		int x_weights, y_weights;
 		int is_dual_plane;
-		int quantization_mode;
+		int quant_mode;
 
-		bool valid = decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quantization_mode);
+		bool valid = decode_block_mode_2d(i, &x_weights, &y_weights, &is_dual_plane, &quant_mode);
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 		float percentile = percentiles[i];
@@ -799,7 +799,7 @@ static void construct_block_size_descriptor_2d(
 #endif
 
 		bsd.block_modes[packed_idx].decimation_mode = decimation_mode;
-		bsd.block_modes[packed_idx].quantization_mode = quantization_mode;
+		bsd.block_modes[packed_idx].quant_mode = quant_mode;
 		bsd.block_modes[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
 		bsd.block_modes[packed_idx].mode_index = i;
 		bsd.block_mode_packed_index[i] = packed_idx;
@@ -865,8 +865,8 @@ static void construct_block_size_descriptor_3d(
 				int maxprec_2planes = -1;
 				for (int i = 0; i < 12; i++)
 				{
-					int bits_1plane = get_ise_sequence_bitcount(weight_count, (quantization_method) i);
-					int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quantization_method) i);
+					int bits_1plane = get_ise_sequence_bitcount(weight_count, (quant_method)i);
+					int bits_2planes = get_ise_sequence_bitcount(2 * weight_count, (quant_method)i);
 
 					if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
 					{
@@ -911,10 +911,10 @@ static void construct_block_size_descriptor_3d(
 	{
 		int x_weights, y_weights, z_weights;
 		int is_dual_plane;
-		int quantization_mode;
+		int quant_mode;
 		int permit_encode = 1;
 
-		if (decode_block_mode_3d(i, &x_weights, &y_weights, &z_weights, &is_dual_plane, &quantization_mode))
+		if (decode_block_mode_3d(i, &x_weights, &y_weights, &z_weights, &is_dual_plane, &quant_mode))
 		{
 			if (x_weights > xdim || y_weights > ydim || z_weights > zdim)
 			{
@@ -931,7 +931,7 @@ static void construct_block_size_descriptor_3d(
 
 		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
 		bsd->block_modes[packed_idx].decimation_mode = decimation_mode;
-		bsd->block_modes[packed_idx].quantization_mode = quantization_mode;
+		bsd->block_modes[packed_idx].quant_mode = quant_mode;
 		bsd->block_modes[packed_idx].is_dual_plane = is_dual_plane ? 1 : 0;
 		bsd->block_modes[packed_idx].mode_index = i;
 

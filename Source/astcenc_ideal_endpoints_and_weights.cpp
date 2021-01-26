@@ -1060,13 +1060,13 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	const float* weight_set_in,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
-	int quantization_level
+	int quant_level
 ) {
 	int weight_count = it->weight_count;
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quantization_level]);
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
 	static const int quant_levels[12] = { 2,3,4,5,6,8,10,12,16,20,24,32 };
-	float quant_level_m1 = (float)(quant_levels[quantization_level] - 1);
+	float quant_level_m1 = (float)(quant_levels[quant_level] - 1);
 
 	// Quantize the weight set using both the specified low/high bounds
 	// and the standard 0..1 weight bounds.
@@ -1211,7 +1211,7 @@ static inline float4 compute_rgbovec(
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
 void recompute_ideal_colors_2planes(
-	int weight_quantization_mode,
+	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 	float4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
@@ -1223,7 +1223,7 @@ void recompute_ideal_colors_2planes(
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
@@ -1620,7 +1620,7 @@ void recompute_ideal_colors_2planes(
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
 void recompute_ideal_colors_1plane(
-	int weight_quantization_mode,
+	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 	float4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
@@ -1636,7 +1636,7 @@ void recompute_ideal_colors_1plane(
 	promise(weight_count > 0);
 	promise(partition_count > 0);
 
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_mode]);
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	for (int i = 0; i < weight_count; i++)

@@ -229,18 +229,18 @@ static void compute_lowest_and_highest_weight(
 }
 
 // main function for running the angular algorithm.
-static void compute_angular_endpoints_for_quantization_levels(
+static void compute_angular_endpoints_for_quant_levels(
 	int samplecount,
 	const float* samples,
 	const float* sample_weights,
-	int max_quantization_level,
+	int max_quant_level,
 	float low_value[12],
 	float high_value[12]
 ) {
-	int max_quantization_steps = quantization_steps_for_level[max_quantization_level + 1];
+	int max_quantization_steps = quantization_steps_for_level[max_quant_level + 1];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
-	int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quantization_level];
+	int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
 	compute_angular_offsets(samplecount, samples, sample_weights, max_angular_steps, angular_offsets);
 
 	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
@@ -316,7 +316,7 @@ static void compute_angular_endpoints_for_quantization_levels(
 		}
 	}
 
-	for (int i = 0; i <= max_quantization_level; i++)
+	for (int i = 0; i <= max_quant_level; i++)
 	{
 		int q = quantization_steps_for_level[i];
 		int bsi = best_scale[q];
@@ -362,7 +362,7 @@ void compute_angular_endpoints_1plane(
 		}
 
 		int samplecount = bsd->decimation_tables[i]->weight_count;
-		compute_angular_endpoints_for_quantization_levels(samplecount,
+		compute_angular_endpoints_for_quant_levels(samplecount,
 		                                                  decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
 		                                                  decimated_weights + i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
@@ -375,7 +375,7 @@ void compute_angular_endpoints_1plane(
 			continue;
 		}
 
-		int quant_mode = bm.quantization_mode;
+		int quant_mode = bm.quant_mode;
 		int decim_mode = bm.decimation_mode;
 
 		low_value[i] = low_values[decim_mode][quant_mode];
@@ -408,11 +408,11 @@ void compute_angular_endpoints_2planes(
 
 		int samplecount = bsd->decimation_tables[i]->weight_count;
 
-		compute_angular_endpoints_for_quantization_levels(samplecount,
+		compute_angular_endpoints_for_quant_levels(samplecount,
 		                                                  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
 		                                                  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
-		compute_angular_endpoints_for_quantization_levels(samplecount,
+		compute_angular_endpoints_for_quant_levels(samplecount,
 		                                                  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
 		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
@@ -425,7 +425,7 @@ void compute_angular_endpoints_2planes(
 			continue;
 		}
 
-		int quant_mode = bm.quantization_mode;
+		int quant_mode = bm.quant_mode;
 		int decim_mode = bm.decimation_mode;
 
 		low_value1[i] = low_values1[decim_mode][quant_mode];

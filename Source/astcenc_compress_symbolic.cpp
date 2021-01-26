@@ -61,8 +61,8 @@ static int realign_weights(
 	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
 	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
 	const block_mode& bm = bsd->block_modes[packed_index];
-	int weight_quantization_level = bm.quantization_mode;
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quantization_level]);
+	int weight_quant_level = bm.quant_mode;
+	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
 	// Get the decimation table
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
@@ -90,7 +90,7 @@ static int realign_weights(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb->color_formats[pa_idx],
-		                       scb->color_quantization_level,
+		                       scb->color_quant_level,
 		                       scb->color_values[pa_idx],
 		                       &rgb_hdr, &alpha_hdr, &nan_endpoint,
 		                       // TODO: Fix these casts ...
@@ -341,7 +341,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = get_ise_sequence_bitcount(
 		    ixtab2[decimation_mode]->weight_count,
-		    (quantization_method)bm.quantization_mode);
+		    (quant_method)bm.quant_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
@@ -357,7 +357,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
-		    bm.quantization_mode);
+		    bm.quant_mode);
 
 		// then, compute weight-errors for the weight mode.
 		qwt_errors[i] = compute_error_of_weight_set(
@@ -371,13 +371,13 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
 	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quantization_level[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	determine_optimal_set_of_endpoint_formats_to_use(
 	    bsd, pi, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
-	    color_quantization_level, color_quantization_level_mod);
+	    color_quant_level, color_quant_level_mod);
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
 	// find out which one is actually best.
@@ -402,7 +402,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		const block_mode& qw_bm = bsd->block_modes[qw_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
-		int weight_quantization_mode = qw_bm.quantization_mode;
+		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
 		weights_to_copy = it->weight_count;
@@ -410,7 +410,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		trace_add_data("weight_x", it->weight_x);
 		trace_add_data("weight_y", it->weight_y);
 		trace_add_data("weight_z", it->weight_z);
-		trace_add_data("weight_quant", weight_quantization_mode);
+		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
 		float4 rgbs_colors[4];
@@ -421,7 +421,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
 			recompute_ideal_colors_1plane(
-			    weight_quantization_mode, &(eix[decimation_mode].ep),
+			    weight_quant_mode, &(eix[decimation_mode].ep),
 			    rgbs_colors, rgbo_colors, u8_weight_src, pi, it, blk, ewb);
 
 			// quantize the chosen color
@@ -436,7 +436,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
 				    workscb.color_values[j],
-				    color_quantization_level[i]);
+				    color_quant_level[i]);
 			}
 
 			// if all the color endpoint modes are the same, we get a few more
@@ -446,7 +446,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			workscb.color_formats_matched = 0;
 
 			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
-			    && color_quantization_level[i] != color_quantization_level_mod[i])
+			    && color_quant_level[i] != color_quant_level_mod[i])
 			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
@@ -461,7 +461,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
-					    color_quantization_level_mod[i]);
+					    color_quant_level_mod[i]);
 				}
 
 				if (color_formats_mod[0] == color_formats_mod[1]
@@ -487,11 +487,11 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			// store header fields
 			workscb.partition_count = partition_count;
 			workscb.partition_index = partition_index;
-			workscb.color_quantization_level = workscb.color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
+			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.error_block = 0;
 
-			if (workscb.color_quantization_level < 4)
+			if (workscb.color_quant_level < 4)
 			{
 				workscb.error_block = 1; // should never happen, but cannot prove it impossible.
 			}
@@ -778,7 +778,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = get_ise_sequence_bitcount(
 			2 * ixtab2[decimation_mode]->weight_count,
-			(quantization_method)bm.quantization_mode);
+			(quant_method)bm.quant_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
@@ -794,7 +794,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		    weight_high_value1[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode),
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
-		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quantization_mode);
+		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quant_mode);
 
 		compute_ideal_quantized_weights_for_decimation_table(
 		    ixtab2[decimation_mode],
@@ -802,7 +802,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		    weight_high_value2[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode + 1),
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1),
-		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1), bm.quantization_mode);
+		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1), bm.quant_mode);
 
 
 		// then, compute quantization errors for the block mode.
@@ -820,8 +820,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	// decide the optimal combination of color endpoint encodings and weight encodings.
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
 	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quantization_level[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quantization_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
+	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
 	merge_endpoints(&(ei1->ep), &(ei2->ep), separate_component, &epm);
@@ -829,7 +829,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	determine_optimal_set_of_endpoint_formats_to_use(
 	    bsd, pi, blk, ewb, &epm, separate_component, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
-	    color_quantization_level, color_quantization_level_mod);
+	    color_quant_level, color_quant_level_mod);
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
 	// find out which one is actually best.
@@ -855,7 +855,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		const block_mode& qw_bm = bsd->block_modes[qw_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
-		int weight_quantization_mode = qw_bm.quantization_mode;
+		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table *it = ixtab2[decimation_mode];
 
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
@@ -865,7 +865,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		trace_add_data("weight_x", it->weight_x);
 		trace_add_data("weight_y", it->weight_y);
 		trace_add_data("weight_z", it->weight_z);
-		trace_add_data("weight_quant", weight_quantization_mode);
+		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
 		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), separate_component, &epm);
@@ -878,7 +878,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
 			recompute_ideal_colors_2planes(
-			    weight_quantization_mode, &epm, rgbs_colors, rgbo_colors,
+			    weight_quant_mode, &epm, rgbs_colors, rgbo_colors,
 			    u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
 
 			// store the colors for the block
@@ -889,13 +889,13 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				                            rgbs_colors[j], rgbo_colors[j],
 				                            partition_format_specifiers[i][j],
 				                            workscb.color_values[j],
-				                            color_quantization_level[i]);
+				                            color_quant_level[i]);
 			}
 
 			workscb.color_formats_matched = 0;
 
 			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
-			    && color_quantization_level[i] != color_quantization_level_mod[i])
+			    && color_quant_level[i] != color_quant_level_mod[i])
 			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
@@ -910,7 +910,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
-					    color_quantization_level_mod[i]);
+					    color_quant_level_mod[i]);
 				}
 
 				if (color_formats_mod[0] == color_formats_mod[1]
@@ -936,12 +936,12 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			// store header fields
 			workscb.partition_count = partition_count;
 			workscb.partition_index = partition_index;
-			workscb.color_quantization_level = workscb.color_formats_matched ? color_quantization_level_mod[i] : color_quantization_level[i];
+			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_color_component = separate_component;
 			workscb.error_block = 0;
 
-			if (workscb.color_quantization_level < 4)
+			if (workscb.color_quant_level < 4)
 			{
 				workscb.error_block = 1;	// should never happen, but cannot prove it impossible
 			}

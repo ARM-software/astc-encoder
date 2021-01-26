@@ -425,7 +425,7 @@ static const std::array<ise_size, 21> ise_sizes = {{
 /* See header for documentation. */
 int get_ise_sequence_bitcount(
 	int items,
-	quantization_method quant
+	quant_method quant
 ) {
 	// Cope with out-of bounds values - input might be invalid
 	if (static_cast<size_t>(quant) >= ise_sizes.size())
@@ -475,7 +475,7 @@ static inline int read_bits(
 }
 
 void encode_ise(
-	int quantization_level,
+	int quant_level,
 	int elements,
 	const uint8_t* input_data,
 	uint8_t* output_data,
@@ -485,9 +485,9 @@ void encode_ise(
 	uint8_t highparts[69];		// 64 elements + 5 elements for padding
 	uint8_t tq_blocks[22];		// trit-blocks or quint-blocks
 
-	int bits = btq_counts[quantization_level].bits;
-	int trits = btq_counts[quantization_level].trits;
-	int quints = btq_counts[quantization_level].quints;
+	int bits = btq_counts[quant_level].bits;
+	int trits = btq_counts[quant_level].trits;
+	int quints = btq_counts[quant_level].quints;
 
 	promise(elements > 0);
 	for (int i = 0; i < elements; i++)
@@ -555,7 +555,7 @@ void encode_ise(
 }
 
 void decode_ise(
-	int quantization_level,
+	int quant_level,
 	int elements,
 	const uint8_t* input_data,
 	uint8_t* output_data,
@@ -568,9 +568,9 @@ void decode_ise(
 	uint8_t results[68];
 	uint8_t tq_blocks[22];		// trit-blocks or quint-blocks
 
-	int bits = btq_counts[quantization_level].bits;
-	int trits = btq_counts[quantization_level].trits;
-	int quints = btq_counts[quantization_level].quints;
+	int bits = btq_counts[quant_level].bits;
+	int trits = btq_counts[quant_level].trits;
+	int quints = btq_counts[quant_level].quints;
 
 	int lcounter = 0;
 	int hcounter = 0;

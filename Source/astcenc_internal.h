@@ -438,7 +438,7 @@ struct decimation_table
 struct block_mode
 {
 	int8_t decimation_mode;
-	int8_t quantization_mode;
+	int8_t quant_mode;
 	uint8_t is_dual_plane : 1;
 	uint8_t percentile_hit : 1;
 	uint8_t percentile_always : 1;
@@ -601,7 +601,7 @@ struct error_weight_block
 };
 
 // enumeration of all the quantization methods we support under this format.
-enum quantization_method
+enum quant_method
 {
 	QUANT_2 = 0,
 	QUANT_3 = 1,
@@ -643,7 +643,7 @@ enum quantization_method
 struct quantization_and_transfer_table
 {
 	/** The quantization level used */
-	quantization_method method;
+	quant_method method;
 	/** The unscrambled unquantized value. */
 	float unquantized_value_unsc[33];
 	/** The scrambling order: value[map[i]] == value_unsc[i] */
@@ -691,7 +691,7 @@ struct symbolic_compressed_block
 	int partition_index;		// 0 to 1023
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
-	int color_quantization_level;
+	int color_quant_level;
 	int plane2_color_component;	// color component for the secondary plane of weights
 	int color_values[4][12];	// quantized endpoint color pairs.
 	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
@@ -795,19 +795,19 @@ int is_legal_3d_block_size(
 // functions and data pertaining to quantization and encoding
 // **********************************************************
 
-extern const uint8_t color_quantization_tables[21][256];
-extern const uint8_t color_unquantization_tables[21][256];
-extern int8_t quantization_mode_table[17][128];
+extern const uint8_t color_quant_tables[21][256];
+extern const uint8_t color_unquant_tables[21][256];
+extern int8_t quant_mode_table[17][128];
 
 void encode_ise(
-	int quantization_level,
+	int quant_level,
 	int elements,
 	const uint8_t* input_data,
 	uint8_t* output_data,
 	int bit_offset);
 
 void decode_ise(
-	int quantization_level,
+	int quant_level,
 	int elements,
 	const uint8_t* input_data,
 	uint8_t* output_data,
@@ -825,9 +825,9 @@ void decode_ise(
  */
 int get_ise_sequence_bitcount(
 	int items,
-	quantization_method quant);
+	quant_method quant);
 
-void build_quantization_mode_table(void);
+void build_quant_mode_table(void);
 
 // **********************************************
 // functions and data pertaining to partitioning
@@ -1092,7 +1092,7 @@ void compute_ideal_quantized_weights_for_decimation_table(
 	const float* weight_set_in,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
-	int quantization_level);
+	int quant_level);
 
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
@@ -1116,13 +1116,13 @@ int pack_color_endpoints(
 	float4 rgbo_color,
 	int format,
 	int* output,
-	int quantization_level);
+	int quant_level);
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
-	int quantization_level,
+	int quant_level,
 	const int* input,
 	int* rgb_hdr,
 	int* alpha_hdr,
@@ -1187,11 +1187,11 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	// output data
 	int partition_format_specifiers[4][4],
 	int quantized_weight[4],
-	int quantization_level[4],
-	int quantization_level_mod[4]);
+	int quant_level[4],
+	int quant_level_mod[4]);
 
 void recompute_ideal_colors_1plane(
-	int weight_quantization_mode,
+	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
 	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
@@ -1202,7 +1202,7 @@ void recompute_ideal_colors_1plane(
 	const error_weight_block* ewb);
 
 void recompute_ideal_colors_2planes(
-	int weight_quantization_mode,
+	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
 	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
 	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)

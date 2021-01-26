@@ -23,18 +23,18 @@
 
 static int rgb_delta_unpack(
 	const int input[6],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
 	// unquantize the color endpoints
-	int r0 = color_unquantization_tables[quantization_level][input[0]];
-	int g0 = color_unquantization_tables[quantization_level][input[2]];
-	int b0 = color_unquantization_tables[quantization_level][input[4]];
+	int r0 = color_unquant_tables[quant_level][input[0]];
+	int g0 = color_unquant_tables[quant_level][input[2]];
+	int b0 = color_unquant_tables[quant_level][input[4]];
 
-	int r1 = color_unquantization_tables[quantization_level][input[1]];
-	int g1 = color_unquantization_tables[quantization_level][input[3]];
-	int b1 = color_unquantization_tables[quantization_level][input[5]];
+	int r1 = color_unquant_tables[quant_level][input[1]];
+	int g1 = color_unquant_tables[quant_level][input[3]];
+	int b1 = color_unquant_tables[quant_level][input[5]];
 
 	// perform the bit-transfer procedure
 	r0 |= (r1 & 0x80) << 1;
@@ -116,16 +116,16 @@ static int rgb_delta_unpack(
 
 static int rgb_unpack(
 	const int input[6],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int ri0b = color_unquantization_tables[quantization_level][input[0]];
-	int ri1b = color_unquantization_tables[quantization_level][input[1]];
-	int gi0b = color_unquantization_tables[quantization_level][input[2]];
-	int gi1b = color_unquantization_tables[quantization_level][input[3]];
-	int bi0b = color_unquantization_tables[quantization_level][input[4]];
-	int bi1b = color_unquantization_tables[quantization_level][input[5]];
+	int ri0b = color_unquant_tables[quant_level][input[0]];
+	int ri1b = color_unquant_tables[quant_level][input[1]];
+	int gi0b = color_unquant_tables[quant_level][input[2]];
+	int gi1b = color_unquant_tables[quant_level][input[3]];
+	int bi0b = color_unquant_tables[quant_level][input[4]];
+	int bi1b = color_unquant_tables[quant_level][input[5]];
 
 	if (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b)
 	{
@@ -163,31 +163,31 @@ static int rgb_unpack(
 
 static void rgba_unpack(
 	const int input[8],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int order = rgb_unpack(input, quantization_level, output0, output1);
+	int order = rgb_unpack(input, quant_level, output0, output1);
 	if (order == 0)
 	{
-		output0->a = color_unquantization_tables[quantization_level][input[6]];
-		output1->a = color_unquantization_tables[quantization_level][input[7]];
+		output0->a = color_unquant_tables[quant_level][input[6]];
+		output1->a = color_unquant_tables[quant_level][input[7]];
 	}
 	else
 	{
-		output0->a = color_unquantization_tables[quantization_level][input[7]];
-		output1->a = color_unquantization_tables[quantization_level][input[6]];
+		output0->a = color_unquant_tables[quant_level][input[7]];
+		output1->a = color_unquant_tables[quant_level][input[6]];
 	}
 }
 
 static void rgba_delta_unpack(
 	const int input[8],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int a0 = color_unquantization_tables[quantization_level][input[6]];
-	int a1 = color_unquantization_tables[quantization_level][input[7]];
+	int a0 = color_unquant_tables[quant_level][input[6]];
+	int a1 = color_unquant_tables[quant_level][input[7]];
 	a0 |= (a1 & 0x80) << 1;
 	a1 &= 0x7F;
 	if (a1 & 0x40)
@@ -198,7 +198,7 @@ static void rgba_delta_unpack(
 
 	a1 = astc::clamp(a1, 0, 255);
 
-	int order = rgb_delta_unpack(input, quantization_level, output0, output1);
+	int order = rgb_delta_unpack(input, quant_level, output0, output1);
 	if (order == 0)
 	{
 		output0->a = a0;
@@ -213,15 +213,15 @@ static void rgba_delta_unpack(
 
 static void rgb_scale_unpack(
 	const int input[4],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int ir = color_unquantization_tables[quantization_level][input[0]];
-	int ig = color_unquantization_tables[quantization_level][input[1]];
-	int ib = color_unquantization_tables[quantization_level][input[2]];
+	int ir = color_unquant_tables[quant_level][input[0]];
+	int ig = color_unquant_tables[quant_level][input[1]];
+	int ib = color_unquant_tables[quant_level][input[2]];
 
-	int iscale = color_unquantization_tables[quantization_level][input[3]];
+	int iscale = color_unquant_tables[quant_level][input[3]];
 
 	*output1 = uint4(ir, ig, ib, 255);
 	*output0 = uint4((ir * iscale) >> 8, (ig * iscale) >> 8, (ib * iscale) >> 8, 255);
@@ -229,35 +229,35 @@ static void rgb_scale_unpack(
 
 static void rgb_scale_alpha_unpack(
 	const int input[6],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	rgb_scale_unpack(input, quantization_level, output0, output1);
-	output0->a = color_unquantization_tables[quantization_level][input[4]];
-	output1->a = color_unquantization_tables[quantization_level][input[5]];
+	rgb_scale_unpack(input, quant_level, output0, output1);
+	output0->a = color_unquant_tables[quant_level][input[4]];
+	output1->a = color_unquant_tables[quant_level][input[5]];
 }
 
 static void luminance_unpack(
 	const int input[2],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int lum0 = color_unquantization_tables[quantization_level][input[0]];
-	int lum1 = color_unquantization_tables[quantization_level][input[1]];
+	int lum0 = color_unquant_tables[quant_level][input[0]];
+	int lum1 = color_unquant_tables[quant_level][input[1]];
 	*output0 = uint4(lum0, lum0, lum0, 255);
 	*output1 = uint4(lum1, lum1, lum1, 255);
 }
 
 static void luminance_delta_unpack(
 	const int input[2],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int v0 = color_unquantization_tables[quantization_level][input[0]];
-	int v1 = color_unquantization_tables[quantization_level][input[1]];
+	int v0 = color_unquant_tables[quant_level][input[0]];
+	int v1 = color_unquant_tables[quant_level][input[1]];
 	int l0 = (v0 >> 2) | (v1 & 0xC0);
 	int l1 = l0 + (v1 & 0x3F);
 
@@ -269,28 +269,28 @@ static void luminance_delta_unpack(
 
 static void luminance_alpha_unpack(
 	const int input[4],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int lum0 = color_unquantization_tables[quantization_level][input[0]];
-	int lum1 = color_unquantization_tables[quantization_level][input[1]];
-	int alpha0 = color_unquantization_tables[quantization_level][input[2]];
-	int alpha1 = color_unquantization_tables[quantization_level][input[3]];
+	int lum0 = color_unquant_tables[quant_level][input[0]];
+	int lum1 = color_unquant_tables[quant_level][input[1]];
+	int alpha0 = color_unquant_tables[quant_level][input[2]];
+	int alpha1 = color_unquant_tables[quant_level][input[3]];
 	*output0 = uint4(lum0, lum0, lum0, alpha0);
 	*output1 = uint4(lum1, lum1, lum1, alpha1);
 }
 
 static void luminance_alpha_delta_unpack(
 	const int input[4],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int lum0 = color_unquantization_tables[quantization_level][input[0]];
-	int lum1 = color_unquantization_tables[quantization_level][input[1]];
-	int alpha0 = color_unquantization_tables[quantization_level][input[2]];
-	int alpha1 = color_unquantization_tables[quantization_level][input[3]];
+	int lum0 = color_unquant_tables[quant_level][input[0]];
+	int lum1 = color_unquant_tables[quant_level][input[1]];
+	int alpha0 = color_unquant_tables[quant_level][input[2]];
+	int alpha1 = color_unquant_tables[quant_level][input[3]];
 
 	lum0 |= (lum1 & 0x80) << 1;
 	alpha0 |= (alpha1 & 0x80) << 1;
@@ -318,14 +318,14 @@ static void luminance_alpha_delta_unpack(
 // RGB-offset format
 static void hdr_rgbo_unpack3(
 	const int input[4],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int v0 = color_unquantization_tables[quantization_level][input[0]];
-	int v1 = color_unquantization_tables[quantization_level][input[1]];
-	int v2 = color_unquantization_tables[quantization_level][input[2]];
-	int v3 = color_unquantization_tables[quantization_level][input[3]];
+	int v0 = color_unquant_tables[quant_level][input[0]];
+	int v1 = color_unquant_tables[quant_level][input[1]];
+	int v2 = color_unquant_tables[quant_level][input[2]];
+	int v3 = color_unquant_tables[quant_level][input[3]];
 
 	int modeval = ((v0 & 0xC0) >> 6) | (((v1 & 0x80) >> 7) << 2) | (((v2 & 0x80) >> 7) << 3);
 
@@ -462,17 +462,17 @@ static void hdr_rgbo_unpack3(
 
 static void hdr_rgb_unpack3(
 	const int input[6],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
 
-	int v0 = color_unquantization_tables[quantization_level][input[0]];
-	int v1 = color_unquantization_tables[quantization_level][input[1]];
-	int v2 = color_unquantization_tables[quantization_level][input[2]];
-	int v3 = color_unquantization_tables[quantization_level][input[3]];
-	int v4 = color_unquantization_tables[quantization_level][input[4]];
-	int v5 = color_unquantization_tables[quantization_level][input[5]];
+	int v0 = color_unquant_tables[quant_level][input[0]];
+	int v1 = color_unquant_tables[quant_level][input[1]];
+	int v2 = color_unquant_tables[quant_level][input[2]];
+	int v3 = color_unquant_tables[quant_level][input[3]];
+	int v4 = color_unquant_tables[quant_level][input[4]];
+	int v5 = color_unquant_tables[quant_level][input[5]];
 
 	// extract all the fixed-placement bitfields
 	int modeval = ((v1 & 0x80) >> 7) | (((v2 & 0x80) >> 7) << 1) | (((v3 & 0x80) >> 7) << 2);
@@ -618,26 +618,26 @@ static void hdr_rgb_unpack3(
 
 static void hdr_rgb_ldr_alpha_unpack3(
 	const int input[8],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	hdr_rgb_unpack3(input, quantization_level, output0, output1);
+	hdr_rgb_unpack3(input, quant_level, output0, output1);
 
-	int v6 = color_unquantization_tables[quantization_level][input[6]];
-	int v7 = color_unquantization_tables[quantization_level][input[7]];
+	int v6 = color_unquant_tables[quant_level][input[6]];
+	int v7 = color_unquant_tables[quant_level][input[7]];
 	output0->a = v6;
 	output1->a = v7;
 }
 
 static void hdr_luminance_small_range_unpack(
 	const int input[2],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int v0 = color_unquantization_tables[quantization_level][input[0]];
-	int v1 = color_unquantization_tables[quantization_level][input[1]];
+	int v0 = color_unquant_tables[quant_level][input[0]];
+	int v1 = color_unquant_tables[quant_level][input[1]];
 
 	int y0, y1;
 	if (v0 & 0x80)
@@ -661,12 +661,12 @@ static void hdr_luminance_small_range_unpack(
 
 static void hdr_luminance_large_range_unpack(
 	const int input[2],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	int v0 = color_unquantization_tables[quantization_level][input[0]];
-	int v1 = color_unquantization_tables[quantization_level][input[1]];
+	int v0 = color_unquant_tables[quant_level][input[0]];
+	int v1 = color_unquant_tables[quant_level][input[1]];
 
 	int y0, y1;
 	if (v1 >= v0)
@@ -685,13 +685,13 @@ static void hdr_luminance_large_range_unpack(
 
 static void hdr_alpha_unpack(
 	const int input[2],
-	int quantization_level,
+	int quant_level,
 	int* output0,
 	int* output1
 ) {
 
-	int v6 = color_unquantization_tables[quantization_level][input[0]];
-	int v7 = color_unquantization_tables[quantization_level][input[1]];
+	int v6 = color_unquant_tables[quant_level][input[0]];
+	int v7 = color_unquant_tables[quant_level][input[1]];
 
 	int selector = ((v6 >> 7) & 1) | ((v7 >> 6) & 2);
 	v6 &= 0x7F;
@@ -726,14 +726,14 @@ static void hdr_alpha_unpack(
 
 static void hdr_rgb_hdr_alpha_unpack3(
 	const int input[8],
-	int quantization_level,
+	int quant_level,
 	uint4* output0,
 	uint4* output1
 ) {
-	hdr_rgb_unpack3(input, quantization_level, output0, output1);
+	hdr_rgb_unpack3(input, quant_level, output0, output1);
 
 	int alpha0, alpha1;
-	hdr_alpha_unpack(input + 6, quantization_level, &alpha0, &alpha1);
+	hdr_alpha_unpack(input + 6, quant_level, &alpha0, &alpha1);
 
 	output0->a = alpha0;
 	output1->a = alpha1;
@@ -742,7 +742,7 @@ static void hdr_rgb_hdr_alpha_unpack3(
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
-	int quantization_level,
+	int quant_level,
 	const int* input,
 	int* rgb_hdr,
 	int* alpha_hdr,
@@ -758,97 +758,97 @@ void unpack_color_endpoints(
 	case FMT_LUMINANCE:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		luminance_unpack(input, quantization_level, output0, output1);
+		luminance_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_LUMINANCE_DELTA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		luminance_delta_unpack(input, quantization_level, output0, output1);
+		luminance_delta_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_LUMINANCE_SMALL_RANGE:
 		*rgb_hdr = 1;
 		*alpha_hdr = -1;
-		hdr_luminance_small_range_unpack(input, quantization_level, output0, output1);
+		hdr_luminance_small_range_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_LUMINANCE_LARGE_RANGE:
 		*rgb_hdr = 1;
 		*alpha_hdr = -1;
-		hdr_luminance_large_range_unpack(input, quantization_level, output0, output1);
+		hdr_luminance_large_range_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_LUMINANCE_ALPHA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		luminance_alpha_unpack(input, quantization_level, output0, output1);
+		luminance_alpha_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_LUMINANCE_ALPHA_DELTA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		luminance_alpha_delta_unpack(input, quantization_level, output0, output1);
+		luminance_alpha_delta_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGB_SCALE:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgb_scale_unpack(input, quantization_level, output0, output1);
+		rgb_scale_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGB_SCALE_ALPHA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgb_scale_alpha_unpack(input, quantization_level, output0, output1);
+		rgb_scale_alpha_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_RGB_SCALE:
 		*rgb_hdr = 1;
 		*alpha_hdr = -1;
-		hdr_rgbo_unpack3(input, quantization_level, output0, output1);
+		hdr_rgbo_unpack3(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGB:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgb_unpack(input, quantization_level, output0, output1);
+		rgb_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGB_DELTA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgb_delta_unpack(input, quantization_level, output0, output1);
+		rgb_delta_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_RGB:
 		*rgb_hdr = 1;
 		*alpha_hdr = -1;
-		hdr_rgb_unpack3(input, quantization_level, output0, output1);
+		hdr_rgb_unpack3(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGBA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgba_unpack(input, quantization_level, output0, output1);
+		rgba_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_RGBA_DELTA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgba_delta_unpack(input, quantization_level, output0, output1);
+		rgba_delta_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_RGB_LDR_ALPHA:
 		*rgb_hdr = 1;
 		*alpha_hdr = 0;
-		hdr_rgb_ldr_alpha_unpack3(input, quantization_level, output0, output1);
+		hdr_rgb_ldr_alpha_unpack3(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_RGBA:
 		*rgb_hdr = 1;
 		*alpha_hdr = 1;
-		hdr_rgb_hdr_alpha_unpack3(input, quantization_level, output0, output1);
+		hdr_rgb_hdr_alpha_unpack3(input, quant_level, output0, output1);
 		break;
 	}
 

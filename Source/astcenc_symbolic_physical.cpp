@@ -131,13 +131,13 @@ void symbolic_to_physical(
 	const block_mode& bm = bsd.block_modes[packed_index];
 
 	int weight_count = ixtab2[bm.decimation_mode]->weight_count;
-	int weight_quantization_method = bm.quantization_mode;
+	int weight_quant_method = bm.quant_mode;
 	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
 	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count,
-	                                            (quantization_method) weight_quantization_method);
+	                                                 (quant_method)weight_quant_method);
 
 	if (is_dual_plane)
 	{
@@ -147,11 +147,11 @@ void symbolic_to_physical(
 			weights[2 * i] = scb.weights[i];
 			weights[2 * i + 1] = scb.weights[i + PLANE2_WEIGHTS_OFFSET];
 		}
-		encode_ise(weight_quantization_method, real_weight_count, weights, weightbuf, 0);
+		encode_ise(weight_quant_method, real_weight_count, weights, weightbuf, 0);
 	}
 	else
 	{
-		encode_ise(weight_quantization_method, weight_count, scb.weights, weightbuf, 0);
+		encode_ise(weight_quant_method, weight_count, scb.weights, weightbuf, 0);
 	}
 
 	for (int i = 0; i < 16; i++)
@@ -244,7 +244,7 @@ void symbolic_to_physical(
 	}
 
 	// then, encode an ISE based on them.
-	encode_ise(scb.color_quantization_level, valuecount_to_encode, values_to_encode, pcb.data, (scb.partition_count == 1 ? 17 : 19 + PARTITION_BITS));
+	encode_ise(scb.color_quant_level, valuecount_to_encode, values_to_encode, pcb.data, (scb.partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 }
 
 void physical_to_symbolic(
@@ -334,7 +334,7 @@ void physical_to_symbolic(
 	const struct block_mode& bm = bsd.block_modes[packed_index];
 
 	int weight_count = ixtab2[bm.decimation_mode]->weight_count;
-	int weight_quantization_method = bm.quantization_mode;
+	int weight_quant_method = bm.quant_mode;
 	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
@@ -350,14 +350,14 @@ void physical_to_symbolic(
 	}
 
 	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count,
-												(quantization_method) weight_quantization_method);
+	                                                 (quant_method)weight_quant_method);
 
 	int below_weights_pos = 128 - bits_for_weights;
 
 	if (is_dual_plane)
 	{
 		uint8_t indices[64];
-		decode_ise(weight_quantization_method, real_weight_count, bswapped, indices, 0);
+		decode_ise(weight_quant_method, real_weight_count, bswapped, indices, 0);
 		for (int i = 0; i < weight_count; i++)
 		{
 			scb.weights[i] = indices[2 * i];
@@ -366,7 +366,7 @@ void physical_to_symbolic(
 	}
 	else
 	{
-		decode_ise(weight_quantization_method, weight_count, bswapped, scb.weights, 0);
+		decode_ise(weight_quant_method, weight_count, bswapped, scb.weights, 0);
 	}
 
 	if (is_dual_plane && partition_count == 4)
@@ -452,16 +452,16 @@ void physical_to_symbolic(
 		color_bits = 0;
 	}
 
-	int color_quantization_level = quantization_mode_table[color_integer_count >> 1][color_bits];
-	scb.color_quantization_level = color_quantization_level;
-	if (color_quantization_level < 4)
+	int color_quant_level = quant_mode_table[color_integer_count >> 1][color_bits];
+	scb.color_quant_level = color_quant_level;
+	if (color_quant_level < 4)
 	{
 		scb.error_block = 1;
 	}
 
 	// then unpack the integer-bits
 	uint8_t values_to_decode[32];
-	decode_ise(color_quantization_level, color_integer_count, pcb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
+	decode_ise(color_quant_level, color_integer_count, pcb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 
 	// and distribute them over the endpoint types
 	int valuecount_to_decode = 0;
