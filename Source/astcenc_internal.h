@@ -113,6 +113,19 @@
 	#define promise(cond) assert(cond);
 #endif
 
+/**
+ * @brief Make a promise to the compiler's optimizer parameters don't alias.
+ *
+ * This is a compiler extension to implement the equivalent of the C99
+ *  @c restrict keyword. Mostly expected to help on functions which are
+ * reading and writing to arrays via pointers of the same basic type.
+ */
+#if !defined(__clang__) && defined(_MSC_VER)
+	#define RESTRICT __restrict
+#else // Assume Clang or GCC
+	#define RESTRICT __restrict__
+#endif
+
 /* ============================================================================
   Constants
 ============================================================================ */
@@ -1079,13 +1092,29 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	endpoints_and_weights* ei1, // primary plane weights
 	endpoints_and_weights* ei2); // secondary plane weights
 
+/**
+ * @brief Compute the optimal weights for a decimation table.
+ *
+ * Compute the idealized weight set, assuming infinite precision and no
+ * quantization. Later functions will use this as a staring points.
+ *
+ * @param      eai          The non-decimated endpoints and weights.
+ * @param      dt           The selected decimation table.
+ * @param[out] weight_set   The output decimated weight set.
+ * @param[out] weights      The output decimated weights.
+ */
 void compute_ideal_weights_for_decimation_table(
-	const endpoints_and_weights* eai,
-	const decimation_table* it,
+	const endpoints_and_weights& eai,
+	const decimation_table& dt,
 	float* weight_set,
 	float* weights);
 
-void compute_ideal_quantized_weights_for_decimation_table(
+/**
+ * @brief Compute the best quantized weights for a decimation table.
+ *
+ * Compute the quantized weight set, for a specific quant level.
+ */
+void compute_quantized_weights_for_decimation_table(
 	const decimation_table* it,
 	float low_bound,
 	float high_bound,

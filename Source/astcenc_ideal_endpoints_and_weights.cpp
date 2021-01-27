@@ -937,100 +937,97 @@ float compute_error_of_weight_set(
 	return error_summa;
 }
 
-/*
-	Given a complete weight set and a decimation table, try to
-	compute the optimal weight set (assuming infinite precision)
-	given the selected decimation table.
-*/
+/* See header for documentation. */
 void compute_ideal_weights_for_decimation_table(
-	const endpoints_and_weights* eai,
-	const decimation_table* it,
-	float* weight_set,
-	float* weights
+	const endpoints_and_weights& eai,
+	const decimation_table& dt,
+	float* RESTRICT weight_set,
+	float* RESTRICT weights
 ) {
-	int texel_count = it->texel_count;
-	int weight_count = it->weight_count;
+	int texel_count = dt.texel_count;
+	int weight_count = dt.weight_count;
 
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// perform a shortcut in the case of a complete decimation table
+	// If we have a 1:1 mapping just shortcut the computation
 	if (texel_count == weight_count)
 	{
 		for (int i = 0; i < texel_count; i++)
 		{
-			int texel = it->weight_texel[i][0];
-			weight_set[i] = eai->weights[texel];
-			weights[i] = eai->weight_error_scale[texel];
+			assert(i == dt.weight_texel[i][0]);
+			weight_set[i] = eai.weights[i];
+			weights[i] = eai.weight_error_scale[i];
 		}
 		return;
 	}
 
-	// if the shortcut is not available, we will instead compute a simple estimate
-	// and perform a single iteration of refinement on that estimate.
+	// Otherwise compute an estimate and perform single refinement iteration
 	float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
-	// compute an initial average for each weight.
+	// Compute an initial average for each weight
 	for (int i = 0; i < weight_count; i++)
 	{
-		float weight_weight = 1e-10f;	// to avoid 0/0 later on
+		// Start with a small value to avoid div-by-zero later
+		float weight_weight = 1e-10f;
 		float initial_weight = 0.0f;
 
-		int weight_texel_count = it->weight_texel_count[i];
+		// Accumulate error weighting of all the texels using this weight
+		int weight_texel_count = dt.weight_texel_count[i];
 		promise(weight_texel_count > 0);
+
 		for (int j = 0; j < weight_texel_count; j++)
 		{
-			int texel = it->weight_texel[i][j];
-			float weight = it->weights_flt[i][j];
-			float contrib_weight = weight * eai->weight_error_scale[texel];
+			int texel = dt.weight_texel[i][j];
+			float weight = dt.weights_flt[i][j];
+			float contrib_weight = weight * eai.weight_error_scale[texel];
 			weight_weight += contrib_weight;
-			initial_weight += eai->weights[texel] * contrib_weight;
+			initial_weight += eai.weights[texel] * contrib_weight;
 		}
 
 		weights[i] = weight_weight;
-		weight_set[i] = initial_weight / weight_weight;	// this is the 0/0 that is to be avoided.
+		weight_set[i] = initial_weight / weight_weight;
 	}
 
-	// TODO: Unroll this using the new SOA _t4 layout?
+	// Populate the interpolated weight grid based on the initital average
 	for (int i = 0; i < texel_count; i++)
 	{
-		const uint8_t *texel_weights = it->texel_weights_t4[i];
-		const float *texel_weights_float = it->texel_weights_float_t4[i];
+		const uint8_t *texel_weights = dt.texel_weights_t4[i];
+		const float *texel_weights_float = dt.texel_weights_float_t4[i];
 		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
 		                     + weight_set[texel_weights[1]] * texel_weights_float[1])
 		                    + (weight_set[texel_weights[2]] * texel_weights_float[2]
 		                     + weight_set[texel_weights[3]] * texel_weights_float[3]);
 	}
 
+	// Perform a single iteration of refinement
 	constexpr float stepsize = 0.25f;
-	constexpr float ch0_scale = 4.0f * (stepsize * stepsize * (1.0f / (TEXEL_WEIGHT_SUM * TEXEL_WEIGHT_SUM)));
-	constexpr float ch1_scale = -2.0f * (stepsize * (2.0f / TEXEL_WEIGHT_SUM));
-	constexpr float chd_scale = (ch1_scale / ch0_scale) * stepsize;
+	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
 
 	for (int i = 0; i < weight_count; i++)
 	{
 		float weight_val = weight_set[i];
 
-		const uint8_t *weight_texel_ptr = it->weight_texel[i];
-		const float *weights_ptr = it->weights_flt[i];
+		const uint8_t *weight_texel_ptr = dt.weight_texel[i];
+		const float *weights_ptr = dt.weights_flt[i];
 
-
-		float error_change0 = 1e-10f; // done in order to ensure that this value isn't 0, in order to avoid a possible divide by zero later.
+		// Start with a small value to avoid div-by-zero later
+		float error_change0 = 1e-10f;
 		float error_change1 = 0.0f;
 
-		// compute the two error changes that can occur from perturbing the current index.
-		int weight_texel_count = it->weight_texel_count[i];
+		// Compute the two error changes that occur from perturbing the current index
+		int weight_texel_count = dt.weight_texel_count[i];
 		promise(weight_texel_count > 0);
 		for (int k = 0; k < weight_texel_count; k++)
 		{
-			uint8_t weight_texel = weight_texel_ptr[k];
-			float weights2 = weights_ptr[k];
+			uint8_t texel = weight_texel_ptr[k];
+			float contrib_weight = weights_ptr[k];
 
-			float scale = eai->weight_error_scale[weight_texel] * weights2;
-			float old_weight = infilled_weights[weight_texel];
-			float ideal_weight = eai->weights[weight_texel];
+			float scale = eai.weight_error_scale[texel] * contrib_weight;
+			float old_weight = infilled_weights[texel];
+			float ideal_weight = eai.weights[texel];
 
-			error_change0 += weights2 * scale;
+			error_change0 +=  contrib_weight * scale;
 			error_change1 += (old_weight - ideal_weight) * scale;
 		}
 
@@ -1053,7 +1050,7 @@ void compute_ideal_weights_for_decimation_table(
 	Repeat until we have made a complete processing pass over all weights without
 	triggering any perturbations *OR* we have run 4 full passes.
 */
-void compute_ideal_quantized_weights_for_decimation_table(
+void compute_quantized_weights_for_decimation_table(
 	const decimation_table* it,
 	float low_bound,
 	float high_bound,

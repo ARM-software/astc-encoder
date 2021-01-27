@@ -257,8 +257,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		eix[i] = *ei;
 
 		compute_ideal_weights_for_decimation_table(
-		    &(eix[i]),
-		    ixtab2[i],
+		    eix[i],
+		    *(ixtab2[i]),
 		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + i * MAX_WEIGHTS_PER_BLOCK);
 	}
@@ -351,7 +351,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		qwt_bitcounts[i] = bitcount;
 
 		// then, generate the optimized set of weights for the weight mode.
-		compute_ideal_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation_table(
 		    ixtab2[decimation_mode],
 		    weight_low_value[i], weight_high_value[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
@@ -630,14 +630,14 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		eix2[i] = *ei2;
 
 		compute_ideal_weights_for_decimation_table(
-		    &(eix1[i]),
-		    ixtab2[i],
+		    eix1[i],
+		    *(ixtab2[i]),
 		    decimated_quantized_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK);
 
 		compute_ideal_weights_for_decimation_table(
-		    &(eix2[i]),
-		    ixtab2[i],
+		    eix2[i],
+		    *(ixtab2[i]),
 		    decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK);
 	}
@@ -788,7 +788,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		qwt_bitcounts[i] = bitcount;
 
 		// then, generate the optimized set of weights for the mode.
-		compute_ideal_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation_table(
 		    ixtab2[decimation_mode],
 		    weight_low_value1[i],
 		    weight_high_value1[i],
@@ -796,7 +796,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quant_mode);
 
-		compute_ideal_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation_table(
 		    ixtab2[decimation_mode],
 		    weight_low_value2[i],
 		    weight_high_value2[i],
