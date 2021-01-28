@@ -481,75 +481,151 @@ void encode_ise(
 	uint8_t* output_data,
 	int bit_offset
 ) {
-	uint8_t lowparts[64];
-	uint8_t highparts[69];		// 64 elements + 5 elements for padding
-	uint8_t tq_blocks[22];		// trit-blocks or quint-blocks
-
 	int bits = btq_counts[quant_level].bits;
 	int trits = btq_counts[quant_level].trits;
 	int quints = btq_counts[quant_level].quints;
+	int mask = (1 << bits) - 1;
 
-	promise(elements > 0);
-	for (int i = 0; i < elements; i++)
-	{
-		lowparts[i] = input_data[i] & ((1 << bits) - 1);
-		highparts[i] = input_data[i] >> bits;
-	}
-
-	for (int i = elements; i < elements + 5; i++)
-	{
-		highparts[i] = 0;		// padding before we start constructing trit-blocks or quint-blocks
-	}
-
-	// construct trit-blocks or quint-blocks as necessary
+	// Write out trits and bits
 	if (trits)
 	{
-		int trit_blocks = (elements + 4) / 5;
-		for (int i = 0; i < trit_blocks; i++)
+		int i = 0;
+		int full_trit_blocks = elements / 5;
+
+		for (int j = 0; j < full_trit_blocks; j++)
 		{
-			tq_blocks[i] = integer_of_trits[highparts[5 * i + 4]][highparts[5 * i + 3]][highparts[5 * i + 2]][highparts[5 * i + 1]][highparts[5 * i]];
+			int i4 = input_data[i + 4] >> bits;
+			int i3 = input_data[i + 3] >> bits;
+			int i2 = input_data[i + 2] >> bits;
+			int i1 = input_data[i + 1] >> bits;
+			int i0 = input_data[i + 0] >> bits;
+
+			uint8_t T = integer_of_trits[i4][i3][i2][i1][i0];
+
+			// The max size of a trit bit count is 6, so we can always safely
+			// pack a single MX value with the following 1 or 2 T bits.
+			uint8_t pack;
+
+			// Element 0 + T0 + T1
+			pack = (input_data[i++] & mask) | (((T >> 0) & 0x3) << bits);
+			write_bits(pack, bits + 2, bit_offset, output_data);
+			bit_offset += bits + 2;
+
+			// Element 1 + T2 + T3
+			pack = (input_data[i++] & mask) | (((T >> 2) & 0x3) << bits);
+			write_bits(pack, bits + 2, bit_offset, output_data);
+			bit_offset += bits + 2;
+
+			// Element 2 + T4
+			pack = (input_data[i++] & mask) | (((T >> 4) & 0x1) << bits);
+			write_bits(pack, bits + 1, bit_offset, output_data);
+			bit_offset += bits + 1;
+
+			// Element 3 + T5 + T6
+			pack = (input_data[i++] & mask) | (((T >> 5) & 0x3) << bits);
+			write_bits(pack, bits + 2, bit_offset, output_data);
+			bit_offset += bits + 2;
+
+			// Element 4 + T7
+			pack = (input_data[i++] & mask) | (((T >> 7) & 0x1) << bits);
+			write_bits(pack, bits + 1, bit_offset, output_data);
+			bit_offset += bits + 1;
+		}
+
+		// Loop tail for a partial block
+		if (i != elements)
+		{
+			// i4 cannot be present - we know the block is partial
+			// i0 must be present - we know the block isn't empty
+			int i4 =                         0;
+			int i3 = i + 3 >= elements ? 0 : input_data[i + 3] >> bits;
+			int i2 = i + 2 >= elements ? 0 : input_data[i + 2] >> bits;
+			int i1 = i + 1 >= elements ? 0 : input_data[i + 1] >> bits;
+			int i0 =                         input_data[i + 0] >> bits;
+
+			uint8_t T = integer_of_trits[i4][i3][i2][i1][i0];
+
+			for (int j = 0; i < elements; i++, j++)
+			{
+				// Truncated table as this iteration is always partital
+				static const uint8_t tbits[4]  = { 2, 2, 1, 2 };
+				static const uint8_t tshift[4] = { 0, 2, 4, 5 };
+
+				uint8_t pack = (input_data[i] & mask) |
+				               (((T >> tshift[j]) & ((1 << tbits[j]) - 1)) << bits);
+
+				write_bits(pack, bits + tbits[j], bit_offset, output_data);
+				bit_offset += bits + tbits[j];
+			}
 		}
 	}
-
-	if (quints)
+	// Write out quints and bits
+	else if (quints)
 	{
-		int quint_blocks = (elements + 2) / 3;
-		for (int i = 0; i < quint_blocks; i++)
+		int i = 0;
+		int full_quint_blocks = elements / 3;
+
+		for (int j = 0; j < full_quint_blocks; j++)
 		{
-			tq_blocks[i] = integer_of_quints[highparts[3 * i + 2]][highparts[3 * i + 1]][highparts[3 * i]];
+			int i2 = input_data[i + 2] >> bits;
+			int i1 = input_data[i + 1] >> bits;
+			int i0 = input_data[i + 0] >> bits;
+
+			uint8_t T = integer_of_quints[i2][i1][i0];
+
+			// The max size of a quint bit count is 5, so we can always safely
+			// pack a single M value with the following 2 or 3 T bits.
+			uint8_t pack;
+
+			// Element 0
+			pack = (input_data[i++] & mask) | (((T >> 0) & 0x7) << bits);
+			write_bits(pack, bits + 3, bit_offset, output_data);
+			bit_offset += bits + 3;
+
+			// Element 1
+			pack = (input_data[i++] & mask) | (((T >> 3) & 0x3) << bits);
+			write_bits(pack, bits + 2, bit_offset, output_data);
+			bit_offset += bits + 2;
+
+			// Element 2
+			pack = (input_data[i++] & mask) | (((T >> 5) & 0x3) << bits);
+			write_bits(pack, bits + 2, bit_offset, output_data);
+			bit_offset += bits + 2;
+		}
+
+		// Loop tail for a partial block
+		if (i != elements)
+		{
+			// i2 cannot be present - we know the block is partial
+			// i0 must be present - we know the block isn't empty
+			int i2 =                         0;
+			int i1 = i + 1 >= elements ? 0 : input_data[i + 1] >> bits;
+			int i0 =                         input_data[i + 0] >> bits;
+
+			uint8_t T = integer_of_quints[i2][i1][i0];
+
+			for (int j = 0; i < elements; i++, j++)
+			{
+				// Truncated table as this iteration is always partital
+				static const uint8_t tbits[2]  = { 3, 2 };
+				static const uint8_t tshift[2] = { 0, 3 };
+
+				uint8_t pack = (input_data[i] & mask) |
+				               (((T >> tshift[j]) & ((1 << tbits[j]) - 1)) << bits);
+
+				write_bits(pack, bits + tbits[j], bit_offset, output_data);
+				bit_offset += bits + tbits[j];
+			}
 		}
 	}
-
-	// then, write out the actual bits.
-	int lcounter = 0;
-	int hcounter = 0;
-	for (int i = 0; i < elements; i++)
+	// Write out just bits
+	else
 	{
-		write_bits(lowparts[i], bits, bit_offset, output_data);
-		bit_offset += bits;
-
-		if (trits)
+		promise(elements > 0);
+		for (int i = 0; i < elements; i++)
 		{
-			static const int bits_to_write[5] = { 2, 2, 1, 2, 1 };
-			static const int block_shift[5]   = { 0, 2, 4, 5, 7 };
-			static const int next_lcounter[5] = { 1, 2, 3, 4, 0 };
-			static const int hcounter_incr[5] = { 0, 0, 0, 0, 1 };
-			write_bits(tq_blocks[hcounter] >> block_shift[lcounter], bits_to_write[lcounter], bit_offset, output_data);
-			bit_offset += bits_to_write[lcounter];
-			hcounter += hcounter_incr[lcounter];
-			lcounter = next_lcounter[lcounter];
-		}
-
-		if (quints)
-		{
-			static const int bits_to_write[3] = { 3, 2, 2 };
-			static const int block_shift[3]   = { 0, 3, 5 };
-			static const int next_lcounter[3] = { 1, 2, 0 };
-			static const int hcounter_incr[3] = { 0, 0, 1 };
-			write_bits(tq_blocks[hcounter] >> block_shift[lcounter], bits_to_write[lcounter], bit_offset, output_data);
-			bit_offset += bits_to_write[lcounter];
-			hcounter += hcounter_incr[lcounter];
-			lcounter = next_lcounter[lcounter];
+			write_bits(input_data[i], bits, bit_offset, output_data);
+			bit_offset += bits;
 		}
 	}
 }
