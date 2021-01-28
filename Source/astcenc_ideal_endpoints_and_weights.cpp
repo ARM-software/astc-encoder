@@ -965,7 +965,7 @@ void compute_ideal_weights_for_decimation_table(
 	// Otherwise compute an estimate and perform single refinement iteration
 	float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
-	// Compute an initial average for each weight
+	// Compute an initial average for each decimated weight
 	for (int i = 0; i < weight_count; i++)
 	{
 		// Start with a small value to avoid div-by-zero later

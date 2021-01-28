@@ -1626,7 +1626,7 @@ void compress_block(
 	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
-	// compress/decompress to a physical block
+	// Compress to a physical block
 	symbolic_to_physical(*bsd, scb, pcb);
 }
 

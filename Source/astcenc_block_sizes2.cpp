@@ -271,7 +271,6 @@ static void initialize_decimation_table_2d(
 			int x_weight_int = x_weight >> 4;
 			int y_weight_int = y_weight >> 4;
 			int qweight[4];
-			int weight[4];
 			qweight[0] = x_weight_int + y_weight_int * x_weights;
 			qweight[1] = qweight[0] + 1;
 			qweight[2] = qweight[0] + x_weights;
@@ -280,6 +279,7 @@ static void initialize_decimation_table_2d(
 			// truncated-precision bilinear interpolation.
 			int prod = x_weight_frac * y_weight_frac;
 
+			int weight[4];
 			weight[3] = (prod + 8) >> 4;
 			weight[1] = x_weight_frac - weight[3];
 			weight[2] = y_weight_frac - weight[3];
