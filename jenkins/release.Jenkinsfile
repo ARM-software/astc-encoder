@@ -15,7 +15,7 @@
  * similarly on different operating systems, so we test one compiler per OS.
  */
 
-@Library('hive-infra-library@master') _
+@Library('hive-infra-library@changes/88/287488/3') _
 
 pipeline {
   agent none
