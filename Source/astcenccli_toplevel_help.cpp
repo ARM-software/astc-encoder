@@ -22,7 +22,7 @@
 #include "astcenccli_internal.h"
 
 static const char *astcenc_copyright_string =
-R"(ASTC codec v2.3-develop, %u-bit %s%s
+R"(astcenc v2.3-develop, %u-bit %s%s
 Copyright 2011-2021 Arm Limited, all rights reserved
 )";
 
@@ -30,23 +30,22 @@ static const char *astcenc_short_help =
 R"(
 Basic usage:
 
-To compress an image use the following command line:
-    astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <preset> [options]
+To compress an image use:
+    astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <quality> [options]
 
-For example, to compress to 8x6 blocks with the thorough preset use:
+e.g. using LDR profile, 8x6 blocks, and the thorough quality preset:
     astcenc -cl kodim01.png kodim01.astc 8x6 -thorough
 
-To decompress an image use the following command line:
+To decompress an image use:
     astcenc {-dl|-ds|-dh|-dH} <in> <out>
 
-For example, use:
+e.g. using LDR profile:
     astcenc -dl kodim01.astc kodim01.png
 
-To perform a compression test, writing back the decompressed output, use
-the following command line:
-    astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <preset> [options]
+To perform a compression test, writing back the decompressed output, use:
+    astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
 
-For example, use:
+e.g. using LDR profile, 8x6 blocks, and the thorough quality preset:
     astcenc -tl kodim01.png kodim01-test.png 8x6 -thorough
 
 The -*l options are used to configure the codec to support only the linear
@@ -73,9 +72,9 @@ NAME
 SYNOPSIS
        astcenc {-h|-help}
        astcenc {-v|-version}
-       astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <preset> [options]
-       astcenc {-dl|-ds|-dh|-dH} <in> <out> <blocksize> <preset> [options]
-       astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <preset> [options]
+       astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <quality> [options]
+       astcenc {-dl|-ds|-dh|-dH} <in> <out> <blocksize> <quality> [options]
+       astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <quality> [options]
 
 DESCRIPTION
        astcenc compresses image files into the Adaptive Scalable Texture
@@ -88,10 +87,11 @@ DESCRIPTION
            All 2D block sizes (4x4 though to 12x12)
            All 3D block sizes (3x3x3 through to 6x6x6)
 
-       The compressor provides a number of pre-determined quality presets,
-       which allow users to tradeoff compressed image quality against
-       compression performance. For advanced users the compressor provides
-       many additional control options.
+       The compressor provides a flexible quality level, allowing users to
+       trade off compressed image quality against compression performance.
+       For ease of use, a number of quality presets are also provided. For
+       advanced users the compressor provides many additional control
+       options for fine tuning quality.
 
        astcenc can also be used to decompress ASTC compressed images, and
        perform compression image quality analysis.
@@ -132,24 +132,24 @@ COMPRESSION
            4x4x4: 2.00 bpp       6x6x5: 0.71 bpp
            5x4x4: 1.60 bpp       6x6x6: 0.59 bpp
 
-       The quality preset configures the quality-performance tradeoff for
+       The quality level configures the quality-performance tradeoff for
        the compressor; more complete searches of the search space improve
-       image quality at the expense of compression time. The available
-       presets are:
+       image quality at the expense of compression time. The quality
+       level can be set to any value between 0 (fastest) and 100
+       (thorough), or to a fixed quality preset:
 
-           -fastest
-           -fast
-           -medium
-           -thorough
-           -exhaustive
+           -fastest       (equivalent to quality =   0)
+           -fast          (equivalent to quality =  10)
+           -medium        (equivalent to quality =  60)
+           -thorough      (equivalent to quality =  98)
+           -exhaustive    (equivalent to quality = 100)
 
-       Using the -fastest setting throws away a lot of image quality
-       compared. It is useful for quickly roughing-out new content, but
-       we recommend using higher quality settings for production builds.
+       For compression of production content we recommend using a quality
+       level equivalent to -medium or higher.
 
-       Using the -exhaustive setting significantly increases compression
-       time, but typically only gives minor quality improvements over
-       using -thorough.
+       Using quality levels higher than -thorough will significantly
+       increase compression time, but typically only gives minor quality
+       improvements.
 
        There are a number of additional compressor options which are
        useful to consider for common usage, based on the type of image
