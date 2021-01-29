@@ -129,7 +129,7 @@ void compute_error_metrics(
 	int fstop_lo,
 	int fstop_hi
 ) {
-	static int channelmasks[5] = { 0x00, 0x07, 0x0C, 0x07, 0x0F };
+	static const int channelmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
 	int channelmask = channelmasks[input_components];
 
 	kahan_accum4 errorsum;

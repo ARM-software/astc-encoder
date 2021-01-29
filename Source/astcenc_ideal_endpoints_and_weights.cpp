@@ -1062,7 +1062,7 @@ void compute_quantized_weights_for_decimation_table(
 	int weight_count = it->weight_count;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
-	static const int quant_levels[12] = { 2,3,4,5,6,8,10,12,16,20,24,32 };
+	static const int quant_levels[12] { 2,3,4,5,6,8,10,12,16,20,24,32 };
 	float quant_level_m1 = (float)(quant_levels[quant_level] - 1);
 
 	// Quantize the weight set using both the specified low/high bounds

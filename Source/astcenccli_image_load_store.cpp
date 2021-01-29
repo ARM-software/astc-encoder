@@ -1209,7 +1209,9 @@ static int store_ktx_uncompressed_image(
 
 	ktx_header hdr;
 
-	int gl_format_of_channels[4] = { GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA };
+	static const int gl_format_of_channels[4] {
+		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
+	};
 
 	memcpy(hdr.magic, ktx_magic, 12);
 	hdr.endianness = 0x04030201;

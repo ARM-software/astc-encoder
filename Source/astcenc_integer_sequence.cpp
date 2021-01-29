@@ -548,8 +548,8 @@ void encode_ise(
 			for (int j = 0; i < elements; i++, j++)
 			{
 				// Truncated table as this iteration is always partital
-				static const uint8_t tbits[4]  = { 2, 2, 1, 2 };
-				static const uint8_t tshift[4] = { 0, 2, 4, 5 };
+				static const uint8_t tbits[4]  { 2, 2, 1, 2 };
+				static const uint8_t tshift[4] { 0, 2, 4, 5 };
 
 				uint8_t pack = (input_data[i] & mask) |
 				               (((T >> tshift[j]) & ((1 << tbits[j]) - 1)) << bits);
@@ -607,8 +607,8 @@ void encode_ise(
 			for (int j = 0; i < elements; i++, j++)
 			{
 				// Truncated table as this iteration is always partital
-				static const uint8_t tbits[2]  = { 3, 2 };
-				static const uint8_t tshift[2] = { 0, 3 };
+				static const uint8_t tbits[2]  { 3, 2 };
+				static const uint8_t tshift[2] { 0, 3 };
 
 				uint8_t pack = (input_data[i] & mask) |
 				               (((T >> tshift[j]) & ((1 << tbits[j]) - 1)) << bits);
@@ -665,10 +665,10 @@ void decode_ise(
 
 		if (trits)
 		{
-			static const int bits_to_read[5]  = { 2, 2, 1, 2, 1 };
-			static const int block_shift[5]   = { 0, 2, 4, 5, 7 };
-			static const int next_lcounter[5] = { 1, 2, 3, 4, 0 };
-			static const int hcounter_incr[5] = { 0, 0, 0, 0, 1 };
+			static const int bits_to_read[5]  { 2, 2, 1, 2, 1 };
+			static const int block_shift[5]   { 0, 2, 4, 5, 7 };
+			static const int next_lcounter[5] { 1, 2, 3, 4, 0 };
+			static const int hcounter_incr[5] { 0, 0, 0, 0, 1 };
 			int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
@@ -678,10 +678,10 @@ void decode_ise(
 
 		if (quints)
 		{
-			static const int bits_to_read[3]  = { 3, 2, 2 };
-			static const int block_shift[3]   = { 0, 3, 5 };
-			static const int next_lcounter[3] = { 1, 2, 0 };
-			static const int hcounter_incr[3] = { 0, 0, 1 };
+			static const int bits_to_read[3]  { 3, 2, 2 };
+			static const int block_shift[3]   { 0, 3, 5 };
+			static const int next_lcounter[3] { 1, 2, 0 };
+			static const int hcounter_incr[3] { 0, 0, 1 };
 			int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];

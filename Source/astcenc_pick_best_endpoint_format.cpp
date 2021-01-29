@@ -238,8 +238,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			rgb_mode = 7;
 		}
 
-		static const float rgbo_error_scales[6] = { 4.0f, 4.0f, 16.0f, 64.0f, 256.0f, 1024.0f };
-		static const float rgb_error_scales[9] = { 64.0f, 64.0f, 16.0f, 16.0f, 4.0f, 4.0f, 1.0f, 1.0f, 384.0f };
+		static const float rgbo_error_scales[6] { 4.0f, 4.0f, 16.0f, 64.0f, 256.0f, 1024.0f };
+		static const float rgb_error_scales[9] { 64.0f, 64.0f, 16.0f, 16.0f, 4.0f, 4.0f, 1.0f, 1.0f, 384.0f };
 
 		float mode7mult = rgbo_error_scales[rgbo_mode] * 0.0015f;	// empirically determined ....
 		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;	// empirically determined ....

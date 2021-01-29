@@ -78,7 +78,7 @@ void symbolic_to_physical(
 		// This encodes separate constant-color blocks. There is currently
 		// no attempt to coalesce them into larger void-extents.
 
-		static const uint8_t cbytes[8] = { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+		static const uint8_t cbytes[8] { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
 			pcb.data[i] = cbytes[i];
@@ -99,7 +99,7 @@ void symbolic_to_physical(
 		// This encodes separate constant-color blocks. There is currently
 		// no attempt to coalesce them into larger void-extents.
 
-		static const uint8_t cbytes[8] = { 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+		static const uint8_t cbytes[8]  { 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
 			pcb.data[i] = cbytes[i];
@@ -440,7 +440,7 @@ void physical_to_symbolic(
 	}
 
 	// then, determine the color endpoint format to use for these integers
-	static const int color_bits_arr[5] = { -1, 115 - 4, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS };
+	static const int color_bits_arr[5] { -1, 115 - 4, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS };
 	int color_bits = color_bits_arr[partition_count] - bits_for_weights - encoded_type_highpart_size;
 	if (is_dual_plane)
 	{

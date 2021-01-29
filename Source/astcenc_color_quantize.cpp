@@ -1787,7 +1787,7 @@ static void quantize_hdr_alpha3(
 		v7e = color_quant_tables[quant_level][v7];
 		v7d = color_unquant_tables[quant_level][v7e];
 
-		static const int testbits[3] = { 0xE0, 0xF0, 0xF8 };
+		static const int testbits[3] { 0xE0, 0xF0, 0xF8 };
 
 		if ((v7 ^ v7d) & testbits[i])
 		{

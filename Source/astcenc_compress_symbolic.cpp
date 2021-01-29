@@ -451,7 +451,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
 				int colorvals[4][12];
-				int color_formats_mod[4] = { 0 };
+				int color_formats_mod[4] { 0 };
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
@@ -900,7 +900,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
 				int colorvals[4][12];
-				int color_formats_mod[4] = { 0 };
+				int color_formats_mod[4] { 0 };
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(

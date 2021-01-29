@@ -404,7 +404,7 @@ static void hdr_rgbo_unpack3(
 		red |= bit5 << 10;
 
 	// expand to 12 bits.
-	static const int shamts[6] = { 1, 1, 2, 3, 4, 5 };
+	static const int shamts[6] { 1, 1, 2, 3, 4, 5 };
 	int shamt = shamts[mode];
 	red <<= shamt;
 	green <<= shamt;
@@ -494,7 +494,7 @@ static void hdr_rgb_unpack3(
 	int d1 = v5 & 0x7f;
 
 	// get hold of the number of bits in 'd0' and 'd1'
-	static const int dbits_tab[8] = { 7, 6, 7, 6, 5, 6, 5, 6 };
+	static const int dbits_tab[8] { 7, 6, 7, 6, 5, 6, 5, 6 };
 	int dbits = dbits_tab[modeval];
 
 	// extract six variable-placement bits

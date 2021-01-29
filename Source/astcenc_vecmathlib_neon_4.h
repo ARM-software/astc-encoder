@@ -140,7 +140,7 @@ struct vfloat4
 	 */
 	static ASTCENC_SIMD_INLINE vfloat4 lane_id()
 	{
-		alignas(16) float data[4] = { 0.0f, 1.0f, 2.0f, 3.0f };
+		alignas(16) float data[4] { 0.0f, 1.0f, 2.0f, 3.0f };
 		return vfloat4(vld1q_f32(data));
 	}
 
@@ -204,7 +204,7 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(int a, int b, int c, int d)
 	{
-		int32x4_t v = { a, b, c, d };
+		int32x4_t v { a, b, c, d };
 		m = v;
 	}
 
@@ -253,7 +253,7 @@ struct vint4
 	 */
 	static ASTCENC_SIMD_INLINE vint4 lane_id()
 	{
-		alignas(ASTCENC_VECALIGN) int data[4] = { 0, 1, 2, 3 };
+		alignas(ASTCENC_VECALIGN) static const int data[4] { 0, 1, 2, 3 };
 		return vint4(vld1q_s32(data));
 	}
 
@@ -337,7 +337,7 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 {
-	int32x4_t shift = { 0, 1, 2, 3 };
+	static const int32x4_t shift { 0, 1, 2, 3 };
 	uint32x4_t tmp = vshrq_n_u32(a.m, 31);
 	return vaddvq_u32(vshlq_u32(tmp, shift));
 }

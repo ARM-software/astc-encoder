@@ -238,7 +238,7 @@ void compute_encoding_choice_errors(
 	}
 
 	// Compute the error that arises from just ditching alpha
-	float alpha_drop_error[4] = { 0 };
+	float alpha_drop_error[4] { 0 };
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pi->partition_of_texel[i];
@@ -264,8 +264,8 @@ void compute_encoding_choice_errors(
 		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
 	}
 
-	bool can_offset_encode[4] = { 0 };
-	bool can_blue_contract[4] = { 0 };
+	bool can_offset_encode[4] { 0 };
+	bool can_blue_contract[4] { 0 };
 	for (int i = 0; i < partition_count; i++)
 	{
 		float4 endpt0 = ep.endpt0[i];
