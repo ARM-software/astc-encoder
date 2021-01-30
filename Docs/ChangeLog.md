@@ -19,22 +19,82 @@ Reminder for users of the library interface - the API is not designed to be
 stable across versions, and this release is not compatible with 2.2. Please
 recompile your client-side code using the updated `astcenc.h` header.
 
+* **General:**
+  * **Feature:** Decompressor-only builds of the codec are supported again.
+    While this is primarily a feature for library users who want to shrink
+    binary size, a variant command line tool `astcdec` can be built by
+    specifying `DECOMPRESSOR=ON` on the CMake configure command line.
+  * **Feature:** Diagnostic builds of the codec can now be built. These builds
+    generate a JSON file containing a trace of the compressor execution.
+    Diagnostic builds are only suitable for codec development; they are slower
+    and JSON generation cannot be disabled. Build by setting `DIAGNOSTICS=ON`
+    on the CMake configure command line.
+  * **Feature:** Code compatibility improved with older versions of GCC,
+    earliest compiler now tested is GCC 7.5 (was GCC 9.3).
+  * **Feature:** Code compatibility improved with newer versions of LLVM,
+    latest compiler now tested is Clang 12.0 (was Clang 9.0).
+  * **Feature:** Code compatibility improved with the Visual Studio 2019 LLVM
+    toolset (`clang-cl`). Using the LLVM toolset gives 25% performance
+    improvements and is recommended.
 * **Command Line:**
   * **Feature:** Quality level now accepts either a preset (`-fast`, etc) or a
     float value between 0 and 100, allowing more control over the compression
     quality vs performance trade-off. The presets are not evenly spaced in the
     float range; they have been spaced to give the best distribution of points
     between the fast and thorough presets.
-
     * `-fastest`: 0.0
     * `-fast`: 10.0
     * `-medium`: 60.0
     * `-thorough`: 98.0
     * `-exhaustive`: 100.0
-
 * **Core API:**
   * **API Change:** Quality level preset enum replaced with a float value
     between 0 (`-fastest`) and 100 (`-exhaustive`). See above for more info.
+
+### Performance
+
+This release includes a number of optimizations to improve performance.
+
+* New compressor algorithm for handling encoding candidates and refinement.
+* Vectorized implementation of `compute_error_of_weight_set()`.
+* Unrolled implementation of `encode_ise()`.
+* Many other small improvements!
+
+The most significant change is the change to the compressor path, which now
+uses an adaptive approach to candidate trials and block refinement.
+
+In earlier releases the quality level will determine the number of encoding
+candidates and the number of iterative refinement passes that are used for each
+major encoding trial. This is a fixed behavior; it will always try the full N
+candidates and M refinement iterations specified by the quality level for each
+encoding trial.
+
+The new approach implements two optimizations for this:
+
+* Compression will complete when a block candidate hits the specified target
+  quality, after its M refinement iterations have been applied. Later block
+  candidates are simply abandoned.
+* Block candidates will predict how much refinement can improve them, and
+  abandon refinement if they are unlikely to improve upon the best known
+  encoding already in-hand.
+
+This pair of optimizations provides significant performance improvement to the
+high quality modes which use the most block candidates and refinement
+iterations. A minor loss of image quality is expected, as the blocks we no
+longer test or refine may have been better coding choices.
+
+**Absolute performance vs 2.2 release:**
+
+<!-- ![Absolute scores 2.2 vs 2.1](./ChangeLogImg/absolute-2.1-to-2.2.png) -->
+
+TBD
+
+**Relative performance vs 2.2 release:**
+
+<!-- ![Relative scores 2.2 vs 2.1](./ChangeLogImg/relative-2.1-to-2.2.png) -->
+
+TBD
+
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.2
@@ -173,6 +233,7 @@ Key for performance charts:
 **Relative performance vs 2.0 release:**
 
 ![Relative scores 2.1 vs 2.0](./ChangeLogImg/relative-2.0-to-2.1.png)
+
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.0
