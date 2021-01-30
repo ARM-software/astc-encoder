@@ -20,10 +20,7 @@ project(astc${CODEC}-${ISA_SIMD})
 set(GNU_LIKE "GNU,Clang,AppleClang")
 set(CLANG_LIKE "Clang,AppleClang")
 
-add_executable(astc${CODEC}-${ISA_SIMD})
-
-target_sources(astc${CODEC}-${ISA_SIMD}
-    PRIVATE
+add_library(astc${CODEC}-${ISA_SIMD}-static
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes2.cpp
         astcenc_color_quantize.cpp
@@ -48,7 +45,11 @@ target_sources(astc${CODEC}-${ISA_SIMD}
         astcenc_quantization.cpp
         astcenc_symbolic_physical.cpp
         astcenc_weight_align.cpp
-        astcenc_weight_quant_xfer_tables.cpp
+        astcenc_weight_quant_xfer_tables.cpp)
+
+target_include_directories(astc${CODEC}-${ISA_SIMD}-static PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_executable(astc${CODEC}-${ISA_SIMD}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -57,147 +58,151 @@ target_sources(astc${CODEC}-${ISA_SIMD}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_compile_features(astc${CODEC}-${ISA_SIMD}
-    PRIVATE
-        cxx_std_14)
+target_link_libraries(astc${CODEC}-${ISA_SIMD} PRIVATE astc${CODEC}-${ISA_SIMD}-static)
 
-target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-    PRIVATE
-        # Common defines
-        ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INVARIANCE}>
-        # MSVC defines
-        $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
-
-if(${DECOMPRESSOR})
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
+macro(astc_set_properties NAME)
+    target_compile_features(${NAME}
         PRIVATE
-            ASTCENC_DECOMPRESS_ONLY)
-endif()
+            cxx_std_14)
 
-if(${DIAGNOSTICS})
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
+    target_compile_definitions(${NAME}
         PRIVATE
-            ASTCENC_DIAGNOSTICS)
-endif()
+            # Common defines
+            ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INVARIANCE}>
+            # MSVC defines
+            $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
-target_compile_options(astc${CODEC}-${ISA_SIMD}
-    PRIVATE
-        # Use pthreads on Linux/macOS
-        $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
+    if(${DECOMPRESSOR})
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_DECOMPRESS_ONLY)
+    endif()
 
-        # MSVC compiler defines
-        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+    if(${DIAGNOSTICS})
+        target_compile_definitions(${NAME}
+            PUBLIC
+                ASTCENC_DIAGNOSTICS)
+    endif()
 
-        # G++ and Clang++ compiler defines
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>
+    target_compile_options(${NAME}
+        PRIVATE
+            # Use pthreads on Linux/macOS
+            $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
 
-        # Hide noise thrown up by Clang 10 and clang-cl
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-compat-pedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>
+            # MSVC compiler defines
+            $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
 
-        # Clang 10 also throws up warnings we need to investigate (ours)
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-old-style-cast>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
+            # G++ and Clang++ compiler defines
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>
 
-        $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
+            # Hide noise thrown up by Clang 10 and clang-cl
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-compat-pedantic>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-deprecated-declarations>
+
+            # Clang 10 also throws up warnings we need to investigate (ours)
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-old-style-cast>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
+
+            $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
 
-target_link_options(astc${CODEC}-${ISA_SIMD}
-    PRIVATE
-        # Use pthreads on Linux/macOS
-        $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
+    target_link_options(${NAME}
+        PRIVATE
+            # Use pthreads on Linux/macOS
+            $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
-# Enable LTO on release builds
-set_property(TARGET astc${CODEC}-${ISA_SIMD} PROPERTY
-             INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
+    # Enable LTO on release builds
+    set_property(TARGET ${NAME} PROPERTY
+                 INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
 
-# Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
-set_property(TARGET astc${CODEC}-${ISA_SIMD} PROPERTY
-             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    # Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
+    set_property(TARGET ${NAME} PROPERTY
+                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+    # Set up configuration for SIMD ISA builds
+    if(${ISA_SIMD} MATCHES "none")
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NEON=0
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0)
+
+    elseif(${ISA_SIMD} MATCHES "neon")
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NEON=1
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0)
+
+    elseif(${ISA_SIMD} MATCHES "sse2")
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NEON=0
+                ASTCENC_SSE=20
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0)
+
+    elseif(${ISA_SIMD} MATCHES "sse4.1")
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NEON=0
+                ASTCENC_SSE=41
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=1)
+
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
+
+    elseif(${ISA_SIMD} MATCHES "avx2")
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NEON=0
+                ASTCENC_SSE=41
+                ASTCENC_AVX=2
+                ASTCENC_POPCNT=1)
+
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt>
+                $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
+    endif()
+endmacro()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-
     string(CONCAT EXTERNAL_CXX_FLAGS
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -fno-strict-aliasing>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-unused-parameter>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-double-promotion>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-zero-as-null-pointer-constant>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-disabled-macro-expansion>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-reserved-id-macro>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-extra-semi-stmt>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
-        " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
-        " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>"
-    )
-
-
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -fno-strict-aliasing>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-unused-parameter>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-double-promotion>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-zero-as-null-pointer-constant>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-disabled-macro-expansion>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-reserved-id-macro>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-extra-semi-stmt>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
+            " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>"
+            )
 
     set_source_files_properties(astcenccli_image_external.cpp
-        PROPERTIES COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
+            PROPERTIES COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-# Set up configuration for SIMD ISA builds
-if(${ISA_SIMD} MATCHES "none")
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            ASTCENC_NEON=0
-            ASTCENC_SSE=0
-            ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
-
-elseif(${ISA_SIMD} MATCHES "neon")
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            ASTCENC_NEON=1
-            ASTCENC_SSE=0
-            ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
-
-elseif(${ISA_SIMD} MATCHES "sse2")
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            ASTCENC_NEON=0
-            ASTCENC_SSE=20
-            ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
-
-elseif(${ISA_SIMD} MATCHES "sse4.1")
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            ASTCENC_NEON=0
-            ASTCENC_SSE=41
-            ASTCENC_AVX=0
-            ASTCENC_POPCNT=1)
-
-    target_compile_options(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
-
-elseif(${ISA_SIMD} MATCHES "avx2")
-    target_compile_definitions(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            ASTCENC_NEON=0
-            ASTCENC_SSE=41
-            ASTCENC_AVX=2
-            ASTCENC_POPCNT=1)
-
-    target_compile_options(astc${CODEC}-${ISA_SIMD}
-        PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt>
-            $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
-endif()
+astc_set_properties(astc${CODEC}-${ISA_SIMD})
+astc_set_properties(astc${CODEC}-${ISA_SIMD}-static)
 
 install(TARGETS astc${CODEC}-${ISA_SIMD} DESTINATION ${PACKAGE_ROOT})
