@@ -1372,11 +1372,19 @@ void compress_block(
 	trace_add_data("pos_y", blk->ypos);
 	trace_add_data("pos_z", blk->zpos);
 
+	// Set stricter block targets for luminance data as we have more bits to
+	// play with - fewer endpoints and never need a second weight plane
+	bool block_is_l = imageblock_is_lum(blk);
+	float block_is_l_scale = block_is_l ? 1.0f / 1.5f : 1.0f;
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
-	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
+	float error_threshold = ctx.config.tune_db_limit
+	                      * error_weight_sum
+	                      * block_is_l_scale;
+
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 
 	trace_add_data("tune_error_threshold", error_threshold);
@@ -1432,7 +1440,9 @@ void compress_block(
 
 #if !defined(ASTCENC_DIAGNOSTICS)
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
-	float error_threshold = ctx.config.tune_db_limit * error_weight_sum;
+	float error_threshold = ctx.config.tune_db_limit
+	                      * error_weight_sum
+	                      * block_is_l_scale;
 #endif
 
 	// Set SCB and mode errors to a very high error value

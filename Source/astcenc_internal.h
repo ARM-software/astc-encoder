@@ -564,6 +564,20 @@ static inline int imageblock_uses_alpha(const imageblock * pb)
 	return pb->data_min.lane<3>() != pb->data_max.lane<3>();
 }
 
+static inline int imageblock_is_lum(const imageblock * pb)
+{
+	bool alpha1 = (pb->data_min.lane<3>() == 65535.0f) &&
+	              (pb->data_max.lane<3>() == 65535.0f);
+	return pb->grayscale && alpha1;
+}
+
+static inline int imageblock_is_lumalp(const imageblock * pb)
+{
+	bool alpha1 = (pb->data_min.lane<3>() == 65535.0f) &&
+	              (pb->data_max.lane<3>() == 65535.0f);
+	return pb->grayscale && !alpha1;
+}
+
 void imageblock_initialize_orig_from_work(
 	imageblock * pb,
 	int pixelcount);
