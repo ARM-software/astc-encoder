@@ -1377,13 +1377,19 @@ void compress_block(
 	bool block_is_l = imageblock_is_lum(blk);
 	float block_is_l_scale = block_is_l ? 1.0f / 1.5f : 1.0f;
 
+	// Set slightly stricter block targets for lumalpha data as we have more
+	// bits to play with - fewer endpoints but may use a second weight plane
+	bool block_is_la = imageblock_is_lumalp(blk);
+	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
-	                      * block_is_l_scale;
+	                      * block_is_l_scale
+	                      * block_is_la_scale;
 
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 
@@ -1442,7 +1448,8 @@ void compress_block(
 	float error_weight_sum = prepare_error_weight_block(ctx, input_image, bsd, blk, ewb);
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
-	                      * block_is_l_scale;
+	                      * block_is_l_scale
+	                      * block_is_la_scale;
 #endif
 
 	// Set SCB and mode errors to a very high error value
