@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2020 Arm Limited
+# Copyright 2019-2021 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -252,38 +252,6 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    # 2.0 variants
-    elif encoderName == "ref-2.0-sse2":
-        encoder = te.Encoder2_0("sse2")
-        name = "reference-2.0-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.0-sse4.1":
-        encoder = te.Encoder2_0("sse4.1")
-        name = "reference-2.0-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.0-avx2":
-        encoder = te.Encoder2_0("avx2")
-        name = "reference-2.0-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    # 2.1 variants
-    elif encoderName == "ref-2.1-sse2":
-        encoder = te.Encoder2_1("sse2")
-        name = "reference-2.1-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.1-sse4.1":
-        encoder = te.Encoder2_1("sse4.1")
-        name = "reference-2.1-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.1-avx2":
-        encoder = te.Encoder2_1("avx2")
-        name = "reference-2.1-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
     # 2.2 variants
     elif encoderName == "ref-2.2-sse2":
         encoder = te.Encoder2_2("sse2")
@@ -303,6 +271,27 @@ def get_encoder_params(encoderName, referenceName, imageSet):
     elif encoderName == "ref-2.2-neon":
         encoder = te.Encoder2_2("neon")
         name = "reference-2.2-neon"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    # 2.3 variants
+    elif encoderName == "ref-2.3-sse2":
+        encoder = te.Encoder2_3("sse2")
+        name = "reference-2.3-sse2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.3-sse4.1":
+        encoder = te.Encoder2_3("sse4.1")
+        name = "reference-2.3-sse4.1"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.3-avx2":
+        encoder = te.Encoder2_3("avx2")
+        name = "reference-2.3-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.3-neon":
+        encoder = te.Encoder2_3("neon")
+        name = "reference-2.3-neon"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     # Latest master
@@ -354,9 +343,8 @@ def parse_command_line():
 
     # All reference encoders
     refcoders = ["ref-1.7",
-                 "ref-2.0-sse2", "ref-2.0-sse4.1", "ref-2.0-avx2",
-                 "ref-2.1-sse2", "ref-2.1-sse4.1", "ref-2.1-avx2",
                  "ref-2.2-neon", "ref-2.2-sse2", "ref-2.2-sse4.1", "ref-2.2-avx2",
+                 "ref-2.3-neon", "ref-2.3-sse2", "ref-2.3-sse4.1", "ref-2.3-avx2",
                  "ref-master-neon", "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
 
     # All test encoders
@@ -369,7 +357,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-master-avx2",
+    parser.add_argument("--reference", dest="reference", default="ref-2.3-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]

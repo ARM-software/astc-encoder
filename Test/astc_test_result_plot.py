@@ -65,6 +65,9 @@ def find_reference_results():
                 if imageSet == "Small":
                     continue
 
+                if imageSet == "Frymire":
+                    continue
+
                 testRef = trs.ResultSet(imageSet)
                 testRef.load_from_file(fullPath)
 
@@ -250,96 +253,66 @@ def main():
 
     charts = [
         [
-            # Plot headline 1.7 to 2.2 scores
+            # Plot headline 1.7 to 2.3 scores
             ["medium"],
-            ["ref-2.2-avx2"],
+            ["ref-2.3-avx2"],
             ["4x4", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-1.7-to-2.2.png",
-            (8, None)
+            "relative-1.7-to-2.3.png",
+            (10, None)
         ], [
             # --------------------------------------------------------
             # Plot all absolute scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.0-avx2", "ref-2.1-avx2", "ref-2.2-avx2"],
+            ["ref-2.2-avx2", "ref-2.3-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             False,
             None,
             None,
             "absolute-all.png",
             (absoluteXLimit, None)
-        ], [
-            # Plot 2.1 to 2.2 absolute scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.1-avx2", "ref-2.2-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            False,
-            None,
-            None,
-            "absolute-2.1-to-2.2.png",
-            (absoluteXLimit, None)
-        ], [
+        ],[
             # --------------------------------------------------------
             # Plot all relative scores vs 1.7
             ["thorough", "medium", "fast"],
-            ["ref-2.0-avx2", "ref-2.1-avx2", "ref-2.2-avx2"],
+            ["ref-2.2-avx2", "ref-2.3-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-allv1.7.png",
+            "relative-all-v1.7.png",
             (None, None)
         ], [
-            # Plot all relative scores vs 2.0
+            # Plot 2.2 to 2.3 relative scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.1-avx2", "ref-2.2-avx2"],
+            ["ref-2.3-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
-            "ref-2.0-avx2",
+            "ref-2.2-avx2",
             None,
-            "relative-allv2.0.png",
-            (None, None)
-        ], [
-            # Plot 1.7 to 2.2 relative scores
-            ["thorough", "medium", "fast"],
-            ["ref-2.2-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            True,
-            "ref-1.7",
-            None,
-            "relative-1.7-to-2.2.png",
-            (None, None)
-        ], [
-            # Plot 2.1 to 2.2 relative scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.2-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            True,
-            "ref-2.1-avx2",
-            None,
-            "relative-2.1-to-2.2.png",
+            "relative-2.2-to-2.3.png",
             (None, None),
         ], [
             # Plot relative scores of ISAs of latest
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.2-sse4.1", "ref-2.2-avx2"],
+            ["ref-2.3-sse4.1", "ref-2.3-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
-            "ref-2.2-sse2",
+            "ref-2.3-sse2",
             None,
-            "relative-2.2-isas.png",
+            "relative-2.3-isas.png",
             (None, None)
         ], [
             # Plot relative scores of qualities of latest
             ["medium", "fast", "fastest"],
-            ["ref-2.2-avx2"],
+            ["ref-2.3-avx2"],
             ["4x4", "5x5", "6x6", "8x8"],
             True,
             None,
             "thorough",
-            "relative-2.2-qualities.png",
+            "relative-2.3-qualities.png",
             (None, None)
         ]
     ]
