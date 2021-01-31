@@ -8,9 +8,16 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 
 
 <!-- ---------------------------------------------------------------------- -->
-## 2.3
+## 2.4
 
 **Status:** In development
+
+The 2.4 release is the fifth release in the 2.x series. It includes ...
+
+<!-- ---------------------------------------------------------------------- -->
+## 2.3
+
+**Status:** Released
 
 The 2.3 release is the fourth release in the 2.x series. It includes a number
 of performance improvements and new features.
