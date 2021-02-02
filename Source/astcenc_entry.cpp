@@ -735,7 +735,8 @@ static void compress_image(
 					{
 						float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
 						// SATs accumulate error, so don't test exactly zero
-						if (a_avg > 1e-6f)
+						// a=0x1 for single pixel in 12x12 block = 2.7e-5 avg
+						if (a_avg > 2.6e-5f)
 						{
 							use_full_block = true;
 							ax = end_x;
