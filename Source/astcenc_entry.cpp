@@ -727,6 +727,18 @@ static void compress_image(
 				int start_y = y * block_y;
 				int end_y = astc::min(dim_y, start_y + block_y);
 
+				// SATs accumulate error, so don't test exactly zero. Test for
+				// less than 1 alpha in the expanded block footprint that
+				// includes the alpha radius.
+				int x_footprint = block_x +
+				                  2 * (ctx.config.a_scale_radius - 1);
+
+				int y_footprint = block_y +
+				                  2 * (ctx.config.a_scale_radius - 1);
+
+				float footprint = (float)(x_footprint * y_footprint);
+				float threshold = 0.9f / (255.0f * footprint);
+
 				// Do we have any alpha values?
 				use_full_block = false;
 				for (int ay = start_y; ay < end_y; ay++)
@@ -734,9 +746,7 @@ static void compress_image(
 					for (int ax = start_x; ax < end_x; ax++)
 					{
 						float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
-						// SATs accumulate error, so don't test exactly zero
-						// a=0x1 for single pixel in 12x12 block = 2.7e-5 avg
-						if (a_avg > 2.6e-5f)
+						if (a_avg > threshold)
 						{
 							use_full_block = true;
 							ax = end_x;
