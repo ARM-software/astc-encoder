@@ -500,6 +500,20 @@ DECOMPRESSION FILE FORMATS
            Container Formats:
                Khronos Texture KTX (*.ktx)
                DirectDraw Surface DDS (*.dds)
+
+QUICK REFERENCE
+
+       To compress an image use:
+           astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <quality> [options]
+
+       To decompress an image use:
+           astcenc {-dl|-ds|-dh|-dH} <in> <out>
+
+       To perform a quality test use:
+           astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
+
+       Mode -*l = linear LDR, -*s = sRGB LDR, -*h = HDR RGB/LDR A, -*H = HDR.
+       Quality = -fastest/-fast/-medium/-thorough/-exhaustive/a float [0-100].
 )";
 
 // print version and basic build information
