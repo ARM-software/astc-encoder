@@ -263,6 +263,11 @@ ADVANCED COMPRESSION
            of the texel defined by the <radius> argument. Setting <radius>
            to 0 causes only the texel's own alpha to be used.
 
+           ASTC blocks that are entirely zero weighted, after the radius is
+           taken into account, are replaced by constant color blocks. This
+           is an RDO-like technique to improve compression ratio in any
+           application packaging level compression that is applied.
+
        -cw <red> <green> <blue> <alpha>
            Assign an additional weight scaling to each color channel,
            allowing the channels to be treated differently in terms of

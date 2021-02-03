@@ -14,6 +14,13 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 
 The 2.4 release is the fifth release in the 2.x series. It includes ...
 
+* **General:**
+  * **Feature:** When using the `-a` option any 2D blocks that are entirely
+    zero alpha, after the alpha filter radius is taken into account, are
+    replaced by transparent black constant color blocks. This is an RDO-like
+    technique to improve compression ratios of any additional packaging level
+    compression applied.
+
 <!-- ---------------------------------------------------------------------- -->
 ## 2.3
 
