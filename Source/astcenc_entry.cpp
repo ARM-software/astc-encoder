@@ -717,9 +717,58 @@ static void compress_image(
 			int y = rem / row_blocks;
 			int x = rem - (y * row_blocks);
 
-			// Decompress
-			fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+			// Test if we can apply some basic alpha-scale RDO
+			bool use_full_block = true;
+			if (ctx.config.a_scale_radius != 0 && block_z == 1)
+			{
+				int start_x = x * block_x;
+				int end_x = astc::min(dim_x, start_x + block_x);
 
+				int start_y = y * block_y;
+				int end_y = astc::min(dim_y, start_y + block_y);
+
+				// SATs accumulate error, so don't test exactly zero. Test for
+				// less than 1 alpha in the expanded block footprint that
+				// includes the alpha radius.
+				int x_footprint = block_x +
+				                  2 * (ctx.config.a_scale_radius - 1);
+
+				int y_footprint = block_y +
+				                  2 * (ctx.config.a_scale_radius - 1);
+
+				float footprint = (float)(x_footprint * y_footprint);
+				float threshold = 0.9f / (255.0f * footprint);
+
+				// Do we have any alpha values?
+				use_full_block = false;
+				for (int ay = start_y; ay < end_y; ay++)
+				{
+					for (int ax = start_x; ax < end_x; ax++)
+					{
+						float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
+						if (a_avg > threshold)
+						{
+							use_full_block = true;
+							ax = end_x;
+							ay = end_y;
+						}
+					}
+				}
+			}
+
+			// Fetch the full block for compression
+			if (use_full_block)
+			{
+				fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+			}
+			// Apply alpha scale RDO - substitute constant color block
+			else
+			{
+				pb.origin_texel = float4(0.0f, 0.0f, 0.0f, 0.0f);
+				pb.data_min = vfloat4(0.0f, 0.0f, 0.0f, 0.0f);
+				pb.data_max = pb.data_min;
+				pb.grayscale = false;
+			}
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
