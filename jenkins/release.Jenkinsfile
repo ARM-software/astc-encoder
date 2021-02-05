@@ -15,7 +15,7 @@
  * similarly on different operating systems, so we test one compiler per OS.
  */
 
-@Library('hive-infra-library@changes/88/287488/3') _
+@Library('hive-infra-library@changes/86/295486/1') _
 
 pipeline {
   agent none
@@ -31,12 +31,29 @@ pipeline {
         /* Run static analysis on Linux */
         stage('Coverity') {
           agent {
-            docker {
-              image 'astcenc:2.4.0'
-              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-              registryCredentialsId 'cepe-artifactory-jenkins'
-              label 'docker'
-              alwaysPull true
+            kubernetes {
+              yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  imagePullSecrets:
+    - name: artifactory-ms-docker
+  containers:
+    - name: astcenc
+      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/openjfx:astcenc:3.0.0
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          cpu: 4
+          memory: 8Gi
+'''
+            defaultContainer 'astcenc'
             }
           }
           stages {
@@ -76,12 +93,29 @@ pipeline {
         /* Build for Linux on x86-64 using Clang */
         stage('Linux') {
           agent {
-            docker {
-              image 'astcenc:2.3.0'
-              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-              registryCredentialsId 'cepe-artifactory-jenkins'
-              label 'docker'
-              alwaysPull true
+            kubernetes {
+              yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  imagePullSecrets:
+    - name: artifactory-ms-docker
+  containers:
+    - name: astcenc
+      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/openjfx:astcenc:3.0.0
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          cpu: 4
+          memory: 8Gi
+'''
+              defaultContainer 'astcenc'
             }
           }
           stages {
@@ -133,7 +167,7 @@ pipeline {
         /* Build for Windows on x86-64 using MSVC */
         stage('Windows') {
           agent {
-            label 'Windows && x86_64'
+            label 'Windows'
           }
           stages {
             stage('Clean') {
@@ -173,7 +207,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac && x86_64 && notarizer'
+            label 'mac && notarizer'
           }
           stages {
             stage('Clean') {
@@ -231,7 +265,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS arm64') {
           agent {
-            label 'mac && x86_64 && notarizer'
+            label 'mac && notarizer'
           }
           stages {
             stage('Clean') {
@@ -283,12 +317,29 @@ pipeline {
     }
     stage('Artifactory') {
       agent {
-        docker {
-          image 'astcenc:2.3.0'
-          registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-          registryCredentialsId 'cepe-artifactory-jenkins'
-          label 'docker'
-          alwaysPull true
+        kubernetes {
+          yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  imagePullSecrets:
+    - name: artifactory-ms-docker
+  containers:
+    - name: astcenc
+      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/openjfx:astcenc:3.0.0
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          cpu: 1
+          memory: 4Gi
+'''
+          defaultContainer 'astcenc'
         }
       }
       options {
