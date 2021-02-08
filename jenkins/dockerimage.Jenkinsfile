@@ -5,8 +5,6 @@ pipeline {
 apiVersion: v1
 kind: Pod
 spec:
-  securityContext:
-    privileged: true
   imagePullSecrets:
     - name: artifactory-ms-docker
   containers:
@@ -23,6 +21,14 @@ spec:
       env:
         - name: DOCKER_HOST
           value: tcp://localhost:2375
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: dind-storage
+          mountPath: /var/lib/docker
+  volumes:
+    - name: dind-storage
+      emptyDir: {}
 '''
       defaultContainer 'dind'
     }
