@@ -35,6 +35,7 @@ spec:
     stage('Build and Push Image') {
       steps {
         sh '''
+          apk add --no-cache bash
           chmod u+x ./jenkins/build-image.sh
           ./jenkins/build-image.sh push
         '''
