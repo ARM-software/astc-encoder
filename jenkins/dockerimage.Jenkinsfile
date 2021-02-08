@@ -18,9 +18,6 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
-      env:
-        - name: DOCKER_HOST
-          value: tcp://localhost:2375
       securityContext:
         privileged: true
       volumeMounts:
