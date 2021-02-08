@@ -20,8 +20,11 @@ spec:
         requests:
           cpu: 2
           memory: 4Gi
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
 '''
-            defaultContainer 'dind'
+      defaultContainer 'dind'
     }
   }
   environment {
@@ -35,7 +38,7 @@ spec:
     stage('Build and Push Image') {
       steps {
         sh '''
-          apk add --no-cache bash
+          apk add --no-cache bash curl
           chmod u+x ./jenkins/build-image.sh
           ./jenkins/build-image.sh push
         '''
