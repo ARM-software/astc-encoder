@@ -10,10 +10,7 @@ spec:
   containers:
     - name: dind
       image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/docker:dind
-      command:
-        - sleep
-      args:
-        - infinity
+      tty: true
       resources:
         requests:
           cpu: 2
@@ -40,6 +37,7 @@ spec:
   stages {
     stage('Build and Push Image') {
       steps {
+        sh 'docker info'
         sh '''
           apk add --no-cache bash curl
           chmod u+x ./jenkins/build-image.sh
