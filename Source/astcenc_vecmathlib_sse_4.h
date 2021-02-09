@@ -711,7 +711,7 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Return the min vector of a vector and a scalar.
+ * @brief Return the max vector of a vector and a scalar.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
  */
