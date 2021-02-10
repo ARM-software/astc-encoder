@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2020 Arm Limited
+// Copyright 2011-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -187,7 +187,7 @@ astcenc_image* astc_img_from_floatx4_array(
 #if 0
 		float*** data32 = static_cast<float***>(img->data);
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
-		const float* src = data + 4 * dim_y * y_src;
+		const float* src = data + 4 * dim_x * y_src;
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{
@@ -199,7 +199,7 @@ astcenc_image* astc_img_from_floatx4_array(
 #else
 		uint16_t* data16 = static_cast<uint16_t*>(img->data[0]);
 		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
-		const float* src = data + 4 * dim_y * y_src;
+		const float* src = data + 4 * dim_x * y_src;
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{

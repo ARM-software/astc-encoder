@@ -423,11 +423,6 @@ static void compute_pixel_region_variance(
 			int z_low  = z_src - alpha_kernel_radius;
 			int z_high = z_src + alpha_kernel_radius + 1;
 
-			z_src  = astc::clamp(z_src,  0, (int)(img->dim_z - 1));
-			z_low  = astc::clamp(z_low,  0, (int)(img->dim_z - 1));
-			z_high = astc::clamp(z_high, 0, (int)(img->dim_z - 1));
-
-
 			for (int y = 0; y < size_y; y++)
 			{
 				int y_src = y + kernel_radius_xy;
@@ -435,20 +430,12 @@ static void compute_pixel_region_variance(
 				int y_low  = y_src - alpha_kernel_radius;
 				int y_high = y_src + alpha_kernel_radius + 1;
 
-				y_src  = astc::clamp(y_src,  0, (int)(img->dim_y - 1));
-				y_low  = astc::clamp(y_low,  0, (int)(img->dim_y - 1));
-				y_high = astc::clamp(y_high, 0, (int)(img->dim_y - 1));
-
 				for (int x = 0; x < size_x; x++)
 				{
 					int x_src = x + kernel_radius_xy;
 					int x_dst = x + offset_x;
 					int x_low  = x_src - alpha_kernel_radius;
 					int x_high = x_src + alpha_kernel_radius + 1;
-
-					x_src  = astc::clamp(x_src,  0, (int)(img->dim_x - 1));
-					x_low  = astc::clamp(x_low,  0, (int)(img->dim_x - 1));
-					x_high = astc::clamp(x_high, 0, (int)(img->dim_x - 1));
 
 					// Summed-area table lookups for alpha average
 					float vasum = (  VARBUF1(z_high, y_low,  x_low).a
@@ -502,20 +489,12 @@ static void compute_pixel_region_variance(
 			int y_low  = y_src - alpha_kernel_radius;
 			int y_high = y_src + alpha_kernel_radius + 1;
 
-			y_src  = astc::clamp(y_src,  0, (int)(img->dim_y - 1));
-			y_low  = astc::clamp(y_low,  0, (int)(img->dim_y - 1));
-			y_high = astc::clamp(y_high, 0, (int)(img->dim_y - 1));
-
 			for (int x = 0; x < size_x; x++)
 			{
 				int x_src = x + kernel_radius_xy;
 				int x_dst = x + offset_x;
 				int x_low  = x_src - alpha_kernel_radius;
 				int x_high = x_src + alpha_kernel_radius + 1;
-
-				x_src  = astc::clamp(x_src,  0, (int)(img->dim_x - 1));
-				x_low  = astc::clamp(x_low,  0, (int)(img->dim_x - 1));
-				x_high = astc::clamp(x_high, 0, (int)(img->dim_x - 1));
 
 				// Summed-area table lookups for alpha average
 				float vasum = VARBUF1(0, y_low,  x_low).a
