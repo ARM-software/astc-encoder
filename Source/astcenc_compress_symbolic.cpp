@@ -79,8 +79,8 @@ static int realign_weights(
 	int nan_endpoint;
 	int4 endpnt0[4];
 	int4 endpnt1[4];
-	float4 endpnt0f[4];
-	float4 offset[4];
+	vfloat4 endpnt0f[4];
+	vfloat4 offset[4];
 
 	promise(partition_count > 0);
 	promise(weight_count > 0);
@@ -115,9 +115,9 @@ static int realign_weights(
 			if (plane_mask & 4) epd.b = 0;
 			if (plane_mask & 8) epd.a = 0;
 
-			endpnt0f[pa_idx] = float4((float)endpnt0[pa_idx].r, (float)endpnt0[pa_idx].g,
+			endpnt0f[pa_idx] = vfloat4((float)endpnt0[pa_idx].r, (float)endpnt0[pa_idx].g,
 			                          (float)endpnt0[pa_idx].b, (float)endpnt0[pa_idx].a);
-			offset[pa_idx] = float4((float)epd.r, (float)epd.g, (float)epd.b, (float)epd.a);
+			offset[pa_idx] = vfloat4((float)epd.r, (float)epd.g, (float)epd.b, (float)epd.a);
 			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
 		}
 
@@ -165,22 +165,22 @@ static int realign_weights(
 				float plane_up_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_next_dif) * twf0) - plane_weight;
 				float plane_down_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_prev_dif) * twf0) - plane_weight;
 
-				float4 color_offset = offset[partition];
-				float4 color_base   = endpnt0f[partition];
+				vfloat4 color_offset = offset[partition];
+				vfloat4 color_base   = endpnt0f[partition];
 
-				float4 color = color_base + color_offset * plane_weight;
+				vfloat4 color = color_base + color_offset * plane_weight;
 
-				float4 origcolor    = float4(blk->data_r[texel], blk->data_g[texel],
-				                             blk->data_b[texel], blk->data_a[texel]);
-				float4 error_weight = float4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
-				                             ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
+				vfloat4 origcolor    = vfloat4(blk->data_r[texel], blk->data_g[texel],
+				                               blk->data_b[texel], blk->data_a[texel]);
+				vfloat4 error_weight = vfloat4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
+				                               ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
 
-				float4 colordiff       = color - origcolor;
-				float4 color_up_diff   = colordiff + color_offset * plane_up_weight;
-				float4 color_down_diff = colordiff + color_offset * plane_down_weight;
-				current_error += dot(colordiff       * colordiff,       error_weight);
-				up_error      += dot(color_up_diff   * color_up_diff,   error_weight);
-				down_error    += dot(color_down_diff * color_down_diff, error_weight);
+				vfloat4 colordiff       = color - origcolor;
+				vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
+				vfloat4 color_down_diff = colordiff + color_offset * plane_down_weight;
+				current_error += dot_s(colordiff       * colordiff,       error_weight);
+				up_error      += dot_s(color_up_diff   * color_up_diff,   error_weight);
+				down_error    += dot_s(color_down_diff * color_down_diff, error_weight);
 			}
 
 			// Check if the prev or next error is better, and if so use it
@@ -413,8 +413,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
-		float4 rgbs_colors[4];
-		float4 rgbo_colors[4];
+		vfloat4 rgbs_colors[4];
+		vfloat4 rgbo_colors[4];
 
 		// TODO: Can we ping-pong between two buffers and make this zero copy?
 		symbolic_compressed_block workscb;
@@ -870,8 +870,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		// recompute the ideal color endpoints before storing them.
 		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), separate_component, &epm);
 
-		float4 rgbs_colors[4];
-		float4 rgbo_colors[4];
+		vfloat4 rgbs_colors[4];
+		vfloat4 rgbo_colors[4];
 
 		// TODO: Ping-pong between two buffers and make this zero copy
 		symbolic_compressed_block workscb;
@@ -1212,11 +1212,11 @@ static float prepare_error_weight_block(
 		}
 	}
 
-	float4 error_weight_sum = float4(0.0f, 0.0f, 0.0f, 0.0f);
+	vfloat4 error_weight_sum = vfloat4::zero();
 	int texels_per_block = bsd->texel_count;
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		error_weight_sum = error_weight_sum + vfloat4_to_float4(ewb->error_weights[i]);
+		error_weight_sum = error_weight_sum + ewb->error_weights[i];
 
 		float wr = ewb->error_weights[i].lane<0>();
 		float wg = ewb->error_weights[i].lane<1>();
@@ -1241,7 +1241,7 @@ static float prepare_error_weight_block(
 		ewb->texel_weight[i] = (wr + wg + wb + wa) * 0.25f;
 	}
 
-	return dot(error_weight_sum, float4(1.0f, 1.0f, 1.0f, 1.0f));
+	return hadd_s(error_weight_sum);
 }
 
 static float prepare_block_statistics(

@@ -599,16 +599,6 @@ typedef vtype4<unsigned int> uint4;
 
 static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
 static inline float dot(float3 p, float3 q)  { return p.r * q.r + p.g * q.g + p.b * q.b; }
-static inline float dot(float4 p, float4 q)  {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	__m128 pv = _mm_load_ps((float*)&p);
-	__m128 qv = _mm_load_ps((float*)&q);
-	__m128 t  = _mm_dp_ps(pv, qv, 0xFF);
-	return _mm_cvtss_f32(t);
-#else
-	return p.r * q.r + p.g * q.g + p.b * q.b  + p.a * q.a;
-#endif
-}
 
 static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }

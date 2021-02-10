@@ -1135,7 +1135,7 @@ void compute_quantized_weights_for_decimation_table(
 	}
 }
 
-static inline float4 compute_rgbovec(
+static inline vfloat4 compute_rgbovec(
 	float4 rgba_weight_sum,
 	float3 weight_weight_sum,
 	float red_sum,
@@ -1183,28 +1183,28 @@ static inline float4 compute_rgbovec(
 
 	// Actually compute the adjugate matrix, not the inverse, and apply the
 	// multiplication by 1/det to the vector separately.
-	float4 mat0 = float4(DT, ZQP, RYP, mZYP);
-	float4 mat1 = float4(ZQP, SZmRR * X - Z * PP, RQX, mZQX);
-	float4 mat2 = float4(RYP, RQX, (S * Y - QQ) * X - Y * PP, mRYX);
-	float4 mat3 = float4(mZYP, mZQX, mRYX, Z * YX);
-	float4 vect = float4(red_sum, green_sum, blue_sum, qsum) * rdet;
+	vfloat4 mat0(DT, ZQP, RYP, mZYP);
+	vfloat4 mat1(ZQP, SZmRR * X - Z * PP, RQX, mZQX);
+	vfloat4 mat2(RYP, RQX, (S * Y - QQ) * X - Y * PP, mRYX);
+	vfloat4 mat3(mZYP, mZQX, mRYX, Z * YX);
+	vfloat4 vect = vfloat4(red_sum, green_sum, blue_sum, qsum) * rdet;
 
 	#ifdef DEBUG_CAPTURE_NAN
 	    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 	#endif
 
-	return float4(dot(mat0, vect),
-	              dot(mat1, vect),
-	              dot(mat2, vect),
-	              dot(mat3, vect));
+	return vfloat4(dot_s(mat0, vect),
+	               dot_s(mat1, vect),
+	               dot_s(mat2, vect),
+	               dot_s(mat3, vect));
 }
 
 /* for a given weight set, we wish to recompute the colors so that they are optimal for a particular weight set. */
 void recompute_ideal_colors_2planes(
 	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
-	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
-	float4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
+	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
@@ -1379,15 +1379,15 @@ void recompute_ideal_colors_2planes(
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
-		                                 red_sum, green_sum, blue_sum, psum, qsum);
+		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
+		                                  red_sum, green_sum, blue_sum, psum, qsum);
 		rgbo_vectors[i] = rgbovec;
 
 		// We will occasionally get a failure due to the use of a singular
 		// (non-invertible) matrix. Record whether such a failure has taken
 		// place; if it did, compute rgbo_vectors[] with a different method
 		// later on.
-		float chkval = dot(rgbovec, rgbovec);
+		float chkval = dot_s(rgbovec, rgbovec);
 		int rgbo_fail = chkval != chkval;
 
 		// Initialize the luminance and scale vectors with a reasonable
@@ -1405,7 +1405,7 @@ void recompute_ideal_colors_2planes(
 
 		float3 sds = scale_direction * scale_max;
 
-		rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, scalediv);
+		rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, scalediv);
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
@@ -1437,7 +1437,7 @@ void recompute_ideal_colors_2planes(
 				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
 			}
 
-			rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, 1.0f);
+			rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, 1.0f);
 		}
 		else
 		{
@@ -1499,7 +1499,7 @@ void recompute_ideal_colors_2planes(
 			{
 				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
 				float3 sdsm = scale_direction * scale_ep1;
-				rgbs_vectors[i] = float4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
+				rgbs_vectors[i] = vfloat4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
 			}
 
 			#ifdef DEBUG_CAPTURE_NAN
@@ -1603,7 +1603,7 @@ void recompute_ideal_colors_2planes(
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
 
-			rgbo_vectors[i] = float4(ep0.r, ep0.g, ep0.b, avgdif);
+			rgbo_vectors[i] = vfloat4(ep0.r, ep0.g, ep0.b, avgdif);
 		}
 	}
 }
@@ -1612,8 +1612,8 @@ void recompute_ideal_colors_2planes(
 void recompute_ideal_colors_1plane(
 	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
-	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
-	float4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
+	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
+	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
 	const uint8_t* weight_set8,	// the current set of weight values
 	const partition_info* pi,
 	const decimation_table* it,
@@ -1749,15 +1749,15 @@ void recompute_ideal_colors_1plane(
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
-		                                 red_sum, green_sum, blue_sum, psum, qsum);
+		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
+		                                  red_sum, green_sum, blue_sum, psum, qsum);
 		rgbo_vectors[i] = rgbovec;
 
 		// We will occasionally get a failure due to the use of a singular
 		// (non-invertible) matrix. Record whether such a failure has taken
 		// place; if it did, compute rgbo_vectors[] with a different method
 		// later on.
-		float chkval = dot(rgbovec, rgbovec);
+		float chkval = dot_s(rgbovec, rgbovec);
 		int rgbo_fail = chkval != chkval;
 
 		// Initialize the luminance and scale vectors with a reasonable
@@ -1775,7 +1775,7 @@ void recompute_ideal_colors_1plane(
 
 		float3 sds = scale_direction * scale_max;
 
-		rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, scalediv);
+		rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, scalediv);
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
@@ -1807,7 +1807,7 @@ void recompute_ideal_colors_1plane(
 				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
 			}
 
-			rgbs_vectors[i] = float4(sds.r, sds.g, sds.b, 1.0f);
+			rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, 1.0f);
 		}
 		else
 		{
@@ -1869,7 +1869,7 @@ void recompute_ideal_colors_1plane(
 			{
 				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
 				float3 sdsm = scale_direction * scale_ep1;
-				rgbs_vectors[i] = float4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
+				rgbs_vectors[i] = vfloat4(sdsm.r, sdsm.g, sdsm.b, scalediv2);
 			}
 
 			#ifdef DEBUG_CAPTURE_NAN
@@ -1889,7 +1889,7 @@ void recompute_ideal_colors_1plane(
 			float4 avg = (v0 + v1) * 0.5f;
 			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
 
-			rgbo_vectors[i] = float4(ep0.r, ep0.g, ep0.b, avgdif);
+			rgbo_vectors[i] = vfloat4(ep0.r, ep0.g, ep0.b, avgdif);
 		}
 	}
 }

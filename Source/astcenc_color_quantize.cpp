@@ -1830,8 +1830,8 @@ static void quantize_hdr_rgb_alpha3(
 int pack_color_endpoints(
 	float4 color0,
 	float4 color1,
-	float4 rgbs_color,
-	float4 rgbo_color,
+	vfloat4 rgbs_color,
+	vfloat4 rgbo_color,
 	int format,
 	int* output,
 	int quant_level
@@ -1899,12 +1899,12 @@ int pack_color_endpoints(
 		break;
 
 	case FMT_RGB_SCALE:
-		quantize_rgbs_new(rgbs_color, output, quant_level);
+		quantize_rgbs_new(vfloat4_to_float4(rgbs_color), output, quant_level);
 		retval = FMT_RGB_SCALE;
 		break;
 
 	case FMT_HDR_RGB_SCALE:
-		quantize_hdr_rgbo3(rgbo_color, output, quant_level);
+		quantize_hdr_rgbo3(vfloat4_to_float4(rgbo_color), output, quant_level);
 		retval = FMT_HDR_RGB_SCALE;
 		break;
 
@@ -1914,7 +1914,7 @@ int pack_color_endpoints(
 		break;
 
 	case FMT_RGB_SCALE_ALPHA:
-		quantize_rgbs_alpha_new(color0, color1, rgbs_color, output, quant_level);
+		quantize_rgbs_alpha_new(color0, color1, vfloat4_to_float4(rgbs_color), output, quant_level);
 		retval = FMT_RGB_SCALE_ALPHA;
 		break;
 
