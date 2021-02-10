@@ -835,6 +835,15 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal min of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
+{
+	a.set_lane<3>(a.lane<0>());
+	return hmin_s(a);
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -864,6 +873,15 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
 
 	return _mm_cvtss_f32(t);
+}
+
+/**
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
+{
+	a.set_lane<3>(0.0f);
+	return hadd_s(a);
 }
 
 /**

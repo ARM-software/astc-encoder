@@ -101,7 +101,7 @@ void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
 	const error_weight_block* ewb,
 	const partition_info* pi,
-	float4 error_weightings[4],
+	vfloat4 error_weightings[4],
 	vfloat4 color_scalefactors[4]
 ) {
 	int texels_per_block = bsd->texel_count;
@@ -109,19 +109,19 @@ void compute_partition_error_color_weightings(
 
 	for (int i = 0; i < pcnt; i++)
 	{
-		error_weightings[i] = float4(1e-12f);
+		error_weightings[i] = vfloat4(1e-12f);
 	}
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		int part = pi->partition_of_texel[i];
-		error_weightings[part] = error_weightings[part] + ewb->error_weights[i];
+		error_weightings[part] = error_weightings[part] + float4_to_vfloat4(ewb->error_weights[i]);
 	}
 
 	for (int i = 0; i < pcnt; i++)
 	{
 		error_weightings[i] = error_weightings[i] * (1.0f / pi->texels_per_partition[i]);
-		color_scalefactors[i] = float4_to_vfloat4(sqrt(error_weightings[i]));
+		color_scalefactors[i] = sqrt(error_weightings[i]);
 	}
 }
 
@@ -197,7 +197,7 @@ void find_best_partitionings(
 
 			// compute the weighting to give to each color channel
 			// in each partition.
-			float4 error_weightings[4];
+			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
 			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
@@ -362,7 +362,7 @@ void find_best_partitionings(
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
 				float4 ics = inverse_color_scalefactors[j];
-				float4 error_weights = error_weightings[j] * (tpp * weight_imprecision_estim_squared);
+				vfloat4 error_weights = error_weightings[j] * (tpp * weight_imprecision_estim_squared);
 
 				float4 uncorr_vector = vfloat4_to_float4(uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float4 samechroma_vector = vfloat4_to_float4(samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
@@ -378,17 +378,18 @@ void find_best_partitionings(
 				separate_blue_vector = separate_blue_vector * separate_blue_vector;
 				separate_alpha_vector = separate_alpha_vector * separate_alpha_vector;
 
-				uncorr_error += dot(uncorr_vector, error_weights);
-				samechroma_error += dot(samechroma_vector, error_weights);
-				separate_error.r += dot(separate_red_vector, float3(error_weights.g, error_weights.b, error_weights.a));
-				separate_error.g += dot(separate_green_vector, float3(error_weights.r, error_weights.b, error_weights.a));
-				separate_error.b += dot(separate_blue_vector, float3(error_weights.r, error_weights.g, error_weights.a));
-				separate_error.a += dot(separate_alpha_vector, float3(error_weights.r, error_weights.g, error_weights.b));
+				uncorr_error += dot_s(float4_to_vfloat4(uncorr_vector), error_weights);
+				samechroma_error += dot_s(float4_to_vfloat4(samechroma_vector), error_weights);
+				separate_error.r += dot(separate_red_vector, error_weights.swz<1, 2, 3>());
+				separate_error.g += dot(separate_green_vector, error_weights.swz<0, 2, 3>());
+				separate_error.b += dot(separate_blue_vector, error_weights.swz<0, 1, 3>());
+				separate_error.a += dot(separate_alpha_vector, error_weights.swz<0, 1, 2>());
 
-				separate_error.r += rgba_range[j].lane<0>() * rgba_range[j].lane<0>() * error_weights.r;
-				separate_error.g += rgba_range[j].lane<1>() * rgba_range[j].lane<1>() * error_weights.g;
-				separate_error.b += rgba_range[j].lane<2>() * rgba_range[j].lane<2>() * error_weights.b;
-				separate_error.a += rgba_range[j].lane<3>() * rgba_range[j].lane<3>() * error_weights.a;
+				// TODO: Vectorize this
+				separate_error.r += rgba_range[j].lane<0>() * rgba_range[j].lane<0>() * error_weights.lane<0>();
+				separate_error.g += rgba_range[j].lane<1>() * rgba_range[j].lane<1>() * error_weights.lane<1>();
+				separate_error.b += rgba_range[j].lane<2>() * rgba_range[j].lane<2>() * error_weights.lane<2>();
+				separate_error.a += rgba_range[j].lane<3>() * rgba_range[j].lane<3>() * error_weights.lane<3>();
 			}
 
 			if (uncorr_error < uncorr_best_error)
@@ -454,7 +455,7 @@ void find_best_partitionings(
 
 			// compute the weighting to give to each color channel
 			// in each partition.
-			float4 error_weightings[4];
+			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
 			float4 inverse_color_scalefactors[4];
 
@@ -600,7 +601,7 @@ void find_best_partitionings(
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
 				float3 ics = float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
-				float3 error_weights = float3(error_weightings[j].r, error_weightings[j].g, error_weightings[j].b) * (tpp * weight_imprecision_estim_squared);
+				float3 error_weights = error_weightings[j].swz<0, 1, 2>() * (tpp * weight_imprecision_estim_squared);
 
 				float3 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
 				float3 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;

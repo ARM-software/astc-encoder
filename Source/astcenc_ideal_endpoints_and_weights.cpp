@@ -164,7 +164,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	int texel_count = bsd->texel_count;
 	promise(texel_count > 0);
 
-	float4 error_weightings[4];
+	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 
 	float2 scalefactors[4];
@@ -395,7 +395,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	int texel_count= bsd->texel_count;
 	promise(texel_count > 0);
 
-	float4 error_weightings[4];
+	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 
 	float3 scalefactors[4];
@@ -643,7 +643,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	float scale[4];
 	float length_squared[4];
 
-	float4 error_weightings[4];
+	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 	vfloat4 scalefactors[4];
 

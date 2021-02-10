@@ -151,7 +151,7 @@ void compute_encoding_choice_errors(
 
 	float3 averages[4];
 	float3 directions_rgb[4];
-	float4 error_weightings[4];
+	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 	float4 inverse_color_scalefactors[4];
 

@@ -39,7 +39,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	const partition_info* pi,
 	const encoding_choice_errors* eci,	// pointer to the structure for the CURRENT partition.
 	const endpoints* ep,
-	float4 error_weightings[4],
+	vfloat4 error_weightings[4],
 	// arrays to return results back through.
 	float best_error[21][4],
 	int format_of_choice[21][4]
@@ -70,15 +70,14 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		(65536.0f * 65536.0f / 18.0f) / (255 * 255)
 	};
 
-	float4 ep0 = ep->endpt0[partition_index];
-	float4 ep1 = ep->endpt1[partition_index];
+	vfloat4 ep0 = float4_to_vfloat4(ep->endpt0[partition_index]);
+	vfloat4 ep1 = float4_to_vfloat4(ep->endpt1[partition_index]);
 
-	float ep1_min = astc::min(astc::min(ep1.r, ep1.g), ep1.b);
+	float ep1_min = hmin_rgb_s(ep1);
 	ep1_min = astc::max(ep1_min, 0.0f);
 
-	float4 error_weight = error_weightings[partition_index];
-
-	float error_weight_rgbsum = error_weight.r + error_weight.g + error_weight.b;
+	vfloat4 error_weight = error_weightings[partition_index];
+	float error_weight_rgbsum = hadd_rgb_s(error_weight);
 
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
@@ -86,40 +85,28 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	// it is possible to get endpoint colors significantly outside [0,upper-limit]
 	// even if the input data are safely contained in [0,upper-limit];
 	// we need to add an error term for this situation,
-	float4 ep0_range_error_high;
-	float4 ep1_range_error_high;
-	float4 ep0_range_error_low;
-	float4 ep1_range_error_low;
+	vfloat4 ep0_range_error_high;
+	vfloat4 ep1_range_error_high;
+	vfloat4 ep0_range_error_low;
+	vfloat4 ep1_range_error_low;
 
-	ep0_range_error_high.r = astc::max(0.0f, ep0.r - range_upper_limit_rgb);
-	ep0_range_error_high.g = astc::max(0.0f, ep0.g - range_upper_limit_rgb);
-	ep0_range_error_high.b = astc::max(0.0f, ep0.b - range_upper_limit_rgb);
-	ep0_range_error_high.a = astc::max(0.0f, ep0.a - range_upper_limit_alpha);
+	vfloat4 offset(range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_alpha);
+	ep0_range_error_high = max(ep0 - offset, 0.0f);
+	ep1_range_error_high = max(ep1 - offset, 0.0f);
 
-	ep1_range_error_high.r = astc::max(0.0f, ep1.r - range_upper_limit_rgb);
-	ep1_range_error_high.g = astc::max(0.0f, ep1.g - range_upper_limit_rgb);
-	ep1_range_error_high.b = astc::max(0.0f, ep1.b - range_upper_limit_rgb);
-	ep1_range_error_high.a = astc::max(0.0f, ep1.a - range_upper_limit_alpha);
+	ep0_range_error_low = min(ep0, 0.0f);
+	ep1_range_error_low = min(ep1, 0.0f);
 
-	ep0_range_error_low.r = astc::min(0.0f, ep0.r);
-	ep0_range_error_low.g = astc::min(0.0f, ep0.g);
-	ep0_range_error_low.b = astc::min(0.0f, ep0.b);
-	ep0_range_error_low.a = astc::min(0.0f, ep0.a);
-
-	ep1_range_error_low.r = astc::min(0.0f, ep1.r);
-	ep1_range_error_low.g = astc::min(0.0f, ep1.g);
-	ep1_range_error_low.b = astc::min(0.0f, ep1.b);
-	ep1_range_error_low.a = astc::min(0.0f, ep1.a);
-
-	float4 sum_range_error =
+	vfloat4 sum_range_error =
 		(ep0_range_error_low * ep0_range_error_low) +
 		(ep1_range_error_low * ep1_range_error_low) +
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
-	float rgb_range_error = dot(float3(sum_range_error.r, sum_range_error.g, sum_range_error.b),
-	                            float3(error_weight.r, error_weight.g, error_weight.b))
+
+	float rgb_range_error = dot(sum_range_error.swz<0, 1, 2>(),
+	                            error_weight.swz<0, 1, 2>())
 	                      * 0.5f * static_cast<float>(partition_size);
-	float alpha_range_error = sum_range_error.a * error_weight.a
+	float alpha_range_error = sum_range_error.lane<3>() * error_weight.lane<3>()
 	                        * 0.5f * static_cast<float>(partition_size);
 
 	if (encode_hdr_rgb)
@@ -127,25 +114,25 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 
 		// collect some statistics
 		float af, cf;
-		if (ep1.r > ep1.g && ep1.r > ep1.b)
+		if (ep1.lane<0>() > ep1.lane<1>() && ep1.lane<0>() > ep1.lane<2>())
 		{
-			af = ep1.r;
-			cf = ep1.r - ep0.r;
+			af = ep1.lane<0>();
+			cf = ep1.lane<0>() - ep0.lane<0>();
 		}
-		else if (ep1.g > ep1.b)
+		else if (ep1.lane<1>() > ep1.lane<2>())
 		{
-			af = ep1.g;
-			cf = ep1.g - ep0.g;
+			af = ep1.lane<1>();
+			cf = ep1.lane<1>() - ep0.lane<1>();
 		}
 		else
 		{
-			af = ep1.b;
-			cf = ep1.b - ep0.b;
+			af = ep1.lane<2>();
+			cf = ep1.lane<2>() - ep0.lane<2>();
 		}
 
 		float bf = af - ep1_min;	// estimate of color-component spread in high endpoint color
-		float3 prd = float3(ep1.r, ep1.g, ep1.b) - float3(cf, cf, cf);
-		float3 pdif = prd - float3(ep0.r, ep0.g, ep0.b);
+		float3 prd = ep1.swz<0, 1, 2>() - float3(cf, cf, cf);
+		float3 pdif = prd - ep0.swz<0, 1, 2>();
 		// estimate of color-component spread in low endpoint color
 		float df = astc::max(astc::max(fabsf(pdif.r), fabsf(pdif.g)), fabsf(pdif.b));
 
@@ -245,8 +232,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;	// empirically determined ....
 
 
-		float lum_high = (ep1.r + ep1.g + ep1.b) * (1.0f / 3.0f);
-		float lum_low = (ep0.r + ep0.g + ep0.b) * (1.0f / 3.0f);
+		float lum_high = hadd_rgb_s(ep1) * (1.0f / 3.0f);
+		float lum_low = hadd_rgb_s(ep0) * (1.0f / 3.0f);
 		float lumdif = lum_high - lum_low;
 		float mode23mult = lumdif < 960 ? 4.0f : lumdif < 3968 ? 16.0f : 128.0f;
 
@@ -272,7 +259,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 
 			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
-			float alpha_quantization_error = error_weight.a * base_quant_error * 2.0f;
+			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
 			// for 8 integers, we have two encodings: one with HDR alpha and another one
@@ -319,7 +306,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		{
 			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
-			float alpha_quantization_error = error_weight.a * base_quant_error;
+			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
 			// for 8 integers, the available encodings are:
@@ -807,7 +794,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	compute_encoding_choice_errors(bsd, blk, pt, ewb, separate_component, eci);
 
 	// for each partition, compute the error weights to apply for that partition.
-	float4 error_weightings[4];
+	vfloat4 error_weightings[4];
 	vfloat4 dummied_color_scalefactors[4];	// only used to receive data
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, dummied_color_scalefactors);
 

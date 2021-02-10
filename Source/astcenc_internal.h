@@ -875,7 +875,7 @@ void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
 	const error_weight_block * ewb,
 	const partition_info* pi,
-	float4 error_weightings[4],
+	vfloat4 error_weightings[4],
 	vfloat4 color_scalefactors[4]);
 
 /**
