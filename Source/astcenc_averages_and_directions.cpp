@@ -175,9 +175,9 @@ void compute_averages_and_directions_rgb(
 			base_sum = base_sum + texel_datum;
 		}
 
-		float4 csf = vfloat4_to_float4(color_scalefactors[partition]);
+		vfloat4 csf = color_scalefactors[partition];
 		float3 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
-		averages[partition] = average * float3(csf.r, csf.g, csf.b);
+		averages[partition] = average * csf.swz<0, 1, 2>();
 
 		float3 sum_xp = float3(0.0f);
 		float3 sum_yp = float3(0.0f);
