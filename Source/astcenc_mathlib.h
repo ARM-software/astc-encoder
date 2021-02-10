@@ -612,22 +612,6 @@ static inline float dot(float4 p, float4 q)  {
 
 static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }
-static inline float4 normalize(float4 p) { return p * astc::rsqrt(dot(p, p)); }
-
-static inline float4 sqrt(float4 p) {
-	float4 r;
-#if ASTCENC_SSE >= 20
-	__m128 pv = _mm_load_ps((float*)&p);
-	__m128 t  = _mm_sqrt_ps(pv);
-	_mm_store_ps((float*)&r, t);
-#else
-	r.r = std::sqrt(p.r);
-	r.g = std::sqrt(p.g);
-	r.b = std::sqrt(p.b);
-	r.a = std::sqrt(p.a);
-#endif
-	return r;
-}
 
 /* ============================================================================
   Softfloat library with fp32 and fp16 conversion functionality.

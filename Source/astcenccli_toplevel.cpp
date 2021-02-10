@@ -1050,7 +1050,7 @@ static int edit_astcenc_config(
  *
  * @return      pixel   The pixel color value to write.
  */
-static float4 image_get_pixel(
+static vfloat4 image_get_pixel(
 	const astcenc_image& img,
 	unsigned int x,
 	unsigned int y,
@@ -1070,7 +1070,7 @@ static float4 image_get_pixel(
 		float b = data[(4 * img.dim_x * y) + (4 * x + 2)] / 255.0f;
 		float a = data[(4 * img.dim_x * y) + (4 * x + 3)] / 255.0f;
 
-		return float4(r, g, b, a);
+		return vfloat4(r, g, b, a);
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
@@ -1081,7 +1081,7 @@ static float4 image_get_pixel(
 		float b = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 2)]);
 		float a = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 3)]);
 
-		return float4(r, g, b, a);
+		return vfloat4(r, g, b, a);
 	}
 	else // if (img.data_type == ASTCENC_TYPE_F32)
 	{
@@ -1093,7 +1093,7 @@ static float4 image_get_pixel(
 		float b = data[(4 * img.dim_x * y) + (4 * x + 2)];
 		float a = data[(4 * img.dim_x * y) + (4 * x + 3)];
 
-		return float4(r, g, b, a);
+		return vfloat4(r, g, b, a);
 	}
 }
 
@@ -1111,7 +1111,7 @@ static void image_set_pixel(
 	unsigned int x,
 	unsigned int y,
 	unsigned int z,
-	float4 pixel
+	vfloat4 pixel
 ) {
 	// We should never escape bounds
 	assert(x < img.dim_x);
@@ -1121,10 +1121,10 @@ static void image_set_pixel(
 
 	float* data = static_cast<float*>(img.data[z]);
 
-	data[(4 * img.dim_x * y) + (4 * x    )] = pixel.r;
-	data[(4 * img.dim_x * y) + (4 * x + 1)] = pixel.g;
-	data[(4 * img.dim_x * y) + (4 * x + 2)] = pixel.b;
-	data[(4 * img.dim_x * y) + (4 * x + 3)] = pixel.a;
+	data[(4 * img.dim_x * y) + (4 * x    )] = pixel.lane<0>();
+	data[(4 * img.dim_x * y) + (4 * x + 1)] = pixel.lane<1>();
+	data[(4 * img.dim_x * y) + (4 * x + 2)] = pixel.lane<2>();
+	data[(4 * img.dim_x * y) + (4 * x + 3)] = pixel.lane<3>();
 }
 
 /**
@@ -1148,25 +1148,25 @@ static void image_preprocess_normalize(
 		{
 			for (unsigned int x = 0; x < input.dim_x; x++)
 			{
-				float4 pixel = image_get_pixel(input, x, y, z);
+				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
 				// Stash alpha channel and zero
-				float a = pixel.a;
-				pixel.a = 0.0f;
+				float a = pixel.lane<3>();
+				pixel.set_lane<3>(0.0f);
 
 				// Decode [0,1] normals to [-1,1]
-				pixel.r = (pixel.r * 2.0f) - 1.0f;
-				pixel.g = (pixel.g * 2.0f) - 1.0f;
-				pixel.b = (pixel.b * 2.0f) - 1.0f;
+				pixel.set_lane<0>((pixel.lane<0>() * 2.0f) - 1.0f);
+				pixel.set_lane<1>((pixel.lane<1>() * 2.0f) - 1.0f);
+				pixel.set_lane<2>((pixel.lane<2>() * 2.0f) - 1.0f);
 
 				// Normalize pixel and restore alpha
 				pixel = normalize(pixel);
-				pixel.a = a;
+				pixel.set_lane<3>(a);
 
 				// Encode [-1,1] normals to [0,1]
-				pixel.r = (pixel.r + 1.0f) / 2.0f;
-				pixel.g = (pixel.g + 1.0f) / 2.0f;
-				pixel.b = (pixel.b + 1.0f) / 2.0f;
+				pixel.set_lane<0>((pixel.lane<0>() + 1.0f) / 2.0f);
+				pixel.set_lane<1>((pixel.lane<1>() + 1.0f) / 2.0f);
+				pixel.set_lane<2>((pixel.lane<2>() + 1.0f) / 2.0f);
 
 				image_set_pixel(output, x, y, z, pixel);
 			}
@@ -1225,27 +1225,27 @@ static void image_preprocess_premultiply(
 		{
 			for (unsigned int x = 0; x < input.dim_x; x++)
 			{
-				float4 pixel = image_get_pixel(input, x, y, z);
+				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
 				// Linearize sRGB
 				if (profile == ASTCENC_PRF_LDR_SRGB)
 				{
-					pixel.r = srgb_to_linear(pixel.r);
-					pixel.g = srgb_to_linear(pixel.g);
-					pixel.b = srgb_to_linear(pixel.b);
+					pixel.set_lane<0>(srgb_to_linear(pixel.lane<0>()));
+					pixel.set_lane<1>(srgb_to_linear(pixel.lane<1>()));
+					pixel.set_lane<2>(srgb_to_linear(pixel.lane<2>()));
 				}
 
 				// Premultiply pixel in linear-space
-				pixel.r = pixel.r * pixel.a;
-				pixel.g = pixel.g * pixel.a;
-				pixel.b = pixel.b * pixel.a;
+				pixel.set_lane<0>(pixel.lane<0>() * pixel.lane<3>());
+				pixel.set_lane<1>(pixel.lane<1>() * pixel.lane<3>());
+				pixel.set_lane<2>(pixel.lane<2>() * pixel.lane<3>());
 
 				// Gamma-encode sRGB
 				if (profile == ASTCENC_PRF_LDR_SRGB)
 				{
-					pixel.r = linear_to_srgb(pixel.r);
-					pixel.g = linear_to_srgb(pixel.g);
-					pixel.b = linear_to_srgb(pixel.b);
+					pixel.set_lane<0>(linear_to_srgb(pixel.lane<0>()));
+					pixel.set_lane<1>(linear_to_srgb(pixel.lane<1>()));
+					pixel.set_lane<2>(linear_to_srgb(pixel.lane<2>()));
 				}
 
 				image_set_pixel(output, x, y, z, pixel);
