@@ -841,8 +841,8 @@ astcenc_error astcenc_compress_image(
 		auto init_avg_var = [ctx, &image, swizzle]() {
 			// Perform memory allocations for the destination buffers
 			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
-			ctx->input_averages = new float4[texel_count];
-			ctx->input_variances = new float4[texel_count];
+			ctx->input_averages = new vfloat4[texel_count];
+			ctx->input_variances = new vfloat4[texel_count];
 			ctx->input_alpha_averages = new float[texel_count];
 
 			return init_compute_averages_and_variances(

@@ -1080,12 +1080,12 @@ static float prepare_error_weight_block(
 		ctx.config.v_rgb_mean != 0.0f || ctx.config.v_rgb_stdev != 0.0f || \
 		ctx.config.v_a_mean != 0.0f || ctx.config.v_a_stdev != 0.0f;
 
-	float4 derv[MAX_TEXELS_PER_BLOCK];
+	vfloat4 derv[MAX_TEXELS_PER_BLOCK];
 	imageblock_initialize_deriv(blk, bsd->texel_count, derv);
-	float4 color_weights = float4(ctx.config.cw_r_weight,
-	                              ctx.config.cw_g_weight,
-	                              ctx.config.cw_b_weight,
-	                              ctx.config.cw_a_weight);
+	vfloat4 color_weights(ctx.config.cw_r_weight,
+	                      ctx.config.cw_g_weight,
+	                      ctx.config.cw_b_weight,
+	                      ctx.config.cw_a_weight);
 
 	for (int z = 0; z < bsd->zdim; z++)
 	{
@@ -1103,60 +1103,49 @@ static float prepare_error_weight_block(
 				}
 				else
 				{
-					float4 error_weight = float4(ctx.config.v_rgb_base,
-					                             ctx.config.v_rgb_base,
-					                             ctx.config.v_rgb_base,
-					                             ctx.config.v_a_base);
+					vfloat4 error_weight(ctx.config.v_rgb_base,
+					                     ctx.config.v_rgb_base,
+					                     ctx.config.v_rgb_base,
+					                     ctx.config.v_a_base);
 
 					int ydt = input_image.dim_x;
 					int zdt = input_image.dim_x * input_image.dim_y;
 
 					if (any_mean_stdev_weight)
 					{
-						float4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
-						avg.r = astc::max(avg.r, 6e-5f);
-						avg.g = astc::max(avg.g, 6e-5f);
-						avg.b = astc::max(avg.b, 6e-5f);
-						avg.a = astc::max(avg.a, 6e-5f);
-
+						vfloat4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
+						avg = max(avg, 6e-5f);
 						avg = avg * avg;
 
-						float4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
+						vfloat4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
 						variance = variance * variance;
 
-						float favg = (avg.r + avg.g + avg.b) * (1.0f / 3.0f);
-						float fvar = (variance.r + variance.g + variance.b) * (1.0f / 3.0f);
+						float favg = (avg.lane<0>() + avg.lane<1>() + avg.lane<2>()) * (1.0f / 3.0f);
+						float fvar = (variance.lane<0>() + variance.lane<1>() + variance.lane<2>()) * (1.0f / 3.0f);
 
 						float mixing = ctx.config.v_rgba_mean_stdev_mix;
-						avg.r = favg * mixing + avg.r * (1.0f - mixing);
-						avg.g = favg * mixing + avg.g * (1.0f - mixing);
-						avg.b = favg * mixing + avg.b * (1.0f - mixing);
+						avg.set_lane<0>(favg * mixing + avg.lane<0>() * (1.0f - mixing));
+						avg.set_lane<1>(favg * mixing + avg.lane<1>() * (1.0f - mixing));
+						avg.set_lane<2>(favg * mixing + avg.lane<2>() * (1.0f - mixing));
 
-						variance.r = fvar * mixing + variance.r * (1.0f - mixing);
-						variance.g = fvar * mixing + variance.g * (1.0f - mixing);
-						variance.b = fvar * mixing + variance.b * (1.0f - mixing);
+						variance.set_lane<0>(fvar * mixing + variance.lane<0>() * (1.0f - mixing));
+						variance.set_lane<1>(fvar * mixing + variance.lane<1>() * (1.0f - mixing));
+						variance.set_lane<2>(fvar * mixing + variance.lane<2>() * (1.0f - mixing));
 
-						float4 stdev = float4(astc::sqrt(astc::max(variance.r, 0.0f)),
-						                      astc::sqrt(astc::max(variance.g, 0.0f)),
-						                      astc::sqrt(astc::max(variance.b, 0.0f)),
-						                      astc::sqrt(astc::max(variance.a, 0.0f)));
+						// TODO: Vectorize this ...
+						vfloat4 stdev = vfloat4(astc::sqrt(astc::max(variance.lane<0>(), 0.0f)),
+						                        astc::sqrt(astc::max(variance.lane<1>(), 0.0f)),
+						                        astc::sqrt(astc::max(variance.lane<2>(), 0.0f)),
+						                        astc::sqrt(astc::max(variance.lane<3>(), 0.0f)));
 
-						avg.r *= ctx.config.v_rgb_mean;
-						avg.g *= ctx.config.v_rgb_mean;
-						avg.b *= ctx.config.v_rgb_mean;
-						avg.a *= ctx.config.v_a_mean;
+						vfloat4 scalea(ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_a_mean);
+						avg = avg * scalea;
 
-						stdev.r *= ctx.config.v_rgb_stdev;
-						stdev.g *= ctx.config.v_rgb_stdev;
-						stdev.b *= ctx.config.v_rgb_stdev;
-						stdev.a *= ctx.config.v_a_stdev;
+						vfloat4 scales(ctx.config.v_rgb_stdev, ctx.config.v_rgb_stdev, ctx.config.v_rgb_stdev, ctx.config.v_a_stdev);
+						stdev = stdev * scales;
 
 						error_weight = error_weight + avg + stdev;
-
-						error_weight = float4(1.0f / error_weight.r,
-						                      1.0f / error_weight.g,
-						                      1.0f / error_weight.b,
-						                      1.0f / error_weight.a);
+						error_weight = 1.0f / error_weight;
 					}
 
 					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
@@ -1168,8 +1157,8 @@ static float prepare_error_weight_block(
 						float denom = 1.0f - xN * xN - yN * yN;
 						denom = astc::max(denom, 0.1f);
 						denom = 1.0f / denom;
-						error_weight.r *= 1.0f + xN * xN * denom;
-						error_weight.a *= 1.0f + yN * yN * denom;
+						error_weight.set_lane<0>(error_weight.lane<0>() * (1.0f + xN * xN * denom));
+						error_weight.set_lane<3>(error_weight.lane<3>() * (1.0f + yN * yN * denom));
 					}
 
 					if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
@@ -1187,9 +1176,9 @@ static float prepare_error_weight_block(
 						alpha_scale = astc::max(alpha_scale, 0.0001f);
 
 						alpha_scale *= alpha_scale;
-						error_weight.r *= alpha_scale;
-						error_weight.g *= alpha_scale;
-						error_weight.b *= alpha_scale;
+						error_weight.set_lane<0>(error_weight.lane<0>() * alpha_scale);
+						error_weight.set_lane<1>(error_weight.lane<1>() * alpha_scale);
+						error_weight.set_lane<2>(error_weight.lane<2>() * alpha_scale);
 					}
 
 					error_weight = error_weight * color_weights;
@@ -1203,12 +1192,8 @@ static float prepare_error_weight_block(
 					// which is equivalent to dividing by the derivative of the transfer
 					// function.
 
-					error_weight.r /= (derv[idx].r * derv[idx].r * 1e-10f);
-					error_weight.g /= (derv[idx].g * derv[idx].g * 1e-10f);
-					error_weight.b /= (derv[idx].b * derv[idx].b * 1e-10f);
-					error_weight.a /= (derv[idx].a * derv[idx].a * 1e-10f);
-
-					ewb->error_weights[idx] = float4_to_vfloat4(error_weight);
+					error_weight = error_weight / (derv[idx] * derv[idx] * 1e-10f);
+					ewb->error_weights[idx] = error_weight;
 				}
 				idx++;
 			}

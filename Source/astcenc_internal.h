@@ -937,7 +937,7 @@ struct pixel_region_variance_args
 	/** The position of first src and dst data in the data set. */
 	int3 offset;
 	/** The working memory buffer. */
-	float4 *work_memory;
+	vfloat4 *work_memory;
 };
 
 /**
@@ -1215,7 +1215,7 @@ void prepare_angular_tables();
 void imageblock_initialize_deriv(
 	const imageblock* pb,
 	int pixelcount,
-	float4* dptr);
+	vfloat4* dptr);
 
 void compute_angular_endpoints_1plane(
 	bool only_always,
@@ -1284,8 +1284,8 @@ struct astcenc_context
 	// Regional average-and-variance information, initialized by
 	// compute_averages_and_variances() only if the astc encoder
 	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
+	vfloat4 *input_averages;
+	vfloat4 *input_variances;
 	float *input_alpha_averages;
 
 	compress_symbolic_block_buffers* working_buffers;
