@@ -1828,8 +1828,8 @@ static void quantize_hdr_rgb_alpha3(
 	delta-based representation; as such, it will report back the format it actually used.
 */
 int pack_color_endpoints(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0v,
+	vfloat4 color1v,
 	vfloat4 rgbs_color,
 	vfloat4 rgbo_color,
 	int format,
@@ -1837,16 +1837,10 @@ int pack_color_endpoints(
 	int quant_level
 ) {
 	assert(quant_level >= 0 && quant_level < 21);
-	// we do not support negative colors.
-	color0.r = astc::max(color0.r, 0.0f);
-	color0.g = astc::max(color0.g, 0.0f);
-	color0.b = astc::max(color0.b, 0.0f);
-	color0.a = astc::max(color0.a, 0.0f);
 
-	color1.r = astc::max(color1.r, 0.0f);
-	color1.g = astc::max(color1.g, 0.0f);
-	color1.b = astc::max(color1.b, 0.0f);
-	color1.a = astc::max(color1.a, 0.0f);
+	// we do not support negative colors.
+	float4 color0 = vfloat4_to_float4(max(color0v, 0.0f));
+	float4 color1 = vfloat4_to_float4(max(color1v, 0.0f));
 
 	int retval = 0;
 

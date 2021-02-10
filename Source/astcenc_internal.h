@@ -1102,8 +1102,8 @@ void merge_endpoints(
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
 int pack_color_endpoints(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	vfloat4 rgbs_color,
 	vfloat4 rgbo_color,
 	int format,

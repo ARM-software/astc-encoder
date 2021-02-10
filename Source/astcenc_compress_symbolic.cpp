@@ -430,8 +430,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			for (int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
-				    eix[decimation_mode].ep.endpt0[j],
-				    eix[decimation_mode].ep.endpt1[j],
+				    float4_to_vfloat4(eix[decimation_mode].ep.endpt0[j]),
+				    float4_to_vfloat4(eix[decimation_mode].ep.endpt1[j]),
 				    rgbs_colors[j],
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
@@ -455,8 +455,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
-					    eix[decimation_mode].ep.endpt0[j],
-					    eix[decimation_mode].ep.endpt1[j],
+					    float4_to_vfloat4(eix[decimation_mode].ep.endpt0[j]),
+					    float4_to_vfloat4(eix[decimation_mode].ep.endpt1[j]),
 					    rgbs_colors[j],
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
@@ -885,7 +885,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			for (int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
-				                            epm.endpt0[j], epm.endpt1[j],
+				                            float4_to_vfloat4(epm.endpt0[j]),
+				                            float4_to_vfloat4(epm.endpt1[j]),
 				                            rgbs_colors[j], rgbo_colors[j],
 				                            partition_format_specifiers[i][j],
 				                            workscb.color_values[j],
@@ -904,8 +905,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
-					    epm.endpt0[j],
-					    epm.endpt1[j],
+					    float4_to_vfloat4(epm.endpt0[j]),
+					    float4_to_vfloat4(epm.endpt1[j]),
 					    rgbs_colors[j],
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
