@@ -1410,22 +1410,22 @@ void compress_block(
 		{
 			scb.block_mode = -1;
 			scb.partition_count = 0;
-			float4 orig_color = blk->origin_texel;
-			scb.constant_color[0] = float_to_sf16(orig_color.r, SF_NEARESTEVEN);
-			scb.constant_color[1] = float_to_sf16(orig_color.g, SF_NEARESTEVEN);
-			scb.constant_color[2] = float_to_sf16(orig_color.b, SF_NEARESTEVEN);
-			scb.constant_color[3] = float_to_sf16(orig_color.a, SF_NEARESTEVEN);
+			vfloat4 orig_color = blk->origin_texel;
+			scb.constant_color[0] = float_to_sf16(orig_color.lane<0>(), SF_NEARESTEVEN);
+			scb.constant_color[1] = float_to_sf16(orig_color.lane<1>(), SF_NEARESTEVEN);
+			scb.constant_color[2] = float_to_sf16(orig_color.lane<2>(), SF_NEARESTEVEN);
+			scb.constant_color[3] = float_to_sf16(orig_color.lane<3>(), SF_NEARESTEVEN);
 		}
 		else
 		{
 			// Encode as UNORM16 if NOT using HDR.
 			scb.block_mode = -2;
 			scb.partition_count = 0;
-			float4 orig_color = blk->origin_texel;
-			float red   = orig_color.r;
-			float green = orig_color.g;
-			float blue  = orig_color.b;
-			float alpha = orig_color.a;
+			vfloat4 orig_color = blk->origin_texel;
+			float red   = orig_color.lane<0>();
+			float green = orig_color.lane<1>();
+			float blue  = orig_color.lane<2>();
+			float alpha = orig_color.lane<3>();
 
 			red = astc::clamp(red, 0.0f, 1.0f);
 			green = astc::clamp(green, 0.0f, 1.0f);

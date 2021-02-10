@@ -764,8 +764,8 @@ static void compress_image(
 			// Apply alpha scale RDO - substitute constant color block
 			else
 			{
-				pb.origin_texel = float4(0.0f, 0.0f, 0.0f, 0.0f);
-				pb.data_min = vfloat4(0.0f, 0.0f, 0.0f, 0.0f);
+				pb.origin_texel = vfloat4::zero();
+				pb.data_min = vfloat4::zero();
 				pb.data_max = pb.data_min;
 				pb.grayscale = false;
 			}

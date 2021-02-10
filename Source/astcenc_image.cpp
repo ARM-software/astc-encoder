@@ -171,8 +171,8 @@ void imageblock_initialize_work_from_orig(
 	imageblock* pb,
 	int pixelcount
 ) {
-	pb->origin_texel = float4(pb->data_r[0], pb->data_g[0],
-	                          pb->data_b[0], pb->data_a[0]);
+	pb->origin_texel = vfloat4(pb->data_r[0], pb->data_g[0],
+	                           pb->data_b[0], pb->data_a[0]);
 
 	vfloat4 data_min(1e38f);
 	vfloat4 data_max(-1e38f);

@@ -497,8 +497,7 @@ struct imageblock
 	float data_b[MAX_TEXELS_PER_BLOCK];
 	float data_a[MAX_TEXELS_PER_BLOCK];
 
-	// TODO: Migrate to vfloat4
-	float4 origin_texel;
+	vfloat4 origin_texel;
 	vfloat4 data_min;
 	vfloat4 data_max;
 	bool    grayscale;
