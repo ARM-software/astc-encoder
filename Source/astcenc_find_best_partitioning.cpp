@@ -237,33 +237,33 @@ void find_best_partitionings(
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				uncorr_lines[j].a = vfloat4_to_float4(averages[j]);
+				uncorr_lines[j].a = averages[j];
 				if (dot_s(directions_rgba[j], directions_rgba[j]) == 0.0f)
 				{
-					uncorr_lines[j].b = normalize(float4(1.0f));
+					uncorr_lines[j].b = normalize(vfloat4(1.0f));
 				}
 				else
 				{
-					uncorr_lines[j].b = vfloat4_to_float4(normalize(directions_rgba[j]));
+					uncorr_lines[j].b = normalize(directions_rgba[j]);
 				}
 
-				proc_uncorr_lines[j].amod = float4_to_vfloat4((uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * inverse_color_scalefactors[j]);
-				proc_uncorr_lines[j].bs = float4_to_vfloat4((uncorr_lines[j].b * vfloat4_to_float4(color_scalefactors[j])));
-				proc_uncorr_lines[j].bis = float4_to_vfloat4((uncorr_lines[j].b * inverse_color_scalefactors[j]));
+				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_uncorr_lines[j].bs = uncorr_lines[j].b * color_scalefactors[j];
+				proc_uncorr_lines[j].bis = uncorr_lines[j].b * float4_to_vfloat4(inverse_color_scalefactors[j]);
 
-				samechroma_lines[j].a = float4(0.0f);
+				samechroma_lines[j].a = vfloat4::zero();
 				if (dot_s(averages[j], averages[j]) == 0.0f)
 				{
-					samechroma_lines[j].b = normalize(float4(1.0f));
+					samechroma_lines[j].b = normalize(vfloat4(1.0f));
 				}
 				else
 				{
-					samechroma_lines[j].b = vfloat4_to_float4(normalize(averages[j]));
+					samechroma_lines[j].b = normalize(averages[j]);
 				}
 
-				proc_samechroma_lines[j].amod = float4_to_vfloat4((samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * inverse_color_scalefactors[j]);
-				proc_samechroma_lines[j].bs = float4_to_vfloat4((samechroma_lines[j].b * vfloat4_to_float4(color_scalefactors[j])));
-				proc_samechroma_lines[j].bis = float4_to_vfloat4((samechroma_lines[j].b * inverse_color_scalefactors[j]));
+				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_samechroma_lines[j].bs = samechroma_lines[j].b * color_scalefactors[j];
+				proc_samechroma_lines[j].bis = samechroma_lines[j].b * float4_to_vfloat4(inverse_color_scalefactors[j]);
 
 				separate_red_lines[j].a = averages[j].swz<1, 2, 3>();
 				float3 dirs_gba = directions_rgba[j].swz<1, 2, 3>();
@@ -364,8 +364,8 @@ void find_best_partitionings(
 				float4 ics = inverse_color_scalefactors[j];
 				float4 error_weights = error_weightings[j] * (tpp * weight_imprecision_estim_squared);
 
-				float4 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
-				float4 samechroma_vector = (samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
+				float4 uncorr_vector = vfloat4_to_float4(uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
+				float4 samechroma_vector = vfloat4_to_float4(samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
 				float3 separate_red_vector = separate_red_lines[j].b * float3(ics.g, ics.b, ics.a);
 				float3 separate_green_vector = separate_green_lines[j].b * float3(ics.r, ics.b, ics.a);
 				float3 separate_blue_vector = separate_blue_lines[j].b * float3(ics.r, ics.g, ics.a);

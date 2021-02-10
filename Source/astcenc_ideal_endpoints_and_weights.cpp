@@ -666,14 +666,14 @@ static void compute_endpoints_and_ideal_weights_rgba(
 			directions_rgba[i] = vfloat4::zero() - direc;
 		}
 
-		lines[i].a = vfloat4_to_float4(averages[i]);
+		lines[i].a = averages[i];
 		if (dot_s(directions_rgba[i], directions_rgba[i]) == 0.0f)
 		{
-			lines[i].b = normalize(float4(1.0f));
+			lines[i].b = normalize(vfloat4(1.0f));
 		}
 		else
 		{
-			lines[i].b = vfloat4_to_float4(normalize(directions_rgba[i]));
+			lines[i].b = normalize(directions_rgba[i]);
 		}
 	}
 
@@ -683,10 +683,10 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		{
 			int partition = pt->partition_of_texel[i];
 
-			float4 point = float4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * vfloat4_to_float4(scalefactors[partition]);
+			vfloat4 point = vfloat4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * scalefactors[partition];
 			line4 l = lines[partition];
 
-			float param = dot(point - l.a, l.b);
+			float param = dot_s(point - l.a, l.b);
 			ei->weights[i] = param;
 
 			lowparam[partition] = astc::min(param, lowparam[partition]);
@@ -715,22 +715,14 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
-		float4 ep0 = lines[i].a + lines[i].b * lowparam[i];
-		float4 ep1 = lines[i].a + lines[i].b * highparam[i];
+		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
+		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		// TODO: Vectorize this.
-		ep0.r /= scalefactors[i].lane<0>();
-		ep0.g /= scalefactors[i].lane<1>();
-		ep0.b /= scalefactors[i].lane<2>();
-		ep0.a /= scalefactors[i].lane<3>();
+		ep0 = ep0 / scalefactors[i];
+		ep1 = ep1 / scalefactors[i];
 
-		ep1.r /= scalefactors[i].lane<0>();
-		ep1.g /= scalefactors[i].lane<1>();
-		ep1.b /= scalefactors[i].lane<2>();
-		ep1.a /= scalefactors[i].lane<3>();
-
-		ei->ep.endpt0[i] = ep0;
-		ei->ep.endpt1[i] = ep1;
+		ei->ep.endpt0[i] = vfloat4_to_float4(ep0);
+		ei->ep.endpt1[i] = vfloat4_to_float4(ep1);
 	}
 
 	for (int i = 0; i < texel_count; i++)

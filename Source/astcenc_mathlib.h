@@ -693,8 +693,8 @@ struct line3
 
 struct line4
 {
-	float4 a;
-	float4 b;
+	vfloat4 a;
+	vfloat4 b;
 };
 
 
