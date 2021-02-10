@@ -209,6 +209,41 @@ static inline T max(T p, T q)
 }
 
 /**
+ * @brief Return the maximum of three values.
+ *
+ * For floats, NaNs are turned into @c r.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ * @param r   The third value to compare.
+ *
+ * @return The largest value.
+ */
+template<typename T>
+static inline T max(T p, T q, T r)
+{
+	return max(max(p, q), r);
+}
+
+/**
+ * @brief Return the maximum of four values.
+ *
+ * For floats, NaNs are turned into @c s.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ * @param r   The third value to compare.
+ * @param s   The fourth value to compare.
+ *
+ * @return The largest value.
+ */
+template<typename T>
+static inline T max(T p, T q, T r, T s)
+{
+	return max(max(p, q), max(r, s));
+}
+
+/**
  * @brief Clamp a value value between @c mn and @c mx.
  *
  * For floats, NaNs are turned into @c mn.
