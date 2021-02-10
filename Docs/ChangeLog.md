@@ -10,7 +10,7 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 2.4
 
-**Status:** In development
+**Status:** Released
 
 The 2.4 release is the fifth release in the 2.x series. It is primarily a bug
 fix release for HDR image handling, which impacts all earlier 2.x series
