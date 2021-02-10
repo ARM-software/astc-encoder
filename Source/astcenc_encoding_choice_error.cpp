@@ -118,9 +118,8 @@ static float compute_error_squared_rgb_single_partition(
 		float param = dot(point, lin->bs);
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;
-		float4 ews = ewb->error_weights[i];
-		float3 ews3 = float3(ews.r, ews.g, ews.b);
-		errorsum += dot(ews3, dist * dist);
+		float3 ews = ewb->error_weights[i].swz<0, 1, 2>();
+		errorsum += dot(ews, dist * dist);
 	}
 
 	return errorsum;
@@ -247,7 +246,7 @@ void compute_encoding_choice_errors(
 		float default_alpha = pb->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
 
 		float omalpha = alpha - default_alpha;
-		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].a;
+		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].lane<3>();
 	}
 
 	// check if we are eligible for blue-contraction and offset-encoding

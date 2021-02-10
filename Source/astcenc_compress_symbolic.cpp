@@ -1096,8 +1096,7 @@ static float prepare_error_weight_block(
 
 				if (xpos >= input_image.dim_x || ypos >= input_image.dim_y || zpos >= input_image.dim_z)
 				{
-					float4 weights = float4(1e-11f);
-					ewb->error_weights[idx] = weights;
+					ewb->error_weights[idx] = vfloat4(1e-11f);
 				}
 				else
 				{
@@ -1206,7 +1205,7 @@ static float prepare_error_weight_block(
 					error_weight.b /= (derv[idx].b * derv[idx].b * 1e-10f);
 					error_weight.a /= (derv[idx].a * derv[idx].a * 1e-10f);
 
-					ewb->error_weights[idx] = error_weight;
+					ewb->error_weights[idx] = float4_to_vfloat4(error_weight);
 				}
 				idx++;
 			}
@@ -1217,24 +1216,29 @@ static float prepare_error_weight_block(
 	int texels_per_block = bsd->texel_count;
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		error_weight_sum = error_weight_sum + ewb->error_weights[i];
+		error_weight_sum = error_weight_sum + vfloat4_to_float4(ewb->error_weights[i]);
 
-		ewb->texel_weight_r[i] = ewb->error_weights[i].r;
-		ewb->texel_weight_g[i] = ewb->error_weights[i].g;
-		ewb->texel_weight_b[i] = ewb->error_weights[i].b;
-		ewb->texel_weight_a[i] = ewb->error_weights[i].a;
+		float wr = ewb->error_weights[i].lane<0>();
+		float wg = ewb->error_weights[i].lane<1>();
+		float wb = ewb->error_weights[i].lane<2>();
+		float wa = ewb->error_weights[i].lane<3>();
 
-		ewb->texel_weight_rg[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g) * 0.5f;
-		ewb->texel_weight_rb[i] = (ewb->error_weights[i].r + ewb->error_weights[i].b) * 0.5f;
-		ewb->texel_weight_gb[i] = (ewb->error_weights[i].g + ewb->error_weights[i].b) * 0.5f;
-		ewb->texel_weight_ra[i] = (ewb->error_weights[i].r + ewb->error_weights[i].a) * 0.5f;
+		ewb->texel_weight_r[i] = wr;
+		ewb->texel_weight_g[i] = wg;
+		ewb->texel_weight_b[i] = wb;
+		ewb->texel_weight_a[i] = wa;
 
-		ewb->texel_weight_gba[i] = (ewb->error_weights[i].g + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.333333f;
-		ewb->texel_weight_rba[i] = (ewb->error_weights[i].r + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.333333f;
-		ewb->texel_weight_rga[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].a) * 0.333333f;
-		ewb->texel_weight_rgb[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].b) * 0.333333f;
+		ewb->texel_weight_rg[i] = (wr + wg) * 0.5f;
+		ewb->texel_weight_rb[i] = (wr + wb) * 0.5f;
+		ewb->texel_weight_gb[i] = (wg + wb) * 0.5f;
+		ewb->texel_weight_ra[i] = (wr + wa) * 0.5f;
 
-		ewb->texel_weight[i] = (ewb->error_weights[i].r + ewb->error_weights[i].g + ewb->error_weights[i].b + ewb->error_weights[i].a) * 0.25f;
+		ewb->texel_weight_gba[i] = (wg + wb + wa) * 0.333333f;
+		ewb->texel_weight_rba[i] = (wr + wb + wa) * 0.333333f;
+		ewb->texel_weight_rga[i] = (wr + wg + wa) * 0.333333f;
+		ewb->texel_weight_rgb[i] = (wr + wg + wb) * 0.333333f;
+
+		ewb->texel_weight[i] = (wr + wg + wb + wa) * 0.25f;
 	}
 
 	return dot(error_weight_sum, float4(1.0f, 1.0f, 1.0f, 1.0f));

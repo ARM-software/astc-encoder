@@ -627,7 +627,7 @@ void compute_error_squared_rgba(
 			            blk->data_b[iwt],
 			            blk->data_a[iwt]);
 
-			vfloat4 ews = float4_to_vfloat4(ewb->error_weights[iwt]);
+			vfloat4 ews = ewb->error_weights[iwt];
 
 			float uncor_param = dot_s(dat, l_uncor.bs);
 			uncor_loparam = astc::min(uncor_param, uncor_loparam);
@@ -810,9 +810,7 @@ void compute_error_squared_rgb(
 			                    blk->data_g[iwt],
 			                    blk->data_b[iwt]);
 
-			float3 ews = float3(ewb->error_weights[iwt].r,
-			                    ewb->error_weights[iwt].g,
-			                    ewb->error_weights[iwt].b);
+			float3 ews = float3(ewb->error_weights[iwt].swz<0, 1, 2>());
 
 			float uncor_param = dot(dat, l_uncor.bs);
 			uncor_loparam  = astc::min(uncor_param, uncor_loparam);

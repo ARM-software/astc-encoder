@@ -115,7 +115,7 @@ void compute_partition_error_color_weightings(
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		int part = pi->partition_of_texel[i];
-		error_weightings[part] = error_weightings[part] + float4_to_vfloat4(ewb->error_weights[i]);
+		error_weightings[part] = error_weightings[part] + ewb->error_weights[i];
 	}
 
 	for (int i = 0; i < pcnt; i++)
