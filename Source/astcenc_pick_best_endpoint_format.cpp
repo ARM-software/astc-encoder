@@ -808,7 +808,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 
 	// for each partition, compute the error weights to apply for that partition.
 	float4 error_weightings[4];
-	float4 dummied_color_scalefactors[4];	// only used to receive data
+	vfloat4 dummied_color_scalefactors[4];	// only used to receive data
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, dummied_color_scalefactors);
 
 	float best_error[4][21][4];

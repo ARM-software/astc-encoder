@@ -165,7 +165,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	promise(texel_count > 0);
 
 	float4 error_weightings[4];
-	float4 color_scalefactors[4];
+	vfloat4 color_scalefactors[4];
 
 	float2 scalefactors[4];
 
@@ -200,16 +200,16 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component1)
 		{
 		case 0:
-			s1 = color_scalefactors[i].r;
+			s1 = color_scalefactors[i].lane<0>();
 			break;
 		case 1:
-			s1 = color_scalefactors[i].g;
+			s1 = color_scalefactors[i].lane<1>();
 			break;
 		case 2:
-			s1 = color_scalefactors[i].b;
+			s1 = color_scalefactors[i].lane<2>();
 			break;
 		default:
-			s1 = color_scalefactors[i].a;
+			s1 = color_scalefactors[i].lane<3>();
 			break;
 		}
 
@@ -217,16 +217,16 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component2)
 		{
 		case 0:
-			s2 = color_scalefactors[i].r;
+			s2 = color_scalefactors[i].lane<0>();
 			break;
 		case 1:
-			s2 = color_scalefactors[i].g;
+			s2 = color_scalefactors[i].lane<1>();
 			break;
 		case 2:
-			s2 = color_scalefactors[i].b;
+			s2 = color_scalefactors[i].lane<2>();
 			break;
 		default:
-			s2 = color_scalefactors[i].a;
+			s2 = color_scalefactors[i].lane<3>();
 			break;
 		}
 		scalefactors[i] = normalize(float2(s1, s2)) * 1.41421356f;
@@ -396,7 +396,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	promise(texel_count > 0);
 
 	float4 error_weightings[4];
-	float4 color_scalefactors[4];
+	vfloat4 color_scalefactors[4];
 
 	float3 scalefactors[4];
 
@@ -442,24 +442,24 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		switch (omitted_component)
 		{
 		case 0:
-			s1 = color_scalefactors[i].g;
-			s2 = color_scalefactors[i].b;
-			s3 = color_scalefactors[i].a;
+			s1 = color_scalefactors[i].lane<1>();
+			s2 = color_scalefactors[i].lane<2>();
+			s3 = color_scalefactors[i].lane<3>();
 			break;
 		case 1:
-			s1 = color_scalefactors[i].r;
-			s2 = color_scalefactors[i].b;
-			s3 = color_scalefactors[i].a;
+			s1 = color_scalefactors[i].lane<0>();
+			s2 = color_scalefactors[i].lane<2>();
+			s3 = color_scalefactors[i].lane<3>();
 			break;
 		case 2:
-			s1 = color_scalefactors[i].r;
-			s2 = color_scalefactors[i].g;
-			s3 = color_scalefactors[i].a;
+			s1 = color_scalefactors[i].lane<0>();
+			s2 = color_scalefactors[i].lane<1>();
+			s3 = color_scalefactors[i].lane<3>();
 			break;
 		default:
-			s1 = color_scalefactors[i].r;
-			s2 = color_scalefactors[i].g;
-			s3 = color_scalefactors[i].b;
+			s1 = color_scalefactors[i].lane<0>();
+			s2 = color_scalefactors[i].lane<1>();
+			s3 = color_scalefactors[i].lane<2>();
 			break;
 		}
 
@@ -635,8 +635,8 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	float lowparam[4] { 1e10, 1e10, 1e10, 1e10 };
 	float highparam[4] {  -1e10,  -1e10,  -1e10, -1e10 };
 
-	float4 averages[4];
-	float4 directions_rgba[4];
+	vfloat4 averages[4];
+	vfloat4 directions_rgba[4];
 
 	line4 lines[4];
 
@@ -644,8 +644,8 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	float length_squared[4];
 
 	float4 error_weightings[4];
-	float4 color_scalefactors[4];
-	float4 scalefactors[4];
+	vfloat4 color_scalefactors[4];
+	vfloat4 scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
 
@@ -660,20 +660,20 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	// this will make the first endpoint the darkest one.
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 direc = directions_rgba[i];
-		if (direc.r + direc.g + direc.b < 0.0f)
+		vfloat4 direc = directions_rgba[i];
+		if (direc.lane<0>() + direc.lane<1>()  + direc.lane<2>() < 0.0f)
 		{
-			directions_rgba[i] = float4(0.0f) - direc;
+			directions_rgba[i] = vfloat4::zero() - direc;
 		}
 
-		lines[i].a = averages[i];
-		if (dot(directions_rgba[i], directions_rgba[i]) == 0.0f)
+		lines[i].a = vfloat4_to_float4(averages[i]);
+		if (dot_s(directions_rgba[i], directions_rgba[i]) == 0.0f)
 		{
 			lines[i].b = normalize(float4(1.0f));
 		}
 		else
 		{
-			lines[i].b = normalize(directions_rgba[i]);
+			lines[i].b = vfloat4_to_float4(normalize(directions_rgba[i]));
 		}
 	}
 
@@ -683,7 +683,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		{
 			int partition = pt->partition_of_texel[i];
 
-			float4 point = float4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * scalefactors[partition];
+			float4 point = float4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * vfloat4_to_float4(scalefactors[partition]);
 			line4 l = lines[partition];
 
 			float param = dot(point - l.a, l.b);
@@ -718,15 +718,16 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		float4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.r /= scalefactors[i].r;
-		ep0.g /= scalefactors[i].g;
-		ep0.b /= scalefactors[i].b;
-		ep0.a /= scalefactors[i].a;
+		// TODO: Vectorize this.
+		ep0.r /= scalefactors[i].lane<0>();
+		ep0.g /= scalefactors[i].lane<1>();
+		ep0.b /= scalefactors[i].lane<2>();
+		ep0.a /= scalefactors[i].lane<3>();
 
-		ep1.r /= scalefactors[i].r;
-		ep1.g /= scalefactors[i].g;
-		ep1.b /= scalefactors[i].b;
-		ep1.a /= scalefactors[i].a;
+		ep1.r /= scalefactors[i].lane<0>();
+		ep1.g /= scalefactors[i].lane<1>();
+		ep1.b /= scalefactors[i].lane<2>();
+		ep1.a /= scalefactors[i].lane<3>();
 
 		ei->ep.endpt0[i] = ep0;
 		ei->ep.endpt1[i] = ep1;

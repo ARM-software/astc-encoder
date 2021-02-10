@@ -867,7 +867,7 @@ void compute_averages_and_directions_rgb(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
+	const vfloat4* color_scalefactors,
 	float3* averages,
 	float3* directions_rgb);
 
@@ -875,9 +875,9 @@ void compute_averages_and_directions_rgba(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
-	float4* averages,
-	float4* directions_rgba);
+	const vfloat4* color_scalefactors,
+	vfloat4* averages,
+	vfloat4* directions_rgba);
 
 void compute_averages_and_directions_3_components(
 	const partition_info* pt,
@@ -926,7 +926,7 @@ void compute_partition_error_color_weightings(
 	const error_weight_block * ewb,
 	const partition_info* pi,
 	float4 error_weightings[4],
-	float4 color_scalefactors[4]);
+	vfloat4 color_scalefactors[4]);
 
 /**
  * @brief Find the best set of partitions to trial for a given block.

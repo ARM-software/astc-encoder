@@ -41,9 +41,9 @@ void compute_averages_and_directions_rgba(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
-	float4* averages,
-	float4* directions_rgba
+	const vfloat4* color_scalefactors,
+	vfloat4* averages,
+	vfloat4* directions_rgba
 ) {
 	int partition_count = pt->partition_count;
 	promise(partition_count > 0);
@@ -52,7 +52,7 @@ void compute_averages_and_directions_rgba(
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 
-		float4 base_sum = float4(0.0f);
+		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
 		int texel_count = pt->texels_per_partition[partition];
@@ -62,60 +62,61 @@ void compute_averages_and_directions_rgba(
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-			float4 texel_datum = float4(blk->data_r[iwt],
-			                            blk->data_g[iwt],
-			                            blk->data_b[iwt],
-			                            blk->data_a[iwt]) * weight;
-			partition_weight += weight;
 
-			base_sum = base_sum + texel_datum;
+			vfloat4 texel_datum(blk->data_r[iwt],
+			                    blk->data_g[iwt],
+			                    blk->data_b[iwt],
+			                    blk->data_a[iwt]);
+
+			partition_weight += weight;
+			base_sum = base_sum + texel_datum * weight;
 		}
 
-		float4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
+		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * color_scalefactors[partition];
 
-		float4 sum_xp = float4(0.0f);
-		float4 sum_yp = float4(0.0f);
-		float4 sum_zp = float4(0.0f);
-		float4 sum_wp = float4(0.0f);
+		vfloat4 sum_xp = vfloat4::zero();
+		vfloat4 sum_yp = vfloat4::zero();
+		vfloat4 sum_zp = vfloat4::zero();
+		vfloat4 sum_wp = vfloat4::zero();
 
 		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-			float4 texel_datum = float4(blk->data_r[iwt],
-			                            blk->data_g[iwt],
-			                            blk->data_b[iwt],
-			                            blk->data_a[iwt]);
+			vfloat4 texel_datum(blk->data_r[iwt],
+			                    blk->data_g[iwt],
+			                    blk->data_b[iwt],
+			                    blk->data_a[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
-			if (texel_datum.r > 0.0f)
+			if (texel_datum.lane<0>() > 0.0f)
 			{
 				sum_xp = sum_xp + texel_datum;
 			}
 
-			if (texel_datum.g > 0.0f)
+			if (texel_datum.lane<1>() > 0.0f)
 			{
 				sum_yp = sum_yp + texel_datum;
 			}
 
-			if (texel_datum.b > 0.0f)
+			if (texel_datum.lane<2>() > 0.0f)
 			{
 				sum_zp = sum_zp + texel_datum;
 			}
 
-			if (texel_datum.a > 0.0f)
+			if (texel_datum.lane<3>() > 0.0f)
 			{
 				sum_wp = sum_wp + texel_datum;
 			}
 		}
 
-		float prod_xp = dot(sum_xp, sum_xp);
-		float prod_yp = dot(sum_yp, sum_yp);
-		float prod_zp = dot(sum_zp, sum_zp);
-		float prod_wp = dot(sum_wp, sum_wp);
+		float prod_xp = dot_s(sum_xp, sum_xp);
+		float prod_yp = dot_s(sum_yp, sum_yp);
+		float prod_zp = dot_s(sum_zp, sum_zp);
+		float prod_wp = dot_s(sum_wp, sum_wp);
 
-		float4 best_vector = sum_xp;
+		vfloat4 best_vector = sum_xp;
 		float best_sum = prod_xp;
 
 		if (prod_yp > best_sum)
@@ -143,7 +144,7 @@ void compute_averages_and_directions_rgb(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
+	const vfloat4* color_scalefactors,
 	float3* averages,
 	float3* directions_rgb
 ) {
@@ -174,7 +175,7 @@ void compute_averages_and_directions_rgb(
 			base_sum = base_sum + texel_datum;
 		}
 
-		float4 csf = color_scalefactors[partition];
+		float4 csf = vfloat4_to_float4(color_scalefactors[partition]);
 		float3 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 		averages[partition] = average * float3(csf.r, csf.g, csf.b);
 
