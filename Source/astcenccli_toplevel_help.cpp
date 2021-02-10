@@ -22,7 +22,7 @@
 #include "astcenccli_internal.h"
 
 static const char *astcenc_copyright_string =
-R"(astcenc v2.4-develop, %u-bit %s%s
+R"(astcenc v2.4, %u-bit %s%s
 Copyright 2011-2021 Arm Limited, all rights reserved
 )";
 

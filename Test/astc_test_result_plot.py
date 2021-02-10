@@ -273,7 +273,17 @@ def main():
             None,
             "absolute-all.png",
             (absoluteXLimit, None)
-        ],[
+        ], [
+            # Plot 2.3 to 2.2 absolute scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.2-avx2", "ref-2.3-avx2"],
+            ["4x4", "5x5", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-2.2-to-2.3.png",
+            (absoluteXLimit, None)
+        ], [
             # --------------------------------------------------------
             # Plot all relative scores vs 1.7
             ["thorough", "medium", "fast"],
