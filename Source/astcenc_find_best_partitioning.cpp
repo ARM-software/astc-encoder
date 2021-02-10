@@ -624,7 +624,7 @@ void find_best_partitionings(
 
 				separate_error.r += rgba_range[j].lane<0>() * rgba_range[j].lane<0>() * error_weights.r;
 				separate_error.g += rgba_range[j].lane<1>() * rgba_range[j].lane<1>() * error_weights.g;
-				separate_error.b += rgba_range[j].lane<1>() * rgba_range[j].lane<2>() * error_weights.b;
+				separate_error.b += rgba_range[j].lane<2>() * rgba_range[j].lane<2>() * error_weights.b;
 			}
 
 			if (uncorr_error < uncorr_best_error)
