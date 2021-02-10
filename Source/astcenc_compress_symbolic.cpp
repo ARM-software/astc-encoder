@@ -1454,6 +1454,8 @@ void compress_block(
 
 	// Set SCB and mode errors to a very high error value
 	scb.errorval = 1e30f;
+	scb.error_block = 1;
+
 	float best_errorvals_in_modes[13];
 	for (int i = 0; i < 13; i++)
 	{
