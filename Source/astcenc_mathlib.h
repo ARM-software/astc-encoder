@@ -27,6 +27,56 @@
 #include <cstdint>
 #include <cmath>
 
+#ifndef ASTCENC_SSE
+  #if defined(__SSE4_2__)
+    #define ASTCENC_SSE 42
+  #elif defined(__SSE4_1__)
+    #define ASTCENC_SSE 41
+  #elif defined(__SSE3__)
+    #define ASTCENC_SSE 30
+  #elif defined(__SSE2__)
+    #define ASTCENC_SSE 20
+  #else
+    #define ASTCENC_SSE 0
+  #endif
+#endif
+
+#ifndef ASTCENC_POPCNT
+  #if defined(__POPCNT__)
+    #define ASTCENC_POPCNT 1
+  #else
+    #define ASTCENC_POPCNT 0
+  #endif
+#endif
+
+#ifndef ASTCENC_AVX
+  #if defined(__AVX2__)
+    #define ASTCENC_AVX 2
+  #elif defined(__AVX__)
+    #define ASTCENC_AVX 1
+  #else
+    #define ASTCENC_AVX 0
+  #endif
+#endif
+
+#ifndef ASTCENC_NEON
+  #if defined(__aarch64__)
+    #define ASTCENC_NEON 1
+  #else
+    #define ASTCENC_NEON 0
+  #endif
+#endif
+
+#if ASTCENC_AVX
+  #define ASTCENC_VECALIGN 32
+#else
+  #define ASTCENC_VECALIGN 16
+#endif
+
+#ifndef ASTCENC_ISA_INVARIANCE
+  #define ASTCENC_ISA_INVARIANCE 0
+#endif
+
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
 #endif
@@ -618,6 +668,10 @@ sf16 float_to_sf16(float, roundmode);
 
 float sf16_to_float(sf16);
 
+/*********************************
+  Vector library
+*********************************/
+#include "astcenc_vecmathlib.h"
 
 /*********************************
   Declaration of line types
@@ -660,9 +714,9 @@ struct processed_line3
 
 struct processed_line4
 {
-	float4 amod;
-	float4 bs;
-	float4 bis;
+	vfloat4 amod;
+	vfloat4 bs;
+	vfloat4 bis;
 };
 
 #endif

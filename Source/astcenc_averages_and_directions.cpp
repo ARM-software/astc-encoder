@@ -504,35 +504,35 @@ void compute_error_squared_rgba(
 		// the benefit is limited by the use of gathers and register pressure
 
 		// Vectorize some useful scalar inputs
-		vfloat l_uncor_bs0(l_uncor.bs.r);
-		vfloat l_uncor_bs1(l_uncor.bs.g);
-		vfloat l_uncor_bs2(l_uncor.bs.b);
-		vfloat l_uncor_bs3(l_uncor.bs.a);
+		vfloat l_uncor_bs0(l_uncor.bs.lane<0>());
+		vfloat l_uncor_bs1(l_uncor.bs.lane<1>());
+		vfloat l_uncor_bs2(l_uncor.bs.lane<2>());
+		vfloat l_uncor_bs3(l_uncor.bs.lane<3>());
 
-		vfloat l_uncor_amod0(l_uncor.amod.r);
-		vfloat l_uncor_amod1(l_uncor.amod.g);
-		vfloat l_uncor_amod2(l_uncor.amod.b);
-		vfloat l_uncor_amod3(l_uncor.amod.a);
+		vfloat l_uncor_amod0(l_uncor.amod.lane<0>());
+		vfloat l_uncor_amod1(l_uncor.amod.lane<1>());
+		vfloat l_uncor_amod2(l_uncor.amod.lane<2>());
+		vfloat l_uncor_amod3(l_uncor.amod.lane<3>());
 
-		vfloat l_uncor_bis0(l_uncor.bis.r);
-		vfloat l_uncor_bis1(l_uncor.bis.g);
-		vfloat l_uncor_bis2(l_uncor.bis.b);
-		vfloat l_uncor_bis3(l_uncor.bis.a);
+		vfloat l_uncor_bis0(l_uncor.bis.lane<0>());
+		vfloat l_uncor_bis1(l_uncor.bis.lane<1>());
+		vfloat l_uncor_bis2(l_uncor.bis.lane<2>());
+		vfloat l_uncor_bis3(l_uncor.bis.lane<3>());
 
-		vfloat l_samec_bs0(l_samec.bs.r);
-		vfloat l_samec_bs1(l_samec.bs.g);
-		vfloat l_samec_bs2(l_samec.bs.b);
-		vfloat l_samec_bs3(l_samec.bs.a);
+		vfloat l_samec_bs0(l_samec.bs.lane<0>());
+		vfloat l_samec_bs1(l_samec.bs.lane<1>());
+		vfloat l_samec_bs2(l_samec.bs.lane<2>());
+		vfloat l_samec_bs3(l_samec.bs.lane<3>());
 
-		vfloat l_samec_amod0(l_samec.amod.r);
-		vfloat l_samec_amod1(l_samec.amod.g);
-		vfloat l_samec_amod2(l_samec.amod.b);
-		vfloat l_samec_amod3(l_samec.amod.a);
+		vfloat l_samec_amod0(l_samec.amod.lane<0>());
+		vfloat l_samec_amod1(l_samec.amod.lane<1>());
+		vfloat l_samec_amod2(l_samec.amod.lane<2>());
+		vfloat l_samec_amod3(l_samec.amod.lane<3>());
 
-		vfloat l_samec_bis0(l_samec.bis.r);
-		vfloat l_samec_bis1(l_samec.bis.g);
-		vfloat l_samec_bis2(l_samec.bis.b);
-		vfloat l_samec_bis3(l_samec.bis.a);
+		vfloat l_samec_bis0(l_samec.bis.lane<0>());
+		vfloat l_samec_bis1(l_samec.bis.lane<1>());
+		vfloat l_samec_bis2(l_samec.bis.lane<2>());
+		vfloat l_samec_bis3(l_samec.bis.lane<3>());
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
@@ -622,28 +622,28 @@ void compute_error_squared_rgba(
 		{
 			int iwt = weights[i];
 
-			float4 dat = float4(blk->data_r[iwt],
-			                    blk->data_g[iwt],
-			                    blk->data_b[iwt],
-			                    blk->data_a[iwt]);
+			vfloat4 dat(blk->data_r[iwt],
+			            blk->data_g[iwt],
+			            blk->data_b[iwt],
+			            blk->data_a[iwt]);
 
-			float4 ews = ewb->error_weights[iwt];
+			vfloat4 ews = float4_to_vfloat4(ewb->error_weights[iwt]);
 
-			float uncor_param = dot(dat, l_uncor.bs);
+			float uncor_param = dot_s(dat, l_uncor.bs);
 			uncor_loparam = astc::min(uncor_param, uncor_loparam);
 			uncor_hiparam = astc::max(uncor_param, uncor_hiparam);
 
-			float samec_param = dot(dat, l_samec.bs);
+			float samec_param = dot_s(dat, l_samec.bs);
 			samec_loparam = astc::min(samec_param, samec_loparam);
 			samec_hiparam = astc::max(samec_param, samec_hiparam);
 
-			float4 uncor_dist  = (l_uncor.amod - dat)
-			                   + (uncor_param * l_uncor.bis);
-			uncor_errorsum += dot(ews, uncor_dist * uncor_dist);
+			vfloat4 uncor_dist  = (l_uncor.amod - dat)
+			                    + (uncor_param * l_uncor.bis);
+			uncor_errorsum += dot_s(ews, uncor_dist * uncor_dist);
 
-			float4 samec_dist = (l_samec.amod - dat)
-			                  + (samec_param * l_samec.bis);
-			samec_errorsum += dot(ews, samec_dist * samec_dist);
+			vfloat4 samec_dist = (l_samec.amod - dat)
+			                   + (samec_param * l_samec.bis);
+			samec_errorsum += dot_s(ews, samec_dist * samec_dist);
 		}
 
 		float uncor_linelen = uncor_hiparam - uncor_loparam;
