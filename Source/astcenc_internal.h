@@ -1028,8 +1028,8 @@ float compute_symbolic_block_difference(
 struct endpoints
 {
 	int partition_count;
-	float4 endpt0[4];
-	float4 endpt1[4];
+	vfloat4 endpt0[4];
+	vfloat4 endpt1[4];
 };
 
 struct endpoints_and_weights

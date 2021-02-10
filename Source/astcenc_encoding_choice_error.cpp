@@ -61,29 +61,29 @@ void merge_endpoints(
 	case 0:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].r = ep2->endpt0[i].r;
-			res->endpt1[i].r = ep2->endpt1[i].r;
+			res->endpt0[i].set_lane<0>(ep2->endpt0[i].lane<0>());
+			res->endpt1[i].set_lane<0>(ep2->endpt1[i].lane<0>());
 		}
 		break;
 	case 1:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].g = ep2->endpt0[i].g;
-			res->endpt1[i].g = ep2->endpt1[i].g;
+			res->endpt0[i].set_lane<1>(ep2->endpt0[i].lane<1>());
+			res->endpt1[i].set_lane<1>(ep2->endpt1[i].lane<1>());
 		}
 		break;
 	case 2:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].b = ep2->endpt0[i].b;
-			res->endpt1[i].b = ep2->endpt1[i].b;
+			res->endpt0[i].set_lane<2>(ep2->endpt0[i].lane<2>());
+			res->endpt1[i].set_lane<2>(ep2->endpt1[i].lane<2>());
 		}
 		break;
 	case 3:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].a = ep2->endpt0[i].a;
-			res->endpt1[i].a = ep2->endpt1[i].a;
+			res->endpt0[i].set_lane<3>(ep2->endpt0[i].lane<3>());
+			res->endpt1[i].set_lane<3>(ep2->endpt1[i].lane<3>());
 		}
 		break;
 	}
@@ -268,25 +268,27 @@ void compute_encoding_choice_errors(
 	bool can_blue_contract[4] { 0 };
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 endpt0 = ep.endpt0[i];
-		float4 endpt1 = ep.endpt1[i];
+		vfloat4 endpt0 = ep.endpt0[i];
+		vfloat4 endpt1 = ep.endpt1[i];
 
-		float4 endpt_dif = endpt1 - endpt0;
-		if (fabsf(endpt_dif.r) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.g) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.b) < (0.12f * 65535.0f))
+		vfloat4 endpt_dif = endpt1 - endpt0;
+		if (fabsf(endpt_dif.lane<0>()) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.lane<1>()) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.lane<2>()) < (0.12f * 65535.0f))
 		{
 			can_offset_encode[i] = true;
 		}
 
-		endpt0.r += (endpt0.r - endpt0.b);
-		endpt0.g += (endpt0.g - endpt0.b);
-		endpt1.r += (endpt1.r - endpt1.b);
-		endpt1.g += (endpt1.g - endpt1.b);
-		if (endpt0.r > (0.01f * 65535.0f) && endpt0.r < (0.99f * 65535.0f) &&
-		    endpt1.r > (0.01f * 65535.0f) && endpt1.r < (0.99f * 65535.0f) &&
-		    endpt0.g > (0.01f * 65535.0f) && endpt0.g < (0.99f * 65535.0f) &&
-		    endpt1.g > (0.01f * 65535.0f) && endpt1.g < (0.99f * 65535.0f))
+		endpt0.set_lane<0>(endpt0.lane<0>() + (endpt0.lane<0>() - endpt0.lane<2>()));
+		endpt0.set_lane<1>(endpt0.lane<1>() + (endpt0.lane<1>() - endpt0.lane<2>()));
+
+		endpt1.set_lane<0>(endpt1.lane<0>() + (endpt1.lane<0>() - endpt1.lane<2>()));
+		endpt1.set_lane<1>(endpt1.lane<1>() + (endpt1.lane<1>() - endpt1.lane<2>()));
+
+		if (endpt0.lane<0>() > (0.01f * 65535.0f) && endpt0.lane<0>() < (0.99f * 65535.0f) &&
+		    endpt1.lane<0>() > (0.01f * 65535.0f) && endpt1.lane<0>() < (0.99f * 65535.0f) &&
+		    endpt0.lane<1>() > (0.01f * 65535.0f) && endpt0.lane<1>() < (0.99f * 65535.0f) &&
+		    endpt1.lane<1>() > (0.01f * 65535.0f) && endpt1.lane<1>() < (0.99f * 65535.0f))
 		{
 			can_blue_contract[i] = true;
 		}

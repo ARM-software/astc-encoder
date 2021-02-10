@@ -70,8 +70,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		(65536.0f * 65536.0f / 18.0f) / (255 * 255)
 	};
 
-	vfloat4 ep0 = float4_to_vfloat4(ep->endpt0[partition_index]);
-	vfloat4 ep1 = float4_to_vfloat4(ep->endpt1[partition_index]);
+	vfloat4 ep0 = ep->endpt0[partition_index];
+	vfloat4 ep1 = ep->endpt1[partition_index];
 
 	float ep1_min = hmin_rgb_s(ep1);
 	ep1_min = astc::max(ep1_min, 0.0f);

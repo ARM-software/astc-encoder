@@ -266,37 +266,38 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	// compute maximum colors for the endpoints and ideal weights.
 	// for each endpoint-and-ideal-weight pair, compute the smallest weight value
 	// that will result in a color value greater than 1.
-	float4 min_ep = float4(10.0f);
+	vfloat4 min_ep(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
 		#ifdef DEBUG_CAPTURE_NAN
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 ep = float4(
-			(1.0f - ei->ep.endpt0[i].r) / (ei->ep.endpt1[i].r - ei->ep.endpt0[i].r),
-			(1.0f - ei->ep.endpt0[i].g) / (ei->ep.endpt1[i].g - ei->ep.endpt0[i].g),
-			(1.0f - ei->ep.endpt0[i].b) / (ei->ep.endpt1[i].b - ei->ep.endpt0[i].b),
-			(1.0f - ei->ep.endpt0[i].a) / (ei->ep.endpt1[i].a - ei->ep.endpt0[i].a));
+		// TODO: Vectorize this
+		vfloat4 ep(
+			(1.0f - ei->ep.endpt0[i].lane<0>()) / (ei->ep.endpt1[i].lane<0>() - ei->ep.endpt0[i].lane<0>()),
+			(1.0f - ei->ep.endpt0[i].lane<1>()) / (ei->ep.endpt1[i].lane<1>() - ei->ep.endpt0[i].lane<1>()),
+			(1.0f - ei->ep.endpt0[i].lane<2>()) / (ei->ep.endpt1[i].lane<2>() - ei->ep.endpt0[i].lane<2>()),
+			(1.0f - ei->ep.endpt0[i].lane<3>()) / (ei->ep.endpt1[i].lane<3>() - ei->ep.endpt0[i].lane<3>()));
 
-		if (ep.r > 0.5f && ep.r < min_ep.r)
+		if (ep.lane<0>() > 0.5f && ep.lane<0>() < min_ep.lane<0>())
 		{
-			min_ep.r = ep.r;
+			min_ep.set_lane<0>(ep.lane<0>());
 		}
 
-		if (ep.g > 0.5f && ep.g < min_ep.g)
+		if (ep.lane<1>() > 0.5f && ep.lane<1>() < min_ep.lane<1>())
 		{
-			min_ep.g = ep.g;
+			min_ep.set_lane<1>(ep.lane<1>());
 		}
 
-		if (ep.b > 0.5f && ep.b < min_ep.b)
+		if (ep.lane<2>() > 0.5f && ep.lane<2>() < min_ep.lane<2>())
 		{
-			min_ep.b = ep.b;
+			min_ep.set_lane<2>(ep.lane<2>());
 		}
 
-		if (ep.a > 0.5f && ep.a < min_ep.a)
+		if (ep.lane<3>() > 0.5f && ep.lane<3>() < min_ep.lane<3>())
 		{
-			min_ep.a = ep.a;
+			min_ep.set_lane<3>(ep.lane<3>());
 		}
 
 		#ifdef DEBUG_CAPTURE_NAN
@@ -304,7 +305,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		#endif
 	}
 
-	float min_wt_cutoff = astc::min(min_ep.r, min_ep.g, min_ep.b, min_ep.a);
+	float min_wt_cutoff = hmin_s(min_ep);
 
 	// for each mode, use the angular method to compute a shift.
 	float weight_low_value[MAX_WEIGHT_MODES];
@@ -430,8 +431,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			for (int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
-				    float4_to_vfloat4(eix[decimation_mode].ep.endpt0[j]),
-				    float4_to_vfloat4(eix[decimation_mode].ep.endpt1[j]),
+				    eix[decimation_mode].ep.endpt0[j],
+				    eix[decimation_mode].ep.endpt1[j],
 				    rgbs_colors[j],
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
@@ -455,8 +456,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
-					    float4_to_vfloat4(eix[decimation_mode].ep.endpt0[j]),
-					    float4_to_vfloat4(eix[decimation_mode].ep.endpt1[j]),
+					    eix[decimation_mode].ep.endpt0[j],
+					    eix[decimation_mode].ep.endpt1[j],
 					    rgbs_colors[j],
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
@@ -646,64 +647,65 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	// for each endpoint-and-ideal-weight pair, compute the smallest weight value
 	// that will result in a color value greater than 1.
 
-	float4 min_ep1 = float4(10.0f);
-	float4 min_ep2 = float4(10.0f);
+	vfloat4 min_ep1(10.0f);
+	vfloat4 min_ep2(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
 		#ifdef DEBUG_CAPTURE_NAN
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		float4 ep1 = float4(
-			(1.0f - ei1->ep.endpt0[i].r) / (ei1->ep.endpt1[i].r - ei1->ep.endpt0[i].r),
-			(1.0f - ei1->ep.endpt0[i].g) / (ei1->ep.endpt1[i].g - ei1->ep.endpt0[i].g),
-			(1.0f - ei1->ep.endpt0[i].b) / (ei1->ep.endpt1[i].b - ei1->ep.endpt0[i].b),
-			(1.0f - ei1->ep.endpt0[i].a) / (ei1->ep.endpt1[i].a - ei1->ep.endpt0[i].a));
+		// Vectorize this
+		vfloat4 ep1 = vfloat4(
+			(1.0f - ei1->ep.endpt0[i].lane<0>()) / (ei1->ep.endpt1[i].lane<0>() - ei1->ep.endpt0[i].lane<0>()),
+			(1.0f - ei1->ep.endpt0[i].lane<1>()) / (ei1->ep.endpt1[i].lane<1>() - ei1->ep.endpt0[i].lane<1>()),
+			(1.0f - ei1->ep.endpt0[i].lane<2>()) / (ei1->ep.endpt1[i].lane<2>() - ei1->ep.endpt0[i].lane<2>()),
+			(1.0f - ei1->ep.endpt0[i].lane<3>()) / (ei1->ep.endpt1[i].lane<3>() - ei1->ep.endpt0[i].lane<3>()));
 
-		if (ep1.r > 0.5f && ep1.r < min_ep1.r)
+		if (ep1.lane<0>() > 0.5f && ep1.lane<0>() < min_ep1.lane<0>())
 		{
-			min_ep1.r = ep1.r;
+			min_ep1.set_lane<0>(ep1.lane<0>());
 		}
 
-		if (ep1.g > 0.5f && ep1.g < min_ep1.g)
+		if (ep1.lane<1>() > 0.5f && ep1.lane<1>() < min_ep1.lane<1>())
 		{
-			min_ep1.g = ep1.g;
+			min_ep1.set_lane<1>(ep1.lane<1>());
 		}
 
-		if (ep1.b > 0.5f && ep1.b < min_ep1.b)
+		if (ep1.lane<2>() > 0.5f && ep1.lane<2>() < min_ep1.lane<2>())
 		{
-			min_ep1.b = ep1.b;
+			min_ep1.set_lane<2>(ep1.lane<2>());
 		}
 
-		if (ep1.a > 0.5f && ep1.a < min_ep1.a)
+		if (ep1.lane<3>() > 0.5f && ep1.lane<3>() < min_ep1.lane<3>())
 		{
-			min_ep1.a = ep1.a;
+			min_ep1.set_lane<3>(ep1.lane<3>());
 		}
 
-		float4 ep2 = float4(
-			(1.0f - ei2->ep.endpt0[i].r) / (ei2->ep.endpt1[i].r - ei2->ep.endpt0[i].r),
-			(1.0f - ei2->ep.endpt0[i].g) / (ei2->ep.endpt1[i].g - ei2->ep.endpt0[i].g),
-			(1.0f - ei2->ep.endpt0[i].b) / (ei2->ep.endpt1[i].b - ei2->ep.endpt0[i].b),
-			(1.0f - ei2->ep.endpt0[i].a) / (ei2->ep.endpt1[i].a - ei2->ep.endpt0[i].a));
+		vfloat4 ep2 = vfloat4(
+			(1.0f - ei2->ep.endpt0[i].lane<0>()) / (ei2->ep.endpt1[i].lane<0>() - ei2->ep.endpt0[i].lane<0>()),
+			(1.0f - ei2->ep.endpt0[i].lane<1>()) / (ei2->ep.endpt1[i].lane<1>() - ei2->ep.endpt0[i].lane<1>()),
+			(1.0f - ei2->ep.endpt0[i].lane<2>()) / (ei2->ep.endpt1[i].lane<2>() - ei2->ep.endpt0[i].lane<2>()),
+			(1.0f - ei2->ep.endpt0[i].lane<3>()) / (ei2->ep.endpt1[i].lane<3>() - ei2->ep.endpt0[i].lane<3>()));
 
-		if (ep2.r > 0.5f && ep2.r < min_ep2.r)
+		if (ep2.lane<0>() > 0.5f && ep2.lane<0>() < min_ep2.lane<0>())
 		{
-			min_ep2.r = ep2.r;
+			min_ep2.set_lane<0>(ep2.lane<0>());
 		}
 
-		if (ep2.g > 0.5f && ep2.g < min_ep2.g)
+		if (ep2.lane<1>() > 0.5f && ep2.lane<1>() < min_ep2.lane<1>())
 		{
-			min_ep2.g = ep2.g;
+			min_ep2.set_lane<1>(ep2.lane<1>());
 		}
 
-		if (ep2.b > 0.5f && ep2.b < min_ep2.b)
+		if (ep2.lane<2>() > 0.5f && ep2.lane<2>() < min_ep2.lane<2>())
 		{
-			min_ep2.b = ep2.b;
+			min_ep2.set_lane<2>(ep2.lane<2>());
 		}
 
-		if (ep2.a > 0.5f && ep2.a < min_ep2.a)
+		if (ep2.lane<3>() > 0.5f && ep2.lane<3>() < min_ep2.lane<3>())
 		{
-			min_ep2.a = ep2.a;
+			min_ep2.set_lane<3>(ep2.lane<3>());
 		}
 
 		#ifdef DEBUG_CAPTURE_NAN
@@ -715,26 +717,26 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	switch (separate_component)
 	{
 	case 0:
-		min_wt_cutoff2 = min_ep2.r;
-		min_ep1.r = 1e30f;
+		min_wt_cutoff2 = min_ep2.lane<0>();
+		min_ep1.set_lane<0>(1e30f);
 		break;
 	case 1:
-		min_wt_cutoff2 = min_ep2.g;
-		min_ep1.g = 1e30f;
+		min_wt_cutoff2 = min_ep2.lane<1>();
+		min_ep1.set_lane<1>(1e30f);
 		break;
 	case 2:
-		min_wt_cutoff2 = min_ep2.b;
-		min_ep1.b = 1e30f;
+		min_wt_cutoff2 = min_ep2.lane<2>();
+		min_ep1.set_lane<2>(1e30f);
 		break;
 	case 3:
-		min_wt_cutoff2 = min_ep2.a;
-		min_ep1.a = 1e30f;
+		min_wt_cutoff2 = min_ep2.lane<3>();
+		min_ep1.set_lane<3>(1e30f);
 		break;
 	default:
 		min_wt_cutoff2 = 1e30f;
 	}
 
-	min_wt_cutoff1 = astc::min(min_ep1.r, min_ep1.g, min_ep1.b, min_ep1.a);
+	min_wt_cutoff1 = hmin_s(min_ep1);
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
@@ -885,8 +887,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			for (int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
-				                            float4_to_vfloat4(epm.endpt0[j]),
-				                            float4_to_vfloat4(epm.endpt1[j]),
+				                            epm.endpt0[j],
+				                            epm.endpt1[j],
 				                            rgbs_colors[j], rgbo_colors[j],
 				                            partition_format_specifiers[i][j],
 				                            workscb.color_values[j],
@@ -905,8 +907,8 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				for (int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
-					    float4_to_vfloat4(epm.endpt0[j]),
-					    float4_to_vfloat4(epm.endpt1[j]),
+					    epm.endpt0[j],
+					    epm.endpt1[j],
 					    rgbs_colors[j],
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],

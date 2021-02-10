@@ -122,27 +122,27 @@ static void compute_endpoints_and_ideal_weights_1_component(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
-		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
+		ei->ep.endpt0[i] = blk->data_min;
+		ei->ep.endpt1[i] = blk->data_max;
 
 		assert(component < 4);
 		switch (component)
 		{
 		case 0:				// red/x
-			ei->ep.endpt0[i].r = lowvalues[i];
-			ei->ep.endpt1[i].r = highvalues[i];
+			ei->ep.endpt0[i].set_lane<0>(lowvalues[i]);
+			ei->ep.endpt1[i].set_lane<0>(highvalues[i]);
 			break;
 		case 1:				// green/y
-			ei->ep.endpt0[i].g = lowvalues[i];
-			ei->ep.endpt1[i].g = highvalues[i];
+			ei->ep.endpt0[i].set_lane<1>(lowvalues[i]);
+			ei->ep.endpt1[i].set_lane<1>(highvalues[i]);
 			break;
 		case 2:				// blue/z
-			ei->ep.endpt0[i].b = lowvalues[i];
-			ei->ep.endpt1[i].b = highvalues[i];
+			ei->ep.endpt0[i].set_lane<2>(lowvalues[i]);
+			ei->ep.endpt1[i].set_lane<2>(highvalues[i]);
 			break;
 		default:				// alpha/w
-			ei->ep.endpt0[i].a = lowvalues[i];
-			ei->ep.endpt1[i].a = highvalues[i];
+			ei->ep.endpt0[i].set_lane<3>(lowvalues[i]);
+			ei->ep.endpt1[i].set_lane<3>(highvalues[i]);
 			break;
 		}
 	}
@@ -319,8 +319,8 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
-		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
+		ei->ep.endpt0[i] = blk->data_min;
+		ei->ep.endpt1[i] = blk->data_max;
 
 		float2 ep0 = lowvalues[i];
 		float2 ep1 = highvalues[i];
@@ -329,20 +329,20 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component1)
 		{
 		case 0:
-			ei->ep.endpt0[i].r = ep0.r;
-			ei->ep.endpt1[i].r = ep1.r;
+			ei->ep.endpt0[i].set_lane<0>(ep0.r);
+			ei->ep.endpt1[i].set_lane<0>(ep1.r);
 			break;
 		case 1:
-			ei->ep.endpt0[i].g = ep0.r;
-			ei->ep.endpt1[i].g = ep1.r;
+			ei->ep.endpt0[i].set_lane<1>(ep0.r);
+			ei->ep.endpt1[i].set_lane<1>(ep1.r);
 			break;
 		case 2:
-			ei->ep.endpt0[i].b = ep0.r;
-			ei->ep.endpt1[i].b = ep1.r;
+			ei->ep.endpt0[i].set_lane<2>(ep0.r);
+			ei->ep.endpt1[i].set_lane<2>(ep1.r);
 			break;
 		default:
-			ei->ep.endpt0[i].a = ep0.r;
-			ei->ep.endpt1[i].a = ep1.r;
+			ei->ep.endpt0[i].set_lane<3>(ep0.r);
+			ei->ep.endpt1[i].set_lane<3>(ep1.r);
 			break;
 		}
 
@@ -350,20 +350,20 @@ static void compute_endpoints_and_ideal_weights_2_components(
 		switch (component2)
 		{
 		case 0:
-			ei->ep.endpt0[i].r = ep0.g;
-			ei->ep.endpt1[i].r = ep1.g;
+			ei->ep.endpt0[i].set_lane<0>(ep0.g);
+			ei->ep.endpt1[i].set_lane<0>(ep1.g);
 			break;
 		case 1:
-			ei->ep.endpt0[i].g = ep0.g;
-			ei->ep.endpt1[i].g = ep1.g;
+			ei->ep.endpt0[i].set_lane<1>(ep0.g);
+			ei->ep.endpt1[i].set_lane<1>(ep1.g);
 			break;
 		case 2:
-			ei->ep.endpt0[i].b = ep0.g;
-			ei->ep.endpt1[i].b = ep1.g;
+			ei->ep.endpt0[i].set_lane<2>(ep0.g);
+			ei->ep.endpt1[i].set_lane<2>(ep1.g);
 			break;
 		default:
-			ei->ep.endpt0[i].a = ep0.g;
-			ei->ep.endpt1[i].a = ep1.g;
+			ei->ep.endpt0[i].set_lane<3>(ep0.g);
+			ei->ep.endpt1[i].set_lane<3>(ep1.g);
 			break;
 		}
 	}
@@ -557,8 +557,8 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		ei->ep.endpt0[i] = float4(blk->data_min.lane<0>(), blk->data_min.lane<1>(), blk->data_min.lane<2>(), blk->data_min.lane<3>());
-		ei->ep.endpt1[i] = float4(blk->data_max.lane<0>(), blk->data_max.lane<1>(), blk->data_max.lane<2>(), blk->data_max.lane<3>());
+		ei->ep.endpt0[i] = blk->data_min;
+		ei->ep.endpt1[i] = blk->data_max;
 
 		float3 ep0 = lowvalues[i];
 		float3 ep1 = highvalues[i];
@@ -567,41 +567,40 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		switch (omitted_component)
 		{
 			case 0:
-				ei->ep.endpt0[i].g = ep0.r;
-				ei->ep.endpt0[i].b = ep0.g;
-				ei->ep.endpt0[i].a = ep0.b;
+				ei->ep.endpt0[i].set_lane<1>(ep0.r);
+				ei->ep.endpt0[i].set_lane<2>(ep0.g);
+				ei->ep.endpt0[i].set_lane<3>(ep0.b);
 
-				ei->ep.endpt1[i].g = ep1.r;
-				ei->ep.endpt1[i].b = ep1.g;
-				ei->ep.endpt1[i].a = ep1.b;
+				ei->ep.endpt1[i].set_lane<1>(ep1.r);
+				ei->ep.endpt1[i].set_lane<2>(ep1.g);
+				ei->ep.endpt1[i].set_lane<3>(ep1.b);
 				break;
 			case 1:
-				ei->ep.endpt0[i].r = ep0.r;
-				ei->ep.endpt0[i].b = ep0.g;
-				ei->ep.endpt0[i].a = ep0.b;
+				ei->ep.endpt0[i].set_lane<0>(ep0.r);
+				ei->ep.endpt0[i].set_lane<2>(ep0.g);
+				ei->ep.endpt0[i].set_lane<3>(ep0.b);
 
-				ei->ep.endpt1[i].r = ep1.r;
-				ei->ep.endpt1[i].b = ep1.g;
-				ei->ep.endpt1[i].a = ep1.b;
+				ei->ep.endpt1[i].set_lane<0>(ep1.r);
+				ei->ep.endpt1[i].set_lane<2>(ep1.g);
+				ei->ep.endpt1[i].set_lane<3>(ep1.b);
 				break;
 			case 2:
-				ei->ep.endpt0[i].r = ep0.r;
-				ei->ep.endpt0[i].g = ep0.g;
-				ei->ep.endpt0[i].a = ep0.b;
+				ei->ep.endpt0[i].set_lane<0>(ep0.r);
+				ei->ep.endpt0[i].set_lane<1>(ep0.g);
+				ei->ep.endpt0[i].set_lane<3>(ep0.b);
 
-				ei->ep.endpt1[i].r = ep1.r;
-				ei->ep.endpt1[i].g = ep1.g;
-				ei->ep.endpt1[i].a = ep1.b;
+				ei->ep.endpt1[i].set_lane<0>(ep1.r);
+				ei->ep.endpt1[i].set_lane<1>(ep1.g);
+				ei->ep.endpt1[i].set_lane<3>(ep1.b);
 				break;
 			default:
-				ei->ep.endpt0[i].r = ep0.r;
-				ei->ep.endpt0[i].g = ep0.g;
-				ei->ep.endpt0[i].b = ep0.b;
+				ei->ep.endpt0[i].set_lane<0>(ep0.r);
+				ei->ep.endpt0[i].set_lane<1>(ep0.g);
+				ei->ep.endpt0[i].set_lane<2>(ep0.b);
 
-				ei->ep.endpt1[i].r = ep1.r;
-				ei->ep.endpt1[i].g = ep1.g;
-				ei->ep.endpt1[i].b = ep1.b;
-				break;
+				ei->ep.endpt1[i].set_lane<0>(ep1.r);
+				ei->ep.endpt1[i].set_lane<1>(ep1.g);
+				ei->ep.endpt1[i].set_lane<2>(ep1.b);
 		}
 	}
 
@@ -718,11 +717,8 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0 = ep0 / scalefactors[i];
-		ep1 = ep1 / scalefactors[i];
-
-		ei->ep.endpt0[i] = vfloat4_to_float4(ep0);
-		ei->ep.endpt1[i] = vfloat4_to_float4(ep1);
+		ei->ep.endpt0[i] = ep0 / scalefactors[i];
+		ei->ep.endpt1[i] = ep1 / scalefactors[i];
 	}
 
 	for (int i = 0; i < texel_count; i++)
@@ -1411,30 +1407,34 @@ void recompute_ideal_colors_2planes(
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
-			float4 avg = (color_vec_x + color_vec_y) *
-			             float4(1.0f / rgba_weight_sum.r,
-			                    1.0f / rgba_weight_sum.g,
-			                    1.0f / rgba_weight_sum.b,
-			                    1.0f / rgba_weight_sum.a);
+			vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y)
+				           * float4(1.0f / rgba_weight_sum.r,
+				                    1.0f / rgba_weight_sum.g,
+				                    1.0f / rgba_weight_sum.b,
+				                    1.0f / rgba_weight_sum.a));
 
-			if (plane2_color_component != 0 && avg.r == avg.r)
+			if (plane2_color_component != 0 && avg.lane<0>() == avg.lane<0>())
 			{
-				ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
+				ep->endpt0[i].set_lane<0>(avg.lane<0>());
+				ep->endpt1[i].set_lane<0>(avg.lane<0>());
 			}
 
-			if (plane2_color_component != 1 && avg.g == avg.g)
+			if (plane2_color_component != 1 && avg.lane<1>() == avg.lane<1>())
 			{
-				ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
+				ep->endpt0[i].set_lane<1>(avg.lane<1>());
+				ep->endpt1[i].set_lane<1>(avg.lane<1>());
 			}
 
-			if (plane2_color_component != 2 && avg.b == avg.b)
+			if (plane2_color_component != 2 && avg.lane<2>() == avg.lane<2>())
 			{
-				ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
+				ep->endpt0[i].set_lane<2>(avg.lane<2>());
+				ep->endpt1[i].set_lane<2>(avg.lane<2>());
 			}
 
-			if (plane2_color_component != 3 && avg.a == avg.a)
+			if (plane2_color_component != 3 && avg.lane<3>() == avg.lane<3>())
 			{
-				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
+				ep->endpt0[i].set_lane<3>(avg.lane<3>());
+				ep->endpt1[i].set_lane<3>(avg.lane<3>());
 			}
 
 			rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, 1.0f);
@@ -1465,34 +1465,38 @@ void recompute_ideal_colors_2planes(
 			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
 			              + (lmrs_sum.b * lmrs_sum.b);
 
-			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
-			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
+			vfloat4 ep0 = float4_to_vfloat4((right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1);
+			vfloat4 ep1 = float4_to_vfloat4((left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1);
 
 			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
 
-			if (plane2_color_component != 0 && fabsf(color_det1.r) > (color_mss1.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
+			if (plane2_color_component != 0 && fabsf(color_det1.r) > (color_mss1.r * 1e-4f) &&
+			    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 			{
-				ep->endpt0[i].r = ep0.r;
-				ep->endpt1[i].r = ep1.r;
+				ep->endpt0[i].set_lane<0>(ep0.lane<0>());
+				ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 			}
 
-			if (plane2_color_component != 1 && fabsf(color_det1.g) > (color_mss1.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
+			if (plane2_color_component != 1 && fabsf(color_det1.g) > (color_mss1.g * 1e-4f) &&
+			    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 			{
-				ep->endpt0[i].g = ep0.g;
-				ep->endpt1[i].g = ep1.g;
+				ep->endpt0[i].set_lane<1>(ep0.lane<1>());
+				ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 			}
 
-			if (plane2_color_component != 2 && fabsf(color_det1.b) > (color_mss1.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
+			if (plane2_color_component != 2 && fabsf(color_det1.b) > (color_mss1.b * 1e-4f) &&
+			    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 			{
-				ep->endpt0[i].b = ep0.b;
-				ep->endpt1[i].b = ep1.b;
+				ep->endpt0[i].set_lane<2>(ep0.lane<2>());
+				ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 			}
 
-			if (plane2_color_component != 3 && fabsf(color_det1.a) > (color_mss1.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
+			if (plane2_color_component != 3 && fabsf(color_det1.a) > (color_mss1.a * 1e-4f) &&
+			    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 			{
-				ep->endpt0[i].a = ep0.a;
-				ep->endpt1[i].a = ep1.a;
+				ep->endpt0[i].set_lane<3>(ep0.lane<3>());
+				ep->endpt1[i].set_lane<3>(ep1.lane<3>());
 			}
 
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
@@ -1513,30 +1517,34 @@ void recompute_ideal_colors_2planes(
 			{
 				// if all weights in the partition were equal, then just take average
 				// of all colors in the partition and use that as both endpoint colors.
-				float4 avg = (color_vec_x + color_vec_y)
+				vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y)
 				           * float4(1.0f / rgba_weight_sum.r,
 				                    1.0f / rgba_weight_sum.g,
 				                    1.0f / rgba_weight_sum.b,
-				                    1.0f / rgba_weight_sum.a);
+				                    1.0f / rgba_weight_sum.a));
 
-				if (plane2_color_component == 0 && avg.r == avg.r)
+				if (plane2_color_component == 0 && avg.lane<0>() == avg.lane<0>())
 				{
-					ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
+					ep->endpt0[i].set_lane<0>(avg.lane<0>());
+					ep->endpt1[i].set_lane<0>(avg.lane<0>());
 				}
 
-				if (plane2_color_component == 1 && avg.g == avg.g)
+				if (plane2_color_component == 1 && avg.lane<1>() == avg.lane<1>())
 				{
-					ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
+					ep->endpt0[i].set_lane<1>(avg.lane<1>());
+					ep->endpt1[i].set_lane<1>(avg.lane<1>());
 				}
 
-				if (plane2_color_component == 2 && avg.b == avg.b)
+				if (plane2_color_component == 2 && avg.lane<2>() == avg.lane<2>())
 				{
-					ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
+					ep->endpt0[i].set_lane<2>(avg.lane<2>());
+					ep->endpt1[i].set_lane<2>(avg.lane<2>());
 				}
 
-				if (plane2_color_component == 3 && avg.a == avg.a)
+				if (plane2_color_component == 3 && avg.lane<3>() == avg.lane<3>())
 				{
-					ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
+					ep->endpt0[i].set_lane<3>(avg.lane<3>());
+					ep->endpt1[i].set_lane<3>(avg.lane<3>());
 				}
 			}
 			else
@@ -1557,31 +1565,35 @@ void recompute_ideal_colors_2planes(
 				                  + (2.0f * middle2_sum * middle2_sum)
 				                  + (right2_sum * right2_sum);
 
-				float4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
-				float4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
+				vfloat4 ep0 = float4_to_vfloat4((right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2);
+				vfloat4 ep1 = float4_to_vfloat4((left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2);
 
-				if (plane2_color_component == 0 && fabsf(color_det2.r) > (color_mss2.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
+				if (plane2_color_component == 0 && fabsf(color_det2.r) > (color_mss2.r * 1e-4f) &&
+				    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 				{
-					ep->endpt0[i].r = ep0.r;
-					ep->endpt1[i].r = ep1.r;
+					ep->endpt0[i].set_lane<0>(ep0.lane<0>());
+					ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 				}
 
-				if (plane2_color_component == 1 && fabsf(color_det2.g) > (color_mss2.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
+				if (plane2_color_component == 1 && fabsf(color_det2.g) > (color_mss2.g * 1e-4f) &&
+				    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 				{
-					ep->endpt0[i].g = ep0.g;
-					ep->endpt1[i].g = ep1.g;
+					ep->endpt0[i].set_lane<1>(ep0.lane<1>());
+					ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 				}
 
-				if (plane2_color_component == 2 && fabsf(color_det2.b) > (color_mss2.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
+				if (plane2_color_component == 2 && fabsf(color_det2.b) > (color_mss2.b * 1e-4f) &&
+				    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 				{
-					ep->endpt0[i].b = ep0.b;
-					ep->endpt1[i].b = ep1.b;
+					ep->endpt0[i].set_lane<2>(ep0.lane<2>());
+					ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 				}
 
-				if (plane2_color_component == 3 && fabsf(color_det2.a) > (color_mss2.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
+				if (plane2_color_component == 3 && fabsf(color_det2.a) > (color_mss2.a * 1e-4f) &&
+				    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 				{
-					ep->endpt0[i].a = ep0.a;
-					ep->endpt1[i].a = ep1.a;
+					ep->endpt0[i].set_lane<3>(ep0.lane<3>());
+					ep->endpt1[i].set_lane<3>(ep1.lane<3>());
 				}
 
 				#ifdef DEBUG_CAPTURE_NAN
@@ -1594,8 +1606,8 @@ void recompute_ideal_colors_2planes(
 		// a somewhat-sensible value anyway
 		if (rgbo_fail)
 		{
-			float4 v0 = ep->endpt0[i];
-			float4 v1 = ep->endpt1[i];
+			float4 v0 = vfloat4_to_float4(ep->endpt0[i]);
+			float4 v1 = vfloat4_to_float4(ep->endpt1[i]);
 			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
 
 			avgdif = astc::max(avgdif, 0.0f);
@@ -1781,30 +1793,35 @@ void recompute_ideal_colors_1plane(
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
-			float4 avg = (color_vec_x + color_vec_y) *
+			vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y) *
 			             float4(1.0f / rgba_weight_sum.r,
 			                    1.0f / rgba_weight_sum.g,
 			                    1.0f / rgba_weight_sum.b,
-			                    1.0f / rgba_weight_sum.a);
+			                    1.0f / rgba_weight_sum.a));
 
-			if (avg.r == avg.r)
+
+			if (avg.lane<0>() == avg.lane<0>())
 			{
-				ep->endpt0[i].r = ep->endpt1[i].r = avg.r;
+				ep->endpt0[i].set_lane<0>(avg.lane<0>());
+				ep->endpt1[i].set_lane<0>(avg.lane<0>());
 			}
 
-			if (avg.g == avg.g)
+			if (avg.lane<1>() == avg.lane<1>())
 			{
-				ep->endpt0[i].g = ep->endpt1[i].g = avg.g;
+				ep->endpt0[i].set_lane<1>(avg.lane<1>());
+				ep->endpt1[i].set_lane<1>(avg.lane<1>());
 			}
 
-			if (avg.b == avg.b)
+			if (avg.lane<2>() == avg.lane<2>())
 			{
-				ep->endpt0[i].b = ep->endpt1[i].b = avg.b;
+				ep->endpt0[i].set_lane<2>(avg.lane<2>());
+				ep->endpt1[i].set_lane<2>(avg.lane<2>());
 			}
 
-			if (avg.a == avg.a)
+			if (avg.lane<3>() == avg.lane<3>())
 			{
-				ep->endpt0[i].a = ep->endpt1[i].a = avg.a;
+				ep->endpt0[i].set_lane<3>(avg.lane<3>());
+				ep->endpt1[i].set_lane<3>(avg.lane<3>());
 			}
 
 			rgbs_vectors[i] = vfloat4(sds.r, sds.g, sds.b, 1.0f);
@@ -1835,34 +1852,38 @@ void recompute_ideal_colors_1plane(
 			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
 			              + (lmrs_sum.b * lmrs_sum.b);
 
-			float4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
-			float4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
+			vfloat4 ep0 = float4_to_vfloat4((right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1);
+			vfloat4 ep1 = float4_to_vfloat4((left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1);
 
 			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
 
-			if (fabsf(color_det1.r) > (color_mss1.r * 1e-4f) && ep0.r == ep0.r && ep1.r == ep1.r)
+			if (fabsf(color_det1.r) > (color_mss1.r * 1e-4f) &&
+			    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 			{
-				ep->endpt0[i].r = ep0.r;
-				ep->endpt1[i].r = ep1.r;
+				ep->endpt0[i].set_lane<0>(ep0.lane<0>());
+				ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 			}
 
-			if (fabsf(color_det1.g) > (color_mss1.g * 1e-4f) && ep0.g == ep0.g && ep1.g == ep1.g)
+			if (fabsf(color_det1.g) > (color_mss1.g * 1e-4f) &&
+			    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 			{
-				ep->endpt0[i].g = ep0.g;
-				ep->endpt1[i].g = ep1.g;
+				ep->endpt0[i].set_lane<1>(ep0.lane<1>());
+				ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 			}
 
-			if (fabsf(color_det1.b) > (color_mss1.b * 1e-4f) && ep0.b == ep0.b && ep1.b == ep1.b)
+			if (fabsf(color_det1.b) > (color_mss1.b * 1e-4f) &&
+			    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 			{
-				ep->endpt0[i].b = ep0.b;
-				ep->endpt1[i].b = ep1.b;
+				ep->endpt0[i].set_lane<2>(ep0.lane<2>());
+				ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 			}
 
-			if (fabsf(color_det1.a) > (color_mss1.a * 1e-4f) && ep0.a == ep0.a && ep1.a == ep1.a)
+			if (fabsf(color_det1.a) > (color_mss1.a * 1e-4f) &&
+			    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 			{
-				ep->endpt0[i].a = ep0.a;
-				ep->endpt1[i].a = ep1.a;
+				ep->endpt0[i].set_lane<3>(ep0.lane<3>());
+				ep->endpt1[i].set_lane<3>(ep1.lane<3>());
 			}
 
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
@@ -1881,8 +1902,8 @@ void recompute_ideal_colors_1plane(
 		// a somewhat-sensible value anyway
 		if (rgbo_fail)
 		{
-			float4 v0 = ep->endpt0[i];
-			float4 v1 = ep->endpt1[i];
+			float4 v0 = vfloat4_to_float4(ep->endpt0[i]);
+			float4 v1 = vfloat4_to_float4(ep->endpt1[i]);
 			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
 			avgdif = astc::max(avgdif, 0.0f);
 
