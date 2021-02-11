@@ -627,7 +627,6 @@ vtype4<T> operator*(T p, vtype4<T> q) {
 
 typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
-typedef vtype4<float>        float4;
 typedef vtype3<int>          int3;
 typedef vtype4<int>          int4;
 typedef vtype4<unsigned int> uint4;
