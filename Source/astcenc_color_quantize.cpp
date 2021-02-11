@@ -531,15 +531,18 @@ static int try_quantize_alpha_delta(
 }
 
 static int try_quantize_luminance_alpha_delta(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	float l0 = astc::clamp255f((color0.r + color0.g + color0.b) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float l1 = astc::clamp255f((color1.r + color1.g + color1.b) * ((1.0f / 3.0f) * (1.0f / 257.0f)));
-	float a0 = astc::clamp255f(color0.a * (1.0f / 257.0f));
-	float a1 = astc::clamp255f(color1.a * (1.0f / 257.0f));
+	float scale = 1.0f / 257.0f;
+
+	float l0 = astc::clamp255f((color0.lane<0>() + color0.lane<1>() + color0.lane<2>()) * ((1.0f / 3.0f) * scale));
+	float l1 = astc::clamp255f((color1.lane<0>() + color1.lane<1>() + color1.lane<2>()) * ((1.0f / 3.0f) * scale));
+
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
 
 	int l0a = astc::flt2int_rtn(l0);
 	int a0a = astc::flt2int_rtn(a0);
@@ -647,17 +650,15 @@ static int try_quantize_rgba_delta_blue_contract(
 }
 
 static void quantize_rgbs_new(
-	float4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
+	vfloat4 rgbs_color,	// W component is a desired-scale to apply, in the range 0..1
 	int output[4],
 	int quant_level
 ) {
-	rgbs_color.r *= (1.0f / 257.0f);
-	rgbs_color.g *= (1.0f / 257.0f);
-	rgbs_color.b *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	float r = astc::clamp255f(rgbs_color.r);
-	float g = astc::clamp255f(rgbs_color.g);
-	float b = astc::clamp255f(rgbs_color.b);
+	float r = astc::clamp255f(rgbs_color.lane<0>() * scale);
+	float g = astc::clamp255f(rgbs_color.lane<1>() * scale);
+	float b = astc::clamp255f(rgbs_color.lane<2>() * scale);
 
 	int ri = color_quant_tables[quant_level][astc::flt2int_rtn(r)];
 	int gi = color_quant_tables[quant_level][astc::flt2int_rtn(g)];
@@ -667,11 +668,11 @@ static void quantize_rgbs_new(
 	int gu = color_unquant_tables[quant_level][gi];
 	int bu = color_unquant_tables[quant_level][bi];
 
-	float oldcolorsum = rgbs_color.r + rgbs_color.g + rgbs_color.b;
+	float oldcolorsum = (rgbs_color.lane<0>() + rgbs_color.lane<1>() + rgbs_color.lane<02>()) * scale;
 	float newcolorsum = (float)(ru + gu + bu);
 
-	float scale = astc::clamp1f(rgbs_color.a * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
-	int scale_idx = astc::flt2int_rtn(scale * 256.0f);
+	float scalea = astc::clamp1f(rgbs_color.lane<3>() * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
+	int scale_idx = astc::flt2int_rtn(scalea * 256.0f);
 	scale_idx = astc::clamp(scale_idx, 0, 255);
 
 	output[0] = ri;
@@ -681,17 +682,16 @@ static void quantize_rgbs_new(
 }
 
 static void quantize_rgbs_alpha_new(
-	float4 color0,
-	float4 color1,
-	float4 rgbs_color,
+	vfloat4 color0,
+	vfloat4 color1,
+	vfloat4 rgbs_color,
 	int output[6],
 	int quant_level
 ) {
-	color0.a *= (1.0f / 257.0f);
-	color1.a *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	float a0 = astc::clamp255f(color0.a);
-	float a1 = astc::clamp255f(color1.a);
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
 
 	int ai0 = color_quant_tables[quant_level][astc::flt2int_rtn(a0)];
 	int ai1 = color_quant_tables[quant_level][astc::flt2int_rtn(a1)];
@@ -1875,7 +1875,7 @@ int pack_color_endpoints(
 		break;
 
 	case FMT_RGB_SCALE:
-		quantize_rgbs_new(vfloat4_to_float4(rgbs_color), output, quant_level);
+		quantize_rgbs_new(rgbs_color, output, quant_level);
 		retval = FMT_RGB_SCALE;
 		break;
 
@@ -1890,7 +1890,7 @@ int pack_color_endpoints(
 		break;
 
 	case FMT_RGB_SCALE_ALPHA:
-		quantize_rgbs_alpha_new(color0, color1, vfloat4_to_float4(rgbs_color), output, quant_level);
+		quantize_rgbs_alpha_new(color0v, color1v, rgbs_color, output, quant_level);
 		retval = FMT_RGB_SCALE_ALPHA;
 		break;
 
@@ -1913,7 +1913,7 @@ int pack_color_endpoints(
 	case FMT_LUMINANCE_ALPHA:
 		if (quant_level <= 18)
 		{
-			if (try_quantize_luminance_alpha_delta(color0, color1, output, quant_level))
+			if (try_quantize_luminance_alpha_delta(color0v, color1v, output, quant_level))
 			{
 				retval = FMT_LUMINANCE_ALPHA_DELTA;
 				break;
