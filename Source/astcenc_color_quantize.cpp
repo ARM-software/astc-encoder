@@ -703,21 +703,23 @@ static void quantize_rgbs_alpha_new(
 }
 
 static void quantize_luminance(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[2],
 	int quant_level
 ) {
-	color0.r *= (1.0f / 257.0f);
-	color0.g *= (1.0f / 257.0f);
-	color0.b *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	color1.r *= (1.0f / 257.0f);
-	color1.g *= (1.0f / 257.0f);
-	color1.b *= (1.0f / 257.0f);
+	float r0 = color0.lane<0>() * scale;
+	float g0 = color0.lane<1>() * scale;
+	float b0 = color0.lane<2>() * scale;
 
-	float lum0 = astc::clamp255f((color0.r + color0.g + color0.b) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((color1.r + color1.g + color1.b) * (1.0f / 3.0f));
+	float r1 = color1.lane<0>() * scale;
+	float g1 = color1.lane<1>() * scale;
+	float b1 = color1.lane<2>() * scale;
+
+	float lum0 = astc::clamp255f((r0 + g0 + b0) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((r1 + g1 + b1) * (1.0f / 3.0f));
 
 	if (lum0 > lum1)
 	{
@@ -731,18 +733,25 @@ static void quantize_luminance(
 }
 
 static void quantize_luminance_alpha(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[4],
 	int quant_level
 ) {
-	color0 = color0 * (1.0f / 257.0f);
-	color1 = color1 * (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	float lum0 = astc::clamp255f((color0.r + color0.g + color0.b) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((color1.r + color1.g + color1.b) * (1.0f / 3.0f));
-	float a0 = astc::clamp255f(color0.a);
-	float a1 = astc::clamp255f(color1.a);
+	float r0 = color0.lane<0>() * scale;
+	float g0 = color0.lane<1>() * scale;
+	float b0 = color0.lane<2>() * scale;
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+
+	float r1 = color1.lane<0>() * scale;
+	float g1 = color1.lane<1>() * scale;
+	float b1 = color1.lane<2>() * scale;
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+
+	float lum0 = astc::clamp255f((r0 + g0 + b0) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f((r1 + g1 + b1) * (1.0f / 3.0f));
 
 	// if the endpoints are *really* close, then pull them apart slightly;
 	// this affords for >8 bits precision for normal maps.
@@ -1906,7 +1915,7 @@ int pack_color_endpoints(
 		break;
 
 	case FMT_LUMINANCE:
-		quantize_luminance(color0, color1, output, quant_level);
+		quantize_luminance(color0v, color1v, output, quant_level);
 		retval = FMT_LUMINANCE;
 		break;
 
@@ -1919,7 +1928,7 @@ int pack_color_endpoints(
 				break;
 			}
 		}
-		quantize_luminance_alpha(color0, color1, output, quant_level);
+		quantize_luminance_alpha(color0v, color1v, output, quant_level);
 		retval = FMT_LUMINANCE_ALPHA;
 		break;
 
