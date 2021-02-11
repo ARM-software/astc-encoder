@@ -205,31 +205,26 @@ static int try_quantize_rgba_blue_contract(
 
 /* attempt to quantize an RGB endpoint value with delta-encoding. */
 static int try_quantize_rgb_delta(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[6],
 	int quant_level
 ) {
-	color0.r *= (1.0f / 257.0f);
-	color0.g *= (1.0f / 257.0f);
-	color0.b *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	color1.r *= (1.0f / 257.0f);
-	color1.g *= (1.0f / 257.0f);
-	color1.b *= (1.0f / 257.0f);
+	float r0 = astc::clamp255f(color0.lane<0>() * scale);
+	float g0 = astc::clamp255f(color0.lane<1>() * scale);
+	float b0 = astc::clamp255f(color0.lane<2>() * scale);
 
-	float r0 = astc::clamp255f(color0.r);
-	float g0 = astc::clamp255f(color0.g);
-	float b0 = astc::clamp255f(color0.b);
-
-	float r1 = astc::clamp255f(color1.r);
-	float g1 = astc::clamp255f(color1.g);
-	float b1 = astc::clamp255f(color1.b);
+	float r1 = astc::clamp255f(color1.lane<0>() * scale);
+	float g1 = astc::clamp255f(color1.lane<1>() * scale);
+	float b1 = astc::clamp255f(color1.lane<2>() * scale);
 
 	// transform r0 to unorm9
 	int r0a = astc::flt2int_rtn(r0);
 	int g0a = astc::flt2int_rtn(g0);
 	int b0a = astc::flt2int_rtn(b0);
+
 	r0a <<= 1;
 	g0a <<= 1;
 	b0a <<= 1;
@@ -342,27 +337,21 @@ static int try_quantize_rgb_delta(
 }
 
 static int try_quantize_rgb_delta_blue_contract(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[6],
 	int quant_level
 ) {
-	color0.r *= (1.0f / 257.0f);
-	color0.g *= (1.0f / 257.0f);
-	color0.b *= (1.0f / 257.0f);
+	// Note: Switch around endpoint colors already at start
+	float scale = 1.0f / 257.0f;
 
-	color1.r *= (1.0f / 257.0f);
-	color1.g *= (1.0f / 257.0f);
-	color1.b *= (1.0f / 257.0f);
+	float r1 = color0.lane<0>() * scale;
+	float g1 = color0.lane<1>() * scale;
+	float b1 = color0.lane<2>() * scale;
 
-	// switch around endpoint colors already at start.
-	float r0 = color1.r;
-	float g0 = color1.g;
-	float b0 = color1.b;
-
-	float r1 = color0.r;
-	float g1 = color0.g;
-	float b1 = color0.b;
+	float r0 = color1.lane<0>() * scale;
+	float g0 = color1.lane<1>() * scale;
+	float b0 = color1.lane<2>() * scale;
 
 	// inverse blue-contraction. This step can perform an overflow, in which case
 	// we will bail out immediately.
@@ -495,18 +484,15 @@ static int try_quantize_rgb_delta_blue_contract(
 }
 
 static int try_quantize_alpha_delta(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	color0.a *= (1.0f / 257.0f);
-	color1.a *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	// the calculation for alpha-delta is exactly the same as for RGB-delta; see
-	// the RGB-delta function for comments.
-	float a0 = astc::clamp255f(color0.a);
-	float a1 = astc::clamp255f(color1.a);
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
 
 	int a0a = astc::flt2int_rtn(a0);
 	a0a <<= 1;
@@ -627,8 +613,8 @@ static int try_quantize_luminance_alpha_delta(
 }
 
 static int try_quantize_rgba_delta(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
@@ -643,8 +629,8 @@ static int try_quantize_rgba_delta(
 }
 
 static int try_quantize_rgba_delta_blue_contract(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
@@ -1845,12 +1831,12 @@ int pack_color_endpoints(
 	case FMT_RGB:
 		if (quant_level <= 18)
 		{
-			if (try_quantize_rgb_delta_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgb_delta_blue_contract(color0v, color1v, output, quant_level))
 			{
 				retval = FMT_RGB_DELTA;
 				break;
 			}
-			if (try_quantize_rgb_delta(color0, color1, output, quant_level))
+			if (try_quantize_rgb_delta(color0v, color1v, output, quant_level))
 			{
 				retval = FMT_RGB_DELTA;
 				break;
@@ -1868,12 +1854,12 @@ int pack_color_endpoints(
 	case FMT_RGBA:
 		if (quant_level <= 18)
 		{
-			if (try_quantize_rgba_delta_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgba_delta_blue_contract(color0v, color1v, output, quant_level))
 			{
 				retval = FMT_RGBA_DELTA;
 				break;
 			}
-			if (try_quantize_rgba_delta(color0, color1, output, quant_level))
+			if (try_quantize_rgba_delta(color0v, color1v, output, quant_level))
 			{
 				retval = FMT_RGBA_DELTA;
 				break;
