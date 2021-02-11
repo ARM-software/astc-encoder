@@ -1188,7 +1188,7 @@ static void quantize_hdr_rgb3(
 	int output[6],
 	int quant_level
 ) {
-	// TODO: If a not used, vectorize this ...
+	// TODO: If lane 3/a not used, vectorize this ...
 	color0.set_lane<0>(astc::clamp(color0.lane<0>(), 0.0f, 65535.0f));
 	color0.set_lane<1>(astc::clamp(color0.lane<1>(), 0.0f, 65535.0f));
 	color0.set_lane<2>(astc::clamp(color0.lane<2>(), 0.0f, 65535.0f));

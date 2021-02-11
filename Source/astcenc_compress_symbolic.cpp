@@ -273,12 +273,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		// TODO: Vectorize this
-		vfloat4 ep(
-			(1.0f - ei->ep.endpt0[i].lane<0>()) / (ei->ep.endpt1[i].lane<0>() - ei->ep.endpt0[i].lane<0>()),
-			(1.0f - ei->ep.endpt0[i].lane<1>()) / (ei->ep.endpt1[i].lane<1>() - ei->ep.endpt0[i].lane<1>()),
-			(1.0f - ei->ep.endpt0[i].lane<2>()) / (ei->ep.endpt1[i].lane<2>() - ei->ep.endpt0[i].lane<2>()),
-			(1.0f - ei->ep.endpt0[i].lane<3>()) / (ei->ep.endpt1[i].lane<3>() - ei->ep.endpt0[i].lane<3>()));
+		vfloat4 ep = (vfloat4(1.0f) - ei->ep.endpt0[i]) / (ei->ep.endpt1[i] - ei->ep.endpt0[i]);
 
 		if (ep.lane<0>() > 0.5f && ep.lane<0>() < min_ep.lane<0>())
 		{
@@ -655,12 +650,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
-		// Vectorize this
-		vfloat4 ep1 = vfloat4(
-			(1.0f - ei1->ep.endpt0[i].lane<0>()) / (ei1->ep.endpt1[i].lane<0>() - ei1->ep.endpt0[i].lane<0>()),
-			(1.0f - ei1->ep.endpt0[i].lane<1>()) / (ei1->ep.endpt1[i].lane<1>() - ei1->ep.endpt0[i].lane<1>()),
-			(1.0f - ei1->ep.endpt0[i].lane<2>()) / (ei1->ep.endpt1[i].lane<2>() - ei1->ep.endpt0[i].lane<2>()),
-			(1.0f - ei1->ep.endpt0[i].lane<3>()) / (ei1->ep.endpt1[i].lane<3>() - ei1->ep.endpt0[i].lane<3>()));
+		vfloat4 ep1 = (vfloat4(1.0f) - ei1->ep.endpt0[i]) / (ei1->ep.endpt1[i] - ei1->ep.endpt0[i]);
 
 		if (ep1.lane<0>() > 0.5f && ep1.lane<0>() < min_ep1.lane<0>())
 		{
@@ -682,11 +672,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			min_ep1.set_lane<3>(ep1.lane<3>());
 		}
 
-		vfloat4 ep2 = vfloat4(
-			(1.0f - ei2->ep.endpt0[i].lane<0>()) / (ei2->ep.endpt1[i].lane<0>() - ei2->ep.endpt0[i].lane<0>()),
-			(1.0f - ei2->ep.endpt0[i].lane<1>()) / (ei2->ep.endpt1[i].lane<1>() - ei2->ep.endpt0[i].lane<1>()),
-			(1.0f - ei2->ep.endpt0[i].lane<2>()) / (ei2->ep.endpt1[i].lane<2>() - ei2->ep.endpt0[i].lane<2>()),
-			(1.0f - ei2->ep.endpt0[i].lane<3>()) / (ei2->ep.endpt1[i].lane<3>() - ei2->ep.endpt0[i].lane<3>()));
+		vfloat4 ep2 = (vfloat4(1.0f) - ei2->ep.endpt0[i]) / (ei2->ep.endpt1[i] - ei2->ep.endpt0[i]);
 
 		if (ep2.lane<0>() > 0.5f && ep2.lane<0>() < min_ep2.lane<0>())
 		{
