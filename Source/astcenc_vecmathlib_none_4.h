@@ -40,6 +40,7 @@
 	#error "Include astcenc_vecmathlib.h, do not include directly"
 #endif
 
+#include <algorithm>
 #include <cstring>
 
 // ============================================================================
@@ -883,6 +884,15 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal min of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
+{
+	a.set_lane<3>(a.lane<0>());
+	return hmin_s(a);
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -906,6 +916,15 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
 ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
 	return (a.m[0] + a.m[1]) + (a.m[2] + a.m[3]);
+}
+
+
+/**
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
+{
+	return a.m[0] + a.m[1] + a.m[2];
 }
 
 /**
