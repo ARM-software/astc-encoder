@@ -27,6 +27,56 @@
 #include <cstdint>
 #include <cmath>
 
+#ifndef ASTCENC_SSE
+  #if defined(__SSE4_2__)
+    #define ASTCENC_SSE 42
+  #elif defined(__SSE4_1__)
+    #define ASTCENC_SSE 41
+  #elif defined(__SSE3__)
+    #define ASTCENC_SSE 30
+  #elif defined(__SSE2__)
+    #define ASTCENC_SSE 20
+  #else
+    #define ASTCENC_SSE 0
+  #endif
+#endif
+
+#ifndef ASTCENC_POPCNT
+  #if defined(__POPCNT__)
+    #define ASTCENC_POPCNT 1
+  #else
+    #define ASTCENC_POPCNT 0
+  #endif
+#endif
+
+#ifndef ASTCENC_AVX
+  #if defined(__AVX2__)
+    #define ASTCENC_AVX 2
+  #elif defined(__AVX__)
+    #define ASTCENC_AVX 1
+  #else
+    #define ASTCENC_AVX 0
+  #endif
+#endif
+
+#ifndef ASTCENC_NEON
+  #if defined(__aarch64__)
+    #define ASTCENC_NEON 1
+  #else
+    #define ASTCENC_NEON 0
+  #endif
+#endif
+
+#if ASTCENC_AVX
+  #define ASTCENC_VECALIGN 32
+#else
+  #define ASTCENC_VECALIGN 16
+#endif
+
+#ifndef ASTCENC_ISA_INVARIANCE
+  #define ASTCENC_ISA_INVARIANCE 0
+#endif
+
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
 #endif
@@ -156,6 +206,41 @@ template<typename T>
 static inline T max(T p, T q)
 {
 	return p > q ? p : q;
+}
+
+/**
+ * @brief Return the maximum of three values.
+ *
+ * For floats, NaNs are turned into @c r.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ * @param r   The third value to compare.
+ *
+ * @return The largest value.
+ */
+template<typename T>
+static inline T max(T p, T q, T r)
+{
+	return max(max(p, q), r);
+}
+
+/**
+ * @brief Return the maximum of four values.
+ *
+ * For floats, NaNs are turned into @c s.
+ *
+ * @param p   The first value to compare.
+ * @param q   The second value to compare.
+ * @param r   The third value to compare.
+ * @param s   The fourth value to compare.
+ *
+ * @return The largest value.
+ */
+template<typename T>
+static inline T max(T p, T q, T r, T s)
+{
+	return max(max(p, q), max(r, s));
 }
 
 /**
@@ -542,42 +627,15 @@ vtype4<T> operator*(T p, vtype4<T> q) {
 
 typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
-typedef vtype4<float>        float4;
 typedef vtype3<int>          int3;
 typedef vtype4<int>          int4;
 typedef vtype4<unsigned int> uint4;
 
 static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
 static inline float dot(float3 p, float3 q)  { return p.r * q.r + p.g * q.g + p.b * q.b; }
-static inline float dot(float4 p, float4 q)  {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	__m128 pv = _mm_load_ps((float*)&p);
-	__m128 qv = _mm_load_ps((float*)&q);
-	__m128 t  = _mm_dp_ps(pv, qv, 0xFF);
-	return _mm_cvtss_f32(t);
-#else
-	return p.r * q.r + p.g * q.g + p.b * q.b  + p.a * q.a;
-#endif
-}
 
 static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }
-static inline float4 normalize(float4 p) { return p * astc::rsqrt(dot(p, p)); }
-
-static inline float4 sqrt(float4 p) {
-	float4 r;
-#if ASTCENC_SSE >= 20
-	__m128 pv = _mm_load_ps((float*)&p);
-	__m128 t  = _mm_sqrt_ps(pv);
-	_mm_store_ps((float*)&r, t);
-#else
-	r.r = std::sqrt(p.r);
-	r.g = std::sqrt(p.g);
-	r.b = std::sqrt(p.b);
-	r.a = std::sqrt(p.a);
-#endif
-	return r;
-}
 
 /* ============================================================================
   Softfloat library with fp32 and fp16 conversion functionality.
@@ -618,6 +676,10 @@ sf16 float_to_sf16(float, roundmode);
 
 float sf16_to_float(sf16);
 
+/*********************************
+  Vector library
+*********************************/
+#include "astcenc_vecmathlib.h"
 
 /*********************************
   Declaration of line types
@@ -639,8 +701,8 @@ struct line3
 
 struct line4
 {
-	float4 a;
-	float4 b;
+	vfloat4 a;
+	vfloat4 b;
 };
 
 
@@ -660,9 +722,9 @@ struct processed_line3
 
 struct processed_line4
 {
-	float4 amod;
-	float4 bs;
-	float4 bis;
+	vfloat4 amod;
+	vfloat4 bs;
+	vfloat4 bis;
 };
 
 #endif

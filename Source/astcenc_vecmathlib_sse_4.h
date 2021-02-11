@@ -152,6 +152,26 @@ struct vfloat4
 	}
 
 	/**
+	 * @brief Return a swizzled float 2.
+	 *
+	 * TODO: Implement float2 as a SIMD register, and use permutes.
+	 */
+	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
+	{
+		return float2(lane<l0>(), lane<l1>());
+	}
+
+	/**
+	 * @brief Return a swizzled float 3.
+	 *
+	 * TODO: Implement float3 as a SIMD register, and use permutes.
+	 */
+	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE float3 swz() const
+	{
+		return float3(lane<l0>(), lane<l1>(), lane<l2>());
+	}
+
+	/**
 	 * @brief The vector ...
 	 */
 	__m128 m;
@@ -815,6 +835,15 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
 }
 
 /**
+ * @brief Return the horizontal min of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
+{
+	a.set_lane<3>(a.lane<0>());
+	return hmin_s(a);
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -844,6 +873,15 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
 
 	return _mm_cvtss_f32(t);
+}
+
+/**
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
+{
+	a.set_lane<3>(0.0f);
+	return hadd_s(a);
 }
 
 /**

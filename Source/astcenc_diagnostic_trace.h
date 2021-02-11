@@ -159,7 +159,7 @@ public:
 	/**
 	 * @brief The file stream to write to.
 	 */
- 	std::ofstream m_file;
+	std::ofstream m_file;
 
 	/**
 	 * @brief The stack of nodes (newest at the back).

@@ -106,10 +106,15 @@ uint16_t unorm16_to_sf16(uint16_t p)
 void imageblock_initialize_deriv(
 	const imageblock* pb,
 	int pixelcount,
-	float4* dptr
+	vfloat4* dptr
 ) {
 	for (int i = 0; i < pixelcount; i++)
 	{
+		float dr = 65535.0f;
+		float dg = 65535.0f;
+		float db = 65535.0f;
+		float da = 65535.0f;
+
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
@@ -128,19 +133,9 @@ void imageblock_initialize_deriv(
 
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
-			rderiv = astc::clamp(rderiv, 1.0f / 32.0f, 33554432.0f);
-			gderiv = astc::clamp(gderiv, 1.0f / 32.0f, 33554432.0f);
-			bderiv = astc::clamp(bderiv, 1.0f / 32.0f, 33554432.0f);
-
-			dptr->r = rderiv;
-			dptr->g = gderiv;
-			dptr->b = bderiv;
-		}
-		else
-		{
-			dptr->r = 65535.0f;
-			dptr->g = 65535.0f;
-			dptr->b = 65535.0f;
+			dr = astc::clamp(rderiv, 1.0f / 32.0f, 33554432.0f);
+			dg = astc::clamp(gderiv, 1.0f / 32.0f, 33554432.0f);
+			db = astc::clamp(bderiv, 1.0f / 32.0f, 33554432.0f);
 		}
 
 		// then compute derivatives for Alpha
@@ -153,15 +148,10 @@ void imageblock_initialize_deriv(
 			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
 			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
 			// if it does, we clamp it.
-			aderiv = astc::clamp(aderiv, 1.0f / 32.0f, 33554432.0f);
-
-			dptr->a = aderiv;
-		}
-		else
-		{
-			dptr->a = 65535.0f;
+			da = astc::clamp(aderiv, 1.0f / 32.0f, 33554432.0f);
 		}
 
+		*dptr = vfloat4(dr, dg, db, da);
 		dptr++;
 	}
 }
@@ -171,8 +161,8 @@ void imageblock_initialize_work_from_orig(
 	imageblock* pb,
 	int pixelcount
 ) {
-	pb->origin_texel = float4(pb->data_r[0], pb->data_g[0],
-	                          pb->data_b[0], pb->data_a[0]);
+	pb->origin_texel = vfloat4(pb->data_r[0], pb->data_g[0],
+	                           pb->data_b[0], pb->data_a[0]);
 
 	vfloat4 data_min(1e38f);
 	vfloat4 data_max(-1e38f);

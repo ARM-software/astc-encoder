@@ -1136,7 +1136,7 @@ bool load_ktx_compressed_image(
 	img.block_y = fmt->y;
 	img.block_z = fmt->z == 0 ? 1 : fmt->z;
 
- 	img.dim_x = hdr.pixel_width;
+	img.dim_x = hdr.pixel_width;
 	img.dim_y = hdr.pixel_height;
 	img.dim_z = hdr.pixel_depth == 0 ? 1 : hdr.pixel_depth;
 
@@ -2288,7 +2288,7 @@ int store_cimage(
 	hdr.dim_z[1] = (comp_img.dim_z >>  8) & 0xFF;
 	hdr.dim_z[2] = (comp_img.dim_z >> 16) & 0xFF;
 
- 	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
 	{
 		printf("ERROR: File open failed '%s'\n", filename);

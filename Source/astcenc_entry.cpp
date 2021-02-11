@@ -515,7 +515,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;
 
- 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
+		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
 			config.b_deblock_weight = 1.8f;
 			config.v_rgba_radius = 3;
@@ -764,8 +764,8 @@ static void compress_image(
 			// Apply alpha scale RDO - substitute constant color block
 			else
 			{
-				pb.origin_texel = float4(0.0f, 0.0f, 0.0f, 0.0f);
-				pb.data_min = vfloat4(0.0f, 0.0f, 0.0f, 0.0f);
+				pb.origin_texel = vfloat4::zero();
+				pb.data_min = vfloat4::zero();
 				pb.data_max = pb.data_min;
 				pb.grayscale = false;
 			}
@@ -841,8 +841,8 @@ astcenc_error astcenc_compress_image(
 		auto init_avg_var = [ctx, &image, swizzle]() {
 			// Perform memory allocations for the destination buffers
 			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
-			ctx->input_averages = new float4[texel_count];
-			ctx->input_variances = new float4[texel_count];
+			ctx->input_averages = new vfloat4[texel_count];
+			ctx->input_variances = new vfloat4[texel_count];
 			ctx->input_alpha_averages = new float[texel_count];
 
 			return init_compute_averages_and_variances(

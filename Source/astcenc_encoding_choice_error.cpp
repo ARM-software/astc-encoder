@@ -61,29 +61,29 @@ void merge_endpoints(
 	case 0:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].r = ep2->endpt0[i].r;
-			res->endpt1[i].r = ep2->endpt1[i].r;
+			res->endpt0[i].set_lane<0>(ep2->endpt0[i].lane<0>());
+			res->endpt1[i].set_lane<0>(ep2->endpt1[i].lane<0>());
 		}
 		break;
 	case 1:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].g = ep2->endpt0[i].g;
-			res->endpt1[i].g = ep2->endpt1[i].g;
+			res->endpt0[i].set_lane<1>(ep2->endpt0[i].lane<1>());
+			res->endpt1[i].set_lane<1>(ep2->endpt1[i].lane<1>());
 		}
 		break;
 	case 2:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].b = ep2->endpt0[i].b;
-			res->endpt1[i].b = ep2->endpt1[i].b;
+			res->endpt0[i].set_lane<2>(ep2->endpt0[i].lane<2>());
+			res->endpt1[i].set_lane<2>(ep2->endpt1[i].lane<2>());
 		}
 		break;
 	case 3:
 		for (int i = 0; i < partition_count; i++)
 		{
-			res->endpt0[i].a = ep2->endpt0[i].a;
-			res->endpt1[i].a = ep2->endpt1[i].a;
+			res->endpt0[i].set_lane<3>(ep2->endpt0[i].lane<3>());
+			res->endpt1[i].set_lane<3>(ep2->endpt1[i].lane<3>());
 		}
 		break;
 	}
@@ -118,9 +118,8 @@ static float compute_error_squared_rgb_single_partition(
 		float param = dot(point, lin->bs);
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;
-		float4 ews = ewb->error_weights[i];
-		float3 ews3 = float3(ews.r, ews.g, ews.b);
-		errorsum += dot(ews3, dist * dist);
+		float3 ews = ewb->error_weights[i].swz<0, 1, 2>();
+		errorsum += dot(ews, dist * dist);
 	}
 
 	return errorsum;
@@ -151,9 +150,9 @@ void compute_encoding_choice_errors(
 
 	float3 averages[4];
 	float3 directions_rgb[4];
-	float4 error_weightings[4];
-	float4 color_scalefactors[4];
-	float4 inverse_color_scalefactors[4];
+	vfloat4 error_weightings[4];
+	vfloat4 color_scalefactors[4];
+	vfloat4 inverse_color_scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
 	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
@@ -170,13 +169,9 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		inverse_color_scalefactors[i].r = 1.0f / astc::max(color_scalefactors[i].r, 1e-7f);
-		inverse_color_scalefactors[i].g = 1.0f / astc::max(color_scalefactors[i].g, 1e-7f);
-		inverse_color_scalefactors[i].b = 1.0f / astc::max(color_scalefactors[i].b, 1e-7f);
-		inverse_color_scalefactors[i].a = 1.0f / astc::max(color_scalefactors[i].a, 1e-7f);
-
-		float3 csf = float3(color_scalefactors[i].r, color_scalefactors[i].g, color_scalefactors[i].b);
-		float3 icsf = float3(inverse_color_scalefactors[i].r, inverse_color_scalefactors[i].g, inverse_color_scalefactors[i].b);
+		inverse_color_scalefactors[i] = 1.0f / max(color_scalefactors[i], 1e-7f);
+		float3 csf = color_scalefactors[i].swz<0, 1, 2>();
+		float3 icsf = inverse_color_scalefactors[i].swz<0, 1, 2>();
 
 		uncorr_rgb_lines[i].a = averages[i];
 		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)
@@ -246,7 +241,7 @@ void compute_encoding_choice_errors(
 		float default_alpha = pb->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
 
 		float omalpha = alpha - default_alpha;
-		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].a;
+		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].lane<3>();
 	}
 
 	// check if we are eligible for blue-contraction and offset-encoding
@@ -268,25 +263,27 @@ void compute_encoding_choice_errors(
 	bool can_blue_contract[4] { 0 };
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 endpt0 = ep.endpt0[i];
-		float4 endpt1 = ep.endpt1[i];
+		vfloat4 endpt0 = ep.endpt0[i];
+		vfloat4 endpt1 = ep.endpt1[i];
 
-		float4 endpt_dif = endpt1 - endpt0;
-		if (fabsf(endpt_dif.r) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.g) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.b) < (0.12f * 65535.0f))
+		vfloat4 endpt_dif = endpt1 - endpt0;
+		if (fabsf(endpt_dif.lane<0>()) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.lane<1>()) < (0.12f * 65535.0f) &&
+		    fabsf(endpt_dif.lane<2>()) < (0.12f * 65535.0f))
 		{
 			can_offset_encode[i] = true;
 		}
 
-		endpt0.r += (endpt0.r - endpt0.b);
-		endpt0.g += (endpt0.g - endpt0.b);
-		endpt1.r += (endpt1.r - endpt1.b);
-		endpt1.g += (endpt1.g - endpt1.b);
-		if (endpt0.r > (0.01f * 65535.0f) && endpt0.r < (0.99f * 65535.0f) &&
-		    endpt1.r > (0.01f * 65535.0f) && endpt1.r < (0.99f * 65535.0f) &&
-		    endpt0.g > (0.01f * 65535.0f) && endpt0.g < (0.99f * 65535.0f) &&
-		    endpt1.g > (0.01f * 65535.0f) && endpt1.g < (0.99f * 65535.0f))
+		endpt0.set_lane<0>(endpt0.lane<0>() + (endpt0.lane<0>() - endpt0.lane<2>()));
+		endpt0.set_lane<1>(endpt0.lane<1>() + (endpt0.lane<1>() - endpt0.lane<2>()));
+
+		endpt1.set_lane<0>(endpt1.lane<0>() + (endpt1.lane<0>() - endpt1.lane<2>()));
+		endpt1.set_lane<1>(endpt1.lane<1>() + (endpt1.lane<1>() - endpt1.lane<2>()));
+
+		if (endpt0.lane<0>() > (0.01f * 65535.0f) && endpt0.lane<0>() < (0.99f * 65535.0f) &&
+		    endpt1.lane<0>() > (0.01f * 65535.0f) && endpt1.lane<0>() < (0.99f * 65535.0f) &&
+		    endpt0.lane<1>() > (0.01f * 65535.0f) && endpt0.lane<1>() < (0.99f * 65535.0f) &&
+		    endpt1.lane<1>() > (0.01f * 65535.0f) && endpt1.lane<1>() < (0.99f * 65535.0f))
 		{
 			can_blue_contract[i] = true;
 		}

@@ -186,14 +186,4 @@ ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 	return change_sign(select(z, vfloat(astc::PI) - z, xmask), y);
 }
 
-static inline vfloat4 float4_to_vfloat4(const float4& a) {
-	return vfloat4(a.r, a.g, a.b, a.a);
-}
-
-static inline float4 vfloat4_to_float4(const vfloat4& a) {
-	float4 ret;
-	store(a, (float*)&ret);
-	return ret;
-}
-
 #endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED

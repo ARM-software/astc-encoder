@@ -374,6 +374,34 @@ TEST(vfloat4, LaneID)
 	EXPECT_EQ(a.lane<3>(), 3.0f);
 }
 
+/** @brief Test vfloat4 swz to float3. */
+TEST(vfloat4, swz3)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	float3 r = a.swz<0, 3, 2>();
+	EXPECT_EQ(r.r, 1.0f);
+	EXPECT_EQ(r.g, 4.0f);
+	EXPECT_EQ(r.b, 3.0f);
+
+	r = a.swz<3, 1, 1>();
+	EXPECT_EQ(r.r, 4.0f);
+	EXPECT_EQ(r.g, 2.0f);
+	EXPECT_EQ(r.b, 2.0f);
+}
+
+/** @brief Test vfloat4 swz to float2. */
+TEST(vfloat4, swz2)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	float2 r = a.swz<0, 3>();
+	EXPECT_EQ(r.r, 1.0f);
+	EXPECT_EQ(r.g, 4.0f);
+
+	r = a.swz<2, 1>();
+	EXPECT_EQ(r.r, 3.0f);
+	EXPECT_EQ(r.g, 2.0f);
+}
+
 /** @brief Test vfloat4 add. */
 TEST(vfloat4, vadd)
 {
@@ -726,6 +754,18 @@ TEST(vfloat4, hmin_s)
 	EXPECT_EQ(r2, 0.2f);
 }
 
+/** @brief Test vfloat4 hmin_rgb_s. */
+TEST(vfloat4, hmin_rgb_s)
+{
+	vfloat4 a1(1.1f, 1.5f, 1.6f, 0.2f);
+	float r1 = hmin_rgb_s(a1);
+	EXPECT_EQ(r1, 1.1f);
+
+	vfloat4 a2(1.5f, 0.9f, 1.6f, 1.2f);
+	float r2 = hmin_rgb_s(a2);
+	EXPECT_EQ(r2, 0.9f);
+}
+
 /** @brief Test vfloat4 hmax. */
 TEST(vfloat4, hmax)
 {
@@ -756,12 +796,21 @@ TEST(vfloat4, hmax_s)
 	EXPECT_EQ(r2, 1.6f);
 }
 
-/** @brief Test vfloat4 hadd. */
+/** @brief Test vfloat4 hadd_s. */
 TEST(vfloat4, hadd_s)
 {
 	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
 	float sum = 1.1f + 1.5f + 1.6f + 4.0f;
 	float r = hadd_s(a1);
+	EXPECT_NEAR(r, sum, 0.005f);
+}
+
+/** @brief Test vfloat4 hadd_rgb_s. */
+TEST(vfloat4, hadd_rgb_s)
+{
+	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
+	float sum = 1.1f + 1.5f + 1.6f;
+	float r = hadd_rgb_s(a1);
 	EXPECT_NEAR(r, sum, 0.005f);
 }
 

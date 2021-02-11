@@ -32,56 +32,6 @@
 #include <mutex>
 #include <type_traits>
 
-#ifndef ASTCENC_SSE
-  #if defined(__SSE4_2__)
-    #define ASTCENC_SSE 42
-  #elif defined(__SSE4_1__)
-    #define ASTCENC_SSE 41
-  #elif defined(__SSE3__)
-    #define ASTCENC_SSE 30
-  #elif defined(__SSE2__)
-    #define ASTCENC_SSE 20
-  #else
-    #define ASTCENC_SSE 0
-  #endif
-#endif
-
-#ifndef ASTCENC_POPCNT
-  #if defined(__POPCNT__)
-    #define ASTCENC_POPCNT 1
-  #else
-    #define ASTCENC_POPCNT 0
-  #endif
-#endif
-
-#ifndef ASTCENC_AVX
-  #if defined(__AVX2__)
-    #define ASTCENC_AVX 2
-  #elif defined(__AVX__)
-    #define ASTCENC_AVX 1
-  #else
-    #define ASTCENC_AVX 0
-  #endif
-#endif
-
-#ifndef ASTCENC_NEON
-  #if defined(__aarch64__)
-    #define ASTCENC_NEON 1
-  #else
-    #define ASTCENC_NEON 0
-  #endif
-#endif
-
-#if ASTCENC_AVX
-  #define ASTCENC_VECALIGN 32
-#else
-  #define ASTCENC_VECALIGN 16
-#endif
-
-#ifndef ASTCENC_ISA_INVARIANCE
-  #define ASTCENC_ISA_INVARIANCE 0
-#endif
-
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 #include "astcenc_vecmathlib.h"
@@ -547,8 +497,7 @@ struct imageblock
 	float data_b[MAX_TEXELS_PER_BLOCK];
 	float data_a[MAX_TEXELS_PER_BLOCK];
 
-	// TODO: Migrate to vfloat4
-	float4 origin_texel;
+	vfloat4 origin_texel;
 	vfloat4 data_min;
 	vfloat4 data_max;
 	bool    grayscale;
@@ -609,7 +558,7 @@ void imageblock_initialize_work_from_orig(
 
 struct error_weight_block
 {
-	float4 error_weights[MAX_TEXELS_PER_BLOCK];
+	vfloat4 error_weights[MAX_TEXELS_PER_BLOCK];
 	float texel_weight[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_gba[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_rba[MAX_TEXELS_PER_BLOCK];
@@ -867,7 +816,7 @@ void compute_averages_and_directions_rgb(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
+	const vfloat4* color_scalefactors,
 	float3* averages,
 	float3* directions_rgb);
 
@@ -875,9 +824,9 @@ void compute_averages_and_directions_rgba(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float4* color_scalefactors,
-	float4* averages,
-	float4* directions_rgba);
+	const vfloat4* color_scalefactors,
+	vfloat4* averages,
+	vfloat4* directions_rgba);
 
 void compute_averages_and_directions_3_components(
 	const partition_info* pt,
@@ -925,8 +874,8 @@ void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
 	const error_weight_block * ewb,
 	const partition_info* pi,
-	float4 error_weightings[4],
-	float4 color_scalefactors[4]);
+	vfloat4 error_weightings[4],
+	vfloat4 color_scalefactors[4]);
 
 /**
  * @brief Find the best set of partitions to trial for a given block.
@@ -988,7 +937,7 @@ struct pixel_region_variance_args
 	/** The position of first src and dst data in the data set. */
 	int3 offset;
 	/** The working memory buffer. */
-	float4 *work_memory;
+	vfloat4 *work_memory;
 };
 
 /**
@@ -1079,8 +1028,8 @@ float compute_symbolic_block_difference(
 struct endpoints
 {
 	int partition_count;
-	float4 endpt0[4];
-	float4 endpt1[4];
+	vfloat4 endpt0[4];
+	vfloat4 endpt1[4];
 };
 
 struct endpoints_and_weights
@@ -1153,10 +1102,10 @@ void merge_endpoints(
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
 int pack_color_endpoints(
-	float4 color0,
-	float4 color1,
-	float4 rgbs_color,
-	float4 rgbo_color,
+	vfloat4 color0,
+	vfloat4 color1,
+	vfloat4 rgbs_color,
+	vfloat4 rgbo_color,
 	int format,
 	int* output,
 	int quant_level);
@@ -1236,8 +1185,8 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 void recompute_ideal_colors_1plane(
 	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
-	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
-	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
+	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
+	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
 	const uint8_t* weight_set8,	// the current set of weight values
 	const partition_info* pi,
 	const decimation_table* it,
@@ -1247,8 +1196,8 @@ void recompute_ideal_colors_1plane(
 void recompute_ideal_colors_2planes(
 	int weight_quant_mode,
 	endpoints* ep,	// contains the endpoints we wish to update
-	float4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
-	float4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
+	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
+	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
@@ -1266,7 +1215,7 @@ void prepare_angular_tables();
 void imageblock_initialize_deriv(
 	const imageblock* pb,
 	int pixelcount,
-	float4* dptr);
+	vfloat4* dptr);
 
 void compute_angular_endpoints_1plane(
 	bool only_always,
@@ -1335,8 +1284,8 @@ struct astcenc_context
 	// Regional average-and-variance information, initialized by
 	// compute_averages_and_variances() only if the astc encoder
 	// is requested to do error weighting based on averages and variances.
-	float4 *input_averages;
-	float4 *input_variances;
+	vfloat4 *input_averages;
+	vfloat4 *input_variances;
 	float *input_alpha_averages;
 
 	compress_symbolic_block_buffers* working_buffers;

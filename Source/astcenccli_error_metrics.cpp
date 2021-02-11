@@ -36,18 +36,18 @@ class kahan_accum4
 {
 public:
 	/** The running sum. */
-	float4 sum;
+	vfloat4 sum;
 
 	/** The current compensation factor. */
-	float4 comp;
+	vfloat4 comp;
 
 	/**
 	 * @brief Create a new Kahan accumulator
 	 */
 	kahan_accum4()
 	{
-		sum = float4(0.0f);
-		comp = float4(0.0f);
+		sum = vfloat4::zero();
+		comp = vfloat4::zero();
 	}
 };
 
@@ -61,10 +61,10 @@ public:
  */
 static kahan_accum4 &operator+=(
 	kahan_accum4 &val,
-	float4 inc
+	vfloat4 inc
 ) {
-	float4 y = inc - val.comp;
-	float4 t = val.sum + y;
+	vfloat4 y = inc - val.comp;
+	vfloat4 t = val.sum + y;
 	val.comp = (t - val.sum) - y;
 	val.sum = t;
 	return val;
@@ -162,13 +162,13 @@ void compute_error_metrics(
 		{
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				float4 color1;
-				float4 color2;
+				vfloat4 color1;
+				vfloat4 color2;
 
 				if (img1->data_type == ASTCENC_TYPE_U8)
 				{
 					uint8_t* data8 = static_cast<uint8_t*>(img1->data[z]);
-					color1 = float4(
+					color1 = vfloat4(
 					    data8[(4 * xsize1 * y) + (4 * x    )] * (1.0f / 255.0f),
 					    data8[(4 * xsize1 * y) + (4 * x + 1)] * (1.0f / 255.0f),
 					    data8[(4 * xsize1 * y) + (4 * x + 2)] * (1.0f / 255.0f),
@@ -177,7 +177,7 @@ void compute_error_metrics(
 				else if (img1->data_type == ASTCENC_TYPE_F16)
 				{
 					uint16_t* data16 = static_cast<uint16_t*>(img1->data[z]);
-					color1 = float4(
+					color1 = vfloat4(
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x    )])),
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x + 1)])),
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize1 * y) + (4 * x + 2)])),
@@ -187,7 +187,7 @@ void compute_error_metrics(
 				{
 					assert(img1->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img1->data[z]);
-					color1 = float4(
+					color1 = vfloat4(
 					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x    )]),
 					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x + 1)]),
 					    astc::clamp64Kf(data32[(4 * xsize1 * y) + (4 * x + 2)]),
@@ -197,7 +197,7 @@ void compute_error_metrics(
 				if (img2->data_type == ASTCENC_TYPE_U8)
 				{
 					uint8_t* data8 = static_cast<uint8_t*>(img2->data[z]);
-					color2 = float4(
+					color2 = vfloat4(
 					    data8[(4 * xsize2 * y) + (4 * x    )] * (1.0f / 255.0f),
 					    data8[(4 * xsize2 * y) + (4 * x + 1)] * (1.0f / 255.0f),
 					    data8[(4 * xsize2 * y) + (4 * x + 2)] * (1.0f / 255.0f),
@@ -206,7 +206,7 @@ void compute_error_metrics(
 				else if (img2->data_type == ASTCENC_TYPE_F16)
 				{
 					uint16_t* data16 = static_cast<uint16_t*>(img2->data[z]);
-					color2 = float4(
+					color2 = vfloat4(
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x    )])),
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x + 1)])),
 					    astc::clamp64Kf(sf16_to_float(data16[(4 * xsize2 * y) + (4 * x + 2)])),
@@ -216,50 +216,50 @@ void compute_error_metrics(
 				{
 					assert(img2->data_type == ASTCENC_TYPE_F32);
 					float* data16 = static_cast<float*>(img2->data[z]);
-					color2 = float4(
+					color2 = vfloat4(
 					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x    )]),
 					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 1)]),
 					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 2)]),
 					    astc::clamp64Kf(data16[(4 * xsize2 * y) + (4 * x + 3)]));
 				}
 
-				rgb_peak = astc::max(astc::max(color1.r, color1.g), astc::max(color1.b, rgb_peak));
+				rgb_peak = astc::max(color1.lane<0>(), color1.lane<1>(), color1.lane<2>(), rgb_peak);
 
-				float4 diffcolor = color1 - color2;
+				vfloat4 diffcolor = color1 - color2;
 				errorsum += diffcolor * diffcolor;
 
-				float4 alpha_scaled_diffcolor = float4(
-				    diffcolor.r * color1.a,
-				    diffcolor.g * color1.a,
-				    diffcolor.b * color1.a,
-				    diffcolor.a);
+				vfloat4 alpha_scaled_diffcolor = vfloat4(
+				    diffcolor.lane<0>() * color1.lane<3>(),
+				    diffcolor.lane<1>() * color1.lane<3>(),
+				    diffcolor.lane<2>() * color1.lane<3>(),
+				    diffcolor.lane<3>());
 
 				alpha_scaled_errorsum += alpha_scaled_diffcolor * \
 				                         alpha_scaled_diffcolor;
 
 				if (compute_hdr_metrics)
 				{
-					float4 log_input_color1 = float4(
-					    astc::xlog2(color1.r),
-					    astc::xlog2(color1.g),
-					    astc::xlog2(color1.b),
-					    astc::xlog2(color1.a));
+					vfloat4 log_input_color1 = vfloat4(
+					    astc::xlog2(color1.lane<0>()),
+					    astc::xlog2(color1.lane<1>()),
+					    astc::xlog2(color1.lane<2>()),
+					    astc::xlog2(color1.lane<3>()));
 
-					float4 log_input_color2 = float4(
-					    astc::xlog2(color2.r),
-					    astc::xlog2(color2.g),
-					    astc::xlog2(color2.b),
-					    astc::xlog2(color2.a));
+					vfloat4 log_input_color2 = vfloat4(
+					    astc::xlog2(color2.lane<0>()),
+					    astc::xlog2(color2.lane<1>()),
+					    astc::xlog2(color2.lane<2>()),
+					    astc::xlog2(color2.lane<3>()));
 
-					float4 log_diffcolor = log_input_color1 - log_input_color2;
+					vfloat4 log_diffcolor = log_input_color1 - log_input_color2;
 
 					log_errorsum += log_diffcolor * log_diffcolor;
 
-					float4 mpsnr_error = float4(
-					    mpsnr_sumdiff(color1.r, color2.r, fstop_lo, fstop_hi),
-					    mpsnr_sumdiff(color1.g, color2.g, fstop_lo, fstop_hi),
-					    mpsnr_sumdiff(color1.b, color2.b, fstop_lo, fstop_hi),
-					    mpsnr_sumdiff(color1.a, color2.a, fstop_lo, fstop_hi));
+					vfloat4 mpsnr_error = vfloat4(
+					    mpsnr_sumdiff(color1.lane<0>(), color2.lane<0>(), fstop_lo, fstop_hi),
+					    mpsnr_sumdiff(color1.lane<1>(), color2.lane<1>(), fstop_lo, fstop_hi),
+					    mpsnr_sumdiff(color1.lane<2>(), color2.lane<2>(), fstop_lo, fstop_hi),
+					    mpsnr_sumdiff(color1.lane<3>(), color2.lane<3>(), fstop_lo, fstop_hi));
 
 					mpsnr_errorsum += mpsnr_error;
 				}
@@ -276,35 +276,35 @@ void compute_error_metrics(
 
 	if (channelmask & 1)
 	{
-		num += errorsum.sum.r;
-		alpha_num += alpha_scaled_errorsum.sum.r;
-		log_num += log_errorsum.sum.r;
-		mpsnr_num += mpsnr_errorsum.sum.r;
+		num += errorsum.sum.lane<0>();
+		alpha_num += alpha_scaled_errorsum.sum.lane<0>();
+		log_num += log_errorsum.sum.lane<0>();
+		mpsnr_num += mpsnr_errorsum.sum.lane<0>();
 		samples += pixels;
 	}
 
 	if (channelmask & 2)
 	{
-		num += errorsum.sum.g;
-		alpha_num += alpha_scaled_errorsum.sum.g;
-		log_num += log_errorsum.sum.g;
-		mpsnr_num += mpsnr_errorsum.sum.g;
+		num += errorsum.sum.lane<1>();
+		alpha_num += alpha_scaled_errorsum.sum.lane<1>();
+		log_num += log_errorsum.sum.lane<1>();
+		mpsnr_num += mpsnr_errorsum.sum.lane<1>();
 		samples += pixels;
 	}
 
 	if (channelmask & 4)
 	{
-		num += errorsum.sum.b;
-		alpha_num += alpha_scaled_errorsum.sum.b;
-		log_num += log_errorsum.sum.b;
-		mpsnr_num += mpsnr_errorsum.sum.b;
+		num += errorsum.sum.lane<2>();
+		alpha_num += alpha_scaled_errorsum.sum.lane<2>();
+		log_num += log_errorsum.sum.lane<2>();
+		mpsnr_num += mpsnr_errorsum.sum.lane<2>();
 		samples += pixels;
 	}
 
 	if (channelmask & 8)
 	{
-		num += errorsum.sum.a;
-		alpha_num += alpha_scaled_errorsum.sum.a;
+		num += errorsum.sum.lane<3>();
+		alpha_num += alpha_scaled_errorsum.sum.lane<3>();
 		samples += pixels;
 	}
 
@@ -334,7 +334,7 @@ void compute_error_metrics(
 			alpha_psnr = 10.0f * log10f(denom / alpha_num);
 		printf("    Alpha-weighted PSNR:      %9.4f dB\n", (double)alpha_psnr);
 
-		float rgb_num = errorsum.sum.r + errorsum.sum.g + errorsum.sum.b;
+		float rgb_num = errorsum.sum.lane<0>() + errorsum.sum.lane<1>() + errorsum.sum.lane<2>();
 		if (rgb_num == 0.0f)
 			rgb_psnr = 999.0f;
 		else
