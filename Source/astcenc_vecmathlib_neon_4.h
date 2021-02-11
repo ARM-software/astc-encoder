@@ -145,6 +145,26 @@ struct vfloat4
 	}
 
 	/**
+	 * @brief Return a swizzled float 2.
+	 *
+	 * TODO: Implement float2 as a SIMD register, and use permutes.
+	 */
+	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
+	{
+		return float2(lane<l0>(), lane<l1>());
+	}
+
+	/**
+	 * @brief Return a swizzled float 3.
+	 *
+	 * TODO: Implement float3 as a SIMD register, and use permutes.
+	 */
+	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE float3 swz() const
+	{
+		return float3(lane<l0>(), lane<l1>(), lane<l2>());
+	}
+
+	/**
 	 * @brief The vector ...
 	 */
 	float32x4_t m;

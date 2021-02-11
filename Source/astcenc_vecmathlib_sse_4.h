@@ -154,7 +154,7 @@ struct vfloat4
 	/**
 	 * @brief Return a swizzled float 2.
 	 *
-	 * TODO: Implement float3 as a SIMD register, and use permutes.
+	 * TODO: Implement float2 as a SIMD register, and use permutes.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
 	{
