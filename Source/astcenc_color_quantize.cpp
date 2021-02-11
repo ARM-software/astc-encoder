@@ -44,20 +44,20 @@ static inline int cqt_lookup(
 }
 
 static void quantize_rgb(
-	float4 color0,	// LDR: 0=lowest, 255=highest
-	float4 color1,
+	vfloat4 color0,	// LDR: 0=lowest, 255=highest
+	vfloat4 color1,
 	int output[6],
 	int quant_level
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float r0 = astc::clamp255f(color0.r * scale);
-	float g0 = astc::clamp255f(color0.g * scale);
-	float b0 = astc::clamp255f(color0.b * scale);
+	float r0 = astc::clamp255f(color0.lane<0>() * scale);
+	float g0 = astc::clamp255f(color0.lane<1>() * scale);
+	float b0 = astc::clamp255f(color0.lane<2>() * scale);
 
-	float r1 = astc::clamp255f(color1.r * scale);
-	float g1 = astc::clamp255f(color1.g * scale);
-	float b1 = astc::clamp255f(color1.b * scale);
+	float r1 = astc::clamp255f(color1.lane<0>() * scale);
+	float g1 = astc::clamp255f(color1.lane<1>() * scale);
+	float b1 = astc::clamp255f(color1.lane<2>() * scale);
 
 	int ri0, gi0, bi0, ri1, gi1, bi1;
 	int ri0b, gi0b, bi0b, ri1b, gi1b, bi1b;
@@ -95,16 +95,16 @@ static void quantize_rgb(
 
 /* quantize an RGBA color. */
 static void quantize_rgba(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	color0.a *= (1.0f / 257.0f);
-	color1.a *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	float a0 = astc::clamp255f(color0.a);
-	float a1 = astc::clamp255f(color1.a);
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+
 	int ai0 = color_quant_tables[quant_level][astc::flt2int_rtn(a0)];
 	int ai1 = color_quant_tables[quant_level][astc::flt2int_rtn(a1)];
 
@@ -116,26 +116,20 @@ static void quantize_rgba(
 
 /* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
 static int try_quantize_rgb_blue_contract(
-	float4 color0,	// assumed to be the smaller color
-	float4 color1,	// assumed to be the larger color
+	vfloat4 color0,	// assumed to be the smaller color
+	vfloat4 color1,	// assumed to be the larger color
 	int output[6],
 	int quant_level
 ) {
-	color0.r *= (1.0f / 257.0f);
-	color0.g *= (1.0f / 257.0f);
-	color0.b *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	color1.r *= (1.0f / 257.0f);
-	color1.g *= (1.0f / 257.0f);
-	color1.b *= (1.0f / 257.0f);
+	float r0 = color0.lane<0>() * scale;
+	float g0 = color0.lane<1>() * scale;
+	float b0 = color0.lane<2>() * scale;
 
-	float r0 = color0.r;
-	float g0 = color0.g;
-	float b0 = color0.b;
-
-	float r1 = color1.r;
-	float g1 = color1.g;
-	float b1 = color1.b;
+	float r1 = color1.lane<0>() * scale;
+	float g1 = color1.lane<1>() * scale;
+	float b1 = color1.lane<2>() * scale;
 
 	// inverse blue-contraction. This can produce an overflow;
 	// just bail out immediately if this is the case.
@@ -186,16 +180,15 @@ static int try_quantize_rgb_blue_contract(
 
 /* quantize an RGBA color with blue-contraction */
 static int try_quantize_rgba_blue_contract(
-	float4 color0,
-	float4 color1,
+	vfloat4 color0,
+	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	color0.a *= (1.0f / 257.0f);
-	color1.a *= (1.0f / 257.0f);
+	float scale = 1.0f / 257.0f;
 
-	float a0 = astc::clamp255f(color0.a);
-	float a1 = astc::clamp255f(color1.a);
+	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	float a1 = astc::clamp255f(color1.lane<3>() * scale);
 
 	output[7] = color_quant_tables[quant_level][astc::flt2int_rtn(a0)];
 	output[6] = color_quant_tables[quant_level][astc::flt2int_rtn(a1)];
@@ -1839,8 +1832,11 @@ int pack_color_endpoints(
 	assert(quant_level >= 0 && quant_level < 21);
 
 	// we do not support negative colors.
-	float4 color0 = vfloat4_to_float4(max(color0v, 0.0f));
-	float4 color1 = vfloat4_to_float4(max(color1v, 0.0f));
+	color0v = max(color0v, 0.0f);
+	color1v = max(color1v, 0.0f);
+
+	float4 color0 = vfloat4_to_float4(color0v);
+	float4 color1 = vfloat4_to_float4(color1v);
 
 	int retval = 0;
 
@@ -1860,12 +1856,12 @@ int pack_color_endpoints(
 				break;
 			}
 		}
-		if (try_quantize_rgb_blue_contract(color0, color1, output, quant_level))
+		if (try_quantize_rgb_blue_contract(color0v, color1v, output, quant_level))
 		{
 			retval = FMT_RGB;
 			break;
 		}
-		quantize_rgb(color0, color1, output, quant_level);
+		quantize_rgb(color0v, color1v, output, quant_level);
 		retval = FMT_RGB;
 		break;
 
@@ -1883,12 +1879,12 @@ int pack_color_endpoints(
 				break;
 			}
 		}
-		if (try_quantize_rgba_blue_contract(color0, color1, output, quant_level))
+		if (try_quantize_rgba_blue_contract(color0v, color1v, output, quant_level))
 		{
 			retval = FMT_RGBA;
 			break;
 		}
-		quantize_rgba(color0, color1, output, quant_level);
+		quantize_rgba(color0v, color1v, output, quant_level);
 		retval = FMT_RGBA;
 		break;
 
