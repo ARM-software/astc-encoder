@@ -199,16 +199,12 @@ void find_best_partitionings(
 			// in each partition.
 			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
-			float4 inverse_color_scalefactors[4];
+			vfloat4 inverse_color_scalefactors[4];
 			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				// TODO: Vectorize this
-				inverse_color_scalefactors[j].r = 1.0f / astc::max(color_scalefactors[j].lane<0>(), 1e-7f);
-				inverse_color_scalefactors[j].g = 1.0f / astc::max(color_scalefactors[j].lane<1>(), 1e-7f);
-				inverse_color_scalefactors[j].b = 1.0f / astc::max(color_scalefactors[j].lane<2>(), 1e-7f);
-				inverse_color_scalefactors[j].a = 1.0f / astc::max(color_scalefactors[j].lane<3>(), 1e-7f);
+				inverse_color_scalefactors[j] = 1.0f / max(color_scalefactors[j], 1e-7f);
 			}
 
 			vfloat4 averages[4];
@@ -247,9 +243,9 @@ void find_best_partitionings(
 					uncorr_lines[j].b = normalize(directions_rgba[j]);
 				}
 
-				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * inverse_color_scalefactors[j];
 				proc_uncorr_lines[j].bs = uncorr_lines[j].b * color_scalefactors[j];
-				proc_uncorr_lines[j].bis = uncorr_lines[j].b * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_uncorr_lines[j].bis = uncorr_lines[j].b * inverse_color_scalefactors[j];
 
 				samechroma_lines[j].a = vfloat4::zero();
 				if (dot_s(averages[j], averages[j]) == 0.0f)
@@ -261,9 +257,9 @@ void find_best_partitionings(
 					samechroma_lines[j].b = normalize(averages[j]);
 				}
 
-				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * inverse_color_scalefactors[j];
 				proc_samechroma_lines[j].bs = samechroma_lines[j].b * color_scalefactors[j];
-				proc_samechroma_lines[j].bis = samechroma_lines[j].b * float4_to_vfloat4(inverse_color_scalefactors[j]);
+				proc_samechroma_lines[j].bis = samechroma_lines[j].b * inverse_color_scalefactors[j];
 
 				separate_red_lines[j].a = averages[j].swz<1, 2, 3>();
 				float3 dirs_gba = directions_rgba[j].swz<1, 2, 3>();
@@ -309,28 +305,28 @@ void find_best_partitionings(
 					separate_alpha_lines[j].b = normalize(dirs_rgb);
 				}
 
-				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float3(inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b, inverse_color_scalefactors[j].a);
+				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * inverse_color_scalefactors[j].swz<1, 2, 3>();
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * color_scalefactors[j].swz<1, 2, 3>());
-				proc_separate_red_lines[j].bis = (separate_red_lines[j].b * float3(inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b, inverse_color_scalefactors[j].a));
+				proc_separate_red_lines[j].bis = (separate_red_lines[j].b * inverse_color_scalefactors[j].swz<1, 2, 3>());
 
 				proc_separate_green_lines[j].amod =
-					(separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].b, inverse_color_scalefactors[j].a);
+					(separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) * inverse_color_scalefactors[j].swz<0, 2, 3>();
 				proc_separate_green_lines[j].bs = (separate_green_lines[j].b * color_scalefactors[j].swz<0, 2, 3>());
-				proc_separate_green_lines[j].bis = (separate_green_lines[j].b * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].b, inverse_color_scalefactors[j].a));
+				proc_separate_green_lines[j].bis = (separate_green_lines[j].b * inverse_color_scalefactors[j].swz<0, 2, 3>());
 
-				proc_separate_blue_lines[j].amod = (separate_blue_lines[j].a - separate_blue_lines[j].b * dot(separate_blue_lines[j].a, separate_blue_lines[j].b)) * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].a);
+				proc_separate_blue_lines[j].amod = (separate_blue_lines[j].a - separate_blue_lines[j].b * dot(separate_blue_lines[j].a, separate_blue_lines[j].b)) * inverse_color_scalefactors[j].swz<0, 1, 3>();
 				proc_separate_blue_lines[j].bs = (separate_blue_lines[j].b * color_scalefactors[j].swz<0, 1, 3>());
-				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].a));
+				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b * inverse_color_scalefactors[j].swz<0, 1, 3>());
 
 				proc_separate_alpha_lines[j].amod =
-					(separate_alpha_lines[j].a - separate_alpha_lines[j].b * dot(separate_alpha_lines[j].a, separate_alpha_lines[j].b)) * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
+					(separate_alpha_lines[j].a - separate_alpha_lines[j].b * dot(separate_alpha_lines[j].a, separate_alpha_lines[j].b)) * inverse_color_scalefactors[j].swz<0, 1, 2>();
 				proc_separate_alpha_lines[j].bs = (separate_alpha_lines[j].b * color_scalefactors[j].swz<0, 1, 2>());
-				proc_separate_alpha_lines[j].bis = (separate_alpha_lines[j].b * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b));
+				proc_separate_alpha_lines[j].bis = (separate_alpha_lines[j].b * inverse_color_scalefactors[j].swz<0, 1, 2>());
 			}
 
 			float uncorr_error = 0.0f;
 			float samechroma_error = 0.0f;
-			float4 separate_error = float4(0.0f);
+			vfloat4 separate_error = vfloat4::zero();
 			compute_error_squared_rgba(ptab + partition,
 			                           blk,
 			                           ewb,
@@ -361,15 +357,15 @@ void find_best_partitionings(
 			{
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
-				float4 ics = inverse_color_scalefactors[j];
+				vfloat4 ics = inverse_color_scalefactors[j];
 				vfloat4 error_weights = error_weightings[j] * (tpp * weight_imprecision_estim_squared);
 
-				float4 uncorr_vector = vfloat4_to_float4(uncorr_lines[j].b * uncorr_linelengths[j]) * ics;
-				float4 samechroma_vector = vfloat4_to_float4(samechroma_lines[j].b * samechroma_linelengths[j]) * ics;
-				float3 separate_red_vector = separate_red_lines[j].b * float3(ics.g, ics.b, ics.a);
-				float3 separate_green_vector = separate_green_lines[j].b * float3(ics.r, ics.b, ics.a);
-				float3 separate_blue_vector = separate_blue_lines[j].b * float3(ics.r, ics.g, ics.a);
-				float3 separate_alpha_vector = separate_alpha_lines[j].b * float3(ics.r, ics.g, ics.b);
+				vfloat4 uncorr_vector = uncorr_lines[j].b * uncorr_linelengths[j] * ics;
+				vfloat4 samechroma_vector = samechroma_lines[j].b * samechroma_linelengths[j] * ics;
+				float3 separate_red_vector = separate_red_lines[j].b * ics.swz<1, 2, 3>();
+				float3 separate_green_vector = separate_green_lines[j].b * ics.swz<0, 2, 3>();
+				float3 separate_blue_vector = separate_blue_lines[j].b * ics.swz<0, 1, 3>();
+				float3 separate_alpha_vector = separate_alpha_lines[j].b * ics.swz<0, 1, 2>();
 
 				uncorr_vector = uncorr_vector * uncorr_vector;
 				samechroma_vector = samechroma_vector * samechroma_vector;
@@ -378,18 +374,15 @@ void find_best_partitionings(
 				separate_blue_vector = separate_blue_vector * separate_blue_vector;
 				separate_alpha_vector = separate_alpha_vector * separate_alpha_vector;
 
-				uncorr_error += dot_s(float4_to_vfloat4(uncorr_vector), error_weights);
-				samechroma_error += dot_s(float4_to_vfloat4(samechroma_vector), error_weights);
-				separate_error.r += dot(separate_red_vector, error_weights.swz<1, 2, 3>());
-				separate_error.g += dot(separate_green_vector, error_weights.swz<0, 2, 3>());
-				separate_error.b += dot(separate_blue_vector, error_weights.swz<0, 1, 3>());
-				separate_error.a += dot(separate_alpha_vector, error_weights.swz<0, 1, 2>());
+				uncorr_error += dot_s(uncorr_vector, error_weights);
+				samechroma_error += dot_s(samechroma_vector, error_weights);
 
-				// TODO: Vectorize this
-				separate_error.r += rgba_range[j].lane<0>() * rgba_range[j].lane<0>() * error_weights.lane<0>();
-				separate_error.g += rgba_range[j].lane<1>() * rgba_range[j].lane<1>() * error_weights.lane<1>();
-				separate_error.b += rgba_range[j].lane<2>() * rgba_range[j].lane<2>() * error_weights.lane<2>();
-				separate_error.a += rgba_range[j].lane<3>() * rgba_range[j].lane<3>() * error_weights.lane<3>();
+				separate_error.set_lane<0>(separate_error.lane<0>() + dot(separate_red_vector, error_weights.swz<1, 2, 3>()));
+				separate_error.set_lane<1>(separate_error.lane<1>() + dot(separate_green_vector, error_weights.swz<0, 2, 3>()));
+				separate_error.set_lane<2>(separate_error.lane<2>() + dot(separate_blue_vector, error_weights.swz<0, 1, 3>()));
+				separate_error.set_lane<3>(separate_error.lane<3>() + dot(separate_alpha_vector, error_weights.swz<0, 1, 2>()));
+
+				separate_error = separate_error + rgba_range[j] * rgba_range[j] * error_weights;
 			}
 
 			if (uncorr_error < uncorr_best_error)
@@ -412,30 +405,30 @@ void find_best_partitionings(
 				samechroma_best_partitions[1] = partition;
 			}
 
-			if (separate_error.r < separate_best_error)
+			if (separate_error.lane<0>() < separate_best_error)
 			{
-				separate_best_error = separate_error.r;
+				separate_best_error = separate_error.lane<0>();
 				separate_best_partition = partition;
 				separate_best_component = 0;
 			}
 
-			if (separate_error.g < separate_best_error)
+			if (separate_error.lane<1>() < separate_best_error)
 			{
-				separate_best_error = separate_error.g;
+				separate_best_error = separate_error.lane<1>();
 				separate_best_partition = partition;
 				separate_best_component = 1;
 			}
 
-			if (separate_error.b < separate_best_error)
+			if (separate_error.lane<2>() < separate_best_error)
 			{
-				separate_best_error = separate_error.b;
+				separate_best_error = separate_error.lane<2>();
 				separate_best_partition = partition;
 				separate_best_component = 2;
 			}
 
-			if (separate_error.a < separate_best_error)
+			if (separate_error.lane<3>() < separate_best_error)
 			{
-				separate_best_error = separate_error.a;
+				separate_best_error = separate_error.lane<3>();
 				separate_best_partition = partition;
 				separate_best_component = 3;
 			}
@@ -457,17 +450,13 @@ void find_best_partitionings(
 			// in each partition.
 			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
-			float4 inverse_color_scalefactors[4];
+			vfloat4 inverse_color_scalefactors[4];
 
 			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				// TODO: Vectorize this
-				inverse_color_scalefactors[j].r = 1.0f / astc::max(color_scalefactors[j].lane<0>(), 1e-7f);
-				inverse_color_scalefactors[j].g = 1.0f / astc::max(color_scalefactors[j].lane<1>(), 1e-7f);
-				inverse_color_scalefactors[j].b = 1.0f / astc::max(color_scalefactors[j].lane<2>(), 1e-7f);
-				inverse_color_scalefactors[j].a = 1.0f / astc::max(color_scalefactors[j].lane<3>(), 1e-7f);
+				inverse_color_scalefactors[j] = 1.0f / max(color_scalefactors[j], 1e-7f);
 			}
 
 			float3 averages[4];
@@ -513,13 +502,13 @@ void find_best_partitionings(
 					samechroma_lines[j].b = normalize(averages[j]);
 				}
 
-				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
+				proc_uncorr_lines[j].amod = (uncorr_lines[j].a - uncorr_lines[j].b * dot(uncorr_lines[j].a, uncorr_lines[j].b)) * inverse_color_scalefactors[j].swz<0, 1, 2>();
 				proc_uncorr_lines[j].bs = (uncorr_lines[j].b * color_scalefactors[j].swz<0, 1, 2>());
-				proc_uncorr_lines[j].bis = (uncorr_lines[j].b * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b));
+				proc_uncorr_lines[j].bis = (uncorr_lines[j].b * inverse_color_scalefactors[j].swz<0, 1, 2>());
 
-				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
+				proc_samechroma_lines[j].amod = (samechroma_lines[j].a - samechroma_lines[j].b * dot(samechroma_lines[j].a, samechroma_lines[j].b)) * inverse_color_scalefactors[j].swz<0, 1, 2>();
 				proc_samechroma_lines[j].bs = (samechroma_lines[j].b * color_scalefactors[j].swz<0, 1, 2>());
-				proc_samechroma_lines[j].bis = (samechroma_lines[j].b * float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b));
+				proc_samechroma_lines[j].bis = (samechroma_lines[j].b * inverse_color_scalefactors[j].swz<0, 1, 2>());
 
 				separate_red_lines[j].a = float2(averages[j].g, averages[j].b);
 				float2 dirs_gb = float2(directions_rgb[j].g, directions_rgb[j].b);
@@ -554,17 +543,17 @@ void find_best_partitionings(
 					separate_blue_lines[j].b = normalize(dirs_rg);
 				}
 
-				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * float2(inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
+				proc_separate_red_lines[j].amod = (separate_red_lines[j].a - separate_red_lines[j].b * dot(separate_red_lines[j].a, separate_red_lines[j].b)) * inverse_color_scalefactors[j].swz<1, 2>();
 				proc_separate_red_lines[j].bs = (separate_red_lines[j].b * color_scalefactors[j].swz<1, 2>());
-				proc_separate_red_lines[j].bis = (separate_red_lines[j].b * float2(inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b));
+				proc_separate_red_lines[j].bis = (separate_red_lines[j].b *  inverse_color_scalefactors[j].swz<1, 2>());
 
-				proc_separate_green_lines[j].amod = (separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) * float2(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].b);
+				proc_separate_green_lines[j].amod = (separate_green_lines[j].a - separate_green_lines[j].b * dot(separate_green_lines[j].a, separate_green_lines[j].b)) *  inverse_color_scalefactors[j].swz<0, 2>();
 				proc_separate_green_lines[j].bs = (separate_green_lines[j].b * color_scalefactors[j].swz<0, 2>());
-				proc_separate_green_lines[j].bis = (separate_green_lines[j].b * float2(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].b));
+				proc_separate_green_lines[j].bis = (separate_green_lines[j].b *  inverse_color_scalefactors[j].swz<0, 2>());
 
-				proc_separate_blue_lines[j].amod = (separate_blue_lines[j].a - separate_blue_lines[j].b * dot(separate_blue_lines[j].a, separate_blue_lines[j].b)) * float2(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g);
+				proc_separate_blue_lines[j].amod = (separate_blue_lines[j].a - separate_blue_lines[j].b * dot(separate_blue_lines[j].a, separate_blue_lines[j].b)) *  inverse_color_scalefactors[j].swz<0, 1>();
 				proc_separate_blue_lines[j].bs = (separate_blue_lines[j].b * color_scalefactors[j].swz<0, 1>());
-				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b * float2(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g));
+				proc_separate_blue_lines[j].bis = (separate_blue_lines[j].b *  inverse_color_scalefactors[j].swz<0, 1>());
 			}
 
 			float uncorr_error = 0.0f;
@@ -600,7 +589,7 @@ void find_best_partitionings(
 			{
 				float tpp = (float)(ptab[partition].texels_per_partition[j]);
 
-				float3 ics = float3(inverse_color_scalefactors[j].r, inverse_color_scalefactors[j].g, inverse_color_scalefactors[j].b);
+				float3 ics = inverse_color_scalefactors[j].swz<0, 1, 2>();
 				float3 error_weights = error_weightings[j].swz<0, 1, 2>() * (tpp * weight_imprecision_estim_squared);
 
 				float3 uncorr_vector = (uncorr_lines[j].b * uncorr_linelengths[j]) * ics;

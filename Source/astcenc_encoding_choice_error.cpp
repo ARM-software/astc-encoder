@@ -152,7 +152,7 @@ void compute_encoding_choice_errors(
 	float3 directions_rgb[4];
 	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
-	float4 inverse_color_scalefactors[4];
+	vfloat4 inverse_color_scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
 	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
@@ -169,14 +169,9 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		// TODO: Vectorize this ...
-		inverse_color_scalefactors[i].r = 1.0f / astc::max(color_scalefactors[i].lane<0>(), 1e-7f);
-		inverse_color_scalefactors[i].g = 1.0f / astc::max(color_scalefactors[i].lane<1>(), 1e-7f);
-		inverse_color_scalefactors[i].b = 1.0f / astc::max(color_scalefactors[i].lane<2>(), 1e-7f);
-		inverse_color_scalefactors[i].a = 1.0f / astc::max(color_scalefactors[i].lane<3>(), 1e-7f);
-
+		inverse_color_scalefactors[i] = 1.0f / max(color_scalefactors[i], 1e-7f);
 		float3 csf = color_scalefactors[i].swz<0, 1, 2>();
-		float3 icsf = float3(inverse_color_scalefactors[i].r, inverse_color_scalefactors[i].g, inverse_color_scalefactors[i].b);
+		float3 icsf = inverse_color_scalefactors[i].swz<0, 1, 2>();
 
 		uncorr_rgb_lines[i].a = averages[i];
 		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)

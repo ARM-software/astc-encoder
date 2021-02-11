@@ -1132,7 +1132,7 @@ void compute_quantized_weights_for_decimation_table(
 }
 
 static inline vfloat4 compute_rgbovec(
-	float4 rgba_weight_sum,
+	vfloat4 rgba_weight_sum,
 	float3 weight_weight_sum,
 	float red_sum,
 	float green_sum,
@@ -1144,15 +1144,15 @@ static inline vfloat4 compute_rgbovec(
 	// has a regular structure, we can simplify the inverse calculation. This
 	// gives us ~24 multiplications, down from 96 for a generic inverse
 
-	// mat[0] = float4(rgba_ws.x,      0.0f,      0.0f, wght_ws.x);
-	// mat[1] = float4(     0.0f, rgba_ws.y,      0.0f, wght_ws.y);
-	// mat[2] = float4(     0.0f,      0.0f, rgba_ws.z, wght_ws.z);
-	// mat[3] = float4(wght_ws.x, wght_ws.y, wght_ws.z,      psum);
+	// mat[0] = vfloat4(rgba_ws.x,      0.0f,      0.0f, wght_ws.x);
+	// mat[1] = vfloat4(     0.0f, rgba_ws.y,      0.0f, wght_ws.y);
+	// mat[2] = vfloat4(     0.0f,      0.0f, rgba_ws.z, wght_ws.z);
+	// mat[3] = vfloat4(wght_ws.x, wght_ws.y, wght_ws.z,      psum);
 	// mat = invert(mat);
 
-	float X = rgba_weight_sum.r;
-	float Y = rgba_weight_sum.g;
-	float Z = rgba_weight_sum.b;
+	float X = rgba_weight_sum.lane<0>();
+	float Y = rgba_weight_sum.lane<1>();
+	float Z = rgba_weight_sum.lane<2>();
 	float P = weight_weight_sum.r;
 	float Q = weight_weight_sum.g;
 	float R = weight_weight_sum.b;
@@ -1231,8 +1231,8 @@ void recompute_ideal_colors_2planes(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 rgba_sum        = float4(1e-17f);
-		float4 rgba_weight_sum = float4(1e-17f);
+		vfloat4 rgba_sum(1e-17f);
+		vfloat4 rgba_weight_sum(1e-17f);
 
 		int texelcount = pi->texels_per_partition[i];
 		const uint8_t *texel_indexes = pi->texels_of_partition[i];
@@ -1240,17 +1240,14 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 error_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
 			rgba_weight_sum = rgba_weight_sum + error_weight;
 		}
 
-		float3 scale_direction = normalize(float3(
-		        rgba_sum.r * (1.0f / rgba_weight_sum.r),
-		        rgba_sum.g * (1.0f / rgba_weight_sum.g),
-		        rgba_sum.b * (1.0f / rgba_weight_sum.b)));
+		float3 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
 
 		float scale_max = 0.0f;
 		float scale_min = 1e10f;
@@ -1260,18 +1257,18 @@ void recompute_ideal_colors_2planes(
 		float wmin2 = 1.0f;
 		float wmax2 = 0.0f;
 
-		float4 left_sum    = float4(0.0f);
-		float4 middle_sum  = float4(0.0f);
-		float4 right_sum   = float4(0.0f);
+		vfloat4 left_sum    = vfloat4::zero();
+		vfloat4 middle_sum  = vfloat4::zero();
+		vfloat4 right_sum   = vfloat4::zero();
 
-		float4 left2_sum   = float4(0.0f);
-		float4 middle2_sum = float4(0.0f);
-		float4 right2_sum  = float4(0.0f);
+		vfloat4 left2_sum   = vfloat4::zero();
+		vfloat4 middle2_sum = vfloat4::zero();
+		vfloat4 right2_sum  = vfloat4::zero();
 
 		float3 lmrs_sum = float3(0.0f);
 
-		float4 color_vec_x = float4(0.0f);
-		float4 color_vec_y = float4(0.0f);
+		vfloat4 color_vec_x = vfloat4::zero();
+		vfloat4 color_vec_y = vfloat4::zero();
 
 		float2 scale_vec = float2(0.0f);
 
@@ -1283,14 +1280,14 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 color_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			float3 color_weight3 = float3(color_weight.r, color_weight.g, color_weight.b);
-			float3 rgb = float3(rgba.r, rgba.g, rgba.b);
+			float3 color_weight3 = color_weight.swz<0, 1, 2>();
+			float3 rgb = rgba.swz<0, 1, 2>();
 
 			// FIXME: move this calculation out to the color block.
-			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
+			float ls_weight = color_weight.lane<0>() + color_weight.lane<1>() + color_weight.lane<2>();
 
 			const uint8_t *texel_weights = it->texel_weights_t4[tix];
 			const float *texel_weights_float = it->texel_weights_float_t4[tix];
@@ -1307,9 +1304,9 @@ void recompute_ideal_colors_2planes(
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
-			float4 left   = color_weight * (om_idx0 * om_idx0);
-			float4 middle = color_weight * (om_idx0 * idx0);
-			float4 right  = color_weight * (idx0 * idx0);
+			vfloat4 left   = color_weight * (om_idx0 * om_idx0);
+			vfloat4 middle = color_weight * (om_idx0 * idx0);
+			vfloat4 right  = color_weight * (idx0 * idx0);
 
 			float3 lmrs = float3(om_idx0 * om_idx0,
 			                     om_idx0 * idx0,
@@ -1335,24 +1332,24 @@ void recompute_ideal_colors_2planes(
 				wmin2 = astc::min(idx1, wmin2);
 				wmax2 = astc::max(idx1, wmax2);
 
-				float4 left2   = color_weight * (om_idx1 * om_idx1);
-				float4 middle2 = color_weight * (om_idx1 * idx1);
-				float4 right2  = color_weight * (idx1 * idx1);
+				vfloat4 left2   = color_weight * (om_idx1 * om_idx1);
+				vfloat4 middle2 = color_weight * (om_idx1 * idx1);
+				vfloat4 right2  = color_weight * (idx1 * idx1);
 
 				left2_sum   = left2_sum   + left2;
 				middle2_sum = middle2_sum + middle2;
 				right2_sum  = right2_sum  + right2;
 			}
 
-			float4 color_idx = float4((plane2_color_component == 0) ? idx1 : idx0,
-			                          (plane2_color_component == 1) ? idx1 : idx0,
-			                          (plane2_color_component == 2) ? idx1 : idx0,
-			                          (plane2_color_component == 3) ? idx1 : idx0);
+			vfloat4 color_idx((plane2_color_component == 0) ? idx1 : idx0,
+			                  (plane2_color_component == 1) ? idx1 : idx0,
+			                  (plane2_color_component == 2) ? idx1 : idx0,
+			                  (plane2_color_component == 3) ? idx1 : idx0);
 
-			float3 color_idx3 = float3(color_idx.r, color_idx.g, color_idx.b);
+			float3 color_idx3 = color_idx.swz<0, 1, 2>();
 
-			float4 cwprod = color_weight * rgba;
-			float4 cwiprod = cwprod * color_idx;
+			vfloat4 cwprod = color_weight * rgba;
+			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y = color_vec_y + cwiprod;
 			color_vec_x = color_vec_x + (cwprod - cwiprod);
@@ -1366,10 +1363,10 @@ void recompute_ideal_colors_2planes(
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
 		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.r + color_vec_y.r;
-		float green_sum = color_vec_x.g + color_vec_y.g;
-		float blue_sum  = color_vec_x.b + color_vec_y.b;
-		float qsum = color_vec_y.r + color_vec_y.g + color_vec_y.b;
+		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
+		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
+		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
+		float qsum = color_vec_y.lane<0>() + color_vec_y.lane<1>() + color_vec_y.lane<2>();
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1407,11 +1404,7 @@ void recompute_ideal_colors_2planes(
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
-			vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y)
-				           * float4(1.0f / rgba_weight_sum.r,
-				                    1.0f / rgba_weight_sum.g,
-				                    1.0f / rgba_weight_sum.b,
-				                    1.0f / rgba_weight_sum.a));
+			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 			if (plane2_color_component != 0 && avg.lane<0>() == avg.lane<0>())
 			{
@@ -1448,51 +1441,48 @@ void recompute_ideal_colors_2planes(
 			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 			#endif
 
-			float4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
-			float4 color_rdet1 = float4(1.0f / color_det1.r,
-			                            1.0f / color_det1.g,
-			                            1.0f / color_det1.b,
-			                            1.0f / color_det1.a );
+			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
+			vfloat4 color_rdet1 = 1.0f / color_det1;
 
 			float ls_det1  = (lmrs_sum.r * lmrs_sum.b) - (lmrs_sum.g * lmrs_sum.g);
 			float ls_rdet1 = 1.0f / ls_det1;
 
-			float4 color_mss1 = (left_sum * left_sum)
-			                  + (2.0f * middle_sum * middle_sum)
-			                  + (right_sum * right_sum);
+			vfloat4 color_mss1 = (left_sum * left_sum)
+			                   + (2.0f * middle_sum * middle_sum)
+			                   + (right_sum * right_sum);
 
 			float ls_mss1 = (lmrs_sum.r * lmrs_sum.r)
 			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
 			              + (lmrs_sum.b * lmrs_sum.b);
 
-			vfloat4 ep0 = float4_to_vfloat4((right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1);
-			vfloat4 ep1 = float4_to_vfloat4((left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1);
+			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
+			vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
 			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
 
-			if (plane2_color_component != 0 && fabsf(color_det1.r) > (color_mss1.r * 1e-4f) &&
+			if (plane2_color_component != 0 && fabsf(color_det1.lane<0>()) > (color_mss1.lane<0>() * 1e-4f) &&
 			    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 			{
 				ep->endpt0[i].set_lane<0>(ep0.lane<0>());
 				ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 			}
 
-			if (plane2_color_component != 1 && fabsf(color_det1.g) > (color_mss1.g * 1e-4f) &&
+			if (plane2_color_component != 1 && fabsf(color_det1.lane<1>()) > (color_mss1.lane<1>() * 1e-4f) &&
 			    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 			{
 				ep->endpt0[i].set_lane<1>(ep0.lane<1>());
 				ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 			}
 
-			if (plane2_color_component != 2 && fabsf(color_det1.b) > (color_mss1.b * 1e-4f) &&
+			if (plane2_color_component != 2 && fabsf(color_det1.lane<2>()) > (color_mss1.lane<2>() * 1e-4f) &&
 			    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 			{
 				ep->endpt0[i].set_lane<2>(ep0.lane<2>());
 				ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 			}
 
-			if (plane2_color_component != 3 && fabsf(color_det1.a) > (color_mss1.a * 1e-4f) &&
+			if (plane2_color_component != 3 && fabsf(color_det1.lane<3>()) > (color_mss1.lane<3>() * 1e-4f) &&
 			    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 			{
 				ep->endpt0[i].set_lane<3>(ep0.lane<3>());
@@ -1517,11 +1507,7 @@ void recompute_ideal_colors_2planes(
 			{
 				// if all weights in the partition were equal, then just take average
 				// of all colors in the partition and use that as both endpoint colors.
-				vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y)
-				           * float4(1.0f / rgba_weight_sum.r,
-				                    1.0f / rgba_weight_sum.g,
-				                    1.0f / rgba_weight_sum.b,
-				                    1.0f / rgba_weight_sum.a));
+				vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 				if (plane2_color_component == 0 && avg.lane<0>() == avg.lane<0>())
 				{
@@ -1555,41 +1541,38 @@ void recompute_ideal_colors_2planes(
 
 				// otherwise, complete the analytic calculation of ideal-endpoint-values
 				// for the given set of texel weights and pixel colors.
-				float4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
-				float4 color_rdet2 = float4(1.0f / color_det2.r,
-				                            1.0f / color_det2.g,
-				                            1.0f / color_det2.b,
-				                            1.0f / color_det2.a);
+				vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
+				vfloat4 color_rdet2 = 1.0f / color_det2;
 
-				float4 color_mss2 = (left2_sum * left2_sum)
-				                  + (2.0f * middle2_sum * middle2_sum)
-				                  + (right2_sum * right2_sum);
+				vfloat4 color_mss2 = (left2_sum * left2_sum)
+				                   + (2.0f * middle2_sum * middle2_sum)
+				                   + (right2_sum * right2_sum);
 
-				vfloat4 ep0 = float4_to_vfloat4((right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2);
-				vfloat4 ep1 = float4_to_vfloat4((left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2);
+				vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
+				vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
-				if (plane2_color_component == 0 && fabsf(color_det2.r) > (color_mss2.r * 1e-4f) &&
+				if (plane2_color_component == 0 && fabsf(color_det2.lane<0>()) > (color_mss2.lane<0>() * 1e-4f) &&
 				    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 				{
 					ep->endpt0[i].set_lane<0>(ep0.lane<0>());
 					ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 				}
 
-				if (plane2_color_component == 1 && fabsf(color_det2.g) > (color_mss2.g * 1e-4f) &&
+				if (plane2_color_component == 1 && fabsf(color_det2.lane<1>()) > (color_mss2.lane<1>() * 1e-4f) &&
 				    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 				{
 					ep->endpt0[i].set_lane<1>(ep0.lane<1>());
 					ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 				}
 
-				if (plane2_color_component == 2 && fabsf(color_det2.b) > (color_mss2.b * 1e-4f) &&
+				if (plane2_color_component == 2 && fabsf(color_det2.lane<2>()) > (color_mss2.lane<2>() * 1e-4f) &&
 				    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 				{
 					ep->endpt0[i].set_lane<2>(ep0.lane<2>());
 					ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 				}
 
-				if (plane2_color_component == 3 && fabsf(color_det2.a) > (color_mss2.a * 1e-4f) &&
+				if (plane2_color_component == 3 && fabsf(color_det2.lane<3>()) > (color_mss2.lane<3>() * 1e-4f) &&
 				    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 				{
 					ep->endpt0[i].set_lane<3>(ep0.lane<3>());
@@ -1606,16 +1589,16 @@ void recompute_ideal_colors_2planes(
 		// a somewhat-sensible value anyway
 		if (rgbo_fail)
 		{
-			float4 v0 = vfloat4_to_float4(ep->endpt0[i]);
-			float4 v1 = vfloat4_to_float4(ep->endpt1[i]);
-			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
+			vfloat4 v0 = ep->endpt0[i];
+			vfloat4 v1 = ep->endpt1[i];
+			float avgdif = ((v1.lane<0>() - v0.lane<0>()) + (v1.lane<1>() - v0.lane<1>()) + (v1.lane<2>() - v0.lane<2>())) * (1.0f / 3.0f);
 
 			avgdif = astc::max(avgdif, 0.0f);
 
-			float4 avg = (v0 + v1) * 0.5f;
-			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
+			vfloat4 avg = (v0 + v1) * 0.5f;
+			vfloat4 ep0 = avg - vfloat4(avgdif) * 0.5f;
 
-			rgbo_vectors[i] = vfloat4(ep0.r, ep0.g, ep0.b, avgdif);
+			rgbo_vectors[i] = vfloat4(ep0.lane<0>(), ep0.lane<1>(), ep0.lane<2>(), avgdif);
 		}
 	}
 }
@@ -1648,8 +1631,8 @@ void recompute_ideal_colors_1plane(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float4 rgba_sum        = float4(1e-17f);
-		float4 rgba_weight_sum = float4(1e-17f);
+		vfloat4 rgba_sum(1e-17f);
+		vfloat4 rgba_weight_sum(1e-17f);
 
 		int texelcount = pi->texels_per_partition[i];
 		const uint8_t *texel_indexes = pi->texels_of_partition[i];
@@ -1659,17 +1642,14 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 error_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
 			rgba_weight_sum = rgba_weight_sum + error_weight;
 		}
 
-		float3 scale_direction = normalize(float3(
-		        rgba_sum.r * (1.0f / rgba_weight_sum.r),
-		        rgba_sum.g * (1.0f / rgba_weight_sum.g),
-		        rgba_sum.b * (1.0f / rgba_weight_sum.b)));
+		float3 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
 
 		float scale_max = 0.0f;
 		float scale_min = 1e10f;
@@ -1677,14 +1657,14 @@ void recompute_ideal_colors_1plane(
 		float wmin1 = 1.0f;
 		float wmax1 = 0.0f;
 
-		float4 left_sum    = float4(0.0f);
-		float4 middle_sum  = float4(0.0f);
-		float4 right_sum   = float4(0.0f);
+		vfloat4 left_sum    = vfloat4::zero();
+		vfloat4 middle_sum  = vfloat4::zero();
+		vfloat4 right_sum   = vfloat4::zero();
 
 		float3 lmrs_sum = float3(0.0f);
 
-		float4 color_vec_x = float4(0.0f);
-		float4 color_vec_y = float4(0.0f);
+		vfloat4 color_vec_x = vfloat4::zero();
+		vfloat4 color_vec_y = vfloat4::zero();
 
 		float2 scale_vec = float2(0.0f);
 
@@ -1696,14 +1676,14 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			float4 rgba = float4(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
-			float4 color_weight = float4(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			float3 color_weight3 = float3(color_weight.r, color_weight.g, color_weight.b);
-			float3 rgb = float3(rgba.r, rgba.g, rgba.b);
+			float3 color_weight3 = color_weight.swz<0, 1, 2>();
+			float3 rgb = rgba.swz<0, 1, 2>();
 
 			// FIXME: move this calculation out to the color block.
-			float ls_weight = (color_weight.r + color_weight.g + color_weight.b);
+			float ls_weight = (color_weight.lane<0>() + color_weight.lane<1>() + color_weight.lane<2>());
 
 			const uint8_t *texel_weights = it->texel_weights_t4[tix];
 			const float *texel_weights_float = it->texel_weights_float_t4[tix];
@@ -1720,9 +1700,9 @@ void recompute_ideal_colors_1plane(
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
-			float4 left   = color_weight * (om_idx0 * om_idx0);
-			float4 middle = color_weight * (om_idx0 * idx0);
-			float4 right  = color_weight * (idx0 * idx0);
+			vfloat4 left   = color_weight * (om_idx0 * om_idx0);
+			vfloat4 middle = color_weight * (om_idx0 * idx0);
+			vfloat4 right  = color_weight * (idx0 * idx0);
 
 			float3 lmrs = float3(om_idx0 * om_idx0,
 			                     om_idx0 * idx0,
@@ -1734,11 +1714,11 @@ void recompute_ideal_colors_1plane(
 
 			lmrs_sum = lmrs_sum + lmrs;
 
-			float4 color_idx = float4(idx0);
-			float3 color_idx3 = float3(idx0);
+			vfloat4 color_idx(idx0);
+			float3 color_idx3(idx0);
 
-			float4 cwprod = color_weight * rgba;
-			float4 cwiprod = cwprod * color_idx;
+			vfloat4 cwprod = color_weight * rgba;
+			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y = color_vec_y + cwiprod;
 			color_vec_x = color_vec_x + (cwprod - cwiprod);
@@ -1752,10 +1732,10 @@ void recompute_ideal_colors_1plane(
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
 		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.r + color_vec_y.r;
-		float green_sum = color_vec_x.g + color_vec_y.g;
-		float blue_sum  = color_vec_x.b + color_vec_y.b;
-		float qsum = color_vec_y.r + color_vec_y.g + color_vec_y.b;
+		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
+		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
+		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
+		float qsum = color_vec_y.lane<0>() + color_vec_y.lane<1>() + color_vec_y.lane<2>();
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1793,12 +1773,7 @@ void recompute_ideal_colors_1plane(
 		{
 			// if all weights in the partition were equal, then just take average
 			// of all colors in the partition and use that as both endpoint colors.
-			vfloat4 avg = float4_to_vfloat4((color_vec_x + color_vec_y) *
-			             float4(1.0f / rgba_weight_sum.r,
-			                    1.0f / rgba_weight_sum.g,
-			                    1.0f / rgba_weight_sum.b,
-			                    1.0f / rgba_weight_sum.a));
-
+			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 			if (avg.lane<0>() == avg.lane<0>())
 			{
@@ -1835,51 +1810,48 @@ void recompute_ideal_colors_1plane(
 			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 			#endif
 
-			float4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
-			float4 color_rdet1 = float4(1.0f / color_det1.r,
-			                            1.0f / color_det1.g,
-			                            1.0f / color_det1.b,
-			                            1.0f / color_det1.a );
+			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
+			vfloat4 color_rdet1 = 1.0f / color_det1;
 
 			float ls_det1  = (lmrs_sum.r * lmrs_sum.b) - (lmrs_sum.g * lmrs_sum.g);
 			float ls_rdet1 = 1.0f / ls_det1;
 
-			float4 color_mss1 = (left_sum * left_sum)
-			                  + (2.0f * middle_sum * middle_sum)
-			                  + (right_sum * right_sum);
+			vfloat4 color_mss1 = (left_sum * left_sum)
+			                   + (2.0f * middle_sum * middle_sum)
+			                   + (right_sum * right_sum);
 
 			float ls_mss1 = (lmrs_sum.r * lmrs_sum.r)
 			              + (2.0f * lmrs_sum.g * lmrs_sum.g)
 			              + (lmrs_sum.b * lmrs_sum.b);
 
-			vfloat4 ep0 = float4_to_vfloat4((right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1);
-			vfloat4 ep1 = float4_to_vfloat4((left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1);
+			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
+			vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
 			float scale_ep0 = (lmrs_sum.b * scale_vec.r - lmrs_sum.g * scale_vec.g) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.r * scale_vec.g - lmrs_sum.g * scale_vec.r) * ls_rdet1;
 
-			if (fabsf(color_det1.r) > (color_mss1.r * 1e-4f) &&
+			if (fabsf(color_det1.lane<0>()) > (color_mss1.lane<0>() * 1e-4f) &&
 			    ep0.lane<0>() == ep0.lane<0>() && ep1.lane<0>() == ep1.lane<0>())
 			{
 				ep->endpt0[i].set_lane<0>(ep0.lane<0>());
 				ep->endpt1[i].set_lane<0>(ep1.lane<0>());
 			}
 
-			if (fabsf(color_det1.g) > (color_mss1.g * 1e-4f) &&
+			if (fabsf(color_det1.lane<1>()) > (color_mss1.lane<1>() * 1e-4f) &&
 			    ep0.lane<1>() == ep0.lane<1>() && ep1.lane<1>() == ep1.lane<1>())
 			{
 				ep->endpt0[i].set_lane<1>(ep0.lane<1>());
 				ep->endpt1[i].set_lane<1>(ep1.lane<1>());
 			}
 
-			if (fabsf(color_det1.b) > (color_mss1.b * 1e-4f) &&
+			if (fabsf(color_det1.lane<2>()) > (color_mss1.lane<2>() * 1e-4f) &&
 			    ep0.lane<2>() == ep0.lane<2>() && ep1.lane<2>() == ep1.lane<2>())
 			{
 				ep->endpt0[i].set_lane<2>(ep0.lane<2>());
 				ep->endpt1[i].set_lane<2>(ep1.lane<2>());
 			}
 
-			if (fabsf(color_det1.a) > (color_mss1.a * 1e-4f) &&
+			if (fabsf(color_det1.lane<3>()) > (color_mss1.lane<3>() * 1e-4f) &&
 			    ep0.lane<3>() == ep0.lane<3>() && ep1.lane<3>() == ep1.lane<3>())
 			{
 				ep->endpt0[i].set_lane<3>(ep0.lane<3>());
@@ -1902,15 +1874,15 @@ void recompute_ideal_colors_1plane(
 		// a somewhat-sensible value anyway
 		if (rgbo_fail)
 		{
-			float4 v0 = vfloat4_to_float4(ep->endpt0[i]);
-			float4 v1 = vfloat4_to_float4(ep->endpt1[i]);
-			float avgdif = ((v1.r - v0.r) + (v1.g - v0.g) + (v1.b - v0.b)) * (1.0f / 3.0f);
+			vfloat4 v0 = ep->endpt0[i];
+			vfloat4 v1 = ep->endpt1[i];
+			float avgdif = ((v1.lane<0>() - v0.lane<0>()) + (v1.lane<1>() - v0.lane<1>()) + (v1.lane<2>() - v0.lane<2>())) * (1.0f / 3.0f);
 			avgdif = astc::max(avgdif, 0.0f);
 
-			float4 avg = (v0 + v1) * 0.5f;
-			float4 ep0 = avg - float4(avgdif, avgdif, avgdif, avgdif) * 0.5f;
+			vfloat4 avg = (v0 + v1) * 0.5f;
+			vfloat4 ep0 = avg - vfloat4(avgdif) * 0.5f;
 
-			rgbo_vectors[i] = vfloat4(ep0.r, ep0.g, ep0.b, avgdif);
+			rgbo_vectors[i] = vfloat4(ep0.lane<0>(), ep0.lane<1>(), ep0.lane<2>(), avgdif);
 		}
 	}
 }
