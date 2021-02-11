@@ -515,7 +515,7 @@ astcenc_error astcenc_config_init(
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;
 
- 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
+		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
 			config.b_deblock_weight = 1.8f;
 			config.v_rgba_radius = 3;
