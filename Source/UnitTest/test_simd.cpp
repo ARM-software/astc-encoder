@@ -805,7 +805,7 @@ TEST(vfloat4, hadd_s)
 	EXPECT_NEAR(r, sum, 0.005f);
 }
 
-/** @brief Test vfloat4 hadd_rgb. */
+/** @brief Test vfloat4 hadd_rgb_s. */
 TEST(vfloat4, hadd_rgb_s)
 {
 	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
