@@ -73,7 +73,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 		error_weights = ewb->texel_weight_b;
 		data_vr = blk->data_b;
 		break;
-	case 3:
+	default:
 		error_weights = ewb->texel_weight_a;
 		data_vr = blk->data_a;
 		break;
