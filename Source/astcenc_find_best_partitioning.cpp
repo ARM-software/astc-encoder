@@ -374,12 +374,12 @@ void find_best_partitionings(
 				uncorr_error += dot_s(uncorr_vector, error_weights);
 				samechroma_error += dot_s(samechroma_vector, error_weights);
 
-				separate_error.set_lane<0>(separate_error.lane<0>() + dot(separate_red_vector, error_weights.swz<1, 2, 3>()));
-				separate_error.set_lane<1>(separate_error.lane<1>() + dot(separate_green_vector, error_weights.swz<0, 2, 3>()));
-				separate_error.set_lane<2>(separate_error.lane<2>() + dot(separate_blue_vector, error_weights.swz<0, 1, 3>()));
-				separate_error.set_lane<3>(separate_error.lane<3>() + dot(separate_alpha_vector, error_weights.swz<0, 1, 2>()));
+				vfloat4 sep_err_inc(dot(separate_red_vector, error_weights.swz<1, 2, 3>()),
+				                    dot(separate_green_vector, error_weights.swz<0, 2, 3>()),
+				                    dot(separate_blue_vector, error_weights.swz<0, 1, 3>()),
+				                    dot(separate_alpha_vector, error_weights.swz<0, 1, 2>()));
 
-				separate_error = separate_error + rgba_range[j] * rgba_range[j] * error_weights;
+				separate_error = separate_error + sep_err_inc + (rgba_range[j] * rgba_range[j] * error_weights);
 			}
 
 			if (uncorr_error < uncorr_best_error)
