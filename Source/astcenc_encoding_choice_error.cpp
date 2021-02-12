@@ -49,43 +49,14 @@ void merge_endpoints(
 	endpoints * res
 ) {
 	int partition_count = ep1->partition_count;
+	vmask4 sep_mask = vint4::lane_id() == vint4(separate_component);
+
 	res->partition_count = partition_count;
+	promise(partition_count > 0);
 	for (int i = 0; i < partition_count; i++)
 	{
-		res->endpt0[i] = ep1->endpt0[i];
-		res->endpt1[i] = ep1->endpt1[i];
-	}
-
-	switch (separate_component)
-	{
-	case 0:
-		for (int i = 0; i < partition_count; i++)
-		{
-			res->endpt0[i].set_lane<0>(ep2->endpt0[i].lane<0>());
-			res->endpt1[i].set_lane<0>(ep2->endpt1[i].lane<0>());
-		}
-		break;
-	case 1:
-		for (int i = 0; i < partition_count; i++)
-		{
-			res->endpt0[i].set_lane<1>(ep2->endpt0[i].lane<1>());
-			res->endpt1[i].set_lane<1>(ep2->endpt1[i].lane<1>());
-		}
-		break;
-	case 2:
-		for (int i = 0; i < partition_count; i++)
-		{
-			res->endpt0[i].set_lane<2>(ep2->endpt0[i].lane<2>());
-			res->endpt1[i].set_lane<2>(ep2->endpt1[i].lane<2>());
-		}
-		break;
-	case 3:
-		for (int i = 0; i < partition_count; i++)
-		{
-			res->endpt0[i].set_lane<3>(ep2->endpt0[i].lane<3>());
-			res->endpt1[i].set_lane<3>(ep2->endpt1[i].lane<3>());
-		}
-		break;
+		res->endpt0[i] = select(ep1->endpt0[i], ep2->endpt0[i], sep_mask);
+		res->endpt1[i] = select(ep1->endpt1[i], ep2->endpt1[i], sep_mask);
 	}
 }
 
