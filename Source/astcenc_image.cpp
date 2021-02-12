@@ -157,7 +157,7 @@ void imageblock_initialize_deriv(
 }
 
 // helper function to initialize the work-data from the orig-data
-void imageblock_initialize_work_from_orig(
+static void imageblock_initialize_work_from_orig(
 	imageblock* pb,
 	int pixelcount
 ) {

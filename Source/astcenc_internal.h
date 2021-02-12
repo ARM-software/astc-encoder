@@ -547,10 +547,6 @@ void imageblock_initialize_orig_from_work(
 	imageblock * pb,
 	int pixelcount);
 
-void imageblock_initialize_work_from_orig(
-	imageblock * pb,
-	int pixelcount);
-
 /*
 	Data structure representing error weighting for one block of an image. this is used as
 	a multiplier for the error weight to apply to each color component when computing PSNR.
