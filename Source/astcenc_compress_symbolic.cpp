@@ -645,30 +645,16 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		#endif
 	}
 
-	float min_wt_cutoff1, min_wt_cutoff2;
-	switch (separate_component)
-	{
-	case 0:
-		min_wt_cutoff2 = min_ep2.lane<0>();
-		min_ep1.set_lane<0>(1e30f);
-		break;
-	case 1:
-		min_wt_cutoff2 = min_ep2.lane<1>();
-		min_ep1.set_lane<1>(1e30f);
-		break;
-	case 2:
-		min_wt_cutoff2 = min_ep2.lane<2>();
-		min_ep1.set_lane<2>(1e30f);
-		break;
-	case 3:
-		min_wt_cutoff2 = min_ep2.lane<3>();
-		min_ep1.set_lane<3>(1e30f);
-		break;
-	default:
-		min_wt_cutoff2 = 1e30f;
-	}
+	vfloat4 err_max(1e30f);
+	vmask4 err_mask = vint4::lane_id() == vint4(separate_component);
 
-	min_wt_cutoff1 = hmin_s(min_ep1);
+	// Set the separate component to max error in ep1
+	min_ep1 = select(min_ep1, err_max, err_mask);
+
+	float min_wt_cutoff1 = hmin_s(min_ep1);
+
+	// Set the minwt2 to the separate component min in ep2
+	float min_wt_cutoff2 = hmin_s(select(err_max, min_ep2, err_mask));
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
 	float weight_high_value1[MAX_WEIGHT_MODES];
