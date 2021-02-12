@@ -305,16 +305,16 @@ void fetch_imageblock(
 
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			int zi = astc::min(zpos + z, zsize - 1);
 			uint8_t* data8 = static_cast<uint8_t*>(img.data[zi]);
 
 			for (int y = 0; y < bsd->ydim; y++)
 			{
-				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+				int yi = astc::min(ypos + y, ysize - 1);
 
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = astc::clamp(xpos + x, 0, xsize - 1);
+					int xi = astc::min(xpos + x, xsize - 1);
 
 					int r = data8[(4 * xsize * yi) + (4 * xi    )];
 					int g = data8[(4 * xsize * yi) + (4 * xi + 1)];
@@ -351,16 +351,16 @@ void fetch_imageblock(
 
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			int zi = astc::min(zpos + z, zsize - 1);
 			uint16_t* data16 = static_cast<uint16_t*>(img.data[zi]);
 
 			for (int y = 0; y < bsd->ydim; y++)
 			{
-				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+				int yi = astc::min(ypos + y, ysize - 1);
 
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = astc::clamp(xpos + x, 0, xsize - 1);
+					int xi = astc::min(xpos + x, xsize - 1);
 
 					int r = data16[(4 * xsize * yi) + (4 * xi    )];
 					int g = data16[(4 * xsize * yi) + (4 * xi + 1)];
@@ -399,16 +399,16 @@ void fetch_imageblock(
 
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zi = astc::clamp(zpos + z, 0, zsize - 1);
+			int zi = astc::min(zpos + z, zsize - 1);
 			float* data32 = static_cast<float*>(img.data[zi]);
 
 			for (int y = 0; y < bsd->ydim; y++)
 			{
-				int yi = astc::clamp(ypos + y, 0, ysize - 1);
+				int yi = astc::min(ypos + y, ysize - 1);
 
 				for (int x = 0; x < bsd->xdim; x++)
 				{
-					int xi = astc::clamp(xpos + x, 0, xsize - 1);
+					int xi = astc::min(xpos + x, xsize - 1);
 
 					float r = data32[(4 * xsize * yi) + (4 * xi    )];
 					float g = data32[(4 * xsize * yi) + (4 * xi + 1)];
@@ -484,7 +484,7 @@ void write_imageblock(
 	{
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			int zc = astc::min(zpos + z, zsize - 1);
 			uint8_t* data8 = static_cast<uint8_t*>(img.data[zc]);
 
 			for (int y = 0; y < bsd->ydim; y++)
@@ -554,7 +554,7 @@ void write_imageblock(
 	{
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			int zc = astc::min(zpos + z, zsize - 1);
 			uint16_t* data16 = static_cast<uint16_t*>(img.data[zc]);
 
 			for (int y = 0; y < bsd->ydim; y++)
@@ -625,7 +625,7 @@ void write_imageblock(
 
 		for (int z = 0; z < bsd->zdim; z++)
 		{
-			int zc = astc::clamp(zpos + z, 0, zsize - 1);
+			int zc = astc::min(zpos + z, zsize - 1);
 			float* data32 = static_cast<float*>(img.data[zc]);
 
 			for (int y = 0; y < bsd->ydim; y++)
