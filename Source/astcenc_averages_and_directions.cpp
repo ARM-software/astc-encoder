@@ -62,11 +62,7 @@ void compute_averages_and_directions_rgba(
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-
-			vfloat4 texel_datum(blk->data_r[iwt],
-			                    blk->data_g[iwt],
-			                    blk->data_b[iwt],
-			                    blk->data_a[iwt]);
+			vfloat4 texel_datum = blk->texel(iwt);
 
 			partition_weight += weight;
 			base_sum = base_sum + texel_datum * weight;
@@ -84,10 +80,7 @@ void compute_averages_and_directions_rgba(
 		{
 			int iwt = weights[i];
 			float weight = ewb->texel_weight[iwt];
-			vfloat4 texel_datum(blk->data_r[iwt],
-			                    blk->data_g[iwt],
-			                    blk->data_b[iwt],
-			                    blk->data_a[iwt]);
+			vfloat4 texel_datum = blk->texel(iwt);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.lane<0>() > 0.0f)
@@ -167,11 +160,9 @@ void compute_averages_and_directions_rgb(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->data_r[iwt],
-			                            blk->data_g[iwt],
-			                            blk->data_b[iwt]) * weight;
-			partition_weight += weight;
+			float3 texel_datum = blk->texel3(iwt) * weight;
 
+			partition_weight += weight;
 			base_sum = base_sum + texel_datum;
 		}
 
@@ -187,9 +178,7 @@ void compute_averages_and_directions_rgb(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float3 texel_datum = float3(blk->data_r[iwt],
-			                            blk->data_g[iwt],
-			                            blk->data_b[iwt]);
+			float3 texel_datum = blk->texel3(iwt);
 			texel_datum = (texel_datum - average) * weight;
 
 			if (texel_datum.r > 0.0f)
@@ -622,11 +611,7 @@ void compute_error_squared_rgba(
 		{
 			int iwt = weights[i];
 
-			vfloat4 dat(blk->data_r[iwt],
-			            blk->data_g[iwt],
-			            blk->data_b[iwt],
-			            blk->data_a[iwt]);
-
+			vfloat4 dat = blk->texel(iwt);
 			vfloat4 ews = ewb->error_weights[iwt];
 
 			float uncor_param = dot_s(dat, l_uncor.bs);
@@ -806,10 +791,7 @@ void compute_error_squared_rgb(
 		{
 			int iwt = weights[i];
 
-			float3 dat = float3(blk->data_r[iwt],
-			                    blk->data_g[iwt],
-			                    blk->data_b[iwt]);
-
+			float3 dat = blk->texel3(iwt);
 			float3 ews = float3(ewb->error_weights[iwt].swz<0, 1, 2>());
 
 			float uncor_param = dot(dat, l_uncor.bs);

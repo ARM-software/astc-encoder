@@ -118,7 +118,7 @@ void imageblock_initialize_deriv(
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
-			float3 fdata = float3(pb->data_r[i], pb->data_g[i], pb->data_b[i]);
+			float3 fdata = pb->texel3(i);
 			fdata.r = sf16_to_float(lns_to_sf16((uint16_t)fdata.r));
 			fdata.g = sf16_to_float(lns_to_sf16((uint16_t)fdata.g));
 			fdata.b = sf16_to_float(lns_to_sf16((uint16_t)fdata.b));
@@ -161,8 +161,7 @@ void imageblock_initialize_work_from_orig(
 	imageblock* pb,
 	int pixelcount
 ) {
-	pb->origin_texel = vfloat4(pb->data_r[0], pb->data_g[0],
-	                           pb->data_b[0], pb->data_a[0]);
+	pb->origin_texel = pb->texel(0);
 
 	vfloat4 data_min(1e38f);
 	vfloat4 data_max(-1e38f);
@@ -170,8 +169,7 @@ void imageblock_initialize_work_from_orig(
 
 	for (int i = 0; i < pixelcount; i++)
 	{
-		vfloat4 data = vfloat4(pb->data_r[i], pb->data_g[i],
-		                       pb->data_b[i], pb->data_a[i]);
+		vfloat4 data = pb->texel(i);
 
 		if (pb->rgb_lns[i])
 		{
@@ -228,8 +226,7 @@ void imageblock_initialize_orig_from_work(
 
 	for (int i = 0; i < pixelcount; i++)
 	{
-		vfloat4 data = vfloat4(pb->data_r[i], pb->data_g[i],
-		                       pb->data_b[i], pb->data_a[i]);
+		vfloat4 data = pb->texel(i);
 
 		if (pb->rgb_lns[i])
 		{

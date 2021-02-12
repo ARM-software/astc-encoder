@@ -411,10 +411,7 @@ float compute_symbolic_block_difference(
 		                 (float)color.b,
 		                 (float)color.a);
 
-		vfloat4 oldColor(pb->data_r[i],
-		                 pb->data_g[i],
-		                 pb->data_b[i],
-		                 pb->data_a[i]);
+		vfloat4 oldColor = pb->texel(i);
 
 		vfloat4 error = oldColor - newColor;
 

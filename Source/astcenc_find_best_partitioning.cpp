@@ -79,10 +79,7 @@ static void compute_rgba_range(
 		if (ewb->texel_weight[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			vfloat4 data(blk->data_r[i],
-			             blk->data_g[i],
-			             blk->data_b[i],
-			             blk->data_a[i]);
+			vfloat4 data = blk->texel(i);
 
 			rgba_min[partition] = min(data, rgba_min[partition]);
 			rgba_max[partition] = max(data, rgba_max[partition]);

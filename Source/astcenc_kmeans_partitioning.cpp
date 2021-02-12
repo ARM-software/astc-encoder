@@ -52,18 +52,12 @@ static void kmeans_init(
 
 	// compute the distance to the first point.
 	int sample = cluster_center_samples[0];
-	vfloat4 center_color = vfloat4(blk->data_r[sample],
-	                               blk->data_g[sample],
-	                               blk->data_b[sample],
-	                               blk->data_a[sample]);
+	vfloat4 center_color = blk->texel(sample);
 
 	float distance_sum = 0.0f;
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		vfloat4 color = vfloat4(blk->data_r[i],
-		                        blk->data_g[i],
-		                        blk->data_b[i],
-		                        blk->data_a[i]);
+		vfloat4 color =  blk->texel(i);
 		vfloat4 diff = color - center_color;
 		float distance = dot_s(diff, diff);
 		distance_sum += distance;
@@ -106,18 +100,12 @@ static void kmeans_init(
 		}
 
 		// update the distances with the new point.
-		center_color = vfloat4(blk->data_r[sample],
-		                       blk->data_g[sample],
-		                       blk->data_b[sample],
-		                       blk->data_a[sample]);
+		center_color = blk->texel(sample);;
 
 		distance_sum = 0.0f;
 		for (int i = 0; i < texels_per_block; i++)
 		{
-			vfloat4 color = vfloat4(blk->data_r[i],
-			                        blk->data_g[i],
-			                        blk->data_b[i],
-			                        blk->data_a[i]);
+			vfloat4 color = blk->texel(i);
 			vfloat4 diff = color - center_color;
 			float distance = dot_s(diff, diff);
 			distance = astc::min(distance, distances[i]);
@@ -130,11 +118,7 @@ static void kmeans_init(
 	for (int i = 0; i < partition_count; i++)
 	{
 		int center_sample = cluster_center_samples[i];
-		vfloat4 color = vfloat4(blk->data_r[center_sample],
-		                        blk->data_g[center_sample],
-		                        blk->data_b[center_sample],
-		                        blk->data_a[center_sample]);
-		cluster_centers[i] = color;
+		cluster_centers[i] = blk->texel(center_sample);
 	}
 }
 
@@ -159,10 +143,7 @@ static void kmeans_assign(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		vfloat4 color = vfloat4(blk->data_r[i],
-		                        blk->data_g[i],
-		                        blk->data_b[i],
-		                        blk->data_a[i]);
+		vfloat4 color = blk->texel(i);
 		vfloat4 diff = color - cluster_centers[0];
 		float distance = dot_s(diff, diff);
 		distances[i] = distance;
@@ -175,10 +156,7 @@ static void kmeans_assign(
 
 		for (int i = 0; i < texels_per_block; i++)
 		{
-			vfloat4 color = vfloat4(blk->data_r[i],
-			                        blk->data_g[i],
-			                        blk->data_b[i],
-			                        blk->data_a[i]);
+			vfloat4 color = blk->texel(i);
 			vfloat4 diff = color - center_color;
 			float distance = dot_s(diff, diff);
 			if (distance < distances[i])
@@ -235,10 +213,7 @@ static void kmeans_update(
 	// first, find the center-of-gravity in each cluster
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		vfloat4 color = vfloat4(blk->data_r[i],
-		                        blk->data_g[i],
-		                        blk->data_b[i],
-		                        blk->data_a[i]);
+		vfloat4 color = blk->texel(i);
 		int part = partition_of_texel[i];
 		color_sum[part] = color_sum[part] + color;
 		weight_sum[part]++;

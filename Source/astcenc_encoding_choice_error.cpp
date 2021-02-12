@@ -112,9 +112,7 @@ static float compute_error_squared_rgb_single_partition(
 			continue;
 		}
 
-		float3 point = float3(blk->data_r[i],
-		                      blk->data_g[i],
-		                      blk->data_b[i]);
+		float3 point = blk->texel3(i);
 		float param = dot(point, lin->bs);
 		float3 rp1 = lin->amod + param * lin->bis;
 		float3 dist = rp1 - point;

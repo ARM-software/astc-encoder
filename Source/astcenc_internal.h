@@ -506,7 +506,23 @@ struct imageblock
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
 	uint8_t nan_texel[MAX_TEXELS_PER_BLOCK];    // 1 if the texel is a NaN-texel.
 	int xpos, ypos, zpos;
+
+	inline vfloat4 texel(int index) const
+	{
+		return vfloat4(data_r[index],
+		               data_g[index],
+		               data_b[index],
+		               data_a[index]);
+	}
+
+	inline float3 texel3(int index) const
+	{
+		return float3(data_r[index],
+		              data_g[index],
+		              data_b[index]);
+	}
 };
+
 
 static inline int imageblock_uses_alpha(const imageblock * pb)
 {

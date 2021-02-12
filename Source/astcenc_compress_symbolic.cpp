@@ -170,8 +170,7 @@ static int realign_weights(
 
 				vfloat4 color = color_base + color_offset * plane_weight;
 
-				vfloat4 origcolor    = vfloat4(blk->data_r[texel], blk->data_g[texel],
-				                               blk->data_b[texel], blk->data_a[texel]);
+				vfloat4 origcolor    = blk->texel(texel);
 				vfloat4 error_weight = vfloat4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
 				                               ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
 

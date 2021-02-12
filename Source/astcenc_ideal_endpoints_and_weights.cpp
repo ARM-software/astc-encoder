@@ -682,7 +682,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 		{
 			int partition = pt->partition_of_texel[i];
 
-			vfloat4 point = vfloat4(blk->data_r[i], blk->data_g[i], blk->data_b[i], blk->data_a[i]) * scalefactors[partition];
+			vfloat4 point = blk->texel(i) * scalefactors[partition];
 			line4 l = lines[partition];
 
 			float param = dot_s(point - l.a, l.b);
@@ -1240,7 +1240,7 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 rgba = pb->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
@@ -1280,7 +1280,7 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 rgba = pb->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			float3 color_weight3 = color_weight.swz<0, 1, 2>();
@@ -1642,7 +1642,7 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 rgba = pb->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
@@ -1676,7 +1676,7 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba(pb->data_r[tix], pb->data_g[tix], pb->data_b[tix], pb->data_a[tix]);
+			vfloat4 rgba = pb->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			float3 color_weight3 = color_weight.swz<0, 1, 2>();
