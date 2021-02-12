@@ -274,25 +274,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 		vfloat4 ep = (vfloat4(1.0f) - ei->ep.endpt0[i]) / (ei->ep.endpt1[i] - ei->ep.endpt0[i]);
 
-		if (ep.lane<0>() > 0.5f && ep.lane<0>() < min_ep.lane<0>())
-		{
-			min_ep.set_lane<0>(ep.lane<0>());
-		}
-
-		if (ep.lane<1>() > 0.5f && ep.lane<1>() < min_ep.lane<1>())
-		{
-			min_ep.set_lane<1>(ep.lane<1>());
-		}
-
-		if (ep.lane<2>() > 0.5f && ep.lane<2>() < min_ep.lane<2>())
-		{
-			min_ep.set_lane<2>(ep.lane<2>());
-		}
-
-		if (ep.lane<3>() > 0.5f && ep.lane<3>() < min_ep.lane<3>())
-		{
-			min_ep.set_lane<3>(ep.lane<3>());
-		}
+		vmask4 use_ep = (ep > vfloat4(0.5f)) & (ep < min_ep);
+		min_ep = select(min_ep, ep, use_ep);
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -650,48 +633,12 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		#endif
 
 		vfloat4 ep1 = (vfloat4(1.0f) - ei1->ep.endpt0[i]) / (ei1->ep.endpt1[i] - ei1->ep.endpt0[i]);
-
-		if (ep1.lane<0>() > 0.5f && ep1.lane<0>() < min_ep1.lane<0>())
-		{
-			min_ep1.set_lane<0>(ep1.lane<0>());
-		}
-
-		if (ep1.lane<1>() > 0.5f && ep1.lane<1>() < min_ep1.lane<1>())
-		{
-			min_ep1.set_lane<1>(ep1.lane<1>());
-		}
-
-		if (ep1.lane<2>() > 0.5f && ep1.lane<2>() < min_ep1.lane<2>())
-		{
-			min_ep1.set_lane<2>(ep1.lane<2>());
-		}
-
-		if (ep1.lane<3>() > 0.5f && ep1.lane<3>() < min_ep1.lane<3>())
-		{
-			min_ep1.set_lane<3>(ep1.lane<3>());
-		}
+		vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
+		min_ep1 = select(min_ep1, ep1, use_ep1);
 
 		vfloat4 ep2 = (vfloat4(1.0f) - ei2->ep.endpt0[i]) / (ei2->ep.endpt1[i] - ei2->ep.endpt0[i]);
-
-		if (ep2.lane<0>() > 0.5f && ep2.lane<0>() < min_ep2.lane<0>())
-		{
-			min_ep2.set_lane<0>(ep2.lane<0>());
-		}
-
-		if (ep2.lane<1>() > 0.5f && ep2.lane<1>() < min_ep2.lane<1>())
-		{
-			min_ep2.set_lane<1>(ep2.lane<1>());
-		}
-
-		if (ep2.lane<2>() > 0.5f && ep2.lane<2>() < min_ep2.lane<2>())
-		{
-			min_ep2.set_lane<2>(ep2.lane<2>());
-		}
-
-		if (ep2.lane<3>() > 0.5f && ep2.lane<3>() < min_ep2.lane<3>())
-		{
-			min_ep2.set_lane<3>(ep2.lane<3>());
-		}
+		vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
+		min_ep2 = select(min_ep2, ep2, use_ep2);
 
 		#ifdef DEBUG_CAPTURE_NAN
 			feenableexcept(FE_DIVBYZERO | FE_INVALID);
