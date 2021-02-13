@@ -668,7 +668,7 @@ static void quantize_rgbs_new(
 	int gu = color_unquant_tables[quant_level][gi];
 	int bu = color_unquant_tables[quant_level][bi];
 
-	float oldcolorsum = (rgbs_color.lane<0>() + rgbs_color.lane<1>() + rgbs_color.lane<02>()) * scale;
+	float oldcolorsum = hadd_rgb_s(rgbs_color) * scale;
 	float newcolorsum = (float)(ru + gu + bu);
 
 	float scalea = astc::clamp1f(rgbs_color.lane<3>() * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
@@ -1562,9 +1562,8 @@ static void quantize_hdr_luminance_large_range3(
 	int output[2],
 	int quant_level
 ) {
-
-	float lum1 = (color1.lane<0>() + color1.lane<1>() + color1.lane<2>()) * (1.0f / 3.0f);
-	float lum0 = (color0.lane<0>() + color0.lane<1>() + color0.lane<2>()) * (1.0f / 3.0f);
+	float lum0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
+	float lum1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
 	if (lum1 < lum0)
 	{
@@ -1627,8 +1626,8 @@ static int try_quantize_hdr_luminance_small_range3(
 	int output[2],
 	int quant_level
 ) {
-	float lum1 = (color1.lane<0>() + color1.lane<1>() + color1.lane<2>()) * (1.0f / 3.0f);
-	float lum0 = (color0.lane<0>() + color0.lane<1>() + color0.lane<2>()) * (1.0f / 3.0f);
+	float lum0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
+	float lum1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
 	if (lum1 < lum0)
 	{

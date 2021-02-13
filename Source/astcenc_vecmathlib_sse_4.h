@@ -925,8 +925,7 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 {
-	a.set_lane<3>(0.0f);
-	return hadd_s(a);
+	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
 /**

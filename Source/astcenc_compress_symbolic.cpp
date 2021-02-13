@@ -1032,8 +1032,8 @@ static float prepare_error_weight_block(
 						vfloat4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
 						variance = variance * variance;
 
-						float favg = (avg.lane<0>() + avg.lane<1>() + avg.lane<2>()) * (1.0f / 3.0f);
-						float fvar = (variance.lane<0>() + variance.lane<1>() + variance.lane<2>()) * (1.0f / 3.0f);
+						float favg = hadd_rgb_s(avg) * (1.0f / 3.0f);
+						float fvar = hadd_rgb_s(variance) * (1.0f / 3.0f);
 
 						float mixing = ctx.config.v_rgba_mean_stdev_mix;
 						avg.set_lane<0>(favg * mixing + avg.lane<0>() * (1.0f - mixing));

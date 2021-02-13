@@ -570,7 +570,7 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 direc = directions_rgba[i];
-		if (direc.lane<0>() + direc.lane<1>()  + direc.lane<2>() < 0.0f)
+		if (hadd_rgb_s(direc) < 0.0f)
 		{
 			directions_rgba[i] = vfloat4::zero() - direc;
 		}
@@ -1197,7 +1197,7 @@ void recompute_ideal_colors_2planes(
 			float3 rgb = rgba.swz<0, 1, 2>();
 
 			// FIXME: move this calculation out to the color block.
-			float ls_weight = color_weight.lane<0>() + color_weight.lane<1>() + color_weight.lane<2>();
+			float ls_weight = hadd_rgb_s(color_weight);
 
 			const uint8_t *texel_weights = it->texel_weights_t4[tix];
 			const float *texel_weights_float = it->texel_weights_float_t4[tix];
@@ -1276,7 +1276,7 @@ void recompute_ideal_colors_2planes(
 		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
 		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
 		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
-		float qsum = color_vec_y.lane<0>() + color_vec_y.lane<1>() + color_vec_y.lane<2>();
+		float qsum = hadd_rgb_s(color_vec_y);
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1518,7 +1518,7 @@ void recompute_ideal_colors_1plane(
 			float3 rgb = rgba.swz<0, 1, 2>();
 
 			// FIXME: move this calculation out to the color block.
-			float ls_weight = (color_weight.lane<0>() + color_weight.lane<1>() + color_weight.lane<2>());
+			float ls_weight = hadd_rgb_s(color_weight);
 
 			const uint8_t *texel_weights = it->texel_weights_t4[tix];
 			const float *texel_weights_float = it->texel_weights_float_t4[tix];
@@ -1570,7 +1570,7 @@ void recompute_ideal_colors_1plane(
 		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
 		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
 		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
-		float qsum = color_vec_y.lane<0>() + color_vec_y.lane<1>() + color_vec_y.lane<2>();
+		float qsum = hadd_rgb_s(color_vec_y);
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);

@@ -334,7 +334,7 @@ void compute_error_metrics(
 			alpha_psnr = 10.0f * log10f(denom / alpha_num);
 		printf("    Alpha-weighted PSNR:      %9.4f dB\n", (double)alpha_psnr);
 
-		float rgb_num = errorsum.sum.lane<0>() + errorsum.sum.lane<1>() + errorsum.sum.lane<2>();
+		float rgb_num = hadd_rgb_s(errorsum.sum);
 		if (rgb_num == 0.0f)
 			rgb_psnr = 999.0f;
 		else
