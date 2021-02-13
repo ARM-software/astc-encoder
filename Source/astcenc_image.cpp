@@ -41,7 +41,7 @@ static float float_to_lns(float p)
 	}
 
 	int expo;
-	float normfrac = frexpf(p, &expo);
+	float normfrac = astc::frexp(p, &expo);
 	float p1;
 	if (expo < -13)
 	{
@@ -56,11 +56,17 @@ static float float_to_lns(float p)
 	}
 
 	if (p1 < 384.0f)
+	{
 		p1 *= 4.0f / 3.0f;
+	}
 	else if (p1 <= 1408.0f)
+	{
 		p1 += 128.0f;
+	}
 	else
+	{
 		p1 = (p1 + 512.0f) * (4.0f / 5.0f);
+	}
 
 	p1 += ((float)expo) * 2048.0f;
 	return p1 + 1.0f;
@@ -72,15 +78,23 @@ static uint16_t lns_to_sf16(uint16_t p)
 	uint16_t ec = p >> 11;
 	uint16_t mt;
 	if (mc < 512)
+	{
 		mt = 3 * mc;
+	}
 	else if (mc < 1536)
+	{
 		mt = 4 * mc - 512;
+	}
 	else
+	{
 		mt = 5 * mc - 2048;
+	}
 
 	uint16_t res = (ec << 10) | (mt >> 3);
 	if (res > 0x7BFF)
+	{
 		res = 0x7BFF;
+	}
 	return res;
 }
 
@@ -91,10 +105,14 @@ static uint16_t lns_to_sf16(uint16_t p)
 uint16_t unorm16_to_sf16(uint16_t p)
 {
 	if (p == 0xFFFF)
+	{
 		return 0x3C00;			// value of 1.0
+	}
 
 	if (p < 4)
+	{
 		return p << 8;
+	}
 
 	int lz = clz32(p) - 16;
 	p <<= (lz + 1);

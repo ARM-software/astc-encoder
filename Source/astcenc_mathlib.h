@@ -92,6 +92,14 @@
   to future vectorization.
 ============================================================================ */
 
+// Union for manipulation of float bit patterns
+typedef union
+{
+	uint32_t u;
+	int32_t s;
+	float f;
+} if32;
+
 // These are namespaced to avoid colliding with C standard library functions.
 namespace astc
 {
@@ -406,6 +414,23 @@ static inline float sqrt(float v)
 }
 
 /**
+ * @brief Extract mantissa and exponent of a float value.
+ *
+ * @param      v      The input value.
+ * @param[out] expo   The output exponent.
+ *
+ * @return The mantissa.
+ */
+static inline float frexp(float v, int* expo)
+{
+	if32 p;
+	p.f = v;
+	*expo = ((p.u >> 23) & 0xFF) - 126;
+	p.u = (p.u & 0x807fffff) | 0x3f000000;
+	return p.f;
+}
+
+/**
  * @brief Log base 2, linearized from 2^-14.
  *
  * @param v   The value to log2.
@@ -580,13 +605,6 @@ static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }
 /* ============================================================================
   Softfloat library with fp32 and fp16 conversion functionality.
 ============================================================================ */
-typedef union if32_
-{
-	uint32_t u;
-	int32_t s;
-	float f;
-} if32;
-
 uint32_t clz32(uint32_t p);
 
 /*	sized soft-float types. These are mapped to the sized integer
