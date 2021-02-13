@@ -423,7 +423,15 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {
+#if ASTCENC_SSE >= 41
 	return vint4(_mm_mullo_epi32 (a.m, b.m));
+#else
+	__m128i t1 = _mm_mul_epu32(a.m, b.m);
+	__m128i t2 = _mm_mul_epu32(_mm_srli_si128(a.m, 4), _mm_srli_si128(b.m, 4));
+	__m128i r =  _mm_unpacklo_epi32(_mm_shuffle_epi32(t1, _MM_SHUFFLE (0, 0, 2, 0)),
+	                                _mm_shuffle_epi32(t2, _MM_SHUFFLE (0, 0, 2, 0)));
+	return vint4(r);
+#endif
 }
 
 /**
@@ -431,7 +439,7 @@ ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
 {
-	return vint4(_mm_mullo_epi32 (a.m, _mm_set1_epi32(b)));
+	return a * vint4(b);
 }
 
 /**
