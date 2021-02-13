@@ -115,7 +115,7 @@ static void quantize_rgba(
 }
 
 /* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
-static int try_quantize_rgb_blue_contract(
+static bool try_quantize_rgb_blue_contract(
 	vfloat4 color0,	// assumed to be the smaller color
 	vfloat4 color1,	// assumed to be the larger color
 	int output[6],
@@ -336,7 +336,7 @@ static int try_quantize_rgb_delta(
 	return 1;
 }
 
-static int try_quantize_rgb_delta_blue_contract(
+static bool try_quantize_rgb_delta_blue_contract(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[6],
@@ -363,7 +363,7 @@ static int try_quantize_rgb_delta_blue_contract(
 	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
 	    r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
 	{
-		return 0;
+		return false;
 	}
 
 	// transform r0 to unorm9
@@ -408,7 +408,7 @@ static int try_quantize_rgb_delta_blue_contract(
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
 	{
-		return 0;
+		return false;
 	}
 
 	// insert top bit of the base into the offset
@@ -433,7 +433,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the sum of the encoded offsets is negative, else encoding fails
@@ -459,7 +459,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (r1du + g1du + b1du >= 0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the offsets produce legitimate sums as well.
@@ -469,7 +469,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 
 	// OK, we've come this far; we can now encode legitimate values.
@@ -480,7 +480,7 @@ static int try_quantize_rgb_delta_blue_contract(
 	output[4] = b0be;
 	output[5] = b1de;
 
-	return 1;
+	return true;
 }
 
 static int try_quantize_alpha_delta(
@@ -631,7 +631,7 @@ static int try_quantize_rgba_delta(
 	return try_quantize_rgb_delta(color0, color1, output, quant_level);
 }
 
-static int try_quantize_rgba_delta_blue_contract(
+static bool try_quantize_rgba_delta_blue_contract(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -643,7 +643,7 @@ static int try_quantize_rgba_delta_blue_contract(
 
 	if (alpha_delta_res == 0)
 	{
-		return 0;
+		return false;
 	}
 
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quant_level);
