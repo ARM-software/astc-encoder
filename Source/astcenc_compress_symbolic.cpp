@@ -70,15 +70,15 @@ static int realign_weights(
 	int weight_count = it->weight_count;
 
 	int max_plane = bm.is_dual_plane;
-	int plane2_component = max_plane ? scb->plane2_color_component : 0;
-	int plane_mask = max_plane ? 1 << plane2_component : 0;
+	int plane2_component = bm.is_dual_plane ? scb->plane2_color_component : -1;
+	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
 	int rgb_hdr;
 	int alpha_hdr;
 	int nan_endpoint;
-	int4 endpnt0[4];
-	int4 endpnt1[4];
+	vint4 endpnt0[4];
+	vint4 endpnt1[4];
 	vfloat4 endpnt0f[4];
 	vfloat4 offset[4];
 
@@ -93,9 +93,8 @@ static int realign_weights(
 		                       scb->color_quant_level,
 		                       scb->color_values[pa_idx],
 		                       &rgb_hdr, &alpha_hdr, &nan_endpoint,
-		                       // TODO: Fix these casts ...
-		                       reinterpret_cast<uint4*>(&endpnt0[pa_idx]),
-		                       reinterpret_cast<uint4*>(&endpnt1[pa_idx]));
+		                       &endpnt0[pa_idx],
+		                       &endpnt1[pa_idx]);
 	}
 
 	uint8_t uq_pl_weights[MAX_WEIGHTS_PER_BLOCK];
@@ -108,16 +107,11 @@ static int realign_weights(
 		for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 		{
 			// Compute the endpoint delta for all channels in current plane
-			int4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
+			vint4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
+			epd = select(epd, vint4::zero(), plane_mask);
 
-			if (plane_mask & 1) epd.r = 0;
-			if (plane_mask & 2) epd.g = 0;
-			if (plane_mask & 4) epd.b = 0;
-			if (plane_mask & 8) epd.a = 0;
-
-			endpnt0f[pa_idx] = vfloat4((float)endpnt0[pa_idx].r, (float)endpnt0[pa_idx].g,
-			                          (float)endpnt0[pa_idx].b, (float)endpnt0[pa_idx].a);
-			offset[pa_idx] = vfloat4((float)epd.r, (float)epd.g, (float)epd.b, (float)epd.a);
+			endpnt0f[pa_idx] = int_to_float(endpnt0[pa_idx]);
+			offset[pa_idx] = int_to_float(epd);
 			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
 		}
 
@@ -199,7 +193,7 @@ static int realign_weights(
 
 		// Prepare iteration for plane 2
 		weight_set8 = plane2_weight_set8;
-		plane_mask ^= 0xF;
+		plane_mask = ~plane_mask;
 	}
 
 	return adjustments;

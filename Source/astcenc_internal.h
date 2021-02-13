@@ -1131,8 +1131,8 @@ void unpack_color_endpoints(
 	int* rgb_hdr,
 	int* alpha_hdr,
 	int* nan_endpoint,
-	uint4* output0,
-	uint4* output1);
+	vint4* output0,
+	vint4* output1);
 
 struct encoding_choice_errors
 {

@@ -253,6 +253,21 @@ struct vint4
 	}
 
 	/**
+	 * @brief Set the scalar value of a single lane.
+	 */
+	template <int l> ASTCENC_SIMD_INLINE void set_lane(int a)
+	{
+#if ASTCENC_SSE >= 41
+		m = _mm_insert_epi32(m, a, l);
+#else
+		alignas(16) float idx[4];
+		_mm_store_si128((__m128i*)idx, m);
+		idx[l] = a;
+		m = _mm_load_si128((const __m128i*)idx);
+#endif
+	}
+
+	/**
 	 * @brief Factory that returns a vector of zeros.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 zero()

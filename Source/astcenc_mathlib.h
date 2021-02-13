@@ -567,69 +567,9 @@ vtype3<T> operator*(T p, vtype3<T> q) {
 	return vtype3<T> { p * q.r, p * q.g, p * q.b };
 }
 
-template <typename T> class alignas(16) vtype4
-{
-public:
-	// Data storage
-	T r, g, b, a;
-
-	// Default constructor
-	vtype4() {}
-
-	// Initialize from 1 scalar
-	vtype4(T p) : r(p), g(p), b(p), a(p) {}
-
-	// Initialize from N scalars
-	vtype4(T p, T q, T s, T t) : r(p), g(q), b(s), a(t) {}
-
-	// Initialize from another vector
-	vtype4(const vtype4 & p) : r(p.r), g(p.g), b(p.b), a(p.a) {}
-
-	// Assignment operator
-	vtype4& operator=(const vtype4 &s) {
-		this->r = s.r;
-		this->g = s.g;
-		this->b = s.b;
-		this->a = s.a;
-		return *this;
-	}
-};
-
-// Vector by vector addition
-template <typename T>
-vtype4<T> operator+(vtype4<T> p, vtype4<T> q) {
-	return vtype4<T> { p.r + q.r, p.g + q.g, p.b + q.b, p.a + q.a };
-}
-
-// Vector by vector subtraction
-template <typename T>
-vtype4<T> operator-(vtype4<T> p, vtype4<T> q) {
-	return vtype4<T> { p.r - q.r, p.g - q.g, p.b - q.b, p.a - q.a };
-}
-
-// Vector by vector multiplication operator
-template <typename T>
-vtype4<T> operator*(vtype4<T> p, vtype4<T> q) {
-	return vtype4<T> { p.r * q.r, p.g * q.g, p.b * q.b, p.a * q.a };
-}
-
-// Vector by scalar multiplication operator
-template <typename T>
-vtype4<T> operator*(vtype4<T> p, T q) {
-	return vtype4<T> { p.r * q, p.g * q, p.b * q, p.a * q };
-}
-
-// Scalar by vector multiplication operator
-template <typename T>
-vtype4<T> operator*(T p, vtype4<T> q) {
-	return vtype4<T> { p * q.r, p * q.g, p * q.b, p * q.a };
-}
-
 typedef vtype2<float>        float2;
 typedef vtype3<float>        float3;
 typedef vtype3<int>          int3;
-typedef vtype4<int>          int4;
-typedef vtype4<unsigned int> uint4;
 
 static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
 static inline float dot(float3 p, float3 q)  { return p.r * q.r + p.g * q.g + p.b * q.b; }

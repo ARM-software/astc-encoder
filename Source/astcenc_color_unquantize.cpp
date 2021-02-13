@@ -24,8 +24,8 @@
 static int rgb_delta_unpack(
 	const int input[6],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	// unquantize the color endpoints
 	int r0 = color_unquant_tables[quant_level][input[0]];
@@ -101,15 +101,8 @@ static int rgb_delta_unpack(
 	g1e = astc::clamp(g1e, 0, 255);
 	b1e = astc::clamp(b1e, 0, 255);
 
-	output0->r = r0e;
-	output0->g = g0e;
-	output0->b = b0e;
-	output0->a = 0xFF;
-
-	output1->r = r1e;
-	output1->g = g1e;
-	output1->b = b1e;
-	output1->a = 0xFF;
+	*output0 = vint4(r0e, g0e, b0e, 0xFF);
+	*output1 = vint4(r1e, g1e, b1e, 0xFF);
 
 	return retval;
 }
@@ -117,8 +110,8 @@ static int rgb_delta_unpack(
 static int rgb_unpack(
 	const int input[6],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int ri0b = color_unquant_tables[quant_level][input[0]];
 	int ri1b = color_unquant_tables[quant_level][input[1]];
@@ -135,28 +128,14 @@ static int rgb_unpack(
 		ri1b = (ri1b + bi1b) >> 1;
 		gi1b = (gi1b + bi1b) >> 1;
 
-		output0->r = ri1b;
-		output0->g = gi1b;
-		output0->b = bi1b;
-		output0->a = 255;
-
-		output1->r = ri0b;
-		output1->g = gi0b;
-		output1->b = bi0b;
-		output1->a = 255;
+		*output0 = vint4(ri1b, gi1b, bi1b, 255);
+		*output1 = vint4(ri0b, gi0b, bi0b, 255);
 		return 1;
 	}
 	else
 	{
-		output0->r = ri0b;
-		output0->g = gi0b;
-		output0->b = bi0b;
-		output0->a = 255;
-
-		output1->r = ri1b;
-		output1->g = gi1b;
-		output1->b = bi1b;
-		output1->a = 255;
+		*output0 = vint4(ri0b, gi0b, bi0b, 255);
+		*output1 = vint4(ri1b, gi1b, bi1b, 255);
 		return 0;
 	}
 }
@@ -164,27 +143,27 @@ static int rgb_unpack(
 static void rgba_unpack(
 	const int input[8],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int order = rgb_unpack(input, quant_level, output0, output1);
 	if (order == 0)
 	{
-		output0->a = color_unquant_tables[quant_level][input[6]];
-		output1->a = color_unquant_tables[quant_level][input[7]];
+		output0->set_lane<3>(color_unquant_tables[quant_level][input[6]]);
+		output1->set_lane<3>(color_unquant_tables[quant_level][input[7]]);
 	}
 	else
 	{
-		output0->a = color_unquant_tables[quant_level][input[7]];
-		output1->a = color_unquant_tables[quant_level][input[6]];
+		output0->set_lane<3>(color_unquant_tables[quant_level][input[7]]);
+		output1->set_lane<3>(color_unquant_tables[quant_level][input[6]]);
 	}
 }
 
 static void rgba_delta_unpack(
 	const int input[8],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int a0 = color_unquant_tables[quant_level][input[6]];
 	int a1 = color_unquant_tables[quant_level][input[7]];
@@ -201,21 +180,21 @@ static void rgba_delta_unpack(
 	int order = rgb_delta_unpack(input, quant_level, output0, output1);
 	if (order == 0)
 	{
-		output0->a = a0;
-		output1->a = a1;
+		output0->set_lane<3>(a0);
+		output1->set_lane<3>(a1);
 	}
 	else
 	{
-		output0->a = a1;
-		output1->a = a0;
+		output0->set_lane<3>(a1);
+		output1->set_lane<3>(a0);
 	}
 }
 
 static void rgb_scale_unpack(
 	const int input[4],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int ir = color_unquant_tables[quant_level][input[0]];
 	int ig = color_unquant_tables[quant_level][input[1]];
@@ -223,38 +202,38 @@ static void rgb_scale_unpack(
 
 	int iscale = color_unquant_tables[quant_level][input[3]];
 
-	*output1 = uint4(ir, ig, ib, 255);
-	*output0 = uint4((ir * iscale) >> 8, (ig * iscale) >> 8, (ib * iscale) >> 8, 255);
+	*output1 = vint4(ir, ig, ib, 255);
+	*output0 = vint4((ir * iscale) >> 8, (ig * iscale) >> 8, (ib * iscale) >> 8, 255);
 }
 
 static void rgb_scale_alpha_unpack(
 	const int input[6],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	rgb_scale_unpack(input, quant_level, output0, output1);
-	output0->a = color_unquant_tables[quant_level][input[4]];
-	output1->a = color_unquant_tables[quant_level][input[5]];
+	output0->set_lane<3>(color_unquant_tables[quant_level][input[4]]);
+	output1->set_lane<3>(color_unquant_tables[quant_level][input[5]]);
 }
 
 static void luminance_unpack(
 	const int input[2],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int lum0 = color_unquant_tables[quant_level][input[0]];
 	int lum1 = color_unquant_tables[quant_level][input[1]];
-	*output0 = uint4(lum0, lum0, lum0, 255);
-	*output1 = uint4(lum1, lum1, lum1, 255);
+	*output0 = vint4(lum0, lum0, lum0, 255);
+	*output1 = vint4(lum1, lum1, lum1, 255);
 }
 
 static void luminance_delta_unpack(
 	const int input[2],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int v0 = color_unquant_tables[quant_level][input[0]];
 	int v1 = color_unquant_tables[quant_level][input[1]];
@@ -263,29 +242,29 @@ static void luminance_delta_unpack(
 
 	l1 = astc::min(l1, 255);
 
-	*output0 = uint4(l0, l0, l0, 255);
-	*output1 = uint4(l1, l1, l1, 255);
+	*output0 = vint4(l0, l0, l0, 255);
+	*output1 = vint4(l1, l1, l1, 255);
 }
 
 static void luminance_alpha_unpack(
 	const int input[4],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int lum0 = color_unquant_tables[quant_level][input[0]];
 	int lum1 = color_unquant_tables[quant_level][input[1]];
 	int alpha0 = color_unquant_tables[quant_level][input[2]];
 	int alpha1 = color_unquant_tables[quant_level][input[3]];
-	*output0 = uint4(lum0, lum0, lum0, alpha0);
-	*output1 = uint4(lum1, lum1, lum1, alpha1);
+	*output0 = vint4(lum0, lum0, lum0, alpha0);
+	*output1 = vint4(lum1, lum1, lum1, alpha1);
 }
 
 static void luminance_alpha_delta_unpack(
 	const int input[4],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int lum0 = color_unquant_tables[quant_level][input[0]];
 	int lum1 = color_unquant_tables[quant_level][input[1]];
@@ -311,16 +290,16 @@ static void luminance_alpha_delta_unpack(
 	lum1 = astc::clamp(lum1, 0, 255);
 	alpha1 = astc::clamp(alpha1, 0, 255);
 
-	*output0 = uint4(lum0, lum0, lum0, alpha0);
-	*output1 = uint4(lum1, lum1, lum1, alpha1);
+	*output0 = vint4(lum0, lum0, lum0, alpha0);
+	*output1 = vint4(lum1, lum1, lum1, alpha1);
 }
 
 // RGB-offset format
 static void hdr_rgbo_unpack3(
 	const int input[4],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int v0 = color_unquant_tables[quant_level][input[0]];
 	int v1 = color_unquant_tables[quant_level][input[1]];
@@ -456,15 +435,15 @@ static void hdr_rgbo_unpack3(
 	if (blue0 < 0)
 		blue0 = 0;
 
-	*output0 = uint4(red0 << 4, green0 << 4, blue0 << 4, 0x7800);
-	*output1 = uint4(red << 4, green << 4, blue << 4, 0x7800);
+	*output0 = vint4(red0 << 4, green0 << 4, blue0 << 4, 0x7800);
+	*output1 = vint4(red << 4, green << 4, blue << 4, 0x7800);
 }
 
 static void hdr_rgb_unpack3(
 	const int input[6],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 
 	int v0 = color_unquant_tables[quant_level][input[0]];
@@ -481,8 +460,8 @@ static void hdr_rgb_unpack3(
 
 	if (majcomp == 3)
 	{
-		*output0 = uint4(v0 << 8, v2 << 8, (v4 & 0x7F) << 9, 0x7800);
-		*output1 = uint4(v1 << 8, v3 << 8, (v5 & 0x7F) << 9, 0x7800);
+		*output0 = vint4(v0 << 8, v2 << 8, (v4 & 0x7F) << 9, 0x7800);
+		*output1 = vint4(v1 << 8, v3 << 8, (v5 & 0x7F) << 9, 0x7800);
 		return;
 	}
 
@@ -612,29 +591,29 @@ static void hdr_rgb_unpack3(
 		break;
 	}
 
-	*output0 = uint4(red0 << 4, green0 << 4, blue0 << 4, 0x7800);
-	*output1 = uint4(red1 << 4, green1 << 4, blue1 << 4, 0x7800);
+	*output0 = vint4(red0 << 4, green0 << 4, blue0 << 4, 0x7800);
+	*output1 = vint4(red1 << 4, green1 << 4, blue1 << 4, 0x7800);
 }
 
 static void hdr_rgb_ldr_alpha_unpack3(
 	const int input[8],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	hdr_rgb_unpack3(input, quant_level, output0, output1);
 
 	int v6 = color_unquant_tables[quant_level][input[6]];
 	int v7 = color_unquant_tables[quant_level][input[7]];
-	output0->a = v6;
-	output1->a = v7;
+	output0->set_lane<3>(v6);
+	output1->set_lane<3>(v7);
 }
 
 static void hdr_luminance_small_range_unpack(
 	const int input[2],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int v0 = color_unquant_tables[quant_level][input[0]];
 	int v1 = color_unquant_tables[quant_level][input[1]];
@@ -655,15 +634,15 @@ static void hdr_luminance_small_range_unpack(
 	if (y1 > 0xFFF)
 		y1 = 0xFFF;
 
-	*output0 = uint4(y0 << 4, y0 << 4, y0 << 4, 0x7800);
-	*output1 = uint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
+	*output0 = vint4(y0 << 4, y0 << 4, y0 << 4, 0x7800);
+	*output1 = vint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
 }
 
 static void hdr_luminance_large_range_unpack(
 	const int input[2],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	int v0 = color_unquant_tables[quant_level][input[0]];
 	int v1 = color_unquant_tables[quant_level][input[1]];
@@ -679,8 +658,8 @@ static void hdr_luminance_large_range_unpack(
 		y0 = (v1 << 4) + 8;
 		y1 = (v0 << 4) - 8;
 	}
-	*output0 = uint4(y0 << 4, y0 << 4, y0 << 4, 0x7800);
-	*output1 = uint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
+	*output0 = vint4(y0 << 4, y0 << 4, y0 << 4, 0x7800);
+	*output1 = vint4(y1 << 4, y1 << 4, y1 << 4, 0x7800);
 }
 
 static void hdr_alpha_unpack(
@@ -727,16 +706,16 @@ static void hdr_alpha_unpack(
 static void hdr_rgb_hdr_alpha_unpack3(
 	const int input[8],
 	int quant_level,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	hdr_rgb_unpack3(input, quant_level, output0, output1);
 
 	int alpha0, alpha1;
 	hdr_alpha_unpack(input + 6, quant_level, &alpha0, &alpha1);
 
-	output0->a = alpha0;
-	output1->a = alpha1;
+	output0->set_lane<3>(alpha0);
+	output1->set_lane<3>(alpha1);
 }
 
 void unpack_color_endpoints(
@@ -747,8 +726,8 @@ void unpack_color_endpoints(
 	int* rgb_hdr,
 	int* alpha_hdr,
 	int* nan_endpoint,
-	uint4* output0,
-	uint4* output1
+	vint4* output0,
+	vint4* output1
 ) {
 	*nan_endpoint = 0;
 
@@ -856,14 +835,14 @@ void unpack_color_endpoints(
 	{
 		if (decode_mode == ASTCENC_PRF_HDR)
 		{
-			output0->a = 0x7800;
-			output1->a = 0x7800;
+			output0->set_lane<3>(0x7800);
+			output1->set_lane<3>(0x7800);
 			*alpha_hdr = 1;
 		}
 		else
 		{
-			output0->a = 0x00FF;
-			output1->a = 0x00FF;
+			output0->set_lane<3>(0x00FF);
+			output1->set_lane<3>(0x00FF);
 			*alpha_hdr = 0;
 		}
 	}
@@ -873,27 +852,13 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_LDR_SRGB:
 		if (*rgb_hdr == 1)
 		{
-			output0->r = 0xFF00;
-			output0->g = 0x0000;
-			output0->b = 0xFF00;
-			output0->a = 0xFF00;
-
-			output1->r = 0xFF00;
-			output1->g = 0x0000;
-			output1->b = 0xFF00;
-			output1->a = 0xFF00;
+			*output0 = vint4(0xFF00, 0x0000, 0xFF00, 0xFF00);
+			*output1 = vint4(0xFF00, 0x0000, 0xFF00, 0xFF00);
 		}
 		else
 		{
-			output0->r *= 257;
-			output0->g *= 257;
-			output0->b *= 257;
-			output0->a *= 257;
-
-			output1->r *= 257;
-			output1->g *= 257;
-			output1->b *= 257;
-			output1->a *= 257;
+			*output0 = *output0 * 257;
+			*output1 = *output1 * 257;
 		}
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
@@ -902,28 +867,14 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_LDR:
 		if (*rgb_hdr == 1)
 		{
-			output0->r = 0xFFFF;
-			output0->g = 0xFFFF;
-			output0->b = 0xFFFF;
-			output0->a = 0xFFFF;
-
-			output1->r = 0xFFFF;
-			output1->g = 0xFFFF;
-			output1->b = 0xFFFF;
-			output1->a = 0xFFFF;
+			*output0 = vint4(0xFFFF);
+			*output1 = vint4(0xFFFF);
 			*nan_endpoint = 1;
 		}
 		else
 		{
-			output0->r *= 257;
-			output0->g *= 257;
-			output0->b *= 257;
-			output0->a *= 257;
-
-			output1->r *= 257;
-			output1->g *= 257;
-			output1->b *= 257;
-			output1->a *= 257;
+			*output0 = *output0 * 257;
+			*output1 = *output1 * 257;
 		}
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
@@ -933,18 +884,18 @@ void unpack_color_endpoints(
 	case ASTCENC_PRF_HDR:
 		if (*rgb_hdr == 0)
 		{
-			output0->r *= 257;
-			output0->g *= 257;
-			output0->b *= 257;
+			output0->set_lane<0>(output0->lane<0>() * 257);
+			output0->set_lane<1>(output0->lane<1>() * 257);
+			output0->set_lane<2>(output0->lane<2>() * 257);
 
-			output1->r *= 257;
-			output1->g *= 257;
-			output1->b *= 257;
+			output1->set_lane<0>(output1->lane<0>() * 257);
+			output1->set_lane<1>(output1->lane<1>() * 257);
+			output1->set_lane<2>(output1->lane<2>() * 257);
 		}
 		if (*alpha_hdr == 0)
 		{
-			output0->a *= 257;
-			output1->a *= 257;
+			output0->set_lane<3>(output0->lane<3>() * 257);
+			output1->set_lane<3>(output1->lane<3>() * 257);
 		}
 		break;
 	}

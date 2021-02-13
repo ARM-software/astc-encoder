@@ -1050,6 +1050,35 @@ TEST(vint4, CopyLoad)
 	EXPECT_EQ(a.lane<3>(), 44);
 }
 
+/** @brief Test vint4 scalar lane set. */
+TEST(int4, SetLane)
+{
+	vint4 a(0);
+
+	a.set_lane<0>(1);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 0);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 0);
+
+	a.set_lane<1>(2);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 0);
+
+	a.set_lane<2>(3);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 0);
+
+	a.set_lane<3>(4);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 4);
+}
 
 /** @brief Test vint4 zero. */
 TEST(vint4, Zero)

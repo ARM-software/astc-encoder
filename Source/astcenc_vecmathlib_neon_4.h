@@ -245,6 +245,14 @@ struct vint4
 	}
 
 	/**
+	 * @brief Set the scalar value of a single lane.
+	 */
+	template <int l> ASTCENC_SIMD_INLINE void set_lane(float a)
+	{
+		m = vld1q_lane_s32(&a, m, l);
+	}
+
+	/**
 	 * @brief Factory that returns a vector of zeros.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 zero()

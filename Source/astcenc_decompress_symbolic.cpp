@@ -209,8 +209,8 @@ void decompress_symbolic_block(
 	int weight_quant_level = bm.quant_mode;
 
 	// decode the color endpoints
-	uint4 color_endpoint0[4];
-	uint4 color_endpoint1[4];
+	vint4 color_endpoint0[4];
+	vint4 color_endpoint1[4];
 	int rgb_hdr_endpoint[4];
 	int alpha_hdr_endpoint[4];
 	int nan_endpoint[4];
@@ -273,16 +273,12 @@ void decompress_symbolic_block(
 	{
 		int partition = pt->partition_of_texel[i];
 
-		// TODO: Remove uint4 completely
-		uint4 ep0 = color_endpoint0[partition];
-		uint4 ep1 = color_endpoint1[partition];
-
-		vint4 vep0(ep0.r, ep0.g, ep0.b, ep0.a);
-		vint4 vep1(ep1.r, ep1.g, ep1.b, ep1.a);
+		vint4 ep0 = color_endpoint0[partition];
+		vint4 ep1 = color_endpoint1[partition];
 
 		vfloat4 color = lerp_color_int(decode_mode,
-		                               vep0,
-		                               vep1,
+		                               ep0,
+		                               ep1,
 		                               weights[i],
 		                               plane2_weights[i],
 		                               plane2_mask);
@@ -339,8 +335,8 @@ float compute_symbolic_block_difference(
 	promise(texel_count > 0);
 
 	// decode the color endpoints
-	uint4 color_endpoint0[4];
-	uint4 color_endpoint1[4];
+	vint4 color_endpoint0[4];
+	vint4 color_endpoint1[4];
 	int rgb_hdr_endpoint[4];
 	int alpha_hdr_endpoint[4];
 	int nan_endpoint[4];
@@ -403,16 +399,12 @@ float compute_symbolic_block_difference(
 	{
 		int partition = pt->partition_of_texel[i];
 
-		// TODO: Remove uint4 completely
-		uint4 ep0 = color_endpoint0[partition];
-		uint4 ep1 = color_endpoint1[partition];
-
-		vint4 vep0(ep0.r, ep0.g, ep0.b, ep0.a);
-		vint4 vep1(ep1.r, ep1.g, ep1.b, ep1.a);
+		vint4 ep0 = color_endpoint0[partition];
+		vint4 ep1 = color_endpoint1[partition];
 
 		vfloat4 color = lerp_color_int(decode_mode,
-		                               vep0,
-		                               vep1,
+		                               ep0,
+		                               ep1,
 		                               weights[i],
 		                               plane2_weights[i],
 		                               plane2_mask);
