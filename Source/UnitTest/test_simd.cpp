@@ -985,6 +985,17 @@ TEST(vfloat4, float_to_int_rtn)
 	EXPECT_EQ(r.lane<3>(), 4);
 }
 
+/** @brief Test vfloat4 round. */
+TEST(vfloat4, int_to_float)
+{
+	vint4 a(1, 2, 3, 4);
+	vfloat4 r = int_to_float(a);
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 4.0f);
+}
+
 
 // VINT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1103,6 +1114,29 @@ TEST(vint4, vsub)
 	EXPECT_EQ(a.lane<1>(), 2 - 3);
 	EXPECT_EQ(a.lane<2>(), 4 - 3);
 	EXPECT_EQ(a.lane<3>(), 4 - 5);
+}
+
+/** @brief Test vint4 mul. */
+TEST(vint4, vmul)
+{
+	vint4 a(1, 2, 4, 4);
+	vint4 b(2, 3, 3, 5);
+	a = a * b;
+	EXPECT_EQ(a.lane<0>(), 1 * 2);
+	EXPECT_EQ(a.lane<1>(), 2 * 3);
+	EXPECT_EQ(a.lane<2>(), 4 * 3);
+	EXPECT_EQ(a.lane<3>(), 4 * 5);
+}
+
+/** @brief Test vint4 mul. */
+TEST(vint4, vsmul)
+{
+	vint4 a(1, 2, 4, 4);
+	a = a * 3;
+	EXPECT_EQ(a.lane<0>(), 1 * 3);
+	EXPECT_EQ(a.lane<1>(), 2 * 3);
+	EXPECT_EQ(a.lane<2>(), 4 * 3);
+	EXPECT_EQ(a.lane<3>(), 4 * 3);
 }
 
 /** @brief Test vint4 bitwise invert. */
@@ -1230,6 +1264,29 @@ TEST(vint4, cle)
 	vint4 b(0, 3, 3, 5);
 	vmask4 r = a > b;
 	EXPECT_EQ(0x1, mask(r));
+}
+
+/** @brief Test vint4 lsr. */
+TEST(vint4, lsr)
+{
+	vint4 a(1, 2, 4, 4);
+	a = lsr<0>(a);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 4);
+	EXPECT_EQ(a.lane<3>(), 4);
+
+	a = lsr<1>(a);
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 1);
+	EXPECT_EQ(a.lane<2>(), 2);
+	EXPECT_EQ(a.lane<3>(), 2);
+
+	a = lsr<2>(a);
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 0);
+	EXPECT_EQ(a.lane<2>(), 0);
+	EXPECT_EQ(a.lane<3>(), 0);
 }
 
 /** @brief Test vint4 min. */

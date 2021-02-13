@@ -426,6 +426,28 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Overload: vector by vector multiplication.
+ */
+ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
+{
+	return vint4(a.m[0] * b.m[0],
+	             a.m[1] * b.m[1],
+	             a.m[2] * b.m[2],
+	             a.m[3] * b.m[3]);
+}
+
+/**
+ * @brief Overload: vector by scalar multiplication.
+ */
+ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
+{
+	return vint4(a.m[0] * b,
+	             a.m[1] * b,
+	             a.m[2] * b,
+	             a.m[3] * b);
+}
+
+/**
  * @brief Overload: vector bit invert.
  */
 ASTCENC_SIMD_INLINE vint4 operator~(vint4 a)
@@ -511,6 +533,17 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 	              a.m[1] > b.m[1] ? 0xFFFFFFFF : 0,
 	              a.m[2] > b.m[2] ? 0xFFFFFFFF : 0,
 	              a.m[3] > b.m[3] ? 0xFFFFFFFF : 0);
+}
+
+/**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	return vint4(a.m[0] >> s,
+	             a.m[1] >> s,
+	             a.m[2] >> s,
+	             a.m[3] >> s);
 }
 
 /**
@@ -1052,6 +1085,17 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 	             (int)(a.m[1] + 0.5f),
 	             (int)(a.m[2] + 0.5f),
 	             (int)(a.m[3] + 0.5f));
+}
+
+/**
+ * @brief Return a integer value for a float vector, using truncation.
+ */
+ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
+{
+	return vfloat4((float)a.m[0],
+	               (float)a.m[1],
+	               (float)a.m[2],
+	               (float)a.m[3]);
 }
 
 /**

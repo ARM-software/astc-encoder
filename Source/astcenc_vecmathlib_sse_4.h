@@ -404,6 +404,22 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Overload: vector by vector multiplication.
+ */
+ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
+{
+	return vint4(_mm_mullo_epi32 (a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scalar multiplication.
+ */
+ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
+{
+	return vint4(_mm_mullo_epi32 (a.m, _mm_set1_epi32(b)));
+}
+
+/**
  * @brief Overload: vector bit invert.
  */
 ASTCENC_SIMD_INLINE vint4 operator~(vint4 a)
@@ -465,6 +481,14 @@ ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, vint4 b)
 ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 {
 	return vmask4(_mm_cmpgt_epi32(a.m, b.m));
+}
+
+/**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	return vint4(_mm_srli_epi32(a.m, s));
 }
 
 /**
@@ -1003,6 +1027,14 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
 	a = round(a);
 	return vint4(_mm_cvttps_epi32(a.m));
+}
+
+/**
+ * @brief Return a float value for an integer vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
+{
+	return vfloat4(_mm_cvtepi32_ps(a.m));
 }
 
 /**
