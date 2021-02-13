@@ -141,7 +141,7 @@ static bool try_quantize_rgb_blue_contract(
 	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
 		r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
 	{
-		return 0;
+		return false;
 	}
 
 	// quantize the inverse-blue-contracted color
@@ -165,7 +165,7 @@ static bool try_quantize_rgb_blue_contract(
 	// we must only test AFTER blue-contraction.
 	if (ru1 + gu1 + bu1 <= ru0 + gu0 + bu0)
 	{
-		return 0;
+		return false;
 	}
 
 	output[0] = ri1;
@@ -175,7 +175,7 @@ static bool try_quantize_rgb_blue_contract(
 	output[4] = bi1;
 	output[5] = bi0;
 
-	return 1;
+	return true;
 }
 
 /* quantize an RGBA color with blue-contraction */
@@ -581,11 +581,11 @@ static bool try_quantize_luminance_alpha_delta(
 	int a1du = color_unquant_tables[quant_level][a1de];
 	if ((l1d ^ l1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	if ((a1d ^ a1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	l1du &= 0x7F;
 	a1du &= 0x7F;
@@ -1626,7 +1626,7 @@ static void quantize_hdr_luminance_large_range3(
 	output[1] = color_quant_tables[quant_level][v1];
 }
 
-static int try_quantize_hdr_luminance_small_range3(
+static bool try_quantize_hdr_luminance_small_range3(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[2],
@@ -1648,7 +1648,7 @@ static int try_quantize_hdr_luminance_small_range3(
 	// difference of more than a factor-of-2 results in immediate failure.
 	if (ilum1 - ilum0 > 2048)
 	{
-		return 0;
+		return false;
 	}
 
 	int lowval, highval, diffval;
@@ -1680,7 +1680,7 @@ static int try_quantize_hdr_luminance_small_range3(
 			{
 				output[0] = v0e;
 				output[1] = v1e;
-				return 1;
+				return true;
 			}
 		}
 	}
@@ -1699,14 +1699,14 @@ static int try_quantize_hdr_luminance_small_range3(
 	v0d = color_unquant_tables[quant_level][v0e];
 	if ((v0d & 0x80) == 0)
 	{
-		return 0;
+		return false;
 	}
 
 	lowval = (lowval & ~0x7F) | (v0d & 0x7F);
 	diffval = highval - lowval;
 	if (diffval < 0 || diffval > 31)
 	{
-		return 0;
+		return false;
 	}
 
 	v1 = ((lowval >> 2) & 0xE0) | diffval;
@@ -1714,12 +1714,12 @@ static int try_quantize_hdr_luminance_small_range3(
 	v1d = color_unquant_tables[quant_level][v1e];
 	if ((v1d & 0xE0) != (v1 & 0xE0))
 	{
-		return 0;
+		return false;
 	}
 
 	output[0] = v0e;
 	output[1] = v1e;
-	return 1;
+	return true;
 }
 
 static void quantize_hdr_alpha3(
