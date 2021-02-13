@@ -1356,7 +1356,7 @@ void recompute_ideal_colors_2planes(
 
 			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_color_component);
 			vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
-			vmask4 notnan_mask = ep0 == ep0 & ep1 == ep1;
+			vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 			vmask4 full_mask = p1_mask & det_mask & notnan_mask;
 
 			ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
@@ -1409,7 +1409,7 @@ void recompute_ideal_colors_2planes(
 
 				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_color_component);
 				vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
-				vmask4 notnan_mask = ep0 == ep0 & ep1 == ep1;
+				vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 				vmask4 full_mask = p2_mask & det_mask & notnan_mask;
 
 				ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
@@ -1644,7 +1644,7 @@ void recompute_ideal_colors_1plane(
 			vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
 			vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
-			vmask4 notnan_mask = ep0 == ep0 & ep1 == ep1;
+			vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 			vmask4 full_mask = det_mask & notnan_mask;
 
 			ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
