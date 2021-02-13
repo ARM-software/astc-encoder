@@ -1166,6 +1166,13 @@ TEST(vint4, vsmul)
 	EXPECT_EQ(a.lane<1>(), 2 * 3);
 	EXPECT_EQ(a.lane<2>(), 4 * 3);
 	EXPECT_EQ(a.lane<3>(), 4 * 3);
+
+	vint4 b(1, 2, -4, 4);
+	b = b * -3;
+	EXPECT_EQ(b.lane<0>(), 1 * -3);
+	EXPECT_EQ(b.lane<1>(), 2 * -3);
+	EXPECT_EQ(b.lane<2>(), -4 * -3);
+	EXPECT_EQ(b.lane<3>(), 4 * -3);
 }
 
 /** @brief Test vint4 bitwise invert. */
