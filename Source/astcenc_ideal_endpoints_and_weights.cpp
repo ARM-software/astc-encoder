@@ -460,9 +460,6 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		}
 	}
 
-	float3 lowvalues[4];
-	float3 highvalues[4];
-
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
@@ -491,56 +488,29 @@ static void compute_endpoints_and_ideal_weights_3_components(
 		ep1.g /= scalefactors[i].g;
 		ep1.b /= scalefactors[i].b;
 
-		lowvalues[i] = ep0;
-		highvalues[i] = ep1;
-	}
+		vfloat4 bmin = blk->data_min;
+		vfloat4 bmax = blk->data_max;
 
-	for (int i = 0; i < partition_count; i++)
-	{
-		ei->ep.endpt0[i] = blk->data_min;
-		ei->ep.endpt1[i] = blk->data_max;
-
-		float3 ep0 = lowvalues[i];
-		float3 ep1 = highvalues[i];
-
+		// TODO: Probably a programmatic vector permute we can do here ...
 		assert(omitted_component < 4);
 		switch (omitted_component)
 		{
 			case 0:
-				ei->ep.endpt0[i].set_lane<1>(ep0.r);
-				ei->ep.endpt0[i].set_lane<2>(ep0.g);
-				ei->ep.endpt0[i].set_lane<3>(ep0.b);
-
-				ei->ep.endpt1[i].set_lane<1>(ep1.r);
-				ei->ep.endpt1[i].set_lane<2>(ep1.g);
-				ei->ep.endpt1[i].set_lane<3>(ep1.b);
+				ei->ep.endpt0[i] = vfloat4(bmin.lane<0>(), ep0.r, ep0.g, ep0.b);
+				ei->ep.endpt1[i] = vfloat4(bmax.lane<0>(), ep1.r, ep1.g, ep1.b);
 				break;
 			case 1:
-				ei->ep.endpt0[i].set_lane<0>(ep0.r);
-				ei->ep.endpt0[i].set_lane<2>(ep0.g);
-				ei->ep.endpt0[i].set_lane<3>(ep0.b);
-
-				ei->ep.endpt1[i].set_lane<0>(ep1.r);
-				ei->ep.endpt1[i].set_lane<2>(ep1.g);
-				ei->ep.endpt1[i].set_lane<3>(ep1.b);
+				ei->ep.endpt0[i] = vfloat4(ep0.r, bmin.lane<1>(), ep0.g, ep0.b);
+				ei->ep.endpt1[i] = vfloat4(ep1.r, bmax.lane<1>(), ep1.g, ep1.b);
 				break;
 			case 2:
-				ei->ep.endpt0[i].set_lane<0>(ep0.r);
-				ei->ep.endpt0[i].set_lane<1>(ep0.g);
-				ei->ep.endpt0[i].set_lane<3>(ep0.b);
-
-				ei->ep.endpt1[i].set_lane<0>(ep1.r);
-				ei->ep.endpt1[i].set_lane<1>(ep1.g);
-				ei->ep.endpt1[i].set_lane<3>(ep1.b);
+				ei->ep.endpt0[i] = vfloat4(ep0.r, ep0.g, bmin.lane<2>(), ep0.b);
+				ei->ep.endpt1[i] = vfloat4(ep1.r, ep1.g, bmax.lane<2>(), ep1.b);
 				break;
 			default:
-				ei->ep.endpt0[i].set_lane<0>(ep0.r);
-				ei->ep.endpt0[i].set_lane<1>(ep0.g);
-				ei->ep.endpt0[i].set_lane<2>(ep0.b);
-
-				ei->ep.endpt1[i].set_lane<0>(ep1.r);
-				ei->ep.endpt1[i].set_lane<1>(ep1.g);
-				ei->ep.endpt1[i].set_lane<2>(ep1.b);
+				ei->ep.endpt0[i] = vfloat4(ep0.r, ep0.g, ep0.b, bmin.lane<3>());
+				ei->ep.endpt1[i] = vfloat4(ep1.r, ep1.g, ep1.b, bmax.lane<3>());
+				break;
 		}
 	}
 
