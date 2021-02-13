@@ -538,8 +538,8 @@ static int try_quantize_luminance_alpha_delta(
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float l0 = astc::clamp255f((color0.lane<0>() + color0.lane<1>() + color0.lane<2>()) * ((1.0f / 3.0f) * scale));
-	float l1 = astc::clamp255f((color1.lane<0>() + color1.lane<1>() + color1.lane<2>()) * ((1.0f / 3.0f) * scale));
+	float l0 = astc::clamp255f(hadd_rgb_s(color0) * ((1.0f / 3.0f) * scale));
+	float l1 = astc::clamp255f(hadd_rgb_s(color1) * ((1.0f / 3.0f) * scale));
 
 	float a0 = astc::clamp255f(color0.lane<3>() * scale);
 	float a1 = astc::clamp255f(color1.lane<3>() * scale);
@@ -710,16 +710,11 @@ static void quantize_luminance(
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float r0 = color0.lane<0>() * scale;
-	float g0 = color0.lane<1>() * scale;
-	float b0 = color0.lane<2>() * scale;
+	color0 = color0 * scale;
+	color1 = color1 * scale;
 
-	float r1 = color1.lane<0>() * scale;
-	float g1 = color1.lane<1>() * scale;
-	float b1 = color1.lane<2>() * scale;
-
-	float lum0 = astc::clamp255f((r0 + g0 + b0) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((r1 + g1 + b1) * (1.0f / 3.0f));
+	float lum0 = astc::clamp255f(hadd_rgb_s(color0) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f(hadd_rgb_s(color1) * (1.0f / 3.0f));
 
 	if (lum0 > lum1)
 	{
@@ -740,50 +735,50 @@ static void quantize_luminance_alpha(
 ) {
 	float scale = 1.0f / 257.0f;
 
-	float r0 = color0.lane<0>() * scale;
-	float g0 = color0.lane<1>() * scale;
-	float b0 = color0.lane<2>() * scale;
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
+	color0 = color0 * scale;
+	color1 = color1 * scale;
 
-	float r1 = color1.lane<0>() * scale;
-	float g1 = color1.lane<1>() * scale;
-	float b1 = color1.lane<2>() * scale;
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float lum0 = astc::clamp255f(hadd_rgb_s(color0) * (1.0f / 3.0f));
+	float lum1 = astc::clamp255f(hadd_rgb_s(color1) * (1.0f / 3.0f));
 
-	float lum0 = astc::clamp255f((r0 + g0 + b0) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f((r1 + g1 + b1) * (1.0f / 3.0f));
+	float a0 = astc::clamp255f(color0.lane<3>());
+	float a1 = astc::clamp255f(color1.lane<3>());
 
 	// if the endpoints are *really* close, then pull them apart slightly;
 	// this affords for >8 bits precision for normal maps.
-	if (quant_level > 18 && fabsf(lum0 - lum1) < 3.0f)
+	if (quant_level > 18)
 	{
-		if (lum0 < lum1)
+		if (fabsf(lum0 - lum1) < 3.0f)
 		{
-			lum0 -= 0.5f;
-			lum1 += 0.5f;
+			if (lum0 < lum1)
+			{
+				lum0 -= 0.5f;
+				lum1 += 0.5f;
+			}
+			else
+			{
+				lum0 += 0.5f;
+				lum1 -= 0.5f;
+			}
+			lum0 = astc::clamp255f(lum0);
+			lum1 = astc::clamp255f(lum1);
 		}
-		else
+
+		if (fabsf(a0 - a1) < 3.0f)
 		{
-			lum0 += 0.5f;
-			lum1 -= 0.5f;
+			if (a0 < a1)
+			{
+				a0 -= 0.5f;
+				a1 += 0.5f;
+			}
+			else
+			{
+				a0 += 0.5f;
+				a1 -= 0.5f;
+			}
+			a0 = astc::clamp255f(a0);
+			a1 = astc::clamp255f(a1);
 		}
-		lum0 = astc::clamp255f(lum0);
-		lum1 = astc::clamp255f(lum1);
-	}
-	if (quant_level > 18 && fabsf(a0 - a1) < 3.0f)
-	{
-		if (a0 < a1)
-		{
-			a0 -= 0.5f;
-			a1 += 0.5f;
-		}
-		else
-		{
-			a0 += 0.5f;
-			a1 -= 0.5f;
-		}
-		a0 = astc::clamp255f(a0);
-		a1 = astc::clamp255f(a1);
 	}
 
 	output[0] = color_quant_tables[quant_level][astc::flt2int_rtn(lum0)];
