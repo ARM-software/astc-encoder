@@ -204,7 +204,7 @@ static int try_quantize_rgba_blue_contract(
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
 /* attempt to quantize an RGB endpoint value with delta-encoding. */
-static int try_quantize_rgb_delta(
+static bool try_quantize_rgb_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[6],
@@ -263,7 +263,7 @@ static int try_quantize_rgb_delta(
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
 	{
-		return 0;
+		return false;
 	}
 
 	// insert top bit of the base into the offset
@@ -288,7 +288,7 @@ static int try_quantize_rgb_delta(
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the sum of the encoded offsets is nonnegative, else encoding fails
@@ -313,7 +313,7 @@ static int try_quantize_rgb_delta(
 
 	if (r1du + g1du + b1du < 0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the offsets produce legitimate sums as well.
@@ -322,7 +322,7 @@ static int try_quantize_rgb_delta(
 	b1du += b0b;
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 
 	// OK, we've come this far; we can now encode legitimate values.
@@ -333,7 +333,7 @@ static int try_quantize_rgb_delta(
 	output[4] = b0be;
 	output[5] = b1de;
 
-	return 1;
+	return true;
 }
 
 static bool try_quantize_rgb_delta_blue_contract(
@@ -483,7 +483,7 @@ static bool try_quantize_rgb_delta_blue_contract(
 	return true;
 }
 
-static int try_quantize_alpha_delta(
+static bool try_quantize_alpha_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -505,7 +505,7 @@ static int try_quantize_alpha_delta(
 	a1d -= a0b;
 	if (a1d > 63 || a1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	a1d &= 0x7F;
 	a1d |= (a0b & 0x100) >> 1;
@@ -513,7 +513,7 @@ static int try_quantize_alpha_delta(
 	int a1du = color_unquant_tables[quant_level][a1de];
 	if ((a1d ^ a1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	a1du &= 0x7F;
 	if (a1du & 0x40)
@@ -523,11 +523,11 @@ static int try_quantize_alpha_delta(
 	a1du += a0b;
 	if (a1du < 0 || a1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	output[6] = a0be;
 	output[7] = a1de;
-	return 1;
+	return true;
 }
 
 static int try_quantize_luminance_alpha_delta(
@@ -615,17 +615,17 @@ static int try_quantize_luminance_alpha_delta(
 	return 1;
 }
 
-static int try_quantize_rgba_delta(
+static bool try_quantize_rgba_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	int alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quant_level);
+	bool alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quant_level);
 
-	if (alpha_delta_res == 0)
+	if (alpha_delta_res == false)
 	{
-		return 0;
+		return false;
 	}
 
 	return try_quantize_rgb_delta(color0, color1, output, quant_level);
