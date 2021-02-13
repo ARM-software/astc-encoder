@@ -530,7 +530,7 @@ static bool try_quantize_alpha_delta(
 	return true;
 }
 
-static int try_quantize_luminance_alpha_delta(
+static bool try_quantize_luminance_alpha_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -564,11 +564,11 @@ static int try_quantize_luminance_alpha_delta(
 	a1d -= a0b;
 	if (l1d > 63 || l1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	if (a1d > 63 || a1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	l1d &= 0x7F;
 	a1d &= 0x7F;
@@ -601,18 +601,18 @@ static int try_quantize_luminance_alpha_delta(
 	a1du += a0b;
 	if (l1du < 0 || l1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	if (a1du < 0 || a1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	output[0] = l0be;
 	output[1] = l1de;
 	output[2] = a0be;
 	output[3] = a1de;
 
-	return 1;
+	return true;
 }
 
 static bool try_quantize_rgba_delta(
