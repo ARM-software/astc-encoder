@@ -1427,8 +1427,7 @@ void recompute_ideal_colors_2planes(
 		{
 			vfloat4 v0 = ep->endpt0[i];
 			vfloat4 v1 = ep->endpt1[i];
-			float avgdif = ((v1.lane<0>() - v0.lane<0>()) + (v1.lane<1>() - v0.lane<1>()) + (v1.lane<2>() - v0.lane<2>())) * (1.0f / 3.0f);
-
+			float avgdif = hadd_rgb_s(v1 - v0) * (1.0f / 3.0f);
 			avgdif = astc::max(avgdif, 0.0f);
 
 			vfloat4 avg = (v0 + v1) * 0.5f;
