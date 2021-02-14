@@ -942,8 +942,12 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 {
+	// Clear lane to zero to ensure it's not in the dot()
 	a.set_lane<3>(0.0f);
-	return vfloat4(vaddvq_f32(vmulq_f32(a.m, b.m)));
+	a = vfloat4(vaddvq_f32(vmulq_f32(a.m, b.m)));
+	// Clear lane so we return only a vec3
+	a.set_lane<3>(0.0f);
+	return a;
 }
 
 /**
