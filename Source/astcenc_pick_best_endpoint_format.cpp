@@ -103,8 +103,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
 
-	float rgb_range_error = dot(sum_range_error.swz<0, 1, 2>(),
-	                            error_weight.swz<0, 1, 2>())
+	float rgb_range_error = dot3_s(sum_range_error.swz<0, 1, 2>(),
+	                               error_weight.swz<0, 1, 2>())
 	                      * 0.5f * static_cast<float>(partition_size);
 	float alpha_range_error = sum_range_error.lane<3>() * error_weight.lane<3>()
 	                        * 0.5f * static_cast<float>(partition_size);
@@ -131,10 +131,10 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		}
 
 		float bf = af - ep1_min;	// estimate of color-component spread in high endpoint color
-		float3 prd = ep1.swz<0, 1, 2>() - float3(cf, cf, cf);
-		float3 pdif = prd - ep0.swz<0, 1, 2>();
+		vfloat4 prd = (ep1 - vfloat4(cf)).swz<0, 1, 2>();
+		vfloat4 pdif = prd - ep0.swz<0, 1, 2>();
 		// estimate of color-component spread in low endpoint color
-		float df = astc::max(astc::max(fabsf(pdif.r), fabsf(pdif.g)), fabsf(pdif.b));
+		float df = hmax_s(abs(pdif));
 
 		int b = (int)bf;
 		int c = (int)cf;

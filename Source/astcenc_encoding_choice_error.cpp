@@ -83,12 +83,12 @@ static float compute_error_squared_rgb_single_partition(
 			continue;
 		}
 
-		float3 point = blk->texel3(i);
-		float param = dot(point, lin->bs);
-		float3 rp1 = lin->amod + param * lin->bis;
-		float3 dist = rp1 - point;
-		float3 ews = ewb->error_weights[i].swz<0, 1, 2>();
-		errorsum += dot(ews, dist * dist);
+		vfloat4 point = blk->texel(i);
+		float param = dot3_s(point, lin->bs);
+		vfloat4 rp1 = lin->amod + param * lin->bis;
+		vfloat4 dist = rp1 - point;
+		vfloat4 ews = ewb->error_weights[i];
+		errorsum += dot3_s(ews, dist * dist);
 	}
 
 	return errorsum;
@@ -117,8 +117,8 @@ void compute_encoding_choice_errors(
 	promise(partition_count > 0);
 	promise(texels_per_block > 0);
 
-	float3 averages[4];
-	float3 directions_rgb[4];
+	vfloat4 averages[4];
+	vfloat4 directions_rgb[4];
 	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 	vfloat4 inverse_color_scalefactors[4];
@@ -139,11 +139,15 @@ void compute_encoding_choice_errors(
 	for (int i = 0; i < partition_count; i++)
 	{
 		inverse_color_scalefactors[i] = 1.0f / max(color_scalefactors[i], 1e-7f);
-		float3 csf = color_scalefactors[i].swz<0, 1, 2>();
-		float3 icsf = inverse_color_scalefactors[i].swz<0, 1, 2>();
+
+		vfloat4 csf = color_scalefactors[i];
+		csf.set_lane<3>(0.0f);
+
+		vfloat4 icsf = inverse_color_scalefactors[i];
+		icsf.set_lane<3>(0.0f);
 
 		uncorr_rgb_lines[i].a = averages[i];
-		if (dot(directions_rgb[i], directions_rgb[i]) == 0.0f)
+		if (dot3_s(directions_rgb[i], directions_rgb[i]) == 0.0f)
 		{
 			uncorr_rgb_lines[i].b = normalize(csf);
 		}
@@ -152,8 +156,8 @@ void compute_encoding_choice_errors(
 			uncorr_rgb_lines[i].b = normalize(directions_rgb[i]);
 		}
 
-		samechroma_rgb_lines[i].a = float3(0.0f);
-		if (dot(averages[i], averages[i]) < 1e-20f)
+		samechroma_rgb_lines[i].a = vfloat4::zero();
+		if (dot3_s(averages[i], averages[i]) < 1e-20f)
 		{
 			samechroma_rgb_lines[i].b = normalize(csf);
 		}
@@ -165,22 +169,23 @@ void compute_encoding_choice_errors(
 		rgb_luma_lines[i].a = averages[i];
 		rgb_luma_lines[i].b = normalize(csf);
 
-		luminance_lines[i].a = float3(0.0f);
+		luminance_lines[i].a = vfloat4::zero();
 		luminance_lines[i].b = normalize(csf);
 
-		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
+		// TODO: Can these just be dot3() (not scalar - return three lanes)
+		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot3_s(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
 		proc_uncorr_rgb_lines[i].bs = uncorr_rgb_lines[i].b * csf;
 		proc_uncorr_rgb_lines[i].bis = uncorr_rgb_lines[i].b * icsf;
 
-		proc_samechroma_rgb_lines[i].amod = (samechroma_rgb_lines[i].a - samechroma_rgb_lines[i].b * dot(samechroma_rgb_lines[i].a, samechroma_rgb_lines[i].b)) * icsf;
+		proc_samechroma_rgb_lines[i].amod = (samechroma_rgb_lines[i].a - samechroma_rgb_lines[i].b *  dot3_s(samechroma_rgb_lines[i].a, samechroma_rgb_lines[i].b)) * icsf;
 		proc_samechroma_rgb_lines[i].bs = samechroma_rgb_lines[i].b * csf;
 		proc_samechroma_rgb_lines[i].bis = samechroma_rgb_lines[i].b * icsf;
 
-		proc_rgb_luma_lines[i].amod = (rgb_luma_lines[i].a - rgb_luma_lines[i].b * dot(rgb_luma_lines[i].a, rgb_luma_lines[i].b)) * icsf;
+		proc_rgb_luma_lines[i].amod = (rgb_luma_lines[i].a - rgb_luma_lines[i].b * dot3_s(rgb_luma_lines[i].a, rgb_luma_lines[i].b)) * icsf;
 		proc_rgb_luma_lines[i].bs = rgb_luma_lines[i].b * csf;
 		proc_rgb_luma_lines[i].bis = rgb_luma_lines[i].b * icsf;
 
-		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot(luminance_lines[i].a, luminance_lines[i].b)) * icsf;
+		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot3_s(luminance_lines[i].a, luminance_lines[i].b)) * icsf;
 		proc_luminance_lines[i].bs = luminance_lines[i].b * csf;
 		proc_luminance_lines[i].bis = luminance_lines[i].b * icsf;
 	}

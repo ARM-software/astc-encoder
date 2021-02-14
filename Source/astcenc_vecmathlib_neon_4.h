@@ -146,8 +146,6 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 2.
-	 *
-	 * TODO: Implement float2 as a SIMD register, and use permutes.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
 	{
@@ -157,11 +155,21 @@ struct vfloat4
 	/**
 	 * @brief Return a swizzled float 3.
 	 *
-	 * TODO: Implement float3 as a SIMD register, and use permutes.
+	 * TODO: Implement using permutes.
 	 */
-	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE float3 swz() const
+	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		return float3(lane<l0>(), lane<l1>(), lane<l2>());
+		return vfloat4(lane<l0>(), lane<l1>(), lane<l2>(), 0.0f);
+	}
+
+	/**
+	 * @brief Return a swizzled float 4.
+	 *
+	 * TODO: Implement using permutes.
+	 */
+	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE float3 swz() const
+	{
+		return float3(lane<l0>(), lane<l1>(), lane<l2>(), lane<l3>());
 	}
 
 	/**
@@ -927,6 +935,23 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
 	return dot(a, b).lane<0>();
+}
+
+/**
+ * @brief Return the dot product for the first 3 lanes, returning vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
+{
+	a.set_lane<3>(0.0f);
+	return vfloat4(vaddvq_f32(vmulq_f32(a.m, b.m)));
+}
+
+/**
+ * @brief Return the dot product for the first 3 lanes, returning scalar.
+ */
+ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
+{
+	return dot3(a, b).lane<0>();
 }
 
 /**

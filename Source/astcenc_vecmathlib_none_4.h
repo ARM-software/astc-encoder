@@ -147,8 +147,6 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 2.
-	 *
-	 * TODO: Implement float2 as a SIMD register, and use permutes.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
 	{
@@ -157,12 +155,18 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 3.
-	 *
-	 * TODO: Implement float3 as a SIMD register, and use permutes.
 	 */
-	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE float3 swz() const
+	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		return float3(lane<l0>(), lane<l1>(), lane<l2>());
+		return vfloat4(lane<l0>(), lane<l1>(), lane<l2>(), 0.0f);
+	}
+
+	/**
+	 * @brief Return a swizzled float 4.
+	 */
+	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE vfloat4 swz() const
+	{
+		return vfloat4(lane<l0>(), lane<l1>(), lane<l2>(), lane<l3>());
 	}
 
 	/**
@@ -1024,19 +1028,6 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* ptr)
 }
 
 /**
- * @brief Return the dot product for the full 4 lanes, returning vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
-{
-	float s = a.m[0] * b.m[0] +
-	          a.m[1] * b.m[1] +
-	          a.m[2] * b.m[2] +
-	          a.m[3] * b.m[3];
-
-	return vfloat4(s);
-}
-
-/**
  * @brief Return the dot product for the full 4 lanes, returning scalar.
  */
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
@@ -1045,6 +1036,33 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 	       a.m[1] * b.m[1] +
 	       a.m[2] * b.m[2] +
 	       a.m[3] * b.m[3];
+}
+
+/**
+ * @brief Return the dot product for the full 4 lanes, returning vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
+{
+	return vfloat4(dot_s(a, b));
+}
+
+/**
+ * @brief Return the dot product for first 3 lanes, returning scalar.
+ */
+ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
+{
+	return a.m[0] * b.m[0] +
+	       a.m[1] * b.m[1] +
+	       a.m[2] * b.m[2];
+}
+
+/**
+ * @brief Return the dot product for first 3 lanes, returning vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
+{
+	float d3 = dot3_s(a, b);
+	return vfloat4(d3, d3, d3, 0.0f);
 }
 
 /**

@@ -593,14 +593,11 @@ vtype3<T> operator*(T p, vtype3<T> q) {
 }
 
 typedef vtype2<float>        float2;
-typedef vtype3<float>        float3;
 typedef vtype3<int>          int3;
 
 static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
-static inline float dot(float3 p, float3 q)  { return p.r * q.r + p.g * q.g + p.b * q.b; }
 
 static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
-static inline float3 normalize(float3 p) { return p * astc::rsqrt(dot(p, p)); }
 
 /* ============================================================================
   Softfloat library with fp32 and fp16 conversion functionality.
@@ -653,8 +650,8 @@ struct line2
 // parametric line, 3D
 struct line3
 {
-	float3 a;
-	float3 b;
+	vfloat4 a;
+	vfloat4 b;
 };
 
 struct line4
@@ -673,9 +670,9 @@ struct processed_line2
 
 struct processed_line3
 {
-	float3 amod;
-	float3 bs;
-	float3 bis;
+	vfloat4 amod;
+	vfloat4 bs;
+	vfloat4 bis;
 };
 
 struct processed_line4

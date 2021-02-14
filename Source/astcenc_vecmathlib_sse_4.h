@@ -151,8 +151,6 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 2.
-	 *
-	 * TODO: Implement float2 as a SIMD register, and use permutes.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
 	{
@@ -161,12 +159,22 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 3.
-	 *
-	 * TODO: Implement float3 as a SIMD register, and use permutes.
 	 */
-	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE float3 swz() const
+	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		return float3(lane<l0>(), lane<l1>(), lane<l2>());
+		constexpr int mask = l0 | l1 << 2 | l2 << 4;
+		vfloat4 result(_mm_shuffle_ps(m, m, mask));
+		result.set_lane<3>(0.0f);
+		return result;
+	}
+
+	/**
+	 * @brief Return a swizzled float 4.
+	 */
+	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE vfloat4 swz() const
+	{
+		constexpr int mask = l0 | l1 << 2 | l2 << 4 | l3 << 6;
+		return vfloat4(_mm_shuffle_ps(m, m, mask));
 	}
 
 	/**
@@ -976,6 +984,19 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
 }
 
 /**
+ * @brief Return the dot product for the full 4 lanes, returning scalar.
+ */
+ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
+{
+#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
+	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0xFF));
+#else
+	vfloat4 m = a * b;
+	return hadd_s(m);
+#endif
+}
+
+/**
  * @brief Return the dot product for the full 4 lanes, returning vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
@@ -989,15 +1010,29 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Return the dot product for the full 4 lanes, returning scalar.
+ * @brief Return the dot product for the bottom 3 lanes, returning scalar.
  */
-ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
+ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 {
 #if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0xFF));
+	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0x77));
 #else
 	vfloat4 m = a * b;
-	return hadd_s(m);
+	return hadd_rgb_s(m);
+#endif
+}
+
+/**
+ * @brief Return the dot product for the full 4 lanes, returning vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
+{
+#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
+	return vfloat4(_mm_dp_ps(a.m, b.m, 0x77));
+#else
+	vfloat4 m = a * b;
+	float d3 = hadd_rgb_s(m);
+	return vfloat4(d3, d3, d3, 0.0f);
 #endif
 }
 

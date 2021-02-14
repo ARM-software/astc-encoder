@@ -136,14 +136,14 @@ void imageblock_initialize_deriv(
 		// compute derivatives for RGB first
 		if (pb->rgb_lns[i])
 		{
-			float3 fdata = pb->texel3(i);
-			fdata.r = sf16_to_float(lns_to_sf16((uint16_t)fdata.r));
-			fdata.g = sf16_to_float(lns_to_sf16((uint16_t)fdata.g));
-			fdata.b = sf16_to_float(lns_to_sf16((uint16_t)fdata.b));
+			vfloat4 fdata = pb->texel3(i);
+			fdata.set_lane<0>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<0>())));
+			fdata.set_lane<1>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<1>())));
+			fdata.set_lane<2>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<2>())));
 
-			float r = astc::max(fdata.r, 6e-5f);
-			float g = astc::max(fdata.g, 6e-5f);
-			float b = astc::max(fdata.b, 6e-5f);
+			float r = astc::max(fdata.lane<0>(), 6e-5f);
+			float g = astc::max(fdata.lane<1>(), 6e-5f);
+			float b = astc::max(fdata.lane<2>(), 6e-5f);
 
 			float rderiv = (float_to_lns(r * 1.05f) - float_to_lns(r)) / (r * 0.05f);
 			float gderiv = (float_to_lns(g * 1.05f) - float_to_lns(g)) / (g * 0.05f);

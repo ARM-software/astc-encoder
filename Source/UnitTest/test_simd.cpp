@@ -374,19 +374,38 @@ TEST(vfloat4, LaneID)
 	EXPECT_EQ(a.lane<3>(), 3.0f);
 }
 
+/** @brief Test vfloat4 swz to float4. */
+TEST(vfloat4, swz4)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat4 r = a.swz<0, 3, 2, 1>();
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 4.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 2.0f);
+
+	r = a.swz<3, 1, 1, 0>();
+	EXPECT_EQ(r.lane<0>(), 4.0f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 2.0f);
+	EXPECT_EQ(r.lane<3>(), 1.0f);
+}
+
 /** @brief Test vfloat4 swz to float3. */
 TEST(vfloat4, swz3)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
-	float3 r = a.swz<0, 3, 2>();
-	EXPECT_EQ(r.r, 1.0f);
-	EXPECT_EQ(r.g, 4.0f);
-	EXPECT_EQ(r.b, 3.0f);
+	vfloat4 r = a.swz<0, 3, 2>();
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 4.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 0.0f);
 
 	r = a.swz<3, 1, 1>();
-	EXPECT_EQ(r.r, 4.0f);
-	EXPECT_EQ(r.g, 2.0f);
-	EXPECT_EQ(r.b, 2.0f);
+	EXPECT_EQ(r.lane<0>(), 4.0f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
+	EXPECT_EQ(r.lane<2>(), 2.0f);
+	EXPECT_EQ(r.lane<3>(), 0.0f);
 }
 
 /** @brief Test vfloat4 swz to float2. */
@@ -928,6 +947,27 @@ TEST(vfloat4, dot_s)
 	vfloat4 b(1.0f, 0.5f, 0.25f, 0.125f);
 	float r = dot_s(a, b);
 	EXPECT_EQ(r, 4.0f);
+}
+
+/** @brief Test vfloat4 dot3. */
+TEST(vfloat4, dot3)
+{
+	vfloat4 a(1.0f, 2.0f, 4.0f, 8.0f);
+	vfloat4 b(1.0f, 0.5f, 0.25f, 0.125f);
+	vfloat4 r = dot3(a, b);
+	EXPECT_EQ(r.lane<0>(), 3.0f);
+	EXPECT_EQ(r.lane<1>(), 3.0f);
+	EXPECT_EQ(r.lane<2>(), 3.0f);
+	EXPECT_EQ(r.lane<3>(), 0.0f);
+}
+
+/** @brief Test vfloat4 dot3_s. */
+TEST(vfloat4, dot3_s)
+{
+	vfloat4 a(1.0f, 2.0f, 4.0f, 8.0f);
+	vfloat4 b(1.0f, 0.5f, 0.25f, 0.125f);
+	float r = dot3_s(a, b);
+	EXPECT_EQ(r, 3.0f);
 }
 
 /** @brief Test vfloat4 reciprocal. */

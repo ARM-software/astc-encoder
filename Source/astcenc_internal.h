@@ -515,11 +515,12 @@ struct imageblock
 		               data_a[index]);
 	}
 
-	inline float3 texel3(int index) const
+	inline vfloat4 texel3(int index) const
 	{
-		return float3(data_r[index],
-		              data_g[index],
-		              data_b[index]);
+		return vfloat4(data_r[index],
+		               data_g[index],
+		               data_b[index],
+		               0.0f);
 	}
 };
 
@@ -829,8 +830,8 @@ void compute_averages_and_directions_rgb(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const vfloat4* color_scalefactors,
-	float3* averages,
-	float3* directions_rgb);
+	vfloat4* averages,
+	vfloat4* directions_rgb);
 
 void compute_averages_and_directions_rgba(
 	const partition_info* pt,
@@ -844,10 +845,10 @@ void compute_averages_and_directions_3_components(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float3 * color_scalefactors,
+	const vfloat4 * color_scalefactors,
 	int omitted_component,
-	float3* averages,
-	float3* directions);
+	vfloat4* averages,
+	vfloat4* directions);
 
 void compute_averages_and_directions_2_components(
 	const partition_info* pt,
