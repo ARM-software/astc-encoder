@@ -162,8 +162,7 @@ struct vfloat4
 	 */
 	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		constexpr int mask = l0 | l1 << 2 | l2 << 4;
-		vfloat4 result(_mm_shuffle_ps(m, m, mask));
+		vfloat4 result(_mm_shuffle_ps(m, m, l0 | l1 << 2 | l2 << 4));
 		result.set_lane<3>(0.0f);
 		return result;
 	}
@@ -173,8 +172,7 @@ struct vfloat4
 	 */
 	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		constexpr int mask = l0 | l1 << 2 | l2 << 4 | l3 << 6;
-		return vfloat4(_mm_shuffle_ps(m, m, mask));
+		return vfloat4(_mm_shuffle_ps(m, m, l0 | l1 << 2 | l2 << 4 | l3 << 6));
 	}
 
 	/**
