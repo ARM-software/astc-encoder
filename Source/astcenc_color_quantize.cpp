@@ -115,7 +115,7 @@ static void quantize_rgba(
 }
 
 /* attempt to quantize RGB endpoint values with blue-contraction. Returns 1 on failure, 0 on success. */
-static int try_quantize_rgb_blue_contract(
+static bool try_quantize_rgb_blue_contract(
 	vfloat4 color0,	// assumed to be the smaller color
 	vfloat4 color1,	// assumed to be the larger color
 	int output[6],
@@ -141,7 +141,7 @@ static int try_quantize_rgb_blue_contract(
 	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
 		r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
 	{
-		return 0;
+		return false;
 	}
 
 	// quantize the inverse-blue-contracted color
@@ -165,7 +165,7 @@ static int try_quantize_rgb_blue_contract(
 	// we must only test AFTER blue-contraction.
 	if (ru1 + gu1 + bu1 <= ru0 + gu0 + bu0)
 	{
-		return 0;
+		return false;
 	}
 
 	output[0] = ri1;
@@ -175,7 +175,7 @@ static int try_quantize_rgb_blue_contract(
 	output[4] = bi1;
 	output[5] = bi0;
 
-	return 1;
+	return true;
 }
 
 /* quantize an RGBA color with blue-contraction */
@@ -204,7 +204,7 @@ static int try_quantize_rgba_blue_contract(
 // if the sum of the offsets is nonnegative, then we encode a regular delta.
 
 /* attempt to quantize an RGB endpoint value with delta-encoding. */
-static int try_quantize_rgb_delta(
+static bool try_quantize_rgb_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[6],
@@ -263,7 +263,7 @@ static int try_quantize_rgb_delta(
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
 	{
-		return 0;
+		return false;
 	}
 
 	// insert top bit of the base into the offset
@@ -288,7 +288,7 @@ static int try_quantize_rgb_delta(
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the sum of the encoded offsets is nonnegative, else encoding fails
@@ -313,7 +313,7 @@ static int try_quantize_rgb_delta(
 
 	if (r1du + g1du + b1du < 0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the offsets produce legitimate sums as well.
@@ -322,7 +322,7 @@ static int try_quantize_rgb_delta(
 	b1du += b0b;
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 
 	// OK, we've come this far; we can now encode legitimate values.
@@ -333,10 +333,10 @@ static int try_quantize_rgb_delta(
 	output[4] = b0be;
 	output[5] = b1de;
 
-	return 1;
+	return true;
 }
 
-static int try_quantize_rgb_delta_blue_contract(
+static bool try_quantize_rgb_delta_blue_contract(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[6],
@@ -363,7 +363,7 @@ static int try_quantize_rgb_delta_blue_contract(
 	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
 	    r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
 	{
-		return 0;
+		return false;
 	}
 
 	// transform r0 to unorm9
@@ -408,7 +408,7 @@ static int try_quantize_rgb_delta_blue_contract(
 	// check if the difference is too large to be encodable.
 	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
 	{
-		return 0;
+		return false;
 	}
 
 	// insert top bit of the base into the offset
@@ -433,7 +433,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the sum of the encoded offsets is negative, else encoding fails
@@ -459,7 +459,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (r1du + g1du + b1du >= 0)
 	{
-		return 0;
+		return false;
 	}
 
 	// check that the offsets produce legitimate sums as well.
@@ -469,7 +469,7 @@ static int try_quantize_rgb_delta_blue_contract(
 
 	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 
 	// OK, we've come this far; we can now encode legitimate values.
@@ -480,10 +480,10 @@ static int try_quantize_rgb_delta_blue_contract(
 	output[4] = b0be;
 	output[5] = b1de;
 
-	return 1;
+	return true;
 }
 
-static int try_quantize_alpha_delta(
+static bool try_quantize_alpha_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -505,7 +505,7 @@ static int try_quantize_alpha_delta(
 	a1d -= a0b;
 	if (a1d > 63 || a1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	a1d &= 0x7F;
 	a1d |= (a0b & 0x100) >> 1;
@@ -513,7 +513,7 @@ static int try_quantize_alpha_delta(
 	int a1du = color_unquant_tables[quant_level][a1de];
 	if ((a1d ^ a1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	a1du &= 0x7F;
 	if (a1du & 0x40)
@@ -523,14 +523,14 @@ static int try_quantize_alpha_delta(
 	a1du += a0b;
 	if (a1du < 0 || a1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	output[6] = a0be;
 	output[7] = a1de;
-	return 1;
+	return true;
 }
 
-static int try_quantize_luminance_alpha_delta(
+static bool try_quantize_luminance_alpha_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -564,11 +564,11 @@ static int try_quantize_luminance_alpha_delta(
 	a1d -= a0b;
 	if (l1d > 63 || l1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	if (a1d > 63 || a1d < -64)
 	{
-		return 0;
+		return false;
 	}
 	l1d &= 0x7F;
 	a1d &= 0x7F;
@@ -581,11 +581,11 @@ static int try_quantize_luminance_alpha_delta(
 	int a1du = color_unquant_tables[quant_level][a1de];
 	if ((l1d ^ l1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	if ((a1d ^ a1du) & 0xC0)
 	{
-		return 0;
+		return false;
 	}
 	l1du &= 0x7F;
 	a1du &= 0x7F;
@@ -601,37 +601,37 @@ static int try_quantize_luminance_alpha_delta(
 	a1du += a0b;
 	if (l1du < 0 || l1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	if (a1du < 0 || a1du > 0x1FF)
 	{
-		return 0;
+		return false;
 	}
 	output[0] = l0be;
 	output[1] = l1de;
 	output[2] = a0be;
 	output[3] = a1de;
 
-	return 1;
+	return true;
 }
 
-static int try_quantize_rgba_delta(
+static bool try_quantize_rgba_delta(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
 	int quant_level
 ) {
-	int alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quant_level);
+	bool alpha_delta_res = try_quantize_alpha_delta(color0, color1, output, quant_level);
 
-	if (alpha_delta_res == 0)
+	if (alpha_delta_res == false)
 	{
-		return 0;
+		return false;
 	}
 
 	return try_quantize_rgb_delta(color0, color1, output, quant_level);
 }
 
-static int try_quantize_rgba_delta_blue_contract(
+static bool try_quantize_rgba_delta_blue_contract(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[8],
@@ -643,7 +643,7 @@ static int try_quantize_rgba_delta_blue_contract(
 
 	if (alpha_delta_res == 0)
 	{
-		return 0;
+		return false;
 	}
 
 	return try_quantize_rgb_delta_blue_contract(color0, color1, output, quant_level);
@@ -1620,7 +1620,7 @@ static void quantize_hdr_luminance_large_range3(
 	output[1] = color_quant_tables[quant_level][v1];
 }
 
-static int try_quantize_hdr_luminance_small_range3(
+static bool try_quantize_hdr_luminance_small_range3(
 	vfloat4 color0,
 	vfloat4 color1,
 	int output[2],
@@ -1642,7 +1642,7 @@ static int try_quantize_hdr_luminance_small_range3(
 	// difference of more than a factor-of-2 results in immediate failure.
 	if (ilum1 - ilum0 > 2048)
 	{
-		return 0;
+		return false;
 	}
 
 	int lowval, highval, diffval;
@@ -1674,7 +1674,7 @@ static int try_quantize_hdr_luminance_small_range3(
 			{
 				output[0] = v0e;
 				output[1] = v1e;
-				return 1;
+				return true;
 			}
 		}
 	}
@@ -1693,14 +1693,14 @@ static int try_quantize_hdr_luminance_small_range3(
 	v0d = color_unquant_tables[quant_level][v0e];
 	if ((v0d & 0x80) == 0)
 	{
-		return 0;
+		return false;
 	}
 
 	lowval = (lowval & ~0x7F) | (v0d & 0x7F);
 	diffval = highval - lowval;
 	if (diffval < 0 || diffval > 31)
 	{
-		return 0;
+		return false;
 	}
 
 	v1 = ((lowval >> 2) & 0xE0) | diffval;
@@ -1708,12 +1708,12 @@ static int try_quantize_hdr_luminance_small_range3(
 	v1d = color_unquant_tables[quant_level][v1e];
 	if ((v1d & 0xE0) != (v1 & 0xE0))
 	{
-		return 0;
+		return false;
 	}
 
 	output[0] = v0e;
 	output[1] = v1e;
-	return 1;
+	return true;
 }
 
 static void quantize_hdr_alpha3(
