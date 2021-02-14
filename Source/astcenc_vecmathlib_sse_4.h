@@ -1059,12 +1059,19 @@ ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
 {
-	// Compute 1/divisor using fast rsqrt with no NR iterations
+	// Compute 1/divisor using rsqrt with one NR iteration
+	vfloat4 half = vfloat4(0.5f);
+	vfloat4 three = vfloat4(3.0f);
 	vfloat4 length = dot(a, a);
+
 	__m128 raw = _mm_rsqrt_ps(length.m);
 
+	// Apply NR iteration
+	__m128 ref = _mm_mul_ps(_mm_mul_ps(length.m, raw), raw);
+	       ref = _mm_mul_ps(_mm_mul_ps(half.m, raw), _mm_sub_ps(three.m, ref));
+
 	// Apply scaling factor
-	return vfloat4(_mm_mul_ps(a.m, raw));
+	return vfloat4(_mm_mul_ps(a.m, ref));
 }
 
 /**
