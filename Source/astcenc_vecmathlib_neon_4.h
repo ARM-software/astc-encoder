@@ -167,9 +167,9 @@ struct vfloat4
 	 *
 	 * TODO: Implement using permutes.
 	 */
-	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE float3 swz() const
+	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		return float3(lane<l0>(), lane<l1>(), lane<l2>(), lane<l3>());
+		return vfloat4(lane<l0>(), lane<l1>(), lane<l2>(), lane<l3>());
 	}
 
 	/**
