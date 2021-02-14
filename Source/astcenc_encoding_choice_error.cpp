@@ -83,7 +83,7 @@ static float compute_error_squared_rgb_single_partition(
 			continue;
 		}
 
-		vfloat4 point = blk->texel(i);
+		vfloat4 point = blk->texel3(i);
 		float param = dot3_s(point, lin->bs);
 		vfloat4 rp1 = lin->amod + param * lin->bis;
 		vfloat4 dist = rp1 - point;
