@@ -6,6 +6,19 @@ release of the 2.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running astcenc using 6 threads.
 
+<!-- ---------------------------------------------------------------------- -->
+## 2.5
+
+**Status:** In development
+
+The 2.5 release is the sixth release in the 2.x series. For this release
+onwards the 2.x series is aiming to freeze image quality compared to 2.4,
+allowing only minor differences caused by rounding and association changes.
+
+**General:**
+  * **Feature:** The `ISA_INVARIANCE` build option is no longer supported, as
+    there is no longer any performance benefit from the variant paths. All
+	builds are now using the equivalent of the `ISA_INVARIANCE=ON` setting.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.4

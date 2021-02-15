@@ -105,23 +105,6 @@ To enable this binary variant add `-DISA_NONE=ON` to the CMake command line
 when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
 
-### ISA Invariance
-
-Normal builds are not ISA invariant, meaning that builds for different
-instruction sets on the same CPU hardware can produce subtly different outputs.
-This is caused by precision differences between, e.g, FMA and DOT hardware
-instructions and their equivalent C code.
-
-To build an ISA invariant build add `-DISA_INVARIANCE=ON` to the CMake command
-line when configuring. Note that this will reduce performance, as it will
-disable use of hardware instructions that cannot be matched by the reference
-functionality available in SSE2.
-
-Note that even with ISA invariance enabled we do not guarantee invariant output
-across CPU implementations or compilers. The C specification does not require
-bit-exact implementations for many maths library functions (`sin()`, `cos()`,
-etc) and there are known precision differences across vendors.
-
 ### Build Types
 
 We support and test the following `CMAKE_BUILD_TYPE` options.

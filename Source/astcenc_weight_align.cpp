@@ -137,7 +137,7 @@ static void compute_angular_offsets(
 	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
 	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	{
-		vfloat ssize = fast_recip(rcp_stepsize);
+		vfloat ssize = 1.0f / rcp_stepsize;
 		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
 		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));
 		vfloat ofs = angle * ssize * mult;
@@ -218,7 +218,7 @@ static void compute_lowest_and_highest_weight(
 		// The cut_(lowest/highest)_weight_error indicate the error that
 		// results from  forcing samples that should have had the weight value
 		// one step (up/down).
-		vfloat ssize = fast_recip(rcp_stepsize);
+		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, &error[sp]);
 		storea(cut_low_weight_err * errscale, &cut_low_weight_error[sp]);

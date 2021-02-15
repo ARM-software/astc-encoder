@@ -670,22 +670,6 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat1 a)
 }
 
 /**
- * @brief Generate a reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat1 recip(vfloat1 b)
-{
-	return 1.0f / b;
-}
-
-/**
- * @brief Generate an approximate reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat1 fast_recip(vfloat1 b)
-{
-	return 1.0f / b;
-}
-
-/**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat1 select(vfloat1 a, vfloat1 b, vmask1 cond)

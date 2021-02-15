@@ -989,12 +989,8 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
  */
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0xFF));
-#else
 	vfloat4 m = a * b;
 	return hadd_s(m);
-#endif
 }
 
 /**
@@ -1002,12 +998,8 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	return vfloat4(_mm_dp_ps(a.m, b.m, 0xFF));
-#else
 	vfloat4 m = a * b;
 	return vfloat4(hadd_s(m));
-#endif
 }
 
 /**
@@ -1015,12 +1007,8 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	return _mm_cvtss_f32(_mm_dp_ps(a.m, b.m, 0x77));
-#else
 	vfloat4 m = a * b;
 	return hadd_rgb_s(m);
-#endif
 }
 
 /**
@@ -1028,13 +1016,9 @@ ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 {
-#if (ASTCENC_SSE >= 41) && (ASTCENC_ISA_INVARIANCE == 0)
-	return vfloat4(_mm_dp_ps(a.m, b.m, 0x77));
-#else
 	vfloat4 m = a * b;
 	float d3 = hadd_rgb_s(m);
 	return vfloat4(d3, d3, d3, 0.0f);
-#endif
 }
 
 /**
@@ -1042,27 +1026,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 {
-#if ASTCENC_ISA_INVARIANCE == 0
-	// Reciprocal with a single NR iteration
-	__m128 t1 = _mm_rcp_ps(b.m);
-	__m128 t2 = _mm_mul_ps(b.m, _mm_mul_ps(t1, t1));
-	return vfloat4(_mm_sub_ps(_mm_add_ps(t1, t1), t2));
-#else
 	return 1.0f / b;
-#endif
-}
-
-/**
- * @brief Generate an approximate reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
-{
-#if ASTCENC_ISA_INVARIANCE == 0
-	// Reciprocal with no NR iteration
-	return vfloat4(_mm_rcp_ps(b.m));
-#else
-	return 1.0f / b;
-#endif
 }
 
 /**
@@ -1070,23 +1034,8 @@ ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
 {
-#if ASTCENC_ISA_INVARIANCE == 0
-	// Compute 1/divisor using rsqrt with one NR iteration
-	vfloat4 length = dot(a, a);
-	__m128 raw = _mm_rsqrt_ps(length.m);
-
-	// Apply NR iteration
-	vfloat4 half = vfloat4(0.5f);
-	vfloat4 three = vfloat4(3.0f);
-	__m128 ref = _mm_mul_ps(_mm_mul_ps(length.m, raw), raw);
-	       ref = _mm_mul_ps(_mm_mul_ps(half.m, raw), _mm_sub_ps(three.m, ref));
-
-	// Apply scaling factor
-	return vfloat4(_mm_mul_ps(a.m, ref));
-#else
 	vfloat4 length = dot(a, a);
 	return a / sqrt(length);
-#endif
 }
 
 /**

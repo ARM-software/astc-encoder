@@ -79,13 +79,6 @@ else()
     message("  -- No SIMD backend - OFF")
 endif()
 
-option(ISA_INVARIANCE "Enable builds for ISA invariance")
-if(${ISA_INVARIANCE})
-    message("  -- ISA invariant backend - ON")
-else()
-    message("  -- ISA invariant backend - OFF")
-endif()
-
 option(DECOMPRESSOR "Enable builds for decompression only")
 if(${DECOMPRESSOR})
     message("  -- Decompress-only backend - ON")

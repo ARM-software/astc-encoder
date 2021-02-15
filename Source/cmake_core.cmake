@@ -63,8 +63,6 @@ target_compile_features(astc${CODEC}-${ISA_SIMD}
 
 target_compile_definitions(astc${CODEC}-${ISA_SIMD}
     PRIVATE
-        # Common defines
-        ASTCENC_ISA_INVARIANCE=$<BOOL:${ISA_INVARIANCE}>
         # MSVC defines
         $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 

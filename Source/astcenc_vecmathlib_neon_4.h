@@ -959,22 +959,6 @@ ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Generate a reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
-{
-	return 1.0f / b;
-}
-
-/**
- * @brief Generate an approximate reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 fast_recip(vfloat4 b)
-{
-	return vfloat4(vrecpeq_f32(b.m));
-}
-
-/**
  * @brief Normalize a vector to unit length.
  */
 ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)

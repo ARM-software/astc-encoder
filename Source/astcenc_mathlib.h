@@ -73,10 +73,6 @@
   #define ASTCENC_VECALIGN 16
 #endif
 
-#ifndef ASTCENC_ISA_INVARIANCE
-  #define ASTCENC_ISA_INVARIANCE 0
-#endif
-
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
 	#include <immintrin.h>
 #endif

@@ -2,7 +2,7 @@
 
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020 Arm Limited
+#  Copyright 2020-2021 Arm Limited
 #  Copyright 2020 Google Inc.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -31,7 +31,6 @@ for source in ./*.cpp; do
       -DASTCENC_SSE=0 \
       -DASTCENC_AVX=0 \
       -DASTCENC_POPCNT=0 \
-      -DASTCENC_ISA_INVARIANCE=0 \
       -I. -std=c++14 -mfpmath=sse -msse2 -fno-strict-aliasing -O0 -g \
       $source \
       -o ${BASE}.o
@@ -45,7 +44,6 @@ for fuzzer in ./Fuzzers/fuzz_*.cpp; do
       -DASTCENC_SSE=0 \
       -DASTCENC_AVX=0 \
       -DASTCENC_POPCNT=0 \
-      -DASTCENC_ISA_INVARIANCE=0 \
       -I. -std=c++14 $fuzzer $LIB_FUZZING_ENGINE ./libastcenc.a \
       -o $OUT/$(basename -s .cpp $fuzzer)
 done
