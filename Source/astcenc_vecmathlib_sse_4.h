@@ -572,13 +572,20 @@ ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 }
 
 /**
+ * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
+{
+	// Cast due to missing intrinsics
+	_mm_storeu_ps((float*)p, _mm_castsi128_ps(a.m));
+}
+
+/**
  * @brief Store lowest N (vector width) bytes into an unaligned address.
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	// _mm_storeu_si32(ptr, v.m);
+	// Cast due to missing intrinsics
 	_mm_store_ss((float*)p, _mm_castsi128_ps(a.m));
 }
 

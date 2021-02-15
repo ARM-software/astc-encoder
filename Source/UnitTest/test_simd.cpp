@@ -904,6 +904,18 @@ TEST(vfloat4, gatherf)
 	EXPECT_EQ(r.lane<3>(), 2.0f);
 }
 
+/** @brief Test vfloat4 storea. */
+TEST(vfloat4, storea)
+{
+	alignas(16) float out[4];
+	vfloat4 a(f32_data);
+	storea(a, out);
+	EXPECT_EQ(out[0], 0.0f);
+	EXPECT_EQ(out[1], 1.0f);
+	EXPECT_EQ(out[2], 2.0f);
+	EXPECT_EQ(out[3], 3.0f);
+}
+
 /** @brief Test vfloat4 store. */
 TEST(vfloat4, store)
 {
@@ -914,18 +926,6 @@ TEST(vfloat4, store)
 	EXPECT_EQ(out[2], 1.0f);
 	EXPECT_EQ(out[3], 2.0f);
 	EXPECT_EQ(out[4], 3.0f);
-}
-
-/** @brief Test vfloat4 storea. */
-TEST(vfloat4, storea)
-{
-	alignas(16) float out[4];
-	vfloat4 a(f32_data);
-	store(a, out);
-	EXPECT_EQ(out[0], 0.0f);
-	EXPECT_EQ(out[1], 1.0f);
-	EXPECT_EQ(out[2], 2.0f);
-	EXPECT_EQ(out[3], 3.0f);
 }
 
 /** @brief Test vfloat4 dot. */
@@ -1395,6 +1395,18 @@ TEST(vint4, storea)
 	EXPECT_EQ(out[1], 1);
 	EXPECT_EQ(out[2], 2);
 	EXPECT_EQ(out[3], 3);
+}
+
+/** @brief Test vint4 store. */
+TEST(vint4, store)
+{
+	alignas(16) int out[5];
+	vint4 a(s32_data);
+	store(a, &(out[1]));
+	EXPECT_EQ(out[1], 0);
+	EXPECT_EQ(out[2], 1);
+	EXPECT_EQ(out[3], 2);
+	EXPECT_EQ(out[4], 3);
 }
 
 /** @brief Test vint4 store_nbytes. */

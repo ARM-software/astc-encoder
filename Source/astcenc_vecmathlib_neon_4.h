@@ -535,6 +535,14 @@ ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 }
 
 /**
+ * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
+{
+	vst1q_s32(p, a.m);
+}
+
+/**
  * @brief Store lowest N (vector width) bytes into an unaligned address.
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
