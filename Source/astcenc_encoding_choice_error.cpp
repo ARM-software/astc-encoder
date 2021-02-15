@@ -62,36 +62,72 @@ void merge_endpoints(
 
 // function to compute the error across a tile when using a particular line for
 // a particular partition.
-static float compute_error_squared_rgb_single_partition(
+static void compute_error_squared_rgb_single_partition(
 	int partition_to_test,
 	const block_size_descriptor* bsd,
 	const partition_info* pt,	// the partition that we use when computing the squared-error.
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const processed_line3* lin	// the line for the partition.
+	const processed_line3* uncor_pline,
+	float* uncor_err,
+	const processed_line3* samec_pline,
+	float* samec_err,
+	const processed_line3* rgbl_pline,
+	float* rgbl_err,
+	const processed_line3* l_pline,
+	float* l_err
 ) {
 	int texels_per_block = bsd->texel_count;
-	float errorsum = 0.0f;
+	float uncor_errorsum = 0.0f;
+	float samec_errorsum = 0.0f;
+	float rgbl_errorsum = 0.0f;
+	float l_errorsum = 0.0f;
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
 		int partition = pt->partition_of_texel[i];
 		float texel_weight = ewb->texel_weight_rgb[i];
-
 		if (partition != partition_to_test || texel_weight < 1e-20f)
 		{
 			continue;
 		}
 
 		vfloat4 point = blk->texel3(i);
-		float param = dot3_s(point, lin->bs);
-		vfloat4 rp1 = lin->amod + param * lin->bis;
-		vfloat4 dist = rp1 - point;
 		vfloat4 ews = ewb->error_weights[i];
-		errorsum += dot3_s(ews, dist * dist);
+
+		{
+			float param = dot3_s(point, uncor_pline->bs);
+			vfloat4 rp1 = uncor_pline->amod + param * uncor_pline->bis;
+			vfloat4 dist = rp1 - point;
+			uncor_errorsum += dot3_s(ews, dist * dist);
+		}
+
+		{
+			float param = dot3_s(point, samec_pline->bs);
+			vfloat4 rp1 = samec_pline->amod + param * samec_pline->bis;
+			vfloat4 dist = rp1 - point;
+			samec_errorsum += dot3_s(ews, dist * dist);
+		}
+
+		{
+			float param = dot3_s(point,  rgbl_pline->bs);
+			vfloat4 rp1 = rgbl_pline->amod + param * rgbl_pline->bis;
+			vfloat4 dist = rp1 - point;
+			rgbl_errorsum += dot3_s(ews, dist * dist);
+		}
+
+		{
+			float param = dot3_s(point, l_pline->bs);
+			vfloat4 rp1 = l_pline->amod + param * l_pline->bis;
+			vfloat4 dist = rp1 - point;
+			l_errorsum += dot3_s(ews, dist * dist);
+		}
 	}
 
-	return errorsum;
+	*uncor_err = uncor_errorsum;
+	*samec_err = samec_errorsum;
+	*rgbl_err = rgbl_errorsum;
+	*l_err = l_errorsum;
 }
 
 /*
@@ -197,16 +233,16 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		uncorr_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_uncorr_rgb_lines[i]));
-
-		samechroma_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_samechroma_rgb_lines[i]));
-
-		rgb_luma_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_rgb_luma_lines[i]));
-
-		luminance_rgb_error[i] = compute_error_squared_rgb_single_partition(i, bsd, pi, pb, ewb, &(proc_luminance_lines[i]));
+		compute_error_squared_rgb_single_partition(
+		    i, bsd, pi, pb, ewb,
+		    proc_uncorr_rgb_lines + i, uncorr_rgb_error + i,
+		    proc_samechroma_rgb_lines + i, samechroma_rgb_error + i,
+			proc_rgb_luma_lines + i, rgb_luma_error + i,
+			proc_luminance_lines + i, luminance_rgb_error + i);
 	}
 
 	// Compute the error that arises from just ditching alpha
+	// TODO: Skip this if the input has constant 1 alpha
 	float alpha_drop_error[4] { 0 };
 	for (int i = 0; i < texels_per_block; i++)
 	{

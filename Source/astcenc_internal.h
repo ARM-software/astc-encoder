@@ -1030,11 +1030,6 @@ void write_imageblock(
 	int zpos,
 	astcenc_swizzle swz);
 
-// helper function to check whether a given picture-block has alpha that is not
-// just uniformly 1.
-int imageblock_uses_alpha(
-	const imageblock * pb);
-
 float compute_symbolic_block_difference(
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
