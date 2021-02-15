@@ -1325,21 +1325,10 @@ void compress_block(
 			// Encode as UNORM16 if NOT using HDR.
 			scb.block_mode = -2;
 			scb.partition_count = 0;
-			vfloat4 orig_color = blk->origin_texel;
-			float red   = orig_color.lane<0>();
-			float green = orig_color.lane<1>();
-			float blue  = orig_color.lane<2>();
-			float alpha = orig_color.lane<3>();
 
-			red = astc::clamp(red, 0.0f, 1.0f);
-			green = astc::clamp(green, 0.0f, 1.0f);
-			blue = astc::clamp(blue, 0.0f, 1.0f);
-			alpha = astc::clamp(alpha, 0.0f, 1.0f);
-
-			scb.constant_color[0] = astc::flt2int_rtn(red * 65535.0f);
-			scb.constant_color[1] = astc::flt2int_rtn(green * 65535.0f);
-			scb.constant_color[2] = astc::flt2int_rtn(blue * 65535.0f);
-			scb.constant_color[3] = astc::flt2int_rtn(alpha * 65535.0f);
+			vfloat4 color_u16f = clamp(0.0f, 1.0f, blk->origin_texel) * 65535.0f;
+			vint4 color_u16i = float_to_int_rtn(color_u16f);
+			store(color_u16i, scb.constant_color);
 		}
 
 		trace_add_data("exit", "quality hit");
