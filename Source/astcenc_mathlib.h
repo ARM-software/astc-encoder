@@ -531,65 +531,7 @@ vtype2<T> operator*(T p, vtype2<T> q) {
 	return vtype2<T> { p * q.r, p * q.g };
 }
 
-template <typename T> class vtype3
-{
-public:
-	// Data storage
-	T r, g, b;
-
-	// Default constructor
-	vtype3() {}
-
-	// Initialize from 1 scalar
-	vtype3(T p) : r(p), g(p), b(p) {}
-
-	// Initialize from N scalars
-	vtype3(T p, T q, T s) : r(p), g(q), b(s) {}
-
-	// Initialize from another vector
-	vtype3(const vtype3 & p) : r(p.r), g(p.g), b(p.b) {}
-
-	// Assignment operator
-	vtype3& operator=(const vtype3 &s) {
-		this->r = s.r;
-		this->g = s.g;
-		this->b = s.b;
-		return *this;
-	}
-};
-
-// Vector by vector addition
-template <typename T>
-vtype3<T> operator+(vtype3<T> p, vtype3<T> q) {
-	return vtype3<T> { p.r + q.r, p.g + q.g, p.b + q.b };
-}
-
-// Vector by vector subtraction
-template <typename T>
-vtype3<T> operator-(vtype3<T> p, vtype3<T> q) {
-	return vtype3<T> { p.r - q.r, p.g - q.g, p.b - q.b };
-}
-
-// Vector by vector multiplication operator
-template <typename T>
-vtype3<T> operator*(vtype3<T> p, vtype3<T> q) {
-	return vtype3<T> { p.r * q.r, p.g * q.g, p.b * q.b };
-}
-
-// Vector by scalar multiplication operator
-template <typename T>
-vtype3<T> operator*(vtype3<T> p, T q) {
-	return vtype3<T> { p.r * q, p.g * q, p.b * q };
-}
-
-// Scalar by vector multiplication operator
-template <typename T>
-vtype3<T> operator*(T p, vtype3<T> q) {
-	return vtype3<T> { p * q.r, p * q.g, p * q.b };
-}
-
 typedef vtype2<float>        float2;
-typedef vtype3<int>          int3;
 
 static inline float dot(float2 p, float2 q)  { return p.r * q.r + p.g * q.g; }
 

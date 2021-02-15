@@ -119,13 +119,13 @@ static void compute_pixel_region_variance(
 	astcenc_swizzle swz = arg->swz;
 	int have_z = arg->have_z;
 
-	int size_x = arg->size.r;
-	int size_y = arg->size.g;
-	int size_z = arg->size.b;
+	int size_x = arg->size_x;
+	int size_y = arg->size_y;
+	int size_z = arg->size_z;
 
-	int offset_x = arg->offset.r;
-	int offset_y = arg->offset.g;
-	int offset_z = arg->offset.b;
+	int offset_x = arg->offset_x;
+	int offset_y = arg->offset_y;
+	int offset_z = arg->offset_z;
 
 	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
 	int alpha_kernel_radius = arg->alpha_kernel_radius;
@@ -536,15 +536,14 @@ void compute_averages_and_variances(
 	pixel_region_variance_args arg = ag.arg;
 	arg.work_memory = new vfloat4[ag.work_memory_size];
 
-	int size_x = ag.img_size.r;
-	int size_y = ag.img_size.g;
-	int size_z = ag.img_size.b;
+	int size_x = ag.img_size_x;
+	int size_y = ag.img_size_y;
+	int size_z = ag.img_size_z;
 
-	int step_x = ag.blk_size.r;
-	int step_y = ag.blk_size.g;
-	int step_z = ag.blk_size.b;
+	int step_xy = ag.blk_size_xy;
+	int step_z = ag.blk_size_z;
 
-	int y_tasks = (size_y + step_y - 1) / step_y;
+	int y_tasks = (size_y + step_xy - 1) / step_xy;
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)
@@ -558,18 +557,18 @@ void compute_averages_and_variances(
 
 		assert(count == 1);
 		int z = (base / (y_tasks)) * step_z;
-		int y = (base - (z * y_tasks)) * step_y;
+		int y = (base - (z * y_tasks)) * step_xy;
 
-		arg.size.b = astc::min(step_z, size_z - z);
-		arg.offset.b = z;
+		arg.size_z = astc::min(step_z, size_z - z);
+		arg.offset_z = z;
 
-		arg.size.g = astc::min(step_y, size_y - y);
-		arg.offset.g = y;
+		arg.size_y = astc::min(step_xy, size_y - y);
+		arg.offset_y = y;
 
-		for (int x = 0; x < size_x; x += step_x)
+		for (int x = 0; x < size_x; x += step_xy)
 		{
-			arg.size.r = astc::min(step_x, size_x - x);
-			arg.offset.r = x;
+			arg.size_x = astc::min(step_xy, size_x - x);
+			arg.offset_x = x;
 			compute_pixel_region_variance(ctx, &arg);
 		}
 
@@ -607,8 +606,12 @@ unsigned int init_compute_averages_and_variances(
 
 	// Perform block-wise averages-and-variances calculations across the image
 	// Initialize fields which are not populated until later
-	arg.size = int3(0);
-	arg.offset = int3(0);
+	arg.size_x = 0;
+	arg.size_y = 0;
+	arg.size_z = 0;
+	arg.offset_x = 0;
+	arg.offset_y = 0;
+	arg.offset_z = 0;
 	arg.work_memory = nullptr;
 
 	arg.img = &img;
@@ -620,8 +623,11 @@ unsigned int init_compute_averages_and_variances(
 	arg.alpha_kernel_radius = alpha_kernel_radius;
 
 	ag.arg = arg;
-	ag.img_size = int3(size_x, size_y, size_z);
-	ag.blk_size = int3(max_blk_size_xy, max_blk_size_xy, max_blk_size_z);
+	ag.img_size_x = size_x;
+	ag.img_size_y = size_y;
+	ag.img_size_z = size_z;
+	ag.blk_size_xy = max_blk_size_xy;
+	ag.blk_size_z = max_blk_size_z;
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
 
 	// The parallel task count

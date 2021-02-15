@@ -946,9 +946,13 @@ struct pixel_region_variance_args
 	/** The kernel radius for alpha processing. */
 	int alpha_kernel_radius;
 	/** The size of the working data to process. */
-	int3 size;
+	int size_x;
+	int size_y;
+	int size_z;
 	/** The position of first src and dst data in the data set. */
-	int3 offset;
+	int offset_x;
+	int offset_y;
+	int offset_z;
 	/** The working memory buffer. */
 	vfloat4 *work_memory;
 };
@@ -961,9 +965,12 @@ struct avg_var_args
 	/** The arguments for the nested variance computation. */
 	pixel_region_variance_args arg;
 	/** The image dimensions. */
-	int3 img_size;
+	int img_size_x;
+	int img_size_y;
+	int img_size_z;
 	/** The maximum working block dimensions. */
-	int3 blk_size;
+	int blk_size_xy;
+	int blk_size_z;
 	/** The working block memory size. */
 	int work_memory_size;
 };
