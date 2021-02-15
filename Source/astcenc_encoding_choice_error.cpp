@@ -75,13 +75,15 @@ static void compute_error_squared_rgb_single_partition(
 	const processed_line3* rgbl_pline,
 	float* rgbl_err,
 	const processed_line3* l_pline,
-	float* l_err
+	float* l_err,
+	float* a_drop_err
 ) {
 	int texels_per_block = bsd->texel_count;
 	float uncor_errorsum = 0.0f;
 	float samec_errorsum = 0.0f;
 	float rgbl_errorsum = 0.0f;
 	float l_errorsum = 0.0f;
+	float a_drop_errorsum = 0.0f;
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
@@ -92,8 +94,13 @@ static void compute_error_squared_rgb_single_partition(
 			continue;
 		}
 
-		vfloat4 point = blk->texel3(i);
+		vfloat4 point = blk->texel(i);
 		vfloat4 ews = ewb->error_weights[i];
+
+		// Compute the error that arises from just ditching alpha
+		float default_alpha = blk->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
+		float omalpha = point.lane<3>() - default_alpha;
+		a_drop_errorsum += omalpha * omalpha * ews.lane<3>();
 
 		{
 			float param = dot3_s(point, uncor_pline->bs);
@@ -118,7 +125,8 @@ static void compute_error_squared_rgb_single_partition(
 
 		{
 			float param = dot3_s(point, l_pline->bs);
-			vfloat4 rp1 = l_pline->amod + param * l_pline->bis;
+			// No luma amod - we know it's always zero
+			vfloat4 rp1 = /* l_pline->amod + */ param * l_pline->bis;
 			vfloat4 dist = rp1 - point;
 			l_errorsum += dot3_s(ews, dist * dist);
 		}
@@ -128,6 +136,7 @@ static void compute_error_squared_rgb_single_partition(
 	*samec_err = samec_errorsum;
 	*rgbl_err = rgbl_errorsum;
 	*l_err = l_errorsum;
+	*a_drop_err = a_drop_errorsum;
 }
 
 /*
@@ -157,104 +166,10 @@ void compute_encoding_choice_errors(
 	vfloat4 directions_rgb[4];
 	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
-	vfloat4 inverse_color_scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
 	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
 
-	line3 uncorr_rgb_lines[4];
-	line3 samechroma_rgb_lines[4];	// for LDR-RGB-scale
-	line3 rgb_luma_lines[4];	// for HDR-RGB-scale
-	line3 luminance_lines[4];
-
-	processed_line3 proc_uncorr_rgb_lines[4];
-	processed_line3 proc_samechroma_rgb_lines[4];	// for LDR-RGB-scale
-	processed_line3 proc_rgb_luma_lines[4];	// for HDR-RGB-scale
-	processed_line3 proc_luminance_lines[4];
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		inverse_color_scalefactors[i] = 1.0f / max(color_scalefactors[i], 1e-7f);
-
-		vfloat4 csf = color_scalefactors[i];
-		csf.set_lane<3>(0.0f);
-
-		vfloat4 icsf = inverse_color_scalefactors[i];
-		icsf.set_lane<3>(0.0f);
-
-		uncorr_rgb_lines[i].a = averages[i];
-		if (dot3_s(directions_rgb[i], directions_rgb[i]) == 0.0f)
-		{
-			uncorr_rgb_lines[i].b = normalize(csf);
-		}
-		else
-		{
-			uncorr_rgb_lines[i].b = normalize(directions_rgb[i]);
-		}
-
-		samechroma_rgb_lines[i].a = vfloat4::zero();
-		if (dot3_s(averages[i], averages[i]) < 1e-20f)
-		{
-			samechroma_rgb_lines[i].b = normalize(csf);
-		}
-		else
-		{
-			samechroma_rgb_lines[i].b = normalize(averages[i]);
-		}
-
-		rgb_luma_lines[i].a = averages[i];
-		rgb_luma_lines[i].b = normalize(csf);
-
-		luminance_lines[i].a = vfloat4::zero();
-		luminance_lines[i].b = normalize(csf);
-
-		// TODO: Can these just be dot3() (not scalar - return three lanes)
-		proc_uncorr_rgb_lines[i].amod = (uncorr_rgb_lines[i].a - uncorr_rgb_lines[i].b * dot3_s(uncorr_rgb_lines[i].a, uncorr_rgb_lines[i].b)) * icsf;
-		proc_uncorr_rgb_lines[i].bs = uncorr_rgb_lines[i].b * csf;
-		proc_uncorr_rgb_lines[i].bis = uncorr_rgb_lines[i].b * icsf;
-
-		proc_samechroma_rgb_lines[i].amod = (samechroma_rgb_lines[i].a - samechroma_rgb_lines[i].b *  dot3_s(samechroma_rgb_lines[i].a, samechroma_rgb_lines[i].b)) * icsf;
-		proc_samechroma_rgb_lines[i].bs = samechroma_rgb_lines[i].b * csf;
-		proc_samechroma_rgb_lines[i].bis = samechroma_rgb_lines[i].b * icsf;
-
-		proc_rgb_luma_lines[i].amod = (rgb_luma_lines[i].a - rgb_luma_lines[i].b * dot3_s(rgb_luma_lines[i].a, rgb_luma_lines[i].b)) * icsf;
-		proc_rgb_luma_lines[i].bs = rgb_luma_lines[i].b * csf;
-		proc_rgb_luma_lines[i].bis = rgb_luma_lines[i].b * icsf;
-
-		proc_luminance_lines[i].amod = (luminance_lines[i].a - luminance_lines[i].b * dot3_s(luminance_lines[i].a, luminance_lines[i].b)) * icsf;
-		proc_luminance_lines[i].bs = luminance_lines[i].b * csf;
-		proc_luminance_lines[i].bis = luminance_lines[i].b * icsf;
-	}
-
-	float uncorr_rgb_error[4];
-	float samechroma_rgb_error[4];
-	float rgb_luma_error[4];
-	float luminance_rgb_error[4];
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		compute_error_squared_rgb_single_partition(
-		    i, bsd, pi, pb, ewb,
-		    proc_uncorr_rgb_lines + i, uncorr_rgb_error + i,
-		    proc_samechroma_rgb_lines + i, samechroma_rgb_error + i,
-			proc_rgb_luma_lines + i, rgb_luma_error + i,
-			proc_luminance_lines + i, luminance_rgb_error + i);
-	}
-
-	// Compute the error that arises from just ditching alpha
-	// TODO: Skip this if the input has constant 1 alpha
-	float alpha_drop_error[4] { 0 };
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		int partition = pi->partition_of_texel[i];
-		float alpha = pb->data_a[i];
-		float default_alpha = pb->alpha_lns[i] ? (float)0x7800 : (float)0xFFFF;
-
-		float omalpha = alpha - default_alpha;
-		alpha_drop_error[partition] += omalpha * omalpha * ewb->error_weights[i].lane<3>();
-	}
-
-	// check if we are eligible for blue-contraction and offset-encoding
 	endpoints ep;
 	if (separate_component == -1)
 	{
@@ -269,45 +184,104 @@ void compute_encoding_choice_errors(
 		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
 	}
 
-	bool can_offset_encode[4] { 0 };
-	bool can_blue_contract[4] { 0 };
 	for (int i = 0; i < partition_count; i++)
 	{
+		// TODO: Can we skip rgb_luma_lines for LDR images?
+		line3 uncorr_rgb_lines;
+		line3 samechroma_rgb_lines;	// for LDR-RGB-scale
+		line3 rgb_luma_lines;	// for HDR-RGB-scale
+
+		processed_line3 proc_uncorr_rgb_lines;
+		processed_line3 proc_samechroma_rgb_lines;	// for LDR-RGB-scale
+		processed_line3 proc_rgb_luma_lines;	// for HDR-RGB-scale
+		processed_line3 proc_luminance_lines;
+
+		float uncorr_rgb_error;
+		float samechroma_rgb_error;
+		float rgb_luma_error;
+		float luminance_rgb_error;
+		float alpha_drop_error;
+
+		vfloat4 csf = color_scalefactors[i];
+		csf.set_lane<3>(0.0f);
+
+		vfloat4 icsf = 1.0f / max(color_scalefactors[i], 1e-7f);
+		icsf.set_lane<3>(0.0f);
+
+		uncorr_rgb_lines.a = averages[i];
+		if (dot3_s(directions_rgb[i], directions_rgb[i]) == 0.0f)
+		{
+			uncorr_rgb_lines.b = normalize(csf);
+		}
+		else
+		{
+			uncorr_rgb_lines.b = normalize(directions_rgb[i]);
+		}
+
+		samechroma_rgb_lines.a = vfloat4::zero();
+		if (dot3_s(averages[i], averages[i]) < 1e-20f)
+		{
+			samechroma_rgb_lines.b = normalize(csf);
+		}
+		else
+		{
+			samechroma_rgb_lines.b = normalize(averages[i]);
+		}
+
+		rgb_luma_lines.a = averages[i];
+		rgb_luma_lines.b = normalize(csf);
+
+		proc_uncorr_rgb_lines.amod = (uncorr_rgb_lines.a - uncorr_rgb_lines.b * dot3_s(uncorr_rgb_lines.a, uncorr_rgb_lines.b)) * icsf;
+		proc_uncorr_rgb_lines.bs = uncorr_rgb_lines.b * csf;
+		proc_uncorr_rgb_lines.bis = uncorr_rgb_lines.b * icsf;
+
+		proc_samechroma_rgb_lines.amod = (samechroma_rgb_lines.a - samechroma_rgb_lines.b *  dot3_s(samechroma_rgb_lines.a, samechroma_rgb_lines.b)) * icsf;
+		proc_samechroma_rgb_lines.bs = samechroma_rgb_lines.b * csf;
+		proc_samechroma_rgb_lines.bis = samechroma_rgb_lines.b * icsf;
+
+		proc_rgb_luma_lines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3_s(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
+		proc_rgb_luma_lines.bs = rgb_luma_lines.b * csf;
+		proc_rgb_luma_lines.bis = rgb_luma_lines.b * icsf;
+
+		// Luminance always goes though zero, so this is simpler than the others
+		proc_luminance_lines.amod = vfloat4::zero();
+		proc_luminance_lines.bs = normalize(csf) * csf;
+		proc_luminance_lines.bis = normalize(csf) * icsf;
+
+		compute_error_squared_rgb_single_partition(
+		    i, bsd, pi, pb, ewb,
+		    &proc_uncorr_rgb_lines,     &uncorr_rgb_error,
+		    &proc_samechroma_rgb_lines, &samechroma_rgb_error,
+		    &proc_rgb_luma_lines,       &rgb_luma_error,
+		    &proc_luminance_lines,      &luminance_rgb_error,
+		                                &alpha_drop_error);
+
+		// Determine if we can offset encode RGB lanes
 		vfloat4 endpt0 = ep.endpt0[i];
 		vfloat4 endpt1 = ep.endpt1[i];
+		vfloat4 endpt_diff = abs(endpt1 - endpt0);
+		vmask4 endpt_can_offset = endpt_diff < vfloat4(0.12f * 65535.0f);
+		bool can_offset_encode = (mask(endpt_can_offset) & 0x7) == 0x7;
 
-		vfloat4 endpt_dif = endpt1 - endpt0;
-		if (fabsf(endpt_dif.lane<0>()) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.lane<1>()) < (0.12f * 65535.0f) &&
-		    fabsf(endpt_dif.lane<2>()) < (0.12f * 65535.0f))
-		{
-			can_offset_encode[i] = true;
-		}
+		// Determine if we can blue contract encode RGB lanes
+		vfloat4 endpt_diff_bc(
+			endpt0.lane<0>() + (endpt0.lane<0>() - endpt0.lane<2>()),
+			endpt1.lane<0>() + (endpt1.lane<0>() - endpt1.lane<2>()),
+			endpt0.lane<1>() + (endpt0.lane<1>() - endpt0.lane<2>()),
+			endpt1.lane<1>() + (endpt1.lane<1>() - endpt1.lane<2>())
+		);
 
-		endpt0.set_lane<0>(endpt0.lane<0>() + (endpt0.lane<0>() - endpt0.lane<2>()));
-		endpt0.set_lane<1>(endpt0.lane<1>() + (endpt0.lane<1>() - endpt0.lane<2>()));
+		vmask4 endpt_can_bc_lo = endpt_diff_bc > vfloat4(0.01f * 65535.0f);
+		vmask4 endpt_can_bc_hi = endpt_diff_bc < vfloat4(0.99f * 65535.0f);
+		bool can_blue_contract = (mask(endpt_can_bc_lo & endpt_can_bc_hi) & 0x7) == 0x7;
 
-		endpt1.set_lane<0>(endpt1.lane<0>() + (endpt1.lane<0>() - endpt1.lane<2>()));
-		endpt1.set_lane<1>(endpt1.lane<1>() + (endpt1.lane<1>() - endpt1.lane<2>()));
-
-		if (endpt0.lane<0>() > (0.01f * 65535.0f) && endpt0.lane<0>() < (0.99f * 65535.0f) &&
-		    endpt1.lane<0>() > (0.01f * 65535.0f) && endpt1.lane<0>() < (0.99f * 65535.0f) &&
-		    endpt0.lane<1>() > (0.01f * 65535.0f) && endpt0.lane<1>() < (0.99f * 65535.0f) &&
-		    endpt1.lane<1>() > (0.01f * 65535.0f) && endpt1.lane<1>() < (0.99f * 65535.0f))
-		{
-			can_blue_contract[i] = true;
-		}
-	}
-
-	// finally, gather up our results
-	for (int i = 0; i < partition_count; i++)
-	{
-		eci[i].rgb_scale_error = (samechroma_rgb_error[i] - uncorr_rgb_error[i]) * 0.7f;	// empirical
-		eci[i].rgb_luma_error = (rgb_luma_error[i] - uncorr_rgb_error[i]) * 1.5f;	// wild guess
-		eci[i].luminance_error = (luminance_rgb_error[i] - uncorr_rgb_error[i]) * 3.0f;	// empirical
-		eci[i].alpha_drop_error = alpha_drop_error[i] * 3.0f;
-		eci[i].can_offset_encode = can_offset_encode[i];
-		eci[i].can_blue_contract = can_blue_contract[i];
+		// Store out the settings
+		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;	// empirical
+		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;	// wild guess
+		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;	// empirical
+		eci[i].alpha_drop_error = alpha_drop_error * 3.0f;
+		eci[i].can_offset_encode = can_offset_encode;
+		eci[i].can_blue_contract = can_blue_contract;
 	}
 }
 
