@@ -19,7 +19,8 @@ add_executable(test-simd-${ISA_SIMD})
 
 target_sources(test-simd-${ISA_SIMD}
     PRIVATE
-        test_simd.cpp)
+        test_simd.cpp
+        ../astcenc_mathlib_softfloat.cpp)
 
 target_include_directories(test-simd-${ISA_SIMD}
     PRIVATE
@@ -48,7 +49,8 @@ if(${ISA_SIMD} MATCHES "none")
             ASTCENC_NEON=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
     if (${ARCH} MATCHES x64)
         target_compile_options(test-simd-${ISA_SIMD}
@@ -62,7 +64,8 @@ elseif(${ISA_SIMD} MATCHES "neon")
             ASTCENC_NEON=1
             ASTCENC_SSE=0
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
 elseif(${ISA_SIMD} MATCHES "sse2")
     target_compile_definitions(test-simd-${ISA_SIMD}
@@ -70,7 +73,8 @@ elseif(${ISA_SIMD} MATCHES "sse2")
             ASTCENC_NEON=0
             ASTCENC_SSE=20
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=0)
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
     target_compile_options(test-simd-${ISA_SIMD}
         PRIVATE
@@ -82,7 +86,8 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
             ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=0
-            ASTCENC_POPCNT=1)
+            ASTCENC_POPCNT=1
+            ASTCENC_F16C=0)
 
     target_compile_options(test-simd-${ISA_SIMD}
         PRIVATE
@@ -94,11 +99,12 @@ elseif(${ISA_SIMD} MATCHES "avx2")
             ASTCENC_NEON=0
             ASTCENC_SSE=41
             ASTCENC_AVX=2
-            ASTCENC_POPCNT=1)
+            ASTCENC_POPCNT=1
+            ASTCENC_F16C=1)
 
     target_compile_options(test-simd-${ISA_SIMD}
         PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt -mf16c>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 endif()
 

@@ -1014,6 +1014,53 @@ TEST(vfloat4, int_to_float)
 	EXPECT_EQ(r.lane<3>(), 4.0f);
 }
 
+/** @brief Test vfloat4 float to fp16 conversion. */
+TEST(vfloat4, float_to_float16)
+{
+	vfloat4 a(1.5, 234.5, 345345.0, qnan);
+	vint4 r = float_to_float16(a);
+
+	// Normal numbers
+	EXPECT_EQ(r.lane<0>(), 0x3E00);
+	EXPECT_EQ(r.lane<1>(), 0x5B54);
+
+	// Large numbers convert to infinity
+	EXPECT_EQ(r.lane<2>(), 0x7C00);
+
+	// NaN must convert to any valid NaN encoding
+	EXPECT_EQ((r.lane<3>() >> 10) & 0x1F, 0x1F); // Exponent must be all 1s
+	EXPECT_NE(r.lane<3>() & (0x3FF), 0);         // Mantissa must be non-zero
+}
+
+/** @brief Test float to fp16 conversion. */
+TEST(sfloat, float_to_float16)
+{
+	int r = float_to_float16(234.5);
+	EXPECT_EQ(r, 0x5B54);
+}
+
+/** @brief Test vfloat4 fp16 to float conversion. */
+TEST(vfloat4, float16_to_float)
+{	vint4 a(0x3E00, 0x5B54, 0x7C00, 0xFFFF);
+	vfloat4 r = float16_to_float(a);
+
+	// Normal numbers
+	EXPECT_EQ(r.lane<0>(), 1.5);
+	EXPECT_EQ(r.lane<1>(), 234.5);
+
+	// Infinities must be preserved
+	EXPECT_NE(std::isinf(r.lane<2>()), 0);
+
+	// NaNs must be preserved
+	EXPECT_NE(std::isnan(r.lane<3>()), 0);
+}
+
+/** @brief Test fp16 to float conversion. */
+TEST(sfloat, float16_to_float)
+{
+	float r = float16_to_float(0x5B54);
+	EXPECT_EQ(r, 234.5);
+}
 
 // VINT4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
