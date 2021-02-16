@@ -1010,9 +1010,9 @@ ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
 	float16x4_t f16 = vcvt_f16_f32(a.m);
 
 	// Convert each 16-bit float pattern to a 32-bit pattern
-	uint16x4_t u16 = vreinterpret_u16_f16(f16)
-	uint32x4_t u32 = movl_u16(u16);
-	return vint4(vreinterpret_s32_u32(u32));
+	uint16x4_t u16 = vreinterpret_u16_f16(f16);
+	uint32x4_t u32 = vmovl_u16(u16);
+	return vint4(vreinterpretq_s32_u32(u32));
 }
 
 /**
@@ -1026,14 +1026,12 @@ static inline uint16_t float_to_float16(float a)
 
 /**
  * @brief Return a float value for a float16 vector.
- *
- * TODO: Use the NEON fp16 support.
  */
 ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
 {
 	// Convert each 32-bit float pattern to a 16-bit pattern
-	uint32x4_t u32 = vreinterpret_u32_s32(a.m);
-	uint16x4_t u16 = movn_u32(u32);
+	uint32x4_t u32 = vreinterpretq_u32_s32(a.m);
+	uint16x4_t u16 = vmovn_u32(u32);
 	float16x4_t f16 = vreinterpret_f16_u16(u16);
 
 	// Generate float16 value
