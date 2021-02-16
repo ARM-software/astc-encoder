@@ -126,50 +126,59 @@ void imageblock_initialize_deriv(
 	int pixelcount,
 	vfloat4* dptr
 ) {
+	// TODO: For LDR on the current codec we can skip this if no LNS and just
+	// early-out as we use the same LNS settings everywhere ...
 	for (int i = 0; i < pixelcount; i++)
 	{
-		float dr = 65535.0f;
-		float dg = 65535.0f;
-		float db = 65535.0f;
-		float da = 65535.0f;
+		vfloat4 derv_unorm(65535.0f);
+		vfloat4 derv_lns = vfloat4::zero();
 
-		// compute derivatives for RGB first
-		if (pb->rgb_lns[i])
+		// TODO: Pack these into bits and avoid the disjoint fetch
+		int rgb_lns = pb->rgb_lns[i];
+		int a_lns = pb->alpha_lns[i];
+
+		// Compute derivatives if we have any use of LNS
+		if (rgb_lns || a_lns)
 		{
-			vfloat4 fdata = pb->texel3(i);
-			fdata.set_lane<0>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<0>())));
-			fdata.set_lane<1>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<1>())));
-			fdata.set_lane<2>(sf16_to_float(lns_to_sf16((uint16_t)fdata.lane<2>())));
+			vfloat4 data = pb->texel(i);
 
-			float r = astc::max(fdata.lane<0>(), 6e-5f);
-			float g = astc::max(fdata.lane<1>(), 6e-5f);
-			float b = astc::max(fdata.lane<2>(), 6e-5f);
+			vint4 datai(
+				lns_to_sf16((uint16_t)data.lane<0>()),
+				lns_to_sf16((uint16_t)data.lane<1>()),
+				lns_to_sf16((uint16_t)data.lane<2>()),
+				lns_to_sf16((uint16_t)data.lane<3>())
+			);
 
-			float rderiv = (float_to_lns(r * 1.05f) - float_to_lns(r)) / (r * 0.05f);
-			float gderiv = (float_to_lns(g * 1.05f) - float_to_lns(g)) / (g * 0.05f);
-			float bderiv = (float_to_lns(b * 1.05f) - float_to_lns(b)) / (b * 0.05f);
+			vfloat4 dataf = float16_to_float(datai);
+			dataf = max(dataf, 6e-5f);
 
-			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
-			// if it does, we clamp it.
-			dr = astc::clamp(rderiv, 1.0f / 32.0f, 33554432.0f);
-			dg = astc::clamp(gderiv, 1.0f / 32.0f, 33554432.0f);
-			db = astc::clamp(bderiv, 1.0f / 32.0f, 33554432.0f);
+			vfloat4 data_lns1 = dataf * 1.05;
+			data_lns1 = vfloat4(
+				float_to_lns(data_lns1.lane<0>()),
+				float_to_lns(data_lns1.lane<1>()),
+				float_to_lns(data_lns1.lane<2>()),
+				float_to_lns(data_lns1.lane<3>())
+			);
+
+			vfloat4 data_lns2 = dataf;
+			data_lns2 = vfloat4(
+				float_to_lns(data_lns2.lane<0>()),
+				float_to_lns(data_lns2.lane<1>()),
+				float_to_lns(data_lns2.lane<2>()),
+				float_to_lns(data_lns2.lane<3>())
+			);
+
+			vfloat4 divisor_lns = dataf * 0.05f;
+
+			// Clamp derivatives between 1/32 and 2^25
+			float lo = 1.0f / 32.0f;
+			float hi = 33554432.0f;
+			derv_lns = clamp(lo, hi, (data_lns1 - data_lns2) / divisor_lns);
 		}
 
-		// then compute derivatives for Alpha
-		if (pb->alpha_lns[i])
-		{
-			float fdata = pb->data_a[i];
-			fdata = sf16_to_float(lns_to_sf16((uint16_t)fdata));
-
-			float a = astc::max(fdata, 6e-5f);
-			float aderiv = (float_to_lns(a * 1.05f) - float_to_lns(a)) / (a * 0.05f);
-			// the derivative may not actually take values smaller than 1/32 or larger than 2^25;
-			// if it does, we clamp it.
-			da = astc::clamp(aderiv, 1.0f / 32.0f, 33554432.0f);
-		}
-
-		*dptr = vfloat4(dr, dg, db, da);
+		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		vmask4 lns_mask = use_lns != vint4::zero();
+		*dptr = select(derv_unorm, derv_lns, lns_mask);
 		dptr++;
 	}
 }
@@ -210,7 +219,6 @@ static void imageblock_initialize_work_from_orig(
 		{
 			data.set_lane<3>(data.lane<3>() * 65535.0f);
 		}
-
 		// Compute block metadata
 		data_min = min(data_min, data);
 		data_max = max(data_max, data);
@@ -246,27 +254,42 @@ void imageblock_initialize_orig_from_work(
 	{
 		vfloat4 data = pb->texel(i);
 
-		if (pb->rgb_lns[i])
+		vint4 color_lns = vint4::zero();
+		vint4 color_unorm = vint4::zero();
+
+		// TODO: Pack these into bits and avoid the disjoint fetch
+		int rgb_lns = pb->rgb_lns[i];
+		int a_lns = pb->alpha_lns[i];
+
+		// TODO: Do a vector version of lns_to_sf16
+		//       ... or do we even need the f16 intermediate?
+		if (rgb_lns || a_lns)
 		{
-			data.set_lane<0>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<0>())));
-			data.set_lane<1>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<1>())));
-			data.set_lane<2>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<2>())));
-		}
-		else
-		{
-			data.set_lane<0>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<0>())));
-			data.set_lane<1>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<1>())));
-			data.set_lane<2>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<2>())));
+			color_lns = vint4(
+				lns_to_sf16((uint16_t)data.lane<0>()),
+				lns_to_sf16((uint16_t)data.lane<1>()),
+				lns_to_sf16((uint16_t)data.lane<2>()),
+				lns_to_sf16((uint16_t)data.lane<3>())
+			);
 		}
 
-		if (pb->alpha_lns[i])
+		// TODO: Do a vector version of unorm16_to_sf16
+		//       ... or do we even need the f16 intermediate?
+		if ((!rgb_lns) || (!a_lns))
 		{
-			data.set_lane<3>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<3>())));
+			color_unorm = vint4(
+				unorm16_to_sf16((uint16_t)data.lane<0>()),
+				unorm16_to_sf16((uint16_t)data.lane<1>()),
+				unorm16_to_sf16((uint16_t)data.lane<2>()),
+				unorm16_to_sf16((uint16_t)data.lane<3>())
+			);
 		}
-		else
-		{
-			data.set_lane<3>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<3>())));
-		}
+
+		// Pick channels and then covert to FP16
+		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		vmask4 lns_mask = use_lns != vint4::zero();
+		vint4 datai = select(color_unorm, color_lns, lns_mask);
+		data = float16_to_float(datai);
 
 		// Compute block metadata
 		data_min = min(data_min, data);
@@ -398,10 +421,11 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = astc::max(sf16_to_float(r), 1e-8f);
-					pb->data_g[idx] = astc::max(sf16_to_float(g), 1e-8f);
-					pb->data_b[idx] = astc::max(sf16_to_float(b), 1e-8f);
-					pb->data_a[idx] = astc::max(sf16_to_float(a), 1e-8f);
+					vfloat4 dataf = max(float16_to_float(vint4(r, g, b, a)), 1e-8);
+					pb->data_r[idx] = dataf.lane<0>();
+					pb->data_g[idx] = dataf.lane<1>();
+					pb->data_b[idx] = dataf.lane<2>();
+					pb->data_a[idx] = dataf.lane<3>();
 					idx++;
 				}
 			}
@@ -585,14 +609,11 @@ void write_imageblock(
 
 					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
 					{
-						int ri, gi, bi, ai;
+						vint4 color;
 
 						if (*nptr)
 						{
-							ri = 0xFFFF;
-							gi = 0xFFFF;
-							bi = 0xFFFF;
-							ai = 0xFFFF;
+							color = vint4(0xFFFF);
 						}
 						else if (needs_swz)
 						{
@@ -613,23 +634,19 @@ void write_imageblock(
 								data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
 							}
 
-							ri = float_to_sf16(data[swz.r], SF_NEARESTEVEN);
-							gi = float_to_sf16(data[swz.g], SF_NEARESTEVEN);
-							bi = float_to_sf16(data[swz.b], SF_NEARESTEVEN);
-							ai = float_to_sf16(data[swz.a], SF_NEARESTEVEN);
+							vfloat4 colorf(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
+							color = float_to_float16(colorf);
 						}
 						else
 						{
-							ri = float_to_sf16(pb->data_r[idx], SF_NEARESTEVEN);
-							gi = float_to_sf16(pb->data_g[idx], SF_NEARESTEVEN);
-							bi = float_to_sf16(pb->data_b[idx], SF_NEARESTEVEN);
-							ai = float_to_sf16(pb->data_a[idx], SF_NEARESTEVEN);
+							vfloat4 colorf = pb->texel(idx);
+							color = float_to_float16(colorf);
 						}
 
-						data16[(4 * xsize * yi) + (4 * xi    )] = ri;
-						data16[(4 * xsize * yi) + (4 * xi + 1)] = gi;
-						data16[(4 * xsize * yi) + (4 * xi + 2)] = bi;
-						data16[(4 * xsize * yi) + (4 * xi + 3)] = ai;
+						data16[(4 * xsize * yi) + (4 * xi    )] = (uint16_t)color.lane<0>();
+						data16[(4 * xsize * yi) + (4 * xi + 1)] = (uint16_t)color.lane<1>();
+						data16[(4 * xsize * yi) + (4 * xi + 2)] = (uint16_t)color.lane<2>();
+						data16[(4 * xsize * yi) + (4 * xi + 3)] = (uint16_t)color.lane<3>();
 					}
 					idx++;
 					nptr++;

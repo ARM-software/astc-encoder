@@ -1002,6 +1002,52 @@ ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 }
 
 /**
+ * @brief Return a float16 value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
+{
+	// Generate float16 value
+	float16x4_t f16 = vcvt_f16_f32(a.m);
+
+	// Convert each 16-bit float pattern to a 32-bit pattern
+	uint16x4_t u16 = vreinterpret_u16_f16(f16);
+	uint32x4_t u32 = vmovl_u16(u16);
+	return vint4(vreinterpretq_s32_u32(u32));
+}
+
+/**
+ * @brief Return a float16 value for a float scalar, using round-to-nearest.
+ */
+static inline uint16_t float_to_float16(float a)
+{
+	vfloat4 av(a);
+	return float_to_float16(av).lane<0>();
+}
+
+/**
+ * @brief Return a float value for a float16 vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
+{
+	// Convert each 32-bit float pattern to a 16-bit pattern
+	uint32x4_t u32 = vreinterpretq_u32_s32(a.m);
+	uint16x4_t u16 = vmovn_u32(u32);
+	float16x4_t f16 = vreinterpret_f16_u16(u16);
+
+	// Generate float16 value
+	return vfloat4(vcvt_f32_f16(f16));
+}
+
+/**
+ * @brief Return a float value for a float16 scalar.
+ */
+ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
+{
+	vint4 av(a);
+	return float16_to_float(av).lane<0>();
+}
+
+/**
  * @brief Return a float value as an integer bit pattern (i.e. no conversion).
  *
  * It is a common trick to convert floats into integer bit patterns, perform

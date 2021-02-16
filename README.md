@@ -70,20 +70,22 @@ Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 ## astcenc 2.x binaries
 
 The current builds of the astcenc 2.x series are provided as multiple binaries,
-each tuned for a specific SIMD instruction set. We provide, in order of
-increasing performance:
+each tuned for a specific SIMD instruction set.
+
+For x86-64 we provide, in order of increasing performance:
 
 * `astcenc-sse2` - uses SSE2
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
-* `astcenc-avx2` - uses SSE4.2, POPCNT, and AVX2
+* `astcenc-avx2` - uses AVX2, SSE4.2, POPCNT, and F16C
 
-The SSE2 builds will work on all x86-64 host machines, but it is the slowest of
-the three. The other two require extended CPU instruction set support which is
-not universally available.
+For Apple silicon macOS devices we provide:
 
-It is worth noting that the three binaries do not produce identical output
-images; there are minor output differences caused by variations in
-floating-point rounding.
+* `astcenc-neon` - uses NEON
+
+The x86-64 SSE2 builds will work on all x86-64 machines, but it is the slowest
+of the three. The other two require extended CPU instruction set support which
+is not universally available, but each step gains ~15% more performance.
+
 
 ## Repository branches
 

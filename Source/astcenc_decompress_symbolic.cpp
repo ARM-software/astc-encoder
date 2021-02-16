@@ -83,6 +83,7 @@ void decompress_symbolic_block(
 	// if we detected an error-block, blow up immediately.
 	if (scb->error_block)
 	{
+		// TODO: Check this - isn't linear LDR magenta too? Same below ...
 		if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 		{
 			for (int i = 0; i < bsd->texel_count; i++)
@@ -115,74 +116,58 @@ void decompress_symbolic_block(
 
 	if (scb->block_mode < 0)
 	{
-		float red = 0, green = 0, blue = 0, alpha = 0;
+		vfloat4 color;
 		int use_lns = 0;
 		int use_nan = 0;
 
 		if (scb->block_mode == -2)
 		{
-			int ired = scb->constant_color[0];
-			int igreen = scb->constant_color[1];
-			int iblue = scb->constant_color[2];
-			int ialpha = scb->constant_color[3];
+			vint4 colori(scb->constant_color);
 
 			// For sRGB decoding a real decoder would just use the top 8 bits
 			// for color conversion. We don't color convert, so linearly scale
 			// the top 8 bits into the full 16 bit dynamic range
 			if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 			{
-				ired = (ired >> 8) * 257;
-				igreen = (igreen >> 8) * 257;
-				iblue = (iblue >> 8) * 257;
-				ialpha = (ialpha >> 8) * 257;
+				colori = lsr<8>(colori) * 257;
 			}
 
-			red = sf16_to_float(unorm16_to_sf16(ired));
-			green = sf16_to_float(unorm16_to_sf16(igreen));
-			blue = sf16_to_float(unorm16_to_sf16(iblue));
-			alpha = sf16_to_float(unorm16_to_sf16(ialpha));
-			use_lns = 0;
-			use_nan = 0;
+			vint4 colorf16(
+				unorm16_to_sf16(colori.lane<0>()),
+				unorm16_to_sf16(colori.lane<1>()),
+				unorm16_to_sf16(colori.lane<2>()),
+				unorm16_to_sf16(colori.lane<3>())
+			);
+
+			color = float16_to_float(colorf16);
 		}
 		else
 		{
 			switch (decode_mode)
 			{
 			case ASTCENC_PRF_LDR_SRGB:
-				red = 1.0f;
-				green = 0.0f;
-				blue = 1.0f;
-				alpha = 1.0f;
-				use_lns = 0;
-				use_nan = 0;
+				color = vfloat4(1.0f, 0.0f, 1.0f, 1.0f);
 				break;
 			case ASTCENC_PRF_LDR:
-				red = 0.0f;
-				green = 0.0f;
-				blue = 0.0f;
-				alpha = 0.0f;
-				use_lns = 0;
+				color = vfloat4(0.0f);
 				use_nan = 1;
 				break;
 			case ASTCENC_PRF_HDR_RGB_LDR_A:
 			case ASTCENC_PRF_HDR:
 				// constant-color block; unpack from FP16 to FP32.
-				red = sf16_to_float(scb->constant_color[0]);
-				green = sf16_to_float(scb->constant_color[1]);
-				blue = sf16_to_float(scb->constant_color[2]);
-				alpha = sf16_to_float(scb->constant_color[3]);
+				color = float16_to_float(vint4(scb->constant_color));
 				use_lns = 1;
-				use_nan = 0;
 				break;
 			}
 		}
 
+		// TODO: Skip this and add constant color transfer to img block?
 		for (int i = 0; i < bsd->texel_count; i++)
 		{
-			blk->data_r[i] = red;
-			blk->data_g[i] = green;
-			blk->data_b[i] = blue;
-			blk->data_a[i] = alpha;
+			blk->data_r[i] = color.lane<0>();
+			blk->data_g[i] = color.lane<1>();
+			blk->data_b[i] = color.lane<2>();
+			blk->data_a[i] = color.lane<3>();
 			blk->rgb_lns[i] = use_lns;
 			blk->alpha_lns[i] = use_lns;
 			blk->nan_texel[i] = use_nan;

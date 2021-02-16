@@ -1071,6 +1071,69 @@ ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 }
 
 /**
+ * @brief Return a float16 value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
+{
+#if ASTCENC_F16C >= 1
+	__m128i packedf16 = _mm_cvtps_ph(a.m, _MM_FROUND_NO_EXC);
+	__m128i f16 = _mm_cvtepu16_epi32(packedf16);
+	return vint4(f16);
+#else
+	return vint4(
+		float_to_sf16(a.lane<0>()),
+		float_to_sf16(a.lane<1>()),
+		float_to_sf16(a.lane<2>()),
+		float_to_sf16(a.lane<3>()));
+#endif
+}
+
+/**
+ * @brief Return a float16 value for a float scalar, using round-to-nearest.
+ */
+static inline uint16_t float_to_float16(float a)
+{
+#if ASTCENC_F16C >= 1
+	__m128i f16 = _mm_cvtps_ph(_mm_set1_ps(a), _MM_FROUND_NO_EXC);
+	return  (uint16_t)_mm_cvtsi128_si32(f16);
+#else
+	return float_to_sf16(a);
+#endif
+}
+
+/**
+ * @brief Return a float value for a float16 vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
+{
+#if ASTCENC_F16C >= 1
+	__m128i packed = _mm_packs_epi32(a.m, a.m);
+	__m128 f32 = _mm_cvtph_ps(packed);
+	return vfloat4(f32);
+#else
+	return vfloat4(
+		sf16_to_float(a.lane<0>()),
+		sf16_to_float(a.lane<1>()),
+		sf16_to_float(a.lane<2>()),
+		sf16_to_float(a.lane<3>()));
+#endif
+}
+
+/**
+ * @brief Return a float value for a float16 scalar.
+ */
+ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
+{
+#if ASTCENC_F16C >= 1
+	__m128i packed = _mm_set1_epi16(a);
+	__m128 f32 = _mm_cvtph_ps(packed);
+	return _mm_cvtss_f32(f32);
+#else
+	return sf16_to_float(a);
+#endif
+}
+
+/**
  * @brief Return a float value as an integer bit pattern (i.e. no conversion).
  *
  * It is a common trick to convert floats into integer bit patterns, perform
@@ -1104,5 +1167,7 @@ ASTCENC_SIMD_INLINE void print(vfloat4 a)
 	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
 	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
 }
+
+
 
 #endif // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED

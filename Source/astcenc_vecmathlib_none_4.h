@@ -1120,6 +1120,46 @@ ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 }
 
 /**
+ * @brief Return a float16 value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
+{
+	return vint4(
+		float_to_sf16(a.lane<0>()),
+		float_to_sf16(a.lane<1>()),
+		float_to_sf16(a.lane<2>()),
+		float_to_sf16(a.lane<3>()));
+}
+
+/**
+ * @brief Return a float16 value for a float scalar, using round-to-nearest.
+ */
+static inline uint16_t float_to_float16(float a)
+{
+	return float_to_sf16(a);
+}
+
+/**
+ * @brief Return a float value for a float16 vector.
+ */
+ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
+{
+	return vfloat4(
+		sf16_to_float(a.lane<0>()),
+		sf16_to_float(a.lane<1>()),
+		sf16_to_float(a.lane<2>()),
+		sf16_to_float(a.lane<3>()));
+}
+
+/**
+ * @brief Return a float value for a float16 scalar.
+ */
+ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
+{
+	return sf16_to_float(a);
+}
+
+/**
  * @brief Return a float value as an integer bit pattern (i.e. no conversion).
  *
  * It is a common trick to convert floats into integer bit patterns, perform
