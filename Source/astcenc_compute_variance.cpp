@@ -245,15 +245,8 @@ static void compute_pixel_region_variance(
 					data[2] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
 					data[3] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
 
-					uint16_t r = data[swz.r];
-					uint16_t g = data[swz.g];
-					uint16_t b = data[swz.b];
-					uint16_t a = data[swz.a];
-
-					vfloat4 d = vfloat4(sf16_to_float(r),
-					                    sf16_to_float(g),
-					                    sf16_to_float(b),
-					                    sf16_to_float(a));
+					vint4 di(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
+					vfloat4 d = float16_to_float(di);
 
 					if (!are_powers_1)
 					{
