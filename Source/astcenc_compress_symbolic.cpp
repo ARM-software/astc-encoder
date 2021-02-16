@@ -1308,27 +1308,22 @@ void compress_block(
 
 		// detected a constant-color block. Encode as FP16 if using HDR
 		scb.error_block = 0;
+		scb.partition_count = 0;
 
 		if ((decode_mode == ASTCENC_PRF_HDR) ||
 		    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
 		{
 			scb.block_mode = -1;
-			scb.partition_count = 0;
-			vfloat4 orig_color = blk->origin_texel;
-			scb.constant_color[0] = float_to_sf16(orig_color.lane<0>(), SF_NEARESTEVEN);
-			scb.constant_color[1] = float_to_sf16(orig_color.lane<1>(), SF_NEARESTEVEN);
-			scb.constant_color[2] = float_to_sf16(orig_color.lane<2>(), SF_NEARESTEVEN);
-			scb.constant_color[3] = float_to_sf16(orig_color.lane<3>(), SF_NEARESTEVEN);
+			vint4 color_f16 = float_to_float16(blk->origin_texel);
+			store(color_f16, scb.constant_color);
 		}
 		else
 		{
 			// Encode as UNORM16 if NOT using HDR.
 			scb.block_mode = -2;
-			scb.partition_count = 0;
-
-			vfloat4 color_u16f = clamp(0.0f, 1.0f, blk->origin_texel) * 65535.0f;
-			vint4 color_u16i = float_to_int_rtn(color_u16f);
-			store(color_u16i, scb.constant_color);
+			vfloat4 color_f32 = clamp(0.0f, 1.0f, blk->origin_texel) * 65535.0f;
+			vint4 color_u16 = float_to_int_rtn(color_f32);
+			store(color_u16, scb.constant_color);
 		}
 
 		trace_add_data("exit", "quality hit");
