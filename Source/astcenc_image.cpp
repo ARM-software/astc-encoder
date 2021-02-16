@@ -246,27 +246,42 @@ void imageblock_initialize_orig_from_work(
 	{
 		vfloat4 data = pb->texel(i);
 
-		if (pb->rgb_lns[i])
+		vint4 color_lns = vint4::zero();
+		vint4 color_unorm = vint4::zero();
+
+		// TODO: Pack these into bits and avoid the disjoint fetch
+		int rgb_lns = pb->rgb_lns[i];
+		int a_lns = pb->alpha_lns[i];
+
+		// TODO: Do a vector version of lns_to_sf16
+		//       ... or do we even need the f16 intermediate?
+		if (rgb_lns || a_lns)
 		{
-			data.set_lane<0>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<0>())));
-			data.set_lane<1>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<1>())));
-			data.set_lane<2>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<2>())));
-		}
-		else
-		{
-			data.set_lane<0>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<0>())));
-			data.set_lane<1>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<1>())));
-			data.set_lane<2>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<2>())));
+			color_lns = vint4(
+				lns_to_sf16((uint16_t)data.lane<0>()),
+				lns_to_sf16((uint16_t)data.lane<1>()),
+				lns_to_sf16((uint16_t)data.lane<2>()),
+				lns_to_sf16((uint16_t)data.lane<3>())
+			);
 		}
 
-		if (pb->alpha_lns[i])
+		// TODO: Do a vector version of unorm16_to_sf16
+		//       ... or do we even need the f16 intermediate?
+		if ((!rgb_lns) || (!a_lns))
 		{
-			data.set_lane<3>(sf16_to_float(lns_to_sf16((uint16_t)data.lane<3>())));
+			color_unorm = vint4(
+				unorm16_to_sf16((uint16_t)data.lane<0>()),
+				unorm16_to_sf16((uint16_t)data.lane<1>()),
+				unorm16_to_sf16((uint16_t)data.lane<2>()),
+				unorm16_to_sf16((uint16_t)data.lane<3>())
+			);
 		}
-		else
-		{
-			data.set_lane<3>(sf16_to_float(unorm16_to_sf16((uint16_t)data.lane<3>())));
-		}
+
+		// Pick channels and then covert to FP16
+		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		vmask4 lns_mask = use_lns != vint4::zero();
+		vint4 datai = select(color_unorm, color_lns, lns_mask);
+		data = float16_to_float(datai);
 
 		// Compute block metadata
 		data_min = min(data_min, data);
