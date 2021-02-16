@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020 Arm Limited
+// Copyright 2020-2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -15,7 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-#if (ASTCENC_SSE > 0) || (ASTCENC_AVX > 0) || (ASTCENC_POPCNT > 0)
+#if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
+    (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
 /**
  * @brief Platform-specific function implementations.
@@ -28,6 +29,7 @@
 static int g_cpu_has_sse41 = -1;
 static int g_cpu_has_avx2 = -1;
 static int g_cpu_has_popcnt = -1;
+static int g_cpu_has_f16c = -1;
 
 /* ============================================================================
    Platform code for Visual Studio
@@ -44,6 +46,7 @@ static void detect_cpu_isa()
 
 	g_cpu_has_sse41 = 0;
 	g_cpu_has_popcnt = 0;
+	g_cpu_has_f16c = 0;
 	if (num_id >= 1)
 	{
 		__cpuidex(data, 1, 0);
@@ -51,6 +54,8 @@ static void detect_cpu_isa()
 		g_cpu_has_sse41 = data[2] & (1 << 19) ? 1 : 0;
 		// POPCNT = Bank 1, ECX, bit 23
 		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
+		// F16C = Bank 1, ECX, bit 29
+		g_cpu_has_f16c = data[2] & (1 << 29) ? 1 : 0;
 	}
 
 	g_cpu_has_avx2 = 0;
@@ -74,12 +79,15 @@ static void detect_cpu_isa()
 
 	g_cpu_has_sse41 = 0;
 	g_cpu_has_popcnt = 0;
+	g_cpu_has_f16c = 0;
 	if (__get_cpuid_count(1, 0, &data[0], &data[1], &data[2], &data[3]))
 	{
 		// SSE41 = Bank 1, ECX, bit 19
 		g_cpu_has_sse41 = data[2] & (1 << 19) ? 1 : 0;
 		// POPCNT = Bank 1, ECX, bit 23
 		g_cpu_has_popcnt = data[2] & (1 << 23) ? 1 : 0;
+		// F16C = Bank 1, ECX, bit 29
+		g_cpu_has_f16c = data[2] & (1 << 29) ? 1 : 0;
 	}
 
 	g_cpu_has_avx2 = 0;
@@ -111,6 +119,17 @@ int cpu_supports_popcnt()
 	}
 
 	return g_cpu_has_popcnt;
+}
+
+/* Public function, see header file for detailed documentation */
+int cpu_supports_f16c()
+{
+	if (g_cpu_has_f16c == -1)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_f16c;
 }
 
 /* Public function, see header file for detailed documentation */

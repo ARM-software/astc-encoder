@@ -1324,19 +1324,25 @@ struct astcenc_context
   Platform-specific functions
 ============================================================================ */
 /**
- * @brief Run-time detection if the host CPU supports SSE 4.1.
- * @return Zero if not supported, positive value if it is.
- */
-int cpu_supports_sse41();
-
-/**
- * @brief Run-time detection if the host CPU supports popcnt.
+ * @brief Run-time detection if the host CPU supports the POPCNT extension.
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_popcnt();
 
 /**
- * @brief Run-time detection if the host CPU supports avx2.
+ * @brief Run-time detection if the host CPU supports F16C extension.
+ * @return Zero if not supported, positive value if it is.
+ */
+int cpu_supports_f16c();
+
+/**
+ * @brief Run-time detection if the host CPU supports SSE 4.1 extension.
+ * @return Zero if not supported, positive value if it is.
+ */
+int cpu_supports_sse41();
+
+/**
+ * @brief Run-time detection if the host CPU supports AVX 2 extension.
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_avx2();

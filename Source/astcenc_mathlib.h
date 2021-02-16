@@ -27,6 +27,22 @@
 #include <cstdint>
 #include <cmath>
 
+#ifndef ASTCENC_POPCNT
+  #if defined(__POPCNT__)
+    #define ASTCENC_POPCNT 1
+  #else
+    #define ASTCENC_POPCNT 0
+  #endif
+#endif
+
+#ifndef ASTCENC_F16C
+  #if defined(__F16C__)
+    #define ASTCENC_F16C 1
+  #else
+    #define ASTCENC_F16C 0
+  #endif
+#endif
+
 #ifndef ASTCENC_SSE
   #if defined(__SSE4_2__)
     #define ASTCENC_SSE 42
@@ -38,14 +54,6 @@
     #define ASTCENC_SSE 20
   #else
     #define ASTCENC_SSE 0
-  #endif
-#endif
-
-#ifndef ASTCENC_POPCNT
-  #if defined(__POPCNT__)
-    #define ASTCENC_POPCNT 1
-  #else
-    #define ASTCENC_POPCNT 0
   #endif
 #endif
 

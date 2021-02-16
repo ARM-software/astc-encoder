@@ -64,6 +64,13 @@ static astcenc_error validate_cpu_isa()
 		}
 	#endif
 
+	#if ASTCENC_F16C >= 1
+		if (!cpu_supports_f16c())
+		{
+			return ASTCENC_ERR_BAD_CPU_ISA;
+		}
+	#endif
+
 	#if ASTCENC_AVX >= 2
 		if (!cpu_supports_avx2())
 		{
