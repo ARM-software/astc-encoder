@@ -94,27 +94,30 @@ spec:
         stage('Linux') {
           agent {
             kubernetes {
-              yaml '''
-apiVersion: v1
-kind: Pod
-spec:
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-  imagePullSecrets:
-    - name: artifactory-ms-docker
-  containers:
-    - name: astcenc
-      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/astcenc:3.0.0
-      command:
-        - sleep
-      args:
-        - infinity
-      resources:
-        requests:
-          cpu: 4
-          memory: 8Gi
-'''
+              yaml '''\
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                  imagePullSecrets:
+                    - name: artifactory-ms-docker
+                  containers:
+                    - name: astcenc
+                      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/astcenc:3.0.0
+                      command:
+                        - sleep
+                      args:
+                        - infinity
+                      resources:
+                        requests:
+                          cpu: 4
+                          memory: 8Gi
+                        limits:
+                          cpu: 8
+                          memory: 16Gi
+              '''.stripIndent()
               defaultContainer 'astcenc'
             }
           }
