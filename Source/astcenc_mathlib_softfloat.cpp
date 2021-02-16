@@ -21,6 +21,13 @@
 
 #include "astcenc_mathlib.h"
 
+/*	sized soft-float types. These are mapped to the sized integer
+    types of C99, instead of C's floating-point types; this is because
+    the library needs to maintain exact, bit-level control on all
+    operations on these data types. */
+typedef uint16_t sf16;
+typedef uint32_t sf32;
+
 /******************************************
   helper functions and their lookup tables
  ******************************************/
@@ -58,7 +65,7 @@ uint32_t clz32(uint32_t inp)
 {
 	#if defined(__GNUC__) && (defined(__i386) || defined(__amd64))
 		uint32_t bsr;
-	__asm__("bsrl %1, %0": "=r"(bsr):"r"(inp | 1));
+		__asm__("bsrl %1, %0": "=r"(bsr):"r"(inp | 1));
 		return 31 - bsr;
 	#else
 		#if defined(__arm__) && defined(__ARMCC_VERSION)
@@ -66,7 +73,7 @@ uint32_t clz32(uint32_t inp)
 		#else
 			#if defined(__arm__) && defined(__GNUC__)
 				uint32_t lz;
-			__asm__("clz %0, %1": "=r"(lz):"r"(inp));
+				__asm__("clz %0, %1": "=r"(lz):"r"(inp));
 				return lz;
 			#else
 				/* slow default version */
@@ -86,6 +93,17 @@ uint32_t clz32(uint32_t inp)
 		#endif
 	#endif
 }
+
+/* the five rounding modes that IEEE-754r defines */
+typedef enum
+{
+	SF_UP = 0,				/* round towards positive infinity */
+	SF_DOWN = 1,			/* round towards negative infinity */
+	SF_TOZERO = 2,			/* round towards zero */
+	SF_NEARESTEVEN = 3,		/* round toward nearest value; if mid-between, round to even value */
+	SF_NEARESTAWAY = 4		/* round toward nearest value; if mid-between, round away from zero */
+} roundmode;
+
 
 static uint32_t rtne_shift32(uint32_t inp, uint32_t shamt)
 {
@@ -369,7 +387,7 @@ sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 }
 
 /* convert from soft-float to native-float */
-float sf16_to_float(sf16 p)
+float sf16_to_float(uint16_t p)
 {
 	if32 i;
 	i.u = sf16_to_sf32(p);
@@ -377,9 +395,9 @@ float sf16_to_float(sf16 p)
 }
 
 /* convert from native-float to soft-float */
-sf16 float_to_sf16(float p, roundmode rm)
+uint16_t float_to_sf16(float p)
 {
 	if32 i;
 	i.f = p;
-	return sf32_to_sf16(i.u, rm);
+	return sf32_to_sf16(i.u, SF_NEARESTEVEN);
 }

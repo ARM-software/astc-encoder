@@ -203,10 +203,17 @@ astcenc_image* astc_img_from_floatx4_array(
 
 		for (unsigned int x = 0; x < dim_x; x++)
 		{
-			data16[(4 * dim_x * y) + (4 * x    )] = float_to_sf16(src[4 * x    ], SF_NEARESTEVEN);
-			data16[(4 * dim_x * y) + (4 * x + 1)] = float_to_sf16(src[4 * x + 1], SF_NEARESTEVEN);
-			data16[(4 * dim_x * y) + (4 * x + 2)] = float_to_sf16(src[4 * x + 2], SF_NEARESTEVEN);
-			data16[(4 * dim_x * y) + (4 * x + 3)] = float_to_sf16(src[4 * x + 3], SF_NEARESTEVEN);
+			vint4 colorf16 = float_to_float16(vfloat4(
+				src[4 * x    ],
+				src[4 * x + 1],
+				src[4 * x + 2],
+				src[4 * x + 3]
+			));
+
+			data16[(4 * dim_x * y) + (4 * x    )] = (uint16_t)colorf16.lane<0>();
+			data16[(4 * dim_x * y) + (4 * x + 1)] = (uint16_t)colorf16.lane<1>();
+			data16[(4 * dim_x * y) + (4 * x + 2)] = (uint16_t)colorf16.lane<2>();
+			data16[(4 * dim_x * y) + (4 * x + 3)] = (uint16_t)colorf16.lane<3>();
 		}
 #endif
 	}

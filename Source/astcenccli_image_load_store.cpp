@@ -217,8 +217,8 @@ static void copy_scanline(
 ) {
 
 #define id(x) (x)
-#define u16_sf16(x) float_to_sf16(x * (1.0f/65535.0f), SF_NEARESTEVEN)
-#define f32_sf16(x) sf32_to_sf16(x, SF_NEARESTEVEN)
+#define u16_sf16(x) float_to_float16(x * (1.0f/65535.0f))
+#define f32_sf16(x) float16_to_float(x)
 
 #define COPY_R(dsttype, srctype, convfunc, oneval) \
 	do { \

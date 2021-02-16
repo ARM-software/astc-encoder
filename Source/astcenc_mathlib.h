@@ -305,21 +305,6 @@ static inline float clamp255f(float v)
 }
 
 /**
- * @brief Clamp a float value between 0.0f and 65504.0f.
- *
- * NaNs are turned into 0.0f.
- *
- * @param v   The value to clamp
- *
- * @return The clamped value
- */
-static inline float clamp64Kf(float v)
-{
-	return astc::clamp(v, 0.0f, 65504.0f);
-}
-
-
-/**
  * @brief SP float round-to-nearest.
  *
  * @param v   The value to round.
@@ -550,32 +535,9 @@ static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 ============================================================================ */
 uint32_t clz32(uint32_t p);
 
-/*	sized soft-float types. These are mapped to the sized integer
-    types of C99, instead of C's floating-point types; this is because
-    the library needs to maintain exact, bit-level control on all
-    operations on these data types. */
-typedef uint16_t sf16;
-typedef uint32_t sf32;
-
-/* the five rounding modes that IEEE-754r defines */
-typedef enum
-{
-	SF_UP = 0,				/* round towards positive infinity */
-	SF_DOWN = 1,			/* round towards negative infinity */
-	SF_TOZERO = 2,			/* round towards zero */
-	SF_NEARESTEVEN = 3,		/* round toward nearest value; if mid-between, round to even value */
-	SF_NEARESTAWAY = 4		/* round toward nearest value; if mid-between, round away from zero */
-} roundmode;
-
 /* narrowing float->float conversions */
-sf16 sf32_to_sf16(sf32, roundmode);
-
-/* widening float->float conversions */
-sf32 sf16_to_sf32(sf16);
-
-sf16 float_to_sf16(float, roundmode);
-
-float sf16_to_float(sf16);
+uint16_t float_to_sf16(float val);
+float sf16_to_float(uint16_t val);
 
 /*********************************
   Vector library
