@@ -572,7 +572,9 @@ void imageblock_initialize_orig_from_work(
 struct error_weight_block
 {
 	vfloat4 error_weights[MAX_TEXELS_PER_BLOCK];
+
 	float texel_weight[MAX_TEXELS_PER_BLOCK];
+
 	float texel_weight_gba[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_rba[MAX_TEXELS_PER_BLOCK];
 	float texel_weight_rga[MAX_TEXELS_PER_BLOCK];
