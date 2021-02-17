@@ -824,15 +824,6 @@ void build_quant_mode_table(void);
 
 // functions to compute color averages and dominant directions
 // for each partition in a block
-
-void compute_averages_and_directions_rgb(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const vfloat4* color_scalefactors,
-	vfloat4* averages,
-	vfloat4* directions_rgb);
-
 void compute_averages_and_directions_rgba(
 	const partition_info* pt,
 	const imageblock* blk,

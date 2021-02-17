@@ -168,7 +168,7 @@ void compute_encoding_choice_errors(
 	vfloat4 color_scalefactors[4];
 
 	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
-	compute_averages_and_directions_rgb(pi, pb, ewb, color_scalefactors, averages, directions_rgb);
+	compute_averages_and_directions_3_components(pi, pb, ewb, color_scalefactors, 3, averages, directions_rgb);
 
 	endpoints ep;
 	if (separate_component == -1)

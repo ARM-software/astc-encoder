@@ -465,7 +465,7 @@ void find_best_partitionings(
 			vfloat4 averages[4];
 			vfloat4 directions_rgb[4];
 
-			compute_averages_and_directions_rgb(ptab + partition, blk, ewb, color_scalefactors, averages, directions_rgb);
+			compute_averages_and_directions_3_components(ptab + partition, blk, ewb, color_scalefactors, 3, averages, directions_rgb);
 
 			line3 uncorr_lines[4];
 			line3 samechroma_lines[4];
