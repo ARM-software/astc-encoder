@@ -34,7 +34,7 @@
 	#include <fenv.h>
 #endif
 
-static void compute_endpoints_and_ideal_weights_1_component(
+static void compute_endpoints_and_ideal_weights_1_comp(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
@@ -128,7 +128,7 @@ static void compute_endpoints_and_ideal_weights_1_component(
 	}
 }
 
-static void compute_endpoints_and_ideal_weights_2_components(
+static void compute_endpoints_and_ideal_weights_2_comp(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
@@ -317,7 +317,7 @@ static void compute_endpoints_and_ideal_weights_2_components(
 	}
 }
 
-static void compute_endpoints_and_ideal_weights_3_components(
+static void compute_endpoints_and_ideal_weights_3_comp(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
@@ -515,7 +515,7 @@ static void compute_endpoints_and_ideal_weights_3_components(
 	}
 }
 
-static void compute_endpoints_and_ideal_weights_rgba(
+static void compute_endpoints_and_ideal_weights_4_comp(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
@@ -649,11 +649,11 @@ void compute_endpoints_and_ideal_weights_1_plane(
 	int uses_alpha = imageblock_uses_alpha(blk);
 	if (uses_alpha)
 	{
-		compute_endpoints_and_ideal_weights_rgba(bsd, pt, blk, ewb, ei);
+		compute_endpoints_and_ideal_weights_4_comp(bsd, pt, blk, ewb, ei);
 	}
 	else
 	{
-		compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei, 3);
+		compute_endpoints_and_ideal_weights_3_comp(bsd, pt, blk, ewb, ei, 3);
 	}
 }
 
@@ -674,43 +674,43 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	case 0: // separate weights for red
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 0);
+			compute_endpoints_and_ideal_weights_3_comp(bsd, pt, blk, ewb, ei1, 0);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 1, 2);
+			compute_endpoints_and_ideal_weights_2_comp(bsd, pt, blk, ewb, ei1, 1, 2);
 		}
-		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 0);
+		compute_endpoints_and_ideal_weights_1_comp(bsd, pt, blk, ewb, ei2, 0);
 		break;
 
 	case 1: // separate weights for green
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 1);
+			compute_endpoints_and_ideal_weights_3_comp(bsd, pt, blk, ewb, ei1, 1);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 2);
+			compute_endpoints_and_ideal_weights_2_comp(bsd, pt, blk, ewb, ei1, 0, 2);
 		}
-		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 1);
+		compute_endpoints_and_ideal_weights_1_comp(bsd, pt, blk, ewb, ei2, 1);
 		break;
 
 	case 2: // separate weights for blue
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 2);
+			compute_endpoints_and_ideal_weights_3_comp(bsd, pt, blk, ewb, ei1, 2);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_components(bsd, pt, blk, ewb, ei1, 0, 1);
+			compute_endpoints_and_ideal_weights_2_comp(bsd, pt, blk, ewb, ei1, 0, 1);
 		}
-		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 2);
+		compute_endpoints_and_ideal_weights_1_comp(bsd, pt, blk, ewb, ei2, 2);
 		break;
 
 	default: // separate weights for alpha
 		assert(uses_alpha);
-		compute_endpoints_and_ideal_weights_3_components(bsd, pt, blk, ewb, ei1, 3);
-		compute_endpoints_and_ideal_weights_1_component(bsd, pt, blk, ewb, ei2, 3);
+		compute_endpoints_and_ideal_weights_3_comp(bsd, pt, blk, ewb, ei1, 3);
+		compute_endpoints_and_ideal_weights_1_comp(bsd, pt, blk, ewb, ei2, 3);
 		break;
 	}
 }
