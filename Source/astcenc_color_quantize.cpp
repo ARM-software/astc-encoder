@@ -886,10 +886,10 @@ static void quantize_hdr_rgbo3(
 	switch (majcomp)
 	{
 	case 1:
-		color = vfloat4(color.lane<1>(), color.lane<0>(), color.lane<2>(), color.lane<3>());
+		color = color.swz<1, 0, 2, 3>();
 		break;
 	case 2:
-		color = vfloat4(color.lane<2>(), color.lane<1>(), color.lane<0>(), color.lane<3>());
+		color = color.swz<2, 1, 0, 3>();
 		break;
 	default:
 		break;
@@ -1208,12 +1208,12 @@ static void quantize_hdr_rgb3(
 	switch (majcomp)
 	{
 	case 1:					// red-green swap
-		color0 = vfloat4(color0.lane<1>(), color0.lane<0>(), color0.lane<2>(), color0.lane<3>());
-		color1 = vfloat4(color1.lane<1>(), color1.lane<0>(), color1.lane<2>(), color1.lane<3>());
+		color0 = color0.swz<1, 0, 2, 3>();
+		color1 = color1.swz<1, 0, 2, 3>();
 		break;
 	case 2:					// red-blue swap
-		color0 = vfloat4(color0.lane<2>(), color0.lane<1>(), color0.lane<0>(), color0.lane<3>());
-		color1 = vfloat4(color1.lane<2>(), color1.lane<1>(), color1.lane<0>(), color1.lane<3>());
+		color0 = color0.swz<2, 1, 0, 3>();
+		color1 = color1.swz<2, 1, 0, 3>();
 		break;
 	default:
 		break;
