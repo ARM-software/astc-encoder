@@ -226,23 +226,20 @@ static void compute_endpoints_and_ideal_weights_2_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float2 egv = directions[i];
-		if (egv.r + egv.g < 0.0f)
+		float2 dir = directions[i];
+		if (dir.r + dir.g < 0.0f)
 		{
-			directions[i] = float2(0.0f) - egv;
+			dir = float2(0.0f) - dir;
 		}
-	}
 
-	for (int i = 0; i < partition_count; i++)
-	{
 		lines[i].a = averages[i];
-		if (dot(directions[i], directions[i]) == 0.0f)
+		if (dot(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(float2(1.0f));
 		}
 		else
 		{
-			lines[i].b = normalize(directions[i]);
+			lines[i].b = normalize(dir);
 		}
 	}
 
@@ -421,23 +418,20 @@ static void compute_endpoints_and_ideal_weights_3_components(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 direc = directions[i];
-		if (hadd_rgb_s(direc) < 0.0f)
+		vfloat4 dir = directions[i];
+		if (hadd_rgb_s(dir) < 0.0f)
 		{
-			directions[i] = vfloat4(0.0f) - direc;
+			dir = vfloat4(0.0f) - dir;
 		}
-	}
 
-	for (int i = 0; i < partition_count; i++)
-	{
 		lines[i].a = averages[i];
-		if (dot3_s(directions[i], directions[i]) == 0.0f)
+		if (dot3_s(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
 		}
 		else
 		{
-			lines[i].b = normalize(directions[i]);
+			lines[i].b = normalize(dir);
 		}
 	}
 
@@ -564,20 +558,20 @@ static void compute_endpoints_and_ideal_weights_rgba(
 	// this will make the first endpoint the darkest one.
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 direc = directions_rgba[i];
-		if (hadd_rgb_s(direc) < 0.0f)
+		vfloat4 dir = directions_rgba[i];
+		if (hadd_rgb_s(dir) < 0.0f)
 		{
-			directions_rgba[i] = vfloat4::zero() - direc;
+			dir = vfloat4::zero() - dir;
 		}
 
 		lines[i].a = averages[i];
-		if (dot_s(directions_rgba[i], directions_rgba[i]) == 0.0f)
+		if (dot_s(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(vfloat4(1.0f));
 		}
 		else
 		{
-			lines[i].b = normalize(directions_rgba[i]);
+			lines[i].b = normalize(dir);
 		}
 	}
 
