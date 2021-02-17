@@ -511,23 +511,28 @@ static void hdr_rgb_unpack3(
 		c |= bit2 << 7;
 
 	if (ohmod & 0x5B)
+	{
 		b0 |= bit0 << 6;
-	if (ohmod & 0x5B)
 		b1 |= bit1 << 6;
+	}
 
 	if (ohmod & 0x12)
+	{
 		b0 |= bit2 << 7;
-	if (ohmod & 0x12)
 		b1 |= bit3 << 7;
+	}
 
 	if (ohmod & 0xAF)
+	{
 		d0 |= bit4 << 5;
-	if (ohmod & 0xAF)
 		d1 |= bit5 << 5;
+	}
+
 	if (ohmod & 0x5)
+	{
 		d0 |= bit2 << 6;
-	if (ohmod & 0x5)
 		d1 |= bit3 << 6;
+	}
 
 	// sign-extend 'd0' and 'd1'
 	// note: this code assumes that signed right-shift actually sign-fills, not zero-fills.
