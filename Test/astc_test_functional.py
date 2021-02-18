@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2020 Arm Limited
+# Copyright 2020-2021 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -1042,9 +1042,9 @@ class CLIPTest(CLITestBase):
                 chRMSE = self.get_channel_rmse(inputFile, decompFile)
                 self.assertLess(chRMSE[chIdx], baseRMSE[chIdx])
 
-    def test_partition_limit(self):
+    def test_partition_count_limit(self):
         """
-        Test partition limit.
+        Test partition count limit.
         """
         inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
         decompFile = self.get_tmp_image_path("LDR", "decomp")
@@ -1057,7 +1057,29 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
-        command += ["-partitionlimit", "1"]
+        command += ["-partitioncountlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_partition_index_limit(self):
+        """
+        Test partition index limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-partitionindexlimit", "1"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
@@ -1870,7 +1892,7 @@ class CLINTest(CLITestBase):
 
     def test_cl_partitionlimit_missing_args(self):
         """
-        Test -cl with -partitionlimit and missing arguments.
+        Test -cl with -partitionindexlimit and missing arguments.
         """
         # Build a valid command
         command = [
@@ -1878,7 +1900,7 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A"),
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast",
-            "-partitionlimit", "3"]
+            "-partitionindexlimit", "3"]
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)

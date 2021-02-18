@@ -790,16 +790,27 @@ static int edit_astcenc_config(
 
 			config.tune_block_mode_limit = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-partitionlimit"))
+		else if (!strcmp(argv[argidx], "-partitioncountlimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -partitionlimit switch with no argument\n");
+				printf("ERROR: -partitioncountlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_partition_limit = atoi(argv[argidx - 1]);
+			config.tune_partition_count_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-partitionindexlimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -partitionindexlimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_partition_index_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
@@ -1022,7 +1033,8 @@ static int edit_astcenc_config(
 			printf("    B channel weight:           %g\n",(double)config.cw_b_weight);
 			printf("    A channel weight:           %g\n",(double)config.cw_a_weight);
 			printf("    Deblock artifact setting:   %g\n", (double)config.b_deblock_weight);
-			printf("    Block partition cutoff:     %u partitions\n", config.tune_partition_limit);
+			printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
+			printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
 			printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
 			printf("    1->2 partition cutoff:      %g\n", (double)config.tune_partition_early_out_limit);
 			printf("    2 plane correlation cutoff: %g\n", (double)config.tune_two_plane_early_out_limit);

@@ -418,11 +418,18 @@ struct astcenc_config {
 	float b_deblock_weight;
 
 	/**
-	 * @brief The maximum number of partitions searched (-partitionlimit).
+	 * @brief The maximum number of partitions searched (-partitioncountlimit).
+	 *
+	 * Valid values are between 1 and 4.
+	 */
+	unsigned int tune_partition_count_limit;
+
+	/**
+	 * @brief The maximum number of partitions searched (-partitionindexlimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_partition_limit;
+	unsigned int tune_partition_index_limit;
 
 	/**
 	 * @brief The maximum centile for block modes searched (-blockmodelimit).

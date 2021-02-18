@@ -93,7 +93,8 @@ static astcenc_error validate_cpu_isa()
  */
 struct astcenc_preset_config {
 	float quality;
-	unsigned int tune_partition_limit;
+	unsigned int tune_partition_count_limit;
+	unsigned int tune_partition_index_limit;
 	unsigned int tune_block_mode_limit;
 	unsigned int tune_refinement_limit;
 	unsigned int tune_candidate_limit;
@@ -111,19 +112,19 @@ struct astcenc_preset_config {
 static const std::array<astcenc_preset_config, 5> preset_configs {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
+		2, 2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
+		3, 4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+		3, 26, 76, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+		3, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
+		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
 	}
 }};
 
@@ -306,7 +307,8 @@ static astcenc_error validate_config(
 
 	config.b_deblock_weight = astc::max(config.b_deblock_weight, 0.0f);
 
-	config.tune_partition_limit = astc::clamp(config.tune_partition_limit, 1u, (unsigned int)PARTITION_COUNT);
+	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
+	config.tune_partition_index_limit = astc::clamp(config.tune_partition_index_limit, 1u, (unsigned int)PARTITION_COUNT);
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
 	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
@@ -391,7 +393,8 @@ astcenc_error astcenc_config_init(
 	// Start and end node are the same - so just transfer the values.
 	if (start == end)
 	{
-		config.tune_partition_limit = preset_configs[start].tune_partition_limit;
+		config.tune_partition_count_limit = preset_configs[start].tune_partition_count_limit;
+		config.tune_partition_index_limit = preset_configs[start].tune_partition_index_limit;
 		config.tune_block_mode_limit = preset_configs[start].tune_block_mode_limit;
 		config.tune_refinement_limit = preset_configs[start].tune_refinement_limit;
 		config.tune_candidate_limit = astc::min(preset_configs[start].tune_candidate_limit,
@@ -424,7 +427,8 @@ astcenc_error astcenc_config_init(
 		#define LERPI(param) astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
 		#define LERPUI(param) (unsigned int)astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
 
-		config.tune_partition_limit = LERPI(tune_partition_limit);
+		config.tune_partition_count_limit = LERPI(tune_partition_count_limit);
+		config.tune_partition_index_limit = LERPI(tune_partition_index_limit);
 		config.tune_block_mode_limit = LERPI(tune_block_mode_limit);
 		config.tune_refinement_limit = LERPI(tune_refinement_limit);
 		config.tune_candidate_limit = astc::min(LERPUI(tune_candidate_limit),

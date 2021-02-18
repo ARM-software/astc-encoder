@@ -1286,6 +1286,14 @@ void compress_block(
 	bool block_is_la = imageblock_is_lumalp(blk);
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
+	// Default max partition, but +1 if only have 1 or 2 active components
+	int max_partitions = ctx.config.tune_partition_count_limit;
+	if (block_is_l || block_is_la)
+	{
+		max_partitions = astc::min(max_partitions + 1, 4);
+	}
+
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
@@ -1440,13 +1448,13 @@ void compress_block(
 	}
 
 	// find best blocks for 2, 3 and 4 partitions
-	for (int partition_count = 2; partition_count <= 4; partition_count++)
+	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
 		int partition_indices_1plane[2];
 		int partition_index_2planes;
 
 		find_best_partitionings(bsd, blk, ewb, partition_count,
-		                        ctx.config.tune_partition_limit,
+		                        ctx.config.tune_partition_index_limit,
 		                        &(partition_indices_1plane[0]),
 		                        &(partition_indices_1plane[1]),
 		                        &partition_index_2planes);

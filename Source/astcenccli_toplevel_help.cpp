@@ -291,14 +291,26 @@ ADVANCED COMPRESSION
        These options provide low-level control of the codec heuristics that
        drive the performance-quality trade off.
 
-       -partitionlimit <number>
-           Test only <number> block partitions. Higher numbers give
-           better quality, however large values give diminishing returns
-           especially for smaller block sizes. Preset defaults are:
+       -partitioncountlimit <number>
+           Test only up to and including <number> partitions for each block.
+           Higher numbers give better quality, as more complex blocks can be
+           encoded, however they are expensive to search. Preset defaults are:
+
+               -fastest    : 2
+               -fast       : 3
+               -medium     : 3
+               -thorough   : 3
+               -exhaustive : 4
+
+       -partitionindexlimit <number>
+           Test only <number> block partition indices for each partition count.
+           Higher numbers give better quality, however large values give
+           diminishing returns especially for smaller block sizes. Preset
+           defaults are:
 
                -fastest    :    2
                -fast       :    4
-               -medium     :   25
+               -medium     :   26
                -thorough   :   75
                -exhaustive : 1024
 
@@ -309,7 +321,7 @@ ADVANCED COMPRESSION
 
                -fastest    :  25
                -fast       :  50
-               -medium     :  75
+               -medium     :  76
                -thorough   :  92
                -exhaustive : 100
 
