@@ -53,46 +53,43 @@
 
 #include "astcenc_internal.h"
 
-// TODO: This slows down when inlining, but might change if we shrink caller
-static void compute_rgba_range(
-	int texels_per_block,
-	const partition_info* pt,
+static void compute_partition_error_color_weightings_and_range(
 	const imageblock* blk,
 	const error_weight_block* ewb,
+	const partition_info* pt,
+	vfloat4 error_weightings[4],
+	vfloat4 color_scalefactors[4],
 	vfloat4 rgba_range[4]
 ) {
-	vfloat4 rgba_min[4];
-	vfloat4 rgba_max[4];
-
 	int partition_count = pt->partition_count;
 
-	promise(partition_count > 0);
 	for (int i = 0; i < partition_count; i++)
 	{
-		rgba_min[i] = vfloat4(1e38f);
-		rgba_max[i] = vfloat4(-1e38f);
-	}
+		vfloat4 error_weight(1e-12f);
+		vfloat4 rgba_min(1e38f);
+		vfloat4 rgba_max(-1e38f);
 
-	promise(texels_per_block > 0);
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		if (ewb->texel_weight[i] > 1e-10f)
+		int texel_count = pt->texels_per_partition[i];
+		for (int j = 0; j < texel_count; j++)
 		{
-			int partition = pt->partition_of_texel[i];
-			vfloat4 data = blk->texel(i);
+			int tidx = pt->texels_of_partition[i][j];
+			error_weight = error_weight + ewb->error_weights[tidx];
 
-			rgba_min[partition] = min(data, rgba_min[partition]);
-			rgba_max[partition] = max(data, rgba_max[partition]);
+			if (ewb->texel_weight[tidx] > 1e-10f)
+			{
+				vfloat4 data = blk->texel(tidx);
+				rgba_min = min(data, rgba_min);
+				rgba_max = max(data, rgba_max);
+			}
 		}
-	}
 
-	// Covert min/max into ranges forcing a min range of 1e-10
-	// to avoid divide by zeros later ...
-	for (int i = 0; i < partition_count; i++)
-	{
-		rgba_range[i] = max(rgba_max[i] - rgba_min[i], 1e-10f);
+		error_weight = error_weight / pt->texels_per_partition[i];
+		error_weightings[i] = error_weight;
+		color_scalefactors[i] = sqrt(error_weight);
+		rgba_range[i] = max(rgba_max - rgba_min, 1e-10f);
 	}
 }
+
 
 void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
@@ -197,7 +194,8 @@ void find_best_partitionings(
 			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
 			vfloat4 inverse_color_scalefactors[4];
-			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
+			vfloat4 rgba_range[4];
+			compute_partition_error_color_weightings_and_range(blk, ewb, ptab + partition, error_weightings, color_scalefactors, rgba_range);
 
 			for (int j = 0; j < partition_count; j++)
 			{
@@ -340,10 +338,6 @@ void find_best_partitionings(
 			                           &uncorr_error,
 			                           &samechroma_error);
 
-			// compute minimum & maximum alpha values in each partition
-			vfloat4 rgba_range[4];
-			compute_rgba_range(bsd->texel_count, ptab + partition, blk, ewb, rgba_range);
-
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
 			   This error is computed as follows, for each partition
@@ -454,8 +448,8 @@ void find_best_partitionings(
 			vfloat4 error_weightings[4];
 			vfloat4 color_scalefactors[4];
 			vfloat4 inverse_color_scalefactors[4];
-
-			compute_partition_error_color_weightings(bsd, ewb, ptab + partition, error_weightings, color_scalefactors);
+			vfloat4 rgba_range[4];
+			compute_partition_error_color_weightings_and_range(blk, ewb, ptab + partition, error_weightings, color_scalefactors, rgba_range);
 
 			for (int j = 0; j < partition_count; j++)
 			{
@@ -573,9 +567,6 @@ void find_best_partitionings(
 			                          samechroma_linelengths,
 			                          &uncorr_error,
 			                          &samechroma_error);
-
-			vfloat4 rgba_range[4];
-			compute_rgba_range(bsd->texel_count, ptab + partition, blk, ewb, rgba_range);
 
 			/*
 			   compute an estimate of error introduced by weight imprecision.
