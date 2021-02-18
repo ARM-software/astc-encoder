@@ -120,7 +120,7 @@ static const std::array<astcenc_preset_config, 5> preset_configs {{
 		25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		100, 95, 4, 3, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+		75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
 		1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
