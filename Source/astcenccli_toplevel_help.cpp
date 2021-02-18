@@ -299,7 +299,7 @@ ADVANCED COMPRESSION
                -fastest    :    2
                -fast       :    4
                -medium     :   25
-               -thorough   :  100
+               -thorough   :   75
                -exhaustive : 1024
 
        -blockmodelimit <number>
@@ -310,7 +310,7 @@ ADVANCED COMPRESSION
                -fastest    :  25
                -fast       :  50
                -medium     :  75
-               -thorough   :  95
+               -thorough   :  92
                -exhaustive : 100
 
        -refinementlimit <value>
@@ -329,7 +329,7 @@ ADVANCED COMPRESSION
                -fastest    : 1
                -fast       : 2
                -medium     : 2
-               -thorough   : 3
+               -thorough   : 4
                -exhaustive : 4
 
        -dblimit <number>
