@@ -94,12 +94,12 @@ static void compute_partition_error_color_weightings_and_range(
 void compute_partition_error_color_weightings(
 	const block_size_descriptor* bsd,
 	const error_weight_block* ewb,
-	const partition_info* pi,
+	const partition_info* pt,
 	vfloat4 error_weightings[4],
 	vfloat4 color_scalefactors[4]
 ) {
 	int texels_per_block = bsd->texel_count;
-	int pcnt = pi->partition_count;
+	int pcnt = pt->partition_count;
 
 	for (int i = 0; i < pcnt; i++)
 	{
@@ -108,13 +108,13 @@ void compute_partition_error_color_weightings(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		int part = pi->partition_of_texel[i];
+		int part = pt->partition_of_texel[i];
 		error_weightings[part] = error_weightings[part] + ewb->error_weights[i];
 	}
 
 	for (int i = 0; i < pcnt; i++)
 	{
-		error_weightings[i] = error_weightings[i] * (1.0f / pi->texels_per_partition[i]);
+		error_weightings[i] = error_weightings[i] * (1.0f / pt->texels_per_partition[i]);
 		color_scalefactors[i] = sqrt(error_weightings[i]);
 	}
 }

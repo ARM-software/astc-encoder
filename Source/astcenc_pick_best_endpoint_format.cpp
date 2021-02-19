@@ -36,7 +36,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	int encode_hdr_rgb,	// 1 = perform HDR encoding, 0 = perform LDR encoding.
 	int encode_hdr_alpha,
 	int partition_index,
-	const partition_info* pi,
+	const partition_info* pt,
 	const encoding_choice_errors* eci,	// pointer to the structure for the CURRENT partition.
 	const endpoints* ep,
 	vfloat4 error_weightings[4],
@@ -44,7 +44,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float best_error[21][4],
 	int format_of_choice[21][4]
 ) {
-	int partition_size = pi->texels_per_partition[partition_index];
+	int partition_size = pt->texels_per_partition[partition_index];
 
 	static const float baseline_quant_error[21] = {
 		(65536.0f * 65536.0f / 18.0f),				// 2 values, 1 step

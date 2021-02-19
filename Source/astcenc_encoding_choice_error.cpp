@@ -151,12 +151,12 @@ static void compute_error_squared_rgb_single_partition(
 void compute_encoding_choice_errors(
 	const block_size_descriptor* bsd,
 	const imageblock* pb,
-	const partition_info* pi,
+	const partition_info* pt,
 	const error_weight_block* ewb,
 	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
 	encoding_choice_errors* eci)
 {
-	int partition_count = pi->partition_count;
+	int partition_count = pt->partition_count;
 	int texels_per_block = bsd->texel_count;
 
 	promise(partition_count > 0);
@@ -167,20 +167,20 @@ void compute_encoding_choice_errors(
 	vfloat4 error_weightings[4];
 	vfloat4 color_scalefactors[4];
 
-	compute_partition_error_color_weightings(bsd, ewb, pi, error_weightings, color_scalefactors);
-	compute_avgs_and_dirs_3_comp(pi, pb, ewb, color_scalefactors, 3, averages, directions_rgb);
+	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
+	compute_avgs_and_dirs_3_comp(pt, pb, ewb, color_scalefactors, 3, averages, directions_rgb);
 
 	endpoints ep;
 	if (separate_component == -1)
 	{
 		endpoints_and_weights ei;
-		compute_endpoints_and_ideal_weights_1_plane(bsd, pi, pb, ewb, &ei);
+		compute_endpoints_and_ideal_weights_1_plane(bsd, pt, pb, ewb, &ei);
 		ep = ei.ep;
 	}
 	else
 	{
 		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2_planes(bsd, pi, pb, ewb, separate_component, &ei1, &ei2);
+		compute_endpoints_and_ideal_weights_2_planes(bsd, pt, pb, ewb, separate_component, &ei1, &ei2);
 		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
 	}
 
@@ -249,7 +249,7 @@ void compute_encoding_choice_errors(
 		proc_luminance_lines.bis = normalize(csf) * icsf;
 
 		compute_error_squared_rgb_single_partition(
-		    i, bsd, pi, pb, ewb,
+		    i, bsd, pt, pb, ewb,
 		    &proc_uncorr_rgb_lines,     &uncorr_rgb_error,
 		    &proc_samechroma_rgb_lines, &samechroma_rgb_error,
 		    &proc_rgb_luma_lines,       &rgb_luma_error,

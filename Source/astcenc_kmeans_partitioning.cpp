@@ -325,7 +325,7 @@ static void count_partition_mismatch_bits(
 	const uint64_t bitmaps[4],
 	int bitcounts[PARTITION_COUNT]
 ) {
-	const partition_info *pi = get_partition_table(bsd, partition_count);
+	const partition_info *pt = get_partition_table(bsd, partition_count);
 
 	if (partition_count == 2)
 	{
@@ -333,15 +333,15 @@ static void count_partition_mismatch_bits(
 		uint64_t bm1 = bitmaps[1];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
-			if (pi->partition_count == 2)
+			if (pt->partition_count == 2)
 			{
-				bitcounts[i] = partition_mismatch2(bm0, bm1, pi->coverage_bitmaps[0], pi->coverage_bitmaps[1]);
+				bitcounts[i] = partition_mismatch2(bm0, bm1, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1]);
 			}
 			else
 			{
 				bitcounts[i] = 255;
 			}
-			pi++;
+			pt++;
 		}
 	}
 	else if (partition_count == 3)
@@ -351,15 +351,15 @@ static void count_partition_mismatch_bits(
 		uint64_t bm2 = bitmaps[2];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
-			if (pi->partition_count == 3)
+			if (pt->partition_count == 3)
 			{
-				bitcounts[i] = partition_mismatch3(bm0, bm1, bm2, pi->coverage_bitmaps[0], pi->coverage_bitmaps[1], pi->coverage_bitmaps[2]);
+				bitcounts[i] = partition_mismatch3(bm0, bm1, bm2, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2]);
 			}
 			else
 			{
 				bitcounts[i] = 255;
 			}
-			pi++;
+			pt++;
 		}
 	}
 	else if (partition_count == 4)
@@ -370,15 +370,15 @@ static void count_partition_mismatch_bits(
 		uint64_t bm3 = bitmaps[3];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
-			if (pi->partition_count == 4)
+			if (pt->partition_count == 4)
 			{
-				bitcounts[i] = partition_mismatch4(bm0, bm1, bm2, bm3, pi->coverage_bitmaps[0], pi->coverage_bitmaps[1], pi->coverage_bitmaps[2], pi->coverage_bitmaps[3]);
+				bitcounts[i] = partition_mismatch4(bm0, bm1, bm2, bm3, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2], pt->coverage_bitmaps[3]);
 			}
 			else
 			{
 				bitcounts[i] = 255;
 			}
-			pi++;
+			pt++;
 		}
 	}
 

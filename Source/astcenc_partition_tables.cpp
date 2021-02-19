@@ -75,14 +75,14 @@ static int compare_canonicalized_partition_tables(
    consider and thus improves encode performance. */
 static void partition_table_zap_equal_elements(
 	int texel_count,
-	partition_info* pi
+	partition_info* pt
 ) {
 	int partition_tables_zapped = 0;
 	uint64_t *canonicalizeds = new uint64_t[PARTITION_COUNT * 7];
 
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		gen_canonicalized_partition_table(texel_count, pi[i].partition_of_texel, canonicalizeds + i * 7);
+		gen_canonicalized_partition_table(texel_count, pt[i].partition_of_texel, canonicalizeds + i * 7);
 	}
 
 	for (int i = 0; i < PARTITION_COUNT; i++)
@@ -91,7 +91,7 @@ static void partition_table_zap_equal_elements(
 		{
 			if (compare_canonicalized_partition_tables(canonicalizeds + 7 * i, canonicalizeds + 7 * j))
 			{
-				pi[i].partition_count = 0;
+				pt[i].partition_count = 0;
 				partition_tables_zapped++;
 				break;
 			}

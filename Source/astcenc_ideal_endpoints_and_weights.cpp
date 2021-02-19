@@ -1103,7 +1103,7 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
-	const partition_info* pi,
+	const partition_info* pt,
 	const decimation_table* it,
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
@@ -1126,15 +1126,15 @@ void recompute_ideal_colors_2planes(
 		}
 	}
 
-	int partition_count = pi->partition_count;
+	int partition_count = pt->partition_count;
 
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pi->texels_per_partition[i];
-		const uint8_t *texel_indexes = pi->texels_of_partition[i];
+		int texelcount = pt->texels_per_partition[i];
+		const uint8_t *texel_indexes = pt->texels_of_partition[i];
 		for (int j = 0; j < texelcount; j++)
 		{
 			int tix = texel_indexes[j];
@@ -1435,13 +1435,13 @@ void recompute_ideal_colors_1plane(
 	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
 	const uint8_t* weight_set8,	// the current set of weight values
-	const partition_info* pi,
+	const partition_info* pt,
 	const decimation_table* it,
 	const imageblock* pb,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
 	int weight_count = it->weight_count;
-	int partition_count = pi->partition_count;
+	int partition_count = pt->partition_count;
 
 	promise(weight_count > 0);
 	promise(partition_count > 0);
@@ -1459,8 +1459,8 @@ void recompute_ideal_colors_1plane(
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pi->texels_per_partition[i];
-		const uint8_t *texel_indexes = pi->texels_of_partition[i];
+		int texelcount = pt->texels_per_partition[i];
+		const uint8_t *texel_indexes = pt->texels_of_partition[i];
 
 		promise(texelcount > 0);
 		for (int j = 0; j < texelcount; j++)

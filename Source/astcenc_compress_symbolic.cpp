@@ -220,14 +220,14 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		0, 115 - 4, 111 - 4 - PARTITION_BITS, 108 - 4 - PARTITION_BITS, 105 - 4 - PARTITION_BITS
 	};
 
-	const partition_info *pi = get_partition_table(bsd, partition_count);
-	pi += partition_index;
+	const partition_info *pt = get_partition_table(bsd, partition_count);
+	pt += partition_index;
 
 	// first, compute ideal weights and endpoint colors, under the assumption that
 	// there is no quantization or decimation going on.
 	endpoints_and_weights *ei = &tmpbuf->ei1;
 	endpoints_and_weights *eix = tmpbuf->eix1;
-	compute_endpoints_and_ideal_weights_1_plane(bsd, pi, blk, ewb, ei);
+	compute_endpoints_and_ideal_weights_1_plane(bsd, pt, blk, ewb, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
@@ -347,7 +347,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pi, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
+	    bsd, pt, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 
@@ -394,7 +394,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		{
 			recompute_ideal_colors_1plane(
 			    weight_quant_mode, &(eix[decimation_mode].ep),
-			    rgbs_colors, rgbo_colors, u8_weight_src, pi, it, blk, ewb);
+			    rgbs_colors, rgbo_colors, u8_weight_src, pt, it, blk, ewb);
 
 			// quantize the chosen color
 
@@ -571,15 +571,15 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		0, 113 - 4, 109 - 4 - PARTITION_BITS, 106 - 4 - PARTITION_BITS, 103 - 4 - PARTITION_BITS
 	};
 
-	const partition_info *pi = get_partition_table(bsd, partition_count);
-	pi += partition_index;
+	const partition_info *pt = get_partition_table(bsd, partition_count);
+	pt += partition_index;
 
 	// first, compute ideal weights and endpoint colors
 	endpoints_and_weights *ei1 = &tmpbuf->ei1;
 	endpoints_and_weights *ei2 = &tmpbuf->ei2;
 	endpoints_and_weights *eix1 = tmpbuf->eix1;
 	endpoints_and_weights *eix2 = tmpbuf->eix2;
-	compute_endpoints_and_ideal_weights_2_planes(bsd, pi, blk, ewb, separate_component, ei1, ei2);
+	compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, separate_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *ixtab2 = bsd->decimation_tables;
@@ -741,7 +741,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	merge_endpoints(&(ei1->ep), &(ei2->ep), separate_component, &epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pi, blk, ewb, &epm, separate_component, qwt_bitcounts, qwt_errors,
+	    bsd, pt, blk, ewb, &epm, separate_component, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 
@@ -793,7 +793,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		{
 			recompute_ideal_colors_2planes(
 			    weight_quant_mode, &epm, rgbs_colors, rgbo_colors,
-			    u8_weight1_src, u8_weight2_src, separate_component, pi, it, blk, ewb);
+			    u8_weight1_src, u8_weight2_src, separate_component, pt, it, blk, ewb);
 
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)
