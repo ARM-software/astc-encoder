@@ -524,6 +524,11 @@ struct imageblock
 	}
 };
 
+static inline float imageblock_default_alpha(const imageblock * blk)
+{
+	return blk->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
+}
+
 
 static inline int imageblock_uses_alpha(const imageblock * blk)
 {
@@ -532,15 +537,17 @@ static inline int imageblock_uses_alpha(const imageblock * blk)
 
 static inline int imageblock_is_lum(const imageblock * blk)
 {
-	bool alpha1 = (blk->data_min.lane<3>() == 65535.0f) &&
-	              (blk->data_max.lane<3>() == 65535.0f);
+	float default_alpha = imageblock_default_alpha(blk);
+	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
+	              (blk->data_max.lane<3>() == default_alpha);
 	return blk->grayscale && alpha1;
 }
 
 static inline int imageblock_is_lumalp(const imageblock * blk)
 {
-	bool alpha1 = (blk->data_min.lane<3>() == 65535.0f) &&
-	              (blk->data_max.lane<3>() == 65535.0f);
+	float default_alpha = imageblock_default_alpha(blk);
+	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
+	              (blk->data_max.lane<3>() == default_alpha);
 	return blk->grayscale && !alpha1;
 }
 
