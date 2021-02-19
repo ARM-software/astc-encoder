@@ -1076,7 +1076,13 @@ ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
 {
 #if ASTCENC_F16C >= 1
-	__m128i packedf16 = _mm_cvtps_ph(a.m, _MM_FROUND_NO_EXC);
+	// Workaround for MSVC bug not accepting _MM_FROUND_NO_EXC;
+	// https://developercommunity2.visualstudio.com/t/-mm-cvtps-ph-doesnt-accept-mm-fround-no-exc/1343857
+	#if !defined(__clang__) && defined(_MSC_VER)
+		__m128i packedf16 = _mm_cvtps_ph(a.m, 0);
+	#else
+		__m128i packedf16 = _mm_cvtps_ph(a.m, _MM_FROUND_NO_EXC);
+	#endif
 	__m128i f16 = _mm_cvtepu16_epi32(packedf16);
 	return vint4(f16);
 #else
@@ -1094,7 +1100,13 @@ ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
 static inline uint16_t float_to_float16(float a)
 {
 #if ASTCENC_F16C >= 1
-	__m128i f16 = _mm_cvtps_ph(_mm_set1_ps(a), _MM_FROUND_NO_EXC);
+	// Workaround for MSVC bug not accepting _MM_FROUND_NO_EXC;
+	// https://developercommunity2.visualstudio.com/t/-mm-cvtps-ph-doesnt-accept-mm-fround-no-exc/1343857
+	#if !defined(__clang__) && defined(_MSC_VER)
+		__m128i f16 = _mm_cvtps_ph(_mm_set1_ps(a), 0);
+	#else
+		__m128i f16 = _mm_cvtps_ph(_mm_set1_ps(a), _MM_FROUND_NO_EXC);
+	#endif
 	return  (uint16_t)_mm_cvtsi128_si32(f16);
 #else
 	return float_to_sf16(a);
