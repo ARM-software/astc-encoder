@@ -122,7 +122,7 @@ uint16_t unorm16_to_sf16(uint16_t p)
 }
 
 void imageblock_initialize_deriv(
-	const imageblock* pb,
+	const imageblock* blk,
 	int pixelcount,
 	vfloat4* dptr
 ) {
@@ -134,13 +134,13 @@ void imageblock_initialize_deriv(
 		vfloat4 derv_lns = vfloat4::zero();
 
 		// TODO: Pack these into bits and avoid the disjoint fetch
-		int rgb_lns = pb->rgb_lns[i];
-		int a_lns = pb->alpha_lns[i];
+		int rgb_lns = blk->rgb_lns[i];
+		int a_lns = blk->alpha_lns[i];
 
 		// Compute derivatives if we have any use of LNS
 		if (rgb_lns || a_lns)
 		{
-			vfloat4 data = pb->texel(i);
+			vfloat4 data = blk->texel(i);
 
 			vint4 datai(
 				lns_to_sf16((uint16_t)data.lane<0>()),
@@ -185,10 +185,10 @@ void imageblock_initialize_deriv(
 
 // helper function to initialize the work-data from the orig-data
 static void imageblock_initialize_work_from_orig(
-	imageblock* pb,
+	imageblock* blk,
 	int pixelcount
 ) {
-	pb->origin_texel = pb->texel(0);
+	blk->origin_texel = blk->texel(0);
 
 	vfloat4 data_min(1e38f);
 	vfloat4 data_max(-1e38f);
@@ -196,9 +196,9 @@ static void imageblock_initialize_work_from_orig(
 
 	for (int i = 0; i < pixelcount; i++)
 	{
-		vfloat4 data = pb->texel(i);
+		vfloat4 data = blk->texel(i);
 
-		if (pb->rgb_lns[i])
+		if (blk->rgb_lns[i])
 		{
 			data.set_lane<0>(float_to_lns(data.lane<0>()));
 			data.set_lane<1>(float_to_lns(data.lane<1>()));
@@ -211,7 +211,7 @@ static void imageblock_initialize_work_from_orig(
 			data.set_lane<2>(data.lane<2>() * 65535.0f);
 		}
 
-		if (pb->alpha_lns[i])
+		if (blk->alpha_lns[i])
 		{
 			data.set_lane<3>(float_to_lns(data.lane<3>()));
 		}
@@ -229,21 +229,21 @@ static void imageblock_initialize_work_from_orig(
 		}
 
 		// Store block data
-		pb->data_r[i] = data.lane<0>();
-		pb->data_g[i] = data.lane<1>();
-		pb->data_b[i] = data.lane<2>();
-		pb->data_a[i] = data.lane<3>();
+		blk->data_r[i] = data.lane<0>();
+		blk->data_g[i] = data.lane<1>();
+		blk->data_b[i] = data.lane<2>();
+		blk->data_a[i] = data.lane<3>();
 	}
 
 	// Store block metadata
-	pb->data_min = data_min;
-	pb->data_max = data_max;
-	pb->grayscale = grayscale;
+	blk->data_min = data_min;
+	blk->data_max = data_max;
+	blk->grayscale = grayscale;
 }
 
 // helper function to initialize the orig-data from the work-data
 void imageblock_initialize_orig_from_work(
-	imageblock* pb,
+	imageblock* blk,
 	int pixelcount
 ) {
 	vfloat4 data_min(1e38f);
@@ -252,14 +252,14 @@ void imageblock_initialize_orig_from_work(
 
 	for (int i = 0; i < pixelcount; i++)
 	{
-		vfloat4 data = pb->texel(i);
+		vfloat4 data = blk->texel(i);
 
 		vint4 color_lns = vint4::zero();
 		vint4 color_unorm = vint4::zero();
 
 		// TODO: Pack these into bits and avoid the disjoint fetch
-		int rgb_lns = pb->rgb_lns[i];
-		int a_lns = pb->alpha_lns[i];
+		int rgb_lns = blk->rgb_lns[i];
+		int a_lns = blk->alpha_lns[i];
 
 		// TODO: Do a vector version of lns_to_sf16
 		//       ... or do we even need the f16 intermediate?
@@ -301,23 +301,23 @@ void imageblock_initialize_orig_from_work(
 		}
 
 		// Store block data
-		pb->data_r[i] = data.lane<0>();
-		pb->data_g[i] = data.lane<1>();
-		pb->data_b[i] = data.lane<2>();
-		pb->data_a[i] = data.lane<3>();
+		blk->data_r[i] = data.lane<0>();
+		blk->data_g[i] = data.lane<1>();
+		blk->data_b[i] = data.lane<2>();
+		blk->data_a[i] = data.lane<3>();
 	}
 
 	// Store block metadata
-	pb->data_min = data_min;
-	pb->data_max = data_max;
-	pb->grayscale = grayscale;
+	blk->data_min = data_min;
+	blk->data_max = data_max;
+	blk->grayscale = grayscale;
 }
 
 // fetch an imageblock from the input file.
 void fetch_imageblock(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock* pb,	// picture-block to initialize with image data
+	imageblock* blk,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in texture.
 	int xpos,
@@ -329,9 +329,9 @@ void fetch_imageblock(
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
 
-	pb->xpos = xpos;
-	pb->ypos = ypos;
-	pb->zpos = zpos;
+	blk->xpos = xpos;
+	blk->ypos = ypos;
+	blk->zpos = zpos;
 
 	// True if any non-identity swizzle
 	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
@@ -375,10 +375,10 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = static_cast<float>(r) / 255.0f;
-					pb->data_g[idx] = static_cast<float>(g) / 255.0f;
-					pb->data_b[idx] = static_cast<float>(b) / 255.0f;
-					pb->data_a[idx] = static_cast<float>(a) / 255.0f;
+					blk->data_r[idx] = static_cast<float>(r) / 255.0f;
+					blk->data_g[idx] = static_cast<float>(g) / 255.0f;
+					blk->data_b[idx] = static_cast<float>(b) / 255.0f;
+					blk->data_a[idx] = static_cast<float>(a) / 255.0f;
 					idx++;
 				}
 			}
@@ -422,10 +422,10 @@ void fetch_imageblock(
 					}
 
 					vfloat4 dataf = max(float16_to_float(vint4(r, g, b, a)), 1e-8);
-					pb->data_r[idx] = dataf.lane<0>();
-					pb->data_g[idx] = dataf.lane<1>();
-					pb->data_b[idx] = dataf.lane<2>();
-					pb->data_a[idx] = dataf.lane<3>();
+					blk->data_r[idx] = dataf.lane<0>();
+					blk->data_g[idx] = dataf.lane<1>();
+					blk->data_b[idx] = dataf.lane<2>();
+					blk->data_a[idx] = dataf.lane<3>();
 					idx++;
 				}
 			}
@@ -470,10 +470,10 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					pb->data_r[idx] = astc::max(r, 1e-8f);
-					pb->data_g[idx] = astc::max(g, 1e-8f);
-					pb->data_b[idx] = astc::max(b, 1e-8f);
-					pb->data_a[idx] = astc::max(a, 1e-8f);
+					blk->data_r[idx] = astc::max(r, 1e-8f);
+					blk->data_g[idx] = astc::max(g, 1e-8f);
+					blk->data_b[idx] = astc::max(b, 1e-8f);
+					blk->data_a[idx] = astc::max(a, 1e-8f);
 					idx++;
 				}
 			}
@@ -486,17 +486,17 @@ void fetch_imageblock(
 	// impose the choice on every pixel when encoding.
 	for (int i = 0; i < bsd->texel_count; i++)
 	{
-		pb->rgb_lns[i] = rgb_lns;
-		pb->alpha_lns[i] = alpha_lns;
-		pb->nan_texel[i] = 0;
+		blk->rgb_lns[i] = rgb_lns;
+		blk->alpha_lns[i] = alpha_lns;
+		blk->nan_texel[i] = 0;
 	}
 
-	imageblock_initialize_work_from_orig(pb, bsd->texel_count);
+	imageblock_initialize_work_from_orig(blk, bsd->texel_count);
 }
 
 void write_imageblock(
 	astcenc_image& img,
-	const imageblock* pb,	// picture-block to initialize with image data. We assume that orig_data is valid.
+	const imageblock* blk,	// picture-block to initialize with image data. We assume that orig_data is valid.
 	const block_size_descriptor* bsd,
 	// position to write the block to
 	int xpos,
@@ -504,7 +504,7 @@ void write_imageblock(
 	int zpos,
 	astcenc_swizzle swz
 ) {
-	const uint8_t *nptr = pb->nan_texel;
+	const uint8_t *nptr = blk->nan_texel;
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
@@ -551,10 +551,10 @@ void write_imageblock(
 						}
 						else if (needs_swz)
 						{
-							data[ASTCENC_SWZ_R] = pb->data_r[idx];
-							data[ASTCENC_SWZ_G] = pb->data_g[idx];
-							data[ASTCENC_SWZ_B] = pb->data_b[idx];
-							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+							data[ASTCENC_SWZ_R] = blk->data_r[idx];
+							data[ASTCENC_SWZ_G] = blk->data_g[idx];
+							data[ASTCENC_SWZ_B] = blk->data_b[idx];
+							data[ASTCENC_SWZ_A] = blk->data_a[idx];
 
 							if (needs_z)
 							{
@@ -575,10 +575,10 @@ void write_imageblock(
 						}
 						else
 						{
-							ri = astc::flt2int_rtn(astc::min(pb->data_r[idx], 1.0f) * 255.0f);
-							gi = astc::flt2int_rtn(astc::min(pb->data_g[idx], 1.0f) * 255.0f);
-							bi = astc::flt2int_rtn(astc::min(pb->data_b[idx], 1.0f) * 255.0f);
-							ai = astc::flt2int_rtn(astc::min(pb->data_a[idx], 1.0f) * 255.0f);
+							ri = astc::flt2int_rtn(astc::min(blk->data_r[idx], 1.0f) * 255.0f);
+							gi = astc::flt2int_rtn(astc::min(blk->data_g[idx], 1.0f) * 255.0f);
+							bi = astc::flt2int_rtn(astc::min(blk->data_b[idx], 1.0f) * 255.0f);
+							ai = astc::flt2int_rtn(astc::min(blk->data_a[idx], 1.0f) * 255.0f);
 						}
 
 						data8[(4 * xsize * yi) + (4 * xi    )] = ri;
@@ -617,10 +617,10 @@ void write_imageblock(
 						}
 						else if (needs_swz)
 						{
-							data[ASTCENC_SWZ_R] = pb->data_r[idx];
-							data[ASTCENC_SWZ_G] = pb->data_g[idx];
-							data[ASTCENC_SWZ_B] = pb->data_b[idx];
-							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+							data[ASTCENC_SWZ_R] = blk->data_r[idx];
+							data[ASTCENC_SWZ_G] = blk->data_g[idx];
+							data[ASTCENC_SWZ_B] = blk->data_b[idx];
+							data[ASTCENC_SWZ_A] = blk->data_a[idx];
 
 							if (needs_z)
 							{
@@ -639,7 +639,7 @@ void write_imageblock(
 						}
 						else
 						{
-							vfloat4 colorf = pb->texel(idx);
+							vfloat4 colorf = blk->texel(idx);
 							color = float_to_float16(colorf);
 						}
 
@@ -684,10 +684,10 @@ void write_imageblock(
 						}
 						else if (needs_swz)
 						{
-							data[ASTCENC_SWZ_R] = pb->data_r[idx];
-							data[ASTCENC_SWZ_G] = pb->data_g[idx];
-							data[ASTCENC_SWZ_B] = pb->data_b[idx];
-							data[ASTCENC_SWZ_A] = pb->data_a[idx];
+							data[ASTCENC_SWZ_R] = blk->data_r[idx];
+							data[ASTCENC_SWZ_G] = blk->data_g[idx];
+							data[ASTCENC_SWZ_B] = blk->data_b[idx];
+							data[ASTCENC_SWZ_A] = blk->data_a[idx];
 
 							if (needs_z)
 							{
@@ -708,10 +708,10 @@ void write_imageblock(
 						}
 						else
 						{
-							rf = pb->data_r[idx];
-							gf = pb->data_g[idx];
-							bf = pb->data_b[idx];
-							af = pb->data_a[idx];
+							rf = blk->data_r[idx];
+							gf = blk->data_g[idx];
+							bf = blk->data_b[idx];
+							af = blk->data_a[idx];
 						}
 
 						data32[(4 * xsize * yi) + (4 * xi    )] = rf;

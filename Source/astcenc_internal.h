@@ -525,27 +525,27 @@ struct imageblock
 };
 
 
-static inline int imageblock_uses_alpha(const imageblock * pb)
+static inline int imageblock_uses_alpha(const imageblock * blk)
 {
-	return pb->data_min.lane<3>() != pb->data_max.lane<3>();
+	return blk->data_min.lane<3>() != blk->data_max.lane<3>();
 }
 
-static inline int imageblock_is_lum(const imageblock * pb)
+static inline int imageblock_is_lum(const imageblock * blk)
 {
-	bool alpha1 = (pb->data_min.lane<3>() == 65535.0f) &&
-	              (pb->data_max.lane<3>() == 65535.0f);
-	return pb->grayscale && alpha1;
+	bool alpha1 = (blk->data_min.lane<3>() == 65535.0f) &&
+	              (blk->data_max.lane<3>() == 65535.0f);
+	return blk->grayscale && alpha1;
 }
 
-static inline int imageblock_is_lumalp(const imageblock * pb)
+static inline int imageblock_is_lumalp(const imageblock * blk)
 {
-	bool alpha1 = (pb->data_min.lane<3>() == 65535.0f) &&
-	              (pb->data_max.lane<3>() == 65535.0f);
-	return pb->grayscale && !alpha1;
+	bool alpha1 = (blk->data_min.lane<3>() == 65535.0f) &&
+	              (blk->data_max.lane<3>() == 65535.0f);
+	return blk->grayscale && !alpha1;
 }
 
 void imageblock_initialize_orig_from_work(
-	imageblock * pb,
+	imageblock * blk,
 	int pixelcount);
 
 /*
@@ -1003,7 +1003,7 @@ void compute_averages_and_variances(
 void fetch_imageblock(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock* pb,	// picture-block to initialize with image data
+	imageblock* blk,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in picture to fetch block from
 	int xpos,
@@ -1015,7 +1015,7 @@ void fetch_imageblock(
 // the data written are taken from orig_data.
 void write_imageblock(
 	astcenc_image& img,
-	const imageblock* pb,	// picture-block to initialize with image data
+	const imageblock* blk,	// picture-block to initialize with image data
 	const block_size_descriptor* bsd,
 	// position in picture to write block to.
 	int xpos,
@@ -1027,7 +1027,7 @@ float compute_symbolic_block_difference(
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const symbolic_compressed_block* scb,
-	const imageblock* pb,
+	const imageblock* blk,
 	const error_weight_block *ewb) ;
 
 // ***********************************************************
@@ -1167,7 +1167,7 @@ struct compress_symbolic_block_buffers
 
 void compute_encoding_choice_errors(
 	const block_size_descriptor* bsd,
-	const imageblock* pb,
+	const imageblock* blk,
 	const partition_info* pt,
 	const error_weight_block* ewb,
 	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
@@ -1198,7 +1198,7 @@ void recompute_ideal_colors_1plane(
 	const uint8_t* weight_set8,	// the current set of weight values
 	const partition_info* pt,
 	const decimation_table* it,
-	const imageblock* pb,	// picture-block containing the actual data.
+	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb);
 
 void recompute_ideal_colors_2planes(
@@ -1211,7 +1211,7 @@ void recompute_ideal_colors_2planes(
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
 	const partition_info* pt,
 	const decimation_table* it,
-	const imageblock* pb,	// picture-block containing the actual data.
+	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb);
 
 void expand_deblock_weights(
@@ -1221,7 +1221,7 @@ void expand_deblock_weights(
 void prepare_angular_tables();
 
 void imageblock_initialize_deriv(
-	const imageblock* pb,
+	const imageblock* blk,
 	int pixelcount,
 	vfloat4* dptr);
 

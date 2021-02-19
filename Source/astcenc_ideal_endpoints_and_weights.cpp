@@ -1105,7 +1105,7 @@ void recompute_ideal_colors_2planes(
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
 	const partition_info* pt,
 	const decimation_table* it,
-	const imageblock* pb,	// picture-block containing the actual data.
+	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
@@ -1139,7 +1139,7 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba = pb->texel(tix);
+			vfloat4 rgba = blk->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
@@ -1179,7 +1179,7 @@ void recompute_ideal_colors_2planes(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba = pb->texel(tix);
+			vfloat4 rgba = blk->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			vfloat4 color_weight3 = color_weight.swz<0, 1, 2>();
@@ -1437,7 +1437,7 @@ void recompute_ideal_colors_1plane(
 	const uint8_t* weight_set8,	// the current set of weight values
 	const partition_info* pt,
 	const decimation_table* it,
-	const imageblock* pb,	// picture-block containing the actual data.
+	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
 	int weight_count = it->weight_count;
@@ -1467,7 +1467,7 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba = pb->texel(tix);
+			vfloat4 rgba = blk->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			rgba_sum = rgba_sum + (rgba * error_weight);
@@ -1501,7 +1501,7 @@ void recompute_ideal_colors_1plane(
 		{
 			int tix = texel_indexes[j];
 
-			vfloat4 rgba = pb->texel(tix);
+			vfloat4 rgba = blk->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
 			vfloat4 color_weight3 = color_weight.swz<0, 1, 2>();

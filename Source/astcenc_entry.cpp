@@ -693,7 +693,7 @@ static void compress_image(
 	int block_z = bsd->zdim;
 	astcenc_profile decode_mode = ctx.config.profile;
 
-	imageblock pb;
+	imageblock blk;
 	int dim_x = image.dim_x;
 	int dim_y = image.dim_y;
 	int dim_z = image.dim_z;
@@ -770,22 +770,22 @@ static void compress_image(
 			// Fetch the full block for compression
 			if (use_full_block)
 			{
-				fetch_imageblock(decode_mode, image, &pb, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+				fetch_imageblock(decode_mode, image, &blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 			}
 			// Apply alpha scale RDO - substitute constant color block
 			else
 			{
-				pb.origin_texel = vfloat4::zero();
-				pb.data_min = vfloat4::zero();
-				pb.data_max = pb.data_min;
-				pb.grayscale = false;
+				blk.origin_texel = vfloat4::zero();
+				blk.data_min = vfloat4::zero();
+				blk.data_max = blk.data_min;
+				blk.grayscale = false;
 			}
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
 			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
 			symbolic_compressed_block scb;
-			compress_block(ctx, image, &pb, scb, *pcb, temp_buffers);
+			compress_block(ctx, image, &blk, scb, *pcb, temp_buffers);
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);
@@ -943,7 +943,7 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
-	imageblock pb;
+	imageblock blk;
 
 	for (unsigned int z = 0; z < zblocks; z++)
 	{
@@ -960,9 +960,9 @@ astcenc_error astcenc_decompress_image(
 
 				decompress_symbolic_block(context->config.profile, context->bsd,
 				                          x * block_x, y * block_y, z * block_z,
-				                          &scb, &pb);
+				                          &scb, &blk);
 
-				write_imageblock(image_out, &pb, context->bsd,
+				write_imageblock(image_out, &blk, context->bsd,
 				                 x * block_x, y * block_y, z * block_z, swizzle);
 			}
 		}

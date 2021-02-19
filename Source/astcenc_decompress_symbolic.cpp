@@ -285,7 +285,7 @@ float compute_symbolic_block_difference(
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const symbolic_compressed_block* scb,
-	const imageblock* pb,
+	const imageblock* blk,
 	const error_weight_block *ewb
 ) {
 	// if we detected an error-block, blow up immediately.
@@ -394,7 +394,7 @@ float compute_symbolic_block_difference(
 		                               plane2_weights[i],
 		                               plane2_mask);
 
-		vfloat4 oldColor = pb->texel(i);
+		vfloat4 oldColor = blk->texel(i);
 
 		vfloat4 error = oldColor - color;
 
