@@ -195,7 +195,10 @@ COMPRESSION
             Run a preprocess over the image that scales RGB components
             in the image by the alpha value. Preprocessing applies before any
             codec encoding swizzle, so color data must be in the RGB
-            channels in the source image.
+            channels in the source image.)"
+// This split in the literals is needed for Visual Studio; the compiler
+// will concatenate these two strings together ...
+R"(
 
 COMPRESSION TIPS & TRICKS
        ASTC is a block-based format that can be prone to block artifacts.
