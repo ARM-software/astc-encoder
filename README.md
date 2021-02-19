@@ -89,7 +89,7 @@ is not universally available, but each step gains ~15% more performance.
 
 ## Repository branches
 
-The `master` branch is an active development branch for the compressor. It aims
+The `main` branch is an active development branch for the compressor. It aims
 to be a stable branch, but as it is used for development expect it to change.
 
 The `1.x` branch is a maintenance branch for the 1.x release series. It is

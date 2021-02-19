@@ -32,5 +32,5 @@ TestOutput
 /*.png
 /*.exr
 /*.astc
-astc_reference-master*
+astc_reference-main*
 Docs/Profiling.md

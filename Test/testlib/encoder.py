@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2020 Arm Limited
+# Copyright 2019-2021 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -228,10 +228,10 @@ class EncoderBase():
 
 class Encoder2x(EncoderBase):
     """
-    This class wraps the latest `astcenc` 2.x series binaries from the master
+    This class wraps the latest `astcenc` 2.x series binaries from main branch.
     branch.
     """
-    VERSION = "master"
+    VERSION = "main"
 
     SWITCHES = {
         "ldr": "-tl",

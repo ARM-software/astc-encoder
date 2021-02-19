@@ -294,33 +294,33 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-2.3-neon"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    # Latest master
-    elif encoderName == "ref-master-neon":
+    # Latest main
+    elif encoderName == "ref-main-neon":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder.
+        # main branch using the user's locally build encoder.
         encoder = te.Encoder2x("neon")
-        name = "reference-master-neon"
+        name = "reference-main-neon"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "ref-master-sse2":
+    elif encoderName == "ref-main-sse2":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder.
+        # main branch using the user's locally build encoder.
         encoder = te.Encoder2x("sse2")
-        name = "reference-master-sse2"
+        name = "reference-main-sse2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "ref-master-sse4.1":
+    elif encoderName == "ref-main-sse4.1":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder.
+        # main branch using the user's locally build encoder.
         encoder = te.Encoder2x("sse4.1")
-        name = "reference-master-sse4.1"
+        name = "reference-main-sse4.1"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    elif encoderName == "ref-master-avx2":
+    elif encoderName == "ref-main-avx2":
         # Warning: this option rebuilds a new reference test result for the
-        # master branch using the user's locally build encoder.
+        # main branch using the user's locally build encoder.
         encoder = te.Encoder2x("avx2")
-        name = "reference-master-avx2"
+        name = "reference-main-avx2"
         outDir = "Test/Images/%s" % imageSet
         refName = None
     else:
@@ -345,7 +345,7 @@ def parse_command_line():
     refcoders = ["ref-1.7",
                  "ref-2.2-neon", "ref-2.2-sse2", "ref-2.2-sse4.1", "ref-2.2-avx2",
                  "ref-2.3-neon", "ref-2.3-sse2", "ref-2.3-sse4.1", "ref-2.3-avx2",
-                 "ref-master-neon", "ref-master-sse2", "ref-master-sse4.1", "ref-master-avx2"]
+                 "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders
     testcoders = ["none", "neon", "sse2", "sse4.1", "avx2"]

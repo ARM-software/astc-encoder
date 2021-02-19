@@ -1,13 +1,13 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-    echo "ERROR: Missing root; e.g. for ref-master-avx2 set 'master'"
+    echo "ERROR: Missing root; e.g. for ref-main-avx2 set 'main'"
     exit 1
 fi
 
 echo "Generating new ref-$1 results"
 
-if [ "$1" = "master" ]; then
+if [ "$1" = "main" ]; then
     echo "Using binary from ./astcenc/${1}/"
 else
     echo "Using binary from ./Binaries/${1}/"

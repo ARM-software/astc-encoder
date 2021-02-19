@@ -128,7 +128,7 @@ static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
  *     * A condition variable so threads can wait for processing completion.
  *
  * The init stage will be executed by the first thread to arrive in the
- * critical section, there is no master thread in the thread pool.
+ * critical section, there is no main thread in the thread pool.
  *
  * The processing stage uses dynamic dispatch to assign task tickets to threads
  * on an on-demand basis. Threads may each therefore executed different numbers
