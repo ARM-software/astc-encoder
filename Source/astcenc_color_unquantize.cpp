@@ -736,7 +736,6 @@ void unpack_color_endpoints(
 ) {
 	*nan_endpoint = 0;
 
-	// TODO: Make format the correct enum type
 	switch (format)
 	{
 	case FMT_LUMINANCE:
