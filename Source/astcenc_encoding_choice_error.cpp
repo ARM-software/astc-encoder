@@ -162,13 +162,11 @@ void compute_encoding_choice_errors(
 	promise(partition_count > 0);
 	promise(texels_per_block > 0);
 
-	vfloat4 averages[4];
-	vfloat4 directions_rgb[4];
-	vfloat4 error_weightings[4];
-	vfloat4 color_scalefactors[4];
+	partition_metrics pms[4];
 
-	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
-	compute_avgs_and_dirs_3_comp(pt, blk, ewb, color_scalefactors, 3, averages, directions_rgb);
+	compute_partition_error_color_weightings(*ewb, *pt, pms);
+
+	compute_avgs_and_dirs_3_comp(pt, blk, ewb, 3, pms);
 
 	endpoints ep;
 	if (separate_component == -1)
@@ -186,6 +184,8 @@ void compute_encoding_choice_errors(
 
 	for (int i = 0; i < partition_count; i++)
 	{
+		partition_metrics& pm = pms[i];
+
 		// TODO: Can we skip rgb_luma_lines for LDR images?
 		line3 uncorr_rgb_lines;
 		line3 samechroma_rgb_lines;	// for LDR-RGB-scale
@@ -202,33 +202,33 @@ void compute_encoding_choice_errors(
 		float luminance_rgb_error;
 		float alpha_drop_error;
 
-		vfloat4 csf = color_scalefactors[i];
+		vfloat4 csf = pm.color_scale;
 		csf.set_lane<3>(0.0f);
 
-		vfloat4 icsf = 1.0f / max(color_scalefactors[i], 1e-7f);
+		vfloat4 icsf = pm.icolor_scale;
 		icsf.set_lane<3>(0.0f);
 
-		uncorr_rgb_lines.a = averages[i];
-		if (dot3_s(directions_rgb[i], directions_rgb[i]) == 0.0f)
+		uncorr_rgb_lines.a = pm.avg;
+		if (dot3_s(pm.dir, pm.dir) == 0.0f)
 		{
 			uncorr_rgb_lines.b = normalize(csf);
 		}
 		else
 		{
-			uncorr_rgb_lines.b = normalize(directions_rgb[i]);
+			uncorr_rgb_lines.b = normalize(pm.dir);
 		}
 
 		samechroma_rgb_lines.a = vfloat4::zero();
-		if (dot3_s(averages[i], averages[i]) < 1e-20f)
+		if (dot3_s(pm.avg, pm.avg) < 1e-20f)
 		{
 			samechroma_rgb_lines.b = normalize(csf);
 		}
 		else
 		{
-			samechroma_rgb_lines.b = normalize(averages[i]);
+			samechroma_rgb_lines.b = normalize(pm.avg);
 		}
 
-		rgb_luma_lines.a = averages[i];
+		rgb_luma_lines.a = pm.avg;
 		rgb_luma_lines.b = normalize(csf);
 
 		proc_uncorr_rgb_lines.amod = (uncorr_rgb_lines.a - uncorr_rgb_lines.b * dot3_s(uncorr_rgb_lines.a, uncorr_rgb_lines.b)) * icsf;

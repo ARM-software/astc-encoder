@@ -144,8 +144,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 	int texel_count = bsd->texel_count;
 	promise(texel_count > 0);
 
-	vfloat4 error_weightings[4];
-	vfloat4 color_scalefactors[4];
+	partition_metrics pms[4];
 
 	float2 scalefactors[4];
 
@@ -171,7 +170,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		data_vg = blk->data_b;
 	}
 
-	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(*ewb, *pt, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -180,16 +179,16 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		switch (component1)
 		{
 		case 0:
-			s1 = color_scalefactors[i].lane<0>();
+			s1 = pms[i].color_scale.lane<0>();
 			break;
 		case 1:
-			s1 = color_scalefactors[i].lane<1>();
+			s1 = pms[i].color_scale.lane<1>();
 			break;
 		case 2:
-			s1 = color_scalefactors[i].lane<2>();
+			s1 = pms[i].color_scale.lane<2>();
 			break;
 		default:
-			s1 = color_scalefactors[i].lane<3>();
+			s1 = pms[i].color_scale.lane<3>();
 			break;
 		}
 
@@ -197,16 +196,16 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		switch (component2)
 		{
 		case 0:
-			s2 = color_scalefactors[i].lane<0>();
+			s2 = pms[i].color_scale.lane<0>();
 			break;
 		case 1:
-			s2 = color_scalefactors[i].lane<1>();
+			s2 = pms[i].color_scale.lane<1>();
 			break;
 		case 2:
-			s2 = color_scalefactors[i].lane<2>();
+			s2 = pms[i].color_scale.lane<2>();
 			break;
 		default:
-			s2 = color_scalefactors[i].lane<3>();
+			s2 = pms[i].color_scale.lane<3>();
 			break;
 		}
 		scalefactors[i] = normalize(float2(s1, s2)) * 1.41421356f;
@@ -332,10 +331,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 	int texel_count= bsd->texel_count;
 	promise(texel_count > 0);
 
-	vfloat4 error_weightings[4];
-	vfloat4 color_scalefactors[4];
-
-	vfloat4 scalefactors[4];
+	partition_metrics pms[4];
 
 	const float *error_weights;
 	const float* data_vr = nullptr;
@@ -370,7 +366,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		data_vb = blk->data_b;
 	}
 
-	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(*ewb, *pt, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -379,28 +375,28 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		switch (omitted_component)
 		{
 		case 0:
-			s1 = color_scalefactors[i].lane<1>();
-			s2 = color_scalefactors[i].lane<2>();
-			s3 = color_scalefactors[i].lane<3>();
+			s1 = pms[i].color_scale.lane<1>();
+			s2 = pms[i].color_scale.lane<2>();
+			s3 = pms[i].color_scale.lane<3>();
 			break;
 		case 1:
-			s1 = color_scalefactors[i].lane<0>();
-			s2 = color_scalefactors[i].lane<2>();
-			s3 = color_scalefactors[i].lane<3>();
+			s1 = pms[i].color_scale.lane<0>();
+			s2 = pms[i].color_scale.lane<2>();
+			s3 = pms[i].color_scale.lane<3>();
 			break;
 		case 2:
-			s1 = color_scalefactors[i].lane<0>();
-			s2 = color_scalefactors[i].lane<1>();
-			s3 = color_scalefactors[i].lane<3>();
+			s1 = pms[i].color_scale.lane<0>();
+			s2 = pms[i].color_scale.lane<1>();
+			s3 = pms[i].color_scale.lane<3>();
 			break;
 		default:
-			s1 = color_scalefactors[i].lane<0>();
-			s2 = color_scalefactors[i].lane<1>();
-			s3 = color_scalefactors[i].lane<2>();
+			s1 = pms[i].color_scale.lane<0>();
+			s2 = pms[i].color_scale.lane<1>();
+			s3 = pms[i].color_scale.lane<2>();
 			break;
 		}
 
-		scalefactors[i] = normalize(vfloat4(s1, s2, s3, 0.0f)) * 1.73205080f;
+		pms[i].color_scale = normalize(vfloat4(s1, s2, s3, 0.0f)) * 1.73205080f;
 	}
 
 	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
@@ -414,17 +410,17 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 	float length_squared[4];
 
 
-	compute_avgs_and_dirs_3_comp(pt, blk, ewb, scalefactors, omitted_component, averages, directions);
+	compute_avgs_and_dirs_3_comp(pt, blk, ewb, omitted_component, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 dir = directions[i];
+		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
 		{
 			dir = vfloat4(0.0f) - dir;
 		}
 
-		lines[i].a = averages[i];
+		lines[i].a = pms[i].avg;
 		if (dot3_s(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
@@ -440,7 +436,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			vfloat4 point = vfloat4(data_vr[i], data_vg[i], data_vb[i], 0.0f) * scalefactors[partition];
+			vfloat4 point = vfloat4(data_vr[i], data_vg[i], data_vb[i], 0.0f) * pms[partition].color_scale;
 			line3 l = lines[partition];
 			float param = dot3_s(point - l.a, l.b);
 			ei->weights[i] = param;
@@ -474,8 +470,8 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0 = ep0 / scalefactors[i];
-		ep1 = ep1 / scalefactors[i];
+		ep0 = ep0 / pms[i].color_scale;
+		ep1 = ep1 / pms[i].color_scale;
 
 		vfloat4 bmin = blk->data_min;
 		vfloat4 bmax = blk->data_max;
@@ -533,38 +529,33 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 	float lowparam[4] { 1e10, 1e10, 1e10, 1e10 };
 	float highparam[4] {  -1e10,  -1e10,  -1e10, -1e10 };
 
-	vfloat4 averages[4];
-	vfloat4 directions_rgba[4];
-
 	line4 lines[4];
 
 	float scale[4];
 	float length_squared[4];
 
-	vfloat4 error_weightings[4];
-	vfloat4 color_scalefactors[4];
-	vfloat4 scalefactors[4];
+	partition_metrics pms[4];
 
-	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, color_scalefactors);
+	compute_partition_error_color_weightings(*ewb, *pt, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		scalefactors[i] = normalize(color_scalefactors[i]) * 2.0f;
+		pms[i].color_scale = normalize(pms[i].color_scale) * 2.0f;
 	}
 
-	compute_avgs_and_dirs_4_comp(pt, blk, ewb, scalefactors, averages, directions_rgba);
+	compute_avgs_and_dirs_4_comp(pt, blk, ewb, pms);
 
 	// if the direction-vector ends up pointing from light to dark, FLIP IT!
 	// this will make the first endpoint the darkest one.
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 dir = directions_rgba[i];
+		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
 		{
 			dir = vfloat4::zero() - dir;
 		}
 
-		lines[i].a = averages[i];
+		lines[i].a = pms[i].avg;
 		if (dot_s(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(vfloat4(1.0f));
@@ -581,7 +572,7 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		{
 			int partition = pt->partition_of_texel[i];
 
-			vfloat4 point = blk->texel(i) * scalefactors[partition];
+			vfloat4 point = blk->texel(i) * pms[partition].color_scale;
 			line4 l = lines[partition];
 
 			float param = dot_s(point - l.a, l.b);
@@ -616,8 +607,8 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ei->ep.endpt0[i] = ep0 / scalefactors[i];
-		ei->ep.endpt1[i] = ep1 / scalefactors[i];
+		ei->ep.endpt0[i] = ep0 / pms[i].color_scale;
+		ei->ep.endpt1[i] = ep1 / pms[i].color_scale;
 	}
 
 	for (int i = 0; i < texel_count; i++)

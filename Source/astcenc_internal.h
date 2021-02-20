@@ -332,6 +332,27 @@ public:
 	}
 };
 
+struct partition_metrics
+{
+	vfloat4 range_sq;
+	vfloat4 error_weight;
+	vfloat4 icolor_scale;
+	vfloat4 color_scale;
+	vfloat4 avg;
+	vfloat4 dir;
+};
+
+struct partition_lines3
+{
+	line3 uncor_line;
+	line3 samec_line;
+
+	processed_line3 uncor_pline;
+	processed_line3 samec_pline;
+
+	float uncor_line_len;
+	float samec_line_len;
+};
 
 /*
 	Partition table representation:
@@ -837,18 +858,14 @@ void compute_avgs_and_dirs_4_comp(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const vfloat4* color_scalefactors,
-	vfloat4* averages,
-	vfloat4* directions_rgba);
+	partition_metrics pm[4]);
 
 void compute_avgs_and_dirs_3_comp(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const vfloat4 * color_scalefactors,
 	int omitted_component,
-	vfloat4* averages,
-	vfloat4* directions);
+	partition_metrics pm[4]);
 
 void compute_avgs_and_dirs_2_comp(
 	const partition_info* pt,
@@ -875,20 +892,15 @@ void compute_error_squared_rgb(
 	const partition_info *pt,
 	const imageblock *blk,
 	const error_weight_block *ewb,
-	const processed_line3 *uncor_plines,
-	const processed_line3 *samec_plines,
-	float *uncor_lengths,
-	float *samec_lengths,
-	float *uncor_errors,
-	float *samec_errors);
+	partition_lines3 plines[4],
+	float& uncor_error,
+	float& samec_error);
 
 // for each partition, compute its color weightings.
 void compute_partition_error_color_weightings(
-	const block_size_descriptor* bsd,
-	const error_weight_block * ewb,
-	const partition_info* pt,
-	vfloat4 error_weightings[4],
-	vfloat4 color_scalefactors[4]);
+	const error_weight_block& ewb,
+	const partition_info& pt,
+	partition_metrics pm[4]);
 
 /**
  * @brief Find the best set of partitions to trial for a given block.
@@ -1394,4 +1406,6 @@ void aligned_free(T* ptr)
 }
 
 #endif
+
+
 

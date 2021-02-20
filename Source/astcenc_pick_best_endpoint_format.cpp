@@ -39,7 +39,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	const partition_info* pt,
 	const encoding_choice_errors* eci,	// pointer to the structure for the CURRENT partition.
 	const endpoints* ep,
-	vfloat4 error_weightings[4],
+	vfloat4 error_weight,
 	// arrays to return results back through.
 	float best_error[21][4],
 	int format_of_choice[21][4]
@@ -76,7 +76,6 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float ep1_min = hmin_rgb_s(ep1);
 	ep1_min = astc::max(ep1_min, 0.0f);
 
-	vfloat4 error_weight = error_weightings[partition_index];
 	float error_weight_rgbsum = hadd_rgb_s(error_weight);
 
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
@@ -794,9 +793,9 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	compute_encoding_choice_errors(bsd, blk, pt, ewb, separate_component, eci);
 
 	// for each partition, compute the error weights to apply for that partition.
-	vfloat4 error_weightings[4];
-	vfloat4 dummied_color_scalefactors[4];	// only used to receive data
-	compute_partition_error_color_weightings(bsd, ewb, pt, error_weightings, dummied_color_scalefactors);
+	partition_metrics pms[4];
+
+	compute_partition_error_color_weightings(*ewb, *pt, pms);
 
 	float best_error[4][21][4];
 	int format_of_choice[4][21][4];
@@ -804,7 +803,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	{
 		compute_color_error_for_every_integer_count_and_quant_level(
 		    encode_hdr_rgb, encode_hdr_alpha, i,
-		    pt, &(eci[i]), ep, error_weightings, best_error[i],
+		    pt, &(eci[i]), ep, pms[i].error_weight, best_error[i],
 		    format_of_choice[i]);
 	}
 
