@@ -408,10 +408,7 @@ void compute_error_squared_rgba(
 		vfloat l_samec_bs2(l_samec.bs.lane<2>());
 		vfloat l_samec_bs3(l_samec.bs.lane<3>());
 
-		vfloat l_samec_amod0(l_samec.amod.lane<0>());
-		vfloat l_samec_amod1(l_samec.amod.lane<1>());
-		vfloat l_samec_amod2(l_samec.amod.lane<2>());
-		vfloat l_samec_amod3(l_samec.amod.lane<3>());
+		assert(all(l_samec.amod == vfloat4(0.0f)));
 
 		vfloat l_samec_bis0(l_samec.bis.lane<0>());
 		vfloat l_samec_bis1(l_samec.bis.lane<1>());
@@ -475,14 +472,10 @@ void compute_error_squared_rgba(
 			samec_hiparamv = max(samec_param, samec_hiparamv);
 
 
-			vfloat samec_dist0 = (l_samec_amod0 - data_r)
-			                   + (samec_param * l_samec_bis0);
-			vfloat samec_dist1 = (l_samec_amod1 - data_g)
-			                   + (samec_param * l_samec_bis1);
-			vfloat samec_dist2 = (l_samec_amod2 - data_b)
-			                   + (samec_param * l_samec_bis2);
-			vfloat samec_dist3 = (l_samec_amod3 - data_a)
-			                   + (samec_param * l_samec_bis3);
+			vfloat samec_dist0 = samec_param * l_samec_bis0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bis1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bis2 - data_b;
+			vfloat samec_dist3 = samec_param * l_samec_bis3 - data_a;
 
 			vfloat samec_error = (ew_r * samec_dist0 * samec_dist0)
 			                   + (ew_g * samec_dist1 * samec_dist1)
@@ -521,8 +514,7 @@ void compute_error_squared_rgba(
 			                    + (uncor_param * l_uncor.bis);
 			uncor_errorsum += dot_s(ews, uncor_dist * uncor_dist);
 
-			vfloat4 samec_dist = (l_samec.amod - dat)
-			                   + (samec_param * l_samec.bis);
+			vfloat4 samec_dist = samec_param * l_samec.bis - dat;
 			samec_errorsum += dot_s(ews, samec_dist * samec_dist);
 		}
 
@@ -595,9 +587,7 @@ void compute_error_squared_rgb(
 		vfloat l_samec_bs1(l_samec.bs.lane<1>());
 		vfloat l_samec_bs2(l_samec.bs.lane<2>());
 
-		vfloat l_samec_amod0(l_samec.amod.lane<0>());
-		vfloat l_samec_amod1(l_samec.amod.lane<1>());
-		vfloat l_samec_amod2(l_samec.amod.lane<2>());
+		assert(all(l_samec.amod == vfloat4(0.0f)));
 
 		vfloat l_samec_bis0(l_samec.bis.lane<0>());
 		vfloat l_samec_bis1(l_samec.bis.lane<1>());
@@ -625,8 +615,8 @@ void compute_error_squared_rgb(
 			vfloat ew_b = gatherf(ewb->texel_weight_b, texel_idxs);
 
 			vfloat uncor_param  = (data_r * l_uncor_bs0)
-			                     + (data_g * l_uncor_bs1)
-			                     + (data_b * l_uncor_bs2);
+			                    + (data_g * l_uncor_bs1)
+			                    + (data_b * l_uncor_bs2);
 
 			uncor_loparamv = min(uncor_param, uncor_loparamv);
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
@@ -653,16 +643,13 @@ void compute_error_squared_rgb(
 			samec_hiparamv = max(samec_param, samec_hiparamv);
 
 
-			vfloat samec_dist0 = (l_samec_amod0 - data_r)
-			                   + (samec_param * l_samec_bis0);
-			vfloat samec_dist1 = (l_samec_amod1 - data_g)
-			                   + (samec_param * l_samec_bis1);
-			vfloat samec_dist2 = (l_samec_amod2 - data_b)
-			                   + (samec_param * l_samec_bis2);
+			vfloat samec_dist0 = samec_param * l_samec_bis0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bis1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bis2 - data_b;
 
 			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
-			                   + (ew_g * samec_dist1 * samec_dist1)
-			                   + (ew_b * samec_dist2 * samec_dist2);
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2);
 
 			samec_errorsumv = samec_errorsumv + samec_err;
 		}
@@ -696,8 +683,7 @@ void compute_error_squared_rgb(
 			                    + (uncor_param * l_uncor.bis);
 			uncor_errorsum += dot3_s(ews, uncor_dist * uncor_dist);
 
-			vfloat4 samec_dist = (l_samec.amod - dat)
-			                   + (samec_param * l_samec.bis);
+			vfloat4 samec_dist = samec_param * l_samec.bis - dat;
 			samec_errorsum += dot3_s(ews, samec_dist * samec_dist);
 		}
 

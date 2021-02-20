@@ -219,15 +219,15 @@ void find_best_partitionings(
 				uncor_lines[j].b = normalize_safe(pm.dir, unit4());
 
 				uncor_plines[j].amod = (uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b)) * pm.icolor_scale;
-				uncor_plines[j].bs = uncor_lines[j].b * pm.color_scale;
-				uncor_plines[j].bis = uncor_lines[j].b * pm.icolor_scale;
+				uncor_plines[j].bs   = uncor_lines[j].b * pm.color_scale;
+				uncor_plines[j].bis  = uncor_lines[j].b * pm.icolor_scale;
 
 				samec_lines[j].a = vfloat4::zero();
 				samec_lines[j].b = normalize_safe(pm.avg, unit4());
 
-				samec_plines[j].amod = (samec_lines[j].a - samec_lines[j].b * dot(samec_lines[j].a, samec_lines[j].b)) * pm.icolor_scale;
-				samec_plines[j].bs = samec_lines[j].b * pm.color_scale;
-				samec_plines[j].bis = samec_lines[j].b * pm.icolor_scale;
+				samec_plines[j].amod = vfloat4::zero();
+				samec_plines[j].bs   = samec_lines[j].b * pm.color_scale;
+				samec_plines[j].bis  = samec_lines[j].b * pm.icolor_scale;
 
 				if (!skip_two_plane)
 				{
@@ -425,7 +425,7 @@ void find_best_partitionings(
 				pl.uncor_pline.bs   = (pl.uncor_line.b * pm.color_scale.swz<0, 1, 2, 3>());
 				pl.uncor_pline.bis  = (pl.uncor_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
 
-				pl.samec_pline.amod = (pl.samec_line.a - pl.samec_line.b * dot(pl.samec_line.a, pl.samec_line.b)) * pm.icolor_scale.swz<0, 1, 2, 3>();
+				pl.samec_pline.amod = vfloat4::zero();
 				pl.samec_pline.bs   = (pl.samec_line.b * pm.color_scale.swz<0, 1, 2, 3>());
 				pl.samec_pline.bis  = (pl.samec_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
 

@@ -111,7 +111,8 @@ static void compute_error_squared_rgb_single_partition(
 
 		{
 			float param = dot3_s(point, samec_pline->bs);
-			vfloat4 rp1 = samec_pline->amod + param * samec_pline->bis;
+			// No samec amod - we know it's always zero
+			vfloat4 rp1 = /* samec_pline->amod + */ param * samec_pline->bis;
 			vfloat4 dist = rp1 - point;
 			samec_errorsum += dot3_s(ews, dist * dist);
 		}
@@ -222,7 +223,8 @@ void compute_encoding_choice_errors(
 		uncor_rgb_plines.bs   = uncor_rgb_lines.b * csf;
 		uncor_rgb_plines.bis  = uncor_rgb_lines.b * icsf;
 
-		samec_rgb_plines.amod = (samec_rgb_lines.a - samec_rgb_lines.b *  dot3(samec_rgb_lines.a, samec_rgb_lines.b)) * icsf;
+		// Same chroma always goes though zero, so this is simpler than the others
+		samec_rgb_plines.amod = vfloat4::zero();
 		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
 		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
 
@@ -232,8 +234,8 @@ void compute_encoding_choice_errors(
 
 		// Luminance always goes though zero, so this is simpler than the others
 		luminance_plines.amod = vfloat4::zero();
-		luminance_plines.bs = csfn * csf;
-		luminance_plines.bis = csfn * icsf;
+		luminance_plines.bs   = csfn * csf;
+		luminance_plines.bis  = csfn * icsf;
 
 		compute_error_squared_rgb_single_partition(
 		    i, bsd, pt, blk, ewb,
