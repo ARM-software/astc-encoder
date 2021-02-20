@@ -1044,11 +1044,7 @@ static float prepare_error_weight_block(
 						variance.set_lane<1>(fvar * mixing + variance.lane<1>() * (1.0f - mixing));
 						variance.set_lane<2>(fvar * mixing + variance.lane<2>() * (1.0f - mixing));
 
-						// TODO: Vectorize this ...
-						vfloat4 stdev = vfloat4(astc::sqrt(astc::max(variance.lane<0>(), 0.0f)),
-						                        astc::sqrt(astc::max(variance.lane<1>(), 0.0f)),
-						                        astc::sqrt(astc::max(variance.lane<2>(), 0.0f)),
-						                        astc::sqrt(astc::max(variance.lane<3>(), 0.0f)));
+						vfloat4 stdev = sqrt(max(variance, 0.0f));
 
 						vfloat4 scalea(ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_a_mean);
 						avg = avg * scalea;
