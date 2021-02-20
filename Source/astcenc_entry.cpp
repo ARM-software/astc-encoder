@@ -112,16 +112,16 @@ struct astcenc_preset_config {
 static const std::array<astcenc_preset_config, 5> preset_configs {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
+		4, 2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
+		4, 4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		3, 26, 76, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+		4, 25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		3, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+		4, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
 		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f

@@ -299,10 +299,10 @@ ADVANCED COMPRESSION
            Higher numbers give better quality, as more complex blocks can be
            encoded, however they are expensive to search. Preset defaults are:
 
-               -fastest    : 2
-               -fast       : 3
-               -medium     : 3
-               -thorough   : 3
+               -fastest    : 4
+               -fast       : 4
+               -medium     : 4
+               -thorough   : 4
                -exhaustive : 4
 
        -partitionindexlimit <number>
@@ -324,7 +324,7 @@ ADVANCED COMPRESSION
 
                -fastest    :  25
                -fast       :  50
-               -medium     :  76
+               -medium     :  75
                -thorough   :  92
                -exhaustive : 100
 
