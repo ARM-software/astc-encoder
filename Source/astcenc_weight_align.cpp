@@ -121,7 +121,8 @@ static void compute_angular_offsets(
 
 		vfloat sample_weightv(sample_weight);
 		promise(max_angular_steps > 0);
-		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
+ 		// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
+		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat cp = loada(&cosptr[j]);
 			vfloat sp = loada(&sinptr[j]);
@@ -135,7 +136,8 @@ static void compute_angular_offsets(
 	// post-process the angle-sums
 	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
 	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
-	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH) // arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
+ 	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
+	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ssize = 1.0f / rcp_stepsize;
 		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
@@ -301,7 +303,6 @@ static void compute_angular_endpoints_for_quant_levels(
 			best_scale[idx_span - 2] = i;
 			cut_low_weight[idx_span - 2] = 1;
 		}
-
 	}
 
 	// if we got a better error-value for a low sample count than for a high one,
@@ -324,11 +325,15 @@ static void compute_angular_endpoints_for_quant_levels(
 		// Did we find anything?
 		// TODO: Can we do better than bsi = 0 here. We should at least
 		// propagate an error (and move the printf into the CLI).
+#if defined(NDEBUG)
 		if (bsi < 0)
 		{
 			printf("WARNING: Unable to find encoding within specified error limit\n");
 			bsi = 0;
 		}
+else
+		bsi = astc::max(0, bsi);
+#endif
 
 		float stepsize = 1.0f / (1.0f + (float)bsi);
 		int lwi = lowest_weight[bsi] + cut_low_weight[q];
