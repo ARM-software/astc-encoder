@@ -1282,6 +1282,8 @@ void compress_block(
 	bool block_is_la = imageblock_is_lumalp(blk);
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
+	bool block_skip_two_plane = false;
+
 	// Default max partition, but +1 if only have 1 or 2 active components
 	int max_partitions = ctx.config.tune_partition_count_limit;
 	if (block_is_l || block_is_la)
@@ -1397,6 +1399,7 @@ void compress_block(
 
 #if !defined(ASTCENC_DIAGNOSTICS)
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	block_skip_two_plane = lowest_correl > ctx.config.tune_two_plane_early_out_limit;
 #endif
 
 	// next, test the four possible 1-partition, 2-planes modes
@@ -1407,7 +1410,7 @@ void compress_block(
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_channel", i);
 
-		if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
+		if (block_skip_two_plane)
 		{
 			trace_add_data("skip", "tune_two_plane_early_out_limit");
 			continue;
@@ -1453,7 +1456,7 @@ void compress_block(
 		                        ctx.config.tune_partition_index_limit,
 		                        &(partition_indices_1plane[0]),
 		                        &(partition_indices_1plane[1]),
-		                        &partition_index_2planes);
+		                        block_skip_two_plane ? nullptr : &partition_index_2planes);
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -1501,7 +1504,7 @@ void compress_block(
 		}
 
 		// * Blocks with higher component correlation than the tuning cutoff
-		if (lowest_correl > ctx.config.tune_two_plane_early_out_limit)
+		if (block_skip_two_plane)
 		{
 			trace_add_data("skip", "tune_two_plane_early_out_limit");
 			continue;

@@ -172,6 +172,8 @@ void find_best_partitionings(
 	int sep_best_partition { 0 };
 	int sep_best_component { 0 };
 
+	bool skip_two_plane = best_partition_dualplane == nullptr;
+
 	if (uses_alpha)
 	{
 
@@ -256,65 +258,68 @@ void find_best_partitionings(
 				samec_plines[j].bs = samec_lines[j].b * color_scale_factors[j];
 				samec_plines[j].bis = samec_lines[j].b * icolor_scale_factors[j];
 
-				sep_r_lines[j].a = avgs_rgba[j].swz<1, 2, 3>();
-				vfloat4 dirs_gba = dirs_rgba[j].swz<1, 2, 3, 0>();
-				if (dot3_s(dirs_gba, dirs_gba) == 0.0f)
+				if (!skip_two_plane)
 				{
-					sep_r_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					sep_r_lines[j].b = normalize(dirs_gba);
-				}
+					sep_r_lines[j].a = avgs_rgba[j].swz<1, 2, 3>();
+					vfloat4 dirs_gba = dirs_rgba[j].swz<1, 2, 3, 0>();
+					if (dot3_s(dirs_gba, dirs_gba) == 0.0f)
+					{
+						sep_r_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
+					}
+					else
+					{
+						sep_r_lines[j].b = normalize(dirs_gba);
+					}
 
-				sep_g_lines[j].a = avgs_rgba[j].swz<0, 2, 3>();
-				vfloat4 dirs_rba = dirs_rgba[j].swz<0, 2, 3, 1>();
-				if (dot3_s(dirs_rba, dirs_rba) == 0.0f)
-				{
-					sep_g_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					sep_g_lines[j].b = normalize(dirs_rba);
-				}
+					sep_g_lines[j].a = avgs_rgba[j].swz<0, 2, 3>();
+					vfloat4 dirs_rba = dirs_rgba[j].swz<0, 2, 3, 1>();
+					if (dot3_s(dirs_rba, dirs_rba) == 0.0f)
+					{
+						sep_g_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
+					}
+					else
+					{
+						sep_g_lines[j].b = normalize(dirs_rba);
+					}
 
-				sep_b_lines[j].a = avgs_rgba[j].swz<0, 1, 3>();
-				vfloat4 dirs_rga = dirs_rgba[j].swz<0, 1, 3, 2>();
-				if (dot3_s(dirs_rga, dirs_rga) == 0.0f)
-				{
-					sep_b_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
+					sep_b_lines[j].a = avgs_rgba[j].swz<0, 1, 3>();
+					vfloat4 dirs_rga = dirs_rgba[j].swz<0, 1, 3, 2>();
+					if (dot3_s(dirs_rga, dirs_rga) == 0.0f)
+					{
+						sep_b_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
+					}
+					else
+					{
+						sep_b_lines[j].b = normalize(dirs_rga);
+					}
+
+					sep_a_lines[j].a = avgs_rgba[j].swz<0, 1, 2>();
+					vfloat4 dirs_rgb = dirs_rgba[j].swz<0, 1, 2, 3>();
+					if (dot3_s(dirs_rgb, dirs_rgb) == 0.0f)
+					{
+						sep_a_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
+					}
+					else
+					{
+						sep_a_lines[j].b = normalize(dirs_rgb);
+					}
+
+					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot3(sep_r_lines[j].a, sep_r_lines[j].b)) * icolor_scale_factors[j].swz<1, 2, 3, 0>();
+					sep_r_plines[j].bs   = (sep_r_lines[j].b * color_scale_factors[j].swz<1, 2, 3, 0>());
+					sep_r_plines[j].bis  = (sep_r_lines[j].b * icolor_scale_factors[j].swz<1, 2, 3, 0>());
+
+					sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot3(sep_g_lines[j].a, sep_g_lines[j].b)) * icolor_scale_factors[j].swz<0, 2, 3, 1>();
+					sep_g_plines[j].bs   = (sep_g_lines[j].b * color_scale_factors[j].swz<0, 2, 3, 1>());
+					sep_g_plines[j].bis  = (sep_g_lines[j].b * icolor_scale_factors[j].swz<0, 2, 3, 1>());
+
+					sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot3(sep_b_lines[j].a, sep_b_lines[j].b)) * icolor_scale_factors[j].swz<0, 1, 3, 2>();
+					sep_b_plines[j].bs   = (sep_b_lines[j].b * color_scale_factors[j].swz<0, 1, 3, 2>());
+					sep_b_plines[j].bis  = (sep_b_lines[j].b * icolor_scale_factors[j].swz<0, 1, 3, 2>());
+
+					sep_a_plines[j].amod = (sep_a_lines[j].a - sep_a_lines[j].b * dot3(sep_a_lines[j].a, sep_a_lines[j].b)) * icolor_scale_factors[j].swz<0, 1, 2, 3>();
+					sep_a_plines[j].bs   = (sep_a_lines[j].b * color_scale_factors[j].swz<0, 1, 2, 3>());
+					sep_a_plines[j].bis  = (sep_a_lines[j].b * icolor_scale_factors[j].swz<0, 1, 2, 3>());
 				}
-				else
-				{
-					sep_b_lines[j].b = normalize(dirs_rga);
-				}
-
-				sep_a_lines[j].a = avgs_rgba[j].swz<0, 1, 2>();
-				vfloat4 dirs_rgb = dirs_rgba[j].swz<0, 1, 2, 3>();
-				if (dot3_s(dirs_rgb, dirs_rgb) == 0.0f)
-				{
-					sep_a_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					sep_a_lines[j].b = normalize(dirs_rgb);
-				}
-
-				sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot3(sep_r_lines[j].a, sep_r_lines[j].b)) * icolor_scale_factors[j].swz<1, 2, 3, 0>();
-				sep_r_plines[j].bs   = (sep_r_lines[j].b * color_scale_factors[j].swz<1, 2, 3, 0>());
-				sep_r_plines[j].bis  = (sep_r_lines[j].b * icolor_scale_factors[j].swz<1, 2, 3, 0>());
-
-				sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot3(sep_g_lines[j].a, sep_g_lines[j].b)) * icolor_scale_factors[j].swz<0, 2, 3, 1>();
-				sep_g_plines[j].bs   = (sep_g_lines[j].b * color_scale_factors[j].swz<0, 2, 3, 1>());
-				sep_g_plines[j].bis  = (sep_g_lines[j].b * icolor_scale_factors[j].swz<0, 2, 3, 1>());
-
-				sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot3(sep_b_lines[j].a, sep_b_lines[j].b)) * icolor_scale_factors[j].swz<0, 1, 3, 2>();
-				sep_b_plines[j].bs   = (sep_b_lines[j].b * color_scale_factors[j].swz<0, 1, 3, 2>());
-				sep_b_plines[j].bis  = (sep_b_lines[j].b * icolor_scale_factors[j].swz<0, 1, 3, 2>());
-
-				sep_a_plines[j].amod = (sep_a_lines[j].a - sep_a_lines[j].b * dot3(sep_a_lines[j].a, sep_a_lines[j].b)) * icolor_scale_factors[j].swz<0, 1, 2, 3>();
-				sep_a_plines[j].bs   = (sep_a_lines[j].b * color_scale_factors[j].swz<0, 1, 2, 3>());
-				sep_a_plines[j].bis  = (sep_a_lines[j].b * icolor_scale_factors[j].swz<0, 1, 2, 3>());
 			}
 
 			float uncor_error = 0.0f;
@@ -352,27 +357,32 @@ void find_best_partitionings(
 
 				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j] * ics;
 				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j] * ics;
-				vfloat4 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2, 3, 0>();
-				vfloat4 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2, 3, 1>();
-				vfloat4 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1, 3, 2>();
-				vfloat4 sep_a_vector = sep_a_lines[j].b * ics.swz<0, 1, 2, 3>();
 
 				uncor_vector = uncor_vector * uncor_vector;
 				samec_vector = samec_vector * samec_vector;
-				sep_r_vector = sep_r_vector * sep_r_vector;
-				sep_g_vector = sep_g_vector * sep_g_vector;
-				sep_b_vector = sep_b_vector * sep_b_vector;
-				sep_a_vector = sep_a_vector * sep_a_vector;
 
 				uncor_error += dot_s(uncor_vector, error_weights);
 				samec_error += dot_s(samec_vector, error_weights);
 
-				vfloat4 sep_err_inc(dot3_s(sep_r_vector, error_weights.swz<1, 2, 3, 0>()),
-				                    dot3_s(sep_g_vector, error_weights.swz<0, 2, 3, 1>()),
-				                    dot3_s(sep_b_vector, error_weights.swz<0, 1, 3, 2>()),
-				                    dot3_s(sep_a_vector, error_weights.swz<0, 1, 2, 3>()));
+				if (!skip_two_plane)
+				{
+					vfloat4 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2, 3, 0>();
+					vfloat4 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2, 3, 1>();
+					vfloat4 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1, 3, 2>();
+					vfloat4 sep_a_vector = sep_a_lines[j].b * ics.swz<0, 1, 2, 3>();
 
-				sep_error = sep_error + sep_err_inc + (ranges_rgba[j] * ranges_rgba[j] * error_weights);
+					sep_r_vector = sep_r_vector * sep_r_vector;
+					sep_g_vector = sep_g_vector * sep_g_vector;
+					sep_b_vector = sep_b_vector * sep_b_vector;
+					sep_a_vector = sep_a_vector * sep_a_vector;
+
+					vfloat4 sep_err_inc(dot3_s(sep_r_vector, error_weights.swz<1, 2, 3, 0>()),
+										dot3_s(sep_g_vector, error_weights.swz<0, 2, 3, 1>()),
+										dot3_s(sep_b_vector, error_weights.swz<0, 1, 3, 2>()),
+										dot3_s(sep_a_vector, error_weights.swz<0, 1, 2, 3>()));
+
+					sep_error = sep_error + sep_err_inc + (ranges_rgba[j] * ranges_rgba[j] * error_weights);
+				}
 			}
 
 			if (uncor_error < uncor_best_error)
@@ -395,32 +405,35 @@ void find_best_partitionings(
 				samec_best_partitions[1] = partition;
 			}
 
-			if (sep_error.lane<0>() < sep_best_error)
+			if (!skip_two_plane)
 			{
-				sep_best_error = sep_error.lane<0>();
-				sep_best_partition = partition;
-				sep_best_component = 0;
-			}
+				if (sep_error.lane<0>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<0>();
+					sep_best_partition = partition;
+					sep_best_component = 0;
+				}
 
-			if (sep_error.lane<1>() < sep_best_error)
-			{
-				sep_best_error = sep_error.lane<1>();
-				sep_best_partition = partition;
-				sep_best_component = 1;
-			}
+				if (sep_error.lane<1>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<1>();
+					sep_best_partition = partition;
+					sep_best_component = 1;
+				}
 
-			if (sep_error.lane<2>() < sep_best_error)
-			{
-				sep_best_error = sep_error.lane<2>();
-				sep_best_partition = partition;
-				sep_best_component = 2;
-			}
+				if (sep_error.lane<2>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<2>();
+					sep_best_partition = partition;
+					sep_best_component = 2;
+				}
 
-			if (sep_error.lane<3>() < sep_best_error)
-			{
-				sep_best_error = sep_error.lane<3>();
-				sep_best_partition = partition;
-				sep_best_component = 3;
+				if (sep_error.lane<3>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<3>();
+					sep_best_partition = partition;
+					sep_best_component = 3;
+				}
 			}
 		}
 	}
@@ -502,50 +515,53 @@ void find_best_partitionings(
 				samec_plines[j].bs   = (samec_lines[j].b * color_scale_factors[j].swz<0, 1, 2, 3>());
 				samec_plines[j].bis  = (samec_lines[j].b * icolor_scale_factors[j].swz<0, 1, 2, 3>());
 
-				sep_r_lines[j].a = avgs_rgba[j].swz<1, 2>();
-				float2 dirs_gb = dirs_rgb[j].swz<1, 2>();
-				if (dot(dirs_gb, dirs_gb) == 0.0f)
+				if (!skip_two_plane)
 				{
-					sep_r_lines[j].b = normalize(float2(1.0f));
-				}
-				else
-				{
-					sep_r_lines[j].b = normalize(dirs_gb);
-				}
+					sep_r_lines[j].a = avgs_rgba[j].swz<1, 2>();
+					float2 dirs_gb = dirs_rgb[j].swz<1, 2>();
+					if (dot(dirs_gb, dirs_gb) == 0.0f)
+					{
+						sep_r_lines[j].b = normalize(float2(1.0f));
+					}
+					else
+					{
+						sep_r_lines[j].b = normalize(dirs_gb);
+					}
 
-				sep_g_lines[j].a = avgs_rgba[j].swz<0, 2>();
-				float2 dirs_rb = dirs_rgb[j].swz<0, 2>();
-				if (dot(dirs_rb, dirs_rb) == 0.0f)
-				{
-					sep_g_lines[j].b = normalize(float2(1.0f));
-				}
-				else
-				{
-					sep_g_lines[j].b = normalize(dirs_rb);
-				}
+					sep_g_lines[j].a = avgs_rgba[j].swz<0, 2>();
+					float2 dirs_rb = dirs_rgb[j].swz<0, 2>();
+					if (dot(dirs_rb, dirs_rb) == 0.0f)
+					{
+						sep_g_lines[j].b = normalize(float2(1.0f));
+					}
+					else
+					{
+						sep_g_lines[j].b = normalize(dirs_rb);
+					}
 
-				sep_b_lines[j].a = avgs_rgba[j].swz<0, 1>();
-				float2 dirs_rg = dirs_rgb[j].swz<0, 1>();
-				if (dot(dirs_rg, dirs_rg) == 0.0f)
-				{
-					sep_b_lines[j].b = normalize(float2(1.0f));
+					sep_b_lines[j].a = avgs_rgba[j].swz<0, 1>();
+					float2 dirs_rg = dirs_rgb[j].swz<0, 1>();
+					if (dot(dirs_rg, dirs_rg) == 0.0f)
+					{
+						sep_b_lines[j].b = normalize(float2(1.0f));
+					}
+					else
+					{
+						sep_b_lines[j].b = normalize(dirs_rg);
+					}
+
+					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot(sep_r_lines[j].a, sep_r_lines[j].b)) * icolor_scale_factors[j].swz<1, 2>();
+					sep_r_plines[j].bs   = (sep_r_lines[j].b * color_scale_factors[j].swz<1, 2>());
+					sep_r_plines[j].bis  = (sep_r_lines[j].b *  icolor_scale_factors[j].swz<1, 2>());
+
+					sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot(sep_g_lines[j].a, sep_g_lines[j].b)) *  icolor_scale_factors[j].swz<0, 2>();
+					sep_g_plines[j].bs   = (sep_g_lines[j].b * color_scale_factors[j].swz<0, 2>());
+					sep_g_plines[j].bis  = (sep_g_lines[j].b *  icolor_scale_factors[j].swz<0, 2>());
+
+					sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot(sep_b_lines[j].a, sep_b_lines[j].b)) *  icolor_scale_factors[j].swz<0, 1>();
+					sep_b_plines[j].bs   = (sep_b_lines[j].b * color_scale_factors[j].swz<0, 1>());
+					sep_b_plines[j].bis  = (sep_b_lines[j].b *  icolor_scale_factors[j].swz<0, 1>());
 				}
-				else
-				{
-					sep_b_lines[j].b = normalize(dirs_rg);
-				}
-
-				sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot(sep_r_lines[j].a, sep_r_lines[j].b)) * icolor_scale_factors[j].swz<1, 2>();
-				sep_r_plines[j].bs   = (sep_r_lines[j].b * color_scale_factors[j].swz<1, 2>());
-				sep_r_plines[j].bis  = (sep_r_lines[j].b *  icolor_scale_factors[j].swz<1, 2>());
-
-				sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot(sep_g_lines[j].a, sep_g_lines[j].b)) *  icolor_scale_factors[j].swz<0, 2>();
-				sep_g_plines[j].bs   = (sep_g_lines[j].b * color_scale_factors[j].swz<0, 2>());
-				sep_g_plines[j].bis  = (sep_g_lines[j].b *  icolor_scale_factors[j].swz<0, 2>());
-
-				sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot(sep_b_lines[j].a, sep_b_lines[j].b)) *  icolor_scale_factors[j].swz<0, 1>();
-				sep_b_plines[j].bs   = (sep_b_lines[j].b * color_scale_factors[j].swz<0, 1>());
-				sep_b_plines[j].bis  = (sep_b_lines[j].b *  icolor_scale_factors[j].swz<0, 1>());
 			}
 
 			float uncor_error = 0.0f;
@@ -587,25 +603,30 @@ void find_best_partitionings(
 				vfloat4 uncor_vector = (uncor_lines[j].b * uncor_line_lens[j]) * ics;
 				vfloat4 samec_vector = (samec_lines[j].b * samec_line_lens[j]) * ics;
 
-				float2 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2>();
-				float2 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2>();
-				float2 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1>();
-
 				uncor_vector = uncor_vector * uncor_vector;
 				samec_vector = samec_vector * samec_vector;
-				sep_r_vector = sep_r_vector * sep_r_vector;
-				sep_g_vector = sep_g_vector * sep_g_vector;
-				sep_b_vector = sep_b_vector * sep_b_vector;
 
 				uncor_error += dot3_s(uncor_vector, error_weights);
 				samec_error += dot3_s(samec_vector, error_weights);
-				sep_error.set_lane<0>(sep_error.lane<0>() + dot(sep_r_vector, error_weights.swz<1, 2>()));
-				sep_error.set_lane<1>(sep_error.lane<1>() + dot(sep_g_vector, error_weights.swz<0, 2>()));
-				sep_error.set_lane<2>(sep_error.lane<2>() + dot(sep_b_vector, error_weights.swz<0, 1>()));
 
-				sep_error.set_lane<0>(sep_error.lane<0>() + ranges_rgba[j].lane<0>() * ranges_rgba[j].lane<0>() * error_weights.lane<0>());
-				sep_error.set_lane<1>(sep_error.lane<1>() + ranges_rgba[j].lane<1>() * ranges_rgba[j].lane<1>() * error_weights.lane<1>());
-				sep_error.set_lane<2>(sep_error.lane<2>() + ranges_rgba[j].lane<2>() * ranges_rgba[j].lane<2>() * error_weights.lane<2>());
+				if (!skip_two_plane)
+				{
+					float2 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2>();
+					float2 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2>();
+					float2 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1>();
+
+					sep_r_vector = sep_r_vector * sep_r_vector;
+					sep_g_vector = sep_g_vector * sep_g_vector;
+					sep_b_vector = sep_b_vector * sep_b_vector;
+
+					sep_error.set_lane<0>(sep_error.lane<0>() + dot(sep_r_vector, error_weights.swz<1, 2>()));
+					sep_error.set_lane<1>(sep_error.lane<1>() + dot(sep_g_vector, error_weights.swz<0, 2>()));
+					sep_error.set_lane<2>(sep_error.lane<2>() + dot(sep_b_vector, error_weights.swz<0, 1>()));
+
+					sep_error.set_lane<0>(sep_error.lane<0>() + ranges_rgba[j].lane<0>() * ranges_rgba[j].lane<0>() * error_weights.lane<0>());
+					sep_error.set_lane<1>(sep_error.lane<1>() + ranges_rgba[j].lane<1>() * ranges_rgba[j].lane<1>() * error_weights.lane<1>());
+					sep_error.set_lane<2>(sep_error.lane<2>() + ranges_rgba[j].lane<2>() * ranges_rgba[j].lane<2>() * error_weights.lane<2>());
+				}
 			}
 
 			if (uncor_error < uncor_best_error)
@@ -628,25 +649,28 @@ void find_best_partitionings(
 				samec_best_partitions[1] = partition;
 			}
 
-			if (sep_error.lane<0>() < sep_best_error)
+			if (!skip_two_plane)
 			{
-				sep_best_error = sep_error.lane<0>();
-				sep_best_partition = partition;
-				sep_best_component = 0;
-			}
+				if (sep_error.lane<0>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<0>();
+					sep_best_partition = partition;
+					sep_best_component = 0;
+				}
 
-			if (sep_error.lane<1>() < sep_best_error)
-			{
-				sep_best_error = sep_error.lane<1>();
-				sep_best_partition = partition;
-				sep_best_component = 1;
-			}
+				if (sep_error.lane<1>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<1>();
+					sep_best_partition = partition;
+					sep_best_component = 1;
+				}
 
-			if (sep_error.lane<2>() < sep_best_error)
-			{
-				sep_best_error = sep_error.lane<2>();
-				sep_best_partition = partition;
-				sep_best_component = 2;
+				if (sep_error.lane<2>() < sep_best_error)
+				{
+					sep_best_error = sep_error.lane<2>();
+					sep_best_partition = partition;
+					sep_best_component = 2;
+				}
 			}
 		}
 	}
@@ -656,8 +680,11 @@ void find_best_partitionings(
 	int index = samec_best_partitions[0] != uncor_best_partition ? 0 : 1;
 	*best_partition_samec = samec_best_partitions[index];
 
-	*best_partition_dualplane = (sep_best_component << PARTITION_BITS) |
-	                            (sep_best_partition);
+	if (best_partition_dualplane)
+	{
+		*best_partition_dualplane = (sep_best_component << PARTITION_BITS) |
+		                            (sep_best_partition);
+	}
 }
 
 #endif
