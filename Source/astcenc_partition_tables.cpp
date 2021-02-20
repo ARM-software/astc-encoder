@@ -275,7 +275,7 @@ static void generate_one_partition_table(
 
 	for (int i = 0; i < 4; i++)
 	{
-		pt->texels_per_partition[i] = counts[i];
+		pt->partition_texel_count[i] = counts[i];
 	}
 
 	if (counts[0] == 0)

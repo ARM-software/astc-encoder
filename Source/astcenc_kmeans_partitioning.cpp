@@ -133,12 +133,12 @@ static void kmeans_assign(
 ) {
 	float distances[MAX_TEXELS_PER_BLOCK];
 
-	int texels_per_partition[4];
+	int partition_texel_count[4];
 
-	texels_per_partition[0] = texels_per_block;
+	partition_texel_count[0] = texels_per_block;
 	for (int i = 1; i < partition_count; i++)
 	{
-		texels_per_partition[i] = 0;
+		partition_texel_count[i] = 0;
 	}
 
 	for (int i = 0; i < texels_per_block; i++)
@@ -162,8 +162,8 @@ static void kmeans_assign(
 			if (distance < distances[i])
 			{
 				distances[i] = distance;
-				texels_per_partition[partition_of_texel[i]]--;
-				texels_per_partition[j]++;
+				partition_texel_count[partition_of_texel[i]]--;
+				partition_texel_count[j]++;
 				partition_of_texel[i] = j;
 			}
 		}
@@ -180,10 +180,10 @@ static void kmeans_assign(
 		problem_case = 0;
 		for (int i = 0; i < partition_count; i++)
 		{
-			if (texels_per_partition[i] == 0)
+			if (partition_texel_count[i] == 0)
 			{
-				texels_per_partition[partition_of_texel[i]]--;
-				texels_per_partition[i]++;
+				partition_texel_count[partition_of_texel[i]]--;
+				partition_texel_count[i]++;
 				partition_of_texel[i] = i;
 				problem_case = 1;
 			}

@@ -1133,7 +1133,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pt->texels_per_partition[i];
+		int texelcount = pt->partition_texel_count[i];
 		const uint8_t *texel_indexes = pt->texels_of_partition[i];
 		for (int j = 0; j < texelcount; j++)
 		{
@@ -1459,7 +1459,7 @@ void recompute_ideal_colors_1plane(
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pt->texels_per_partition[i];
+		int texelcount = pt->partition_texel_count[i];
 		const uint8_t *texel_indexes = pt->texels_of_partition[i];
 
 		promise(texelcount > 0);

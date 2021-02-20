@@ -348,7 +348,7 @@ public:
 struct partition_info
 {
 	int partition_count;
-	uint8_t texels_per_partition[4];
+	uint8_t partition_texel_count[4];
 	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t texels_of_partition[4][MAX_TEXELS_PER_BLOCK];
 	uint64_t coverage_bitmaps[4];

@@ -55,7 +55,7 @@ void compute_avgs_and_dirs_4_comp(
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->texels_per_partition[partition];
+		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)
@@ -175,7 +175,7 @@ void compute_avgs_and_dirs_3_comp(
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->texels_per_partition[partition];
+		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)
@@ -293,7 +293,7 @@ void compute_avgs_and_dirs_2_comp(
 		float2 base_sum = float2(0.0f);
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->texels_per_partition[partition];
+		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)
@@ -381,7 +381,7 @@ void compute_error_squared_rgba(
 
 		// TODO: split up this loop due to too many temporaries; in particular,
 		// the six line functions will consume 18 vector registers
-		int texel_count = pt->texels_per_partition[partition];
+		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		int i = 0;
@@ -577,7 +577,7 @@ void compute_error_squared_rgb(
 
 		// TODO: split up this loop due to too many temporaries; in
 		// particular, the six line functions will consume 18 vector registers
-		int texel_count = pt->texels_per_partition[partition];
+		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		int i = 0;

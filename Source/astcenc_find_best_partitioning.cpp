@@ -69,7 +69,7 @@ static void compute_partition_error_color_weightings_and_range(
 		vfloat4 rgba_min(1e38f);
 		vfloat4 rgba_max(-1e38f);
 
-		int texel_count = pt->texels_per_partition[i];
+		int texel_count = pt->partition_texel_count[i];
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tidx = pt->texels_of_partition[i][j];
@@ -83,7 +83,7 @@ static void compute_partition_error_color_weightings_and_range(
 			}
 		}
 
-		error_weight = error_weight / pt->texels_per_partition[i];
+		error_weight = error_weight / pt->partition_texel_count[i];
 		error_weightings[i] = error_weight;
 		color_scale_factors[i] = sqrt(error_weight);
 		ranges_rgba[i] = max(rgba_max - rgba_min, 1e-10f);
@@ -114,7 +114,7 @@ void compute_partition_error_color_weightings(
 
 	for (int i = 0; i < pcnt; i++)
 	{
-		error_weightings[i] = error_weightings[i] * (1.0f / pt->texels_per_partition[i]);
+		error_weightings[i] = error_weightings[i] * (1.0f / pt->partition_texel_count[i]);
 		color_scale_factors[i] = sqrt(error_weightings[i]);
 	}
 }
@@ -345,7 +345,7 @@ void find_best_partitionings(
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				float tpp = (float)(ptab[partition].texels_per_partition[j]);
+				float tpp = (float)(ptab[partition].partition_texel_count[j]);
 
 				vfloat4 ics = icolor_scale_factors[j];
 				vfloat4 error_weights = error_weightings[j] * (tpp * weight_imprecision_estim);
@@ -576,7 +576,7 @@ void find_best_partitionings(
 
 			for (int j = 0; j < partition_count; j++)
 			{
-				float tpp = (float)(ptab[partition].texels_per_partition[j]);
+				float tpp = (float)(ptab[partition].partition_texel_count[j]);
 
 				vfloat4 ics = icolor_scale_factors[j];
 				ics.set_lane<3>(0.0f);

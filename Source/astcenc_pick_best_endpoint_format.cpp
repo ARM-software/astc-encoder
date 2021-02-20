@@ -44,7 +44,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float best_error[21][4],
 	int format_of_choice[21][4]
 ) {
-	int partition_size = pt->texels_per_partition[partition_index];
+	int partition_size = pt->partition_texel_count[partition_index];
 
 	static const float baseline_quant_error[21] = {
 		(65536.0f * 65536.0f / 18.0f),				// 2 values, 1 step
