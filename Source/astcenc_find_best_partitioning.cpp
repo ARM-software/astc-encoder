@@ -216,28 +216,14 @@ void find_best_partitionings(
 				partition_metrics& pm = pms[j];
 
 				uncor_lines[j].a = pm.avg;
-				if (dot_s(pm.dir, pm.dir) == 0.0f)
-				{
-					uncor_lines[j].b = normalize(vfloat4(1.0f));
-				}
-				else
-				{
-					uncor_lines[j].b = normalize(pm.dir);
-				}
+				uncor_lines[j].b = normalize_safe(pm.dir, unit4());
 
 				uncor_plines[j].amod = (uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b)) * pm.icolor_scale;
 				uncor_plines[j].bs = uncor_lines[j].b * pm.color_scale;
 				uncor_plines[j].bis = uncor_lines[j].b * pm.icolor_scale;
 
 				samec_lines[j].a = vfloat4::zero();
-				if (dot_s(pm.avg, pm.avg) == 0.0f)
-				{
-					samec_lines[j].b = normalize(vfloat4(1.0f));
-				}
-				else
-				{
-					samec_lines[j].b = normalize(pm.avg);
-				}
+				samec_lines[j].b = normalize_safe(pm.avg, unit4());
 
 				samec_plines[j].amod = (samec_lines[j].a - samec_lines[j].b * dot(samec_lines[j].a, samec_lines[j].b)) * pm.icolor_scale;
 				samec_plines[j].bs = samec_lines[j].b * pm.color_scale;
@@ -246,48 +232,20 @@ void find_best_partitionings(
 				if (!skip_two_plane)
 				{
 					sep_r_lines[j].a = pm.avg.swz<1, 2, 3>();
-					vfloat4 dirs_gba = pm.dir.swz<1, 2, 3, 0>();
-					if (dot3_s(dirs_gba, dirs_gba) == 0.0f)
-					{
-						sep_r_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-					}
-					else
-					{
-						sep_r_lines[j].b = normalize(dirs_gba);
-					}
+					vfloat4 dirs_gba = pm.dir.swz<1, 2, 3>();
+					sep_r_lines[j].b = normalize_safe(dirs_gba, unit3());
 
 					sep_g_lines[j].a = pm.avg.swz<0, 2, 3>();
-					vfloat4 dirs_rba = pm.dir.swz<0, 2, 3, 1>();
-					if (dot3_s(dirs_rba, dirs_rba) == 0.0f)
-					{
-						sep_g_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-					}
-					else
-					{
-						sep_g_lines[j].b = normalize(dirs_rba);
-					}
+					vfloat4 dirs_rba = pm.dir.swz<0, 2, 3>();
+					sep_g_lines[j].b = normalize_safe(dirs_rba, unit3());
 
 					sep_b_lines[j].a = pm.avg.swz<0, 1, 3>();
-					vfloat4 dirs_rga = pm.dir.swz<0, 1, 3, 2>();
-					if (dot3_s(dirs_rga, dirs_rga) == 0.0f)
-					{
-						sep_b_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-					}
-					else
-					{
-						sep_b_lines[j].b = normalize(dirs_rga);
-					}
+					vfloat4 dirs_rga = pm.dir.swz<0, 1, 3>();
+					sep_b_lines[j].b = normalize_safe(dirs_rga, unit3());
 
 					sep_a_lines[j].a = pm.avg.swz<0, 1, 2>();
-					vfloat4 dirs_rgb = pm.dir.swz<0, 1, 2, 3>();
-					if (dot3_s(dirs_rgb, dirs_rgb) == 0.0f)
-					{
-						sep_a_lines[j].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-					}
-					else
-					{
-						sep_a_lines[j].b = normalize(dirs_rgb);
-					}
+					vfloat4 dirs_rgb = pm.dir.swz<0, 1, 2>();
+					sep_a_lines[j].b = normalize_safe(dirs_rgb, unit3());
 
 					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot3(sep_r_lines[j].a, sep_r_lines[j].b)) * pm.icolor_scale.swz<1, 2, 3, 0>();
 					sep_r_plines[j].bs   = (sep_r_lines[j].b * pm.color_scale.swz<1, 2, 3, 0>());
@@ -458,24 +416,10 @@ void find_best_partitionings(
 				partition_lines3& pl = plines[j];
 
 				pl.uncor_line.a = pm.avg;
-				if (dot3_s(pm.dir, pm.dir) == 0.0f)
-				{
-					pl.uncor_line.b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					pl.uncor_line.b = normalize(pm.dir);
-				}
+				pl.uncor_line.b = normalize_safe(pm.dir.swz<0, 1, 2>(), unit3());
 
 				pl.samec_line.a = vfloat4::zero();
-				if (dot3_s(pm.avg, pm.avg) == 0.0f)
-				{
-					pl.samec_line.b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-				}
-				else
-				{
-					pl.samec_line.b = normalize(pm.avg);
-				}
+				pl.samec_line.b = normalize_safe(pm.avg.swz<0, 1, 2>(), unit3());
 
 				pl.uncor_pline.amod = (pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b)) * pm.icolor_scale.swz<0, 1, 2, 3>();
 				pl.uncor_pline.bs   = (pl.uncor_line.b * pm.color_scale.swz<0, 1, 2, 3>());

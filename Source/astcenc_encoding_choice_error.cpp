@@ -43,10 +43,10 @@
 
 // helper function to merge two endpoint-colors
 void merge_endpoints(
-	const endpoints * ep1,	// contains three of the color components
-	const endpoints * ep2,	// contains the remaining color component
+	const endpoints* ep1,	// contains three of the color components
+	const endpoints* ep2,	// contains the remaining color component
 	int separate_component,
-	endpoints * res
+	endpoints* res
 ) {
 	int partition_count = ep1->partition_count;
 	vmask4 sep_mask = vint4::lane_id() == vint4(separate_component);
@@ -187,14 +187,14 @@ void compute_encoding_choice_errors(
 		partition_metrics& pm = pms[i];
 
 		// TODO: Can we skip rgb_luma_lines for LDR images?
-		line3 uncorr_rgb_lines;
-		line3 samechroma_rgb_lines;	// for LDR-RGB-scale
+		line3 uncor_rgb_lines;
+		line3 samec_rgb_lines;	// for LDR-RGB-scale
 		line3 rgb_luma_lines;	// for HDR-RGB-scale
 
-		processed_line3 proc_uncorr_rgb_lines;
-		processed_line3 proc_samechroma_rgb_lines;	// for LDR-RGB-scale
-		processed_line3 proc_rgb_luma_lines;	// for HDR-RGB-scale
-		processed_line3 proc_luminance_lines;
+		processed_line3 uncor_rgb_plines;
+		processed_line3 samec_rgb_plines;	// for LDR-RGB-scale
+		processed_line3 rgb_luma_plines;	// for HDR-RGB-scale
+		processed_line3 luminance_plines;
 
 		float uncorr_rgb_error;
 		float samechroma_rgb_error;
@@ -204,57 +204,44 @@ void compute_encoding_choice_errors(
 
 		vfloat4 csf = pm.color_scale;
 		csf.set_lane<3>(0.0f);
+		vfloat4 csfn = normalize(csf);
 
 		vfloat4 icsf = pm.icolor_scale;
 		icsf.set_lane<3>(0.0f);
 
-		uncorr_rgb_lines.a = pm.avg;
-		if (dot3_s(pm.dir, pm.dir) == 0.0f)
-		{
-			uncorr_rgb_lines.b = normalize(csf);
-		}
-		else
-		{
-			uncorr_rgb_lines.b = normalize(pm.dir);
-		}
+		uncor_rgb_lines.a = pm.avg;
+		uncor_rgb_lines.b = normalize_safe(pm.dir.swz<0, 1, 2>(), csfn);
 
-		samechroma_rgb_lines.a = vfloat4::zero();
-		if (dot3_s(pm.avg, pm.avg) < 1e-20f)
-		{
-			samechroma_rgb_lines.b = normalize(csf);
-		}
-		else
-		{
-			samechroma_rgb_lines.b = normalize(pm.avg);
-		}
+		samec_rgb_lines.a = vfloat4::zero();
+		samec_rgb_lines.b = normalize_safe(pm.avg.swz<0, 1, 2>(), csfn);
 
 		rgb_luma_lines.a = pm.avg;
-		rgb_luma_lines.b = normalize(csf);
+		rgb_luma_lines.b = csfn;
 
-		proc_uncorr_rgb_lines.amod = (uncorr_rgb_lines.a - uncorr_rgb_lines.b * dot3_s(uncorr_rgb_lines.a, uncorr_rgb_lines.b)) * icsf;
-		proc_uncorr_rgb_lines.bs = uncorr_rgb_lines.b * csf;
-		proc_uncorr_rgb_lines.bis = uncorr_rgb_lines.b * icsf;
+		uncor_rgb_plines.amod = (uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b)) * icsf;
+		uncor_rgb_plines.bs   = uncor_rgb_lines.b * csf;
+		uncor_rgb_plines.bis  = uncor_rgb_lines.b * icsf;
 
-		proc_samechroma_rgb_lines.amod = (samechroma_rgb_lines.a - samechroma_rgb_lines.b *  dot3_s(samechroma_rgb_lines.a, samechroma_rgb_lines.b)) * icsf;
-		proc_samechroma_rgb_lines.bs = samechroma_rgb_lines.b * csf;
-		proc_samechroma_rgb_lines.bis = samechroma_rgb_lines.b * icsf;
+		samec_rgb_plines.amod = (samec_rgb_lines.a - samec_rgb_lines.b *  dot3(samec_rgb_lines.a, samec_rgb_lines.b)) * icsf;
+		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
+		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
 
-		proc_rgb_luma_lines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3_s(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
-		proc_rgb_luma_lines.bs = rgb_luma_lines.b * csf;
-		proc_rgb_luma_lines.bis = rgb_luma_lines.b * icsf;
+		rgb_luma_plines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
+		rgb_luma_plines.bs   = rgb_luma_lines.b * csf;
+		rgb_luma_plines.bis  = rgb_luma_lines.b * icsf;
 
 		// Luminance always goes though zero, so this is simpler than the others
-		proc_luminance_lines.amod = vfloat4::zero();
-		proc_luminance_lines.bs = normalize(csf) * csf;
-		proc_luminance_lines.bis = normalize(csf) * icsf;
+		luminance_plines.amod = vfloat4::zero();
+		luminance_plines.bs = csfn * csf;
+		luminance_plines.bis = csfn * icsf;
 
 		compute_error_squared_rgb_single_partition(
 		    i, bsd, pt, blk, ewb,
-		    &proc_uncorr_rgb_lines,     &uncorr_rgb_error,
-		    &proc_samechroma_rgb_lines, &samechroma_rgb_error,
-		    &proc_rgb_luma_lines,       &rgb_luma_error,
-		    &proc_luminance_lines,      &luminance_rgb_error,
-		                                &alpha_drop_error);
+		    &uncor_rgb_plines, &uncorr_rgb_error,
+		    &samec_rgb_plines, &samechroma_rgb_error,
+		    &rgb_luma_plines,  &rgb_luma_error,
+		    &luminance_plines, &luminance_rgb_error,
+		                       &alpha_drop_error);
 
 		// Determine if we can offset encode RGB lanes
 		vfloat4 endpt0 = ep.endpt0[i];
