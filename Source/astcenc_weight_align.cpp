@@ -414,12 +414,12 @@ void compute_angular_endpoints_2planes(
 		int samplecount = bsd->decimation_tables[i]->weight_count;
 
 		compute_angular_endpoints_for_quant_levels(samplecount,
-		                                                  decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
-		                                                  decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values1[i], high_values1[i]);
+		                                           decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
+		                                           decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 		compute_angular_endpoints_for_quant_levels(samplecount,
-		                                                  decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
-		                                                  decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values2[i], high_values2[i]);
+		                                           decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
+		                                           decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK, dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
 	for (int i = 0; i < bsd->block_mode_count; ++i)
