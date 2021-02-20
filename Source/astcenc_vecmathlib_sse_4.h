@@ -851,9 +851,6 @@ ASTCENC_SIMD_INLINE vfloat4 abs(vfloat4 a)
 
 /**
  * @brief Return a float rounded to the nearest integer value.
- *
- * TODO: Can we do a better fallback here, if we exploit the fact that we
- *       can assume that values are positive?
  */
 ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 {

@@ -44,7 +44,7 @@ static inline int cqt_lookup(
 }
 
 static void quantize_rgb(
-	vfloat4 color0,	// LDR: 0=lowest, 255=highest
+	vfloat4 color0,
 	vfloat4 color1,
 	int output[6],
 	int quant_level

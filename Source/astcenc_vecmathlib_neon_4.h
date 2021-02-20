@@ -95,8 +95,6 @@ struct vfloat4
 
 	/**
 	 * @brief Get the scalar value of a single lane.
-	 *
-	 * TODO: Can we do better for lane0, which is the common case for VLA?
 	 */
 	template <int l> ASTCENC_SIMD_INLINE float lane() const
 	{
@@ -812,9 +810,6 @@ ASTCENC_SIMD_INLINE vfloat4 abs(vfloat4 a)
 
 /**
  * @brief Return a float rounded to the nearest integer value.
- *
- * TODO: Can we do a better fallback here, if we exploit the fact that we
- *       can assume that values are positive?
  */
 ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 {

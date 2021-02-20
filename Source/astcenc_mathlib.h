@@ -147,9 +147,8 @@ static inline float fabs(float v)
  *
  * @return Zero is not a NaN, non-zero otherwise.
  */
-static inline int isnan(float v)
+static inline bool isnan(float v)
 {
-	// TODO: Make this a boolean.
 	return v != v;
 }
 

@@ -270,7 +270,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		if (length < 0.0f)			// case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
-			highparam[i] = 1e-7f; // TODO: Why is this 1e-7; similar code above is zero
+			highparam[i] = 1e-7f;
 		}
 
 		// it is possible for a uniform-color partition to produce length=0; this

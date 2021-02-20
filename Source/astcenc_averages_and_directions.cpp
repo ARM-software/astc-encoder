@@ -362,8 +362,6 @@ void compute_error_squared_rgba(
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		// TODO: sort partitions by number of texels. For warp-architectures,
-		// this can reduce the running time by about 25-50%.
 		const uint8_t *weights = pt->texels_of_partition[partition];
 
 		float uncor_loparam = 1e10f;
@@ -375,8 +373,6 @@ void compute_error_squared_rgba(
 		processed_line4 l_uncor = uncor_plines[partition];
 		processed_line4 l_samec = samec_plines[partition];
 
-		// TODO: split up this loop due to too many temporaries; in particular,
-		// the six line functions will consume 18 vector registers
 		int texel_count = pt->partition_texel_count[partition];
 		promise(texel_count > 0);
 

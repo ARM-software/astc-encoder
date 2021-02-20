@@ -92,8 +92,6 @@ struct vfloat8
 
 	/**
 	 * @brief Get the scalar value of a single lane.
-	 *
-	 * TODO: Can we do better for lane0, which is the common case for VLA?
 	 */
 	template <int l> ASTCENC_SIMD_INLINE float lane() const
 	{
@@ -210,8 +208,6 @@ struct vint8
 
 	/**
 	 * @brief Get the scalar from a single lane.
-	 *
-	 * TODO: Can we do better for lane0, which is the common case for VLA?
 	 */
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
