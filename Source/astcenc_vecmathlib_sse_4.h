@@ -1037,15 +1037,6 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 }
 
 /**
- * @brief Normalize a vector to unit length.
- */
-ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
-{
-	vfloat4 length = dot(a, a);
-	return a / sqrt(length);
-}
-
-/**
  * @brief Return a integer value for a float vector, using truncation.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)

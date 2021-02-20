@@ -186,4 +186,43 @@ ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 	return change_sign(select(z, vfloat(astc::PI) - z, xmask), y);
 }
 
+/*
+ * @brief Factory that returns a unit length 4 component vfloat4.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 unit4()
+{
+	return vfloat4(0.5f);
+}
+
+/**
+ * @brief Factory that returns a unit length 3 component vfloat4.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 unit3()
+{
+	return vfloat4(0.57735f, 0.57735f, 0.57735f, 0.0f);
+}
+
+/**
+ * @brief Normalize a non-zero length vector to unit length.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
+{
+	vfloat4 length = dot(a, a);
+	return a / sqrt(length);
+}
+
+/**
+ * @brief Normalize a vector, returning @c safe if len is zero.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
+{
+	vfloat4 length = dot(a, a);
+	if (length.lane<0>() != 0.0f)
+	{
+		return a / sqrt(length);
+	}
+
+	return safe;
+}
+
 #endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED

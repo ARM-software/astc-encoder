@@ -981,6 +981,26 @@ TEST(vfloat4, normalize)
 	EXPECT_NEAR(r.lane<3>(), 4.0f / astc::sqrt(30.0f), 0.0005f);
 }
 
+/** @brief Test vfloat4 normalize_safe. */
+TEST(vfloat4, normalize_safe)
+{
+	vfloat4 s(-1.0f, -1.0f, -1.0f, -1.0f);
+
+	vfloat4 a1(1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat4 r1 = normalize_safe(a1, s);
+	EXPECT_NEAR(r1.lane<0>(), 1.0f / astc::sqrt(30.0f), 0.0005f);
+	EXPECT_NEAR(r1.lane<1>(), 2.0f / astc::sqrt(30.0f), 0.0005f);
+	EXPECT_NEAR(r1.lane<2>(), 3.0f / astc::sqrt(30.0f), 0.0005f);
+	EXPECT_NEAR(r1.lane<3>(), 4.0f / astc::sqrt(30.0f), 0.0005f);
+
+	vfloat4 a2(0.0f, 0.0f, 0.0f, 0.0f);
+	vfloat4 r2 = normalize_safe(a2, s);
+	EXPECT_EQ(r2.lane<0>(), -1.0f);
+	EXPECT_EQ(r2.lane<1>(), -1.0f);
+	EXPECT_EQ(r2.lane<2>(), -1.0f);
+	EXPECT_EQ(r2.lane<3>(), -1.0f);
+}
+
 /** @brief Test vfloat4 float_to_int. */
 TEST(vfloat4, float_to_int)
 {
