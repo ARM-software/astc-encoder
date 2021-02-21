@@ -180,11 +180,10 @@ void find_best_partitionings(
 		{
 			int partition = partition_sequence[i];
 
-			// TODO: Can we avoid returning these completely?
 			int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
-				continue;
+				break;
 			}
 
 			// Compute weighting to give to each channel in each partition
@@ -390,7 +389,7 @@ void find_best_partitionings(
 			int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
-				continue;
+				break;
 			}
 
 			// Compute weighting to give to each channel in each partition
