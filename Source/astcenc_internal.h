@@ -1088,13 +1088,15 @@ void compute_endpoints_and_ideal_weights_2_planes(
  * Compute the idealized weight set, assuming infinite precision and no
  * quantization. Later functions will use this as a staring points.
  *
- * @param      eai          The non-decimated endpoints and weights.
+ * @param      eai_in       The non-decimated endpoints and weights.
+ * @param      eai_out      A copy of eai_in we can modify later.
  * @param      dt           The selected decimation table.
  * @param[out] weight_set   The output decimated weight set.
  * @param[out] weights      The output decimated weights.
  */
 void compute_ideal_weights_for_decimation_table(
-	const endpoints_and_weights& eai,
+	const endpoints_and_weights& eai_in,
+	endpoints_and_weights& eai_out,
 	const decimation_table& dt,
 	float* weight_set,
 	float* weights);

@@ -818,7 +818,8 @@ float compute_error_of_weight_set(
 
 /* See header for documentation. */
 void compute_ideal_weights_for_decimation_table(
-	const endpoints_and_weights& eai,
+	const endpoints_and_weights& eai_in,
+	endpoints_and_weights& eai_out,
 	const decimation_table& dt,
 	float* RESTRICT weight_set,
 	float* RESTRICT weights
@@ -829,16 +830,35 @@ void compute_ideal_weights_for_decimation_table(
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// If we have a 1:1 mapping just shortcut the computation
+	// This function includes a copy of the epw from eai_in to eai_out. We do it
+	// here because we want to load the data anyway, so we can avoid loading it
+	// from memory twice.
+	eai_out.ep = eai_in.ep;
+
+	// If we have a 1:1 mapping just shortcut the computation - clone the
+	// weights into both the weight set and the output epw copy.
 	if (texel_count == weight_count)
 	{
 		for (int i = 0; i < texel_count; i++)
 		{
 			assert(i == dt.weight_texel[i][0]);
-			weight_set[i] = eai.weights[i];
-			weights[i] = eai.weight_error_scale[i];
+			weight_set[i] = eai_in.weights[i];
+			weights[i] = eai_in.weight_error_scale[i];
+
+			eai_out.weights[i] = eai_in.weights[i];
+			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
 		}
 		return;
+	}
+	// If we don't have a 1:1 mapping just clone the weights into the output
+	// epw copy and then do the full algorithm to decimate weights.
+	else
+	{
+		for (int i = 0; i < texel_count; i++)
+		{
+			eai_out.weights[i] = eai_in.weights[i];
+			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
+		}
 	}
 
 	// Otherwise compute an estimate and perform single refinement iteration
@@ -859,9 +879,9 @@ void compute_ideal_weights_for_decimation_table(
 		{
 			int texel = dt.weight_texel[i][j];
 			float weight = dt.weights_flt[i][j];
-			float contrib_weight = weight * eai.weight_error_scale[texel];
+			float contrib_weight = weight * eai_in.weight_error_scale[texel];
 			weight_weight += contrib_weight;
-			initial_weight += eai.weights[texel] * contrib_weight;
+			initial_weight += eai_in.weights[texel] * contrib_weight;
 		}
 
 		weights[i] = weight_weight;
@@ -902,9 +922,9 @@ void compute_ideal_weights_for_decimation_table(
 			uint8_t texel = weight_texel_ptr[k];
 			float contrib_weight = weights_ptr[k];
 
-			float scale = eai.weight_error_scale[texel] * contrib_weight;
+			float scale = eai_in.weight_error_scale[texel] * contrib_weight;
 			float old_weight = infilled_weights[texel];
-			float ideal_weight = eai.weights[texel];
+			float ideal_weight = eai_in.weights[texel];
 
 			error_change0 +=  contrib_weight * scale;
 			error_change1 += (old_weight - ideal_weight) * scale;

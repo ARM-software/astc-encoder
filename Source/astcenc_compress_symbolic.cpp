@@ -247,9 +247,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			continue;
 		}
 
-		eix[i] = *ei;
-
 		compute_ideal_weights_for_decimation_table(
+		    *ei,
 		    eix[i],
 		    *(ixtab2[i]),
 		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
@@ -598,16 +597,15 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			continue;
 		}
 
-		eix1[i] = *ei1;
-		eix2[i] = *ei2;
-
 		compute_ideal_weights_for_decimation_table(
+		    *ei1,
 		    eix1[i],
 		    *(ixtab2[i]),
 		    decimated_quantized_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK);
 
 		compute_ideal_weights_for_decimation_table(
+		    *ei2,
 		    eix2[i],
 		    *(ixtab2[i]),
 		    decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
