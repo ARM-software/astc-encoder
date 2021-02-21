@@ -122,6 +122,18 @@
 #endif
 
 /**
+ * @brief Round a count down to the largest multiple of 4.
+ *
+ * @param count   The unrounded value.
+ *
+ * @return The rounded value.
+ */
+ASTCENC_SIMD_INLINE int round_down_to_simd_multiple_4(int count)
+{
+	return count & ~(4 - 1);
+}
+
+/**
  * @brief Round a count down to the largest multiple of the SIMD width.
  *
  * Assumption that the vector width is a power of two ...

@@ -594,9 +594,13 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
  */
 ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
 {
+#if ASTCENC_AVX >= 2
+	return vint4(_mm_i32gather_epi32(base, indices.m, 4));
+#else
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	return vint4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
+#endif
 }
 
 /**
@@ -967,9 +971,13 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
+#if ASTCENC_AVX >= 2
+	return vfloat4(_mm_i32gather_ps(base, indices.m, 4));
+#else
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	return vfloat4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
+#endif
 }
 
 /**
@@ -1167,7 +1175,5 @@ ASTCENC_SIMD_INLINE void print(vfloat4 a)
 	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
 	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
 }
-
-
 
 #endif // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED

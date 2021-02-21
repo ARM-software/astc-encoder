@@ -862,7 +862,7 @@ void compute_ideal_weights_for_decimation_table(
 	}
 
 	// Otherwise compute an estimate and perform single refinement iteration
-	float infilled_weights[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
 	// Compute an initial average for each decimated weight
 	for (int i = 0; i < weight_count; i++)
@@ -889,14 +889,50 @@ void compute_ideal_weights_for_decimation_table(
 	}
 
 	// Populate the interpolated weight grid based on the initital average
-	for (int i = 0; i < texel_count; i++)
+	int si = 0;
+
+#if ASTCENC_SIMD_WIDTH >= 8
+	// Note: This vectorization for AVX2 mostly helps the larger block sizes;
+	// it doesn't really help <= 5x5, but is worth 2-3% for >= 8x8.
+
+	// Process SIMD-width texel coordinates at at time while we can
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	for (/* */; si < clipped_texel_count; si += ASTCENC_SIMD_WIDTH)
 	{
-		const uint8_t *texel_weights = dt.texel_weights_t4[i];
-		const float *texel_weights_float = dt.texel_weights_float_t4[i];
-		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
-		                     + weight_set[texel_weights[1]] * texel_weights_float[1])
-		                    + (weight_set[texel_weights[2]] * texel_weights_float[2]
-		                     + weight_set[texel_weights[3]] * texel_weights_float[3]);
+		vint texel_weights_0(dt.texel_weights_4t[0] + si);
+		vint texel_weights_1(dt.texel_weights_4t[1] + si);
+		vint texel_weights_2(dt.texel_weights_4t[2] + si);
+		vint texel_weights_3(dt.texel_weights_4t[3] + si);
+
+		vfloat weight_set_0 = gatherf(weight_set, texel_weights_0);
+		vfloat weight_set_1 = gatherf(weight_set, texel_weights_1);
+		vfloat weight_set_2 = gatherf(weight_set, texel_weights_2);
+		vfloat weight_set_3 = gatherf(weight_set, texel_weights_3);
+
+		vfloat texel_weights_float_0(dt.texel_weights_float_4t[0] + si);
+		vfloat texel_weights_float_1(dt.texel_weights_float_4t[1] + si);
+		vfloat texel_weights_float_2(dt.texel_weights_float_4t[2] + si);
+		vfloat texel_weights_float_3(dt.texel_weights_float_4t[3] + si);
+
+		vfloat weight = (weight_set_0 * texel_weights_float_0
+		                + weight_set_1 * texel_weights_float_1)
+		               + (weight_set_2 * texel_weights_float_2
+		                + weight_set_3 * texel_weights_float_3);
+
+		storea(weight, infilled_weights + si);
+	}
+
+#endif
+
+	// Loop tail
+	for (/* */; si < texel_count; si++)
+	{
+		const uint8_t *texel_weights = dt.texel_weights_t4[si];
+		const float *texel_weights_float = dt.texel_weights_float_t4[si];
+		infilled_weights[si] = (weight_set[texel_weights[0]] * texel_weights_float[0]
+		                      + weight_set[texel_weights[1]] * texel_weights_float[1])
+		                     + (weight_set[texel_weights[2]] * texel_weights_float[2]
+		                      + weight_set[texel_weights[3]] * texel_weights_float[3]);
 	}
 
 	// Perform a single iteration of refinement
