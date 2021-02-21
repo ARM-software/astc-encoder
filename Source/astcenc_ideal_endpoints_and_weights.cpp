@@ -993,15 +993,15 @@ void compute_quantized_weights_for_decimation_table(
 	vfloat low_boundv(low_bound);
 
 	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
-	for (/*Vector loop */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (/* */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
-		ix = clampzo(ix); // upper bound must be smaller than 1 to avoid an array overflow below.
+		ix = clampzo(ix);
 
-		// look up the two closest indexes and return the one that was closest.
+		//Llook up the two closest indexes and return the one that was closest.
 		vfloat ix1 = ix * quant_level_m1v;
 		vint weight = float_to_int(ix1);
-		vint weight1 = weight+vint(1);
+		vint weight1 = weight + vint(1);
 		vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
 		vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
 
@@ -1017,8 +1017,8 @@ void compute_quantized_weights_for_decimation_table(
 	}
 #endif // #if ASTCENC_SIMD_WIDTH > 1
 
-	// Process remaining weights in a scalar way.
-	for (/* Loop tail */; i < weight_count; i++)
+	// Loop tail
+	for (/* */; i < weight_count; i++)
 	{
 		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
 		ix = astc::clamp1f(ix);

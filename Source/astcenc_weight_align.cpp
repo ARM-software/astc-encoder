@@ -103,11 +103,13 @@ static void compute_angular_offsets(
 	int max_angular_steps,
 	float* offsets
 ) {
+	promise(samplecount > 0);
+	promise(max_angular_steps > 0);
+
 	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS] { 0 };
 	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS] { 0 };
 
 	// compute the angle-sums.
-	promise(samplecount > 0);
 	for (int i = 0; i < samplecount; i++)
 	{
 		float sample = samples[i];
@@ -120,7 +122,6 @@ static void compute_angular_offsets(
 		const float *cosptr = cos_table[isample];
 
 		vfloat sample_weightv(sample_weight);
-		promise(max_angular_steps > 0);
  		// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH)
 		{
@@ -168,7 +169,7 @@ static void compute_lowest_and_highest_weight(
 
 	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
 
-	// Arrays are always multiple of SIMD width (ANGULAR_STEPS), so this is safe even if overshoot max
+	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
 	for (int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
 		vint minidx(128);
