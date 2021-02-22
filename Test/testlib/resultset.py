@@ -66,14 +66,20 @@ class ResultSummary():
         """
         Create a new result summary.
         """
+        # Pass fail metrics
         self.notruns = 0
         self.passes = 0
         self.warnings = 0
         self.fails = 0
 
-        self.tTimes = []
-        self.cTimes = []
-        self.psnrs = []
+        # Relative results
+        self.tTimesRel = []
+        self.cTimesRel = []
+        self.psnrRel = []
+
+        # Absolute results
+        self.cTime = []
+        self.psnr = []
 
     def add_record(self, record):
         """
@@ -92,9 +98,12 @@ class ResultSummary():
             self.notruns += 1
 
         if record.tTimeRel is not None:
-            self.tTimes.append(record.tTimeRel)
-            self.cTimes.append(record.cTimeRel)
-            self.psnrs.append(record.psnrRel)
+            self.tTimesRel.append(record.tTimeRel)
+            self.cTimesRel.append(record.cTimeRel)
+            self.psnrRel.append(record.psnrRel)
+
+            self.cTime.append(record.cTime)
+            self.psnr.append(record.psnr)
 
     def get_worst_result(self):
         """
@@ -120,16 +129,22 @@ class ResultSummary():
         dat = (overall, self.passes, self.warnings, self.fails)
         result = ["\nSet Status: %s (Pass: %u | Warn: %u | Fail: %u)" % dat]
 
-        if (self.tTimes):
+        if (self.tTimesRel):
             # Performance summaries
-            dat = (np.mean(self.tTimes), np.std(self.tTimes))
-            result.append("\nTotal time:     Mean: %+0.2fx    Std: %0.2fx" % dat)
+            dat = (np.mean(self.tTimesRel), np.std(self.tTimesRel))
+            result.append("\nTotal speed:   Mean:  %+0.2f x   Std: %0.2f x" % dat)
 
-            dat = (np.mean(self.cTimes), np.std(self.cTimes))
-            result.append("Coding time:    Mean: %+0.2fx    Std: %0.2fx" % dat)
+            dat = (np.mean(self.cTimesRel), np.std(self.cTimesRel))
+            result.append("Coding speed:  Mean:  %+0.2f x   Std: %0.2f x" % dat)
 
-            dat = (np.mean(self.psnrs), np.std(self.psnrs))
-            result.append("Image quality:  Mean: %+0.2f dB  Std: %0.2f dB" % dat)
+            dat = (np.mean(self.psnrRel), np.std(self.psnrRel))
+            result.append("Quality diff:  Mean:  %+0.2f dB  Std: %0.2f dB" % dat)
+
+            dat = (np.mean(self.cTime), np.std(self.cTime))
+            result.append("Coding time:   Mean:  %+0.2f s   Std: %0.2f s" % dat)
+
+            dat = (np.mean(self.psnr), np.std(self.psnr))
+            result.append("Quality abs:   Mean: %+0.2f dB  Std: %0.2f dB" % dat)
 
         return "\n".join(result)
 
