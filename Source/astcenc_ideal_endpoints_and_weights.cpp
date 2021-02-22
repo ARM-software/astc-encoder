@@ -402,13 +402,9 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
 	float highparam[4] { -1e10f, -1e10f, -1e10f, -1e10f };
 
-	vfloat4 averages[4];
-	vfloat4 directions[4];
-
 	line3 lines[4];
 	float scale[4];
 	float length_squared[4];
-
 
 	compute_avgs_and_dirs_3_comp(pt, blk, ewb, omitted_component, pms);
 
