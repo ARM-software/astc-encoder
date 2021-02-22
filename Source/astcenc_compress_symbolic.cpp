@@ -65,9 +65,8 @@ static int realign_weights(
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
 	// Get the decimation table
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
-	const decimation_table *it = ixtab2[bm.decimation_mode];
-	int weight_count = it->weight_count;
+	const decimation_table* dt = bsd->decimation_tables[bm.decimation_mode];
+	int weight_count = dt->weight_count;
 
 	int max_plane = bm.is_dual_plane;
 	int plane2_component = bm.is_dual_plane ? scb->plane2_color_component : -1;
@@ -138,13 +137,13 @@ static int realign_weights(
 			float down_error = 0.0f;
 
 			// Interpolate the colors to create the diffs
-			int texels_to_evaluate = it->weight_texel_count[we_idx];
+			int texels_to_evaluate = dt->weight_texel_count[we_idx];
 			promise(texels_to_evaluate > 0);
 			for (int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
-				int texel = it->weight_texel[we_idx][te_idx];
-				const uint8_t *texel_weights = it->texel_weights_texel[we_idx][te_idx];
-				const float *texel_weights_float = it->texel_weights_float_texel[we_idx][te_idx];
+				int texel = dt->weight_texel[we_idx][te_idx];
+				const uint8_t *texel_weights = dt->texel_weights_texel[we_idx][te_idx];
+				const float *texel_weights_float = dt->texel_weights_float_texel[we_idx][te_idx];
 				float twf0 = texel_weights_float[0];
 				float weight_base =
 				    ((static_cast<float>(uqw) * twf0
@@ -230,7 +229,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	compute_endpoints_and_ideal_weights_1_plane(bsd, pt, blk, ewb, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *dts = bsd->decimation_tables;
 
 	float *decimated_quantized_weights = tmpbuf->decimated_quantized_weights;
 	float *decimated_weights = tmpbuf->decimated_weights;
@@ -250,7 +249,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		compute_ideal_weights_for_decimation_table(
 		    *ei,
 		    eix[i],
-		    *(ixtab2[i]),
+		    *(dts[i]),
 		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + i * MAX_WEIGHTS_PER_BLOCK);
 	}
@@ -311,7 +310,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = get_ise_sequence_bitcount(
-		    ixtab2[decimation_mode]->weight_count,
+		    dts[decimation_mode]->weight_count,
 		    (quant_method)bm.quant_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
@@ -323,7 +322,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 		// then, generate the optimized set of weights for the weight mode.
 		compute_quantized_weights_for_decimation_table(
-		    ixtab2[decimation_mode],
+		    dts[decimation_mode],
 		    weight_low_value[i], weight_high_value[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
@@ -333,7 +332,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		// then, compute weight-errors for the weight mode.
 		qwt_errors[i] = compute_error_of_weight_set(
 		                    &(eix[decimation_mode]),
-		                    ixtab2[decimation_mode],
+		                    dts[decimation_mode],
 		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
 	}
 
@@ -374,13 +373,13 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
-		const decimation_table *it = ixtab2[decimation_mode];
+		const decimation_table *dt = dts[decimation_mode];
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
-		weights_to_copy = it->weight_count;
+		weights_to_copy = dt->weight_count;
 
-		trace_add_data("weight_x", it->weight_x);
-		trace_add_data("weight_y", it->weight_y);
-		trace_add_data("weight_z", it->weight_z);
+		trace_add_data("weight_x", dt->weight_x);
+		trace_add_data("weight_y", dt->weight_y);
+		trace_add_data("weight_z", dt->weight_z);
 		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
@@ -393,7 +392,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		{
 			recompute_ideal_colors_1plane(
 			    weight_quant_mode, &(eix[decimation_mode].ep),
-			    rgbs_colors, rgbo_colors, u8_weight_src, pt, it, blk, ewb);
+			    rgbs_colors, rgbo_colors, u8_weight_src, pt, dt, blk, ewb);
 
 			// quantize the chosen color
 
@@ -581,7 +580,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, separate_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *dts = bsd->decimation_tables;
 
 	float *decimated_quantized_weights = tmpbuf->decimated_quantized_weights;
 	float *decimated_weights = tmpbuf->decimated_weights;
@@ -600,14 +599,14 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		compute_ideal_weights_for_decimation_table(
 		    *ei1,
 		    eix1[i],
-		    *(ixtab2[i]),
+		    *(dts[i]),
 		    decimated_quantized_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK);
 
 		compute_ideal_weights_for_decimation_table(
 		    *ei2,
 		    eix2[i],
-		    *(ixtab2[i]),
+		    *(dts[i]),
 		    decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK);
 	}
@@ -689,7 +688,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 		// compute weight bitcount for the mode
 		int bits_used_by_weights = get_ise_sequence_bitcount(
-			2 * ixtab2[decimation_mode]->weight_count,
+			2 * dts[decimation_mode]->weight_count,
 			(quant_method)bm.quant_mode);
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
@@ -701,7 +700,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 		// then, generate the optimized set of weights for the mode.
 		compute_quantized_weights_for_decimation_table(
-		    ixtab2[decimation_mode],
+		    dts[decimation_mode],
 		    weight_low_value1[i],
 		    weight_high_value1[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode),
@@ -709,7 +708,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quant_mode);
 
 		compute_quantized_weights_for_decimation_table(
-		    ixtab2[decimation_mode],
+		    dts[decimation_mode],
 		    weight_low_value2[i],
 		    weight_high_value2[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode + 1),
@@ -720,12 +719,12 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		// then, compute quantization errors for the block mode.
 		qwt_errors[i] =	compute_error_of_weight_set(
 		                    &(eix1[decimation_mode]),
-		                    ixtab2[decimation_mode],
+		                    dts[decimation_mode],
 		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i))
 
 		              + compute_error_of_weight_set(
 		                    &(eix2[decimation_mode]),
-		                    ixtab2[decimation_mode],
+		                    dts[decimation_mode],
 		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1));
 	}
 
@@ -768,15 +767,15 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
-		const decimation_table *it = ixtab2[decimation_mode];
+		const decimation_table *dt = dts[decimation_mode];
 
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
 		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
-		weights_to_copy = it->weight_count;
+		weights_to_copy = dt->weight_count;
 
-		trace_add_data("weight_x", it->weight_x);
-		trace_add_data("weight_y", it->weight_y);
-		trace_add_data("weight_z", it->weight_z);
+		trace_add_data("weight_x", dt->weight_x);
+		trace_add_data("weight_y", dt->weight_y);
+		trace_add_data("weight_z", dt->weight_z);
 		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
@@ -791,7 +790,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		{
 			recompute_ideal_colors_2planes(
 			    weight_quant_mode, &epm, rgbs_colors, rgbo_colors,
-			    u8_weight1_src, u8_weight2_src, separate_component, pt, it, blk, ewb);
+			    u8_weight1_src, u8_weight2_src, separate_component, pt, dt, blk, ewb);
 
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)

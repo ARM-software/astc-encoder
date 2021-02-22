@@ -739,12 +739,12 @@ void compute_endpoints_and_ideal_weights_2_planes(
 
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
-	const decimation_table* it,
+	const decimation_table* dt,
 	const float* weights
 ) {
 	vfloat verror_summa(0.0f);
 	float error_summa = 0.0f;
-	int texel_count = it->texel_count;
+	int texel_count = dt->texel_count;
 
 	int i = 0;
 
@@ -755,10 +755,10 @@ float compute_error_of_weight_set(
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Load the bilinear filter texel weight indexes
-		vint weight_idx0 = vint(&(it->texel_weights_4t[0][i]));
-		vint weight_idx1 = vint(&(it->texel_weights_4t[1][i]));
-		vint weight_idx2 = vint(&(it->texel_weights_4t[2][i]));
-		vint weight_idx3 = vint(&(it->texel_weights_4t[3][i]));
+		vint weight_idx0 = vint(&(dt->texel_weights_4t[0][i]));
+		vint weight_idx1 = vint(&(dt->texel_weights_4t[1][i]));
+		vint weight_idx2 = vint(&(dt->texel_weights_4t[2][i]));
+		vint weight_idx3 = vint(&(dt->texel_weights_4t[3][i]));
 
 		// Load the bilinear filter texel weights
 		vfloat weight_val0 = gatherf(weights, weight_idx0);
@@ -767,11 +767,11 @@ float compute_error_of_weight_set(
 		vfloat weight_val3 = gatherf(weights, weight_idx3);
 
 		// Load the weight contributions for each texel
-		// TODO: Should we rename this it->texel_weights_float field?
-		vfloat tex_weight_float0 = loada(&(it->texel_weights_float_4t[0][i]));
-		vfloat tex_weight_float1 = loada(&(it->texel_weights_float_4t[1][i]));
-		vfloat tex_weight_float2 = loada(&(it->texel_weights_float_4t[2][i]));
-		vfloat tex_weight_float3 = loada(&(it->texel_weights_float_4t[3][i]));
+		// TODO: Should we rename this dt->texel_weights_float field?
+		vfloat tex_weight_float0 = loada(&(dt->texel_weights_float_4t[0][i]));
+		vfloat tex_weight_float1 = loada(&(dt->texel_weights_float_4t[1][i]));
+		vfloat tex_weight_float2 = loada(&(dt->texel_weights_float_4t[2][i]));
+		vfloat tex_weight_float3 = loada(&(dt->texel_weights_float_4t[3][i]));
 
 		// Compute the bilinear interpolation
 		vfloat current_values = (weight_val0 * tex_weight_float0 +
@@ -798,10 +798,10 @@ float compute_error_of_weight_set(
 	{
 		// This isn't the ideal access pattern, but the cache lines are probably
 		// already in the cache due to the vector loop above, so go with it ...
-		float current_value = (weights[it->texel_weights_4t[0][i]] * it->texel_weights_float_4t[0][i] +
-		                       weights[it->texel_weights_4t[1][i]] * it->texel_weights_float_4t[1][i]) +
-		                      (weights[it->texel_weights_4t[2][i]] * it->texel_weights_float_4t[2][i] +
-		                       weights[it->texel_weights_4t[3][i]] * it->texel_weights_float_4t[3][i]);
+		float current_value = (weights[dt->texel_weights_4t[0][i]] * dt->texel_weights_float_4t[0][i] +
+		                       weights[dt->texel_weights_4t[1][i]] * dt->texel_weights_float_4t[1][i]) +
+		                      (weights[dt->texel_weights_4t[2][i]] * dt->texel_weights_float_4t[2][i] +
+		                       weights[dt->texel_weights_4t[3][i]] * dt->texel_weights_float_4t[3][i]);
 
 		float valuedif = current_value - eai->weights[i];
 		float error = valuedif * valuedif * eai->weight_error_scale[i];
@@ -982,7 +982,7 @@ void compute_ideal_weights_for_decimation_table(
 	triggering any perturbations *OR* we have run 4 full passes.
 */
 void compute_quantized_weights_for_decimation_table(
-	const decimation_table* it,
+	const decimation_table* dt,
 	float low_bound,
 	float high_bound,
 	const float* weight_set_in,
@@ -990,7 +990,7 @@ void compute_quantized_weights_for_decimation_table(
 	uint8_t* quantized_weight_set,
 	int quant_level
 ) {
-	int weight_count = it->weight_count;
+	int weight_count = dt->weight_count;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
 	static const int quant_levels[12] { 2,3,4,5,6,8,10,12,16,20,24,32 };
@@ -1147,7 +1147,7 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
 	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
 	const partition_info* pt,
-	const decimation_table* it,
+	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
@@ -1156,14 +1156,14 @@ void recompute_ideal_colors_2planes(
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
 
-	for (int i = 0; i < it->weight_count; i++)
+	for (int i = 0; i < dt->weight_count; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
 	}
 
 	if (plane2_weight_set8)
 	{
-		for (int i = 0; i < it->weight_count; i++)
+		for (int i = 0; i < dt->weight_count; i++)
 		{
 			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
 		}
@@ -1231,8 +1231,8 @@ void recompute_ideal_colors_2planes(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
 
-			const uint8_t *texel_weights = it->texel_weights_t4[tix];
-			const float *texel_weights_float = it->texel_weights_float_t4[tix];
+			const uint8_t *texel_weights = dt->texel_weights_t4[tix];
+			const float *texel_weights_float = dt->texel_weights_float_t4[tix];
 			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
 			            + weight_set[texel_weights[1]] * texel_weights_float[1])
 			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
@@ -1479,11 +1479,11 @@ void recompute_ideal_colors_1plane(
 	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
 	const uint8_t* weight_set8,	// the current set of weight values
 	const partition_info* pt,
-	const decimation_table* it,
+	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
-	int weight_count = it->weight_count;
+	int weight_count = dt->weight_count;
 	int partition_count = pt->partition_count;
 
 	promise(weight_count > 0);
@@ -1553,8 +1553,8 @@ void recompute_ideal_colors_1plane(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
 
-			const uint8_t *texel_weights = it->texel_weights_t4[tix];
-			const float *texel_weights_float = it->texel_weights_float_t4[tix];
+			const uint8_t *texel_weights = dt->texel_weights_t4[tix];
+			const float *texel_weights_float = dt->texel_weights_float_t4[tix];
 			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
 			            + weight_set[texel_weights[1]] * texel_weights_float[1])
 			           + (weight_set[texel_weights[2]] * texel_weights_float[2]

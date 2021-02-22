@@ -26,15 +26,15 @@
 
 static int compute_value_of_texel_int(
 	int texel_to_get,
-	const decimation_table* it,
+	const decimation_table* dt,
 	const int* weights
 ) {
 	int summed_value = 8;
-	int weights_to_evaluate = it->texel_weight_count[texel_to_get];
+	int weights_to_evaluate = dt->texel_weight_count[texel_to_get];
 	for (int i = 0; i < weights_to_evaluate; i++)
 	{
-		summed_value += weights[it->texel_weights_t4[texel_to_get][i]]
-		              * it->texel_weights_int_t4[texel_to_get][i];
+		summed_value += weights[dt->texel_weights_t4[texel_to_get][i]]
+		              * dt->texel_weights_int_t4[texel_to_get][i];
 	}
 	return summed_value >> 4;
 }
@@ -182,12 +182,12 @@ void decompress_symbolic_block(
 	pt += scb->partition_index;
 
 	// get the appropriate block descriptor
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *dts = bsd->decimation_tables;
 
 	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
 	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
 	const block_mode& bm = bsd->block_modes[packed_index];
-	const decimation_table *it = ixtab2[bm.decimation_mode];
+	const decimation_table *dt = dts[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;
 
@@ -216,7 +216,7 @@ void decompress_symbolic_block(
 	// first unquantize the weights
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = it->weight_count;
+	int weight_count = dt->weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
@@ -239,14 +239,14 @@ void decompress_symbolic_block(
 
 	for (int i = 0; i < bsd->texel_count; i++)
 	{
-		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
+		weights[i] = compute_value_of_texel_int(i, dt, uq_plane1_weights);
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < bsd->texel_count; i++)
 		{
-			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
+			plane2_weights[i] = compute_value_of_texel_int(i, dt, uq_plane2_weights);
 		}
 	}
 
@@ -302,17 +302,17 @@ float compute_symbolic_block_difference(
 	pt += scb->partition_index;
 
 	// get the appropriate block descriptor
-	const decimation_table *const *ixtab2 = bsd->decimation_tables;
+	const decimation_table *const *dts = bsd->decimation_tables;
 
 	const int packed_index = bsd->block_mode_packed_index[scb->block_mode];
 	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
 	const block_mode& bm = bsd->block_modes[packed_index];
-	const decimation_table *it = ixtab2[bm.decimation_mode];
+	const decimation_table *dt = dts[bm.decimation_mode];
 
 	int is_dual_plane = bm.is_dual_plane;
 	int weight_quant_level = bm.quant_mode;
 
-	int weight_count = it->weight_count;
+	int weight_count = dt->weight_count;
 	int texel_count = bsd->texel_count;
 
 	promise(partition_count > 0);
@@ -364,14 +364,14 @@ float compute_symbolic_block_difference(
 
 	for (int i = 0; i < texel_count; i++)
 	{
-		weights[i] = compute_value_of_texel_int(i, it, uq_plane1_weights);
+		weights[i] = compute_value_of_texel_int(i, dt, uq_plane1_weights);
 	}
 
 	if (is_dual_plane)
 	{
 		for (int i = 0; i < texel_count; i++)
 		{
-			plane2_weights[i] = compute_value_of_texel_int(i, it, uq_plane2_weights);
+			plane2_weights[i] = compute_value_of_texel_int(i, dt, uq_plane2_weights);
 		}
 	}
 
