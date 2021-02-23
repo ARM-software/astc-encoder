@@ -587,6 +587,14 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
 }
 
 /**
+ * @brief Arithmetic shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
+{
+	return vint4(_mm_srai_epi32(a.m, s));
+}
+
+/**
  * @brief Return the min vector of two vectors.
  */
 ASTCENC_SIMD_INLINE vint4 min(vint4 a, vint4 b)
