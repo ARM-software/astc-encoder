@@ -421,7 +421,6 @@ static void hdr_rgb_unpack3(
 	// extract six variable-placement bits
 	int bit0 = (v2 >> 6) & 1;
 	int bit1 = (v3 >> 6) & 1;
-
 	int bit2 = (v4 >> 6) & 1;
 	int bit3 = (v5 >> 6) & 1;
 	int bit4 = (v4 >> 5) & 1;
