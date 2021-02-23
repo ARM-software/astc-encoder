@@ -15,6 +15,8 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
+#include <utility>
+
 /**
  * @brief Functions for color unquantization.
  */
@@ -107,56 +109,48 @@ static int rgb_delta_unpack(
 	return retval;
 }
 
-static int rgb_unpack(
-	const int input[6],
+static void rgba_unpack(
+	vint4 input0q,
+	vint4 input1q,
 	int quant_level,
-	vint4* output0,
-	vint4* output1
+	vint4& output0,
+	vint4& output1
 ) {
-	int ri0b = color_unquant_tables[quant_level][input[0]];
-	int ri1b = color_unquant_tables[quant_level][input[1]];
-	int gi0b = color_unquant_tables[quant_level][input[2]];
-	int gi1b = color_unquant_tables[quant_level][input[3]];
-	int bi0b = color_unquant_tables[quant_level][input[4]];
-	int bi1b = color_unquant_tables[quant_level][input[5]];
+	// Unquantize
+	const uint8_t* unq = color_unquant_tables[quant_level];
+	vint4 input0(unq[input0q.lane<0>()], unq[input0q.lane<1>()],
+	             unq[input0q.lane<2>()], unq[input0q.lane<3>()]);
+	vint4 input1(unq[input1q.lane<0>()], unq[input1q.lane<1>()],
+	             unq[input1q.lane<2>()], unq[input1q.lane<3>()]);
 
-	if (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b)
+	// Apply blue-contraction if needed
+	if (hadd_rgb_s(input0) > hadd_rgb_s(input1))
 	{
-		// blue-contraction
-		ri0b = (ri0b + bi0b) >> 1;
-		gi0b = (gi0b + bi0b) >> 1;
-		ri1b = (ri1b + bi1b) >> 1;
-		gi1b = (gi1b + bi1b) >> 1;
+		vmask4 mask(-1, -1, 0, 0);
 
-		*output0 = vint4(ri1b, gi1b, bi1b, 255);
-		*output1 = vint4(ri0b, gi0b, bi0b, 255);
-		return 1;
+		vint4 bc0 = lsr<1>(input0 + input0.lane<2>());
+		input0 = select(input0, bc0, mask);
+
+		vint4 bc1 = lsr<1>(input1 + input1.lane<2>());
+		input1 = select(input1, bc1, mask);
+
+		std::swap(input0, input1);
 	}
-	else
-	{
-		*output0 = vint4(ri0b, gi0b, bi0b, 255);
-		*output1 = vint4(ri1b, gi1b, bi1b, 255);
-		return 0;
-	}
+
+	output0 = input0;
+	output1 = input1;
 }
 
-static void rgba_unpack(
-	const int input[8],
+static void rgb_unpack(
+	vint4 input0q,
+	vint4 input1q,
 	int quant_level,
-	vint4* output0,
-	vint4* output1
+	vint4& output0,
+	vint4& output1
 ) {
-	int order = rgb_unpack(input, quant_level, output0, output1);
-	if (order == 0)
-	{
-		output0->set_lane<3>(color_unquant_tables[quant_level][input[6]]);
-		output1->set_lane<3>(color_unquant_tables[quant_level][input[7]]);
-	}
-	else
-	{
-		output0->set_lane<3>(color_unquant_tables[quant_level][input[7]]);
-		output1->set_lane<3>(color_unquant_tables[quant_level][input[6]]);
-	}
+	rgba_unpack(input0q, input1q, quant_level, output0, output1);
+	output0.set_lane<3>(255);
+	output1.set_lane<3>(255);
 }
 
 static void rgba_delta_unpack(
@@ -795,7 +789,11 @@ void unpack_color_endpoints(
 	case FMT_RGB:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgb_unpack(input, quant_level, output0, output1);
+		{
+			vint4 input0q(input[0], input[2], input[4], 0);
+			vint4 input1q(input[1], input[3], input[5], 0);
+			rgb_unpack(input0q, input1q, quant_level, *output0, *output1);
+		}
 		break;
 
 	case FMT_RGB_DELTA:
@@ -813,7 +811,11 @@ void unpack_color_endpoints(
 	case FMT_RGBA:
 		*rgb_hdr = 0;
 		*alpha_hdr = 0;
-		rgba_unpack(input, quant_level, output0, output1);
+		{
+			vint4 input0q(input[0], input[2], input[4], input[6]);
+			vint4 input1q(input[1], input[3], input[5], input[7]);
+			rgba_unpack(input0q, input1q, quant_level, *output0, *output1);
+		}
 		break;
 
 	case FMT_RGBA_DELTA:
