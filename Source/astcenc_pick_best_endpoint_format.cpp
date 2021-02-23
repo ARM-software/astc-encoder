@@ -300,52 +300,51 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			format_of_choice[i][0] = FMT_LUMINANCE;
 		}
 
+		float base_quant_error_rgb = error_weight_rgbsum * static_cast<float>(partition_size);
+		float base_quant_error_a = error_weight.lane<3>() * static_cast<float>(partition_size);
+		float base_quant_error_rgba = base_quant_error_rgb + base_quant_error_a;
+
+		float error_scale_bc_rgba = eci->can_blue_contract ? 0.625 : 1.0f;
+		float error_scale_oe_rgba = eci->can_offset_encode ? 0.5 : 1.0f;
+
+		float error_scale_bc_rgb = eci->can_blue_contract ? 0.5 : 1.0f;
+		float error_scale_oe_rgb = eci->can_offset_encode ? 0.25 : 1.0f;
+
 		// pick among the available LDR endpoint modes
 		for (int i = 4; i < 21; i++)
 		{
-			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
-			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
-			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error;
-			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
-
-			// for 8 integers, the available encodings are:
-			// full LDR RGB-Alpha
-			float full_ldr_rgba_error = rgba_quantization_error;
-
-			if (eci->can_blue_contract)
+			// Offset encoding not possible at higher quant levels
+			if (i == 19)
 			{
-				full_ldr_rgba_error *= 0.625f;
+				error_scale_oe_rgba = 1.0f;
+				error_scale_oe_rgb = 1.0f;
 			}
 
-			if (eci->can_offset_encode && i <= 18)
-			{
-				full_ldr_rgba_error *= 0.5f;
-			}
+			float base_quant_error = baseline_quant_error[i];
+			float quant_error_rgb  = base_quant_error_rgb * base_quant_error;
+			float quant_error_rgba = base_quant_error_rgba * base_quant_error;
 
-			full_ldr_rgba_error += rgb_range_error + alpha_range_error;
+			// 8 integers can encode as RGBA+RGBA
+			float full_ldr_rgba_error = quant_error_rgba
+			                          * error_scale_bc_rgba
+			                          * error_scale_oe_rgba
+			                          + rgb_range_error
+			                          + alpha_range_error;
 
 			best_error[i][3] = full_ldr_rgba_error;
 			format_of_choice[i][3] = FMT_RGBA;
 
-			// for 6 integers, we have:
-			// - an LDR-RGB encoding
-			// - an RGBS + Alpha encoding (LDR)
+			// 6 integers can encode as RGB+RGB or RGBS+AA
+			float full_ldr_rgb_error = quant_error_rgb
+			                         * error_scale_bc_rgb
+			                         * error_scale_oe_rgb
+			                         + rgb_range_error
+			                         + eci->alpha_drop_error;
 
-			float full_ldr_rgb_error = rgb_quantization_error;
-
-			if (eci->can_blue_contract)
-			{
-				full_ldr_rgb_error *= 0.5f;
-			}
-
-			if (eci->can_offset_encode && i <= 18)
-			{
-				full_ldr_rgb_error *= 0.25f;
-			}
-
-			full_ldr_rgb_error += eci->alpha_drop_error + rgb_range_error;
-
-			float rgbs_alpha_error = rgba_quantization_error + eci->rgb_scale_error + rgb_range_error + alpha_range_error;
+			float rgbs_alpha_error = quant_error_rgba
+			                       + eci->rgb_scale_error
+			                       + rgb_range_error
+			                       + alpha_range_error;
 
 			if (rgbs_alpha_error < full_ldr_rgb_error)
 			{
@@ -358,10 +357,16 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 				format_of_choice[i][2] = FMT_RGB;
 			}
 
-			// for 4 integers, we have a Luminance-Alpha encoding and the RGBS encoding
-			float ldr_rgbs_error = rgb_quantization_error + eci->alpha_drop_error + eci->rgb_scale_error + rgb_range_error;
+			// 4 integers can encode as RGBS or LA+LA
+			float ldr_rgbs_error = quant_error_rgb
+			                     + rgb_range_error
+			                     + eci->alpha_drop_error
+			                     + eci->rgb_scale_error;
 
-			float lum_alpha_error = rgba_quantization_error + eci->luminance_error + rgb_range_error + alpha_range_error;
+			float lum_alpha_error = quant_error_rgba
+			                      + rgb_range_error
+			                      + alpha_range_error
+			                      + eci->luminance_error;
 
 			if (ldr_rgbs_error < lum_alpha_error)
 			{
@@ -374,8 +379,11 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 				format_of_choice[i][1] = FMT_LUMINANCE_ALPHA;
 			}
 
-			// for 2 integers, we have a Luminance-encoding and an Alpha-encoding.
-			float luminance_error = rgb_quantization_error + eci->alpha_drop_error + eci->luminance_error + rgb_range_error;
+			// 2 integers can encode as L+L
+			float luminance_error = quant_error_rgb
+			                      + rgb_range_error
+			                      + eci->alpha_drop_error
+			                      + eci->luminance_error;
 
 			best_error[i][0] = luminance_error;
 			format_of_choice[i][0] = FMT_LUMINANCE;
