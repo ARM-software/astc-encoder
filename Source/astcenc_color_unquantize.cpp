@@ -23,6 +23,16 @@
 
 #include "astcenc_internal.h"
 
+static vint4 unquant_color(
+	int quant_level,
+	vint4 inputq
+) {
+	// Unquantize
+	const uint8_t* unq = color_unquant_tables[quant_level];
+	return vint4 (unq[inputq.lane<0>()], unq[inputq.lane<1>()],
+	              unq[inputq.lane<2>()], unq[inputq.lane<3>()]);
+}
+
 static int rgb_delta_unpack(
 	const int input[6],
 	int quant_level,
@@ -117,11 +127,8 @@ static void rgba_unpack(
 	vint4& output1
 ) {
 	// Unquantize
-	const uint8_t* unq = color_unquant_tables[quant_level];
-	vint4 input0(unq[input0q.lane<0>()], unq[input0q.lane<1>()],
-	             unq[input0q.lane<2>()], unq[input0q.lane<3>()]);
-	vint4 input1(unq[input1q.lane<0>()], unq[input1q.lane<1>()],
-	             unq[input1q.lane<2>()], unq[input1q.lane<3>()]);
+	vint4 input0 = unquant_color(quant_level, input0q);
+	vint4 input1 = unquant_color(quant_level, input1q);
 
 	// Apply blue-contraction if needed
 	if (hadd_rgb_s(input0) > hadd_rgb_s(input1))
