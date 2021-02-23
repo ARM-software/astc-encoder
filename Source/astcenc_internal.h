@@ -712,6 +712,8 @@ struct symbolic_compressed_block
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
 	int color_quant_level;
 	int plane2_color_component;	// color component for the secondary plane of weights
+
+	// TODO: Under what circumstances is this ever more than 8 (4 pairs) colors
 	int color_values[4][12];	// quantized endpoint color pairs.
 	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 	// Quantized and decimated weights. In the case of dual plane, the second
