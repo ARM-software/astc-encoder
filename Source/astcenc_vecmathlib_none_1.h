@@ -406,6 +406,14 @@ ASTCENC_SIMD_INLINE vint1 hmin(vint1 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a single vector.
+ */
+ASTCENC_SIMD_INLINE vint1 hmax(vint1 a)
+{
+	return a;
+}
+
+/**
  * @brief Store a vector to an aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vint1 a, int* p)
@@ -589,7 +597,7 @@ ASTCENC_SIMD_INLINE vfloat1 max(vfloat1 a, vfloat1 b)
  */
 ASTCENC_SIMD_INLINE vfloat1 clamp(float minv, float maxv, vfloat1 a)
 {
-	return  min(max(a, vfloat1(minv)), vfloat1(maxv));;
+	return  min(max(a, vfloat1(minv)), vfloat1(maxv));
 }
 
 /**

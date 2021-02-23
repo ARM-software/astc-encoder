@@ -470,6 +470,24 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
+{
+	__m128i m = _mm_max_epi32(_mm256_extracti128_si256(a.m, 0), _mm256_extracti128_si256(a.m, 1));
+	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
+	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
+	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
+
+	// This is the most logical implementation, but the convenience intrinsic
+	// is missing on older compilers (supported in g++ 9 and clang++ 9).
+	//__m256i r = _mm256_set_m128i(m, m)
+	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(m), m, 1);
+	vint8 vmax(r);
+	return vmax;
+}
+
+/**
  * @brief Store a vector to a 16B aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)

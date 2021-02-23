@@ -141,7 +141,7 @@ static int realign_weights(
 			promise(texels_to_evaluate > 0);
 			for (int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
-				int texel = dt->weight_texel[we_idx][te_idx];
+				int texel = dt->weight_texel[te_idx][we_idx];
 				const uint8_t *texel_weights = dt->texel_weights_texel[we_idx][te_idx];
 				const float *texel_weights_float = dt->texel_weights_float_texel[we_idx][te_idx];
 				float twf0 = texel_weights_float[0];

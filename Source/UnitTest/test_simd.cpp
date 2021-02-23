@@ -1469,27 +1469,28 @@ TEST(vint4, lsl)
 	EXPECT_EQ(a.lane<3>(), 32);
 }
 
-/** @brief Test vint4 lsr. */
-TEST(vint4, lsr)
+/** @brief Test vint4 asr. */
+TEST(vint4, asr)
 {
-	vint4 a(1, 2, 4, 4);
-	a = lsr<0>(a);
-	EXPECT_EQ(a.lane<0>(), 1);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 4);
-	EXPECT_EQ(a.lane<3>(), 4);
+	vint4 a(1, 2, 4, -4);
+	a = asr<0>(a);
+	EXPECT_EQ(a.lane<0>(),  1);
+	EXPECT_EQ(a.lane<1>(),  2);
+	EXPECT_EQ(a.lane<2>(),  4);
+	EXPECT_EQ(a.lane<3>(), -4);
 
-	a = lsr<1>(a);
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 2);
-	EXPECT_EQ(a.lane<3>(), 2);
+	a = asr<1>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  1);
+	EXPECT_EQ(a.lane<2>(),  2);
+	EXPECT_EQ(a.lane<3>(), -2);
 
-	a = lsr<2>(a);
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 0);
-	EXPECT_EQ(a.lane<2>(), 0);
-	EXPECT_EQ(a.lane<3>(), 0);
+	// Note - quirk of asr is that you will get "stuck" at -1
+	a = asr<2>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  0);
+	EXPECT_EQ(a.lane<2>(),  0);
+	EXPECT_EQ(a.lane<3>(), -1);
 }
 
 /** @brief Test vint4 min. */
@@ -1543,6 +1544,24 @@ TEST(vint4, hmin)
 	EXPECT_EQ(r2.lane<1>(), -1);
 	EXPECT_EQ(r2.lane<2>(), -1);
 	EXPECT_EQ(r2.lane<3>(), -1);
+}
+
+/** @brief Test vint4 hmax. */
+TEST(vint4, hmax)
+{
+	vint4 a1(1, 3, 1, 2);
+	vint4 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 3);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 3);
+	EXPECT_EQ(r1.lane<3>(), 3);
+
+	vint4 a2(1, 2, -1, 5);
+	vint4 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 5);
+	EXPECT_EQ(r2.lane<1>(), 5);
+	EXPECT_EQ(r2.lane<2>(), 5);
+	EXPECT_EQ(r2.lane<3>(), 5);
 }
 
 /** @brief Test vint4 hadd_s. */
@@ -2813,6 +2832,32 @@ TEST(vint8, hmin)
 	EXPECT_EQ(r2.lane<5>(), -1);
 	EXPECT_EQ(r2.lane<6>(), -1);
 	EXPECT_EQ(r2.lane<7>(), -1);
+}
+
+/** @brief Test vint8 hmax. */
+TEST(vint8, hmax)
+{
+	vint8 a1(1, 2, 1, 2, 1, 3, 1, 2);
+	vint8 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 3);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 3);
+	EXPECT_EQ(r1.lane<3>(), 3);
+	EXPECT_EQ(r1.lane<4>(), 3);
+	EXPECT_EQ(r1.lane<5>(), 3);
+	EXPECT_EQ(r1.lane<6>(), 3);
+	EXPECT_EQ(r1.lane<7>(), 3);
+
+	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
+	vint8 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 5);
+	EXPECT_EQ(r2.lane<1>(), 5);
+	EXPECT_EQ(r2.lane<2>(), 5);
+	EXPECT_EQ(r2.lane<3>(), 5);
+	EXPECT_EQ(r2.lane<4>(), 5);
+	EXPECT_EQ(r2.lane<5>(), 5);
+	EXPECT_EQ(r2.lane<6>(), 5);
+	EXPECT_EQ(r2.lane<7>(), 5);
 }
 
 /** @brief Test vint8 storea. */

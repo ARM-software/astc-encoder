@@ -52,12 +52,12 @@ static vfloat4 lerp_color_int(
 
 	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
-		color0 = lsr<8>(color0);
-		color1 = lsr<8>(color1);
+		color0 = asr<8>(color0);
+		color1 = asr<8>(color1);
 	}
 
 	vint4 color = (color0 * weight0) + (color1 * weight1) + vint4(32);
-	color = lsr<6>(color);
+	color = asr<6>(color);
 
 	if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 	{
@@ -129,7 +129,7 @@ void decompress_symbolic_block(
 			// the top 8 bits into the full 16 bit dynamic range
 			if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 			{
-				colori = lsr<8>(colori) * 257;
+				colori = asr<8>(colori) * 257;
 			}
 
 			vint4 colorf16(

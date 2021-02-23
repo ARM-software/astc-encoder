@@ -581,14 +581,6 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 /**
  * @brief Logical shift right.
  */
-template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
-{
-	return vint4(_mm_srli_epi32(a.m, s));
-}
-
-/**
- * @brief Arithmetic shift right.
- */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
 	return vint4(_mm_srai_epi32(a.m, s));
@@ -627,11 +619,9 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 /**
  * @brief Return the clamped value between min and max.
  */
-ASTCENC_SIMD_INLINE vint4 clamp(float min, float max, vint4 a)
+ASTCENC_SIMD_INLINE vint4 clamp(float minv, float maxv, vint4 a)
 {
-	a.m = _mm_max_epi32(a.m, _mm_set1_epi32(min));
-	a.m = _mm_min_epi32(a.m, _mm_set1_epi32(max));
-	return a;
+	return min(max(a, vint4(minv)), vint4(maxv));
 }
 
 /**
@@ -641,6 +631,16 @@ ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
 {
 	a = min(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = min(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 1))));
+	return vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+/*
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
+{
+	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 3, 2))));
+	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 0)));
 }
 

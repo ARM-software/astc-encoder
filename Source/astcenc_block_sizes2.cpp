@@ -334,9 +334,12 @@ static void initialize_decimation_table_2d(
 		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			uint8_t texel = texels_of_weight[i][j];
-			dt->weight_texel[i][j] = texel;
+
 			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-			dt->weights_flt[i][j] = (float)texelweights_of_weight[i][j];
+
+			// Create transposed versions of these for better vectorization
+			dt->weight_texel[j][i] = texel;
+			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
@@ -551,9 +554,12 @@ static void initialize_decimation_table_3d(
 		for (int j = 0; j < texelcount_of_weight[i]; j++)
 		{
 			int texel = texels_of_weight[i][j];
-			dt->weight_texel[i][j] = texel;
+
 			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-			dt->weights_flt[i][j] = (float)texelweights_of_weight[i][j];
+
+			// Create transposed versions of these for better vectorization
+			dt->weight_texel[j][i] = texel;
+			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this

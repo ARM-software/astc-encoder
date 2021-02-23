@@ -36,7 +36,7 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
 	vint4 input
 ) {
 	vmask4 mask(true, true, false, false);
-	vint4 bc0 = lsr<1>(input + input.lane<2>());
+	vint4 bc0 = asr<1>(input + input.lane<2>());
 	return select(input, bc0, mask);
 }
 
@@ -138,7 +138,7 @@ static void rgb_scale_alpha_unpack(
 	output1 = input;
 	output1.set_lane<3>(alpha1);
 
-	output0 = lsr<8>(input * scale);
+	output0 = asr<8>(input * scale);
 	output0.set_lane<3>(input.lane<3>());
 }
 
@@ -155,7 +155,7 @@ static void rgb_scale_unpack(
 	output1 = input;
 	output1.set_lane<3>(255);
 
-	output0 = lsr<8>(input * scale);
+	output0 = asr<8>(input * scale);
 	output0.set_lane<3>(255);
 }
 
