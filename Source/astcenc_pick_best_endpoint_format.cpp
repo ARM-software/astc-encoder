@@ -300,52 +300,51 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			format_of_choice[i][0] = FMT_LUMINANCE;
 		}
 
+		float base_quant_error_rgb = error_weight_rgbsum * static_cast<float>(partition_size);
+		float base_quant_error_a = error_weight.lane<3>() * static_cast<float>(partition_size);
+		float base_quant_error_rgba = base_quant_error_rgb + base_quant_error_a;
+
+		float error_scale_bc_rgba = eci->can_blue_contract ? 0.625f : 1.0f;
+		float error_scale_oe_rgba = eci->can_offset_encode ? 0.5f : 1.0f;
+
+		float error_scale_bc_rgb = eci->can_blue_contract ? 0.5f : 1.0f;
+		float error_scale_oe_rgb = eci->can_offset_encode ? 0.25f : 1.0f;
+
 		// pick among the available LDR endpoint modes
 		for (int i = 4; i < 21; i++)
 		{
-			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
-			float rgb_quantization_error = error_weight_rgbsum * base_quant_error;
-			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error;
-			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
-
-			// for 8 integers, the available encodings are:
-			// full LDR RGB-Alpha
-			float full_ldr_rgba_error = rgba_quantization_error;
-
-			if (eci->can_blue_contract)
+			// Offset encoding not possible at higher quant levels
+			if (i == 19)
 			{
-				full_ldr_rgba_error *= 0.625f;
+				error_scale_oe_rgba = 1.0f;
+				error_scale_oe_rgb = 1.0f;
 			}
 
-			if (eci->can_offset_encode && i <= 18)
-			{
-				full_ldr_rgba_error *= 0.5f;
-			}
+			float base_quant_error = baseline_quant_error[i];
+			float quant_error_rgb  = base_quant_error_rgb * base_quant_error;
+			float quant_error_rgba = base_quant_error_rgba * base_quant_error;
 
-			full_ldr_rgba_error += rgb_range_error + alpha_range_error;
+			// 8 integers can encode as RGBA+RGBA
+			float full_ldr_rgba_error = quant_error_rgba
+			                          * error_scale_bc_rgba
+			                          * error_scale_oe_rgba
+			                          + rgb_range_error
+			                          + alpha_range_error;
 
 			best_error[i][3] = full_ldr_rgba_error;
 			format_of_choice[i][3] = FMT_RGBA;
 
-			// for 6 integers, we have:
-			// - an LDR-RGB encoding
-			// - an RGBS + Alpha encoding (LDR)
+			// 6 integers can encode as RGB+RGB or RGBS+AA
+			float full_ldr_rgb_error = quant_error_rgb
+			                         * error_scale_bc_rgb
+			                         * error_scale_oe_rgb
+			                         + rgb_range_error
+			                         + eci->alpha_drop_error;
 
-			float full_ldr_rgb_error = rgb_quantization_error;
-
-			if (eci->can_blue_contract)
-			{
-				full_ldr_rgb_error *= 0.5f;
-			}
-
-			if (eci->can_offset_encode && i <= 18)
-			{
-				full_ldr_rgb_error *= 0.25f;
-			}
-
-			full_ldr_rgb_error += eci->alpha_drop_error + rgb_range_error;
-
-			float rgbs_alpha_error = rgba_quantization_error + eci->rgb_scale_error + rgb_range_error + alpha_range_error;
+			float rgbs_alpha_error = quant_error_rgba
+			                       + eci->rgb_scale_error
+			                       + rgb_range_error
+			                       + alpha_range_error;
 
 			if (rgbs_alpha_error < full_ldr_rgb_error)
 			{
@@ -358,10 +357,16 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 				format_of_choice[i][2] = FMT_RGB;
 			}
 
-			// for 4 integers, we have a Luminance-Alpha encoding and the RGBS encoding
-			float ldr_rgbs_error = rgb_quantization_error + eci->alpha_drop_error + eci->rgb_scale_error + rgb_range_error;
+			// 4 integers can encode as RGBS or LA+LA
+			float ldr_rgbs_error = quant_error_rgb
+			                     + rgb_range_error
+			                     + eci->alpha_drop_error
+			                     + eci->rgb_scale_error;
 
-			float lum_alpha_error = rgba_quantization_error + eci->luminance_error + rgb_range_error + alpha_range_error;
+			float lum_alpha_error = quant_error_rgba
+			                      + rgb_range_error
+			                      + alpha_range_error
+			                      + eci->luminance_error;
 
 			if (ldr_rgbs_error < lum_alpha_error)
 			{
@@ -374,8 +379,11 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 				format_of_choice[i][1] = FMT_LUMINANCE_ALPHA;
 			}
 
-			// for 2 integers, we have a Luminance-encoding and an Alpha-encoding.
-			float luminance_error = rgb_quantization_error + eci->alpha_drop_error + eci->luminance_error + rgb_range_error;
+			// 2 integers can encode as L+L
+			float luminance_error = quant_error_rgb
+			                      + rgb_range_error
+			                      + eci->alpha_drop_error
+			                      + eci->luminance_error;
 
 			best_error[i][0] = luminance_error;
 			format_of_choice[i][0] = FMT_LUMINANCE;
@@ -828,8 +836,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	// code for the case where the block contains 1 partition
 	if (partition_count == 1)
 	{
-		int best_quant_level;
-		int best_format;
 		float error_of_best_combination;
 		for (int i = 0; i < bsd->block_mode_count; ++i)
 		{
@@ -841,23 +847,16 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 
 			one_partition_find_best_combination_for_bitcount(
 			    best_error[0], format_of_choice[0], qwt_bitcounts[i],
-			    &best_quant_level, &best_format, &error_of_best_combination);
+			    best_quant_levels + i, best_ep_formats[i], &error_of_best_combination);
 			error_of_best_combination += qwt_errors[i];
 
 			errors_of_best_combination[i] = error_of_best_combination;
-			best_quant_levels[i] = best_quant_level;
-			best_quant_levels_mod[i] = best_quant_level;
-			best_ep_formats[i][0] = best_format;
+			best_quant_levels_mod[i] = best_quant_levels[i];
 		}
 	}
 	// code for the case where the block contains 2 partitions
 	else if (partition_count == 2)
 	{
-		int best_quant_level;
-		int best_quant_level_mod;
-		int best_formats[2];
-		float error_of_best_combination;
-
 		float combined_best_error[21][7];
 		int formats_of_choice[21][7][2];
 
@@ -873,28 +872,18 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
+			float error_of_best_combination;
 			two_partitions_find_best_combination_for_bitcount(
 			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    &best_quant_level, &best_quant_level_mod,
-			    best_formats, &error_of_best_combination);
+			    best_quant_levels + i, best_quant_levels_mod + i,
+			    best_ep_formats[i], &error_of_best_combination);
 
-			error_of_best_combination += qwt_errors[i];
-
-			errors_of_best_combination[i] = error_of_best_combination;
-			best_quant_levels[i] = best_quant_level;
-			best_quant_levels_mod[i] = best_quant_level_mod;
-			best_ep_formats[i][0] = best_formats[0];
-			best_ep_formats[i][1] = best_formats[1];
+			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 		}
 	}
 	// code for the case where the block contains 3 partitions
 	else if (partition_count == 3)
 	{
-		int best_quant_level;
-		int best_quant_level_mod;
-		int best_formats[3];
-		float error_of_best_combination;
-
 		float combined_best_error[21][10];
 		int formats_of_choice[21][10][3];
 
@@ -909,29 +898,18 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
+			float error_of_best_combination;
 			three_partitions_find_best_combination_for_bitcount(
 			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    &best_quant_level, &best_quant_level_mod,
-			    best_formats, &error_of_best_combination);
+			    best_quant_levels + i, best_quant_levels_mod + i,
+			    best_ep_formats[i], &error_of_best_combination);
 
-			error_of_best_combination += qwt_errors[i];
-
-			errors_of_best_combination[i] = error_of_best_combination;
-			best_quant_levels[i] = best_quant_level;
-			best_quant_levels_mod[i] = best_quant_level_mod;
-			best_ep_formats[i][0] = best_formats[0];
-			best_ep_formats[i][1] = best_formats[1];
-			best_ep_formats[i][2] = best_formats[2];
+			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];;
 		}
 	}
 	// code for the case where the block contains 4 partitions
 	else if (partition_count == 4)
 	{
-		int best_quant_level;
-		int best_quant_level_mod;
-		int best_formats[4];
-		float error_of_best_combination;
-
 		float combined_best_error[21][13];
 		int formats_of_choice[21][13][4];
 
@@ -946,46 +924,26 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 				continue;
 			}
 
+			float error_of_best_combination;
 			four_partitions_find_best_combination_for_bitcount(
 			    combined_best_error, formats_of_choice, qwt_bitcounts[i],
-			    &best_quant_level, &best_quant_level_mod,
-			    best_formats, &error_of_best_combination);
+			    best_quant_levels + i, best_quant_levels_mod + i,
+			    best_ep_formats[i], &error_of_best_combination);
 
-			error_of_best_combination += qwt_errors[i];
-
-			errors_of_best_combination[i] = error_of_best_combination;
-			best_quant_levels[i] = best_quant_level;
-			best_quant_levels_mod[i] = best_quant_level_mod;
-			best_ep_formats[i][0] = best_formats[0];
-			best_ep_formats[i][1] = best_formats[1];
-			best_ep_formats[i][2] = best_formats[2];
-			best_ep_formats[i][3] = best_formats[3];
+			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 		}
 	}
 
-	// finally, go through the results and pick the best-looking modes.
+	// Go through the results and pick the best candidate modes
 	int best_error_weights[TUNE_MAX_TRIAL_CANDIDATES];
+	static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0,
+	              "MAX_WEIGHT_MODES should be multiple of ASTCENC_SIMD_WIDTH");
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
-#if 0
-		// reference; scalar code
-		float best_ep_error = 1e30f;
-		int best_error_index = -1;
-		for (int j = 0, npack = bsd->block_mode_count; j < npack; ++j)
-		{
-			if (errors_of_best_combination[j] < best_ep_error && best_quant_levels[j] >= 5)
-			{
-				best_ep_error = errors_of_best_combination[j];
-				best_error_index = j;
-			}
-		}
-#else
-		// find best mode, SIMD N-wide way
-		static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0, "MAX_WEIGHT_MODES should be multiple of ASTCENC_SIMD_WIDTH");
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(1e30f);
 		vint lane_ids = vint::lane_id();
-		for (int j = 0, npack = bsd->block_mode_count; j < npack; j += ASTCENC_SIMD_WIDTH)
+		for (int j = 0; j < bsd->block_mode_count; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat err = vfloat(&errors_of_best_combination[j]);
 			vmask mask1 = err < vbest_ep_error;
@@ -996,19 +954,16 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
 		}
 
-		// pick final best mode from the SIMD result.
-		// note that if multiple SIMD lanes have "best" score,
-		// we want to pick one with the lowest index, i.e. what
-		// would happen if code was purely scalar.
-		vmask lanes_with_min_error = vbest_ep_error == hmin(vbest_ep_error);
-		// take smallest index from the SIMD lanes that had the best score
-		vbest_error_index = select(vint(0x7fffffff), vbest_error_index, lanes_with_min_error);
+		// Pick best mode from the SIMD result. If multiple SIMD lanes have
+		// the best score, pick the one with the lowest index.
+		vmask lanes_min_error = vbest_ep_error == hmin(vbest_ep_error);
+		vbest_error_index = select(vint(0x7FFFFFFF), vbest_error_index, lanes_min_error);
 		vbest_error_index = hmin(vbest_error_index);
 		int best_error_index = vbest_error_index.lane<0>();
-#endif
 
 		best_error_weights[i] = best_error_index;
 
+		// Max the error for this candidate so we don't pick it again
 		if (best_error_index >= 0)
 		{
 			errors_of_best_combination[best_error_index] = 1e30f;

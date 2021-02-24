@@ -1218,6 +1218,18 @@ TEST(vint4, vadd)
 	EXPECT_EQ(a.lane<3>(), 4 + 5);
 }
 
+/** @brief Test vint4 add. */
+TEST(vint4, vsadd)
+{
+	vint4 a(1, 2, 3, 4);
+	int b = 5;
+	a = a + b;
+	EXPECT_EQ(a.lane<0>(), 1 + 5);
+	EXPECT_EQ(a.lane<1>(), 2 + 5);
+	EXPECT_EQ(a.lane<2>(), 3 + 5);
+	EXPECT_EQ(a.lane<3>(), 4 + 5);
+}
+
 /** @brief Test vint4 sub. */
 TEST(vint4, vsub)
 {
@@ -1227,6 +1239,18 @@ TEST(vint4, vsub)
 	EXPECT_EQ(a.lane<0>(), 1 - 2);
 	EXPECT_EQ(a.lane<1>(), 2 - 3);
 	EXPECT_EQ(a.lane<2>(), 4 - 3);
+	EXPECT_EQ(a.lane<3>(), 4 - 5);
+}
+
+/** @brief Test vint4 sub. */
+TEST(vint4, vssub)
+{
+	vint4 a(1, 2, 4, 4);
+	int b = 5;
+	a = a - b;
+	EXPECT_EQ(a.lane<0>(), 1 - 5);
+	EXPECT_EQ(a.lane<1>(), 2 - 5);
+	EXPECT_EQ(a.lane<2>(), 4 - 5);
 	EXPECT_EQ(a.lane<3>(), 4 - 5);
 }
 
@@ -1283,6 +1307,17 @@ TEST(vint4, bit_vor)
 	EXPECT_EQ(a.lane<3>(), 5);
 }
 
+TEST(vint4, bit_vsor)
+{
+	vint4 a(1, 2, 3, 4);
+	int b = 2;
+	a = a | b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 3);
+	EXPECT_EQ(a.lane<3>(), 6);
+}
+
 /** @brief Test vint4 bitwise and. */
 TEST(vint4, bit_vand)
 {
@@ -1295,6 +1330,18 @@ TEST(vint4, bit_vand)
 	EXPECT_EQ(a.lane<3>(), 4);
 }
 
+/** @brief Test vint4 bitwise and. */
+TEST(vint4, bit_vsand)
+{
+	vint4 a(1, 2, 3, 4);
+	int b = 2;
+	a = a & b;
+	EXPECT_EQ(a.lane<0>(), 0);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 2);
+	EXPECT_EQ(a.lane<3>(), 0);
+}
+
 /** @brief Test vint4 bitwise xor. */
 TEST(vint4, bit_vxor)
 {
@@ -1305,6 +1352,18 @@ TEST(vint4, bit_vxor)
 	EXPECT_EQ(a.lane<1>(), 1);
 	EXPECT_EQ(a.lane<2>(), 7);
 	EXPECT_EQ(a.lane<3>(), 1);
+}
+
+/** @brief Test vint4 bitwise xor. */
+TEST(vint4, bit_vsxor)
+{
+	vint4 a(1, 2, 3, 4);
+	int b = 2;
+	a = a ^ b;
+	EXPECT_EQ(a.lane<0>(), 3);
+	EXPECT_EQ(a.lane<1>(), 0);
+	EXPECT_EQ(a.lane<2>(), 1);
+	EXPECT_EQ(a.lane<3>(), 6);
 }
 
 /** @brief Test vint4 ceq. */
@@ -1387,27 +1446,51 @@ TEST(vint4, cle)
 	EXPECT_EQ(0x1, mask(r));
 }
 
-/** @brief Test vint4 lsr. */
-TEST(vint4, lsr)
+/** @brief Test vint4 lsl. */
+TEST(vint4, lsl)
 {
 	vint4 a(1, 2, 4, 4);
-	a = lsr<0>(a);
+	a = lsl<0>(a);
 	EXPECT_EQ(a.lane<0>(), 1);
 	EXPECT_EQ(a.lane<1>(), 2);
 	EXPECT_EQ(a.lane<2>(), 4);
 	EXPECT_EQ(a.lane<3>(), 4);
 
-	a = lsr<1>(a);
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 2);
-	EXPECT_EQ(a.lane<3>(), 2);
+	a = lsl<1>(a);
+	EXPECT_EQ(a.lane<0>(), 2);
+	EXPECT_EQ(a.lane<1>(), 4);
+	EXPECT_EQ(a.lane<2>(), 8);
+	EXPECT_EQ(a.lane<3>(), 8);
 
-	a = lsr<2>(a);
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 0);
-	EXPECT_EQ(a.lane<2>(), 0);
-	EXPECT_EQ(a.lane<3>(), 0);
+	a = lsl<2>(a);
+	EXPECT_EQ(a.lane<0>(), 8);
+	EXPECT_EQ(a.lane<1>(), 16);
+	EXPECT_EQ(a.lane<2>(), 32);
+	EXPECT_EQ(a.lane<3>(), 32);
+}
+
+/** @brief Test vint4 asr. */
+TEST(vint4, asr)
+{
+	vint4 a(1, 2, 4, -4);
+	a = asr<0>(a);
+	EXPECT_EQ(a.lane<0>(),  1);
+	EXPECT_EQ(a.lane<1>(),  2);
+	EXPECT_EQ(a.lane<2>(),  4);
+	EXPECT_EQ(a.lane<3>(), -4);
+
+	a = asr<1>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  1);
+	EXPECT_EQ(a.lane<2>(),  2);
+	EXPECT_EQ(a.lane<3>(), -2);
+
+	// Note - quirk of asr is that you will get "stuck" at -1
+	a = asr<2>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  0);
+	EXPECT_EQ(a.lane<2>(),  0);
+	EXPECT_EQ(a.lane<3>(), -1);
 }
 
 /** @brief Test vint4 min. */
@@ -1434,6 +1517,17 @@ TEST(vint4, max)
 	EXPECT_EQ(r.lane<3>(), 5);
 }
 
+/** @brief Test vint4 clamp. */
+TEST(vint4, clamp)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 r = clamp(2, 3, a);
+	EXPECT_EQ(r.lane<0>(), 2);
+	EXPECT_EQ(r.lane<1>(), 2);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 3);
+}
+
 /** @brief Test vint4 hmin. */
 TEST(vint4, hmin)
 {
@@ -1450,6 +1544,48 @@ TEST(vint4, hmin)
 	EXPECT_EQ(r2.lane<1>(), -1);
 	EXPECT_EQ(r2.lane<2>(), -1);
 	EXPECT_EQ(r2.lane<3>(), -1);
+}
+
+/** @brief Test vint4 hmax. */
+TEST(vint4, hmax)
+{
+	vint4 a1(1, 3, 1, 2);
+	vint4 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 3);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 3);
+	EXPECT_EQ(r1.lane<3>(), 3);
+
+	vint4 a2(1, 2, -1, 5);
+	vint4 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 5);
+	EXPECT_EQ(r2.lane<1>(), 5);
+	EXPECT_EQ(r2.lane<2>(), 5);
+	EXPECT_EQ(r2.lane<3>(), 5);
+}
+
+/** @brief Test vint4 hadd_s. */
+TEST(vint4, hadd_s)
+{
+	vint4 a1(1, 3, 5, 7);
+	int r1 = hadd_s(a1);
+	EXPECT_EQ(r1, 16);
+
+	vint4 a2(1, 2, -1, 5);
+	int r2 = hadd_s(a2);
+	EXPECT_EQ(r2, 7);
+}
+
+/** @brief Test vint4 hadd_s. */
+TEST(vint4, hadd_rgb_s)
+{
+	vint4 a1(1, 3, 5, 7);
+	int r1 = hadd_rgb_s(a1);
+	EXPECT_EQ(r1, 9);
+
+	vint4 a2(1, 2, -1, 5);
+	int r2 = hadd_rgb_s(a2);
+	EXPECT_EQ(r2, 2);
 }
 
 /** @brief Test vint4 storea. */
@@ -1550,6 +1686,21 @@ TEST(vint4, select_msb)
 }
 
 // VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** @brief Test vmask4 scalar constructor. */
+TEST(vmask4, scalar_construct)
+{
+	vfloat4 m1a(0, 0, 0, 0);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1(true, false, true, false);
+
+	vfloat4 r = select(m1a, m1b, m1);
+
+	EXPECT_EQ(r.lane<0>(), 1);
+	EXPECT_EQ(r.lane<1>(), 0);
+	EXPECT_EQ(r.lane<2>(), 1);
+	EXPECT_EQ(r.lane<3>(), 0);
+}
+
 /** @brief Test vmask4 or. */
 TEST(vmask4, or)
 {
@@ -2681,6 +2832,32 @@ TEST(vint8, hmin)
 	EXPECT_EQ(r2.lane<5>(), -1);
 	EXPECT_EQ(r2.lane<6>(), -1);
 	EXPECT_EQ(r2.lane<7>(), -1);
+}
+
+/** @brief Test vint8 hmax. */
+TEST(vint8, hmax)
+{
+	vint8 a1(1, 2, 1, 2, 1, 3, 1, 2);
+	vint8 r1 = hmax(a1);
+	EXPECT_EQ(r1.lane<0>(), 3);
+	EXPECT_EQ(r1.lane<1>(), 3);
+	EXPECT_EQ(r1.lane<2>(), 3);
+	EXPECT_EQ(r1.lane<3>(), 3);
+	EXPECT_EQ(r1.lane<4>(), 3);
+	EXPECT_EQ(r1.lane<5>(), 3);
+	EXPECT_EQ(r1.lane<6>(), 3);
+	EXPECT_EQ(r1.lane<7>(), 3);
+
+	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
+	vint8 r2 = hmax(a2);
+	EXPECT_EQ(r2.lane<0>(), 5);
+	EXPECT_EQ(r2.lane<1>(), 5);
+	EXPECT_EQ(r2.lane<2>(), 5);
+	EXPECT_EQ(r2.lane<3>(), 5);
+	EXPECT_EQ(r2.lane<4>(), 5);
+	EXPECT_EQ(r2.lane<5>(), 5);
+	EXPECT_EQ(r2.lane<6>(), 5);
+	EXPECT_EQ(r2.lane<7>(), 5);
 }
 
 /** @brief Test vint8 storea. */

@@ -337,6 +337,21 @@ struct vmask4
 	}
 
 	/**
+	 * @brief Construct from 4 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask4(bool a, bool b, bool c, bool d)
+	{
+		vint4 mask(a == false ? 0 : -1,
+		           b == false ? 0 : -1,
+		           c == false ? 0 : -1,
+		           d == false ? 0 : -1);
+
+		m = _mm_castsi128_ps(mask.m);
+	}
+
+	/**
 	 * @brief The vector ...
 	 */
 	__m128 m;
@@ -417,11 +432,27 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Overload: vector by scale addition.
+ */
+ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
+{
+	return a + vint4(b);
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
 	return vint4(_mm_sub_epi32(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scale subtraction.
+ */
+ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
+{
+	return a - vint4(b);
 }
 
 /**
@@ -468,6 +499,14 @@ ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar bitwise or.
+ */
+ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, int b)
+{
+	return a | vint4(b);
+}
+
+/**
  * @brief Overload: vector by vector bitwise and.
  */
 ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
@@ -476,11 +515,27 @@ ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar bitwise and.
+ */
+ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, int b)
+{
+	return a & vint4(b);
+}
+
+/**
  * @brief Overload: vector by vector bitwise xor.
  */
 ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, vint4 b)
 {
 	return vint4(_mm_xor_si128(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scalar bitwise xor.
+ */
+ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
+{
+	return a ^ vint4(b);
 }
 
 /**
@@ -516,11 +571,19 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Logical shift left.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
+{
+	return vint4(_mm_slli_epi32(a.m, s));
+}
+
+/**
  * @brief Logical shift right.
  */
-template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
-	return vint4(_mm_srli_epi32(a.m, s));
+	return vint4(_mm_srai_epi32(a.m, s));
 }
 
 /**
@@ -554,6 +617,14 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 }
 
 /**
+ * @brief Return the clamped value between min and max.
+ */
+ASTCENC_SIMD_INLINE vint4 clamp(float minv, float maxv, vint4 a)
+{
+	return min(max(a, vint4(minv)), vint4(maxv));
+}
+
+/**
  * @brief Return the horizontal minimum of a vector.
  */
 ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
@@ -561,6 +632,40 @@ ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
 	a = min(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = min(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+/*
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
+{
+	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 3, 2))));
+	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 1))));
+	return vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 0)));
+}
+
+/**
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
+{
+	return a.lane<0>() + a.lane<1>() + a.lane<2>();
+}
+
+/**
+ * @brief Return the horizontal sum of a vector as a scalar.
+ */
+ASTCENC_SIMD_INLINE int hadd_s(vint4 a)
+{
+	// Add top and bottom halves, lane 1/0
+	__m128i fold = _mm_castps_si128(_mm_movehl_ps(_mm_castsi128_ps(a.m),
+	                                              _mm_castsi128_ps(a.m)));
+	__m128i t = _mm_add_epi32(a.m, fold);
+
+	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
+	t = _mm_add_epi32(t, _mm_shuffle_epi32(t, 0x55));
+
+	return _mm_cvtsi128_si32(t);
 }
 
 /**
