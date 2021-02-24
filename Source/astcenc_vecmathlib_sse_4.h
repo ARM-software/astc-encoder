@@ -579,7 +579,7 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 }
 
 /**
- * @brief Logical shift right.
+ * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
