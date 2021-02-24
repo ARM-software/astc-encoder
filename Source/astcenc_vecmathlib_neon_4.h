@@ -549,7 +549,15 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 }
 
 /**
- * @brief Logical shift right.
+ * @brief Logical shift left.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
+{
+	return vint4(vshlq_s32(a.m, vdupq_n_s32(s)));
+}
+
+/**
+ * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
