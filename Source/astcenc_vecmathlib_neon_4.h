@@ -323,6 +323,22 @@ struct vmask4
 	}
 
 	/**
+	 * @brief Construct from an existing SIMD register.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask4(bool a, bool b, bool c, bool d)
+	{
+		int32x4_t v {
+			a == true ? -1 : 0,
+			b == true ? -1 : 0,
+			c == true ? -1 : 0,
+			d == true ? -1 : 0
+		};
+
+		m = v;
+	}
+
+
+	/**
 	 * @brief The vector ...
 	 */
 	uint32x4_t m;
