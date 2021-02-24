@@ -81,7 +81,7 @@
   #define ASTCENC_VECALIGN 16
 #endif
 
-#if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
+#if ASTCENC_SSE != 0 || ASTCENC_AVX != 0 || ASTCENC_POPCNT != 0
 	#include <immintrin.h>
 #endif
 
