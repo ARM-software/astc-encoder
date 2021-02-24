@@ -348,7 +348,7 @@ struct vmask4
 		           c == false ? 0 : -1,
 		           d == false ? 0 : -1);
 
-		m = mask.m;
+		m = _mm_castsi128_ps(mask.m);
 	}
 
 	/**

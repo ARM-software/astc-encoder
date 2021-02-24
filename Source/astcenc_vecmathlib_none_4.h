@@ -550,10 +550,10 @@ ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vint4 a, vint4 b)
 {
-	return vmask4(a.m[0] == b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] == b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] == b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] == b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] == b.m[0],
+	              a.m[1] == b.m[1],
+	              a.m[2] == b.m[2],
+	              a.m[3] == b.m[3]);
 }
 
 /**
@@ -561,10 +561,10 @@ ASTCENC_SIMD_INLINE vmask4 operator==(vint4 a, vint4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator!=(vint4 a, vint4 b)
 {
-	return vmask4(a.m[0] != b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] != b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] != b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] != b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] != b.m[0],
+	              a.m[1] != b.m[1],
+	              a.m[2] != b.m[2],
+	              a.m[3] != b.m[3]);
 }
 
 /**
@@ -572,10 +572,10 @@ ASTCENC_SIMD_INLINE vmask4 operator!=(vint4 a, vint4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, vint4 b)
 {
-	return vmask4(a.m[0] < b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] < b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] < b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] < b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] < b.m[0],
+	              a.m[1] < b.m[1],
+	              a.m[2] < b.m[2],
+	              a.m[3] < b.m[3]);
 }
 
 /**
@@ -583,12 +583,11 @@ ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, vint4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 {
-	return vmask4(a.m[0] > b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] > b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] > b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] > b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] > b.m[0],
+	              a.m[1] > b.m[1],
+	              a.m[2] > b.m[2],
+	              a.m[3] > b.m[3]);
 }
-
 
 /**
  * @brief Logical shift left.
@@ -842,10 +841,10 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] == b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] == b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] == b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] == b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] == b.m[0],
+	              a.m[1] == b.m[1],
+	              a.m[2] == b.m[2],
+	              a.m[3] == b.m[3]);
 }
 
 /**
@@ -853,10 +852,10 @@ ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator!=(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] != b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] != b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] != b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] != b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] != b.m[0],
+	              a.m[1] != b.m[1],
+	              a.m[2] != b.m[2],
+	              a.m[3] != b.m[3]);
 }
 
 /**
@@ -864,10 +863,10 @@ ASTCENC_SIMD_INLINE vmask4 operator!=(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator<(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] < b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] < b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] < b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] < b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] < b.m[0],
+	              a.m[1] < b.m[1],
+	              a.m[2] < b.m[2],
+	              a.m[3] < b.m[3]);
 }
 
 /**
@@ -875,10 +874,10 @@ ASTCENC_SIMD_INLINE vmask4 operator<(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator>(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] > b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] > b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] > b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] > b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] > b.m[0],
+	              a.m[1] > b.m[1],
+	              a.m[2] > b.m[2],
+	              a.m[3] > b.m[3]);
 }
 
 /**
@@ -886,10 +885,10 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator<=(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] <= b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] <= b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] <= b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] <= b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] <= b.m[0],
+	              a.m[1] <= b.m[1],
+	              a.m[2] <= b.m[2],
+	              a.m[3] <= b.m[3]);
 }
 
 /**
@@ -897,10 +896,10 @@ ASTCENC_SIMD_INLINE vmask4 operator<=(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vmask4 operator>=(vfloat4 a, vfloat4 b)
 {
-	return vmask4(a.m[0] >= b.m[0] ? 0xFFFFFFFF : 0,
-	              a.m[1] >= b.m[1] ? 0xFFFFFFFF : 0,
-	              a.m[2] >= b.m[2] ? 0xFFFFFFFF : 0,
-	              a.m[3] >= b.m[3] ? 0xFFFFFFFF : 0);
+	return vmask4(a.m[0] >= b.m[0],
+	              a.m[1] >= b.m[1],
+	              a.m[2] >= b.m[2],
+	              a.m[3] >= b.m[3]);
 }
 
 /**

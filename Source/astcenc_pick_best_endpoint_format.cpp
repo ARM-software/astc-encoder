@@ -304,11 +304,11 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float base_quant_error_a = error_weight.lane<3>() * static_cast<float>(partition_size);
 		float base_quant_error_rgba = base_quant_error_rgb + base_quant_error_a;
 
-		float error_scale_bc_rgba = eci->can_blue_contract ? 0.625 : 1.0f;
-		float error_scale_oe_rgba = eci->can_offset_encode ? 0.5 : 1.0f;
+		float error_scale_bc_rgba = eci->can_blue_contract ? 0.625f : 1.0f;
+		float error_scale_oe_rgba = eci->can_offset_encode ? 0.5f : 1.0f;
 
-		float error_scale_bc_rgb = eci->can_blue_contract ? 0.5 : 1.0f;
-		float error_scale_oe_rgb = eci->can_offset_encode ? 0.25 : 1.0f;
+		float error_scale_bc_rgb = eci->can_blue_contract ? 0.5f : 1.0f;
+		float error_scale_oe_rgb = eci->can_offset_encode ? 0.25f : 1.0f;
 
 		// pick among the available LDR endpoint modes
 		for (int i = 4; i < 21; i++)
