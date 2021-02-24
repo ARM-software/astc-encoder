@@ -820,16 +820,31 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 {
-	// Add top and bottom halves, lane 3/2/1/0
-	__m128 t = _mm_add_ps(_mm256_extractf128_ps(a.m, 1), _mm256_castps256_ps128(a.m));
+	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	return hadd_s(lo) + hadd_s(hi);
+}
 
-	// Add top and bottom halves, lane 1/0
-	t = _mm_add_ps(t, _mm_movehl_ps(t, t));
+/**
+ * @brief Return the an accumulated horizontal sum of a vector
+ */
+ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
+{
+	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	accum += hadd_s(lo);
+	accum += hadd_s(hi);
+}
 
-	// Add top and bottom halves, lane 0 (_mm_hadd_ps exists but slow)
-	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
-
-	return _mm_cvtss_f32(t);
+/**
+ * @brief Return the an accumulated partial horizontal sum of a vector
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
+{
+	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	accum = accum + lo;
+	accum = accum + hi;
 }
 
 /**

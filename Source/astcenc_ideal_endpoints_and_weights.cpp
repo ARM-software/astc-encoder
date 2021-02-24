@@ -742,7 +742,7 @@ float compute_error_of_weight_set(
 	const decimation_table* dt,
 	const float* weights
 ) {
-	vfloat verror_summa(0.0f);
+	vfloat4 verror_summa = vfloat4::zero();
 	float error_summa = 0.0f;
 	int texel_count = dt->texel_count;
 
@@ -751,7 +751,7 @@ float compute_error_of_weight_set(
 #if ASTCENC_SIMD_WIDTH > 1
 
 	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	int clipped_texel_count = round_down_to_simd_multiple_8(texel_count);
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Load the bilinear filter texel weight indexes
@@ -785,12 +785,11 @@ float compute_error_of_weight_set(
 		vfloat significance = loada(&(eai->weight_error_scale[i]));
 		vfloat error = diff * diff * significance;
 
-		verror_summa = verror_summa + error;
+		haccumulate(verror_summa, error);
 	}
 
 	// Accumulate the error vectors into a single error sum
-	error_summa += hadd_s(verror_summa);
-
+	haccumulate(error_summa, verror_summa);
 #endif
 
 	// Loop tail

@@ -413,13 +413,13 @@ void compute_error_squared_rgba(
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
-		vfloat uncor_errorsumv = vfloat::zero();
+		vfloat4 uncor_errorsumv = vfloat4::zero();
 
 		vfloat samec_loparamv(1e10f);
 		vfloat samec_hiparamv(-1e10f);
-		vfloat samec_errorsumv = vfloat::zero();
+		vfloat4 samec_errorsumv = vfloat4::zero();
 
-		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+		int clipped_texel_count = round_down_to_simd_multiple_8(texel_count);
 		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_idxs(&(weights[i]));
@@ -456,7 +456,7 @@ void compute_error_squared_rgba(
 			                   + (ew_b * uncor_dist2 * uncor_dist2)
 			                   + (ew_a * uncor_dist3 * uncor_dist3);
 
-			uncor_errorsumv = uncor_errorsumv + uncor_error;
+			haccumulate(uncor_errorsumv, uncor_error);
 
 			// Process samechroma data
 			vfloat samec_param = (data_r * l_samec_bs0)
@@ -478,16 +478,16 @@ void compute_error_squared_rgba(
 			                   + (ew_b * samec_dist2 * samec_dist2)
 			                   + (ew_a * samec_dist3 * samec_dist3);
 
-			samec_errorsumv = samec_errorsumv + samec_error;
+			haccumulate(samec_errorsumv, samec_error);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);
 		uncor_hiparam = hmax_s(uncor_hiparamv);
-		uncor_errorsum += hadd_s(uncor_errorsumv);
+		haccumulate(uncor_errorsum, uncor_errorsumv);
 
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
-		samec_errorsum += hadd_s(samec_errorsumv);
+		haccumulate(samec_errorsum, samec_errorsumv);
 #endif
 
 		// Loop tail
@@ -591,13 +591,13 @@ void compute_error_squared_rgb(
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
-		vfloat uncor_errorsumv = vfloat::zero();
+		vfloat4 uncor_errorsumv = vfloat4::zero();
 
 		vfloat samec_loparamv(1e10f);
 		vfloat samec_hiparamv(-1e10f);
-		vfloat samec_errorsumv = vfloat::zero();
+		vfloat4 samec_errorsumv = vfloat4::zero();
 
-		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+		int clipped_texel_count = round_down_to_simd_multiple_8(texel_count);
 		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_idxs(&(weights[i]));
@@ -628,7 +628,7 @@ void compute_error_squared_rgb(
 			                 + (ew_g * uncor_dist1 * uncor_dist1)
 			                 + (ew_b * uncor_dist2 * uncor_dist2);
 
-			uncor_errorsumv = uncor_errorsumv + uncor_err;
+			haccumulate(uncor_errorsumv, uncor_err);
 
 			// Process samechroma data
 			vfloat samec_param = (data_r * l_samec_bs0)
@@ -647,16 +647,16 @@ void compute_error_squared_rgb(
 			                 + (ew_g * samec_dist1 * samec_dist1)
 			                 + (ew_b * samec_dist2 * samec_dist2);
 
-			samec_errorsumv = samec_errorsumv + samec_err;
+			haccumulate(samec_errorsumv, samec_err);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);
 		uncor_hiparam = hmax_s(uncor_hiparamv);
-		uncor_errorsum += hadd_s(uncor_errorsumv);
+		haccumulate(uncor_errorsum, uncor_errorsumv);
 
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
-		samec_errorsum += hadd_s(samec_errorsumv);
+		haccumulate(samec_errorsum, samec_errorsumv);
 #endif
 
 		// Loop tail

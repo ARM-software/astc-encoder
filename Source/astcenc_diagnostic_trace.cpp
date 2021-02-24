@@ -194,8 +194,10 @@ void trace_add_data(
 	const char* key,
 	float value
 ) {
+  	char buffer[256];
+	sprintf(buffer, "%.20g", (double)value);
 	TraceNode* node = g_TraceLog->get_current_leaf();
-	node->add_attrib("float", key, std::to_string(value));
+	node->add_attrib("float", key, buffer);
 }
 
 void trace_add_data(

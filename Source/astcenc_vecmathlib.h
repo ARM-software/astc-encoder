@@ -68,8 +68,8 @@
 
 #if ASTCENC_AVX >= 2
 	/* If we have AVX2 expose 8-wide VLA. */
-	#include "astcenc_vecmathlib_avx2_8.h"
 	#include "astcenc_vecmathlib_sse_4.h"
+	#include "astcenc_vecmathlib_avx2_8.h"
 
 	#define ASTCENC_SIMD_WIDTH 8
 
@@ -107,19 +107,47 @@
 	constexpr auto load1 = vfloat4::load1;
 
 #else
-	/* If we have nothing expose 1-wide VLA, and 4-wide fixed width. */
-	#include "astcenc_vecmathlib_none_1.h"
+	// If we have nothing expose 4-wide VLA, and 4-wide fixed width.
+
+	// Note: We no longer expose the 1-wide scalar fallback because it is not
+	// invariant with the 4-wide path due to algorithms that use horizontal
+	// operations that accumulate a local vector sum before accumulating into
+	// a running sum.
+	//
+	// For 4 items adding into an accumulator using 1-wide vectors the sum is:
+	//
+	//     result = ((((sum + l0) + l1) + l2) + l3)
+	//
+    // ... whereas the accumulator for a 4-wide vector sum is:
+	//
+	//     result = sum + ((l0 + l2) + (l1 + l3))
+	//
+	// In "normal maths" this is the same, but the floating point reassociation
+	// differences mean that these will not produce the same result.
+
 	#include "astcenc_vecmathlib_none_4.h"
 
-	#define ASTCENC_SIMD_WIDTH 1
+	#define ASTCENC_SIMD_WIDTH 4
 
-	using vfloat = vfloat1;
-	using vint = vint1;
-	using vmask = vmask1;
+	using vfloat = vfloat4;
+	using vint = vint4;
+	using vmask = vmask4;
 
-	constexpr auto loada = vfloat1::loada;
-	constexpr auto load1 = vfloat1::load1;
+	constexpr auto loada = vfloat4::loada;
+	constexpr auto load1 = vfloat4::load1;
 #endif
+
+/**
+ * @brief Round a count down to the largest multiple of 8.
+ *
+ * @param count   The unrounded value.
+ *
+ * @return The rounded value.
+ */
+ASTCENC_SIMD_INLINE int round_down_to_simd_multiple_8(int count)
+{
+	return count & ~(8 - 1);
+}
 
 /**
  * @brief Round a count down to the largest multiple of 4.
