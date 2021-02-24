@@ -596,6 +596,23 @@ ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
 	return vint4(vmaxvq_s32(a.m));
 }
 
+/**
+ * @brief Return the horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hadd_s(vint4 a)
+{
+	int32x2_t t = vadd_s32(vget_high_s32(a.m), vget_low_s32(a.m));
+	return vget_lane_s32(vpadd_s32(t, t), 0);
+}
+
+/**
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ */
+ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
+{
+	a.set_lane<3>(0.0f);
+	return hadd_s(a);
+}
 
 /**
  * @brief Store a vector to a 16B aligned memory address.
