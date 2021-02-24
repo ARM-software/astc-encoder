@@ -1396,8 +1396,9 @@ void compress_block(
 
 #if !defined(ASTCENC_DIAGNOSTICS)
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
-	block_skip_two_plane = lowest_correl > ctx.config.tune_two_plane_early_out_limit;
 #endif
+
+	block_skip_two_plane = lowest_correl > ctx.config.tune_two_plane_early_out_limit;
 
 	// next, test the four possible 1-partition, 2-planes modes
 	for (int i = 0; i < 4; i++)
