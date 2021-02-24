@@ -813,14 +813,14 @@ float compute_error_of_weight_set(
 }
 
 /* See header for documentation. */
-
 // Note: This function is vectorized, but needs to use gathers to access the
 // decimation table structures so vectorization is currently only enabled for
-// AVX2. Due to the need to use full vectors of texels within a partition, this
-// vectorization implementation mostly helps the larger block sizes where there
-// are a large enough number of texels to fill vectors. For e.g. 4x4 blocks
-// there are too many partial vectors which fall back to scalar code to see the
-// full uplift. .
+// AVX2. The implementation loops over decimated weights, and then texels for
+// each weight. We know the backing memory is "large enough" we can can
+// overshoot the weight count to always use full vectors without a loop tail.
+// The inner loop operates on 8 weights, each of which may have a different
+// number of texels referenced by it. We iterate over the max reference count,
+// and then use lane masks to disable lanes that are no longer in scope.
 void compute_ideal_weights_for_decimation_table(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
@@ -869,18 +869,16 @@ void compute_ideal_weights_for_decimation_table(
 	alignas(ASTCENC_VECALIGN) float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
 	// Compute an initial average for each decimated weight
-	int si = 0;
-
 #if ASTCENC_SIMD_WIDTH >= 8
-	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
-	for (/* */; si < clipped_weight_count; si += ASTCENC_SIMD_WIDTH)
+	int clipped_weight_count = round_up_to_simd_multiple_vla(weight_count);
+	for (int i = 0; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
 		vfloat weight_weight(1e-10f);
 		vfloat initial_weight = vfloat::zero();
 
 		// Accumulate error weighting of all the texels using this weight
-		vint weight_texel_count(dt.weight_texel_count + si);
+		vint weight_texel_count(dt.weight_texel_count + i);
 		int max_texel_count = hmax(weight_texel_count).lane<0>();
 		promise(max_texel_count > 0);
 
@@ -889,10 +887,10 @@ void compute_ideal_weights_for_decimation_table(
 			// Not all lanes may actually use j texels, so mask out if idle
 			vmask active = weight_texel_count > vint(j);
 
-			vint texel(dt.weight_texel[j] + si);
+			vint texel(dt.weight_texel[j] + i);
 			texel = select(vint::zero(), texel, active);
 
-			vfloat weight(dt.weights_flt[j] + si);
+			vfloat weight = loada(dt.weights_flt[j] + i);
 			weight = select(vfloat::zero(), weight, active);
 
 			vfloat contrib_weight = weight * gatherf(eai_in.weight_error_scale, texel);
@@ -901,97 +899,90 @@ void compute_ideal_weights_for_decimation_table(
 			initial_weight = initial_weight + gatherf(eai_in.weights, texel) * contrib_weight;
 		}
 
-		store(weight_weight, weights + si);
-		store(initial_weight / weight_weight, weight_set + si);
+		storea(weight_weight, weights + i);
+		storea(initial_weight / weight_weight, weight_set + i);
 	}
-#endif
-
-	// Loop tail
-	for (/* */; si < weight_count; si++)
+#else
+	for (int i = 0; i < weight_count; i++)
 	{
 		// Start with a small value to avoid div-by-zero later
 		float weight_weight = 1e-10f;
 		float initial_weight = 0.0f;
 
 		// Accumulate error weighting of all the texels using this weight
-		int weight_texel_count = dt.weight_texel_count[si];
+		int weight_texel_count = dt.weight_texel_count[i];
 		promise(weight_texel_count > 0);
 
 		for (int j = 0; j < weight_texel_count; j++)
 		{
-			int texel = dt.weight_texel[j][si];
-			float weight = dt.weights_flt[j][si];
+			int texel = dt.weight_texel[j][i];
+			float weight = dt.weights_flt[j][i];
 			float contrib_weight = weight * eai_in.weight_error_scale[texel];
 			weight_weight += contrib_weight;
 			initial_weight += eai_in.weights[texel] * contrib_weight;
 		}
 
-		weights[si] = weight_weight;
-		weight_set[si] = initial_weight / weight_weight;
+		weights[i] = weight_weight;
+		weight_set[i] = initial_weight / weight_weight;
 	}
+#endif
 
 	// Populate the interpolated weight grid based on the initital average
-	si = 0;
-
 #if ASTCENC_SIMD_WIDTH >= 8
 	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-	for (/* */; si < clipped_texel_count; si += ASTCENC_SIMD_WIDTH)
+	int clipped_texel_count = round_up_to_simd_multiple_vla(texel_count);
+	for (int i = 0; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint texel_weights_0(dt.texel_weights_4t[0] + si);
-		vint texel_weights_1(dt.texel_weights_4t[1] + si);
-		vint texel_weights_2(dt.texel_weights_4t[2] + si);
-		vint texel_weights_3(dt.texel_weights_4t[3] + si);
+		vint texel_weights_0(dt.texel_weights_4t[0] + i);
+		vint texel_weights_1(dt.texel_weights_4t[1] + i);
+		vint texel_weights_2(dt.texel_weights_4t[2] + i);
+		vint texel_weights_3(dt.texel_weights_4t[3] + i);
 
 		vfloat weight_set_0 = gatherf(weight_set, texel_weights_0);
 		vfloat weight_set_1 = gatherf(weight_set, texel_weights_1);
 		vfloat weight_set_2 = gatherf(weight_set, texel_weights_2);
 		vfloat weight_set_3 = gatherf(weight_set, texel_weights_3);
 
-		vfloat texel_weights_float_0(dt.texel_weights_float_4t[0] + si);
-		vfloat texel_weights_float_1(dt.texel_weights_float_4t[1] + si);
-		vfloat texel_weights_float_2(dt.texel_weights_float_4t[2] + si);
-		vfloat texel_weights_float_3(dt.texel_weights_float_4t[3] + si);
+		vfloat texel_weights_float_0 = loada(dt.texel_weights_float_4t[0] + i);
+		vfloat texel_weights_float_1 = loada(dt.texel_weights_float_4t[1] + i);
+		vfloat texel_weights_float_2 = loada(dt.texel_weights_float_4t[2] + i);
+		vfloat texel_weights_float_3 = loada(dt.texel_weights_float_4t[3] + i);
 
 		vfloat weight = (weight_set_0 * texel_weights_float_0
 		                + weight_set_1 * texel_weights_float_1)
 		               + (weight_set_2 * texel_weights_float_2
 		                + weight_set_3 * texel_weights_float_3);
 
-		storea(weight, infilled_weights + si);
+		storea(weight, infilled_weights + i);
 	}
-
-#endif
-
-	// Loop tail
-	for (/* */; si < texel_count; si++)
+#else
+	for (int i = 0; i < texel_count; i++)
 	{
-		const uint8_t *texel_weights = dt.texel_weights_t4[si];
-		const float *texel_weights_float = dt.texel_weights_float_t4[si];
-		infilled_weights[si] = (weight_set[texel_weights[0]] * texel_weights_float[0]
+		const uint8_t *texel_weights = dt.texel_weights_t4[i];
+		const float *texel_weights_float = dt.texel_weights_float_t4[i];
+		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
 		                      + weight_set[texel_weights[1]] * texel_weights_float[1])
 		                     + (weight_set[texel_weights[2]] * texel_weights_float[2]
 		                      + weight_set[texel_weights[3]] * texel_weights_float[3]);
 	}
+#endif
 
 	// Perform a single iteration of refinement
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
 
-	si = 0;
-
 #if ASTCENC_SIMD_WIDTH >= 8
-	for (/* */; si < clipped_weight_count; si += ASTCENC_SIMD_WIDTH)
+	for (int i = 0; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
-		vfloat weight_val(weight_set + si);
+		vfloat weight_val = loada(weight_set + i);
 
 		// Accumulate error weighting of all the texels using this weight
 		vfloat error_change0(1e-10f);
 		vfloat error_change1(0.0f);
 
 		// Accumulate error weighting of all the texels using this weight
-		vint weight_texel_count(dt.weight_texel_count + si);
+		vint weight_texel_count(dt.weight_texel_count + i);
 		int max_texel_count = hmax(weight_texel_count).lane<0>();
 		promise(max_texel_count > 0);
 
@@ -1000,10 +991,10 @@ void compute_ideal_weights_for_decimation_table(
 			// Not all lanes may actually use j texels, so mask out if idle
 			vmask active = weight_texel_count > vint(j);
 
-			vint texel(dt.weight_texel[j] + si);
+			vint texel(dt.weight_texel[j] + i);
 			texel = select(vint::zero(), texel, active);
 
-			vfloat contrib_weight(dt.weights_flt[j] + si);
+			vfloat contrib_weight = loada(dt.weights_flt[j] + i);
 			contrib_weight = select(vfloat::zero(), contrib_weight, active);
 
 			vfloat scale = gatherf(eai_in.weight_error_scale, texel) * contrib_weight;
@@ -1018,26 +1009,24 @@ void compute_ideal_weights_for_decimation_table(
 		step = clamp(-stepsize, stepsize, step);
 
 		// update the weight
-		store(weight_val + step, weight_set + si);
+		storea(weight_val + step, weight_set + i);
 	}
-#endif
-
-	// Loop tail
-	for (/* */; si < weight_count; si++)
+#else
+	for (int i = 0; i < weight_count; i++)
 	{
-		float weight_val = weight_set[si];
+		float weight_val = weight_set[i];
 
 		// Start with a small value to avoid div-by-zero later
 		float error_change0 = 1e-10f;
 		float error_change1 = 0.0f;
 
 		// Compute the two error changes that occur from perturbing the current index
-		int weight_texel_count = dt.weight_texel_count[si];
+		int weight_texel_count = dt.weight_texel_count[i];
 		promise(weight_texel_count > 0);
 		for (int k = 0; k < weight_texel_count; k++)
 		{
-			uint8_t texel = dt.weight_texel[k][si];
-			float contrib_weight = dt.weights_flt[k][si];
+			uint8_t texel = dt.weight_texel[k][i];
+			float contrib_weight = dt.weights_flt[k][i];
 
 			float scale = eai_in.weight_error_scale[texel] * contrib_weight;
 			float old_weight = infilled_weights[texel];
@@ -1051,8 +1040,9 @@ void compute_ideal_weights_for_decimation_table(
 		step = astc::clamp(step, -stepsize, stepsize);
 
 		// update the weight
-		weight_set[si] = weight_val + step;
+		weight_set[i] = weight_val + step;
 	}
+#endif
 }
 
 /*

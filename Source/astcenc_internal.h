@@ -409,7 +409,7 @@ struct decimation_table
 
 	// Stored transposed to give better access patterns
 	uint8_t weight_texel[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the texels that the weight contributes to
-	float weights_flt[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the weights that the weight contributes to a texel.
+	alignas(ASTCENC_VECALIGN) float weights_flt[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the weights that the weight contributes to a texel.
 
 	// folded data structures:
 	//  * texel_weights_texel[i][j] = texel_weights[weight_texel[i][j]];
