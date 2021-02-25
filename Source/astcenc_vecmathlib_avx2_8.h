@@ -831,12 +831,14 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
 {
-	// Two sequential 4-wide accumulates gives invariance with 4-wide code
+	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
+	// Note that this approach gives higher error in the sum; adding the two
+	// smaller numbers together first would be more accurate.
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
-	accum += hadd_s(lo);
+	haccumulate(accum, lo);
 
 	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
-	accum += hadd_s(hi);
+	haccumulate(accum, hi);
 }
 
 /**
@@ -844,11 +846,14 @@ ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 {
-	// Two sequential 4-wide accumulates gives invariance with 4-wide code
+	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
+	// Note that this approach gives higher error in the sum; adding the two
+	// smaller numbers together first would be more accurate.
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	haccumulate(accum, lo);
+
 	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
-	accum = accum + lo;
-	accum = accum + hi;
+	haccumulate(accum, hi);
 }
 
 /**
