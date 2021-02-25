@@ -820,27 +820,31 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 {
+	// Two sequential 4-wide adds gives invariance with 4-wide code
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
 	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
 	return hadd_s(lo) + hadd_s(hi);
 }
 
 /**
- * @brief Return the an accumulated horizontal sum of a vector
+ * @brief Accumulate the full horizontal sum of a vector.
  */
 ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
 {
+	// Two sequential 4-wide accumulates gives invariance with 4-wide code
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
-	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
 	accum += hadd_s(lo);
+
+	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
 	accum += hadd_s(hi);
 }
 
 /**
- * @brief Return the an accumulated partial horizontal sum of a vector
+ * @brief Accumulate lane-wise sums for a vector, folded 4-wide.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 {
+	// Two sequential 4-wide accumulates gives invariance with 4-wide code
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
 	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
 	accum = accum + lo;

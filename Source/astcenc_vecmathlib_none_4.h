@@ -1064,7 +1064,7 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 }
 
 /**
- * @brief Return the an accumulated horizontal sum of a vector
+ * @brief Accumulate the full horizontal sum of a vector.
  */
 ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
 {
@@ -1072,7 +1072,7 @@ ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
 }
 
 /**
- * @brief Return the an accumulated partial horizontal sum of a vector
+ * @brief Accumulate lane-wise sums for a vector.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 {
