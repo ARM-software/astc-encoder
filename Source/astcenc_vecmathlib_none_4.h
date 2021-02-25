@@ -666,8 +666,7 @@ ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
  */
 ASTCENC_SIMD_INLINE int hadd_s(vint4 a)
 {
-	// Use halving add, gives invariance with SIMD versions
-	return (a.m[0] + a.m[2]) + (a.m[1] + a.m[3]);
+	return a.m[0] + a.m[1] + a.m[2] + a.m[3];
 }
 
 /**
