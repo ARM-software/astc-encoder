@@ -1058,9 +1058,25 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
-	return (a.m[0] + a.m[1]) + (a.m[2] + a.m[3]);
+	// Use halving add, gives invariance with SIMD versions
+	return (a.m[0] + a.m[2]) + (a.m[1] + a.m[3]);
 }
 
+/**
+ * @brief Accumulate the full horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
+{
+	accum += hadd_s(a);
+}
+
+/**
+ * @brief Accumulate lane-wise sums for a vector.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
+{
+	accum = accum + a;
+}
 
 /**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
@@ -1130,10 +1146,9 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* ptr)
  */
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
-	return a.m[0] * b.m[0] +
-	       a.m[1] * b.m[1] +
-	       a.m[2] * b.m[2] +
-	       a.m[3] * b.m[3];
+	// Use halving add, gives invariance with SIMD versions
+	return (a.m[0] * b.m[0] + a.m[2] * b.m[2]) +
+	       (a.m[1] * b.m[1] + a.m[3] * b.m[3]);
 }
 
 /**

@@ -1043,6 +1043,22 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 }
 
 /**
+ * @brief Accumulate the full horizontal sum of a vector.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
+{
+	accum += hadd_s(a);
+}
+
+/**
+ * @brief Accumulate lane-wise sums for a vector.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
+{
+	accum = accum + a;
+}
+
+/**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
  */
 ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
