@@ -742,16 +742,14 @@ float compute_error_of_weight_set(
 	const decimation_table* dt,
 	const float* weights
 ) {
-	vfloat4 verror_summa = vfloat4::zero();
+	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
 	int texel_count = dt->texel_count;
 
 	int i = 0;
 
-#if ASTCENC_SIMD_WIDTH > 1
-
 	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_down_to_simd_multiple_8(texel_count);
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Load the bilinear filter texel weight indexes
@@ -785,14 +783,14 @@ float compute_error_of_weight_set(
 		vfloat significance = loada(&(eai->weight_error_scale[i]));
 		vfloat error = diff * diff * significance;
 
-		haccumulate(verror_summa, error);
+		haccumulate(error_summav, error);
 	}
 
-	// Accumulate the error vectors into a single error sum
-	haccumulate(error_summa, verror_summa);
-#endif
-
 	// Loop tail
+	// Error is buffered and accumulated in blocks of 4 to ensure that
+	// the partial sums added to the accumulator are invariant with the
+	// vector implementation, irrespective of vector size ...
+	alignas(16) float errorsum_tmp[4] { 0 };
 	for (/* */; i < texel_count; i++)
 	{
 		// This isn't the ideal access pattern, but the cache lines are probably
@@ -805,8 +803,27 @@ float compute_error_of_weight_set(
 		float valuedif = current_value - eai->weights[i];
 		float error = valuedif * valuedif * eai->weight_error_scale[i];
 
-		error_summa += error;
+		// Accumulate error sum in the temporary array
+		int error_index = i & 0x3;
+		errorsum_tmp[error_index] = error;
+
+#if ASTCENC_SIMD_WIDTH == 8
+		// Zero the temporary staging buffer every 4 items unless last. Note
+		// that this block can only trigger for 6x5 blocks, all other partials
+		// tails are shorter than 4 ...
+		if ((i & 0x7) == 0x03)
+		{
+			haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
+ 			storea(vfloat4::zero(), errorsum_tmp);
+		}
+#endif
 	}
+
+	// Accumulate the loop tail using the vfloat4 swizzle
+	haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
+
+	// Resolve the final scalar accumulator sum
+	haccumulate(error_summa, error_summav);
 
 	return error_summa;
 }
