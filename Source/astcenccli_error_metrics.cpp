@@ -227,7 +227,7 @@ void compute_error_metrics(
 					    data16[(4 * xsize2 * y) + (4 * x + 3)]);
 
 					color2 = float16_to_float(color2i);
-					color2 = clamp(0, 65504.0f, color2);;
+					color2 = clamp(0, 65504.0f, color2);
 				}
 				else // if (img2->data_type == ASTCENC_TYPE_F32)
 				{

@@ -100,7 +100,7 @@ static void kmeans_init(
 		}
 
 		// update the distances with the new point.
-		center_color = blk->texel(sample);;
+		center_color = blk->texel(sample);
 
 		distance_sum = 0.0f;
 		for (int i = 0; i < texels_per_block; i++)

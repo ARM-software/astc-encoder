@@ -904,7 +904,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 			    best_quant_levels + i, best_quant_levels_mod + i,
 			    best_ep_formats[i], &error_of_best_combination);
 
-			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];;
+			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 		}
 	}
 	// code for the case where the block contains 4 partitions
