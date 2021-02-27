@@ -119,7 +119,7 @@ struct compression_workload {
 /**
  * @brief Test if a string argument is a well formed float.
  */
-bool is_float(
+static bool is_float(
 	std::string target
 ) {
 	float test;

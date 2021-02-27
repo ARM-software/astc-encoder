@@ -134,7 +134,7 @@ static uint32_t rtup_shift32(uint32_t inp, uint32_t shamt)
 }
 
 /* convert from FP16 to FP32. */
-sf32 sf16_to_sf32(sf16 inp)
+static sf32 sf16_to_sf32(sf16 inp)
 {
 	uint32_t inpx = inp;
 
@@ -185,7 +185,7 @@ sf32 sf16_to_sf32(sf16 inp)
 }
 
 /* Conversion routine that converts from FP32 to FP16. It supports denormals and all rounding modes. If a NaN is given as input, it is quietened. */
-sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
+static sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 {
 	/* for each possible sign/exponent combination, store a case index. This gives a 512-byte table */
 	static const uint8_t tab[512] = {
