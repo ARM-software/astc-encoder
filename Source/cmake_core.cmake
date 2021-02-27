@@ -95,6 +95,7 @@ macro(astcenc_set_properties NAME)
 
             # MSVC compiler defines
             $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+            $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
 
             # G++ and Clang++ compiler defines
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
