@@ -957,7 +957,7 @@ struct pixel_region_variance_args
 	/** The channel swizzle pattern. */
 	astcenc_swizzle swz;
 	/** Should the algorithm bother with Z axis processing? */
-	int have_z;
+	bool have_z;
 	/** The kernel radius for average and variance. */
 	int avg_var_kernel_radius;
 	/** The kernel radius for alpha processing. */
