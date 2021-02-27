@@ -218,7 +218,7 @@ static void copy_scanline(
 
 #define id(x) (x)
 #define u16_sf16(x) float_to_float16(x * (1.0f/65535.0f))
-#define f32_sf16(x) float16_to_float(x)
+#define f32_sf16(x) float_to_float16(x)
 
 #define COPY_R(dsttype, srctype, convfunc, oneval) \
 	do { \
@@ -418,21 +418,21 @@ static void copy_scanline(
 		COPY_LA(uint16_t, uint16_t, u16_sf16, 0x3C00);
 
 	case R32F_TO_RGBA16F:
-		COPY_R(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_R(uint16_t, float, f32_sf16, 0x3C00);
 	case RG32F_TO_RGBA16F:
-		COPY_RG(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_RG(uint16_t, float, f32_sf16, 0x3C00);
 	case RGB32F_TO_RGBA16F:
-		COPY_RGB(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_RGB(uint16_t, float, f32_sf16, 0x3C00);
 	case RGBA32F_TO_RGBA16F:
-		COPY_RGBA(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_RGBA(uint16_t, float, f32_sf16, 0x3C00);
 	case BGR32F_TO_RGBA16F:
-		COPY_BGR(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_BGR(uint16_t, float, f32_sf16, 0x3C00);
 	case BGRA32F_TO_RGBA16F:
-		COPY_BGRA(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_BGRA(uint16_t, float, f32_sf16, 0x3C00);
 	case L32F_TO_RGBA16F:
-		COPY_L(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_L(uint16_t, float, f32_sf16, 0x3C00);
 	case LA32F_TO_RGBA16F:
-		COPY_LA(uint16_t, uint32_t, f32_sf16, 0x3C00);
+		COPY_LA(uint16_t, float, f32_sf16, 0x3C00);
 	}
 }
 
