@@ -861,7 +861,7 @@ void compute_ideal_weights_for_decimation_table(
 	{
 		for (int i = 0; i < texel_count; i++)
 		{
-			assert(i == dt.weight_texel[i][0]);
+			assert(i == dt.weight_texel[0][i]);
 			weight_set[i] = eai_in.weights[i];
 			weights[i] = eai_in.weight_error_scale[i];
 
