@@ -152,7 +152,7 @@ void imageblock_initialize_deriv(
 			vfloat4 dataf = float16_to_float(datai);
 			dataf = max(dataf, 6e-5f);
 
-			vfloat4 data_lns1 = dataf * 1.05;
+			vfloat4 data_lns1 = dataf * 1.05f;
 			data_lns1 = vfloat4(
 				float_to_lns(data_lns1.lane<0>()),
 				float_to_lns(data_lns1.lane<1>()),
@@ -421,7 +421,7 @@ void fetch_imageblock(
 						a = data[swz.a];
 					}
 
-					vfloat4 dataf = max(float16_to_float(vint4(r, g, b, a)), 1e-8);
+					vfloat4 dataf = max(float16_to_float(vint4(r, g, b, a)), 1e-8f);
 					blk->data_r[idx] = dataf.lane<0>();
 					blk->data_g[idx] = dataf.lane<1>();
 					blk->data_b[idx] = dataf.lane<2>();
