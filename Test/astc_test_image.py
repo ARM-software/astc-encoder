@@ -462,9 +462,9 @@ def main():
                 # The fast and fastest presets are now sufficiently fast that
                 # the results are noisy without more repeats
                 testRepeats = args.testRepeats
-                if quality == "fast":
+                if quality == "fast" and testRepeats > 1:
                     testRepeats *= 2
-                elif quality == "fastest":
+                elif quality == "fastest" and testRepeats > 1:
                     testRepeats *= 4
 
                 resultSet = run_test_set(encoder, testRef, testSet, quality,
