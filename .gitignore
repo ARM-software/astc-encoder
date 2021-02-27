@@ -29,6 +29,7 @@ TestOutput
 /*.json
 /*.log
 /*.txt
+/*.hdr
 /*.png
 /*.exr
 /*.astc
