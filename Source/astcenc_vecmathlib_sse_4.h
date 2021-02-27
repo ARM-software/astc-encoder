@@ -619,7 +619,7 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 /**
  * @brief Return the clamped value between min and max.
  */
-ASTCENC_SIMD_INLINE vint4 clamp(float minv, float maxv, vint4 a)
+ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 {
 	return min(max(a, vint4(minv)), vint4(maxv));
 }
