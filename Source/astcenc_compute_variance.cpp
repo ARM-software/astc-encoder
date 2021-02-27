@@ -117,7 +117,7 @@ static void compute_pixel_region_variance(
 	float rgb_power = arg->rgb_power;
 	float alpha_power = arg->alpha_power;
 	astcenc_swizzle swz = arg->swz;
-	int have_z = arg->have_z;
+	bool have_z = arg->have_z;
 
 	int size_x = arg->size_x;
 	int size_y = arg->size_y;
@@ -590,7 +590,7 @@ unsigned int init_compute_averages_and_variances(
 	int kernel_radius = astc::max(avg_var_kernel_radius, alpha_kernel_radius);
 	int kerneldim = 2 * kernel_radius + 1;
 
-	int have_z = (size_z > 1);
+	bool have_z = (size_z > 1);
 	int max_blk_size_xy = have_z ? 16 : 32;
 	int max_blk_size_z = astc::min(size_z, have_z ? 16 : 1);
 
