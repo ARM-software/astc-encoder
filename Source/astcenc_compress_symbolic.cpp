@@ -1447,8 +1447,8 @@ void compress_block(
 	// find best blocks for 2, 3 and 4 partitions
 	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
-		int partition_indices_1plane[2];
-		int partition_index_2planes;
+		int partition_indices_1plane[2] { 0, 0 };
+		int partition_index_2planes = 0;
 
 		find_best_partitionings(bsd, blk, ewb, partition_count,
 		                        ctx.config.tune_partition_index_limit,
