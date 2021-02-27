@@ -41,6 +41,7 @@
 #endif
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 
 // ============================================================================
@@ -744,6 +745,17 @@ ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 	             (cond.m[3] & 0x80000000) ? b.m[3] : a.m[3]);
 }
 
+/**
+ * @brief Debug function to print a vector of ints.
+ */
+ASTCENC_SIMD_INLINE void print(vint4 a)
+{
+	alignas(16) int v[4];
+	storea(a, v);
+	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	       v[0], v[1], v[2], v[3]);
+}
+
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================
@@ -1277,6 +1289,17 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 a)
 	vfloat4 r;
 	memcpy(r.m, a.m, 4 * 4);
 	return r;
+}
+
+/**
+ * @brief Debug function to print a vector of floats.
+ */
+ASTCENC_SIMD_INLINE void print(vfloat4 a)
+{
+	alignas(16) float v[4];
+	storea(a, v);
+	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
+	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_NONE_4_H_INCLUDED
