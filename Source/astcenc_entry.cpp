@@ -424,8 +424,10 @@ astcenc_error astcenc_config_init(
 		float wt_node_b = (quality - node_a.quality) / wt_range;
 
 		#define LERP(param) ((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
-		#define LERPI(param) astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
-		#define LERPUI(param) (unsigned int)astc::flt2int_rtn((node_a.param * wt_node_a) + (node_b.param * wt_node_b))
+		#define LERPI(param) astc::flt2int_rtn(\
+		                         (((float)node_a.param) * wt_node_a) + \
+		                         (((float)node_b.param) * wt_node_b))
+		#define LERPUI(param) (unsigned int)LERPI(param)
 
 		config.tune_partition_count_limit = LERPI(tune_partition_count_limit);
 		config.tune_partition_index_limit = LERPI(tune_partition_index_limit);
