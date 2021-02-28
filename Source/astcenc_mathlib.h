@@ -112,23 +112,6 @@ static const float PI          = 3.14159265358979323846f;
 static const float PI_OVER_TWO = 1.57079632679489661923f;
 
 /**
- * @brief Fast approximation of log2(v).
- *
- * This does not produce correct results for special cases such as
- * zero/inf/nan/denormal/negative inputs:
- *
- *   * Any negative, zero, or denormal will get clamped to smallest-normal,
- *     resulting in a logarithm of -126.
- *   * +Inf and +NaN get treated as an extension of largest-finite values,
- *     which should result in a logarithm value between 128 and 129.
- *
- * @param v   The input value.
- *
- * @return The approximate log2(v).
- */
-float log2(float v);
-
-/**
  * @brief SP float absolute value.
  *
  * @param v   The value to make absolute.
@@ -416,25 +399,6 @@ static inline float frexp(float v, int* expo)
 	*expo = ((p.u >> 23) & 0xFF) - 126;
 	p.u = (p.u & 0x807fffff) | 0x3f000000;
 	return p.f;
-}
-
-/**
- * @brief Log base 2, linearized from 2^-14.
- *
- * @param v   The value to log2.
- *
- * @return The approximated result.
- */
-static inline float xlog2(float v)
-{
-	if (v >= 0.00006103515625f)
-	{
-		return astc::log2(v);
-	}
-
-	// Linearized region
-	return -15.442694664f + v * 23637.115234375f;
-
 }
 
 /**

@@ -259,17 +259,8 @@ void compute_error_metrics(
 
 				if (compute_hdr_metrics)
 				{
-					vfloat4 log_input_color1 = vfloat4(
-					    astc::xlog2(color1.lane<0>()),
-					    astc::xlog2(color1.lane<1>()),
-					    astc::xlog2(color1.lane<2>()),
-					    astc::xlog2(color1.lane<3>()));
-
-					vfloat4 log_input_color2 = vfloat4(
-					    astc::xlog2(color2.lane<0>()),
-					    astc::xlog2(color2.lane<1>()),
-					    astc::xlog2(color2.lane<2>()),
-					    astc::xlog2(color2.lane<3>()));
+					vfloat4 log_input_color1 = log2(color1);
+					vfloat4 log_input_color2 = log2(color2);
 
 					vfloat4 log_diffcolor = log_input_color1 - log_input_color2;
 

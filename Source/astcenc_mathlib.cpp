@@ -17,41 +17,6 @@
 
 #include "astcenc_mathlib.h"
 
-/* Public function, see header file for detailed documentation */
-float astc::log2(float val)
-{
-	if32 p;
-	p.f = val;
-	if (p.s < 0x800000)
-		p.s = 0x800000; // negative, 0, denormal get clamped to non-denormal.
-
-	// normalize mantissa to range [0.66, 1.33] and extract an exponent
-	// in such a way that 1.0 returns 0.
-	p.s -= 0x3f2aaaab;
-	int expo = p.s >> 23;
-	p.s &= 0x7fffff;
-	p.s += 0x3f2aaaab;
-
-	float x = p.f - 1.0f;
-
-	// taylor polynomial that, with horner's-rule style evaluation,
-	// gives sufficient precision for our use
-	// (relative error of about 1 in 10^6)
-
-	float res = (float)expo
-	          + x * ( 1.442695040888963f
-	          + x * (-0.721347520444482f
-	          + x * ( 0.480898346962988f
-	          + x * (-0.360673760222241f
-	          + x * ( 0.288539008177793f
-	          + x * (-0.240449173481494f
-	          + x * ( 0.206099291555566f
-	          + x * (-0.180336880111120f
-	          + x * ( 0.160299448987663f
-	          )))))))));
-	return res;
-}
-
 /**
  * @brief 64-bit rotate left.
  *

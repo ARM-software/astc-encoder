@@ -294,6 +294,27 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-2.3-neon"
         outDir = "Test/Images/%s" % imageSet
         refName = None
+    # 2.3 variants
+    elif encoderName == "ref-2.4-sse2":
+        encoder = te.Encoder2_3("sse2")
+        name = "reference-2.4-sse2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.4-sse4.1":
+        encoder = te.Encoder2_3("sse4.1")
+        name = "reference-2.4-sse4.1"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.4-avx2":
+        encoder = te.Encoder2_3("avx2")
+        name = "reference-2.4-avx2"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
+    elif encoderName == "ref-2.4-neon":
+        encoder = te.Encoder2_3("neon")
+        name = "reference-2.4-neon"
+        outDir = "Test/Images/%s" % imageSet
+        refName = None
     # Latest main
     elif encoderName == "ref-main-neon":
         # Warning: this option rebuilds a new reference test result for the
@@ -345,6 +366,7 @@ def parse_command_line():
     refcoders = ["ref-1.7",
                  "ref-2.2-neon", "ref-2.2-sse2", "ref-2.2-sse4.1", "ref-2.2-avx2",
                  "ref-2.3-neon", "ref-2.3-sse2", "ref-2.3-sse4.1", "ref-2.3-avx2",
+                 "ref-2.4-neon", "ref-2.4-sse2", "ref-2.4-sse4.1", "ref-2.4-avx2",
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders

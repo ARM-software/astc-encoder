@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
 // Copyright 2019-2021 Arm Limited
+// Copyright 2008 Jose Fonseca
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -263,6 +264,83 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 	}
 
 	return safe;
+}
+
+// log2 and exp2 based on 5th degree minimax polynomials, ported from this blog
+// https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+
+#define POLY0(x, c0)                     (                                     c0)
+#define POLY1(x, c0, c1)                 ((POLY0(x, c1) * x)                 + c0)
+#define POLY2(x, c0, c1, c2)             ((POLY1(x, c1, c2) * x)             + c0)
+#define POLY3(x, c0, c1, c2, c3)         ((POLY2(x, c1, c2, c3) * x)         + c0)
+#define POLY4(x, c0, c1, c2, c3, c4)     ((POLY3(x, c1, c2, c3, c4) * x)     + c0)
+#define POLY5(x, c0, c1, c2, c3, c4, c5) ((POLY4(x, c1, c2, c3, c4, c5) * x) + c0)
+
+static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
+{
+	x = clamp(-126.99999f, 129.0f, x);
+
+	vint4 ipart = float_to_int(x - 0.5f);
+	vfloat4 fpart = x - int_to_float(ipart);
+
+	// Integer contrib, using 1 << ipart
+	vfloat4 iexp = int_as_float(lsl<23>(ipart + 127));
+
+	// Fractional contrib, using polynomial fit of 2^x in range [-0.5, 0.5)
+	vfloat4 fexp = POLY5(fpart,
+	                     9.9999994e-1f,
+	                     6.9315308e-1f,
+	                     2.4015361e-1f,
+	                     5.5826318e-2f,
+	                     8.9893397e-3f,
+	                     1.8775767e-3f);
+
+	return iexp * fexp;
+}
+
+static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
+{
+	vint4 exp(0x7F800000);
+	vint4 mant(0x007FFFFF);
+	vint4 one(0x3F800000);
+
+	vint4 i = float_as_int(x);
+
+	vfloat4 e = int_to_float(lsr<23>(i & exp) - 127);
+
+	vfloat4 m = int_as_float((i & mant) | one);
+
+	// Polynomial fit of log2(x)/(x - 1), for x in range [1, 2)
+	vfloat4 p = POLY4(m,
+	                  2.8882704548164776201f,
+	                 -2.52074962577807006663f,
+	                  1.48116647521213171641f,
+	                 -0.465725644288844778798f,
+	                  0.0596515482674574969533f);
+
+	// Increases the polynomial degree, but ensures that log2(1) == 0
+	p = p * (m - 1.0f);
+
+	return p + e;
+}
+
+static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
+{
+	vmask4 zero_mask = y == vfloat4(0.0f);
+	vfloat4 estimate = exp2(log2(x) * y);
+
+	// Guarantee that y == 0 returns exactly 1.0f
+	return select(estimate, vfloat4(1.0f), zero_mask);
+}
+
+namespace astc
+{
+
+static ASTCENC_SIMD_INLINE float pow(float x, float y)
+{
+	return pow(vfloat4(x), vfloat4(y)).lane<0>();
+}
+
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED
