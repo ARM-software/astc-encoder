@@ -602,6 +602,17 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 }
 
 /**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	return vint4((int)(((unsigned int)a.m[0]) >> s),
+	             (int)(((unsigned int)a.m[1]) >> s),
+	             (int)(((unsigned int)a.m[2]) >> s),
+	             (int)(((unsigned int)a.m[3]) >> s),
+}
+
+/**
  * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
@@ -772,6 +783,14 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar addition.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
+{
+	return a + vfloat4(b);
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
@@ -780,6 +799,14 @@ ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 	               a.m[1] - b.m[1],
 	               a.m[2] - b.m[2],
 	               a.m[3] - b.m[3]);
+}
+
+/**
+ * @brief Overload: vector by scalar subtraction.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
+{
+	return a - vfloat4(b);
 }
 
 /**

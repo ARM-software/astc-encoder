@@ -557,11 +557,21 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 }
 
 /**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	uint32x4_t ua = vreinterpretq_u32_s32(a.m);
+	ua = vshlq_u32(ua, vdupq_n_s32(-s)
+	return vint4(vreinterpretq_s32_u32(ua));
+}
+
+/**
  * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
-	return vint4(vshlq_s32(a.m, vdupq_n_s32(-s)));
+	return vint4(vshlq_u32(a.m, vdupq_n_s32(-s)));
 }
 
 /**
@@ -708,11 +718,27 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar addition.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
+{
+	return a + vfloat4(b);
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 {
 	return vfloat4(vsubq_f32(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scalar subtraction.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
+{
+	return a - vfloat4(b);
 }
 
 /**
