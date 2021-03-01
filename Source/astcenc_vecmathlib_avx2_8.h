@@ -555,7 +555,7 @@ ASTCENC_SIMD_INLINE void print(vint8 a)
 {
 	alignas(ASTCENC_VECALIGN) int v[8];
 	storea(a, v);
-	printf("v8_i32:\n  %8u %8u %8u %8u %8u %8u %8u %8u\n",
+	printf("v8_i32:\n  %8d %8d %8d %8d %8d %8d %8d %8d\n",
 	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
 }
 

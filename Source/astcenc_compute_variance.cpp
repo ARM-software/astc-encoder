@@ -205,10 +205,8 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.set_lane<0>(powf(astc::max(d.lane<0>(), 1e-6f), rgb_power));
-						d.set_lane<1>(powf(astc::max(d.lane<1>(), 1e-6f), rgb_power));
-						d.set_lane<2>(powf(astc::max(d.lane<2>(), 1e-6f), rgb_power));
-						d.set_lane<3>(powf(astc::max(d.lane<3>(), 1e-6f), alpha_power));
+						vfloat4 exp(rgb_power, rgb_power, rgb_power, alpha_power);
+						d = pow(max(d, 1e-6f), exp);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -250,11 +248,8 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						// TODO: Vectorize this ...
-						d.set_lane<0>(powf(astc::max(d.lane<0>(), 1e-6f), rgb_power));
-						d.set_lane<1>(powf(astc::max(d.lane<1>(), 1e-6f), rgb_power));
-						d.set_lane<2>(powf(astc::max(d.lane<2>(), 1e-6f), rgb_power));
-						d.set_lane<3>(powf(astc::max(d.lane<3>(), 1e-6f), alpha_power));
+						vfloat4 exp(rgb_power, rgb_power, rgb_power, alpha_power);
+						d = pow(max(d, 1e-6f), exp);
 					}
 
 					VARBUF1(z, y, x) = d;
@@ -302,10 +297,8 @@ static void compute_pixel_region_variance(
 
 					if (!are_powers_1)
 					{
-						d.set_lane<0>(powf(astc::max(d.lane<0>(), 1e-6f), rgb_power));
-						d.set_lane<1>(powf(astc::max(d.lane<1>(), 1e-6f), rgb_power));
-						d.set_lane<2>(powf(astc::max(d.lane<2>(), 1e-6f), rgb_power));
-						d.set_lane<3>(powf(astc::max(d.lane<3>(), 1e-6f), alpha_power));
+						vfloat4 exp(rgb_power, rgb_power, rgb_power, alpha_power);
+						d = pow(max(d, 1e-6f), exp);
 					}
 
 					VARBUF1(z, y, x) = d;

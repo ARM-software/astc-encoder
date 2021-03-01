@@ -968,7 +968,7 @@ void expand_deblock_weights(
 
 				float wdif = 0.36f;
 				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
-				*bef = powf(dist, ctx.config.b_deblock_weight);
+				*bef = astc::pow(dist, ctx.config.b_deblock_weight);
 				bef++;
 			}
 		}

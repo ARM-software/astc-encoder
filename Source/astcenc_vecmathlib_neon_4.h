@@ -557,6 +557,16 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 }
 
 /**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	uint32x4_t ua = vreinterpretq_u32_s32(a.m);
+	ua = vshlq_u32(ua, vdupq_n_s32(-s));
+	return vint4(vreinterpretq_s32_u32(ua));
+}
+
+/**
  * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
@@ -618,8 +628,7 @@ ASTCENC_SIMD_INLINE int hadd_s(vint4 a)
  */
 ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 {
-	a.set_lane<3>(0.0f);
-	return hadd_s(a);
+	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
 /**
@@ -691,7 +700,7 @@ ASTCENC_SIMD_INLINE void print(vint4 a)
 {
 	alignas(16) int v[4];
 	storea(a, v);
-	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	printf("v4_i32:\n  %8d %8d %8d %8d\n",
 	       v[0], v[1], v[2], v[3]);
 }
 
@@ -708,11 +717,27 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar addition.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
+{
+	return a + vfloat4(b);
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 {
 	return vfloat4(vsubq_f32(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scalar subtraction.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
+{
+	return a - vfloat4(b);
 }
 
 /**
@@ -958,6 +983,8 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
+	// Perform halving add to ensure invariance; we cannot use vaddqv as this
+	// does (0 + 1 + 2 + 3) which is not invariant with x86 (0 + 2) + (1 + 3).
 	float32x2_t t = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
 	return vget_lane_f32(vpadd_f32(t, t), 0);
 }
@@ -983,8 +1010,7 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 {
-	a.set_lane<3>(0.0f);
-	return hadd_s(a);
+	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
 /**
@@ -1041,7 +1067,7 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
  */
 ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 {
-	return vfloat4(vaddvq_f32(vmulq_f32(a.m, b.m)));
+	return vfloat4(hadd_s(a * b));
 }
 
 /**
@@ -1049,7 +1075,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
-	return dot(a, b).lane<0>();
+	return hadd_s(a * b);
 }
 
 /**
@@ -1057,12 +1083,8 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 {
-	// Clear lane to zero to ensure it's not in the dot()
-	a.set_lane<3>(0.0f);
-	a = vfloat4(vaddvq_f32(vmulq_f32(a.m, b.m)));
-	// Clear lane so we return only a vec3
-	a.set_lane<3>(0.0f);
-	return a;
+	float d3 = hadd_rgb_s(a * b);
+	return vfloat4(d3, d3, d3, 0.0f);
 }
 
 /**
@@ -1070,7 +1092,8 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 {
-	return dot3(a, b).lane<0>();
+	vfloat4 m = a * b;
+	return hadd_rgb_s(m);
 }
 
 /**

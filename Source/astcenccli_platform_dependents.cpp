@@ -78,7 +78,7 @@ int get_cpu_count()
 double get_time()
 {
 	FILETIME tv;
-	GetSystemTimeAsFileTime(&tv);
+	GetSystemTimePreciseAsFileTime(&tv);
 	unsigned long long ticks = tv.dwHighDateTime;
 	ticks = (ticks << 32) | tv.dwLowDateTime;
 	return ((double)ticks) / 1.0e7;

@@ -432,7 +432,7 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scale addition.
+ * @brief Overload: vector by scalar addition.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 {
@@ -448,7 +448,7 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scale subtraction.
+ * @brief Overload: vector by scalar subtraction.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
 {
@@ -576,6 +576,14 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 {
 	return vint4(_mm_slli_epi32(a.m, s));
+}
+
+/**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
+{
+	return vint4(_mm_srli_epi32(a.m, s));
 }
 
 /**
@@ -748,7 +756,7 @@ ASTCENC_SIMD_INLINE void print(vint4 a)
 {
 	alignas(16) int v[4];
 	storea(a, v);
-	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	printf("v4_i32:\n  %8d %8d %8d %8d\n",
 	       v[0], v[1], v[2], v[3]);
 }
 
@@ -765,11 +773,27 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 }
 
 /**
+ * @brief Overload: vector by scalar addition.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
+{
+	return a + vfloat4(b);
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 {
 	return vfloat4(_mm_sub_ps(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by scalar subtraction.
+ */
+ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
+{
+	return a - vfloat4(b);
 }
 
 /**
