@@ -763,7 +763,7 @@ ASTCENC_SIMD_INLINE void print(vint4 a)
 {
 	alignas(16) int v[4];
 	storea(a, v);
-	printf("v4_i32:\n  %8u %8u %8u %8u\n",
+	printf("v4_i32:\n  %8d %8d %8d %8d\n",
 	       v[0], v[1], v[2], v[3]);
 }
 
