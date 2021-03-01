@@ -1521,6 +1521,29 @@ TEST(vint4, lsl)
 	EXPECT_EQ(a.lane<3>(), 32);
 }
 
+/** @brief Test vint4 lsr. */
+TEST(vint4, lsr)
+{
+	vint4 a(1, 2, 4, -4);
+	a = lsr<0>(a);
+	EXPECT_EQ(a.lane<0>(),  1);
+	EXPECT_EQ(a.lane<1>(),  2);
+	EXPECT_EQ(a.lane<2>(),  4);
+	EXPECT_EQ(a.lane<3>(),  0xFFFFFFFC);
+
+	a = lsr<1>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  1);
+	EXPECT_EQ(a.lane<2>(),  2);
+	EXPECT_EQ(a.lane<3>(),  0x7FFFFFFE);
+
+	a = lsr<2>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  0);
+	EXPECT_EQ(a.lane<2>(),  0);
+	EXPECT_EQ(a.lane<3>(),  0x1FFFFFFF);
+}
+
 /** @brief Test vint4 asr. */
 TEST(vint4, asr)
 {
