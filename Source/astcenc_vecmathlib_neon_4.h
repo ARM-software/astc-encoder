@@ -571,7 +571,7 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
-	return vint4(vshlq_u32(a.m, vdupq_n_s32(-s)));
+	return vint4(vshlq_s32(a.m, vdupq_n_s32(-s)));
 }
 
 /**
