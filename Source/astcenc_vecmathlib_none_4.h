@@ -609,7 +609,7 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
 	return vint4((int)(((unsigned int)a.m[0]) >> s),
 	             (int)(((unsigned int)a.m[1]) >> s),
 	             (int)(((unsigned int)a.m[2]) >> s),
-	             (int)(((unsigned int)a.m[3]) >> s),
+	             (int)(((unsigned int)a.m[3]) >> s));
 }
 
 /**

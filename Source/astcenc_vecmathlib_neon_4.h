@@ -562,7 +562,7 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
 {
 	uint32x4_t ua = vreinterpretq_u32_s32(a.m);
-	ua = vshlq_u32(ua, vdupq_n_s32(-s)
+	ua = vshlq_u32(ua, vdupq_n_s32(-s));
 	return vint4(vreinterpretq_s32_u32(ua));
 }
 
