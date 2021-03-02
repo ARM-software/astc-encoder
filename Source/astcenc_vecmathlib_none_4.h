@@ -1222,14 +1222,16 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 {
-	return vint4(a.m[0],
-	             a.m[1],
-	             a.m[2],
-	             a.m[3]);
+	// Casting to unsigned buys us an extra bit of precision in cases where
+	// we can use the integer as nasty bit hacks.
+	return vint4((unsigned int)a.m[0],
+	             (unsigned int)a.m[1],
+	             (unsigned int)a.m[2],
+	             (unsigned int)a.m[3]);
 }
 
-/**
- * @brief Return a integer value for a float vector, using truncation.
+/**f
+ * @brief Return a integer value for a float vector, using round-to-nearest.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
@@ -1240,7 +1242,7 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 }
 
 /**
- * @brief Return a integer value for a float vector, using truncation.
+ * @brief Return a float value for a integer vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 {

@@ -24,103 +24,6 @@
 
 #include "astcenc_internal.h"
 
-// conversion functions between the LNS representation and the FP16 representation.
-static float float_to_lns(float p)
-{
-	if (!(p > (1.0f / 67108864.0f)))
-	{
-		// underflow or NaN value, return 0.
-		// We count underflow if the input value is smaller than 2^-26.
-		return 0.0f;
-	}
-
-	if (p >= 65536.0f)
-	{
-		// overflow, return a +INF value
-		return 65535.0f;
-	}
-
-	int expo;
-	float normfrac = astc::frexp(p, &expo);
-	float p1;
-	if (expo < -13)
-	{
-		// input number is smaller than 2^-14. In this case, multiply by 2^25.
-		p1 = p * 33554432.0f;
-		expo = 0;
-	}
-	else
-	{
-		expo += 14;
-		p1 = (normfrac - 0.5f) * 4096.0f;
-	}
-
-	if (p1 < 384.0f)
-	{
-		p1 *= 4.0f / 3.0f;
-	}
-	else if (p1 <= 1408.0f)
-	{
-		p1 += 128.0f;
-	}
-	else
-	{
-		p1 = (p1 + 512.0f) * (4.0f / 5.0f);
-	}
-
-	p1 += ((float)expo) * 2048.0f;
-	return p1 + 1.0f;
-}
-
-static uint16_t lns_to_sf16(uint16_t p)
-{
-	uint16_t mc = p & 0x7FF;
-	uint16_t ec = p >> 11;
-	uint16_t mt;
-	if (mc < 512)
-	{
-		mt = 3 * mc;
-	}
-	else if (mc < 1536)
-	{
-		mt = 4 * mc - 512;
-	}
-	else
-	{
-		mt = 5 * mc - 2048;
-	}
-
-	uint16_t res = (ec << 10) | (mt >> 3);
-	if (res > 0x7BFF)
-	{
-		res = 0x7BFF;
-	}
-	return res;
-}
-
-// conversion function from 16-bit LDR value to FP16.
-// note: for LDR interpolation, it is impossible to get a denormal result;
-// this simplifies the conversion.
-// FALSE; we can receive a very small UNORM16 through the constant-block.
-uint16_t unorm16_to_sf16(uint16_t p)
-{
-	if (p == 0xFFFF)
-	{
-		return 0x3C00;			// value of 1.0
-	}
-
-	if (p < 4)
-	{
-		return p << 8;
-	}
-
-	int lz = clz32(p) - 16;
-	p <<= (lz + 1);
-	p >>= 6;
-	p |= (14 - lz) << 10;
-	return p;
-}
-
 void imageblock_initialize_deriv(
 	const imageblock* blk,
 	int pixelcount,
@@ -141,32 +44,16 @@ void imageblock_initialize_deriv(
 		if (rgb_lns || a_lns)
 		{
 			vfloat4 data = blk->texel(i);
-
-			vint4 datai(
-				lns_to_sf16((uint16_t)data.lane<0>()),
-				lns_to_sf16((uint16_t)data.lane<1>()),
-				lns_to_sf16((uint16_t)data.lane<2>()),
-				lns_to_sf16((uint16_t)data.lane<3>())
-			);
+			vint4 datai = lns_to_sf16(float_to_int(data));
 
 			vfloat4 dataf = float16_to_float(datai);
 			dataf = max(dataf, 6e-5f);
 
 			vfloat4 data_lns1 = dataf * 1.05f;
-			data_lns1 = vfloat4(
-				float_to_lns(data_lns1.lane<0>()),
-				float_to_lns(data_lns1.lane<1>()),
-				float_to_lns(data_lns1.lane<2>()),
-				float_to_lns(data_lns1.lane<3>())
-			);
+			data_lns1 = float_to_lns(data_lns1);
 
 			vfloat4 data_lns2 = dataf;
-			data_lns2 = vfloat4(
-				float_to_lns(data_lns2.lane<0>()),
-				float_to_lns(data_lns2.lane<1>()),
-				float_to_lns(data_lns2.lane<2>()),
-				float_to_lns(data_lns2.lane<3>())
-			);
+			data_lns2 = float_to_lns(data_lns2);
 
 			vfloat4 divisor_lns = dataf * 0.05f;
 
@@ -197,28 +84,21 @@ static void imageblock_initialize_work_from_orig(
 	for (int i = 0; i < pixelcount; i++)
 	{
 		vfloat4 data = blk->texel(i);
+		vfloat4 color_lns = vfloat4::zero();
+		vfloat4 color_unorm = data * 65535.0f;
 
-		if (blk->rgb_lns[i])
+		int rgb_lns = blk->rgb_lns[i];
+		int a_lns = blk->alpha_lns[i];
+
+		if (rgb_lns || a_lns)
 		{
-			data.set_lane<0>(float_to_lns(data.lane<0>()));
-			data.set_lane<1>(float_to_lns(data.lane<1>()));
-			data.set_lane<2>(float_to_lns(data.lane<2>()));
-		}
-		else
-		{
-			data.set_lane<0>(data.lane<0>() * 65535.0f);
-			data.set_lane<1>(data.lane<1>() * 65535.0f);
-			data.set_lane<2>(data.lane<2>() * 65535.0f);
+			color_lns = float_to_lns(data);
 		}
 
-		if (blk->alpha_lns[i])
-		{
-			data.set_lane<3>(float_to_lns(data.lane<3>()));
-		}
-		else
-		{
-			data.set_lane<3>(data.lane<3>() * 65535.0f);
-		}
+		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		vmask4 lns_mask = use_lns != vint4::zero();
+		data = select(color_unorm, color_lns, lns_mask);
+
 		// Compute block metadata
 		data_min = min(data_min, data);
 		data_max = max(data_max, data);
@@ -261,28 +141,14 @@ void imageblock_initialize_orig_from_work(
 		int rgb_lns = blk->rgb_lns[i];
 		int a_lns = blk->alpha_lns[i];
 
-		// TODO: Do a vector version of lns_to_sf16
-		//       ... or do we even need the f16 intermediate?
 		if (rgb_lns || a_lns)
 		{
-			color_lns = vint4(
-				lns_to_sf16((uint16_t)data.lane<0>()),
-				lns_to_sf16((uint16_t)data.lane<1>()),
-				lns_to_sf16((uint16_t)data.lane<2>()),
-				lns_to_sf16((uint16_t)data.lane<3>())
-			);
+			color_lns = lns_to_sf16(float_to_int(data));
 		}
 
-		// TODO: Do a vector version of unorm16_to_sf16
-		//       ... or do we even need the f16 intermediate?
 		if ((!rgb_lns) || (!a_lns))
 		{
-			color_unorm = vint4(
-				unorm16_to_sf16((uint16_t)data.lane<0>()),
-				unorm16_to_sf16((uint16_t)data.lane<1>()),
-				unorm16_to_sf16((uint16_t)data.lane<2>()),
-				unorm16_to_sf16((uint16_t)data.lane<3>())
-			);
+			color_unorm = unorm16_to_sf16(float_to_int(data));
 		}
 
 		// Pick channels and then covert to FP16

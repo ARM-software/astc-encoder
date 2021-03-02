@@ -132,13 +132,7 @@ void decompress_symbolic_block(
 				colori = asr<8>(colori) * 257;
 			}
 
-			vint4 colorf16(
-				unorm16_to_sf16(colori.lane<0>()),
-				unorm16_to_sf16(colori.lane<1>()),
-				unorm16_to_sf16(colori.lane<2>()),
-				unorm16_to_sf16(colori.lane<3>())
-			);
-
+			vint4 colorf16 = unorm16_to_sf16(colori);
 			color = float16_to_float(colorf16);
 		}
 		else

@@ -266,8 +266,7 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 	return safe;
 }
 
-// log2 and exp2 based on 5th degree minimax polynomials, ported from this blog
-// https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+
 
 #define POLY0(x, c0)                     (                                     c0)
 #define POLY1(x, c0, c1)                 ((POLY0(x, c1) * x)                 + c0)
@@ -276,6 +275,12 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 #define POLY4(x, c0, c1, c2, c3, c4)     ((POLY3(x, c1, c2, c3, c4) * x)     + c0)
 #define POLY5(x, c0, c1, c2, c3, c4, c5) ((POLY4(x, c1, c2, c3, c4, c5) * x) + c0)
 
+/**
+ * @brief Compute an approximate exp2(x) for each lane in the vector.
+ *
+ * Based on 5th degree minimax polynomials, ported from this blog
+ * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ */
 static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
 {
 	x = clamp(-126.99999f, 129.0f, x);
@@ -298,6 +303,12 @@ static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
 	return iexp * fexp;
 }
 
+/**
+ * @brief Compute an approximate log2(x) for each lane in the vector.
+ *
+ * Based on 5th degree minimax polynomials, ported from this blog
+ * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ */
 static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
 {
 	vint4 exp(0x7F800000);
@@ -324,6 +335,11 @@ static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
 	return p + e;
 }
 
+/**
+ * @brief Compute an approximate pow(x, y) for each lane in the vector.
+ *
+ * Power function based on the exp2(log2(x) * y) transform.
+ */
 static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 {
 	vmask4 zero_mask = y == vfloat4(0.0f);
@@ -331,6 +347,161 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 
 	// Guarantee that y == 0 returns exactly 1.0f
 	return select(estimate, vfloat4(1.0f), zero_mask);
+}
+
+/**
+ * @brief Count the leading zeros for each lane in @c a.
+ *
+ * Valid for all data values of @c a; will return a per-lane value [0, 32].
+ */
+ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
+{
+	// This function is a horrible abuse of floating point exponents to convert
+	// the original integer value into a 2^N encoding we can recover easily.
+
+	// Convert to float without risk of rounding up by keeping only top 8 bits.
+	// This trick is is guranteed to keep top 8 bits and clear the 9th.
+	a = (~lsr<8>(a)) & a;
+	a = float_as_int(int_to_float(a));
+
+	// Extract and unbias exponent
+	a = vint4(127 + 31) - lsr<23>(a);
+
+	// Clamp result to a valid 32-bit range
+	return clamp(0, 32, a);
+}
+
+/**
+ * @brief Return lanewise 2^a for each lane in @c a.
+ *
+ * Use of signed int mean that this is only valid for values in range [0, 31].
+ */
+ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
+{
+	// This function is a horrible abuse of floating point to use the exponent
+	// and float conversion to generate a 2^N multiple.
+
+	// Bias the exponent
+	vint4 exp = a + 127;
+	exp = lsl<23>(exp);
+
+	// Reinterpret the bits as a float, and then convert to an int
+	vfloat4 f = int_as_float(exp);
+	return float_to_int(f);
+}
+
+/**
+ * @brief Convert unorm16 [0, 65535] to float16 in range [0, 1].
+ */
+ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
+{
+	vint4 fp16_one = vint4(0x3C00);
+	vint4 fp16_small = lsl<8>(p);
+
+	vmask4 is_one = p == vint4(0xFFFF);
+	vmask4 is_small = p < vint4(4);
+
+	vint4 lz = clz(p) - 16;
+
+	// TODO: Could use AVX2 _mm_sllv_epi32() instead of p * 2^<shift>
+	p = p * two_to_the_n(lz + 1);
+	p = p & vint4(0xFFFF);
+
+	p = lsr<6>(p);
+
+	p = p | lsl<10>(vint4(14) - lz);
+
+	vint4 r = select(p, fp16_one, is_one);
+	r = select(r, fp16_small, is_small);
+	return r;
+}
+
+/**
+ * @brief Convert 16-bit LNS to float16.
+ */
+ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
+{
+	vint4 mc = p & 0x7FF;
+	vint4 ec = lsr<11>(p);
+
+	vint4 mc_512 = mc * 3;
+	vmask4 mask_512 = mc < vint4(512);
+
+	vint4 mc_1536 = mc * 4 - 512;
+	vmask4 mask_1536 = mc < vint4(1536);
+
+	vint4 mc_else = mc * 5 - 2048;
+
+	vint4 mt = mc_else;
+	mt = select(mt, mc_1536, mask_1536);
+	mt = select(mt, mc_512, mask_512);
+
+	vint4 res = lsl<10>(ec) | lsr<3>(mt);
+	return min(res, vint4(0x7BFF));
+}
+
+/**
+ * @brief Extract mantissa and exponent of a float value.
+ *
+ * @param      a      The input value.
+ * @param[out] exp    The output exponent.
+ *
+ * @return The mantissa.
+ */
+static inline vfloat4 frexp(vfloat4 a, vint4& exp)
+{
+	// Interpret the bits as an integer
+	vint4 ai = float_as_int(a);
+
+	// Extract and unbias the exponent
+	exp = (lsr<23>(ai) & 0xFF) - 126;
+
+	// Extract and unbias the mantissa
+	vint4 manti = (ai & 0x807FFFFF) | 0x3F000000;
+	return int_as_float(manti);
+}
+
+/**
+ * @brief Convert float to 16-bit LNS.
+ */
+static inline vfloat4 float_to_lns(vfloat4 a)
+{
+	vint4 exp;
+	vfloat4 mant = frexp(a, exp);
+
+	// Do these early before we start messing about ...
+	vmask4 mask_underflow_nan = ~(a > vfloat4(1.0f / 67108864.0f));
+	vmask4 mask_infinity = a >= vfloat4(65536.0f);
+
+	// If input is smaller than 2^-14, multiply by 2^25 and don't bias.
+	vmask4 exp_lt_m13 = exp < vint4(-13);
+
+	vfloat4 a1a = a * 33554432.0f;
+	vint4 expa = vint4::zero();
+
+	vfloat4 a1b = (mant - 0.5f) * 4096;
+	vint4 expb = exp + 14;
+
+	a = select(a1b, a1a, exp_lt_m13);
+	exp = select(expb, expa, exp_lt_m13);
+
+	vmask4 a_lt_384 = a < vfloat4(384.0f);
+	vmask4 a_lt_1408 = a <= vfloat4(1408.0f);
+
+	vfloat4 a2a = a * (4.0f / 3.0f);
+	vfloat4 a2b = a + 128.0f;
+	vfloat4 a2c = (a + 512.0f) * (4.0f / 5.0f);
+
+	a = a2c;
+	a = select(a, a2b, a_lt_1408);
+	a = select(a, a2a, a_lt_384);
+
+	a = a + (int_to_float(exp) * 2048.0f) + 1.0f;
+
+	a = select(a, vfloat4(65535.0f), mask_infinity);
+	a = select(a, vfloat4::zero(), mask_underflow_nan);
+
+	return a;
 }
 
 namespace astc
