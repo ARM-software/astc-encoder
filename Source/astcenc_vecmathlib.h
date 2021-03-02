@@ -266,8 +266,7 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 	return safe;
 }
 
-// log2 and exp2 based on 5th degree minimax polynomials, ported from this blog
-// https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+
 
 #define POLY0(x, c0)                     (                                     c0)
 #define POLY1(x, c0, c1)                 ((POLY0(x, c1) * x)                 + c0)
@@ -276,6 +275,12 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 #define POLY4(x, c0, c1, c2, c3, c4)     ((POLY3(x, c1, c2, c3, c4) * x)     + c0)
 #define POLY5(x, c0, c1, c2, c3, c4, c5) ((POLY4(x, c1, c2, c3, c4, c5) * x) + c0)
 
+/**
+ * @brief Compute an approximate exp2(x) for each lane in the vector.
+ *
+ * Based on 5th degree minimax polynomials, ported from this blog
+ * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ */
 static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
 {
 	x = clamp(-126.99999f, 129.0f, x);
@@ -298,6 +303,12 @@ static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
 	return iexp * fexp;
 }
 
+/**
+ * @brief Compute an approximate log2(x) for each lane in the vector.
+ *
+ * Based on 5th degree minimax polynomials, ported from this blog
+ * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ */
 static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
 {
 	vint4 exp(0x7F800000);
@@ -324,6 +335,11 @@ static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
 	return p + e;
 }
 
+/**
+ * @brief Compute an approximate pow(x, y) for each lane in the vector.
+ *
+ * Power function based on the exp2(log2(x) * y) transform.
+ */
 static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 {
 	vmask4 zero_mask = y == vfloat4(0.0f);
@@ -333,6 +349,11 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 	return select(estimate, vfloat4(1.0f), zero_mask);
 }
 
+/**
+ * @brief Count the leading zeros for each lane in @c a.
+ *
+ * Valid for all data values of @c a; will return a per-lane value [0, 32].
+ */
 ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 {
 	// This function is a horrible abuse of floating point exponents to convert
@@ -350,12 +371,15 @@ ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 	return clamp(0, 32, a);
 }
 
+/**
+ * @brief Return lanewise 2^a for each lane in @c a.
+ *
+ * Use of signed int mean that this is only valid for values in range [0, 31].
+ */
 ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 {
 	// This function is a horrible abuse of floating point to use the exponent
 	// and float conversion to generate a 2^N multiple.
-
-	// AVX2 has _mm_sllv_epi32()
 
 	// Bias the exponent
 	vint4 exp = a + 127;
@@ -366,7 +390,9 @@ ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 	return float_to_int(f);
 }
 
-// Conversion function from 16-bit LDR value to FP16.
+/**
+ * @brief Convert unorm16 [0, 65535] to float16 in range [0, 1].
+ */
 ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 {
 	vint4 fp16_one = vint4(0x3C00);
@@ -377,6 +403,7 @@ ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 
 	vint4 lz = clz(p) - 16;
 
+	// TODO: Could use AVX2 _mm_sllv_epi32() instead of p * 2^<shift>
 	p = p * two_to_the_n(lz + 1);
 	p = p & vint4(0xFFFF);
 
@@ -389,7 +416,9 @@ ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 	return r;
 }
 
-// Conversion function from 16-bit LDR value to FP16.
+/**
+ * @brief Convert 16-bit LNS to float16.
+ */
 ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
 {
 	vint4 mc = p & 0x7FF;
@@ -432,7 +461,9 @@ static inline vfloat4 frexp(vfloat4 a, vint4& exp)
 	return int_as_float(manti);
 }
 
-// conversion functions between the LNS representation and the FP16 representation.
+/**
+ * @brief Convert float to 16-bit LNS.
+ */
 static inline vfloat4 float_to_lns(vfloat4 a)
 {
 	vint4 exp;
