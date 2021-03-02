@@ -735,12 +735,16 @@ TEST(vfloat4, abs)
 /** @brief Test vfloat4 round. */
 TEST(vfloat4, round)
 {
-	vfloat4 a(1.1f, 1.5f, 1.6f, 4.0f);
-	vfloat4 r = round(a);
-	EXPECT_EQ(r.lane<0>(), 1.0f);
-	EXPECT_EQ(r.lane<1>(), 2.0f);
-	EXPECT_EQ(r.lane<2>(), 2.0f);
-	EXPECT_EQ(r.lane<3>(), 4.0f);
+	vfloat4 a1(1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat4 r1 = round(a1);
+	EXPECT_EQ(r1.lane<0>(), 1.0f);
+	EXPECT_EQ(r1.lane<1>(), 2.0f);
+	EXPECT_EQ(r1.lane<2>(), 2.0f);
+	EXPECT_EQ(r1.lane<3>(), 4.0f);
+
+	vfloat4 a2(-3.5f);
+	vfloat4 r2 = round(a2);
+	EXPECT_EQ(r2.lane<0>(), -4.0f);
 }
 
 /** @brief Test vfloat4 hmin. */

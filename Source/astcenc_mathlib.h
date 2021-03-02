@@ -287,18 +287,6 @@ static inline float clamp255f(float v)
 }
 
 /**
- * @brief SP float round-to-nearest.
- *
- * @param v   The value to round.
- *
- * @return The rounded value.
- */
-static inline float flt_rte(float v)
-{
-	return std::floor(v + 0.5f);
-}
-
-/**
  * @brief SP float round-down.
  *
  * @param v   The value to round.
