@@ -196,7 +196,6 @@ static void compute_lowest_and_highest_weight(
 
 			// Accumulate on min hit
 			mask = idxv == minidx;
-			minidx = select(minidx, idxv, mask);
 			vfloat accum = cut_low_weight_err + wt - vfloat(2.0f) * dwt;
 			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
 
