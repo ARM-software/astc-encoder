@@ -1298,9 +1298,6 @@ void physical_to_symbolic(
 	const physical_compressed_block& pcb,
 	symbolic_compressed_block& scb);
 
-uint16_t unorm16_to_sf16(
-	uint16_t p);
-
 #if defined(ASTCENC_DIAGNOSTICS)
 class TraceLog; // See astcenc_diagnostic_trace for details.
 #endif

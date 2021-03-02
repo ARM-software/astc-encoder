@@ -333,6 +333,84 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 	return select(estimate, vfloat4(1.0f), zero_mask);
 }
 
+ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
+{
+	// This function is a horrible abuse of floating point exponents to convert
+	// the original integer value into a 2^N encoding we can recover easily.
+
+	// Convert to float without risk of rounding up by keeping only top 8 bits.
+	// This trick is is guranteed to keep top 8 bits and clear the 9th.
+	a = (~lsr<8>(a)) & a;
+	a = float_as_int(int_to_float(a));
+
+	// Extract and unbias exponent
+	a = vint4(127 + 31) - lsr<23>(a);
+
+	// Clamp result to a valid 32-bit range
+	return clamp(0, 32, a);
+}
+
+ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
+{
+	// This function is a horrible abuse of floating point to use the exponent
+	// and float conversion to generate a 2^N multiple.
+
+	// AVX2 has _mm_sllv_epi32()
+
+	// Bias the exponent
+	vint4 exp = a + 127;
+	exp = lsl<23>(exp);
+
+	// Reinterpret the bits as a float, and then convert to an int
+	vfloat4 f = int_as_float(exp);
+	return float_to_int(f);
+}
+
+// Conversion function from 16-bit LDR value to FP16.
+ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
+{
+	vint4 fp16_one = vint4(0x3C00);
+	vint4 fp16_small = lsl<8>(p);
+
+	vmask4 is_one = p == vint4(0xFFFF);
+	vmask4 is_small = p < vint4(4);
+
+	vint4 lz = clz(p) - 16;
+
+	p = p * two_to_the_n(lz + 1);
+	p = p & vint4(0xFFFF);
+
+	p = lsr<6>(p);
+
+	p = p | lsl<10>(vint4(14) - lz);
+
+	vint4 r = select(p, fp16_one, is_one);
+	r = select(r, fp16_small, is_small);
+	return r;
+}
+
+// Conversion function from 16-bit LDR value to FP16.
+ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
+{
+	vint4 mc = p & 0x7FF;
+	vint4 ec = lsr<11>(p);
+
+	vint4 mc_512 = mc * 3;
+	vmask4 mask_512 = mc < vint4(512);
+
+	vint4 mc_1536 = mc * 4 - 512;
+	vmask4 mask_1536 = mc < vint4(1536);
+
+	vint4 mc_else = mc * 5 - 2048;
+
+	vint4 mt = mc_else;
+	mt = select(mt, mc_1536, mask_1536);
+	mt = select(mt, mc_512, mask_512);
+
+	vint4 res = lsl<10>(ec) | lsr<3>(mt);
+	return min(res, vint4(0x7BFF));
+}
+
 namespace astc
 {
 
