@@ -411,6 +411,68 @@ ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
 	return min(res, vint4(0x7BFF));
 }
 
+/**
+ * @brief Extract mantissa and exponent of a float value.
+ *
+ * @param      a      The input value.
+ * @param[out] exp    The output exponent.
+ *
+ * @return The mantissa.
+ */
+static inline vfloat4 frexp(vfloat4 a, vint4& exp)
+{
+	// Interpret the bits as an integer
+	vint4 ai = float_as_int(a);
+
+	// Extract and unbias the exponent
+	exp = (lsr<23>(ai) & 0xFF) - 126;
+
+	// Extract and unbias the mantissa
+	vint4 manti = (ai & 0x807FFFFF) | 0x3F000000;
+	return int_as_float(manti);
+}
+
+// conversion functions between the LNS representation and the FP16 representation.
+static inline vfloat4 float_to_lns(vfloat4 a)
+{
+	vint4 exp;
+	vfloat4 mant = frexp(a, exp);
+
+	// Do these early before we start messing about ...
+	vmask4 mask_underflow_nan = ~(a > vfloat4(1.0f / 67108864.0f));
+	vmask4 mask_infinity = a >= vfloat4(65536.0f);
+
+	// If input is smaller than 2^-14, multiply by 2^25 and don't bias.
+	vmask4 exp_lt_m13 = exp < vint4(-13);
+
+	vfloat4 a1a = a * 33554432.0f;
+	vint4 expa = vint4::zero();
+
+	vfloat4 a1b = (mant - 0.5f) * 4096;
+	vint4 expb = exp + 14;
+
+	a = select(a1b, a1a, exp_lt_m13);
+	exp = select(expb, expa, exp_lt_m13);
+
+	vmask4 a_lt_384 = a < vfloat4(384.0f);
+	vmask4 a_lt_1408 = a <= vfloat4(1408.0f);
+
+	vfloat4 a2a = a * (4.0f / 3.0f);
+	vfloat4 a2b = a + 128.0f;
+	vfloat4 a2c = (a + 512.0f) * (4.0f / 5.0f);
+
+	a = a2c;
+	a = select(a, a2b, a_lt_1408);
+	a = select(a, a2a, a_lt_384);
+
+	a = a + (int_to_float(exp) * 2048.0f) + 1.0f;
+
+	a = select(a, vfloat4(65535.0f), mask_infinity);
+	a = select(a, vfloat4::zero(), mask_underflow_nan);
+
+	return a;
+}
+
 namespace astc
 {
 

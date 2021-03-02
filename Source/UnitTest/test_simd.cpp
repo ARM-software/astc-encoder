@@ -1663,6 +1663,47 @@ TEST(vint4, hadd_rgb_s)
 	EXPECT_EQ(r2, 2);
 }
 
+/** @brief Test vint4 clz. */
+TEST(vint4, clz)
+{
+	vint4 a1(0x80000000, 0x40000000, 0x20000000, 0x10000000);
+	vint4 r1 = clz(a1);
+	EXPECT_EQ(r1.lane<0>(), 0);
+	EXPECT_EQ(r1.lane<1>(), 1);
+	EXPECT_EQ(r1.lane<2>(), 2);
+	EXPECT_EQ(r1.lane<3>(), 3);
+
+	vint4 a2(0x0, 0x1, 0x2, 0x4);
+	vint4 r2 = clz(a2);
+	EXPECT_EQ(r2.lane<0>(), 32);
+	EXPECT_EQ(r2.lane<1>(), 31);
+	EXPECT_EQ(r2.lane<2>(), 30);
+	EXPECT_EQ(r2.lane<3>(), 29);
+}
+
+/** @brief Test vint4 two_to_the_n. */
+TEST(vint4, two_to_the_n)
+{
+	vint4 a1(0, 1, 2, 3);
+	vint4 r1 = two_to_the_n(a1);
+	EXPECT_EQ(r1.lane<0>(), 1 << 0);
+	EXPECT_EQ(r1.lane<1>(), 1 << 1);
+	EXPECT_EQ(r1.lane<2>(), 1 << 2);
+	EXPECT_EQ(r1.lane<3>(), 1 << 3);
+
+	vint4 a2(29, 30, 31, 32);
+	vint4 r2 = two_to_the_n(a2);
+	EXPECT_EQ(r2.lane<0>(), 1 << 29);
+	EXPECT_EQ(r2.lane<1>(), 1 << 30);
+	EXPECT_EQ(r2.lane<2>(), 1 << 31);
+
+	// This is just here for experimentation; the behavior of the actual
+	// implementation here is undefined, as it shifts beyond the size of the
+	// native type, and internally overflows the max value that can be stored
+	// in a signed int. Behavior is different across instruction sets.
+	// EXPECT_EQ(r2.lane<3>(), 1 << 32);
+}
+
 /** @brief Test vint4 storea. */
 TEST(vint4, storea)
 {

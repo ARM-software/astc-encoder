@@ -24,54 +24,6 @@
 
 #include "astcenc_internal.h"
 
-// conversion functions between the LNS representation and the FP16 representation.
-static float float_to_lns(float p)
-{
-	if (!(p > (1.0f / 67108864.0f)))
-	{
-		// underflow or NaN value, return 0.
-		// We count underflow if the input value is smaller than 2^-26.
-		return 0.0f;
-	}
-
-	if (p >= 65536.0f)
-	{
-		// overflow, return a +INF value
-		return 65535.0f;
-	}
-
-	int expo;
-	float normfrac = astc::frexp(p, &expo);
-	float p1;
-	if (expo < -13)
-	{
-		// input number is smaller than 2^-14. In this case, multiply by 2^25.
-		p1 = p * 33554432.0f;
-		expo = 0;
-	}
-	else
-	{
-		expo += 14;
-		p1 = (normfrac - 0.5f) * 4096.0f;
-	}
-
-	if (p1 < 384.0f)
-	{
-		p1 *= 4.0f / 3.0f;
-	}
-	else if (p1 <= 1408.0f)
-	{
-		p1 += 128.0f;
-	}
-	else
-	{
-		p1 = (p1 + 512.0f) * (4.0f / 5.0f);
-	}
-
-	p1 += ((float)expo) * 2048.0f;
-	return p1 + 1.0f;
-}
-
 void imageblock_initialize_deriv(
 	const imageblock* blk,
 	int pixelcount,
@@ -98,20 +50,10 @@ void imageblock_initialize_deriv(
 			dataf = max(dataf, 6e-5f);
 
 			vfloat4 data_lns1 = dataf * 1.05f;
-			data_lns1 = vfloat4(
-				float_to_lns(data_lns1.lane<0>()),
-				float_to_lns(data_lns1.lane<1>()),
-				float_to_lns(data_lns1.lane<2>()),
-				float_to_lns(data_lns1.lane<3>())
-			);
+			data_lns1 = float_to_lns(data_lns1);
 
 			vfloat4 data_lns2 = dataf;
-			data_lns2 = vfloat4(
-				float_to_lns(data_lns2.lane<0>()),
-				float_to_lns(data_lns2.lane<1>()),
-				float_to_lns(data_lns2.lane<2>()),
-				float_to_lns(data_lns2.lane<3>())
-			);
+			data_lns2 = float_to_lns(data_lns2);
 
 			vfloat4 divisor_lns = dataf * 0.05f;
 
@@ -142,28 +84,20 @@ static void imageblock_initialize_work_from_orig(
 	for (int i = 0; i < pixelcount; i++)
 	{
 		vfloat4 data = blk->texel(i);
+		vfloat4 color_lns = vfloat4::zero();
+		vfloat4 color_unorm = data * 65535.0f;
 
-		if (blk->rgb_lns[i])
+		int rgb_lns = blk->rgb_lns[i];
+		int a_lns = blk->alpha_lns[i];
+
+		if (rgb_lns || a_lns)
 		{
-			data.set_lane<0>(float_to_lns(data.lane<0>()));
-			data.set_lane<1>(float_to_lns(data.lane<1>()));
-			data.set_lane<2>(float_to_lns(data.lane<2>()));
-		}
-		else
-		{
-			data.set_lane<0>(data.lane<0>() * 65535.0f);
-			data.set_lane<1>(data.lane<1>() * 65535.0f);
-			data.set_lane<2>(data.lane<2>() * 65535.0f);
+			color_lns = float_to_lns(data);
 		}
 
-		if (blk->alpha_lns[i])
-		{
-			data.set_lane<3>(float_to_lns(data.lane<3>()));
-		}
-		else
-		{
-			data.set_lane<3>(data.lane<3>() * 65535.0f);
-		}
+		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		vmask4 lns_mask = use_lns != vint4::zero();
+		data = select(color_unorm, color_lns, lns_mask);
 
 		// Compute block metadata
 		data_min = min(data_min, data);
