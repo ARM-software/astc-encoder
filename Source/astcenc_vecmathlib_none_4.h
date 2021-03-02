@@ -1041,10 +1041,10 @@ ASTCENC_SIMD_INLINE vfloat4 abs(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 {
-	return vfloat4(std::round(a.m[0] + 0.5f),
-	               std::round(a.m[1] + 0.5f),
-	               std::round(a.m[2] + 0.5f),
-	               std::round(a.m[3] + 0.5f));
+	return vfloat4(std::round(a.m[0]),
+	               std::round(a.m[1]),
+	               std::round(a.m[2]),
+	               std::round(a.m[3]));
 }
 
 /**
