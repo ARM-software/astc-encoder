@@ -39,7 +39,7 @@ static int compute_value_of_texel_int(
 	return summed_value >> 4;
 }
 
-static vfloat4 lerp_color_int(
+static vint4 lerp_color_int(
 	astcenc_profile decode_mode,
 	vint4 color0,
 	vint4 color1,
@@ -64,7 +64,30 @@ static vfloat4 lerp_color_int(
 		color = color * vint4(257);
 	}
 
-	return int_to_float(color);
+	return color;
+}
+
+// Turn packed unorm16 or LNS data into generic float data
+static inline vfloat4 decode_texel(
+	vint4 data,
+	vmask4 lns_mask
+) {
+	vint4 color_lns = vint4::zero();
+	vint4 color_unorm = vint4::zero();
+
+	if (any(lns_mask))
+	{
+		color_lns = lns_to_sf16(data);
+	}
+
+	if (!all(lns_mask))
+	{
+		color_unorm = unorm16_to_sf16(data);
+	}
+
+	// Pick channels and then covert to FP16
+	vint4 datai = select(color_unorm, color_lns, lns_mask);
+	return float16_to_float(datai);
 }
 
 void decompress_symbolic_block(
@@ -79,6 +102,10 @@ void decompress_symbolic_block(
 	blk->xpos = xpos;
 	blk->ypos = ypos;
 	blk->zpos = zpos;
+
+	blk->data_min = vfloat4::zero();
+	blk->data_max = vfloat4::zero();
+	blk->grayscale = false;
 
 	// if we detected an error-block, blow up immediately.
 	if (scb->error_block)
@@ -248,31 +275,35 @@ void decompress_symbolic_block(
 	int plane2_color_component = is_dual_plane ? scb->plane2_color_component : -1;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_color_component);
 
-	for (int i = 0; i < bsd->texel_count; i++)
+	for (int i = 0; i < partition_count; i++)
 	{
-		int partition = pt->partition_of_texel[i];
+		vint4 ep0 = color_endpoint0[i];
+		vint4 ep1 = color_endpoint1[i];
+		bool rgb_lns = rgb_hdr_endpoint[i];
+		bool nan = nan_endpoint[i];
+		bool a_lns = alpha_hdr_endpoint[i];
+		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
-		vint4 ep0 = color_endpoint0[partition];
-		vint4 ep1 = color_endpoint1[partition];
+		int texel_count = pt->partition_texel_count[i];
+		for (int j = 0; j < texel_count; j++)
+		{
+			int tix = pt->texels_of_partition[i][j];
+			vint4 color = lerp_color_int(decode_mode,
+			                             ep0,
+			                             ep1,
+			                             weights[tix],
+			                             plane2_weights[tix],
+			                             plane2_mask);
 
-		vfloat4 color = lerp_color_int(decode_mode,
-		                               ep0,
-		                               ep1,
-		                               weights[i],
-		                               plane2_weights[i],
-		                               plane2_mask);
+			vfloat4 colorf = decode_texel(color, lns_mask);
 
-		blk->rgb_lns[i] = rgb_hdr_endpoint[partition];
-		blk->alpha_lns[i] = alpha_hdr_endpoint[partition];
-		blk->nan_texel[i] = nan_endpoint[partition];
-
-		blk->data_r[i] = color.lane<0>();
-		blk->data_g[i] = color.lane<1>();
-		blk->data_b[i] = color.lane<2>();
-		blk->data_a[i] = color.lane<3>();
+			blk->nan_texel[tix] = nan;
+			blk->data_r[tix] = colorf.lane<0>();
+			blk->data_g[tix] = colorf.lane<1>();
+			blk->data_b[tix] = colorf.lane<2>();
+			blk->data_a[tix] = colorf.lane<3>();
+		}
 	}
-
-	imageblock_initialize_orig_from_work(blk, bsd->texel_count);
 }
 
 float compute_symbolic_block_difference(
@@ -381,24 +412,22 @@ float compute_symbolic_block_difference(
 		vint4 ep0 = color_endpoint0[partition];
 		vint4 ep1 = color_endpoint1[partition];
 
-		vfloat4 color = lerp_color_int(decode_mode,
-		                               ep0,
-		                               ep1,
-		                               weights[i],
-		                               plane2_weights[i],
-		                               plane2_mask);
+		vint4 colori = lerp_color_int(decode_mode,
+		                              ep0,
+		                              ep1,
+		                              weights[i],
+		                              plane2_weights[i],
+		                              plane2_mask);
 
+		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk->texel(i);
 
 		vfloat4 error = oldColor - color;
-
 		error = min(abs(error), 1e15f);
 		error = error * error;
 
-		vfloat4 errorWeight = ewb->error_weights[i];
-
-		float metric = dot_s(error, errorWeight);
-		summa += astc::clamp(metric, 0.0f, 1e30f);
+		float metric = dot_s(error, ewb->error_weights[i]);
+		summa += astc::min(metric, 1e30f);
 	}
 
 	return summa;

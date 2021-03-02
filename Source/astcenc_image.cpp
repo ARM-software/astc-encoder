@@ -121,64 +121,6 @@ static void imageblock_initialize_work_from_orig(
 	blk->grayscale = grayscale;
 }
 
-// helper function to initialize the orig-data from the work-data
-void imageblock_initialize_orig_from_work(
-	imageblock* blk,
-	int pixelcount
-) {
-	vfloat4 data_min(1e38f);
-	vfloat4 data_max(-1e38f);
-	bool grayscale = true;
-
-	for (int i = 0; i < pixelcount; i++)
-	{
-		vfloat4 data = blk->texel(i);
-
-		vint4 color_lns = vint4::zero();
-		vint4 color_unorm = vint4::zero();
-
-		// TODO: Pack these into bits and avoid the disjoint fetch
-		int rgb_lns = blk->rgb_lns[i];
-		int a_lns = blk->alpha_lns[i];
-
-		if (rgb_lns || a_lns)
-		{
-			color_lns = lns_to_sf16(float_to_int(data));
-		}
-
-		if ((!rgb_lns) || (!a_lns))
-		{
-			color_unorm = unorm16_to_sf16(float_to_int(data));
-		}
-
-		// Pick channels and then covert to FP16
-		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
-		vmask4 lns_mask = use_lns != vint4::zero();
-		vint4 datai = select(color_unorm, color_lns, lns_mask);
-		data = float16_to_float(datai);
-
-		// Compute block metadata
-		data_min = min(data_min, data);
-		data_max = max(data_max, data);
-
-		if (grayscale && (data.lane<0>() != data.lane<1>() || data.lane<0>() != data.lane<2>()))
-		{
-			grayscale = false;
-		}
-
-		// Store block data
-		blk->data_r[i] = data.lane<0>();
-		blk->data_g[i] = data.lane<1>();
-		blk->data_b[i] = data.lane<2>();
-		blk->data_a[i] = data.lane<3>();
-	}
-
-	// Store block metadata
-	blk->data_min = data_min;
-	blk->data_max = data_max;
-	blk->grayscale = grayscale;
-}
-
 // fetch an imageblock from the input file.
 void fetch_imageblock(
 	astcenc_profile decode_mode,
