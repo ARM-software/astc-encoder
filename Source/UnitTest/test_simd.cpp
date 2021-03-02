@@ -742,9 +742,10 @@ TEST(vfloat4, round)
 	EXPECT_EQ(r1.lane<2>(), 2.0f);
 	EXPECT_EQ(r1.lane<3>(), 4.0f);
 
-	vfloat4 a2(-3.5f);
+	vfloat4 a2(-2.5f, -2.5f, -3.5f, -3.5f);
 	vfloat4 r2 = round(a2);
-	EXPECT_EQ(r2.lane<0>(), -4.0f);
+	EXPECT_EQ(r2.lane<0>(), -2.0f);
+	EXPECT_EQ(r2.lane<2>(), -4.0f);
 }
 
 /** @brief Test vfloat4 hmin. */
