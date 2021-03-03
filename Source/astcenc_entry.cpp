@@ -995,6 +995,8 @@ astcenc_error astcenc_decompress_image(
 			write_imageblock(image_out, &blk, ctx->bsd,
 			                 x * block_x, y * block_y, z * block_z, swizzle);
 		}
+
+		ctx->manage_decompress.complete_task_assignment(count);
 	}
 
 	return ASTCENC_SUCCESS;
