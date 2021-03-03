@@ -709,11 +709,7 @@ static void compress_image(
 	while (true)
 	{
 		unsigned int count;
-		// TODO: Task assignment has been tuned empirically as the current
-		// approach is expensive. Consider using atomic tracker for task
-		// assignment, not a mutex-managed tracker, at which point we can
-		// reduce these down again.
-		unsigned int base = ctx.manage_compress.get_task_assignment(64, count);
+		unsigned int base = ctx.manage_compress.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
@@ -963,10 +959,6 @@ astcenc_error astcenc_decompress_image(
 	while (true)
 	{
 		unsigned int count;
-		// TODO: Task assignment has been tuned empirically as the current
-		// approach is expensive. Consider using atomic tracker for task
-		// assignment, not a mutex-managed tracker, at which point we can
-		// reduce these down again.
 		unsigned int base = ctx->manage_decompress.get_task_assignment(128, count);
 		if (!count)
 		{

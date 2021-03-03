@@ -23,6 +23,7 @@
 #define ASTCENC_INTERNAL_INCLUDED
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -194,10 +195,10 @@ private:
 	std::condition_variable m_complete;
 
 	/** @brief Number of tasks started, but not necessarily finished. */
-	unsigned int m_start_count;
+	std::atomic<unsigned int> m_start_count;
 
 	/** @brief Number of tasks finished. */
-	unsigned int m_done_count;
+	std::atomic<unsigned int> m_done_count;
 
 	/** @brief Number of tasks that need to be processed. */
 	unsigned int m_task_count;
@@ -277,10 +278,14 @@ public:
 	 */
 	unsigned int get_task_assignment(unsigned int granule, unsigned int& count)
 	{
-		std::lock_guard<std::mutex> lck(m_lock);
-		unsigned int base = m_start_count;
-		count = std::min(granule, m_task_count - m_start_count);
-		m_start_count += count;
+		unsigned int base = m_start_count.fetch_add(granule, std::memory_order_relaxed);
+		if (base >= m_task_count)
+		{
+			count = 0;
+			return 0;
+		}
+
+		count = astc::min(m_task_count - base, granule);
 		return base;
 	}
 
@@ -294,11 +299,9 @@ public:
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
-		std::unique_lock<std::mutex> lck(m_lock);
-		this->m_done_count += count;
-		if (m_done_count == m_task_count)
+		unsigned int base = m_done_count.fetch_add(count, std::memory_order_relaxed);
+		if ((base + count) == m_task_count)
 		{
-			lck.unlock();
 			m_complete.notify_all();
 		}
 	}
@@ -1408,6 +1411,3 @@ void aligned_free(T* ptr)
 }
 
 #endif
-
-
-
