@@ -535,27 +535,29 @@ void compute_averages_and_variances(
 	while (true)
 	{
 		unsigned int count;
-		unsigned int base = ctx.manage_avg_var.get_task_assignment(1, count);
+		unsigned int base = ctx.manage_avg_var.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		assert(count == 1);
-		int z = (base / (y_tasks)) * step_z;
-		int y = (base - (z * y_tasks)) * step_xy;
-
-		arg.size_z = astc::min(step_z, size_z - z);
-		arg.offset_z = z;
-
-		arg.size_y = astc::min(step_xy, size_y - y);
-		arg.offset_y = y;
-
-		for (int x = 0; x < size_x; x += step_xy)
+		for (unsigned int i = base; i < base + count; i++)
 		{
-			arg.size_x = astc::min(step_xy, size_x - x);
-			arg.offset_x = x;
-			compute_pixel_region_variance(ctx, &arg);
+			int z = (i / (y_tasks)) * step_z;
+			int y = (i - (z * y_tasks)) * step_xy;
+
+			arg.size_z = astc::min(step_z, size_z - z);
+			arg.offset_z = z;
+
+			arg.size_y = astc::min(step_xy, size_y - y);
+			arg.offset_y = y;
+
+			for (int x = 0; x < size_x; x += step_xy)
+			{
+				arg.size_x = astc::min(step_xy, size_x - x);
+				arg.offset_x = x;
+				compute_pixel_region_variance(ctx, &arg);
+			}
 		}
 
 		ctx.manage_avg_var.complete_task_assignment(count);
