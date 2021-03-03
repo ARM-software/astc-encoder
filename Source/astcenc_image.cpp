@@ -317,6 +317,17 @@ void write_imageblock(
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
 
+	int x_start = xpos;
+	int x_end = std::min(xsize, xpos + bsd->xdim);
+	int x_nudge = bsd->xdim - (x_end - x_start);
+
+	int y_start = ypos;
+	int y_end = std::min(ysize, ypos + bsd->ydim);
+	int y_nudge = (bsd->ydim - (y_end - y_start)) * bsd->xdim;
+
+	int z_start = zpos;
+	int z_end = std::min(zsize, zpos + bsd->zdim);
+
 	float data[7];
 	data[ASTCENC_SWZ_0] = 0.0f;
 	data[ASTCENC_SWZ_1] = 1.0f;
@@ -332,205 +343,174 @@ void write_imageblock(
 	int idx = 0;
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
-		for (int z = 0; z < bsd->zdim; z++)
+		for (int z = z_start; z < z_end; z++)
 		{
-			int zc = astc::min(zpos + z, zsize - 1);
-			uint8_t* data8 = static_cast<uint8_t*>(img.data[zc]);
+			// Fetch the image plane
+			uint8_t* data8 = static_cast<uint8_t*>(img.data[z]);
 
-			for (int y = 0; y < bsd->ydim; y++)
+			for (int y = y_start; y < y_end; y++)
 			{
-				for (int x = 0; x < bsd->xdim; x++)
+				for (int x = x_start; x < x_end; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
+					vint4 colori = vint4::zero();
 
-					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
+					if (*nptr)
 					{
-						int ri, gi, bi, ai;
-
-						if (*nptr)
-						{
-							// NaN-pixel, but we can't display it. Display purple instead.
-							ri = 0xFF;
-							gi = 0x00;
-							bi = 0xFF;
-							ai = 0xFF;
-						}
-						else if (needs_swz)
-						{
-							data[ASTCENC_SWZ_R] = blk->data_r[idx];
-							data[ASTCENC_SWZ_G] = blk->data_g[idx];
-							data[ASTCENC_SWZ_B] = blk->data_b[idx];
-							data[ASTCENC_SWZ_A] = blk->data_a[idx];
-
-							if (needs_z)
-							{
-								float xcoord = (data[0] * 2.0f) - 1.0f;
-								float ycoord = (data[3] * 2.0f) - 1.0f;
-								float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
-								if (zcoord < 0.0f)
-								{
-									zcoord = 0.0f;
-								}
-								data[ASTCENC_SWZ_Z] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
-							}
-
-							ri = astc::flt2int_rtn(astc::min(data[swz.r], 1.0f) * 255.0f);
-							gi = astc::flt2int_rtn(astc::min(data[swz.g], 1.0f) * 255.0f);
-							bi = astc::flt2int_rtn(astc::min(data[swz.b], 1.0f) * 255.0f);
-							ai = astc::flt2int_rtn(astc::min(data[swz.a], 1.0f) * 255.0f);
-						}
-						else
-						{
-							ri = astc::flt2int_rtn(astc::min(blk->data_r[idx], 1.0f) * 255.0f);
-							gi = astc::flt2int_rtn(astc::min(blk->data_g[idx], 1.0f) * 255.0f);
-							bi = astc::flt2int_rtn(astc::min(blk->data_b[idx], 1.0f) * 255.0f);
-							ai = astc::flt2int_rtn(astc::min(blk->data_a[idx], 1.0f) * 255.0f);
-						}
-
-						data8[(4 * xsize * yi) + (4 * xi    )] = ri;
-						data8[(4 * xsize * yi) + (4 * xi + 1)] = gi;
-						data8[(4 * xsize * yi) + (4 * xi + 2)] = bi;
-						data8[(4 * xsize * yi) + (4 * xi + 3)] = ai;
+						// Can't display NaN - show magenta error color
+						colori = vint4(0xFF, 0x00, 0xFF, 0xFF);
 					}
+					else if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = blk->data_r[idx];
+						data[ASTCENC_SWZ_G] = blk->data_g[idx];
+						data[ASTCENC_SWZ_B] = blk->data_b[idx];
+						data[ASTCENC_SWZ_A] = blk->data_a[idx];
+
+						if (needs_z)
+						{
+							float xcoord = (data[0] * 2.0f) - 1.0f;
+							float ycoord = (data[3] * 2.0f) - 1.0f;
+							float zcoord = 1.0f - xcoord * xcoord - ycoord * ycoord;
+							if (zcoord < 0.0f)
+							{
+								zcoord = 0.0f;
+							}
+							data[ASTCENC_SWZ_Z] = (astc::sqrt(zcoord) * 0.5f) + 0.5f;
+						}
+
+						vfloat4 color = vfloat4(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
+						colori = float_to_int_rtn(min(color, 1.0f) * 255.0f);
+					}
+					else
+					{
+						vfloat4 color = blk->texel(idx);
+						colori = float_to_int_rtn(min(color, 1.0f) * 255.0f);
+					}
+
+					colori = pack_low_bytes(colori);
+					store_nbytes(colori, data8 + (4 * xsize * y) + (4 * x    ));
+
 					idx++;
 					nptr++;
 				}
+				idx += x_nudge;
+				nptr += x_nudge;
 			}
+			idx += y_nudge;
+			nptr += y_nudge;
 		}
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		for (int z = 0; z < bsd->zdim; z++)
+		for (int z = z_start; z < z_end; z++)
 		{
-			int zc = astc::min(zpos + z, zsize - 1);
-			uint16_t* data16 = static_cast<uint16_t*>(img.data[zc]);
+			// Fetch the image plane
+			uint16_t* data16 = static_cast<uint16_t*>(img.data[z]);
 
-			for (int y = 0; y < bsd->ydim; y++)
+			for (int y = y_start; y < y_end; y++)
 			{
-				for (int x = 0; x < bsd->xdim; x++)
+				for (int x = x_start; x < x_end; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
+					vint4 color;
 
-					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
+					if (*nptr)
 					{
-						vint4 color;
-
-						if (*nptr)
-						{
-							color = vint4(0xFFFF);
-						}
-						else if (needs_swz)
-						{
-							data[ASTCENC_SWZ_R] = blk->data_r[idx];
-							data[ASTCENC_SWZ_G] = blk->data_g[idx];
-							data[ASTCENC_SWZ_B] = blk->data_b[idx];
-							data[ASTCENC_SWZ_A] = blk->data_a[idx];
-
-							if (needs_z)
-							{
-								float xN = (data[0] * 2.0f) - 1.0f;
-								float yN = (data[3] * 2.0f) - 1.0f;
-								float zN = 1.0f - xN * xN - yN * yN;
-								if (zN < 0.0f)
-								{
-									zN = 0.0f;
-								}
-								data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
-							}
-
-							vfloat4 colorf(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
-							color = float_to_float16(colorf);
-						}
-						else
-						{
-							vfloat4 colorf = blk->texel(idx);
-							color = float_to_float16(colorf);
-						}
-
-						data16[(4 * xsize * yi) + (4 * xi    )] = (uint16_t)color.lane<0>();
-						data16[(4 * xsize * yi) + (4 * xi + 1)] = (uint16_t)color.lane<1>();
-						data16[(4 * xsize * yi) + (4 * xi + 2)] = (uint16_t)color.lane<2>();
-						data16[(4 * xsize * yi) + (4 * xi + 3)] = (uint16_t)color.lane<3>();
+						color = vint4(0xFFFF);
 					}
+					else if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = blk->data_r[idx];
+						data[ASTCENC_SWZ_G] = blk->data_g[idx];
+						data[ASTCENC_SWZ_B] = blk->data_b[idx];
+						data[ASTCENC_SWZ_A] = blk->data_a[idx];
+
+						if (needs_z)
+						{
+							float xN = (data[0] * 2.0f) - 1.0f;
+							float yN = (data[3] * 2.0f) - 1.0f;
+							float zN = 1.0f - xN * xN - yN * yN;
+							if (zN < 0.0f)
+							{
+								zN = 0.0f;
+							}
+							data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
+						}
+
+						vfloat4 colorf(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
+						color = float_to_float16(colorf);
+					}
+					else
+					{
+						vfloat4 colorf = blk->texel(idx);
+						color = float_to_float16(colorf);
+					}
+
+					data16[(4 * xsize * y) + (4 * x    )] = (uint16_t)color.lane<0>();
+					data16[(4 * xsize * y) + (4 * x + 1)] = (uint16_t)color.lane<1>();
+					data16[(4 * xsize * y) + (4 * x + 2)] = (uint16_t)color.lane<2>();
+					data16[(4 * xsize * y) + (4 * x + 3)] = (uint16_t)color.lane<3>();
+
 					idx++;
 					nptr++;
 				}
+				idx += x_nudge;
+				nptr += x_nudge;
 			}
+			idx += y_nudge;
+			nptr += y_nudge;
 		}
 	}
 	else // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 
-		for (int z = 0; z < bsd->zdim; z++)
+		for (int z = z_start; z < z_end; z++)
 		{
-			int zc = astc::min(zpos + z, zsize - 1);
-			float* data32 = static_cast<float*>(img.data[zc]);
+			// Fetch the image plane
+			float* data32 = static_cast<float*>(img.data[z]);
 
-			for (int y = 0; y < bsd->ydim; y++)
+			for (int y = y_start; y < y_end; y++)
 			{
-				for (int x = 0; x < bsd->xdim; x++)
+				for (int x = x_start; x < x_end; x++)
 				{
-					int xi = xpos + x;
-					int yi = ypos + y;
-					int zi = zpos + z;
+					vfloat4 color = blk->texel(idx);
 
-					if (xi >= 0 && yi >= 0 && zi >= 0 && xi < xsize && yi < ysize && zi < zsize)
+					if (*nptr)
 					{
-						float rf, gf, bf, af;
-
-						if (*nptr)
-						{
-							rf = std::numeric_limits<float>::quiet_NaN();
-							gf = std::numeric_limits<float>::quiet_NaN();
-							bf = std::numeric_limits<float>::quiet_NaN();
-							af = std::numeric_limits<float>::quiet_NaN();
-						}
-						else if (needs_swz)
-						{
-							data[ASTCENC_SWZ_R] = blk->data_r[idx];
-							data[ASTCENC_SWZ_G] = blk->data_g[idx];
-							data[ASTCENC_SWZ_B] = blk->data_b[idx];
-							data[ASTCENC_SWZ_A] = blk->data_a[idx];
-
-							if (needs_z)
-							{
-								float xN = (data[0] * 2.0f) - 1.0f;
-								float yN = (data[3] * 2.0f) - 1.0f;
-								float zN = 1.0f - xN * xN - yN * yN;
-								if (zN < 0.0f)
-								{
-									zN = 0.0f;
-								}
-								data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
-							}
-
-							rf = data[swz.r];
-							gf = data[swz.g];
-							bf = data[swz.b];
-							af = data[swz.a];
-						}
-						else
-						{
-							rf = blk->data_r[idx];
-							gf = blk->data_g[idx];
-							bf = blk->data_b[idx];
-							af = blk->data_a[idx];
-						}
-
-						data32[(4 * xsize * yi) + (4 * xi    )] = rf;
-						data32[(4 * xsize * yi) + (4 * xi + 1)] = gf;
-						data32[(4 * xsize * yi) + (4 * xi + 2)] = bf;
-						data32[(4 * xsize * yi) + (4 * xi + 3)] = af;
+						color = vfloat4(std::numeric_limits<float>::quiet_NaN());
 					}
+					else if (needs_swz)
+					{
+						data[ASTCENC_SWZ_R] = color.lane<0>();
+						data[ASTCENC_SWZ_G] = color.lane<1>();
+						data[ASTCENC_SWZ_B] = color.lane<2>();
+						data[ASTCENC_SWZ_A] = color.lane<3>();
+
+						if (needs_z)
+						{
+							float xN = (data[0] * 2.0f) - 1.0f;
+							float yN = (data[3] * 2.0f) - 1.0f;
+							float zN = 1.0f - xN * xN - yN * yN;
+							if (zN < 0.0f)
+							{
+								zN = 0.0f;
+							}
+							data[ASTCENC_SWZ_Z] = (astc::sqrt(zN) * 0.5f) + 0.5f;
+						}
+
+						color = vfloat4(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
+					}
+
+					store(color, data32 + (4 * xsize * y) + (4 * x    ));
+
 					idx++;
 					nptr++;
 				}
+				idx += x_nudge;
+				nptr += x_nudge;
 			}
+			idx += y_nudge;
+			nptr += y_nudge;
 		}
 	}
 }
