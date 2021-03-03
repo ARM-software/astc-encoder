@@ -1327,6 +1327,8 @@ struct astcenc_context
 	ParallelManager manage_compress;
 #endif
 
+	ParallelManager manage_decompress;
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	TraceLog* trace_log;
 #endif

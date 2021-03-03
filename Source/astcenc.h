@@ -43,9 +43,9 @@
  *       allocate multiple contexts and assign each context to a thread.
  *     * An application wishing to process a single image in using multiple
  *       threads can configure the context for multi-threaded use, and invoke
- *       astcenc_compress() once per thread for faster compression. The caller
- *       is responsible for creating the worker threads. Note that
- *       decompression is always single-threaded.
+ *       astcenc_compress/decompress() once per thread for faster processing.
+ *       The caller is responsible for creating the worker threads, and
+ *       synchronizing between images.
  *
  * Threading
  * =========
@@ -620,7 +620,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
 	unsigned int thread_index);
 
 /**
- * @brief Reset the compressor state for a new compression.
+ * @brief Reset the codec state for a new compression.
  *
  * The caller is responsible for synchronizing threads in the worker thread
  * pool. This function must only be called when all threads have exited the
@@ -637,11 +637,12 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_reset(
 /**
  * @brief Decompress an image.
  *
- * @param         context      Codec context.
- * @param[in]     data         Pointer to compressed data.
- * @param         data_len     Length of the compressed data, in bytes.
- * @param[in,out] image_out    Output image.
- * @param         swizzle      Decompression data swizzle.
+ * @param         context        Codec context.
+ * @param[in]     data           Pointer to compressed data.
+ * @param         data_len       Length of the compressed data, in bytes.
+ * @param[in,out] image_out      Output image.
+ * @param         swizzle        Decompression data swizzle.
+ * @param         thread_index   Thread index [0..N-1] of calling thread.
  *
  * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
@@ -650,7 +651,23 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
 	const uint8_t* data,
 	size_t data_len,
 	astcenc_image* image_out,
-	astcenc_swizzle swizzle);
+	astcenc_swizzle swizzle,
+	unsigned int thread_index);
+
+/**
+ * @brief Reset the codec state for a new decompression.
+ *
+ * The caller is responsible for synchronizing threads in the worker thread
+ * pool. This function must only be called when all threads have exited the
+ * astcenc_decompress_image() function for image N, but before any thread
+ * enters it for image N + 1.
+ *
+ * @param context   Codec context.
+ *
+ * @return ASTCENC_SUCCESS on success, or an error if reset failed.
+ */
+ASTCENC_PUBLIC astcenc_error astcenc_decompress_reset(
+	astcenc_context* context);
 
 /**
  * Free the compressor context.

@@ -116,6 +116,15 @@ struct compression_workload {
 	astcenc_error error;
 };
 
+struct decompression_workload {
+	astcenc_context* context;
+	uint8_t* data;
+	size_t data_len;
+	astcenc_image* image_out;
+	astcenc_swizzle swizzle;
+	astcenc_error error;
+};
+
 /**
  * @brief Test if a string argument is a well formed float.
  */
@@ -154,6 +163,26 @@ static void compression_workload_runner(
 	astcenc_error error = astcenc_compress_image(
 	                       work->context, work->image, work->swizzle,
 	                       work->data_out, work->data_len, thread_id);
+
+	// This is a racy update, so which error gets returned is a random, but it
+	// will reliably report an error if an error occurs
+	if (error != ASTCENC_SUCCESS)
+	{
+		work->error = error;
+	}
+}
+
+static void decompression_workload_runner(
+	int thread_count,
+	int thread_id,
+	void* payload
+) {
+	(void)thread_count;
+
+	decompression_workload* work = static_cast<decompression_workload*>(payload);
+	astcenc_error error = astcenc_decompress_image(
+	                       work->context, work->data, work->data_len,
+	                       work->image_out, work->swizzle, thread_id);
 
 	// This is a racy update, so which error gets returned is a random, but it
 	// will reliably report an error if an error occurs
@@ -960,16 +989,10 @@ static int edit_astcenc_config(
 		cli_config.thread_count = get_cpu_count();
 	}
 
-#if defined(ASTCENC_DECOMPRESS_ONLY) || defined(ASTCENC_DIAGNOSTICS)
-	cli_config.thread_count = 1;
-#else
-	if (operation == ASTCENC_OP_DECOMPRESS)
-	{
-		cli_config.thread_count = 1;
-	}
-#endif
-
 #if defined(ASTCENC_DIAGNOSTICS)
+	// Force single threaded for diagnostic builds
+	cli_config.thread_count = 1;
+
 	if (!config.trace_file_path)
 	{
 		printf("ERROR: Diagnostics builds must set -dtrace-out\n");
@@ -1533,9 +1556,28 @@ int main(
 		image_decomp_out = alloc_image(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
 
-		codec_status = astcenc_decompress_image(codec_context, image_comp.data, image_comp.data_len,
-		                                        image_decomp_out, cli_config.swz_decode);
-		if (codec_status != ASTCENC_SUCCESS)
+		decompression_workload work;
+		work.context = codec_context;
+		work.data = image_comp.data;
+		work.data_len = image_comp.data_len;
+		work.image_out = image_decomp_out;
+		work.swizzle = cli_config.swz_decode;
+		work.error = ASTCENC_SUCCESS;
+
+		// Only launch worker threads for multi-threaded use - it makes basic
+		// single-threaded profiling and debugging a little less convoluted
+		if (cli_config.thread_count > 1)
+		{
+			launch_threads(cli_config.thread_count, decompression_workload_runner, &work);
+		}
+		else
+		{
+			work.error = astcenc_decompress_image(
+			    work.context, work.data, work.data_len,
+			    work.image_out, work.swizzle, 0);
+		}
+
+		if (work.error != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
 			return 1;

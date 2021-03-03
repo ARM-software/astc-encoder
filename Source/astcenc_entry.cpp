@@ -258,8 +258,7 @@ static astcenc_error validate_decompression_swizzle(
  *     make no sense algorithmically will return an error.
  */
 static astcenc_error validate_config(
-	astcenc_config &config,
-	unsigned int thread_count
+	astcenc_config &config
 ) {
 	astcenc_error status;
 
@@ -279,12 +278,6 @@ static astcenc_error validate_config(
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
-	}
-
-	// Decompress-only contexts must be single threaded
-	if ((config.flags & ASTCENC_FLG_DECOMPRESS_ONLY) && (thread_count > 1))
-	{
-		return ASTCENC_ERR_BAD_PARAM;
 	}
 
 #if defined(ASTCENC_DECOMPRESS_ONLY)
@@ -598,7 +591,7 @@ astcenc_error astcenc_context_alloc(
 	ctx->input_alpha_averages = nullptr;
 
 	// Copy the config first and validate the copy (we may modify it)
-	status = validate_config(ctx->config, thread_count);
+	status = validate_config(ctx->config);
 	if (status != ASTCENC_SUCCESS)
 	{
 		delete ctx;
@@ -688,15 +681,17 @@ static void compress_image(
 	uint8_t* buffer
 ) {
 	const block_size_descriptor *bsd = ctx.bsd;
+	astcenc_profile decode_mode = ctx.config.profile;
+	imageblock blk;
+
 	int block_x = bsd->xdim;
 	int block_y = bsd->ydim;
 	int block_z = bsd->zdim;
-	astcenc_profile decode_mode = ctx.config.profile;
 
-	imageblock blk;
 	int dim_x = image.dim_x;
 	int dim_y = image.dim_y;
 	int dim_z = image.dim_z;
+
 	int xblocks = (dim_x + block_x - 1) / block_x;
 	int yblocks = (dim_y + block_y - 1) / block_y;
 	int zblocks = (dim_z + block_z - 1) / block_z;
@@ -714,7 +709,11 @@ static void compress_image(
 	while (true)
 	{
 		unsigned int count;
-		unsigned int base = ctx.manage_compress.get_task_assignment(4, count);
+		// TODO: Task assignment has been tuned empirically as the current
+		// approach is expensive. Consider using atomic tracker for task
+		// assignment, not a mutex-managed tracker, at which point we can
+		// reduce these down again.
+		unsigned int base = ctx.manage_compress.get_task_assignment(64, count);
 		if (!count)
 		{
 			break;
@@ -915,14 +914,21 @@ astcenc_error astcenc_compress_reset(
 }
 
 astcenc_error astcenc_decompress_image(
-	astcenc_context* context,
+	astcenc_context* ctx,
 	const uint8_t* data,
 	size_t data_len,
 	astcenc_image* image_outp,
-	astcenc_swizzle swizzle
+	astcenc_swizzle swizzle,
+	unsigned int thread_index
 ) {
 	astcenc_error status;
 	astcenc_image& image_out = *image_outp;
+
+	// Today this doesn't matter (working set on stack) but might in future ...
+	if (thread_index >= ctx->thread_count)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
 
 	status = validate_decompression_swizzle(swizzle);
 	if (status != ASTCENC_SUCCESS)
@@ -930,13 +936,16 @@ astcenc_error astcenc_decompress_image(
 		return status;
 	}
 
-	unsigned int block_x = context->config.block_x;
-	unsigned int block_y = context->config.block_y;
-	unsigned int block_z = context->config.block_z;
+	unsigned int block_x = ctx->config.block_x;
+	unsigned int block_y = ctx->config.block_y;
+	unsigned int block_z = ctx->config.block_z;
 
 	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
 	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
 	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
+
+	int row_blocks = xblocks;
+	int plane_blocks = xblocks * yblocks;
 
 	// Check we have enough output space (16 bytes per block)
 	size_t size_needed = xblocks * yblocks * zblocks * 16;
@@ -947,29 +956,54 @@ astcenc_error astcenc_decompress_image(
 
 	imageblock blk;
 
-	for (unsigned int z = 0; z < zblocks; z++)
+	// Only the first thread actually runs the initializer
+	ctx->manage_decompress.init(zblocks * yblocks * xblocks);
+
+	// All threads run this processing loop until there is no work remaining
+	while (true)
 	{
-		for (unsigned int y = 0; y < yblocks; y++)
+		unsigned int count;
+		// TODO: Task assignment has been tuned empirically as the current
+		// approach is expensive. Consider using atomic tracker for task
+		// assignment, not a mutex-managed tracker, at which point we can
+		// reduce these down again.
+		unsigned int base = ctx->manage_decompress.get_task_assignment(128, count);
+		if (!count)
 		{
-			for (unsigned int x = 0; x < xblocks; x++)
-			{
-				unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-				const uint8_t* bp = data + offset;
-				physical_compressed_block pcb = *(const physical_compressed_block*)bp;
-				symbolic_compressed_block scb;
+			break;
+		}
 
-				physical_to_symbolic(*context->bsd, pcb, scb);
+		for (unsigned int i = base; i < base + count; i++)
+		{
+			// Decode i into x, y, z block indices
+			int z = i / plane_blocks;
+			unsigned int rem = i - (z * plane_blocks);
+			int y = rem / row_blocks;
+			int x = rem - (y * row_blocks);
 
-				decompress_symbolic_block(context->config.profile, context->bsd,
-				                          x * block_x, y * block_y, z * block_z,
-				                          &scb, &blk);
+			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
+			const uint8_t* bp = data + offset;
+			physical_compressed_block pcb = *(const physical_compressed_block*)bp;
+			symbolic_compressed_block scb;
 
-				write_imageblock(image_out, &blk, context->bsd,
-				                 x * block_x, y * block_y, z * block_z, swizzle);
-			}
+			physical_to_symbolic(*ctx->bsd, pcb, scb);
+
+			decompress_symbolic_block(ctx->config.profile, ctx->bsd,
+			                          x * block_x, y * block_y, z * block_z,
+			                          &scb, &blk);
+
+			write_imageblock(image_out, &blk, ctx->bsd,
+			                 x * block_x, y * block_y, z * block_z, swizzle);
 		}
 	}
 
+	return ASTCENC_SUCCESS;
+}
+
+astcenc_error astcenc_decompress_reset(
+	astcenc_context* ctx
+) {
+	ctx->manage_decompress.reset();
 	return ASTCENC_SUCCESS;
 }
 
