@@ -152,7 +152,7 @@ static void compression_workload_runner(
 
 	compression_workload* work = static_cast<compression_workload*>(payload);
 	astcenc_error error = astcenc_compress_image(
-	                       work->context, *work->image, work->swizzle,
+	                       work->context, work->image, work->swizzle,
 	                       work->data_out, work->data_len, thread_id);
 
 	// This is a racy update, so which error gets returned is a random, but it
@@ -527,7 +527,7 @@ static int init_astcenc_config(
 #endif
 
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z,
-	                                           quality, flags, config);
+	                                           quality, flags, &config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
 		printf("ERROR: Block size '%s' is invalid\n", argv[4]);
@@ -1388,7 +1388,7 @@ int main(
 	astcenc_error    codec_status;
 	astcenc_context* codec_context;
 
-	codec_status = astcenc_context_alloc(config, cli_config.thread_count, &codec_context);
+	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context);
 	if (codec_status != ASTCENC_SUCCESS)
 	{
 		printf("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
@@ -1499,7 +1499,7 @@ int main(
 		else
 		{
 			work.error = astcenc_compress_image(
-			    work.context, *work.image, work.swizzle,
+			    work.context, work.image, work.swizzle,
 			    work.data_out, work.data_len, 0);
 		}
 
@@ -1534,7 +1534,7 @@ int main(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
 
 		codec_status = astcenc_decompress_image(codec_context, image_comp.data, image_comp.data_len,
-		                                        *image_decomp_out, cli_config.swz_decode);
+		                                        image_decomp_out, cli_config.swz_decode);
 		if (codec_status != ASTCENC_SUCCESS)
 		{
 			printf("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
