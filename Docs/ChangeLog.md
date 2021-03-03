@@ -9,16 +9,36 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 2.5
 
-**Status:** In development
+**Status:** In development, due late March 2021
 
-The 2.5 release is the sixth release in the 2.x series. For this release
-onwards the 2.x series is aiming to freeze image quality compared to 2.4,
-allowing only minor differences caused by rounding and association changes.
+The 2.5 release is planned to be the last major release in the 2.x series.
+After this release a `2.x` branch will be created to provide stable long-term
+support, and the `main` branch will switch to focusing on more radical changes
+for the 3.x series.
+
+Reminder for users of the library interface - the API is not designed to be
+stable across versions, and this release is not compatible with earlier 2.x
+releases. Please update and rebuild your client-side code using the updated
+`astcenc.h` header.
 
 **General:**
   * **Feature:** The `ISA_INVARIANCE` build option is no longer supported, as
     there is no longer any performance benefit from the variant paths. All
-	builds are now using the equivalent of the `ISA_INVARIANCE=ON` setting.
+    builds are now using the equivalent of the `ISA_INVARIANCE=ON` setting, and
+    all builds are now believed to be invariant across operating systems,
+    compilers, CPU architectures, and SIMD instruction sets.
+* **Core API:**
+  * **API Change:** The core API has been changed to be a pure C API, making it
+    easier to wrap the codec in a stable shared library ABI. Some entry points
+    that used to accept references now expect pointers.
+  * **API Change:** The decompression functionality in the core API has been
+    changed to allow use of multiple threads. The design pattern matches the
+    compression functionality, requiring the caller to create the threads,
+    synchronize them between images, and call the new
+    `astcenc_decompress_reset()` function between images.
+  * **API Feature:** Defines to support exporting public API entry point
+    symbols from a shared object are provided, but not exposed off-the-shelf by
+    the CMake provided by the project.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.4
