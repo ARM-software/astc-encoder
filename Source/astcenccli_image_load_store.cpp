@@ -115,9 +115,12 @@ static int store_png_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
+	assert(img->data_type == ASTCENC_TYPE_U8);
+	uint8_t* buf = (uint8_t*)img->data[0];
+
+	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_png(filename, img->dim_x, img->dim_y, 4, buf, img->dim_x * 4);
-	delete[] buf;
+
 	return (res == 0) ? -1 : 4;
 }
 
@@ -126,9 +129,12 @@ static int store_tga_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
+	assert(img->data_type == ASTCENC_TYPE_U8);
+	uint8_t* buf = (uint8_t*)img->data[0];
+
+	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_tga(filename, img->dim_x, img->dim_y, 4, buf);
-	delete[] buf;
+
 	return (res == 0) ? -1 : 4;
 }
 
@@ -137,9 +143,12 @@ static int store_bmp_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	uint8_t* buf = unorm8x4_array_from_astc_img(img, y_flip);
+	assert(img->data_type == ASTCENC_TYPE_U8);
+	uint8_t* buf = (uint8_t*)img->data[0];
+
+	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_bmp(filename, img->dim_x, img->dim_y, 4, buf);
-	delete[] buf;
+
 	return (res == 0) ? -1 : 4;
 }
 
