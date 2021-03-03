@@ -345,9 +345,10 @@ astcenc_error astcenc_config_init(
 	unsigned int block_z,
 	float quality,
 	unsigned int flags,
-	astcenc_config& config
+	astcenc_config* configp
 ) {
 	astcenc_error status;
+	astcenc_config& config = *configp;
 
 	// Zero init all config fields; although most of will be over written
 	std::memset(&config, 0, sizeof(config));
@@ -402,8 +403,6 @@ astcenc_error astcenc_config_init(
 		config.tune_db_limit = astc::max(preset_configs[start].tune_db_limit_a_base - 35 * ltexels,
 		                                 preset_configs[start].tune_db_limit_b_base - 19 * ltexels);
 
-		// Fast and loose - exit as soon as we get a block within the target.
-		// This costs an average of around 0.7 dB PSNR ...
 		config.tune_mode0_mse_overshoot = preset_configs[start].tune_mode0_mse_overshoot;
 		config.tune_refinement_mse_overshoot = preset_configs[start].tune_refinement_mse_overshoot;
 
@@ -438,8 +437,6 @@ astcenc_error astcenc_config_init(
 		config.tune_db_limit = astc::max(LERP(tune_db_limit_a_base) - 35 * ltexels,
 		                                 LERP(tune_db_limit_b_base) - 19 * ltexels);
 
-		// Fast and loose - exit as soon as we get a block within the target.
-		// This costs an average of around 0.7 dB PSNR ...
 		config.tune_mode0_mse_overshoot = LERP(tune_mode0_mse_overshoot);
 		config.tune_refinement_mse_overshoot = LERP(tune_refinement_mse_overshoot);
 
@@ -556,13 +553,14 @@ astcenc_error astcenc_config_init(
 }
 
 astcenc_error astcenc_context_alloc(
-	astcenc_config const& config,
+	const astcenc_config* configp,
 	unsigned int thread_count,
 	astcenc_context** context
 ) {
 	astcenc_error status;
 	astcenc_context* ctx = nullptr;
 	block_size_descriptor* bsd = nullptr;
+	const astcenc_config& config = *configp;
 
 	status = validate_cpu_float();
 	if (status != ASTCENC_SUCCESS)
@@ -797,7 +795,7 @@ static void compress_image(
 
 astcenc_error astcenc_compress_image(
 	astcenc_context* ctx,
-	astcenc_image& image,
+	astcenc_image* imagep,
 	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
@@ -805,7 +803,7 @@ astcenc_error astcenc_compress_image(
 ) {
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	(void)ctx;
-	(void)image;
+	(void)imagep;
 	(void)swizzle;
 	(void)data_out;
 	(void)data_len;
@@ -813,6 +811,7 @@ astcenc_error astcenc_compress_image(
 	return ASTCENC_ERR_BAD_CONTEXT;
 #else
 	astcenc_error status;
+	astcenc_image& image = *imagep;
 
 	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
 	{
@@ -919,10 +918,11 @@ astcenc_error astcenc_decompress_image(
 	astcenc_context* context,
 	const uint8_t* data,
 	size_t data_len,
-	astcenc_image& image_out,
+	astcenc_image* image_outp,
 	astcenc_swizzle swizzle
 ) {
 	astcenc_error status;
+	astcenc_image& image_out = *image_outp;
 
 	status = validate_decompression_swizzle(swizzle);
 	if (status != ASTCENC_SUCCESS)

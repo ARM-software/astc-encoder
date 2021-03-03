@@ -144,6 +144,16 @@
 #include <cstddef>
 #include <cstdint>
 
+#if defined(ASTCENC_DYNAMIC_LIBRARY)
+	#if defined(_MSC_VER)
+		#define ASTCENC_PUBLIC extern "C" __declspec(dllexport)
+	#else
+		#define ASTCENC_PUBLIC extern "C" __attribute__ ((visibility ("default")))
+	#endif
+#else
+	#define ASTCENC_PUBLIC
+#endif
+
 /* ============================================================================
     Data declarations
 ============================================================================ */
@@ -548,14 +558,14 @@ struct astcenc_image {
  * @return ASTCENC_SUCCESS on success, or an error if the inputs are invalid
  * either individually, or in combination.
  */
-astcenc_error astcenc_config_init(
+ASTCENC_PUBLIC astcenc_error astcenc_config_init(
 	astcenc_profile profile,
 	unsigned int block_x,
 	unsigned int block_y,
 	unsigned int block_z,
 	float quality,
 	unsigned int flags,
-	astcenc_config& config);
+	astcenc_config* config);
 
 /**
  * @brief Allocate a new codec context based on a config.
@@ -578,8 +588,8 @@ astcenc_error astcenc_config_init(
  *
  * @return ASTCENC_SUCCESS on success, or an error if context creation failed.
  */
-astcenc_error astcenc_context_alloc(
-	const astcenc_config& config,
+ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
+	const astcenc_config* config,
 	unsigned int thread_count,
 	astcenc_context** context);
 
@@ -601,9 +611,9 @@ astcenc_error astcenc_context_alloc(
  *
  * @return ASTCENC_SUCCESS on success, or an error if compression failed.
  */
-astcenc_error astcenc_compress_image(
+ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
 	astcenc_context* context,
-	astcenc_image& image,
+	astcenc_image* image,
 	astcenc_swizzle swizzle,
 	uint8_t* data_out,
 	size_t data_len,
@@ -621,7 +631,7 @@ astcenc_error astcenc_compress_image(
  *
  * @return ASTCENC_SUCCESS on success, or an error if reset failed.
  */
-astcenc_error astcenc_compress_reset(
+ASTCENC_PUBLIC astcenc_error astcenc_compress_reset(
 	astcenc_context* context);
 
 /**
@@ -635,11 +645,11 @@ astcenc_error astcenc_compress_reset(
  *
  * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
-astcenc_error astcenc_decompress_image(
+ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
 	astcenc_context* context,
 	const uint8_t* data,
 	size_t data_len,
-	astcenc_image& image_out,
+	astcenc_image* image_out,
 	astcenc_swizzle swizzle);
 
 /**
@@ -647,7 +657,7 @@ astcenc_error astcenc_decompress_image(
  *
  * @param context   The codec context.
  */
-void astcenc_context_free(
+ASTCENC_PUBLIC void astcenc_context_free(
 	astcenc_context* context);
 
 /**
@@ -657,7 +667,7 @@ void astcenc_context_free(
  *
  * @return A human readable nul-terminated string.
  */
-const char* astcenc_get_error_string(
+ASTCENC_PUBLIC const char* astcenc_get_error_string(
 	astcenc_error status);
 
 #endif
