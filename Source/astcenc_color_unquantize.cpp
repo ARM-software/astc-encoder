@@ -810,7 +810,7 @@ void unpack_color_endpoints(
 	vint4 output_scale = ldr_scale;
 
 	// An LDR profile image
-	if ((decode_mode == ASTCENC_PRF_LDR_SRGB) ||
+	if ((decode_mode == ASTCENC_PRF_LDR) ||
 	    (decode_mode == ASTCENC_PRF_LDR_SRGB))
 	{
 		// Also matches HDR alpha, as cannot have HDR alpha without HDR RGB
