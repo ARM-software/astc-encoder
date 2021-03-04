@@ -198,7 +198,7 @@ private:
 	std::atomic<unsigned int> m_start_count;
 
 	/** @brief Number of tasks finished. */
-	std::atomic<unsigned int> m_done_count;
+	unsigned int m_done_count;
 
 	/** @brief Number of tasks that need to be processed. */
 	unsigned int m_task_count;
@@ -299,9 +299,13 @@ public:
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
-		unsigned int base = m_done_count.fetch_add(count, std::memory_order_relaxed);
-		if ((base + count) == m_task_count)
+		// Note: m_done_count cannot use an atomic without the mutex; this has
+		// a race between the update here and the wait() for other threads
+		std::unique_lock<std::mutex> lck(m_lock);
+		this->m_done_count += count;
+		if (m_done_count == m_task_count)
 		{
+			lck.unlock();
 			m_complete.notify_all();
 		}
 	}
