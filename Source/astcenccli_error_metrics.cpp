@@ -234,7 +234,7 @@ void compute_error_metrics(
 					assert(img2->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img2->data[z]);
 
-					color1 = vfloat4(
+					color2 = vfloat4(
 					    data32[(4 * xsize2 * y) + (4 * x    )],
 					    data32[(4 * xsize2 * y) + (4 * x + 1)],
 					    data32[(4 * xsize2 * y) + (4 * x + 2)],
