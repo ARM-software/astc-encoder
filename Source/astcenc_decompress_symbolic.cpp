@@ -422,6 +422,24 @@ float compute_symbolic_block_difference(
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk->texel(i);
 
+		if (1)
+		{
+			color = vfloat4(
+				color.lane<0>() * color.lane<3>() * 5.0f,
+				color.lane<1>() * color.lane<3>() * 5.0f,
+				color.lane<2>() * color.lane<3>() * 5.0f,
+				// Punish encodings that result in zero weight M pixels
+				color.lane<3>() < (2.0f * 65535.0f / 255.0f) ? 6500000.0f : 1.0f
+			);
+
+			oldColor = vfloat4(
+				oldColor.lane<0>() * oldColor.lane<3>() * 5.0f,
+				oldColor.lane<1>() * oldColor.lane<3>() * 5.0f,
+				oldColor.lane<2>() * oldColor.lane<3>() * 5.0f,
+				1.0f
+			);
+		}
+
 		vfloat4 error = oldColor - color;
 		error = min(abs(error), 1e15f);
 		error = error * error;
