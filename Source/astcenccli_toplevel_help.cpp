@@ -173,6 +173,18 @@ COMPRESSION
                nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
                nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
 
+       -rgbm <max>
+           The input texture is an RGBM encoded texture, storing values
+           HDR values between 0 and <max> in an LDR container format with
+           a shared multiplier. Shaders reconstruct the HDR value as:
+
+               vec3 hdr_value = tex.rgb * tex.a * max;
+
+           The compression behavior of the ASTC format for RGBM data
+           requires that the user's RGBM encoding preprocess keeps values
+           of M above a lower threshold to avoid them quantizing to zero
+           during compression. We recommend trying 16/255 or 32/255.
+
        -perceptual
            The codec should optimize perceptual error, instead of direct
            RMS error. This aims to improves perceived image quality, but
