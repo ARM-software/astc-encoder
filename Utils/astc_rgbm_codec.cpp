@@ -32,6 +32,9 @@
 #define MODE_ENCODE 0
 #define MODE_DECODE 1
 
+// Limit M values to be at least this to avoid block quant errors
+#define M_LOW_CLAMP 32.0f
+
 int main(int argc, char **argv)
 {
 	// Parse command line
@@ -103,7 +106,7 @@ int main(int argc, char **argv)
 				float m_scale = astc::min(1.0f, ceil(max_rgb * 255.0f) / 255.0f);
 
 				// But keep well above zero to avoid clamps in the compressor
-				m_scale = astc::max(m_scale, 25.0f / 255.0f);
+				m_scale = astc::max(m_scale, M_LOW_CLAMP / 255.0f);
 
 				float r_scale = astc::min(1.0f, r_in / m_scale);
 				float g_scale = astc::min(1.0f, g_in / m_scale);
