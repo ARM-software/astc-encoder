@@ -475,6 +475,13 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				if (errorval == -1e30f)
+				{
+					errorval = -errorval;
+					workscb.error_block = 1;
+				}
+
+
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -515,6 +522,12 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			if (errorval == -1e30f)
+			{
+				errorval = -errorval;
+				workscb.error_block = 1;
+			}
+
 			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -868,6 +881,13 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				}
 
 				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				if (errorval == -1e30f)
+				{
+					errorval = -errorval;
+					workscb.error_block = 1;
+				}
+
+
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
@@ -909,6 +929,12 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			}
 
 			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			if (errorval == -1e30f)
+			{
+				errorval = -errorval;
+				workscb.error_block = 1;
+			}
+
 			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 

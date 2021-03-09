@@ -424,12 +424,18 @@ float compute_symbolic_block_difference(
 
 		if (1)
 		{
+			// Fail encodings that result in zero weight M pixels
+			if (color.lane<3>() == 0.0f)
+			{
+				return -1e30f;
+			}
+
+			// Compute error based on decoded RGBM color
 			color = vfloat4(
 				color.lane<0>() * color.lane<3>() * 5.0f,
 				color.lane<1>() * color.lane<3>() * 5.0f,
 				color.lane<2>() * color.lane<3>() * 5.0f,
-				// Punish encodings that result in zero weight M pixels
-				color.lane<3>() < (2.0f * 65535.0f / 255.0f) ? 6500000.0f : 1.0f
+				1.0f
 			);
 
 			oldColor = vfloat4(
