@@ -373,7 +373,7 @@ ADVANCED COMPRESSION
                -exhaustive : 1000.0
 
        -planecorlimit <factor>
-           Stop compression after testing only one planes of weights,
+           Stop compression after testing only one plane of weights,
            unless the minimum color correlation factor between any pair of
            color channels is below this factor. This option is ineffective
            for normal maps. Preset defaults are:
