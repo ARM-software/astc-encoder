@@ -202,7 +202,7 @@ static int realign_weights(
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
 static float compress_symbolic_block_fixed_partition_1_plane(
-	astcenc_profile decode_mode,
+	const astcenc_config& config,
 	bool only_always,
 	int tune_candidate_limit,
 	float tune_errorval_threshold,
@@ -474,7 +474,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 					workscb.weights[j] = u8_weight_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, &workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
@@ -512,7 +512,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
-			    decode_mode, bsd, blk, ewb, &workscb,
+			    config.profile, bsd, blk, ewb, &workscb,
 			    u8_weight_src, nullptr);
 
 			// Post-realign test
@@ -521,7 +521,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				workscb.weights[j] = u8_weight_src[j];
 			}
 
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, &workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;
@@ -564,7 +564,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 }
 
 static float compress_symbolic_block_fixed_partition_2_planes(
-	astcenc_profile decode_mode,
+	const astcenc_config& config,
 	bool only_always,
 	int tune_candidate_limit,
 	float tune_errorval_threshold,
@@ -880,7 +880,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, &workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
@@ -918,7 +918,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 			// perform a final pass over the weights to try to improve them.
 			int adjustments = realign_weights(
-			    decode_mode, bsd, blk, ewb, &workscb,
+			    config.profile, bsd, blk, ewb, &workscb,
 			    u8_weight1_src, u8_weight2_src);
 
 			// Post-realign test
@@ -928,7 +928,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 			}
 
-			float errorval = compute_symbolic_block_difference(decode_mode, bsd, &workscb, blk, ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, &workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;
@@ -1405,7 +1405,7 @@ void compress_block(
 		trace_add_data("search_mode", i);
 
 		float errorval = compress_symbolic_block_fixed_partition_1_plane(
-		    decode_mode, i == 0,
+		    ctx.config, i == 0,
 		    ctx.config.tune_candidate_limit,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
@@ -1453,7 +1453,7 @@ void compress_block(
 		}
 
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
-		    decode_mode, false,
+		    ctx.config, false,
 		    ctx.config.tune_candidate_limit,
 		    error_threshold * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
@@ -1491,7 +1491,7 @@ void compress_block(
 			trace_add_data("search_mode", i);
 
 			float errorval = compress_symbolic_block_fixed_partition_1_plane(
-			    decode_mode, false,
+			    ctx.config, false,
 			    ctx.config.tune_candidate_limit,
 			    error_threshold * errorval_overshoot,
 			    ctx.config.tune_refinement_limit,
@@ -1542,7 +1542,7 @@ void compress_block(
 		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
 
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
-			decode_mode,
+			ctx.config,
 			false,
 			ctx.config.tune_candidate_limit,
 			error_threshold * errorval_overshoot,
