@@ -1051,7 +1051,7 @@ void write_imageblock(
 	astcenc_swizzle swz);
 
 float compute_symbolic_block_difference(
-	astcenc_profile decode_mode,
+	const astcenc_config& config,
 	const block_size_descriptor* bsd,
 	const symbolic_compressed_block* scb,
 	const imageblock* blk,

@@ -32,15 +32,12 @@
 #define MODE_ENCODE 0
 #define MODE_DECODE 1
 
-// Limit M values to be at least this to avoid block quant errors
-#define M_LOW_CLAMP 32.0f
-
 int main(int argc, char **argv)
 {
 	// Parse command line
-	if (argc != 5)
+	if (argc != 6)
 	{
-		printf("Usage: astc_rgbm_codec [-ch|-dh] <M> <source> <dest>\n");
+		printf("Usage: astc_rgbm_codec [-ch|-dh] <M> <low_clamp> <source> <dest>\n");
 		exit(1);
 	}
 
@@ -60,9 +57,10 @@ int main(int argc, char **argv)
 	}
 
  	float rgbm_multiplier = atof(argv[2]);
+ 	float low_clamp = atof(argv[3]);
 
-	const char* src_file = argv[3];
-	const char* dst_file = argv[4];
+	const char* src_file = argv[4];
+	const char* dst_file = argv[5];
 
 	// Convert an HDR input file into an RGBM encoded LDR file
 	if (opmode == MODE_ENCODE)
@@ -106,7 +104,7 @@ int main(int argc, char **argv)
 				float m_scale = astc::min(1.0f, ceil(max_rgb * 255.0f) / 255.0f);
 
 				// But keep well above zero to avoid clamps in the compressor
-				m_scale = astc::max(m_scale, M_LOW_CLAMP / 255.0f);
+				m_scale = astc::max(m_scale, low_clamp / 255.0f);
 
 				float r_scale = astc::min(1.0f, r_in / m_scale);
 				float g_scale = astc::min(1.0f, g_in / m_scale);
