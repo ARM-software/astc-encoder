@@ -45,12 +45,15 @@ releases. Please update and rebuild your client-side code using the updated
     changed to allow use of multiple threads. The design pattern matches the
     compression functionality, requiring the caller to create the threads,
     synchronize them between images, and call the new
-    `astcenc_decompress_reset()` function between images.
   * **API Feature:** Defines to support exporting public API entry point
     symbols from a shared object are provided, but not exposed off-the-shelf by
     the CMake provided by the project.
-  * **API Feature:** Codec configuration extended to expose the new RGBM
-    compression mode. See the API header for details.
+    `astcenc_decompress_reset()` function between images.
+  * **API Feature:** New `astcenc_get_block_info()` function added to the core
+    API to allow users to perform high level analysis of compressed data. This
+	API is not implemented in decompressor-only builds.
+  * **API Feature:** Codec configuration structure has been extended to expose
+    the new RGBM compression mode. See the API header for details.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.4

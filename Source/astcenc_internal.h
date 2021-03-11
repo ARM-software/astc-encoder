@@ -651,6 +651,34 @@ enum quant_method
 	QUANT_256 = 20
 };
 
+static inline int get_quant_method_levels(quant_method method)
+{
+	switch(method)
+	{
+	case QUANT_2:   return   2;
+	case QUANT_3:   return   3;
+	case QUANT_4:   return   4;
+	case QUANT_5:   return   5;
+	case QUANT_6:   return   6;
+	case QUANT_8:   return   8;
+	case QUANT_10:  return  10;
+	case QUANT_12:  return  12;
+	case QUANT_16:  return  16;
+	case QUANT_20:  return  20;
+	case QUANT_24:  return  24;
+	case QUANT_32:  return  32;
+	case QUANT_40:  return  40;
+	case QUANT_48:  return  48;
+	case QUANT_64:  return  64;
+	case QUANT_80:  return  80;
+	case QUANT_96:  return  96;
+	case QUANT_128: return 128;
+	case QUANT_160: return 160;
+	case QUANT_192: return 192;
+	case QUANT_256: return 256;
+	}
+};
+
 /**
  * @brief Weight quantization transfer table.
  *
@@ -1158,6 +1186,16 @@ void unpack_color_endpoints(
 	int* nan_endpoint,
 	vint4* output0,
 	vint4* output1);
+
+// unquantize and undecimate a weight grid
+void unpack_weights(
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const decimation_table& dt,
+	bool is_dual_plane,
+	int weight_quant_level,
+	int weights_plane1[MAX_TEXELS_PER_BLOCK],
+	int weights_plane2[MAX_TEXELS_PER_BLOCK]);
 
 struct encoding_choice_errors
 {

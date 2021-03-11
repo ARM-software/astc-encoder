@@ -378,7 +378,8 @@ static const unsigned int ASTCENC_ALL_FLAGS =
  * the value in the config applies to the channel that exists after any
  * compression data swizzle is applied.
  */
-struct astcenc_config {
+struct astcenc_config
+{
 	/** @brief The color profile. */
 	astcenc_profile profile;
 
@@ -554,17 +555,98 @@ struct astcenc_config {
  * 3D image are passed in as an array of 2D slices. Each slice has identical
  * size and color format.
  */
-struct astcenc_image {
+struct astcenc_image
+{
 	/** @brief The X dimension of the image, in texels. */
 	unsigned int dim_x;
+
 	/** @brief The Y dimension of the image, in texels. */
 	unsigned int dim_y;
+
 	/** @brief The Z dimension of the image, in texels. */
 	unsigned int dim_z;
+
 	/** @brief The data type per channel. */
 	astcenc_type data_type;
-	/** @brief The array of 2D slices, of length dim_z. */
+
+	/** @brief The array of 2D slices, of length @c dim_z. */
 	void** data;
+};
+
+/**
+ * @brief A block encoding metadata query result.
+ *
+ * If the block is an error block or a constant color block or an error block
+ * all fields other than the profile, block dimensions, and error/constant
+ * indicator will be zero.
+ */
+struct astcenc_block_info
+{
+	/** @brief The block encoding color profile. */
+	astcenc_profile profile;
+
+	/** @brief The number of texels in the X dimension. */
+	int block_x;
+
+	/** @brief The number of texels in the Y dimension. */
+	int block_y;
+
+	/** @brief The number of texel in the Z dimension. */
+	int block_z;
+
+	/** @brief The number of texels in the block. */
+	int texel_count;
+
+	/** @brief True if this block is an error block. */
+	bool is_error_block;
+
+	/** @brief True if this block is a constant color block. */
+	bool is_constant_block;
+
+	/** @brief True if this block is an HDR block. */
+	bool is_hdr_block;
+
+	/** @brief True if this block uses two weight planes. */
+	bool is_dual_plane_block;
+
+	/** @brief The number of partitions if not constant color. */
+	int partition_count;
+
+	/** @brief The partition index if 2 - 4 partitions used. */
+	int partition_index;
+
+	/** @brief The component index of the second plane if dual plane. */
+	int dual_plane_component;
+
+	/** @brief The color endpoint encoding mode for each partition. */
+	int color_endpoint_modes[4];
+
+	/** @brief The number of color endpoint quantization levels. */
+	int color_level_count;
+
+	/** @brief The number of weight quantization levels. */
+	int weight_level_count;
+
+	/** @brief The number of weights in the X dimension. */
+	int weight_x;
+
+	/** @brief The number of weights in the Y dimension. */
+	int weight_y;
+
+	/** @brief The number of weights in the Z dimension. */
+	int weight_z;
+
+	/** @brief The unpacked color endpoints for each partition. */
+	float color_endpoints[4][2][4];
+
+	/** @brief The per-texel interpolation weights for the block. */
+	float weight_values_plane1[216];
+
+	/** @brief The per-texel interpolation weights for the block. */
+	float weight_values_plane2[216];
+
+	/** @brief The per-texel partition assignments for the block. */
+	uint8_t partition_assignment[216];
 };
 
 /**
@@ -705,6 +787,25 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_reset(
  */
 ASTCENC_PUBLIC void astcenc_context_free(
 	astcenc_context* context);
+
+/**
+ * @brief Provide a high level summary of a block's encoding.
+ *
+ * This feature is primarily useful for codec developers but may be useful
+ * for developers building advanced content packaging pipelines.
+ *
+ * @param context   Codec context.
+ * @param data      One block of compressesd ASTC data.
+ * @param info      The output info structure to populate.
+ *
+ * @return ASTCENC_SUCCESS if the block was decoded, or an error otherwise.
+ *         Note that this function will return success even if the block itself
+ *         was an error block encoding, as the decode was correctly handled.
+ */
+ASTCENC_PUBLIC astcenc_error astcenc_get_block_info(
+	astcenc_context* context,
+	const uint8_t data[16],
+	astcenc_block_info* info);
 
 /**
  * @brief Get a printable string for specific status code.

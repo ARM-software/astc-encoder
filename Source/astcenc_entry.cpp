@@ -1009,6 +1009,128 @@ astcenc_error astcenc_decompress_reset(
 	return ASTCENC_SUCCESS;
 }
 
+astcenc_error astcenc_get_block_info(
+	astcenc_context* ctx,
+	const uint8_t data[16],
+	astcenc_block_info* info
+) {
+#if defined(ASTCENC_DECOMPRESS_ONLY)
+	(void)ctx;
+	(void)data;
+	(void)info;
+	return ASTCENC_ERR_BAD_CONTEXT;
+#else
+	// Decode the compressed data into a symbolic form
+	physical_compressed_block pcb = *(const physical_compressed_block*)data;
+	symbolic_compressed_block scb;
+	physical_to_symbolic(*ctx->bsd, pcb, scb);
+
+	// Fetch the appropriate partition and decimation tables
+	block_size_descriptor& bsd = *ctx->bsd;
+
+	int partition_count = scb.partition_count;
+	const partition_info* pt = get_partition_table(&bsd, partition_count);
+	pt += scb.partition_index;
+
+	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
+	assert(packed_index >= 0 && packed_index < bsd->block_mode_count);
+	const block_mode& bm = bsd.block_modes[packed_index];
+	const decimation_table& dt = *bsd.decimation_tables[bm.decimation_mode];
+
+	// Start from a clean slate
+	memset(info, 0, sizeof(*info));
+
+	// Basic info we can always populate
+	info->profile = ctx->config.profile;
+
+	info->block_x = ctx->config.block_x;
+	info->block_y = ctx->config.block_y;
+	info->block_z = ctx->config.block_z;
+	info->texel_count = bsd.texel_count;
+
+	// Check for error blocks first ...
+	info->is_error_block = scb.error_block != 0;
+	if (info->is_error_block)
+	{
+		return ASTCENC_SUCCESS;
+	}
+
+	// Check for constant color blocks second ...
+	info->is_constant_block = scb.block_mode < 0;
+	if (info->is_constant_block)
+	{
+		return ASTCENC_SUCCESS;
+	}
+
+	// Otherwise, handle a full block with partition payload ...
+	info->weight_x = dt.weight_x;
+	info->weight_y = dt.weight_y;
+	info->weight_z = dt.weight_z;
+
+	info->is_dual_plane_block = bm.is_dual_plane != 0;
+
+	info->partition_count = scb.partition_count;
+	info->partition_index = scb.partition_index;
+	info->dual_plane_component = scb.plane2_color_component;
+
+	info->color_level_count =  get_quant_method_levels((quant_method)scb.color_quant_level);
+	info->weight_level_count = get_quant_method_levels((quant_method)bm.quant_mode);
+
+	// Unpack color endpoints for each active partition
+	for (int i = 0; i < scb.partition_count; i++)
+	{
+		int rgb_hdr;
+		int a_hdr;
+		int nan;
+		vint4 endpnt[2];
+
+		unpack_color_endpoints(ctx->config.profile,
+		                       scb.color_formats[i],
+		                       scb.color_quant_level,
+		                       scb.color_values[i],
+		                       &rgb_hdr, &a_hdr, &nan,
+		                       endpnt, endpnt + 1);
+
+		// Store the color endpoint mode info
+		info->color_endpoint_modes[i] = scb.color_formats[i];
+		info->is_hdr_block |= (rgb_hdr != 0) | (a_hdr != 0);
+
+		// Store the unpacked and decoded color endpoint
+		vmask4 hdr_mask(rgb_hdr, rgb_hdr, rgb_hdr, a_hdr);
+		for (int j = 0; j < 2; j++)
+		{
+			vint4 color_lns = lns_to_sf16(endpnt[j]);
+			vint4 color_unorm = unorm16_to_sf16(endpnt[j]);
+			vint4 datai = select(color_unorm, color_lns, hdr_mask);
+			store(float16_to_float(datai), info->color_endpoints[i][j]);
+		}
+	}
+
+	// Unpack weights for each texel
+	int weight_plane1[MAX_TEXELS_PER_BLOCK];
+	int weight_plane2[MAX_TEXELS_PER_BLOCK];
+
+	unpack_weights(bsd, scb, dt, bm.is_dual_plane, bm.quant_mode, weight_plane1, weight_plane2);
+	for (int i = 0; i < bsd.texel_count; i++)
+	{
+		info->weight_values_plane1[i] = (float)weight_plane1[i] / (float)TEXEL_WEIGHT_SUM;
+		if (info->is_dual_plane_block)
+		{
+			info->weight_values_plane2[i] = (float)weight_plane2[i] / (float)TEXEL_WEIGHT_SUM;
+		}
+	}
+
+	// Unpack partition assignments for each texel
+	for (int i = 0; i < bsd.texel_count; i++)
+	{
+		info->partition_assignment[i] = pt->partition_of_texel[i];
+	}
+
+	return ASTCENC_SUCCESS;
+#endif
+}
+
+
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {
