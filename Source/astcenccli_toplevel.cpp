@@ -504,18 +504,23 @@ static int init_astcenc_config(
 			argidx++;
 			flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
 		}
+		else if (!strcmp(argv[argidx], "-mask"))
+		{
+			flags |= ASTCENC_FLG_MAP_MASK;
+		}
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			flags |= ASTCENC_FLG_MAP_NORMAL;
 		}
+		else if (!strcmp(argv[argidx], "-rgbm"))
+		{
+			// Skip over the data value for now
+			argidx++;
+			flags |= ASTCENC_FLG_MAP_RGBM;
+		}
 		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
 			flags |= ASTCENC_FLG_USE_PERCEPTUAL;
-		}
-		else if (!strcmp(argv[argidx], "-mask"))
-		{
-
-			flags |= ASTCENC_FLG_MAP_MASK;
 		}
 		else if (!strcmp(argv[argidx], "-pp-normalize"))
 		{
@@ -778,6 +783,10 @@ static int edit_astcenc_config(
 			cli_config.swz_decode.a = swizzle_components[3];
 		}
 		// presets begin here
+		else if (!strcmp(argv[argidx], "-mask"))
+		{
+			argidx++;
+		}
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			argidx++;
@@ -792,11 +801,19 @@ static int edit_astcenc_config(
 			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
 			cli_config.swz_decode.a = ASTCENC_SWZ_1;
 		}
-		else if (!strcmp(argv[argidx], "-perceptual"))
+		else if (!strcmp(argv[argidx], "-rgbm"))
 		{
-			argidx++;
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -rgbm switch with no argument\n");
+				return 1;
+			}
+
+			config.rgbm_m_scale = atof(argv[argidx - 1]);
+			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 		}
-		else if (!strcmp(argv[argidx], "-mask"))
+		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
 			argidx++;
 		}

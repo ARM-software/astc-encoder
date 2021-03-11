@@ -306,8 +306,10 @@ void decompress_symbolic_block(
 	}
 }
 
+// Returns a negative error for encodings we want to reject as a part of a
+// heuristic check, e.g. for RGBM textures which have zero M values.
 float compute_symbolic_block_difference(
-	astcenc_profile decode_mode,
+	const astcenc_config& config,
 	const block_size_descriptor* bsd,
 	const symbolic_compressed_block* scb,
 	const imageblock* blk,
@@ -353,7 +355,7 @@ float compute_symbolic_block_difference(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		unpack_color_endpoints(decode_mode,
+		unpack_color_endpoints(config.profile,
 		                       scb->color_formats[i],
 		                       scb->color_quant_level,
 		                       scb->color_values[i],
@@ -412,7 +414,7 @@ float compute_symbolic_block_difference(
 		vint4 ep0 = color_endpoint0[partition];
 		vint4 ep1 = color_endpoint1[partition];
 
-		vint4 colori = lerp_color_int(decode_mode,
+		vint4 colori = lerp_color_int(config.profile,
 		                              ep0,
 		                              ep1,
 		                              weights[i],
@@ -421,6 +423,36 @@ float compute_symbolic_block_difference(
 
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk->texel(i);
+
+		if (config.flags & ASTCENC_FLG_MAP_RGBM)
+		{
+			// Fail encodings that result in zero weight M pixels. Note that
+			// this can cause "interesting" artifacts if we reject all useful
+			// encodings - we typically get max brightness encodings instead
+			// which look just as bad. We recommend users apply a bias to their
+			// stored M value, limiting the lower value to 16 or 32 to avoid
+			// getting small M values post-quantization, but we can't prove it
+			// would never happen, especially at low bit rates ...
+			if (color.lane<3>() == 0.0f)
+			{
+				return -1e30f;
+			}
+
+			// Compute error based on decoded RGBM color
+			color = vfloat4(
+				color.lane<0>() * color.lane<3>() * config.rgbm_m_scale,
+				color.lane<1>() * color.lane<3>() * config.rgbm_m_scale,
+				color.lane<2>() * color.lane<3>() * config.rgbm_m_scale,
+				1.0f
+			);
+
+			oldColor = vfloat4(
+				oldColor.lane<0>() * oldColor.lane<3>() * config.rgbm_m_scale,
+				oldColor.lane<1>() * oldColor.lane<3>() * config.rgbm_m_scale,
+				oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
+				1.0f
+			);
+		}
 
 		vfloat4 error = oldColor - color;
 		error = min(abs(error), 1e15f);

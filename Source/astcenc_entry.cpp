@@ -170,7 +170,9 @@ static astcenc_error validate_flags(
 	}
 
 	// Flags field must only contain at most a single map type
-	exMask = ASTCENC_FLG_MAP_MASK | ASTCENC_FLG_MAP_NORMAL;
+	exMask = ASTCENC_FLG_MAP_MASK
+	       | ASTCENC_FLG_MAP_NORMAL
+	       | ASTCENC_FLG_MAP_RGBM;
 	if (astc::popcount(flags & exMask) > 1)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
@@ -299,6 +301,8 @@ static astcenc_error validate_config(
 	config.v_a_stdev = astc::max(config.v_a_stdev, 0.0f);
 
 	config.b_deblock_weight = astc::max(config.b_deblock_weight, 0.0f);
+
+	config.rgbm_m_scale = astc::max(config.rgbm_m_scale, 1.0f);
 
 	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
 	config.tune_partition_index_limit = astc::clamp(config.tune_partition_index_limit, 1u, (unsigned int)PARTITION_COUNT);
@@ -452,7 +456,7 @@ astcenc_error astcenc_config_init(
 
 	config.a_scale_radius = 0;
 
-	config.b_deblock_weight = 0.0f;
+	config.rgbm_m_scale = 0.0f;
 
 	config.profile = profile;
 
@@ -511,10 +515,8 @@ astcenc_error astcenc_config_init(
 
 	if (flags & ASTCENC_FLG_MAP_NORMAL)
 	{
-		config.cw_r_weight = 1.0f;
 		config.cw_g_weight = 0.0f;
 		config.cw_b_weight = 0.0f;
-		config.cw_a_weight = 1.0f;
 		config.tune_partition_early_out_limit = 1000.0f;
 		config.tune_two_plane_early_out_limit = 0.99f;
 
@@ -538,6 +540,12 @@ astcenc_error astcenc_config_init(
 		config.v_rgb_stdev = 25.0f;
 		config.v_a_mean = 0.0f;
 		config.v_a_stdev = 25.0f;
+	}
+
+	if (flags & ASTCENC_FLG_MAP_RGBM)
+	{
+		config.rgbm_m_scale = 5.0f;
+		config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 	}
 
 	config.flags = flags;
