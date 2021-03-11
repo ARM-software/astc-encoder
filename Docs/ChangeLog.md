@@ -25,8 +25,18 @@ releases. Please update and rebuild your client-side code using the updated
   * **Feature:** The `ISA_INVARIANCE` build option is no longer supported, as
     there is no longer any performance benefit from the variant paths. All
     builds are now using the equivalent of the `ISA_INVARIANCE=ON` setting, and
-    all builds are now believed to be invariant across operating systems,
-    compilers, CPU architectures, and SIMD instruction sets.
+    all builds (except Armv7) are now believed to be invariant across operating
+    systems, compilers, CPU architectures, and SIMD instruction sets.
+  * **Feature:** 32-bit Armv7 builds with NEON are now supported, with
+    out-of-the-box support for Arm Linux soft-float and hard-float ABIs. These
+    are NOT guaranteed to be invariant with other architectures, as Armv7 NEON
+    does not support IEEE-754 strict mode. There are no pre-built binaries for
+    these targets; support is included for library users targeting older
+    Android and iOS devices.
+  * **Feature:** A compressor mode for encoding HDR textures that have been
+    encoded into LDR RGBM wrapper format is now supported. Note that this
+    encoding has some strong recomendations for how the RGBM encoding is
+    implemented to avoid block artifacts in the compressed image.
 * **Core API:**
   * **API Change:** The core API has been changed to be a pure C API, making it
     easier to wrap the codec in a stable shared library ABI. Some entry points
@@ -39,6 +49,8 @@ releases. Please update and rebuild your client-side code using the updated
   * **API Feature:** Defines to support exporting public API entry point
     symbols from a shared object are provided, but not exposed off-the-shelf by
     the CMake provided by the project.
+  * **API Feature:** Codec configuration extended to expose the new RGBM
+    compression mode. See the API header for details.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 2.4
