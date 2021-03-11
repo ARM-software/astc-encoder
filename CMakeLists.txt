@@ -112,19 +112,23 @@ if(${ARCH} MATCHES "aarch64")
     set(CMAKE_OSX_ARCHITECTURES "arm64")
 elseif(${ARCH} MATCHES "armv7")
     set(CMAKE_OSX_ARCHITECTURES "armv7")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         # using Clang
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-vfpv4")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-command-line-argument")
+        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # using GCC (GCC's support for armv7 is terrible)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
+        # using GCC
         # softfp for arm-linux-gnueabi-g++
         # hard for arm-linux-gnueabihf-g++
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
         # arm-linux-gnueabi(hf)-gcc uses #pragma GCC target ("fpu=neon-fp-armv8")
         # to declare more intrinsics (including vminnmq/vmaxnmq)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-fp-armv8")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfp16-format=ieee -flax-vector-conversions")
+        # support fp16 in GCC
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfp16-format=ieee")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions")
         # For Source/tinyexr.h:11025
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-type-limits")
     endif()
