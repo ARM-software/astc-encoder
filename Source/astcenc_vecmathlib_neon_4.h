@@ -39,7 +39,7 @@
 
 #include <cstdio>
 
-#ifdef __arm__
+#if defined(__arm__)
 	#include "astcenc_vecmathlib_neon_armv7_4.h"
 #endif
 

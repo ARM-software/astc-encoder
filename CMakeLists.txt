@@ -112,7 +112,22 @@ if(${ARCH} MATCHES "aarch64")
     set(CMAKE_OSX_ARCHITECTURES "arm64")
 elseif(${ARCH} MATCHES "armv7")
     set(CMAKE_OSX_ARCHITECTURES "armv7")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-vfpv4")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # using Clang
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # using GCC (GCC's support for armv7 is terrible)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
+        # softfp for arm-linux-gnueabi-g++
+        # hard for arm-linux-gnueabihf-g++
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
+        # arm-linux-gnueabi(hf)-gcc uses #pragma GCC target ("fpu=neon-fp-armv8")
+        # to declare more intrinsics (including vminnmq/vmaxnmq)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-fp-armv8")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfp16-format=ieee -flax-vector-conversions")
+        # For Source/tinyexr.h:11025
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-type-limits")
+    endif()
 else()
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
 endif()

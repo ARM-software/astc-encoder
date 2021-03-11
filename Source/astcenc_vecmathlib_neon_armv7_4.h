@@ -31,6 +31,11 @@
 
 #include <algorithm>
 
+
+// arm-linux-gnueabi-gcc contains the following functions by using
+// #pragma GCC target ("fpu=neon-fp-armv8"), while clang does not.
+#if defined(__clang__)
+
 /**
  * @brief Return the max vector of two vectors.
  *
@@ -60,6 +65,8 @@ ASTCENC_SIMD_INLINE float32x4_t vminnmq_f32(float32x4_t a, float32x4_t b)
 	b = vbslq_f32(bmask, b, a);
 	return vminq_f32(a, b);
 }
+
+#endif
 
 /**
  * @brief Return the horizontal maximum of a vector.
@@ -118,7 +125,11 @@ ASTCENC_SIMD_INLINE float32x4_t vsqrtq_f32(float32x4_t a)
 	float32_t a1 = std::sqrt(vgetq_lane_f32(a, 1));
 	float32_t a2 = std::sqrt(vgetq_lane_f32(a, 2));
 	float32_t a3 = std::sqrt(vgetq_lane_f32(a, 3));
-	return { a0, a1, a2, a3 };
+	vsetq_lane_f32(a0, a, 0);
+	vsetq_lane_f32(a1, a, 1);
+	vsetq_lane_f32(a2, a, 2);
+	vsetq_lane_f32(a3, a, 3);
+	return a;
 }
 
 /**
@@ -131,7 +142,11 @@ ASTCENC_SIMD_INLINE float32x4_t vrndnq_f32(float32x4_t a)
 	float32_t a1 = std::nearbyintf(vgetq_lane_f32(a, 1));
 	float32_t a2 = std::nearbyintf(vgetq_lane_f32(a, 2));
 	float32_t a3 = std::nearbyintf(vgetq_lane_f32(a, 3));
-	return { a0, a1, a2, a3 };
+	vsetq_lane_f32(a0, a, 0);
+	vsetq_lane_f32(a1, a, 1);
+	vsetq_lane_f32(a2, a, 2);
+	vsetq_lane_f32(a3, a, 3);
+	return a;
 }
 
 /**
@@ -157,6 +172,15 @@ ASTCENC_SIMD_INLINE int8x16_t vqtbl1q_s8(int8x16_t t, uint8x16_t idx)
 	return vcombine_s8(
 		vtbl2_s8(tab, vget_low_s8(id)),
 		vtbl2_s8(tab, vget_high_s8(id)));
+}
+
+ASTCENC_SIMD_INLINE uint32_t vaddvq_u32(uint32x4_t a)
+{
+	uint32_t a0 = vgetq_lane_u32(a, 0);
+	uint32_t a1 = vgetq_lane_u32(a, 1);
+	uint32_t a2 = vgetq_lane_u32(a, 2);
+	uint32_t a3 = vgetq_lane_u32(a, 3);
+	return a0 + a1 + a2 + a3;
 }
 
 #endif
