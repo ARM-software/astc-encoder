@@ -1696,19 +1696,18 @@ TEST(vint4, two_to_the_n)
 	EXPECT_EQ(r1.lane<2>(), 1 << 2);
 	EXPECT_EQ(r1.lane<3>(), 1 << 3);
 
-	vint4 a2(29, 30, 31, 32);
+	vint4 a2(27, 28, 29, 30);
 	vint4 r2 = two_to_the_n(a2);
-	EXPECT_EQ(r2.lane<0>(), 1 << 29);
-	EXPECT_EQ(r2.lane<1>(), 1 << 30);
+	EXPECT_EQ(r2.lane<0>(), 1 << 27);
+	EXPECT_EQ(r2.lane<1>(), 1 << 28);
+	EXPECT_EQ(r2.lane<2>(), 1 << 29);
+	EXPECT_EQ(r2.lane<3>(), 1 << 30);
 
-	// This is just here for experimentation; the behavior of the actual
-	// implementation here is undefined, as it shifts beyond the size of the
-	// native type, and internally overflows the max value that can be stored
-	// in a signed int. Behavior is different across instruction sets.
-	// Shifts into sign bit
-	// EXPECT_EQ(r2.lane<2>(), 1 << 31);
-	// Shifts off the end of the word
-	// EXPECT_EQ(r2.lane<3>(), 1 << 32);
+	// Shifts higher than 30 are not allowed as it overflows the int type;
+	// and results in implementation-defined behavior because of how we
+	// generate the shifted result in two_to_the_n().
+	// -  Shift by 31 shifts into sign bit
+	// -  Shift by 32 shifts off the end
 }
 
 /** @brief Test vint4 storea. */
