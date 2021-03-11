@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN useradd -u 1001 -U -m -c Jenkins jenkins
+RUN useradd -u 1000 -U -m -c Jenkins jenkins
 
 RUN apt update && apt-get install -y \
     software-properties-common \

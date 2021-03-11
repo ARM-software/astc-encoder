@@ -15,7 +15,7 @@
  * similarly on different operating systems, so we test one compiler per OS.
  */
 
-@Library('hive-infra-library@changes/88/287488/3') _
+@Library('hive-infra-library@changes/86/295486/1') _
 
 pipeline {
   agent none
@@ -31,12 +31,29 @@ pipeline {
         /* Run static analysis on Linux */
         stage('Coverity') {
           agent {
-            docker {
-              image 'astcenc:2.4.0'
-              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-              registryCredentialsId 'cepe-artifactory-jenkins'
-              label 'docker'
-              alwaysPull true
+            kubernetes {
+              yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  imagePullSecrets:
+    - name: artifactory-ms-docker
+  containers:
+    - name: astcenc
+      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/astcenc:3.0.0
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          cpu: 4
+          memory: 8Gi
+'''
+            defaultContainer 'astcenc'
             }
           }
           stages {
@@ -76,12 +93,32 @@ pipeline {
         /* Build for Linux on x86-64 using Clang */
         stage('Linux') {
           agent {
-            docker {
-              image 'astcenc:2.3.0'
-              registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-              registryCredentialsId 'cepe-artifactory-jenkins'
-              label 'docker'
-              alwaysPull true
+            kubernetes {
+              yaml '''\
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  securityContext:
+                    runAsUser: 1000
+                    runAsGroup: 1000
+                  imagePullSecrets:
+                    - name: artifactory-ms-docker
+                  containers:
+                    - name: astcenc
+                      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/astcenc:3.0.0
+                      command:
+                        - sleep
+                      args:
+                        - infinity
+                      resources:
+                        requests:
+                          cpu: 4
+                          memory: 8Gi
+                        limits:
+                          cpu: 8
+                          memory: 16Gi
+              '''.stripIndent()
+              defaultContainer 'astcenc'
             }
           }
           stages {
@@ -133,7 +170,7 @@ pipeline {
         /* Build for Windows on x86-64 using MSVC */
         stage('Windows') {
           agent {
-            label 'Windows && x86_64'
+            label 'Windows'
           }
           stages {
             stage('Clean') {
@@ -173,7 +210,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac && x86_64 && notarizer'
+            label 'mac && notarizer'
           }
           stages {
             stage('Clean') {
@@ -197,10 +234,7 @@ pipeline {
               }
               steps {
                 dir('build_rel') {
-                  withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
-                                                     keyFileVariable: 'SSH_AUTH_FILE')]) {
-                    sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-                  }
+                  sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
                   withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                     usernameVariable: 'USERNAME',
                                                     passwordVariable: 'PASSWORD')]) {
@@ -231,7 +265,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS arm64') {
           agent {
-            label 'mac && x86_64 && notarizer'
+            label 'mac && notarizer'
           }
           stages {
             stage('Clean') {
@@ -255,10 +289,7 @@ pipeline {
               }
               steps {
                 dir('build_rel') {
-                  withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
-                                                     keyFileVariable: 'SSH_AUTH_FILE')]) {
-                    sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-                  }
+                  sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
                   withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                     usernameVariable: 'USERNAME',
                                                     passwordVariable: 'PASSWORD')]) {
@@ -283,12 +314,29 @@ pipeline {
     }
     stage('Artifactory') {
       agent {
-        docker {
-          image 'astcenc:2.3.0'
-          registryUrl 'https://mobile-studio--docker.artifactory.geo.arm.com'
-          registryCredentialsId 'cepe-artifactory-jenkins'
-          label 'docker'
-          alwaysPull true
+        kubernetes {
+          yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+  imagePullSecrets:
+    - name: artifactory-ms-docker
+  containers:
+    - name: astcenc
+      image: mobile-studio--docker.eu-west-1.artifactory.aws.arm.com/astcenc:3.0.0
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          cpu: 1
+          memory: 4Gi
+'''
+          defaultContainer 'astcenc'
         }
       }
       options {
@@ -308,10 +356,14 @@ pipeline {
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
-              withCredentials([sshUserPrivateKey(credentialsId: 'gerrit-jenkins-ssh',
-                                                 keyFileVariable: 'SSH_AUTH_FILE')]) {
-                sh 'GIT_SSH_COMMAND="ssh -i $SSH_AUTH_FILE -o StrictHostKeyChecking=no" git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-              }
+              checkout changelog: false,
+                       poll: false,
+                       scm: [$class: 'GitSCM',
+                       branches: [[name: '*/master']],
+                       doGenerateSubmoduleConfigurations: false,
+                       extensions: [],
+                       submoduleCfg: [],
+                       userRemoteConfigs: [[credentialsId: 'gerrit-jenkins', url: 'ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing']]]
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
