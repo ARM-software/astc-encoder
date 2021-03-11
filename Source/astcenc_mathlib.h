@@ -68,7 +68,7 @@
 #endif
 
 #ifndef ASTCENC_NEON
-  #if defined(__aarch64__)
+  #if defined(__aarch64__) || defined(__arm__)
     #define ASTCENC_NEON 1
   #else
     #define ASTCENC_NEON 0
