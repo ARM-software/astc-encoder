@@ -338,7 +338,7 @@ struct vmask4
 			d == true ? -1 : 0
 		};
 
-		m = v;
+		m = vreinterpretq_u32_s32(v);
 	}
 
 
