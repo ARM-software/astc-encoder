@@ -171,13 +171,4 @@ ASTCENC_SIMD_INLINE int8x16_t vqtbl1q_s8(int8x16_t t, uint8x16_t idx)
 		vtbl2_s8(tab, vget_high_s8(id)));
 }
 
-ASTCENC_SIMD_INLINE uint32_t vaddvq_u32(uint32x4_t a)
-{
-	uint32_t a0 = vgetq_lane_u32(a, 0);
-	uint32_t a1 = vgetq_lane_u32(a, 1);
-	uint32_t a2 = vgetq_lane_u32(a, 2);
-	uint32_t a3 = vgetq_lane_u32(a, 3);
-	return a0 + a1 + a2 + a3;
-}
-
 #endif
