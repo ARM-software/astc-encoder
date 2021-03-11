@@ -378,6 +378,9 @@ ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
  */
 ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 {
+	// 2^30 is the largest signed number than can be represented
+	assert(all(a < vint4(31)));
+
 	// This function is a horrible abuse of floating point to use the exponent
 	// and float conversion to generate a 2^N multiple.
 
