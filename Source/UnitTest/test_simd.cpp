@@ -1696,7 +1696,7 @@ TEST(vint4, two_to_the_n)
 	EXPECT_EQ(r1.lane<2>(), 1 << 2);
 	EXPECT_EQ(r1.lane<3>(), 1 << 3);
 
-	vint4 a2(29, 30, 31, 32);
+	vint4 a2(29, 30, 0, 0);
 	vint4 r2 = two_to_the_n(a2);
 	EXPECT_EQ(r2.lane<0>(), 1 << 29);
 	EXPECT_EQ(r2.lane<1>(), 1 << 30);
