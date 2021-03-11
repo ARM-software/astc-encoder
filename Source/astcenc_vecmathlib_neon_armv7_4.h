@@ -145,7 +145,7 @@ ASTCENC_SIMD_INLINE float32x4_t vrndnq_f32(float32x4_t a)
 }
 
 /**
- * @brief vector by vector division.
+ * @brief Vector by vector division.
  */
 ASTCENC_SIMD_INLINE float32x4_t vdivq_f32(float32x4_t a, float32x4_t b)
 {
@@ -158,7 +158,7 @@ ASTCENC_SIMD_INLINE float32x4_t vdivq_f32(float32x4_t a, float32x4_t b)
 }
 
 /**
- * @brief Table vector Lookup.
+ * @brief Table vector lookup.
  */
 ASTCENC_SIMD_INLINE int8x16_t vqtbl1q_s8(int8x16_t t, uint8x16_t idx)
 {
@@ -169,6 +169,18 @@ ASTCENC_SIMD_INLINE int8x16_t vqtbl1q_s8(int8x16_t t, uint8x16_t idx)
 	return vcombine_s8(
 		vtbl2_s8(tab, vget_low_s8(id)),
 		vtbl2_s8(tab, vget_high_s8(id)));
+}
+
+/**
+ * @brief Horizontal integer addition. 
+ */
+ASTCENC_SIMD_INLINE uint32_t vaddvq_u32(uint32x4_t a)
+{
+	uint32_t a0 = vgetq_lane_u32(a, 0);
+	uint32_t a1 = vgetq_lane_u32(a, 1);
+	uint32_t a2 = vgetq_lane_u32(a, 2);
+	uint32_t a3 = vgetq_lane_u32(a, 3);
+	return a0 + a1 + a2 + a3;
 }
 
 #endif
