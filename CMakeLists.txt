@@ -35,7 +35,7 @@ function(printopt optName optVal optArch tgtArch)
     endif()
 endfunction()
 
-set(VALID_ARCH aarch64 armv7 x64)
+set(VALID_ARCH aarch64 armv7 armv7hf x64)
 set(ARCH x64 CACHE STRING "Target architecture")
 set_property(CACHE ARCH PROPERTY STRINGS ${VALID_ARCH})
 
@@ -66,8 +66,8 @@ if(${ISA_SSE2} AND ${ARCH} MATCHES "x64")
 endif()
 
 option(ISA_NEON "Enable builds for NEON SIMD")
-printopt("NEON" ${ISA_NEON} "armv7|aarch64" ${ARCH})
-if(${ISA_NEON} AND ${ARCH} MATCHES "armv7|aarch64")
+printopt("NEON" ${ISA_NEON} "armv7|armv7hf|aarch64" ${ARCH})
+if(${ISA_NEON} AND ${ARCH} MATCHES "armv7|armv7hf|aarch64")
     set(ANY_ISA 1)
 endif()
 
@@ -110,26 +110,31 @@ endif()
 # or it gets overriden (this contradicts the official docs)
 if(${ARCH} MATCHES "aarch64")
     set(CMAKE_OSX_ARCHITECTURES "arm64")
-elseif(${ARCH} MATCHES "armv7")
+elseif(${ARCH} MATCHES "armv7|armv7hf")
     set(CMAKE_OSX_ARCHITECTURES "armv7")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        # using Clang
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # Using Clang
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-vfpv4")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-command-line-argument")
         set(CMAKE_CXX_FLAGS_RELEASE "-O3")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # using GCC
-        # softfp for arm-linux-gnueabi-g++
-        # hard for arm-linux-gnueabihf-g++
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
-        # arm-linux-gnueabi(hf)-gcc uses #pragma GCC target ("fpu=neon-fp-armv8")
-        # to declare more intrinsics (including vminnmq/vmaxnmq)
+        # Using GCC
+        if(${ARCH} STREQUAL "armv7")
+            # softfp for arm-linux-gnueabi-g++
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
+        elseif(${ARCH} STREQUAL "armv7hf")
+            # hard for arm-linux-gnueabihf-g++
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=hard")
+        endif()
+
+        # Using fpu=neon-fp-armv8 emulates many aarch64 intrinsics
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-fp-armv8")
-        # support fp16 in GCC
+
+        # Enable fp16 support in GCC
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfp16-format=ieee")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flax-vector-conversions")
-        # For Source/tinyexr.h:11025
+
+        # Workaround for Source/tinyexr.h:11025
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-type-limits")
     endif()
 else()
