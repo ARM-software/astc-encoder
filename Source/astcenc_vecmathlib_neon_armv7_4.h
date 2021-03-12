@@ -67,6 +67,20 @@ ASTCENC_SIMD_INLINE float32x4_t vminnmq_f32(float32x4_t a, float32x4_t b)
 	return vminq_f32(a, b);
 }
 
+/**
+ * @brief Return a float rounded to the nearest integer value.
+ */
+ASTCENC_SIMD_INLINE float32x4_t vrndnq_f32(float32x4_t a)
+{
+	assert( std::fegetround() == FE_TONEAREST);
+	float a0 = std::nearbyintf(vgetq_lane_f32(a, 0));
+	float a1 = std::nearbyintf(vgetq_lane_f32(a, 1));
+	float a2 = std::nearbyintf(vgetq_lane_f32(a, 2));
+	float a3 = std::nearbyintf(vgetq_lane_f32(a, 3));
+	float32x4_t c { a0, a1, a2, a3 };
+	return c;
+}
+
 #endif
 
 /**
@@ -131,20 +145,6 @@ ASTCENC_SIMD_INLINE float32x4_t vsqrtq_f32(float32x4_t a)
 }
 
 /**
- * @brief Return a float rounded to the nearest integer value.
- */
-ASTCENC_SIMD_INLINE float32x4_t vrndnq_f32(float32x4_t a)
-{
-	assert( std::fegetround() == FE_TONEAREST);
-	float a0 = std::nearbyintf(vgetq_lane_f32(a, 0));
-	float a1 = std::nearbyintf(vgetq_lane_f32(a, 1));
-	float a2 = std::nearbyintf(vgetq_lane_f32(a, 2));
-	float a3 = std::nearbyintf(vgetq_lane_f32(a, 3));
-	float32x4_t c { a0, a1, a2, a3 };
-	return c;
-}
-
-/**
  * @brief Vector by vector division.
  */
 ASTCENC_SIMD_INLINE float32x4_t vdivq_f32(float32x4_t a, float32x4_t b)
@@ -172,7 +172,7 @@ ASTCENC_SIMD_INLINE int8x16_t vqtbl1q_s8(int8x16_t t, uint8x16_t idx)
 }
 
 /**
- * @brief Horizontal integer addition. 
+ * @brief Horizontal integer addition.
  */
 ASTCENC_SIMD_INLINE uint32_t vaddvq_u32(uint32x4_t a)
 {
