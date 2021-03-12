@@ -105,28 +105,27 @@ To enable this binary variant add `-DISA_NONE=ON` to the CMake command line
 when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
 
-### Armv7 builds
+### 32-bit Armv8 builds
 
-The build system includes support for building for Armv7 32-bit binaries on
-Linux and macOS, using GCC 9.3 or higher, or Clang 9 or higher. The `armv7`
-build uses the soft-float ABI and `armv7hf` uses the hard-float ABI.
-
-:warning: Armv7 NEON is not IEEE-754 strict compliant, so these builds may not
-be invariant with other build targets.
+The build system includes support for building for Armv8 32-bit binaries on
+Linux, using GCC 9.3 or higher, or Clang 9 or higher. The `aarch32` build uses
+the soft-float ABI and `aarch32hf` uses the hard-float ABI.
 
 We tested these builds using the following cross-compilers on Ubuntu 20.04:
 
-* `armv7`: arm-linux-gnueabi-g++-9 (v 9.3.0)
-* `armv7hf`:  arm-linux-gnueabihf-g++-9 (v 9.3.0)
+* `aarch32`: arm-linux-gnueabi-g++-9 (v 9.3.0)
+* `aarch32hf`:  arm-linux-gnueabihf-g++-9 (v 9.3.0)
 
 ```shell
-# Arm armv7 using the soft-float ABI
+# Arm aarch32 using the soft-float ABI
+export CXX=arm-linux-gnueabi-g++-9
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DARCH=armv7 -DISA_NEON=ON ..
+    -DARCH=aarch32 -DISA_NEON=ON ..
 
-# Arm armv7hf using the hard-float ABI
+# Arm aarch32 using the hard-float ABI
+export CXX=arm-linux-gnueabihf-g++-9
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DARCH=armv7hf -DISA_NEON=ON ..
+    -DARCH=aarch32hf -DISA_NEON=ON ..
 ```
 
 ### Build Types

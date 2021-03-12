@@ -27,12 +27,10 @@ releases. Please update and rebuild your client-side code using the updated
     builds are now using the equivalent of the `ISA_INVARIANCE=ON` setting, and
     all builds (except Armv7) are now believed to be invariant across operating
     systems, compilers, CPU architectures, and SIMD instruction sets.
-  * **Feature:** 32-bit Armv7 builds with NEON are now supported, with
-    out-of-the-box support for Arm Linux soft-float and hard-float ABIs. These
-    are NOT guaranteed to be invariant with other architectures, as Armv7 NEON
-    does not support IEEE-754 strict mode. There are no pre-built binaries for
-    these targets; support is included for library users targeting older
-    Android and iOS devices.
+  * **Feature:** Armv8 32-bit builds with NEON are now supported, with
+    out-of-the-box support for Arm Linux soft-float and hard-float ABIs. There
+    are no pre-built binaries for these targets; support is included for
+    library users targeting older 32-bit Android and iOS devices.
   * **Feature:** A compressor mode for encoding HDR textures that have been
     encoded into LDR RGBM wrapper format is now supported. Note that this
     encoding has some strong recomendations for how the RGBM encoding is
