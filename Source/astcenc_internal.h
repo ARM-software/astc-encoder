@@ -676,6 +676,8 @@ static inline int get_quant_method_levels(quant_method method)
 	case QUANT_160: return 160;
 	case QUANT_192: return 192;
 	case QUANT_256: return 256;
+	// Unreachable - the enum is fully described
+	default:        return   0;
 	}
 }
 
