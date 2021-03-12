@@ -677,7 +677,7 @@ static inline int get_quant_method_levels(quant_method method)
 	case QUANT_192: return 192;
 	case QUANT_256: return 256;
 	}
-};
+}
 
 /**
  * @brief Weight quantization transfer table.
