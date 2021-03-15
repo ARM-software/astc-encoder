@@ -802,6 +802,11 @@ static void construct_block_size_descriptor_2d(
 			bsd.block_modes[packed_idx].percentile_hit = true;
 			bsd.decimation_modes[decimation_mode].percentile_hit = true;
 		}
+		else
+		{
+			bsd.block_modes[packed_idx].percentile_always = false;
+			bsd.block_modes[packed_idx].percentile_hit = false;
+		}
 #endif
 
 		bsd.block_modes[packed_idx].decimation_mode = decimation_mode;
