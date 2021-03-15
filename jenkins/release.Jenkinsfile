@@ -367,7 +367,7 @@ spec:
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
+                sh 'python3 ./windows-client-wrapper.py ${USERNAME} *.zip'
                 sh 'mv *.zip.sha256 ../'
                 sh 'mv *.zip ../'
               }
