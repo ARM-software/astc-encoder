@@ -363,7 +363,7 @@ spec:
                        doGenerateSubmoduleConfigurations: false,
                        extensions: [],
                        submoduleCfg: [],
-                       userRemoteConfigs: [[credentialsId: 'gerrit-jenkins', url: 'ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing']]]
+                       userRemoteConfigs: [[credentialsId: 'gerrit-jenkins-ssh', url: 'ssh://mirror.eu-west-1.gerrit-eu01.aws.arm.com:29418/Hive/shared/signing']]]
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
