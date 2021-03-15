@@ -356,14 +356,17 @@ spec:
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
-              checkout changelog: false,
-                       poll: false,
-                       scm: [$class: 'GitSCM',
-                       branches: [[name: '*/master']],
-                       doGenerateSubmoduleConfigurations: false,
-                       extensions: [],
-                       submoduleCfg: [],
-                       userRemoteConfigs: [[credentialsId: 'gerrit-jenkins', url: 'ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing']]]
+              dir('signing') {
+                checkout changelog: false,
+                         poll: false,
+                         scm: [$class: 'GitSCM',
+                               branches: [[name: '*/master']],
+                               doGenerateSubmoduleConfigurations: false,
+                               extensions: [],
+                               submoduleCfg: [],
+                               userRemoteConfigs: [[credentialsId: 'gerrit-jenkins-ssh',
+                                                    url: 'ssh://mirror.eu-west-1.gerrit-eu01.aws.arm.com:29418/Hive/shared/signing']]]
+              }
               withCredentials([usernamePassword(credentialsId: 'win-signing',
                                                 usernameVariable: 'USERNAME',
                                                 passwordVariable: 'PASSWORD')]) {
