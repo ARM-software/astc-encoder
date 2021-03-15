@@ -816,6 +816,7 @@ static void construct_block_size_descriptor_2d(
 		bsd.block_mode_packed_index[i] = packed_idx;
 		++packed_idx;
 	}
+
 	bsd.block_mode_count = packed_idx;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
@@ -936,9 +937,12 @@ static void construct_block_size_descriptor_3d(
 		{
 			permit_encode = 0;
 		}
+
 		bsd->block_mode_packed_index[i] = -1;
 		if (!permit_encode)
+		{
 			continue;
+		}
 
 		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
 		bsd->block_modes[packed_idx].decimation_mode = decimation_mode;
@@ -955,6 +959,7 @@ static void construct_block_size_descriptor_3d(
 		bsd->block_mode_packed_index[i] = packed_idx;
 		++packed_idx;
 	}
+
 	bsd->block_mode_count = packed_idx;
 
 	// Determine the texels to use for kmeans clustering.
@@ -983,8 +988,8 @@ void init_block_size_descriptor(
 }
 
 void term_block_size_descriptor(
-	block_size_descriptor* bsd)
-{
+	block_size_descriptor* bsd
+) {
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		aligned_free<const decimation_table>(bsd->decimation_tables[i]);
