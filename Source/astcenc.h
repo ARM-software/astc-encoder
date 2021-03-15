@@ -693,8 +693,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  * be set when creating ay context.
  *
  * @param[in]  config         Codec config.
- * @param      thread_count   Thread count to configure for. Decompress-only
- *                            contexts must have a thread_count of 1.
+ * @param      thread_count   Thread count to configure for.
  * @param[out] context        Location to store an opaque context pointer.
  *
  * @return ASTCENC_SUCCESS on success, or an error if context creation failed.
