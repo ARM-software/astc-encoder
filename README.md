@@ -8,16 +8,13 @@ and decompressing images using the ASTC texture compression standard.
 
 The ASTC compressed data format, developed by Arm® and AMD, has been adopted as
 an official extension to the Open GL®, OpenGL ES, and Vulkan® graphics APIs. It
-provides a major step forward both in terms of image quality at a given
-bitrate, and in terms of the format and bitrate flexibility available to
-content creators. This allows more assets to use compression, often at a
-reduced bitrate compared to legacy formats, reducing memory bandwidth and
-energy consumption.
+provides a major step forward in terms of both the image quality at a given
+bitrate, and the format and bitrate flexibility available to content creators.
+This allows more assets to use compression, often at a reduced bitrate compared
+to other formats, reducing memory storage and bandwidth requirements.
 
-Read our [ASTC Format Overview](./Docs/FormatOverview.md) for a quick
-introduction, or read the full data format specification:
-
-* [Khronos Data Format Specification v1.2 # ASTC](https://www.khronos.org/registry/DataFormat/specs/1.2/dataformat.1.2.html#ASTC)
+Read the [ASTC Format Overview][1] for a quick introduction to the format, or
+read the full [Khronos Data Format Specification][2] for all the details.
 
 ## License
 
@@ -45,32 +42,29 @@ image and the compressed output.
 
 ## ASTC format support
 
-The ASTC specification allows three profiles of implementation:
+The `astcenc` compressor supports generation of images for all three profiles
+allowed by the ASTC specification:
 
 * 2D Low Dynamic Range (LDR profile)
 * 2D LDR and High Dynamic Range (HDR profile)
 * 2D and 3D, LDR and HDR (Full profile)
 
-The `astcenc` compressor supports generation of images for all three profiles.
-In addition it also supports all of the ASTC block sizes and compression
-modes, allowing content creators access the full spectrum of quality-to-bitrate
-options ranging from 0.89 bits/pixel up to 8 bits/pixel.
+It also supports all of the ASTC block sizes and compression modes, allowing
+content creators to use the full spectrum of quality-to-bitrate options ranging
+from 0.89 bits/pixel up to 8 bits/pixel.
 
 # Prebuilt binaries
 
 Release build binaries for the `astcenc` stable releases are provided in the
-[GitHub Releases page](https://github.com/ARM-software/astc-encoder/releases).
-Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
+[GitHub Releases page][3].
 
-* Latest stable release: 2.4
+* Latest stable release: 2.5
 * Change log: [2.x series](./Docs/ChangeLog.md)
 * Roadmap: [2.x series and beyond](./Docs/Roadmap.md)
 
-
-## astcenc 2.x binaries
-
-The current builds of the astcenc 2.x series are provided as multiple binaries,
-each tuned for a specific SIMD instruction set.
+Binaries are provided for 64-bit builds on Windows, macOS, and Linux. The
+builds of the astcenc are provided as multiple binaries, each tuned for a
+specific SIMD instruction set.
 
 For x86-64 we provide, in order of increasing performance:
 
@@ -78,25 +72,32 @@ For x86-64 we provide, in order of increasing performance:
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
 * `astcenc-avx2` - uses AVX2, SSE4.2, POPCNT, and F16C
 
-For Apple silicon macOS devices we provide:
-
-* `astcenc-neon` - uses NEON
-
 The x86-64 SSE2 builds will work on all x86-64 machines, but it is the slowest
 of the three. The other two require extended CPU instruction set support which
 is not universally available, but each step gains ~15% more performance.
+
+For Apple silicon macOS devices we provide:
+
+* `astcenc-neon` - uses NEON
 
 
 ## Repository branches
 
 The `main` branch is an active development branch for the compressor. It aims
-to be a stable branch, but as it is used for development expect it to change.
+to be a stable branch, but as it is used for ongoing development expect it to
+have some volatility.
 
-The `1.x` branch is a maintenance branch for the 1.x release series. It is
-no longer under active development.
+The `2.x` branch is a stable branch for the 2.x release series. It is no longer
+under active development, but is a supported branch that will continue to get
+backported bug fixes.
 
-Other branches are development branches for new features or optimizations, so
-might be interesting to play with, but should be considered unstable.
+The `1.x` branch is a stable branch for the 1.x release series. It is no longer
+under active development or getting bug fixes.
+
+Any other branches you might find are development branches for new features or
+optimizations, so might be interesting to play with but should be considered
+transient and unstable.
+
 
 # Getting started
 
@@ -120,9 +121,10 @@ Compress an image using the `-cl` \ `-cs` \ `-ch` \ `-cH` modes. For example:
     astcenc -cl example.png example.astc 6x6 -medium
 
 This compresses `example.png` using the LDR color profile and a 6x6 block
-footprint (3.55 bits/pixel). The `-medium` quality preset gives a reasonable
-image quality for a relatively fast compression speed. The output is stored to
-a linear color space compressed image, `example.astc`.
+footprint (3.56 bits/pixel). The `-medium` quality preset gives a reasonable
+image quality for a relatively fast compression speed, so is a good starting
+point for compression. The output is stored to a linear color space compressed
+image, `example.astc`.
 
 The modes available are:
 
@@ -133,26 +135,20 @@ The modes available are:
 
 ## Decompressing an image
 
-Decompress an image using the `-dl` \ `-ds` \ `-dh` \ `-dH` modes. For
-example:
+Decompress an image using the `-dl` \ `-ds` \ `-dh` \ `-dH` modes. For example:
 
     astcenc -dh example.astc example.tga
 
 This decompresses `example.astc` using the full HDR feature profile, storing
 the decompressed output to `example.tga`.
 
-The modes available are:
-
-* `-dl` : use the linear LDR color profile.
-* `-ds` : use the sRGB LDR color profile.
-* `-dh` and `-dH` : use the HDR color profile.
-
-Note that for decompression there is no difference between the two HDR modes,
-they are both provided simply to maintain symmetry across operations.
+The modes available mirror the options used for compression, but use a `d`
+prefix. Note that for decompression there is no difference between the two HDR
+modes, they are both provided simply to maintain symmetry across operations.
 
 ## Measuring image quality
 
-Review the compression quality using the `-tl` \ `-ts` \ -`th` \ -`tH` modes.
+Review the compression quality using the `-tl` \ `-ts` \ `-th` \ `-tH` modes.
 For example:
 
     astcenc -tl example.png example.tga 5x5 -thorough
@@ -163,23 +159,19 @@ immediately decompressing the image and saving the result. This can be used
 to enable a visual inspection of the compressed image quality. In addition
 this mode also prints out some image quality metrics to the console.
 
-The modes available are:
-
-* `-tl` : use the linear LDR color profile.
-* `-ts` : use the sRGB LDR color profile.
-* `-th` : use the HDR color profile, tuned for HDR RGB and LDR A.
-* `-tH` : use the HDR color profile, tuned for HDR RGBA.
+The modes available mirror the options used for compression, but use a `t`
+prefix.
 
 ## Experimenting
 
 Efficient real-time graphics benefits from minimizing compressed texture size,
-as it reduces memory bandwidth, saves energy, and can improve texture cache
-efficiency. However, like any lossy compression format there will come a point
-where the compressed image quality is unacceptable because there are simply
-not enough bits to represent the output with the precision needed. We
-recommend experimenting with the block footprint to find the optimum balance
-between size and quality, as the finely adjustable compression ratio is one of
-major strengths of the ASTC format.
+as it reduces memory footprint, reduces memory bandwidth, saves energy, and can
+improve texture cache efficiency. However, like any lossy compression format
+there will come a point where the compressed image quality is unacceptable
+because there are simply not enough bits to represent the output with the
+precision needed. We recommend experimenting with the block footprint to find
+the optimum balance between size and quality, as the finely adjustable
+compression ratio is one of major strengths of the ASTC format.
 
 The compression speed can be controlled from `-fastest`, through `-fast`,
 `-medium` and `-thorough`, up to `-exhaustive`. In general, the more time the
@@ -197,8 +189,8 @@ help message for more details.
 
 # Documentation
 
-The [ASTC Format Overview](./Docs/FormatOverview.md) page provides a high level
-overview of the ASTC data format, how it encodes data, and why it is both
+The [ASTC Format Overview](./Docs/FormatOverview.md) provides a high level
+introduction to the ASTC data format, how it encodes data, and why it is both
 flexible and efficient.
 
 The [Effective ASTC Encoding](./Docs/Encoding.md) page looks at some of the
@@ -227,3 +219,7 @@ Graphics forums](https://community.arm.com/graphics/).
 - - -
 
 _Copyright (c) 2013-2021, Arm Limited and contributors. All rights reserved._
+
+[1]: ./Docs/FormatOverview.md
+[2]: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.html#ASTC
+[3]: https://github.com/ARM-software/astc-encoder/releases

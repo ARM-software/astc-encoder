@@ -7,8 +7,6 @@ most of the engineering work here is done by volunteers.
 ## astcenc 3.0
 
 The next milestone for astcenc will be a new major release, version 3.0.
-Objective is to have this release around SIGGRAPH (start of August 2021), which
-is one year after the 2.0 release.
 
 The 2.x series has seen many changes to both the image quality, where we've
 traded off quality to gain performance, and the core codec API. Now that we've
@@ -33,8 +31,6 @@ out for any given bitrate, especially for non-color data such as normal maps
 and PBR material textures. We'd like to produce a short training course or
 video series explaining the format, the compressor, and how to use them.
 
-This should align with the 3.0 release, so we can release both together.
-
 ## Normal maps and HDR texture performance
 
 The current codec disables PSNR thresholds for both normal maps and HDR
@@ -44,17 +40,6 @@ significantly slower than color LDR textures, and it feels like we should be
 able to come up with a criteria to exit "easy blocks" faster. Simple linear
 PSNR may not be a good choice, but _something_ should be possible.
 
-This is a quality change, so we'd like to get this changed done before 3.0.
-
-## Compression effort level
-
-Today we have a set of distinct quality profiles (fast, medium, etc) which
-have relatively large gaps between them in terms of quality and performance.
-We'd like to expose a more granular "effort level", which would give users more
-control over the quality-vs-time tradeoff. Existing presets would remain,
-mapping to specific effort levels.
-
-This is an API change, so we'd like to get this changed done before 3.0.
 
 ## Command line front-end implementation
 
