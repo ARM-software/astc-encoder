@@ -135,6 +135,12 @@ ASTCENC_SIMD_INLINE void print(vint4 a)
 // vfloat4 operators and functions
 // ============================================================================
 
+ASTCENC_SIMD_INLINE vfloat4& operator+=(vfloat4& a, const vfloat4& b)
+{
+	a = a + b;
+	return a;
+}
+
 /**
  * @brief Overload: vector by scalar addition.
  */

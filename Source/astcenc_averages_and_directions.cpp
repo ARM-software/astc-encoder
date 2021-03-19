@@ -84,16 +84,16 @@ void compute_avgs_and_dirs_4_comp(
 			vfloat4 zero = vfloat4::zero();
 
 			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
-			sum_xp = sum_xp + select(zero, texel_datum, tdm0);
+			sum_xp += select(zero, texel_datum, tdm0);
 
 			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
-			sum_yp = sum_yp + select(zero, texel_datum, tdm1);
+			sum_yp += select(zero, texel_datum, tdm1);
 
 			vmask4 tdm2 = vfloat4(texel_datum.lane<2>()) > zero;
-			sum_zp = sum_zp + select(zero, texel_datum, tdm2);
+			sum_zp += select(zero, texel_datum, tdm2);
 
 			vmask4 tdm3 = vfloat4(texel_datum.lane<3>()) > zero;
-			sum_wp = sum_wp + select(zero, texel_datum, tdm3);
+			sum_wp += select(zero, texel_datum, tdm3);
 		}
 
 		float prod_xp = dot_s(sum_xp, sum_xp);
@@ -209,13 +209,13 @@ void compute_avgs_and_dirs_3_comp(
 			vfloat4 zero = vfloat4::zero();
 
 			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
-			sum_xp = sum_xp + select(zero, texel_datum, tdm0);
+			sum_xp += select(zero, texel_datum, tdm0);
 
 			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
-			sum_yp = sum_yp + select(zero, texel_datum, tdm1);
+			sum_yp += select(zero, texel_datum, tdm1);
 
 			vmask4 tdm2 = vfloat4(texel_datum.lane<2>()) > zero;
-			sum_zp = sum_zp + select(zero, texel_datum, tdm2);
+			sum_zp += select(zero, texel_datum, tdm2);
 		}
 
 		float prod_xp = dot3_s(sum_xp, sum_xp);
