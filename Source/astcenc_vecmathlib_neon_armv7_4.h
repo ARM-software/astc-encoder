@@ -72,7 +72,7 @@ ASTCENC_SIMD_INLINE float32x4_t vminnmq_f32(float32x4_t a, float32x4_t b)
  */
 ASTCENC_SIMD_INLINE float32x4_t vrndnq_f32(float32x4_t a)
 {
-	assert( std::fegetround() == FE_TONEAREST);
+	assert(std::fegetround() == FE_TONEAREST);
 	float a0 = std::nearbyintf(vgetq_lane_f32(a, 0));
 	float a1 = std::nearbyintf(vgetq_lane_f32(a, 1));
 	float a2 = std::nearbyintf(vgetq_lane_f32(a, 2));

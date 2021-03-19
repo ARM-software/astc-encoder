@@ -403,22 +403,6 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	return _mm_movemask_ps(a.m);
 }
 
-/**
- * @brief True if any lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool any(vmask4 a)
-{
-	return mask(a) != 0;
-}
-
-/**
- * @brief True if all lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool all(vmask4 a)
-{
-	return mask(a) == 0xF;
-}
-
 // ============================================================================
 // vint4 operators and functions
 // ============================================================================
@@ -432,27 +416,11 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scalar addition.
- */
-ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
-{
-	return a + vint4(b);
-}
-
-/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
 	return vint4(_mm_sub_epi32(a.m, b.m));
-}
-
-/**
- * @brief Overload: vector by scalar subtraction.
- */
-ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
-{
-	return a - vint4(b);
 }
 
 /**
@@ -475,14 +443,6 @@ ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scalar multiplication.
- */
-ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
-{
-	return a * vint4(b);
-}
-
-/**
  * @brief Overload: vector bit invert.
  */
 ASTCENC_SIMD_INLINE vint4 operator~(vint4 a)
@@ -499,14 +459,6 @@ ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scalar bitwise or.
- */
-ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, int b)
-{
-	return a | vint4(b);
-}
-
-/**
  * @brief Overload: vector by vector bitwise and.
  */
 ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
@@ -515,27 +467,11 @@ ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
 }
 
 /**
- * @brief Overload: vector by scalar bitwise and.
- */
-ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, int b)
-{
-	return a & vint4(b);
-}
-
-/**
  * @brief Overload: vector by vector bitwise xor.
  */
 ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, vint4 b)
 {
 	return vint4(_mm_xor_si128(a.m, b.m));
-}
-
-/**
- * @brief Overload: vector by scalar bitwise xor.
- */
-ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
-{
-	return a ^ vint4(b);
 }
 
 /**
@@ -625,14 +561,6 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 }
 
 /**
- * @brief Return the clamped value between min and max.
- */
-ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
-{
-	return min(max(a, vint4(minv)), vint4(maxv));
-}
-
-/**
  * @brief Return the horizontal minimum of a vector.
  */
 ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
@@ -650,14 +578,6 @@ ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
 	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = max(a, vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vint4(_mm_shuffle_epi32(a.m, _MM_SHUFFLE(0, 0, 0, 0)));
-}
-
-/**
- * @brief Return the horizontal sum of RGB vector lanes as a scalar.
- */
-ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
-{
-	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
 /**
@@ -749,17 +669,6 @@ ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 #endif
 }
 
-/**
- * @brief Debug function to print a vector of ints.
- */
-ASTCENC_SIMD_INLINE void print(vint4 a)
-{
-	alignas(16) int v[4];
-	storea(a, v);
-	printf("v4_i32:\n  %8d %8d %8d %8d\n",
-	       v[0], v[1], v[2], v[3]);
-}
-
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================
@@ -773,27 +682,11 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Overload: vector by scalar addition.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
-{
-	return a + vfloat4(b);
-}
-
-/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 {
 	return vfloat4(_mm_sub_ps(a.m, b.m));
-}
-
-/**
- * @brief Overload: vector by scalar subtraction.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
-{
-	return a - vfloat4(b);
 }
 
 /**
@@ -805,43 +698,11 @@ ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Overload: vector by scalar multiplication.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, float b)
-{
-	return vfloat4(_mm_mul_ps(a.m, _mm_set1_ps(b)));
-}
-
-/**
- * @brief Overload: scalar by vector multiplication.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator*(float a, vfloat4 b)
-{
-	return vfloat4(_mm_mul_ps(_mm_set1_ps(a), b.m));
-}
-
-/**
  * @brief Overload: vector by vector division.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
 {
 	return vfloat4(_mm_div_ps(a.m, b.m));
-}
-
-/**
- * @brief Overload: vector by scalar division.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
-{
-	return vfloat4(_mm_div_ps(a.m, _mm_set1_ps(b)));
-}
-
-/**
- * @brief Overload: scalar by vector division.
- */
-ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
-{
-	return vfloat4(_mm_div_ps(_mm_set1_ps(a), b.m));
 }
 
 /**
@@ -904,16 +765,6 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 }
 
 /**
- * @brief Return the min vector of a vector and a scalar.
- *
- * If either lane value is NaN, @c b will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
-{
-	return vfloat4(_mm_min_ps(a.m, _mm_set1_ps(b)));
-}
-
-/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -922,56 +773,6 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 {
 	// Do not reorder - second operand will return if either is NaN
 	return vfloat4(_mm_max_ps(a.m, b.m));
-}
-
-/**
- * @brief Return the max vector of a vector and a scalar.
- *
- * If either lane value is NaN, @c b will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
-{
-	return vfloat4(_mm_max_ps(a.m, _mm_set1_ps(b)));
-}
-
-/**
- * @brief Return the clamped value between min and max.
- *
- * It is assumed that neither @c min nor @c max are NaN values. If @c a is NaN
- * then @c min will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 clamp(float min, float max, vfloat4 a)
-{
-	// Do not reorder - second operand will return if either is NaN
-	a.m = _mm_max_ps(a.m, _mm_set1_ps(min));
-	a.m = _mm_min_ps(a.m, _mm_set1_ps(max));
-	return a;
-}
-
-/**
- * @brief Return a clamped value between 0.0f and max.
- *
- * It is assumed that @c max is not a NaN value. If @c a is NaN then zero will
- * be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 clampz(float max, vfloat4 a)
-{
-	// Do not reorder - second operand will return if either is NaN
-	a.m = _mm_max_ps(a.m, _mm_setzero_ps());
-	a.m = _mm_min_ps(a.m, _mm_set1_ps(max));
-	return a;
-}
-
-/**
- * @brief Return a clamped value between 0.0f and 1.0f.
- *
- * If @c a is NaN then zero will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 clampzo(vfloat4 a)
-{
-	a.m = _mm_max_ps(a.m, _mm_setzero_ps());
-	a.m = _mm_min_ps(a.m, _mm_set1_ps(1.0f));
-	return a;
 }
 
 /**
@@ -1018,23 +819,6 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 }
 
 /**
- * @brief Return the horizontal minimum of a vector.
- */
-ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
-{
-	return hmin(a).lane<0>();
-}
-
-/**
- * @brief Return the horizontal min of RGB vector lanes as a scalar.
- */
-ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
-{
-	a.set_lane<3>(a.lane<0>());
-	return hmin_s(a);
-}
-
-/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
@@ -1042,14 +826,6 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 	a = max(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 3, 2))));
 	a = max(a, vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 1))));
 	return vfloat4(_mm_shuffle_ps(a.m, a.m, _MM_SHUFFLE(0, 0, 0, 0)));
-}
-
-/**
- * @brief Return the horizontal maximum of a vector.
- */
-ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
-{
-	return hmax(a).lane<0>();
 }
 
 /**
@@ -1064,30 +840,6 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 	t = _mm_add_ss(t, _mm_shuffle_ps(t, t, 0x55));
 
 	return _mm_cvtss_f32(t);
-}
-
-/**
- * @brief Accumulate the full horizontal sum of a vector.
- */
-ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
-{
-	accum += hadd_s(a);
-}
-
-/**
- * @brief Accumulate lane-wise sums for a vector.
- */
-ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
-{
-	accum = accum + a;
-}
-
-/**
- * @brief Return the horizontal sum of RGB vector lanes as a scalar.
- */
-ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
-{
-	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
 /**
@@ -1139,51 +891,6 @@ ASTCENC_SIMD_INLINE void store(vfloat4 a, float* p)
 ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
 {
 	_mm_store_ps(p, a.m);
-}
-
-/**
- * @brief Return the dot product for the full 4 lanes, returning scalar.
- */
-ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
-{
-	vfloat4 m = a * b;
-	return hadd_s(m);
-}
-
-/**
- * @brief Return the dot product for the full 4 lanes, returning vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
-{
-	vfloat4 m = a * b;
-	return vfloat4(hadd_s(m));
-}
-
-/**
- * @brief Return the dot product for the bottom 3 lanes, returning scalar.
- */
-ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
-{
-	vfloat4 m = a * b;
-	return hadd_rgb_s(m);
-}
-
-/**
- * @brief Return the dot product for the full 4 lanes, returning vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
-{
-	vfloat4 m = a * b;
-	float d3 = hadd_rgb_s(m);
-	return vfloat4(d3, d3, d3, 0.0f);
-}
-
-/**
- * @brief Generate a reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
-{
-	return 1.0f / b;
 }
 
 /**
@@ -1296,17 +1003,6 @@ ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
 {
 	return vfloat4(_mm_castsi128_ps(v.m));
-}
-
-/**
- * @brief Debug function to print a vector of floats.
- */
-ASTCENC_SIMD_INLINE void print(vfloat4 a)
-{
-	alignas(16) float v[4];
-	storea(a, v);
-	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
-	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED

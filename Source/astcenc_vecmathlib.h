@@ -70,6 +70,7 @@
 #if ASTCENC_AVX >= 2
 	/* If we have AVX2 expose 8-wide VLA. */
 	#include "astcenc_vecmathlib_sse_4.h"
+	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx2_8.h"
 
 	#define ASTCENC_SIMD_WIDTH 8
@@ -84,6 +85,7 @@
 #elif ASTCENC_SSE >= 20
 	/* If we have SSE expose 4-wide VLA, and 4-wide fixed width. */
 	#include "astcenc_vecmathlib_sse_4.h"
+	#include "astcenc_vecmathlib_common_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 4
 
@@ -97,6 +99,7 @@
 #elif ASTCENC_NEON > 0
 	/* If we have NEON expose 4-wide VLA. */
 	#include "astcenc_vecmathlib_neon_4.h"
+	#include "astcenc_vecmathlib_common_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 4
 
@@ -127,6 +130,7 @@
 	// differences mean that these will not produce the same result.
 
 	#include "astcenc_vecmathlib_none_4.h"
+	#include "astcenc_vecmathlib_common_4.h"
 
 	#define ASTCENC_SIMD_WIDTH 4
 
