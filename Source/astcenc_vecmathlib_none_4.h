@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <cfenv>
 
 // ============================================================================
 // vfloat4 data type
