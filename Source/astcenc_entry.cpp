@@ -112,7 +112,7 @@ struct astcenc_preset_config {
 static const std::array<astcenc_preset_config, 5> preset_configs {{
 	{
 		ASTCENC_PRE_FASTEST,
-		4, 2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
+		4, 2, 30, 1, 1, 79, 57, 2.0f, 2.0f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
 		4, 4, 50, 2, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
