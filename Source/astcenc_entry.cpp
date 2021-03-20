@@ -115,7 +115,7 @@ static const std::array<astcenc_preset_config, 5> preset_configs {{
 		4, 2, 25, 1, 1, 75, 53, 1.0f, 1.0f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		4, 4, 50, 1, 2, 85, 63, 2.5f, 2.5f, 1.0f, 0.5f
+		4, 4, 50, 2, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
 		4, 25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
