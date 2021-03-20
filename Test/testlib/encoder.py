@@ -317,32 +317,18 @@ class Encoder2x(EncoderBase):
         return r"\s*Coding rate:\s*([0-9.]*) MT/s"
 
 
-class Encoder2_2(Encoder2x):
+class Encoder2xRel(Encoder2x):
     """
-    This class wraps the 2.2 series binaries.
+    This class wraps a released 2.x series binary.
     """
-    VERSION = "2.2"
+    def __init__(self, version, variant):
 
-    def __init__(self, variant):
+        self.VERSION = version
+
         if os.name == 'nt':
-            binary = "./Binaries/2.2/astcenc-%s.exe" % variant
+            binary = f"./Binaries/{version}/astcenc-{variant}.exe"
         else:
-            binary = "./Binaries/2.2/astcenc-%s" % variant
-
-        super().__init__(variant, binary)
-
-
-class Encoder2_3(Encoder2x):
-    """
-    This class wraps the 2.3 series binaries.
-    """
-    VERSION = "2.3"
-
-    def __init__(self, variant):
-        if os.name == 'nt':
-            binary = "./Binaries/2.3/astcenc-%s.exe" % variant
-        else:
-            binary = "./Binaries/2.3/astcenc-%s" % variant
+            binary = f"./Binaries/{version}/astcenc-{variant}"
 
         super().__init__(variant, binary)
 

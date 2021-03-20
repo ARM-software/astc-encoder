@@ -245,104 +245,33 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         name = "reference-1.7"
         outDir = "Test/Images/%s" % imageSet
         refName = None
-    # 2.2 variants
-    elif encoderName == "ref-2.2-sse2":
-        encoder = te.Encoder2_2("sse2")
-        name = "reference-2.2-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.2-sse4.1":
-        encoder = te.Encoder2_2("sse4.1")
-        name = "reference-2.2-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.2-avx2":
-        encoder = te.Encoder2_2("avx2")
-        name = "reference-2.2-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.2-neon":
-        encoder = te.Encoder2_2("neon")
-        name = "reference-2.2-neon"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    # 2.3 variants
-    elif encoderName == "ref-2.3-sse2":
-        encoder = te.Encoder2_3("sse2")
-        name = "reference-2.3-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.3-sse4.1":
-        encoder = te.Encoder2_3("sse4.1")
-        name = "reference-2.3-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.3-avx2":
-        encoder = te.Encoder2_3("avx2")
-        name = "reference-2.3-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.3-neon":
-        encoder = te.Encoder2_3("neon")
-        name = "reference-2.3-neon"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    # 2.3 variants
-    elif encoderName == "ref-2.4-sse2":
-        encoder = te.Encoder2_3("sse2")
-        name = "reference-2.4-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.4-sse4.1":
-        encoder = te.Encoder2_3("sse4.1")
-        name = "reference-2.4-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.4-avx2":
-        encoder = te.Encoder2_3("avx2")
-        name = "reference-2.4-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-2.4-neon":
-        encoder = te.Encoder2_3("neon")
-        name = "reference-2.4-neon"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    # Latest main
-    elif encoderName == "ref-main-neon":
-        # Warning: this option rebuilds a new reference test result for the
-        # main branch using the user's locally build encoder.
-        encoder = te.Encoder2x("neon")
-        name = "reference-main-neon"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-main-sse2":
-        # Warning: this option rebuilds a new reference test result for the
-        # main branch using the user's locally build encoder.
-        encoder = te.Encoder2x("sse2")
-        name = "reference-main-sse2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-main-sse4.1":
-        # Warning: this option rebuilds a new reference test result for the
-        # main branch using the user's locally build encoder.
-        encoder = te.Encoder2x("sse4.1")
-        name = "reference-main-sse4.1"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    elif encoderName == "ref-main-avx2":
-        # Warning: this option rebuilds a new reference test result for the
-        # main branch using the user's locally build encoder.
-        encoder = te.Encoder2x("avx2")
-        name = "reference-main-avx2"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-    else:
-        encoder = te.Encoder2x(encoderName)
-        name = "develop-%s" % encoderName
-        outDir = "TestOutput/%s" % imageSet
-        refName = referenceName.replace("ref", "reference")
+        return (encoder, name, outDir, refName)
 
+    if encoderName.startswith("ref"):
+        _, version, simd = encoderName.split("-")
+
+        # 2.x variants
+        if version.startswith("2."):
+            encoder = te.Encoder2xRel(version, simd)
+            name = f"reference-{version}-{simd}"
+            outDir = "Test/Images/%s" % imageSet
+            refName = None
+            return (encoder, name, outDir, refName)
+
+        # Latest main
+        if version == main:
+            encoder = te.Encoder2x(version, simd)
+            name = f"reference-{version}-{simd}"
+            outDir = "Test/Images/%s" % imageSet
+            refName = None
+            return (encoder, name, outDir, refName)
+
+        assert False, f"Encoder {encoderName} not recognized"
+
+    encoder = te.Encoder2x(encoderName)
+    name = "develop-%s" % encoderName
+    outDir = "TestOutput/%s" % imageSet
+    refName = referenceName.replace("ref", "reference")
     return (encoder, name, outDir, refName)
 
 
@@ -357,9 +286,7 @@ def parse_command_line():
 
     # All reference encoders
     refcoders = ["ref-1.7",
-                 "ref-2.2-neon", "ref-2.2-sse2", "ref-2.2-sse4.1", "ref-2.2-avx2",
-                 "ref-2.3-neon", "ref-2.3-sse2", "ref-2.3-sse4.1", "ref-2.3-avx2",
-                 "ref-2.4-neon", "ref-2.4-sse2", "ref-2.4-sse4.1", "ref-2.4-avx2",
+                 "ref-2.5-neon", "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders
@@ -372,7 +299,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-main-avx2",
+    parser.add_argument("--reference", dest="reference", default="ref-2.5-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
