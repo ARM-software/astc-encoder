@@ -9,12 +9,11 @@ clocked at 4.2 GHz, running astcenc using 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 2.5
 
-**Status:** In development, due late March 2021
+**Status:** Released, March 2021
 
-The 2.5 release is planned to be the last major release in the 2.x series.
-After this release a `2.x` branch will be created to provide stable long-term
-support, and the `main` branch will switch to focusing on more radical changes
-for the 3.x series.
+The 2.5 release is the last major release in the 2.x series. After this release
+a `2.x` branch will provide stable long-term support, and the `main` branch
+will switch to focusing on more radical changes for the 3.x series.
 
 Reminder for users of the library interface - the API is not designed to be
 stable across versions, and this release is not compatible with earlier 2.x
@@ -42,14 +41,14 @@ releases. Please update and rebuild your client-side code using the updated
   * **API Change:** The decompression functionality in the core API has been
     changed to allow use of multiple threads. The design pattern matches the
     compression functionality, requiring the caller to create the threads,
-    synchronize them between images, and call the new
-  * **API Feature:** Defines to support exporting public API entry point
+    synchronize them between images, and to call the new
+    `astcenc_decompress_reset()` function between images.
+* **API Feature:** Defines to support exporting public API entry point
     symbols from a shared object are provided, but not exposed off-the-shelf by
     the CMake provided by the project.
-    `astcenc_decompress_reset()` function between images.
   * **API Feature:** New `astcenc_get_block_info()` function added to the core
     API to allow users to perform high level analysis of compressed data. This
-	API is not implemented in decompressor-only builds.
+    API is not implemented in decompressor-only builds.
   * **API Feature:** Codec configuration structure has been extended to expose
     the new RGBM compression mode. See the API header for details.
 
