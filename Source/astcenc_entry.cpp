@@ -1028,15 +1028,6 @@ astcenc_error astcenc_get_block_info(
 	// Fetch the appropriate partition and decimation tables
 	block_size_descriptor& bsd = *ctx->bsd;
 
-	int partition_count = scb.partition_count;
-	const partition_info* pt = get_partition_table(&bsd, partition_count);
-	pt += scb.partition_index;
-
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
-	const decimation_table& dt = *bsd.decimation_tables[bm.decimation_mode];
-
 	// Start from a clean slate
 	memset(info, 0, sizeof(*info));
 
@@ -1048,21 +1039,31 @@ astcenc_error astcenc_get_block_info(
 	info->block_z = ctx->config.block_z;
 	info->texel_count = bsd.texel_count;
 
-	// Check for error blocks first ...
+	// Check for error blocks first - block_mode will be negative
 	info->is_error_block = scb.error_block != 0;
 	if (info->is_error_block)
 	{
 		return ASTCENC_SUCCESS;
 	}
 
-	// Check for constant color blocks second ...
+	// Check for constant color blocks second - block_mode will be negative
 	info->is_constant_block = scb.block_mode < 0;
 	if (info->is_constant_block)
 	{
 		return ASTCENC_SUCCESS;
 	}
 
-	// Otherwise, handle a full block with partition payload ...
+	// Otherwise, handle a full block with partition payload; values are known
+	// to be valid once the two conditions above have been checked
+	int partition_count = scb.partition_count;
+	const partition_info* pt = get_partition_table(&bsd, partition_count);
+	pt += scb.partition_index;
+
+	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
+	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	const block_mode& bm = bsd.block_modes[packed_index];
+	const decimation_table& dt = *bsd.decimation_tables[bm.decimation_mode];
+
 	info->weight_x = dt.weight_x;
 	info->weight_y = dt.weight_y;
 	info->weight_z = dt.weight_z;
