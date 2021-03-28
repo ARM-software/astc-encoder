@@ -15,16 +15,18 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-#if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
-    (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
-
 /**
  * @brief Platform-specific function implementations.
  *
  * This module contains functions for querying the host extended ISA support.
  */
 
+// Include before the defines below to pick up any auto-setup based on compiler
+// built-in config, if not being set explicitly by the build system
 #include "astcenc_internal.h"
+
+#if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
+    (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
 static int g_cpu_has_sse41 = -1;
 static int g_cpu_has_avx2 = -1;
