@@ -630,7 +630,9 @@ astcenc_error astcenc_context_alloc(
 		}
 
 		size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
-		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize , 32);
+		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize, ASTCENC_VECALIGN);
+		static_assert((sizeof(compress_symbolic_block_buffers) % ASTCENC_VECALIGN) == 0,
+		              "compress_symbolic_block_buffers size must be multiple of vector alignment");
 		if (!ctx->working_buffers)
 		{
 			term_block_size_descriptor(bsd);
