@@ -218,7 +218,7 @@ Graphics forums](https://community.arm.com/graphics/).
 
 - - -
 
-_Copyright (c) 2013-2021, Arm Limited and contributors. All rights reserved._
+_Copyright © 2013-2021, Arm Limited and contributors. All rights reserved._
 
 [1]: ./Docs/FormatOverview.md
 [2]: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.html#ASTC
