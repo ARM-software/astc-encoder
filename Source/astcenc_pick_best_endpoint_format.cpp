@@ -102,8 +102,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
 
-	float rgb_range_error = dot3_s(sum_range_error.swz<0, 1, 2>(),
-	                               error_weight.swz<0, 1, 2>())
+	float rgb_range_error = dot3_s(sum_range_error, error_weight)
 	                      * 0.5f * static_cast<float>(partition_size);
 	float alpha_range_error = sum_range_error.lane<3>() * error_weight.lane<3>()
 	                        * 0.5f * static_cast<float>(partition_size);

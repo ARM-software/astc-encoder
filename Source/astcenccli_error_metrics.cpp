@@ -36,19 +36,10 @@ class kahan_accum4
 {
 public:
 	/** The running sum. */
-	vfloat4 sum;
+	vfloat4 sum { vfloat4::zero() };
 
 	/** The current compensation factor. */
-	vfloat4 comp;
-
-	/**
-	 * @brief Create a new Kahan accumulator
-	 */
-	kahan_accum4()
-	{
-		sum = vfloat4::zero();
-		comp = vfloat4::zero();
-	}
+	vfloat4 comp { vfloat4::zero() };
 };
 
 /**
@@ -360,16 +351,21 @@ void compute_error_metrics(
 	if (compute_hdr_metrics)
 	{
 		printf("    PSNR (RGB norm to peak):  %9.4f dB (peak %f)\n",
-				(double)(rgb_psnr + 20.0f * log10f(rgb_peak)),
-				(double)rgb_peak);
+		       (double)(rgb_psnr + 20.0f * log10f(rgb_peak)),
+		       (double)rgb_peak);
 
 		float mpsnr;
 		if (mpsnr_num == 0.0f)
+		{
 			mpsnr = 999.0f;
+		}
 		else
+		{
 			mpsnr = 10.0f * log10f(mpsnr_denom / mpsnr_num);
+		}
+
 		printf("    mPSNR (RGB):              %9.4f dB (fstops %+d to %+d)\n",
-				(double)mpsnr, fstop_lo, fstop_hi);
+		       (double)mpsnr, fstop_lo, fstop_hi);
 
 		float logrmse = astc::sqrt(log_num / pixels);
 		printf("    LogRMSE (RGB):            %9.4f\n", (double)logrmse);

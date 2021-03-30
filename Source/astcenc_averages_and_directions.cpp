@@ -63,7 +63,7 @@ void compute_avgs_and_dirs_4_comp(
 			vfloat4 texel_datum = blk->texel(iwt);
 
 			partition_weight += weight;
-			base_sum = base_sum + texel_datum * weight;
+			base_sum += texel_datum * weight;
 		}
 
 		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
@@ -184,7 +184,7 @@ void compute_avgs_and_dirs_3_comp(
 			                    0.0f);
 
 			partition_weight += weight;
-			base_sum = base_sum + texel_datum * weight;
+			base_sum += texel_datum * weight;
 		}
 
 		vfloat4 csf = pm[partition].color_scale;
@@ -299,7 +299,7 @@ void compute_avgs_and_dirs_2_comp(
 			float2 texel_datum = float2(data_vr[iwt], data_vg[iwt]) * weight;
 			partition_weight += weight;
 
-			base_sum = base_sum + texel_datum;
+			base_sum += texel_datum;
 		}
 
 		float2 csf = color_scalefactors[partition];
@@ -319,12 +319,12 @@ void compute_avgs_and_dirs_2_comp(
 
 			if (texel_datum.r > 0.0f)
 			{
-				sum_xp = sum_xp + texel_datum;
+				sum_xp += texel_datum;
 			}
 
 			if (texel_datum.g > 0.0f)
 			{
-				sum_yp = sum_yp + texel_datum;
+				sum_yp += texel_datum;
 			}
 		}
 
@@ -461,7 +461,6 @@ void compute_error_squared_rgba(
 
 			samec_loparamv = min(samec_param, samec_loparamv);
 			samec_hiparamv = max(samec_param, samec_hiparamv);
-
 
 			vfloat samec_dist0 = samec_param * l_samec_bis0 - data_r;
 			vfloat samec_dist1 = samec_param * l_samec_bis1 - data_g;

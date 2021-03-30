@@ -1264,9 +1264,6 @@ void recompute_ideal_colors_2planes(
 			vfloat4 rgba = blk->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			vfloat4 color_weight3 = color_weight.swz<0, 1, 2>();
-			vfloat4 rgb = rgba.swz<0, 1, 2>();
-
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
 
@@ -1276,7 +1273,7 @@ void recompute_ideal_colors_2planes(
 			wmin1 = astc::min(idx0, wmin1);
 			wmax1 = astc::max(idx0, wmax1);
 
-			float scale = dot3_s(scale_direction, rgb);
+			float scale = dot3_s(scale_direction, rgba);
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
@@ -1320,19 +1317,17 @@ void recompute_ideal_colors_2planes(
 			                  (plane2_component == 2) ? idx1 : idx0,
 			                  (plane2_component == 3) ? idx1 : idx0);
 
-			vfloat4 color_idx3 = color_idx.swz<0, 1, 2>();
-
 			vfloat4 cwprod = color_weight * rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y = color_vec_y + cwiprod;
 			color_vec_x = color_vec_x + (cwprod - cwiprod);
 
-			scale_vec = scale_vec + float2(om_idx0, idx0) * (ls_weight * scale);
+			scale_vec += float2(om_idx0, idx0) * (ls_weight * scale);
 
-			weight_weight_sum = weight_weight_sum + (color_weight3 * color_idx3);
+			weight_weight_sum += (color_weight * color_idx);
 
-			psum += dot3_s(color_weight3 * color_idx3, color_idx3);
+			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
@@ -1578,9 +1573,6 @@ void recompute_ideal_colors_1plane(
 			vfloat4 rgba = blk->texel(tix);
 			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			vfloat4 color_weight3 = color_weight.swz<0, 1, 2>();
-			vfloat4 rgb = rgba.swz<0, 1, 2>();
-
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
 			float idx0 = bilinear_infill(*dt, weight_set, tix);
@@ -1589,7 +1581,7 @@ void recompute_ideal_colors_1plane(
 			wmin1 = astc::min(idx0, wmin1);
 			wmax1 = astc::max(idx0, wmax1);
 
-			float scale = dot3_s(scale_direction, rgb);
+			float scale = dot3_s(scale_direction, rgba);
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
@@ -1609,19 +1601,17 @@ void recompute_ideal_colors_1plane(
 			lmrs_sum = lmrs_sum + lmrs;
 
 			vfloat4 color_idx(idx0);
-			vfloat4 color_idx3(idx0);
-
 			vfloat4 cwprod = color_weight * rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y = color_vec_y + cwiprod;
 			color_vec_x = color_vec_x + (cwprod - cwiprod);
 
-			scale_vec = scale_vec + float2(om_idx0, idx0) * (ls_weight * scale);
+			scale_vec += (float2(om_idx0, idx0) * (ls_weight * scale));
 
-			weight_weight_sum = weight_weight_sum + (color_weight3 * color_idx3);
+			weight_weight_sum += color_weight * color_idx;
 
-			psum += dot3_s(color_weight3 * color_idx3, color_idx3);
+			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
