@@ -59,8 +59,8 @@ provide correct output results.
 The -*h/-*H options are used to configure the codec to support the HDR ASTC
 color profile. Textures compressed with this profile may fail to decompress
 correctly on GPU hardware without HDR profile support. The -*h options
-configure the compressor for HDR RGB channels with an LDR alpha channel.
-The -*H options configure the compressor for full HDR across all channels.
+configure the compressor for HDR RGB components and an LDR alpha component.
+The -*H options configure the compressor for HDR across all 4 components.
 
 For full help documentation run 'astcenc -help'.
 )";
@@ -98,13 +98,12 @@ DESCRIPTION
 
 COMPRESSION
        To compress an image using the ASTC format you must specify the
-       color profile, the input file name, the output file name, the
-       target block size, and the quality preset.
+       color profile, the input file name, the output file name, the target
+       block size, and the quality preset.
 
-       The color profile is specified using the -cl (LDR linear),
-       -cs (LDR sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder
-       options. Note that not all hardware implementations of ASTC support
-       the HDR profile.
+       The color profile is specified using the -cl (LDR linear), -cs (LDR
+       sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder options. Note
+       that not all GPUs implementing ASTC support the HDR profile.
 
        The input file path must match a valid file format for compression,
        and the output file format must be a valid output for compression.
@@ -134,9 +133,9 @@ COMPRESSION
 
        The quality level configures the quality-performance tradeoff for
        the compressor; more complete searches of the search space improve
-       image quality at the expense of compression time. The quality
-       level can be set to any value between 0 (fastest) and 100
-       (thorough), or to a fixed quality preset:
+       image quality at the expense of compression time. The quality level
+       can be set to any value between 0 (fastest) and 100 (thorough), or
+       to a fixed quality preset:
 
            -fastest       (equivalent to quality =   0)
            -fast          (equivalent to quality =  10)
@@ -151,20 +150,20 @@ COMPRESSION
        increase compression time, but typically only gives minor quality
        improvements.
 
-       There are a number of additional compressor options which are
-       useful to consider for common usage, based on the type of image
-       data being compressed.
+       There are a number of additional compressor options which are useful
+       to consider for common usage, based on the type of image data being
+       compressed.
 
        -mask
            The input texture is a mask texture with unrelated data stored
-           in the various color channels, so enable error heuristics that
+           in the various color components, so enable error heuristics that
            aim to improve perceptual quality by minimizing the effect of
-           error cross-talk across the color channels.
+           error cross-talk across the color components.
 
        -normal
-           The input texture is a three channel linear LDR normal map
-           storing unit length normals as (R=X, G=Y, B=Z). The output
-           will be a two channel X+Y normal map stored as (RGB=X, A=Y),
+           The input texture is a three component linear LDR normal map
+           storing unit length normals as (R=X, G=Y, B=Z). The output will
+           be a two component X+Y normal map stored as (RGB=X, A=Y),
            optimized for angular error instead of simple PSNR. The Z
            component can be recovered programmatically in shader code by
            using the equation:
@@ -174,9 +173,9 @@ COMPRESSION
                nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
 
        -rgbm <max>
-           The input texture is an RGBM encoded texture, storing values
-           HDR values between 0 and <max> in an LDR container format with
-           a shared multiplier. Shaders reconstruct the HDR value as:
+           The input texture is an RGBM encoded texture, storing values HDR
+           values between 0 and <max> in an LDR container format with a
+           shared multiplier. Shaders reconstruct the HDR value as:
 
                vec3 hdr_value = tex.rgb * tex.a * max;
 
@@ -188,26 +187,26 @@ COMPRESSION
        -perceptual
            The codec should optimize perceptual error, instead of direct
            RMS error. This aims to improves perceived image quality, but
-           typically lowers the measured PSNR score. Perceptual methods
-           are currently only available for normal maps.
+           typically lowers the measured PSNR score. Perceptual methods are
+           currently only available for normal maps.
 
        -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.
            The input filename given is used is decorated with the postfix
-           "_<slice>" to find the file to load. For example, an input
-           named "input.png" would load as input_0.png, input_1.png, etc.
+           "_<slice>" to find the file to load. For example, an input named
+           "input.png" would load as input_0.png, input_1.png, etc.
 
        -pp-normalize
             Run a preprocess over the image that forces normal vectors to
-            be unit length. Preprocessing applies before any codec
-            encoding swizzle, so normal data must be in the RGB channels
-            in the source image.
+            be unit length. Preprocessing applies before any codec encoding
+            swizzle, so normal data must be in the RGB components in the
+            source image.
 
        -pp-premultiply
-            Run a preprocess over the image that scales RGB components
-            in the image by the alpha value. Preprocessing applies before any
+            Run a preprocess over the image that scales RGB components in
+            the image by the alpha value. Preprocessing applies before any
             codec encoding swizzle, so color data must be in the RGB
-            channels in the source image.)"
+            components in the source image.)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(
@@ -225,15 +224,12 @@ COMPRESSION TIPS & TRICKS
        The -b option is a general-purpose block-artifact reduction option.
        The -v and -va option settings will concentrate effort where smooth
        regions lie next to regions with high detail, which are particularly
-       prone to block artifacts. Increasing the -dblimit option is
-       sometimes also needed to force the compressor to keep searching for
-       a better encoding, which can be needed in images with smooth
-       gradients.
+       prone to block artifacts.
 
        If a texture exhibits severe block artifacts in only some of the
-       color channels, which is a common problem for mask textures, then
+       color components, which is a common problem for mask textures, then
        using the -cw option to raise the weighting of the affected color
-       channel(s) may help. For example, if the green color channel is
+       component(s) may help. For example, if the green color component is
        particularly badly encoded then try '-cw 1 6 1 1'.
 
 ADVANCED COMPRESSION
@@ -245,7 +241,7 @@ ADVANCED COMPRESSION
 
        -v <radius> <power> <base> <mean> <stdev> <mix>
            Compute the per-texel relative error weighting for the RGB color
-           channels as follows:
+           components as follows:
 
            weight = 1 / (<base> + <mean> * mean^2 + <stdev> * stdev^2)
 
@@ -253,13 +249,13 @@ ADVANCED COMPRESSION
            neighborhood over which the average and standard deviation are
            computed.
 
-           The <mix> parameter is used to control the degree of mixing
-           of the average and stddev error components across the color
-           channels. Setting this parameter to 0 causes the computation
-           to be done completely separately for each color channel; setting
-           it to 1 causes the results from the RGB channels to be combined
-           and applied to all three together. Intermediate values between
-           these two extremes do a linear mix of the two error values.
+           The <mix> parameter is used to control the degree of mixing of
+           the average and stddev error values across the color components.
+           Setting this parameter to 0 causes the computation to be done
+           separately for each color component; setting it to 1 causes the
+           results from the RGB components to be combined and applied to
+           all three components. Intermediate values between these two
+           settings do a linear mix of the two.
 
            The <power> argument is a power used to raise the values of the
            input texels before computing average and standard deviation;
@@ -268,27 +264,27 @@ ADVANCED COMPRESSION
 
        -va <power> <base> <mean> <stdev>
            Compute the per-texel relative error weighting for the alpha
-           channel, when used in conjunction with -v. See documentation for
-           -v for parameter documentation.
+           component, when used in conjunction with -v. See documentation
+           of -v for individual parameter documentation.
 
        -a <radius>
-           For textures with alpha channel, scale per-texel weights by the
-           alpha value. The alpha value chosen for scaling of any
-           particular texel is taken as an average across a neighborhood
-           of the texel defined by the <radius> argument. Setting <radius>
-           to 0 causes only the texel's own alpha to be used.
+           For textures with alpha component, scale per-texel weights by
+           the alpha value. The alpha value chosen for scaling of any
+           particular texel is taken as an average across a neighborhood of
+           the texel defined by the <radius> argument. Setting <radius> to
+           0 causes only the texel's own alpha to be used.
 
            ASTC blocks that are entirely zero weighted, after the radius is
            taken into account, are replaced by constant color blocks. This
            is an RDO-like technique to improve compression ratio in any
-           application packaging level compression that is applied.
+           application packaging compression that is applied.
 
        -cw <red> <green> <blue> <alpha>
-           Assign an additional weight scaling to each color channel,
-           allowing the channels to be treated differently in terms of
-           error significance. Set values above 1 to increase a channel's
-           significance, and values below 1 to decrease it. Set to 0
-           to exclude a channel from error computation completely.
+           Assign an additional weight scaling to each color component,
+           allowing the components to be treated differently in terms of
+           error significance. Set values above 1 to increase a component's
+           significance, and values below 1 to decrease it. Set to 0 to
+           exclude a component from error computation.
 
        -b <weight>
            Assign an additional weight scaling for texels at compression
@@ -307,9 +303,9 @@ ADVANCED COMPRESSION
        drive the performance-quality trade off.
 
        -partitioncountlimit <number>
-           Test only up to and including <number> partitions for each block.
-           Higher numbers give better quality, as more complex blocks can be
-           encoded, however they are expensive to search. Preset defaults are:
+           Test up to and including <number> partitions for each block.
+           Higher numbers give better quality, as more complex blocks can
+           be encoded, but will increase search time. Preset defaults are:
 
                -fastest    : 4
                -fast       : 4
@@ -318,7 +314,7 @@ ADVANCED COMPRESSION
                -exhaustive : 4
 
        -partitionindexlimit <number>
-           Test only <number> block partition indices for each partition count.
+           Test <number> block partition indices for each partition count.
            Higher numbers give better quality, however large values give
            diminishing returns especially for smaller block sizes. Preset
            defaults are:
@@ -330,9 +326,9 @@ ADVANCED COMPRESSION
                -exhaustive : 1024
 
        -blockmodelimit <number>
-           Test only block modes below the <number> usage centile in an
-           empirically determined distribution of block mode frequency.
-           This option is ineffective for 3D textures. Preset defaults are:
+           Test block modes below <number> usage centile in an empirically
+           determined distribution of block mode frequency. This option is
+           ineffective for 3D textures. Preset defaults are:
 
                -fastest    :  25
                -fast       :  50
@@ -385,10 +381,10 @@ ADVANCED COMPRESSION
                -exhaustive : 1000.0
 
        -planecorlimit <factor>
-           Stop compression after testing only one plane of weights,
-           unless the minimum color correlation factor between any pair of
-           color channels is below this factor. This option is ineffective
-           for normal maps. Preset defaults are:
+           Stop compression after testing only one plane of weights, unless
+           the minimum color correlation factor between any pair of color
+           components is below this factor. This option is ineffective for
+           normal maps. Preset defaults are:
 
                -fastest    : 0.50
                -fast       : 0.50
@@ -403,31 +399,31 @@ ADVANCED COMPRESSION
            Swizzle the color components before compression. The swizzle is
            specified using a 4-character string, which defines the output
            format ordering. The characters may be taken from the set
-           [rgba01], selecting either input color channels or a literal
-           zero or one. For example to swap the RG channels, and replace
+           [rgba01], selecting either input color components or a literal
+           zero or one. For example to swap the RG components, and replace
            alpha with 1, the swizzle 'grb1' should be used.
 
            The input swizzle takes place before any compression, and all
            error weighting applied using the -cw option is applied to the
-           post-swizzle channel ordering.
+           post-swizzle component ordering.
 
-           By default all 4 post-swizzle channels are included in the error
-           metrics during compression. When using -esw to map two channel
-           data to the L+A endpoint (e.g. -esw rrrg) the luminance data
-           stored in the rgb channels will be weighted three times more
-           strongly than the alpha channel. This can be corrected using the
-           -cw option to zero the weights of unused channels; e.g. using
-           -cw 1 0 0 1.
+           By default all 4 post-swizzle components are included in the
+           error metrics during compression. When using -esw to map two
+           component data to the L+A endpoint (e.g. -esw rrrg) the
+           luminance data stored in the RGB components will be weighted 3
+           times more strongly than the alpha component. This can be
+           corrected using the -cw option to zero the weights of unused
+           components; e.g. using -cw 1 0 0 1.
 
        -dsw <swizzle>
            Swizzle the color components after decompression. The swizzle is
            specified using the same method as the -esw option, with support
            for an additional "z" character. This is used to specify that
            the compressed data stores an X+Y normal map, and that the Z
-           output channel should be reconstructed from the two channels
-           stored in the data. For the typical ASTC normal encoding,
-           which uses an 'rrrg' compression swizzle, you should specify an
-           'raz1' swizzle for decompression.
+           output component should be reconstructed from the two components
+           stored in the data. For the typical ASTC normal encoding, which
+           uses an 'rrrg' compression swizzle, you should specify an 'raz1'
+           swizzle for decompression.
 
        -yflip
            Flip the image in the vertical axis prior to compression and
@@ -435,16 +431,16 @@ ADVANCED COMPRESSION
            (-t*) will have no effect as the image will be flipped twice.
 
        -j <threads>
-           Explicitly specify the number of compression/decompression
-           theads to use in the codec. If not specified, the codec will
-           use on thread per CPU detected in the system.
+           Explicitly specify the number of threads to use in the codec. If
+           not specified, the codec will use one thread per CPU detected in
+           the system.
 
        -silent
            Suppresses all non-essential diagnostic output from the codec.
            Error messages will always be printed, as will mandatory outputs
-           for the selected operation mode. For example, the test mode
-           will always output image quality metrics and compression time
-           but will suppress all other output.)"
+           for the selected operation mode. For example, the test mode will
+           always output image quality metrics and compression time but
+           will suppress all other output.)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(
@@ -453,17 +449,17 @@ DECOMPRESSION
        To decompress an image stored in the ASTC format you must specify
        the color profile, the input file name, and the output file name.
 
-       The color profile is specified using the -dl (LDR linear), -ds
-       (LDR sRGB), -dh (HDR RGB, LDR A), or -dH (HDR RGBA) decoder options.
+       The color profile is specified using the -dl (LDR linear), -ds (LDR
+       sRGB), -dh (HDR RGB, LDR A), or -dH (HDR RGBA) decoder options.
 
        The input file path must match a valid file format for
        decompression, and the output file format must be a valid output for
        a decompressed image. Note that not all output formats that the
-       coompression path can produce are supported for decompression. See
+       compression path can produce are supported for decompression. See
        the FILE FORMATS section for the list of supported formats.
 
-       The -dsw options documented in ADVANCED COMPRESSION option documentation
-	   are relevant to decompression.
+       The -dsw option documented in ADVANCED COMPRESSION option
+       documentation is also relevant to decompression.
 
 TEST
        To perform a compression test which round-trips a single image
@@ -475,9 +471,9 @@ TEST
        The color profile is specified using the -tl (LDR linear), -ts (LDR
        sRGB), -th (HDR RGB, LDR A), or -tH (HDR RGBA) encoder options.
 
-       This operation mode will print error metrics suitable for either
-       LDR and HDR images, allowing some assessment of the compression
-       image quality.
+       This operation mode will print error metrics suitable for either LDR
+       and HDR images, allowing some assessment of the compression image
+       quality.
 
 COMPRESSION FILE FORMATS
        The following formats are supported as compression inputs:

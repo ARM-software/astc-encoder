@@ -747,7 +747,7 @@ struct symbolic_compressed_block
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
 	int color_quant_level;
-	int plane2_color_component;	// color component for the secondary plane of weights
+	int plane2_component;	// color component for the secondary plane of weights
 
 	// TODO: Under what circumstances is this ever more than 8 (4 pairs) colors
 	int color_values[4][12];	// quantized endpoint color pairs.
@@ -983,11 +983,11 @@ struct pixel_region_variance_args
 {
 	/** The image to analyze. */
 	const astcenc_image* img;
-	/** The RGB channel power adjustment. */
+	/** The RGB component power adjustment. */
 	float rgb_power;
-	/** The alpha channel power adjustment. */
+	/** The alpha component power adjustment. */
 	float alpha_power;
-	/** The channel swizzle pattern. */
+	/** The component swizzle pattern. */
 	astcenc_swizzle swz;
 	/** Should the algorithm bother with Z axis processing? */
 	bool have_z;
@@ -1032,11 +1032,11 @@ struct avg_var_args
  * and img->input_alpha_averages.
  *
  * @param img                   The input image data, also holds output data.
- * @param rgb_power             The RGB channel power.
- * @param alpha_power           The A channel power.
+ * @param rgb_power             The RGB component power.
+ * @param alpha_power           The A component power.
  * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
  * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
- * @param swz                   Input data channel swizzle.
+ * @param swz                   Input data component swizzle.
  * @param arg                   The pixel region arguments for this thread.
  * @param ag                    The average variance arguments for this thread.
  *
@@ -1326,7 +1326,7 @@ void recompute_ideal_colors_2planes(
 	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
-	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	int plane2_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
 	const partition_info* pt,
 	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.

@@ -18,7 +18,7 @@
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 
 /**
- * @brief Functions to calculate variance per channel in a NxN footprint.
+ * @brief Functions to calculate variance per component in a NxN footprint.
  *
  * We need N to be parametric, so the routine below uses summed area tables in
  * order to execute in O(1) time independent of how big N is.

@@ -186,7 +186,7 @@ void find_best_partitionings(
 				break;
 			}
 
-			// Compute weighting to give to each channel in each partition
+			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
 
 			compute_partition_error_color_weightings_and_range(*blk, *ewb, *(ptab + partition), pms);
@@ -392,7 +392,7 @@ void find_best_partitionings(
 				break;
 			}
 
-			// Compute weighting to give to each channel in each partition
+			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
 
 			compute_partition_error_color_weightings_and_range(*blk, *ewb, *(ptab + partition), pms);

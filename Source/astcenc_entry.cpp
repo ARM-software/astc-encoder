@@ -1074,7 +1074,7 @@ astcenc_error astcenc_get_block_info(
 
 	info->partition_count = scb.partition_count;
 	info->partition_index = scb.partition_index;
-	info->dual_plane_component = scb.plane2_color_component;
+	info->dual_plane_component = scb.plane2_component;
 
 	info->color_level_count =  get_quant_method_levels((quant_method)scb.color_quant_level);
 	info->weight_level_count = get_quant_method_levels((quant_method)bm.quant_mode);

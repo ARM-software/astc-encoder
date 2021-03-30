@@ -89,14 +89,14 @@ void free_image(astcenc_image * img)
 	delete img;
 }
 
-int determine_image_channels(const astcenc_image * img)
+int determine_image_components(const astcenc_image * img)
 {
 	unsigned int dim_x = img->dim_x;
 	unsigned int dim_y = img->dim_y;
 	unsigned int dim_z = img->dim_z;
 
 	// scan through the image data
-	// to determine how many color channels the image has.
+	// to determine how many color components the image has.
 
 	bool is_luma = true;
 	bool has_alpha = false;
@@ -168,8 +168,8 @@ int determine_image_channels(const astcenc_image * img)
 		}
 	}
 
-	int image_channels = 1 + (is_luma == 0 ? 0 : 2) + (has_alpha ? 0 : 1);
-	return image_channels;
+	int image_components = 1 + (is_luma == 0 ? 0 : 2) + (has_alpha ? 0 : 1);
+	return image_components;
 }
 
 // initialize an astcenc_image data structure from a 2D array of RGBA float*4

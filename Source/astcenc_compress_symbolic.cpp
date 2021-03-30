@@ -69,7 +69,7 @@ static int realign_weights(
 	int weight_count = dt->weight_count;
 
 	int max_plane = bm.is_dual_plane;
-	int plane2_component = bm.is_dual_plane ? scb->plane2_color_component : -1;
+	int plane2_component = bm.is_dual_plane ? scb->plane2_component : -1;
 	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
@@ -105,7 +105,7 @@ static int realign_weights(
 	{
 		for (int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 		{
-			// Compute the endpoint delta for all channels in current plane
+			// Compute the endpoint delta for all components in current plane
 			vint4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
 			epd = select(epd, vint4::zero(), plane_mask);
 
@@ -863,7 +863,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			workscb.partition_index = partition_index;
 			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
-			workscb.plane2_color_component = separate_component;
+			workscb.plane2_component = separate_component;
 			workscb.error_block = 0;
 
 			if (workscb.color_quant_level < 4)
@@ -1432,7 +1432,7 @@ void compress_block(
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", 1);
 		trace_add_data("plane_count", 2);
-		trace_add_data("plane_channel", i);
+		trace_add_data("plane_component", i);
 
 		if (block_skip_two_plane)
 		{
@@ -1448,7 +1448,7 @@ void compress_block(
 
 		if (!uses_alpha && i == 3)
 		{
-			trace_add_data("skip", "no alpha channel");
+			trace_add_data("skip", "no alpha component");
 			continue;
 		}
 
@@ -1539,7 +1539,7 @@ void compress_block(
 		trace_add_data("partition_count", partition_count);
 		trace_add_data("partition_index", partition_index_2planes & (PARTITION_COUNT - 1));
 		trace_add_data("plane_count", 2);
-		trace_add_data("plane_channel", partition_index_2planes >> PARTITION_BITS);
+		trace_add_data("plane_component", partition_index_2planes >> PARTITION_BITS);
 
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 			ctx.config,

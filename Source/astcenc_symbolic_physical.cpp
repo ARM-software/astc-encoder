@@ -226,7 +226,7 @@ void symbolic_to_physical(
 	// in dual-plane mode, encode the color component of the second plane of weights
 	if (is_dual_plane)
 	{
-		write_bits(scb.plane2_color_component, 2, below_weights_pos - 2, pcb.data);
+		write_bits(scb.plane2_component, 2, below_weights_pos - 2, pcb.data);
 	}
 
 	// finally, encode the color bits
@@ -479,6 +479,6 @@ void physical_to_symbolic(
 	// get hold of color component for second-plane in the case of dual plane of weights.
 	if (is_dual_plane)
 	{
-		scb.plane2_color_component = read_bits(2, below_weights_pos - 2, pcb.data);
+		scb.plane2_component = read_bits(2, below_weights_pos - 2, pcb.data);
 	}
 }

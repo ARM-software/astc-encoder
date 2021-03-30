@@ -29,8 +29,8 @@
  *           - candidate
  *
  * One block node exists for each compressed block in the image. One pass node
- * exists for each major pass (N partition, M planes, O channel) applied to a
- * block. One candidate node exists for each encoding candidate trialed for a
+ * exists for each major pass (N partition, M planes, O components) applied to
+ * a block. One candidate node exists for each encoding candidate trialed for a
  * pass.
  *
  * Each node contains both the hierarchy but also a number of attributes which

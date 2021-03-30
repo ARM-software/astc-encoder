@@ -15,7 +15,7 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-// This is a utility tool to blockify the M channel of an RGBM image, writing
+// This is a utility tool to blockify the M component of an RGBM image, writing
 // the result back to a file on disk.
 //
 // This tool requires stb_image.h and stb_image_write.h single header libraries

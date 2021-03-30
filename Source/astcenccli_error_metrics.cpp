@@ -129,8 +129,8 @@ void compute_error_metrics(
 	int fstop_lo,
 	int fstop_hi
 ) {
-	static const int channelmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
-	int channelmask = channelmasks[input_components];
+	static const int componentmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
+	int componentmask = componentmasks[input_components];
 
 	kahan_accum4 errorsum;
 	kahan_accum4 alpha_scaled_errorsum;
@@ -285,7 +285,7 @@ void compute_error_metrics(
 	float mpsnr_num = 0.0f;
 	float samples = 0.0f;
 
-	if (channelmask & 1)
+	if (componentmask & 1)
 	{
 		num += errorsum.sum.lane<0>();
 		alpha_num += alpha_scaled_errorsum.sum.lane<0>();
@@ -294,7 +294,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (channelmask & 2)
+	if (componentmask & 2)
 	{
 		num += errorsum.sum.lane<1>();
 		alpha_num += alpha_scaled_errorsum.sum.lane<1>();
@@ -303,7 +303,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (channelmask & 4)
+	if (componentmask & 4)
 	{
 		num += errorsum.sum.lane<2>();
 		alpha_num += alpha_scaled_errorsum.sum.lane<2>();
@@ -312,7 +312,7 @@ void compute_error_metrics(
 		samples += pixels;
 	}
 
-	if (channelmask & 8)
+	if (componentmask & 8)
 	{
 		num += errorsum.sum.lane<3>();
 		alpha_num += alpha_scaled_errorsum.sum.lane<3>();
@@ -334,7 +334,7 @@ void compute_error_metrics(
 	printf("Quality metrics\n");
 	printf("===============\n\n");
 
-	if (channelmask & 8)
+	if (componentmask & 8)
 	{
 		printf("    PSNR (LDR-RGBA):          %9.4f dB\n", (double)psnr);
 

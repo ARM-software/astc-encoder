@@ -89,7 +89,7 @@ astcenc_image* alloc_image(
 void free_image(
 	astcenc_image* img);
 
-int determine_image_channels(
+int determine_image_components(
 	const astcenc_image* img);
 
 int load_cimage(

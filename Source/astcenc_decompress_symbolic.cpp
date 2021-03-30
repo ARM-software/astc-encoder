@@ -85,7 +85,7 @@ static inline vfloat4 decode_texel(
 		color_unorm = unorm16_to_sf16(data);
 	}
 
-	// Pick channels and then covert to FP16
+	// Pick components and then covert to FP16
 	vint4 datai = select(color_unorm, color_lns, lns_mask);
 	return float16_to_float(datai);
 }
@@ -284,8 +284,8 @@ void decompress_symbolic_block(
 	unpack_weights(*bsd, *scb, *dt, is_dual_plane, weight_quant_level, weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
-	int plane2_color_component = is_dual_plane ? scb->plane2_color_component : -1;
-	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_color_component);
+	int plane2_component = is_dual_plane ? scb->plane2_component : -1;
+	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -384,8 +384,8 @@ float compute_symbolic_block_difference(
 	unpack_weights(*bsd, *scb, *dt, is_dual_plane, weight_quant_level, weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
-	int plane2_color_component = is_dual_plane ? scb->plane2_color_component : -1;
-	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_color_component);
+	int plane2_component = is_dual_plane ? scb->plane2_component : -1;
+	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
 	float summa = 0.0f;
 	for (int i = 0; i < texel_count; i++)

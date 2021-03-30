@@ -1184,7 +1184,7 @@ void recompute_ideal_colors_2planes(
 	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
 	const uint8_t* weight_set8,	// the current set of weight values
 	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
-	int plane2_color_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	int plane2_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
 	const partition_info* pt,
 	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.
@@ -1315,10 +1315,10 @@ void recompute_ideal_colors_2planes(
 				right2_sum  = right2_sum  + right2;
 			}
 
-			vfloat4 color_idx((plane2_color_component == 0) ? idx1 : idx0,
-			                  (plane2_color_component == 1) ? idx1 : idx0,
-			                  (plane2_color_component == 2) ? idx1 : idx0,
-			                  (plane2_color_component == 3) ? idx1 : idx0);
+			vfloat4 color_idx((plane2_component == 0) ? idx1 : idx0,
+			                  (plane2_component == 1) ? idx1 : idx0,
+			                  (plane2_component == 2) ? idx1 : idx0,
+			                  (plane2_component == 3) ? idx1 : idx0);
 
 			vfloat4 color_idx3 = color_idx.swz<0, 1, 2>();
 
@@ -1380,7 +1380,7 @@ void recompute_ideal_colors_2planes(
 			// of all colors in the partition and use that as both endpoint colors.
 			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
-			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_color_component);
+			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 			vmask4 notnan_mask = avg == avg;
 			vmask4 full_mask = p1_mask & notnan_mask;
 
@@ -1418,7 +1418,7 @@ void recompute_ideal_colors_2planes(
 			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.r - lmrs_sum.lane<1>() * scale_vec.g) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.g - lmrs_sum.lane<1>() * scale_vec.r) * ls_rdet1;
 
-			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_color_component);
+			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 			vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
 			vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 			vmask4 full_mask = p1_mask & det_mask & notnan_mask;
@@ -1446,7 +1446,7 @@ void recompute_ideal_colors_2planes(
 				// of all colors in the partition and use that as both endpoint colors.
 				vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
-				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_color_component);
+				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 				vmask4 notnan_mask = avg == avg;
 				vmask4 full_mask = p2_mask & notnan_mask;
 
@@ -1471,7 +1471,7 @@ void recompute_ideal_colors_2planes(
 				vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 				vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
-				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_color_component);
+				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 				vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
 				vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 				vmask4 full_mask = p2_mask & det_mask & notnan_mask;

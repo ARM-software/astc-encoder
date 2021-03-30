@@ -720,7 +720,7 @@ static int edit_astcenc_config(
 					swizzle_components[i] = ASTCENC_SWZ_1;
 					break;
 				default:
-					printf("ERROR: -esw channel '%c' is not valid\n", argv[argidx - 1][i]);
+					printf("ERROR: -esw component '%c' is not valid\n", argv[argidx - 1][i]);
 					return 1;
 				}
 			}
@@ -772,7 +772,7 @@ static int edit_astcenc_config(
 					swizzle_components[i] =  ASTCENC_SWZ_Z;
 					break;
 				default:
-					printf("ERROR: ERROR: -dsw channel '%c' is not valid\n", argv[argidx - 1][i]);
+					printf("ERROR: ERROR: -dsw component '%c' is not valid\n", argv[argidx - 1][i]);
 					return 1;
 				}
 			}
@@ -1068,10 +1068,10 @@ static int edit_astcenc_config(
 				printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
 			}
 
-			printf("    R channel weight:           %g\n",(double)config.cw_r_weight);
-			printf("    G channel weight:           %g\n",(double)config.cw_g_weight);
-			printf("    B channel weight:           %g\n",(double)config.cw_b_weight);
-			printf("    A channel weight:           %g\n",(double)config.cw_a_weight);
+			printf("    R component weight:         %g\n",(double)config.cw_r_weight);
+			printf("    G component weight:         %g\n",(double)config.cw_g_weight);
+			printf("    B component weight:         %g\n",(double)config.cw_b_weight);
+			printf("    A component weight:         %g\n",(double)config.cw_a_weight);
 			printf("    Deblock artifact setting:   %g\n", (double)config.b_deblock_weight);
 			printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 			printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
@@ -1152,7 +1152,7 @@ static vfloat4 image_get_pixel(
 /**
  * @brief Set the value of a single pixel in an image.
  *
- * @param[out] img     The output image; must use F32 texture channels.
+ * @param[out] img     The output image; must use F32 texture components.
  * @param      x       The pixel x coordinate.
  * @param      y       The pixel y coordinate.
  * @param      z       The pixel z coordinate.
@@ -1188,7 +1188,7 @@ static void image_set_pixel(
  * the core codec.
  *
  * @param[in]  input    The input image.
- * @param[out] output   The output image, must use F32 channels.
+ * @param[out] output   The output image, must use F32 components.
  */
 static void image_preprocess_normalize(
 	const astcenc_image& input,
@@ -1202,7 +1202,7 @@ static void image_preprocess_normalize(
 			{
 				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
-				// Stash alpha channel and zero
+				// Stash alpha component and zero
 				float a = pixel.lane<3>();
 				pixel.set_lane<3>(0.0f);
 
@@ -1263,7 +1263,7 @@ static float linear_to_srgb(
  * premultiplication and re-gamma-encode afterwards.
  *
  * @param[in]  input     The input image.
- * @param[out] output    The output image, must use F32 channels.
+ * @param[out] output    The output image, must use F32 components.
  * @param      profile   The encoding profile.
  */
 static void image_preprocess_premultiply(
@@ -1420,7 +1420,7 @@ int main(
 	}
 
 	astcenc_image* image_uncomp_in = nullptr ;
-	unsigned int image_uncomp_in_channel_count = 0;
+	unsigned int image_uncomp_in_component_count = 0;
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image* image_decomp_out = nullptr;
 
@@ -1438,8 +1438,9 @@ int main(
 	// Load the uncompressed input file if needed
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
 	{
-		image_uncomp_in = load_uncomp_file(input_filename.c_str(), cli_config.array_size,
-		                                   cli_config.y_flip, image_uncomp_in_is_hdr, image_uncomp_in_channel_count);
+		image_uncomp_in = load_uncomp_file(
+		    input_filename.c_str(), cli_config.array_size, cli_config.y_flip,
+		    image_uncomp_in_is_hdr, image_uncomp_in_component_count);
 		if (!image_uncomp_in)
 		{
 			printf ("ERROR: Failed to load uncompressed image file\n");
@@ -1493,7 +1494,7 @@ int main(
 				printf("    Dimensions:                 2D, %ux%u\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
-			printf("    Channels:                   %d\n\n", image_uncomp_in_channel_count);
+			printf("    Components:                 %d\n\n", image_uncomp_in_component_count);
 		}
 	}
 
@@ -1606,8 +1607,9 @@ int main(
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
-		compute_error_metrics(image_uncomp_in_is_hdr, image_uncomp_in_channel_count, image_uncomp_in,
-		                      image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
+		compute_error_metrics(
+		    image_uncomp_in_is_hdr, image_uncomp_in_component_count, image_uncomp_in,
+		    image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
 	}
 
 	// Store compressed image

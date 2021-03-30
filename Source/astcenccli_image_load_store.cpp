@@ -1214,11 +1214,11 @@ static int store_ktx_uncompressed_image(
 	unsigned int dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
-	int image_channels = determine_image_channels(img);
+	int image_components = determine_image_components(img);
 
 	ktx_header hdr;
 
-	static const int gl_format_of_channels[4] {
+	static const int gl_format_of_components[4] {
 		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
 	};
 
@@ -1226,9 +1226,9 @@ static int store_ktx_uncompressed_image(
 	hdr.endianness = 0x04030201;
 	hdr.gl_type = (bitness == 16) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
 	hdr.gl_type_size = bitness / 8;
-	hdr.gl_format = gl_format_of_channels[image_channels - 1];
-	hdr.gl_internal_format = gl_format_of_channels[image_channels - 1];
-	hdr.gl_base_internal_format = gl_format_of_channels[image_channels - 1];
+	hdr.gl_format = gl_format_of_components[image_components - 1];
+	hdr.gl_internal_format = gl_format_of_components[image_components - 1];
+	hdr.gl_base_internal_format = gl_format_of_components[image_components - 1];
 	hdr.pixel_width = dim_x;
 	hdr.pixel_height = dim_y;
 	hdr.pixel_depth = (dim_z == 1) ? 0 : dim_z;
@@ -1244,19 +1244,19 @@ static int store_ktx_uncompressed_image(
 	{
 		row_pointers8 = new uint8_t **[dim_z];
 		row_pointers8[0] = new uint8_t *[dim_y * dim_z];
-		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_channels + 3];
+		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_components + 3];
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_x * image_channels * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_x * image_components * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_channels * y;
+				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
@@ -1266,7 +1266,7 @@ static int store_ktx_uncompressed_image(
 			for (unsigned int y = 0; y < dim_y; y++)
 			{
 				int ym = y_flip ? dim_y - y - 1 : y;
-				switch (image_channels)
+				switch (image_components)
 				{
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
@@ -1306,19 +1306,19 @@ static int store_ktx_uncompressed_image(
 	{
 		row_pointers16 = new uint16_t **[dim_z];
 		row_pointers16[0] = new uint16_t *[dim_y * dim_z];
-		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_channels + 1];
+		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_components + 1];
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_channels * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_channels * y;
+				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
@@ -1328,7 +1328,7 @@ static int store_ktx_uncompressed_image(
 			for (unsigned int y = 0; y < dim_y; y++)
 			{
 				int ym = y_flip ? dim_y - y - 1 : y;
-				switch (image_channels)
+				switch (image_components)
 				{
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
@@ -1365,8 +1365,8 @@ static int store_ktx_uncompressed_image(
 		}
 	}
 
-	int retval = image_channels + (bitness == 16 ? 0x80 : 0);
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_channels * (bitness / 8);
+	int retval = image_components + (bitness == 16 ? 0x80 : 0);
+	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 	uint32_t image_write_bytes = (image_bytes + 3) & ~3;
 
 	FILE *wf = fopen(ktx_filename, "wb");
@@ -1783,11 +1783,11 @@ static int store_dds_uncompressed_image(
 	unsigned int dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
-	int image_channels = (bitness == 16) ? 4 : determine_image_channels(img);
+	int image_components = (bitness == 16) ? 4 : determine_image_components(img);
 
 
 	// DDS-pixel-format structures to use when storing LDR image with 1,2,3 or 4 components.
-	static const dds_pixelformat format_of_image_channels[4] =
+	static const dds_pixelformat format_of_image_components[4] =
 	{
 		{32, 0x20000, 0, 8, 0xFF, 0, 0, 0},	// luminance
 		{32, 0x20001, 0, 16, 0xFF, 0, 0, 0xFF00},	// L8A8
@@ -1813,7 +1813,7 @@ static int store_dds_uncompressed_image(
 	hdr.flags = 0x100F | (dim_z > 1 ? 0x800000 : 0);
 	hdr.height = dim_y;
 	hdr.width = dim_x;
-	hdr.pitch_or_linear_size = image_channels * (bitness / 8) * dim_x;
+	hdr.pitch_or_linear_size = image_components * (bitness / 8) * dim_x;
 	hdr.depth = dim_z;
 	hdr.mipmapcount = 1;
 	for (unsigned int i = 0; i < 11; i++)
@@ -1828,7 +1828,7 @@ static int store_dds_uncompressed_image(
 	// pixel-format data
 	if (bitness == 8)
 	{
-		hdr.ddspf = format_of_image_channels[image_channels - 1];
+		hdr.ddspf = format_of_image_components[image_components - 1];
 	}
 	else
 	{
@@ -1851,19 +1851,19 @@ static int store_dds_uncompressed_image(
 	{
 		row_pointers8 = new uint8_t **[dim_z];
 		row_pointers8[0] = new uint8_t *[dim_y * dim_z];
-		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_channels];
+		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_components];
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_z * image_channels * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_z * image_components * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_channels * y;
+				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
@@ -1874,7 +1874,7 @@ static int store_dds_uncompressed_image(
 			for (unsigned int y = 0; y < dim_y; y++)
 			{
 				int ym = y_flip ? dim_y - y - 1 : y;
-				switch (image_channels)
+				switch (image_components)
 				{
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
@@ -1914,19 +1914,19 @@ static int store_dds_uncompressed_image(
 	{
 		row_pointers16 = new uint16_t **[dim_z];
 		row_pointers16[0] = new uint16_t *[dim_y * dim_z];
-		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_channels];
+		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_components];
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_channels * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
 		}
 
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
 			for (unsigned int y = 1; y < dim_y; y++)
 			{
-				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_channels * y;
+				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
@@ -1937,7 +1937,7 @@ static int store_dds_uncompressed_image(
 			for (unsigned int y = 0; y < dim_y; y++)
 			{
 				int ym = y_flip ? dim_y - y - 1: y;
-				switch (image_channels)
+				switch (image_components)
 				{
 				case 1:		// single-component, treated as Luminance
 					for (unsigned int x = 0; x < dim_x; x++)
@@ -1974,8 +1974,8 @@ static int store_dds_uncompressed_image(
 		}
 	}
 
-	int retval = image_channels;
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_channels * (bitness / 8);
+	int retval = image_components;
+	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 
 	uint32_t dds_magic = DDS_MAGIC;
 

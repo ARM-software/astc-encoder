@@ -121,11 +121,11 @@ class Block:
 
 class Pass:
 
-    def __init__(self, partitions, partition, planes, target_hit, mode, channel):
+    def __init__(self, partitions, partition, planes, target_hit, mode, component):
         self.partitions = partitions
         self.partition_index = 0 if partition is None else partition
         self.planes = planes
-        self.plane2_channel = channel
+        self.plane2_component = component
         self.target_hit = target_hit
         self.search_mode = mode
         self.candidates = []
@@ -291,7 +291,7 @@ def generate_database(data):
             prts = get_attrib(pas, "partition_count")
             prti = get_attrib(pas, "partition_index", False, False)
             plns = get_attrib(pas, "plane_count")
-            chan = get_attrib(pas, "plane_channel", False, plns > 2)
+            chan = get_attrib(pas, "plane_component", False, plns > 2)
             mode = get_attrib(pas, "search_mode", False, False)
             ehit = get_attrib(pas, "exit", False, False) == "quality hit"
 
@@ -413,7 +413,7 @@ def generate_feature_statistics(data):
     for _, pas in foreach_pass(data):
         result_count[pas.partitions][pas.planes] += 1
         if (pas.planes > 1):
-            result_channel[pas.partitions][pas.plane2_channel] += 1
+            result_channel[pas.partitions][pas.plane2_component] += 1
 
     print("Plane Usage")
     print("===========")

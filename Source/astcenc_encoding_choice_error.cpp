@@ -27,7 +27,7 @@
  * Encoding choice errors are caused by encoder decisions, such as:
  * - using luminance rather than RGB.
  * - using RGB+scale instead of two full RGB endpoints.
- * - dropping the alpha channel.
+ * - dropping the alpha component.
  *
  * Quantization errors occur due to the limited precision we use for storage.
  * These errors generally scale with quantization level, but are not actually

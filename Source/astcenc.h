@@ -83,7 +83,7 @@
  * Images can be any dimension; there is no requirement for them to be a
  * multiple of the ASTC block size.
  *
- * Data is always passed in as 4 color channels, and accessed as an array of
+ * Data is always passed in as 4 color components, and accessed as an array of
  * 2D image slices. Data within an image slice is always tightly packed without
  * padding. Addresing looks like this:
  *
@@ -96,26 +96,27 @@
  * =======================
  *
  * One of the most important things for coding image quality is to align the
- * input data channel count with the ASTC color endpoint mode. This avoids
- * wasting bits encoding channels you don't need in the endpoint colors.
+ * input data component count with the ASTC color endpoint mode. This avoids
+ * wasting bits encoding components you don't need in the endpoint colors.
  *
- *         | Input data | Encoding swizzle | Sampling swizzle |
- *         | ---------- | ---------------- | ---------------- |
- *         | 1 channel  | RRR1             | .g               |
- *         | 2 channels | RRRG             | .ga              |
- *         | 3 channels | RGB1             | .rgb             |
- *         | 4 channels | RGBA             | .rgba            |
+ *         | Input data   | Encoding swizzle | Sampling swizzle |
+ *         | ------------ | ---------------- | ---------------- |
+ *         | 1 component  | RRR1             | .g               |
+ *         | 2 components | RRRG             | .ga              |
+ *         | 3 components | RGB1             | .rgb             |
+ *         | 4 components | RGBA             | .rgba            |
  *
- * The 1 and 2 channel modes recommend sampling from "g" to recover the
+ * The 1 and 2 component modes recommend sampling from "g" to recover the
  * luminance value as this provide best compatibility with ETC1. For ETC the
- * luminance data will be stored as RGB565 where the green channel has the
- * best quality. For ASTC any of the rgb channels can be used - the same data
+ * luminance data will be stored as RGB565 where the green component has the
+ * best quality. For ASTC any of the RGB components can be used - the same data
  * will be returned for all three.
  *
  * When using the normal map compression mode ASTC will store normals as a two
- * channel X+Y map. Input images must contain unit-length normalized and should
- * be passed in using the RRRG swizzle. The Z component can be programatically
- * recovered in shader code, using knowledge that the vector is unit length.
+ * component X+Y map. Input images must contain unit-length normalized and
+ * should be passed in using the RRRG swizzle. The Z component can be recovered
+ * programatically in shader code, using knowledge that the vector is unit
+ * length.
  *
  * Decompress-only usage
  * =====================
@@ -183,7 +184,7 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_PROFILE,
 	/** @brief The call failed due to an out-of-spec quality value. */
 	ASTCENC_ERR_BAD_QUALITY,
-	/** @brief The call failed due to an out-of-spec channel swizzle. */
+	/** @brief The call failed due to an out-of-spec component swizzle. */
 	ASTCENC_ERR_BAD_SWIZZLE,
 	/** @brief The call failed due to an out-of-spec flag set. */
 	ASTCENC_ERR_BAD_FLAGS,
@@ -227,55 +228,55 @@ static const float ASTCENC_PRE_THOROUGH = 98.0f;
 static const float ASTCENC_PRE_EXHAUSTIVE = 100.0f;
 
 /**
- * @brief A codec channel swizzle selector.
+ * @brief A codec component swizzle selector.
  */
 enum astcenc_swz {
-	/** @brief Select the red channel. */
+	/** @brief Select the red component. */
 	ASTCENC_SWZ_R = 0,
-	/** @brief Select the green channel. */
+	/** @brief Select the green component. */
 	ASTCENC_SWZ_G = 1,
-	/** @brief Select the blue channel. */
+	/** @brief Select the blue component. */
 	ASTCENC_SWZ_B = 2,
-	/** @brief Select the alpha channel. */
+	/** @brief Select the alpha component. */
 	ASTCENC_SWZ_A = 3,
-	/** @brief Use a constant zero channel. */
+	/** @brief Use a constant zero component. */
 	ASTCENC_SWZ_0 = 4,
-	/** @brief Use a constant one channel. */
+	/** @brief Use a constant one component. */
 	ASTCENC_SWZ_1 = 5,
-	/** @brief Use a reconstructed normal vector Z channel. */
+	/** @brief Use a reconstructed normal vector Z component. */
 	ASTCENC_SWZ_Z = 6
 };
 
 /**
- * @brief A texel channel swizzle.
+ * @brief A texel component swizzle.
  */
 struct astcenc_swizzle {
-	/** @brief The red channel selector. */
+	/** @brief The red component selector. */
 	astcenc_swz r;
-	/** @brief The green channel selector. */
+	/** @brief The green component selector. */
 	astcenc_swz g;
-	/** @brief The blue channel selector. */
+	/** @brief The blue component selector. */
 	astcenc_swz b;
-	/** @brief The alpha channel selector. */
+	/** @brief The alpha component selector. */
 	astcenc_swz a;
 };
 
 /**
- * @brief A texel channel data format.
+ * @brief A texel component data format.
  */
 enum astcenc_type {
-	/** @brief Unorm 8-bit data per channel. */
+	/** @brief Unorm 8-bit data per component. */
 	ASTCENC_TYPE_U8 = 0,
-	/** @brief 16-bit float per channel. */
+	/** @brief 16-bit float per component. */
 	ASTCENC_TYPE_F16 = 1,
-	/** @brief 32-bit float per channel. */
+	/** @brief 32-bit float per component. */
 	ASTCENC_TYPE_F32 = 2
 };
 
 /**
  * @brief Enable normal map compression.
  *
- * Input data will be treated a two channel normal map, storing X and Y, and
+ * Input data will be treated a two component normal map, storing X and Y, and
  * the codec will optimize for angular error rather than simple linear PSNR.
  * In this mode the input swizzle should be e.g. rrrg (the default ordering for
  * ASTC normals on the command line) or gggr (the ordering used by BC5).
@@ -286,7 +287,7 @@ static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
  * @brief Enable mask map compression.
  *
  * Input data will be treated a multi-layer mask map, where is is desirable for
- * the color channels to be treated independently for the purposes of error
+ * the color components to be treated independently for the purposes of error
  * analysis.
  */
 static const unsigned int ASTCENC_FLG_MAP_MASK             = 1 << 1;
@@ -320,7 +321,7 @@ static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
  * @brief Enable alpha weighting.
  *
  * The input alpha value is used for transparency, so errors in the RGB
- * channels are weighted by the transparency level. This allows the codec to
+ * components are weighted by the transparency level. This allows the codec to
  * more accurately encode the alpha value in areas where the color value
  * is less significant.
  */
@@ -374,8 +375,8 @@ static const unsigned int ASTCENC_ALL_FLAGS =
  * astcenccli_toplevel_help.cpp for full user documentation of the power-user
  * settings.
  *
- * Note for any settings which are associated with a specific color channel,
- * the value in the config applies to the channel that exists after any
+ * Note for any settings which are associated with a specific color component,
+ * the value in the config applies to the component that exists after any
  * compression data swizzle is applied.
  */
 struct astcenc_config
@@ -398,7 +399,7 @@ struct astcenc_config
 	/** @brief The size of the texel kernel for error weighting (-v). */
 	unsigned int v_rgba_radius;
 
-	/** @brief The mean and stdev channel mix for error weighting (-v). */
+	/** @brief The mean and stdev component mix for error weighting (-v). */
 	float v_rgba_mean_stdev_mix;
 
 	/** @brief The texel RGB power for error weighting (-v). */
@@ -425,16 +426,16 @@ struct astcenc_config
 	/** @brief The texel A stdev for error weighting (-va). */
 	float v_a_stdev;
 
-	/** @brief The red channel weight scale for error weighting (-cw). */
+	/** @brief The red component weight scale for error weighting (-cw). */
 	float cw_r_weight;
 
-	/** @brief The green channel weight scale for error weighting (-cw). */
+	/** @brief The green component weight scale for error weighting (-cw). */
 	float cw_g_weight;
 
-	/** @brief The blue channel weight scale for error weighting (-cw). */
+	/** @brief The blue component weight scale for error weighting (-cw). */
 	float cw_b_weight;
 
-	/** @brief The alpha channel weight scale for error weighting (-cw). */
+	/** @brief The alpha component weight scale for error weighting (-cw). */
 	float cw_a_weight;
 
 	/**
@@ -566,7 +567,7 @@ struct astcenc_image
 	/** @brief The Z dimension of the image, in texels. */
 	unsigned int dim_z;
 
-	/** @brief The data type per channel. */
+	/** @brief The data type per component. */
 	astcenc_type data_type;
 
 	/** @brief The array of 2D slices, of length @c dim_z. */
