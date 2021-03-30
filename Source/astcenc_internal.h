@@ -747,7 +747,7 @@ struct symbolic_compressed_block
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
 	int color_quant_level;
-	int plane2_component;	// color component for the secondary plane of weights
+	int plane2_component;		// color component for second plane of weights
 
 	// TODO: Under what circumstances is this ever more than 8 (4 pairs) colors
 	int color_values[4][12];	// quantized endpoint color pairs.
@@ -1116,9 +1116,9 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	int separate_component,
-	endpoints_and_weights* ei1, // primary plane weights
-	endpoints_and_weights* ei2); // secondary plane weights
+	int plane2_component,
+	endpoints_and_weights* ei1,  // First weight plane
+	endpoints_and_weights* ei2); // Second weight plane
 
 /**
  * @brief Compute the optimal weights for a decimation table.
@@ -1210,7 +1210,8 @@ float compute_error_of_weight_set(
 void merge_endpoints(
 	const endpoints* ep1,	// contains three of the color components
 	const endpoints* ep2,	// contains the remaining color component
-	int separate_component, endpoints* res);
+	int plane2_component,
+	endpoints* res);
 
 // functions dealing with color endpoints
 
@@ -1288,7 +1289,7 @@ void compute_encoding_choice_errors(
 	const imageblock* blk,
 	const partition_info* pt,
 	const error_weight_block* ewb,
-	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
+	int plane2_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
 	encoding_choice_errors* eci);
 
 void determine_optimal_set_of_endpoint_formats_to_use(
@@ -1297,7 +1298,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const endpoints* ep,
-	int separate_component,	// separate color component for 2-plane mode; -1 for single-plane mode
+	int plane2_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
 	const float* qwt_errors,

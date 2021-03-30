@@ -45,11 +45,11 @@
 void merge_endpoints(
 	const endpoints* ep1,	// contains three of the color components
 	const endpoints* ep2,	// contains the remaining color component
-	int separate_component,
+	int plane2_component,
 	endpoints* res
 ) {
 	int partition_count = ep1->partition_count;
-	vmask4 sep_mask = vint4::lane_id() == vint4(separate_component);
+	vmask4 sep_mask = vint4::lane_id() == vint4(plane2_component);
 
 	res->partition_count = partition_count;
 	promise(partition_count > 0);
@@ -154,7 +154,7 @@ void compute_encoding_choice_errors(
 	const imageblock* blk,
 	const partition_info* pt,
 	const error_weight_block* ewb,
-	int separate_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
+	int plane2_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
 	encoding_choice_errors* eci)
 {
 	int partition_count = pt->partition_count;
@@ -170,7 +170,7 @@ void compute_encoding_choice_errors(
 	compute_avgs_and_dirs_3_comp(pt, blk, ewb, 3, pms);
 
 	endpoints ep;
-	if (separate_component == -1)
+	if (plane2_component == -1)
 	{
 		endpoints_and_weights ei;
 		compute_endpoints_and_ideal_weights_1_plane(bsd, pt, blk, ewb, &ei);
@@ -179,8 +179,8 @@ void compute_encoding_choice_errors(
 	else
 	{
 		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, separate_component, &ei1, &ei2);
-		merge_endpoints(&(ei1.ep), &(ei2.ep), separate_component, &ep);
+		compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, plane2_component, &ei1, &ei2);
+		merge_endpoints(&(ei1.ep), &(ei2.ep), plane2_component, &ep);
 	}
 
 	for (int i = 0; i < partition_count; i++)

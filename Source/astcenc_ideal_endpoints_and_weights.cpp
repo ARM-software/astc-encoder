@@ -649,14 +649,14 @@ void compute_endpoints_and_ideal_weights_2_planes(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	int separate_component,
+	int plane2_component,
 	endpoints_and_weights* ei1,
 	endpoints_and_weights* ei2
 ) {
 	int uses_alpha = imageblock_uses_alpha(blk);
 
-	assert(separate_component < 4);
-	switch (separate_component)
+	assert(plane2_component < 4);
+	switch (plane2_component)
 	{
 	case 0: // separate weights for red
 		if (uses_alpha)

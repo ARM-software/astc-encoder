@@ -572,7 +572,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	const block_size_descriptor* bsd,
 	int partition_count,
 	int partition_index,
-	int separate_component,
+	int plane2_component,
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	symbolic_compressed_block& scb,
@@ -590,7 +590,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	endpoints_and_weights *ei2 = &tmpbuf->ei2;
 	endpoints_and_weights *eix1 = tmpbuf->eix1;
 	endpoints_and_weights *eix2 = tmpbuf->eix2;
-	compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, separate_component, ei1, ei2);
+	compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, plane2_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *dts = bsd->decimation_tables;
@@ -650,14 +650,14 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	}
 
 	vfloat4 err_max(1e30f);
-	vmask4 err_mask = vint4::lane_id() == vint4(separate_component);
+	vmask4 err_mask = vint4::lane_id() == vint4(plane2_component);
 
-	// Set the separate component to max error in ep1
+	// Set the plane2 component to max error in ep1
 	min_ep1 = select(min_ep1, err_max, err_mask);
 
 	float min_wt_cutoff1 = hmin_s(min_ep1);
 
-	// Set the minwt2 to the separate component min in ep2
+	// Set the minwt2 to the plane2 component min in ep2
 	float min_wt_cutoff2 = hmin_s(select(err_max, min_ep2, err_mask));
 
 	float weight_low_value1[MAX_WEIGHT_MODES];
@@ -748,10 +748,10 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
-	merge_endpoints(&(ei1->ep), &(ei2->ep), separate_component, &epm);
+	merge_endpoints(&(ei1->ep), &(ei2->ep), plane2_component, &epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pt, blk, ewb, &epm, separate_component, qwt_bitcounts, qwt_errors,
+	    bsd, pt, blk, ewb, &epm, plane2_component, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 
@@ -792,7 +792,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
-		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), separate_component, &epm);
+		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), plane2_component, &epm);
 
 		vfloat4 rgbs_colors[4];
 		vfloat4 rgbo_colors[4];
@@ -803,7 +803,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		{
 			recompute_ideal_colors_2planes(
 			    weight_quant_mode, &epm, rgbs_colors, rgbo_colors,
-			    u8_weight1_src, u8_weight2_src, separate_component, pt, dt, blk, ewb);
+			    u8_weight1_src, u8_weight2_src, plane2_component, pt, dt, blk, ewb);
 
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)
@@ -863,7 +863,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			workscb.partition_index = partition_index;
 			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
-			workscb.plane2_component = separate_component;
+			workscb.plane2_component = plane2_component;
 			workscb.error_block = 0;
 
 			if (workscb.color_quant_level < 4)
