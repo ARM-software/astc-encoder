@@ -2938,7 +2938,7 @@ TEST(vint8, clt)
 }
 
 /** @brief Test vint8 cgt. */
-TEST(vint8, cle)
+TEST(vint8, cgt)
 {
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);

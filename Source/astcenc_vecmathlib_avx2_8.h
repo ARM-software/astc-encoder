@@ -662,7 +662,7 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vfloat8 a, vfloat8 b)
 }
 
 /**
- * @brief Overload: vector by vector les than or equal.
+ * @brief Overload: vector by vector less than or equal.
  */
 ASTCENC_SIMD_INLINE vmask8 operator<=(vfloat8 a, vfloat8 b)
 {
