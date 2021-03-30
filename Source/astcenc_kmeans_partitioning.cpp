@@ -31,54 +31,54 @@
 
 #include "astcenc_internal.h"
 
-// for k++ means, we need pseudo-random numbers, however using random numbers
-// directly results in unreproducible encoding results. As such, we will
-// instead just supply a handful of numbers from random.org, and apply an
-// algorithm similar to XKCD #221. (http://xkcd.com/221/)
-
-// cluster the texels using the k++ means clustering initialization algorithm.
+/**
+ * @brief Pick some initital kmeans cluster centers.
+ */
 static void kmeans_init(
-	int texels_per_block,
+	const imageblock& blk,
+	int texel_count,
 	int partition_count,
-	const imageblock* blk,
-	vfloat4* cluster_centers
+	vfloat4 cluster_centers[4]
 ) {
-	int cluster_center_samples[4];
-	// pick a random sample as first center-point.
-	cluster_center_samples[0] = 145897 /* number from random.org */  % texels_per_block;
-	int samples_selected = 1;
+	promise(texel_count > 0);
+	promise(partition_count > 0);
 
+	int clusters_selected = 0;
 	float distances[MAX_TEXELS_PER_BLOCK];
 
-	// compute the distance to the first point.
-	int sample = cluster_center_samples[0];
-	vfloat4 center_color = blk->texel(sample);
+	// Pick a random sample as first cluster center; 145897 from random.org
+	int sample = 145897 % texel_count;
+	vfloat4 center_color = blk.texel(sample);
+	cluster_centers[clusters_selected] = center_color;
+	clusters_selected++;
 
+	// Compute the distance to the first cluster center
 	float distance_sum = 0.0f;
-	for (int i = 0; i < texels_per_block; i++)
+	for (int i = 0; i < texel_count; i++)
 	{
-		vfloat4 color =  blk->texel(i);
+		vfloat4 color = blk.texel(i);
 		vfloat4 diff = color - center_color;
 		float distance = dot_s(diff, diff);
 		distance_sum += distance;
 		distances[i] = distance;
 	}
 
-	// more numbers from random.org
-	float cluster_cutoffs[25] = {
-		0.952312f, 0.206893f, 0.835984f, 0.507813f, 0.466170f,
-		0.872331f, 0.488028f, 0.866394f, 0.363093f, 0.467905f,
-		0.812967f, 0.626220f, 0.932770f, 0.275454f, 0.832020f,
-		0.362217f, 0.318558f, 0.240113f, 0.009190f, 0.983995f,
-		0.566812f, 0.347661f, 0.731960f, 0.156391f, 0.297786f
+	// More numbers from random.org for weighted-random center selection
+	const float cluster_cutoffs[9] = {
+		0.626220f, 0.932770f, 0.275454f,
+		0.318558f, 0.240113f, 0.009190f,
+		0.347661f, 0.731960f, 0.156391f
 	};
 
-	while (1)
+	int cutoff = (clusters_selected - 1) + 3 * (partition_count - 2);
+
+	// Pick the remaining samples as needed
+	while (true)
 	{
-		// pick a point in a weighted-random fashion.
+		// Pick the next center in a weighted-random fashion.
 		float summa = 0.0f;
-		float distance_cutoff = distance_sum * cluster_cutoffs[samples_selected + 5 * partition_count];
-		for (sample = 0; sample < texels_per_block; sample++)
+		float distance_cutoff = distance_sum * cluster_cutoffs[cutoff++];
+		for (sample = 0; sample < texel_count; sample++)
 		{
 			summa += distances[sample];
 			if (summa >= distance_cutoff)
@@ -87,25 +87,21 @@ static void kmeans_init(
 			}
 		}
 
-		if (sample >= texels_per_block)
-		{
-			sample = texels_per_block - 1;
-		}
+		// Clamp to a valid range and store the selected cluster center
+		sample = astc::min(sample, texel_count - 1);
 
-		cluster_center_samples[samples_selected] = sample;
-		samples_selected++;
-		if (samples_selected >= partition_count)
+		center_color = blk.texel(sample);
+		cluster_centers[clusters_selected++] = center_color;
+		if (clusters_selected >= partition_count)
 		{
 			break;
 		}
 
-		// update the distances with the new point.
-		center_color = blk->texel(sample);
-
+		// Compute the distance to the new cluster center, keep the min dist
 		distance_sum = 0.0f;
-		for (int i = 0; i < texels_per_block; i++)
+		for (int i = 0; i < texel_count; i++)
 		{
-			vfloat4 color = blk->texel(i);
+			vfloat4 color = blk.texel(i);
 			vfloat4 diff = color - center_color;
 			float distance = dot_s(diff, diff);
 			distance = astc::min(distance, distances[i]);
@@ -113,67 +109,50 @@ static void kmeans_init(
 			distances[i] = distance;
 		}
 	}
-
-	// finally, gather up the results.
-	for (int i = 0; i < partition_count; i++)
-	{
-		int center_sample = cluster_center_samples[i];
-		cluster_centers[i] = blk->texel(center_sample);
-	}
 }
 
-// basic K-means clustering: given a set of cluster centers,
-// assign each texel to a partition
+/**
+ * @brief Assign texels to clusters, based on a set of chosen center points.
+ */
 static void kmeans_assign(
-	int texels_per_block,
+	const imageblock& blk,
+	int texel_count,
 	int partition_count,
-	const imageblock* blk,
-	const vfloat4* cluster_centers,
-	int* partition_of_texel
+	const vfloat4 cluster_centers[4],
+	int partition_of_texel[MAX_TEXELS_PER_BLOCK]
 ) {
-	float distances[MAX_TEXELS_PER_BLOCK];
+	promise(texel_count > 0);
+	promise(partition_count > 0);
 
-	int partition_texel_count[4];
+	int partition_texel_count[4] { 0 };
 
-	partition_texel_count[0] = texels_per_block;
-	for (int i = 1; i < partition_count; i++)
+	// Find the best partition for every texel
+	for (int i = 0; i < texel_count; i++)
 	{
-		partition_texel_count[i] = 0;
-	}
+		float best_distance = std::numeric_limits<float>::max();
+		int best_partition = -1;
 
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		vfloat4 color = blk->texel(i);
-		vfloat4 diff = color - cluster_centers[0];
-		float distance = dot_s(diff, diff);
-		distances[i] = distance;
-		partition_of_texel[i] = 0;
-	}
-
-	for (int j = 1; j < partition_count; j++)
-	{
-		vfloat4 center_color = cluster_centers[j];
-
-		for (int i = 0; i < texels_per_block; i++)
+		vfloat4 color = blk.texel(i);
+		for (int j = 0; j < partition_count; j++)
 		{
-			vfloat4 color = blk->texel(i);
-			vfloat4 diff = color - center_color;
+			vfloat4 diff = color - cluster_centers[j];
 			float distance = dot_s(diff, diff);
-			if (distance < distances[i])
+			if (distance < best_distance)
 			{
-				distances[i] = distance;
-				partition_texel_count[partition_of_texel[i]]--;
-				partition_texel_count[j]++;
-				partition_of_texel[i] = j;
+				best_distance = distance;
+				best_partition = j;
 			}
 		}
+
+		partition_of_texel[i] = best_partition;
+		partition_texel_count[best_partition]++;
 	}
 
-	// it is possible to get a situation where one of the partitions ends up
-	// without any texels. In this case, we assign texel N to partition N;
-	// this is silly, but ensures that every partition retains at least one texel.
-	// Reassigning a texel in this manner may cause another partition to go empty,
-	// so if we actually did a reassignment, we run the whole loop over again.
+	// It is possible to get a situation where a partition ends up without any
+	// texels. In this case, we assign texel N to partition N. This is silly,
+	// but ensures that every partition retains at least one texel. Reassigning
+	// a texel in this manner may cause another partition to go empty, so if we
+	// actually did a reassignment, we run the whole loop over again.
 	int problem_case;
 	do
 	{
@@ -188,44 +167,50 @@ static void kmeans_assign(
 				problem_case = 1;
 			}
 		}
-	}
-	while (problem_case != 0);
+	} while (problem_case != 0);
 }
 
-// basic k-means clustering: given a set of cluster assignments
-// for the texels, find the center position of each cluster.
+/**
+ * @brief Compute new cluster centers based on their center of gravity.
+ */
 static void kmeans_update(
-	int texels_per_block,
+	const imageblock& blk,
+	int texel_count,
 	int partition_count,
-	const imageblock* blk,
-	const int* partition_of_texel,
-	vfloat4* cluster_centers
+	vfloat4 cluster_centers[4],
+	const int partition_of_texel[MAX_TEXELS_PER_BLOCK]
 ) {
-	vfloat4 color_sum[4];
-	int weight_sum[4];
+	promise(texel_count > 0);
+	promise(partition_count > 0);
 
-	for (int i = 0; i < partition_count; i++)
+	vfloat4 color_sum[4] {
+		vfloat4::zero(),
+		vfloat4::zero(),
+		vfloat4::zero(),
+		vfloat4::zero()
+	};
+
+	int partition_texel_count[4] { 0 };
+
+	// Find the center-of-gravity in each cluster
+	for (int i = 0; i < texel_count; i++)
 	{
-		color_sum[i] = vfloat4::zero();
-		weight_sum[i] = 0;
+		int partition = partition_of_texel[i];
+		color_sum[partition] += blk.texel(i);;
+		partition_texel_count[partition]++;
 	}
 
-	// first, find the center-of-gravity in each cluster
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		vfloat4 color = blk->texel(i);
-		int part = partition_of_texel[i];
-		color_sum[part] = color_sum[part] + color;
-		weight_sum[part]++;
-	}
-
+	// Set the center of gravity to be the new cluster center
 	for (int i = 0; i < partition_count; i++)
 	{
-		cluster_centers[i] = color_sum[i] * (1.0f / static_cast<float>(weight_sum[i]));
+		float scale = 1.0f / static_cast<float>(partition_texel_count[i]);
+		cluster_centers[i] = color_sum[i] * scale;
 	}
 }
 
-// compute the bit-mismatch for a partitioning in 2-partition mode
+/**
+ * @brief Compute bit-mismatch for partitioning in 2-partition mode.
+ */
 static inline int partition_mismatch2(
 	uint64_t a0,
 	uint64_t a1,
@@ -237,7 +222,9 @@ static inline int partition_mismatch2(
 	return astc::min(v1, v2);
 }
 
-// compute the bit-mismatch for a partitioning in 3-partition mode
+/**
+ * @brief Compute bit-mismatch for partitioning in 3-partition mode.
+ */
 static inline int partition_mismatch3(
 	uint64_t a0,
 	uint64_t a1,
@@ -273,7 +260,9 @@ static inline int partition_mismatch3(
 	return astc::min(v0, v1, v2);
 }
 
-// compute the bit-mismatch for a partitioning in 4-partition mode
+/**
+ * @brief Compute bit-mismatch for partitioning in 4-partition mode.
+ */
 static inline int partition_mismatch4(
 	uint64_t a0,
 	uint64_t a1,
@@ -319,6 +308,9 @@ static inline int partition_mismatch4(
 	return astc::min(v0, v1, v2, v3);
 }
 
+/**
+ * @brief Count the partition table mismatches vs the data clustering.
+ */
 static void count_partition_mismatch_bits(
 	const block_size_descriptor* bsd,
 	int partition_count,
@@ -362,8 +354,9 @@ static void count_partition_mismatch_bits(
 			pt++;
 		}
 	}
-	else if (partition_count == 4)
+	else // if (partition_count == 4)
 	{
+		assert(partition_count == 4);
 		uint64_t bm0 = bitmaps[0];
 		uint64_t bm1 = bitmaps[1];
 		uint64_t bm2 = bitmaps[2];
@@ -381,7 +374,6 @@ static void count_partition_mismatch_bits(
 			pt++;
 		}
 	}
-
 }
 
 /**
@@ -432,14 +424,14 @@ void kmeans_compute_partition_ordering(
 	{
 		if (i == 0)
 		{
-			kmeans_init(bsd->texel_count, partition_count, blk, cluster_centers);
+			kmeans_init(*blk, bsd->texel_count, partition_count, cluster_centers);
 		}
 		else
 		{
-			kmeans_update(bsd->texel_count, partition_count, blk, partition_of_texel, cluster_centers);
+			kmeans_update(*blk, bsd->texel_count, partition_count, cluster_centers, partition_of_texel);
 		}
 
-		kmeans_assign(bsd->texel_count, partition_count, blk, cluster_centers, partition_of_texel);
+		kmeans_assign(*blk, bsd->texel_count, partition_count, cluster_centers, partition_of_texel);
 	}
 
 	// Construct the block bitmaps of texel assignments to each partition
