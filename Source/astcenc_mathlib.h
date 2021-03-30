@@ -451,6 +451,12 @@ vtype2<T> operator+(vtype2<T> p, vtype2<T> q) {
 	return vtype2<T> { p.r + q.r, p.g + q.g };
 }
 
+template <typename T>
+vtype2<T>& operator+=(vtype2<T>& p, const vtype2<T>& q) {
+	p = p + q;
+	return p;
+}
+
 // Vector by vector subtraction
 template <typename T>
 vtype2<T> operator-(vtype2<T> p, vtype2<T> q) {

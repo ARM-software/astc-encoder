@@ -433,6 +433,27 @@ TEST(vfloat4, vadd)
 	EXPECT_EQ(a.lane<3>(), 4.0f + 0.4f);
 }
 
+/** @brief Test vfloat4 self-add. */
+TEST(vfloat4, vselfadd1)
+{
+	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat4 b(0.1f, 0.2f, 0.3f, 0.4f);
+
+	// Test increment by another variable
+	a += b;
+	EXPECT_EQ(a.lane<0>(), 1.0f + 0.1f);
+	EXPECT_EQ(a.lane<1>(), 2.0f + 0.2f);
+	EXPECT_EQ(a.lane<2>(), 3.0f + 0.3f);
+	EXPECT_EQ(a.lane<3>(), 4.0f + 0.4f);
+
+	// Test increment by an expression
+	a += b + b;
+	EXPECT_NEAR(a.lane<0>(), 1.0f + 0.3f, 0.001f);
+	EXPECT_NEAR(a.lane<1>(), 2.0f + 0.6f, 0.001f);
+	EXPECT_NEAR(a.lane<2>(), 3.0f + 0.9f, 0.001f);
+	EXPECT_NEAR(a.lane<3>(), 4.0f + 1.2f, 0.001f);
+}
+
 /** @brief Test vfloat4 sub. */
 TEST(vfloat4, vsub)
 {
