@@ -752,30 +752,8 @@ float compute_error_of_weight_set(
 	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		// Load the bilinear filter texel weight indexes
-		vint weight_idx0 = vint(&(dt->texel_weights_4t[0][i]));
-		vint weight_idx1 = vint(&(dt->texel_weights_4t[1][i]));
-		vint weight_idx2 = vint(&(dt->texel_weights_4t[2][i]));
-		vint weight_idx3 = vint(&(dt->texel_weights_4t[3][i]));
-
-		// Load the bilinear filter texel weights
-		vfloat weight_val0 = gatherf(weights, weight_idx0);
-		vfloat weight_val1 = gatherf(weights, weight_idx1);
-		vfloat weight_val2 = gatherf(weights, weight_idx2);
-		vfloat weight_val3 = gatherf(weights, weight_idx3);
-
-		// Load the weight contributions for each texel
-		// TODO: Should we rename this dt->texel_weights_float field?
-		vfloat tex_weight_float0 = loada(&(dt->texel_weights_float_4t[0][i]));
-		vfloat tex_weight_float1 = loada(&(dt->texel_weights_float_4t[1][i]));
-		vfloat tex_weight_float2 = loada(&(dt->texel_weights_float_4t[2][i]));
-		vfloat tex_weight_float3 = loada(&(dt->texel_weights_float_4t[3][i]));
-
-		// Compute the bilinear interpolation
-		vfloat current_values = (weight_val0 * tex_weight_float0 +
-		                         weight_val1 * tex_weight_float1) +
-		                        (weight_val2 * tex_weight_float2 +
-		                         weight_val3 * tex_weight_float3);
+		// Compute the bilinear interpolation of the decimated weight grid
+		vfloat current_values = bilinear_infill_vla(*dt, weights, i);
 
 		// Compute the error between the computed value and the ideal weight
 		vfloat actual_values = loada(&(eai->weights[i]));
@@ -793,13 +771,7 @@ float compute_error_of_weight_set(
 	alignas(16) float errorsum_tmp[4] { 0 };
 	for (/* */; i < texel_count; i++)
 	{
-		// This isn't the ideal access pattern, but the cache lines are probably
-		// already in the cache due to the vector loop above, so go with it ...
-		float current_value = (weights[dt->texel_weights_4t[0][i]] * dt->texel_weights_float_4t[0][i] +
-		                       weights[dt->texel_weights_4t[1][i]] * dt->texel_weights_float_4t[1][i]) +
-		                      (weights[dt->texel_weights_4t[2][i]] * dt->texel_weights_float_4t[2][i] +
-		                       weights[dt->texel_weights_4t[3][i]] * dt->texel_weights_float_4t[3][i]);
-
+		float current_value = bilinear_infill(*dt, weights, i);
 		float valuedif = current_value - eai->weights[i];
 		float error = valuedif * valuedif * eai->weight_error_scale[i];
 
@@ -949,37 +921,13 @@ void compute_ideal_weights_for_decimation_table(
 	int clipped_texel_count = round_up_to_simd_multiple_vla(texel_count);
 	for (int i = 0; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint texel_weights_0(dt.texel_weights_4t[0] + i);
-		vint texel_weights_1(dt.texel_weights_4t[1] + i);
-		vint texel_weights_2(dt.texel_weights_4t[2] + i);
-		vint texel_weights_3(dt.texel_weights_4t[3] + i);
-
-		vfloat weight_set_0 = gatherf(weight_set, texel_weights_0);
-		vfloat weight_set_1 = gatherf(weight_set, texel_weights_1);
-		vfloat weight_set_2 = gatherf(weight_set, texel_weights_2);
-		vfloat weight_set_3 = gatherf(weight_set, texel_weights_3);
-
-		vfloat texel_weights_float_0 = loada(dt.texel_weights_float_4t[0] + i);
-		vfloat texel_weights_float_1 = loada(dt.texel_weights_float_4t[1] + i);
-		vfloat texel_weights_float_2 = loada(dt.texel_weights_float_4t[2] + i);
-		vfloat texel_weights_float_3 = loada(dt.texel_weights_float_4t[3] + i);
-
-		vfloat weight = (weight_set_0 * texel_weights_float_0
-		                + weight_set_1 * texel_weights_float_1)
-		               + (weight_set_2 * texel_weights_float_2
-		                + weight_set_3 * texel_weights_float_3);
-
+		vfloat weight = bilinear_infill_vla(dt, weight_set, i);
 		storea(weight, infilled_weights + i);
 	}
 #else
 	for (int i = 0; i < texel_count; i++)
 	{
-		const uint8_t *texel_weights = dt.texel_weights_t4[i];
-		const float *texel_weights_float = dt.texel_weights_float_t4[i];
-		infilled_weights[i] = (weight_set[texel_weights[0]] * texel_weights_float[0]
-		                      + weight_set[texel_weights[1]] * texel_weights_float[1])
-		                     + (weight_set[texel_weights[2]] * texel_weights_float[2]
-		                      + weight_set[texel_weights[3]] * texel_weights_float[3]);
+		infilled_weights[i] = bilinear_infill(dt, weight_set, i);
 	}
 #endif
 
@@ -1322,12 +1270,7 @@ void recompute_ideal_colors_2planes(
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
 
-			const uint8_t *texel_weights = dt->texel_weights_t4[tix];
-			const float *texel_weights_float = dt->texel_weights_float_t4[tix];
-			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
-			            + weight_set[texel_weights[1]] * texel_weights_float[1])
-			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
-			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
+			float idx0 = bilinear_infill(*dt, weight_set, tix);
 
 			float om_idx0 = 1.0f - idx0;
 			wmin1 = astc::min(idx0, wmin1);
@@ -1357,10 +1300,7 @@ void recompute_ideal_colors_2planes(
 
 			if (plane2_weight_set8)
 			{
-				idx1 = (plane2_weight_set[texel_weights[0]] * texel_weights_float[0]
-				      + plane2_weight_set[texel_weights[1]] * texel_weights_float[1])
-				     + (plane2_weight_set[texel_weights[2]] * texel_weights_float[2]
-				      + plane2_weight_set[texel_weights[3]] * texel_weights_float[3]);
+				idx1 = bilinear_infill(*dt, plane2_weight_set, tix);
 
 				om_idx1 = 1.0f - idx1;
 				wmin2 = astc::min(idx1, wmin2);
@@ -1643,13 +1583,7 @@ void recompute_ideal_colors_1plane(
 
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
-
-			const uint8_t *texel_weights = dt->texel_weights_t4[tix];
-			const float *texel_weights_float = dt->texel_weights_float_t4[tix];
-			float idx0 = (weight_set[texel_weights[0]] * texel_weights_float[0]
-			            + weight_set[texel_weights[1]] * texel_weights_float[1])
-			           + (weight_set[texel_weights[2]] * texel_weights_float[2]
-			            + weight_set[texel_weights[3]] * texel_weights_float[3]);
+			float idx0 = bilinear_infill(*dt, weight_set, tix);
 
 			float om_idx0 = 1.0f - idx0;
 			wmin1 = astc::min(idx0, wmin1);

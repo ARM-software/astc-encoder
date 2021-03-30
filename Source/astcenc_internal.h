@@ -1153,6 +1153,55 @@ void compute_quantized_weights_for_decimation_table(
 	uint8_t* quantized_weight_set,
 	int quant_level);
 
+/*********************************
+  Utilties for bilinear filtering
+*********************************/
+
+/**
+ * @brief Compute the infilled weight for a texel index in a decimated grid.
+ */
+static inline float bilinear_infill(
+	const decimation_table& dt,
+	const float* weights,
+	int index
+) {
+	return (weights[dt.texel_weights_t4[index][0]] * dt.texel_weights_float_t4[index][0] +
+	        weights[dt.texel_weights_t4[index][1]] * dt.texel_weights_float_t4[index][1]) +
+	       (weights[dt.texel_weights_t4[index][2]] * dt.texel_weights_float_t4[index][2] +
+	        weights[dt.texel_weights_t4[index][3]] * dt.texel_weights_float_t4[index][3]);
+}
+
+/**
+ * @brief Compute the infilled weight for N texel indices in a decimated grid.
+ */
+static inline vfloat bilinear_infill_vla(
+	const decimation_table& dt,
+	const float* weights,
+	int index
+) {
+	// Load the bilinear filter texel weight indexes in the decimated grid
+	vint weight_idx0 = vint(dt.texel_weights_4t[0] + index);
+	vint weight_idx1 = vint(dt.texel_weights_4t[1] + index);
+	vint weight_idx2 = vint(dt.texel_weights_4t[2] + index);
+	vint weight_idx3 = vint(dt.texel_weights_4t[3] + index);
+
+	// Load the bilinear filter weights from the decimated grid
+	vfloat weight_val0 = gatherf(weights, weight_idx0);
+	vfloat weight_val1 = gatherf(weights, weight_idx1);
+	vfloat weight_val2 = gatherf(weights, weight_idx2);
+	vfloat weight_val3 = gatherf(weights, weight_idx3);
+
+	// Load the weight contribution factors for each decimated weight
+	vfloat tex_weight_float0 = loada(dt.texel_weights_float_4t[0] + index);
+	vfloat tex_weight_float1 = loada(dt.texel_weights_float_4t[1] + index);
+	vfloat tex_weight_float2 = loada(dt.texel_weights_float_4t[2] + index);
+	vfloat tex_weight_float3 = loada(dt.texel_weights_float_4t[3] + index);
+
+	// Compute the bilinear interpolation to generate the per-texel weight
+	return (weight_val0 * tex_weight_float0 + weight_val1 * tex_weight_float1) +
+	       (weight_val2 * tex_weight_float2 + weight_val3 * tex_weight_float3);
+}
+
 float compute_error_of_weight_set(
 	const endpoints_and_weights* eai,
 	const decimation_table* dt,
