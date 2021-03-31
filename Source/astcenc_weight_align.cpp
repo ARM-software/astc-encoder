@@ -118,7 +118,6 @@ static void compute_angular_offsets(
 
 	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
-	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
 
 	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
 	{
@@ -133,10 +132,8 @@ static void compute_angular_offsets(
 			anglesum_y += loada(sin_table[isample] + i) * sample_weightv;
 		}
 
-		vfloat ssize = 1.0f / rcp_stepsize;
-		rcp_stepsize += vfloat(ASTCENC_SIMD_WIDTH);
 		vfloat angle = atan2(anglesum_y, anglesum_x);
-		vfloat ofs = angle * ssize * mult;
+		vfloat ofs = angle * mult;
 		storea(ofs, offsets + i);
 	}
 }
@@ -146,16 +143,16 @@ static void compute_angular_offsets(
 // also, compute the resulting error.
 static void compute_lowest_and_highest_weight(
 	int samplecount,
-	const float *samples,
-	const float *sample_weights,
+	const float* samples,
+	const float* sample_weights,
 	int max_angular_steps,
 	int max_quantization_steps,
-	const float *offsets,
-	int32_t * lowest_weight,
-	int32_t * weight_span,
-	float *error,
-	float *cut_low_weight_error,
-	float *cut_high_weight_error
+	const float* offsets,
+	int* lowest_weight,
+	int* weight_span,
+	float* error,
+	float* cut_low_weight_error,
+	float* cut_high_weight_error
 ) {
 	promise(samplecount > 0);
 	promise(max_angular_steps > 0);
@@ -171,16 +168,16 @@ static void compute_lowest_and_highest_weight(
 		vfloat cut_low_weight_err = vfloat::zero();
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(&offsets[sp]);
-		vfloat scaled_offset = rcp_stepsize * offset;
+
 		for (int j = 0; j < samplecount; ++j)
 		{
 			vfloat wt = load1(&sample_weights[j]);
-			vfloat sval = load1(&samples[j]) * rcp_stepsize - scaled_offset;
+			vfloat sval = load1(&samples[j]) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
 			vint idxv = float_to_int(svalrte);
 			vfloat dif = sval - svalrte;
 			vfloat dwt = dif * wt;
-			errval = errval + dwt * dif;
+			errval += dwt * dif;
 
 			// Reset tracker on min hit
 			vmask mask = idxv < minidx;
@@ -331,8 +328,8 @@ else
 		float stepsize = 1.0f / (1.0f + (float)bsi);
 		int lwi = lowest_weight[bsi] + cut_low_weight[q];
 		int hwi = lwi + q - 1;
-		float offset = angular_offsets[bsi];
 
+		float offset = angular_offsets[bsi] * stepsize;
 		low_value[i] = offset + static_cast<float>(lwi) * stepsize;
 		high_value[i] = offset + static_cast<float>(hwi) * stepsize;
 	}
