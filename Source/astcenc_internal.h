@@ -964,10 +964,10 @@ void find_best_partitionings(
 
 // use k-means clustering to compute a partition ordering for a block.
 void kmeans_compute_partition_ordering(
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
 	int partition_count,
-	const imageblock* blk,
-	int *ordering);
+	int partition_ordering[PARTITION_COUNT]);
 
 // *********************************************************
 // functions and data pertaining to images and imageblocks

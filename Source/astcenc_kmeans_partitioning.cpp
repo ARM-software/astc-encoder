@@ -312,12 +312,12 @@ static inline int partition_mismatch4(
  * @brief Count the partition table mismatches vs the data clustering.
  */
 static void count_partition_mismatch_bits(
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
 	int partition_count,
 	const uint64_t bitmaps[4],
 	int bitcounts[PARTITION_COUNT]
 ) {
-	const partition_info *pt = get_partition_table(bsd, partition_count);
+	const partition_info *pt = get_partition_table(&bsd, partition_count);
 
 	if (partition_count == 2)
 	{
@@ -325,14 +325,13 @@ static void count_partition_mismatch_bits(
 		uint64_t bm1 = bitmaps[1];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
+			int bitcount = 255;
 			if (pt->partition_count == 2)
 			{
-				bitcounts[i] = partition_mismatch2(bm0, bm1, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1]);
+				bitcount = partition_mismatch2(bm0, bm1, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1]);
 			}
-			else
-			{
-				bitcounts[i] = 255;
-			}
+
+			bitcounts[i] = bitcount;
 			pt++;
 		}
 	}
@@ -343,14 +342,13 @@ static void count_partition_mismatch_bits(
 		uint64_t bm2 = bitmaps[2];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
+			int bitcount = 255;
 			if (pt->partition_count == 3)
 			{
-				bitcounts[i] = partition_mismatch3(bm0, bm1, bm2, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2]);
+				bitcount = partition_mismatch3(bm0, bm1, bm2, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2]);
 			}
-			else
-			{
-				bitcounts[i] = 255;
-			}
+
+			bitcounts[i] = bitcount;
 			pt++;
 		}
 	}
@@ -363,14 +361,13 @@ static void count_partition_mismatch_bits(
 		uint64_t bm3 = bitmaps[3];
 		for (int i = 0; i < PARTITION_COUNT; i++)
 		{
+			int bitcount = 255;
 			if (pt->partition_count == 4)
 			{
-				bitcounts[i] = partition_mismatch4(bm0, bm1, bm2, bm3, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2], pt->coverage_bitmaps[3]);
+				bitcount = partition_mismatch4(bm0, bm1, bm2, bm3, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2], pt->coverage_bitmaps[3]);
 			}
-			else
-			{
-				bitcounts[i] = 255;
-			}
+
+			bitcounts[i] = bitcount;
 			pt++;
 		}
 	}
@@ -411,36 +408,37 @@ static void get_partition_ordering_by_mismatch_bits(
 }
 
 void kmeans_compute_partition_ordering(
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
 	int partition_count,
-	const imageblock* blk,
-	int* ordering
+	int partition_ordering[PARTITION_COUNT]
 ) {
 	vfloat4 cluster_centers[4];
-	int partition_of_texel[MAX_TEXELS_PER_BLOCK];
+	int texel_partitions[MAX_TEXELS_PER_BLOCK];
 
 	// Use three passes of k-means clustering to partition the block data
 	for (int i = 0; i < 3; i++)
 	{
 		if (i == 0)
 		{
-			kmeans_init(*blk, bsd->texel_count, partition_count, cluster_centers);
+			kmeans_init(blk, bsd.texel_count, partition_count, cluster_centers);
 		}
 		else
 		{
-			kmeans_update(*blk, bsd->texel_count, partition_count, cluster_centers, partition_of_texel);
+			kmeans_update(blk, bsd.texel_count, partition_count, cluster_centers, texel_partitions);
 		}
 
-		kmeans_assign(*blk, bsd->texel_count, partition_count, cluster_centers, partition_of_texel);
+		kmeans_assign(blk, bsd.texel_count, partition_count, cluster_centers, texel_partitions);
 	}
 
 	// Construct the block bitmaps of texel assignments to each partition
 	uint64_t bitmaps[4] { 0 };
-	int texels_to_process = bsd->kmeans_texel_count;
+	int texels_to_process = bsd.kmeans_texel_count;
+	promise(texels_to_process > 0);
 	for (int i = 0; i < texels_to_process; i++)
 	{
-		int idx = bsd->kmeans_texels[i];
-		bitmaps[partition_of_texel[idx]] |= 1ULL << i;
+		int idx = bsd.kmeans_texels[i];
+		bitmaps[texel_partitions[idx]] |= 1ULL << i;
 	}
 
 	// Count the mismatch between the block and the format's partition tables
@@ -448,7 +446,7 @@ void kmeans_compute_partition_ordering(
 	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
 	// Sort the partitions based on the number of mismatched bits
-	get_partition_ordering_by_mismatch_bits(mismatch_counts, ordering);
+	get_partition_ordering_by_mismatch_bits(mismatch_counts, partition_ordering);
 }
 
 #endif
