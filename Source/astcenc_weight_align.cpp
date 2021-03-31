@@ -97,54 +97,47 @@ void prepare_angular_tables()
 // angular sums, compute alignment factor and offset.
 
 static void compute_angular_offsets(
-	int samplecount,
+	int sample_count,
 	const float* samples,
 	const float* sample_weights,
 	int max_angular_steps,
 	float* offsets
 ) {
-	promise(samplecount > 0);
+	promise(sample_count > 0);
 	promise(max_angular_steps > 0);
 
-	alignas(ASTCENC_VECALIGN) float anglesum_x[ANGULAR_STEPS] { 0 };
-	alignas(ASTCENC_VECALIGN) float anglesum_y[ANGULAR_STEPS] { 0 };
+	alignas(ASTCENC_VECALIGN) int isamplev[MAX_WEIGHTS_PER_BLOCK] { 0 };
 
-	// compute the angle-sums.
-	for (int i = 0; i < samplecount; i++)
+	// Precompute isample; arrays are always allocated 64 elements long
+	for (int i = 0; i < sample_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		float sample = samples[i];
-		float sample_weight = sample_weights[i];
-		if32 p;
-		p.f = (sample * (SINCOS_STEPS - 1.0f)) + 12582912.0f;
-		unsigned int isample = p.u & (SINCOS_STEPS - 1);
-
-		const float *sinptr = sin_table[isample];
-		const float *cosptr = cos_table[isample];
-
-		vfloat sample_weightv(sample_weight);
- 		// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
-		for (int j = 0; j < max_angular_steps; j += ASTCENC_SIMD_WIDTH)
-		{
-			vfloat cp = loada(&cosptr[j]);
-			vfloat sp = loada(&sinptr[j]);
-			vfloat ax = loada(&anglesum_x[j]) + cp * sample_weightv;
-			vfloat ay = loada(&anglesum_y[j]) + sp * sample_weightv;
-			storea(ax, &anglesum_x[j]);
-			storea(ay, &anglesum_y[j]);
-		}
+		vfloat sample = loada(samples + i) * (SINCOS_STEPS - 1.0f) + vfloat(12582912.0f);
+		vint isample = float_as_int(sample) & vint((SINCOS_STEPS - 1));
+		storea(isample, isamplev + i);
 	}
 
-	// post-process the angle-sums
+	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
 	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
- 	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
+
 	for (int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
 	{
+		vfloat anglesum_x = vfloat::zero();
+		vfloat anglesum_y = vfloat::zero();
+
+		for (int j = 0; j < sample_count; j++)
+		{
+			int isample = isamplev[j];
+			vfloat sample_weightv(sample_weights[j]);
+			anglesum_x += loada(cos_table[isample] + i) * sample_weightv;
+			anglesum_y += loada(sin_table[isample] + i) * sample_weightv;
+		}
+
 		vfloat ssize = 1.0f / rcp_stepsize;
-		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
-		vfloat angle = atan2(loada(&anglesum_y[i]), loada(&anglesum_x[i]));
+		rcp_stepsize += vfloat(ASTCENC_SIMD_WIDTH);
+		vfloat angle = atan2(anglesum_y, anglesum_x);
 		vfloat ofs = angle * ssize * mult;
-		storea(ofs, &offsets[i]);
+		storea(ofs, offsets + i);
 	}
 }
 

@@ -572,6 +572,15 @@ ASTCENC_SIMD_INLINE vfloat8 operator+(vfloat8 a, vfloat8 b)
 }
 
 /**
+ * @brief Overload: vector by vector incremental addition.
+ */
+ASTCENC_SIMD_INLINE vfloat8& operator+=(vfloat8& a, const vfloat8& b)
+{
+	a = a + b;
+	return a;
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
