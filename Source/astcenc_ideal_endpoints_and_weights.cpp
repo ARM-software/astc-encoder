@@ -1115,11 +1115,8 @@ void compute_quantized_weights_for_decimation_table(
 static inline vfloat4 compute_rgbovec(
 	vfloat4 rgba_weight_sum,
 	vfloat4 weight_weight_sum,
-	float red_sum,
-	float green_sum,
-	float blue_sum,
-	float psum,
-	float qsum
+	vfloat4 rgbq_sum,
+	float psum
 ) {
 	// Compute the rgb+offset for HDR endpoint mode #7. Since the matrix needed
 	// has a regular structure, we can simplify the inverse calculation. This
@@ -1164,7 +1161,7 @@ static inline vfloat4 compute_rgbovec(
 	vfloat4 mat1(ZQP, SZmRR * X - Z * PP, RQX, mZQX);
 	vfloat4 mat2(RYP, RQX, (S * Y - QQ) * X - Y * PP, mRYX);
 	vfloat4 mat3(mZYP, mZQX, mRYX, Z * YX);
-	vfloat4 vect = vfloat4(red_sum, green_sum, blue_sum, qsum) * rdet;
+	vfloat4 vect = rgbq_sum * rdet;
 
 	#ifdef DEBUG_CAPTURE_NAN
 	    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
@@ -1310,10 +1307,8 @@ void recompute_ideal_colors_2planes(
 				right2_sum  += right2;
 			}
 
-			vfloat4 color_idx((plane2_component == 0) ? idx1 : idx0,
-			                  (plane2_component == 1) ? idx1 : idx0,
-			                  (plane2_component == 2) ? idx1 : idx0,
-			                  (plane2_component == 3) ? idx1 : idx0);
+			vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
+			vfloat4 color_idx = select(vfloat4(idx0), vfloat4(idx1), p2_mask);
 
 			vfloat4 cwprod = color_weight * rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
@@ -1328,17 +1323,15 @@ void recompute_ideal_colors_2planes(
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
 		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
-		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
-		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
-		float qsum = hadd_rgb_s(color_vec_y);
+		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
+		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
 		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
-		                                  red_sum, green_sum, blue_sum, psum, qsum);
+		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 
 		// We will occasionally get a failure due to the use of a singular
@@ -1609,17 +1602,15 @@ void recompute_ideal_colors_1plane(
 
 		// calculations specific to mode #7, the HDR RGB-scale mode.
 		// FIXME: Can we skip this for LDR textures?
-		float red_sum   = color_vec_x.lane<0>() + color_vec_y.lane<0>();
-		float green_sum = color_vec_x.lane<1>() + color_vec_y.lane<1>();
-		float blue_sum  = color_vec_x.lane<2>() + color_vec_y.lane<2>();
-		float qsum = hadd_rgb_s(color_vec_y);
+		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
+		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
 		#ifdef DEBUG_CAPTURE_NAN
 		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
 		#endif
 
 		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
-		                                  red_sum, green_sum, blue_sum, psum, qsum);
+		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 
 		// We will occasionally get a failure due to the use of a singular
