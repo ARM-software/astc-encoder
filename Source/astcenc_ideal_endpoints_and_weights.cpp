@@ -1224,8 +1224,8 @@ void recompute_ideal_colors_2planes(
 			vfloat4 rgba = blk->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			rgba_sum = rgba_sum + (rgba * error_weight);
-			rgba_weight_sum = rgba_weight_sum + error_weight;
+			rgba_sum += rgba * error_weight;
+			rgba_weight_sum += error_weight;
 		}
 
 		vfloat4 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
@@ -1245,8 +1245,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 left2_sum   = vfloat4::zero();
 		vfloat4 middle2_sum = vfloat4::zero();
 		vfloat4 right2_sum  = vfloat4::zero();
-
-		vfloat4 lmrs_sum = vfloat4(0.0f);
+		vfloat4 lmrs_sum    = vfloat4::zero();
 
 		vfloat4 color_vec_x = vfloat4::zero();
 		vfloat4 color_vec_y = vfloat4::zero();
@@ -1286,11 +1285,10 @@ void recompute_ideal_colors_2planes(
 			                       idx0 * idx0,
 			                       0.0f) * ls_weight;
 
-			left_sum   = left_sum + left;
-			middle_sum = middle_sum + middle;
-			right_sum  = right_sum + right;
-
-			lmrs_sum = lmrs_sum + lmrs;
+			left_sum   += left;
+			middle_sum += middle;
+			right_sum  += right;
+			lmrs_sum   += lmrs;
 
 			float idx1 = 0.0f;
 			float om_idx1 = 0.0f;
@@ -1307,9 +1305,9 @@ void recompute_ideal_colors_2planes(
 				vfloat4 middle2 = color_weight * (om_idx1 * idx1);
 				vfloat4 right2  = color_weight * (idx1 * idx1);
 
-				left2_sum   = left2_sum   + left2;
-				middle2_sum = middle2_sum + middle2;
-				right2_sum  = right2_sum  + right2;
+				left2_sum   += left2;
+				middle2_sum += middle2;
+				right2_sum  += right2;
 			}
 
 			vfloat4 color_idx((plane2_component == 0) ? idx1 : idx0,
@@ -1320,13 +1318,11 @@ void recompute_ideal_colors_2planes(
 			vfloat4 cwprod = color_weight * rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
-			color_vec_y = color_vec_y + cwiprod;
-			color_vec_x = color_vec_x + (cwprod - cwiprod);
+			color_vec_y += cwiprod;
+			color_vec_x += cwprod - cwiprod;
 
 			scale_vec += float2(om_idx0, idx0) * (ls_weight * scale);
-
 			weight_weight_sum += (color_weight * color_idx);
-
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
@@ -1486,6 +1482,7 @@ void recompute_ideal_colors_2planes(
 		{
 			vfloat4 v0 = ep->endpt0[i];
 			vfloat4 v1 = ep->endpt1[i];
+
 			float avgdif = hadd_rgb_s(v1 - v0) * (1.0f / 3.0f);
 			avgdif = astc::max(avgdif, 0.0f);
 
@@ -1539,8 +1536,8 @@ void recompute_ideal_colors_1plane(
 			vfloat4 rgba = blk->texel(tix);
 			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
 
-			rgba_sum = rgba_sum + (rgba * error_weight);
-			rgba_weight_sum = rgba_weight_sum + error_weight;
+			rgba_sum += rgba * error_weight;
+			rgba_weight_sum += error_weight;
 		}
 
 		vfloat4 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
@@ -1554,8 +1551,7 @@ void recompute_ideal_colors_1plane(
 		vfloat4 left_sum    = vfloat4::zero();
 		vfloat4 middle_sum  = vfloat4::zero();
 		vfloat4 right_sum   = vfloat4::zero();
-
-		vfloat4 lmrs_sum = vfloat4(0.0f);
+		vfloat4 lmrs_sum    = vfloat4::zero();
 
 		vfloat4 color_vec_x = vfloat4::zero();
 		vfloat4 color_vec_y = vfloat4::zero();
@@ -1594,23 +1590,20 @@ void recompute_ideal_colors_1plane(
 			                       idx0 * idx0,
 			                       0.0f) * ls_weight;
 
-			left_sum   = left_sum + left;
-			middle_sum = middle_sum + middle;
-			right_sum  = right_sum + right;
-
-			lmrs_sum = lmrs_sum + lmrs;
+			left_sum   += left;
+			middle_sum += middle;
+			right_sum  += right;
+			lmrs_sum   += lmrs;
 
 			vfloat4 color_idx(idx0);
 			vfloat4 cwprod = color_weight * rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
-			color_vec_y = color_vec_y + cwiprod;
-			color_vec_x = color_vec_x + (cwprod - cwiprod);
+			color_vec_y += cwiprod;
+			color_vec_x += cwprod - cwiprod;
 
 			scale_vec += (float2(om_idx0, idx0) * (ls_weight * scale));
-
 			weight_weight_sum += color_weight * color_idx;
-
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
@@ -1719,7 +1712,8 @@ void recompute_ideal_colors_1plane(
 		{
 			vfloat4 v0 = ep->endpt0[i];
 			vfloat4 v1 = ep->endpt1[i];
-			float avgdif = ((v1.lane<0>() - v0.lane<0>()) + (v1.lane<1>() - v0.lane<1>()) + (v1.lane<2>() - v0.lane<2>())) * (1.0f / 3.0f);
+
+			float avgdif = hadd_rgb_s(v1 - v0) * (1.0f / 3.0f);
 			avgdif = astc::max(avgdif, 0.0f);
 
 			vfloat4 avg = (v0 + v1) * 0.5f;
