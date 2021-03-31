@@ -1290,22 +1290,19 @@ void recompute_ideal_colors_2planes(
 			float idx1 = 0.0f;
 			float om_idx1 = 0.0f;
 
-			if (plane2_weight_set8)
-			{
-				idx1 = bilinear_infill(*dt, plane2_weight_set, tix);
+			idx1 = bilinear_infill(*dt, plane2_weight_set, tix);
 
-				om_idx1 = 1.0f - idx1;
-				wmin2 = astc::min(idx1, wmin2);
-				wmax2 = astc::max(idx1, wmax2);
+			om_idx1 = 1.0f - idx1;
+			wmin2 = astc::min(idx1, wmin2);
+			wmax2 = astc::max(idx1, wmax2);
 
-				vfloat4 left2   = color_weight * (om_idx1 * om_idx1);
-				vfloat4 middle2 = color_weight * (om_idx1 * idx1);
-				vfloat4 right2  = color_weight * (idx1 * idx1);
+			vfloat4 left2   = color_weight * (om_idx1 * om_idx1);
+			vfloat4 middle2 = color_weight * (om_idx1 * idx1);
+			vfloat4 right2  = color_weight * (idx1 * idx1);
 
-				left2_sum   += left2;
-				middle2_sum += middle2;
-				right2_sum  += right2;
-			}
+			left2_sum   += left2;
+			middle2_sum += middle2;
+			right2_sum  += right2;
 
 			vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 			vfloat4 color_idx = select(vfloat4(idx0), vfloat4(idx1), p2_mask);
@@ -1422,51 +1419,48 @@ void recompute_ideal_colors_2planes(
 			#endif
 		}
 
-		if (plane2_weight_set8)
+		if (wmin2 >= wmax2 * 0.999f)
 		{
-			if (wmin2 >= wmax2 * 0.999f)
-			{
-				// if all weights in the partition were equal, then just take average
-				// of all colors in the partition and use that as both endpoint colors.
-				vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
+			// if all weights in the partition were equal, then just take average
+			// of all colors in the partition and use that as both endpoint colors.
+			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
-				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
-				vmask4 notnan_mask = avg == avg;
-				vmask4 full_mask = p2_mask & notnan_mask;
+			vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
+			vmask4 notnan_mask = avg == avg;
+			vmask4 full_mask = p2_mask & notnan_mask;
 
-				ep->endpt0[i] = select(ep->endpt0[i], avg, full_mask);
-				ep->endpt1[i] = select(ep->endpt1[i], avg, full_mask);
-			}
-			else
-			{
-				#ifdef DEBUG_CAPTURE_NAN
-					fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-				#endif
+			ep->endpt0[i] = select(ep->endpt0[i], avg, full_mask);
+			ep->endpt1[i] = select(ep->endpt1[i], avg, full_mask);
+		}
+		else
+		{
+			#ifdef DEBUG_CAPTURE_NAN
+				fedisableexcept(FE_DIVBYZERO | FE_INVALID);
+			#endif
 
-				// otherwise, complete the analytic calculation of ideal-endpoint-values
-				// for the given set of texel weights and pixel colors.
-				vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
-				vfloat4 color_rdet2 = 1.0f / color_det2;
+			// otherwise, complete the analytic calculation of ideal-endpoint-values
+			// for the given set of texel weights and pixel colors.
+			vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
+			vfloat4 color_rdet2 = 1.0f / color_det2;
 
-				vfloat4 color_mss2 = (left2_sum * left2_sum)
-				                   + (2.0f * middle2_sum * middle2_sum)
-				                   + (right2_sum * right2_sum);
+			vfloat4 color_mss2 = (left2_sum * left2_sum)
+			                   + (2.0f * middle2_sum * middle2_sum)
+			                   + (right2_sum * right2_sum);
 
-				vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
-				vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
+			vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
+			vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
-				vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
-				vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
-				vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
-				vmask4 full_mask = p2_mask & det_mask & notnan_mask;
+			vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
+			vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
+			vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
+			vmask4 full_mask = p2_mask & det_mask & notnan_mask;
 
-				ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
-				ep->endpt1[i] = select(ep->endpt1[i], ep1, full_mask);
+			ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
+			ep->endpt1[i] = select(ep->endpt1[i], ep1, full_mask);
 
-				#ifdef DEBUG_CAPTURE_NAN
-					feenableexcept(FE_DIVBYZERO | FE_INVALID);
-				#endif
-			}
+			#ifdef DEBUG_CAPTURE_NAN
+				feenableexcept(FE_DIVBYZERO | FE_INVALID);
+			#endif
 		}
 
 		// if the calculation of an RGB-offset vector failed, try to compute
