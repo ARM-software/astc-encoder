@@ -816,6 +816,7 @@ void compute_ideal_weights_for_decimation_table(
 	float* RESTRICT weight_set,
 	float* RESTRICT weights
 ) {
+	int i;
 	int texel_count = dt.texel_count;
 	int weight_count = dt.weight_count;
 
@@ -831,7 +832,7 @@ void compute_ideal_weights_for_decimation_table(
 	// weights into both the weight set and the output epw copy.
 	if (texel_count == weight_count)
 	{
-		for (int i = 0; i < texel_count; i++)
+		for (i = 0; i < texel_count; i++)
 		{
 			assert(i == dt.weight_texel[0][i]);
 			weight_set[i] = eai_in.weights[i];
@@ -846,7 +847,7 @@ void compute_ideal_weights_for_decimation_table(
 	// epw copy and then do the full algorithm to decimate weights.
 	else
 	{
-		for (int i = 0; i < texel_count; i++)
+		for (i = 0; i < texel_count; i++)
 		{
 			eai_out.weights[i] = eai_in.weights[i];
 			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
@@ -857,9 +858,11 @@ void compute_ideal_weights_for_decimation_table(
 	alignas(ASTCENC_VECALIGN) float infilled_weights[MAX_TEXELS_PER_BLOCK];
 
 	// Compute an initial average for each decimated weight
+	i = 0;
+
 #if ASTCENC_SIMD_WIDTH >= 8
-	int clipped_weight_count = round_up_to_simd_multiple_vla(weight_count);
-	for (int i = 0; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
+	for (/* */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
 		vfloat weight_weight(1e-10f);
@@ -890,8 +893,10 @@ void compute_ideal_weights_for_decimation_table(
 		storea(weight_weight, weights + i);
 		storea(initial_weight / weight_weight, weight_set + i);
 	}
-#else
-	for (int i = 0; i < weight_count; i++)
+#endif
+
+	// Loop tail
+	for (/* */; i < weight_count; i++)
 	{
 		// Start with a small value to avoid div-by-zero later
 		float weight_weight = 1e-10f;
@@ -913,30 +918,33 @@ void compute_ideal_weights_for_decimation_table(
 		weights[i] = weight_weight;
 		weight_set[i] = initial_weight / weight_weight;
 	}
-#endif
 
 	// Populate the interpolated weight grid based on the initital average
+	i = 0;
+
 #if ASTCENC_SIMD_WIDTH >= 8
 	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_up_to_simd_multiple_vla(texel_count);
-	for (int i = 0; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight = bilinear_infill_vla(dt, weight_set, i);
 		storea(weight, infilled_weights + i);
 	}
-#else
-	for (int i = 0; i < texel_count; i++)
+#endif
+
+	// Loop tail
+	for (/* */; i < texel_count; i++)
 	{
 		infilled_weights[i] = bilinear_infill(dt, weight_set, i);
 	}
-#endif
 
 	// Perform a single iteration of refinement
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
+	i = 0;
 
 #if ASTCENC_SIMD_WIDTH >= 8
-	for (int i = 0; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (/* */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
 		vfloat weight_val = loada(weight_set + i);
@@ -975,8 +983,10 @@ void compute_ideal_weights_for_decimation_table(
 		// update the weight
 		storea(weight_val + step, weight_set + i);
 	}
-#else
-	for (int i = 0; i < weight_count; i++)
+#endif
+
+	// Loop tail
+	for (/* */; i < weight_count; i++)
 	{
 		float weight_val = weight_set[i];
 
@@ -1006,7 +1016,6 @@ void compute_ideal_weights_for_decimation_table(
 		// update the weight
 		weight_set[i] = weight_val + step;
 	}
-#endif
 }
 
 /*
