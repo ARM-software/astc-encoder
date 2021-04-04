@@ -106,3 +106,11 @@ Once this is done, run the command:
 test suite gets exclusive use of the machine to avoid other processing slowing
 down the compression and disturbing the performance data. It is recommended to
 shutdown or disable any background applications that are running.
+
+## Valgrind memcheck
+
+It is always worth running the Valgrind memcheck tool to validate that we have
+not introduced any obvious memory errors. Build a release build with symbols
+information with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` and then run:
+
+    valgrind --tool=memcheck --track-origins=yes <command>
