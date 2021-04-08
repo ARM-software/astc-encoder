@@ -85,8 +85,8 @@ struct vfloat4
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat4(float a, float b, float c, float d)
 	{
-		float32x4_t v { a, b, c, d };
-		m = v;
+		float v[4] = { a, b, c, d };
+		m = vld1q_f32(v);
 	}
 
 	/**
@@ -234,8 +234,8 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(int a, int b, int c, int d)
 	{
-		int32x4_t v { a, b, c, d };
-		m = v;
+		int v[4] = { a, b, c, d };
+		m = vld1q_s32(v); 
 	}
 
 	/**
@@ -318,6 +318,7 @@ struct vmask4
 		m = a;
 	}
 
+#if !defined(_MSC_VER)
 	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
@@ -325,20 +326,22 @@ struct vmask4
 	{
 		m = vreinterpretq_u32_s32(a);
 	}
+#endif 
 
 	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(bool a, bool b, bool c, bool d)
 	{
-		int32x4_t v {
+		int v[4] = {
 			a == true ? -1 : 0,
 			b == true ? -1 : 0,
 			c == true ? -1 : 0,
 			d == true ? -1 : 0
 		};
 
-		m = vreinterpretq_u32_s32(v);
+		int32x4_t ms = vld1q_s32(v);
+		m = vreinterpretq_u32_s32(ms);
 	}
 
 
@@ -391,7 +394,9 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 {
-	static const int32x4_t shift { 0, 1, 2, 3 };
+	static const int shifta[4] = { 0, 1, 2, 3 };
+	static const int32x4_t shift = vld1q_s32(shifta);
+
 	uint32x4_t tmp = vshrq_n_u32(a.m, 31);
 	return vaddvq_u32(vshlq_u32(tmp, shift));
 }
