@@ -388,7 +388,7 @@ float compute_symbolic_block_difference(
 			error = min(abs(error), 1e15f);
 			error = error * error;
 
-			float metric = dot_s(error, ewb->error_weights[i]);
+			float metric = dot_s(error, ewb->error_weights[tix]);
 			summa += astc::min(metric, 1e30f);
 		}
 	}
