@@ -285,10 +285,15 @@ float* floatx4_array_from_astc_img(
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				dst[4 * x    ] = sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x    )]);
-				dst[4 * x + 1] = sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 1)]);
-				dst[4 * x + 2] = sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 2)]);
-				dst[4 * x + 3] = sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 3)]);
+				vint4 colori(
+					data16[(4 * dim_x * ymod) + (4 * x    )],
+					data16[(4 * dim_x * ymod) + (4 * x + 1)],
+					data16[(4 * dim_x * ymod) + (4 * x + 2)],
+					data16[(4 * dim_x * ymod) + (4 * x + 3)]
+				);
+
+				vfloat4 color = float16_to_float(colori);
+				store(color, dst + 4 * x);
 			}
 		}
 	}
@@ -351,10 +356,19 @@ uint8_t* unorm8x4_array_from_astc_img(
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
-				dst[4 * x   ]  = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x    )])) * 255.0f);
-				dst[4 * x + 1] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 1)])) * 255.0f);
-				dst[4 * x + 2] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 2)])) * 255.0f);
-				dst[4 * x + 3] = (uint8_t)astc::flt2int_rtn(astc::clamp1f(sf16_to_float(data16[(4 * dim_x * ymod) + (4 * x + 3)])) * 255.0f);
+				vint4 colori(
+					data16[(4 * dim_x * ymod) + (4 * x    )],
+					data16[(4 * dim_x * ymod) + (4 * x + 1)],
+					data16[(4 * dim_x * ymod) + (4 * x + 2)],
+					data16[(4 * dim_x * ymod) + (4 * x + 3)]
+				);
+
+				vfloat4 color = float16_to_float(colori);
+				color = clamp(0.0f, 1.0f, color) * 255.0f;
+
+				colori = float_to_int_rtn(color);
+				pack_low_bytes(colori);
+				store_nbytes(colori, dst + 4 * x);
 			}
 		}
 	}

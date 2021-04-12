@@ -1128,24 +1128,26 @@ static vfloat4 image_get_pixel(
 	{
 		uint16_t* data = static_cast<uint16_t*>(img.data[z]);
 
-		float r = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x    )]);
-		float g = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 1)]);
-		float b = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 2)]);
-		float a = sf16_to_float(data[(4 * img.dim_x * y) + (4 * x + 3)]);
+		vint4 colori(
+			data[(4 * img.dim_x * y) + (4 * x    )],
+			data[(4 * img.dim_x * y) + (4 * x + 1)],
+			data[(4 * img.dim_x * y) + (4 * x + 2)],
+			data[(4 * img.dim_x * y) + (4 * x + 3)]
+		);
 
-		return vfloat4(r, g, b, a);
+		return float16_to_float(colori);
 	}
 	else // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 		float* data = static_cast<float*>(img.data[z]);
 
-		float r = data[(4 * img.dim_x * y) + (4 * x    )];
-		float g = data[(4 * img.dim_x * y) + (4 * x + 1)];
-		float b = data[(4 * img.dim_x * y) + (4 * x + 2)];
-		float a = data[(4 * img.dim_x * y) + (4 * x + 3)];
-
-		return vfloat4(r, g, b, a);
+		return vfloat4(
+			data[(4 * img.dim_x * y) + (4 * x    )],
+			data[(4 * img.dim_x * y) + (4 * x + 1)],
+			data[(4 * img.dim_x * y) + (4 * x + 2)],
+			data[(4 * img.dim_x * y) + (4 * x + 3)]
+		);
 	}
 }
 

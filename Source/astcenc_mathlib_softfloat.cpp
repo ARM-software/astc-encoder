@@ -18,6 +18,7 @@
 /**
  * @brief Soft-float library for IEEE-754.
  */
+#if ASTCENC_F16C == 0
 
 #include "astcenc_mathlib.h"
 
@@ -61,7 +62,7 @@ typedef uint32_t sf32;
 
 /*
    32-bit count-leading-zeros function: use the Assembly instruction whenever possible. */
-uint32_t clz32(uint32_t inp)
+static uint32_t clz32(uint32_t inp)
 {
 	#if defined(__GNUC__) && (defined(__i386) || defined(__amd64))
 		uint32_t bsr;
@@ -401,3 +402,5 @@ uint16_t float_to_sf16(float p)
 	i.f = p;
 	return sf32_to_sf16(i.u, SF_NEARESTEVEN);
 }
+
+#endif

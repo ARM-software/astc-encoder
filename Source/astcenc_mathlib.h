@@ -490,11 +490,11 @@ static inline float2 normalize(float2 p) { return p * astc::rsqrt(dot(p, p)); }
 /* ============================================================================
   Softfloat library with fp32 and fp16 conversion functionality.
 ============================================================================ */
-uint32_t clz32(uint32_t p);
-
-/* narrowing float->float conversions */
-uint16_t float_to_sf16(float val);
-float sf16_to_float(uint16_t val);
+#if ASTCENC_F16C == 0
+	/* narrowing float->float conversions */
+	uint16_t float_to_sf16(float val);
+	float sf16_to_float(uint16_t val);
+#endif
 
 /*********************************
   Vector library
