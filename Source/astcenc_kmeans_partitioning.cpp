@@ -212,13 +212,11 @@ static void kmeans_update(
  * @brief Compute bit-mismatch for partitioning in 2-partition mode.
  */
 static inline int partition_mismatch2(
-	uint64_t a0,
-	uint64_t a1,
-	uint64_t b0,
-	uint64_t b1
+	const uint64_t* a,
+	const uint64_t* b
 ) {
-	int v1 = astc::popcount(a0 ^ b0) + astc::popcount(a1 ^ b1);
-	int v2 = astc::popcount(a0 ^ b1) + astc::popcount(a1 ^ b0);
+	int v1 = astc::popcount(a[0] ^ b[0]) + astc::popcount(a[1] ^ b[1]);
+	int v2 = astc::popcount(a[0] ^ b[1]) + astc::popcount(a[1] ^ b[0]);
 	return astc::min(v1, v2);
 }
 
@@ -226,24 +224,20 @@ static inline int partition_mismatch2(
  * @brief Compute bit-mismatch for partitioning in 3-partition mode.
  */
 static inline int partition_mismatch3(
-	uint64_t a0,
-	uint64_t a1,
-	uint64_t a2,
-	uint64_t b0,
-	uint64_t b1,
-	uint64_t b2
+	const uint64_t* a,
+	const uint64_t* b
 ) {
-	int p00 = astc::popcount(a0 ^ b0);
-	int p01 = astc::popcount(a0 ^ b1);
-	int p02 = astc::popcount(a0 ^ b2);
+	int p00 = astc::popcount(a[0] ^ b[0]);
+	int p01 = astc::popcount(a[0] ^ b[1]);
+	int p02 = astc::popcount(a[0] ^ b[2]);
 
-	int p10 = astc::popcount(a1 ^ b0);
-	int p11 = astc::popcount(a1 ^ b1);
-	int p12 = astc::popcount(a1 ^ b2);
+	int p10 = astc::popcount(a[1] ^ b[0]);
+	int p11 = astc::popcount(a[1] ^ b[1]);
+	int p12 = astc::popcount(a[1] ^ b[2]);
 
-	int p20 = astc::popcount(a2 ^ b0);
-	int p21 = astc::popcount(a2 ^ b1);
-	int p22 = astc::popcount(a2 ^ b2);
+	int p20 = astc::popcount(a[2] ^ b[0]);
+	int p21 = astc::popcount(a[2] ^ b[1]);
+	int p22 = astc::popcount(a[2] ^ b[2]);
 
 	int s0 = p11 + p22;
 	int s1 = p12 + p21;
@@ -264,34 +258,28 @@ static inline int partition_mismatch3(
  * @brief Compute bit-mismatch for partitioning in 4-partition mode.
  */
 static inline int partition_mismatch4(
-	uint64_t a0,
-	uint64_t a1,
-	uint64_t a2,
-	uint64_t a3,
-	uint64_t b0,
-	uint64_t b1,
-	uint64_t b2,
-	uint64_t b3
+	const uint64_t* a,
+	const uint64_t* b
 ) {
-	int p00 = astc::popcount(a0 ^ b0);
-	int p01 = astc::popcount(a0 ^ b1);
-	int p02 = astc::popcount(a0 ^ b2);
-	int p03 = astc::popcount(a0 ^ b3);
+	int p00 = astc::popcount(a[0] ^ b[0]);
+	int p01 = astc::popcount(a[0] ^ b[1]);
+	int p02 = astc::popcount(a[0] ^ b[2]);
+	int p03 = astc::popcount(a[0] ^ b[3]);
 
-	int p10 = astc::popcount(a1 ^ b0);
-	int p11 = astc::popcount(a1 ^ b1);
-	int p12 = astc::popcount(a1 ^ b2);
-	int p13 = astc::popcount(a1 ^ b3);
+	int p10 = astc::popcount(a[1] ^ b[0]);
+	int p11 = astc::popcount(a[1] ^ b[1]);
+	int p12 = astc::popcount(a[1] ^ b[2]);
+	int p13 = astc::popcount(a[1] ^ b[3]);
 
-	int p20 = astc::popcount(a2 ^ b0);
-	int p21 = astc::popcount(a2 ^ b1);
-	int p22 = astc::popcount(a2 ^ b2);
-	int p23 = astc::popcount(a2 ^ b3);
+	int p20 = astc::popcount(a[2] ^ b[0]);
+	int p21 = astc::popcount(a[2] ^ b[1]);
+	int p22 = astc::popcount(a[2] ^ b[2]);
+	int p23 = astc::popcount(a[2] ^ b[3]);
 
-	int p30 = astc::popcount(a3 ^ b0);
-	int p31 = astc::popcount(a3 ^ b1);
-	int p32 = astc::popcount(a3 ^ b2);
-	int p33 = astc::popcount(a3 ^ b3);
+	int p30 = astc::popcount(a[3] ^ b[0]);
+	int p31 = astc::popcount(a[3] ^ b[1]);
+	int p32 = astc::popcount(a[3] ^ b[2]);
+	int p33 = astc::popcount(a[3] ^ b[3]);
 
 	int mx23 = astc::min(p22 + p33, p23 + p32);
 	int mx13 = astc::min(p21 + p33, p23 + p31);
@@ -308,6 +296,9 @@ static inline int partition_mismatch4(
 	return astc::min(v0, v1, v2, v3);
 }
 
+
+using mismatch_dispatch = int (*)(const uint64_t*, const uint64_t*);
+
 /**
  * @brief Count the partition table mismatches vs the data clustering.
  */
@@ -319,57 +310,23 @@ static void count_partition_mismatch_bits(
 ) {
 	const partition_info *pt = get_partition_table(&bsd, partition_count);
 
-	if (partition_count == 2)
-	{
-		uint64_t bm0 = bitmaps[0];
-		uint64_t bm1 = bitmaps[1];
-		for (int i = 0; i < PARTITION_COUNT; i++)
-		{
-			int bitcount = 255;
-			if (pt->partition_count == 2)
-			{
-				bitcount = partition_mismatch2(bm0, bm1, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1]);
-			}
+	// Function pointer dispatch table
+	const mismatch_dispatch dispatch[3] {
+		partition_mismatch2,
+		partition_mismatch3,
+		partition_mismatch4
+	};
 
-			bitcounts[i] = bitcount;
-			pt++;
-		}
-	}
-	else if (partition_count == 3)
+	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		uint64_t bm0 = bitmaps[0];
-		uint64_t bm1 = bitmaps[1];
-		uint64_t bm2 = bitmaps[2];
-		for (int i = 0; i < PARTITION_COUNT; i++)
+		int bitcount = 255;
+		if (pt->partition_count == partition_count)
 		{
-			int bitcount = 255;
-			if (pt->partition_count == 3)
-			{
-				bitcount = partition_mismatch3(bm0, bm1, bm2, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2]);
-			}
-
-			bitcounts[i] = bitcount;
-			pt++;
+			bitcount = dispatch[partition_count - 2](bitmaps, pt->coverage_bitmaps);
 		}
-	}
-	else // if (partition_count == 4)
-	{
-		assert(partition_count == 4);
-		uint64_t bm0 = bitmaps[0];
-		uint64_t bm1 = bitmaps[1];
-		uint64_t bm2 = bitmaps[2];
-		uint64_t bm3 = bitmaps[3];
-		for (int i = 0; i < PARTITION_COUNT; i++)
-		{
-			int bitcount = 255;
-			if (pt->partition_count == 4)
-			{
-				bitcount = partition_mismatch4(bm0, bm1, bm2, bm3, pt->coverage_bitmaps[0], pt->coverage_bitmaps[1], pt->coverage_bitmaps[2], pt->coverage_bitmaps[3]);
-			}
 
-			bitcounts[i] = bitcount;
-			pt++;
-		}
+		bitcounts[i] = bitcount;
+		pt++;
 	}
 }
 
