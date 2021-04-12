@@ -1233,9 +1233,9 @@ void unpack_color_endpoints(
 	int format,
 	int quant_level,
 	const int* input,
-	int* rgb_hdr,
-	int* alpha_hdr,
-	int* nan_endpoint,
+	bool* rgb_hdr,
+	bool* alpha_hdr,
+	bool* nan_endpoint,
 	vint4* output0,
 	vint4* output1);
 

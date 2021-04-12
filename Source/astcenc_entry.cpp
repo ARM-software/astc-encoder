@@ -1082,9 +1082,9 @@ astcenc_error astcenc_get_block_info(
 	// Unpack color endpoints for each active partition
 	for (int i = 0; i < scb.partition_count; i++)
 	{
-		int rgb_hdr;
-		int a_hdr;
-		int nan;
+		bool rgb_hdr;
+		bool a_hdr;
+		bool nan;
 		vint4 endpnt[2];
 
 		unpack_color_endpoints(ctx->config.profile,
@@ -1096,7 +1096,7 @@ astcenc_error astcenc_get_block_info(
 
 		// Store the color endpoint mode info
 		info->color_endpoint_modes[i] = scb.color_formats[i];
-		info->is_hdr_block |= (rgb_hdr != 0) | (a_hdr != 0);
+		info->is_hdr_block = info->is_hdr_block || rgb_hdr || a_hdr;
 
 		// Store the unpacked and decoded color endpoint
 		vmask4 hdr_mask(rgb_hdr, rgb_hdr, rgb_hdr, a_hdr);

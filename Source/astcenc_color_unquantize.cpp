@@ -669,21 +669,20 @@ void unpack_color_endpoints(
 	int format,
 	int quant_level,
 	const int* input,
-	int* rgb_hdr,
-	int* alpha_hdr,
-	int* nan_endpoint,
+	bool* rgb_hdr,
+	bool* alpha_hdr,
+	bool* nan_endpoint,
 	vint4* output0,
 	vint4* output1
 ) {
-	// TODO: Make these bools ...
-
 	// Assume no NaNs and LDR endpoints
 
 	// TODO: Review use of NaN endpoint. It's never set for HDR images ...
-	*nan_endpoint = 0;
-	*rgb_hdr = 0;
-	*alpha_hdr = 0;
+	*nan_endpoint = false;
+	*rgb_hdr = false;
+	*alpha_hdr = false;
 
+	bool alpha_hdr_default = false;
 
 	switch (format)
 	{
@@ -696,14 +695,14 @@ void unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_LUMINANCE_SMALL_RANGE:
-		*rgb_hdr = 1;
-		*alpha_hdr = -1;
+		*rgb_hdr = true;
+		alpha_hdr_default = true;
 		hdr_luminance_small_range_unpack(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_LUMINANCE_LARGE_RANGE:
-		*rgb_hdr = 1;
-		*alpha_hdr = -1;
+		*rgb_hdr = true;
+		alpha_hdr_default = true;
 		hdr_luminance_large_range_unpack(input, quant_level, output0, output1);
 		break;
 
@@ -733,8 +732,8 @@ void unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB_SCALE:
-		*rgb_hdr = 1;
-		*alpha_hdr = -1;
+		*rgb_hdr = true;
+		alpha_hdr_default = true;
 		hdr_rgbo_unpack3(input, quant_level, output0, output1);
 		break;
 
@@ -755,8 +754,8 @@ void unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB:
-		*rgb_hdr = 1;
-		*alpha_hdr = -1;
+		*rgb_hdr = true;
+		alpha_hdr_default = true;
 		hdr_rgb_unpack3(input, quant_level, output0, output1);
 		break;
 
@@ -777,31 +776,31 @@ void unpack_color_endpoints(
 		break;
 
 	case FMT_HDR_RGB_LDR_ALPHA:
-		*rgb_hdr = 1;
+		*rgb_hdr = true;
 		hdr_rgb_ldr_alpha_unpack3(input, quant_level, output0, output1);
 		break;
 
 	case FMT_HDR_RGBA:
-		*rgb_hdr = 1;
-		*alpha_hdr = 1;
+		*rgb_hdr = true;
+		*alpha_hdr = true;
 		hdr_rgb_hdr_alpha_unpack3(input, quant_level, output0, output1);
 		break;
 	}
 
 	// Assign a correct default alpha
-	if (*alpha_hdr == -1)
+	if (alpha_hdr_default)
 	{
 		if (decode_mode == ASTCENC_PRF_HDR)
 		{
 			output0->set_lane<3>(0x7800);
 			output1->set_lane<3>(0x7800);
-			*alpha_hdr = 1;
+			*alpha_hdr = true;
 		}
 		else
 		{
 			output0->set_lane<3>(0x00FF);
 			output1->set_lane<3>(0x00FF);
-			*alpha_hdr = 0;
+			*alpha_hdr = false;
 		}
 	}
 
@@ -814,22 +813,20 @@ void unpack_color_endpoints(
 	    (decode_mode == ASTCENC_PRF_LDR_SRGB))
 	{
 		// Also matches HDR alpha, as cannot have HDR alpha without HDR RGB
-		if (*rgb_hdr == 1)
+		if (*rgb_hdr == true)
 		{
 			*output0 = vint4(0xFF00, 0x0000, 0xFF00, 0xFF00);
 			*output1 = vint4(0xFF00, 0x0000, 0xFF00, 0xFF00);
 			output_scale = hdr_scale;
 
-			*rgb_hdr = 0;
-			*alpha_hdr = 0;
+			*rgb_hdr = false;
+			*alpha_hdr = false;
 		}
 	}
 	// An HDR profile image
 	else
 	{
-		bool hrgb = *rgb_hdr == 1;
-		bool ha = *alpha_hdr == 1;
-		vmask4 hdr_lanes(hrgb, hrgb, hrgb, ha);
+		vmask4 hdr_lanes(*rgb_hdr, *rgb_hdr, *rgb_hdr, *alpha_hdr);
 		output_scale = select(ldr_scale, hdr_scale, hdr_lanes);
 	}
 

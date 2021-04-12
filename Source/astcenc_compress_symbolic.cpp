@@ -73,9 +73,9 @@ static int realign_weights(
 	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
-	int rgb_hdr;
-	int alpha_hdr;
-	int nan_endpoint;
+	bool rgb_hdr;
+	bool alpha_hdr;
+	bool nan_endpoint;
 	vint4 endpnt0[4];
 	vint4 endpnt1[4];
 	vfloat4 endpnt0f[4];
