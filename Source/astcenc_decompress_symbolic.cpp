@@ -154,33 +154,14 @@ void decompress_symbolic_block(
 	// If we detected an error-block, blow up immediately.
 	if (scb->error_block)
 	{
-		// TODO: Check this - isn't linear LDR magenta too? Same below ...
-		// Yes, but currently applied later as special case during block copy.
-		if (decode_mode == ASTCENC_PRF_LDR_SRGB)
+		for (int i = 0; i < bsd->texel_count; i++)
 		{
-			for (int i = 0; i < bsd->texel_count; i++)
-			{
-				blk->data_r[i] = 1.0f;
-				blk->data_g[i] = 0.0f;
-				blk->data_b[i] = 1.0f;
-				blk->data_a[i] = 1.0f;
-				blk->rgb_lns[i] = 0;
-				blk->alpha_lns[i] = 0;
-				blk->nan_texel[i] = 0;
-			}
-		}
-		else
-		{
-			for (int i = 0; i < bsd->texel_count; i++)
-			{
-				blk->data_r[i] = 0.0f;
-				blk->data_g[i] = 0.0f;
-				blk->data_b[i] = 0.0f;
-				blk->data_a[i] = 0.0f;
-				blk->rgb_lns[i] = 0;
-				blk->alpha_lns[i] = 0;
-				blk->nan_texel[i] = 1;
-			}
+			blk->data_r[i] = std::numeric_limits<float>::quiet_NaN();
+			blk->data_g[i] = std::numeric_limits<float>::quiet_NaN();
+			blk->data_b[i] = std::numeric_limits<float>::quiet_NaN();
+			blk->data_a[i] = std::numeric_limits<float>::quiet_NaN();
+			blk->rgb_lns[i] = 0;
+			blk->alpha_lns[i] = 0;
 		}
 
 		return;
@@ -190,7 +171,6 @@ void decompress_symbolic_block(
 	{
 		vfloat4 color;
 		int use_lns = 0;
-		int use_nan = 0;
 
 		if (scb->block_mode == -2)
 		{
@@ -212,11 +192,8 @@ void decompress_symbolic_block(
 			switch (decode_mode)
 			{
 			case ASTCENC_PRF_LDR_SRGB:
-				color = vfloat4(1.0f, 0.0f, 1.0f, 1.0f);
-				break;
 			case ASTCENC_PRF_LDR:
-				color = vfloat4(0.0f);
-				use_nan = 1;
+				color = vfloat4(std::numeric_limits<float>::quiet_NaN());
 				break;
 			case ASTCENC_PRF_HDR_RGB_LDR_A:
 			case ASTCENC_PRF_HDR:
@@ -236,7 +213,6 @@ void decompress_symbolic_block(
 			blk->data_a[i] = color.lane<3>();
 			blk->rgb_lns[i] = use_lns;
 			blk->alpha_lns[i] = use_lns;
-			blk->nan_texel[i] = use_nan;
 		}
 
 		return;
@@ -274,7 +250,6 @@ void decompress_symbolic_block(
 		vint4 ep0;
 		vint4 ep1;
 		bool rgb_lns;
-		bool nan;
 		bool a_lns;
 
 		unpack_color_endpoints(decode_mode,
@@ -283,7 +258,6 @@ void decompress_symbolic_block(
 		                       scb->color_values[i],
 		                       &rgb_lns,
 		                       &a_lns,
-		                       &nan,
 		                       &ep0,
 		                       &ep1);
 
@@ -302,7 +276,6 @@ void decompress_symbolic_block(
 
 			vfloat4 colorf = decode_texel(color, lns_mask);
 
-			blk->nan_texel[tix] = nan;
 			blk->data_r[tix] = colorf.lane<0>();
 			blk->data_g[tix] = colorf.lane<1>();
 			blk->data_b[tix] = colorf.lane<2>();
@@ -357,14 +330,13 @@ float compute_symbolic_block_difference(
 		vint4 ep0;
 		vint4 ep1;
 		bool rgb_lns;
-		bool nan;
 		bool a_lns;
 
 		unpack_color_endpoints(config.profile,
 		                       scb->color_formats[i],
 		                       scb->color_quant_level,
 		                       scb->color_values[i],
-		                       &rgb_lns, &a_lns, &nan,
+		                       &rgb_lns, &a_lns,
 		                       &ep0, &ep1);
 
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);

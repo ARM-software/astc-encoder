@@ -535,7 +535,7 @@ struct imageblock
 
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
-	uint8_t nan_texel[MAX_TEXELS_PER_BLOCK];    // 1 if the texel is a NaN-texel.
+
 	int xpos, ypos, zpos;
 
 	inline vfloat4 texel(int index) const
@@ -559,7 +559,6 @@ static inline float imageblock_default_alpha(const imageblock * blk)
 {
 	return blk->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
 }
-
 
 static inline int imageblock_uses_alpha(const imageblock * blk)
 {
@@ -1235,7 +1234,6 @@ void unpack_color_endpoints(
 	const int* input,
 	bool* rgb_hdr,
 	bool* alpha_hdr,
-	bool* nan_endpoint,
 	vint4* output0,
 	vint4* output1);
 

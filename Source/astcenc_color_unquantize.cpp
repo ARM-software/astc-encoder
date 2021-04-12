@@ -671,14 +671,10 @@ void unpack_color_endpoints(
 	const int* input,
 	bool* rgb_hdr,
 	bool* alpha_hdr,
-	bool* nan_endpoint,
 	vint4* output0,
 	vint4* output1
 ) {
-	// Assume no NaNs and LDR endpoints
-
-	// TODO: Review use of NaN endpoint. It's never set for HDR images ...
-	*nan_endpoint = false;
+	// Assume no NaNs and LDR endpoints unless set later
 	*rgb_hdr = false;
 	*alpha_hdr = false;
 

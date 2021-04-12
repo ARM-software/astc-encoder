@@ -296,7 +296,6 @@ void fetch_imageblock(
 	{
 		blk->rgb_lns[i] = rgb_lns;
 		blk->alpha_lns[i] = alpha_lns;
-		blk->nan_texel[i] = 0;
 	}
 
 	imageblock_initialize_work_from_orig(blk, bsd->texel_count);
@@ -312,7 +311,6 @@ void write_imageblock(
 	int zpos,
 	astcenc_swizzle swz
 ) {
-	const uint8_t *nptr = blk->nan_texel;
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
@@ -354,7 +352,7 @@ void write_imageblock(
 				{
 					vint4 colori = vint4::zero();
 
-					if (*nptr)
+					if (blk->data_r[idx] == std::numeric_limits<float>::quiet_NaN())
 					{
 						// Can't display NaN - show magenta error color
 						colori = vint4(0xFF, 0x00, 0xFF, 0xFF);
@@ -391,13 +389,10 @@ void write_imageblock(
 					store_nbytes(colori, data8 + (4 * xsize * y) + (4 * x    ));
 
 					idx++;
-					nptr++;
 				}
 				idx += x_nudge;
-				nptr += x_nudge;
 			}
 			idx += y_nudge;
-			nptr += y_nudge;
 		}
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
@@ -413,7 +408,7 @@ void write_imageblock(
 				{
 					vint4 color;
 
-					if (*nptr)
+					if (blk->data_r[idx] == std::numeric_limits<float>::quiet_NaN())
 					{
 						color = vint4(0xFFFF);
 					}
@@ -451,13 +446,10 @@ void write_imageblock(
 					data16[(4 * xsize * y) + (4 * x + 3)] = (uint16_t)color.lane<3>();
 
 					idx++;
-					nptr++;
 				}
 				idx += x_nudge;
-				nptr += x_nudge;
 			}
 			idx += y_nudge;
-			nptr += y_nudge;
 		}
 	}
 	else // if (img.data_type == ASTCENC_TYPE_F32)
@@ -475,7 +467,7 @@ void write_imageblock(
 				{
 					vfloat4 color = blk->texel(idx);
 
-					if (*nptr)
+					if (color.lane<0>() == std::numeric_limits<float>::quiet_NaN())
 					{
 						color = vfloat4(std::numeric_limits<float>::quiet_NaN());
 					}
@@ -504,13 +496,10 @@ void write_imageblock(
 					store(color, data32 + (4 * xsize * y) + (4 * x    ));
 
 					idx++;
-					nptr++;
 				}
 				idx += x_nudge;
-				nptr += x_nudge;
 			}
 			idx += y_nudge;
-			nptr += y_nudge;
 		}
 	}
 }

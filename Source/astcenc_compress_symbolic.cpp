@@ -75,7 +75,6 @@ static int realign_weights(
 	// Decode the color endpoints
 	bool rgb_hdr;
 	bool alpha_hdr;
-	bool nan_endpoint;
 	vint4 endpnt0[4];
 	vint4 endpnt1[4];
 	vfloat4 endpnt0f[4];
@@ -91,7 +90,7 @@ static int realign_weights(
 		                       scb->color_formats[pa_idx],
 		                       scb->color_quant_level,
 		                       scb->color_values[pa_idx],
-		                       &rgb_hdr, &alpha_hdr, &nan_endpoint,
+		                       &rgb_hdr, &alpha_hdr,
 		                       &endpnt0[pa_idx],
 		                       &endpnt1[pa_idx]);
 	}

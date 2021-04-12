@@ -1084,14 +1084,13 @@ astcenc_error astcenc_get_block_info(
 	{
 		bool rgb_hdr;
 		bool a_hdr;
-		bool nan;
 		vint4 endpnt[2];
 
 		unpack_color_endpoints(ctx->config.profile,
 		                       scb.color_formats[i],
 		                       scb.color_quant_level,
 		                       scb.color_values[i],
-		                       &rgb_hdr, &a_hdr, &nan,
+		                       &rgb_hdr, &a_hdr,
 		                       endpnt, endpnt + 1);
 
 		// Store the color endpoint mode info
