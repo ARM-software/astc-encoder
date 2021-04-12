@@ -64,7 +64,6 @@ void merge_endpoints(
 // a particular partition.
 static void compute_error_squared_rgb_single_partition(
 	int partition_to_test,
-	const block_size_descriptor* bsd,
 	const partition_info* pt,	// the partition that we use when computing the squared-error.
 	const imageblock* blk,
 	const error_weight_block* ewb,
@@ -78,24 +77,26 @@ static void compute_error_squared_rgb_single_partition(
 	float* l_err,
 	float* a_drop_err
 ) {
-	int texels_per_block = bsd->texel_count;
 	float uncor_errorsum = 0.0f;
 	float samec_errorsum = 0.0f;
 	float rgbl_errorsum = 0.0f;
 	float l_errorsum = 0.0f;
 	float a_drop_errorsum = 0.0f;
 
-	for (int i = 0; i < texels_per_block; i++)
+	int texels_in_partition = pt->partition_texel_count[partition_to_test];
+	promise(texels_in_partition > 0);
+
+	for (int i = 0; i < texels_in_partition; i++)
 	{
-		int partition = pt->partition_of_texel[i];
-		float texel_weight = ewb->texel_weight_rgb[i];
-		if (partition != partition_to_test || texel_weight < 1e-20f)
+		int tix = pt->texels_of_partition[partition_to_test][i];
+		float texel_weight = ewb->texel_weight_rgb[tix];
+		if (texel_weight < 1e-20f)
 		{
 			continue;
 		}
 
-		vfloat4 point = blk->texel(i);
-		vfloat4 ews = ewb->error_weights[i];
+		vfloat4 point = blk->texel(tix);
+		vfloat4 ews = ewb->error_weights[tix];
 
 		// Compute the error that arises from just ditching alpha
 		float default_alpha = imageblock_default_alpha(blk);
@@ -238,7 +239,7 @@ void compute_encoding_choice_errors(
 		luminance_plines.bis  = csfn * icsf;
 
 		compute_error_squared_rgb_single_partition(
-		    i, bsd, pt, blk, ewb,
+		    i, pt, blk, ewb,
 		    &uncor_rgb_plines, &uncorr_rgb_error,
 		    &samec_rgb_plines, &samechroma_rgb_error,
 		    &rgb_luma_plines,  &rgb_luma_error,
