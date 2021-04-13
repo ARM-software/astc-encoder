@@ -385,7 +385,6 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		vfloat4 rgbs_colors[4];
 		vfloat4 rgbo_colors[4];
 
-		// TODO: Can we ping-pong between two buffers and make this zero copy?
 		symbolic_compressed_block workscb;
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
@@ -796,7 +795,6 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		vfloat4 rgbs_colors[4];
 		vfloat4 rgbo_colors[4];
 
-		// TODO: Ping-pong between two buffers and make this zero copy
 		symbolic_compressed_block workscb;
 		for (int l = 0; l < max_refinement_iters; l++)
 		{
