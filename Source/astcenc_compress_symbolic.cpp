@@ -43,7 +43,7 @@
  * over all weights (per partition and per plane) and attempt to improve image
  * quality by moving each weight up by one or down by one quantization step.
  */
-static int realign_weights(
+static bool realign_weights(
 	astcenc_profile decode_mode,
 	const block_size_descriptor* bsd,
 	const imageblock* blk,
@@ -97,7 +97,7 @@ static int realign_weights(
 
 	uint8_t uq_pl_weights[MAX_WEIGHTS_PER_BLOCK];
 	uint8_t* weight_set8 = plane1_weight_set8;
-	int adjustments = 0;
+	bool adjustments = false;
 
 	// For each plane and partition ...
 	for (int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
@@ -179,13 +179,13 @@ static int realign_weights(
 			{
 				uq_pl_weights[we_idx] = next_wt_uq;
 				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
-				adjustments++;
+				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
 				uq_pl_weights[we_idx] = prev_wt_uq;
 				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
-				adjustments++;
+				adjustments = true;
 			}
 		}
 
@@ -509,7 +509,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			}
 
 			// perform a final pass over the weights to try to improve them.
-			int adjustments = realign_weights(
+			bool adjustments = realign_weights(
 			    config.profile, bsd, blk, ewb, &workscb,
 			    u8_weight_src, nullptr);
 
@@ -551,7 +551,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 				}
 			}
 
-			if (adjustments == 0)
+			if (!adjustments)
 			{
 				break;
 			}
@@ -914,7 +914,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			}
 
 			// perform a final pass over the weights to try to improve them.
-			int adjustments = realign_weights(
+			bool adjustments = realign_weights(
 			    config.profile, bsd, blk, ewb, &workscb,
 			    u8_weight1_src, u8_weight2_src);
 
@@ -957,7 +957,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 				}
 			}
 
-			if (adjustments == 0)
+			if (!adjustments)
 			{
 				break;
 			}
