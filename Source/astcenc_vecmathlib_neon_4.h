@@ -235,7 +235,7 @@ struct vint4
 	ASTCENC_SIMD_INLINE explicit vint4(int a, int b, int c, int d)
 	{
 		int v[4] = { a, b, c, d };
-		m = vld1q_s32(v); 
+		m = vld1q_s32(v);
 	}
 
 	/**
@@ -326,10 +326,20 @@ struct vmask4
 	{
 		m = vreinterpretq_u32_s32(a);
 	}
-#endif 
+#endif
 
 	/**
-	 * @brief Construct from an existing SIMD register.
+	 * @brief Construct from 1 scalar value.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask4(bool a)
+	{
+		m = vreinterpretq_u32_s32(vdupq_n_s32(a == true ? -1 : 0));
+	}
+
+	/**
+	 * @brief Construct from 4 scalar values.
+	 *
+	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(bool a, bool b, bool c, bool d)
 	{
@@ -343,7 +353,6 @@ struct vmask4
 		int32x4_t ms = vld1q_s32(v);
 		m = vreinterpretq_u32_s32(ms);
 	}
-
 
 	/**
 	 * @brief The vector ...

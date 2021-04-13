@@ -337,6 +337,15 @@ struct vmask4
 	}
 
 	/**
+	 * @brief Construct from 1 scalar values.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask4(bool a)
+	{
+		vint4 mask(a == false ? 0 : -1);
+		m = _mm_castsi128_ps(mask.m);
+	}
+
+	/**
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.

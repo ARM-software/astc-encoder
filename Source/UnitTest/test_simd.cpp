@@ -1829,8 +1829,30 @@ TEST(vint4, select_msb)
 }
 
 // VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/** @brief Test vmask4 scalar constructor. */
-TEST(vmask4, scalar_construct)
+/** @brief Test vmask4 scalar literal constructor. */
+TEST(vmask4, scalar_literal_construct)
+{
+	vfloat4 m1a(0, 0, 0, 0);
+	vfloat4 m1b(1, 1, 1, 1);
+	vmask4 m1(true);
+
+	vfloat4 r = select(m1a, m1b, m1);
+
+	EXPECT_EQ(r.lane<0>(), 1);
+	EXPECT_EQ(r.lane<1>(), 1);
+	EXPECT_EQ(r.lane<2>(), 1);
+	EXPECT_EQ(r.lane<3>(), 1);
+
+	r = select(m1b, m1a, m1);
+
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 0);
+	EXPECT_EQ(r.lane<2>(), 0);
+	EXPECT_EQ(r.lane<3>(), 0);
+}
+
+/** @brief Test vmask4 literal constructor. */
+TEST(vmask4, literal_construct)
 {
 	vfloat4 m1a(0, 0, 0, 0);
 	vfloat4 m1b(1, 1, 1, 1);

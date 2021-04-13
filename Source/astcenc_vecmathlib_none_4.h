@@ -318,6 +318,17 @@ struct vmask4
 	}
 
 	/**
+	 * @brief Construct from 1 scalar value.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask4(bool a)
+	{
+		m[0] = a == false ? 0 : -1;
+		m[1] = a == false ? 0 : -1;
+		m[2] = a == false ? 0 : -1;
+		m[3] = a == false ? 0 : -1;
+	}
+
+	/**
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
@@ -329,6 +340,7 @@ struct vmask4
 		m[2] = c == false ? 0 : -1;
 		m[3] = d == false ? 0 : -1;
 	}
+
 
 	/**
 	 * @brief The vector ...
