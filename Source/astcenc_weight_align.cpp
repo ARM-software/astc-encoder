@@ -246,76 +246,75 @@ static void compute_angular_endpoints_for_quant_levels(
 	                                  angular_offsets, lowest_weight, weight_span, error,
 	                                  cut_low_weight_error, cut_high_weight_error);
 
-	// for each quantization level, find the best error terms.
-	float best_errors[40];
-	int best_scale[40];
-	uint8_t cut_low_weight[40];
+	// For each quantization level, find the best error terms. Use packed
+	// vectors so data-dependent branches can become selects. This involves
+	// some integer to float casts, but the values are small enough so they
+	// never round the wrong way.
+	vfloat4 best_results[40];
+
+	// Initialize the array to some safe defaults
 	for (int i = 0; i < (max_quantization_steps + 4); i++)
 	{
-		best_scale[i] = -1;	// Indicates no solution found
-		best_errors[i] = 1e30f;
-		cut_low_weight[i] = 0;
+		// Lane<0> = Best error
+		// Lane<1> = Best scale; -1 indicates no solution found
+		// Lane<2> = Cut low weight
+		best_results[i] = vfloat4(1e30f, -1.0f, 0.0f, 0.0f);
 	}
 
 	promise(max_angular_steps > 0);
 	for (int i = 0; i < max_angular_steps; i++)
 	{
 		int idx_span = weight_span[i];
-
-		if (best_errors[idx_span] > error[i])
-		{
-			best_errors[idx_span] = error[i];
-			best_scale[idx_span] = i;
-			cut_low_weight[idx_span] = 0;
-		}
-
 		float error_cut_low = error[i] + cut_low_weight_error[i];
 		float error_cut_high = error[i] + cut_high_weight_error[i];
 		float error_cut_low_high = error[i] + cut_low_weight_error[i] + cut_high_weight_error[i];
 
-		if (best_errors[idx_span - 1] > error_cut_low)
-		{
-			best_errors[idx_span - 1] = error_cut_low;
-			best_scale[idx_span - 1] = i;
-			cut_low_weight[idx_span - 1] = 1;
-		}
+		vfloat4 best_result;
+		vfloat4 new_result;
 
-		if (best_errors[idx_span - 1] > error_cut_high)
-		{
-			best_errors[idx_span - 1] = error_cut_high;
-			best_scale[idx_span - 1] = i;
-			cut_low_weight[idx_span - 1] = 0;
-		}
+		// Check best error against record N
+		best_result = best_results[idx_span];
+		new_result = vfloat4(error[i], (float)i, 0.0f, 0.0f);
+		vmask4 mask1(best_result.lane<0>() > error[i]);
+		best_results[idx_span] = select(best_result, new_result, mask1);
 
-		if (best_errors[idx_span - 2] > error_cut_low_high)
-		{
-			best_errors[idx_span - 2] = error_cut_low_high;
-			best_scale[idx_span - 2] = i;
-			cut_low_weight[idx_span - 2] = 1;
-		}
+		// Check best error against record N-1 with both cut low and cut high
+		best_result = best_results[idx_span - 1];
+
+		new_result = vfloat4(error_cut_low, (float)i, 1.0f, 0.0f);
+		vmask4 mask2(best_result.lane<0>() > error_cut_low);
+		best_result = select(best_result, new_result, mask2);
+
+		new_result = vfloat4(error_cut_high, (float)i, 0.0f, 0.0f);
+		vmask4 mask3(best_result.lane<0>() > error_cut_high);
+		best_results[idx_span - 1] = select(best_result, new_result, mask3);
+
+		// Check best error against record N-2 with cut low high
+		best_result = best_results[idx_span - 2];
+		new_result = vfloat4(error_cut_low_high, (float)i, 1.0f, 0.0f);
+		vmask4 mask4(best_result.lane<0>() > error_cut_low_high);
+		best_results[idx_span - 2] = select(best_result, new_result, mask4);
 	}
 
-	// if we got a better error-value for a low sample count than for a high one,
-	// use the low sample count error value for the higher sample count as well.
+	// If we get a better error for lower sample count then use the lower
+	// sample count's error for the higher sample count as well.
 	for (int i = 3; i <= max_quantization_steps; i++)
 	{
-		if (best_errors[i] > best_errors[i - 1])
-		{
-			best_errors[i] = best_errors[i - 1];
-			best_scale[i] = best_scale[i - 1];
-			cut_low_weight[i] = cut_low_weight[i - 1];
-		}
+		vfloat4 result = best_results[i];
+		vfloat4 prev_result = best_results[i - 1];
+		vmask4 mask(result.lane<0>() > prev_result.lane<0>());
+		best_results[i] = select(result, prev_result, mask);
 	}
 
 	for (int i = 0; i <= max_quant_level; i++)
 	{
 		int q = quantization_steps_for_level[i];
-		int bsi = best_scale[q];
+		int bsi = (int)best_results[q].lane<1>();
 
 		// Did we find anything?
 		// TODO: Can we do better than bsi = 0 here. We should at least
 		// propagate an error (and move the printf into the CLI).
-#if defined(NDEBUG)
+#if !defined(NDEBUG)
 		if (bsi < 0)
 		{
 			printf("WARNING: Unable to find encoding within specified error limit\n");
@@ -326,7 +325,7 @@ else
 #endif
 
 		float stepsize = 1.0f / (1.0f + (float)bsi);
-		int lwi = lowest_weight[bsi] + cut_low_weight[q];
+		int lwi = lowest_weight[bsi] + (int)best_results[q].lane<2>();
 		int hwi = lwi + q - 1;
 
 		float offset = angular_offsets[bsi] * stepsize;
