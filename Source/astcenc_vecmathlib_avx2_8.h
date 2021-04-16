@@ -285,6 +285,15 @@ struct vmask8
 	}
 
 	/**
+	 * @brief Construct from 1 scalar value.
+	 */
+	ASTCENC_SIMD_INLINE explicit vmask8(bool a)
+	{
+		vint8 mask(a == false ? 0 : -1);
+		m = _mm256_castsi256_ps(mask.m);
+	}
+
+	/**
 	 * @brief The vector ...
 	 */
 	__m256 m;

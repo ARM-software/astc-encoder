@@ -337,7 +337,7 @@ struct vmask4
 	}
 
 	/**
-	 * @brief Construct from 1 scalar values.
+	 * @brief Construct from 1 scalar value.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(bool a)
 	{

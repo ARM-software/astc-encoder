@@ -3164,6 +3164,24 @@ TEST(vint8, select_msb)
 }
 
 // vmask8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/** @brief Test vmask8 scalar literal constructor. */
+TEST(vmask8, scalar_literal_construct)
+{
+	vfloat8 ma(0.0f);
+	vfloat8 mb(1.0f);
+
+	vmask8 m1(true);
+	vfloat8 r1 = select(ma, mb, m1);
+	vmask8 rm1 = r1 == mb;
+	EXPECT_EQ(all(rm1), true);
+
+	vmask8 m2(false);
+	vfloat8 r2 = select(ma, mb, m2);
+	vmask8 rm2 = r2 == mb;
+	EXPECT_EQ(any(rm2), false);
+}
+
 /** @brief Test vmask8 or. */
 TEST(vmask8, or)
 {
