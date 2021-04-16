@@ -91,6 +91,7 @@ static void compute_endpoints_and_ideal_weights_1_comp(
 		}
 	}
 
+	vmask4 sep_mask = vint4::lane_id() == vint4(component);
 	for (int i = 0; i < partition_count; i++)
 	{
 		float diff = highvalues[i] - lowvalues[i];
@@ -105,7 +106,13 @@ static void compute_endpoints_and_ideal_weights_1_comp(
 
 		partition_error_scale[i] = diff * diff;
 		linelengths_rcp[i] = 1.0f / diff;
+
+		ei->ep.endpt0[i] = select(blk->data_min, vfloat4(lowvalues[i]), sep_mask);
+		ei->ep.endpt1[i] = select(blk->data_max, vfloat4(highvalues[i]), sep_mask);
 	}
+
+	bool is_constant_wes = true;
+	float constant_wes = partition_error_scale[pt->partition_of_texel[0]] * error_weights[0];
 
 	for (int i = 0; i < texel_count; i++)
 	{
@@ -118,14 +125,11 @@ static void compute_endpoints_and_ideal_weights_1_comp(
 		ei->weights[i] = value;
 		ei->weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
+
+		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
 
-	vmask4 sep_mask = vint4::lane_id() == vint4(component);
-	for (int i = 0; i < partition_count; i++)
-	{
-		ei->ep.endpt0[i] = select(blk->data_min, vfloat4(lowvalues[i]), sep_mask);
-		ei->ep.endpt1[i] = select(blk->data_max, vfloat4(highvalues[i]), sep_mask);
-	}
+	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
 static void compute_endpoints_and_ideal_weights_2_comp(
@@ -304,6 +308,9 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		ei->ep.endpt1[i] = select(ep1, vfloat4(highvalues[i].g), comp2_mask);
 	}
 
+	bool is_constant_wes = true;
+	float constant_wes = length_squared[pt->partition_of_texel[0]] * error_weights[0];
+
 	for (int i = 0; i < texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
@@ -313,7 +320,11 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
+
+		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
+
+	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
 static void compute_endpoints_and_ideal_weights_3_comp(
@@ -487,6 +498,10 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		}
 	}
 
+
+	bool is_constant_wes = true;
+	float constant_wes = length_squared[pt->partition_of_texel[0]] * error_weights[0];
+
 	for (int i = 0; i < texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
@@ -496,7 +511,11 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = length_squared[partition] * error_weights[i];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
+
+		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
+
+	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
 static void compute_endpoints_and_ideal_weights_4_comp(
@@ -599,6 +618,9 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		ei->ep.endpt1[i] = ep1 / pms[i].color_scale;
 	}
 
+	bool is_constant_wes = true;
+	float constant_wes = length_squared[pt->partition_of_texel[0]] * error_weights[0];
+
 	for (int i = 0; i < texel_count; i++)
 	{
 		int partition = pt->partition_of_texel[i];
@@ -608,7 +630,11 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		ei->weights[i] = idx;
 		ei->weight_error_scale[i] = error_weights[i] * length_squared[partition];
 		assert(!astc::isnan(ei->weight_error_scale[i]));
+
+		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
+
+	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
 /*
@@ -819,6 +845,7 @@ void compute_ideal_weights_for_decimation_table(
 	// here because we want to load the data anyway, so we can avoid loading it
 	// from memory twice.
 	eai_out.ep = eai_in.ep;
+	eai_out.is_constant_weight_error_scale = eai_in.is_constant_weight_error_scale;
 
 	// If we have a 1:1 mapping just shortcut the computation - clone the
 	// weights into both the weight set and the output epw copy.
@@ -854,6 +881,10 @@ void compute_ideal_weights_for_decimation_table(
 
 #if ASTCENC_SIMD_WIDTH >= 8
 	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
+
+	bool constant_wes = eai_in.is_constant_weight_error_scale;
+	vfloat weight_error_scale(eai_in.weight_error_scale[0]);
+
 	for (/* */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
@@ -876,7 +907,12 @@ void compute_ideal_weights_for_decimation_table(
 			vfloat weight = loada(dt.weights_flt[j] + i);
 			weight = select(vfloat::zero(), weight, active);
 
-			vfloat contrib_weight = weight * gatherf(eai_in.weight_error_scale, texel);
+			if (!constant_wes)
+			{
+				weight_error_scale = gatherf(eai_in.weight_error_scale, texel);
+			}
+
+			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight = weight_weight + contrib_weight;
 			initial_weight = initial_weight + gatherf(eai_in.weights, texel) * contrib_weight;
@@ -961,7 +997,12 @@ void compute_ideal_weights_for_decimation_table(
 			vfloat contrib_weight = loada(dt.weights_flt[j] + i);
 			contrib_weight = select(vfloat::zero(), contrib_weight, active);
 
-			vfloat scale = gatherf(eai_in.weight_error_scale, texel) * contrib_weight;
+			if (!constant_wes)
+			{
+ 				weight_error_scale = gatherf(eai_in.weight_error_scale, texel);
+			}
+
+			vfloat scale = weight_error_scale * contrib_weight;
 			vfloat old_weight = gatherf(infilled_weights, texel);
 			vfloat ideal_weight = gatherf(eai_in.weights, texel);
 

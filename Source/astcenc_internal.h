@@ -1101,6 +1101,9 @@ struct endpoints_and_weights
 	endpoints ep;
 	alignas(ASTCENC_VECALIGN) float weights[MAX_TEXELS_PER_BLOCK];
 	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
+
+	/**< True if all active values in weight_error_scale are the same. */
+	bool is_constant_weight_error_scale;
 };
 
 void compute_endpoints_and_ideal_weights_1_plane(
