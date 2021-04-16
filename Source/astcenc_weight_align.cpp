@@ -229,7 +229,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	float low_value[12],
 	float high_value[12]
 ) {
-	int max_quantization_steps = quantization_steps_for_level[max_quant_level + 1];
+	int max_quantization_steps = quantization_steps_for_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
 	int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
