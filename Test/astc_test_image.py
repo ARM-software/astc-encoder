@@ -259,8 +259,8 @@ def get_encoder_params(encoderName, referenceName, imageSet):
             return (encoder, name, outDir, refName)
 
         # Latest main
-        if version == main:
-            encoder = te.Encoder2x(version, simd)
+        if version == "main":
+            encoder = te.Encoder2x(simd)
             name = f"reference-{version}-{simd}"
             outDir = "Test/Images/%s" % imageSet
             refName = None
