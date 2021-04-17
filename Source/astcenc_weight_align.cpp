@@ -111,6 +111,7 @@ static void compute_angular_offsets(
 	// Precompute isample; arrays are always allocated 64 elements long
 	for (int i = 0; i < sample_count; i += ASTCENC_SIMD_WIDTH)
 	{
+		// Add 2^23 and interpreting bits extracts round-to-nearest int
 		vfloat sample = loada(samples + i) * (SINCOS_STEPS - 1.0f) + vfloat(12582912.0f);
 		vint isample = float_as_int(sample) & vint((SINCOS_STEPS - 1));
 		storea(isample, isamplev + i);

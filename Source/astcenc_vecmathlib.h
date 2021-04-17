@@ -47,7 +47,6 @@
  *     * 4-wide for x86-64 SSE2.
  *     * 4-wide for x86-64 SSE4.1.
  *     * 8-wide for x86-64 AVX2.
- *
  */
 
 #ifndef ASTC_VECMATHLIB_H_INCLUDED
