@@ -252,77 +252,103 @@ def main():
     absoluteXLimit = 35
 
     charts = [
+        # --------------------------------------------------------
+        # Latest in stable series charts
         [
-            # Plot headline 1.7 to 2.3 scores
-            ["medium"],
-            ["ref-2.3-avx2"],
+            # Relative scores
+            ["thorough", "medium", "fast"],
+            ["ref-2.5-avx2"],
             ["4x4", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-1.7-to-2.3.png",
+            "relative-stable-series.png",
             (10, None)
         ], [
-            # --------------------------------------------------------
-            # Plot all absolute scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.2-avx2", "ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            False,
-            None,
-            None,
-            "absolute-all.png",
-            (absoluteXLimit, None)
-        ], [
-            # Plot 2.3 to 2.2 absolute scores
-            ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.2-avx2", "ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            False,
-            None,
-            None,
-            "absolute-2.2-to-2.3.png",
-            (absoluteXLimit, None)
-        ], [
-            # --------------------------------------------------------
-            # Plot all relative scores vs 1.7
+            # Absolute scores
             ["thorough", "medium", "fast"],
-            ["ref-2.2-avx2", "ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
+            ["ref-1.7", "ref-2.5-avx2"],
+            ["4x4", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-stable-series.png",
+            (absoluteXLimit, None)
+        ],
+        # --------------------------------------------------------
+        # Latest 2.x vs 1.7 release charts
+        [
+            # Relative scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.5-avx2"],
+            ["4x4", "6x6", "8x8"],
             True,
             "ref-1.7",
             None,
-            "relative-all-v1.7.png",
+            "relative-2.x-vs-1.x.png",
             (None, None)
         ], [
-            # Plot 2.2 to 2.3 relative scores
+            # Absolute scores
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
-            True,
-            "ref-2.2-avx2",
+            ["ref-1.7", "ref-2.5-avx2"],
+            ["4x4", "6x6", "8x8"],
+            False,
             None,
-            "relative-2.2-to-2.3.png",
-            (None, None),
+            None,
+            "absolute-2.x-vs-1.x.png",
+            (absoluteXLimit, None)
         ], [
-            # Plot relative scores of ISAs of latest
+            # Relative ISAs of latest
             ["thorough", "medium", "fast", "fastest"],
-            ["ref-2.3-sse4.1", "ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
+            ["ref-2.5-sse4.1", "ref-2.5-avx2"],
+            ["4x4", "6x6", "8x8"],
             True,
-            "ref-2.3-sse2",
+            "ref-2.5-sse2",
             None,
-            "relative-2.3-isas.png",
+            "relative-2.x-isa.png",
             (None, None)
         ], [
-            # Plot relative scores of qualities of latest
+            # Relative quality of latest
             ["medium", "fast", "fastest"],
-            ["ref-2.3-avx2"],
-            ["4x4", "5x5", "6x6", "8x8"],
+            ["ref-2.5-avx2"],
+            ["4x4", "6x6", "8x8"],
             True,
             None,
             "thorough",
-            "relative-2.3-qualities.png",
+            "relative-2.x-quality.png",
+            (None, None)
+        ],
+        # --------------------------------------------------------
+        # Latest main vs last stable release charts
+        [
+            # Relative scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            "ref-2.5-avx2",
+            None,
+            "relative-main-vs-2.x.png",
+            (None, None)
+        ], [
+            # Absolute scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-2.5-avx2", "ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            False,
+            None,
+            None,
+            "absolute-main-vs-2.x.png",
+            (absoluteXLimit, None)
+        ], [
+            # Relative quality of latest
+            ["medium", "fast", "fastest"],
+            ["ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            None,
+            "thorough",
+            "relative-main-quality.png",
             (None, None)
         ]
     ]
