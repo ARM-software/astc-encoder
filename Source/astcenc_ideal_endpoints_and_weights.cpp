@@ -1080,15 +1080,7 @@ void compute_quantized_weights_for_decimation_table(
 	// Quantize the weight set using both the specified low/high bounds
 	// and the standard 0..1 weight bounds.
 
-	/*
-	   TODO: WTF issue that we need to examine some time
-	*/
-	if (!((high_bound - low_bound) > 0.5f))
-	{
-		low_bound = 0.0f;
-		high_bound = 1.0f;
-	}
-
+	assert(high_bound > low_bound);
 	float rscale = high_bound - low_bound;
 	float scale = 1.0f / rscale;
 
@@ -1098,7 +1090,7 @@ void compute_quantized_weights_for_decimation_table(
 	int i = 0;
 
 #if ASTCENC_SIMD_WIDTH > 1
-	// SIMD loop; process weights in SIMD width batches while we can.
+	// SIMD loop; process weights in SIMD width batches while we can
 	vfloat scalev(scale);
 	vfloat scaled_low_boundv(scaled_low_bound);
 	vfloat quant_level_m1v(quant_level_m1);
@@ -1111,7 +1103,7 @@ void compute_quantized_weights_for_decimation_table(
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
 		ix = clampzo(ix);
 
-		//Llook up the two closest indexes and return the one that was closest.
+		// Look up the two closest indexes and return the one that was closest
 		vfloat ix1 = ix * quant_level_m1v;
 		vint weight = float_to_int(ix1);
 		vint weight1 = weight + vint(1);
