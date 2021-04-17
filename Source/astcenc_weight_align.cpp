@@ -348,6 +348,7 @@ void compute_angular_endpoints_1plane(
 	float low_values[MAX_DECIMATION_MODES][12];
 	float high_values[MAX_DECIMATION_MODES][12];
 
+	promise(bsd->decimation_mode_count > 0);
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd->decimation_modes[i];
@@ -364,6 +365,7 @@ void compute_angular_endpoints_1plane(
 		    dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
+	promise(bsd->block_mode_count > 0);
 	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd->block_modes[i];
@@ -395,6 +397,7 @@ void compute_angular_endpoints_2planes(
 	float low_values2[MAX_DECIMATION_MODES][12];
 	float high_values2[MAX_DECIMATION_MODES][12];
 
+	promise(bsd->decimation_mode_count > 0);
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd->decimation_modes[i];
@@ -418,6 +421,7 @@ void compute_angular_endpoints_2planes(
 		    dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
+	promise(bsd->block_mode_count > 0);
 	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd->block_modes[i];

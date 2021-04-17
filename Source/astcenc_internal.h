@@ -406,14 +406,9 @@ struct decimation_table
 	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
 	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
 
-	// TODO: Can we remove the copies?
-	float texel_weights_float_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
 	uint8_t texel_weights_t4[MAX_TEXELS_PER_BLOCK][4];	// the weights that go into a texel calculation
-
 	uint8_t texel_weights_int_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
-
 	uint8_t weight_texel_count[MAX_WEIGHTS_PER_BLOCK];	// the number of texels that a given weight contributes to
-	uint8_t weights_int[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];	// the weights that the weight contributes to a texel.
 
 	// Stored transposed to give better access patterns
 	uint8_t weight_texel[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the texels that the weight contributes to
@@ -1169,10 +1164,10 @@ static inline float bilinear_infill(
 	const float* weights,
 	int index
 ) {
-	return (weights[dt.texel_weights_t4[index][0]] * dt.texel_weights_float_t4[index][0] +
-	        weights[dt.texel_weights_t4[index][1]] * dt.texel_weights_float_t4[index][1]) +
-	       (weights[dt.texel_weights_t4[index][2]] * dt.texel_weights_float_t4[index][2] +
-	        weights[dt.texel_weights_t4[index][3]] * dt.texel_weights_float_t4[index][3]);
+	return (weights[dt.texel_weights_4t[0][index]] * dt.texel_weights_float_4t[0][index] +
+	        weights[dt.texel_weights_4t[1][index]] * dt.texel_weights_float_4t[1][index]) +
+	       (weights[dt.texel_weights_4t[2][index]] * dt.texel_weights_float_4t[2][index] +
+	        weights[dt.texel_weights_4t[3][index]] * dt.texel_weights_float_4t[3][index]);
 }
 
 /**

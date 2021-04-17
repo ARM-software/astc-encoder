@@ -308,7 +308,6 @@ static void initialize_decimation_table_2d(
 		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = 0;
-			dt->texel_weights_float_t4[i][j] = 0.0f;
 			dt->texel_weights_t4[i][j] = 0;
 
 			dt->texel_weights_float_4t[j][i] = 0.0f;
@@ -319,7 +318,6 @@ static void initialize_decimation_table_2d(
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
 			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
 
 			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
@@ -335,8 +333,6 @@ static void initialize_decimation_table_2d(
 		{
 			uint8_t texel = texels_of_weight[i][j];
 
-			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-
 			// Create transposed versions of these for better vectorization
 			dt->weight_texel[j][i] = texel;
 			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
@@ -348,7 +344,7 @@ static void initialize_decimation_table_2d(
 			for (int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = dt->texel_weights_t4[texel][k];
-				float dttwf = dt->texel_weights_float_t4[texel][k];
+				float dttwf = dt->texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
@@ -530,7 +526,6 @@ static void initialize_decimation_table_3d(
 		for (int j = 0; j < 4; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = 0;
-			dt->texel_weights_float_t4[i][j] = 0.0f;
 			dt->texel_weights_t4[i][j] = 0;
 
 			dt->texel_weights_float_4t[j][i] = 0.0f;
@@ -540,7 +535,6 @@ static void initialize_decimation_table_3d(
 		for (int j = 0; j < weightcount_of_texel[i]; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_float_t4[i][j] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
 			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
 
 			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
@@ -555,8 +549,6 @@ static void initialize_decimation_table_3d(
 		{
 			int texel = texels_of_weight[i][j];
 
-			dt->weights_int[i][j] = texelweights_of_weight[i][j];
-
 			// Create transposed versions of these for better vectorization
 			dt->weight_texel[j][i] = texel;
 			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
@@ -568,7 +560,7 @@ static void initialize_decimation_table_3d(
 			for (int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = dt->texel_weights_t4[texel][k];
-				float dttwf = dt->texel_weights_float_t4[texel][k];
+				float dttwf = dt->texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
