@@ -914,8 +914,8 @@ void compute_ideal_weights_for_decimation_table(
 
 			vfloat contrib_weight = weight * weight_error_scale;
 
-			weight_weight = weight_weight + contrib_weight;
-			initial_weight = initial_weight + gatherf(eai_in.weights, texel) * contrib_weight;
+			weight_weight += contrib_weight;
+			initial_weight += gatherf(eai_in.weights, texel) * contrib_weight;
 		}
 
 		storea(weight_weight, weights + i);
