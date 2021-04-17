@@ -1105,13 +1105,15 @@ void compute_quantized_weights_for_decimation_table(
 
 		// Look up the two closest indexes and return the one that was closest
 		vfloat ix1 = ix * quant_level_m1v;
-		vint weight = float_to_int(ix1);
-		vint weight1 = weight + vint(1);
-		vfloat ixl = gatherf(qat->unquantized_value_unsc, weight);
-		vfloat ixh = gatherf(qat->unquantized_value_unsc, weight1);
+
+		vint weightl = float_to_int(ix1);
+		vint weighth = weightl + vint(1);
+
+		vfloat ixl = gatherf(qat->unquantized_value_unsc, weightl);
+		vfloat ixh = gatherf(qat->unquantized_value_unsc, weighth);
 
 		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
-		weight = select(weight, weight1, mask);
+		vint weight = select(weightl, weighth, mask);
 		ixl = select(ixl, ixh, mask);
 
 		// Invert the weight-scaling that was done initially
