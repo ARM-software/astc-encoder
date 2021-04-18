@@ -329,7 +329,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		    bm.quant_mode);
 
 		// then, compute weight-errors for the weight mode.
-		qwt_errors[i] = compute_error_of_weight_set(
+		qwt_errors[i] = compute_error_of_weight_set_1plane(
 		                    &(eix[decimation_mode]),
 		                    dts[decimation_mode],
 		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
@@ -728,15 +728,12 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 
 		// then, compute quantization errors for the block mode.
-		qwt_errors[i] = compute_error_of_weight_set(
-		                    &(eix1[decimation_mode]),
-		                    dts[decimation_mode],
-		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i))
-
-		              + compute_error_of_weight_set(
-		                    &(eix2[decimation_mode]),
-		                    dts[decimation_mode],
-		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1));
+		qwt_errors[i] = compute_error_of_weight_set_2planes(
+		    &(eix1[decimation_mode]),
+		    &(eix2[decimation_mode]),
+		    dts[decimation_mode],
+		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
+		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1));
 	}
 
 	// decide the optimal combination of color endpoint encodings and weight encodings.

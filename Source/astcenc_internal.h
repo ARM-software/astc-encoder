@@ -1201,10 +1201,17 @@ static inline vfloat bilinear_infill_vla(
 	       (weight_val2 * tex_weight_float2 + weight_val3 * tex_weight_float3);
 }
 
-float compute_error_of_weight_set(
+float compute_error_of_weight_set_1plane(
 	const endpoints_and_weights* eai,
 	const decimation_table* dt,
 	const float *weights);
+
+float compute_error_of_weight_set_2planes(
+	const endpoints_and_weights* eai1,
+	const endpoints_and_weights* eai2,
+	const decimation_table* dt,
+	const float* weights1,
+	const float* weights2);
 
 void merge_endpoints(
 	const endpoints* ep1,	// contains three of the color components

@@ -755,7 +755,7 @@ void compute_endpoints_and_ideal_weights_2_planes(
      go into a given texel.
 */
 
-float compute_error_of_weight_set(
+float compute_error_of_weight_set_1plane(
 	const endpoints_and_weights* eai,
 	const decimation_table* dt,
 	const float* weights
@@ -796,6 +796,86 @@ float compute_error_of_weight_set(
 		// Accumulate error sum in the temporary array
 		int error_index = i & 0x3;
 		errorsum_tmp[error_index] = error;
+
+#if ASTCENC_SIMD_WIDTH == 8
+		// Zero the temporary staging buffer every 4 items unless last. Note
+		// that this block can only trigger for 6x5 blocks, all other partials
+		// tails are shorter than 4 ...
+		if ((i & 0x7) == 0x03)
+		{
+			haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
+ 			storea(vfloat4::zero(), errorsum_tmp);
+		}
+#endif
+	}
+
+	// Accumulate the loop tail using the vfloat4 swizzle
+	haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
+
+	// Resolve the final scalar accumulator sum
+	haccumulate(error_summa, error_summav);
+
+	return error_summa;
+}
+
+float compute_error_of_weight_set_2planes(
+	const endpoints_and_weights* eai1,
+	const endpoints_and_weights* eai2,
+	const decimation_table* dt,
+	const float* weights1,
+	const float* weights2
+) {
+	vfloat4 error_summav = vfloat4::zero();
+	float error_summa = 0.0f;
+	int texel_count = dt->texel_count;
+
+	int i = 0;
+
+	// Process SIMD-width texel coordinates at at time while we can
+	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		// Plane 1
+		// Compute the bilinear interpolation of the decimated weight grid
+		vfloat current_values1 = bilinear_infill_vla(*dt, weights1, i);
+
+		// Compute the error between the computed value and the ideal weight
+		vfloat actual_values1 = loada(&(eai1->weights[i]));
+		vfloat diff = current_values1 - actual_values1;
+		vfloat error1 = diff * diff * loada(&(eai1->weight_error_scale[i]));
+
+		// Plane 2
+		// Compute the bilinear interpolation of the decimated weight grid
+		vfloat current_values2 = bilinear_infill_vla(*dt, weights2, i);
+
+		// Compute the error between the computed value and the ideal weight
+		vfloat actual_values2 = loada(&(eai2->weights[i]));
+		diff = current_values2 - actual_values2;
+		vfloat error2 = diff * diff * loada(&(eai2->weight_error_scale[i]));
+
+		haccumulate(error_summav, error1 + error2);
+	}
+
+	// Loop tail
+	// Error is buffered and accumulated in blocks of 4 to ensure that
+	// the partial sums added to the accumulator are invariant with the
+	// vector implementation, irrespective of vector size ...
+	alignas(16) float errorsum_tmp[4] { 0 };
+	for (/* */; i < texel_count; i++)
+	{
+		// Plane 1
+		float current_value1 = bilinear_infill(*dt, weights1, i);
+		float valuedif1 = current_value1 - eai1->weights[i];
+		float error1 = valuedif1 * valuedif1 * eai1->weight_error_scale[i];
+
+		// Plane 2
+		float current_value2 = bilinear_infill(*dt, weights2, i);
+		float valuedif2 = current_value2 - eai2->weights[i];
+		float error2 = valuedif2 * valuedif2 * eai2->weight_error_scale[i];
+
+		// Accumulate error sum in the temporary array
+		int error_index = i & 0x3;
+		errorsum_tmp[error_index] = error1 + error2;
 
 #if ASTCENC_SIMD_WIDTH == 8
 		// Zero the temporary staging buffer every 4 items unless last. Note
