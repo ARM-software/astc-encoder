@@ -249,6 +249,8 @@ static void generate_one_partition_table(
 
 	uint8_t *partition_of_texel = pt->partition_of_texel;
 
+	int texel_idx = 0;
+	int counts[4] { 0 };
 	for (int z = 0; z < bsd->zdim; z++)
 	{
 		for (int y = 0; y <  bsd->ydim; y++)
@@ -256,26 +258,21 @@ static void generate_one_partition_table(
 			for (int x = 0; x <  bsd->xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
+				pt->texels_of_partition[part][counts[part]++] = texel_idx++;
 				*partition_of_texel++ = part;
 			}
 		}
 	}
 
-	int counts[4];
-	for (int i = 0; i < 4; i++)
+	// Fill loop tail so we can overfetch later
+	for (int i = 0; i < partition_count; i++)
 	{
-		counts[i] = 0;
-	}
-
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		int partition = pt->partition_of_texel[i];
-		pt->texels_of_partition[partition][counts[partition]++] = i;
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		pt->partition_texel_count[i] = counts[i];
+		int ptex_count = counts[i];
+		int ptex_count_simd = round_up_to_simd_multiple_vla(ptex_count);
+		for (int j = ptex_count; j < ptex_count_simd; j++)
+		{
+			pt->texels_of_partition[i][j] = pt->texels_of_partition[i][ptex_count - 1];
+		}
 	}
 
 	if (counts[0] == 0)
@@ -301,6 +298,7 @@ static void generate_one_partition_table(
 
 	for (int i = 0; i < 4; i++)
 	{
+		pt->partition_texel_count[i] = counts[i];
 		pt->coverage_bitmaps[i] = 0ULL;
 	}
 

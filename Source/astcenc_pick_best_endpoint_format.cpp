@@ -935,8 +935,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 
 	// Go through the results and pick the best candidate modes
 	int best_error_weights[TUNE_MAX_TRIAL_CANDIDATES];
-	static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0,
-	              "MAX_WEIGHT_MODES should be multiple of ASTCENC_SIMD_WIDTH");
 	for (int i = 0; i < tune_candidate_limit; i++)
 	{
 		vint vbest_error_index(-1);

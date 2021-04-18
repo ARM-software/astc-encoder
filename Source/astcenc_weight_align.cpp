@@ -52,6 +52,7 @@
 #include <cstring>
 
 #define ANGULAR_STEPS 40
+
 static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
               "ANGULAR_STEPS must be multiple of ASTCENC_SIMD_WIDTH");
 

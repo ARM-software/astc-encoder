@@ -414,9 +414,13 @@ void compute_error_squared_rgba(
 		vfloat samec_hiparamv(-1e10f);
 		vfloat4 samec_errorsumv = vfloat4::zero();
 
-		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		// This implementation over-shoots, but this is safe as we initialize the weights array
+		// to extend the last value. This means min/max are not impacted, but we need to mask
+		// out the dummy values when we compute the line weighting.
+		vint lane_ids = vint::lane_id();
+		for (/* */; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
+			vmask mask = lane_ids < vint(texel_count);
 			vint texel_idxs(&(weights[i]));
 
 			vfloat data_r = gatherf(blk->data_r, texel_idxs);
@@ -446,12 +450,13 @@ void compute_error_squared_rgba(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bis3);
 
-			vfloat uncor_error = (ew_r * uncor_dist0 * uncor_dist0)
-			                   + (ew_g * uncor_dist1 * uncor_dist1)
-			                   + (ew_b * uncor_dist2 * uncor_dist2)
-			                   + (ew_a * uncor_dist3 * uncor_dist3);
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist1 * uncor_dist1)
+			                 + (ew_b * uncor_dist2 * uncor_dist2)
+			                 + (ew_a * uncor_dist3 * uncor_dist3);
 
-			haccumulate(uncor_errorsumv, uncor_error);
+			uncor_err = select(vfloat::zero(), uncor_err, mask);
+			haccumulate(uncor_errorsumv, uncor_err);
 
 			// Process samechroma data
 			vfloat samec_param = (data_r * l_samec_bs0)
@@ -467,12 +472,15 @@ void compute_error_squared_rgba(
 			vfloat samec_dist2 = samec_param * l_samec_bis2 - data_b;
 			vfloat samec_dist3 = samec_param * l_samec_bis3 - data_a;
 
-			vfloat samec_error = (ew_r * samec_dist0 * samec_dist0)
-			                   + (ew_g * samec_dist1 * samec_dist1)
-			                   + (ew_b * samec_dist2 * samec_dist2)
-			                   + (ew_a * samec_dist3 * samec_dist3);
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2)
+			                 + (ew_a * samec_dist3 * samec_dist3);
 
-			haccumulate(samec_errorsumv, samec_error);
+			samec_err = select(vfloat::zero(), samec_err, mask);
+			haccumulate(samec_errorsumv, samec_err);
+
+			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);
@@ -480,56 +488,6 @@ void compute_error_squared_rgba(
 
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
-
-		// Loop tail
-		// Error is buffered and accumulated in blocks of 4 to ensure that
-		// the partial sums added to the accumulator are invariant with the
-		// vector implementation, irrespective of vector size ...
-		alignas(16) float uncor_errorsum_tmp[4] { 0 };
-		alignas(16) float samec_errorsum_tmp[4] { 0 };
-		for (/* */; i < texel_count; i++)
-		{
-			int iwt = weights[i];
-
-			vfloat4 dat = blk->texel(iwt);
-			vfloat4 ews = ewb->error_weights[iwt];
-
-			float uncor_param = dot_s(dat, l_uncor.bs);
-			uncor_loparam = astc::min(uncor_param, uncor_loparam);
-			uncor_hiparam = astc::max(uncor_param, uncor_hiparam);
-
-			float samec_param = dot_s(dat, l_samec.bs);
-			samec_loparam = astc::min(samec_param, samec_loparam);
-			samec_hiparam = astc::max(samec_param, samec_hiparam);
-
-			vfloat4 uncor_dist  = (l_uncor.amod - dat)
-			                    + (uncor_param * l_uncor.bis);
-			float uncor_error_tmp = dot_s(ews, uncor_dist * uncor_dist);
-
-			vfloat4 samec_dist = samec_param * l_samec.bis - dat;
-			float samec_error_tmp = dot_s(ews, samec_dist * samec_dist);
-
-			// Accumulate error sum in the temporary array
-			int error_index = i & 0x3;
-			uncor_errorsum_tmp[error_index] = uncor_error_tmp;
-			samec_errorsum_tmp[error_index] = samec_error_tmp;
-
-#if ASTCENC_SIMD_WIDTH == 8
-			// Zero the temporary staging buffer every 4 items unless last iter
-			if ((i & 0x7) == 0x03)
-			{
-				haccumulate(uncor_errorsumv, vfloat4::loada(uncor_errorsum_tmp));
-				storea(vfloat4::zero(), uncor_errorsum_tmp);
-
-				haccumulate(samec_errorsumv, vfloat4::loada(samec_errorsum_tmp));
-				storea(vfloat4::zero(), samec_errorsum_tmp);
-			}
-#endif
-		}
-
-		// Accumulate the loop tail using the vfloat4 swizzle
-		haccumulate(uncor_errorsumv, vfloat4::loada(uncor_errorsum_tmp));
-		haccumulate(samec_errorsumv, vfloat4::loada(samec_errorsum_tmp));
 
 		// Resolve the final scalar accumulator sum
 		haccumulate(uncor_errorsum, uncor_errorsumv);
@@ -539,11 +497,8 @@ void compute_error_squared_rgba(
 		float samec_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
-		uncor_linelen = astc::max(uncor_linelen, 1e-7f);
-		samec_linelen = astc::max(samec_linelen, 1e-7f);
-
-		uncor_lengths[partition] = uncor_linelen;
-		samec_lengths[partition] = samec_linelen;
+		uncor_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
+		samec_lengths[partition] = astc::max(samec_linelen, 1e-7f);
 	}
 
 	*uncor_errors = uncor_errorsum;
@@ -580,8 +535,6 @@ void compute_error_squared_rgb(
 		processed_line3 l_uncor = pl.uncor_pline;
 		processed_line3 l_samec = pl.samec_pline;
 
-		int i = 0;
-
 		// This implementation is an example vectorization of this function.
 		// It works for - the codec is a 2-4% faster than not vectorizing - but
 		// the benefit is limited by the use of gathers and register pressure
@@ -617,9 +570,13 @@ void compute_error_squared_rgb(
 		vfloat samec_hiparamv(-1e10f);
 		vfloat4 samec_errorsumv = vfloat4::zero();
 
-		int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-		for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		// This implementation over-shoots, but this is safe as we initialize the weights array
+		// to extend the last value. This means min/max are not impacted, but we need to mask
+		// out the dummy values when we compute the line weighting.
+		vint lane_ids = vint::lane_id();
+		for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
+			vmask mask = lane_ids < vint(texel_count);
 			vint texel_idxs(&(weights[i]));
 
 			vfloat data_r = gatherf(blk->data_r, texel_idxs);
@@ -648,6 +605,7 @@ void compute_error_squared_rgb(
 			                 + (ew_g * uncor_dist1 * uncor_dist1)
 			                 + (ew_b * uncor_dist2 * uncor_dist2);
 
+			uncor_err = select(vfloat::zero(), uncor_err, mask);
 			haccumulate(uncor_errorsumv, uncor_err);
 
 			// Process samechroma data
@@ -667,7 +625,10 @@ void compute_error_squared_rgb(
 			                 + (ew_g * samec_dist1 * samec_dist1)
 			                 + (ew_b * samec_dist2 * samec_dist2);
 
+			samec_err = select(vfloat::zero(), samec_err, mask);
 			haccumulate(samec_errorsumv, samec_err);
+
+			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);
@@ -675,56 +636,6 @@ void compute_error_squared_rgb(
 
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
-
-		// Loop tail
-		// Error is buffered and accumulated in blocks of 4 to ensure that
-		// the partial sums added to the accumulator are invariant with the
-		// vector implementation, irrespective of vector size ...
-		alignas(16) float uncor_errorsum_tmp[4] { 0 };
-		alignas(16) float samec_errorsum_tmp[4] { 0 };
-		for (/* */; i < texel_count; i++)
-		{
-			int iwt = weights[i];
-
-			vfloat4 dat = blk->texel3(iwt);
-			vfloat4 ews = ewb->error_weights[iwt];
-
-			float uncor_param = dot3_s(dat, l_uncor.bs);
-			uncor_loparam  = astc::min(uncor_param, uncor_loparam);
-			uncor_hiparam = astc::max(uncor_param, uncor_hiparam);
-
-			float samec_param = dot3_s(dat, l_samec.bs);
-			samec_loparam  = astc::min(samec_param, samec_loparam);
-			samec_hiparam = astc::max(samec_param, samec_hiparam);
-
-			vfloat4 uncor_dist  = (l_uncor.amod - dat)
-			                    + (uncor_param * l_uncor.bis);
-			float uncor_error_tmp = dot3_s(ews, uncor_dist * uncor_dist);
-
-			vfloat4 samec_dist = samec_param * l_samec.bis - dat;
-			float samec_error_tmp = dot3_s(ews, samec_dist * samec_dist);
-
-			// Accumulate error sum in the temporary array
-			int error_index = i & 0x3;
-			uncor_errorsum_tmp[error_index] = uncor_error_tmp;
-			samec_errorsum_tmp[error_index] = samec_error_tmp;
-
-#if ASTCENC_SIMD_WIDTH == 8
-			// Emit the staging buffer every 4 items unless last iteration
-			if ((i & 0x7) == 0x03)
-			{
-				haccumulate(uncor_errorsumv, vfloat4::loada(uncor_errorsum_tmp));
-				storea(vfloat4::zero(), uncor_errorsum_tmp);
-
-				haccumulate(samec_errorsumv, vfloat4::loada(samec_errorsum_tmp));
-				storea(vfloat4::zero(), samec_errorsum_tmp);
-			}
-#endif
-		}
-
-		// Accumulate the loop tail using the vfloat4 swizzle
-		haccumulate(uncor_errorsumv, vfloat4::loada(uncor_errorsum_tmp));
-		haccumulate(samec_errorsumv, vfloat4::loada(samec_errorsum_tmp));
 
 		// Resolve the final scalar accumulator sum
 		haccumulate(uncor_errorsum, uncor_errorsumv);
@@ -734,11 +645,8 @@ void compute_error_squared_rgb(
 		float samec_linelen = samec_hiparam - samec_loparam;
 
 		// Turn very small numbers and NaNs into a small number
-		uncor_linelen = astc::max(uncor_linelen, 1e-7f);
-		samec_linelen = astc::max(samec_linelen, 1e-7f);
-
-		pl.uncor_line_len = uncor_linelen;
-		pl.samec_line_len = samec_linelen;
+		pl.uncor_line_len = astc::max(uncor_linelen, 1e-7f);
+		pl.samec_line_len = astc::max(samec_linelen, 1e-7f);
 	}
 
 	uncor_error = uncor_errorsum;

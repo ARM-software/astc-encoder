@@ -94,6 +94,15 @@
 #define MAX_DECIMATION_MODES 87
 #define MAX_WEIGHT_MODES 2048
 
+static_assert((MAX_TEXELS_PER_BLOCK % ASTCENC_SIMD_WIDTH) == 0,
+              "MAX_TEXELS_PER_BLOCK must be multiple of ASTCENC_SIMD_WIDTH");
+
+static_assert((MAX_WEIGHTS_PER_BLOCK % ASTCENC_SIMD_WIDTH) == 0,
+              "MAX_WEIGHTS_PER_BLOCK must be multiple of ASTCENC_SIMD_WIDTH");
+
+static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0,
+              "MAX_WEIGHT_MODES must be multiple of ASTCENC_SIMD_WIDTH");
+
 // A high default error value
 static const float ERROR_CALC_DEFAULT { 1e30f };
 
