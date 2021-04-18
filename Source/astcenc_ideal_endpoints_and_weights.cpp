@@ -927,6 +927,15 @@ void compute_ideal_weights_for_decimation_table(
 	eai_out.ep = eai_in.ep;
 	eai_out.is_constant_weight_error_scale = eai_in.is_constant_weight_error_scale;
 
+	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
+	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
+	// arrays always contain space for 64 elements
+	int simd_weight_count = round_up_to_simd_multiple_vla(weight_count);
+	for (i = weight_count; i < simd_weight_count; i++)
+	{
+		weight_set[i] = 0.0f;
+	}
+
 	// If we have a 1:1 mapping just shortcut the computation - clone the
 	// weights into both the weight set and the output epw copy.
 	if (texel_count == weight_count)
@@ -940,6 +949,7 @@ void compute_ideal_weights_for_decimation_table(
 			eai_out.weights[i] = eai_in.weights[i];
 			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
 		}
+
 		return;
 	}
 	// If we don't have a 1:1 mapping just clone the weights into the output
@@ -1167,18 +1177,15 @@ void compute_quantized_weights_for_decimation_table(
 	float scaled_low_bound = low_bound * scale;
 	rscale *= 1.0f / 64.0f;
 
-	int i = 0;
-
-#if ASTCENC_SIMD_WIDTH > 1
-	// SIMD loop; process weights in SIMD width batches while we can
 	vfloat scalev(scale);
 	vfloat scaled_low_boundv(scaled_low_bound);
 	vfloat quant_level_m1v(quant_level_m1);
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
 
-	int clipped_weight_count = round_down_to_simd_multiple_vla(weight_count);
-	for (/* */; i < clipped_weight_count; i += ASTCENC_SIMD_WIDTH)
+	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
+	// safe data in compute_ideal_weights_for_decimation_table and arrays are always 64 elements
+	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
 		ix = clampzo(ix);
@@ -1201,30 +1208,6 @@ void compute_quantized_weights_for_decimation_table(
 		vint scm = gatheri(qat->scramble_map, weight);
 		vint scn = pack_low_bytes(scm);
 		store_nbytes(scn, &quantized_weight_set[i]);
-	}
-#endif // #if ASTCENC_SIMD_WIDTH > 1
-
-	// Loop tail
-	for (/* */; i < weight_count; i++)
-	{
-		float ix = (weight_set_in[i] * scale) - scaled_low_bound;
-		ix = astc::clamp1f(ix);
-
-		// look up the two closest indexes and return the one that was closest.
-		float ix1 = ix * quant_level_m1;
-		int weight = (int)ix1;
-		float ixl = qat->unquantized_value_unsc[weight];
-		float ixh = qat->unquantized_value_unsc[weight + 1];
-
-		if (ixl + ixh < 128.0f * ix)
-		{
-			weight++;
-			ixl = ixh;
-		}
-
-		// Invert the weight-scaling that was done initially
-		weight_set_out[i] = (ixl * rscale) + low_bound;
-		quantized_weight_set[i] = (uint8_t)qat->scramble_map[weight];
 	}
 }
 
