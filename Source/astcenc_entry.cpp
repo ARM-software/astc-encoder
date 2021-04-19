@@ -27,6 +27,101 @@
 #include "astcenc_internal.h"
 #include "astcenc_diagnostic_trace.h"
 
+/**
+ * @brief Record of the quality tuning parameter values.
+ *
+ * See the @c astcenc_config structure for detailed parameter documentation.
+ *
+ * Note that the mse_overshoot entries are scaling factors relative to the
+ * base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
+ * base db_limit, so we may actually use lower ratios for the more through
+ * search presets because the underlying db_limit is so much higher.
+ */
+struct astcenc_preset_config {
+	float quality;
+	unsigned int tune_partition_count_limit;
+	unsigned int tune_partition_index_limit;
+	unsigned int tune_block_mode_limit;
+	unsigned int tune_refinement_limit;
+	unsigned int tune_candidate_limit;
+	float tune_db_limit_a_base;
+	float tune_db_limit_b_base;
+	float tune_mode0_mse_overshoot;
+	float tune_refinement_mse_overshoot;
+	float tune_partition_early_out_limit;
+	float tune_two_plane_early_out_limit;
+};
+
+/**
+ * @brief The static quality presets that are built-in for high bandwidth
+ * presets (x < 25 texels per block).
+ */
+static const std::array<astcenc_preset_config, 5> preset_configs_high {{
+	{
+		ASTCENC_PRE_FASTEST,
+		3, 2, 30, 1, 1, 79, 57, 2.0f, 2.0f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_FAST,
+		3, 12, 55, 3, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_MEDIUM,
+		4, 25, 75, 2, 2, 95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+	}, {
+		ASTCENC_PRE_THOROUGH,
+		4, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+	}, {
+		ASTCENC_PRE_EXHAUSTIVE,
+		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
+	}
+}};
+
+/**
+ * @brief The static quality presets that are built-in for medium bandwidth
+ * presets (25 <= x < 64 texels per block).
+ */
+static const std::array<astcenc_preset_config, 5> preset_configs_mid {{
+	{
+		ASTCENC_PRE_FASTEST,
+		3, 2, 30, 1, 1, 79, 57, 2.0f, 2.0f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_FAST,
+		3, 10, 55, 2, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_MEDIUM,
+		3, 27, 77, 2, 2, 95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+	}, {
+		ASTCENC_PRE_THOROUGH,
+		4, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+	}, {
+		ASTCENC_PRE_EXHAUSTIVE,
+		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
+	}
+}};
+
+/**
+ * @brief The static quality presets that are built-in for low bandwidth
+ * presets (64 <= x texels per block).
+ */
+static const std::array<astcenc_preset_config, 5> preset_configs_low {{
+	{
+		ASTCENC_PRE_FASTEST,
+		3, 2, 30, 1, 1, 79, 57, 2.0f, 2.0f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_FAST,
+		3, 6, 52, 2, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
+	}, {
+		ASTCENC_PRE_MEDIUM,
+		3, 27, 77, 3, 2, 95, 70, 1.75f, 1.75f, 1.2f, 0.75f
+	}, {
+		ASTCENC_PRE_THOROUGH,
+		3, 77, 94, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
+	}, {
+		ASTCENC_PRE_EXHAUSTIVE,
+		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
+	}
+}};
+
+
 // The ASTC codec is written with the assumption that a float threaded through
 // the "if32" union will in fact be stored and reloaded as a 32-bit IEEE-754 single-precision
 // float, stored with round-to-nearest rounding. This is always the case in an
@@ -80,53 +175,6 @@ static astcenc_error validate_cpu_isa()
 
 	return ASTCENC_SUCCESS;
 }
-
-/**
- * @brief Record of the quality tuning parameter values.
- *
- * See the @c astcenc_config structure for detailed parameter documentation.
- *
- * Note that the mse_overshoot entries are scaling factors relative to the
- * base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
- * base db_limit, so we may actually use lower ratios for the more through
- * search presets because the underlying db_limit is so much higher.
- */
-struct astcenc_preset_config {
-	float quality;
-	unsigned int tune_partition_count_limit;
-	unsigned int tune_partition_index_limit;
-	unsigned int tune_block_mode_limit;
-	unsigned int tune_refinement_limit;
-	unsigned int tune_candidate_limit;
-	float tune_db_limit_a_base;
-	float tune_db_limit_b_base;
-	float tune_mode0_mse_overshoot;
-	float tune_refinement_mse_overshoot;
-	float tune_partition_early_out_limit;
-	float tune_two_plane_early_out_limit;
-};
-
-/**
- * @brief The static quality presets that are built-in.
- */
-static const std::array<astcenc_preset_config, 5> preset_configs {{
-	{
-		ASTCENC_PRE_FASTEST,
-		4, 2, 30, 1, 1, 79, 57, 2.0f, 2.0f, 1.0f, 0.5f
-	}, {
-		ASTCENC_PRE_FAST,
-		4, 4, 50, 2, 2, 85, 63, 3.5f, 3.5f, 1.0f, 0.5f
-	}, {
-		ASTCENC_PRE_MEDIUM,
-		4, 25, 75, 2, 2,  95, 70, 1.75f, 1.75f, 1.2f, 0.75f
-	}, {
-		ASTCENC_PRE_THOROUGH,
-		4, 75, 92, 4, 4, 105, 77, 10.0f, 10.0f, 2.5f, 0.95f
-	}, {
-		ASTCENC_PRE_EXHAUSTIVE,
-		4, 1024, 100, 4, 4, 200, 200, 10.0f, 10.0f, 10.0f, 0.99f
-	}
-}};
 
 static astcenc_error validate_profile(
 	astcenc_profile profile
@@ -375,12 +423,30 @@ astcenc_error astcenc_config_init(
 		return ASTCENC_ERR_BAD_QUALITY;
 	}
 
+	static const std::array<astcenc_preset_config, 5>* preset_configs;
+	int texels_int = block_x * block_y * block_z;
+	if (texels_int < 25)
+	{
+		preset_configs = &preset_configs_high;
+		printf("High bitrate config\n");
+	}
+	else if (texels_int < 64)
+	{
+		preset_configs = &preset_configs_mid;
+		printf("Mid bitrate config\n");
+	}
+	else
+	{
+		preset_configs = &preset_configs_low;
+		printf("Low bitrate config\n");
+	}
+
 	// Determine which preset to use, or which pair to interpolate
 	size_t start;
 	size_t end;
-	for (end = 0; end < preset_configs.size(); end++)
+	for (end = 0; end < preset_configs->size(); end++)
 	{
-		if (preset_configs[end].quality >= quality)
+		if ((*preset_configs)[end].quality >= quality)
 		{
 			break;
 		}
@@ -391,26 +457,26 @@ astcenc_error astcenc_config_init(
 	// Start and end node are the same - so just transfer the values.
 	if (start == end)
 	{
-		config.tune_partition_count_limit = preset_configs[start].tune_partition_count_limit;
-		config.tune_partition_index_limit = preset_configs[start].tune_partition_index_limit;
-		config.tune_block_mode_limit = preset_configs[start].tune_block_mode_limit;
-		config.tune_refinement_limit = preset_configs[start].tune_refinement_limit;
-		config.tune_candidate_limit = astc::min(preset_configs[start].tune_candidate_limit,
+		config.tune_partition_count_limit = (*preset_configs)[start].tune_partition_count_limit;
+		config.tune_partition_index_limit = (*preset_configs)[start].tune_partition_index_limit;
+		config.tune_block_mode_limit = (*preset_configs)[start].tune_block_mode_limit;
+		config.tune_refinement_limit = (*preset_configs)[start].tune_refinement_limit;
+		config.tune_candidate_limit = astc::min((*preset_configs)[start].tune_candidate_limit,
 		                                        TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_db_limit = astc::max(preset_configs[start].tune_db_limit_a_base - 35 * ltexels,
-		                                 preset_configs[start].tune_db_limit_b_base - 19 * ltexels);
+		config.tune_db_limit = astc::max((*preset_configs)[start].tune_db_limit_a_base - 35 * ltexels,
+		                                 (*preset_configs)[start].tune_db_limit_b_base - 19 * ltexels);
 
-		config.tune_mode0_mse_overshoot = preset_configs[start].tune_mode0_mse_overshoot;
-		config.tune_refinement_mse_overshoot = preset_configs[start].tune_refinement_mse_overshoot;
+		config.tune_mode0_mse_overshoot = (*preset_configs)[start].tune_mode0_mse_overshoot;
+		config.tune_refinement_mse_overshoot = (*preset_configs)[start].tune_refinement_mse_overshoot;
 
-		config.tune_partition_early_out_limit = preset_configs[start].tune_partition_early_out_limit;
-		config.tune_two_plane_early_out_limit = preset_configs[start].tune_two_plane_early_out_limit;
+		config.tune_partition_early_out_limit = (*preset_configs)[start].tune_partition_early_out_limit;
+		config.tune_two_plane_early_out_limit = (*preset_configs)[start].tune_two_plane_early_out_limit;
 	}
 	// Start and end node are not the same - so interpolate between them
 	else
 	{
-		auto& node_a = preset_configs[start];
-		auto& node_b = preset_configs[end];
+		auto& node_a = (*preset_configs)[start];
+		auto& node_b = (*preset_configs)[end];
 
 		float wt_range = node_b.quality - node_a.quality;
 		assert(wt_range > 0);
