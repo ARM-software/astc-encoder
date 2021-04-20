@@ -371,8 +371,8 @@ ADVANCED COMPRESSION
            Stop compression work on a block after only testing blocks with
            up to two partions and one plane of weights, unless the two
            partition error term is lower than the error term from encoding
-           with one partition by more than the specified factor. This
-           option is ineffective for normal maps. Preset defaults are:
+           with one partition by more than the specified factor. Preset
+           defaults are:
 
                -fastest    :  1.00
                -fast       :  1.00
@@ -384,8 +384,8 @@ ADVANCED COMPRESSION
            Stop compression work on a block after only testing blocks with
            up to three partions and one plane of weights, unless the three
            partition error term is lower than the error term from encoding
-           with two partitions by more than the specified factor. This
-           option is ineffective for normal maps. Preset defaults are:
+           with two partitions by more than the specified factor. Preset
+           defaults are:
 
                -fastest    :  1.00
                -fast       :  1.10

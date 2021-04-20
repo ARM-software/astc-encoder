@@ -521,8 +521,8 @@ astcenc_error astcenc_config_init(
 	{
 		config.cw_g_weight = 0.0f;
 		config.cw_b_weight = 0.0f;
-		config.tune_2_partition_early_out_limit = 1000.0f;
-		config.tune_3_partition_early_out_limit = 1000.0f;
+		config.tune_2_partition_early_out_limit *= 1.5f;
+		config.tune_3_partition_early_out_limit *= 1.5f;
 		config.tune_two_plane_early_out_limit = 0.99f;
 
 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)

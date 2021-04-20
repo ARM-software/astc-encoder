@@ -528,14 +528,14 @@ struct astcenc_config
 	/**
 	 * @brief The threshold for skipping 2.2/3.1/3.2/4.1 trials (-2partitionearlylimit).
 	 *
-	 * This option is ineffective for normal maps.
+	 * This option is further scaled for normal maps, so it skips less often.
 	 */
 	float tune_2_partition_early_out_limit;
 
 	/**
 	 * @brief The threshold for skipping 3.2/4.1 trials (-3partitionearlylimit).
 	 *
-	 * This option is ineffective for normal maps.
+	 * This option is further scaled for normal maps, so it skips less often.
 	 */
 	float tune_3_partition_early_out_limit;
 
