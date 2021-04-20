@@ -388,7 +388,7 @@ ADVANCED COMPRESSION
            option is ineffective for normal maps. Preset defaults are:
 
                -fastest    :  1.00
-               -fast       :  1.00
+               -fast       :  1.10
                -medium     :  1.25
                -thorough   :  1.25
                -exhaustive : 10.00
