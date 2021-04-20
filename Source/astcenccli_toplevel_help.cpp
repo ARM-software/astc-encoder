@@ -367,18 +367,31 @@ ADVANCED COMPRESSION
                -thorough   : MAX(77-19*log10(N), 105-35*log10(N))
                -exhaustive : 999
 
-       -partitionearlylimit <factor>
+       -2partitionearlylimit <factor>
            Stop compression work on a block after only testing blocks with
            up to two partions and one plane of weights, unless the two
            partition error term is lower than the error term from encoding
            with one partition by more than the specified factor. This
            option is ineffective for normal maps. Preset defaults are:
 
-               -fastest    :    1.0
-               -fast       :    1.0
-               -medium     :    1.2
-               -thorough   :    2.5
-               -exhaustive : 1000.0
+               -fastest    :  1.00
+               -fast       :  1.00
+               -medium     :  1.20
+               -thorough   :  2.50
+               -exhaustive : 10.00
+
+       -3partitionearlylimit <factor>
+           Stop compression work on a block after only testing blocks with
+           up to three partions and one plane of weights, unless the three
+           partition error term is lower than the error term from encoding
+           with two partitions by more than the specified factor. This
+           option is ineffective for normal maps. Preset defaults are:
+
+               -fastest    :  1.00
+               -fast       :  1.00
+               -medium     :  1.25
+               -thorough   :  1.25
+               -exhaustive : 10.00
 
        -planecorlimit <factor>
            Stop compression after testing only one plane of weights, unless
