@@ -50,7 +50,7 @@ public:
  *
  * @return The updated accumulator
  */
-static kahan_accum4 &operator+=(
+static kahan_accum4& operator+=(
 	kahan_accum4 &val,
 	vfloat4 inc
 ) {
@@ -166,7 +166,7 @@ void compute_error_metrics(
 					    data8[(4 * xsize1 * y) + (4 * x + 2)],
 					    data8[(4 * xsize1 * y) + (4 * x + 3)]);
 
-					color1 = color1 * (1.0f / 255.0f);
+					color1 = color1 / 255.0f;
 				}
 				else if (img1->data_type == ASTCENC_TYPE_F16)
 				{
@@ -205,7 +205,7 @@ void compute_error_metrics(
 					    data8[(4 * xsize2 * y) + (4 * x + 2)],
 					    data8[(4 * xsize2 * y) + (4 * x + 3)]);
 
-					color2 = color2 * (1.0f / 255.0f);
+					color2 = color2 / 255.0f;
 				}
 				else if (img2->data_type == ASTCENC_TYPE_F16)
 				{
@@ -237,7 +237,8 @@ void compute_error_metrics(
 				rgb_peak = astc::max(color1.lane<0>(), color1.lane<1>(), color1.lane<2>(), rgb_peak);
 
 				vfloat4 diffcolor = color1 - color2;
-				errorsum += diffcolor * diffcolor;
+				vfloat4 diffcolor_sq = diffcolor * diffcolor;
+				errorsum += diffcolor_sq;
 
 				vfloat4 alpha_scaled_diffcolor = vfloat4(
 				    diffcolor.lane<0>() * color1.lane<3>(),
@@ -245,8 +246,8 @@ void compute_error_metrics(
 				    diffcolor.lane<2>() * color1.lane<3>(),
 				    diffcolor.lane<3>());
 
-				alpha_scaled_errorsum += alpha_scaled_diffcolor * \
-				                         alpha_scaled_diffcolor;
+				vfloat4 alpha_scaled_diffcolor_sq = alpha_scaled_diffcolor * alpha_scaled_diffcolor;
+				alpha_scaled_errorsum += alpha_scaled_diffcolor_sq;
 
 				if (compute_hdr_metrics)
 				{
