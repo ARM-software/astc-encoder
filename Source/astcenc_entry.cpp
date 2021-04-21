@@ -430,17 +430,14 @@ astcenc_error astcenc_config_init(
 	if (texels_int < 25)
 	{
 		preset_configs = &preset_configs_high;
-		printf("High bitrate config\n");
 	}
 	else if (texels_int < 64)
 	{
 		preset_configs = &preset_configs_mid;
-		printf("Mid bitrate config\n");
 	}
 	else
 	{
 		preset_configs = &preset_configs_low;
-		printf("Low bitrate config\n");
 	}
 
 	// Determine which preset to use, or which pair to interpolate
