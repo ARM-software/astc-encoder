@@ -300,15 +300,18 @@ ADVANCED COMPRESSION
        ------------------------------------
 
        These options provide low-level control of the codec heuristics that
-       drive the performance-quality trade off.
+       drive the performance-quality trade off. The presets vary by block
+       bitrate; the recommended starting point for a 4x4 block is very
+       different to a 8x8 block. The presets documented here are for the
+	   high bitrate mode (fewer than 25 texels).
 
        -partitioncountlimit <number>
            Test up to and including <number> partitions for each block.
            Higher numbers give better quality, as more complex blocks can
            be encoded, but will increase search time. Preset defaults are:
 
-               -fastest    : 4
-               -fast       : 4
+               -fastest    : 3
+               -fast       : 3
                -medium     : 4
                -thorough   : 4
                -exhaustive : 4
@@ -320,8 +323,8 @@ ADVANCED COMPRESSION
            defaults are:
 
                -fastest    :    2
-               -fast       :    4
-               -medium     :   26
+               -fast       :   12
+               -medium     :   25
                -thorough   :   75
                -exhaustive : 1024
 
@@ -330,8 +333,8 @@ ADVANCED COMPRESSION
            determined distribution of block mode frequency. This option is
            ineffective for 3D textures. Preset defaults are:
 
-               -fastest    :  25
-               -fast       :  50
+               -fastest    :  30
+               -fast       :  55
                -medium     :  75
                -thorough   :  92
                -exhaustive : 100
@@ -341,7 +344,7 @@ ADVANCED COMPRESSION
            weights. Minimum value is 1. Preset defaults are:
 
                -fastest    : 1
-               -fast       : 1
+               -fast       : 3
                -medium     : 2
                -thorough   : 4
                -exhaustive : 4
@@ -361,7 +364,7 @@ ADVANCED COMPRESSION
            ineffective for HDR textures. Preset defaults, where N is the
            number of texels in a block, are:
 
-               -fastest    : MAX(53-19*log10(N),  70-35*log10(N))
+               -fastest    : MAX(57-19*log10(N),  79-35*log10(N))
                -fast       : MAX(63-19*log10(N),  85-35*log10(N))
                -medium     : MAX(70-19*log10(N),  95-35*log10(N))
                -thorough   : MAX(77-19*log10(N), 105-35*log10(N))
