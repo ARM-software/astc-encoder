@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <cstdio>
+#include <string>
 
 #include "astcenc_diagnostic_trace.h"
 
