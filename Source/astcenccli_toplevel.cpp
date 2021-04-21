@@ -872,16 +872,27 @@ static int edit_astcenc_config(
 				config.tune_db_limit = static_cast<float>(atof(argv[argidx - 1]));
 			}
 		}
-		else if (!strcmp(argv[argidx], "-partitionearlylimit"))
+		else if (!strcmp(argv[argidx], "-2partitionearlylimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -partitionearlylimit switch with no argument\n");
+				printf("ERROR: -2partitionearlylimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_partition_early_out_limit = static_cast<float>(atof(argv[argidx - 1]));
+			config.tune_2_partition_early_out_limit = static_cast<float>(atof(argv[argidx - 1]));
+		}
+		else if (!strcmp(argv[argidx], "-3partitionearlylimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -3partitionearlylimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_3_partition_early_out_limit = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-planecorlimit"))
 		{
@@ -1076,7 +1087,8 @@ static int edit_astcenc_config(
 			printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 			printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
 			printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
-			printf("    1->2 partition cutoff:      %g\n", (double)config.tune_partition_early_out_limit);
+			printf("    2.2+ partition cutoff:      %g\n", (double)config.tune_2_partition_early_out_limit);
+			printf("    3.2+ partition cutoff:      %g\n", (double)config.tune_3_partition_early_out_limit);
 			printf("    2 plane correlation cutoff: %g\n", (double)config.tune_two_plane_early_out_limit);
 			printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
 			printf("    Max refinement cutoff:      %u iterations\n", config.tune_refinement_limit);
