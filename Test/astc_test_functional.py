@@ -1187,7 +1187,7 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
-        command += ["-2partitionearlylimit", "1.0"]
+        command += ["-2partitionlimitfactor", "1.0"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
@@ -1209,16 +1209,16 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
-        command += ["-3partitionearlylimit", "0.5"]
+        command += ["-3partitionlimitfactor", "0.5"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
         # RMSE should get worse (higher) if we reduce search space
         self.assertGreater(testRMSE, refRMSE)
 
-    def test_dual_plane_correlation_limit(self):
+    def test_2plane_correlation_limit(self):
         """
-        Test dual plane correlation limit.
+        Test 2 plane correlation limit.
         """
         inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
         decompFile = self.get_tmp_image_path("LDR", "decomp")
@@ -1231,7 +1231,7 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
-        command += ["-planecorlimit", "0.1"]
+        command += ["-2planelimitcorrelation", "0.1"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
@@ -1974,7 +1974,7 @@ class CLINTest(CLITestBase):
 
     def test_cl_2partitionearlylimit_missing_args(self):
         """
-        Test -cl with -2partitionearlylimit and missing arguments.
+        Test -cl with -2partitionlimitfactor and missing arguments.
         """
         # Build a valid command
         command = [
@@ -1982,14 +1982,14 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A"),
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast",
-            "-2partitionearlylimit", "3"]
+            "-2partitionlimitfactor", "3"]
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)
 
     def test_cl_3partitionearlylimit_missing_args(self):
         """
-        Test -cl with -3partitionearlylimit and missing arguments.
+        Test -cl with -3partitionlimitfactor and missing arguments.
         """
         # Build a valid command
         command = [
@@ -1997,14 +1997,14 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A"),
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast",
-            "-3partitionearlylimit", "3"]
+            "-3partitionlimitfactor", "3"]
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)
 
-    def test_cl_planecorlimit_missing_args(self):
+    def test_cl_2planeearlylimit_missing_args(self):
         """
-        Test -cl with -planecorlimit and missing arguments.
+        Test -cl with -2planelimitcorrelation and missing arguments.
         """
         # Build a valid command
         command = [
@@ -2012,7 +2012,7 @@ class CLINTest(CLITestBase):
             self.get_ref_image_path("LDR", "input", "A"),
             self.get_tmp_image_path("LDR", "comp"),
             "4x4", "-fast",
-            "-planecorlimit", "0.66"]
+            "-2planelimitcorrelation", "0.66"]
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)

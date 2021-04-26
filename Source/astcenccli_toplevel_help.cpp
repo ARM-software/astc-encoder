@@ -370,7 +370,7 @@ ADVANCED COMPRESSION
                -thorough   : MAX(77-19*log10(N), 105-35*log10(N))
                -exhaustive : 999
 
-       -2partitionearlylimit <factor>
+       -2partitionlimitfactor <factor>
            Stop compression work on a block after only testing blocks with
            up to two partions and one plane of weights, unless the two
            partition error term is lower than the error term from encoding
@@ -383,7 +383,7 @@ ADVANCED COMPRESSION
                -thorough   :  2.50
                -exhaustive : 10.00
 
-       -3partitionearlylimit <factor>
+       -3partitionlimitfactor <factor>
            Stop compression work on a block after only testing blocks with
            up to three partions and one plane of weights, unless the three
            partition error term is lower than the error term from encoding
@@ -396,7 +396,7 @@ ADVANCED COMPRESSION
                -thorough   :  1.25
                -exhaustive : 10.00
 
-       -planecorlimit <factor>
+       -2planelimitcorrelation <factor>
            Stop compression after testing only one plane of weights, unless
            the minimum color correlation factor between any pair of color
            components is below this factor. This option is ineffective for

@@ -526,25 +526,32 @@ struct astcenc_config
 	float tune_refinement_mse_overshoot;
 
 	/**
-	 * @brief The threshold for skipping 2.2/3.1/3.2/4.1 trials (-2partitionearlylimit).
+	 * @brief The threshold for skipping 2.2/3.1/3.2/4.1 trials (-2partitionlimitfactor).
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
-	float tune_2_partition_early_out_limit;
+	float tune_2_partition_early_out_limit_factor;
 
 	/**
-	 * @brief The threshold for skipping 3.2/4.1 trials (-3partitionearlylimit).
+	 * @brief The threshold for skipping 3.2/4.1 trials (-3partitionlimitfactor).
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
-	float tune_3_partition_early_out_limit;
+	float tune_3_partition_early_out_limit_factor;
 
 	/**
-	 * @brief The threshold for skipping 2 weight planess (-planecorlimit).
+	 * @brief The threshold for skipping two weight planes (-2planelimitfactor).
 	 *
 	 * This option is ineffective for normal maps.
 	 */
-	float tune_two_plane_early_out_limit;
+	float tune_2_plane_early_out_limit_factor;
+
+	/**
+	 * @brief The threshold for skipping two weight planes (-2planelimitcorrelation).
+	 *
+	 * This option is ineffective for normal maps.
+	 */
+	float tune_2_plane_early_out_limit_correlation;
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**

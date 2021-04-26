@@ -1437,7 +1437,7 @@ void compress_block(
 	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
 #endif
 
-	block_skip_two_plane = lowest_correl > ctx.config.tune_two_plane_early_out_limit;
+	block_skip_two_plane = lowest_correl > ctx.config.tune_2_plane_early_out_limit_correlation;
 
 	// next, test the four possible 1-partition, 2-planes modes
 	for (int i = 0; i < 4; i++)
@@ -1449,7 +1449,7 @@ void compress_block(
 
 		if (block_skip_two_plane)
 		{
-			trace_add_data("skip", "tune_two_plane_early_out_limit");
+			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation");
 			continue;
 		}
 
@@ -1474,6 +1474,8 @@ void compress_block(
 		    0,	// partition index
 		    i,	// the color component to test a separate plane of weights for.
 		    blk, ewb, scb, &tmpbuf->planes);
+
+		best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R + i] = errorval;
 
 		// Modes 7, 10 (13 is unreachable)
 		if (errorval < error_threshold)
@@ -1522,25 +1524,30 @@ void compress_block(
 
 		float best_1_partition_1_plane_result = best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE];
 
+		float best_1_partition_2_plane_result = astc::min(best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
+		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
+		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
+		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R]);
+
 		float best_2_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_5_2_PARTITION_1_PLANE_UNCOR],
 		                                                  best_errorvals_in_modes[MODE_6_2_PARTITION_1_PLANE_COR]);
 
+		float best_3_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_8_3_PARTITION_1_PLANE_UNCOR],
+		                                                  best_errorvals_in_modes[MODE_9_3_PARTITION_1_PLANE_COR]);
+
 		// If adding a second partition doesn't improve much over using one partition then skip more
 		// thorough searches. This skips 2pt/2pl, 3pt/1pl, 3pt/2pl, 4pt/1pl.
-		if (partition_count == 2 && (best_2_partition_1_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_partition_early_out_limit)))
+		if (partition_count == 2 && (best_2_partition_1_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_partition_early_out_limit_factor)))
 		{
-			trace_add_data("skip", "tune_2_partition_early_out_limit");
+			trace_add_data("skip", "tune_2_partition_early_out_limit_factor");
 			goto END_OF_TESTS;
 		}
 
 		// If adding a third partition doesn't improve much over using two partitions then skip more
 		// thorough searches as it's not going to help. This skips 3pt/2pl, 4pt/1pl.
-		float best_3_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_8_3_PARTITION_1_PLANE_UNCOR],
-		                                                  best_errorvals_in_modes[MODE_9_3_PARTITION_1_PLANE_COR]);
-
-		if (partition_count == 3 && (best_3_partition_1_plane_result > (best_2_partition_1_plane_result * ctx.config.tune_3_partition_early_out_limit)))
+		if (partition_count == 3 && (best_3_partition_1_plane_result > (best_2_partition_1_plane_result * ctx.config.tune_3_partition_early_out_limit_factor)))
 		{
-			trace_add_data("skip", "tune_3_partition_early_out");
+			trace_add_data("skip", "tune_3_partition_early_out_limit_factor");
 			goto END_OF_TESTS;
 		}
 
@@ -1561,10 +1568,19 @@ void compress_block(
 		// * Blocks with higher component correlation than the tuning cutoff
 		if (block_skip_two_plane)
 		{
-			trace_add_data("skip", "tune_two_plane_early_out_limit");
+			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation");
 			continue;
 		}
 
+		// If adding a 2nd plane to 1 partition doesn't help by some margin then trying with more
+		// partitions is even less likely to help, so skip those. This is NOT exposed as a heuristic that the user can
+		// control as we've found no need to - this is a very reliable heuristic even on torture
+		// test images.
+		if (best_1_partition_2_plane_result > best_1_partition_1_plane_result * ctx.config.tune_2_plane_early_out_limit_factor)
+		{
+			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation_builtin");
+			continue;
+		}
 
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", partition_count);
