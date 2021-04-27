@@ -246,7 +246,7 @@ static void initialize_decimation_table_2d(
 	uint8_t texel_count_of_weight[MAX_WEIGHTS_PER_BLOCK];
 	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
-	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
+	int texel_weights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
@@ -294,7 +294,7 @@ static void initialize_decimation_table_2d(
 					weights_of_texel[texel][weight_count_of_texel[texel]] = weight[i];
 					weight_count_of_texel[texel]++;
 					texels_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = texel;
-					texelweights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
+					texel_weights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
 					texel_count_of_weight[qweight[i]]++;
 					max_texel_count_of_weight = astc::max(max_texel_count_of_weight, texel_count_of_weight[qweight[i]]);
 				}
@@ -337,7 +337,7 @@ static void initialize_decimation_table_2d(
 
 			// Create transposed versions of these for better vectorization
 			dt->weight_texel[j][i] = texel;
-			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
+			dt->weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
@@ -419,7 +419,7 @@ static void initialize_decimation_table_3d(
 	uint8_t texel_count_of_weight[MAX_WEIGHTS_PER_BLOCK];
 	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
-	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
+	int texel_weights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
@@ -539,7 +539,7 @@ static void initialize_decimation_table_3d(
 						weights_of_texel[texel][weight_count_of_texel[texel]] = weight[i];
 						weight_count_of_texel[texel]++;
 						texels_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = texel;
-						texelweights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
+						texel_weights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
 						texel_count_of_weight[qweight[i]]++;
 						max_texel_count_of_weight = astc::max(max_texel_count_of_weight, texel_count_of_weight[qweight[i]]);
 					}
@@ -583,7 +583,7 @@ static void initialize_decimation_table_3d(
 
 			// Create transposed versions of these for better vectorization
 			dt->weight_texel[j][i] = texel;
-			dt->weights_flt[j][i] = (float)texelweights_of_weight[i][j];
+			dt->weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
