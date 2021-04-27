@@ -249,7 +249,7 @@ def main():
         int: The process return code.
     """
 
-    absoluteXLimit = 35
+    absoluteXLimit = 40
 
     charts = [
         # --------------------------------------------------------
@@ -320,6 +320,17 @@ def main():
         ],
         # --------------------------------------------------------
         # Latest main vs last stable release charts
+        [
+            # Relative scores
+            ["thorough", "medium", "fast"],
+            ["ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            "ref-1.7",
+            None,
+            "relative-main-vs-1.x.png",
+            (None, None)
+        ],
         [
             # Relative scores
             ["thorough", "medium", "fast", "fastest"],
