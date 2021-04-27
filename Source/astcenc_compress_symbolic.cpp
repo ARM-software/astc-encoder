@@ -49,8 +49,8 @@ static bool realign_weights(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	symbolic_compressed_block* scb,
-	uint8_t* plane1_weight_set8,
-	uint8_t* plane2_weight_set8
+	uint8_t* weight_set8_plane1,
+	uint8_t* weight_set8_plane2
 ) {
 	// Get the partition descriptor
 	int partition_count = scb->partition_count;
@@ -96,7 +96,7 @@ static bool realign_weights(
 	}
 
 	uint8_t uq_pl_weights[MAX_WEIGHTS_PER_BLOCK];
-	uint8_t* weight_set8 = plane1_weight_set8;
+	uint8_t* weight_set8 = weight_set8_plane1;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -190,7 +190,7 @@ static bool realign_weights(
 		}
 
 		// Prepare iteration for plane 2
-		weight_set8 = plane2_weight_set8;
+		weight_set8 = weight_set8_plane2;
 		plane_mask = ~plane_mask;
 	}
 
