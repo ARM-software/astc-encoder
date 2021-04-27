@@ -1339,9 +1339,9 @@ void recompute_ideal_colors_2planes(
 	endpoints* ep,	// contains the endpoints we wish to update
 	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
 	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
-	const uint8_t* weight_set8,	// the current set of weight values
-	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
-	int plane2_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	const uint8_t* weight_set8_plane1,	// Plane 1 weight values
+	const uint8_t* weight_set8_plane2,	// Plane 2 weight values
+	int plane2_component,	// color component for 2nd plane of weights
 	const partition_info* pt,
 	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.

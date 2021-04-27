@@ -1211,9 +1211,9 @@ void recompute_ideal_colors_2planes(
 	endpoints* ep,	// contains the endpoints we wish to update
 	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6
 	vfloat4* rgbo_vectors,	// used to return RGBO-vectors for endpoint mode #7
-	const uint8_t* weight_set8,	// the current set of weight values
-	const uint8_t* plane2_weight_set8,	// nullptr if plane 2 is not actually used.
-	int plane2_component,	// color component for 2nd plane of weights; -1 if the 2nd plane of weights is not present
+	const uint8_t* weight_set8_plane1,	// Plane 1 weight set
+	const uint8_t* weight_set8_plane2,	// Plane 2 weight set
+	int plane2_component,	// Color component for 2nd plane of weights
 	const partition_info* pt,
 	const decimation_table* dt,
 	const imageblock* blk,	// picture-block containing the actual data.
@@ -1226,27 +1226,19 @@ void recompute_ideal_colors_2planes(
 
 	for (int i = 0; i < dt->weight_count; i++)
 	{
-		weight_set[i] = qat->unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
-	}
-
-	if (plane2_weight_set8)
-	{
-		for (int i = 0; i < dt->weight_count; i++)
-		{
-			plane2_weight_set[i] = qat->unquantized_value[plane2_weight_set8[i]] * (1.0f / 64.0f);
-		}
+		weight_set[i] = qat->unquantized_value[weight_set8_plane1[i]] * (1.0f / 64.0f);
+		plane2_weight_set[i] = qat->unquantized_value[weight_set8_plane2[i]] * (1.0f / 64.0f);
 	}
 
 	int partition_count = pt->partition_count;
-
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pt->partition_texel_count[i];
+		int texel_count = pt->partition_texel_count[i];
 		const uint8_t *texel_indexes = pt->texels_of_partition[i];
-		for (int j = 0; j < texelcount; j++)
+		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
 
@@ -1285,7 +1277,7 @@ void recompute_ideal_colors_2planes(
 		float psum = 1e-17f;
 
 		// FIXME: the loop below has too many responsibilities, making it inefficient.
-		for (int j = 0; j < texelcount; j++)
+		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
 
@@ -1544,11 +1536,11 @@ void recompute_ideal_colors_1plane(
 		vfloat4 rgba_sum(1e-17f);
 		vfloat4 rgba_weight_sum(1e-17f);
 
-		int texelcount = pt->partition_texel_count[i];
+		int texel_count = pt->partition_texel_count[i];
 		const uint8_t *texel_indexes = pt->texels_of_partition[i];
 
-		promise(texelcount > 0);
-		for (int j = 0; j < texelcount; j++)
+		promise(texel_count > 0);
+		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
 
@@ -1581,7 +1573,7 @@ void recompute_ideal_colors_1plane(
 		float psum = 1e-17f;
 
 		// FIXME: the loop below has too many responsibilities, making it inefficient.
-		for (int j = 0; j < texelcount; j++)
+		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
 

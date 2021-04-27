@@ -239,23 +239,23 @@ static void initialize_decimation_table_2d(
 	int texels_per_block = xdim * ydim;
 	int weights_per_block = x_weights * y_weights;
 
-	uint8_t weightcount_of_texel[MAX_TEXELS_PER_BLOCK];
+	uint8_t weight_count_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t grid_weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
 	uint8_t weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
 
-	uint8_t texelcount_of_weight[MAX_WEIGHTS_PER_BLOCK];
-	uint8_t max_texelcount_of_weight = 0;
+	uint8_t texel_count_of_weight[MAX_WEIGHTS_PER_BLOCK];
+	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		texelcount_of_weight[i] = 0;
+		texel_count_of_weight[i] = 0;
 	}
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		weightcount_of_texel[i] = 0;
+		weight_count_of_texel[i] = 0;
 	}
 
 	for (int y = 0; y < ydim; y++)
@@ -290,13 +290,13 @@ static void initialize_decimation_table_2d(
 			{
 				if (weight[i] != 0)
 				{
-					grid_weights_of_texel[texel][weightcount_of_texel[texel]] = qweight[i];
-					weights_of_texel[texel][weightcount_of_texel[texel]] = weight[i];
-					weightcount_of_texel[texel]++;
-					texels_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = texel;
-					texelweights_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = weight[i];
-					texelcount_of_weight[qweight[i]]++;
-					max_texelcount_of_weight = astc::max(max_texelcount_of_weight, texelcount_of_weight[qweight[i]]);
+					grid_weights_of_texel[texel][weight_count_of_texel[texel]] = qweight[i];
+					weights_of_texel[texel][weight_count_of_texel[texel]] = weight[i];
+					weight_count_of_texel[texel]++;
+					texels_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = texel;
+					texelweights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
+					texel_count_of_weight[qweight[i]]++;
+					max_texel_count_of_weight = astc::max(max_texel_count_of_weight, texel_count_of_weight[qweight[i]]);
 				}
 			}
 		}
@@ -304,9 +304,9 @@ static void initialize_decimation_table_2d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt->texel_weight_count[i] = weightcount_of_texel[i];
+		dt->texel_weight_count[i] = weight_count_of_texel[i];
 
-		for (int j = 0; j < weightcount_of_texel[i]; j++)
+		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
 			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
@@ -316,7 +316,7 @@ static void initialize_decimation_table_2d(
 		}
 
 		// Init all 4 entries so we can rely on zeros for vectorization
-		for (int j = weightcount_of_texel[i]; j < 4; j++)
+		for (int j = weight_count_of_texel[i]; j < 4; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = 0;
 			dt->texel_weights_t4[i][j] = 0;
@@ -328,7 +328,7 @@ static void initialize_decimation_table_2d(
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		int texel_count_wt = texelcount_of_weight[i];
+		int texel_count_wt = texel_count_of_weight[i];
 		dt->weight_texel_count[i] = (uint8_t)texel_count_wt;
 
 		for (int j = 0; j < texel_count_wt; j++)
@@ -369,7 +369,7 @@ static void initialize_decimation_table_2d(
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 		// Match last texel in active lane in SIMD group, for better gathers
 		uint8_t last_texel = dt->weight_texel[texel_count_wt - 1][i];
-		for (int j = texel_count_wt; j < max_texelcount_of_weight; j++)
+		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
 			dt->weight_texel[j][i] = last_texel;
 			dt->weights_flt[j][i] = 0.0f;
@@ -378,7 +378,7 @@ static void initialize_decimation_table_2d(
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 	// Match last texel in active lane in SIMD group, for better gathers
-	int last_texel_count_wt = texelcount_of_weight[weights_per_block - 1];
+	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = dt->weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
 
 	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
@@ -386,7 +386,7 @@ static void initialize_decimation_table_2d(
 	{
 		dt->weight_texel_count[i] = 0;
 
-		for (int j = 0; j < max_texelcount_of_weight; j++)
+		for (int j = 0; j < max_texel_count_of_weight; j++)
 		{
 			dt->weight_texel[j][i] = last_texel;
 			dt->weights_flt[j][i] = 0.0f;
@@ -412,23 +412,23 @@ static void initialize_decimation_table_3d(
 	int texels_per_block = xdim * ydim * zdim;
 	int weights_per_block = x_weights * y_weights * z_weights;
 
-	uint8_t weightcount_of_texel[MAX_TEXELS_PER_BLOCK];
+	uint8_t weight_count_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t grid_weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
 	uint8_t weights_of_texel[MAX_TEXELS_PER_BLOCK][4];
 
-	uint8_t texelcount_of_weight[MAX_WEIGHTS_PER_BLOCK];
-	uint8_t max_texelcount_of_weight = 0;
+	uint8_t texel_count_of_weight[MAX_WEIGHTS_PER_BLOCK];
+	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 	int texelweights_of_weight[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK];
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		texelcount_of_weight[i] = 0;
+		texel_count_of_weight[i] = 0;
 	}
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		weightcount_of_texel[i] = 0;
+		weight_count_of_texel[i] = 0;
 	}
 
 	for (int z = 0; z < zdim; z++)
@@ -535,13 +535,13 @@ static void initialize_decimation_table_3d(
 				{
 					if (weight[i] != 0)
 					{
-						grid_weights_of_texel[texel][weightcount_of_texel[texel]] = qweight[i];
-						weights_of_texel[texel][weightcount_of_texel[texel]] = weight[i];
-						weightcount_of_texel[texel]++;
-						texels_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = texel;
-						texelweights_of_weight[qweight[i]][texelcount_of_weight[qweight[i]]] = weight[i];
-						texelcount_of_weight[qweight[i]]++;
-						max_texelcount_of_weight = astc::max(max_texelcount_of_weight, texelcount_of_weight[qweight[i]]);
+						grid_weights_of_texel[texel][weight_count_of_texel[texel]] = qweight[i];
+						weights_of_texel[texel][weight_count_of_texel[texel]] = weight[i];
+						weight_count_of_texel[texel]++;
+						texels_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = texel;
+						texelweights_of_weight[qweight[i]][texel_count_of_weight[qweight[i]]] = weight[i];
+						texel_count_of_weight[qweight[i]]++;
+						max_texel_count_of_weight = astc::max(max_texel_count_of_weight, texel_count_of_weight[qweight[i]]);
 					}
 				}
 			}
@@ -550,7 +550,7 @@ static void initialize_decimation_table_3d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt->texel_weight_count[i] = weightcount_of_texel[i];
+		dt->texel_weight_count[i] = weight_count_of_texel[i];
 
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (int j = 0; j < 4; j++)
@@ -562,7 +562,7 @@ static void initialize_decimation_table_3d(
 			dt->texel_weights_4t[j][i] = 0;
 		}
 
-		for (int j = 0; j < weightcount_of_texel[i]; j++)
+		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
 			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
 			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
@@ -574,7 +574,7 @@ static void initialize_decimation_table_3d(
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
-		int texel_count_wt = texelcount_of_weight[i];
+		int texel_count_wt = texel_count_of_weight[i];
 		dt->weight_texel_count[i] = (uint8_t)texel_count_wt;
 
 		for (int j = 0; j < texel_count_wt; j++)
@@ -614,7 +614,7 @@ static void initialize_decimation_table_3d(
 
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 		// TODO: Match an active lane in SIMD group, as better for gathers?
-		for (int j = texel_count_wt; j < max_texelcount_of_weight; j++)
+		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
 			dt->weight_texel[j][i] = 0;
 			dt->weights_flt[j][i] = 0.0f;
@@ -628,7 +628,7 @@ static void initialize_decimation_table_3d(
 	{
 		dt->weight_texel_count[i] = 0;
 
-		for (int j = 0; j < max_texelcount_of_weight; j++)
+		for (int j = 0; j < max_texel_count_of_weight; j++)
 		{
 			dt->weight_texel[j][i] = 0;
 			dt->weights_flt[j][i] = 0.0f;
