@@ -200,7 +200,7 @@ static bool realign_weights(
 /*
 	function for compressing a block symbolically, given that we have already decided on a partition
 */
-static float compress_symbolic_block_fixed_partition_1_plane(
+static float compress_symbolic_block_fixed_partition_1plane(
 	const astcenc_config& config,
 	bool only_always,
 	int tune_candidate_limit,
@@ -230,7 +230,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	// there is no quantization or decimation going on.
 	endpoints_and_weights *ei = &tmpbuf->ei1;
 	endpoints_and_weights *eix = tmpbuf->eix1;
-	compute_endpoints_and_ideal_weights_1_plane(bsd, pt, blk, ewb, ei);
+	compute_endpoints_and_ideal_weights_1plane(bsd, pt, blk, ewb, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *dts = bsd->decimation_tables;
@@ -565,7 +565,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	return best_errorval_in_mode;
 }
 
-static float compress_symbolic_block_fixed_partition_2_planes(
+static float compress_symbolic_block_fixed_partition_2planes(
 	const astcenc_config& config,
 	int tune_candidate_limit,
 	float tune_errorval_threshold,
@@ -596,7 +596,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	endpoints_and_weights *ei2 = &tmpbuf->ei2;
 	endpoints_and_weights *eix1 = tmpbuf->eix1;
 	endpoints_and_weights *eix2 = tmpbuf->eix2;
-	compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, plane2_component, ei1, ei2);
+	compute_endpoints_and_ideal_weights_2planes(bsd, pt, blk, ewb, plane2_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *dts = bsd->decimation_tables;
@@ -1424,7 +1424,7 @@ void compress_block(
 		trace_add_data("plane_count", 1);
 		trace_add_data("search_mode", i);
 
-		float errorval = compress_symbolic_block_fixed_partition_1_plane(
+		float errorval = compress_symbolic_block_fixed_partition_1plane(
 		    ctx.config, i == 0,
 		    ctx.config.tune_candidate_limit,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
@@ -1472,7 +1472,7 @@ void compress_block(
 			continue;
 		}
 
-		float errorval = compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2planes(
 		    ctx.config,
 		    ctx.config.tune_candidate_limit,
 		    error_threshold * errorval_overshoot,
@@ -1512,7 +1512,7 @@ void compress_block(
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
-			float errorval = compress_symbolic_block_fixed_partition_1_plane(
+			float errorval = compress_symbolic_block_fixed_partition_1plane(
 			    ctx.config, false,
 			    ctx.config.tune_candidate_limit,
 			    error_threshold * errorval_overshoot,
@@ -1595,7 +1595,7 @@ void compress_block(
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_component", partition_index_2planes >> PARTITION_BITS);
 
-		float errorval = compress_symbolic_block_fixed_partition_2_planes(
+		float errorval = compress_symbolic_block_fixed_partition_2planes(
 			ctx.config,
 			ctx.config.tune_candidate_limit,
 			error_threshold * errorval_overshoot,

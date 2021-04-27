@@ -174,13 +174,13 @@ void compute_encoding_choice_errors(
 	if (plane2_component == -1)
 	{
 		endpoints_and_weights ei;
-		compute_endpoints_and_ideal_weights_1_plane(bsd, pt, blk, ewb, &ei);
+		compute_endpoints_and_ideal_weights_1plane(bsd, pt, blk, ewb, &ei);
 		ep = ei.ep;
 	}
 	else
 	{
 		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2_planes(bsd, pt, blk, ewb, plane2_component, &ei1, &ei2);
+		compute_endpoints_and_ideal_weights_2planes(bsd, pt, blk, ewb, plane2_component, &ei1, &ei2);
 		merge_endpoints(&(ei1.ep), &(ei2.ep), plane2_component, &ep);
 	}
 

@@ -644,7 +644,7 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 
 	These data allow us to assess the error introduced by removing and quantizing the per-pixel weights.
  */
-void compute_endpoints_and_ideal_weights_1_plane(
+void compute_endpoints_and_ideal_weights_1plane(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
@@ -662,7 +662,7 @@ void compute_endpoints_and_ideal_weights_1_plane(
 	}
 }
 
-void compute_endpoints_and_ideal_weights_2_planes(
+void compute_endpoints_and_ideal_weights_2planes(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,

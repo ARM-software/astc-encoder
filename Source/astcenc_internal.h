@@ -1112,14 +1112,14 @@ struct endpoints_and_weights
 	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
 };
 
-void compute_endpoints_and_ideal_weights_1_plane(
+void compute_endpoints_and_ideal_weights_1plane(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	endpoints_and_weights* ei);
 
-void compute_endpoints_and_ideal_weights_2_planes(
+void compute_endpoints_and_ideal_weights_2planes(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
 	const imageblock* blk,
