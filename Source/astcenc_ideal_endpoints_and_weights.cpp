@@ -1095,6 +1095,7 @@ void compute_quantized_weights_for_decimation_table(
 	int quant_level
 ) {
 	int weight_count = dt->weight_count;
+	promise(weight_count > 0);
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
 	static const int quant_levels[12] { 2,3,4,5,6,8,10,12,16,20,24,32 };

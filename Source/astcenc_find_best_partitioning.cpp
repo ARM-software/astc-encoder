@@ -60,6 +60,7 @@ static void compute_partition_error_color_weightings_and_range(
 	partition_metrics pm[4]
 ) {
 	int partition_count = pt.partition_count;
+	promise(partition_count > 0);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -68,6 +69,8 @@ static void compute_partition_error_color_weightings_and_range(
 		vfloat4 rgba_max(-1e38f);
 
 		int texel_count = pt.partition_texel_count[i];
+		promise(texel_count > 0);
+
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tidx = pt.texels_of_partition[i][j];
@@ -97,12 +100,15 @@ void compute_partition_error_color_weightings(
 	partition_metrics pm[4]
 ) {
 	int partition_count = pt.partition_count;
+	promise(partition_count > 0);
 
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 error_weight(1e-12f);
 
 		int texel_count = pt.partition_texel_count[i];
+		promise(texel_count > 0);
+
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tidx = pt.texels_of_partition[i][j];
@@ -147,6 +153,9 @@ void find_best_partitionings(
 		weight_imprecision_estim = 0.05f;
 	}
 
+	promise(partition_count > 0);
+	promise(partition_search_limit > 0);
+
 	weight_imprecision_estim = weight_imprecision_estim * weight_imprecision_estim;
 
 	int partition_sequence[PARTITION_COUNT];
@@ -175,7 +184,6 @@ void find_best_partitionings(
 
 	if (uses_alpha)
 	{
-
 		for (int i = 0; i < partition_search_limit; i++)
 		{
 			int partition = partition_sequence[i];

@@ -308,6 +308,7 @@ static void compute_angular_endpoints_for_quant_levels(
 		best_results[i] = select(result, prev_result, mask);
 	}
 
+	promise(max_quant_level >= 0);
 	for (int i = 0; i <= max_quant_level; i++)
 	{
 		int q = quantization_steps_for_level[i];
