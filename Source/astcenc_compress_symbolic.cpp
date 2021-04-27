@@ -563,7 +563,6 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 
 static float compress_symbolic_block_fixed_partition_2_planes(
 	const astcenc_config& config,
-	bool only_always,
 	int tune_candidate_limit,
 	float tune_errorval_threshold,
 	int max_refinement_iters,
@@ -602,7 +601,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd->decimation_modes[i];
-		if (dm.maxprec_2planes < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
+		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -664,7 +663,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	float weight_high_value2[MAX_WEIGHT_MODES];
 
 	compute_angular_endpoints_2planes(
-	    only_always, bsd,
+	    bsd,
 	    decimated_quantized_weights, decimated_weights,
 	    weight_low_value1, weight_high_value1,
 	    weight_low_value2, weight_high_value2);
@@ -679,7 +678,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd->block_modes[i];
-		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
+		if (!bm.is_dual_plane || !bm.percentile_hit)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -1466,7 +1465,7 @@ void compress_block(
 		}
 
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
-		    ctx.config, false,
+		    ctx.config,
 		    ctx.config.tune_candidate_limit,
 		    error_threshold * errorval_overshoot,
 		    ctx.config.tune_refinement_limit,
@@ -1590,7 +1589,6 @@ void compress_block(
 
 		float errorval = compress_symbolic_block_fixed_partition_2_planes(
 			ctx.config,
-			false,
 			ctx.config.tune_candidate_limit,
 			error_threshold * errorval_overshoot,
 			ctx.config.tune_refinement_limit,

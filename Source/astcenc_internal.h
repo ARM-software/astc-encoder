@@ -1367,7 +1367,6 @@ void compute_angular_endpoints_1plane(
 	float high_value[MAX_WEIGHT_MODES]);
 
 void compute_angular_endpoints_2planes(
-	bool only_always,
 	const block_size_descriptor * bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,

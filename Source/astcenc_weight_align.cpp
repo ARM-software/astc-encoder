@@ -384,7 +384,6 @@ void compute_angular_endpoints_1plane(
 }
 
 void compute_angular_endpoints_2planes(
-	bool only_always,
 	const block_size_descriptor* bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
@@ -402,7 +401,7 @@ void compute_angular_endpoints_2planes(
 	for (int i = 0; i < bsd->decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd->decimation_modes[i];
-		if (dm.maxprec_2planes < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
+		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -426,7 +425,7 @@ void compute_angular_endpoints_2planes(
 	for (int i = 0; i < bsd->block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd->block_modes[i];
-		if ((!bm.is_dual_plane) || (only_always && !bm.percentile_always) || !bm.percentile_hit)
+		if (!bm.is_dual_plane || !bm.percentile_hit)
 		{
 			continue;
 		}
