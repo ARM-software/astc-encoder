@@ -214,6 +214,11 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
+	promise(partition_count > 0);
+	promise(tune_candidate_limit > 0);
+	promise(max_refinement_iters > 0);
+	promise(bsd->decimation_mode_count > 0);
+
 	static const int free_bits_for_partition_count[5] = {
 		0, 115 - 4, 111 - 4 - PARTITION_BITS, 108 - 4 - PARTITION_BITS, 105 - 4 - PARTITION_BITS
 	};
@@ -358,7 +363,6 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		TRACE_NODE(node0, "candidate");
 
 		uint8_t *u8_weight_src;
-		int weights_to_copy;
 
 		const int qw_packed_index = quantized_weight[i];
 		if (qw_packed_index < 0)
@@ -373,8 +377,8 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table *dt = dts[decimation_mode];
+		promise(dt->weight_count > 0);
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
-		weights_to_copy = dt->weight_count;
 
 		trace_add_data("weight_x", dt->weight_x);
 		trace_add_data("weight_y", dt->weight_y);
@@ -467,7 +471,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			// Pre-realign test
 			if (l == 0)
 			{
-				for (int j = 0; j < weights_to_copy; j++)
+				for (int j = 0; j < dt->weight_count; j++)
 				{
 					workscb.weights[j] = u8_weight_src[j];
 				}
@@ -514,7 +518,7 @@ static float compress_symbolic_block_fixed_partition_1_plane(
 			    u8_weight_src, nullptr);
 
 			// Post-realign test
-			for (int j = 0; j < weights_to_copy; j++)
+			for (int j = 0; j < dt->weight_count; j++)
 			{
 				workscb.weights[j] = u8_weight_src[j];
 			}
@@ -575,6 +579,11 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 	symbolic_compressed_block& scb,
 	compress_fixed_partition_buffers* tmpbuf
 ) {
+	promise(partition_count > 0);
+	promise(tune_candidate_limit > 0);
+	promise(max_refinement_iters > 0);
+	promise(bsd->decimation_mode_count > 0);
+
 	static const int free_bits_for_partition_count[5] = {
 		0, 113 - 4, 109 - 4 - PARTITION_BITS, 106 - 4 - PARTITION_BITS, 103 - 4 - PARTITION_BITS
 	};
@@ -767,7 +776,6 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 
 		uint8_t *u8_weight1_src;
 		uint8_t *u8_weight2_src;
-		int weights_to_copy;
 
 		assert(qw_packed_index >= 0 && qw_packed_index < bsd->block_mode_count);
 		const block_mode& qw_bm = bsd->block_modes[qw_packed_index];
@@ -775,10 +783,10 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table *dt = dts[decimation_mode];
+		promise(dt->weight_count > 0);
 
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
 		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
-		weights_to_copy = dt->weight_count;
 
 		trace_add_data("weight_x", dt->weight_x);
 		trace_add_data("weight_y", dt->weight_y);
@@ -867,7 +875,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			// Pre-realign test
 			if (l == 0)
 			{
-				for (int j = 0; j < weights_to_copy; j++)
+				for (int j = 0; j < dt->weight_count; j++)
 				{
 					workscb.weights[j] = u8_weight1_src[j];
 					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
@@ -915,7 +923,7 @@ static float compress_symbolic_block_fixed_partition_2_planes(
 			    u8_weight1_src, u8_weight2_src);
 
 			// Post-realign test
-			for (int j = 0; j < weights_to_copy; j++)
+			for (int j = 0; j < dt->weight_count; j++)
 			{
 				workscb.weights[j] = u8_weight1_src[j];
 				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
