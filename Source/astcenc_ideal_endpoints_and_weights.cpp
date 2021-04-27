@@ -1251,7 +1251,7 @@ void recompute_ideal_colors_2planes(
 			int tix = texel_indexes[j];
 
 			vfloat4 rgba = blk->texel(tix);
-			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 error_weight = ewb->error_weights[tix];
 
 			rgba_sum += rgba * error_weight;
 			rgba_weight_sum += error_weight;
@@ -1290,7 +1290,7 @@ void recompute_ideal_colors_2planes(
 			int tix = texel_indexes[j];
 
 			vfloat4 rgba = blk->texel(tix);
-			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 color_weight = ewb->error_weights[tix];
 
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
@@ -1553,7 +1553,7 @@ void recompute_ideal_colors_1plane(
 			int tix = texel_indexes[j];
 
 			vfloat4 rgba = blk->texel(tix);
-			vfloat4 error_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 error_weight = ewb->error_weights[tix];
 
 			rgba_sum += rgba * error_weight;
 			rgba_weight_sum += error_weight;
@@ -1586,7 +1586,7 @@ void recompute_ideal_colors_1plane(
 			int tix = texel_indexes[j];
 
 			vfloat4 rgba = blk->texel(tix);
-			vfloat4 color_weight(ewb->texel_weight_r[tix], ewb->texel_weight_g[tix], ewb->texel_weight_b[tix], ewb->texel_weight_a[tix]);
+			vfloat4 color_weight = ewb->error_weights[tix];
 
 			// FIXME: move this calculation out to the color block.
 			float ls_weight = hadd_rgb_s(color_weight);
