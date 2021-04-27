@@ -148,7 +148,7 @@ static void compute_lowest_and_highest_weight(
 	const float* samples,
 	const float* sample_weights,
 	int max_angular_steps,
-	int max_quantization_steps,
+	int max_quant_steps,
 	const float* offsets,
 	int* lowest_weight,
 	int* weight_span,
@@ -204,7 +204,7 @@ static void compute_lowest_and_highest_weight(
 
 		// Write out min weight and weight span; clamp span to a usable range
 		vint span = maxidx - minidx + vint(1);
-		span = min(span, vint(max_quantization_steps + 3));
+		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
 		storea(minidx, &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
@@ -231,7 +231,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	float low_value[12],
 	float high_value[12]
 ) {
-	int max_quantization_steps = quantization_steps_for_level[max_quant_level];
+	int max_quant_steps = quantization_steps_for_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
 	int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
@@ -244,7 +244,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	alignas(ASTCENC_VECALIGN) float cut_high_weight_error[ANGULAR_STEPS];
 
 	compute_lowest_and_highest_weight(samplecount, samples, sample_weights,
-	                                  max_angular_steps, max_quantization_steps,
+	                                  max_angular_steps, max_quant_steps,
 	                                  angular_offsets, lowest_weight, weight_span, error,
 	                                  cut_low_weight_error, cut_high_weight_error);
 
@@ -255,7 +255,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	vfloat4 best_results[40];
 
 	// Initialize the array to some safe defaults
-	for (int i = 0; i < (max_quantization_steps + 4); i++)
+	for (int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error
 		// Lane<1> = Best scale; -1 indicates no solution found
@@ -300,7 +300,7 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	// If we get a better error for lower sample count then use the lower
 	// sample count's error for the higher sample count as well.
-	for (int i = 3; i <= max_quantization_steps; i++)
+	for (int i = 3; i <= max_quant_steps; i++)
 	{
 		vfloat4 result = best_results[i];
 		vfloat4 prev_result = best_results[i - 1];
