@@ -1337,10 +1337,6 @@ int main(
 ) {
 	double start_time = get_time();
 
-	#ifdef DEBUG_CAPTURE_NAN
-		feenableexcept(FE_DIVBYZERO | FE_INVALID);
-	#endif
-
 	if (argc < 2)
 	{
 		astcenc_print_shorthelp();

@@ -118,13 +118,6 @@ static const unsigned int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
 static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 
 /* ============================================================================
-  Other configuration parameters
-============================================================================ */
-
-// Uncomment to enable checking for inappropriate NaNs; Linux only, and slow!
-// #define DEBUG_CAPTURE_NAN
-
-/* ============================================================================
   Parallel execution control
 ============================================================================ */
 

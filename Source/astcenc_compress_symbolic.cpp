@@ -28,14 +28,6 @@
 #include <cstring>
 #include <cstdio>
 
-#ifdef DEBUG_CAPTURE_NAN
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE
-	#endif
-
-	#include <fenv.h>
-#endif
-
 /**
  * @brief Attempt to improve weights given a chosen configuration.
  *
@@ -264,18 +256,10 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	vfloat4 min_ep(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
-		#ifdef DEBUG_CAPTURE_NAN
-			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		vfloat4 ep = (vfloat4(1.0f) - ei->ep.endpt0[i]) / (ei->ep.endpt1[i] - ei->ep.endpt0[i]);
 
 		vmask4 use_ep = (ep > vfloat4(0.5f)) & (ep < min_ep);
 		min_ep = select(min_ep, ep, use_ep);
-
-		#ifdef DEBUG_CAPTURE_NAN
-			feenableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
 	}
 
 	float min_wt_cutoff = hmin_s(min_ep);
@@ -638,10 +622,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	vfloat4 min_ep2(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
-		#ifdef DEBUG_CAPTURE_NAN
-			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		vfloat4 ep1 = (vfloat4(1.0f) - ei1->ep.endpt0[i]) / (ei1->ep.endpt1[i] - ei1->ep.endpt0[i]);
 		vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
 		min_ep1 = select(min_ep1, ep1, use_ep1);
@@ -649,10 +629,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		vfloat4 ep2 = (vfloat4(1.0f) - ei2->ep.endpt0[i]) / (ei2->ep.endpt1[i] - ei2->ep.endpt0[i]);
 		vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
 		min_ep2 = select(min_ep2, ep2, use_ep2);
-
-		#ifdef DEBUG_CAPTURE_NAN
-			feenableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
 	}
 
 	vfloat4 err_max(1e30f);

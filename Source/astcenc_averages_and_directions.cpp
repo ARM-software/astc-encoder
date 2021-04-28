@@ -24,14 +24,6 @@
 
 #include <cassert>
 
-#ifdef DEBUG_CAPTURE_NAN
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE
-	#endif
-
-	#include <fenv.h>
-#endif
-
 // For a full block, functions to compute averages and dominant directions. The
 // averages and directions are computed separately for each partition.
 // We have separate versions for blocks with and without alpha, since the

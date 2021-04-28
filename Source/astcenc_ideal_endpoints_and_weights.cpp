@@ -26,14 +26,6 @@
 #include "astcenc_internal.h"
 #include "astcenc_vecmathlib.h"
 
-#ifdef DEBUG_CAPTURE_NAN
-	#ifndef _GNU_SOURCE
-		#define _GNU_SOURCE
-	#endif
-
-	#include <fenv.h>
-#endif
-
 static void compute_endpoints_and_ideal_weights_1_comp(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,
@@ -1196,10 +1188,6 @@ static inline vfloat4 compute_rgbovec(
 	vfloat4 mat3(mZYP, mZQX, mRYX, Z * YX);
 	vfloat4 vect = rgbq_sum * rdet;
 
-	#ifdef DEBUG_CAPTURE_NAN
-	    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-	#endif
-
 	return vfloat4(dot_s(mat0, vect),
 	               dot_s(mat1, vect),
 	               dot_s(mat2, vect),
@@ -1348,10 +1336,6 @@ void recompute_ideal_colors_2planes(
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
-		#ifdef DEBUG_CAPTURE_NAN
-		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
@@ -1365,16 +1349,8 @@ void recompute_ideal_colors_2planes(
 
 		// Initialize the luminance and scale vectors with a reasonable
 		//  default, just in case the subsequent calculation blows up.
-		#ifdef DEBUG_CAPTURE_NAN
-			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
-
-		#ifdef DEBUG_CAPTURE_NAN
-			feenableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
 
 		vfloat4 sds = scale_direction * scale_max;
 
@@ -1399,11 +1375,6 @@ void recompute_ideal_colors_2planes(
 		{
 			// otherwise, complete the analytic calculation of ideal-endpoint-values
 			// for the given set of texel weights and pixel colors.
-
-			#ifdef DEBUG_CAPTURE_NAN
-			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
-
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
@@ -1438,10 +1409,6 @@ void recompute_ideal_colors_2planes(
 				vfloat4 sdsm = scale_direction * scale_ep1;
 				rgbs_vectors[i] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
 			}
-
-			#ifdef DEBUG_CAPTURE_NAN
-				feenableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
 		}
 
 		if (wmin2 >= wmax2 * 0.999f)
@@ -1459,10 +1426,6 @@ void recompute_ideal_colors_2planes(
 		}
 		else
 		{
-			#ifdef DEBUG_CAPTURE_NAN
-				fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
-
 			// otherwise, complete the analytic calculation of ideal-endpoint-values
 			// for the given set of texel weights and pixel colors.
 			vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
@@ -1482,10 +1445,6 @@ void recompute_ideal_colors_2planes(
 
 			ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
 			ep->endpt1[i] = select(ep->endpt1[i], ep1, full_mask);
-
-			#ifdef DEBUG_CAPTURE_NAN
-				feenableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
 		}
 
 		// if the calculation of an RGB-offset vector failed, try to compute
@@ -1624,10 +1583,6 @@ void recompute_ideal_colors_1plane(
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
-		#ifdef DEBUG_CAPTURE_NAN
-		    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
@@ -1641,16 +1596,8 @@ void recompute_ideal_colors_1plane(
 
 		// Initialize the luminance and scale vectors with a reasonable
 		//  default, just in case the subsequent calculation blows up.
-		#ifdef DEBUG_CAPTURE_NAN
-			fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
-
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
-
-		#ifdef DEBUG_CAPTURE_NAN
-			feenableexcept(FE_DIVBYZERO | FE_INVALID);
-		#endif
 
 		vfloat4 sds = scale_direction * scale_max;
 
@@ -1672,11 +1619,6 @@ void recompute_ideal_colors_1plane(
 		{
 			// otherwise, complete the analytic calculation of ideal-endpoint-values
 			// for the given set of texel weights and pixel colors.
-
-			#ifdef DEBUG_CAPTURE_NAN
-			    fedisableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
-
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
@@ -1710,10 +1652,6 @@ void recompute_ideal_colors_1plane(
 				vfloat4 sdsm = scale_direction * scale_ep1;
 				rgbs_vectors[i] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
 			}
-
-			#ifdef DEBUG_CAPTURE_NAN
-				feenableexcept(FE_DIVBYZERO | FE_INVALID);
-			#endif
 		}
 
 		// if the calculation of an RGB-offset vector failed, try to compute
