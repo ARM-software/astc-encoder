@@ -155,8 +155,7 @@ static bool realign_weights(
 				vfloat4 color = color_base + color_offset * plane_weight;
 
 				vfloat4 origcolor    = blk->texel(texel);
-				vfloat4 error_weight = vfloat4(ewb->texel_weight_r[texel], ewb->texel_weight_g[texel],
-				                               ewb->texel_weight_b[texel], ewb->texel_weight_a[texel]);
+				vfloat4 error_weight = ewb->error_weights[texel];
 
 				vfloat4 colordiff       = color - origcolor;
 				vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
