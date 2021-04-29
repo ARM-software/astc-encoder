@@ -166,8 +166,6 @@ void compute_encoding_choice_errors(
 
 	partition_metrics pms[4];
 
-	compute_partition_error_color_weightings(*ewb, *pt, pms);
-
 	compute_avgs_and_dirs_3_comp(pt, blk, ewb, 3, pms);
 
 	endpoints ep;
@@ -205,17 +203,16 @@ void compute_encoding_choice_errors(
 		float alpha_drop_error;
 
 		vfloat4 csf = pm.color_scale;
-		csf.set_lane<3>(0.0f);
 		vfloat4 csfn = normalize(csf);
 
 		vfloat4 icsf = pm.icolor_scale;
 		icsf.set_lane<3>(0.0f);
 
 		uncor_rgb_lines.a = pm.avg;
-		uncor_rgb_lines.b = normalize_safe(pm.dir.swz<0, 1, 2>(), csfn);
+		uncor_rgb_lines.b = normalize_safe(pm.dir, csfn);
 
 		samec_rgb_lines.a = vfloat4::zero();
-		samec_rgb_lines.b = normalize_safe(pm.avg.swz<0, 1, 2>(), csfn);
+		samec_rgb_lines.b = normalize_safe(pm.avg, csfn);
 
 		rgb_luma_lines.a = pm.avg;
 		rgb_luma_lines.b = csfn;
