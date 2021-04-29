@@ -85,7 +85,7 @@ static inline vfloat4 decode_texel(
 		color_unorm = unorm16_to_sf16(data);
 	}
 
-	// Pick components and then covert to FP16
+	// Pick components and then convert to FP16
 	vint4 datai = select(color_unorm, color_lns, lns_mask);
 	return float16_to_float(datai);
 }
