@@ -348,8 +348,8 @@ void compute_avgs_and_dirs_2_comp(
 	{
 		const uint8_t *weights = pt->texels_of_partition[partition];
 
-		float2 error_sum = float2(0.0f);
-		float2 base_sum = float2(0.0f);
+		vfloat4 error_sum = vfloat4::zero();
+		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
 		int texel_count = pt->partition_texel_count[partition];
@@ -359,51 +359,48 @@ void compute_avgs_and_dirs_2_comp(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float2 texel_datum = float2(data_vr[iwt], data_vg[iwt]) * weight;
+			vfloat4 texel_datum = vfloat4(data_vr[iwt], data_vg[iwt], 0.0f, 0.0f) * weight;
 
-			float2 error_weight = float2(error_vr[iwt], error_vg[iwt]);
+			vfloat4 error_weight = vfloat4(error_vr[iwt], error_vg[iwt], 0.0f, 0.0f);
 
 			partition_weight += weight;
 			base_sum += texel_datum;
 			error_sum += error_weight;
 		}
 
-		vfloat4 error_sum4 = vfloat4(error_sum.r, error_sum.g, 0.0f, 0.0f) * (1.0f / texel_count);
-		vfloat4 csf = normalize(sqrt(error_sum4)) * 1.41421356f;
-		vfloat4 average4 = vfloat4(base_sum.r, base_sum.g, 0.0f, 0.0f) * (1.0f / astc::max(partition_weight, 1e-7f));
+		error_sum = error_sum / texel_count;
+		vfloat4 csf = normalize(sqrt(error_sum)) * 1.41421356f;
+		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 
 
-		pm[partition].error_weight = error_sum4;
-		pm[partition].avg = average4 * csf;
-		float2 average = float2(average4.lane<0>(), average4.lane<1>());
+		pm[partition].error_weight = error_sum;
+		pm[partition].avg = average * csf;
 		pm[partition].color_scale = csf;
 		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
 
-		float2 sum_xp = float2(0.0f);
-		float2 sum_yp = float2(0.0f);
+		vfloat4 sum_xp = vfloat4::zero();
+		vfloat4 sum_yp = vfloat4::zero();
 
 		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			float2 texel_datum = float2(data_vr[iwt], data_vg[iwt]);
+			vfloat4 texel_datum = vfloat4(data_vr[iwt], data_vg[iwt], 0.0f, 0.0f);
 			texel_datum = (texel_datum - average) * weight;
 
-			if (texel_datum.r > 0.0f)
-			{
-				sum_xp += texel_datum;
-			}
+			vfloat4 zero = vfloat4::zero();
 
-			if (texel_datum.g > 0.0f)
-			{
-				sum_yp += texel_datum;
-			}
+			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
+			sum_xp += select(zero, texel_datum, tdm0);
+
+			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
+			sum_yp += select(zero, texel_datum, tdm1);
 		}
 
-		float prod_xp = dot(sum_xp, sum_xp);
-		float prod_yp = dot(sum_yp, sum_yp);
+		float prod_xp = dot_s(sum_xp, sum_xp);
+		float prod_yp = dot_s(sum_yp, sum_yp);
 
-		float2 best_vector = sum_xp;
+		vfloat4 best_vector = sum_xp;
 		float best_sum = prod_xp;
 
 		if (prod_yp > best_sum)
@@ -411,7 +408,7 @@ void compute_avgs_and_dirs_2_comp(
 			best_vector = sum_yp;
 		}
 
-		pm[partition].dir = vfloat4(best_vector.r, best_vector.g, 0.0f, 0.0f);
+		pm[partition].dir = best_vector;
 	}
 }
 
