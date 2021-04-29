@@ -905,11 +905,9 @@ void compute_avgs_and_dirs_2_comp(
 	const partition_info* pt,
 	const imageblock* blk,
 	const error_weight_block* ewb,
-	const float2* color_scalefactors,
 	int component1,
 	int component2,
-	float2* averages,
-	float2* directions);
+	partition_metrics pm[4]);
 
 void compute_error_squared_rgba(
 	const partition_info* pt,

@@ -53,47 +53,6 @@
 
 #include "astcenc_internal.h"
 
-static void compute_partition_error_color_weightings_and_range(
-	const imageblock& blk,
-	const error_weight_block& ewb,
-	const partition_info& pt,
-	partition_metrics pm[4]
-) {
-	int partition_count = pt.partition_count;
-	promise(partition_count > 0);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		vfloat4 error_weight(1e-12f);
-		vfloat4 rgba_min(1e38f);
-		vfloat4 rgba_max(-1e38f);
-
-		int texel_count = pt.partition_texel_count[i];
-		promise(texel_count > 0);
-
-		for (int j = 0; j < texel_count; j++)
-		{
-			int tidx = pt.texels_of_partition[i][j];
-			error_weight = error_weight + ewb.error_weights[tidx];
-
-			if (ewb.texel_weight[tidx] > 1e-10f)
-			{
-				vfloat4 data = blk.texel(tidx);
-				rgba_min = min(data, rgba_min);
-				rgba_max = max(data, rgba_max);
-			}
-		}
-
-		error_weight = error_weight / pt.partition_texel_count[i];
-		vfloat4 csf = sqrt(error_weight);
-		vfloat4 range = max(rgba_max - rgba_min, 1e-10f);
-		pm[i].error_weight = error_weight;
-		pm[i].color_scale = csf;
-		pm[i].icolor_scale = 1.0f / max(csf, 1e-7f);
-		pm[i].range_sq = range * range;
-	}
-}
-
 void compute_partition_error_color_weightings(
 	const error_weight_block& ewb,
 	const partition_info& pt,
@@ -116,11 +75,7 @@ void compute_partition_error_color_weightings(
 		}
 
 		error_weight = error_weight / pt.partition_texel_count[i];
-		vfloat4 csf = sqrt(error_weight);
-
 		pm[i].error_weight = error_weight;
-		pm[i].color_scale = csf;
-		pm[i].icolor_scale = 1.0f / max(csf, 1e-7f);
 	}
 }
 
@@ -197,8 +152,6 @@ void find_best_partitionings(
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
 
-			compute_partition_error_color_weightings_and_range(*blk, *ewb, *(ptab + partition), pms);
-
 			compute_avgs_and_dirs_4_comp(ptab + partition, blk, ewb, pms);
 
 			line4 uncor_lines[4];
@@ -266,9 +219,9 @@ void find_best_partitionings(
 					sep_b_plines[j].bs   = (sep_b_lines[j].b * pm.color_scale.swz<0, 1, 3, 2>());
 					sep_b_plines[j].bis  = (sep_b_lines[j].b * pm.icolor_scale.swz<0, 1, 3, 2>());
 
-					sep_a_plines[j].amod = (sep_a_lines[j].a - sep_a_lines[j].b * dot3(sep_a_lines[j].a, sep_a_lines[j].b)) * pm.icolor_scale.swz<0, 1, 2, 3>();
-					sep_a_plines[j].bs   = (sep_a_lines[j].b * pm.color_scale.swz<0, 1, 2, 3>());
-					sep_a_plines[j].bis  = (sep_a_lines[j].b * pm.icolor_scale.swz<0, 1, 2, 3>());
+					sep_a_plines[j].amod = (sep_a_lines[j].a - sep_a_lines[j].b * dot3(sep_a_lines[j].a, sep_a_lines[j].b)) * pm.icolor_scale;
+					sep_a_plines[j].bs   = (sep_a_lines[j].b * pm.color_scale);
+					sep_a_plines[j].bis  = (sep_a_lines[j].b * pm.icolor_scale);
 				}
 			}
 
@@ -402,9 +355,6 @@ void find_best_partitionings(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
-
-			compute_partition_error_color_weightings_and_range(*blk, *ewb, *(ptab + partition), pms);
-
 			compute_avgs_and_dirs_3_comp(ptab + partition, blk, ewb, 3, pms);
 
 			partition_lines3 plines[4];

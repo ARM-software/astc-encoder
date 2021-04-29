@@ -142,8 +142,6 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 
 	partition_metrics pms[4];
 
-	float2 scalefactors[4];
-
 	const float *error_weights;
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
@@ -166,68 +164,24 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		data_vg = blk->data_b;
 	}
 
-	compute_partition_error_color_weightings(*ewb, *pt, pms);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		float s1 = 0, s2 = 0;
-		assert(component1 < 4);
-		switch (component1)
-		{
-		case 0:
-			s1 = pms[i].color_scale.lane<0>();
-			break;
-		case 1:
-			s1 = pms[i].color_scale.lane<1>();
-			break;
-		case 2:
-			s1 = pms[i].color_scale.lane<2>();
-			break;
-		default:
-			s1 = pms[i].color_scale.lane<3>();
-			break;
-		}
-
-		assert(component2 < 4);
-		switch (component2)
-		{
-		case 0:
-			s2 = pms[i].color_scale.lane<0>();
-			break;
-		case 1:
-			s2 = pms[i].color_scale.lane<1>();
-			break;
-		case 2:
-			s2 = pms[i].color_scale.lane<2>();
-			break;
-		default:
-			s2 = pms[i].color_scale.lane<3>();
-			break;
-		}
-		scalefactors[i] = normalize(float2(s1, s2)) * 1.41421356f;
-	}
-
 	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
 	float highparam[4] { -1e10f, -1e10f, -1e10f, -1e10f };
-
-	float2 averages[4];
-	float2 directions[4];
 
 	line2 lines[4];
 	float scale[4];
 	float length_squared[4];
 
-	compute_avgs_and_dirs_2_comp(pt, blk, ewb, scalefactors, component1, component2, averages, directions);
+	compute_avgs_and_dirs_2_comp(pt, blk, ewb, component1, component2, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float2 dir = directions[i];
+		float2 dir = pms[i].dir.swz<0, 1>();
 		if (dir.r + dir.g < 0.0f)
 		{
 			dir = float2(0.0f) - dir;
 		}
 
-		lines[i].a = averages[i];
+		lines[i].a = pms[i].avg.swz<0, 1>();
 		if (dot(dir, dir) == 0.0f)
 		{
 			lines[i].b = normalize(float2(1.0f));
@@ -243,7 +197,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float2 point = float2(data_vr[i], data_vg[i]) * scalefactors[partition];
+			float2 point = float2(data_vr[i], data_vg[i]) * float2(pms[partition].color_scale.lane<0>(), pms[partition].color_scale.lane<0>());
 			line2 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
@@ -279,11 +233,11 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		float2 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		float2 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.r /= scalefactors[i].r;
-		ep0.g /= scalefactors[i].g;
+		ep0.r /= pms[i].color_scale.lane<0>();
+		ep0.g /= pms[i].color_scale.lane<1>();
 
-		ep1.r /= scalefactors[i].r;
-		ep1.g /= scalefactors[i].g;
+		ep1.r /= pms[i].color_scale.lane<0>();
+		ep1.g /= pms[i].color_scale.lane<1>();
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -369,31 +323,6 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		data_vb = blk->data_b;
 	}
 
-	compute_partition_error_color_weightings(*ewb, *pt, pms);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		vfloat4 color_scale;
-		assert(omitted_component < 4);
-		switch (omitted_component)
-		{
-		case 0:
-			color_scale = pms[i].color_scale.swz<1, 2, 3>();
-			break;
-		case 1:
-			color_scale = pms[i].color_scale.swz<0, 2, 3>();
-			break;
-		case 2:
-			color_scale = pms[i].color_scale.swz<0, 1, 3>();
-			break;
-		default:
-			color_scale = pms[i].color_scale.swz<0, 1, 2>();
-			break;
-		}
-
-		pms[i].color_scale = normalize(color_scale) * 1.73205080f;
-	}
-
 	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
 	float highparam[4] { -1e10f, -1e10f, -1e10f, -1e10f };
 
@@ -412,14 +341,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		}
 
 		lines[i].a = pms[i].avg;
-		if (dot3_s(dir, dir) == 0.0f)
-		{
-			lines[i].b = normalize(vfloat4(1.0f, 1.0f, 1.0f, 0.0f));
-		}
-		else
-		{
-			lines[i].b = normalize(dir);
-		}
+		lines[i].b = normalize_safe(dir, unit3());
 	}
 
 	for (int i = 0; i < texel_count; i++)
@@ -534,13 +456,6 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 	float length_squared[4];
 
 	partition_metrics pms[4];
-
-	compute_partition_error_color_weightings(*ewb, *pt, pms);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		pms[i].color_scale = normalize(pms[i].color_scale) * 2.0f;
-	}
 
 	compute_avgs_and_dirs_4_comp(pt, blk, ewb, pms);
 
