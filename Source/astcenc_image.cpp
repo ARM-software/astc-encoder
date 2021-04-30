@@ -24,55 +24,128 @@
 
 #include "astcenc_internal.h"
 
-// helper function to initialize the work-data from the orig-data
-static void imageblock_initialize_work_from_orig(
-	imageblock* blk,
-	int pixelcount
+/**
+ * @brief Loader pipeline function type for data fetch from memory.
+ */
+using pixel_loader = vfloat4(*)(const void*, int);
+
+/**
+ * @brief Loader pipeline function type for swizzling data in a vector.
+ */
+using pixel_swizzler = vfloat4(*)(vfloat4, const astcenc_swizzle&);
+
+/**
+ * @brief Loader pipeline function type for converting data in a vector to LNS.
+ */
+using pixel_converter = vfloat4(*)(vfloat4, vmask4);
+
+/**
+ * @brief Load a 8-bit UNORM texel from a data array.
+ *
+ * @param data          The data pointer.
+ * @param base_offset   The index offset to the start of the pixel.
+ */
+static vfloat4 load_texel_u8(
+	const void* data,
+	int base_offset
 ) {
-	blk->origin_texel = blk->texel(0);
+	const uint8_t* data8 = static_cast<const uint8_t*>(data);
+	return int_to_float(vint4(data8 + base_offset)) / 255.0f;
 
-	vfloat4 data_min(1e38f);
-	vfloat4 data_max(-1e38f);
-	bool grayscale = true;
+}
 
-	for (int i = 0; i < pixelcount; i++)
-	{
-		vfloat4 data = blk->texel(i);
-		vfloat4 color_lns = vfloat4::zero();
-		vfloat4 color_unorm = data * 65535.0f;
+/**
+ * @brief Load a 16-bit fp16 texel from a data array.
+ *
+ * @param data          The data pointer.
+ * @param base_offset   The index offset to the start of the pixel.
+ */
+static vfloat4 load_texel_f16(
+	const void* data,
+	int base_offset
+) {
+	const uint16_t* data16 = static_cast<const uint16_t*>(data);
+	int r = static_cast<float>(data16[base_offset    ]);
+	int g = static_cast<float>(data16[base_offset + 1]);
+	int b = static_cast<float>(data16[base_offset + 2]);
+	int a = static_cast<float>(data16[base_offset + 3]);
+	return float16_to_float(vint4(r, g, b, a));
+}
 
-		int rgb_lns = blk->rgb_lns[i];
-		int a_lns = blk->alpha_lns[i];
+/**
+ * @brief Load a 32-bit float texel from a data array.
+ *
+ * @param data          The data pointer.
+ * @param base_offset   The index offset to the start of the pixel.
+ */
+static vfloat4 load_texel_f32(
+	const void* data,
+	int base_offset
+) {
+	const float* data32 = static_cast<const float*>(data);
+	return vfloat4(data32 + base_offset);
+}
 
-		if (rgb_lns || a_lns)
-		{
-			color_lns = float_to_lns(data);
-		}
+/**
+ * @brief Dummy no-op swizzle function.
+ *
+ * @param data   The source RGBA vector to swizzle.
+ * @param swz    The swizzle to use.
+ */
+static vfloat4 swz_texel_skip(
+	vfloat4 data,
+	const astcenc_swizzle& swz
+) {
+	(void)swz;
+	return data;
+}
 
-		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
-		vmask4 lns_mask = use_lns != vint4::zero();
-		data = select(color_unorm, color_lns, lns_mask);
+/**
+ * @brief Swizzle a texel into a new arrangement.
+ *
+ * @param data   The source RGBA vector to swizzle.
+ * @param swz    The swizzle to use.
+ */
+static vfloat4 swz_texel(
+	vfloat4 data,
+	const astcenc_swizzle& swz
+) {
+	alignas(16) float datas[6];
 
-		// Compute block metadata
-		data_min = min(data_min, data);
-		data_max = max(data_max, data);
+	storea(data, datas);
+	datas[ASTCENC_SWZ_0] = 0.0f;
+	datas[ASTCENC_SWZ_1] = 1.0f;
 
-		if (grayscale && (data.lane<0>() != data.lane<1>() || data.lane<0>() != data.lane<2>()))
-		{
-			grayscale = false;
-		}
+	return vfloat4(datas[swz.r], datas[swz.g], datas[swz.b], datas[swz.a]);
+}
 
-		// Store block data
-		blk->data_r[i] = data.lane<0>();
-		blk->data_g[i] = data.lane<1>();
-		blk->data_b[i] = data.lane<2>();
-		blk->data_a[i] = data.lane<3>();
-	}
+/**
+ * @brief Encode a texel that is entirely LDR linear.
+ *
+ * @param data       The RGBA data to encode.
+ * @param lns_mask   The mask for the HDR channels than need LNS encoding.
+ */
+static vfloat4 encode_texel_unorm(
+	vfloat4 data,
+	vmask4 lns_mask
+) {
+	(void)lns_mask;
+	return data * 65535.0f;
+}
 
-	// Store block metadata
-	blk->data_min = data_min;
-	blk->data_max = data_max;
-	blk->grayscale = grayscale;
+/**
+ * @brief Encode a texel that includes at least some HDR LNS texels.
+ *
+ * @param data       The RGBA data to encode.
+ * @param lns_mask   The mask for the HDR channels than need LNS encoding.
+ */
+static vfloat4 encode_texel_lns(
+	vfloat4 data,
+	vmask4 lns_mask
+) {
+	vfloat4 datav_unorm = data * 65535.0f;
+	vfloat4 datav_lns   = float_to_lns(data);
+	return select(datav_unorm, datav_lns, lns_mask);
 }
 
 // fetch an imageblock from the input file.
@@ -100,159 +173,96 @@ void fetch_imageblock(
 	                 (swz.b != ASTCENC_SWZ_B) || (swz.a != ASTCENC_SWZ_A);
 
 	int idx = 0;
-	if (img.data_type == ASTCENC_TYPE_U8)
-	{
-		uint8_t data[6];
-		data[ASTCENC_SWZ_0] = 0x00;
-		data[ASTCENC_SWZ_1] = 0xFF;
 
-		for (int z = 0; z < bsd->zdim; z++)
-		{
-			int zi = astc::min(zpos + z, zsize - 1);
-			uint8_t* data8 = static_cast<uint8_t*>(img.data[zi]);
+	vfloat4 data_min(1e38f);
+	vfloat4 data_max(-1e38f);
+	bool grayscale = true;
 
-			for (int y = 0; y < bsd->ydim; y++)
-			{
-				int yi = astc::min(ypos + y, ysize - 1);
-
-				for (int x = 0; x < bsd->xdim; x++)
-				{
-					int xi = astc::min(xpos + x, xsize - 1);
-
-					int r = data8[(4 * xsize * yi) + (4 * xi    )];
-					int g = data8[(4 * xsize * yi) + (4 * xi + 1)];
-					int b = data8[(4 * xsize * yi) + (4 * xi + 2)];
-					int a = data8[(4 * xsize * yi) + (4 * xi + 3)];
-
-					if (needs_swz)
-					{
-						data[ASTCENC_SWZ_R] = r;
-						data[ASTCENC_SWZ_G] = g;
-						data[ASTCENC_SWZ_B] = b;
-						data[ASTCENC_SWZ_A] = a;
-
-						r = data[swz.r];
-						g = data[swz.g];
-						b = data[swz.b];
-						a = data[swz.a];
-					}
-
-					blk->data_r[idx] = static_cast<float>(r) / 255.0f;
-					blk->data_g[idx] = static_cast<float>(g) / 255.0f;
-					blk->data_b[idx] = static_cast<float>(b) / 255.0f;
-					blk->data_a[idx] = static_cast<float>(a) / 255.0f;
-					idx++;
-				}
-			}
-		}
-	}
-	else if (img.data_type == ASTCENC_TYPE_F16)
-	{
-		uint16_t data[6];
-		data[ASTCENC_SWZ_0] = 0x0000;
-		data[ASTCENC_SWZ_1] = 0x3C00;
-
-		for (int z = 0; z < bsd->zdim; z++)
-		{
-			int zi = astc::min(zpos + z, zsize - 1);
-			uint16_t* data16 = static_cast<uint16_t*>(img.data[zi]);
-
-			for (int y = 0; y < bsd->ydim; y++)
-			{
-				int yi = astc::min(ypos + y, ysize - 1);
-
-				for (int x = 0; x < bsd->xdim; x++)
-				{
-					int xi = astc::min(xpos + x, xsize - 1);
-
-					int r = data16[(4 * xsize * yi) + (4 * xi    )];
-					int g = data16[(4 * xsize * yi) + (4 * xi + 1)];
-					int b = data16[(4 * xsize * yi) + (4 * xi + 2)];
-					int a = data16[(4 * xsize * yi) + (4 * xi + 3)];
-
-					if (needs_swz)
-					{
-						data[ASTCENC_SWZ_R] = r;
-						data[ASTCENC_SWZ_G] = g;
-						data[ASTCENC_SWZ_B] = b;
-						data[ASTCENC_SWZ_A] = a;
-
-						r = data[swz.r];
-						g = data[swz.g];
-						b = data[swz.b];
-						a = data[swz.a];
-					}
-
-					vfloat4 dataf = max(float16_to_float(vint4(r, g, b, a)), 1e-8f);
-					blk->data_r[idx] = dataf.lane<0>();
-					blk->data_g[idx] = dataf.lane<1>();
-					blk->data_b[idx] = dataf.lane<2>();
-					blk->data_a[idx] = dataf.lane<3>();
-					idx++;
-				}
-			}
-		}
-	}
-	else // if (img.data_type == ASTCENC_TYPE_F32)
-	{
-		assert(img.data_type == ASTCENC_TYPE_F32);
-
-		float data[6];
-		data[ASTCENC_SWZ_0] = 0.0f;
-		data[ASTCENC_SWZ_1] = 1.0f;
-
-		for (int z = 0; z < bsd->zdim; z++)
-		{
-			int zi = astc::min(zpos + z, zsize - 1);
-			float* data32 = static_cast<float*>(img.data[zi]);
-
-			for (int y = 0; y < bsd->ydim; y++)
-			{
-				int yi = astc::min(ypos + y, ysize - 1);
-
-				for (int x = 0; x < bsd->xdim; x++)
-				{
-					int xi = astc::min(xpos + x, xsize - 1);
-
-					float r = data32[(4 * xsize * yi) + (4 * xi    )];
-					float g = data32[(4 * xsize * yi) + (4 * xi + 1)];
-					float b = data32[(4 * xsize * yi) + (4 * xi + 2)];
-					float a = data32[(4 * xsize * yi) + (4 * xi + 3)];
-
-					if (needs_swz)
-					{
-						data[ASTCENC_SWZ_R] = r;
-						data[ASTCENC_SWZ_G] = g;
-						data[ASTCENC_SWZ_B] = b;
-						data[ASTCENC_SWZ_A] = a;
-
-						r = data[swz.r];
-						g = data[swz.g];
-						b = data[swz.b];
-						a = data[swz.a];
-					}
-
-					blk->data_r[idx] = astc::max(r, 1e-8f);
-					blk->data_g[idx] = astc::max(g, 1e-8f);
-					blk->data_b[idx] = astc::max(b, 1e-8f);
-					blk->data_a[idx] = astc::max(a, 1e-8f);
-					idx++;
-				}
-			}
-		}
-	}
-
+	// This works because we impose the same choice everywhere during encode
 	int rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
-	int alpha_lns = decode_mode == ASTCENC_PRF_HDR;
+	int a_lns = decode_mode == ASTCENC_PRF_HDR;
+	vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+	vmask4 lns_mask = use_lns != vint4::zero();
 
-	// impose the choice on every pixel when encoding.
-	for (int i = 0; i < bsd->texel_count; i++)
+	// Set up the function pointers for loading pipeline as needed
+	pixel_loader loader = load_texel_u8;
+	if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		blk->rgb_lns[i] = rgb_lns;
-		blk->alpha_lns[i] = alpha_lns;
+		loader = load_texel_f16;
+	}
+	else if  (img.data_type == ASTCENC_TYPE_F32)
+	{
+		loader = load_texel_f32;
 	}
 
-	imageblock_initialize_work_from_orig(blk, bsd->texel_count);
+	pixel_swizzler swizzler = swz_texel_skip;
+	if (needs_swz)
+	{
+		swizzler = swz_texel;
+	}
+
+	pixel_converter converter = encode_texel_unorm;
+	if (any(lns_mask))
+	{
+		converter = encode_texel_lns;
+	}
+
+	for (int z = 0; z < bsd->zdim; z++)
+	{
+		int zi = astc::min(zpos + z, zsize - 1);
+		void* plane = img.data[zi];
+
+		for (int y = 0; y < bsd->ydim; y++)
+		{
+			int yi = astc::min(ypos + y, ysize - 1);
+
+			for (int x = 0; x < bsd->xdim; x++)
+			{
+				int xi = astc::min(xpos + x, xsize - 1);
+
+				vfloat4 datav = loader(plane, (4 * xsize * yi) + (4 * xi    ));
+				datav = swizzler(datav, swz);
+				datav = converter(datav, lns_mask);
+
+				// Compute block metadata
+				data_min = min(data_min, datav);
+				data_max = max(data_max, datav);
+
+				if (grayscale && (datav.lane<0>() != datav.lane<1>() || datav.lane<0>() != datav.lane<2>()))
+				{
+					grayscale = false;
+				}
+
+				blk->data_r[idx] = datav.lane<0>();
+				blk->data_g[idx] = datav.lane<1>();
+				blk->data_b[idx] = datav.lane<2>();
+				blk->data_a[idx] = datav.lane<3>();
+
+				blk->rgb_lns[idx] = rgb_lns;
+				blk->alpha_lns[idx] = a_lns;
+
+				idx++;
+			}
+		}
+	}
+
+	// Reverse the encoding so we store origin block in the original format
+	// TODO: Move this to when we consume it, as we rarely do?
+	vfloat4 data_enc = blk->texel(0);
+	vfloat4 data_enc_unorm = data_enc / 65535.0f;
+	vfloat4 data_enc_lns = vfloat4::zero();
+
+	if (rgb_lns || a_lns)
+	{
+		data_enc_lns = float16_to_float(lns_to_sf16(float_to_int(data_enc)));
+	}
+
+	blk->origin_texel = select(data_enc_unorm, data_enc_lns, lns_mask);;
+
+	// Store block metadata
+	blk->data_min = data_min;
+	blk->data_max = data_max;
+	blk->grayscale = grayscale;
 }
 
 void write_imageblock(
