@@ -24,52 +24,6 @@
 
 #include "astcenc_internal.h"
 
-void imageblock_initialize_deriv(
-	const imageblock* blk,
-	int pixelcount,
-	vfloat4* dptr
-) {
-	// TODO: For LDR on the current codec we can skip this if no LNS and just
-	// early-out as we use the same LNS settings everywhere ...
-	for (int i = 0; i < pixelcount; i++)
-	{
-		vfloat4 derv_unorm(65535.0f);
-		vfloat4 derv_lns = vfloat4::zero();
-
-		// TODO: Pack these into bits and avoid the disjoint fetch
-		int rgb_lns = blk->rgb_lns[i];
-		int a_lns = blk->alpha_lns[i];
-
-		// Compute derivatives if we have any use of LNS
-		if (rgb_lns || a_lns)
-		{
-			vfloat4 data = blk->texel(i);
-			vint4 datai = lns_to_sf16(float_to_int(data));
-
-			vfloat4 dataf = float16_to_float(datai);
-			dataf = max(dataf, 6e-5f);
-
-			vfloat4 data_lns1 = dataf * 1.05f;
-			data_lns1 = float_to_lns(data_lns1);
-
-			vfloat4 data_lns2 = dataf;
-			data_lns2 = float_to_lns(data_lns2);
-
-			vfloat4 divisor_lns = dataf * 0.05f;
-
-			// Clamp derivatives between 1/32 and 2^25
-			float lo = 1.0f / 32.0f;
-			float hi = 33554432.0f;
-			derv_lns = clamp(lo, hi, (data_lns1 - data_lns2) / divisor_lns);
-		}
-
-		vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
-		vmask4 lns_mask = use_lns != vint4::zero();
-		*dptr = select(derv_unorm, derv_lns, lns_mask);
-		dptr++;
-	}
-}
-
 // helper function to initialize the work-data from the orig-data
 static void imageblock_initialize_work_from_orig(
 	imageblock* blk,

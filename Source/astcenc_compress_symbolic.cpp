@@ -991,12 +991,16 @@ static float prepare_error_weight_block(
 		ctx.config.v_rgb_mean != 0.0f || ctx.config.v_rgb_stdev != 0.0f || \
 		ctx.config.v_a_mean != 0.0f || ctx.config.v_a_stdev != 0.0f;
 
-	vfloat4 derv[MAX_TEXELS_PER_BLOCK];
-	imageblock_initialize_deriv(blk, bsd->texel_count, derv);
 	vfloat4 color_weights(ctx.config.cw_r_weight,
 	                      ctx.config.cw_g_weight,
 	                      ctx.config.cw_b_weight,
 	                      ctx.config.cw_a_weight);
+
+	// This works because HDR is imposed globally at compression time
+	int rgb_lns = blk->rgb_lns[0];
+	int a_lns = blk->alpha_lns[0];
+	vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
+	vmask4 lns_mask = use_lns != vint4::zero();
 
 	for (int z = 0; z < bsd->zdim; z++)
 	{
@@ -1014,6 +1018,34 @@ static float prepare_error_weight_block(
 				}
 				else
 				{
+					vfloat4 derv(65535.0f);
+
+					// Compute derivative if we have any use of LNS
+					if (any(lns_mask))
+					{
+						// TODO: Can we avoid some of the multi-type translation?
+						vfloat4 data = blk->texel(idx);
+						vint4 datai = lns_to_sf16(float_to_int(data));
+
+						vfloat4 dataf = float16_to_float(datai);
+						dataf = max(dataf, 6e-5f);
+
+						vfloat4 data_lns1 = dataf * 1.05f;
+						data_lns1 = float_to_lns(data_lns1);
+
+						vfloat4 data_lns2 = dataf;
+						data_lns2 = float_to_lns(data_lns2);
+
+						vfloat4 divisor_lns = dataf * 0.05f;
+
+						// Clamp derivatives between 1/32 and 2^25
+						float lo = 1.0f / 32.0f;
+						float hi = 33554432.0f;
+						vfloat4 derv_lns = clamp(lo, hi, (data_lns1 - data_lns2) / divisor_lns);
+						derv = select(derv, derv_lns, lns_mask);
+					}
+
+					// Compute error weight
 					vfloat4 error_weight(ctx.config.v_rgb_base,
 					                     ctx.config.v_rgb_base,
 					                     ctx.config.v_rgb_base,
@@ -1099,7 +1131,7 @@ static float prepare_error_weight_block(
 					// which is equivalent to dividing by the derivative of the transfer
 					// function.
 
-					error_weight = error_weight / (derv[idx] * derv[idx] * 1e-10f);
+					error_weight = error_weight / (derv * derv * 1e-10f);
 					ewb->error_weights[idx] = error_weight;
 				}
 				idx++;

@@ -1344,11 +1344,6 @@ void expand_deblock_weights(
 // functions pertaining to weight alignment
 void prepare_angular_tables();
 
-void imageblock_initialize_deriv(
-	const imageblock* blk,
-	int pixelcount,
-	vfloat4* dptr);
-
 void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor* bsd,
