@@ -481,6 +481,8 @@ void encode_ise(
 	uint8_t* output_data,
 	int bit_offset
 ) {
+	promise(elements > 0);
+
 	int bits = btq_counts[quant_level].bits;
 	int trits = btq_counts[quant_level].trits;
 	int quints = btq_counts[quant_level].quints;
@@ -637,6 +639,8 @@ void decode_ise(
 	uint8_t* output_data,
 	int bit_offset
 ) {
+	promise(elements > 0);
+
 	// note: due to how the trit/quint-block unpacking is done in this function,
 	// we may write more temporary results than the number of outputs
 	// The maximum actual number of results is 64 bit, but we keep 4 additional elements

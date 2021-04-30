@@ -790,6 +790,9 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 ) {
 	int partition_count = pt->partition_count;
 
+	promise(partition_count > 0);
+	promise(bsd->block_mode_count > 0);
+
 	int encode_hdr_rgb = blk->rgb_lns[0];
 	int encode_hdr_alpha = blk->alpha_lns[0];
 
