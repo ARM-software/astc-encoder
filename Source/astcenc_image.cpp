@@ -220,7 +220,7 @@ void fetch_imageblock(
 			{
 				int xi = astc::min(xpos + x, xsize - 1);
 
-				vfloat4 datav = loader(plane, (4 * xsize * yi) + (4 * xi    ));
+				vfloat4 datav = loader(plane, (4 * xsize * yi) + (4 * xi));
 				datav = swizzler(datav, swz);
 				datav = converter(datav, lns_mask);
 

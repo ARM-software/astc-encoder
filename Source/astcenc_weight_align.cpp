@@ -255,6 +255,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	vfloat4 best_results[40];
 
 	// Initialize the array to some safe defaults
+	promise(max_quant_steps > 0);
 	for (int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error

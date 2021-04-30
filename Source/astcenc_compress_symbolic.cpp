@@ -101,8 +101,7 @@ static bool realign_weights(
 			epd = select(epd, vint4::zero(), plane_mask);
 
 			endpnt0f[pa_idx] = int_to_float(endpnt0[pa_idx]);
-			offset[pa_idx] = int_to_float(epd);
-			offset[pa_idx] = offset[pa_idx] * (1.0f / 64.0f);
+			offset[pa_idx] = int_to_float(epd) * (1.0f / 64.0f);
 		}
 
 		// Create an unquantized weight grid for this decimation level
