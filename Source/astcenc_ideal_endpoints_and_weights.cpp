@@ -1123,18 +1123,23 @@ void recompute_ideal_colors_2planes(
 	const imageblock* blk,	// picture-block containing the actual data.
 	const error_weight_block* ewb
 ) {
+	int weight_count = dt->weight_count;
+	int partition_count = pt->partition_count;
+
+	promise(weight_count > 0);
+	promise(partition_count > 0);
+
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
 	float weight_set[MAX_WEIGHTS_PER_BLOCK];
 	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
 
-	for (int i = 0; i < dt->weight_count; i++)
+	for (int i = 0; i < weight_count; i++)
 	{
 		weight_set[i] = qat->unquantized_value[weight_set8_plane1[i]] * (1.0f / 64.0f);
 		plane2_weight_set[i] = qat->unquantized_value[weight_set8_plane2[i]] * (1.0f / 64.0f);
 	}
 
-	int partition_count = pt->partition_count;
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 rgba_sum(1e-17f);
