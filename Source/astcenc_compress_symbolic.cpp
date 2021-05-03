@@ -429,10 +429,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 						{
 							workscb.color_values[j][k] = colorvals[j][k];
 						}
-					}
 
-					for (int j = 0; j < 4; j++)
-					{
 						workscb.color_formats[j] = color_formats_mod[j];
 					}
 				}
@@ -824,10 +821,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 						{
 							workscb.color_values[j][k] = colorvals[j][k];
 						}
-					}
 
-					for (int j = 0; j < 4; j++)
-					{
 						workscb.color_formats[j] = color_formats_mod[j];
 					}
 				}
