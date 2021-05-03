@@ -407,9 +407,8 @@ struct decimation_table
 	// data access patterns depending on how we can unroll loops
 	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
 	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
+	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_int_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
 
-	uint8_t texel_weights_t4[MAX_TEXELS_PER_BLOCK][4];	// the weights that go into a texel calculation
-	uint8_t texel_weights_int_t4[MAX_TEXELS_PER_BLOCK][4];	// the weight to assign to each weight
 	uint8_t weight_texel_count[MAX_WEIGHTS_PER_BLOCK];	// the number of texels that a given weight contributes to
 
 	// Stored transposed to give better access patterns

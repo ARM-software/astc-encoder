@@ -65,6 +65,15 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 }
 
 /**
+ * @brief Overload: vector by vector incremental addition.
+ */
+ASTCENC_SIMD_INLINE vint4& operator+=(vint4& a, const vint4& b)
+{
+	a = a + b;
+	return a;
+}
+
+/**
  * @brief Overload: vector by scalar subtraction.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)

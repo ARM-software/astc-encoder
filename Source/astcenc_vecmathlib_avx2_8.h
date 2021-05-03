@@ -373,11 +373,28 @@ ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 }
 
 /**
+ * @brief Overload: vector by vector incremental addition.
+ */
+ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
+{
+	a = a + b;
+	return a;
+}
+
+/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 {
 	return vint8(_mm256_sub_epi32(a.m, b.m));
+}
+
+/**
+ * @brief Overload: vector by vector multiplication.
+ */
+ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
+{
+	return vint8(_mm256_mullo_epi32(a.m, b.m));
 }
 
 /**
@@ -445,6 +462,22 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 }
 
 /**
+ * @brief Arithmetic shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
+{
+	return vint8(_mm256_srai_epi32(a.m, s));
+}
+
+/**
+ * @brief Logical shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
+{
+	return vint8(_mm256_srli_epi32(a.m, s));
+}
+
+/**
  * @brief Return the min vector of two vectors.
  */
 ASTCENC_SIMD_INLINE vint8 min(vint8 a, vint8 b)
@@ -502,6 +535,14 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
 {
 	_mm256_store_si256((__m256i*)p, a.m);
+}
+
+/**
+ * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
+{
+	_mm256_storeu_si256((__m256i*)p, a.m);
 }
 
 /**

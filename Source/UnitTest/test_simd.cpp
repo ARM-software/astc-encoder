@@ -1296,6 +1296,19 @@ TEST(vint4, vadd)
 	EXPECT_EQ(a.lane<3>(), 4 + 5);
 }
 
+/** @brief Test vint4 self-add. */
+TEST(vint4, vselfadd)
+{
+	vint4 a(1, 2, 3, 4);
+	vint4 b(2, 3, 4, 5);
+	a += b;
+
+	EXPECT_EQ(a.lane<0>(), 1 + 2);
+	EXPECT_EQ(a.lane<1>(), 2 + 3);
+	EXPECT_EQ(a.lane<2>(), 3 + 4);
+	EXPECT_EQ(a.lane<3>(), 4 + 5);
+}
+
 /** @brief Test vint4 add. */
 TEST(vint4, vsadd)
 {
@@ -2692,7 +2705,6 @@ TEST(vint8, UnalignedLoad8)
 	EXPECT_EQ(a.lane<7>(), 8);
 }
 
-
 /** @brief Test scalar duplicated vint8 load. */
 TEST(vint8, ScalarDupLoad)
 {
@@ -2809,6 +2821,24 @@ TEST(vint8, vadd)
 	EXPECT_EQ(a.lane<7>(), 4 + 5);
 }
 
+
+/** @brief Test vint8 self-add. */
+TEST(vint8, vselfadd1)
+{
+	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	a += b;
+
+	EXPECT_EQ(a.lane<0>(), 1 + 2);
+	EXPECT_EQ(a.lane<1>(), 2 + 3);
+	EXPECT_EQ(a.lane<2>(), 3 + 4);
+	EXPECT_EQ(a.lane<3>(), 4 + 5);
+	EXPECT_EQ(a.lane<4>(), 1 + 2);
+	EXPECT_EQ(a.lane<5>(), 2 + 3);
+	EXPECT_EQ(a.lane<6>(), 3 + 4);
+	EXPECT_EQ(a.lane<7>(), 4 + 5);
+}
+
 /** @brief Test vint8 sub. */
 TEST(vint8, vsub)
 {
@@ -2823,6 +2853,22 @@ TEST(vint8, vsub)
 	EXPECT_EQ(a.lane<5>(), 2 - 3);
 	EXPECT_EQ(a.lane<6>(), 4 - 3);
 	EXPECT_EQ(a.lane<7>(), 4 - 5);
+}
+
+/** @brief Test vint8 mul. */
+TEST(vint8, vmul)
+{
+	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
+	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
+	a = a * b;
+	EXPECT_EQ(a.lane<0>(), 1 * 2);
+	EXPECT_EQ(a.lane<1>(), 2 * 3);
+	EXPECT_EQ(a.lane<2>(), 4 * 3);
+	EXPECT_EQ(a.lane<3>(), 4 * 5);
+	EXPECT_EQ(a.lane<4>(), 1 * 2);
+	EXPECT_EQ(a.lane<5>(), 2 * 3);
+	EXPECT_EQ(a.lane<6>(), 4 * 3);
+	EXPECT_EQ(a.lane<7>(), 4 * 5);
 }
 
 /** @brief Test vint8 bitwise invert. */
@@ -3000,6 +3046,78 @@ TEST(vint8, max)
 	EXPECT_EQ(r.lane<7>(), 5);
 }
 
+/** @brief Test vint8 lsr. */
+TEST(vint8, lsr)
+{
+	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	a = lsr<0>(a);
+	EXPECT_EQ(a.lane<0>(),  1);
+	EXPECT_EQ(a.lane<1>(),  2);
+	EXPECT_EQ(a.lane<2>(),  4);
+	EXPECT_EQ(a.lane<3>(),  0xFFFFFFFC);
+	EXPECT_EQ(a.lane<4>(),  1);
+	EXPECT_EQ(a.lane<5>(),  2);
+	EXPECT_EQ(a.lane<6>(),  4);
+	EXPECT_EQ(a.lane<7>(),  0xFFFFFFFC);
+
+
+	a = lsr<1>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  1);
+	EXPECT_EQ(a.lane<2>(),  2);
+	EXPECT_EQ(a.lane<3>(),  0x7FFFFFFE);
+	EXPECT_EQ(a.lane<4>(),  0);
+	EXPECT_EQ(a.lane<5>(),  1);
+	EXPECT_EQ(a.lane<6>(),  2);
+	EXPECT_EQ(a.lane<7>(),  0x7FFFFFFE);
+
+	a = lsr<2>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  0);
+	EXPECT_EQ(a.lane<2>(),  0);
+	EXPECT_EQ(a.lane<3>(),  0x1FFFFFFF);
+	EXPECT_EQ(a.lane<4>(),  0);
+	EXPECT_EQ(a.lane<5>(),  0);
+	EXPECT_EQ(a.lane<6>(),  0);
+	EXPECT_EQ(a.lane<7>(),  0x1FFFFFFF);
+}
+
+/** @brief Test vint8 asr. */
+TEST(vint8, asr)
+{
+	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	a = asr<0>(a);
+	EXPECT_EQ(a.lane<0>(),  1);
+	EXPECT_EQ(a.lane<1>(),  2);
+	EXPECT_EQ(a.lane<2>(),  4);
+	EXPECT_EQ(a.lane<3>(), -4);
+	EXPECT_EQ(a.lane<4>(),  1);
+	EXPECT_EQ(a.lane<5>(),  2);
+	EXPECT_EQ(a.lane<6>(),  4);
+	EXPECT_EQ(a.lane<7>(), -4);
+
+	a = asr<1>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  1);
+	EXPECT_EQ(a.lane<2>(),  2);
+	EXPECT_EQ(a.lane<3>(), -2);
+	EXPECT_EQ(a.lane<4>(),  0);
+	EXPECT_EQ(a.lane<5>(),  1);
+	EXPECT_EQ(a.lane<6>(),  2);
+	EXPECT_EQ(a.lane<7>(), -2);
+
+	// Note - quirk of asr is that you will get "stuck" at -1
+	a = asr<2>(a);
+	EXPECT_EQ(a.lane<0>(),  0);
+	EXPECT_EQ(a.lane<1>(),  0);
+	EXPECT_EQ(a.lane<2>(),  0);
+	EXPECT_EQ(a.lane<3>(), -1);
+	EXPECT_EQ(a.lane<4>(),  0);
+	EXPECT_EQ(a.lane<5>(),  0);
+	EXPECT_EQ(a.lane<6>(),  0);
+	EXPECT_EQ(a.lane<7>(), -1);
+}
+
 /** @brief Test vint8 hmin. */
 TEST(vint8, hmin)
 {
@@ -3066,6 +3184,22 @@ TEST(vint8, storea)
 	EXPECT_EQ(out[5], 5);
 	EXPECT_EQ(out[6], 6);
 	EXPECT_EQ(out[7], 7);
+}
+
+/** @brief Test vint8 store. */
+TEST(vint8, store)
+{
+	alignas(32) int out[9];
+	vint8 a(s32_data);
+	store(a, out + 1);
+	EXPECT_EQ(out[1], 0);
+	EXPECT_EQ(out[2], 1);
+	EXPECT_EQ(out[3], 2);
+	EXPECT_EQ(out[4], 3);
+	EXPECT_EQ(out[5], 4);
+	EXPECT_EQ(out[6], 5);
+	EXPECT_EQ(out[7], 6);
+	EXPECT_EQ(out[8], 7);
 }
 
 /** @brief Test vint8 store_nbytes. */

@@ -308,9 +308,7 @@ static void initialize_decimation_table_2d(
 
 		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
-			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
-
+			dt->texel_weights_int_4t[j][i] = weights_of_texel[i][j];
 			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
 			dt->texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
 		}
@@ -318,9 +316,7 @@ static void initialize_decimation_table_2d(
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (int j = weight_count_of_texel[i]; j < 4; j++)
 		{
-			dt->texel_weights_int_t4[i][j] = 0;
-			dt->texel_weights_t4[i][j] = 0;
-
+			dt->texel_weights_int_4t[j][i] = 0;
 			dt->texel_weights_float_4t[j][i] = 0.0f;
 			dt->texel_weights_4t[j][i] = 0;
 		}
@@ -345,7 +341,7 @@ static void initialize_decimation_table_2d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				uint8_t dttw = dt->texel_weights_t4[texel][k];
+				uint8_t dttw = dt->texel_weights_4t[k][texel];
 				float dttwf = dt->texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
@@ -555,18 +551,14 @@ static void initialize_decimation_table_3d(
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (int j = 0; j < 4; j++)
 		{
-			dt->texel_weights_int_t4[i][j] = 0;
-			dt->texel_weights_t4[i][j] = 0;
-
+			dt->texel_weights_int_4t[j][i] = 0;
 			dt->texel_weights_float_4t[j][i] = 0.0f;
 			dt->texel_weights_4t[j][i] = 0;
 		}
 
 		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
-			dt->texel_weights_int_t4[i][j] = weights_of_texel[i][j];
-			dt->texel_weights_t4[i][j] = grid_weights_of_texel[i][j];
-
+			dt->texel_weights_int_4t[j][i] = weights_of_texel[i][j];
 			dt->texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
 			dt->texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
 		}
@@ -591,7 +583,7 @@ static void initialize_decimation_table_3d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				uint8_t dttw = dt->texel_weights_t4[texel][k];
+				uint8_t dttw = dt->texel_weights_4t[k][texel];
 				float dttwf = dt->texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
