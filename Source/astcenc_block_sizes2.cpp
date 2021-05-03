@@ -373,6 +373,20 @@ static void initialize_decimation_table_2d(
 	}
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
+	int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
+	for (int i = texels_per_block; i < texels_per_block_simd; i++)
+	{
+		dt->texel_weight_count[i] = 0;
+
+		for (int j = 0; j < 4; j++)
+		{
+			dt->texel_weights_float_4t[j][i] = 0;
+			dt->texel_weights_4t[j][i] = 0;
+			dt->texel_weights_int_4t[j][i] = 0;
+		}
+	}
+
+	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 	// Match last texel in active lane in SIMD group, for better gathers
 	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = dt->weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
@@ -605,16 +619,34 @@ static void initialize_decimation_table_3d(
 		}
 
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-		// TODO: Match an active lane in SIMD group, as better for gathers?
+		// Match last texel in active lane in SIMD group, for better gathers
+		uint8_t last_texel = dt->weight_texel[texel_count_wt - 1][i];
 		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
-			dt->weight_texel[j][i] = 0;
+			dt->weight_texel[j][i] = last_texel;
 			dt->weights_flt[j][i] = 0.0f;
 		}
 	}
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-	// TODO: Match an active lane in SIMD group, as better for gathers?
+	int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
+	for (int i = texels_per_block; i < texels_per_block_simd; i++)
+	{
+		dt->texel_weight_count[i] = 0;
+
+		for (int j = 0; j < 4; j++)
+		{
+			dt->texel_weights_float_4t[j][i] = 0;
+			dt->texel_weights_4t[j][i] = 0;
+			dt->texel_weights_int_4t[j][i] = 0;
+		}
+	}
+
+	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
+	// Match last texel in active lane in SIMD group, for better gathers
+	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
+	uint8_t last_texel = dt->weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
+
 	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
 	for (int i = weights_per_block; i < weights_per_block_simd; i++)
 	{
@@ -622,7 +654,7 @@ static void initialize_decimation_table_3d(
 
 		for (int j = 0; j < max_texel_count_of_weight; j++)
 		{
-			dt->weight_texel[j][i] = 0;
+			dt->weight_texel[j][i] = last_texel;
 			dt->weights_flt[j][i] = 0.0f;
 		}
 	}

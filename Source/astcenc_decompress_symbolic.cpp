@@ -24,21 +24,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-static int compute_value_of_texel_int(
-	int texel_to_get,
-	const decimation_table* dt,
-	const int* weights
-) {
-	int summed_value = 8;
-	int weights_to_evaluate = dt->texel_weight_count[texel_to_get];
-	for (int i = 0; i < weights_to_evaluate; i++)
-	{
-		summed_value += weights[dt->texel_weights_4t[i][texel_to_get]]
-		              * dt->texel_weights_int_4t[i][texel_to_get];
-	}
-	return summed_value >> 4;
-}
-
 static vint compute_value_of_texel_int_vla(
 	int texel_to_get,
 	const decimation_table* dt,
@@ -126,46 +111,32 @@ void unpack_weights(
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
-	for (int i = 0; i < weight_count; i++)
-	{
-		uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
-	}
-
-	if (is_dual_plane)
+	// Second, undecimate the weights ...
+	// Safe to overshoot as all arrays are allocated to full size
+	if (!is_dual_plane)
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + PLANE2_WEIGHTS_OFFSET]];
+			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
 		}
-	}
 
-	// Second, undecimate the weights ...
-	int clipped_texel_count = round_down_to_simd_multiple_vla(bsd.texel_count);
-	if (!is_dual_plane)
-	{
-		for (int i = 0; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			store(compute_value_of_texel_int_vla(i, &dt, uq_plane1_weights), weights_plane1 + i);
-
-		}
-
-		for (int i = clipped_texel_count; i < bsd.texel_count; i++)
-		{
-			weights_plane1[i] = compute_value_of_texel_int(i, &dt, uq_plane1_weights);
 		}
 	}
 	else
 	{
-		for (int i = 0; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (int i = 0; i < weight_count; i++)
+		{
+			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + PLANE2_WEIGHTS_OFFSET]];
+		}
+
+		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			store(compute_value_of_texel_int_vla(i, &dt, uq_plane1_weights), weights_plane1 + i);
 			store(compute_value_of_texel_int_vla(i, &dt, uq_plane2_weights), weights_plane2 + i);
-		}
-
-		for (int i = clipped_texel_count; i < bsd.texel_count; i++)
-		{
-			weights_plane1[i] = compute_value_of_texel_int(i, &dt, uq_plane1_weights);
-			weights_plane2[i] = compute_value_of_texel_int(i, &dt, uq_plane2_weights);
 		}
 	}
 }
