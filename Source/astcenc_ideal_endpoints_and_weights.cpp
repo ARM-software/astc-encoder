@@ -494,14 +494,7 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		}
 
 		lines[i].a = pms[i].avg;
-		if (dot_s(dir, dir) == 0.0f)
-		{
-			lines[i].b = normalize(vfloat4(1.0f));
-		}
-		else
-		{
-			lines[i].b = normalize(dir);
-		}
+		lines[i].b = normalize_safe(dir, unit4());
 	}
 
 	for (int i = 0; i < texel_count; i++)
