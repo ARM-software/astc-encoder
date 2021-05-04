@@ -121,6 +121,14 @@ static void compute_endpoints_and_ideal_weights_1_comp(
 		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
 
+	// Zero initialize any SIMD over-fetch
+	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (int i = texel_count; i < texel_count_simd; i++)
+	{
+		ei->weights[i] = 0.0f;
+		ei->weight_error_scale[i] = 0.0f;
+	}
+
 	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
@@ -268,6 +276,14 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		assert(!astc::isnan(ei->weight_error_scale[i]));
 
 		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
+	}
+
+	// Zero initialize any SIMD over-fetch
+	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (int i = texel_count; i < texel_count_simd; i++)
+	{
+		ei->weights[i] = 0.0f;
+		ei->weight_error_scale[i] = 0.0f;
 	}
 
 	ei->is_constant_weight_error_scale = is_constant_wes;
@@ -429,6 +445,14 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
 	}
 
+	// Zero initialize any SIMD over-fetch
+	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (int i = texel_count; i < texel_count_simd; i++)
+	{
+		ei->weights[i] = 0.0f;
+		ei->weight_error_scale[i] = 0.0f;
+	}
+
 	ei->is_constant_weight_error_scale = is_constant_wes;
 }
 
@@ -539,6 +563,14 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 		assert(!astc::isnan(ei->weight_error_scale[i]));
 
 		is_constant_wes = is_constant_wes && ei->weight_error_scale[i] == constant_wes;
+	}
+
+	// Zero initialize any SIMD over-fetch
+	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (int i = texel_count; i < texel_count_simd; i++)
+	{
+		ei->weights[i] = 0.0f;
+		ei->weight_error_scale[i] = 0.0f;
 	}
 
 	ei->is_constant_weight_error_scale = is_constant_wes;
@@ -671,11 +703,9 @@ float compute_error_of_weight_set_1plane(
 	float error_summa = 0.0f;
 	int texel_count = dt->texel_count;
 
-	int i = 0;
-
-	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+	// Process SIMD-width chunks
+	// Safe to over-fetch - the extra space is zero initialized
+	for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Compute the bilinear interpolation of the decimated weight grid
 		vfloat current_values = bilinear_infill_vla(*dt, weights, i);
@@ -688,36 +718,6 @@ float compute_error_of_weight_set_1plane(
 
 		haccumulate(error_summav, error);
 	}
-
-	// Loop tail
-	// Error is buffered and accumulated in blocks of 4 to ensure that
-	// the partial sums added to the accumulator are invariant with the
-	// vector implementation, irrespective of vector size ...
-	alignas(16) float errorsum_tmp[4] { 0 };
-	for (/* */; i < texel_count; i++)
-	{
-		float current_value = bilinear_infill(*dt, weights, i);
-		float valuedif = current_value - eai->weights[i];
-		float error = valuedif * valuedif * eai->weight_error_scale[i];
-
-		// Accumulate error sum in the temporary array
-		int error_index = i & 0x3;
-		errorsum_tmp[error_index] = error;
-
-#if ASTCENC_SIMD_WIDTH == 8
-		// Zero the temporary staging buffer every 4 items unless last. Note
-		// that this block can only trigger for 6x5 blocks, all other partials
-		// tails are shorter than 4 ...
-		if ((i & 0x7) == 0x03)
-		{
-			haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
- 			storea(vfloat4::zero(), errorsum_tmp);
-		}
-#endif
-	}
-
-	// Accumulate the loop tail using the vfloat4 swizzle
-	haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
 
 	// Resolve the final scalar accumulator sum
 	haccumulate(error_summa, error_summav);
@@ -736,11 +736,9 @@ float compute_error_of_weight_set_2planes(
 	float error_summa = 0.0f;
 	int texel_count = dt->texel_count;
 
-	int i = 0;
-
-	// Process SIMD-width texel coordinates at at time while we can
-	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-	for (/* */; i < clipped_texel_count; i += ASTCENC_SIMD_WIDTH)
+	// Process SIMD-width chunks
+	// Safe to over-fetch - the extra space is zero initialized
+	for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Plane 1
 		// Compute the bilinear interpolation of the decimated weight grid
@@ -762,42 +760,6 @@ float compute_error_of_weight_set_2planes(
 
 		haccumulate(error_summav, error1 + error2);
 	}
-
-	// Loop tail
-	// Error is buffered and accumulated in blocks of 4 to ensure that
-	// the partial sums added to the accumulator are invariant with the
-	// vector implementation, irrespective of vector size ...
-	alignas(16) float errorsum_tmp[4] { 0 };
-	for (/* */; i < texel_count; i++)
-	{
-		// Plane 1
-		float current_value1 = bilinear_infill(*dt, weights1, i);
-		float valuedif1 = current_value1 - eai1->weights[i];
-		float error1 = valuedif1 * valuedif1 * eai1->weight_error_scale[i];
-
-		// Plane 2
-		float current_value2 = bilinear_infill(*dt, weights2, i);
-		float valuedif2 = current_value2 - eai2->weights[i];
-		float error2 = valuedif2 * valuedif2 * eai2->weight_error_scale[i];
-
-		// Accumulate error sum in the temporary array
-		int error_index = i & 0x3;
-		errorsum_tmp[error_index] = error1 + error2;
-
-#if ASTCENC_SIMD_WIDTH == 8
-		// Zero the temporary staging buffer every 4 items unless last. Note
-		// that this block can only trigger for 6x5 blocks, all other partials
-		// tails are shorter than 4 ...
-		if ((i & 0x7) == 0x03)
-		{
-			haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
- 			storea(vfloat4::zero(), errorsum_tmp);
-		}
-#endif
-	}
-
-	// Accumulate the loop tail using the vfloat4 swizzle
-	haccumulate(error_summav, vfloat4::loada(errorsum_tmp));
 
 	// Resolve the final scalar accumulator sum
 	haccumulate(error_summa, error_summav);
@@ -836,17 +798,21 @@ void compute_ideal_weights_for_decimation_table(
 	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
 	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
 	// arrays always contain space for 64 elements
-	int simd_weight_count = round_up_to_simd_multiple_vla(weight_count);
-	for (int i = weight_count; i < simd_weight_count; i++)
+	int weight_count_simd = round_up_to_simd_multiple_vla(weight_count);
+	for (int i = weight_count; i < weight_count_simd; i++)
 	{
 		weight_set[i] = 0.0f;
 	}
 
 	// If we have a 1:1 mapping just shortcut the computation - clone the
 	// weights into both the weight set and the output epw copy.
+
+	// Transfer enough to also copy zero initialized SIMD over-fetch region
+	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
 	if (texel_count == weight_count)
 	{
-		for (int i = 0; i < texel_count; i++)
+		// TODO: Use SIMD copies?
+		for (int i = 0; i < texel_count_simd; i++)
 		{
 			assert(i == dt.weight_texel[0][i]);
 			weight_set[i] = eai_in.weights[i];
@@ -862,7 +828,7 @@ void compute_ideal_weights_for_decimation_table(
 	// epw copy and then do the full algorithm to decimate weights.
 	else
 	{
-		for (int i = 0; i < texel_count; i++)
+		for (int i = 0; i < texel_count_simd; i++)
 		{
 			eai_out.weights[i] = eai_in.weights[i];
 			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
