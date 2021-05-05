@@ -722,7 +722,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
-	merge_endpoints(&(ei1->ep), &(ei2->ep), plane2_component, &epm);
+	merge_endpoints(ei1->ep, ei2->ep, plane2_component, epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
 	    bsd, pt, blk, ewb, &epm, plane2_component, qwt_bitcounts, qwt_errors,
@@ -765,7 +765,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		trace_add_data("weight_quant", weight_quant_mode);
 
 		// recompute the ideal color endpoints before storing them.
-		merge_endpoints(&(eix1[decimation_mode].ep), &(eix2[decimation_mode].ep), plane2_component, &epm);
+		merge_endpoints(eix1[decimation_mode].ep, eix2[decimation_mode].ep, plane2_component, epm);
 
 		vfloat4 rgbs_colors[4];
 		vfloat4 rgbo_colors[4];

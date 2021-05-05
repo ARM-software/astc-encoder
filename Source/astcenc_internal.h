@@ -374,7 +374,6 @@ struct partition_lines3
 	  Each index may be 0, 1, 2 or 3.
 	* Each element in the table is an uint8_t indicating partition index (0, 1, 2 or 3)
 */
-
 struct partition_info
 {
 	int partition_count;
@@ -1212,13 +1211,21 @@ float compute_error_of_weight_set_2planes(
 	const float* weights1,
 	const float* weights2);
 
-void merge_endpoints(
-	const endpoints* ep1,	// contains three of the color components
-	const endpoints* ep2,	// contains the remaining color component
-	int plane2_component,
-	endpoints* res);
-
 // functions dealing with color endpoints
+
+/**
+ * @brief Merge two planes of endpoints into a single vector.
+ *
+ * @param      ep_plane1          The endpoints for plane 1.
+ * @param      ep_plane2          The endpoints for plane 2.
+ * @param      component_plane2   The color component for plane 2.
+ * @param[out] result             The merged output.
+ */
+void merge_endpoints(
+	const endpoints& ep_plane1,
+	const endpoints& ep_plane2,
+	int component_plane2,
+	endpoints& result);
 
 // function to pack a pair of color endpoints into a series of integers.
 // the format used may or may not match the format specified;
@@ -1288,13 +1295,28 @@ struct compress_symbolic_block_buffers
 	compress_fixed_partition_buffers planes;
 };
 
+
+/**
+ * @brief For a given set of input colors and partitioning determine endpoint encode errors.
+ *
+ * This function determines the color error that results from RGB-scale encoding (LDR only),
+ * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
+ * the endpoints are eligible for offset encoding or blue-contraction
+ *
+ * @param      bsd               The block size information.
+ * @param      blk               The image block.
+ * @param      pi                The partition info data.
+ * @param      ewb               The error weight block.
+ * @param      component_plane2  The component assigned to a second plane, or -1 if no second plane.
+ * @param[out] eci               The resulting encoding choice error metrics.
+  */
 void compute_encoding_choice_errors(
-	const block_size_descriptor* bsd,
-	const imageblock* blk,
-	const partition_info* pt,
-	const error_weight_block* ewb,
-	int plane2_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
-	encoding_choice_errors* eci);
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const partition_info& pi,
+	const error_weight_block& ewb,
+	int component_plane2,
+	encoding_choice_errors eci[4]);
 
 void determine_optimal_set_of_endpoint_formats_to_use(
 	const block_size_descriptor* bsd,

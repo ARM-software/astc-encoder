@@ -20,166 +20,171 @@
 /**
  * @brief Functions for finding color error post-compression.
  *
- * We assume there are two independent sources of error in any given partition.
- * - encoding choice errors
- * - quantization errors
+ * We assume there are two independent sources of error in any given partition:
  *
- * Encoding choice errors are caused by encoder decisions, such as:
- * - using luminance rather than RGB.
- * - using RGB+scale instead of two full RGB endpoints.
- * - dropping the alpha component.
+ *   - Encoding choice errors
+ *   - Quantization errors
  *
- * Quantization errors occur due to the limited precision we use for storage.
- * These errors generally scale with quantization level, but are not actually
- * independent of color encoding. In particular:
- * - if we can use offset encoding then quantization error is halved.
- * - if we can use blue-contraction, quantization error for RG is halved.
- * - quantization error is higher for the HDR endpoint modes.
- * Other than these errors, quantization error is assumed to be proportional to
- * the quantization step.
+ * Encoding choice errors are caused by encoder decisions. For example:
+ *
+ *   - Using luminance instead of separate RGB components.
+ *   - Using a constant 1.0 alpha instead of storing an alpha component.
+ *   - Using RGB+scale instead of storing two full RGB endpoints.
+ *
+ * Quantization errors occur due to the limited precision we use for storage. These errors generally
+ * scale with quantization level, but are not actually independent of color encoding. In particular:
+ *
+ *   - If we can use offset encoding then quantization error is halved.
+ *   - If we can use blue-contraction then quantization error for RG is halved.
+ *   - If we use HDR endpoints the quantization error is higher.
+ *
+ * Apart from these effects, we assume the error is proportional to the quantization step size.
  */
 
 #include "astcenc_internal.h"
 
-// helper function to merge two endpoint-colors
-void merge_endpoints(
-	const endpoints* ep1,	// contains three of the color components
-	const endpoints* ep2,	// contains the remaining color component
-	int plane2_component,
-	endpoints* res
-) {
-	int partition_count = ep1->partition_count;
-	vmask4 sep_mask = vint4::lane_id() == vint4(plane2_component);
-
-	res->partition_count = partition_count;
-	promise(partition_count > 0);
-	for (int i = 0; i < partition_count; i++)
-	{
-		res->endpt0[i] = select(ep1->endpt0[i], ep2->endpt0[i], sep_mask);
-		res->endpt1[i] = select(ep1->endpt1[i], ep2->endpt1[i], sep_mask);
-	}
-}
-
-// function to compute the error across a tile when using a particular line for
-// a particular partition.
+/**
+ * @brief Compute the errors of the endpoint line options for one partition.
+ *
+ * Uncorrelated data assumes storing completely independent RGBA channels for
+ * each endpoint. Same chroma data assumes storing RGBA endpoints which pass
+ * though the origin (LDR only). RGBL data assumes storing RGB + lumashift (HDR
+ * only). Luminance error assumes storing RGB channels as a single value.
+ *
+ *
+ * @param      pi                The partition info data.
+ * @param      partition_index   The partition index to compule the error for.
+ * @param      blk               The image block.
+ * @param      ewb               The error weight block.
+ * @param      uncor_pline       The endpoint line assuming uncorrelated endpoints.
+ * @param[out] uncor_err         The computed error for the uncorrelated endpoint line.
+ * @param      samec_pline       The endpoint line assuming the same chroma for both endpoints.
+ * @param[out] samec_err         The computed error for the uncorrelated endpoint line.
+ * @param      rgbl_pline        The endpoint line assuming RGB + lumashift data.
+ * @param[out] rgbl_err          The computed error for the RGB + lumashift endpoint line.
+ * @param      l_pline           The endpoint line assuming luminance data.
+ * @param[out] l_err             The computed error for the luminance endpoint line.
+ * @param[out] a_drop_err        The computed error for dropping the alpha component.
+ */
 static void compute_error_squared_rgb_single_partition(
-	int partition_to_test,
-	const partition_info* pt,	// the partition that we use when computing the squared-error.
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line3* uncor_pline,
-	float* uncor_err,
-	const processed_line3* samec_pline,
-	float* samec_err,
-	const processed_line3* rgbl_pline,
-	float* rgbl_err,
-	const processed_line3* l_pline,
-	float* l_err,
-	float* a_drop_err
+	const partition_info& pi,
+	int partition_index,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const processed_line3& uncor_pline,
+	float& uncor_err,
+	const processed_line3& samec_pline,
+	float& samec_err,
+	const processed_line3& rgbl_pline,
+	float& rgbl_err,
+	const processed_line3& l_pline,
+	float& l_err,
+	float& a_drop_err
 ) {
-	float uncor_errorsum = 0.0f;
-	float samec_errorsum = 0.0f;
-	float rgbl_errorsum = 0.0f;
-	float l_errorsum = 0.0f;
-	float a_drop_errorsum = 0.0f;
+	uncor_err = 0.0f;
+	samec_err = 0.0f;
+	rgbl_err = 0.0f;
+	l_err = 0.0f;
+	a_drop_err = 0.0f;
 
-	int texels_in_partition = pt->partition_texel_count[partition_to_test];
+	int texels_in_partition = pi.partition_texel_count[partition_index];
 	promise(texels_in_partition > 0);
 
 	for (int i = 0; i < texels_in_partition; i++)
 	{
-		int tix = pt->texels_of_partition[partition_to_test][i];
-		float texel_weight = ewb->texel_weight_rgb[tix];
+		int tix = pi.texels_of_partition[partition_index][i];
+		float texel_weight = ewb.texel_weight_rgb[tix];
 		if (texel_weight < 1e-20f)
 		{
 			continue;
 		}
 
-		vfloat4 point = blk->texel(tix);
-		vfloat4 ews = ewb->error_weights[tix];
+		vfloat4 point = blk.texel(tix);
+		vfloat4 ews = ewb.error_weights[tix];
 
 		// Compute the error that arises from just ditching alpha
-		float default_alpha = imageblock_default_alpha(blk);
+		float default_alpha = imageblock_default_alpha(&blk);
 		float omalpha = point.lane<3>() - default_alpha;
-		a_drop_errorsum += omalpha * omalpha * ews.lane<3>();
+		a_drop_err += omalpha * omalpha * ews.lane<3>();
 
-		{
-			float param = dot3_s(point, uncor_pline->bs);
-			vfloat4 rp1 = uncor_pline->amod + param * uncor_pline->bis;
-			vfloat4 dist = rp1 - point;
-			uncor_errorsum += dot3_s(ews, dist * dist);
-		}
+		float param1 = dot3_s(point, uncor_pline.bs);
+		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bis;
+		vfloat4 dist1 = rp1 - point;
+		uncor_err += dot3_s(ews, dist1 * dist1);
 
-		{
-			float param = dot3_s(point, samec_pline->bs);
-			// No samec amod - we know it's always zero
-			vfloat4 rp1 = /* samec_pline->amod + */ param * samec_pline->bis;
-			vfloat4 dist = rp1 - point;
-			samec_errorsum += dot3_s(ews, dist * dist);
-		}
+		float param2 = dot3_s(point, samec_pline.bs);
+		// No samec amod - we know it's always zero
+		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bis;
+		vfloat4 dist2 = rp2 - point;
+		samec_err += dot3_s(ews, dist2 * dist2);
 
-		{
-			float param = dot3_s(point,  rgbl_pline->bs);
-			vfloat4 rp1 = rgbl_pline->amod + param * rgbl_pline->bis;
-			vfloat4 dist = rp1 - point;
-			rgbl_errorsum += dot3_s(ews, dist * dist);
-		}
+		// TODO - this is only used for HDR textures. Can we skip?
+		float param3 = dot3_s(point,  rgbl_pline.bs);
+		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bis;
+		vfloat4 dist3 = rp3 - point;
+		rgbl_err += dot3_s(ews, dist3 * dist3);
 
-		{
-			float param = dot3_s(point, l_pline->bs);
-			// No luma amod - we know it's always zero
-			vfloat4 rp1 = /* l_pline->amod + */ param * l_pline->bis;
-			vfloat4 dist = rp1 - point;
-			l_errorsum += dot3_s(ews, dist * dist);
-		}
+		float param4 = dot3_s(point, l_pline.bs);
+		// No luma amod - we know it's always zero
+		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bis;
+		vfloat4 dist4 = rp4 - point;
+		l_err += dot3_s(ews, dist4 * dist4);
 	}
-
-	*uncor_err = uncor_errorsum;
-	*samec_err = samec_errorsum;
-	*rgbl_err = rgbl_errorsum;
-	*l_err = l_errorsum;
-	*a_drop_err = a_drop_errorsum;
 }
 
-/*
-   for a given set of input colors and a given partitioning, determine: color error that results
-   from RGB-scale encoding (relevant for LDR only) color error that results from RGB-lumashift encoding
-   (relevant for HDR only) color error that results from luminance-encoding color error that results
-   form dropping alpha. whether we are eligible for offset encoding whether we are eligible for
-   blue-contraction
+/* See header for documentation. */
+void merge_endpoints(
+	const endpoints& ep_plane1,
+	const endpoints& ep_plane2,
+	int component_plane2,
+	endpoints& result
+) {
+	int partition_count = ep_plane1.partition_count;
+	vmask4 sep_mask = vint4::lane_id() == vint4(component_plane2);
 
-   The input data are: color data partitioning error-weight data
- */
+	result.partition_count = partition_count;
+	promise(partition_count > 0);
+	for (int i = 0; i < partition_count; i++)
+	{
+		result.endpt0[i] = select(ep_plane1.endpt0[i], ep_plane2.endpt0[i], sep_mask);
+		result.endpt1[i] = select(ep_plane1.endpt1[i], ep_plane2.endpt1[i], sep_mask);
+	}
+}
+
+ /* See header for documentation. */
 void compute_encoding_choice_errors(
-	const block_size_descriptor* bsd,
-	const imageblock* blk,
-	const partition_info* pt,
-	const error_weight_block* ewb,
-	int plane2_component,	// component that is separated out in 2-plane mode, -1 in 1-plane mode
-	encoding_choice_errors* eci)
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const partition_info& pi,
+	const error_weight_block& ewb,
+	int component_plane2,
+	encoding_choice_errors eci[4])
 {
-	int partition_count = pt->partition_count;
-	int texels_per_block = bsd->texel_count;
+	int partition_count = pi.partition_count;
+	int texels_per_block = bsd.texel_count;
 
 	promise(partition_count > 0);
 	promise(texels_per_block > 0);
 
 	partition_metrics pms[4];
 
-	compute_avgs_and_dirs_3_comp(pt, blk, ewb, 3, pms);
+	compute_avgs_and_dirs_3_comp(&pi, &blk, &ewb, 3, pms);
 
 	endpoints ep;
-	if (plane2_component == -1)
+
+	// TODO: We only use the endpoints here, and throw away the weights.
+	// That seems ... inefficient ...
+	if (component_plane2 == -1)
 	{
 		endpoints_and_weights ei;
-		compute_endpoints_and_ideal_weights_1plane(bsd, pt, blk, ewb, &ei);
+		compute_endpoints_and_ideal_weights_1plane(&bsd, &pi, &blk, &ewb, &ei);
 		ep = ei.ep;
 	}
 	else
 	{
 		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2planes(bsd, pt, blk, ewb, plane2_component, &ei1, &ei2);
-		merge_endpoints(&(ei1.ep), &(ei2.ep), plane2_component, &ep);
+		compute_endpoints_and_ideal_weights_2planes(&bsd, &pi, &blk, &ewb, component_plane2, &ei1, &ei2);
+		merge_endpoints(ei1.ep, ei2.ep, component_plane2, ep);
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -226,6 +231,7 @@ void compute_encoding_choice_errors(
 		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
 		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
 
+		// TODO - this is only used for HDR textures. Can we skip?
 		rgb_luma_plines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
 		rgb_luma_plines.bs   = rgb_luma_lines.b * csf;
 		rgb_luma_plines.bis  = rgb_luma_lines.b * icsf;
@@ -236,12 +242,12 @@ void compute_encoding_choice_errors(
 		luminance_plines.bis  = csfn * icsf;
 
 		compute_error_squared_rgb_single_partition(
-		    i, pt, blk, ewb,
-		    &uncor_rgb_plines, &uncorr_rgb_error,
-		    &samec_rgb_plines, &samechroma_rgb_error,
-		    &rgb_luma_plines,  &rgb_luma_error,
-		    &luminance_plines, &luminance_rgb_error,
-		                       &alpha_drop_error);
+		    pi, i, blk, ewb,
+		    uncor_rgb_plines, uncorr_rgb_error,
+		    samec_rgb_plines, samechroma_rgb_error,
+		    rgb_luma_plines,  rgb_luma_error,
+		    luminance_plines, luminance_rgb_error,
+		                      alpha_drop_error);
 
 		// Determine if we can offset encode RGB lanes
 		vfloat4 endpt0 = ep.endpt0[i];
