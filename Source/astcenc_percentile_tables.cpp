@@ -1151,7 +1151,7 @@ const float *get_2d_percentile_table(
 #endif
 
 /* Public function, see header file for detailed documentation */
-int is_legal_2d_block_size(
+bool is_legal_2d_block_size(
 	int xdim,
 	int ydim
 ) {
@@ -1172,14 +1172,14 @@ int is_legal_2d_block_size(
 		case 0x0A0A:
 		case 0x0C0A:
 		case 0x0C0C:
-			return 1;
+			return true;
 	}
 
-	return 0;
+	return false;
 }
 
 /* Public function, see header file for detailed documentation */
-int is_legal_3d_block_size(
+bool is_legal_3d_block_size(
 	int xdim,
 	int ydim,
 	int zdim
@@ -1197,8 +1197,8 @@ int is_legal_3d_block_size(
 		case 0x060505:
 		case 0x060605:
 		case 0x060606:
-			return 1;
-		default:
-			return 0;
+			return true;
 	}
+
+	return false;
 }

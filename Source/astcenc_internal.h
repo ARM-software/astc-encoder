@@ -825,18 +825,18 @@ const float *get_2d_percentile_table(
 /**
  * @brief Query if a 2D block size is legal.
  *
- * @return A non-zero value if legal, zero otherwise.
+ * @return True if legal, false otherwise.
  */
-int is_legal_2d_block_size(
+bool is_legal_2d_block_size(
 	int xdim,
 	int ydim);
 
 /**
  * @brief Query if a 3D block size is legal.
  *
- * @return A non-zero value if legal, zero otherwise.
+ * @return True if legal, false otherwise.
  */
-int is_legal_3d_block_size(
+bool is_legal_3d_block_size(
 	int xdim,
 	int ydim,
 	int zdim);
