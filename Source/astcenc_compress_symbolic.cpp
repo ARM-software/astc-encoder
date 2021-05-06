@@ -29,6 +29,32 @@
 #include <cstdio>
 
 /**
+ * @brief Merge two planes of endpoints into a single vector.
+ *
+ * @param      ep_plane1          The endpoints for plane 1.
+ * @param      ep_plane2          The endpoints for plane 2.
+ * @param      component_plane2   The color component for plane 2.
+ * @param[out] result             The merged output.
+ */
+static void merge_endpoints(
+	const endpoints& ep_plane1,
+	const endpoints& ep_plane2,
+	int component_plane2,
+	endpoints& result
+) {
+	int partition_count = ep_plane1.partition_count;
+	vmask4 sep_mask = vint4::lane_id() == vint4(component_plane2);
+
+	result.partition_count = partition_count;
+	promise(partition_count > 0);
+	for (int i = 0; i < partition_count; i++)
+	{
+		result.endpt0[i] = select(ep_plane1.endpt0[i], ep_plane2.endpt0[i], sep_mask);
+		result.endpt1[i] = select(ep_plane1.endpt1[i], ep_plane2.endpt1[i], sep_mask);
+	}
+}
+
+/**
  * @brief Attempt to improve weights given a chosen configuration.
  *
  * Given a fixed weight grid decimation and weight value quantization, iterate
@@ -331,7 +357,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pt, blk, ewb, &(ei->ep), -1, qwt_bitcounts, qwt_errors,
+	    bsd, pt, blk, ewb, &(ei->ep), qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 
@@ -725,7 +751,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	merge_endpoints(ei1->ep, ei2->ep, plane2_component, epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    bsd, pt, blk, ewb, &epm, plane2_component, qwt_bitcounts, qwt_errors,
+	    bsd, pt, blk, ewb, &epm, qwt_bitcounts, qwt_errors,
 	    tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 

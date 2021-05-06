@@ -1213,20 +1213,6 @@ float compute_error_of_weight_set_2planes(
 
 // functions dealing with color endpoints
 
-/**
- * @brief Merge two planes of endpoints into a single vector.
- *
- * @param      ep_plane1          The endpoints for plane 1.
- * @param      ep_plane2          The endpoints for plane 2.
- * @param      component_plane2   The color component for plane 2.
- * @param[out] result             The merged output.
- */
-void merge_endpoints(
-	const endpoints& ep_plane1,
-	const endpoints& ep_plane2,
-	int component_plane2,
-	endpoints& result);
-
 // function to pack a pair of color endpoints into a series of integers.
 // the format used may or may not match the format specified;
 // the return value is the format actually used.
@@ -1303,19 +1289,19 @@ struct compress_symbolic_block_buffers
  * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
  * the endpoints are eligible for offset encoding or blue-contraction
  *
- * @param      bsd               The block size information.
- * @param      blk               The image block.
- * @param      pi                The partition info data.
- * @param      ewb               The error weight block.
- * @param      component_plane2  The component assigned to a second plane, or -1 if no second plane.
- * @param[out] eci               The resulting encoding choice error metrics.
+ * @param      bsd   The block size information.
+ * @param      blk   The image block.
+ * @param      pi    The partition info data.
+ * @param      ewb   The error weight block.
+ * @param      ep    The idealized endpoints.
+ * @param[out] eci   The resulting encoding choice error metrics.
   */
 void compute_encoding_choice_errors(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const partition_info& pi,
 	const error_weight_block& ewb,
-	int component_plane2,
+	const endpoints& ep,
 	encoding_choice_errors eci[4]);
 
 void determine_optimal_set_of_endpoint_formats_to_use(
@@ -1324,7 +1310,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const endpoints* ep,
-	int plane2_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
 	const float* qwt_errors,

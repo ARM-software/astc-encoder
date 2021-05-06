@@ -132,32 +132,13 @@ static void compute_error_squared_rgb_single_partition(
 	}
 }
 
-/* See header for documentation. */
-void merge_endpoints(
-	const endpoints& ep_plane1,
-	const endpoints& ep_plane2,
-	int component_plane2,
-	endpoints& result
-) {
-	int partition_count = ep_plane1.partition_count;
-	vmask4 sep_mask = vint4::lane_id() == vint4(component_plane2);
-
-	result.partition_count = partition_count;
-	promise(partition_count > 0);
-	for (int i = 0; i < partition_count; i++)
-	{
-		result.endpt0[i] = select(ep_plane1.endpt0[i], ep_plane2.endpt0[i], sep_mask);
-		result.endpt1[i] = select(ep_plane1.endpt1[i], ep_plane2.endpt1[i], sep_mask);
-	}
-}
-
  /* See header for documentation. */
 void compute_encoding_choice_errors(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const partition_info& pi,
 	const error_weight_block& ewb,
-	int component_plane2,
+	const endpoints& ep,
 	encoding_choice_errors eci[4])
 {
 	int partition_count = pi.partition_count;
@@ -169,23 +150,6 @@ void compute_encoding_choice_errors(
 	partition_metrics pms[4];
 
 	compute_avgs_and_dirs_3_comp(&pi, &blk, &ewb, 3, pms);
-
-	endpoints ep;
-
-	// TODO: We only use the endpoints here, and throw away the weights.
-	// That seems ... inefficient ...
-	if (component_plane2 == -1)
-	{
-		endpoints_and_weights ei;
-		compute_endpoints_and_ideal_weights_1plane(&bsd, &pi, &blk, &ewb, &ei);
-		ep = ei.ep;
-	}
-	else
-	{
-		endpoints_and_weights ei1, ei2;
-		compute_endpoints_and_ideal_weights_2planes(&bsd, &pi, &blk, &ewb, component_plane2, &ei1, &ei2);
-		merge_endpoints(ei1.ep, ei2.ep, component_plane2, ep);
-	}
 
 	for (int i = 0; i < partition_count; i++)
 	{

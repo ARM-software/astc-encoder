@@ -777,7 +777,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	const imageblock* blk,
 	const error_weight_block* ewb,
 	const endpoints* ep,
-	int plane2_component,	// separate color component for 2-plane mode; -1 for single-plane mode
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
@@ -800,7 +799,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	// encoding choices (such as using luminance instead of RGB, discarding Alpha,
 	// using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[4];
-	compute_encoding_choice_errors(*bsd, *blk, *pt, *ewb, plane2_component, eci);
+	compute_encoding_choice_errors(*bsd, *blk, *pt, *ewb, *ep, eci);
 
 	// for each partition, compute the error weights to apply for that partition.
 	partition_metrics pms[4];
