@@ -1123,7 +1123,7 @@ const float *get_2d_percentile_table(
 	const packed_percentile_table *apt = get_packed_table(xdim, ydim);
 
 	// Set the default percentile
-	for (int i=0; i < 2048; i++)
+	for (int i = 0; i < 2048; i++)
 	{
 		unpacked_table[i] = 1.0f;
 	}
