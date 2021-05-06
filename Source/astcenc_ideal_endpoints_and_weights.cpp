@@ -205,7 +205,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float2 point = float2(data_vr[i], data_vg[i]) * float2(pms[partition].color_scale.lane<0>(), pms[partition].color_scale.lane<0>());
+			float2 point = float2(data_vr[i], data_vg[i]) * float2(pms[partition].color_scale.lane<0>(), pms[partition].color_scale.lane<1>());
 			line2 l = lines[partition];
 			float param = dot(point - l.a, l.b);
 			ei->weights[i] = param;
