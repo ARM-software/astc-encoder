@@ -183,21 +183,14 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		float2 dir = pms[i].dir.swz<0, 1>();
-		if (dir.r + dir.g < 0.0f)
+		vfloat4 dir = pms[i].dir.swz<0, 1>();
+		if (hadd_s(dir) < 0.0f)
 		{
-			dir = float2(0.0f) - dir;
+			dir = vfloat4::zero() - dir;
 		}
 
 		lines[i].a = pms[i].avg.swz<0, 1>();
-		if (dot(dir, dir) == 0.0f)
-		{
-			lines[i].b = normalize(float2(1.0f));
-		}
-		else
-		{
-			lines[i].b = normalize(dir);
-		}
+		lines[i].b = normalize_safe(dir, unit2());
 	}
 
 	for (int i = 0; i < texel_count; i++)
@@ -205,9 +198,9 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			float2 point = float2(data_vr[i], data_vg[i]) * float2(pms[partition].color_scale.lane<0>(), pms[partition].color_scale.lane<1>());
+			vfloat4 point = vfloat2(data_vr[i], data_vg[i]) * pms[partition].color_scale.swz<0, 1>();
 			line2 l = lines[partition];
-			float param = dot(point - l.a, l.b);
+			float param = dot_s(point - l.a, l.b);
 			ei->weights[i] = param;
 
 			lowparam[partition] = astc::min(param, lowparam[partition]);
@@ -219,8 +212,8 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		}
 	}
 
-	float2 lowvalues[4];
-	float2 highvalues[4];
+	vfloat4 lowvalues[4];
+	vfloat4 highvalues[4];
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -238,14 +231,12 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
-		float2 ep0 = lines[i].a + lines[i].b * lowparam[i];
-		float2 ep1 = lines[i].a + lines[i].b * highparam[i];
+		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
+		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0.r /= pms[i].color_scale.lane<0>();
-		ep0.g /= pms[i].color_scale.lane<1>();
+		ep0 = ep0.swz<0, 1>() / pms[i].color_scale;
 
-		ep1.r /= pms[i].color_scale.lane<0>();
-		ep1.g /= pms[i].color_scale.lane<1>();
+		ep1 = ep1.swz<0, 1>() / pms[i].color_scale;
 
 		lowvalues[i] = ep0;
 		highvalues[i] = ep1;
@@ -255,11 +246,11 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 	vmask4 comp2_mask = vint4::lane_id() == vint4(component2);
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 ep0 = select(blk->data_min, vfloat4(lowvalues[i].r), comp1_mask);
-		vfloat4 ep1 = select(blk->data_max, vfloat4(highvalues[i].r), comp1_mask);
+		vfloat4 ep0 = select(blk->data_min, vfloat4(lowvalues[i].lane<0>()), comp1_mask);
+		vfloat4 ep1 = select(blk->data_max, vfloat4(highvalues[i].lane<0>()), comp1_mask);
 
-		ei->ep.endpt0[i] = select(ep0, vfloat4(lowvalues[i].g), comp2_mask);
-		ei->ep.endpt1[i] = select(ep1, vfloat4(highvalues[i].g), comp2_mask);
+		ei->ep.endpt0[i] = select(ep0, vfloat4(lowvalues[i].lane<1>()), comp2_mask);
+		ei->ep.endpt1[i] = select(ep1, vfloat4(highvalues[i].lane<1>()), comp2_mask);
 	}
 
 	bool is_constant_wes = true;
@@ -365,7 +356,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 		if (error_weights[i] > 1e-10f)
 		{
 			int partition = pt->partition_of_texel[i];
-			vfloat4 point = vfloat4(data_vr[i], data_vg[i], data_vb[i], 0.0f) * pms[partition].color_scale;
+			vfloat4 point = vfloat3(data_vr[i], data_vg[i], data_vb[i]) * pms[partition].color_scale;
 			line3 l = lines[partition];
 			float param = dot3_s(point - l.a, l.b);
 			ei->weights[i] = param;
@@ -1141,7 +1132,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 color_vec_x = vfloat4::zero();
 		vfloat4 color_vec_y = vfloat4::zero();
 
-		float2 scale_vec = float2(0.0f);
+		vfloat4 scale_vec = vfloat4::zero();
 
 		vfloat4 weight_weight_sum = vfloat4(1e-17f);
 		float psum = 1e-17f;
@@ -1207,7 +1198,7 @@ void recompute_ideal_colors_2planes(
 			color_vec_y += cwiprod;
 			color_vec_x += cwprod - cwiprod;
 
-			scale_vec += float2(om_idx0, idx0) * (ls_weight * scale);
+			scale_vec += vfloat2(om_idx0, idx0) * (ls_weight * scale);
 			weight_weight_sum += (color_weight * color_idx);
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
@@ -1273,8 +1264,8 @@ void recompute_ideal_colors_2planes(
 			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
 			vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
-			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.r - lmrs_sum.lane<1>() * scale_vec.g) * ls_rdet1;
-			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.g - lmrs_sum.lane<1>() * scale_vec.r) * ls_rdet1;
+			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>() - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
+			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>() - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
 
 			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 			vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
@@ -1408,7 +1399,7 @@ void recompute_ideal_colors_1plane(
 		vfloat4 color_vec_x = vfloat4::zero();
 		vfloat4 color_vec_y = vfloat4::zero();
 
-		float2 scale_vec = float2(0.0f);
+		vfloat4 scale_vec = vfloat4::zero();
 
 		vfloat4 weight_weight_sum = vfloat4(1e-17f);
 		float psum = 1e-17f;
@@ -1454,7 +1445,7 @@ void recompute_ideal_colors_1plane(
 			color_vec_y += cwiprod;
 			color_vec_x += cwprod - cwiprod;
 
-			scale_vec += (float2(om_idx0, idx0) * (ls_weight * scale));
+			scale_vec += vfloat2(om_idx0, idx0) * (ls_weight * scale);
 			weight_weight_sum += color_weight * color_idx;
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
@@ -1524,8 +1515,8 @@ void recompute_ideal_colors_1plane(
 			ep->endpt0[i] = select(ep->endpt0[i], ep0, full_mask);
 			ep->endpt1[i] = select(ep->endpt1[i], ep1, full_mask);
 
-			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.r - lmrs_sum.lane<1>() * scale_vec.g) * ls_rdet1;
-			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.g - lmrs_sum.lane<1>() * scale_vec.r) * ls_rdet1;
+			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>() - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
+			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>() - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
 
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{

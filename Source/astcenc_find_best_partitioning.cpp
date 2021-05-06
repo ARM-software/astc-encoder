@@ -389,37 +389,16 @@ void find_best_partitionings(
 				if (!skip_two_plane)
 				{
 					sep_r_lines[j].a = pm.avg.swz<1, 2>();
-					float2 dirs_gb = pm.dir.swz<1, 2>();
-					if (dot(dirs_gb, dirs_gb) == 0.0f)
-					{
-						sep_r_lines[j].b = normalize(float2(1.0f));
-					}
-					else
-					{
-						sep_r_lines[j].b = normalize(dirs_gb);
-					}
+					vfloat4 dirs_gb = pm.dir.swz<1, 2>();
+					sep_r_lines[j].b = normalize_safe(dirs_gb, unit2());
 
 					sep_g_lines[j].a = pm.avg.swz<0, 2>();
-					float2 dirs_rb = pm.dir.swz<0, 2>();
-					if (dot(dirs_rb, dirs_rb) == 0.0f)
-					{
-						sep_g_lines[j].b = normalize(float2(1.0f));
-					}
-					else
-					{
-						sep_g_lines[j].b = normalize(dirs_rb);
-					}
+					vfloat4 dirs_rb = pm.dir.swz<0, 2>();
+					sep_g_lines[j].b = normalize_safe(dirs_rb, unit2());
 
 					sep_b_lines[j].a = pm.avg.swz<0, 1>();
-					float2 dirs_rg = pm.dir.swz<0, 1>();
-					if (dot(dirs_rg, dirs_rg) == 0.0f)
-					{
-						sep_b_lines[j].b = normalize(float2(1.0f));
-					}
-					else
-					{
-						sep_b_lines[j].b = normalize(dirs_rg);
-					}
+					vfloat4 dirs_rg = pm.dir.swz<0, 1>();
+					sep_b_lines[j].b = normalize_safe(dirs_rg, unit2());
 
 					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot(sep_r_lines[j].a, sep_r_lines[j].b)) * pm.icolor_scale.swz<1, 2>();
 					sep_r_plines[j].bs   = (sep_r_lines[j].b * pm.color_scale.swz<1, 2>());
@@ -482,17 +461,17 @@ void find_best_partitionings(
 
 				if (!skip_two_plane)
 				{
-					float2 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2>();
-					float2 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2>();
-					float2 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1>();
+					vfloat4 sep_r_vector = sep_r_lines[j].b * ics.swz<1, 2>();
+					vfloat4 sep_g_vector = sep_g_lines[j].b * ics.swz<0, 2>();
+					vfloat4 sep_b_vector = sep_b_lines[j].b * ics.swz<0, 1>();
 
 					sep_r_vector = sep_r_vector * sep_r_vector;
 					sep_g_vector = sep_g_vector * sep_g_vector;
 					sep_b_vector = sep_b_vector * sep_b_vector;
 
-					sep_error.set_lane<0>(sep_error.lane<0>() + dot(sep_r_vector, error_weights.swz<1, 2>()));
-					sep_error.set_lane<1>(sep_error.lane<1>() + dot(sep_g_vector, error_weights.swz<0, 2>()));
-					sep_error.set_lane<2>(sep_error.lane<2>() + dot(sep_b_vector, error_weights.swz<0, 1>()));
+					sep_error.set_lane<0>(sep_error.lane<0>() + dot_s(sep_r_vector, error_weights.swz<1, 2>()));
+					sep_error.set_lane<1>(sep_error.lane<1>() + dot_s(sep_g_vector, error_weights.swz<0, 2>()));
+					sep_error.set_lane<2>(sep_error.lane<2>() + dot_s(sep_b_vector, error_weights.swz<0, 1>()));
 
 					sep_error.set_lane<0>(sep_error.lane<0>() + pm.range_sq.lane<0>() * error_weights.lane<0>());
 					sep_error.set_lane<1>(sep_error.lane<1>() + pm.range_sq.lane<1>() * error_weights.lane<1>());

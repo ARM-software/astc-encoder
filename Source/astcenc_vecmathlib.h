@@ -247,6 +247,30 @@ static ASTCENC_SIMD_INLINE vfloat4 unit3()
 }
 
 /**
+ * @brief Factory that returns a unit length 2 component vfloat4.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 unit2()
+{
+	return vfloat4(0.70711f, 0.70711f, 0.0f, 0.0f);
+}
+
+/**
+ * @brief Factory that returns a 3 component vfloat4.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 vfloat3(float a, float b, float c)
+{
+	return vfloat4(a, b, c, 0.0f);
+}
+
+/**
+ * @brief Factory that returns a 2 component vfloat4.
+ */
+static ASTCENC_SIMD_INLINE vfloat4 vfloat2(float a, float b)
+{
+	return vfloat4(a, b, 0.0f, 0.0f);
+}
+
+/**
  * @brief Normalize a non-zero length vector to unit length.
  */
 static ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)

@@ -148,10 +148,12 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 2.
+	 *
+	 * TODO: Implement using permutes.
 	 */
-	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
+	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
-		return float2(lane<l0>(), lane<l1>());
+		return vfloat4(lane<l0>(), lane<l1>(), 0.0f, 0.0f);
 	}
 
 	/**
