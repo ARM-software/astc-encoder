@@ -1162,10 +1162,9 @@ void recompute_ideal_colors_2planes(
 			vfloat4 middle = color_weight * (om_idx0 * idx0);
 			vfloat4 right  = color_weight * (idx0 * idx0);
 
-			vfloat4 lmrs = vfloat4(om_idx0 * om_idx0,
+			vfloat4 lmrs = vfloat3(om_idx0 * om_idx0,
 			                       om_idx0 * idx0,
-			                       idx0 * idx0,
-			                       0.0f) * ls_weight;
+			                       idx0 * idx0) * ls_weight;
 
 			left_sum   += left;
 			middle_sum += middle;
@@ -1428,10 +1427,9 @@ void recompute_ideal_colors_1plane(
 			vfloat4 middle = color_weight * (om_idx0 * idx0);
 			vfloat4 right  = color_weight * (idx0 * idx0);
 
-			vfloat4 lmrs = vfloat4(om_idx0 * om_idx0,
+			vfloat4 lmrs = vfloat3(om_idx0 * om_idx0,
 			                       om_idx0 * idx0,
-			                       idx0 * idx0,
-			                       0.0f) * ls_weight;
+			                       idx0 * idx0) * ls_weight;
 
 			left_sum   += left;
 			middle_sum += middle;

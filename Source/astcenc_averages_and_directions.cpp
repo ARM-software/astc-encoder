@@ -247,10 +247,9 @@ void compute_avgs_and_dirs_3_comp(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			vfloat4 texel_datum = vfloat4(data_vr[iwt],
+			vfloat4 texel_datum = vfloat3(data_vr[iwt],
 			                              data_vg[iwt],
-			                              data_vb[iwt],
-			                              0.0f);
+			                              data_vb[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			vfloat4 zero = vfloat4::zero();
@@ -285,7 +284,7 @@ void compute_avgs_and_dirs_3_comp(
 
 		if (dot3_s(best_vector, best_vector) < 1e-18f)
 		{
-			best_vector = vfloat4(1.0f, 1.0f, 1.0f, 0.0f);
+			best_vector = vfloat3(1.0f, 1.0f, 1.0f);
 		}
 
 		pm[partition].dir = best_vector;
@@ -359,9 +358,9 @@ void compute_avgs_and_dirs_2_comp(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			vfloat4 texel_datum = vfloat4(data_vr[iwt], data_vg[iwt], 0.0f, 0.0f) * weight;
+			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]) * weight;
 
-			vfloat4 error_weight = vfloat4(error_vr[iwt], error_vg[iwt], 0.0f, 0.0f);
+			vfloat4 error_weight = vfloat2(error_vr[iwt], error_vg[iwt]);
 
 			partition_weight += weight;
 			base_sum += texel_datum;
@@ -385,7 +384,7 @@ void compute_avgs_and_dirs_2_comp(
 		{
 			int iwt = weights[i];
 			float weight = texel_weights[iwt];
-			vfloat4 texel_datum = vfloat4(data_vr[iwt], data_vg[iwt], 0.0f, 0.0f);
+			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]);
 			texel_datum = (texel_datum - average) * weight;
 
 			vfloat4 zero = vfloat4::zero();

@@ -416,7 +416,7 @@ void find_best_partitionings(
 
 			float uncor_error = 0.0f;
 			float samec_error = 0.0f;
-			vfloat4 sep_error = vfloat4(0.0f);
+			vfloat4 sep_error = vfloat4::zero();
 
 			compute_error_squared_rgb(ptab + partition,
 			                          blk,

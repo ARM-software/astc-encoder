@@ -543,10 +543,9 @@ struct imageblock
 
 	inline vfloat4 texel3(int index) const
 	{
-		return vfloat4(data_r[index],
+		return vfloat3(data_r[index],
 		               data_g[index],
-		               data_b[index],
-		               0.0f);
+		               data_b[index]);
 	}
 };
 
