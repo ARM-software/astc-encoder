@@ -30,7 +30,6 @@ add_library(astc${CODEC}-${ISA_SIMD}-static
         astcenc_compute_variance.cpp
         astcenc_decompress_symbolic.cpp
         astcenc_diagnostic_trace.cpp
-        astcenc_encoding_choice_error.cpp
         astcenc_entry.cpp
         astcenc_find_best_partitioning.cpp
         astcenc_ideal_endpoints_and_weights.cpp

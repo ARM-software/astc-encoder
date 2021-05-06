@@ -1281,29 +1281,6 @@ struct compress_symbolic_block_buffers
 	compress_fixed_partition_buffers planes;
 };
 
-
-/**
- * @brief For a given set of input colors and partitioning determine endpoint encode errors.
- *
- * This function determines the color error that results from RGB-scale encoding (LDR only),
- * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
- * the endpoints are eligible for offset encoding or blue-contraction
- *
- * @param      bsd   The block size information.
- * @param      blk   The image block.
- * @param      pi    The partition info data.
- * @param      ewb   The error weight block.
- * @param      ep    The idealized endpoints.
- * @param[out] eci   The resulting encoding choice error metrics.
-  */
-void compute_encoding_choice_errors(
-	const block_size_descriptor& bsd,
-	const imageblock& blk,
-	const partition_info& pi,
-	const error_weight_block& ewb,
-	const endpoints& ep,
-	encoding_choice_errors eci[4]);
-
 void determine_optimal_set_of_endpoint_formats_to_use(
 	const block_size_descriptor* bsd,
 	const partition_info* pt,

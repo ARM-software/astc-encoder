@@ -731,7 +731,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1),
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1), bm.quant_mode);
 
-
 		// then, compute quantization errors for the block mode.
 		qwt_errors[i] = compute_error_of_weight_set_2planes(
 		    &(eix1[decimation_mode]),
