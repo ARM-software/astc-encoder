@@ -1054,7 +1054,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int best_quant_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
 
-#if ASTCENC_SIMD_WIDTH > 1
 	// have to ensure that the "overstep" of the last iteration in the vectorized
 	// loop will contain data that will never be picked as best candidate
 	const int packed_mode_count = bsd->block_mode_count;
@@ -1065,7 +1064,6 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 		best_quant_levels[i] = 0;
 		best_quant_levels_mod[i] = 0;
 	}
-#endif // #if ASTCENC_SIMD_WIDTH > 1
 
 	// code for the case where the block contains 1 partition
 	if (partition_count == 1)
