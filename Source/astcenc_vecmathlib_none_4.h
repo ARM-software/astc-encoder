@@ -150,7 +150,7 @@ struct vfloat4
 	/**
 	 * @brief Return a swizzled float 2.
 	 */
-	template <int l0, int l1> ASTCENC_SIMD_INLINE float2 swz() const
+	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
 		return  vfloat4(lane<l0>(), lane<l1>(), 0.0f, 0.0f);
 	}
