@@ -2409,6 +2409,16 @@ int astc_main(int argc, char **argv)
 	if (opmode == 1)
 		output_image = load_astc_file(input_filename, out_bitness, decode_mode, swz_decode);
 
+	double image_size = 0.0f;
+	if (input_image)
+	{
+		image_size = input_image->xsize * input_image->ysize * input_image->zsize;
+	}
+	else
+	{
+		image_size = output_image->xsize * output_image->ysize * output_image->zsize;
+	}
+
 	// process image, if relevant
 	if (opmode == 2)
 		output_image = pack_and_unpack_astc_image(input_image, xdim, ydim, zdim, &ewp, decode_mode, swz_encode, swz_decode, out_bitness, thread_count);
@@ -2468,7 +2478,14 @@ int astc_main(int argc, char **argv)
 
 	if (timemode)
 	{
-		printf("\nElapsed time: %.2lf seconds, of which coding time: %.2lf seconds\n", end_time - start_time, end_coding_time - start_coding_time);
+		double tex_rate = image_size / (end_coding_time - start_coding_time);
+		tex_rate = tex_rate / 1000000.0;
+
+		printf("\nPerformance metrics\n");
+		printf("===================\n\n");
+		printf("    Total time:                %8.4f s\n", end_time - start_time);
+		printf("    Coding time:               %8.4f s\n", end_coding_time - start_coding_time);
+		printf("    Coding rate:               %8.4f MT/s\n", tex_rate);
 	}
 
 	return 0;
