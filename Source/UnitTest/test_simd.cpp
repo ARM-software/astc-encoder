@@ -412,13 +412,13 @@ TEST(vfloat4, swz3)
 TEST(vfloat4, swz2)
 {
 	vfloat4 a(1.0f, 2.0f, 3.0f, 4.0f);
-	float2 r = a.swz<0, 3>();
-	EXPECT_EQ(r.r, 1.0f);
-	EXPECT_EQ(r.g, 4.0f);
+	vfloat4 r = a.swz<0, 3>();
+	EXPECT_EQ(r.lane<0>(), 1.0f);
+	EXPECT_EQ(r.lane<1>(), 4.0f);
 
 	r = a.swz<2, 1>();
-	EXPECT_EQ(r.r, 3.0f);
-	EXPECT_EQ(r.g, 2.0f);
+	EXPECT_EQ(r.lane<0>(), 3.0f);
+	EXPECT_EQ(r.lane<1>(), 2.0f);
 }
 
 /** @brief Test vfloat4 add. */
