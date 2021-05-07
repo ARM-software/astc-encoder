@@ -799,8 +799,8 @@ void compute_ideal_weights_for_decimation_table(
 		for (int i = 0; i < texel_count_simd; i++)
 		{
 			// Assert it's an identity map for valid texels, and last valid value for any overspill
-			assert((i < texel_count) && (i == dt.weight_texel[0][i]) ||
-			       (i >= texel_count) && (texel_count - 1 == dt.weight_texel[0][i]));
+			assert(((i < texel_count) && (i == dt.weight_texel[0][i])) ||
+			       ((i >= texel_count) && (texel_count - 1 == dt.weight_texel[0][i])));
 			weight_set[i] = eai_in.weights[i];
 			weights[i] = eai_in.weight_error_scale[i];
 
