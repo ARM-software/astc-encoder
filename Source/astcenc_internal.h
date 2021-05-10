@@ -883,25 +883,56 @@ void build_quant_mode_table(void);
 // functions and data pertaining to partitioning
 // **********************************************
 
-// functions to compute color averages and dominant directions
-// for each partition in a block
+/**
+ * @brief Compute averages and dominant directions for each partition in a 4 component texture.
+ *
+ * @param      pi    The partition info for the current trial.
+ * @param      blk   The image block color data to be compressed.
+ * @param      ewb   The image block weighted error data.
+ * @param[out] pm    The output partition metrics.
+ *                   - Only pi.partition_count array entries actually get initialized.
+ *                   - Direction vectors @c pm.dir are not normalized.
+ */
 void compute_avgs_and_dirs_4_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	partition_metrics pm[4]);
 
+/**
+ * @brief Compute averages and dominant directions for each partition in a 3 component texture.
+ *
+ * @param      pi                  The partition info for the current trial.
+ * @param      blk                 The image block color data to be compressed.
+ * @param      ewb                 The image block weighted error data.
+ * @param      omitted_component   The component excluded from the analysis.
+ * @param[out] pm                  The output partition metrics.
+ *                                 - Only pi.partition_count array entries actually get initialized.
+ *                                 - Direction vectors @c pm.dir are not normalized.
+ */
 void compute_avgs_and_dirs_3_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int omitted_component,
 	partition_metrics pm[4]);
 
+/**
+ * @brief Compute averages and dominant directions for each partition in a 2 component texture.
+ *
+ * @param      pi           The partition info for the current trial.
+ * @param      blk          The image block color data to be compressed.
+ * @param      ewb          The image block weighted error data.
+ * @param      component1   The first component included in the analysis.
+ * @param      component2   The second component included in the analysis.
+ * @param[out] pm           The output partition metrics.
+ *                          - Only pi.partition_count array entries actually get initialized.
+ *                          - Direction vectors @c pm.dir are not normalized.
+ */
 void compute_avgs_and_dirs_2_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int component1,
 	int component2,
 	partition_metrics pm[4]);

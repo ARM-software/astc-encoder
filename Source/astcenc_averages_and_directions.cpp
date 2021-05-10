@@ -24,23 +24,19 @@
 
 #include <cassert>
 
-// For a full block, functions to compute averages and dominant directions. The
-// averages and directions are computed separately for each partition.
-// We have separate versions for blocks with and without alpha, since the
-// processing for blocks with alpha is significantly more expensive. The
-// direction vectors it produces are NOT normalized.
+/* See header for documentation. */
 void compute_avgs_and_dirs_4_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	partition_metrics pm[4]
 ) {
-	int partition_count = pt->partition_count;
+	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		const uint8_t *weights = pt->texels_of_partition[partition];
+		const uint8_t *weights = pi.texels_of_partition[partition];
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
@@ -48,15 +44,15 @@ void compute_avgs_and_dirs_4_comp(
 		vfloat4 rgba_max(-1e38f);
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->partition_texel_count[partition];
+		int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
-			float weight = ewb->texel_weight[iwt];
-			vfloat4 texel_datum = blk->texel(iwt);
-			vfloat4 error_weight = ewb->error_weights[iwt];
+			float weight = ewb.texel_weight[iwt];
+			vfloat4 texel_datum = blk.texel(iwt);
+			vfloat4 error_weight = ewb.error_weights[iwt];
 
 			if (weight > 1e-10f)
 			{
@@ -89,8 +85,8 @@ void compute_avgs_and_dirs_4_comp(
 		for (int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
-			float weight = ewb->texel_weight[iwt];
-			vfloat4 texel_datum = blk->texel(iwt);
+			float weight = ewb.texel_weight[iwt];
+			vfloat4 texel_datum = blk.texel(iwt);
 			texel_datum = (texel_datum - average) * weight;
 
 			vfloat4 zero = vfloat4::zero();
@@ -137,60 +133,61 @@ void compute_avgs_and_dirs_4_comp(
 	}
 }
 
+/* See header for documentation. */
 void compute_avgs_and_dirs_3_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int omitted_component,
 	partition_metrics pm[4]
 ) {
-	const float *texel_weights = ewb->texel_weight_rgb;
+	const float *texel_weights = ewb.texel_weight_rgb;
 
-	const float* data_vr = blk->data_r;
-	const float* data_vg = blk->data_g;
-	const float* data_vb = blk->data_b;
+	const float* data_vr = blk.data_r;
+	const float* data_vg = blk.data_g;
+	const float* data_vb = blk.data_b;
 
-	const float* error_vr = ewb->texel_weight_r;
-	const float* error_vg = ewb->texel_weight_g;
-	const float* error_vb = ewb->texel_weight_b;
+	const float* error_vr = ewb.texel_weight_r;
+	const float* error_vg = ewb.texel_weight_g;
+	const float* error_vb = ewb.texel_weight_b;
 
 	if (omitted_component == 0)
 	{
-		texel_weights = ewb->texel_weight_gba;
+		texel_weights = ewb.texel_weight_gba;
 
-		data_vr = blk->data_g;
-		data_vg = blk->data_b;
-		data_vb = blk->data_a;
+		data_vr = blk.data_g;
+		data_vg = blk.data_b;
+		data_vb = blk.data_a;
 
-		error_vr = ewb->texel_weight_g;
-		error_vg = ewb->texel_weight_b;
-		error_vb = ewb->texel_weight_a;
+		error_vr = ewb.texel_weight_g;
+		error_vg = ewb.texel_weight_b;
+		error_vb = ewb.texel_weight_a;
 	}
 	else if (omitted_component == 1)
 	{
-		texel_weights = ewb->texel_weight_rba;
+		texel_weights = ewb.texel_weight_rba;
 
-		data_vg = blk->data_b;
-		data_vb = blk->data_a;
+		data_vg = blk.data_b;
+		data_vb = blk.data_a;
 
-		error_vg = ewb->texel_weight_b;
-		error_vb = ewb->texel_weight_a;
+		error_vg = ewb.texel_weight_b;
+		error_vb = ewb.texel_weight_a;
 	}
 	else if (omitted_component == 2)
 	{
-		texel_weights = ewb->texel_weight_rga;
+		texel_weights = ewb.texel_weight_rga;
 
-		data_vb = blk->data_a;
+		data_vb = blk.data_a;
 
-		error_vb = ewb->texel_weight_a;
+		error_vb = ewb.texel_weight_a;
 	}
 
-	int partition_count = pt->partition_count;
+	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		const uint8_t *weights = pt->texels_of_partition[partition];
+		const uint8_t *weights = pi.texels_of_partition[partition];
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
@@ -198,7 +195,7 @@ void compute_avgs_and_dirs_3_comp(
 		vfloat4 rgb_max(-1e38f);
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->partition_texel_count[partition];
+		int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)
@@ -291,10 +288,11 @@ void compute_avgs_and_dirs_3_comp(
 	}
 }
 
+/* See header for documentation. */
 void compute_avgs_and_dirs_2_comp(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const partition_info& pt,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int component1,
 	int component2,
 	partition_metrics pm[4]
@@ -309,49 +307,49 @@ void compute_avgs_and_dirs_2_comp(
 
 	if (component1 == 0 && component2 == 1)
 	{
-		texel_weights = ewb->texel_weight_rg;
+		texel_weights = ewb.texel_weight_rg;
 
-		data_vr = blk->data_r;
-		data_vg = blk->data_g;
+		data_vr = blk.data_r;
+		data_vg = blk.data_g;
 
-		error_vr = ewb->texel_weight_r;
-		error_vg = ewb->texel_weight_g;
+		error_vr = ewb.texel_weight_r;
+		error_vg = ewb.texel_weight_g;
 	}
 	else if (component1 == 0 && component2 == 2)
 	{
-		texel_weights = ewb->texel_weight_rb;
+		texel_weights = ewb.texel_weight_rb;
 
-		data_vr = blk->data_r;
-		data_vg = blk->data_b;
+		data_vr = blk.data_r;
+		data_vg = blk.data_b;
 
-		error_vr = ewb->texel_weight_r;
-		error_vg = ewb->texel_weight_b;
+		error_vr = ewb.texel_weight_r;
+		error_vg = ewb.texel_weight_b;
 	}
 	else // (component1 == 1 && component2 == 2)
 	{
 		assert(component1 == 1 && component2 == 2);
-		texel_weights = ewb->texel_weight_gb;
+		texel_weights = ewb.texel_weight_gb;
 
-		data_vr = blk->data_g;
-		data_vg = blk->data_b;
+		data_vr = blk.data_g;
+		data_vg = blk.data_b;
 
 
-		error_vr = ewb->texel_weight_g;
-		error_vg = ewb->texel_weight_b;
+		error_vr = ewb.texel_weight_g;
+		error_vg = ewb.texel_weight_b;
 	}
 
-	int partition_count = pt->partition_count;
+	int partition_count = pt.partition_count;
 	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		const uint8_t *weights = pt->texels_of_partition[partition];
+		const uint8_t *weights = pt.texels_of_partition[partition];
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
-		int texel_count = pt->partition_texel_count[partition];
+		int texel_count = pt.partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		for (int i = 0; i < texel_count; i++)

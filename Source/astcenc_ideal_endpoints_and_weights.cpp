@@ -179,7 +179,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
 	float scale[4];
 	float length_squared[4];
 
-	compute_avgs_and_dirs_2_comp(pt, blk, ewb, component1, component2, pms);
+	compute_avgs_and_dirs_2_comp(*pt, *blk, *ewb, component1, component2, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -337,7 +337,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
 	float scale[4];
 	float length_squared[4];
 
-	compute_avgs_and_dirs_3_comp(pt, blk, ewb, omitted_component, pms);
+	compute_avgs_and_dirs_3_comp(*pt, *blk, *ewb, omitted_component, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -472,7 +472,7 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 
 	partition_metrics pms[4];
 
-	compute_avgs_and_dirs_4_comp(pt, blk, ewb, pms);
+	compute_avgs_and_dirs_4_comp(*pt, *blk, *ewb, pms);
 
 	// if the direction-vector ends up pointing from light to dark, FLIP IT!
 	// this will make the first endpoint the darkest one.

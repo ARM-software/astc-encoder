@@ -152,7 +152,7 @@ void find_best_partitionings(
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
 
-			compute_avgs_and_dirs_4_comp(ptab + partition, blk, ewb, pms);
+			compute_avgs_and_dirs_4_comp(*(ptab + partition), *blk, *ewb, pms);
 
 			line4 uncor_lines[4];
 			line4 samec_lines[4];
@@ -355,7 +355,7 @@ void find_best_partitionings(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
-			compute_avgs_and_dirs_3_comp(ptab + partition, blk, ewb, 3, pms);
+			compute_avgs_and_dirs_3_comp(*(ptab + partition), *blk, *ewb, 3, pms);
 
 			partition_lines3 plines[4];
 
