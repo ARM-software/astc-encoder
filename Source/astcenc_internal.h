@@ -937,21 +937,58 @@ void compute_avgs_and_dirs_2_comp(
 	int component2,
 	partition_metrics pm[4]);
 
+/**
+ * @brief Compute the RGBA error for uncorrelated and same chroma projections.
+ *
+ * The output of compute averages and dirs is post processed to define two lines, both of which go
+ * through the mean-color-value.  One line has a direction defined by the dominant direction; this
+ * is used to assess the error from using an uncorrelated color representation. The other line goes
+ * through (0,0,0,1) and is used to assess the error from using an RGBS color representation.
+ *
+ * This function computes the squared error when using these two representations.
+ *
+ * @param      pi              The partition info for the current trial.
+ * @param      blk             The image block color data to be compressed.
+ * @param      ewb             The image block weighted error data.
+ * @param      uncor_plines    Processed uncorrelated partition lines for each partition.
+ * @param      samec_plines    Processed same chroma partition lines for each partition.
+ * @param[out] uncor_lengths   The length of each components deviation from the line.
+ * @param[out] samec_lengths   The length of each components deviation from the line.
+ * @param[out] uncor_error     The cumulative error for using the uncorrelated line.
+ * @param[out] samec_error     The cumulative error for using the same chroma line.
+ */
 void compute_error_squared_rgba(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line4* uncor_plines,
-	const processed_line4* samec_plines,
-	float* uncor_lengths,
-	float* samec_lengths,
-	float* uncor_errors,
-	float* samec_errors);
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const processed_line4 uncor_plines[4],
+	const processed_line4 samec_plines[4],
+	float uncor_lengths[4],
+	float samec_lengths[4],
+	float& uncor_error,
+	float& samec_error);
 
+/**
+ * @brief Compute the RGB error for uncorrelated and same chroma projections.
+ *
+ * The output of compute averages and dirs is post processed to define two lines, both of which go
+ * through the mean-color-value.  One line has a direction defined by the dominant direction; this
+ * is used to assess the error from using an uncorrelated color representation. The other line goes
+ * through (0,0,0) and is used to assess the error from using an RGBS color representation.
+ *
+ * This function computes the squared error when using these two representations.
+ *
+ * @param         pi              The partition info for the current trial.
+ * @param         blk             The image block color data to be compressed.
+ * @param         ewb             The image block weighted error data.
+ * @param[in,out] plines          Processed line inputs, and line length outputs.
+ * @param[out]    uncor_error     The cumulative error for using the uncorrelated line.
+ * @param[out]    samec_error     The cumulative error for using the same chroma line.
+ */
 void compute_error_squared_rgb(
-	const partition_info *pt,
-	const imageblock *blk,
-	const error_weight_block *ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	partition_lines3 plines[4],
 	float& uncor_error,
 	float& samec_error);

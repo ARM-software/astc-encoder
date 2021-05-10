@@ -229,15 +229,15 @@ void find_best_partitionings(
 			float samec_error = 0.0f;
 			vfloat4 sep_error = vfloat4::zero();
 
-			compute_error_squared_rgba(ptab + partition,
-			                           blk,
-			                           ewb,
+			compute_error_squared_rgba(*(ptab + partition),
+			                           *blk,
+			                           *ewb,
 			                           uncor_plines,
 			                           samec_plines,
 			                           uncor_line_lens,
 			                           samec_line_lens,
-			                           &uncor_error,
-			                           &samec_error);
+			                           uncor_error,
+			                           samec_error);
 
 			/*
 			   Compute an estimate of error introduced by weight quantization imprecision.
@@ -418,9 +418,9 @@ void find_best_partitionings(
 			float samec_error = 0.0f;
 			vfloat4 sep_error = vfloat4::zero();
 
-			compute_error_squared_rgb(ptab + partition,
-			                          blk,
-			                          ewb,
+			compute_error_squared_rgb(*(ptab + partition),
+			                          *blk,
+			                          *ewb,
 			                          plines,
 			                          uncor_error,
 			                          samec_error);

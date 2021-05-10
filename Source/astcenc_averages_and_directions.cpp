@@ -409,26 +409,27 @@ void compute_avgs_and_dirs_2_comp(
 	}
 }
 
+/* See header for documentation. */
 void compute_error_squared_rgba(
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const processed_line4* uncor_plines,
-	const processed_line4* samec_plines,
-	float* uncor_lengths,
-	float* samec_lengths,
-	float* uncor_errors,
-	float* samec_errors
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const processed_line4 uncor_plines[4],
+	const processed_line4 samec_plines[4],
+	float uncor_lengths[4],
+	float samec_lengths[4],
+	float& uncor_error,
+	float& samec_error
 ) {
-	float uncor_errorsum = 0.0f;
-	float samec_errorsum = 0.0f;
-
-	int partition_count = pt->partition_count;
+	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
+
+	uncor_error = 0.0f;
+	samec_error = 0.0f;
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
-		const uint8_t *weights = pt->texels_of_partition[partition];
+		const uint8_t *weights = pi.texels_of_partition[partition];
 
 		float uncor_loparam = 1e10f;
 		float uncor_hiparam = -1e10f;
@@ -439,10 +440,8 @@ void compute_error_squared_rgba(
 		processed_line4 l_uncor = uncor_plines[partition];
 		processed_line4 l_samec = samec_plines[partition];
 
-		int texel_count = pt->partition_texel_count[partition];
+		int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
-
-		int i = 0;
 
 		// Vectorize some useful scalar inputs
 		vfloat l_uncor_bs0(l_uncor.bs.lane<0>());
@@ -484,20 +483,20 @@ void compute_error_squared_rgba(
 		// to extend the last value. This means min/max are not impacted, but we need to mask
 		// out the dummy values when we compute the line weighting.
 		vint lane_ids = vint::lane_id();
-		for (/* */; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vmask mask = lane_ids < vint(texel_count);
 			vint texel_idxs(&(weights[i]));
 
-			vfloat data_r = gatherf(blk->data_r, texel_idxs);
-			vfloat data_g = gatherf(blk->data_g, texel_idxs);
-			vfloat data_b = gatherf(blk->data_b, texel_idxs);
-			vfloat data_a = gatherf(blk->data_a, texel_idxs);
+			vfloat data_r = gatherf(blk.data_r, texel_idxs);
+			vfloat data_g = gatherf(blk.data_g, texel_idxs);
+			vfloat data_b = gatherf(blk.data_b, texel_idxs);
+			vfloat data_a = gatherf(blk.data_a, texel_idxs);
 
-			vfloat ew_r = gatherf(ewb->texel_weight_r, texel_idxs);
-			vfloat ew_g = gatherf(ewb->texel_weight_g, texel_idxs);
-			vfloat ew_b = gatherf(ewb->texel_weight_b, texel_idxs);
-			vfloat ew_a = gatherf(ewb->texel_weight_a, texel_idxs);
+			vfloat ew_r = gatherf(ewb.texel_weight_r, texel_idxs);
+			vfloat ew_g = gatherf(ewb.texel_weight_g, texel_idxs);
+			vfloat ew_b = gatherf(ewb.texel_weight_b, texel_idxs);
+			vfloat ew_a = gatherf(ewb.texel_weight_a, texel_idxs);
 
 			vfloat uncor_param  = (data_r * l_uncor_bs0)
 			                    + (data_g * l_uncor_bs1)
@@ -556,8 +555,8 @@ void compute_error_squared_rgba(
 		samec_hiparam = hmax_s(samec_hiparamv);
 
 		// Resolve the final scalar accumulator sum
-		haccumulate(uncor_errorsum, uncor_errorsumv);
-		haccumulate(samec_errorsum, samec_errorsumv);
+		haccumulate(uncor_error, uncor_errorsumv);
+		haccumulate(samec_error, samec_errorsumv);
 
 		float uncor_linelen = uncor_hiparam - uncor_loparam;
 		float samec_linelen = samec_hiparam - samec_loparam;
@@ -566,30 +565,28 @@ void compute_error_squared_rgba(
 		uncor_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
 		samec_lengths[partition] = astc::max(samec_linelen, 1e-7f);
 	}
-
-	*uncor_errors = uncor_errorsum;
-	*samec_errors = samec_errorsum;
 }
 
+/* See header for documentation. */
 void compute_error_squared_rgb(
-	const partition_info *pt,
-	const imageblock *blk,
-	const error_weight_block *ewb,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	partition_lines3 plines[4],
 	float& uncor_error,
 	float& samec_error
 ) {
-	float uncor_errorsum = 0.0f;
-	float samec_errorsum = 0.0f;
-
-	int partition_count = pt->partition_count;
+	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
+
+	uncor_error = 0.0f;
+	samec_error = 0.0f;
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		partition_lines3& pl = plines[partition];
-		const uint8_t *weights = pt->texels_of_partition[partition];
-		int texel_count = pt->partition_texel_count[partition];
+		const uint8_t *weights = pi.texels_of_partition[partition];
+		int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
 		float uncor_loparam = 1e10f;
@@ -645,13 +642,13 @@ void compute_error_squared_rgb(
 			vmask mask = lane_ids < vint(texel_count);
 			vint texel_idxs(&(weights[i]));
 
-			vfloat data_r = gatherf(blk->data_r, texel_idxs);
-			vfloat data_g = gatherf(blk->data_g, texel_idxs);
-			vfloat data_b = gatherf(blk->data_b, texel_idxs);
+			vfloat data_r = gatherf(blk.data_r, texel_idxs);
+			vfloat data_g = gatherf(blk.data_g, texel_idxs);
+			vfloat data_b = gatherf(blk.data_b, texel_idxs);
 
-			vfloat ew_r = gatherf(ewb->texel_weight_r, texel_idxs);
-			vfloat ew_g = gatherf(ewb->texel_weight_g, texel_idxs);
-			vfloat ew_b = gatherf(ewb->texel_weight_b, texel_idxs);
+			vfloat ew_r = gatherf(ewb.texel_weight_r, texel_idxs);
+			vfloat ew_g = gatherf(ewb.texel_weight_g, texel_idxs);
+			vfloat ew_b = gatherf(ewb.texel_weight_b, texel_idxs);
 
 			vfloat uncor_param  = (data_r * l_uncor_bs0)
 			                    + (data_g * l_uncor_bs1)
@@ -704,8 +701,8 @@ void compute_error_squared_rgb(
 		samec_hiparam = hmax_s(samec_hiparamv);
 
 		// Resolve the final scalar accumulator sum
-		haccumulate(uncor_errorsum, uncor_errorsumv);
-		haccumulate(samec_errorsum, samec_errorsumv);
+		haccumulate(uncor_error, uncor_errorsumv);
+		haccumulate(samec_error, samec_errorsumv);
 
 		float uncor_linelen = uncor_hiparam - uncor_loparam;
 		float samec_linelen = samec_hiparam - samec_loparam;
@@ -714,9 +711,6 @@ void compute_error_squared_rgb(
 		pl.uncor_line_len = astc::max(uncor_linelen, 1e-7f);
 		pl.samec_line_len = astc::max(samec_linelen, 1e-7f);
 	}
-
-	uncor_error = uncor_errorsum;
-	samec_error = samec_errorsum;
 }
 
 #endif
