@@ -163,10 +163,6 @@ void find_best_partitionings(
 
 			processed_line4 uncor_plines[4];
 			processed_line4 samec_plines[4];
-			processed_line3 sep_r_plines[4];
-			processed_line3 sep_g_plines[4];
-			processed_line3 sep_b_plines[4];
-			processed_line3 sep_a_plines[4];
 
 			float uncor_line_lens[4];
 			float samec_line_lens[4];
@@ -206,22 +202,6 @@ void find_best_partitionings(
 					sep_a_lines[j].a = pm.avg.swz<0, 1, 2>();
 					vfloat4 dirs_rgb = pm.dir.swz<0, 1, 2>();
 					sep_a_lines[j].b = normalize_safe(dirs_rgb, unit3());
-
-					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot3(sep_r_lines[j].a, sep_r_lines[j].b)) * pm.icolor_scale.swz<1, 2, 3, 0>();
-					sep_r_plines[j].bs   = (sep_r_lines[j].b * pm.color_scale.swz<1, 2, 3, 0>());
-					sep_r_plines[j].bis  = (sep_r_lines[j].b * pm.icolor_scale.swz<1, 2, 3, 0>());
-
-					sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot3(sep_g_lines[j].a, sep_g_lines[j].b)) * pm.icolor_scale.swz<0, 2, 3, 1>();
-					sep_g_plines[j].bs   = (sep_g_lines[j].b * pm.color_scale.swz<0, 2, 3, 1>());
-					sep_g_plines[j].bis  = (sep_g_lines[j].b * pm.icolor_scale.swz<0, 2, 3, 1>());
-
-					sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot3(sep_b_lines[j].a, sep_b_lines[j].b)) * pm.icolor_scale.swz<0, 1, 3, 2>();
-					sep_b_plines[j].bs   = (sep_b_lines[j].b * pm.color_scale.swz<0, 1, 3, 2>());
-					sep_b_plines[j].bis  = (sep_b_lines[j].b * pm.icolor_scale.swz<0, 1, 3, 2>());
-
-					sep_a_plines[j].amod = (sep_a_lines[j].a - sep_a_lines[j].b * dot3(sep_a_lines[j].a, sep_a_lines[j].b)) * pm.icolor_scale;
-					sep_a_plines[j].bs   = (sep_a_lines[j].b * pm.color_scale);
-					sep_a_plines[j].bis  = (sep_a_lines[j].b * pm.icolor_scale);
 				}
 			}
 
@@ -363,10 +343,6 @@ void find_best_partitionings(
 			line2 sep_g_lines[4];
 			line2 sep_b_lines[4];
 
-			processed_line2 sep_r_plines[4];
-			processed_line2 sep_g_plines[4];
-			processed_line2 sep_b_plines[4];
-
 			for (int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
@@ -399,18 +375,6 @@ void find_best_partitionings(
 					sep_b_lines[j].a = pm.avg.swz<0, 1>();
 					vfloat4 dirs_rg = pm.dir.swz<0, 1>();
 					sep_b_lines[j].b = normalize_safe(dirs_rg, unit2());
-
-					sep_r_plines[j].amod = (sep_r_lines[j].a - sep_r_lines[j].b * dot(sep_r_lines[j].a, sep_r_lines[j].b)) * pm.icolor_scale.swz<1, 2>();
-					sep_r_plines[j].bs   = (sep_r_lines[j].b * pm.color_scale.swz<1, 2>());
-					sep_r_plines[j].bis  = (sep_r_lines[j].b * pm.icolor_scale.swz<1, 2>());
-
-					sep_g_plines[j].amod = (sep_g_lines[j].a - sep_g_lines[j].b * dot(sep_g_lines[j].a, sep_g_lines[j].b)) * pm.icolor_scale.swz<0, 2>();
-					sep_g_plines[j].bs   = (sep_g_lines[j].b * pm.color_scale.swz<0, 2>());
-					sep_g_plines[j].bis  = (sep_g_lines[j].b * pm.icolor_scale.swz<0, 2>());
-
-					sep_b_plines[j].amod = (sep_b_lines[j].a - sep_b_lines[j].b * dot(sep_b_lines[j].a, sep_b_lines[j].b)) * pm.icolor_scale.swz<0, 1>();
-					sep_b_plines[j].bs   = (sep_b_lines[j].b * pm.color_scale.swz<0, 1>());
-					sep_b_plines[j].bis  = (sep_b_lines[j].b * pm.icolor_scale.swz<0, 1>());
 				}
 			}
 
