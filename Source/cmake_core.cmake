@@ -23,7 +23,7 @@ set(CLANG_LIKE "Clang,AppleClang")
 add_library(astc${CODEC}-${ISA_SIMD}-static
     STATIC
         astcenc_averages_and_directions.cpp
-        astcenc_block_sizes2.cpp
+        astcenc_block_sizes.cpp
         astcenc_color_quantize.cpp
         astcenc_color_unquantize.cpp
         astcenc_compress_symbolic.cpp
