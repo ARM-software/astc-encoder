@@ -684,7 +684,7 @@ astcenc_error astcenc_context_alloc(
 	bsd = new block_size_descriptor;
 	bool can_omit_modes = config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 	init_block_size_descriptor(config.block_x, config.block_y, config.block_z,
-	                           can_omit_modes, static_cast<float>(config.tune_block_mode_limit) / 100.0f, bsd);
+	                           can_omit_modes, static_cast<float>(config.tune_block_mode_limit) / 100.0f, *bsd);
 	ctx->bsd = bsd;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
@@ -710,7 +710,7 @@ astcenc_error astcenc_context_alloc(
 		              "compress_symbolic_block_buffers size must be multiple of vector alignment");
 		if (!ctx->working_buffers)
 		{
-			term_block_size_descriptor(bsd);
+			term_block_size_descriptor(*bsd);
 			delete bsd;
 			delete ctx;
 			*context = nullptr;
@@ -748,7 +748,7 @@ void astcenc_context_free(
 	if (ctx)
 	{
 		aligned_free<compress_symbolic_block_buffers>(ctx->working_buffers);
-		term_block_size_descriptor(ctx->bsd);
+		term_block_size_descriptor(*(ctx->bsd));
 #if defined(ASTCENC_DIAGNOSTICS)
 		delete ctx->trace_log;
 #endif

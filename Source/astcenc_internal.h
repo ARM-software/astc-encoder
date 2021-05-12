@@ -761,27 +761,34 @@ struct physical_compressed_block
 ============================================================================ */
 
 /**
- * @brief Populate the blocksize descriptor for the target block size.
+ * @brief Populate the block size descriptor for the target block size.
  *
  * This will also initialize the partition table metadata, which is stored
- * as part of the BSD structure.
+ * as part of the BSD structure. All initialized block size descriptors must be
+ * terminated using term_block_size_descriptor to correctly free resources.
  *
- * @param xdim        The x axis size of the block.
- * @param ydim        The y axis size of the block.
- * @param zdim        The z axis size of the block.
- * @param mode_cutoff The block mode percentil cutoff [0-1].
- * @param bsd         The structure to populate.
+ * @param      x_texels         The number of texels in the block X dimension.
+ * @param      y_texels         The number of texels in the block Y dimension.
+ * @param      z_texels         The number of texels in the block Z dimension.
+ * @param      can_omit_modes   Can we discard modes that astcenc won't use, even if legal?
+ * @param      mode_cutoff      The block mode percentile cutoff [0-1].
+ * @param[out] bsd              The descriptor to initialize.
  */
 void init_block_size_descriptor(
-	int xdim,
-	int ydim,
-	int zdim,
+	int x_texels,
+	int y_texels,
+	int z_texels,
 	bool can_omit_modes,
 	float mode_cutoff,
-	block_size_descriptor* bsd);
+	block_size_descriptor& bsd);
 
+/**
+ * @brief Terminate a block size descriptor and free associated resources.
+ *
+ * @param bsd   The descriptor to terminate.
+ */
 void term_block_size_descriptor(
-	block_size_descriptor* bsd);
+	block_size_descriptor& bsd);
 
 /**
  * @brief Populate the partition tables for the target block size.
