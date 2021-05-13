@@ -1285,11 +1285,22 @@ float compute_error_of_weight_set_2planes(
 	const float* weights1,
 	const float* weights2);
 
-// functions dealing with color endpoints
-
-// function to pack a pair of color endpoints into a series of integers.
-// the format used may or may not match the format specified;
-// the return value is the format actually used.
+/**
+ * @brief Quantize a color as effectively as possible.
+ *
+ * The user requests a base color endpoint mode in @c format, but the quantizer may choose a
+ * delta-based representation. It will report back the format variant it actually used.
+ *
+ * @param      color0       The input unquantized color0 endpoint for absolute endpoint pairs.
+ * @param      color1       The input unquantized color1 endpoint for absolute endpoint pairs.
+ * @param      rgbs_color   The input unquantized RGBS variant endpoint for same chroma endpoints.
+ * @param      rgbo_color   The input unquantized RGBS variant endpoint for HDR endpoints..
+ * @param      format       The desired base format.
+ * @param[out] output       The output storage for the quantized colors/
+ * @param      quant_level  The quantization level requested.
+ *
+ * @return The actual endpoint mode used.
+ */
 int pack_color_endpoints(
 	vfloat4 color0,
 	vfloat4 color1,
@@ -1297,7 +1308,7 @@ int pack_color_endpoints(
 	vfloat4 rgbo_color,
 	int format,
 	int* output,
-	int quant_level);
+	quant_method quant_level);
 
 // unpack a pair of color endpoints from a series of integers.
 void unpack_color_endpoints(

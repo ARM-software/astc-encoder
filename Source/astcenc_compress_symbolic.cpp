@@ -353,6 +353,8 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
 	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
+
+	// TODO: Make these enums?
 	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
@@ -416,7 +418,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
 				    workscb.color_values[j],
-				    color_quant_level[i]);
+				    (quant_method)color_quant_level[i]);
 			}
 
 			// if all the color endpoint modes are the same, we get a few more
@@ -441,7 +443,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
-					    color_quant_level_mod[i]);
+					    (quant_method)color_quant_level_mod[i]);
 				}
 
 				if (color_formats_mod[0] == color_formats_mod[1]
@@ -811,7 +813,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 				                            rgbs_colors[j], rgbo_colors[j],
 				                            partition_format_specifiers[i][j],
 				                            workscb.color_values[j],
-				                            color_quant_level[i]);
+				                            (quant_method)color_quant_level[i]);
 			}
 
 			workscb.color_formats_matched = 0;
@@ -832,7 +834,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
-					    color_quant_level_mod[i]);
+					    (quant_method)color_quant_level_mod[i]);
 				}
 
 				if (color_formats_mod[0] == color_formats_mod[1]
