@@ -32,10 +32,9 @@
  *
  * See the @c astcenc_config structure for detailed parameter documentation.
  *
- * Note that the mse_overshoot entries are scaling factors relative to the
- * base MSE to hit db_limit. A 20% overshoot is harder to hit for a higher
- * base db_limit, so we may actually use lower ratios for the more through
- * search presets because the underlying db_limit is so much higher.
+ * Note that the mse_overshoot entries are scaling factors relative to the base MSE to hit db_limit.
+ * A 20% overshoot is harder to hit for a higher base db_limit, so we may actually use lower ratios
+ * for the more through search presets because the underlying db_limit is so much higher.
  */
 struct astcenc_preset_config {
 	float quality;
@@ -126,13 +125,16 @@ static const std::array<astcenc_preset_config, 5> preset_configs_low {{
 	}
 }};
 
-
-// The ASTC codec is written with the assumption that a float threaded through
-// the "if32" union will in fact be stored and reloaded as a 32-bit IEEE-754 single-precision
-// float, stored with round-to-nearest rounding. This is always the case in an
-// IEEE-754 compliant system, however not every system is actually IEEE-754 compliant
-// in the first place. As such, we run a quick test to check that this is actually the case
-// (e.g. gcc on 32-bit x86 will typically fail unless -msse2 -mfpmath=sse2 is specified).
+/**
+ * @brief Validate CPU floating point meets assumptions made in the codec.
+ *
+ * The codec is written with the assumption that a float threaded through the @c if32 union will be
+ * stored and reloaded as a 32-bit IEEE-754 float with round-to-nearest rounding. This is always the
+ * case in an IEEE-754 compliant system, however not every system or compilation mode is actually
+ * IEEE-754 compliant. This normally fails if the code is compiled with fast math enabled.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_cpu_float()
 {
 	if32 p;
@@ -148,6 +150,15 @@ static astcenc_error validate_cpu_float()
 	return ASTCENC_SUCCESS;
 }
 
+/**
+ * @brief Validate CPU ISA support meets the requirements of this build of the library.
+ *
+ * Each library build is statically compiled for a particular set of CPU ISA features, such as the
+ * SIMD support or other ISA extensions such as POPCNT. This function checks that the host CPU
+ * actually supports everything this build needs.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_cpu_isa()
 {
 	#if ASTCENC_SSE >= 41
@@ -181,6 +192,13 @@ static astcenc_error validate_cpu_isa()
 	return ASTCENC_SUCCESS;
 }
 
+/**
+ * @brief Validate config profile.
+ *
+ * @param profile   The profile to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_profile(
 	astcenc_profile profile
 ) {
@@ -198,6 +216,15 @@ static astcenc_error validate_profile(
 	}
 }
 
+/**
+ * @brief Validate block size.
+ *
+ * @param block_x   The block x dimensions.
+ * @param block_y   The block y dimensions.
+ * @param block_z   The block z dimensions.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_block_size(
 	unsigned int block_x,
 	unsigned int block_y,
@@ -212,6 +239,13 @@ static astcenc_error validate_block_size(
 	return ASTCENC_ERR_BAD_BLOCK_SIZE;
 }
 
+/**
+ * @brief Validate flags.
+ *
+ * @param flags   The flags to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_flags(
 	unsigned int flags
 ) {
@@ -235,6 +269,14 @@ static astcenc_error validate_flags(
 }
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
+
+/**
+ * @brief Validate single channel compression swizzle.
+ *
+ * @param swizzle   The swizzle to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_compression_swz(
 	astcenc_swz swizzle
 ) {
@@ -253,6 +295,13 @@ static astcenc_error validate_compression_swz(
 	}
 }
 
+/**
+ * @brief Validate overall compression swizzle.
+ *
+ * @param swizzle   The swizzle to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_compression_swizzle(
 	const astcenc_swizzle& swizzle
 ) {
@@ -268,6 +317,13 @@ static astcenc_error validate_compression_swizzle(
 }
 #endif
 
+/**
+ * @brief Validate single channel decompression swizzle.
+ *
+ * @param swizzle   The swizzle to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_decompression_swz(
 	astcenc_swz swizzle
 ) {
@@ -288,6 +344,13 @@ static astcenc_error validate_decompression_swz(
 	}
 }
 
+/**
+ * @brief Validate overall decompression swizzle.
+ *
+ * @param swizzle   The swizzle to check.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ */
 static astcenc_error validate_decompression_swizzle(
 	const astcenc_swizzle& swizzle
 ) {
@@ -311,6 +374,10 @@ static astcenc_error validate_decompression_swizzle(
  *     ranges. No error is thrown for out-of-range inputs in this case.
  *   * Numerical inputs and logic inputs are are logically invalid and which
  *     make no sense algorithmically will return an error.
+ *
+ * @param[in,out] config   The input compressor configuration.
+ *
+ * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
  */
 static astcenc_error validate_config(
 	astcenc_config &config
@@ -390,6 +457,7 @@ static astcenc_error validate_config(
 	return ASTCENC_SUCCESS;
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_config_init(
 	astcenc_profile profile,
 	unsigned int block_x,
@@ -628,6 +696,7 @@ astcenc_error astcenc_config_init(
 	return ASTCENC_SUCCESS;
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_context_alloc(
 	const astcenc_config* configp,
 	unsigned int thread_count,
@@ -742,6 +811,7 @@ astcenc_error astcenc_context_alloc(
 	return ASTCENC_SUCCESS;
 }
 
+/* See header dor documentation. */
 void astcenc_context_free(
 	astcenc_context* ctx
 ) {
@@ -758,11 +828,21 @@ void astcenc_context_free(
 }
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
+
+/**
+ * @brief Compress an image, after any preflight has completed.
+ *
+ * @param[out] ctx            The compressor context.
+ * @param      thread_index   The thread index.
+ * @param      image          The intput image.
+ * @param      swizzle        The input swizzle.
+ * @param[out] buffer         The output array for the compressed data.
+ */
 static void compress_image(
 	astcenc_context& ctx,
 	unsigned int thread_index,
 	const astcenc_image& image,
-	astcenc_swizzle swizzle,
+	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
 ) {
 	const block_size_descriptor *bsd = ctx.bsd;
@@ -785,7 +865,7 @@ static void compress_image(
 	int plane_blocks = xblocks * yblocks;
 
 	// Use preallocated scratch buffer
-	auto temp_buffers = &(ctx.working_buffers[thread_index]);
+	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread actually runs the initializer
 	ctx.manage_compress.init(zblocks * yblocks * xblocks);
@@ -821,11 +901,9 @@ static void compress_image(
 				// SATs accumulate error, so don't test exactly zero. Test for
 				// less than 1 alpha in the expanded block footprint that
 				// includes the alpha radius.
-				int x_footprint = block_x +
-				                  2 * (ctx.config.a_scale_radius - 1);
+				int x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
 
-				int y_footprint = block_y +
-				                  2 * (ctx.config.a_scale_radius - 1);
+				int y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
 
 				float footprint = (float)(x_footprint * y_footprint);
 				float threshold = 0.9f / (255.0f * footprint);
@@ -864,14 +942,16 @@ static void compress_image(
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
 			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
-			compress_block(ctx, image, blk, *pcb, *temp_buffers);
+			compress_block(ctx, image, blk, *pcb, temp_buffers);
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);
 	}
 }
+
 #endif
 
+/* See header for documentation. */
 astcenc_error astcenc_compress_image(
 	astcenc_context* ctx,
 	astcenc_image* imagep,
@@ -975,6 +1055,7 @@ astcenc_error astcenc_compress_image(
 #endif
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_compress_reset(
 	astcenc_context* ctx
 ) {
@@ -993,6 +1074,7 @@ astcenc_error astcenc_compress_reset(
 #endif
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_decompress_image(
 	astcenc_context* ctx,
 	const uint8_t* data,
@@ -1078,6 +1160,7 @@ astcenc_error astcenc_decompress_image(
 	return ASTCENC_SUCCESS;
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_decompress_reset(
 	astcenc_context* ctx
 ) {
@@ -1085,6 +1168,7 @@ astcenc_error astcenc_decompress_reset(
 	return ASTCENC_SUCCESS;
 }
 
+/* See header for documentation. */
 astcenc_error astcenc_get_block_info(
 	astcenc_context* ctx,
 	const uint8_t data[16],
@@ -1206,7 +1290,7 @@ astcenc_error astcenc_get_block_info(
 #endif
 }
 
-
+/* See header for documentation. */
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {
