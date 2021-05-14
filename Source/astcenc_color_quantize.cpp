@@ -1006,7 +1006,7 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 }
 
 /**
- * @brief Quantize a HDR RGB color using RGB + scale.
+ * @brief Quantize a HDR RGB color using RGB + offset.
  *
  * @param      color         The input unquantized color endpoint and offset.
  * @param[out] output        The output endpoints, returned as packed RGBS with some mode bits.

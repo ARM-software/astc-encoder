@@ -263,10 +263,8 @@ void decompress_symbolic_block(
 		                       scb->color_formats[i],
 		                       scb->color_quant_level,
 		                       scb->color_values[i],
-		                       &rgb_lns,
-		                       &a_lns,
-		                       &ep0,
-		                       &ep1);
+		                       rgb_lns, a_lns,
+		                       ep0, ep1);
 
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
@@ -343,8 +341,8 @@ float compute_symbolic_block_difference(
 		                       scb->color_formats[i],
 		                       scb->color_quant_level,
 		                       scb->color_values[i],
-		                       &rgb_lns, &a_lns,
-		                       &ep0, &ep1);
+		                       rgb_lns, a_lns,
+		                       ep0, ep1);
 
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 

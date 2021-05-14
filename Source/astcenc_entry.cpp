@@ -1165,8 +1165,8 @@ astcenc_error astcenc_get_block_info(
 		                       scb.color_formats[i],
 		                       scb.color_quant_level,
 		                       scb.color_values[i],
-		                       &rgb_hdr, &a_hdr,
-		                       endpnt, endpnt + 1);
+		                       rgb_hdr, a_hdr,
+		                       endpnt[0], endpnt[1]);
 
 		// Store the color endpoint mode info
 		info->color_endpoint_modes[i] = scb.color_formats[i];

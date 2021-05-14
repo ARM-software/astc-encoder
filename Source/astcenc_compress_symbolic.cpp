@@ -108,9 +108,9 @@ static bool realign_weights(
 		                       scb->color_formats[pa_idx],
 		                       scb->color_quant_level,
 		                       scb->color_values[pa_idx],
-		                       &rgb_hdr, &alpha_hdr,
-		                       &endpnt0[pa_idx],
-		                       &endpnt1[pa_idx]);
+		                       rgb_hdr, alpha_hdr,
+		                       endpnt0[pa_idx],
+		                       endpnt1[pa_idx]);
 	}
 
 	uint8_t uq_pl_weights[MAX_WEIGHTS_PER_BLOCK];

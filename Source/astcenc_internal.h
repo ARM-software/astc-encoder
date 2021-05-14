@@ -1286,7 +1286,7 @@ float compute_error_of_weight_set_2planes(
 	const float* weights2);
 
 /**
- * @brief Quantize a color as effectively as possible.
+ * @brief Pack a single pair of color endpoints as effectively as possible.
  *
  * The user requests a base color endpoint mode in @c format, but the quantizer may choose a
  * delta-based representation. It will report back the format variant it actually used.
@@ -1310,16 +1310,28 @@ int pack_color_endpoints(
 	int* output,
 	quant_method quant_level);
 
-// unpack a pair of color endpoints from a series of integers.
+/**
+ * @brief Unpack a single pair of encoded and quantized color endpoints.
+ *
+ * @param      decode_mode   The decode mode (LDR, HDR).
+ * @param      format        The color endpoint mode used.
+ * @param      quant_level   The quantization level used.
+ * @param      input         The raw array of encoded input integers. The length of this array
+ *                           depends on @c format; it can be safely assumed to be large enough.
+ * @param[out] rgb_hdr       Is the endpoint using HDR for the RGB channels?
+ * @param[out] alpha_hdr     Is the endpoint using HDR for the A channel?
+ * @param[out] output0       The output color for endpoint 0.
+ * @param[out] output1       The output color for endpoint 1.
+ */
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
 	int quant_level,
 	const int* input,
-	bool* rgb_hdr,
-	bool* alpha_hdr,
-	vint4* output0,
-	vint4* output1);
+	bool& rgb_hdr,
+	bool& alpha_hdr,
+	vint4& output0,
+	vint4& output1);
 
 // unquantize and undecimate a weight grid
 void unpack_weights(
