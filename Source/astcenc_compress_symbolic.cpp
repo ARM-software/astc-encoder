@@ -1588,10 +1588,10 @@ void compress_block(
 		int partition_indices_1plane[2] { 0, 0 };
 		int partition_index_2planes = 0;
 
-		find_best_partitionings(bsd, &blk, &ewb, partition_count,
+		find_best_partitionings(*bsd, blk, ewb, partition_count,
 		                        ctx.config.tune_partition_index_limit,
-		                        &(partition_indices_1plane[0]),
-		                        &(partition_indices_1plane[1]),
+		                        partition_indices_1plane[0],
+		                        partition_indices_1plane[1],
 		                        block_skip_two_plane ? nullptr : &partition_index_2planes);
 
 		for (int i = 0; i < 2; i++)

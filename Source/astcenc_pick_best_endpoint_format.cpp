@@ -48,6 +48,44 @@
 #include <assert.h>
 
 /**
+ * @brief Compute cumulative error weight of each partition.
+ *
+ * The cumulative error weight is used to determine the relative importance of
+ * each partiton when deciding how to quantize colors, as not all partitions
+ * are equal. For example, some partitions will have far fewer texels than
+ * others in the same block.
+ *
+ * @param      ewb   The block error weights.
+ * @param      pi    The partiion info.
+ * @param[out] pm    The output metrics; only writes to @c error_weight field.
+ */
+static void compute_partition_error_color_weightings(
+	const error_weight_block& ewb,
+	const partition_info& pi,
+	partition_metrics pm[4]
+) {
+	int partition_count = pi.partition_count;
+	promise(partition_count > 0);
+
+	for (int i = 0; i < partition_count; i++)
+	{
+		vfloat4 error_weight(1e-12f);
+
+		int texel_count = pi.partition_texel_count[i];
+		promise(texel_count > 0);
+
+		for (int j = 0; j < texel_count; j++)
+		{
+			int tidx = pi.texels_of_partition[i][j];
+			error_weight = error_weight + ewb.error_weights[tidx];
+		}
+
+		error_weight = error_weight / pi.partition_texel_count[i];
+		pm[i].error_weight = error_weight;
+	}
+}
+
+/**
  * @brief Compute the errors of the endpoint line options for one partition.
  *
  * Uncorrelated data assumes storing completely independent RGBA channels for

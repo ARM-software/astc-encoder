@@ -1000,32 +1000,32 @@ void compute_error_squared_rgb(
 	float& uncor_error,
 	float& samec_error);
 
-// for each partition, compute its color weightings.
-void compute_partition_error_color_weightings(
-	const error_weight_block& ewb,
-	const partition_info& pt,
-	partition_metrics pm[4]);
-
 /**
  * @brief Find the best set of partitions to trial for a given block.
  *
- * On return @c best_partition_uncorrelated contains the best partition
- * assuming the data has noncorrelated chroma, @c best_partition_samechroma
- * contains the best partition assuming the data has corelated chroma, and
- * @c best_partition_dualplane contains the best partition assuming the data
- * has one uncorrelated color component.
+ * On return @c best_partition_uncor contains the best partition  assuming data has uncorrelated
+ * chroma, @c best_partition_samec contains the best partition assuming data has corelated chroma,
+ * and* @c best_partition_dualplane contains the best partition assuming the data has one
+ * uncorrelated color component. The @c best_partition_dualplane is stored packed; bits [9:0]
+ * contain the best partition, bits [11:10] contain the best color component.
  *
- * @c best_partition_dualplane is stored packed; bits [9:0] contain the
- * best partition, bits [11:10] contain the best color component.
+ * @param      bsd                        The block size information.
+ * @param      blk                        The image block color data to compress.
+ * @param      ewb                        The image block weighted error data.
+ * @param      partition_count            The number of partitions in the block.
+ * @param      partition_search_limit     The number of candidate partition encodings to trial.
+ * @param[out] best_partition_uncor       The best partition for uncorrelated chroma.
+ * @param[out] best_partition_samec       The best partition for correlated chroma.
+ * @param[out] best_partition_dualplane   The best partition for dual plane, but may be @c nullptr.
  */
 void find_best_partitionings(
-	const block_size_descriptor* bsd,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int partition_count,
 	int partition_search_limit,
-	int* best_partition_uncorrelated,
-	int* best_partition_samechroma,
+	int& best_partition_uncor,
+	int& best_partition_samec,
 	int* best_partition_dualplane);
 
 // use k-means clustering to compute a partition ordering for a block.

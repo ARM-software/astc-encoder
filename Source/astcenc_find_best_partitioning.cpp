@@ -21,79 +21,41 @@
  * @brief Functions for finding best partition for a block.
  *
  * Major step 1:
- * - find best partitioning assuming uncorrelated colors
- * - find best partitioning assuming RGBS color representation
+ *
+ * - Find best partitioning assuming uncorrelated colors.
+ * - Find best partitioning assuming RGBS color representation.
  *
  * Finding best partitioning for a block:
  *
- * foreach available partitioning:
- * - compute mean-color-value and dominant direction.
- * - this defines two lines, both of which go through the mean-color-value.
- * - one line has a direction defined by the dominant direction; this is used
+ * For each available partitioning compute mean color and dominant direction.
+ * This defines two lines, both of which go through the mean-color-value.
+ *
+ * - One line has a direction defined by the dominant direction; this is used
  *   to assess the error from using an uncorrelated color representation.
- * - the other line goes through (0,0,0,1) and is used to assess the error from
+ * - The other line goes through (0,0,0,1) and is used to assess the error from
  *   using an RGBS color representation.
- * - we then compute, as a sum across the block, the squared-errors that result
- *   from using the dominant-direction-lines and the squared-errors that result
- *   from using the 0001-lines.
  *
- *	Partition table representation:
- *	We have 3 tables, each with 1024 partitions
- *	(these correspond to the 3x128 hardware partitions crossed with all the
- *	partition-transform modes in the hardware.)
- *
- *	For each partitioning, we have:
- *	* a 4-entry table indicating how many texels there are in each of the 4
- *	  partitions. this may be from 2 to about 60 or so.
- *	* a 64-entry table indicating the partition index of each of the 64 texels
- *	  in the block. each index may be 0, 1, 2 or 3.
- *
- * each element in the table is an uint8_t indicating partition index (0, 1, 2 or 3)
+ * Then compute the block's squared-errors that result from using the these
+ * two lines for endpoint selection.
  */
 
 #include "astcenc_internal.h"
 
-void compute_partition_error_color_weightings(
-	const error_weight_block& ewb,
-	const partition_info& pt,
-	partition_metrics pm[4]
-) {
-	int partition_count = pt.partition_count;
-	promise(partition_count > 0);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		vfloat4 error_weight(1e-12f);
-
-		int texel_count = pt.partition_texel_count[i];
-		promise(texel_count > 0);
-
-		for (int j = 0; j < texel_count; j++)
-		{
-			int tidx = pt.texels_of_partition[i][j];
-			error_weight = error_weight + ewb.error_weights[tidx];
-		}
-
-		error_weight = error_weight / pt.partition_texel_count[i];
-		pm[i].error_weight = error_weight;
-	}
-}
-
-/* main function to identify the best partitioning for a given number of texels */
+/* See header for documentation. */
 void find_best_partitionings(
-	const block_size_descriptor* bsd,
-	const imageblock* blk,
-	const error_weight_block* ewb,
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const error_weight_block& ewb,
 	int partition_count,
 	int partition_search_limit,
-	int* best_partition_uncor,
-	int* best_partition_samec,
+	int& best_partition_uncor,
+	int& best_partition_samec,
 	int* best_partition_dualplane
 ) {
 	// constant used to estimate quantization error for a given partitioning;
 	// the optimal value for this constant depends on bitrate.
 	// These constants have been determined empirically.
-	int texels_per_block = bsd->texel_count;
+	int texels_per_block = bsd.texel_count;
 	float weight_imprecision_estim = 0.055f;
 	if (texels_per_block <= 20)
 	{
@@ -115,11 +77,11 @@ void find_best_partitionings(
 
 	int partition_sequence[PARTITION_COUNT];
 
-	kmeans_compute_partition_ordering(*bsd, *blk, partition_count, partition_sequence);
+	kmeans_compute_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
-	int uses_alpha = imageblock_uses_alpha(blk);
+	int uses_alpha = imageblock_uses_alpha(&blk);
 
-	const partition_info* ptab = get_partition_table(bsd, partition_count);
+	const partition_info* ptab = get_partition_table(&bsd, partition_count);
 
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncor_best_error { ERROR_CALC_DEFAULT };
@@ -152,7 +114,7 @@ void find_best_partitionings(
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
 
-			compute_avgs_and_dirs_4_comp(*(ptab + partition), *blk, *ewb, pms);
+			compute_avgs_and_dirs_4_comp(*(ptab + partition), blk, ewb, pms);
 
 			line4 uncor_lines[4];
 			line4 samec_lines[4];
@@ -210,8 +172,8 @@ void find_best_partitionings(
 			vfloat4 sep_error = vfloat4::zero();
 
 			compute_error_squared_rgba(*(ptab + partition),
-			                           *blk,
-			                           *ewb,
+			                           blk,
+			                           ewb,
 			                           uncor_plines,
 			                           samec_plines,
 			                           uncor_line_lens,
@@ -335,7 +297,7 @@ void find_best_partitionings(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[4];
-			compute_avgs_and_dirs_3_comp(*(ptab + partition), *blk, *ewb, 3, pms);
+			compute_avgs_and_dirs_3_comp(*(ptab + partition), blk, ewb, 3, pms);
 
 			partition_lines3 plines[4];
 
@@ -383,8 +345,8 @@ void find_best_partitionings(
 			vfloat4 sep_error = vfloat4::zero();
 
 			compute_error_squared_rgb(*(ptab + partition),
-			                          *blk,
-			                          *ewb,
+			                          blk,
+			                          ewb,
 			                          plines,
 			                          uncor_error,
 			                          samec_error);
@@ -489,10 +451,10 @@ void find_best_partitionings(
 		}
 	}
 
-	*best_partition_uncor = uncor_best_partition;
+	best_partition_uncor = uncor_best_partition;
 
 	int index = samec_best_partitions[0] != uncor_best_partition ? 0 : 1;
-	*best_partition_samec = samec_best_partitions[index];
+	best_partition_samec = samec_best_partitions[index];
 
 	if (best_partition_dualplane)
 	{
