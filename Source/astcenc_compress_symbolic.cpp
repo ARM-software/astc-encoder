@@ -498,7 +498,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 					workscb.weights[j] = u8_weight_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(config, &bsd, &workscb, &blk, &ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
@@ -545,7 +545,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 				workscb.weights[j] = u8_weight_src[j];
 			}
 
-			float errorval = compute_symbolic_block_difference(config, &bsd, &workscb, &blk, &ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;
@@ -903,7 +903,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 				}
 
-				float errorval = compute_symbolic_block_difference(config, &bsd, &workscb, &blk, &ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
@@ -951,7 +951,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
 			}
 
-			float errorval = compute_symbolic_block_difference(config, &bsd, &workscb, &blk, &ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;

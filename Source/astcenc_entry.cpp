@@ -1064,9 +1064,9 @@ astcenc_error astcenc_decompress_image(
 
 			physical_to_symbolic(*ctx->bsd, pcb, scb);
 
-			decompress_symbolic_block(ctx->config.profile, ctx->bsd,
+			decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
 			                          x * block_x, y * block_y, z * block_z,
-			                          &scb, &blk);
+			                          scb, blk);
 
 			write_imageblock(image_out, &blk, ctx->bsd,
 			                 x * block_x, y * block_y, z * block_z, *swizzle);

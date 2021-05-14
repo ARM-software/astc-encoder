@@ -1146,13 +1146,6 @@ void write_imageblock(
 	int zpos,
 	const astcenc_swizzle& swz);
 
-float compute_symbolic_block_difference(
-	const astcenc_config& config,
-	const block_size_descriptor* bsd,
-	const symbolic_compressed_block* scb,
-	const imageblock* blk,
-	const error_weight_block *ewb) ;
-
 // ***********************************************************
 // functions pertaining to computing texel weights for a block
 // ***********************************************************
@@ -1333,13 +1326,23 @@ void unpack_color_endpoints(
 	vint4& output0,
 	vint4& output1);
 
-// unquantize and undecimate a weight grid
+/**
+ * @brief Unpack a set of quantized and decimated weights.
+ *
+ * @param      bsd              The block size information.
+ * @param      scb              The symbolic compressed encoding.
+ * @param      dt               The weight grid decimation table.
+ * @param      is_dual_plane    @c true if this is a dual plane block, @c false otherwise.
+ * @param      quant_level      The weight quantization level.
+ * @param[out] weights_plane1   The output array for storing the plane 1 weights.
+ * @param[out] weights_plane2   The output array for storing the plane 2 weights.
+ */
 void unpack_weights(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
 	const decimation_table& dt,
 	bool is_dual_plane,
-	int weight_quant_level,
+	int quant_level,
 	int weights_plane1[MAX_TEXELS_PER_BLOCK],
 	int weights_plane2[MAX_TEXELS_PER_BLOCK]);
 
@@ -1444,7 +1447,7 @@ void compute_angular_endpoints_2planes(
 /* *********************************** high-level encode and decode functions ************************************ */
 
 /**
- * @brief Determine the lowest cross-channel correlation factor.
+ * @brief Compress an image block into a physical block.
  *
  * @param      ctx      The compressor context and configuration.
  * @param      image    The input image information.
@@ -1459,14 +1462,45 @@ void compress_block(
 	physical_compressed_block& pcb,
 	compress_symbolic_block_buffers& tmpbuf);
 
+/**
+ * @brief Decompress a symbolic block in to an image block.
+ *
+ * @param      decode_mode   The decode mode (LDR, HDR, etc).
+ * @param      bsd           The block size information.
+ * @param      xpos          The X coordinate of the block in the overall image.
+ * @param      ypos          The Y coordinate of the block in the overall image.
+ * @param      zpos          The Z coordinate of the block in the overall image.
+ * @param[out] blk           The decompressed image block color data.
+ */
 void decompress_symbolic_block(
 	astcenc_profile decode_mode,
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
 	int xpos,
 	int ypos,
 	int zpos,
-	const symbolic_compressed_block* scb,
-	imageblock* blk);
+	const symbolic_compressed_block& scb,
+	imageblock& blk);
+
+/**
+ * @brief Compute the error between a symbolic block and the original input data.
+ *
+ * In RGBM mode this will reject blocks that attempt to encode a zero M value.
+ *
+ * @param config   The compressor config.
+ * @param bsd      The block size information.
+ * @param scb      The symbolic compressed encoding.
+ * @param blk      The original image block color data.
+ * @param ewb      The error weight block data.
+ *
+ * @return Returns the computed error, or a negative value if the encoding
+ *         should be rejected for any reason.
+ */
+float compute_symbolic_block_difference(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const symbolic_compressed_block& scb,
+	const imageblock& blk,
+	const error_weight_block& ewb) ;
 
 void symbolic_to_physical(
 	const block_size_descriptor& bsd,
