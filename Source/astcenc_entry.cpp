@@ -864,8 +864,7 @@ static void compress_image(
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
 			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
-			symbolic_compressed_block scb;
-			compress_block(ctx, image, &blk, scb, *pcb, temp_buffers);
+			compress_block(ctx, image, blk, *pcb, *temp_buffers);
 		}
 
 		ctx.manage_compress.complete_task_assignment(count);

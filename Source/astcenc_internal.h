@@ -1443,13 +1443,21 @@ void compute_angular_endpoints_2planes(
 
 /* *********************************** high-level encode and decode functions ************************************ */
 
+/**
+ * @brief Determine the lowest cross-channel correlation factor.
+ *
+ * @param      ctx      The compressor context and configuration.
+ * @param      image    The input image information.
+ * @param      blk      The image block color data to compress.
+ * @param[out] pcb      The physical compressed block output.
+ * @param[out] tmpbuf   Preallocated scratch buffers for the compressor.
+ */
 void compress_block(
 	const astcenc_context& ctx,
 	const astcenc_image& image,
-	const imageblock* blk,
-	symbolic_compressed_block& scb,
+	const imageblock& blk,
 	physical_compressed_block& pcb,
-	compress_symbolic_block_buffers* tmpbuf);
+	compress_symbolic_block_buffers& tmpbuf);
 
 void decompress_symbolic_block(
 	astcenc_profile decode_mode,
