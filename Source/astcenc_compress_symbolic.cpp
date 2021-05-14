@@ -25,8 +25,6 @@
 #include "astcenc_diagnostic_trace.h"
 
 #include <cassert>
-#include <cstring>
-#include <cstdio>
 
 /**
  * @brief Merge two planes of endpoints into a single vector.
