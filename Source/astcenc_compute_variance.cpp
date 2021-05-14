@@ -35,7 +35,7 @@
 #include <cassert>
 
 /**
- * @brief Generate a prefix-sum array using Brent-Kung algorithm.
+ * @brief Generate a prefix-sum array using the Brent-Kung algorithm.
  *
  * This will take an input array of the form:
  *     v0, v1, v2, ...
@@ -106,34 +106,35 @@ static void brent_kung_prefix_sum(
  * The routine computes both in a single pass, using a summed-area table to
  * decouple the running time from the averaging/variance kernel size.
  *
- * @param arg The input parameter structure.
+ * @param[out] ctx   The compressor context storing the output data.
+ * @param      arg   The input parameter structure.
  */
 static void compute_pixel_region_variance(
 	astcenc_context& ctx,
-	const pixel_region_variance_args* arg
+	const pixel_region_variance_args& arg
 ) {
 	// Unpack the memory structure into local variables
-	const astcenc_image* img = arg->img;
-	float rgb_power = arg->rgb_power;
-	float alpha_power = arg->alpha_power;
-	astcenc_swizzle swz = arg->swz;
-	bool have_z = arg->have_z;
+	const astcenc_image* img = arg.img;
+	float rgb_power = arg.rgb_power;
+	float alpha_power = arg.alpha_power;
+	astcenc_swizzle swz = arg.swz;
+	bool have_z = arg.have_z;
 
-	int size_x = arg->size_x;
-	int size_y = arg->size_y;
-	int size_z = arg->size_z;
+	int size_x = arg.size_x;
+	int size_y = arg.size_y;
+	int size_z = arg.size_z;
 
-	int offset_x = arg->offset_x;
-	int offset_y = arg->offset_y;
-	int offset_z = arg->offset_z;
+	int offset_x = arg.offset_x;
+	int offset_y = arg.offset_y;
+	int offset_z = arg.offset_z;
 
-	int avg_var_kernel_radius = arg->avg_var_kernel_radius;
-	int alpha_kernel_radius = arg->alpha_kernel_radius;
+	int avg_var_kernel_radius = arg.avg_var_kernel_radius;
+	int alpha_kernel_radius = arg.alpha_kernel_radius;
 
-	float  *input_alpha_averages = ctx.input_alpha_averages;
-	vfloat4 *input_averages = ctx.input_averages;
-	vfloat4 *input_variances = ctx.input_variances;
-	vfloat4 *work_memory = arg->work_memory;
+	float*   input_alpha_averages = ctx.input_alpha_averages;
+	vfloat4* input_averages = ctx.input_averages;
+	vfloat4* input_variances = ctx.input_variances;
+	vfloat4* work_memory = arg.work_memory;
 
 	// Compute memory sizes and dimensions that we need
 	int kernel_radius = astc::max(avg_var_kernel_radius, alpha_kernel_radius);
@@ -556,7 +557,7 @@ void compute_averages_and_variances(
 			{
 				arg.size_x = astc::min(step_xy, size_x - x);
 				arg.offset_x = x;
-				compute_pixel_region_variance(ctx, &arg);
+				compute_pixel_region_variance(ctx, arg);
 			}
 		}
 
@@ -566,7 +567,7 @@ void compute_averages_and_variances(
 	delete[] arg.work_memory;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 unsigned int init_compute_averages_and_variances(
 	astcenc_image& img,
 	float rgb_power,
