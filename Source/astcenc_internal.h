@@ -1114,7 +1114,7 @@ unsigned int init_compute_averages_and_variances(
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
-	astcenc_swizzle swz,
+	const astcenc_swizzle& swz,
 	pixel_region_variance_args& arg,
 	avg_var_args& ag);
 
@@ -1132,7 +1132,7 @@ void fetch_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	astcenc_swizzle swz);
+	const astcenc_swizzle& swz);
 
 // write an image block to the output file buffer.
 // the data written are taken from orig_data.
@@ -1144,7 +1144,7 @@ void write_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	astcenc_swizzle swz);
+	const astcenc_swizzle& swz);
 
 float compute_symbolic_block_difference(
 	const astcenc_config& config,

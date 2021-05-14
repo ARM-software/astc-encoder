@@ -254,7 +254,7 @@ static astcenc_error validate_compression_swz(
 }
 
 static astcenc_error validate_compression_swizzle(
-	astcenc_swizzle swizzle
+	const astcenc_swizzle& swizzle
 ) {
 	if (validate_compression_swz(swizzle.r) ||
 	    validate_compression_swz(swizzle.g) ||
@@ -289,7 +289,7 @@ static astcenc_error validate_decompression_swz(
 }
 
 static astcenc_error validate_decompression_swizzle(
-	astcenc_swizzle swizzle
+	const astcenc_swizzle& swizzle
 ) {
 	if (validate_decompression_swz(swizzle.r) ||
 	    validate_decompression_swz(swizzle.g) ||
@@ -875,7 +875,7 @@ static void compress_image(
 astcenc_error astcenc_compress_image(
 	astcenc_context* ctx,
 	astcenc_image* imagep,
-	astcenc_swizzle swizzle,
+	const astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
 	unsigned int thread_index
@@ -897,7 +897,7 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_CONTEXT;
 	}
 
-	status = validate_compression_swizzle(swizzle);
+	status = validate_compression_swizzle(*swizzle);
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
@@ -938,7 +938,7 @@ astcenc_error astcenc_compress_image(
 
 			return init_compute_averages_and_variances(
 				image, ctx->config.v_rgb_power, ctx->config.v_a_power,
-				ctx->config.v_rgba_radius, ctx->config.a_scale_radius, swizzle,
+				ctx->config.v_rgba_radius, ctx->config.a_scale_radius, *swizzle,
 				ctx->arg, ctx->ag);
 		};
 
@@ -952,7 +952,7 @@ astcenc_error astcenc_compress_image(
 	// Wait for compute_averages_and_variances to complete before compressing
 	ctx->manage_avg_var.wait();
 
-	compress_image(*ctx, thread_index, image, swizzle, data_out);
+	compress_image(*ctx, thread_index, image, *swizzle, data_out);
 
 	// Wait for compress to complete before freeing memory
 	ctx->manage_compress.wait();
@@ -998,7 +998,7 @@ astcenc_error astcenc_decompress_image(
 	const uint8_t* data,
 	size_t data_len,
 	astcenc_image* image_outp,
-	astcenc_swizzle swizzle,
+	const astcenc_swizzle* swizzle,
 	unsigned int thread_index
 ) {
 	astcenc_error status;
@@ -1010,7 +1010,7 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	status = validate_decompression_swizzle(swizzle);
+	status = validate_decompression_swizzle(*swizzle);
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
@@ -1069,7 +1069,7 @@ astcenc_error astcenc_decompress_image(
 			                          &scb, &blk);
 
 			write_imageblock(image_out, &blk, ctx->bsd,
-			                 x * block_x, y * block_y, z * block_z, swizzle);
+			                 x * block_x, y * block_y, z * block_z, *swizzle);
 		}
 
 		ctx->manage_decompress.complete_task_assignment(count);

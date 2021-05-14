@@ -574,7 +574,7 @@ unsigned int init_compute_averages_and_variances(
 	float alpha_power,
 	int avg_var_kernel_radius,
 	int alpha_kernel_radius,
-	astcenc_swizzle swz,
+	const astcenc_swizzle& swz,
 	pixel_region_variance_args& arg,
 	avg_var_args& ag
 ) {

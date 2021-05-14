@@ -161,7 +161,7 @@ static void compression_workload_runner(
 
 	compression_workload* work = static_cast<compression_workload*>(payload);
 	astcenc_error error = astcenc_compress_image(
-	                       work->context, work->image, work->swizzle,
+	                       work->context, work->image, &work->swizzle,
 	                       work->data_out, work->data_len, thread_id);
 
 	// This is a racy update, so which error gets returned is a random, but it
@@ -182,7 +182,7 @@ static void decompression_workload_runner(
 	decompression_workload* work = static_cast<decompression_workload*>(payload);
 	astcenc_error error = astcenc_decompress_image(
 	                       work->context, work->data, work->data_len,
-	                       work->image_out, work->swizzle, thread_id);
+	                       work->image_out, &work->swizzle, thread_id);
 
 	// This is a racy update, so which error gets returned is a random, but it
 	// will reliably report an error if an error occurs
@@ -1561,7 +1561,7 @@ int main(
 		else
 		{
 			work.error = astcenc_compress_image(
-			    work.context, work.image, work.swizzle,
+			    work.context, work.image, &work.swizzle,
 			    work.data_out, work.data_len, 0);
 		}
 
@@ -1613,7 +1613,7 @@ int main(
 		{
 			work.error = astcenc_decompress_image(
 			    work.context, work.data, work.data_len,
-			    work.image_out, work.swizzle, 0);
+			    work.image_out, &work.swizzle, 0);
 		}
 
 		if (work.error != ASTCENC_SUCCESS)

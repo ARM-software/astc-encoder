@@ -729,7 +729,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
  *
  * @param         context        Codec context.
  * @param[in,out] image          An input image, in 2D slices.
- * @param         swizzle        Compression data swizzle.
+ * @param         swizzle        Compression data swizzle, applied before compression.
  * @param[out]    data_out       Pointer to output data array.
  * @param         data_len       Length of the output data array.
  * @param         thread_index   Thread index [0..N-1] of calling thread.
@@ -739,7 +739,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
 ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
 	astcenc_context* context,
 	astcenc_image* image,
-	astcenc_swizzle swizzle,
+	const astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
 	unsigned int thread_index);
@@ -766,7 +766,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_reset(
  * @param[in]     data           Pointer to compressed data.
  * @param         data_len       Length of the compressed data, in bytes.
  * @param[in,out] image_out      Output image.
- * @param         swizzle        Decompression data swizzle.
+ * @param         swizzle        Decompression data swizzle, applied after decompression.
  * @param         thread_index   Thread index [0..N-1] of calling thread.
  *
  * @return ASTCENC_SUCCESS on success, or an error if decompression failed.
@@ -776,7 +776,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
 	const uint8_t* data,
 	size_t data_len,
 	astcenc_image* image_out,
-	astcenc_swizzle swizzle,
+	const astcenc_swizzle* swizzle,
 	unsigned int thread_index);
 
 /**

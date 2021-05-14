@@ -158,7 +158,7 @@ void fetch_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	astcenc_swizzle swz
+	const astcenc_swizzle& swz
 ) {
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
@@ -273,7 +273,7 @@ void write_imageblock(
 	int xpos,
 	int ypos,
 	int zpos,
-	astcenc_swizzle swz
+	const astcenc_swizzle& swz
 ) {
 	int xsize = img.dim_x;
 	int ysize = img.dim_y;
