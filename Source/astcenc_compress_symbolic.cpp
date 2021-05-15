@@ -259,9 +259,9 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 	// first, compute ideal weights and endpoint colors, under the assumption that
 	// there is no quantization or decimation going on.
-	endpoints_and_weights *ei = &tmpbuf.ei1;
+	endpoints_and_weights& ei = tmpbuf.ei1;
 	endpoints_and_weights *eix = tmpbuf.eix1;
-	compute_endpoints_and_ideal_weights_1plane(&bsd, pt, &blk, &ewb, ei);
+	compute_endpoints_and_ideal_weights_1plane(bsd, blk, ewb, *pt, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *dts = bsd.decimation_tables;
@@ -282,7 +282,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 		}
 
 		compute_ideal_weights_for_decimation_table(
-		    *ei,
+		    ei,
 		    eix[i],
 		    *(dts[i]),
 		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
@@ -295,7 +295,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	vfloat4 min_ep(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 ep = (vfloat4(1.0f) - ei->ep.endpt0[i]) / (ei->ep.endpt1[i] - ei->ep.endpt0[i]);
+		vfloat4 ep = (vfloat4(1.0f) - ei.ep.endpt0[i]) / (ei.ep.endpt1[i] - ei.ep.endpt0[i]);
 
 		vmask4 use_ep = (ep > vfloat4(0.5f)) & (ep < min_ep);
 		min_ep = select(min_ep, ep, use_ep);
@@ -349,7 +349,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 		// then, generate the optimized set of weights for the weight mode.
 		compute_quantized_weights_for_decimation_table(
-		    dts[decimation_mode],
+		    *dts[decimation_mode],
 		    weight_low_value[i], weight_high_value[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i,
@@ -358,9 +358,9 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 		// then, compute weight-errors for the weight mode.
 		qwt_errors[i] = compute_error_of_weight_set_1plane(
-		                    &(eix[decimation_mode]),
-		                    dts[decimation_mode],
-		                    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
+		    eix[decimation_mode],
+		    *dts[decimation_mode],
+		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * i);
 	}
 
 	// for each weighting mode, determine the optimal combination of color endpoint encodings
@@ -374,7 +374,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    &bsd, pt, &blk, &ewb, &(ei->ep), qwt_bitcounts, qwt_errors,
+	    &bsd, pt, &blk, &ewb, &ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, quantized_weight,
 	    color_quant_level, color_quant_level_mod);
 
@@ -401,7 +401,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
-		const decimation_table& dt = *(dts[decimation_mode]);
+		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
 		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
 
@@ -418,8 +418,9 @@ static float compress_symbolic_block_fixed_partition_1plane(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_1plane(
-			    weight_quant_mode, &(eix[decimation_mode].ep),
-			    rgbs_colors, rgbo_colors, u8_weight_src, pt, &dt, &blk, &ewb);
+			    blk, ewb, *pt, dt,
+			    weight_quant_mode, u8_weight_src,
+			    eix[decimation_mode].ep, rgbs_colors, rgbo_colors);
 
 			// quantize the chosen color
 
@@ -626,11 +627,11 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	pt += partition_index;
 
 	// first, compute ideal weights and endpoint colors
-	endpoints_and_weights *ei1 = &tmpbuf.ei1;
-	endpoints_and_weights *ei2 = &tmpbuf.ei2;
-	endpoints_and_weights *eix1 = tmpbuf.eix1;
-	endpoints_and_weights *eix2 = tmpbuf.eix2;
-	compute_endpoints_and_ideal_weights_2planes(&bsd, pt, &blk, &ewb, plane2_component, ei1, ei2);
+	endpoints_and_weights& ei1 = tmpbuf.ei1;
+	endpoints_and_weights& ei2 = tmpbuf.ei2;
+	endpoints_and_weights* eix1 = tmpbuf.eix1;
+	endpoints_and_weights* eix2 = tmpbuf.eix2;
+	compute_endpoints_and_ideal_weights_2planes(bsd, blk, ewb, *pt, plane2_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_table *const *dts = bsd.decimation_tables;
@@ -650,14 +651,14 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		}
 
 		compute_ideal_weights_for_decimation_table(
-		    *ei1,
+		    ei1,
 		    eix1[i],
 		    *(dts[i]),
 		    decimated_quantized_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK);
 
 		compute_ideal_weights_for_decimation_table(
-		    *ei2,
+		    ei2,
 		    eix2[i],
 		    *(dts[i]),
 		    decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
@@ -672,11 +673,11 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	vfloat4 min_ep2(10.0f);
 	for (int i = 0; i < partition_count; i++)
 	{
-		vfloat4 ep1 = (vfloat4(1.0f) - ei1->ep.endpt0[i]) / (ei1->ep.endpt1[i] - ei1->ep.endpt0[i]);
+		vfloat4 ep1 = (vfloat4(1.0f) - ei1.ep.endpt0[i]) / (ei1.ep.endpt1[i] - ei1.ep.endpt0[i]);
 		vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
 		min_ep1 = select(min_ep1, ep1, use_ep1);
 
-		vfloat4 ep2 = (vfloat4(1.0f) - ei2->ep.endpt0[i]) / (ei2->ep.endpt1[i] - ei2->ep.endpt0[i]);
+		vfloat4 ep2 = (vfloat4(1.0f) - ei2.ep.endpt0[i]) / (ei2.ep.endpt1[i] - ei2.ep.endpt0[i]);
 		vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
 		min_ep2 = select(min_ep2, ep2, use_ep2);
 	}
@@ -745,7 +746,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 
 		// then, generate the optimized set of weights for the mode.
 		compute_quantized_weights_for_decimation_table(
-		    dts[decimation_mode],
+		    *dts[decimation_mode],
 		    weight_low_value1[i],
 		    weight_high_value1[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode),
@@ -753,7 +754,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quant_mode);
 
 		compute_quantized_weights_for_decimation_table(
-		    dts[decimation_mode],
+		    *dts[decimation_mode],
 		    weight_low_value2[i],
 		    weight_high_value2[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * decimation_mode + 1),
@@ -762,9 +763,9 @@ static float compress_symbolic_block_fixed_partition_2planes(
 
 		// then, compute quantization errors for the block mode.
 		qwt_errors[i] = compute_error_of_weight_set_2planes(
-		    &(eix1[decimation_mode]),
-		    &(eix2[decimation_mode]),
-		    dts[decimation_mode],
+		    eix1[decimation_mode],
+		    eix2[decimation_mode],
+		    *dts[decimation_mode],
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i + 1));
 	}
@@ -776,7 +777,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
-	merge_endpoints(ei1->ep, ei2->ep, plane2_component, epm);
+	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
 	    &bsd, pt, &blk, &ewb, &epm, qwt_bitcounts, qwt_errors,
@@ -807,7 +808,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
-		const decimation_table& dt = *(dts[decimation_mode]);
+		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
 
 		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
@@ -828,8 +829,9 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_2planes(
-			    weight_quant_mode, &epm, rgbs_colors, rgbo_colors,
-			    u8_weight1_src, u8_weight2_src, plane2_component, pt, &dt, &blk, &ewb);
+			    blk, ewb, *pt, dt,
+			    weight_quant_mode, u8_weight1_src, u8_weight2_src,
+			    epm, rgbs_colors, rgbo_colors, plane2_component);
 
 			// store the colors for the block
 			for (int j = 0; j < partition_count; j++)

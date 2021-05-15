@@ -1168,30 +1168,65 @@ struct endpoints_and_weights
 	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
 };
 
+/**
+ * @brief Compute ideal endpoint colors and weights for 1 plane of weights.
+ *
+ * The ideal endpoints define a color line for the partition. For each texel
+ * the ideal weight defines an exact position on the partition color line. We
+ * can then use these to assess the error introduced by removing and quantizing
+ * the weight grid.
+ *
+ * @param      bsd   The block size information.
+ * @param      blk   The image block color data to compress.
+ * @param      ewb   The image block weighted error data.
+ * @param      pi    The partition info for the current trial.
+ * @param[out] ei    The endpoint and weight values.
+ */
 void compute_endpoints_and_ideal_weights_1plane(
-	const block_size_descriptor* bsd,
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	endpoints_and_weights* ei);
-
-void compute_endpoints_and_ideal_weights_2planes(
-	const block_size_descriptor* bsd,
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	int plane2_component,
-	endpoints_and_weights* ei1,  // First weight plane
-	endpoints_and_weights* ei2); // Second weight plane
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const partition_info& pi,
+	endpoints_and_weights& ei);
 
 /**
- * @brief Compute the optimal weights for a decimation table.
+ * @brief Compute ideal endpoint colors and weights for 2 planes of weights.
  *
- * Compute the idealized weight set, assuming infinite precision and no
- * quantization. Later functions will use this as a staring points.
+ * The ideal endpoints define a color line for the partition. For each texel
+ * the ideal weight defines an exact position on the partition color line. We
+ * can then use these to assess the error introduced by removing and quantizing
+ * the weight grid.
+ *
+ * @param      bsd                The block size information.
+ * @param      blk                The image block color data to compress.
+ * @param      ewb                The image block weighted error data.
+ * @param      pi                 The partition info for the current trial.
+ * @param      plane2_component   The component assigned to plane 2.
+ * @param[out] ei1                The endpoint and weight values for plane 1.
+ * @param[out] ei2                The endpoint and weight values for plane 2.
+ */
+void compute_endpoints_and_ideal_weights_2planes(
+	const block_size_descriptor& bsd,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const partition_info& pi,
+	int plane2_component,
+	endpoints_and_weights& ei1,
+	endpoints_and_weights& ei2);
+
+/**
+ * @brief Compute the optimal unquantized weights for a decimation table.
+ *
+ * After computing ideal weights for the case for a complete weight grid, we we want to compute the
+ * ideal weights for the case where weights exist only for some texels. We do this with a
+ * steepest-descent grid solver which works as follows:
+ *
+ * First, for each actual weight, perform a weighted averaging of the texels affected by the weight.
+ * Then, set step size to <some initial value> and attempt one step towards the original ideal
+ * weight if it helps to reduce error.
  *
  * @param      eai_in       The non-decimated endpoints and weights.
- * @param      eai_out      A copy of eai_in we can modify later.
+ * @param      eai_out      A copy of eai_in we can modify later for refinement.
  * @param      dt           The selected decimation table.
  * @param[out] weight_set   The output decimated weight set.
  * @param[out] weights      The output decimated weights.
@@ -1204,12 +1239,21 @@ void compute_ideal_weights_for_decimation_table(
 	float* weights);
 
 /**
- * @brief Compute the best quantized weights for a decimation table.
+ * @brief Compute the optimal quantized weights for a decimation table.
  *
- * Compute the quantized weight set, for a specific quant level.
+ * We test the two closest weight indices in the allowed quantization range
+ * and keep the weight that is the closest match.
+ *
+ * @param      dt                     The selected decimation table.
+ * @param      low_bound              The lowest weight allowed.
+ * @param      high_bound             The highest weight allowed.
+ * @param      weight_set_in          The ideal weight set.
+ * @param[out] weight_set_out         The output quantized weight as a float.
+ * @param[out] quantized_weight_set   The output quantized weight as encoded int.
+ * @param      quant_level            The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation_table(
-	const decimation_table* dt,
+	const decimation_table& dt,
 	float low_bound,
 	float high_bound,
 	const float* weight_set_in,
@@ -1266,15 +1310,45 @@ static inline vfloat bilinear_infill_vla(
 	       (weight_val2 * tex_weight_float2 + weight_val3 * tex_weight_float3);
 }
 
+/**
+ * @brief Compute the error of a decimated weight set for 1 plane.
+ *
+ * After computing ideal weights for the case with one weight per texel, we
+ * want to compute the error for decimated weight grids where weights are
+ * stored at a lower resolution. This function computes the error of the
+ * reduced grid, compared to the full grid.
+ *
+ * @param eai       The ideal weights for the full grid.
+ * @param dt        The weight grid decimation table.
+ * @param weights   The ideal weights for the decimated grid.
+ *
+ * @return The accumulated error.
+ */
 float compute_error_of_weight_set_1plane(
-	const endpoints_and_weights* eai,
-	const decimation_table* dt,
+	const endpoints_and_weights& eai,
+	const decimation_table& dt,
 	const float *weights);
 
+/**
+ * @brief Compute the error of a decimated weight set for 2 planes.
+ *
+ * After computing ideal weights for the case with one weight per texel, we
+ * want to compute the error for decimated weight grids where weights are
+ * stored at a lower resolution. This function computes the error of the
+ * reduced grid, compared to the full grid.
+ *
+ * @param eai1       The ideal weights for the full grid and plane 1.
+ * @param eai2       The ideal weights for the full grid and plane 2.
+ * @param dt         The weight grid decimation table.
+ * @param weights1   The ideal weights for the decimated grid plane 1.
+ * @param weights2   The ideal weights for the decimated grid plane 2.
+ *
+ * @return The accumulated error.
+ */
 float compute_error_of_weight_set_2planes(
-	const endpoints_and_weights* eai1,
-	const endpoints_and_weights* eai2,
-	const decimation_table* dt,
+	const endpoints_and_weights& eai1,
+	const endpoints_and_weights& eai2,
+	const decimation_table& dt,
 	const float* weights1,
 	const float* weights2);
 
@@ -1397,29 +1471,63 @@ void determine_optimal_set_of_endpoint_formats_to_use(
 	int quant_level[4],
 	int quant_level_mod[4]);
 
+/**
+ * @brief For a given 1 plane weight set recompute the endpoint colors.
+ *
+ * As we quantize and decimate weights the optimal endpoint colors may change
+ * slightly, so we must recompute the ideal colors for a specific weight set.
+ *
+ * @param         blk                 The image block color data to compress.
+ * @param         ewb                 The image block weighted error data.
+ * @param         pi                  The partition info for the current trial.
+ * @param         dt                  The weight grid decimation table.
+ * @param         weight_quant_mode   The weight grid quantization level.
+ * @param         weight_set8         The quantized weight set.
+ * @param[in,out] ep                  The color endpoints (modifed in place).
+ * @param[out]    rgbs_vectors        The RGB+scale vectors for LDR blocks.
+ * @param[out]    rgbo_vectors        The RGB+offset vectors for HDR blocks.
+ */
 void recompute_ideal_colors_1plane(
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const partition_info& pi,
+	const decimation_table& dt,
 	int weight_quant_mode,
-	endpoints* ep,	// contains the endpoints we wish to update
-	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
-	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
-	const uint8_t* weight_set8,	// the current set of weight values
-	const partition_info* pt,
-	const decimation_table* dt,
-	const imageblock* blk,	// picture-block containing the actual data.
-	const error_weight_block* ewb);
+	const uint8_t* weight_set8,
+	endpoints& ep,
+	vfloat4 rgbs_vectors[4],
+	vfloat4 rgbo_vectors[4]);
 
+/**
+ * @brief For a given 2 plane weight set recompute the endpoint colors.
+ *
+ * As we quantize and decimate weights the optimal endpoint colors may change
+ * slightly, so we must recompute the ideal colors for a specific weight set.
+ *
+ * @param         blk                  The image block color data to compress.
+ * @param         ewb                  The image block weighted error data.
+ * @param         pi                   The partition info for the current trial.
+ * @param         dt                   The weight grid decimation table.
+ * @param         weight_quant_mode    The weight grid quantization level.
+ * @param         weight_set8_plane1   The quantized weight set for plane 1.
+ * @param         weight_set8_plane2   The quantized weight set for plane 2.
+ * @param[in,out] ep                   The color endpoints (modifed in place).
+ * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
+ * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
+ * @param         plane2_component     The component assigned to plane 2.
+ */
 void recompute_ideal_colors_2planes(
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const partition_info& pi,
+	const decimation_table& dt,
 	int weight_quant_mode,
-	endpoints* ep,	// contains the endpoints we wish to update
-	vfloat4* rgbs_vectors,	// used to return RGBS-vectors for endpoint mode #6 (LDR RGB base + scale)
-	vfloat4* rgbo_vectors,	// used to return RGBS-vectors for endpoint mode #7 (HDR RGB base + scale)
-	const uint8_t* weight_set8_plane1,	// Plane 1 weight values
-	const uint8_t* weight_set8_plane2,	// Plane 2 weight values
-	int plane2_component,	// color component for 2nd plane of weights
-	const partition_info* pt,
-	const decimation_table* dt,
-	const imageblock* blk,	// picture-block containing the actual data.
-	const error_weight_block* ewb);
+	const uint8_t* weight_set8_plane1,
+	const uint8_t* weight_set8_plane2,
+	endpoints& ep,
+	vfloat4 rgbs_vectors[4],
+	vfloat4 rgbo_vectors[4],
+	int plane2_component);
 
 void expand_deblock_weights(
 	astcenc_context& ctx);
