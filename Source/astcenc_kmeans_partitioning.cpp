@@ -33,6 +33,11 @@
 
 /**
  * @brief Pick some initital kmeans cluster centers.
+ *
+ * @param      blk               The image block color data to compress.
+ * @param      texel_count       The number of texels in the block.
+ * @param      partition_count   The number of partitions in the block.
+ * @param[out] cluster_centers   The initital partition cluster center colors.
  */
 static void kmeans_init(
 	const imageblock& blk,
@@ -113,6 +118,14 @@ static void kmeans_init(
 
 /**
  * @brief Assign texels to clusters, based on a set of chosen center points.
+ *
+ * @todo Can partition of texel be uint8_t not int?
+ *
+ * @param      blk                  The image block color data to compress.
+ * @param      texel_count          The number of texels in the block.
+ * @param      partition_count      The number of partitions in the block.
+ * @param      cluster_centers      The partition cluster center colors.
+ * @param[out] partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_assign(
 	const imageblock& blk,
@@ -172,6 +185,12 @@ static void kmeans_assign(
 
 /**
  * @brief Compute new cluster centers based on their center of gravity.
+ *
+ * @param       blk                  The image block color data to compress.
+ * @param       texel_count          The number of texels in the block.
+ * @param       partition_count      The number of partitions in the block.
+ * @param[out]  cluster_centers      The new cluster center colors.
+ * @param       partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_update(
 	const imageblock& blk,
@@ -210,10 +229,15 @@ static void kmeans_update(
 
 /**
  * @brief Compute bit-mismatch for partitioning in 2-partition mode.
+ *
+ * @param a   The texel assignment bitvector for the block.
+ * @param b   The texel assignment bitvector for the partition table.
+ *
+ * @return    The number of bit mismatches.
  */
 static inline int partition_mismatch2(
-	const uint64_t* a,
-	const uint64_t* b
+	const uint64_t a[2],
+	const uint64_t b[2]
 ) {
 	int v1 = astc::popcount(a[0] ^ b[0]) + astc::popcount(a[1] ^ b[1]);
 	int v2 = astc::popcount(a[0] ^ b[1]) + astc::popcount(a[1] ^ b[0]);
@@ -222,10 +246,15 @@ static inline int partition_mismatch2(
 
 /**
  * @brief Compute bit-mismatch for partitioning in 3-partition mode.
+ *
+ * @param a   The texel assignment bitvector for the block.
+ * @param b   The texel assignment bitvector for the partition table.
+ *
+ * @return    The number of bit mismatches.
  */
 static inline int partition_mismatch3(
-	const uint64_t* a,
-	const uint64_t* b
+	const uint64_t a[3],
+	const uint64_t b[3]
 ) {
 	int p00 = astc::popcount(a[0] ^ b[0]);
 	int p01 = astc::popcount(a[0] ^ b[1]);
@@ -256,10 +285,15 @@ static inline int partition_mismatch3(
 
 /**
  * @brief Compute bit-mismatch for partitioning in 4-partition mode.
+ *
+ * @param a   The texel assignment bitvector for the block.
+ * @param b   The texel assignment bitvector for the partition table.
+ *
+ * @return    The number of bit mismatches.
  */
 static inline int partition_mismatch4(
-	const uint64_t* a,
-	const uint64_t* b
+	const uint64_t a[4],
+	const uint64_t b[4]
 ) {
 	int p00 = astc::popcount(a[0] ^ b[0]);
 	int p01 = astc::popcount(a[0] ^ b[1]);
@@ -296,17 +330,21 @@ static inline int partition_mismatch4(
 	return astc::min(v0, v1, v2, v3);
 }
 
-
 using mismatch_dispatch = int (*)(const uint64_t*, const uint64_t*);
 
 /**
  * @brief Count the partition table mismatches vs the data clustering.
+ *
+ * @param      bsd               The block size information.
+ * @param      partition_count   The number of partitions in the block.
+ * @param      bitmaps           The block texel partition assignment patterns.
+ * @param[out] mismatch_counts   The array storing per partitioning mismatch counts.
  */
 static void count_partition_mismatch_bits(
 	const block_size_descriptor& bsd,
 	int partition_count,
 	const uint64_t bitmaps[4],
-	int bitcounts[PARTITION_COUNT]
+	int mismatch_counts[PARTITION_COUNT]
 ) {
 	const partition_info *pt = get_partition_table(&bsd, partition_count);
 
@@ -325,16 +363,19 @@ static void count_partition_mismatch_bits(
 			bitcount = dispatch[partition_count - 2](bitmaps, pt->coverage_bitmaps);
 		}
 
-		bitcounts[i] = bitcount;
+		mismatch_counts[i] = bitcount;
 		pt++;
 	}
 }
 
 /**
  * @brief Use counting sort on the mismatch array to sort partition candidates.
+ *
+ * @param      mismatch_count       Partitioning mismatch counts, in index order.
+ * @param[out] partition_ordering   Partition index values, in mismatch order.
  */
 static void get_partition_ordering_by_mismatch_bits(
-	const int mismatch_bits[PARTITION_COUNT],
+	const int mismatch_count[PARTITION_COUNT],
 	int partition_ordering[PARTITION_COUNT]
 ) {
 	int mscount[256] { 0 };
@@ -342,7 +383,7 @@ static void get_partition_ordering_by_mismatch_bits(
 	// Create the histogram of mismatch counts
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		mscount[mismatch_bits[i]]++;
+		mscount[mismatch_count[i]]++;
 	}
 
 	// Create a running sum from the histogram array
@@ -359,11 +400,12 @@ static void get_partition_ordering_by_mismatch_bits(
 	// sequential entries with the same count
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		int idx = mscount[mismatch_bits[i]]++;
+		int idx = mscount[mismatch_count[i]]++;
 		partition_ordering[idx] = i;
 	}
 }
 
+/* See header for documentation. */
 void kmeans_compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,

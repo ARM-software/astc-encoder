@@ -1028,7 +1028,14 @@ void find_best_partitionings(
 	int& best_partition_samec,
 	int* best_partition_dualplane);
 
-// use k-means clustering to compute a partition ordering for a block.
+/**
+ * @brief Use k-means clustering to compute a partition ordering for a block..
+ *
+ * @param      bsd                  The block size information.
+ * @param      blk                  The image block color data to compress.
+ * @param      partition_count      The desired number of partitions in the block.
+ * @param[out] partition_ordering   The list of recommended partition indices, in priority order.
+  */
 void kmeans_compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
