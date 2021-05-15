@@ -51,7 +51,6 @@ static vfloat4 load_texel_u8(
 ) {
 	const uint8_t* data8 = static_cast<const uint8_t*>(data);
 	return int_to_float(vint4(data8 + base_offset)) / 255.0f;
-
 }
 
 /**
@@ -148,13 +147,12 @@ static vfloat4 encode_texel_lns(
 	return select(datav_unorm, datav_lns, lns_mask);
 }
 
-// fetch an imageblock from the input file.
+/* See header for documentation */
 void fetch_imageblock(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock* blk,	// picture-block to initialize with image data
-	const block_size_descriptor* bsd,
-	// position in texture.
+	imageblock& blk,
+	const block_size_descriptor& bsd,
 	int xpos,
 	int ypos,
 	int zpos,
@@ -164,9 +162,9 @@ void fetch_imageblock(
 	int ysize = img.dim_y;
 	int zsize = img.dim_z;
 
-	blk->xpos = xpos;
-	blk->ypos = ypos;
-	blk->zpos = zpos;
+	blk.xpos = xpos;
+	blk.ypos = ypos;
+	blk.zpos = zpos;
 
 	// True if any non-identity swizzle
 	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
@@ -207,16 +205,16 @@ void fetch_imageblock(
 		converter = encode_texel_lns;
 	}
 
-	for (int z = 0; z < bsd->zdim; z++)
+	for (int z = 0; z < bsd.zdim; z++)
 	{
 		int zi = astc::min(zpos + z, zsize - 1);
 		void* plane = img.data[zi];
 
-		for (int y = 0; y < bsd->ydim; y++)
+		for (int y = 0; y < bsd.ydim; y++)
 		{
 			int yi = astc::min(ypos + y, ysize - 1);
 
-			for (int x = 0; x < bsd->xdim; x++)
+			for (int x = 0; x < bsd.xdim; x++)
 			{
 				int xi = astc::min(xpos + x, xsize - 1);
 
@@ -233,13 +231,13 @@ void fetch_imageblock(
 					grayscale = false;
 				}
 
-				blk->data_r[idx] = datav.lane<0>();
-				blk->data_g[idx] = datav.lane<1>();
-				blk->data_b[idx] = datav.lane<2>();
-				blk->data_a[idx] = datav.lane<3>();
+				blk.data_r[idx] = datav.lane<0>();
+				blk.data_g[idx] = datav.lane<1>();
+				blk.data_b[idx] = datav.lane<2>();
+				blk.data_a[idx] = datav.lane<3>();
 
-				blk->rgb_lns[idx] = rgb_lns;
-				blk->alpha_lns[idx] = a_lns;
+				blk.rgb_lns[idx] = rgb_lns;
+				blk.alpha_lns[idx] = a_lns;
 
 				idx++;
 			}
@@ -248,7 +246,7 @@ void fetch_imageblock(
 
 	// Reverse the encoding so we store origin block in the original format
 	// TODO: Move this to when we consume it, as we rarely do?
-	vfloat4 data_enc = blk->texel(0);
+	vfloat4 data_enc = blk.texel(0);
 	vfloat4 data_enc_unorm = data_enc / 65535.0f;
 	vfloat4 data_enc_lns = vfloat4::zero();
 
@@ -257,19 +255,19 @@ void fetch_imageblock(
 		data_enc_lns = float16_to_float(lns_to_sf16(float_to_int(data_enc)));
 	}
 
-	blk->origin_texel = select(data_enc_unorm, data_enc_lns, lns_mask);;
+	blk.origin_texel = select(data_enc_unorm, data_enc_lns, lns_mask);;
 
 	// Store block metadata
-	blk->data_min = data_min;
-	blk->data_max = data_max;
-	blk->grayscale = grayscale;
+	blk.data_min = data_min;
+	blk.data_max = data_max;
+	blk.grayscale = grayscale;
 }
 
+/* See header for documentation. */
 void write_imageblock(
 	astcenc_image& img,
-	const imageblock* blk,	// picture-block to initialize with image data. We assume that orig_data is valid.
-	const block_size_descriptor* bsd,
-	// position to write the block to
+	const imageblock& blk,
+	const block_size_descriptor& bsd,
 	int xpos,
 	int ypos,
 	int zpos,
@@ -280,15 +278,15 @@ void write_imageblock(
 	int zsize = img.dim_z;
 
 	int x_start = xpos;
-	int x_end = std::min(xsize, xpos + bsd->xdim);
-	int x_nudge = bsd->xdim - (x_end - x_start);
+	int x_end = std::min(xsize, xpos + bsd.xdim);
+	int x_nudge = bsd.xdim - (x_end - x_start);
 
 	int y_start = ypos;
-	int y_end = std::min(ysize, ypos + bsd->ydim);
-	int y_nudge = (bsd->ydim - (y_end - y_start)) * bsd->xdim;
+	int y_end = std::min(ysize, ypos + bsd.ydim);
+	int y_nudge = (bsd.ydim - (y_end - y_start)) * bsd.xdim;
 
 	int z_start = zpos;
-	int z_end = std::min(zsize, zpos + bsd->zdim);
+	int z_end = std::min(zsize, zpos + bsd.zdim);
 
 	float data[7];
 	data[ASTCENC_SWZ_0] = 0.0f;
@@ -316,17 +314,17 @@ void write_imageblock(
 				{
 					vint4 colori = vint4::zero();
 
-					if (blk->data_r[idx] == std::numeric_limits<float>::quiet_NaN())
+					if (blk.data_r[idx] == std::numeric_limits<float>::quiet_NaN())
 					{
 						// Can't display NaN - show magenta error color
 						colori = vint4(0xFF, 0x00, 0xFF, 0xFF);
 					}
 					else if (needs_swz)
 					{
-						data[ASTCENC_SWZ_R] = blk->data_r[idx];
-						data[ASTCENC_SWZ_G] = blk->data_g[idx];
-						data[ASTCENC_SWZ_B] = blk->data_b[idx];
-						data[ASTCENC_SWZ_A] = blk->data_a[idx];
+						data[ASTCENC_SWZ_R] = blk.data_r[idx];
+						data[ASTCENC_SWZ_G] = blk.data_g[idx];
+						data[ASTCENC_SWZ_B] = blk.data_b[idx];
+						data[ASTCENC_SWZ_A] = blk.data_a[idx];
 
 						if (needs_z)
 						{
@@ -345,7 +343,7 @@ void write_imageblock(
 					}
 					else
 					{
-						vfloat4 color = blk->texel(idx);
+						vfloat4 color = blk.texel(idx);
 						colori = float_to_int_rtn(min(color, 1.0f) * 255.0f);
 					}
 
@@ -372,16 +370,16 @@ void write_imageblock(
 				{
 					vint4 color;
 
-					if (blk->data_r[idx] == std::numeric_limits<float>::quiet_NaN())
+					if (blk.data_r[idx] == std::numeric_limits<float>::quiet_NaN())
 					{
 						color = vint4(0xFFFF);
 					}
 					else if (needs_swz)
 					{
-						data[ASTCENC_SWZ_R] = blk->data_r[idx];
-						data[ASTCENC_SWZ_G] = blk->data_g[idx];
-						data[ASTCENC_SWZ_B] = blk->data_b[idx];
-						data[ASTCENC_SWZ_A] = blk->data_a[idx];
+						data[ASTCENC_SWZ_R] = blk.data_r[idx];
+						data[ASTCENC_SWZ_G] = blk.data_g[idx];
+						data[ASTCENC_SWZ_B] = blk.data_b[idx];
+						data[ASTCENC_SWZ_A] = blk.data_a[idx];
 
 						if (needs_z)
 						{
@@ -400,7 +398,7 @@ void write_imageblock(
 					}
 					else
 					{
-						vfloat4 colorf = blk->texel(idx);
+						vfloat4 colorf = blk.texel(idx);
 						color = float_to_float16(colorf);
 					}
 
@@ -429,7 +427,7 @@ void write_imageblock(
 			{
 				for (int x = x_start; x < x_end; x++)
 				{
-					vfloat4 color = blk->texel(idx);
+					vfloat4 color = blk.texel(idx);
 
 					if (color.lane<0>() == std::numeric_limits<float>::quiet_NaN())
 					{

@@ -1129,25 +1129,43 @@ void compute_averages_and_variances(
 	astcenc_context& ctx,
 	const avg_var_args& ag);
 
-// fetch an image-block from the input file
+/**
+ * @brief Fetch a single image block from the input image
+ *
+ * @param      decode_mode   The compression color profile.
+ * @param      img           The input image data.
+ * @param[out] blk           The image block to populate.
+ * @param      bsd           The block size information.
+ * @param      xpos          The block X coordinate in the input image.
+ * @param      ypos          The block Y coordinate in the input image.
+ * @param      zpos          The block Z coordinate in the input image.
+ * @param      swz           The swizzle to apply on load.
+ */
 void fetch_imageblock(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock* blk,	// picture-block to initialize with image data
-	const block_size_descriptor* bsd,
-	// position in picture to fetch block from
+	imageblock& blk,
+	const block_size_descriptor& bsd,
 	int xpos,
 	int ypos,
 	int zpos,
 	const astcenc_swizzle& swz);
 
-// write an image block to the output file buffer.
-// the data written are taken from orig_data.
+/**
+ * @brief Write a single image block from the output image
+ *
+ * @param[out] img           The input image data.
+ * @param      blk           The image block to populate.
+ * @param      bsd           The block size information.
+ * @param      xpos          The block X coordinate in the input image.
+ * @param      ypos          The block Y coordinate in the input image.
+ * @param      zpos          The block Z coordinate in the input image.
+ * @param      swz           The swizzle to apply on store.
+ */
 void write_imageblock(
 	astcenc_image& img,
-	const imageblock* blk,	// picture-block to initialize with image data
-	const block_size_descriptor* bsd,
-	// position in picture to write block to.
+	const imageblock& blk,
+	const block_size_descriptor& bsd,
 	int xpos,
 	int ypos,
 	int zpos,

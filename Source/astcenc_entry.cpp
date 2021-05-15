@@ -928,7 +928,7 @@ static void compress_image(
 			// Fetch the full block for compression
 			if (use_full_block)
 			{
-				fetch_imageblock(decode_mode, image, &blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+				fetch_imageblock(decode_mode, image, blk, *bsd, x * block_x, y * block_y, z * block_z, swizzle);
 			}
 			// Apply alpha scale RDO - substitute constant color block
 			else
@@ -1150,7 +1150,7 @@ astcenc_error astcenc_decompress_image(
 			                          x * block_x, y * block_y, z * block_z,
 			                          scb, blk);
 
-			write_imageblock(image_out, &blk, ctx->bsd,
+			write_imageblock(image_out, blk, *ctx->bsd,
 			                 x * block_x, y * block_y, z * block_z, *swizzle);
 		}
 
