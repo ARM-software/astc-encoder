@@ -856,16 +856,41 @@ extern const uint8_t color_quant_tables[21][256];
 extern const uint8_t color_unquant_tables[21][256];
 extern int8_t quant_mode_table[17][128];
 
+/**
+ * @brief Encode a packed string using BISE.
+ *
+ * Note that BISE can return strings that are not a whole number of bytes
+ * in length, and ASTC can start storing strings in a block at arbitrary bit
+ * offsets in the encoded data.
+ *
+ * @param         quant_level      The BISE alphabet size.
+ * @param         character_count  The number of characters in the string.
+ * @param         input_data       The unpacked string, one byte per character.
+ * @param[in,out] output_data      The output packed string.
+ * @param         bit_offset       The starting offset in the output storage.
+ */
 void encode_ise(
-	int quant_level,
-	int elements,
+	quant_method quant_level,
+	int character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
 	int bit_offset);
 
+/**
+ * @brief Decode a packed string using BISE.
+ *
+ * Note that BISE input strings are not a whole number of bytes in length, and
+ * ASTC can start strings at arbitrary bit offsets in the encoded data.
+ *
+ * @param         quant_level      The BISE alphabet size.
+ * @param         character_count  The number of characters in the string.
+ * @param         input_data       The packed string.
+ * @param[in,out] output_data      The output storage, one byte per character.
+ * @param         bit_offset       The starting offset in the output storage.
+ */
 void decode_ise(
-	int quant_level,
-	int elements,
+	quant_method quant_level,
+	int character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
 	int bit_offset);
@@ -877,12 +902,14 @@ void decode_ise(
  * may come from random data being decompressed, so we return an unencodable
  * size if that is the case.
  *
- * @param items   The number of items in the sequence.
- * @param quant   The desired quantization level.
+ * @param character_count   The number of items in the sequence.
+ * @param quant_level       The desired quantization level.
+ *
+ * @return The number of bits needed to encode the BISE string.
  */
 int get_ise_sequence_bitcount(
-	int items,
-	quant_method quant);
+	int character_count,
+	quant_method quant_level);
 
 void build_quant_mode_table(void);
 
