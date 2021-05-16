@@ -23,7 +23,17 @@
 
 #include <assert.h>
 
-// routine to write up to 8 bits
+/**
+ * @brief Write up to 8 bits at an arbitrary bit offset.
+ *
+ * The stored value is at most 8 bits, but can be stored at an offset of
+ * between 0 and 7 bits so may span two separate bytes in memory.
+ *
+ * @param         value       The value to write.
+ * @param         bitcount    The number of bits to write, starting from LSB.
+ * @param         bitoffset   The bit offset to store at, between 0 and 7.
+ * @param[in,out] ptr         The data pointer to write to.
+ */
 static inline void write_bits(
 	int value,
 	int bitcount,
@@ -44,7 +54,18 @@ static inline void write_bits(
 	ptr[1] |= value >> 8;
 }
 
-// routine to read up to 8 bits
+/**
+ * @brief Read up to 8 bits at an arbitrary bit offset.
+ *
+ * The stored value is at most 8 bits, but can be stored at an offset of
+ * between 0 and 7 bits so may span two separate bytes in memory.
+ *
+ * @param         bitcount    The number of bits to read.
+ * @param         bitoffset   The bit offset to read from, between 0 and 7.
+ * @param[in,out] ptr         The data pointer to read from.
+ *
+ * @return The read value.
+ */
 static inline int read_bits(
 	int bitcount,
 	int bitoffset,
@@ -59,14 +80,22 @@ static inline int read_bits(
 	return value;
 }
 
+/**
+ * @brief Reverse bits in a byte.
+ *
+ * @param p   The value to reverse.
+  *
+ * @return The reversed result.
+ */
 static inline int bitrev8(int p)
 {
-	p = ((p & 0xF) << 4) | ((p >> 4) & 0xF);
+	p = ((p & 0x0F) << 4) | ((p >> 4) & 0x0F);
 	p = ((p & 0x33) << 2) | ((p >> 2) & 0x33);
 	p = ((p & 0x55) << 1) | ((p >> 1) & 0x55);
 	return p;
 }
 
+/* See header for documentation. */
 void symbolic_to_physical(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
@@ -116,8 +145,8 @@ void symbolic_to_physical(
 
 	int partition_count = scb.partition_count;
 
-	// first, compress the weights. They are encoded as an ordinary
-	// integer-sequence, then bit-reversed
+	// First, compress the weights.
+	// They are encoded as an ordinary integer-sequence, then bit-reversed
 	uint8_t weightbuf[16];
 	for (int i = 0; i < 16; i++)
 	{
@@ -164,8 +193,7 @@ void symbolic_to_physical(
 
 	int below_weights_pos = 128 - bits_for_weights;
 
-	// encode partition index and color endpoint types for blocks with
-	// 2 or more partitions.
+	// Encode partition index and color endpoint types for blocks with 2+ partitions
 	if (partition_count > 1)
 	{
 		write_bits(scb.partition_index, 6, 13, pcb.data);
@@ -177,8 +205,7 @@ void symbolic_to_physical(
 		}
 		else
 		{
-			// go through the selected endpoint type classes for each partition
-			// in order to determine the lowest class present.
+			// Check endpoint types for each partition to determine the lowest class present
 			int low_class = 4;
 
 			for (int i = 0; i < partition_count; i++)
@@ -223,14 +250,13 @@ void symbolic_to_physical(
 		write_bits(scb.color_formats[0], 4, 13, pcb.data);
 	}
 
-	// in dual-plane mode, encode the color component of the second plane of weights
+	// In dual-plane mode, encode the color component of the second plane of weights
 	if (is_dual_plane)
 	{
 		write_bits(scb.plane2_component, 2, below_weights_pos - 2, pcb.data);
 	}
 
-	// finally, encode the color bits
-	// first, get hold of all the color components to encode
+	// Encode the color components
 	uint8_t values_to_encode[32];
 	int valuecount_to_encode = 0;
 	for (int i = 0; i < scb.partition_count; i++)
@@ -243,10 +269,10 @@ void symbolic_to_physical(
 		valuecount_to_encode += vals;
 	}
 
-	// then, encode an ISE based on them.
 	encode_ise((quant_method)scb.color_quant_level, valuecount_to_encode, values_to_encode, pcb.data, (scb.partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 }
 
+/* See header for documentation. */
 void physical_to_symbolic(
 	const block_size_descriptor& bsd,
 	const physical_compressed_block& pcb,
@@ -256,16 +282,16 @@ void physical_to_symbolic(
 
 	scb.error_block = 0;
 
-	// get hold of the decimation tables.
+	// Fetch the decimation tables
 	const decimation_table *const *dts = bsd.decimation_tables;
 
-	// extract header fields
+	// Extract header fields
 	int block_mode = read_bits(11, 0, pcb.data);
 	if ((block_mode & 0x1FF) == 0x1FC)
 	{
-		// void-extent block!
+		// Constant color block
 
-		// check what format the data has
+		// Check what format the data has
 		if (block_mode & 0x200)
 		{
 			scb.block_mode = -1;	// floating-point
@@ -281,7 +307,7 @@ void physical_to_symbolic(
 			scb.constant_color[i] = pcb.data[2 * i + 8] | (pcb.data[2 * i + 9] << 8);
 		}
 
-		// additionally, check that the void-extent
+		// Additionally, check that the void-extent
 		if (bsd.zdim == 1)
 		{
 			// 2D void-extent
@@ -375,7 +401,7 @@ void physical_to_symbolic(
 
 	scb.color_formats_matched = 0;
 
-	// then, determine the format of each endpoint pair
+	// Determine the format of each endpoint pair
 	int color_formats[4];
 	int encoded_type_highpart_size = 0;
 	if (partition_count == 1)
@@ -425,7 +451,7 @@ void physical_to_symbolic(
 		scb.color_formats[i] = color_formats[i];
 	}
 
-	// then, determine the number of integers we need to unpack for the endpoint pairs
+	// Determine number of color endpoint integers
 	int color_integer_count = 0;
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -438,7 +464,7 @@ void physical_to_symbolic(
 		scb.error_block = 1;
 	}
 
-	// then, determine the color endpoint format to use for these integers
+	// Determine the color endpoint format to use
 	static const int color_bits_arr[5] { -1, 115 - 4, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS, 113 - 4 - PARTITION_BITS };
 	int color_bits = color_bits_arr[partition_count] - bits_for_weights - encoded_type_highpart_size;
 	if (is_dual_plane)
@@ -458,13 +484,11 @@ void physical_to_symbolic(
 		scb.error_block = 1;
 	}
 
-	// then unpack the integer-bits
+	// Unpack the integer color values and assign to endpoints
 	uint8_t values_to_decode[32];
 	decode_ise((quant_method)color_quant_level, color_integer_count, pcb.data, values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_BITS));
 
-	// and distribute them over the endpoint types
 	int valuecount_to_decode = 0;
-
 	for (int i = 0; i < partition_count; i++)
 	{
 		int vals = 2 * (color_formats[i] >> 2) + 2;
@@ -475,7 +499,7 @@ void physical_to_symbolic(
 		valuecount_to_decode += vals;
 	}
 
-	// get hold of color component for second-plane in the case of dual plane of weights.
+	// Fetch component for second-plane in the case of dual plane of weights.
 	if (is_dual_plane)
 	{
 		scb.plane2_component = read_bits(2, below_weights_pos - 2, pcb.data);
