@@ -28,9 +28,16 @@
 #if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
+/** Does this CPU support SSE 4.1? Set to -1 if not yet initialized. */
 static int g_cpu_has_sse41 = -1;
+
+/** Does this CPU support AVX2? Set to -1 if not yet initialized. */
 static int g_cpu_has_avx2 = -1;
+
+/** Does this CPU support POPCNT? Set to -1 if not yet initialized. */
 static int g_cpu_has_popcnt = -1;
+
+/** Does this CPU support F16C? Set to -1 if not yet initialized. */
 static int g_cpu_has_f16c = -1;
 
 /* ============================================================================
@@ -39,6 +46,9 @@ static int g_cpu_has_f16c = -1;
 #if !defined(__clang__) && defined(_MSC_VER)
 #include <intrin.h>
 
+/**
+ * @brief Detect platform CPU ISA support and update global trackers.
+ */
 static void detect_cpu_isa()
 {
 	int data[4];
@@ -75,6 +85,9 @@ static void detect_cpu_isa()
 #else
 #include <cpuid.h>
 
+/**
+ * @brief Detect platform CPU ISA support and update global trackers.
+ */
 static void detect_cpu_isa()
 {
 	unsigned int data[4];
@@ -101,7 +114,7 @@ static void detect_cpu_isa()
 }
 #endif
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 int cpu_supports_sse41()
 {
 	if (g_cpu_has_sse41 == -1)
@@ -112,7 +125,7 @@ int cpu_supports_sse41()
 	return g_cpu_has_sse41;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 int cpu_supports_popcnt()
 {
 	if (g_cpu_has_popcnt == -1)
@@ -123,7 +136,7 @@ int cpu_supports_popcnt()
 	return g_cpu_has_popcnt;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 int cpu_supports_f16c()
 {
 	if (g_cpu_has_f16c == -1)
@@ -134,7 +147,7 @@ int cpu_supports_f16c()
 	return g_cpu_has_f16c;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 int cpu_supports_avx2()
 {
 	if (g_cpu_has_avx2 == -1)

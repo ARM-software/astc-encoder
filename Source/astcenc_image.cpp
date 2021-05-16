@@ -147,7 +147,7 @@ static vfloat4 encode_texel_lns(
 	return select(datav_unorm, datav_lns, lns_mask);
 }
 
-/* See header for documentation */
+/* See header for documentation. */
 void fetch_imageblock(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
