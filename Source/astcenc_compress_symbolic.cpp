@@ -367,15 +367,15 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	// and weight encodings; return results for the 4 best-looking modes.
 
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
-	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
+	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 
 	// TODO: Make these enums?
 	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    &bsd, pt, &blk, &ewb, &ei.ep, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, partition_format_specifiers, quantized_weight,
+	    bsd, *pt, blk, ewb, ei.ep, qwt_bitcounts, qwt_errors,
+	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
@@ -389,21 +389,21 @@ static float compress_symbolic_block_fixed_partition_1plane(
 
 		uint8_t *u8_weight_src;
 
-		const int qw_packed_index = quantized_weight[i];
-		if (qw_packed_index < 0)
+		const int bm_packed_index = block_mode_index[i];
+		if (bm_packed_index < 0)
 		{
 			trace_add_data("failed", "error_block");
 			continue;
 		}
 
-		assert(qw_packed_index >= 0 && qw_packed_index < bsd.block_mode_count);
-		const block_mode& qw_bm = bsd.block_modes[qw_packed_index];
+		assert(bm_packed_index >= 0 && bm_packed_index < bsd.block_mode_count);
+		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
-		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * qw_packed_index;
+		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * bm_packed_index;
 
 		trace_add_data("weight_x", dt.weight_x);
 		trace_add_data("weight_y", dt.weight_y);
@@ -771,7 +771,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 
 	// decide the optimal combination of color endpoint encodings and weight encodings.
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
-	int quantized_weight[TUNE_MAX_TRIAL_CANDIDATES];
+	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
@@ -779,8 +779,8 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
 
 	determine_optimal_set_of_endpoint_formats_to_use(
-	    &bsd, pt, &blk, &ewb, &epm, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, partition_format_specifiers, quantized_weight,
+	    bsd, *pt, blk, ewb, epm, qwt_bitcounts, qwt_errors,
+	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
 
 	// then iterate over the tune_candidate_limit believed-to-be-best modes to
@@ -792,8 +792,8 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	{
 		TRACE_NODE(node0, "candidate");
 
-		const int qw_packed_index = quantized_weight[i];
-		if (qw_packed_index < 0)
+		const int bm_packed_index = block_mode_index[i];
+		if (bm_packed_index < 0)
 		{
 			trace_add_data("failed", "error_block");
 			continue;
@@ -802,16 +802,16 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		uint8_t *u8_weight1_src;
 		uint8_t *u8_weight2_src;
 
-		assert(qw_packed_index >= 0 && qw_packed_index < bsd.block_mode_count);
-		const block_mode& qw_bm = bsd.block_modes[qw_packed_index];
+		assert(bm_packed_index >= 0 && bm_packed_index < bsd.block_mode_count);
+		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
 
-		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index);
-		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * qw_packed_index + 1);
+		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index);
+		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index + 1);
 
 		trace_add_data("weight_x", dt.weight_x);
 		trace_add_data("weight_y", dt.weight_y);

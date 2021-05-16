@@ -1507,21 +1507,39 @@ struct compress_symbolic_block_buffers
 	compress_fixed_partition_buffers planes;
 };
 
+/**
+ * @brief Identify, for each mode, which set of color endpoint produces the best result.
+ *
+ * Returns the best @c tune_candidate_limit best looking modes, along with the ideal color encoding
+ * combination for each. The modified quantization level can be used when all formats are the same,
+ * as this frees up two additional bits of storage.
+ *
+ * @param      bsd                           The block size information.
+ * @param      pi                            The partition info for the current trial.
+ * @param      blk                           The image block color data to compress.
+ * @param      ewb                           The image block weighted error data.
+ * @param      ep                            The ideal endpoints.
+ * @param      qwt_bitcounts                 Bit counts for different quantization methods.
+ * @param      qwt_errors                    Errors for different quantization methods.
+ * @param      tune_candidate_limit          The number of candidates to return.
+ * @param[out] partition_format_specifiers   The best formats per partition.
+ * @param[out] block_mode                    The best packed block mode index.
+ * @param[out] quant_level                   The best color quant level.
+ * @param[out] quant_level_mod               The best color quant level if endpoints are the same.
+ */
 void determine_optimal_set_of_endpoint_formats_to_use(
-	const block_size_descriptor* bsd,
-	const partition_info* pt,
-	const imageblock* blk,
-	const error_weight_block* ewb,
-	const endpoints* ep,
-	 // bitcounts and errors computed for the various quantization methods
+	const block_size_descriptor& bsd,
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	const endpoints& ep,
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	int tune_candidate_limit,
-	// output data
-	int partition_format_specifiers[4][4],
-	int quantized_weight[4],
-	int quant_level[4],
-	int quant_level_mod[4]);
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4],
+	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
+	int quant_level[TUNE_MAX_TRIAL_CANDIDATES],
+	int quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES]);
 
 /**
  * @brief For a given 1 plane weight set recompute the endpoint colors.
