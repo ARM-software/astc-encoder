@@ -72,6 +72,7 @@ static const int quantization_steps_for_level[13] = {
 alignas(ASTCENC_VECALIGN) static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
 alignas(ASTCENC_VECALIGN) static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
+/* See header for documentation. */
 void prepare_angular_tables()
 {
 	int max_angular_steps_needed_for_quant_steps[ANGULAR_STEPS + 1];
@@ -94,9 +95,15 @@ void prepare_angular_tables()
 	}
 }
 
-// function to compute angular sums; then, from the
-// angular sums, compute alignment factor and offset.
-
+/**
+ * @brief Compute the angular alignment factors and offsets.
+ *
+ * @param      sample_count         The number of samples.
+ * @param      samples              The sample data.
+ * @param      sample_weights       The weight of each sample.
+ * @param      max_angular_steps    The maximum number of steps to be tested.
+ * @param[out] offsets              The output angular offsets array.
+ */
 static void compute_angular_offsets(
 	int sample_count,
 	const float* samples,
@@ -140,9 +147,25 @@ static void compute_angular_offsets(
 	}
 }
 
-// for a given step-size and a given offset, compute the
-// lowest and highest weight that results from quantizing using the stepsize & offset.
-// also, compute the resulting error.
+/**
+ * @brief For a given step size compute the lowest and highest weight.
+ *
+ * Compute the lowest and highest weight that results from quantizing using the given stepsize and
+ * offset, and then compute the resulting error. The cut errors indicate the error that results from
+ * forcing samples that should have had one weight value one step up or down.
+ *
+ * @param      sample_count            The number of samples.
+ * @param      samples                 The sample data.
+ * @param      sample_weights          The weight of each sample.
+ * @param      max_angular_steps       The maximum number of steps to be tested.
+ * @param      max_quant_steps         The maximum quantization level to be tested.
+ * @param      offsets                 The angular offsets array.
+ * @param[out] lowest_weight           Per angular step, the lowest weight.
+ * @param[out] weight_span             Per angular step, the span between lowest and highest weight.
+ * @param[out] error                   Per angular step, the error.
+ * @param[out] cut_low_weight_error    Per angular step, the low weight cut error.
+ * @param[out] cut_high_weight_error   Per angular step, the high weight cut error.
+ */
 static void compute_lowest_and_highest_weight(
 	int sample_count,
 	const float* samples,
@@ -222,7 +245,16 @@ static void compute_lowest_and_highest_weight(
 	}
 }
 
-// main function for running the angular algorithm.
+/**
+ * @brief The main function for the angular algorithm.
+ *
+ * @param      sample_count      The number of samples.
+ * @param      samples           The sample data.
+ * @param      sample_weights    The weight of each sample.
+ * @param      max_quant_level   The maximum quantization level to be tested.
+ * @param[out] low_value         Per angular step, the lowest weight value.
+ * @param[out] high_value        Per angular step, the highest weight value.
+ */
 static void compute_angular_endpoints_for_quant_levels(
 	int sample_count,
 	const float* samples,
@@ -338,11 +370,10 @@ else
 	}
 }
 
-// helper functions that will compute ideal angular-endpoints
-// for a given set of weights and a given block size descriptors
+/* See header for documentation. */
 void compute_angular_endpoints_1plane(
 	bool only_always,
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
 	float low_value[MAX_WEIGHT_MODES],
@@ -351,16 +382,16 @@ void compute_angular_endpoints_1plane(
 	float low_values[MAX_DECIMATION_MODES][12];
 	float high_values[MAX_DECIMATION_MODES][12];
 
-	promise(bsd->decimation_mode_count > 0);
-	for (int i = 0; i < bsd->decimation_mode_count; i++)
+	promise(bsd.decimation_mode_count > 0);
+	for (int i = 0; i < bsd.decimation_mode_count; i++)
 	{
-		const decimation_mode& dm = bsd->decimation_modes[i];
+		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (dm.maxprec_1plane < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
 		{
 			continue;
 		}
 
-		int sample_count = bsd->decimation_tables[i]->weight_count;
+		int sample_count = bsd.decimation_tables[i]->weight_count;
 		compute_angular_endpoints_for_quant_levels(
 		    sample_count,
 		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
@@ -368,10 +399,10 @@ void compute_angular_endpoints_1plane(
 		    dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
-	promise(bsd->block_mode_count > 0);
-	for (int i = 0; i < bsd->block_mode_count; ++i)
+	promise(bsd.block_mode_count > 0);
+	for (int i = 0; i < bsd.block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes[i];
+		const block_mode& bm = bsd.block_modes[i];
 		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
 		{
 			continue;
@@ -385,8 +416,9 @@ void compute_angular_endpoints_1plane(
 	}
 }
 
+/* See header for documentation. */
 void compute_angular_endpoints_2planes(
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
 	float low_value1[MAX_WEIGHT_MODES],
@@ -399,16 +431,16 @@ void compute_angular_endpoints_2planes(
 	float low_values2[MAX_DECIMATION_MODES][12];
 	float high_values2[MAX_DECIMATION_MODES][12];
 
-	promise(bsd->decimation_mode_count > 0);
-	for (int i = 0; i < bsd->decimation_mode_count; i++)
+	promise(bsd.decimation_mode_count > 0);
+	for (int i = 0; i < bsd.decimation_mode_count; i++)
 	{
-		const decimation_mode& dm = bsd->decimation_modes[i];
+		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
 		{
 			continue;
 		}
 
-		int sample_count = bsd->decimation_tables[i]->weight_count;
+		int sample_count = bsd.decimation_tables[i]->weight_count;
 
 		compute_angular_endpoints_for_quant_levels(
 		    sample_count,
@@ -423,10 +455,10 @@ void compute_angular_endpoints_2planes(
 		    dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
-	promise(bsd->block_mode_count > 0);
-	for (int i = 0; i < bsd->block_mode_count; ++i)
+	promise(bsd.block_mode_count > 0);
+	for (int i = 0; i < bsd.block_mode_count; ++i)
 	{
-		const block_mode& bm = bsd->block_modes[i];
+		const block_mode& bm = bsd.block_modes[i];
 		if (!bm.is_dual_plane || !bm.percentile_hit)
 		{
 			continue;

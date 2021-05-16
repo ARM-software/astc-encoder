@@ -1589,14 +1589,14 @@ void prepare_angular_tables();
 
 void compute_angular_endpoints_1plane(
 	bool only_always,
-	const block_size_descriptor* bsd,
+	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
 	float low_value[MAX_WEIGHT_MODES],
 	float high_value[MAX_WEIGHT_MODES]);
 
 void compute_angular_endpoints_2planes(
-	const block_size_descriptor * bsd,
+	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
 	float low_value1[MAX_WEIGHT_MODES],

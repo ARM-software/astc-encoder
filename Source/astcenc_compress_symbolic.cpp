@@ -308,7 +308,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	float weight_high_value[MAX_WEIGHT_MODES];
 
 	compute_angular_endpoints_1plane(
-	    only_always, &bsd,
+	    only_always, bsd,
 	    decimated_quantized_weights, decimated_weights,
 	    weight_low_value, weight_high_value);
 
@@ -699,8 +699,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	float weight_high_value2[MAX_WEIGHT_MODES];
 
 	compute_angular_endpoints_2planes(
-	    &bsd,
-	    decimated_quantized_weights, decimated_weights,
+	    bsd, decimated_quantized_weights, decimated_weights,
 	    weight_low_value1, weight_high_value1,
 	    weight_low_value2, weight_high_value2);
 
