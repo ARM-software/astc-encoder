@@ -493,7 +493,7 @@ static inline int read_bits(
 	return value;
 }
 
-/* See header for details. */
+/* See header for documentation. */
 void encode_ise(
 	quant_method quant_level,
 	int character_count,
@@ -652,7 +652,7 @@ void encode_ise(
 	}
 }
 
-/* See header for details. */
+/* See header for documentation. */
 void decode_ise(
 	quant_method quant_level,
 	int character_count,

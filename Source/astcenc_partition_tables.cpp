@@ -21,23 +21,35 @@
 
 #include "astcenc_internal.h"
 
-/*
-	Produce a canonicalized representation of a partition pattern
-
-	The largest possible such representation is 432 bits, equal to 7 uint64_t values.
-*/
-static void gen_canonicalized_partition_table(
+/**
+ * @brief Generate a canonical representation of a partition pattern.
+ *
+ * The returned value stores two bits per texel, for up to 6x6x6 texels, where
+ * the two bits store the remapped texel index. Remapping ensures that we only
+ * match on the partition pattern, independent of the partition order generated
+ * by the hash.
+ *
+ * @param      texel_count           The number of texels in the block.
+ * @param      partition_of_texel    The partition assignments, in hash order.
+ * @param[out] bit_pattern           The output bit pattern representation.
+ */
+static void generate_canonical_partitioning(
 	int texel_count,
-	const uint8_t* partition_table,
-	uint64_t canonicalized[7]
+	const uint8_t* partition_of_texel,
+	uint64_t bit_pattern[7]
 ) {
+	// Clear the pattern
 	for (int i = 0; i < 7; i++)
 	{
-		canonicalized[i] = 0;
+		bit_pattern[i] = 0;
 	}
 
+	// Store a mapping to reorder the raw partitions so that the the partitions
+	// are ordered such that the lowest texel index in partition N is smaller
+	// than the lowest texel index in partition N + 1.
 	int mapped_index[4];
 	int map_weight_count = 0;
+
 	for (int i = 0; i < 4; i++)
 	{
 		mapped_index[i] = -1;
@@ -45,67 +57,84 @@ static void gen_canonicalized_partition_table(
 
 	for (int i = 0; i < texel_count; i++)
 	{
-		int index = partition_table[i];
+		int index = partition_of_texel[i];
+
 		if (mapped_index[index] == -1)
 		{
 			mapped_index[index] = map_weight_count++;
 		}
+
 		uint64_t xlat_index = mapped_index[index];
-		canonicalized[i >> 5] |= xlat_index << (2 * (i & 0x1F));
+		bit_pattern[i >> 5] |= xlat_index << (2 * (i & 0x1F));
 	}
 }
 
-static int compare_canonicalized_partition_tables(
+/**
+ * @brief Compare two canonical patterns to see if they are the same.
+ *
+ * @param part1   The first canonical bit pattern to check.
+ * @param part2   The second canonical bit pattern to check.
+ *
+ * @return @c true if the patterns are the same, @c false otherwise.
+ */
+static bool compare_canonical_partitionings(
 	const uint64_t part1[7],
 	const uint64_t part2[7]
 ) {
-	if ((part1[0] != part2[0]) || (part1[1] != part2[1]) || (part1[2] != part2[2]) ||
-	    (part1[3] != part2[3]) || (part1[4] != part2[4]) || (part1[5] != part2[5]) ||
-	    (part1[6] != part2[6]))
-	{
-		return 0;
-	}
-
-	return 1;
+	return (part1[0] == part2[0]) && (part1[1] == part2[1]) &&
+	       (part1[2] == part2[2]) && (part1[3] == part2[3]) &&
+	       (part1[4] == part2[4]) && (part1[5] == part2[5]) &&
+	       (part1[6] == part2[6]);
 }
 
-/*
-   For a partition table, detect partitions that are equivalent, then mark them
-   as invalid. This reduces the number of partitions that the codec has to
-   consider and thus improves encode performance. */
-static void partition_table_zap_equal_elements(
+/**
+ * @brief Compare all partition patterns and remove duplicates.
+ *
+ * The partitioning algorithm uses a hash function for texel assignment that can produce partitions
+ * which have the same texel assignment groupings. It is only useful for the compressor to test one
+ * of each, so we mark duplicates as invalid.
+ *
+ * @param         texel_count   The first canonical bit pattern to check.
+ * @param[in,out] pt            The table of partitioning information entries.
+ */
+static void remove_duplicate_partitionings(
 	int texel_count,
-	partition_info* pt
+	partition_info pt[PARTITION_COUNT]
 ) {
-	int partition_tables_zapped = 0;
-	uint64_t *canonicalizeds = new uint64_t[PARTITION_COUNT * 7];
+	uint64_t bit_patterns[PARTITION_COUNT * 7];
 
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
-		gen_canonicalized_partition_table(texel_count, pt[i].partition_of_texel, canonicalizeds + i * 7);
+		generate_canonical_partitioning(texel_count, pt[i].partition_of_texel, bit_patterns + i * 7);
 	}
 
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
 		for (int j = 0; j < i; j++)
 		{
-			if (compare_canonicalized_partition_tables(canonicalizeds + 7 * i, canonicalizeds + 7 * j))
+			if (compare_canonical_partitionings(bit_patterns + 7 * i, bit_patterns + 7 * j))
 			{
 				pt[i].partition_count = 0;
-				partition_tables_zapped++;
 				break;
 			}
 		}
 	}
-
-	delete[] canonicalizeds;
 }
 
-static uint32_t hash52(uint32_t inp)
-{
+/**
+ * @brief Hash function used for procedural partition assignment.
+ *
+ * @param inp The hash seed.
+ *
+ * @return The hashed value.
+ */
+static uint32_t hash52(
+	uint32_t inp
+) {
 	inp ^= inp >> 15;
 
-	inp *= 0xEEDE0891;			// (2^4+1)*(2^7+1)*(2^17-1)
+	// (2^4 + 1) * (2^7 + 1) * (2^17 - 1)
+	inp *= 0xEEDE0891;
 	inp ^= inp >> 5;
 	inp += inp << 16;
 	inp ^= inp >> 7;
@@ -115,14 +144,27 @@ static uint32_t hash52(uint32_t inp)
 	return inp;
 }
 
+/**
+ * @brief Select texel assignment for a single coordinate.
+ *
+ * @param seed              The seed - the partition index from the block.
+ * @param x                 The texel X coordinate in the block.
+ * @param y                 The texel Y coordinate in the block.
+ * @param z                 The texel Z coordinate in the block.
+ * @param partition_count   The total partition count of this encoding.
+ * @param small_block       @c true if the blockhas fewer than 32 texels.
+ *
+ * @return The assigned partition index for this texel.
+ */
 static int select_partition(
 	int seed,
 	int x,
 	int y,
 	int z,
-	int partitioncount,
-	int small_block
+	int partition_count,
+	bool small_block
 ) {
+	// For small blocks bias the coordinates to get better distribution
 	if (small_block)
 	{
 		x <<= 1;
@@ -130,7 +172,7 @@ static int select_partition(
 		z <<= 1;
 	}
 
-	seed += (partitioncount - 1) * 1024;
+	seed += (partition_count - 1) * 1024;
 
 	uint32_t rnum = hash52(seed);
 
@@ -147,8 +189,7 @@ static int select_partition(
 	uint8_t seed11 = (rnum >> 26) & 0xF;
 	uint8_t seed12 = ((rnum >> 30) | (rnum << 2)) & 0xF;
 
-	// squaring all the seeds in order to bias their distribution
-	// towards lower values.
+	// Squaring all the seeds in order to bias their distribution towards lower values.
 	seed1 *= seed1;
 	seed2 *= seed2;
 	seed3 *= seed3;
@@ -166,11 +207,11 @@ static int select_partition(
 	if (seed & 1)
 	{
 		sh1 = (seed & 2 ? 4 : 5);
-		sh2 = (partitioncount == 3 ? 6 : 5);
+		sh2 = (partition_count == 3 ? 6 : 5);
 	}
 	else
 	{
-		sh1 = (partitioncount == 3 ? 6 : 5);
+		sh1 = (partition_count == 3 ? 6 : 5);
 		sh2 = (seed & 2 ? 4 : 5);
 	}
 
@@ -202,17 +243,17 @@ static int select_partition(
 	d &= 0x3F;
 
 	// remove some of the components if we are to output < 4 partitions.
-	if (partitioncount <= 3)
+	if (partition_count <= 3)
 	{
 		d = 0;
 	}
 
-	if (partitioncount <= 2)
+	if (partition_count <= 2)
 	{
 		c = 0;
 	}
 
-	if (partitioncount <= 1)
+	if (partition_count <= 1)
 	{
 		b = 0;
 	}
@@ -238,27 +279,36 @@ static int select_partition(
 	return partition;
 }
 
-static void generate_one_partition_table(
-	const block_size_descriptor* bsd,
+/**
+ * @brief Generate a single partition info structure.
+ *
+ * @param      bsd               The block size information.
+ * @param      partition_count   The partition count of this partitioning.
+ * @param      partition_index   The partition index / see of this partitioning.
+ * @param[out] pi                The partition info structure to populate.
+ */
+static void generate_one_partition_info_entry(
+	const block_size_descriptor& bsd,
 	int partition_count,
 	int partition_index,
-	partition_info* pt
+	partition_info& pi
 ) {
-	int texels_per_block = bsd->texel_count;
-	int small_block = texels_per_block < 32;
+	int texels_per_block = bsd.texel_count;
+	bool small_block = texels_per_block < 32;
 
-	uint8_t *partition_of_texel = pt->partition_of_texel;
+	uint8_t *partition_of_texel = pi.partition_of_texel;
 
+	// Assign texels to partitions
 	int texel_idx = 0;
 	int counts[4] { 0 };
-	for (int z = 0; z < bsd->zdim; z++)
+	for (int z = 0; z < bsd.zdim; z++)
 	{
-		for (int y = 0; y <  bsd->ydim; y++)
+		for (int y = 0; y <  bsd.ydim; y++)
 		{
-			for (int x = 0; x <  bsd->xdim; x++)
+			for (int x = 0; x <  bsd.xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
-				pt->texels_of_partition[part][counts[part]++] = texel_idx++;
+				pi.texels_of_partition[part][counts[part]++] = texel_idx++;
 				*partition_of_texel++ = part;
 			}
 		}
@@ -271,63 +321,63 @@ static void generate_one_partition_table(
 		int ptex_count_simd = round_up_to_simd_multiple_vla(ptex_count);
 		for (int j = ptex_count; j < ptex_count_simd; j++)
 		{
-			pt->texels_of_partition[i][j] = pt->texels_of_partition[i][ptex_count - 1];
+			pi.texels_of_partition[i][j] = pi.texels_of_partition[i][ptex_count - 1];
 		}
 	}
 
 	if (counts[0] == 0)
 	{
-		pt->partition_count = 0;
+		pi.partition_count = 0;
 	}
 	else if (counts[1] == 0)
 	{
-		pt->partition_count = 1;
+		pi.partition_count = 1;
 	}
 	else if (counts[2] == 0)
 	{
-		pt->partition_count = 2;
+		pi.partition_count = 2;
 	}
 	else if (counts[3] == 0)
 	{
-		pt->partition_count = 3;
+		pi.partition_count = 3;
 	}
 	else
 	{
-		pt->partition_count = 4;
+		pi.partition_count = 4;
 	}
 
 	for (int i = 0; i < 4; i++)
 	{
-		pt->partition_texel_count[i] = counts[i];
-		pt->coverage_bitmaps[i] = 0ULL;
+		pi.partition_texel_count[i] = counts[i];
+		pi.coverage_bitmaps[i] = 0ULL;
 	}
 
-	int texels_to_process = bsd->kmeans_texel_count;
+	int texels_to_process = bsd.kmeans_texel_count;
 	for (int i = 0; i < texels_to_process; i++)
 	{
-		int idx = bsd->kmeans_texels[i];
-		pt->coverage_bitmaps[pt->partition_of_texel[idx]] |= 1ULL << i;
+		int idx = bsd.kmeans_texels[i];
+		pi.coverage_bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
 	}
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 void init_partition_tables(
-	block_size_descriptor* bsd
+	block_size_descriptor& bsd
 ) {
-	partition_info *par_tab2 = bsd->partitions;
+	partition_info *par_tab2 = bsd.partitions;
 	partition_info *par_tab3 = par_tab2 + PARTITION_COUNT;
 	partition_info *par_tab4 = par_tab3 + PARTITION_COUNT;
 	partition_info *par_tab1 = par_tab4 + PARTITION_COUNT;
 
-	generate_one_partition_table(bsd, 1, 0, par_tab1);
+	generate_one_partition_info_entry(bsd, 1, 0, *par_tab1);
 	for (int i = 0; i < 1024; i++)
 	{
-		generate_one_partition_table(bsd, 2, i, par_tab2 + i);
-		generate_one_partition_table(bsd, 3, i, par_tab3 + i);
-		generate_one_partition_table(bsd, 4, i, par_tab4 + i);
+		generate_one_partition_info_entry(bsd, 2, i, par_tab2[i]);
+		generate_one_partition_info_entry(bsd, 3, i, par_tab3[i]);
+		generate_one_partition_info_entry(bsd, 4, i, par_tab4[i]);
 	}
 
-	partition_table_zap_equal_elements(bsd->texel_count, par_tab2);
-	partition_table_zap_equal_elements(bsd->texel_count, par_tab3);
-	partition_table_zap_equal_elements(bsd->texel_count, par_tab4);
+	remove_duplicate_partitionings(bsd.texel_count, par_tab2);
+	remove_duplicate_partitionings(bsd.texel_count, par_tab3);
+	remove_duplicate_partitionings(bsd.texel_count, par_tab4);
 }

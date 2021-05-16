@@ -793,13 +793,13 @@ void term_block_size_descriptor(
 /**
  * @brief Populate the partition tables for the target block size.
  *
- * Note the block_size_size descriptor must be initialized before calling this
- * function.
+ * Note the @c bsd descriptor must be initialized by calling @c init_block_size_descriptor() before
+ * calling this function.
  *
- * @param bsd  The structure to populate.
+ * @param[out] bsd   The block size information structure to populate.
  */
 void init_partition_tables(
-	block_size_descriptor* bsd);
+	block_size_descriptor& bsd);
 
 static inline const partition_info *get_partition_table(
 	const block_size_descriptor* bsd,

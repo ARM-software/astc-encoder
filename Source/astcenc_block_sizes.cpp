@@ -1098,7 +1098,7 @@ void init_block_size_descriptor(
 		construct_block_size_descriptor_2d(x_texels, y_texels, can_omit_modes, mode_cutoff, bsd);
 	}
 
-	init_partition_tables(&bsd);
+	init_partition_tables(bsd);
 }
 
 /* See header for documentation. */
