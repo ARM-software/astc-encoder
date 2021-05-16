@@ -21,10 +21,10 @@
 
 #include "astcenc_internal.h"
 
-#define _ 0 // using _ to indicate an entry that will not be used.
+#define _ 0 // Using _ to indicate an entry that will not be used.
 
 const quantization_and_transfer_table quant_and_xfer_tables[12] = {
-	// quantization method 0, range 0..1
+	// Quantization method 0, range 0..1
 	{
 		QUANT_2,
 		{0, 64, 255},
@@ -34,7 +34,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
 		 0x01004000}
 	},
-	// quantization method 1, range 0..2
+	// Quantization method 1, range 0..2
 	{
 		QUANT_3,
 		{0, 32, 64, 255},
@@ -44,7 +44,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,0x02004000,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
 		 _,_,_,_,0x02014020}
 	},
-	// quantization method 2, range 0..3
+	// Quantization method 2, range 0..3
 	{
 		QUANT_4,
 		{0, 21, 43, 64, 255},
@@ -54,7 +54,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,0x03014015,_,_,_,_,_,_,_,_,_,_,_,_,
 		 _,_,_,_,_,_,_,_,0x0302402b}
 	},
-	// quantization method 3, range 0..4
+	// Quantization method 3, range 0..4
 	{
 		QUANT_5,
 		{0, 16, 32, 48, 64, 255},
@@ -64,7 +64,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,_,_,_,_,0x03013010,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,0x04024020,_,_,_,
 		 _,_,_,_,_,_,_,_,_,_,_,_,0x04034030}
 	},
-	// quantization method 4, range 0..5
+	// Quantization method 4, range 0..5
 	{
 		QUANT_6,
 		{0, 12, 25, 39, 52, 64, 255},
@@ -74,7 +74,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 0x0502270c,_,_,_,_,_,_,_,_,_,_,_,_,_,0x03043419,_,_,_,_,_,_,_,_,_,_,
 		 _,_,0x01054027,_,_,_,_,_,_,_,_,_,_,_,0x01034034}
 	},
-	// quantization method 5, range 0..7
+	// Quantization method 5, range 0..7
 	{
 		QUANT_8,
 		{0, 9, 18, 27, 37, 46, 55, 64, 255},
@@ -84,7 +84,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,_,_,_,_,0x04022512,_,_,_,_,_,_,_,_,_,0x05032e1b,_,_,_,_,_,_,_,_,
 		 0x06043725,_,_,_,_,_,_,_,_,0x0705402e,_,_,_,_,_,_,_,_,0x07064037}
 	},
-	// quantization method 6, range 0..9
+	// Quantization method 6, range 0..9
 	{
 		QUANT_10,
 		{0, 7, 14, 21, 28, 36, 43, 50, 57, 64, 255},
@@ -95,7 +95,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,0x05093224,_,_,_,_,_,_,0x0307392b,_,_,_,_,_,_,0x01054032,_,_,_,_,_,
 		 _,0x01034039}
 	},
-	// quantization method 7, range 0..11
+	// Quantization method 7, range 0..11
 	{
 		QUANT_12,
 		{0, 5, 11, 17, 23, 28, 36, 41, 47, 53, 59, 64, 255},
@@ -106,7 +106,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 0x070a291c,_,_,_,_,0x030b2f24,_,_,_,_,_,0x09073529,_,_,_,_,_,
 		 0x05033b2f,_,_,_,_,_,0x01094035,_,_,_,_,0x0105403b}
 	},
-	// quantization method 8, range 0..15
+	// Quantization method 8, range 0..15
 	{
 		QUANT_16,
 		{0, 4, 8, 12, 17, 21, 25, 29, 35, 39, 43, 47, 52, 56, 60, 64, 255},
@@ -117,7 +117,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,0x0907271d,_,_,_,0x0a082b23,_,_,_,0x0b092f27,_,_,_,0x0c0a342b,_,_,_,
 		 _,0x0d0b382f,_,_,_,0x0e0c3c34,_,_,_,0x0f0d4038,_,_,_,0x0f0e403c}
 	},
-	// quantization method 9, range 0..19
+	// Quantization method 9, range 0..19
 	{
 		QUANT_20,
 		{0, 3, 6, 9, 13, 16, 19, 23, 26, 29, 35, 38, 41, 45, 48, 51, 55, 58,
@@ -131,7 +131,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 0x070f2d26,_,_,_,0x030b3029,_,_,0x1107332d,_,_,0x0d033730,_,_,_,
 		 0x09113a33,_,_,0x050d3d37,_,_,0x0109403a,_,_,0x0105403d}
 	},
-	// quantization method 10, range 0..23
+	// Quantization method 10, range 0..23
 	{
 		QUANT_24,
 		{0, 2, 5, 8, 11, 13, 16, 19, 22, 24, 27, 30, 34, 37, 40, 42, 45, 48,
@@ -147,7 +147,7 @@ const quantization_and_transfer_table quant_and_xfer_tables[12] = {
 		 _,_,0x0b053530,_,0x03133833,_,_,0x110b3b35,_,_,0x09033e38,_,_,
 		 0x0111403b,_,0x0109403e}
 	},
-	// quantization method 11, range 0..31
+	// Quantization method 11, range 0..31
 	{
 		QUANT_32,
 		{0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 36, 38,
