@@ -1114,7 +1114,7 @@ static const packed_percentile_table *get_packed_table(
 	return nullptr;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 const float *get_2d_percentile_table(
 	int xdim,
 	int ydim
@@ -1150,7 +1150,7 @@ const float *get_2d_percentile_table(
 }
 #endif
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 bool is_legal_2d_block_size(
 	int xdim,
 	int ydim
@@ -1178,7 +1178,7 @@ bool is_legal_2d_block_size(
 	return false;
 }
 
-/* Public function, see header file for detailed documentation */
+/* See header for documentation. */
 bool is_legal_3d_block_size(
 	int xdim,
 	int ydim,
