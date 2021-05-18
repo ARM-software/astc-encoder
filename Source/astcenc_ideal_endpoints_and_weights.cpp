@@ -754,8 +754,8 @@ void compute_ideal_weights_for_decimation_table(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_table& dt,
-	float* RESTRICT weight_set,
-	float* RESTRICT weights
+	float* weight_set,
+	float* weights
 ) {
 	int texel_count = dt.texel_count;
 	int weight_count = dt.weight_count;

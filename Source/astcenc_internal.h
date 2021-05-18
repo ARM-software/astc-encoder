@@ -64,19 +64,6 @@
 	#define promise(cond) assert(cond);
 #endif
 
-/**
- * @brief Make a promise to the compiler's optimizer parameters don't alias.
- *
- * This is a compiler extension to implement the equivalent of the C99
- *  @c restrict keyword. Mostly expected to help on functions which are
- * reading and writing to arrays via pointers of the same basic type.
- */
-#if !defined(__clang__) && defined(_MSC_VER)
-	#define RESTRICT __restrict
-#else // Assume Clang or GCC
-	#define RESTRICT __restrict__
-#endif
-
 /* ============================================================================
   Constants
 ============================================================================ */
