@@ -913,8 +913,8 @@ void compute_ideal_weights_for_decimation_table(
 			vfloat old_weight = gatherf(infilled_weights, texel);
 			vfloat ideal_weight = gatherf(eai_in.weights, texel);
 
-			error_change0 = error_change0 + contrib_weight * scale;
-			error_change1 = error_change1 + (old_weight - ideal_weight) * scale;
+			error_change0 += contrib_weight * scale;
+			error_change1 += (old_weight - ideal_weight) * scale;
 		}
 
 
