@@ -1086,7 +1086,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 }
 
 /* See header for documentation. */
-void determine_optimal_set_of_endpoint_formats_to_use(
+void compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const imageblock& blk,

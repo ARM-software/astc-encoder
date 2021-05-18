@@ -244,7 +244,7 @@ static int decode_block_mode_3d(
  * @param      y_weights   The number of weights in the Y dimension.
  * @param[out] di          The decimation info structure to populate.
  */
-static void initialize_decimation_info_2d(
+static void init_decimation_info_2d(
 	int x_texels,
 	int y_texels,
 	int x_weights,
@@ -436,7 +436,7 @@ static void initialize_decimation_info_2d(
  * @param      z_weights   The number of weights in the Z dimension.
  * @param[out] di          The decimation info structure to populate.
  */
-static void initialize_decimation_info_3d(
+static void init_decimation_info_3d(
 	int x_texels,
 	int y_texels,
 	int z_texels,
@@ -766,7 +766,7 @@ static int construct_dt_entry_2d(
 	bool try_2planes = (2 * weight_count) <= MAX_WEIGHTS_PER_BLOCK;
 
 	decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
-	initialize_decimation_info_2d(x_texels, y_texels, x_weights, y_weights, *di);
+	init_decimation_info_2d(x_texels, y_texels, x_weights, y_weights, *di);
 
 	int maxprec_1plane = -1;
 	int maxprec_2planes = -1;
@@ -984,7 +984,7 @@ static void construct_block_size_descriptor_3d(
 
 				decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
-				initialize_decimation_info_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, *di);
+				init_decimation_info_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, *di);
 
 				int maxprec_1plane = -1;
 				int maxprec_2planes = -1;

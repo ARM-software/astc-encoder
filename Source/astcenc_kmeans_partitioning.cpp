@@ -406,7 +406,7 @@ static void get_partition_ordering_by_mismatch_bits(
 }
 
 /* See header for documentation. */
-void kmeans_compute_partition_ordering(
+void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	int partition_count,

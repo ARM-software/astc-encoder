@@ -539,7 +539,7 @@ const uint8_t color_unquant_tables[21][256] = {
 int8_t quant_mode_table[17][128];
 
 /* See header for documentation. */
-void build_quant_mode_table()
+void init_quant_mode_table()
 {
 	for (int i = 0; i <= 16; i++)
 	{

@@ -36,7 +36,7 @@
  * @param[out] ei          The computed ideal endpoints and weights.
  * @param      component   The color component to compute.
  */
-static void compute_endpoints_and_ideal_weights_1_comp(
+static void compute_ideal_colors_and_weights_1_comp(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -153,7 +153,7 @@ static void compute_endpoints_and_ideal_weights_1_comp(
  * @param      component1   The first color component to compute.
  * @param      component2   The second color component to compute.
  */
-static void compute_endpoints_and_ideal_weights_2_comp(
+static void compute_ideal_colors_and_weights_2_comp(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -311,7 +311,7 @@ static void compute_endpoints_and_ideal_weights_2_comp(
  * @param[out] ei                  The computed ideal endpoints and weights.
  * @param      omitted_component   The color component excluded from the calculation.
  */
-static void compute_endpoints_and_ideal_weights_3_comp(
+static void compute_ideal_colors_and_weights_3_comp(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -487,7 +487,7 @@ static void compute_endpoints_and_ideal_weights_3_comp(
  * @param      pi                  The partition info for the current trial.
  * @param[out] ei                  The computed ideal endpoints and weights.
  */
-static void compute_endpoints_and_ideal_weights_4_comp(
+static void compute_ideal_colors_and_weights_4_comp(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -599,7 +599,7 @@ static void compute_endpoints_and_ideal_weights_4_comp(
 }
 
 /* See header for documentation. */
-void compute_endpoints_and_ideal_weights_1plane(
+void compute_ideal_colors_and_weights_1plane(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -609,16 +609,16 @@ void compute_endpoints_and_ideal_weights_1plane(
 	int uses_alpha = imageblock_uses_alpha(&blk);
 	if (uses_alpha)
 	{
-		compute_endpoints_and_ideal_weights_4_comp(bsd, blk, ewb, pi, ei);
+		compute_ideal_colors_and_weights_4_comp(bsd, blk, ewb, pi, ei);
 	}
 	else
 	{
-		compute_endpoints_and_ideal_weights_3_comp(bsd,blk, ewb,  pi, ei, 3);
+		compute_ideal_colors_and_weights_3_comp(bsd,blk, ewb,  pi, ei, 3);
 	}
 }
 
 /* See header for documentation. */
-void compute_endpoints_and_ideal_weights_2planes(
+void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -635,43 +635,43 @@ void compute_endpoints_and_ideal_weights_2planes(
 	case 0: // separate weights for red
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_comp(bsd, blk, ewb, pi, ei1, 0);
+			compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 0);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_comp(bsd, blk, ewb, pi, ei1, 1, 2);
+			compute_ideal_colors_and_weights_2_comp(bsd, blk, ewb, pi, ei1, 1, 2);
 		}
-		compute_endpoints_and_ideal_weights_1_comp(bsd, blk, ewb, pi, ei2, 0);
+		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 0);
 		break;
 
 	case 1: // separate weights for green
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_comp(bsd,blk, ewb,  pi, ei1, 1);
+			compute_ideal_colors_and_weights_3_comp(bsd,blk, ewb,  pi, ei1, 1);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_comp(bsd, blk, ewb, pi, ei1, 0, 2);
+			compute_ideal_colors_and_weights_2_comp(bsd, blk, ewb, pi, ei1, 0, 2);
 		}
-		compute_endpoints_and_ideal_weights_1_comp(bsd, blk, ewb, pi, ei2, 1);
+		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 1);
 		break;
 
 	case 2: // separate weights for blue
 		if (uses_alpha)
 		{
-			compute_endpoints_and_ideal_weights_3_comp(bsd, blk, ewb, pi, ei1, 2);
+			compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 2);
 		}
 		else
 		{
-			compute_endpoints_and_ideal_weights_2_comp(bsd, blk, ewb, pi, ei1, 0, 1);
+			compute_ideal_colors_and_weights_2_comp(bsd, blk, ewb, pi, ei1, 0, 1);
 		}
-		compute_endpoints_and_ideal_weights_1_comp(bsd, blk, ewb, pi, ei2, 2);
+		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 2);
 		break;
 
 	default: // separate weights for alpha
 		assert(uses_alpha);
-		compute_endpoints_and_ideal_weights_3_comp(bsd, blk, ewb, pi, ei1, 3);
-		compute_endpoints_and_ideal_weights_1_comp(bsd, blk, ewb, pi, ei2, 3);
+		compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 3);
+		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 3);
 		break;
 	}
 }
@@ -750,7 +750,7 @@ float compute_error_of_weight_set_2planes(
 }
 
 /* See header for documentation. */
-void compute_ideal_weights_for_decimation_table(
+void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
@@ -927,7 +927,7 @@ void compute_ideal_weights_for_decimation_table(
 }
 
 /* See header for documentation. */
-void compute_quantized_weights_for_decimation_table(
+void compute_quantized_weights_for_decimation(
 	const decimation_info& di,
 	float low_bound,
 	float high_bound,
@@ -960,7 +960,7 @@ void compute_quantized_weights_for_decimation_table(
 	vfloat low_boundv(low_bound);
 
 	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
-	// safe data in compute_ideal_weights_for_decimation_table and arrays are always 64 elements
+	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
@@ -1004,7 +1004,7 @@ void compute_quantized_weights_for_decimation_table(
  * @param rgbq_sum            Sum of partition component error weights * texel weight * color data.
  * @param psum                Sum of RGB color weights * texel weight^2.
  */
-static inline vfloat4 compute_rgbovec(
+static inline vfloat4 compute_rgbo_vector(
 	vfloat4 rgba_weight_sum,
 	vfloat4 weight_weight_sum,
 	vfloat4 rgbq_sum,
@@ -1167,7 +1167,7 @@ void recompute_ideal_colors_1plane(
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
-		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
+		vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum,
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 
@@ -1402,7 +1402,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
-		vfloat4 rgbovec = compute_rgbovec(rgba_weight_sum, weight_weight_sum,
+		vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum,
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 

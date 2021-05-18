@@ -898,7 +898,7 @@ int get_ise_sequence_bitcount(
 	int character_count,
 	quant_method quant_level);
 
-void build_quant_mode_table(void);
+void init_quant_mode_table(void);
 
 // **********************************************
 // functions and data pertaining to partitioning
@@ -1032,7 +1032,7 @@ void compute_error_squared_rgb(
  * @param[out] best_partition_samec       The best partition for correlated chroma.
  * @param[out] best_partition_dualplane   The best partition for dual plane, but may be @c nullptr.
  */
-void find_best_partitionings(
+void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -1050,7 +1050,7 @@ void find_best_partitionings(
  * @param      partition_count      The desired number of partitions in the block.
  * @param[out] partition_ordering   The list of recommended partition indices, in priority order.
   */
-void kmeans_compute_partition_ordering(
+void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	int partition_count,
@@ -1221,7 +1221,7 @@ struct endpoints_and_weights
  * @param      pi    The partition info for the current trial.
  * @param[out] ei    The endpoint and weight values.
  */
-void compute_endpoints_and_ideal_weights_1plane(
+void compute_ideal_colors_and_weights_1plane(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -1244,7 +1244,7 @@ void compute_endpoints_and_ideal_weights_1plane(
  * @param[out] ei1                The endpoint and weight values for plane 1.
  * @param[out] ei2                The endpoint and weight values for plane 2.
  */
-void compute_endpoints_and_ideal_weights_2planes(
+void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -1270,7 +1270,7 @@ void compute_endpoints_and_ideal_weights_2planes(
  * @param[out] weight_set   The output decimated weight set.
  * @param[out] weights      The output decimated weights.
  */
-void compute_ideal_weights_for_decimation_table(
+void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
@@ -1291,7 +1291,7 @@ void compute_ideal_weights_for_decimation_table(
  * @param[out] quantized_weight_set   The output quantized weight as encoded int.
  * @param      quant_level            The desired weight quant level.
  */
-void compute_quantized_weights_for_decimation_table(
+void compute_quantized_weights_for_decimation(
 	const decimation_info& di,
 	float low_bound,
 	float high_bound,
@@ -1514,7 +1514,7 @@ struct compress_symbolic_block_buffers
  * @param[out] quant_level                   The best color quant level.
  * @param[out] quant_level_mod               The best color quant level if endpoints are the same.
  */
-void determine_optimal_set_of_endpoint_formats_to_use(
+void compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const imageblock& blk,

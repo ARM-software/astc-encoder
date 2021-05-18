@@ -42,7 +42,7 @@
 #include "astcenc_internal.h"
 
 /* See header for documentation. */
-void find_best_partitionings(
+void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
@@ -77,7 +77,7 @@ void find_best_partitionings(
 
 	int partition_sequence[PARTITION_COUNT];
 
-	kmeans_compute_partition_ordering(bsd, blk, partition_count, partition_sequence);
+	compute_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
 	int uses_alpha = imageblock_uses_alpha(&blk);
 

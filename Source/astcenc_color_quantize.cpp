@@ -36,7 +36,7 @@
  * @return The encoded quantized value. These are not necessarily in the order; the compressor
  *         scrambles the values slightly to make hardware implementation easier.
  */
-static inline int cqt_lookup(
+static inline int quant_color(
 	quant_method quant_level,
 	int value
 ) {
@@ -79,12 +79,12 @@ static void quantize_rgb(
 	int iters = 0;
 	do
 	{
-		ri0 = cqt_lookup(quant_level, astc::flt2int_rd(r0 + rgb0_addon));
-		gi0 = cqt_lookup(quant_level, astc::flt2int_rd(g0 + rgb0_addon));
-		bi0 = cqt_lookup(quant_level, astc::flt2int_rd(b0 + rgb0_addon));
-		ri1 = cqt_lookup(quant_level, astc::flt2int_rd(r1 + rgb1_addon));
-		gi1 = cqt_lookup(quant_level, astc::flt2int_rd(g1 + rgb1_addon));
-		bi1 = cqt_lookup(quant_level, astc::flt2int_rd(b1 + rgb1_addon));
+		ri0 = quant_color(quant_level, astc::flt2int_rd(r0 + rgb0_addon));
+		gi0 = quant_color(quant_level, astc::flt2int_rd(g0 + rgb0_addon));
+		bi0 = quant_color(quant_level, astc::flt2int_rd(b0 + rgb0_addon));
+		ri1 = quant_color(quant_level, astc::flt2int_rd(r1 + rgb1_addon));
+		gi1 = quant_color(quant_level, astc::flt2int_rd(g1 + rgb1_addon));
+		bi1 = quant_color(quant_level, astc::flt2int_rd(b1 + rgb1_addon));
 
 		ri0b = color_unquant_tables[quant_level][ri0];
 		gi0b = color_unquant_tables[quant_level][gi0];

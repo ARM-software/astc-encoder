@@ -106,10 +106,7 @@ static void remove_duplicate_partitionings(
 	for (int i = 0; i < PARTITION_COUNT; i++)
 	{
 		generate_canonical_partitioning(texel_count, pt[i].partition_of_texel, bit_patterns + i * 7);
-	}
 
-	for (int i = 0; i < PARTITION_COUNT; i++)
-	{
 		for (int j = 0; j < i; j++)
 		{
 			if (compare_canonical_partitionings(bit_patterns + 7 * i, bit_patterns + 7 * j))

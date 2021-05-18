@@ -233,7 +233,7 @@ static bool realign_weights(
  * @param[out] scb                       The symbolic compressed block output.
  * @param[out] tmpbuf                    The quantized weights for plane 1.
  */
-static float compress_symbolic_block_fixed_partition_1plane(
+static float compress_symbolic_block_for_partition_1plane(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
@@ -261,7 +261,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	// there is no quantization or decimation going on.
 	endpoints_and_weights& ei = tmpbuf.ei1;
 	endpoints_and_weights *eix = tmpbuf.eix1;
-	compute_endpoints_and_ideal_weights_1plane(bsd, blk, ewb, *pt, ei);
+	compute_ideal_colors_and_weights_1plane(bsd, blk, ewb, *pt, ei);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_info *const *dt = bsd.decimation_tables;
@@ -281,7 +281,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 			continue;
 		}
 
-		compute_ideal_weights_for_decimation_table(
+		compute_ideal_weights_for_decimation(
 		    ei,
 		    eix[i],
 		    *(dt[i]),
@@ -348,7 +348,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 		qwt_bitcounts[i] = bitcount;
 
 		// then, generate the optimized set of weights for the weight mode.
-		compute_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation(
 		    *dt[decimation_mode],
 		    weight_low_value[i], weight_high_value[i],
 		    decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * decimation_mode,
@@ -373,7 +373,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
 	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
-	determine_optimal_set_of_endpoint_formats_to_use(
+	compute_ideal_endpoint_formats(
 	    bsd, *pt, blk, ewb, ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
@@ -596,7 +596,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
  * @param[out] scb                       The symbolic compressed block output.
  * @param[out] tmpbuf                    The quantized weights for plane 1.
  */
-static float compress_symbolic_block_fixed_partition_2planes(
+static float compress_symbolic_block_for_partition_2planes(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
@@ -625,7 +625,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	endpoints_and_weights& ei2 = tmpbuf.ei2;
 	endpoints_and_weights* eix1 = tmpbuf.eix1;
 	endpoints_and_weights* eix2 = tmpbuf.eix2;
-	compute_endpoints_and_ideal_weights_2planes(bsd, blk, ewb, *pt, plane2_component, ei1, ei2);
+	compute_ideal_colors_and_weights_2planes(bsd, blk, ewb, *pt, plane2_component, ei1, ei2);
 
 	// next, compute ideal weights and endpoint colors for every decimation.
 	const decimation_info *const *dt = bsd.decimation_tables;
@@ -644,14 +644,14 @@ static float compress_symbolic_block_fixed_partition_2planes(
 			continue;
 		}
 
-		compute_ideal_weights_for_decimation_table(
+		compute_ideal_weights_for_decimation(
 		    ei1,
 		    eix1[i],
 		    *(dt[i]),
 		    decimated_quantized_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK,
 		    decimated_weights + (2 * i) * MAX_WEIGHTS_PER_BLOCK);
 
-		compute_ideal_weights_for_decimation_table(
+		compute_ideal_weights_for_decimation(
 		    ei2,
 		    eix2[i],
 		    *(dt[i]),
@@ -738,7 +738,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		qwt_bitcounts[i] = bitcount;
 
 		// then, generate the optimized set of weights for the mode.
-		compute_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation(
 		    *dt[decimation_mode],
 		    weight_low_value1[i],
 		    weight_high_value1[i],
@@ -746,7 +746,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		    flt_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i),
 		    u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * i), bm.quant_mode);
 
-		compute_quantized_weights_for_decimation_table(
+		compute_quantized_weights_for_decimation(
 		    *dt[decimation_mode],
 		    weight_low_value2[i],
 		    weight_high_value2[i],
@@ -772,7 +772,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 	endpoints epm;
 	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
 
-	determine_optimal_set_of_endpoint_formats_to_use(
+	compute_ideal_endpoint_formats(
 	    bsd, *pt, blk, ewb, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
@@ -1504,7 +1504,7 @@ void compress_block(
 		trace_add_data("plane_count", 1);
 		trace_add_data("search_mode", i);
 
-		float errorval = compress_symbolic_block_fixed_partition_1plane(
+		float errorval = compress_symbolic_block_for_partition_1plane(
 		    ctx.config, *bsd, blk, ewb, i == 0,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf.planes);
@@ -1550,7 +1550,7 @@ void compress_block(
 			continue;
 		}
 
-		float errorval = compress_symbolic_block_fixed_partition_2planes(
+		float errorval = compress_symbolic_block_for_partition_2planes(
 		    ctx.config, *bsd, blk, ewb,
 		    error_threshold * errorval_overshoot,
 		    1,	// partition count
@@ -1574,7 +1574,7 @@ void compress_block(
 		int partition_indices_1plane[2] { 0, 0 };
 		int partition_index_2planes = 0;
 
-		find_best_partitionings(*bsd, blk, ewb, partition_count,
+		find_best_partition_candidates(*bsd, blk, ewb, partition_count,
 		                        ctx.config.tune_partition_index_limit,
 		                        partition_indices_1plane[0],
 		                        partition_indices_1plane[1],
@@ -1588,7 +1588,7 @@ void compress_block(
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
-			float errorval = compress_symbolic_block_fixed_partition_1plane(
+			float errorval = compress_symbolic_block_for_partition_1plane(
 			    ctx.config, *bsd, blk, ewb, false,
 			    error_threshold * errorval_overshoot,
 			    partition_count, partition_indices_1plane[i],
@@ -1669,7 +1669,7 @@ void compress_block(
 		trace_add_data("plane_count", 2);
 		trace_add_data("plane_component", partition_index_2planes >> PARTITION_BITS);
 
-		float errorval = compress_symbolic_block_fixed_partition_2planes(
+		float errorval = compress_symbolic_block_for_partition_2planes(
 			ctx.config, *bsd, blk, ewb,
 			error_threshold * errorval_overshoot,
 			partition_count,

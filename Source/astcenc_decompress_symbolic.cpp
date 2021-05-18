@@ -27,26 +27,26 @@
 /**
  * @brief Compute a vector of texel weights by interpolating the decimated weight grid.
  *
- * @param texel_to_get   The first texel to get; N (SIMD width) consecutive texels are loaded.
- * @param di             The weight grid decimation table.
- * @param weights        The raw weights.
+ * @param base_texel_index   The first texel to get; N (SIMD width) consecutive texels are loaded.
+ * @param di                 The weight grid decimation to use.
+ * @param weights            The raw weights.
  *
  * @return The undecimated weight for N (SIMD width) texels.
  */
 static vint compute_value_of_texel_weight_int_vla(
-	int texel_to_get,
+	int base_texel_index,
 	const decimation_info& di,
 	const int* weights
 ) {
 	vint summed_value(8);
-	vint weight_count(di.texel_weight_count + texel_to_get);
+	vint weight_count(di.texel_weight_count + base_texel_index);
 	int max_weight_count = hmax(weight_count).lane<0>();
 
 	promise(max_weight_count > 0);
 	for (int i = 0; i < max_weight_count; i++)
 	{
-		vint texel_weights(di.texel_weights_4t[i] + texel_to_get);
-		vint texel_weights_int(di.texel_weights_int_4t[i] + texel_to_get);
+		vint texel_weights(di.texel_weights_4t[i] + base_texel_index);
+		vint texel_weights_int(di.texel_weights_int_4t[i] + base_texel_index);
 
 		summed_value += gatheri(weights, texel_weights) * texel_weights_int;
 	}
