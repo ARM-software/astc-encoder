@@ -153,13 +153,13 @@ void symbolic_to_physical(
 		weightbuf[i] = 0;
 	}
 
-	const decimation_table *const *dts = bsd.decimation_tables;
+	const decimation_info *const *dt = bsd.decimation_tables;
 
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 
-	int weight_count = dts[bm.decimation_mode]->weight_count;
+	int weight_count = dt[bm.decimation_mode]->weight_count;
 	quant_method weight_quant_method = (quant_method)bm.quant_mode;
 	int is_dual_plane = bm.is_dual_plane;
 
@@ -284,7 +284,7 @@ void physical_to_symbolic(
 	scb.error_block = 0;
 
 	// Fetch the decimation tables
-	const decimation_table *const *dts = bsd.decimation_tables;
+	const decimation_info *const *dt = bsd.decimation_tables;
 
 	// Extract header fields
 	int block_mode = read_bits(11, 0, pcb.data);
@@ -360,7 +360,7 @@ void physical_to_symbolic(
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const struct block_mode& bm = bsd.block_modes[packed_index];
 
-	int weight_count = dts[bm.decimation_mode]->weight_count;
+	int weight_count = dt[bm.decimation_mode]->weight_count;
 	quant_method weight_quant_method = (quant_method)bm.quant_mode;
 	int is_dual_plane = bm.is_dual_plane;
 

@@ -28,25 +28,25 @@
  * @brief Compute a vector of texel weights by interpolating the decimated weight grid.
  *
  * @param texel_to_get   The first texel to get; N (SIMD width) consecutive texels are loaded.
- * @param dt             The weight grid decimation table.
+ * @param di             The weight grid decimation table.
  * @param weights        The raw weights.
  *
  * @return The undecimated weight for N (SIMD width) texels.
  */
 static vint compute_value_of_texel_weight_int_vla(
 	int texel_to_get,
-	const decimation_table& dt,
+	const decimation_info& di,
 	const int* weights
 ) {
 	vint summed_value(8);
-	vint weight_count(dt.texel_weight_count + texel_to_get);
+	vint weight_count(di.texel_weight_count + texel_to_get);
 	int max_weight_count = hmax(weight_count).lane<0>();
 
 	promise(max_weight_count > 0);
 	for (int i = 0; i < max_weight_count; i++)
 	{
-		vint texel_weights(dt.texel_weights_4t[i] + texel_to_get);
-		vint texel_weights_int(dt.texel_weights_int_4t[i] + texel_to_get);
+		vint texel_weights(di.texel_weights_4t[i] + texel_to_get);
+		vint texel_weights_int(di.texel_weights_int_4t[i] + texel_to_get);
 
 		summed_value += gatheri(weights, texel_weights) * texel_weights_int;
 	}
@@ -129,7 +129,7 @@ static inline vfloat4 decode_texel(
 void unpack_weights(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const decimation_table& dt,
+	const decimation_info& di,
 	bool is_dual_plane,
 	int quant_level,
 	int weights_plane1[MAX_TEXELS_PER_BLOCK],
@@ -138,7 +138,7 @@ void unpack_weights(
 	// First, unquantize the weights ...
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = dt.weight_count;
+	int weight_count = di.weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
@@ -153,7 +153,7 @@ void unpack_weights(
 
 		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			store(compute_value_of_texel_weight_int_vla(i, dt, uq_plane1_weights), weights_plane1 + i);
+			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
 		}
 	}
 	else
@@ -166,8 +166,8 @@ void unpack_weights(
 
 		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			store(compute_value_of_texel_weight_int_vla(i, dt, uq_plane1_weights), weights_plane1 + i);
-			store(compute_value_of_texel_weight_int_vla(i, dt, uq_plane2_weights), weights_plane2 + i);
+			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
+			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane2_weights), weights_plane2 + i);
 		}
 	}
 }
@@ -263,12 +263,12 @@ void decompress_symbolic_block(
 	pt += scb.partition_index;
 
 	// Get the appropriate block descriptor
-	const decimation_table *const *dts = bsd.decimation_tables;
+	const decimation_info *const *dt = bsd.decimation_tables;
 
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
-	const decimation_table& dt = *(dts[bm.decimation_mode]);
+	const decimation_info& di = *(dt[bm.decimation_mode]);
 
 	int is_dual_plane = bm.is_dual_plane;
 
@@ -277,7 +277,7 @@ void decompress_symbolic_block(
 	// Unquantize and undecimate the weights
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
-	unpack_weights(bsd, scb, dt, is_dual_plane, quant_level, weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, quant_level, weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
@@ -349,14 +349,14 @@ float compute_symbolic_block_difference(
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
-	const decimation_table& dt = *(bsd.decimation_tables[bm.decimation_mode]);
+	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
 
 	bool is_dual_plane = bm.is_dual_plane != 0;
 
 	// Unquantize and undecimate the weights
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
-	unpack_weights(bsd, scb, dt, is_dual_plane, bm.quant_mode, weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, bm.quant_mode, weights, plane2_weights);
 
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);

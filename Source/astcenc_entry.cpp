@@ -1222,11 +1222,11 @@ astcenc_error astcenc_get_block_info(
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
-	const decimation_table& dt = *bsd.decimation_tables[bm.decimation_mode];
+	const decimation_info& di = *bsd.decimation_tables[bm.decimation_mode];
 
-	info->weight_x = dt.weight_x;
-	info->weight_y = dt.weight_y;
-	info->weight_z = dt.weight_z;
+	info->weight_x = di.weight_x;
+	info->weight_y = di.weight_y;
+	info->weight_z = di.weight_z;
 
 	info->is_dual_plane_block = bm.is_dual_plane != 0;
 
@@ -1270,7 +1270,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane1[MAX_TEXELS_PER_BLOCK];
 	int weight_plane2[MAX_TEXELS_PER_BLOCK];
 
-	unpack_weights(bsd, scb, dt, bm.is_dual_plane, bm.quant_mode, weight_plane1, weight_plane2);
+	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.quant_mode, weight_plane1, weight_plane2);
 	for (int i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = (float)weight_plane1[i] / (float)TEXEL_WEIGHT_SUM;

@@ -236,20 +236,20 @@ static int decode_block_mode_3d(
 }
 
 /**
- * @brief Create a 2d decimation table for a block-size and weight-decimation pair.
+ * @brief Create a 2D decimation entry for a block-size and weight-decimation pair.
  *
  * @param      x_texels    The number of texels in the X dimension.
  * @param      y_texels    The number of texels in the Y dimension.
  * @param      x_weights   The number of weights in the X dimension.
  * @param      y_weights   The number of weights in the Y dimension.
- * @param[out] dt          The decimation table to populate.
+ * @param[out] di          The decimation info structure to populate.
  */
-static void initialize_decimation_table_2d(
+static void initialize_decimation_info_2d(
 	int x_texels,
 	int y_texels,
 	int x_weights,
 	int y_weights,
-	decimation_table& dt
+	decimation_info& di
 ) {
 	int texels_per_block = x_texels * y_texels;
 	int weights_per_block = x_weights * y_weights;
@@ -319,36 +319,36 @@ static void initialize_decimation_table_2d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt.texel_weight_count[i] = weight_count_of_texel[i];
+		di.texel_weight_count[i] = weight_count_of_texel[i];
 
 		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
-			dt.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
-			dt.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt.texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
+			di.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
+			di.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			di.texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
 		}
 
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (int j = weight_count_of_texel[i]; j < 4; j++)
 		{
-			dt.texel_weights_int_4t[j][i] = 0;
-			dt.texel_weights_float_4t[j][i] = 0.0f;
-			dt.texel_weights_4t[j][i] = 0;
+			di.texel_weights_int_4t[j][i] = 0;
+			di.texel_weights_float_4t[j][i] = 0.0f;
+			di.texel_weights_4t[j][i] = 0;
 		}
 	}
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
 		int texel_count_wt = texel_count_of_weight[i];
-		dt.weight_texel_count[i] = (uint8_t)texel_count_wt;
+		di.weight_texel_count[i] = (uint8_t)texel_count_wt;
 
 		for (int j = 0; j < texel_count_wt; j++)
 		{
 			uint8_t texel = texels_of_weight[i][j];
 
 			// Create transposed versions of these for better vectorization
-			dt.weight_texel[j][i] = texel;
-			dt.weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
+			di.weight_texel[j][i] = texel;
+			di.weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
@@ -356,34 +356,34 @@ static void initialize_decimation_table_2d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				uint8_t dttw = dt.texel_weights_4t[k][texel];
-				float dttwf = dt.texel_weights_float_4t[k][texel];
+				uint8_t dttw = di.texel_weights_4t[k][texel];
+				float dttwf = di.texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
 				}
-				dt.texel_weights_texel[i][j][k] = dttw;
-				dt.texel_weights_float_texel[i][j][k] = dttwf;
+				di.texel_weights_texel[i][j][k] = dttw;
+				di.texel_weights_float_texel[i][j][k] = dttwf;
 			}
 
 			if (swap_idx != 0)
 			{
-				uint8_t vi = dt.texel_weights_texel[i][j][0];
-				float vf = dt.texel_weights_float_texel[i][j][0];
-				dt.texel_weights_texel[i][j][0] = dt.texel_weights_texel[i][j][swap_idx];
-				dt.texel_weights_float_texel[i][j][0] = dt.texel_weights_float_texel[i][j][swap_idx];
-				dt.texel_weights_texel[i][j][swap_idx] = vi;
-				dt.texel_weights_float_texel[i][j][swap_idx] = vf;
+				uint8_t vi = di.texel_weights_texel[i][j][0];
+				float vf = di.texel_weights_float_texel[i][j][0];
+				di.texel_weights_texel[i][j][0] = di.texel_weights_texel[i][j][swap_idx];
+				di.texel_weights_float_texel[i][j][0] = di.texel_weights_float_texel[i][j][swap_idx];
+				di.texel_weights_texel[i][j][swap_idx] = vi;
+				di.texel_weights_float_texel[i][j][swap_idx] = vf;
 			}
 		}
 
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 		// Match last texel in active lane in SIMD group, for better gathers
-		uint8_t last_texel = dt.weight_texel[texel_count_wt - 1][i];
+		uint8_t last_texel = di.weight_texel[texel_count_wt - 1][i];
 		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
-			dt.weight_texel[j][i] = last_texel;
-			dt.weights_flt[j][i] = 0.0f;
+			di.weight_texel[j][i] = last_texel;
+			di.weights_flt[j][i] = 0.0f;
 		}
 	}
 
@@ -391,42 +391,42 @@ static void initialize_decimation_table_2d(
 	int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
 	for (int i = texels_per_block; i < texels_per_block_simd; i++)
 	{
-		dt.texel_weight_count[i] = 0;
+		di.texel_weight_count[i] = 0;
 
 		for (int j = 0; j < 4; j++)
 		{
-			dt.texel_weights_float_4t[j][i] = 0;
-			dt.texel_weights_4t[j][i] = 0;
-			dt.texel_weights_int_4t[j][i] = 0;
+			di.texel_weights_float_4t[j][i] = 0;
+			di.texel_weights_4t[j][i] = 0;
+			di.texel_weights_int_4t[j][i] = 0;
 		}
 	}
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 	// Match last texel in active lane in SIMD group, for better gathers
 	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
-	uint8_t last_texel = dt.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
+	uint8_t last_texel = di.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
 
 	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
 	for (int i = weights_per_block; i < weights_per_block_simd; i++)
 	{
-		dt.weight_texel_count[i] = 0;
+		di.weight_texel_count[i] = 0;
 
 		for (int j = 0; j < max_texel_count_of_weight; j++)
 		{
-			dt.weight_texel[j][i] = last_texel;
-			dt.weights_flt[j][i] = 0.0f;
+			di.weight_texel[j][i] = last_texel;
+			di.weights_flt[j][i] = 0.0f;
 		}
 	}
 
-	dt.texel_count = texels_per_block;
-	dt.weight_count = weights_per_block;
-	dt.weight_x = x_weights;
-	dt.weight_y = y_weights;
-	dt.weight_z = 1;
+	di.texel_count = texels_per_block;
+	di.weight_count = weights_per_block;
+	di.weight_x = x_weights;
+	di.weight_y = y_weights;
+	di.weight_z = 1;
 }
 
 /**
- * @brief Create a 2d decimation table for a block-size and weight-decimation pair.
+ * @brief Create a 3D decimation entry for a block-size and weight-decimation pair.
  *
  * @param      x_texels    The number of texels in the X dimension.
  * @param      y_texels    The number of texels in the Y dimension.
@@ -434,16 +434,16 @@ static void initialize_decimation_table_2d(
  * @param      x_weights   The number of weights in the X dimension.
  * @param      y_weights   The number of weights in the Y dimension.
  * @param      z_weights   The number of weights in the Z dimension.
- * @param[out] dt          The decimation table to populate.
+ * @param[out] di          The decimation info structure to populate.
  */
-static void initialize_decimation_table_3d(
+static void initialize_decimation_info_3d(
 	int x_texels,
 	int y_texels,
 	int z_texels,
 	int x_weights,
 	int y_weights,
 	int z_weights,
-	decimation_table& dt
+	decimation_info& di
 ) {
 	int texels_per_block = x_texels * y_texels * z_texels;
 	int weights_per_block = x_weights * y_weights * z_weights;
@@ -586,36 +586,36 @@ static void initialize_decimation_table_3d(
 
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		dt.texel_weight_count[i] = weight_count_of_texel[i];
+		di.texel_weight_count[i] = weight_count_of_texel[i];
 
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (int j = 0; j < 4; j++)
 		{
-			dt.texel_weights_int_4t[j][i] = 0;
-			dt.texel_weights_float_4t[j][i] = 0.0f;
-			dt.texel_weights_4t[j][i] = 0;
+			di.texel_weights_int_4t[j][i] = 0;
+			di.texel_weights_float_4t[j][i] = 0.0f;
+			di.texel_weights_4t[j][i] = 0;
 		}
 
 		for (int j = 0; j < weight_count_of_texel[i]; j++)
 		{
-			dt.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
-			dt.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
-			dt.texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
+			di.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
+			di.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / TEXEL_WEIGHT_SUM);
+			di.texel_weights_4t[j][i] = grid_weights_of_texel[i][j];
 		}
 	}
 
 	for (int i = 0; i < weights_per_block; i++)
 	{
 		int texel_count_wt = texel_count_of_weight[i];
-		dt.weight_texel_count[i] = (uint8_t)texel_count_wt;
+		di.weight_texel_count[i] = (uint8_t)texel_count_wt;
 
 		for (int j = 0; j < texel_count_wt; j++)
 		{
 			int texel = texels_of_weight[i][j];
 
 			// Create transposed versions of these for better vectorization
-			dt.weight_texel[j][i] = texel;
-			dt.weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
+			di.weight_texel[j][i] = texel;
+			di.weights_flt[j][i] = (float)texel_weights_of_weight[i][j];
 
 			// perform a layer of array unrolling. An aspect of this unrolling is that
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
@@ -623,34 +623,34 @@ static void initialize_decimation_table_3d(
 			int swap_idx = -1;
 			for (int k = 0; k < 4; k++)
 			{
-				uint8_t dttw = dt.texel_weights_4t[k][texel];
-				float dttwf = dt.texel_weights_float_4t[k][texel];
+				uint8_t dttw = di.texel_weights_4t[k][texel];
+				float dttwf = di.texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
 					swap_idx = k;
 				}
-				dt.texel_weights_texel[i][j][k] = dttw;
-				dt.texel_weights_float_texel[i][j][k] = dttwf;
+				di.texel_weights_texel[i][j][k] = dttw;
+				di.texel_weights_float_texel[i][j][k] = dttwf;
 			}
 
 			if (swap_idx != 0)
 			{
-				uint8_t vi = dt.texel_weights_texel[i][j][0];
-				float vf = dt.texel_weights_float_texel[i][j][0];
-				dt.texel_weights_texel[i][j][0] = dt.texel_weights_texel[i][j][swap_idx];
-				dt.texel_weights_float_texel[i][j][0] = dt.texel_weights_float_texel[i][j][swap_idx];
-				dt.texel_weights_texel[i][j][swap_idx] = vi;
-				dt.texel_weights_float_texel[i][j][swap_idx] = vf;
+				uint8_t vi = di.texel_weights_texel[i][j][0];
+				float vf = di.texel_weights_float_texel[i][j][0];
+				di.texel_weights_texel[i][j][0] = di.texel_weights_texel[i][j][swap_idx];
+				di.texel_weights_float_texel[i][j][0] = di.texel_weights_float_texel[i][j][swap_idx];
+				di.texel_weights_texel[i][j][swap_idx] = vi;
+				di.texel_weights_float_texel[i][j][swap_idx] = vf;
 			}
 		}
 
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 		// Match last texel in active lane in SIMD group, for better gathers
-		uint8_t last_texel = dt.weight_texel[texel_count_wt - 1][i];
+		uint8_t last_texel = di.weight_texel[texel_count_wt - 1][i];
 		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
-			dt.weight_texel[j][i] = last_texel;
-			dt.weights_flt[j][i] = 0.0f;
+			di.weight_texel[j][i] = last_texel;
+			di.weights_flt[j][i] = 0.0f;
 		}
 	}
 
@@ -658,38 +658,38 @@ static void initialize_decimation_table_3d(
 	int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
 	for (int i = texels_per_block; i < texels_per_block_simd; i++)
 	{
-		dt.texel_weight_count[i] = 0;
+		di.texel_weight_count[i] = 0;
 
 		for (int j = 0; j < 4; j++)
 		{
-			dt.texel_weights_float_4t[j][i] = 0;
-			dt.texel_weights_4t[j][i] = 0;
-			dt.texel_weights_int_4t[j][i] = 0;
+			di.texel_weights_float_4t[j][i] = 0;
+			di.texel_weights_4t[j][i] = 0;
+			di.texel_weights_int_4t[j][i] = 0;
 		}
 	}
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 	// Match last texel in active lane in SIMD group, for better gathers
 	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
-	uint8_t last_texel = dt.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
+	uint8_t last_texel = di.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
 
 	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
 	for (int i = weights_per_block; i < weights_per_block_simd; i++)
 	{
-		dt.weight_texel_count[i] = 0;
+		di.weight_texel_count[i] = 0;
 
 		for (int j = 0; j < max_texel_count_of_weight; j++)
 		{
-			dt.weight_texel[j][i] = last_texel;
-			dt.weights_flt[j][i] = 0.0f;
+			di.weight_texel[j][i] = last_texel;
+			di.weights_flt[j][i] = 0.0f;
 		}
 	}
 
-	dt.texel_count = texels_per_block;
-	dt.weight_count = weights_per_block;
-	dt.weight_x = x_weights;
-	dt.weight_y = y_weights;
-	dt.weight_z = z_weights;
+	di.texel_count = texels_per_block;
+	di.weight_count = weights_per_block;
+	di.weight_x = x_weights;
+	di.weight_y = y_weights;
+	di.weight_z = z_weights;
 }
 
 /**
@@ -765,8 +765,8 @@ static int construct_dt_entry_2d(
 
 	bool try_2planes = (2 * weight_count) <= MAX_WEIGHTS_PER_BLOCK;
 
-	decimation_table *dt = aligned_malloc<decimation_table>(sizeof(decimation_table), ASTCENC_VECALIGN);
-	initialize_decimation_table_2d(x_texels, y_texels, x_weights, y_weights, *dt);
+	decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
+	initialize_decimation_info_2d(x_texels, y_texels, x_weights, y_weights, *di);
 
 	int maxprec_1plane = -1;
 	int maxprec_2planes = -1;
@@ -797,7 +797,7 @@ static int construct_dt_entry_2d(
 	bsd.decimation_modes[dm_index].percentile_hit = false;
 	bsd.decimation_modes[dm_index].percentile_always = false;
 
-	bsd.decimation_tables[dm_index] = dt;
+	bsd.decimation_tables[dm_index] = di;
 
 	bsd.decimation_mode_count++;
 	return dm_index;
@@ -876,7 +876,7 @@ static void construct_block_size_descriptor_2d(
 			continue;
 		}
 
-		// Allocate and initialize the DT entry if we've not used it yet.
+		// Allocate and initialize the decimation table entry if we've not used it yet
 		int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
 		if (decimation_mode == -1)
 		{
@@ -982,9 +982,9 @@ static void construct_block_size_descriptor_3d(
 					continue;
 				}
 
-				decimation_table *dt = aligned_malloc<decimation_table>(sizeof(decimation_table), ASTCENC_VECALIGN);
+				decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
-				initialize_decimation_table_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, *dt);
+				initialize_decimation_info_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, *di);
 
 				int maxprec_1plane = -1;
 				int maxprec_2planes = -1;
@@ -1013,7 +1013,7 @@ static void construct_block_size_descriptor_3d(
 				bsd.decimation_modes[decimation_mode_count].maxprec_2planes = maxprec_2planes;
 				bsd.decimation_modes[decimation_mode_count].percentile_hit = false;
 				bsd.decimation_modes[decimation_mode_count].percentile_always = false;
-				bsd.decimation_tables[decimation_mode_count] = dt;
+				bsd.decimation_tables[decimation_mode_count] = di;
 				decimation_mode_count++;
 			}
 		}
@@ -1107,6 +1107,6 @@ void term_block_size_descriptor(
 ) {
 	for (int i = 0; i < bsd.decimation_mode_count; i++)
 	{
-		aligned_free<const decimation_table>(bsd.decimation_tables[i]);
+		aligned_free<const decimation_info>(bsd.decimation_tables[i]);
 	}
 }

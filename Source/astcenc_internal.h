@@ -378,14 +378,14 @@ struct partition_info
    weights it is a combination of for each weight, which texels it contributes to.
    The decimation_table is this data structure.
 */
-struct decimation_table
+struct decimation_info
 {
 	// TODO: Make these byte values
-	int texel_count;
-	int weight_count;
-	int weight_x;
-	int weight_y;
-	int weight_z;
+	uint8_t texel_count;
+	uint8_t weight_count;
+	uint8_t weight_x;
+	uint8_t weight_y;
+	uint8_t weight_z;
 
 	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
 
@@ -477,7 +477,7 @@ struct block_size_descriptor
 	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
 
 	/**< The active decimation tables, stored in low indices. */
-	const decimation_table *decimation_tables[MAX_DECIMATION_MODES];
+	const decimation_info *decimation_tables[MAX_DECIMATION_MODES];
 
 
 	/**< The number of stored block modes. */
@@ -1266,14 +1266,14 @@ void compute_endpoints_and_ideal_weights_2planes(
  *
  * @param      eai_in       The non-decimated endpoints and weights.
  * @param      eai_out      A copy of eai_in we can modify later for refinement.
- * @param      dt           The selected decimation table.
+ * @param      di           The selected weight decimation.
  * @param[out] weight_set   The output decimated weight set.
  * @param[out] weights      The output decimated weights.
  */
 void compute_ideal_weights_for_decimation_table(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
-	const decimation_table& dt,
+	const decimation_info& di,
 	float* weight_set,
 	float* weights);
 
@@ -1283,7 +1283,7 @@ void compute_ideal_weights_for_decimation_table(
  * We test the two closest weight indices in the allowed quantization range
  * and keep the weight that is the closest match.
  *
- * @param      dt                     The selected decimation table.
+ * @param      di                     The selected weight decimation.
  * @param      low_bound              The lowest weight allowed.
  * @param      high_bound             The highest weight allowed.
  * @param      weight_set_in          The ideal weight set.
@@ -1292,7 +1292,7 @@ void compute_ideal_weights_for_decimation_table(
  * @param      quant_level            The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation_table(
-	const decimation_table& dt,
+	const decimation_info& di,
 	float low_bound,
 	float high_bound,
 	const float* weight_set_in,
@@ -1308,29 +1308,29 @@ void compute_quantized_weights_for_decimation_table(
  * @brief Compute the infilled weight for a texel index in a decimated grid.
  */
 static inline float bilinear_infill(
-	const decimation_table& dt,
+	const decimation_info& di,
 	const float* weights,
 	int index
 ) {
-	return (weights[dt.texel_weights_4t[0][index]] * dt.texel_weights_float_4t[0][index] +
-	        weights[dt.texel_weights_4t[1][index]] * dt.texel_weights_float_4t[1][index]) +
-	       (weights[dt.texel_weights_4t[2][index]] * dt.texel_weights_float_4t[2][index] +
-	        weights[dt.texel_weights_4t[3][index]] * dt.texel_weights_float_4t[3][index]);
+	return (weights[di.texel_weights_4t[0][index]] * di.texel_weights_float_4t[0][index] +
+	        weights[di.texel_weights_4t[1][index]] * di.texel_weights_float_4t[1][index]) +
+	       (weights[di.texel_weights_4t[2][index]] * di.texel_weights_float_4t[2][index] +
+	        weights[di.texel_weights_4t[3][index]] * di.texel_weights_float_4t[3][index]);
 }
 
 /**
  * @brief Compute the infilled weight for N texel indices in a decimated grid.
  */
 static inline vfloat bilinear_infill_vla(
-	const decimation_table& dt,
+	const decimation_info& di,
 	const float* weights,
 	int index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
-	vint weight_idx0 = vint(dt.texel_weights_4t[0] + index);
-	vint weight_idx1 = vint(dt.texel_weights_4t[1] + index);
-	vint weight_idx2 = vint(dt.texel_weights_4t[2] + index);
-	vint weight_idx3 = vint(dt.texel_weights_4t[3] + index);
+	vint weight_idx0 = vint(di.texel_weights_4t[0] + index);
+	vint weight_idx1 = vint(di.texel_weights_4t[1] + index);
+	vint weight_idx2 = vint(di.texel_weights_4t[2] + index);
+	vint weight_idx3 = vint(di.texel_weights_4t[3] + index);
 
 	// Load the bilinear filter weights from the decimated grid
 	vfloat weight_val0 = gatherf(weights, weight_idx0);
@@ -1339,10 +1339,10 @@ static inline vfloat bilinear_infill_vla(
 	vfloat weight_val3 = gatherf(weights, weight_idx3);
 
 	// Load the weight contribution factors for each decimated weight
-	vfloat tex_weight_float0 = loada(dt.texel_weights_float_4t[0] + index);
-	vfloat tex_weight_float1 = loada(dt.texel_weights_float_4t[1] + index);
-	vfloat tex_weight_float2 = loada(dt.texel_weights_float_4t[2] + index);
-	vfloat tex_weight_float3 = loada(dt.texel_weights_float_4t[3] + index);
+	vfloat tex_weight_float0 = loada(di.texel_weights_float_4t[0] + index);
+	vfloat tex_weight_float1 = loada(di.texel_weights_float_4t[1] + index);
+	vfloat tex_weight_float2 = loada(di.texel_weights_float_4t[2] + index);
+	vfloat tex_weight_float3 = loada(di.texel_weights_float_4t[3] + index);
 
 	// Compute the bilinear interpolation to generate the per-texel weight
 	return (weight_val0 * tex_weight_float0 + weight_val1 * tex_weight_float1) +
@@ -1358,14 +1358,14 @@ static inline vfloat bilinear_infill_vla(
  * reduced grid, compared to the full grid.
  *
  * @param eai       The ideal weights for the full grid.
- * @param dt        The weight grid decimation table.
+ * @param di        The selected weight decimation.
  * @param weights   The ideal weights for the decimated grid.
  *
  * @return The accumulated error.
  */
 float compute_error_of_weight_set_1plane(
 	const endpoints_and_weights& eai,
-	const decimation_table& dt,
+	const decimation_info& di,
 	const float *weights);
 
 /**
@@ -1378,7 +1378,7 @@ float compute_error_of_weight_set_1plane(
  *
  * @param eai1       The ideal weights for the full grid and plane 1.
  * @param eai2       The ideal weights for the full grid and plane 2.
- * @param dt         The weight grid decimation table.
+ * @param di         The selected weight decimation.
  * @param weights1   The ideal weights for the decimated grid plane 1.
  * @param weights2   The ideal weights for the decimated grid plane 2.
  *
@@ -1387,7 +1387,7 @@ float compute_error_of_weight_set_1plane(
 float compute_error_of_weight_set_2planes(
 	const endpoints_and_weights& eai1,
 	const endpoints_and_weights& eai2,
-	const decimation_table& dt,
+	const decimation_info& di,
 	const float* weights1,
 	const float* weights2);
 
@@ -1444,7 +1444,7 @@ void unpack_color_endpoints(
  *
  * @param      bsd              The block size information.
  * @param      scb              The symbolic compressed encoding.
- * @param      dt               The weight grid decimation table.
+ * @param      di               The weight grid decimation table.
  * @param      is_dual_plane    @c true if this is a dual plane block, @c false otherwise.
  * @param      quant_level      The weight quantization level.
  * @param[out] weights_plane1   The output array for storing the plane 1 weights.
@@ -1453,7 +1453,7 @@ void unpack_color_endpoints(
 void unpack_weights(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const decimation_table& dt,
+	const decimation_info& di,
 	bool is_dual_plane,
 	int quant_level,
 	int weights_plane1[MAX_TEXELS_PER_BLOCK],
@@ -1537,7 +1537,7 @@ void determine_optimal_set_of_endpoint_formats_to_use(
  * @param         blk                 The image block color data to compress.
  * @param         ewb                 The image block weighted error data.
  * @param         pi                  The partition info for the current trial.
- * @param         dt                  The weight grid decimation table.
+ * @param         di                  The weight grid decimation table.
  * @param         weight_quant_mode   The weight grid quantization level.
  * @param         weight_set8         The quantized weight set.
  * @param[in,out] ep                  The color endpoints (modifed in place).
@@ -1548,7 +1548,7 @@ void recompute_ideal_colors_1plane(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	const decimation_table& dt,
+	const decimation_info& di,
 	int weight_quant_mode,
 	const uint8_t* weight_set8,
 	endpoints& ep,
@@ -1564,7 +1564,7 @@ void recompute_ideal_colors_1plane(
  * @param         blk                  The image block color data to compress.
  * @param         ewb                  The image block weighted error data.
  * @param         pi                   The partition info for the current trial.
- * @param         dt                   The weight grid decimation table.
+ * @param         di                   The weight grid decimation table.
  * @param         weight_quant_mode    The weight grid quantization level.
  * @param         weight_set8_plane1   The quantized weight set for plane 1.
  * @param         weight_set8_plane2   The quantized weight set for plane 2.
@@ -1577,7 +1577,7 @@ void recompute_ideal_colors_2planes(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	const decimation_table& dt,
+	const decimation_info& di,
 	int weight_quant_mode,
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
