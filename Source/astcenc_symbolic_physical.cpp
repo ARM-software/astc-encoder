@@ -21,7 +21,7 @@
 
 #include "astcenc_internal.h"
 
-#include <assert.h>
+#include <cassert>
 
 /**
  * @brief Write up to 8 bits at an arbitrary bit offset.
@@ -262,6 +262,7 @@ void symbolic_to_physical(
 	for (int i = 0; i < scb.partition_count; i++)
 	{
 		int vals = 2 * (scb.color_formats[i] >> 2) + 2;
+		assert(vals <= 8);
 		for (int j = 0; j < vals; j++)
 		{
 			values_to_encode[j + valuecount_to_encode] = scb.color_values[i][j];

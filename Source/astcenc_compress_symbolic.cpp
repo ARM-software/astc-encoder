@@ -387,8 +387,6 @@ static float compress_symbolic_block_fixed_partition_1plane(
 	{
 		TRACE_NODE(node0, "candidate");
 
-		uint8_t *u8_weight_src;
-
 		const int bm_packed_index = block_mode_index[i];
 		if (bm_packed_index < 0)
 		{
@@ -403,7 +401,6 @@ static float compress_symbolic_block_fixed_partition_1plane(
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
-		u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * bm_packed_index;
 
 		trace_add_data("weight_x", dt.weight_x);
 		trace_add_data("weight_y", dt.weight_y);
@@ -415,11 +412,18 @@ static float compress_symbolic_block_fixed_partition_1plane(
 		vfloat4 rgbo_colors[4];
 
 		symbolic_compressed_block workscb;
+
+		uint8_t* u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * bm_packed_index;
+		for (int j = 0; j < dt.weight_count; j++)
+		{
+			workscb.weights[j] = u8_weight_src[j];
+		}
+
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_1plane(
 			    blk, ewb, *pt, dt,
-			    weight_quant_mode, u8_weight_src,
+			    weight_quant_mode, workscb.weights,
 			    eix[decimation_mode].ep, rgbs_colors, rgbo_colors);
 
 			// quantize the chosen color
@@ -469,7 +473,7 @@ static float compress_symbolic_block_fixed_partition_1plane(
 					workscb.color_formats_matched = 1;
 					for (int j = 0; j < 4; j++)
 					{
-						for (int k = 0; k < 12; k++)
+						for (int k = 0; k < 8; k++)
 						{
 							workscb.color_values[j][k] = colorvals[j][k];
 						}
@@ -494,11 +498,6 @@ static float compress_symbolic_block_fixed_partition_1plane(
 			// Pre-realign test
 			if (l == 0)
 			{
-				for (int j = 0; j < dt.weight_count; j++)
-				{
-					workscb.weights[j] = u8_weight_src[j];
-				}
-
 				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
@@ -538,14 +537,9 @@ static float compress_symbolic_block_fixed_partition_1plane(
 			// perform a final pass over the weights to try to improve them.
 			bool adjustments = realign_weights(
 			    config.profile, bsd, blk, ewb, workscb,
-			    u8_weight_src, nullptr);
+			    workscb.weights, nullptr);
 
 			// Post-realign test
-			for (int j = 0; j < dt.weight_count; j++)
-			{
-				workscb.weights[j] = u8_weight_src[j];
-			}
-
 			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{
@@ -799,9 +793,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 			continue;
 		}
 
-		uint8_t *u8_weight1_src;
-		uint8_t *u8_weight2_src;
-
 		assert(bm_packed_index >= 0 && bm_packed_index < bsd.block_mode_count);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
@@ -809,9 +800,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		int weight_quant_mode = qw_bm.quant_mode;
 		const decimation_table& dt = *dts[decimation_mode];
 		promise(dt.weight_count > 0);
-
-		u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index);
-		u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index + 1);
 
 		trace_add_data("weight_x", dt.weight_x);
 		trace_add_data("weight_y", dt.weight_y);
@@ -825,11 +813,20 @@ static float compress_symbolic_block_fixed_partition_2planes(
 		vfloat4 rgbo_colors[4];
 
 		symbolic_compressed_block workscb;
+
+		uint8_t* u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index);
+		uint8_t* u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index + 1);
+		for (int j = 0; j < dt.weight_count; j++)
+		{
+			workscb.weights[j] = u8_weight1_src[j];
+			workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
+		}
+
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_2planes(
 			    blk, ewb, *pt, dt,
-			    weight_quant_mode, u8_weight1_src, u8_weight2_src,
+			    weight_quant_mode, workscb.weights, workscb.weights + PLANE2_WEIGHTS_OFFSET,
 			    epm, rgbs_colors, rgbo_colors, plane2_component);
 
 			// store the colors for the block
@@ -872,7 +869,7 @@ static float compress_symbolic_block_fixed_partition_2planes(
 					workscb.color_formats_matched = 1;
 					for (int j = 0; j < 4; j++)
 					{
-						for (int k = 0; k < 12; k++)
+						for (int k = 0; k < 8; k++)
 						{
 							workscb.color_values[j][k] = colorvals[j][k];
 						}
@@ -898,12 +895,6 @@ static float compress_symbolic_block_fixed_partition_2planes(
 			// Pre-realign test
 			if (l == 0)
 			{
-				for (int j = 0; j < dt.weight_count; j++)
-				{
-					workscb.weights[j] = u8_weight1_src[j];
-					workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
-				}
-
 				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 				if (errorval == -1e30f)
 				{
@@ -943,15 +934,9 @@ static float compress_symbolic_block_fixed_partition_2planes(
 			// perform a final pass over the weights to try to improve them.
 			bool adjustments = realign_weights(
 			    config.profile, bsd, blk, ewb, workscb,
-			    u8_weight1_src, u8_weight2_src);
+			    workscb.weights, workscb.weights + PLANE2_WEIGHTS_OFFSET);
 
 			// Post-realign test
-			for (int j = 0; j < dt.weight_count; j++)
-			{
-				workscb.weights[j] = u8_weight1_src[j];
-				workscb.weights[j + PLANE2_WEIGHTS_OFFSET] = u8_weight2_src[j];
-			}
-
 			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
 			if (errorval == -1e30f)
 			{

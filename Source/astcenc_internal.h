@@ -743,8 +743,8 @@ struct symbolic_compressed_block
 	int plane2_component;		// color component for second plane of weights
 
 	// TODO: Under what circumstances is this ever more than 8 (4 pairs) colors
-	int color_values[4][12];	// quantized endpoint color pairs.
-	int constant_color[4];		// constant-color, as FP16 or UINT16. Used for constant-color blocks only.
+	int color_values[4][8];	    // quantized endpoint color pairs.
+	int constant_color[4];      // constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 	// Quantized and decimated weights. In the case of dual plane, the second
 	// index plane starts at weights[PLANE2_WEIGHTS_OFFSET]
 	float errorval;             // The error of the current encoding
