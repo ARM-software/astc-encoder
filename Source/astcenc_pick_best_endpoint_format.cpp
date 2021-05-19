@@ -699,7 +699,7 @@ static void one_partition_find_best_combination_for_bitcount(
 		if (integer_count_error < best_integer_count_error)
 		{
 			best_integer_count_error = integer_count_error;
-			best_integer_count = integer_count;
+			best_integer_count = integer_count - 1;
 		}
 	}
 
