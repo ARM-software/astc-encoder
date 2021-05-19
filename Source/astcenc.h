@@ -749,6 +749,8 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
  * only be called when all threads have exited the @c astcenc_compress_image() function for image N,
  * but before any thread enters it for image N + 1.
  *
+ * Calling this is not required (but won't hurt), if the context is created for single threaded use.
+ *
  * @param context   Codec context.
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if reset failed.
@@ -782,6 +784,8 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
  * The caller is responsible for synchronizing threads in the worker thread pool. This function must
  * only be called when all threads have exited the @c astcenc_decompress_image() function for image
  * N, but before any thread enters it for image N + 1.
+ *
+ * Calling this is not required (but won't hurt), if the context is created for single threaded use.
  *
  * @param context   Codec context.
  *

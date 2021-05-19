@@ -1002,6 +1002,12 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
 
+	// If context thread count is one then implicitly reset
+	if (ctx->thread_count == 1)
+	{
+		astcenc_compress_reset(ctx);
+	}
+
 	if (ctx->config.v_rgb_mean != 0.0f || ctx->config.v_rgb_stdev != 0.0f ||
 	    ctx->config.v_a_mean != 0.0f || ctx->config.v_a_stdev != 0.0f ||
 	    ctx->config.a_scale_radius != 0)
@@ -1116,6 +1122,12 @@ astcenc_error astcenc_decompress_image(
 	}
 
 	imageblock blk;
+
+	// If context thread count is one then implicitly reset
+	if (ctx->thread_count == 1)
+	{
+		astcenc_decompress_reset(ctx);
+	}
 
 	// Only the first thread actually runs the initializer
 	ctx->manage_decompress.init(zblocks * yblocks * xblocks);
