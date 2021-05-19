@@ -26,8 +26,8 @@
 /**
  * @brief Write up to 8 bits at an arbitrary bit offset.
  *
- * The stored value is at most 8 bits, but can be stored at an offset of
- * between 0 and 7 bits so may span two separate bytes in memory.
+ * The stored value is at most 8 bits, but can be stored at an offset of between 0 and 7 bits so
+ * may span two separate bytes in memory.
  *
  * @param         value       The value to write.
  * @param         bitcount    The number of bits to write, starting from LSB.
@@ -57,8 +57,8 @@ static inline void write_bits(
 /**
  * @brief Read up to 8 bits at an arbitrary bit offset.
  *
- * The stored value is at most 8 bits, but can be stored at an offset of
- * between 0 and 7 bits so may span two separate bytes in memory.
+ * The stored value is at most 8 bits, but can be stored at an offset of between 0 and 7 bits so may
+ * span two separate bytes in memory.
  *
  * @param         bitcount    The number of bits to read.
  * @param         bitoffset   The bit offset to read from, between 0 and 7.
@@ -145,7 +145,7 @@ void symbolic_to_physical(
 
 	int partition_count = scb.partition_count;
 
-	// First, compress the weights.
+	// Compress the weights.
 	// They are encoded as an ordinary integer-sequence, then bit-reversed
 	uint8_t weightbuf[16];
 	for (int i = 0; i < 16; i++)

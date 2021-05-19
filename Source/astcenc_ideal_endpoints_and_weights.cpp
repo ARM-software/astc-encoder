@@ -239,15 +239,14 @@ static void compute_ideal_colors_and_weights_2_comp(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0.0f)			// case for when none of the texels had any weight
+		if (length < 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
 		}
 
-		// it is possible for a uniform-color partition to produce length=0; this
-		// causes NaN-production and NaN-propagation later on. Set length to
-		// a small value to avoid this problem.
+		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
+		// so set to a small value to avoid this problem.
 		length = astc::max(length, 1e-7f);
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
@@ -404,15 +403,14 @@ static void compute_ideal_colors_and_weights_3_comp(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)			// case for when none of the texels had any weight
+		if (length < 0)			// Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
 		}
 
-		// it is possible for a uniform-color partition to produce length=0; this
-		// causes NaN-production and NaN-propagation later on. Set length to
-		// a small value to avoid this problem.
+		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
+		// so set to a small value to avoid this problem.
 		length = astc::max(length, 1e-7f);
 
 		length_squared[i] = length * length;
@@ -557,8 +555,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 			highparam[i] = 1e-7f;
 		}
 
-		// Uniform color partitions produce length=0, force small value to
-		// avoid NaN issues later ...
+		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
+		// so set to a small value to avoid this problem.
 		length = astc::max(length, 1e-7f);
 
 		length_squared[i] = length * length;
@@ -632,7 +630,7 @@ void compute_ideal_colors_and_weights_2planes(
 	assert(plane2_component < 4);
 	switch (plane2_component)
 	{
-	case 0: // separate weights for red
+	case 0: // Separate weights for red
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 0);
@@ -644,7 +642,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 0);
 		break;
 
-	case 1: // separate weights for green
+	case 1: // Separate weights for green
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(bsd,blk, ewb,  pi, ei1, 1);
@@ -656,7 +654,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 1);
 		break;
 
-	case 2: // separate weights for blue
+	case 2: // Separate weights for blue
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 2);
@@ -668,7 +666,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 2);
 		break;
 
-	default: // separate weights for alpha
+	default: // Separate weights for alpha
 		assert(uses_alpha);
 		compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb, pi, ei1, 3);
 		compute_ideal_colors_and_weights_1_comp(bsd, blk, ewb, pi, ei2, 3);
@@ -763,9 +761,8 @@ void compute_ideal_weights_for_decimation(
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// This function includes a copy of the epw from eai_in to eai_out. We do it
-	// here because we want to load the data anyway, so we can avoid loading it
-	// from memory twice.
+	// This function includes a copy of the epw from eai_in to eai_out. We do it here because we
+	// want to load the data anyway, so we can avoid loading it from memory twice.
 	eai_out.ep = eai_in.ep;
 	eai_out.is_constant_weight_error_scale = eai_in.is_constant_weight_error_scale;
 
@@ -778,8 +775,8 @@ void compute_ideal_weights_for_decimation(
 		weight_set[i] = 0.0f;
 	}
 
-	// If we have a 1:1 mapping just shortcut the computation - clone the
-	// weights into both the weight set and the output epw copy.
+	// If we have a 1:1 mapping just shortcut the computation - clone the weights into both the
+	// weight set and the output epw copy.
 
 	// Transfer enough to also copy zero initialized SIMD over-fetch region
 	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
@@ -800,8 +797,8 @@ void compute_ideal_weights_for_decimation(
 
 		return;
 	}
-	// If we don't have a 1:1 mapping just clone the weights into the output
-	// epw copy and then do the full algorithm to decimate weights.
+	// If we don't have a 1:1 mapping just clone the weights into the output epw copy and then do
+	// the full algorithm to decimate weights.
 	else
 	{
 		for (int i = 0; i < texel_count_simd; i++)
@@ -874,8 +871,7 @@ void compute_ideal_weights_for_decimation(
 	}
 
 	// Perform a single iteration of refinement
-	// Empirically determined step size; larger values don't help but smaller
-	// values cause a noticeable drop in image quality ...
+	// Empirically determined step size; larger values don't help but smaller drops image quality
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
 
@@ -943,9 +939,7 @@ void compute_quantized_weights_for_decimation(
 	static const int quant_levels[12] { 2,3,4,5,6,8,10,12,16,20,24,32 };
 	float quant_level_m1 = (float)(quant_levels[quant_level] - 1);
 
-	// Quantize the weight set using both the specified low/high bounds
-	// and the standard 0..1 weight bounds.
-
+	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 	assert(high_bound > low_bound);
 	float rscale = high_bound - low_bound;
 	float scale = 1.0f / rscale;
@@ -990,8 +984,8 @@ void compute_quantized_weights_for_decimation(
 /**
  * @brief Compute the RGB + offset for a HDR endpoint mode #7.
  *
- * Since the matrix needed has a regular structure we can simplify the inverse
- * calculation. This gives us ~24 multiplications vs. 96 for a generic inverse.
+ * Since the matrix needed has a regular structure we can simplify the inverse calculation. This
+ * gives us ~24 multiplications vs. 96 for a generic inverse.
  *
  *  mat[0] = vfloat4(rgba_ws.x,      0.0f,      0.0f, wght_ws.x);
  *  mat[1] = vfloat4(     0.0f, rgba_ws.y,      0.0f, wght_ws.y);
@@ -1117,7 +1111,7 @@ void recompute_ideal_colors_1plane(
 		vfloat4 weight_weight_sum = vfloat4(1e-17f);
 		float psum = 1e-17f;
 
-		// FIXME: the loop below has too many responsibilities, making it inefficient.
+		// TODO: This loop has too many responsibilities, making it inefficient
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
@@ -1125,7 +1119,7 @@ void recompute_ideal_colors_1plane(
 			vfloat4 rgba = blk.texel(tix);
 			vfloat4 color_weight = ewb.error_weights[tix];
 
-			// FIXME: move this calculation out to the color block.
+			// TODO: Move this calculation out to the color block?
 			float ls_weight = hadd_rgb_s(color_weight);
 			float idx0 = bilinear_infill(di, weight_set, tix);
 
@@ -1162,8 +1156,8 @@ void recompute_ideal_colors_1plane(
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
-		// calculations specific to mode #7, the HDR RGB-scale mode.
-		// FIXME: Can we skip this for LDR textures?
+		// Calculations specific to mode #7, the HDR RGB-scale mode
+		// TODO: Can we skip this for LDR textures?
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
@@ -1171,15 +1165,13 @@ void recompute_ideal_colors_1plane(
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 
-		// We will occasionally get a failure due to the use of a singular
-		// (non-invertible) matrix. Record whether such a failure has taken
-		// place; if it did, compute rgbo_vectors[] with a different method
-		// later on.
+		// We will occasionally get a failure due to the use of a singular (non-invertible) matrix.
+		// Record whether such a failure has taken place; if it did, compute rgbo_vectors[] with a
+		// different method later
 		float chkval = dot_s(rgbovec, rgbovec);
 		int rgbo_fail = chkval != chkval;
 
-		// Initialize the luminance and scale vectors with a reasonable
-		//  default, just in case the subsequent calculation blows up.
+		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
 
@@ -1189,8 +1181,8 @@ void recompute_ideal_colors_1plane(
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
-			// if all weights in the partition were equal, then just take average
-			// of all colors in the partition and use that as both endpoint colors.
+			// If all weights in the partition were equal, then just take average of all colors in
+			// the partition and use that as both endpoint colors
 			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 			vmask4 notnan_mask = avg == avg;
@@ -1201,8 +1193,8 @@ void recompute_ideal_colors_1plane(
 		}
 		else
 		{
-			// otherwise, complete the analytic calculation of ideal-endpoint-values
-			// for the given set of texel weights and pixel colors.
+			// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
+			// set of texel weights and pixel colors
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
@@ -1238,8 +1230,7 @@ void recompute_ideal_colors_1plane(
 			}
 		}
 
-		// if the calculation of an RGB-offset vector failed, try to compute
-		// a somewhat-sensible value anyway
+		// If the calculation of an RGB-offset vector failed, try to compute a value another way
 		if (rgbo_fail)
 		{
 			vfloat4 v0 = ep.endpt0[i];
@@ -1332,7 +1323,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 weight_weight_sum = vfloat4(1e-17f);
 		float psum = 1e-17f;
 
-		// FIXME: the loop below has too many responsibilities, making it inefficient.
+		// TODO: This loop has too many responsibilities, making it inefficient
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
@@ -1340,7 +1331,7 @@ void recompute_ideal_colors_2planes(
 			vfloat4 rgba = blk.texel(tix);
 			vfloat4 color_weight = ewb.error_weights[tix];
 
-			// FIXME: move this calculation out to the color block.
+			// TODO: Move this calculation out to the color block?
 			float ls_weight = hadd_rgb_s(color_weight);
 
 			float idx0 = bilinear_infill(di, weight_set, tix);
@@ -1397,8 +1388,8 @@ void recompute_ideal_colors_2planes(
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
-		// calculations specific to mode #7, the HDR RGB-scale mode.
-		// FIXME: Can we skip this for LDR textures?
+		// Calculations specific to mode #7, the HDR RGB-scale mode
+		// TODO: Can we skip this for LDR textures?
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
@@ -1406,15 +1397,13 @@ void recompute_ideal_colors_2planes(
 		                                  rgbq_sum, psum);
 		rgbo_vectors[i] = rgbovec;
 
-		// We will occasionally get a failure due to the use of a singular
-		// (non-invertible) matrix. Record whether such a failure has taken
-		// place; if it did, compute rgbo_vectors[] with a different method
-		// later on.
+		// We will occasionally get a failure due to the use of a singular (non-invertible) matrix.
+		// Record whether such a failure has taken place; if it did, compute rgbo_vectors[] with a
+		// different method later
 		float chkval = dot_s(rgbovec, rgbovec);
 		int rgbo_fail = chkval != chkval;
 
-		// Initialize the luminance and scale vectors with a reasonable
-		//  default, just in case the subsequent calculation blows up.
+		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 		scalediv = astc::clamp1f(scalediv);
 
@@ -1424,8 +1413,8 @@ void recompute_ideal_colors_2planes(
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
-			// if all weights in the partition were equal, then just take average
-			// of all colors in the partition and use that as both endpoint colors.
+			// If all weights in the partition were equal, then just take average of all colors in
+			// the partition and use that as both endpoint colors
 			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 			vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
@@ -1439,8 +1428,8 @@ void recompute_ideal_colors_2planes(
 		}
 		else
 		{
-			// otherwise, complete the analytic calculation of ideal-endpoint-values
-			// for the given set of texel weights and pixel colors.
+			// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
+			// set of texel weights and pixel colors
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
@@ -1479,8 +1468,8 @@ void recompute_ideal_colors_2planes(
 
 		if (wmin2 >= wmax2 * 0.999f)
 		{
-			// if all weights in the partition were equal, then just take average
-			// of all colors in the partition and use that as both endpoint colors.
+			// If all weights in the partition were equal, then just take average of all colors in
+			// the partition and use that as both endpoint colors
 			vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
 			vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
@@ -1492,8 +1481,8 @@ void recompute_ideal_colors_2planes(
 		}
 		else
 		{
-			// otherwise, complete the analytic calculation of ideal-endpoint-values
-			// for the given set of texel weights and pixel colors.
+			// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
+			// set of texel weights and pixel colors
 			vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
 			vfloat4 color_rdet2 = 1.0f / color_det2;
 
@@ -1513,8 +1502,7 @@ void recompute_ideal_colors_2planes(
 			ep.endpt1[i] = select(ep.endpt1[i], ep1, full_mask);
 		}
 
-		// if the calculation of an RGB-offset vector failed, try to compute
-		// a somewhat-sensible value anyway
+		// If the calculation of an RGB-offset vector failed, try to compute a value another way
 		if (rgbo_fail)
 		{
 			vfloat4 v0 = ep.endpt0[i];

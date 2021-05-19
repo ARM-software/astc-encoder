@@ -370,10 +370,10 @@ static astcenc_error validate_decompression_swizzle(
  *
  * This function can respond in two ways:
  *
- *   * Numerical inputs that have valid ranges are clamped to those valid
- *     ranges. No error is thrown for out-of-range inputs in this case.
- *   * Numerical inputs and logic inputs are are logically invalid and which
- *     make no sense algorithmically will return an error.
+ *   * Numerical inputs that have valid ranges are clamped to those valid ranges. No error is thrown
+ *     for out-of-range inputs in this case.
+ *   * Numerical inputs and logic inputs are are logically invalid and which make no sense
+ *     algorithmically will return an error.
  *
  * @param[in,out] config   The input compressor configuration.
  *
@@ -488,10 +488,9 @@ astcenc_error astcenc_config_init(
 	float texels = static_cast<float>(block_x * block_y * block_z);
 	float ltexels = logf(texels) / logf(10.0f);
 
-	// Process the performance quality level or preset; note that this must be
-	// done before we process any additional settings, such as color profile
-	// and flags, which may replace some of these settings with more use case
-	// tuned values
+	// Process the performance quality level or preset; note that this must be done before we
+	// process any additional settings, such as color profile and flags, which may replace some of
+	// these settings with more use case tuned values
 	if (quality < ASTCENC_PRE_FASTEST ||
 	    quality > ASTCENC_PRE_EXHAUSTIVE)
 	{

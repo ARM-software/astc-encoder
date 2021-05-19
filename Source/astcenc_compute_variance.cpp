@@ -20,14 +20,13 @@
 /**
  * @brief Functions to calculate variance per component in a NxN footprint.
  *
- * We need N to be parametric, so the routine below uses summed area tables in
- * order to execute in O(1) time independent of how big N is.
+ * We need N to be parametric, so the routine below uses summed area tables in order to execute in
+ * O(1) time independent of how big N is.
  *
- * The addition uses a Brent-Kung-based parallel prefix adder. This uses the
- * prefix tree to first perform a binary reduction, and then distributes the
- * results. This method means that there is no serial dependency between a
- * given element and the next one, and also significantly improves numerical
- * stability allowing us to use floats rather than doubles.
+ * The addition uses a Brent-Kung-based parallel prefix adder. This uses the prefix tree to first
+ * perform a binary reduction, and then distributes the results. This method means that there is no
+ * serial dependency between a given element and the next one, and also significantly improves
+ * numerical stability allowing us to use floats rather than doubles.
  */
 
 #include "astcenc_internal.h"
@@ -103,8 +102,8 @@ static void brent_kung_prefix_sum(
 /**
  * @brief Compute averages and variances for a pixel region.
  *
- * The routine computes both in a single pass, using a summed-area table to
- * decouple the running time from the averaging/variance kernel size.
+ * The routine computes both in a single pass, using a summed-area table to decouple the running
+ * time from the averaging/variance kernel size.
  *
  * @param[out] ctx   The compressor context storing the output data.
  * @param      arg   The input parameter structure.

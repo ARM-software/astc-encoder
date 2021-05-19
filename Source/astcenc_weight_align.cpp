@@ -22,26 +22,19 @@
  *
  * This algorithm works as follows:
  * - we compute a complex number P as (cos s*i, sin s*i) for each weight,
- *   where i is the input value and s is a scaling factor based on the spacing
- *   between the weights.
+ *   where i is the input value and s is a scaling factor based on the spacing between the weights.
  * - we then add together complex numbers for all the weights.
  * - we then compute the length and angle of the resulting sum.
  *
  * This should produce the following results:
- * - perfect alignment results in a vector whose length is equal to the sum of
- *   lengths of all inputs
+ * - perfect alignment results in a vector whose length is equal to the sum of lengths of all inputs
  * - even distribution results in a vector of length 0.
  * - all samples identical results in perfect alignment for every scaling.
  *
- * For each scaling factor within a given set, we compute an alignment factor
- * from 0 to 1. This should then result in some scalings standing out as having
- * particularly good alignment factors; we can use this to produce a set of
- * candidate scale/shift values for various quantization levels; we should then
- * actually try them and see what happens.
- *
- * Assuming N quantization steps, the scaling factor becomes s=2*PI*(N-1); we
- * should probably have about 1 scaling factor for every 1/4 quantization step
- * (perhaps 1/8 for low levels of quantization).
+ * For each scaling factor within a given set, we compute an alignment factor from 0 to 1. This
+ * should then result in some scalings standing out as having particularly good alignment factors;
+ * we can use this to produce a set of candidate scale/shift values for various quantization levels;
+ * we should then actually try them and see what happens.
  */
 
 #include "astcenc_internal.h"
@@ -58,15 +51,14 @@ static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
 
 static int max_angular_steps_needed_for_quant_level[13];
 
-// Yes, the next-to-last entry is supposed to have the value 33. This because
-// the 32-weight mode leaves a double-sized hole in the middle of the weight
-// space, so we are better off matching 33 weights than 32.
+// The next-to-last entry is supposed to have the value 33. This because the 32-weight mode leaves a
+// double-sized hole in the middle of the weight space, so we are better off matching 33 weights.
 static const int quantization_steps_for_level[13] = {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36
 };
 
-// Store a reduced sin/cos table for 64 possible weight values; this causes
-// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
+// Store a reduced sin/cos table for 64 possible weight values; this causes slight quality loss
+// compared to using sin() and cos() directly. Must be 2^N.
 #define SINCOS_STEPS 64
 
 alignas(ASTCENC_VECALIGN) static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
@@ -232,9 +224,8 @@ static void compute_lowest_and_highest_weight(
 		storea(minidx, &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
-		// The cut_(lowest/highest)_weight_error indicate the error that
-		// results from  forcing samples that should have had the weight value
-		// one step (up/down).
+		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
+		// samples that should have had the weight value one step (up/down).
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, &error[sp]);
@@ -280,10 +271,9 @@ static void compute_angular_endpoints_for_quant_levels(
 	                                  angular_offsets, lowest_weight, weight_span, error,
 	                                  cut_low_weight_error, cut_high_weight_error);
 
-	// For each quantization level, find the best error terms. Use packed
-	// vectors so data-dependent branches can become selects. This involves
-	// some integer to float casts, but the values are small enough so they
-	// never round the wrong way.
+	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
+	// branches can become selects. This involves some integer to float casts, but the values are
+	// small enough so they never round the wrong way.
 	vfloat4 best_results[40];
 
 	// Initialize the array to some safe defaults
@@ -331,8 +321,8 @@ static void compute_angular_endpoints_for_quant_levels(
 		best_results[idx_span - 2] = select(best_result, new_result, mask4);
 	}
 
-	// If we get a better error for lower sample count then use the lower
-	// sample count's error for the higher sample count as well.
+	// If we get a better error for lower sample count then use the lower sample count's error for
+	// the higher sample count as well.
 	for (int i = 3; i <= max_quant_steps; i++)
 	{
 		vfloat4 result = best_results[i];
@@ -348,8 +338,7 @@ static void compute_angular_endpoints_for_quant_levels(
 		int bsi = (int)best_results[q].lane<1>();
 
 		// Did we find anything?
-		// TODO: Can we do better than bsi = 0 here. We should at least
-		// propagate an error (and move the printf into the CLI).
+		// TODO: Can we do better than bsi = 0 here. We should at least propagate an error?
 #if !defined(NDEBUG)
 		if (bsi < 0)
 		{

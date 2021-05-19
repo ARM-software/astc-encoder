@@ -40,11 +40,10 @@
 /**
  * @brief Make a promise to the compiler's optimizer.
  *
- * A promise is an expression that the optimizer is can assume is true for to
- * help it generate faster code. Common use cases for this are to promise that
- * a for loop will iterate more than once, or that the loop iteration count is
- * a multiple of a vector length, which avoids pre-loop checks and can avoid
- * loop tails if loops are unrolled by the auto-vectorizer.
+ * A promise is an expression that the optimizer is can assume is true for to help it generate
+ * faster code. Common use cases for this are to promise that a for loop will iterate more than
+ * once, or that the loop iteration count is a multiple of a vector length, which avoids pre-loop
+ * checks and can avoid loop tails if loops are unrolled by the auto-vectorizer.
  */
 #if defined(NDEBUG)
 	#if !defined(__clang__) && defined(_MSC_VER)
@@ -117,21 +116,18 @@ static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
  *     * A multi-threaded processing stage.
  *     * A condition variable so threads can wait for processing completion.
  *
- * The init stage will be executed by the first thread to arrive in the
- * critical section, there is no main thread in the thread pool.
+ * The init stage will be executed by the first thread to arrive in the critical section, there is
+ * no main thread in the thread pool.
  *
- * The processing stage uses dynamic dispatch to assign task tickets to threads
- * on an on-demand basis. Threads may each therefore executed different numbers
- * of tasks, depending on their processing complexity. The task queue and the
- * task tickets are just counters; the caller must map these integers to an
- * actual processing partition in a specific problem domain.
+ * The processing stage uses dynamic dispatch to assign task tickets to threads on an on-demand
+ * basis. Threads may each therefore executed different numbers of tasks, depending on their
+ * processing complexity. The task queue and the task tickets are just counters; the caller must map
+ * these integers to an actual processing partition in a specific problem domain.
  *
- * The exit wait condition is needed to ensure processing has finished before
- * a worker thread can progress to the next stage of the pipeline. Specifically
- * a worker may exit the processing stage because there are no new tasks to
- * assign to it while other worker threads are still processing. Calling wait()
- * will ensure that all other worker have finished before the thread can
- * proceed.
+ * The exit wait condition is needed to ensure processing has finished before a worker thread can
+ * progress to the next stage of the pipeline. Specifically a worker may exit the processing stage
+ * because there are no new tasks to assign to it while other worker threads are still processing.
+ * Calling @c wait() will ensure that all other worker have finished before the thread can proceed.
  *
  * The basic usage model:
  *
@@ -202,8 +198,8 @@ public:
 	/**
 	 * @brief Reset the tracker for a new processing batch.
 	 *
-	 * This must be called from single-threaded code before starting the
-	 * multi-threaded procesing operations.
+	 * This must be called from single-threaded code before starting the multi-threaded procesing
+	 * operations.
 	 */
 	void reset()
 	{
@@ -217,12 +213,11 @@ public:
 	/**
 	 * @brief Trigger the pipeline stage init step.
 	 *
-	 * This can be called from multi-threaded code. The first thread to
-	 * hit this will process the initialization. Other threads will block
-	 * and wait for it to complete.
+	 * This can be called from multi-threaded code. The first thread to hit this will process the
+	 * initialization. Other threads will block and wait for it to complete.
 	 *
-	 * @param init_func   Callable which executes the stage initialization.
-	 *                    Must return the number of tasks in the stage.
+	 * @param init_func   Callable which executes the stage initialization. It must return the
+	 *                    total number of tasks in the stage.
 	 */
 	void init(std::function<unsigned int(void)> init_func)
 	{
@@ -237,9 +232,8 @@ public:
 	/**
 	 * @brief Trigger the pipeline stage init step.
 	 *
-	 * This can be called from multi-threaded code. The first thread to
-	 * hit this will process the initialization. Other threads will block
-	 * and wait for it to complete.
+	 * This can be called from multi-threaded code. The first thread to hit this will process the
+	 * initialization. Other threads will block and wait for it to complete.
 	 *
 	 * @param task_count   Total number of tasks needing processing.
 	 */
@@ -259,11 +253,9 @@ public:
 	 * Assign up to @c granule tasks to the caller for processing.
 	 *
 	 * @param      granule   Maximum number of tasks that can be assigned.
-	 * @param[out] count     Actual number of tasks assigned, or zero if
-	 *                       no tasks were assigned.
+	 * @param[out] count     Actual number of tasks assigned, or zero if no tasks were assigned.
 	 *
-	 * @return Task index of the first assigned task; assigned tasks
-	 *         increment from this.
+	 * @return Task index of the first assigned task; assigned tasks increment from this.
 	 */
 	unsigned int get_task_assignment(unsigned int granule, unsigned int& count)
 	{
@@ -281,15 +273,15 @@ public:
 	/**
 	 * @brief Complete a task assignment.
 	 *
-	 * Mark @c count tasks as complete. This will notify all threads blocked
-	 * on @c wait() if this completes the processing of the stage.
+	 * Mark @c count tasks as complete. This will notify all threads blocked on @c wait() if this
+	 * completes the processing of the stage.
 	 *
 	 * @param count   The number of completed tasks.
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
-		// Note: m_done_count cannot use an atomic without the mutex; this has
-		// a race between the update here and the wait() for other threads
+		// Note: m_done_count cannot use an atomic without the mutex; this has a race between the
+		// update here and the wait() for other threads
 		std::unique_lock<std::mutex> lck(m_lock);
 		this->m_done_count += count;
 		if (m_done_count == m_task_count)
@@ -311,9 +303,9 @@ public:
 	/**
 	 * @brief Trigger the pipeline stage term step.
 	 *
-	 * This can be called from multi-threaded code. The first thread to
-	 * hit this will process the thread termintion. Caller must have called
-	 * wait() prior to calling this function to ensure processing is complete.
+	 * This can be called from multi-threaded code. The first thread to hit this will process the
+	 * thread termintion. Caller must have called @c wait() prior to calling this function to ensure
+	 * that processing is complete.
 	 *
 	 * @param term_func   Callable which executes the stage termination.
 	 */
@@ -435,68 +427,64 @@ struct decimation_mode
 /**
  * @brief Data tables for a single block size.
  *
- * The decimation tables store the information to apply weight grid dimension
- * reductions. We only store the decimation modes that are actually needed by
- * the current context; many of the possible modes will be unused (too many
- * weights for the current block size or disabled by heuristics). The actual
- * number of weights stored is @c decimation_mode_count, and the
- * @c decimation_modes and @c decimation_tables arrays store the active modes
- * contiguously at the start of the array. These entries are not stored in any
- * particuar order.
+ * The decimation tables store the information to apply weight grid dimension reductions. We only
+ * store the decimation modes that are actually needed by the current context; many of the possible
+ * modes will be unused (too many weights for the current block size or disabled by heuristics). The
+ * actual number of weights stored is @c decimation_mode_count, and the @c decimation_modes and
+ * @c decimation_tables arrays store the active modes contiguously at the start of the array. These
+ * entries are not stored in any particuar order.
  *
- * The block mode tables store the unpacked block mode settings. Block modes
- * are stored in the compressed block as an 11 bit field, but for any given
- * block size and set of compressor heuristics, only a subset of the block
- * modes will be used. The actual number of block modes stored is indicated in
- * @c block_mode_count, and the @c block_modes array store the active modes
- * contiguously at the start of the array. These entries are stored in
- * incrementing "packed" value order, which doesn't mean much once unpacked.
- * To allow decompressors to reference the packed data efficiently the
- * @c block_mode_packed_index array stores the mapping between physical ID and
- * the actual remapped array index.
+ * The block mode tables store the unpacked block mode settings. Block modes are stored in the
+ * compressed block as an 11 bit field, but for any given block size and set of compressor
+ * heuristics, only a subset of the block modes will be used. The actual number of block modes
+ * stored is indicated in @c block_mode_count, and the @c block_modes array store the active modes
+ * contiguously at the start of the array. These entries are stored in incrementing "packed" value
+ * order, which doesn't mean much once unpacked. To allow decompressors to reference the packed data
+ * efficiently the @c block_mode_packed_index array stores the mapping between physical ID and the
+ * actual remapped array index.
  */
 struct block_size_descriptor
 {
-	/**< The block X dimension, in texels. */
+	/** @brief The block X dimension, in texels. */
 	int xdim;
 
-	/**< The block Y dimension, in texels. */
+	/** @brief The block Y dimension, in texels. */
 	int ydim;
 
-	/**< The block Z dimension, in texels. */
+	/** @brief The block Z dimension, in texels. */
 	int zdim;
 
-	/**< The block total texel count. */
+	/** @brief The block total texel count. */
 	int texel_count;
 
 
-	/**< The number of stored decimation modes. */
+	/** @brief The number of stored decimation modes. */
 	int decimation_mode_count;
 
-	/**< The active decimation modes, stored in low indices. */
+	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
 
-	/**< The active decimation tables, stored in low indices. */
+	/** @brief The active decimation tables, stored in low indices. */
 	const decimation_info *decimation_tables[MAX_DECIMATION_MODES];
 
 
-	/**< The number of stored block modes. */
+	/** @brief The number of stored block modes. */
 	int block_mode_count;
 
-	/**< The active block modes, stored in low indices. */
+	/** @brief The active block modes, stored in low indices. */
 	block_mode block_modes[MAX_WEIGHT_MODES];
 
-	/**< The block mode array index, or -1 if not valid in current config. */
+	/** @brief The block mode array index, or -1 if not valid in current config. */
 	int16_t block_mode_packed_index[MAX_WEIGHT_MODES];
 
 
-	/**< The texel count for k-means partition selection. */
+	/** @brief The texel count for k-means partition selection. */
 	int kmeans_texel_count;
 
-	/**< The active texels for k-means partition selection. */
+	/** @brief The active texels for k-means partition selection. */
 	int kmeans_texels[MAX_KMEANS_TEXELS];
 
-	/**< The partion tables for all of the possible partitions. */
+	/** @brief The partion tables for all of the possible partitions. */
 	partition_info partitions[(3 * PARTITION_COUNT) + 1];
 };
 
@@ -664,16 +652,13 @@ static inline int get_quant_method_levels(quant_method method)
 /**
  * @brief Weight quantization transfer table.
  *
- * ASTC can store texel weights at many quantization levels, so for performance
- * we store essential information about each level as a precomputed data
- * structure.
+ * ASTC can store texel weights at many quantization levels, so for performance we store essential
+ * information about each level as a precomputed data structure. Unquantized weights are integers
+ * or floats in the range [0, 64].
  *
- * Unquantized weights are integers in the range [0, 64], or floats [0, 1].
- *
- * This structure provides the following information:
- * A table, used to estimate the closest quantized
-	weight for a given floating-point weight. For each quantized weight, the corresponding unquantized
-	and floating-point values. For each quantized weight, a previous-value and a next-value.
+ * This structure provides a table, used to estimate the closest quantized weight for a given
+ * floating-point weight. For each quantized weight, the corresponding unquantized values. For each
+ * quantized weight, a previous-value and a next-value.
 */
 struct quantization_and_transfer_table
 {
@@ -728,8 +713,6 @@ struct symbolic_compressed_block
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
 	int color_quant_level;
 	int plane2_component;		// color component for second plane of weights
-
-	// TODO: Under what circumstances is this ever more than 8 (4 pairs) colors
 	int color_values[4][8];	    // quantized endpoint color pairs.
 	int constant_color[4];      // constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 	// Quantized and decimated weights. In the case of dual plane, the second
@@ -750,9 +733,9 @@ struct physical_compressed_block
 /**
  * @brief Populate the block size descriptor for the target block size.
  *
- * This will also initialize the partition table metadata, which is stored
- * as part of the BSD structure. All initialized block size descriptors must be
- * terminated using term_block_size_descriptor to correctly free resources.
+ * This will also initialize the partition table metadata, which is stored as part of the BSD
+ * structure. All initialized block size descriptors must be terminated using a call to
+ * @c term_block_size_descriptor() to free resources.
  *
  * @param      x_texels         The number of texels in the block X dimension.
  * @param      y_texels         The number of texels in the block Y dimension.
@@ -802,8 +785,8 @@ static inline const partition_info *get_partition_table(
 /**
  * @brief Get the percentile table for 2D block modes.
  *
- * This is an empirically determined prioritization of which block modes to
- * use in the search in terms of their centile (lower centiles = more useful).
+ * This is an empirically determined prioritization of which block modes to use in the search in
+ * terms of their centile (lower centiles = more useful).
  *
  * Returns a dynamically allocated array; caller must free with delete[].
  *
@@ -846,9 +829,8 @@ extern int8_t quant_mode_table[17][128];
 /**
  * @brief Encode a packed string using BISE.
  *
- * Note that BISE can return strings that are not a whole number of bytes
- * in length, and ASTC can start storing strings in a block at arbitrary bit
- * offsets in the encoded data.
+ * Note that BISE can return strings that are not a whole number of bytes in length, and ASTC can
+ * start storing strings in a block at arbitrary bit offsets in the encoded data.
  *
  * @param         quant_level      The BISE alphabet size.
  * @param         character_count  The number of characters in the string.
@@ -866,8 +848,8 @@ void encode_ise(
 /**
  * @brief Decode a packed string using BISE.
  *
- * Note that BISE input strings are not a whole number of bytes in length, and
- * ASTC can start strings at arbitrary bit offsets in the encoded data.
+ * Note that BISE input strings are not a whole number of bytes in length, and ASTC can start
+ * strings at arbitrary bit offsets in the encoded data.
  *
  * @param         quant_level      The BISE alphabet size.
  * @param         character_count  The number of characters in the string.
@@ -885,9 +867,8 @@ void decode_ise(
 /**
  * @brief Return the number of bits needed to encode an ISE sequence.
  *
- * This implementation assumes that the @c quant level is untrusted, given it
- * may come from random data being decompressed, so we return an unencodable
- * size if that is the case.
+ * This implementation assumes that the @c quant level is untrusted, given it may come from random
+ * data being decompressed, so we return an arbitrary unencodable size if that is the case.
  *
  * @param character_count   The number of items in the sequence.
  * @param quant_level       The desired quantization level.
@@ -1063,8 +1044,8 @@ void compute_partition_ordering(
 /**
  * @brief Parameter structure for compute_pixel_region_variance().
  *
- * This function takes a structure to avoid spilling arguments to the stack
- * on every function invocation, as there are a lot of parameters.
+ * This function takes a structure to avoid spilling arguments to the stack on every function
+ * invocation, as there are a lot of parameters.
  */
 struct pixel_region_variance_args
 {
@@ -1115,8 +1096,8 @@ struct avg_var_args
 /**
  * @brief Compute regional averages and variances in an image.
  *
- * Results are written back into img->input_averages, img->input_variances,
- * and img->input_alpha_averages.
+ * Results are written back into @c img->input_averages, @c img->input_variances,
+ * and @c img->input_alpha_averages.
  *
  * @param img                   The input image data, also holds output data.
  * @param rgb_power             The RGB component power.
@@ -1201,7 +1182,7 @@ struct endpoints_and_weights
 
 	alignas(ASTCENC_VECALIGN) float weights[MAX_TEXELS_PER_BLOCK];
 
-	/**< True if all active values in weight_error_scale are the same. */
+	/** @brief True if all active values in weight_error_scale are the same. */
 	bool is_constant_weight_error_scale;
 
 	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
@@ -1210,10 +1191,9 @@ struct endpoints_and_weights
 /**
  * @brief Compute ideal endpoint colors and weights for 1 plane of weights.
  *
- * The ideal endpoints define a color line for the partition. For each texel
- * the ideal weight defines an exact position on the partition color line. We
- * can then use these to assess the error introduced by removing and quantizing
- * the weight grid.
+ * The ideal endpoints define a color line for the partition. For each texel the ideal weight
+ * defines an exact position on the partition color line. We can then use these to assess the error
+ * introduced by removing and quantizing the weight grid.
  *
  * @param      bsd   The block size information.
  * @param      blk   The image block color data to compress.
@@ -1231,10 +1211,9 @@ void compute_ideal_colors_and_weights_1plane(
 /**
  * @brief Compute ideal endpoint colors and weights for 2 planes of weights.
  *
- * The ideal endpoints define a color line for the partition. For each texel
- * the ideal weight defines an exact position on the partition color line. We
- * can then use these to assess the error introduced by removing and quantizing
- * the weight grid.
+ * The ideal endpoints define a color line for the partition. For each texel the ideal weight
+ * defines an exact position on the partition color line. We can then use these to assess the error
+ * introduced by removing and quantizing the weight grid.
  *
  * @param      bsd                The block size information.
  * @param      blk                The image block color data to compress.
@@ -1280,8 +1259,8 @@ void compute_ideal_weights_for_decimation(
 /**
  * @brief Compute the optimal quantized weights for a decimation table.
  *
- * We test the two closest weight indices in the allowed quantization range
- * and keep the weight that is the closest match.
+ * We test the two closest weight indices in the allowed quantization range and keep the weight that
+ * is the closest match.
  *
  * @param      di                     The selected weight decimation.
  * @param      low_bound              The lowest weight allowed.
@@ -1352,10 +1331,9 @@ static inline vfloat bilinear_infill_vla(
 /**
  * @brief Compute the error of a decimated weight set for 1 plane.
  *
- * After computing ideal weights for the case with one weight per texel, we
- * want to compute the error for decimated weight grids where weights are
- * stored at a lower resolution. This function computes the error of the
- * reduced grid, compared to the full grid.
+ * After computing ideal weights for the case with one weight per texel, we want to compute the
+ * error for decimated weight grids where weights are stored at a lower resolution. This function
+ * computes the error of the reduced grid, compared to the full grid.
  *
  * @param eai       The ideal weights for the full grid.
  * @param di        The selected weight decimation.
@@ -1371,10 +1349,9 @@ float compute_error_of_weight_set_1plane(
 /**
  * @brief Compute the error of a decimated weight set for 2 planes.
  *
- * After computing ideal weights for the case with one weight per texel, we
- * want to compute the error for decimated weight grids where weights are
- * stored at a lower resolution. This function computes the error of the
- * reduced grid, compared to the full grid.
+ * After computing ideal weights for the case with one weight per texel, we want to compute the
+ * error for decimated weight grids where weights are stored at a lower resolution. This function
+ * computes the error of the reduced grid, compared to the full grid.
  *
  * @param eai1       The ideal weights for the full grid and plane 1.
  * @param eai2       The ideal weights for the full grid and plane 2.
@@ -1531,8 +1508,8 @@ void compute_ideal_endpoint_formats(
 /**
  * @brief For a given 1 plane weight set recompute the endpoint colors.
  *
- * As we quantize and decimate weights the optimal endpoint colors may change
- * slightly, so we must recompute the ideal colors for a specific weight set.
+ * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
+ * recompute the ideal colors for a specific weight set.
  *
  * @param         blk                 The image block color data to compress.
  * @param         ewb                 The image block weighted error data.
@@ -1558,8 +1535,8 @@ void recompute_ideal_colors_1plane(
 /**
  * @brief For a given 2 plane weight set recompute the endpoint colors.
  *
- * As we quantize and decimate weights the optimal endpoint colors may change
- * slightly, so we must recompute the ideal colors for a specific weight set.
+ * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
+ * recompute the ideal colors for a specific weight set.
  *
  * @param         blk                  The image block color data to compress.
  * @param         ewb                  The image block weighted error data.
@@ -1687,13 +1664,12 @@ struct astcenc_context
 	unsigned int thread_count;
 	block_size_descriptor* bsd;
 
-	// Fields below here are not needed in a decompress-only build, but some
-	// remain as they are small and it avoids littering the code with #ifdefs.
-	// The most significant contributors to large structure size are omitted.
+	// Fields below here are not needed in a decompress-only build, but some remain as they are
+	// small and it avoids littering the code with #ifdefs. The most significant contributors to
+	// large structure size are omitted.
 
-	// Regional average-and-variance information, initialized by
-	// compute_averages_and_variances() only if the astc encoder
-	// is requested to do error weighting based on averages and variances.
+	// Regional average-and-variance information, initialized by compute_averages_and_variances()
+	// only if the astc encoder is requested to do error weighting based on averages and variances.
 	vfloat4 *input_averages;
 	vfloat4 *input_variances;
 	float *input_alpha_averages;

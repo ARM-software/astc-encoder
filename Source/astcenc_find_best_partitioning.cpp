@@ -27,16 +27,15 @@
  *
  * Finding best partitioning for a block:
  *
- * For each available partitioning compute mean color and dominant direction.
- * This defines two lines, both of which go through the mean-color-value.
+ * For each available partitioning compute mean color and dominant direction. This defines two
+ * lines, both of which go through the mean-color-value.
  *
- * - One line has a direction defined by the dominant direction; this is used
- *   to assess the error from using an uncorrelated color representation.
- * - The other line goes through (0,0,0,1) and is used to assess the error from
- *   using an RGBS color representation.
+ * - One line has a direction defined by the dominant direction; this is used to assess the error
+ *   from using an uncorrelated color representation.
+ * - The other line goes through (0,0,0,1) and is used to assess the error from using an RGBS color
+ *   representation.
  *
- * Then compute the block's squared-errors that result from using the these
- * two lines for endpoint selection.
+ * Then compute the squared-errors that result from using these lines for endpoint selection.
  */
 
 #include "astcenc_internal.h"
@@ -52,9 +51,8 @@ void find_best_partition_candidates(
 	int& best_partition_samec,
 	int* best_partition_dualplane
 ) {
-	// constant used to estimate quantization error for a given partitioning;
-	// the optimal value for this constant depends on bitrate.
-	// These constants have been determined empirically.
+	// Constant used to estimate quantization error for a given partitioning; the optimal value for
+	// this depends on bitrate. These values have been determined empirically.
 	int texels_per_block = bsd.texel_count;
 	float weight_imprecision_estim = 0.055f;
 	if (texels_per_block <= 20)
@@ -181,17 +179,15 @@ void find_best_partition_candidates(
 			                           uncor_error,
 			                           samec_error);
 
-			/*
-			   Compute an estimate of error introduced by weight quantization imprecision.
-			   This error is computed as follows, for each partition
-			   1: compute the principal-axis vector (full length) in error-space
-			   2: convert the principal-axis vector to regular RGB-space
-			   3: scale the vector by a constant that estimates average quantization error
-			   4: for each texel, square the vector, then do a dot-product with the texel's error weight;
-			      sum up the results across all texels.
-			   4(optimized): square the vector once, then do a dot-product with the average texel error,
-			      then multiply by the number of texels.
-			 */
+			// Compute an estimate of error introduced by weight quantization imprecision.
+			// This error is computed as follows, for each partition
+			//     1: compute the principal-axis vector (full length) in error-space
+			//     2: convert the principal-axis vector to regular RGB-space
+			//     3: scale the vector by a constant that estimates average quantization error
+			//     4: for each texel, square the vector, then do a dot-product with the texel's
+			//        error weight; sum up the results across all texels.
+			//     4(optimized): square the vector once, then do a dot-product with the average
+			//        texel error, then multiply by the number of texels.
 
 			for (int j = 0; j < partition_count; j++)
 			{
@@ -351,17 +347,15 @@ void find_best_partition_candidates(
 			                          uncor_error,
 			                          samec_error);
 
-			/*
-			   compute an estimate of error introduced by weight imprecision.
-			   This error is computed as follows, for each partition
-			   1: compute the principal-axis vector (full length) in error-space
-			   2: convert the principal-axis vector to regular RGB-space
-			   3: scale the vector by a constant that estimates average quantization error.
-			   4: for each texel, square the vector, then do a dot-product with the texel's error weight;
-			      sum up the results across all texels.
-			   4(optimized): square the vector once, then do a dot-product with the average texel error,
-			      then multiply by the number of texels.
-			 */
+			// Compute an estimate of error introduced by weight quantization imprecision.
+			// This error is computed as follows, for each partition
+			//     1: compute the principal-axis vector (full length) in error-space
+			//     2: convert the principal-axis vector to regular RGB-space
+			//     3: scale the vector by a constant that estimates average quantization error
+			//     4: for each texel, square the vector, then do a dot-product with the texel's
+			//        error weight; sum up the results across all texels.
+			//     4(optimized): square the vector once, then do a dot-product with the average
+			//        texel error, then multiply by the number of texels.
 
 			for (int j = 0; j < partition_count; j++)
 			{

@@ -215,9 +215,8 @@ void decompress_symbolic_block(
 		{
 			vint4 colori(scb.constant_color);
 
-			// For sRGB decoding a real decoder would just use the top 8 bits
-			// for color conversion. We don't color convert, so linearly scale
-			// the top 8 bits into the full 16 bit dynamic range
+			// For sRGB decoding a real decoder would just use the top 8 bits for color conversion.
+			// We don't color convert, so rescale the top 8 bits into the full 16 bit dynamic range.
 			if (decode_mode == ASTCENC_PRF_LDR_SRGB)
 			{
 				colori = asr<8>(colori) * 257;

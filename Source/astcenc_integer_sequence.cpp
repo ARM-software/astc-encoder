@@ -333,16 +333,16 @@ static const uint8_t integer_of_trits[3][3][3][3][3] = {
  * @brief The number of bits, trits, and quints needed for a quant level.
  */
 struct btq_count {
-	/**< The quantization level. */
+	/** @brief The quantization level. */
 	uint8_t quant;
 
-	/**< The number of bits. */
+	/** @brief The number of bits. */
 	uint8_t bits;
 
-	/**< The number of trits. */
+	/** @brief The number of trits. */
 	uint8_t trits;
 
-	/**< The number of quints. */
+	/** @brief The number of quints. */
 	uint8_t quints;
 };
 
@@ -380,16 +380,16 @@ static const std::array<btq_count, 21> btq_counts = {{
  *     (scale * <sequence_len> + round) / divisor
  */
 struct ise_size {
-	/**< The quantization level. */
+	/** @brief The quantization level. */
 	uint8_t quant;
 
-	/**< The scaling parameter. */
+	/** @brief The scaling parameter. */
 	uint8_t scale;
 
-	/**< The rounding parameter. */
+	/** @brief The rounding parameter. */
 	uint8_t round;
 
-	/**< The divisor parameter. */
+	/** @brief The divisor parameter. */
 	uint8_t divisor;
 };
 
@@ -439,8 +439,8 @@ int get_ise_sequence_bitcount(
 /**
  * @brief Write up to 8 bits at an arbitrary bit offset.
  *
- * The stored value is at most 8 bits, but can be stored at an offset of
- * between 0 and 7 bits so may span two separate bytes in memory.
+ * The stored value is at most 8 bits, but can be stored at an offset of between 0 and 7 bits so may
+ * span two separate bytes in memory.
  *
  * @param         value       The value to write.
  * @param         bitcount    The number of bits to write, starting from LSB.
@@ -470,8 +470,8 @@ static inline void write_bits(
 /**
  * @brief Read up to 8 bits at an arbitrary bit offset.
  *
- * The stored value is at most 8 bits, but can be stored at an offset of
- * between 0 and 7 bits so may span two separate bytes in memory.
+ * The stored value is at most 8 bits, but can be stored at an offset of between 0 and 7 bits so may
+ * span two separate bytes in memory.
  *
  * @param         bitcount    The number of bits to read.
  * @param         bitoffset   The bit offset to read from, between 0 and 7.
@@ -662,12 +662,11 @@ void decode_ise(
 ) {
 	promise(character_count > 0);
 
-	// note: due to how the trit/quint-block unpacking is done in this function,
-	// we may write more temporary results than the number of outputs
-	// The maximum actual number of results is 64 bit, but we keep 4 additional character_count
-	// of padding.
+	// Note: due to how the trit/quint-block unpacking is done in this function, we may write more
+	// temporary results than the number of outputs. The maximum actual number of results is 64 bit,
+	// but we keep 4 additional character_count of padding.
 	uint8_t results[68];
-	uint8_t tq_blocks[22];		// trit-blocks or quint-blocks
+	uint8_t tq_blocks[22];		// Trit-blocks or quint-blocks
 
 	int bits = btq_counts[quant_level].bits;
 	int trits = btq_counts[quant_level].trits;
@@ -676,13 +675,13 @@ void decode_ise(
 	int lcounter = 0;
 	int hcounter = 0;
 
-	// trit-blocks or quint-blocks must be zeroed out before we collect them in the loop below.
+	// Trit-blocks or quint-blocks must be zeroed out before we collect them in the loop below
 	for (int i = 0; i < 22; i++)
 	{
 		tq_blocks[i] = 0;
 	}
 
-	// collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
+	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
 	for (int i = 0; i < character_count; i++)
 	{
 		results[i] = read_bits(bits, bit_offset, input_data);
@@ -715,7 +714,7 @@ void decode_ise(
 		}
 	}
 
-	// unpack trit-blocks or quint-blocks as needed
+	// Unpack trit-blocks or quint-blocks as needed
 	if (trits)
 	{
 		int trit_blocks = (character_count + 4) / 5;

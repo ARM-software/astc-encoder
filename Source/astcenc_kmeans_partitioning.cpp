@@ -21,12 +21,12 @@
  * @brief Functions for approximate partitioning by kmeans clustering.
  *
  * Do this in 2 stages:
- * 1: basic clustering, a couple of passes just to get a few clusters
- * 2: clustering based on line, a few passes until it seems to stabilize.
  *
- * After clustering is done, we use the clustering result to construct one
- * bitmap for each partition. We then scan though the partition table, counting
- * how well the bitmaps matched.
+ *     1: Basic clustering, a couple of passes just to get a few clusters
+ *     2: Clustering based on line, a few passes until it seems to stabilize.
+ *
+ * After clustering is done, we use the clustering result to construct one bitmap for each
+ * partition. We then scan though the partition table, counting how well the bitmaps matched.
   */
 
 #include "astcenc_internal.h"

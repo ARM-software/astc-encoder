@@ -18,8 +18,7 @@
 /**
  * @brief Percentile data tables for different block encodings.
  *
- * To reduce binary size the tables are stored using a packed differential
- * encoding.
+ * To reduce binary size the tables are stored using a packed differential encoding.
  */
 
 #include "astcenc_internal.h"
@@ -28,8 +27,7 @@
 /**
  * @brief Structure containing packed percentile metadata.
  *
- * Note that percentile tables do not exist for 3D textures, so no zdim is
- * stored as they are all known to be 2D.
+ * Note that percentile tables do not exist for 3D textures, so no zdim is stored.
  */
 struct packed_percentile_table
 {

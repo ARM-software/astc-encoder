@@ -50,10 +50,9 @@
 /**
  * @brief Compute cumulative error weight of each partition.
  *
- * The cumulative error weight is used to determine the relative importance of
- * each partiton when deciding how to quantize colors, as not all partitions
- * are equal. For example, some partitions will have far fewer texels than
- * others in the same block.
+ * The cumulative error weight is used to determine the relative importance of each partiton when
+ * deciding how to quantize colors, as not all partitions are equal. For example, some partitions
+ * will have far fewer texels than others in the same block.
  *
  * @param      ewb   The block error weights.
  * @param      pi    The partiion info.
@@ -88,10 +87,10 @@ static void compute_partition_error_color_weightings(
 /**
  * @brief Compute the errors of the endpoint line options for one partition.
  *
- * Uncorrelated data assumes storing completely independent RGBA channels for
- * each endpoint. Same chroma data assumes storing RGBA endpoints which pass
- * though the origin (LDR only). RGBL data assumes storing RGB + lumashift (HDR
- * only). Luminance error assumes storing RGB channels as a single value.
+ * Uncorrelated data assumes storing completely independent RGBA channels for each endpoint. Same
+ * chroma data assumes storing RGBA endpoints which pass though the origin (LDR only). RGBL data
+ * assumes storing RGB + lumashift (HDR only). Luminance error assumes storing RGB channels as a
+ * single value.
  *
  *
  * @param      pi                The partition info data.
@@ -358,9 +357,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
 
-	// it is possible to get endpoint colors significantly outside [0,upper-limit]
-	// even if the input data are safely contained in [0,upper-limit];
-	// we need to add an error term for this situation,
+	// It is possible to get endpoint colors significantly outside [0,upper-limit] even if the
+	// input data are safely contained in [0,upper-limit]; we need to add an error term for this
 	vfloat4 ep0_range_error_high;
 	vfloat4 ep1_range_error_high;
 	vfloat4 ep0_range_error_low;
@@ -387,7 +385,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	if (encode_hdr_rgb)
 	{
 
-		// collect some statistics
+		// Collect some statistics
 		float af, cf;
 		if (ep1.lane<0>() > ep1.lane<1>() && ep1.lane<0>() > ep1.lane<2>())
 		{
@@ -405,18 +403,18 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			cf = ep1.lane<2>() - ep0.lane<2>();
 		}
 
-		float bf = af - ep1_min;	// estimate of color-component spread in high endpoint color
+		// Estimate of color-component spread in high endpoint color
+		float bf = af - ep1_min;
 		vfloat4 prd = (ep1 - vfloat4(cf)).swz<0, 1, 2>();
 		vfloat4 pdif = prd - ep0.swz<0, 1, 2>();
-		// estimate of color-component spread in low endpoint color
+		// Estimate of color-component spread in low endpoint color
 		float df = hmax_s(abs(pdif));
 
 		int b = (int)bf;
 		int c = (int)cf;
 		int d = (int)df;
 
-		// determine which one of the 6 submodes is likely to be used in
-		// case of an RGBO-mode
+		// Determine which one of the 6 submodes is likely to be used in case of an RGBO-mode
 		int rgbo_mode = 5;		// 7 bits per component
 		// mode 4: 8 7 6
 		if (b < 32768 && c < 16384)
@@ -448,8 +446,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			rgbo_mode = 0;
 		}
 
-		// determine which one of the 9 submodes is likely to be used in
-		// case of an RGB-mode.
+		// Determine which one of the 9 submodes is likely to be used in case of an RGB-mode.
 		int rgb_mode = 8;		// 8 bits per component, except 7 bits for blue
 
 		// mode 0: 9 7 6 7
@@ -503,8 +500,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		static const float rgbo_error_scales[6] { 4.0f, 4.0f, 16.0f, 64.0f, 256.0f, 1024.0f };
 		static const float rgb_error_scales[9] { 64.0f, 64.0f, 16.0f, 16.0f, 4.0f, 4.0f, 1.0f, 1.0f, 384.0f };
 
-		float mode7mult = rgbo_error_scales[rgbo_mode] * 0.0015f;	// empirically determined ....
-		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;	// empirically determined ....
+		float mode7mult = rgbo_error_scales[rgbo_mode] * 0.0015f;  // Empirically determined ....
+		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;    // Empirically determined ....
 
 
 		float lum_high = hadd_rgb_s(ep1) * (1.0f / 3.0f);
@@ -512,9 +509,9 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float lumdif = lum_high - lum_low;
 		float mode23mult = lumdif < 960 ? 4.0f : lumdif < 3968 ? 16.0f : 128.0f;
 
-		mode23mult *= 0.0005f;	// empirically determined ....
+		mode23mult *= 0.0005f;  // Empirically determined ....
 
-		// pick among the available HDR endpoint modes
+		// Pick among the available HDR endpoint modes
 		for (int i = 0; i < 8; i++)
 		{
 			best_error[i][3] = 1e30f;
@@ -529,33 +526,32 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 
 		for (int i = 8; i < 21; i++)
 		{
-			// base_quant_error should depend on the scale-factor that would be used
-			// during actual encode of the color value.
+			// The base_quant_error should depend on the scale-factor that would be used during
+			// actual encode of the color value
 
 			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
 			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
-			// for 8 integers, we have two encodings: one with HDR alpha and another one
-			// with LDR alpha.
+			// For 8 integers, we have two encodings: one with HDR A and another one with LDR A
 
 			float full_hdr_rgba_error = rgba_quantization_error + rgb_range_error + alpha_range_error;
 			best_error[i][3] = full_hdr_rgba_error;
 			format_of_choice[i][3] = encode_hdr_alpha ? FMT_HDR_RGBA : FMT_HDR_RGB_LDR_ALPHA;
 
-			// for 6 integers, we have one HDR-RGB encoding
+			// For 6 integers, we have one HDR-RGB encoding
 			float full_hdr_rgb_error = (rgb_quantization_error * mode11mult) + rgb_range_error + eci.alpha_drop_error;
 			best_error[i][2] = full_hdr_rgb_error;
 			format_of_choice[i][2] = FMT_HDR_RGB;
 
-			// for 4 integers, we have one HDR-RGB-Scale encoding
+			// For 4 integers, we have one HDR-RGB-Scale encoding
 			float hdr_rgb_scale_error = (rgb_quantization_error * mode7mult) + rgb_range_error + eci.alpha_drop_error + eci.rgb_luma_error;
 
 			best_error[i][1] = hdr_rgb_scale_error;
 			format_of_choice[i][1] = FMT_HDR_RGB_SCALE;
 
-			// for 2 integers, we assume luminance-with-large-range
+			// For 2 integers, we assume luminance-with-large-range
 			float hdr_luminance_error = (rgb_quantization_error * mode23mult) + rgb_range_error + eci.alpha_drop_error + eci.luminance_error;
 			best_error[i][0] = hdr_luminance_error;
 			format_of_choice[i][0] = FMT_HDR_LUMINANCE_LARGE_RANGE;
@@ -586,7 +582,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float error_scale_bc_rgb = eci.can_blue_contract ? 0.5f : 1.0f;
 		float error_scale_oe_rgb = eci.can_offset_encode ? 0.25f : 1.0f;
 
-		// pick among the available LDR endpoint modes
+		// Pick among the available LDR endpoint modes
 		for (int i = 4; i < 21; i++)
 		{
 			// Offset encoding not possible at higher quant levels
@@ -689,12 +685,13 @@ static void one_partition_find_best_combination_for_bitcount(
 	float best_integer_count_error = 1e20f;
 	for (int i = 0; i < 4; i++)
 	{
-		// compute the quantization level for a given number of integers and a given number of bits.
+		// Compute the quantization level for a given number of integers and a given number of bits
 		int quant_level = quant_mode_table[i + 1][bits_available];
 
+		// Don't have enough bits to represent a given endpoint format at all!
 		if (quant_level == -1)
 		{
-			continue;			// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
+			continue;
 		}
 
 		if (best_combined_error[quant_level][i] < best_integer_count_error)
@@ -789,12 +786,13 @@ static void two_partitions_find_best_combination_for_bitcount(
 
 	for (int integer_count = 2; integer_count <= 8; integer_count++)
 	{
-		// compute the quantization level for a given number of integers and a given number of bits.
+		// Compute the quantization level for a given number of integers and a given number of bits
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
+		// Don't have enough bits to represent a given endpoint format at all!
 		if (quant_level == -1)
 		{
-			break;				// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
+			break;
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 2];
@@ -912,12 +910,13 @@ static void three_partitions_find_best_combination_for_bitcount(
 
 	for (int integer_count = 3; integer_count <= 9; integer_count++)
 	{
-		// compute the quantization level for a given number of integers and a given number of bits.
+		// Compute the quantization level for a given number of integers and a given number of bits
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
+		// Don't have enough bits to represent a given endpoint format at all!
 		if (quant_level == -1)
 		{
-			break;				// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
+			break;
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 3];
@@ -1046,12 +1045,13 @@ static void four_partitions_find_best_combination_for_bitcount(
 
 	for (int integer_count = 4; integer_count <= 9; integer_count++)
 	{
-		// compute the quantization level for a given number of integers and a given number of bits.
+		// Compute the quantization level for a given number of integers and a given number of bits
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
+		// Don't have enough bits to represent a given endpoint format at all!
 		if (quant_level == -1)
 		{
-			break;				// used to indicate the case where we don't have enough bits to represent a given endpoint format at all.
+			break;
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 4];
@@ -1110,13 +1110,12 @@ void compute_ideal_endpoint_formats(
 	int encode_hdr_rgb = blk.rgb_lns[0];
 	int encode_hdr_alpha = blk.alpha_lns[0];
 
-	// call a helper function to compute the errors that result from various
-	// encoding choices (such as using luminance instead of RGB, discarding Alpha,
-	// using RGB-scale in place of two separate RGB endpoints and so on)
+	// Compute the errors that result from various encoding choices (such as using luminance instead
+	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[4];
 	compute_encoding_choice_errors(bsd, blk, pi, ewb, ep, eci);
 
-	// for each partition, compute the error weights to apply for that partition.
+	// For each partition, compute the error weights to apply for that partition
 	partition_metrics pms[4];
 
 	compute_partition_error_color_weightings(ewb, pi, pms);
@@ -1136,8 +1135,8 @@ void compute_ideal_endpoint_formats(
 	int best_quant_levels_mod[MAX_WEIGHT_MODES];
 	int best_ep_formats[MAX_WEIGHT_MODES][4];
 
-	// have to ensure that the "overstep" of the last iteration in the vectorized
-	// loop will contain data that will never be picked as best candidate
+	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
+	// that will never be picked as best candidate
 	const int packed_mode_count = bsd.block_mode_count;
 	const int packed_mode_count_simd_up = round_up_to_simd_multiple_vla(packed_mode_count);
 	for (int i = packed_mode_count; i < packed_mode_count_simd_up; ++i)
@@ -1147,7 +1146,7 @@ void compute_ideal_endpoint_formats(
 		best_quant_levels_mod[i] = 0;
 	}
 
-	// code for the case where the block contains 1 partition
+	// The block contains 1 partition
 	if (partition_count == 1)
 	{
 		float error_of_best_combination;
@@ -1168,7 +1167,7 @@ void compute_ideal_endpoint_formats(
 			best_quant_levels_mod[i] = best_quant_levels[i];
 		}
 	}
-	// code for the case where the block contains 2 partitions
+	// The block contains 2 partitions
 	else if (partition_count == 2)
 	{
 		float combined_best_error[21][7];
@@ -1195,7 +1194,7 @@ void compute_ideal_endpoint_formats(
 			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 		}
 	}
-	// code for the case where the block contains 3 partitions
+	// The block contains 3 partitions
 	else if (partition_count == 3)
 	{
 		float combined_best_error[21][10];
@@ -1221,7 +1220,7 @@ void compute_ideal_endpoint_formats(
 			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 		}
 	}
-	// code for the case where the block contains 4 partitions
+	// The block contains 4 partitions
 	else if (partition_count == 4)
 	{
 		float combined_best_error[21][13];
@@ -1266,8 +1265,7 @@ void compute_ideal_endpoint_formats(
 			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
 		}
 
-		// Pick best mode from the SIMD result. If multiple SIMD lanes have
-		// the best score, pick the one with the lowest index.
+		// Pick best mode from the SIMD result, using lowest matching index to ensure invariance
 		vmask lanes_min_error = vbest_ep_error == hmin(vbest_ep_error);
 		vbest_error_index = select(vint(0x7FFFFFFF), vbest_error_index, lanes_min_error);
 		vbest_error_index = hmin(vbest_error_index);

@@ -19,6 +19,20 @@
 
 /**
  * @brief Functions for color quantization.
+ *
+ * The design of the color quantization functionality requires the caller to use higher level error
+ * analysis to determine the base encoding that should be used. This earlier analysis will select
+ * the basic type of the endpoint that should be used:
+ *
+ *     * Mode: LDR or HDR
+ *     * Quantization level
+ *     * Channel count: L, LA, RGB, or RGBA
+ *     * Endpoint 2 type: Direct color endcode, or scaled from endpoint 1.
+ *
+ * However, this leaves a number of decisions about exactly how to pack the endpoints open. In
+ * particular we need to determine if blue contraction can be used, or/and if delta encoding can be
+ * used. If they can be applied these will allow us to maintain higher precision in the endpoints
+ * without needing additional storage.
  */
 
 #include <stdio.h>
