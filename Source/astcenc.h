@@ -686,11 +686,10 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  * to serially compress or decompress multiple images to amortize setup cost.
  *
  * Contexts can be allocated to support only decompression by setting the
- * ASTCENC_FLG_DECOMPRESS_ONLY flag when creating the configuration. These
- * contexts must be allocated with a thread count of 1 (decompression is always
- * single threaded), and the compression functions will fail if invoked. For
- * a decompress-only library build the ASTCENC_FLG_DECOMPRESS_ONLY flag must
- * be set when creating ay context.
+ * @c ASTCENC_FLG_DECOMPRESS_ONLY flag when creating the configuration. The
+ * compression functions will fail if invoked. For a decompress-only library
+ * build the @c ASTCENC_FLG_DECOMPRESS_ONLY flag must be set when creating any
+ * context.
  *
  * @param[in]  config         Codec config.
  * @param      thread_count   Thread count to configure for.
