@@ -681,12 +681,13 @@ static void one_partition_find_best_combination_for_bitcount(
 	int& best_format,
 	float& best_error
 ) {
-	int best_integer_count = -1;
+	int best_integer_count = 0;
 	float best_integer_count_error = 1e20f;
-	for (int i = 0; i < 4; i++)
+
+	for (int integer_count = 1; integer_count <= 4;  integer_count++)
 	{
 		// Compute the quantization level for a given number of integers and a given number of bits
-		int quant_level = quant_mode_table[i + 1][bits_available];
+		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
 		if (quant_level == -1)
@@ -694,10 +695,11 @@ static void one_partition_find_best_combination_for_bitcount(
 			continue;
 		}
 
-		if (best_combined_error[quant_level][i] < best_integer_count_error)
+		float integer_count_error = best_combined_error[quant_level][integer_count - 1];
+		if (integer_count_error < best_integer_count_error)
 		{
-			best_integer_count_error = best_combined_error[quant_level][i];
-			best_integer_count = i;
+			best_integer_count_error = integer_count_error;
+			best_integer_count = integer_count;
 		}
 	}
 
@@ -796,7 +798,6 @@ static void two_partitions_find_best_combination_for_bitcount(
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 2];
-
 		if (integer_count_error < best_integer_count_error)
 		{
 			best_integer_count_error = integer_count_error;
@@ -920,7 +921,6 @@ static void three_partitions_find_best_combination_for_bitcount(
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 3];
-
 		if (integer_count_error < best_integer_count_error)
 		{
 			best_integer_count_error = integer_count_error;
@@ -1055,7 +1055,6 @@ static void four_partitions_find_best_combination_for_bitcount(
 		}
 
 		float integer_count_error = best_combined_error[quant_level][integer_count - 4];
-
 		if (integer_count_error < best_integer_count_error)
 		{
 			best_integer_count_error = integer_count_error;
