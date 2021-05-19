@@ -408,7 +408,13 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		symbolic_compressed_block workscb;
 
+		for (int j = 0; j < 4; j++)
+		{
+			workscb.constant_color[j] = 0;
+		}
+
 		uint8_t* u8_weight_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * bm_packed_index;
+
 		for (int j = 0; j < di.weight_count; j++)
 		{
 			workscb.weights[j] = u8_weight_src[j];
@@ -804,8 +810,14 @@ static float compress_symbolic_block_for_partition_2planes(
 
 		symbolic_compressed_block workscb;
 
+		for (int j = 0; j < 4; j++)
+		{
+			workscb.constant_color[j] = 0;
+		}
+
 		uint8_t* u8_weight1_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index);
 		uint8_t* u8_weight2_src = u8_quantized_decimated_quantized_weights + MAX_WEIGHTS_PER_BLOCK * (2 * bm_packed_index + 1);
+
 		for (int j = 0; j < di.weight_count; j++)
 		{
 			workscb.weights[j] = u8_weight1_src[j];
