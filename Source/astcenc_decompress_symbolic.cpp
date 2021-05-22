@@ -268,7 +268,7 @@ void decompress_symbolic_block(
 	const decimation_info *const *dt = bsd.decimation_tables;
 
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 	const decimation_info& di = *(dt[bm.decimation_mode]);
 
@@ -347,7 +347,7 @@ float compute_symbolic_block_difference(
 
 	// Get the appropriate block descriptor
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
 

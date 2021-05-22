@@ -1232,7 +1232,7 @@ astcenc_error astcenc_get_block_info(
 	pt += scb.partition_index;
 
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 	const decimation_info& di = *bsd.decimation_tables[bm.decimation_mode];
 

@@ -83,7 +83,7 @@ static bool realign_weights(
 
 	// Get the quantization table
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 	int weight_quant_level = bm.quant_mode;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
@@ -388,7 +388,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			continue;
 		}
 
-		assert(bm_packed_index >= 0 && bm_packed_index < bsd.block_mode_count);
+		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
@@ -786,7 +786,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			continue;
 		}
 
-		assert(bm_packed_index >= 0 && bm_packed_index < bsd.block_mode_count);
+		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;

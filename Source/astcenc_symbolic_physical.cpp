@@ -153,7 +153,7 @@ void symbolic_to_physical(
 	const decimation_info *const *dt = bsd.decimation_tables;
 
 	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const block_mode& bm = bsd.block_modes[packed_index];
 
 	int weight_count = dt[bm.decimation_mode]->weight_count;
@@ -353,7 +353,7 @@ void physical_to_symbolic(
 		scb.block_type = SYM_BTYPE_ERROR;
 		return;
 	}
-	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
+	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
 	const struct block_mode& bm = bsd.block_modes[packed_index];
 
 	int weight_count = dt[bm.decimation_mode]->weight_count;
