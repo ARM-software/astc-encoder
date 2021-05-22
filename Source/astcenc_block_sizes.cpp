@@ -33,11 +33,11 @@
  * @return Returns true of valid mode, false otherwise.
  */
 static bool decode_block_mode_2d(
-	int block_mode,
-	int& x_weights,
-	int& y_weights,
+	unsigned int block_mode,
+	unsigned int& x_weights,
+	unsigned int& y_weights,
 	bool& is_dual_plane,
-	int& quant_mode
+	unsigned int& quant_mode
 ) {
 	int base_quant_mode = (block_mode >> 4) & 1;
 	int H = (block_mode >> 9) & 1;
@@ -146,13 +146,13 @@ static bool decode_block_mode_2d(
  *
  * @return Returns true of valid mode, false otherwise.
  */
-static int decode_block_mode_3d(
-	int block_mode,
-	int& x_weights,
-	int& y_weights,
-	int& z_weights,
+static bool decode_block_mode_3d(
+	unsigned int block_mode,
+	unsigned int& x_weights,
+	unsigned int& y_weights,
+	unsigned int& z_weights,
 	bool& is_dual_plane,
-	int& quant_mode
+	unsigned int& quant_mode
 ) {
 	int base_quant_mode = (block_mode >> 4) & 1;
 	int H = (block_mode >> 9) & 1;
@@ -814,15 +814,15 @@ static int construct_dt_entry_2d(
  * @param[out] bsd              The block size descriptor to populate.
  */
 static void construct_block_size_descriptor_2d(
-	int x_texels,
-	int y_texels,
+	unsigned int x_texels,
+	unsigned int y_texels,
 	bool can_omit_modes,
 	float mode_cutoff,
 	block_size_descriptor& bsd
 ) {
 	// Store a remap table for storing packed decimation modes.
 	// Indexing uses [Y * 16 + X] and max size for each axis is 12.
-	static const int MAX_DMI = 12 * 16 + 12;
+	static const unsigned int MAX_DMI = 12 * 16 + 12;
 	int decimation_mode_index[MAX_DMI];
 
 	bsd.xdim = x_texels;
@@ -831,7 +831,7 @@ static void construct_block_size_descriptor_2d(
 	bsd.texel_count = x_texels * y_texels;
 	bsd.decimation_mode_count = 0;
 
-	for (int i = 0; i < MAX_DMI; i++)
+	for (unsigned int i = 0; i < MAX_DMI; i++)
 	{
 		decimation_mode_index[i] = -1;
 	}
@@ -846,13 +846,14 @@ static void construct_block_size_descriptor_2d(
 #endif
 
 	// Construct the list of block formats referencing the decimation tables
-	int packed_idx = 0;
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	unsigned int packed_idx = 0;
+	for (unsigned int i = 0; i < MAX_WEIGHT_MODES; i++)
 	{
-		int x_weights, y_weights;
+		unsigned int x_weights, y_weights;
 		bool is_dual_plane;
+
 		// TODO: Make this an enum? It's been validated.
-		int quant_mode;
+		unsigned int quant_mode;
 
 		bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode);
 
@@ -924,7 +925,7 @@ static void construct_block_size_descriptor_2d(
 #endif
 
 	// Ensure the end of the array contains valid data (should never get read)
-	for (int i = bsd.decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
+	for (unsigned int i = bsd.decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
@@ -949,9 +950,9 @@ static void construct_block_size_descriptor_2d(
  * @param[out] bsd        The block size descriptor to populate.
  */
 static void construct_block_size_descriptor_3d(
-	int x_texels,
-	int y_texels,
-	int z_texels,
+	unsigned int x_texels,
+	unsigned int y_texels,
+	unsigned int z_texels,
 	block_size_descriptor& bsd
 ) {
 	// Store a remap table for storing packed decimation modes.
@@ -971,11 +972,11 @@ static void construct_block_size_descriptor_3d(
 	}
 
 	// gather all the infill-modes that can be used with the current block size
-	for (int x_weights = 2; x_weights <= x_texels; x_weights++)
+	for (unsigned int x_weights = 2; x_weights <= x_texels; x_weights++)
 	{
-		for (int y_weights = 2; y_weights <= y_texels; y_weights++)
+		for (unsigned int y_weights = 2; y_weights <= y_texels; y_weights++)
 		{
-			for (int z_weights = 2; z_weights <= z_texels; z_weights++)
+			for (unsigned int z_weights = 2; z_weights <= z_texels; z_weights++)
 			{
 				unsigned int weight_count = x_weights * y_weights * z_weights;
 				if (weight_count > MAX_WEIGHTS_PER_BLOCK)
@@ -989,7 +990,7 @@ static void construct_block_size_descriptor_3d(
 
 				int maxprec_1plane = -1;
 				int maxprec_2planes = -1;
-				for (int i = 0; i < 12; i++)
+				for (unsigned int i = 0; i < 12; i++)
 				{
 					unsigned int bits_1plane = get_ise_sequence_bitcount(weight_count, (quant_method)i);
 					if (bits_1plane >= MIN_WEIGHT_BITS_PER_BLOCK && bits_1plane <= MAX_WEIGHT_BITS_PER_BLOCK)
@@ -1020,7 +1021,7 @@ static void construct_block_size_descriptor_3d(
 	}
 
 	// Ensure the end of the array contains valid data (should never get read)
-	for (int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
+	for (unsigned int i = decimation_mode_count; i < MAX_DECIMATION_MODES; i++)
 	{
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
@@ -1032,24 +1033,24 @@ static void construct_block_size_descriptor_3d(
 	bsd.decimation_mode_count = decimation_mode_count;
 
 	// Construct the list of block formats
-	int packed_idx = 0;
-	for (int i = 0; i < MAX_WEIGHT_MODES; i++)
+	unsigned int packed_idx = 0;
+	for (unsigned int i = 0; i < MAX_WEIGHT_MODES; i++)
 	{
-		int x_weights, y_weights, z_weights;
+		unsigned int x_weights, y_weights, z_weights;
 		bool is_dual_plane;
-		int quant_mode;
-		int permit_encode = 1;
+		unsigned int quant_mode;
+		bool permit_encode = true;
 
 		if (decode_block_mode_3d(i, x_weights, y_weights, z_weights, is_dual_plane, quant_mode))
 		{
 			if (x_weights > x_texels || y_weights > y_texels || z_weights > z_texels)
 			{
-				permit_encode = 0;
+				permit_encode = false;
 			}
 		}
 		else
 		{
-			permit_encode = 0;
+			permit_encode = false;
 		}
 
 		bsd.block_mode_packed_index[i] = -1;

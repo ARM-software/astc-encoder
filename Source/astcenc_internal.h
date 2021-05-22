@@ -66,21 +66,21 @@
 /* ============================================================================
   Constants
 ============================================================================ */
-static const unsigned int MAX_TEXELS_PER_BLOCK { 216 };
-static const unsigned int MAX_KMEANS_TEXELS { 64 };
+static constexpr unsigned int MAX_TEXELS_PER_BLOCK { 216 };
+static constexpr unsigned int MAX_KMEANS_TEXELS { 64 };
 
-static const unsigned int MAX_WEIGHTS_PER_BLOCK { 64 };
-static const unsigned int MIN_WEIGHT_BITS_PER_BLOCK { 24 };
-static const unsigned int MAX_WEIGHT_BITS_PER_BLOCK { 96 };
+static constexpr unsigned int MAX_WEIGHTS_PER_BLOCK { 64 };
+static constexpr unsigned int MIN_WEIGHT_BITS_PER_BLOCK { 24 };
+static constexpr unsigned int MAX_WEIGHT_BITS_PER_BLOCK { 96 };
 
-static const unsigned int PLANE2_WEIGHTS_OFFSET { MAX_WEIGHTS_PER_BLOCK / 2 };
-static const unsigned int PARTITION_BITS { 10 };
-static const unsigned int PARTITION_COUNT { 1024 };
+static constexpr unsigned int PLANE2_WEIGHTS_OFFSET { MAX_WEIGHTS_PER_BLOCK / 2 };
+static constexpr unsigned int PARTITION_BITS { 10 };
+static constexpr unsigned int PARTITION_COUNT { 1024 };
 
 // the sum of weights for one texel.
-#define TEXEL_WEIGHT_SUM 16
-#define MAX_DECIMATION_MODES 87
-#define MAX_WEIGHT_MODES 2048
+static constexpr float TEXEL_WEIGHT_SUM { 16.0f };
+static constexpr unsigned int MAX_DECIMATION_MODES { 87 };
+static constexpr unsigned int MAX_WEIGHT_MODES { 2048 };
 
 static_assert((MAX_TEXELS_PER_BLOCK % ASTCENC_SIMD_WIDTH) == 0,
               "MAX_TEXELS_PER_BLOCK must be multiple of ASTCENC_SIMD_WIDTH");

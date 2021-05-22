@@ -1284,10 +1284,10 @@ astcenc_error astcenc_get_block_info(
 	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.get_quant_mode(), weight_plane1, weight_plane2);
 	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
-		info->weight_values_plane1[i] = (float)weight_plane1[i] / (float)TEXEL_WEIGHT_SUM;
+		info->weight_values_plane1[i] = (float)weight_plane1[i] * (1.0f / TEXEL_WEIGHT_SUM);
 		if (info->is_dual_plane_block)
 		{
-			info->weight_values_plane2[i] = (float)weight_plane2[i] / (float)TEXEL_WEIGHT_SUM;
+			info->weight_values_plane2[i] = (float)weight_plane2[i] * (1.0f / TEXEL_WEIGHT_SUM);
 		}
 	}
 
