@@ -39,10 +39,10 @@ static bool decode_block_mode_2d(
 	bool& is_dual_plane,
 	unsigned int& quant_mode
 ) {
-	int base_quant_mode = (block_mode >> 4) & 1;
-	int H = (block_mode >> 9) & 1;
-	int D = (block_mode >> 10) & 1;
-	int A = (block_mode >> 5) & 0x3;
+	unsigned int base_quant_mode = (block_mode >> 4) & 1;
+	unsigned int H = (block_mode >> 9) & 1;
+	unsigned int D = (block_mode >> 10) & 1;
+	unsigned int A = (block_mode >> 5) & 0x3;
 
 	x_weights = 0;
 	y_weights = 0;
@@ -50,7 +50,7 @@ static bool decode_block_mode_2d(
 	if ((block_mode & 3) != 0)
 	{
 		base_quant_mode |= (block_mode & 3) << 1;
-		int B = (block_mode >> 7) & 3;
+		unsigned int B = (block_mode >> 7) & 3;
 		switch ((block_mode >> 2) & 3)
 		{
 		case 0:
@@ -88,7 +88,7 @@ static bool decode_block_mode_2d(
 			return false;
 		}
 
-		int B = (block_mode >> 9) & 3;
+		unsigned int B = (block_mode >> 9) & 3;
 		switch ((block_mode >> 7) & 3)
 		{
 		case 0:
@@ -154,10 +154,10 @@ static bool decode_block_mode_3d(
 	bool& is_dual_plane,
 	unsigned int& quant_mode
 ) {
-	int base_quant_mode = (block_mode >> 4) & 1;
-	int H = (block_mode >> 9) & 1;
-	int D = (block_mode >> 10) & 1;
-	int A = (block_mode >> 5) & 0x3;
+	unsigned int base_quant_mode = (block_mode >> 4) & 1;
+	unsigned int H = (block_mode >> 9) & 1;
+	unsigned int D = (block_mode >> 10) & 1;
+	unsigned int A = (block_mode >> 5) & 0x3;
 
 	x_weights = 0;
 	y_weights = 0;
@@ -166,8 +166,8 @@ static bool decode_block_mode_3d(
 	if ((block_mode & 3) != 0)
 	{
 		base_quant_mode |= (block_mode & 3) << 1;
-		int B = (block_mode >> 7) & 3;
-		int C = (block_mode >> 2) & 0x3;
+		unsigned int B = (block_mode >> 7) & 3;
+		unsigned int C = (block_mode >> 2) & 0x3;
 		x_weights = A + 2;
 		y_weights = B + 2;
 		z_weights = C + 2;
@@ -261,7 +261,12 @@ static void init_decimation_info_2d(
 	uint8_t texel_count_of_weight[BLOCK_MAX_WEIGHTS];
 	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
-	int texel_weights_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
+	uint8_t texel_weights_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
+
+	promise(weights_per_block > 0);
+	promise(texels_per_block > 0);
+	promise(x_texels > 0);
+	promise(y_texels > 0);
 
 	for (unsigned int i = 0; i < weights_per_block; i++)
 	{
@@ -322,7 +327,7 @@ static void init_decimation_info_2d(
 	{
 		di.texel_weight_count[i] = weight_count_of_texel[i];
 
-		for (int j = 0; j < weight_count_of_texel[i]; j++)
+		for (unsigned int j = 0; j < weight_count_of_texel[i]; j++)
 		{
 			di.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
 			di.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / WEIGHTS_TEXEL_SUM);
@@ -355,7 +360,7 @@ static void init_decimation_info_2d(
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
 			// fact to reorder the indexes so that the first one is the identity index.
 			int swap_idx = -1;
-			for (int k = 0; k < 4; k++)
+			for (unsigned int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = di.texel_weights_4t[k][texel];
 				float dttwf = di.texel_weights_float_4t[k][texel];
@@ -394,7 +399,7 @@ static void init_decimation_info_2d(
 	{
 		di.texel_weight_count[i] = 0;
 
-		for (int j = 0; j < 4; j++)
+		for (unsigned int j = 0; j < 4; j++)
 		{
 			di.texel_weights_float_4t[j][i] = 0;
 			di.texel_weights_4t[j][i] = 0;
@@ -404,15 +409,15 @@ static void init_decimation_info_2d(
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 	// Match last texel in active lane in SIMD group, for better gathers
-	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
+	unsigned int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = di.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
 
-	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
-	for (int i = weights_per_block; i < weights_per_block_simd; i++)
+	unsigned int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
+	for (unsigned int i = weights_per_block; i < weights_per_block_simd; i++)
 	{
 		di.weight_texel_count[i] = 0;
 
-		for (int j = 0; j < max_texel_count_of_weight; j++)
+		for (unsigned int j = 0; j < max_texel_count_of_weight; j++)
 		{
 			di.weight_texel[j][i] = last_texel;
 			di.weights_flt[j][i] = 0.0f;
@@ -438,16 +443,16 @@ static void init_decimation_info_2d(
  * @param[out] di          The decimation info structure to populate.
  */
 static void init_decimation_info_3d(
-	int x_texels,
-	int y_texels,
-	int z_texels,
-	int x_weights,
-	int y_weights,
-	int z_weights,
+	unsigned int x_texels,
+	unsigned int y_texels,
+	unsigned int z_texels,
+	unsigned int x_weights,
+	unsigned int y_weights,
+	unsigned int z_weights,
 	decimation_info& di
 ) {
-	int texels_per_block = x_texels * y_texels * z_texels;
-	int weights_per_block = x_weights * y_weights * z_weights;
+	unsigned int texels_per_block = x_texels * y_texels * z_texels;
+	unsigned int weights_per_block = x_weights * y_weights * z_weights;
 
 	uint8_t weight_count_of_texel[BLOCK_MAX_TEXELS];
 	uint8_t grid_weights_of_texel[BLOCK_MAX_TEXELS][4];
@@ -456,23 +461,26 @@ static void init_decimation_info_3d(
 	uint8_t texel_count_of_weight[BLOCK_MAX_WEIGHTS];
 	uint8_t max_texel_count_of_weight = 0;
 	uint8_t texels_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
-	int texel_weights_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
+	uint8_t texel_weights_of_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
 
-	for (int i = 0; i < weights_per_block; i++)
+	promise(weights_per_block > 0);
+	promise(texels_per_block > 0);
+
+	for (unsigned int i = 0; i < weights_per_block; i++)
 	{
 		texel_count_of_weight[i] = 0;
 	}
 
-	for (int i = 0; i < texels_per_block; i++)
+	for (unsigned int i = 0; i < texels_per_block; i++)
 	{
 		weight_count_of_texel[i] = 0;
 	}
 
-	for (int z = 0; z < z_texels; z++)
+	for (unsigned int z = 0; z < z_texels; z++)
 	{
-		for (int y = 0; y < y_texels; y++)
+		for (unsigned int y = 0; y < y_texels; y++)
 		{
-			for (int x = 0; x < x_texels; x++)
+			for (unsigned int x = 0; x < x_texels; x++)
 			{
 				int texel = (z * y_texels + y) * x_texels + x;
 
@@ -568,7 +576,7 @@ static void init_decimation_info_3d(
 				weight[2] = w2;
 				weight[3] = w3;
 
-				for (int i = 0; i < 4; i++)
+				for (unsigned int i = 0; i < 4; i++)
 				{
 					if (weight[i] != 0)
 					{
@@ -585,19 +593,19 @@ static void init_decimation_info_3d(
 		}
 	}
 
-	for (int i = 0; i < texels_per_block; i++)
+	for (unsigned int i = 0; i < texels_per_block; i++)
 	{
 		di.texel_weight_count[i] = weight_count_of_texel[i];
 
 		// Init all 4 entries so we can rely on zeros for vectorization
-		for (int j = 0; j < 4; j++)
+		for (unsigned int j = 0; j < 4; j++)
 		{
 			di.texel_weights_int_4t[j][i] = 0;
 			di.texel_weights_float_4t[j][i] = 0.0f;
 			di.texel_weights_4t[j][i] = 0;
 		}
 
-		for (int j = 0; j < weight_count_of_texel[i]; j++)
+		for (unsigned int j = 0; j < weight_count_of_texel[i]; j++)
 		{
 			di.texel_weights_int_4t[j][i] = weights_of_texel[i][j];
 			di.texel_weights_float_4t[j][i] = ((float)weights_of_texel[i][j]) * (1.0f / WEIGHTS_TEXEL_SUM);
@@ -605,14 +613,14 @@ static void init_decimation_info_3d(
 		}
 	}
 
-	for (int i = 0; i < weights_per_block; i++)
+	for (unsigned int i = 0; i < weights_per_block; i++)
 	{
-		int texel_count_wt = texel_count_of_weight[i];
+		unsigned int texel_count_wt = texel_count_of_weight[i];
 		di.weight_texel_count[i] = (uint8_t)texel_count_wt;
 
-		for (int j = 0; j < texel_count_wt; j++)
+		for (unsigned int j = 0; j < texel_count_wt; j++)
 		{
-			int texel = texels_of_weight[i][j];
+			unsigned int texel = texels_of_weight[i][j];
 
 			// Create transposed versions of these for better vectorization
 			di.weight_texel[j][i] = texel;
@@ -622,7 +630,7 @@ static void init_decimation_info_3d(
 			// one of the texel-weight indexes is an identity-mapped index; we will use this
 			// fact to reorder the indexes so that the first one is the identity index.
 			int swap_idx = -1;
-			for (int k = 0; k < 4; k++)
+			for (unsigned int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = di.texel_weights_4t[k][texel];
 				float dttwf = di.texel_weights_float_4t[k][texel];
@@ -648,7 +656,7 @@ static void init_decimation_info_3d(
 		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
 		// Match last texel in active lane in SIMD group, for better gathers
 		uint8_t last_texel = di.weight_texel[texel_count_wt - 1][i];
-		for (int j = texel_count_wt; j < max_texel_count_of_weight; j++)
+		for (unsigned int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
 			di.weight_texel[j][i] = last_texel;
 			di.weights_flt[j][i] = 0.0f;
@@ -656,12 +664,12 @@ static void init_decimation_info_3d(
 	}
 
 	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-	int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
-	for (int i = texels_per_block; i < texels_per_block_simd; i++)
+	unsigned int texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
+	for (unsigned int i = texels_per_block; i < texels_per_block_simd; i++)
 	{
 		di.texel_weight_count[i] = 0;
 
-		for (int j = 0; j < 4; j++)
+		for (unsigned int j = 0; j < 4; j++)
 		{
 			di.texel_weights_float_4t[j][i] = 0;
 			di.texel_weights_4t[j][i] = 0;
@@ -674,8 +682,8 @@ static void init_decimation_info_3d(
 	int last_texel_count_wt = texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = di.weight_texel[last_texel_count_wt - 1][weights_per_block - 1];
 
-	int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
-	for (int i = weights_per_block; i < weights_per_block_simd; i++)
+	unsigned int weights_per_block_simd = round_up_to_simd_multiple_vla(weights_per_block);
+	for (unsigned int i = weights_per_block; i < weights_per_block_simd; i++)
 	{
 		di.weight_texel_count[i] = 0;
 
@@ -754,13 +762,13 @@ static void assign_kmeans_texels(
  * @return The new entry's index in the compacted decimation table array.
  */
 static int construct_dt_entry_2d(
-	int x_texels,
-	int y_texels,
-	int x_weights,
-	int y_weights,
+	unsigned int x_texels,
+	unsigned int y_texels,
+	unsigned int x_weights,
+	unsigned int y_weights,
 	block_size_descriptor& bsd
 ) {
-	int dm_index = bsd.decimation_mode_count;
+	unsigned int dm_index = bsd.decimation_mode_count;
 	unsigned int weight_count = x_weights * y_weights;
 	assert(weight_count <= BLOCK_MAX_WEIGHTS);
 
@@ -957,16 +965,16 @@ static void construct_block_size_descriptor_3d(
 ) {
 	// Store a remap table for storing packed decimation modes.
 	// Indexing uses [Z * 64 + Y *  8 + X] and max size for each axis is 6.
-	static const int MAX_DMI = 6 * 64 + 6 * 8 + 6;
+	static constexpr unsigned int MAX_DMI = 6 * 64 + 6 * 8 + 6;
 	int decimation_mode_index[MAX_DMI];
-	int decimation_mode_count = 0;
+	unsigned int decimation_mode_count = 0;
 
 	bsd.xdim = x_texels;
 	bsd.ydim = y_texels;
 	bsd.zdim = z_texels;
 	bsd.texel_count = x_texels * y_texels * z_texels;
 
-	for (int i = 0; i < MAX_DMI; i++)
+	for (unsigned int i = 0; i < MAX_DMI; i++)
 	{
 		decimation_mode_index[i] = -1;
 	}
