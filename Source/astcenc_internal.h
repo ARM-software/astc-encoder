@@ -710,27 +710,67 @@ struct quantization_and_transfer_table
 
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
 
+/** @brief The block is an error block, and will return error color or NaN. */
 static constexpr unsigned int SYM_BTYPE_ERROR { 0 };
+
+/** @brief The block is a constant color block using FP16 colors. */
 static constexpr unsigned int SYM_BTYPE_CONST_F16 { 1 };
+
+/** @brief The block is a constant color block using UNORM16 colors. */
 static constexpr unsigned int SYM_BTYPE_CONST_U16 { 2 };
+
+/** @brief The block is a normal non-constant color block. */
 static constexpr unsigned int SYM_BTYPE_NONCONST { 3 };
 
+/**
+ * @brief A symbolic representation of a compressed block.
+ *
+ * The symbolic representation stores the unpacked content of a single
+ * @c physical_compressed_block, in a form which is much easier to access for
+ * the rest of the compressor code.
+ */
 struct symbolic_compressed_block
 {
-	unsigned int block_type;
-	unsigned int block_mode;
-	unsigned int partition_count;
-	unsigned int partition_index;
+	/** @brief The block type, one of the @c SYM_BTYPE_* constants. */
+	uint8_t block_type;
 
-	int color_formats[4];		// color format for each endpoint color pair.
-	int color_formats_matched;	// color format for all endpoint pairs are matched.
+	/** @brief The number of partitions; valid for @c NONCONST blocks. */
+	uint8_t partition_count;
+
+	/** @brief Non-zero if the color formats matched; valid for @c NONCONST blocks. */
+	// TODO: Do we need to store this?
+	uint8_t color_formats_matched;
+
+	/** @brief The plane 2 color component, or -1 if single plane; valid for @c NONCONST blocks. */
+	int8_t plane2_component;
+
+	/** @brief The block mode; valid for @c NONCONST blocks. */
+	uint16_t block_mode;
+
+	/** @brief The partition index; valid for @c NONCONST blocks if 2 or more partitions. */
+	uint16_t partition_index;
+
+	/** @brief The endpoint color formats for each partition; valid for @c NONCONST blocks. */
+	uint8_t color_formats[4];
+
+	/** @brief The endpoint color formats for each partition; valid for @c NONCONST blocks. */
 	quant_method color_quant_level;
-	int plane2_component;		// color component for second plane of weights
-	uint8_t color_values[4][8];	    // quantized endpoint color pairs.
-	int constant_color[4];      // constant-color, as FP16 or UINT16. Used for constant-color blocks only.
-	// Quantized and decimated weights. In the case of dual plane, the second
-	// index plane starts at weights[PLANE2_WEIGHTS_OFFSET]
-	float errorval;             // The error of the current encoding
+
+	/** @brief The error of the current encoding; valid for @c NONCONST blocks. */
+	float errorval;
+
+	// We can't have both of these at the same time
+	union {
+		/** @brief The constant color; valid for @c CONST blocks. */
+		int constant_color[4];
+		/** @brief The quantized endpoint color pairs; valid for @c NONCONST blocks. */
+		uint8_t color_values[4][8];
+	};
+
+	/** @brief The quantized and decimated weights.
+	 *
+	 * If dual plane, the second plane starts at @c weights[PLANE2_WEIGHTS_OFFSET].
+	 */
 	uint8_t weights[MAX_WEIGHTS_PER_BLOCK];
 };
 
