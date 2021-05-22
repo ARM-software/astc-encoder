@@ -92,18 +92,18 @@ static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0,
               "MAX_WEIGHT_MODES must be multiple of ASTCENC_SIMD_WIDTH");
 
 // A high default error value
-static const float ERROR_CALC_DEFAULT { 1e30f };
+static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 
 /* ============================================================================
   Compile-time tuning parameters
 ============================================================================ */
 // The max texel count in a block which can try the one partition fast path.
 // Default: enabled for 4x4 and 5x4 blocks.
-static const unsigned int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
+static constexpr unsigned int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
 
 // The maximum number of candidate encodings returned for each encoding mode.
 // Default: depends on quality preset
-static const unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
+static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 
 /* ============================================================================
   Parallel execution control
@@ -451,7 +451,6 @@ struct partition_info
 */
 struct decimation_info
 {
-	// TODO: Make these byte values
 	uint8_t texel_count;
 	uint8_t weight_count;
 	uint8_t weight_x;
@@ -710,12 +709,18 @@ struct quantization_and_transfer_table
 
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
 
+static constexpr unsigned int SYM_BTYPE_ERROR { 0 };
+static constexpr unsigned int SYM_BTYPE_CONST_F16 { 1 };
+static constexpr unsigned int SYM_BTYPE_CONST_U16 { 2 };
+static constexpr unsigned int SYM_BTYPE_NONCONST { 3 };
+
 struct symbolic_compressed_block
 {
-	int error_block;			// 1 marks error block, 0 marks non-error-block.
-	int block_mode;				// 0 to 2047. Negative value marks constant-color block (-1: FP16, -2:UINT16)
-	int partition_count;		// 1 to 4; Zero marks a constant-color block.
-	int partition_index;		// 0 to 1023
+	unsigned int block_type;
+	unsigned int block_mode;
+	unsigned int partition_count;
+	unsigned int partition_index;
+
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
 	int color_quant_level;

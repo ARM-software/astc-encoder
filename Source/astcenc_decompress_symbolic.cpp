@@ -191,7 +191,7 @@ void decompress_symbolic_block(
 	blk.grayscale = false;
 
 	// If we detected an error-block, blow up immediately.
-	if (scb.error_block)
+	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		for (unsigned int i = 0; i < bsd.texel_count; i++)
 		{
@@ -206,12 +206,14 @@ void decompress_symbolic_block(
 		return;
 	}
 
-	if (scb.block_mode < 0)
+	if ((scb.block_type == SYM_BTYPE_CONST_F16) ||
+	    (scb.block_type == SYM_BTYPE_CONST_U16))
 	{
 		vfloat4 color;
 		int use_lns = 0;
 
-		if (scb.block_mode == -2)
+		// UNORM16 constant color block
+		if (scb.block_type == SYM_BTYPE_CONST_U16)
 		{
 			vint4 colori(scb.constant_color);
 
@@ -225,6 +227,7 @@ void decompress_symbolic_block(
 			vint4 colorf16 = unorm16_to_sf16(colori);
 			color = float16_to_float(colorf16);
 		}
+		// FLOAT16 constant color block
 		else
 		{
 			switch (decode_mode)
@@ -329,7 +332,7 @@ float compute_symbolic_block_difference(
 	const error_weight_block& ewb
 ) {
 	// If we detected an error-block, blow up immediately.
-	if (scb.error_block)
+	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		return 1e29f;
 	}

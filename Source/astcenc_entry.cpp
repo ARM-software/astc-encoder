@@ -1210,15 +1210,16 @@ astcenc_error astcenc_get_block_info(
 	info->block_z = ctx->config.block_z;
 	info->texel_count = bsd.texel_count;
 
-	// Check for error blocks first - block_mode will be negative
-	info->is_error_block = scb.error_block != 0;
+	// Check for error blocks first
+	info->is_error_block = scb.block_type == SYM_BTYPE_ERROR;
 	if (info->is_error_block)
 	{
 		return ASTCENC_SUCCESS;
 	}
 
-	// Check for constant color blocks second - block_mode will be negative
-	info->is_constant_block = scb.block_mode < 0;
+	// Check for constant color blocks second
+	info->is_constant_block = scb.block_type == SYM_BTYPE_CONST_F16 ||
+	                          scb.block_type == SYM_BTYPE_CONST_U16;
 	if (info->is_constant_block)
 	{
 		return ASTCENC_SUCCESS;
@@ -1249,7 +1250,7 @@ astcenc_error astcenc_get_block_info(
 	info->weight_level_count = get_quant_method_levels(bm.get_quant_mode());
 
 	// Unpack color endpoints for each active partition
-	for (int i = 0; i < scb.partition_count; i++)
+	for (unsigned int i = 0; i < scb.partition_count; i++)
 	{
 		bool rgb_hdr;
 		bool a_hdr;

@@ -101,12 +101,10 @@ void symbolic_to_physical(
 	const symbolic_compressed_block& scb,
 	physical_compressed_block& pcb
 ) {
-	if (scb.block_mode == -2)
+	// Constant color block using UNORM16 colors
+	if (scb.block_type == SYM_BTYPE_CONST_U16)
 	{
-		// UNORM16 constant-color block.
-		// This encodes separate constant-color blocks. There is currently
-		// no attempt to coalesce them into larger void-extents.
-
+		// There is currently no attempt to coalesce larger void-extents
 		static const uint8_t cbytes[8] { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
@@ -122,12 +120,10 @@ void symbolic_to_physical(
 		return;
 	}
 
-	if (scb.block_mode == -1)
+	// Constant color block using FP16 colors
+	if (scb.block_type == SYM_BTYPE_CONST_F16)
 	{
-		// FP16 constant-color block.
-		// This encodes separate constant-color blocks. There is currently
-		// no attempt to coalesce them into larger void-extents.
-
+		// There is currently no attempt to coalesce larger void-extents
 		static const uint8_t cbytes[8]  { 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 		for (int i = 0; i < 8; i++)
 		{
@@ -258,7 +254,7 @@ void symbolic_to_physical(
 	// Encode the color components
 	uint8_t values_to_encode[32];
 	int valuecount_to_encode = 0;
-	for (int i = 0; i < scb.partition_count; i++)
+	for (unsigned int i = 0; i < scb.partition_count; i++)
 	{
 		int vals = 2 * (scb.color_formats[i] >> 2) + 2;
 		assert(vals <= 8);
@@ -280,7 +276,7 @@ void physical_to_symbolic(
 ) {
 	uint8_t bswapped[16];
 
-	scb.error_block = 0;
+	scb.block_type = SYM_BTYPE_NONCONST;
 
 	// Fetch the decimation tables
 	const decimation_info *const *dt = bsd.decimation_tables;
@@ -294,11 +290,11 @@ void physical_to_symbolic(
 		// Check what format the data has
 		if (block_mode & 0x200)
 		{
-			scb.block_mode = -1;	// floating-point
+			scb.block_type = SYM_BTYPE_CONST_F16;
 		}
 		else
 		{
-			scb.block_mode = -2;	// unorm16.
+			scb.block_type = SYM_BTYPE_CONST_U16;
 		}
 
 		scb.partition_count = 0;
@@ -314,7 +310,7 @@ void physical_to_symbolic(
 			int rsvbits = read_bits(2, 10, pcb.data);
 			if (rsvbits != 3)
 			{
-				scb.error_block = 1;
+				scb.block_type = SYM_BTYPE_ERROR;
 			}
 
 			int vx_low_s = read_bits(8, 12, pcb.data) | (read_bits(5, 12 + 8, pcb.data) << 8);
@@ -326,7 +322,7 @@ void physical_to_symbolic(
 
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t) && !all_ones)
 			{
-				scb.error_block = 1;
+				scb.block_type = SYM_BTYPE_ERROR;
 			}
 		}
 		else
@@ -343,7 +339,7 @@ void physical_to_symbolic(
 
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t || vx_low_p >= vx_high_p) && !all_ones)
 			{
-				scb.error_block = 1;
+				scb.block_type = SYM_BTYPE_ERROR;
 			}
 		}
 
@@ -353,7 +349,7 @@ void physical_to_symbolic(
 	const int packed_index = bsd.block_mode_packed_index[block_mode];
 	if (packed_index < 0)
 	{
-		scb.error_block = 1;
+		scb.block_type = SYM_BTYPE_ERROR;
 		return;
 	}
 	assert(packed_index >= 0 && packed_index < bsd.block_mode_count);
@@ -396,7 +392,7 @@ void physical_to_symbolic(
 
 	if (is_dual_plane && partition_count == 4)
 	{
-		scb.error_block = 1;
+		scb.block_type = SYM_BTYPE_ERROR;
 	}
 
 	scb.color_formats_matched = 0;
@@ -461,7 +457,7 @@ void physical_to_symbolic(
 
 	if (color_integer_count > 18)
 	{
-		scb.error_block = 1;
+		scb.block_type = SYM_BTYPE_ERROR;
 	}
 
 	// Determine the color endpoint format to use
@@ -481,7 +477,7 @@ void physical_to_symbolic(
 	scb.color_quant_level = color_quant_level;
 	if (color_quant_level < 4)
 	{
-		scb.error_block = 1;
+		scb.block_type = SYM_BTYPE_ERROR;
 	}
 
 	// Unpack the integer color values and assign to endpoints

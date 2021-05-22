@@ -486,11 +486,11 @@ static float compress_symbolic_block_for_partition_1plane(
 			workscb.partition_index = partition_index;
 			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
-			workscb.error_block = 0;
+			workscb.block_type = SYM_BTYPE_NONCONST;
 
 			if (workscb.color_quant_level < 4)
 			{
-				workscb.error_block = 1; // Should never happen ...
+				workscb.block_type = SYM_BTYPE_ERROR;
 			}
 
 			// Pre-realign test
@@ -500,9 +500,8 @@ static float compress_symbolic_block_for_partition_1plane(
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
-					workscb.error_block = 1;
+					workscb.block_type = SYM_BTYPE_ERROR;
 				}
-
 
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
@@ -541,7 +540,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;
-				workscb.error_block = 1;
+				workscb.block_type = SYM_BTYPE_ERROR;
 			}
 
 			trace_add_data("error_postrealign", errorval);
@@ -890,11 +889,11 @@ static float compress_symbolic_block_for_partition_2planes(
 			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_component = plane2_component;
-			workscb.error_block = 0;
+			workscb.block_type = SYM_BTYPE_NONCONST;
 
 			if (workscb.color_quant_level < 4)
 			{
-				workscb.error_block = 1;	// Should never happen ...
+				workscb.block_type = SYM_BTYPE_ERROR;
 			}
 
 			// Pre-realign test
@@ -904,9 +903,8 @@ static float compress_symbolic_block_for_partition_2planes(
 				if (errorval == -1e30f)
 				{
 					errorval = -errorval;
-					workscb.error_block = 1;
+					workscb.block_type = SYM_BTYPE_ERROR;
 				}
-
 
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
@@ -945,7 +943,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			if (errorval == -1e30f)
 			{
 				errorval = -errorval;
-				workscb.error_block = 1;
+				workscb.block_type = SYM_BTYPE_ERROR;
 			}
 
 			trace_add_data("error_postrealign", errorval);
@@ -1435,21 +1433,20 @@ void compress_block(
 		trace_add_data("partition_count", 0);
 		trace_add_data("plane_count", 1);
 
-		scb.error_block = 0;
 		scb.partition_count = 0;
 
 		// Encode as FP16 if using HDR
 		if ((decode_mode == ASTCENC_PRF_HDR) ||
 		    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
 		{
-			scb.block_mode = -1;
+			scb.block_type = SYM_BTYPE_CONST_F16;
 			vint4 color_f16 = float_to_float16(blk.origin_texel);
 			store(color_f16, scb.constant_color);
 		}
 		// Encode as UNORM16 if NOT using HDR
 		else
 		{
-			scb.block_mode = -2;
+			scb.block_type = SYM_BTYPE_CONST_U16;
 			vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
 			vint4 color_u16 = float_to_int_rtn(color_f32);
 			store(color_u16, scb.constant_color);
@@ -1471,7 +1468,7 @@ void compress_block(
 
 	// Set SCB and mode errors to a very high error value
 	scb.errorval = 1e30f;
-	scb.error_block = 1;
+	scb.block_type = SYM_BTYPE_ERROR;
 
 	float best_errorvals_in_modes[MODE_COUNT];
 	for (int i = 0; i < MODE_COUNT; i++)
