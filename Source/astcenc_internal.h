@@ -1067,17 +1067,17 @@ struct pixel_region_variance_args
 	/** Should the algorithm bother with Z axis processing? */
 	bool have_z;
 	/** The kernel radius for average and variance. */
-	int avg_var_kernel_radius;
+	unsigned int avg_var_kernel_radius;
 	/** The kernel radius for alpha processing. */
-	int alpha_kernel_radius;
+	unsigned int alpha_kernel_radius;
 	/** The size of the working data to process. */
-	int size_x;
-	int size_y;
-	int size_z;
+	unsigned int size_x;
+	unsigned int size_y;
+	unsigned int size_z;
 	/** The position of first src and dst data in the data set. */
-	int offset_x;
-	int offset_y;
-	int offset_z;
+	unsigned int offset_x;
+	unsigned int offset_y;
+	unsigned int offset_z;
 	/** The working memory buffer. */
 	vfloat4 *work_memory;
 };
@@ -1090,14 +1090,14 @@ struct avg_var_args
 	/** The arguments for the nested variance computation. */
 	pixel_region_variance_args arg;
 	/** The image dimensions. */
-	int img_size_x;
-	int img_size_y;
-	int img_size_z;
+	unsigned int img_size_x;
+	unsigned int img_size_y;
+	unsigned int img_size_z;
 	/** The maximum working block dimensions. */
-	int blk_size_xy;
-	int blk_size_z;
+	unsigned int blk_size_xy;
+	unsigned int blk_size_z;
 	/** The working block memory size. */
-	int work_memory_size;
+	unsigned int work_memory_size;
 };
 
 /**
@@ -1121,8 +1121,8 @@ unsigned int init_compute_averages_and_variances(
 	astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
-	int avg_var_kernel_radius,
-	int alpha_kernel_radius,
+	unsigned int avg_var_kernel_radius,
+	unsigned int alpha_kernel_radius,
 	const astcenc_swizzle& swz,
 	pixel_region_variance_args& arg,
 	avg_var_args& ag);
