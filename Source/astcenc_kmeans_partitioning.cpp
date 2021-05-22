@@ -43,13 +43,13 @@ static void kmeans_init(
 	const imageblock& blk,
 	int texel_count,
 	int partition_count,
-	vfloat4 cluster_centers[4]
+	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS]
 ) {
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
 	int clusters_selected = 0;
-	float distances[MAX_TEXELS_PER_BLOCK];
+	float distances[BLOCK_MAX_TEXELS];
 
 	// Pick a random sample as first cluster center; 145897 from random.org
 	int sample = 145897 % texel_count;
@@ -131,13 +131,13 @@ static void kmeans_assign(
 	const imageblock& blk,
 	int texel_count,
 	int partition_count,
-	const vfloat4 cluster_centers[4],
-	int partition_of_texel[MAX_TEXELS_PER_BLOCK]
+	const vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS],
+	int partition_of_texel[BLOCK_MAX_TEXELS]
 ) {
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
-	int partition_texel_count[4] { 0 };
+	int partition_texel_count[BLOCK_MAX_PARTITIONS] { 0 };
 
 	// Find the best partition for every texel
 	for (int i = 0; i < texel_count; i++)
@@ -196,20 +196,20 @@ static void kmeans_update(
 	const imageblock& blk,
 	int texel_count,
 	int partition_count,
-	vfloat4 cluster_centers[4],
-	const int partition_of_texel[MAX_TEXELS_PER_BLOCK]
+	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS],
+	const int partition_of_texel[BLOCK_MAX_TEXELS]
 ) {
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
-	vfloat4 color_sum[4] {
+	vfloat4 color_sum[BLOCK_MAX_PARTITIONS] {
 		vfloat4::zero(),
 		vfloat4::zero(),
 		vfloat4::zero(),
 		vfloat4::zero()
 	};
 
-	int partition_texel_count[4] { 0 };
+	int partition_texel_count[BLOCK_MAX_PARTITIONS] { 0 };
 
 	// Find the center-of-gravity in each cluster
 	for (int i = 0; i < texel_count; i++)
@@ -343,8 +343,8 @@ using mismatch_dispatch = unsigned int (*)(const uint64_t*, const uint64_t*);
 static void count_partition_mismatch_bits(
 	const block_size_descriptor& bsd,
 	unsigned int partition_count,
-	const uint64_t bitmaps[4],
-	unsigned int mismatch_counts[PARTITION_COUNT]
+	const uint64_t bitmaps[BLOCK_MAX_PARTITIONS],
+	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS]
 ) {
 	const partition_info *pt = get_partition_table(&bsd, partition_count);
 
@@ -355,7 +355,7 @@ static void count_partition_mismatch_bits(
 		partition_mismatch4
 	};
 
-	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		int bitcount = 255;
 		if (pt->partition_count == partition_count)
@@ -375,13 +375,13 @@ static void count_partition_mismatch_bits(
  * @param[out] partition_ordering   Partition index values, in mismatch order.
  */
 static void get_partition_ordering_by_mismatch_bits(
-	const unsigned int mismatch_count[PARTITION_COUNT],
-	unsigned int partition_ordering[PARTITION_COUNT]
+	const unsigned int mismatch_count[BLOCK_MAX_PARTITIONINGS],
+	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
 	unsigned int mscount[256] { 0 };
 
 	// Create the histogram of mismatch counts
-	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		mscount[mismatch_count[i]]++;
 	}
@@ -398,7 +398,7 @@ static void get_partition_ordering_by_mismatch_bits(
 
 	// Use the running sum as the index, incrementing after read to allow
 	// sequential entries with the same count
-	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		unsigned int idx = mscount[mismatch_count[i]]++;
 		partition_ordering[idx] = i;
@@ -410,10 +410,10 @@ void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	unsigned int partition_count,
-	unsigned int partition_ordering[PARTITION_COUNT]
+	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
-	vfloat4 cluster_centers[4];
-	int texel_partitions[MAX_TEXELS_PER_BLOCK];
+	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS];
+	int texel_partitions[BLOCK_MAX_TEXELS];
 
 	// Use three passes of k-means clustering to partition the block data
 	for (int i = 0; i < 3; i++)
@@ -431,7 +431,7 @@ void compute_partition_ordering(
 	}
 
 	// Construct the block bitmaps of texel assignments to each partition
-	uint64_t bitmaps[4] { 0 };
+	uint64_t bitmaps[BLOCK_MAX_PARTITIONS] { 0 };
 	unsigned int texels_to_process = bsd.kmeans_texel_count;
 	promise(texels_to_process > 0);
 	for (unsigned int i = 0; i < texels_to_process; i++)
@@ -441,7 +441,7 @@ void compute_partition_ordering(
 	}
 
 	// Count the mismatch between the block and the format's partition tables
-	unsigned int mismatch_counts[PARTITION_COUNT];
+	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS];
 	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
 	// Sort the partitions based on the number of mismatched bits

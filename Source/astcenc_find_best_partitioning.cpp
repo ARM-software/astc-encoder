@@ -73,7 +73,7 @@ void find_best_partition_candidates(
 
 	weight_imprecision_estim = weight_imprecision_estim * weight_imprecision_estim;
 
-	unsigned int partition_sequence[PARTITION_COUNT];
+	unsigned int partition_sequence[BLOCK_MAX_PARTITIONINGS];
 	compute_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
 	int uses_alpha = imageblock_uses_alpha(&blk);
@@ -109,22 +109,22 @@ void find_best_partition_candidates(
 			}
 
 			// Compute weighting to give to each component in each partition
-			partition_metrics pms[4];
+			partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 			compute_avgs_and_dirs_4_comp(*(ptab + partition), blk, ewb, pms);
 
-			line4 uncor_lines[4];
-			line4 samec_lines[4];
-			line3 sep_r_lines[4];
-			line3 sep_g_lines[4];
-			line3 sep_b_lines[4];
-			line3 sep_a_lines[4];
+			line4 uncor_lines[BLOCK_MAX_PARTITIONS];
+			line4 samec_lines[BLOCK_MAX_PARTITIONS];
+			line3 sep_r_lines[BLOCK_MAX_PARTITIONS];
+			line3 sep_g_lines[BLOCK_MAX_PARTITIONS];
+			line3 sep_b_lines[BLOCK_MAX_PARTITIONS];
+			line3 sep_a_lines[BLOCK_MAX_PARTITIONS];
 
-			processed_line4 uncor_plines[4];
-			processed_line4 samec_plines[4];
+			processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS];
+			processed_line4 samec_plines[BLOCK_MAX_PARTITIONS];
 
-			float uncor_line_lens[4];
-			float samec_line_lens[4];
+			float uncor_line_lens[BLOCK_MAX_PARTITIONS];
+			float samec_line_lens[BLOCK_MAX_PARTITIONS];
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
@@ -291,14 +291,14 @@ void find_best_partition_candidates(
 			}
 
 			// Compute weighting to give to each component in each partition
-			partition_metrics pms[4];
+			partition_metrics pms[BLOCK_MAX_PARTITIONS];
 			compute_avgs_and_dirs_3_comp(*(ptab + partition), blk, ewb, 3, pms);
 
-			partition_lines3 plines[4];
+			partition_lines3 plines[BLOCK_MAX_PARTITIONS];
 
-			line2 sep_r_lines[4];
-			line2 sep_g_lines[4];
-			line2 sep_b_lines[4];
+			line2 sep_r_lines[BLOCK_MAX_PARTITIONS];
+			line2 sep_g_lines[BLOCK_MAX_PARTITIONS];
+			line2 sep_b_lines[BLOCK_MAX_PARTITIONS];
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
@@ -451,7 +451,7 @@ void find_best_partition_candidates(
 
 	if (best_partition_dualplane)
 	{
-		*best_partition_dualplane = (sep_best_component << PARTITION_BITS) |
+		*best_partition_dualplane = (sep_best_component << PARTITION_INDEX_BITS) |
 		                            (sep_best_partition);
 	}
 }

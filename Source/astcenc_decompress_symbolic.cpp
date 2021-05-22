@@ -132,12 +132,12 @@ void unpack_weights(
 	const decimation_info& di,
 	bool is_dual_plane,
 	quant_method quant_level,
-	int weights_plane1[MAX_TEXELS_PER_BLOCK],
-	int weights_plane2[MAX_TEXELS_PER_BLOCK]
+	int weights_plane1[BLOCK_MAX_TEXELS],
+	int weights_plane2[BLOCK_MAX_TEXELS]
 ) {
 	// First, unquantize the weights ...
-	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
-	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
+	int uq_plane1_weights[BLOCK_MAX_WEIGHTS];
+	int uq_plane2_weights[BLOCK_MAX_WEIGHTS];
 	unsigned int weight_count = di.weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
@@ -161,7 +161,7 @@ void unpack_weights(
 		for (unsigned int i = 0; i < weight_count; i++)
 		{
 			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
-			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + PLANE2_WEIGHTS_OFFSET]];
+			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + WEIGHTS_PLANE2_OFFSET]];
 		}
 
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -275,8 +275,8 @@ void decompress_symbolic_block(
 	int is_dual_plane = bm.is_dual_plane;
 
 	// Unquantize and undecimate the weights
-	int weights[MAX_TEXELS_PER_BLOCK];
-	int plane2_weights[MAX_TEXELS_PER_BLOCK];
+	int weights[BLOCK_MAX_TEXELS];
+	int plane2_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_quant_mode(), weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
@@ -354,8 +354,8 @@ float compute_symbolic_block_difference(
 	bool is_dual_plane = bm.is_dual_plane != 0;
 
 	// Unquantize and undecimate the weights
-	int weights[MAX_TEXELS_PER_BLOCK];
-	int plane2_weights[MAX_TEXELS_PER_BLOCK];
+	int weights[BLOCK_MAX_TEXELS];
+	int plane2_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_quant_mode(), weights, plane2_weights);
 
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;

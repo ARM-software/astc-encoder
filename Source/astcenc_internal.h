@@ -66,44 +66,72 @@
 /* ============================================================================
   Constants
 ============================================================================ */
-static constexpr unsigned int MAX_TEXELS_PER_BLOCK { 216 };
-static constexpr unsigned int MAX_KMEANS_TEXELS { 64 };
+/** @brief The maximum number of components a block can support. */
+static constexpr unsigned int BLOCK_MAX_COMPONENTS { 4 };
 
-static constexpr unsigned int MAX_WEIGHTS_PER_BLOCK { 64 };
-static constexpr unsigned int MIN_WEIGHT_BITS_PER_BLOCK { 24 };
-static constexpr unsigned int MAX_WEIGHT_BITS_PER_BLOCK { 96 };
+/** @brief The maximum number of partitions a block can support. */
+static constexpr unsigned int BLOCK_MAX_PARTITIONS { 4 };
 
-static constexpr unsigned int PLANE2_WEIGHTS_OFFSET { MAX_WEIGHTS_PER_BLOCK / 2 };
-static constexpr unsigned int PARTITION_BITS { 10 };
-static constexpr unsigned int PARTITION_COUNT { 1024 };
+/** @brief The number of partitionings, per partition count, suported by the ASTC format. */
+static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
 
-// the sum of weights for one texel.
-static constexpr float TEXEL_WEIGHT_SUM { 16.0f };
-static constexpr unsigned int MAX_DECIMATION_MODES { 87 };
-static constexpr unsigned int MAX_WEIGHT_MODES { 2048 };
+/** @brief The maximum number of texels a block can support (6x6x6 block). */
+static constexpr unsigned int BLOCK_MAX_TEXELS { 216 };
 
-static_assert((MAX_TEXELS_PER_BLOCK % ASTCENC_SIMD_WIDTH) == 0,
-              "MAX_TEXELS_PER_BLOCK must be multiple of ASTCENC_SIMD_WIDTH");
+/** @brief The maximum number of weights used during partition selection for texel clustering. */
+static constexpr unsigned int BLOCK_MAX_KMEANS_TEXELS { 64 };
 
-static_assert((MAX_WEIGHTS_PER_BLOCK % ASTCENC_SIMD_WIDTH) == 0,
-              "MAX_WEIGHTS_PER_BLOCK must be multiple of ASTCENC_SIMD_WIDTH");
+/** @brief The maximum number of weights a block can support. */
+static constexpr unsigned int BLOCK_MAX_WEIGHTS { 64 };
 
-static_assert((MAX_WEIGHT_MODES % ASTCENC_SIMD_WIDTH) == 0,
-              "MAX_WEIGHT_MODES must be multiple of ASTCENC_SIMD_WIDTH");
+/** @brief The minimum number of weight bits a candidate encoding must encode. */
+static constexpr unsigned int BLOCK_MIN_WEIGHT_BITS { 24 };
 
-// A high default error value
+/** @brief The maximum number of weight bits a candidate encoding can encode. */
+static constexpr unsigned int BLOCK_MAX_WEIGHT_BITS { 96 };
+
+/** @brief The number of partition index bits supported by the ASTC format . */
+static constexpr unsigned int PARTITION_INDEX_BITS { 10 };
+
+/** @brief The offset of the plane 2 weights in shared weight arrays. */
+static constexpr unsigned int WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS / 2 };
+
+/** @brief The sum of quantized weights for one texel. */
+static constexpr float WEIGHTS_TEXEL_SUM { 16.0f };
+
+/** @brief The number of block modes suported by the ASTC format. */
+static constexpr unsigned int WEIGHTS_MAX_BLOCK_MODES { 2048 };
+
+/** @brief The number of weight grid decimation modes suported by the ASTC format. */
+static constexpr unsigned int WEIGHTS_MAX_DECIMATION_MODES { 87 };
+
+/** @brief The high default error used to initialize error trackers. */
 static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 
-/* ============================================================================
-  Compile-time tuning parameters
-============================================================================ */
-// The max texel count in a block which can try the one partition fast path.
-// Default: enabled for 4x4 and 5x4 blocks.
+/**
+ * @brief The max texel count in a block which can try the one partition fast path.
+ *
+ * This is enabled for 4x4 and 5x4 block sizes.
+ */
 static constexpr unsigned int TUNE_MAX_TEXELS_MODE0_FASTPATH { 24 };
 
-// The maximum number of candidate encodings returned for each encoding mode.
-// Default: depends on quality preset
+/**
+ * @brief The maximum number of candidate encodings tested for each encoding mode..
+ *
+ * This can be dynamically reduced by the compression quality preset.
+ */
 static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
+
+
+static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
+              "BLOCK_MAX_TEXELS must be multiple of ASTCENC_SIMD_WIDTH");
+
+static_assert((BLOCK_MAX_WEIGHTS % ASTCENC_SIMD_WIDTH) == 0,
+              "BLOCK_MAX_WEIGHTS must be multiple of ASTCENC_SIMD_WIDTH");
+
+static_assert((WEIGHTS_MAX_BLOCK_MODES % ASTCENC_SIMD_WIDTH) == 0,
+              "WEIGHTS_MAX_BLOCK_MODES must be multiple of ASTCENC_SIMD_WIDTH");
+
 
 /* ============================================================================
   Parallel execution control
@@ -435,10 +463,10 @@ struct partition_lines3
 struct partition_info
 {
 	unsigned int partition_count;
-	uint8_t partition_texel_count[4];
-	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
-	uint8_t texels_of_partition[4][MAX_TEXELS_PER_BLOCK];
-	uint64_t coverage_bitmaps[4];
+	uint8_t partition_texel_count[BLOCK_MAX_PARTITIONS];
+	uint8_t partition_of_texel[BLOCK_MAX_TEXELS];
+	uint8_t texels_of_partition[BLOCK_MAX_PARTITIONS][BLOCK_MAX_TEXELS];
+	uint64_t coverage_bitmaps[BLOCK_MAX_PARTITIONS];
 };
 
 /*
@@ -457,25 +485,25 @@ struct decimation_info
 	uint8_t weight_y;
 	uint8_t weight_z;
 
-	uint8_t texel_weight_count[MAX_TEXELS_PER_BLOCK];	// number of indices that go into the calculation for a texel
+	uint8_t texel_weight_count[BLOCK_MAX_TEXELS];	// number of indices that go into the calculation for a texel
 
 	// The 4t and t4 tables are the same data, but transposed to allow optimal
 	// data access patterns depending on how we can unroll loops
-	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
-	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][MAX_TEXELS_PER_BLOCK];	// the weights that go into a texel calculation
-	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_int_4t[4][MAX_TEXELS_PER_BLOCK];	// the weight to assign to each weight
+	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][BLOCK_MAX_TEXELS];	// the weight to assign to each weight
+	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][BLOCK_MAX_TEXELS];	// the weights that go into a texel calculation
+	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_int_4t[4][BLOCK_MAX_TEXELS];	// the weight to assign to each weight
 
-	uint8_t weight_texel_count[MAX_WEIGHTS_PER_BLOCK];	// the number of texels that a given weight contributes to
+	uint8_t weight_texel_count[BLOCK_MAX_WEIGHTS];	// the number of texels that a given weight contributes to
 
 	// Stored transposed to give better access patterns
-	uint8_t weight_texel[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the texels that the weight contributes to
-	alignas(ASTCENC_VECALIGN) float weights_flt[MAX_TEXELS_PER_BLOCK][MAX_WEIGHTS_PER_BLOCK];	// the weights that the weight contributes to a texel.
+	uint8_t weight_texel[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];	// the texels that the weight contributes to
+	alignas(ASTCENC_VECALIGN) float weights_flt[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];	// the weights that the weight contributes to a texel.
 
 	// folded data structures:
 	//  * texel_weights_texel[i][j] = texel_weights[weight_texel[i][j]];
 	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]]
-	uint8_t texel_weights_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
-	float texel_weights_float_texel[MAX_WEIGHTS_PER_BLOCK][MAX_TEXELS_PER_BLOCK][4];
+	uint8_t texel_weights_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
+	float texel_weights_float_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
 };
 
 /**
@@ -544,28 +572,28 @@ struct block_size_descriptor
 	unsigned int decimation_mode_count;
 
 	/** @brief The active decimation modes, stored in low indices. */
-	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
+	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The active decimation tables, stored in low indices. */
-	const decimation_info *decimation_tables[MAX_DECIMATION_MODES];
+	const decimation_info *decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The number of stored block modes. */
 	unsigned int block_mode_count;
 
 	/** @brief The block mode array index, or -1 if not valid in current config. */
-	int16_t block_mode_packed_index[MAX_WEIGHT_MODES];
+	int16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The active block modes, stored in low indices. */
-	block_mode block_modes[MAX_WEIGHT_MODES];
+	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The texel count for k-means partition selection. */
 	unsigned int kmeans_texel_count;
 
 	/** @brief The active texels for k-means partition selection. */
-	unsigned int kmeans_texels[MAX_KMEANS_TEXELS];
+	unsigned int kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
 
 	/** @brief The partion tables for all of the possible partitions. */
-	partition_info partitions[(3 * PARTITION_COUNT) + 1];
+	partition_info partitions[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
 };
 
 // data structure representing one block of an image.
@@ -573,18 +601,18 @@ struct block_size_descriptor
 // on conversions to/from uint8_t (this also allows us to handle HDR textures easily)
 struct imageblock
 {
-	float data_r[MAX_TEXELS_PER_BLOCK];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
-	float data_g[MAX_TEXELS_PER_BLOCK];
-	float data_b[MAX_TEXELS_PER_BLOCK];
-	float data_a[MAX_TEXELS_PER_BLOCK];
+	float data_r[BLOCK_MAX_TEXELS];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
+	float data_g[BLOCK_MAX_TEXELS];
+	float data_b[BLOCK_MAX_TEXELS];
+	float data_a[BLOCK_MAX_TEXELS];
 
 	vfloat4 origin_texel;
 	vfloat4 data_min;
 	vfloat4 data_max;
 	bool    grayscale;
 
-	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
-	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
+	uint8_t rgb_lns[BLOCK_MAX_TEXELS];      // 1 if RGB data are being treated as LNS
+	uint8_t alpha_lns[BLOCK_MAX_TEXELS];    // 1 if Alpha data are being treated as LNS
 
 	unsigned int xpos;
 	unsigned int ypos;
@@ -656,24 +684,24 @@ static inline bool imageblock_is_lumalp(const imageblock * blk)
 
 struct error_weight_block
 {
-	vfloat4 error_weights[MAX_TEXELS_PER_BLOCK];
+	vfloat4 error_weights[BLOCK_MAX_TEXELS];
 
-	float texel_weight[MAX_TEXELS_PER_BLOCK];
+	float texel_weight[BLOCK_MAX_TEXELS];
 
-	float texel_weight_gba[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_rba[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_rga[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_rgb[MAX_TEXELS_PER_BLOCK];
+	float texel_weight_gba[BLOCK_MAX_TEXELS];
+	float texel_weight_rba[BLOCK_MAX_TEXELS];
+	float texel_weight_rga[BLOCK_MAX_TEXELS];
+	float texel_weight_rgb[BLOCK_MAX_TEXELS];
 
-	float texel_weight_rg[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_rb[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_gb[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_ra[MAX_TEXELS_PER_BLOCK];
+	float texel_weight_rg[BLOCK_MAX_TEXELS];
+	float texel_weight_rb[BLOCK_MAX_TEXELS];
+	float texel_weight_gb[BLOCK_MAX_TEXELS];
+	float texel_weight_ra[BLOCK_MAX_TEXELS];
 
-	float texel_weight_r[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_g[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_b[MAX_TEXELS_PER_BLOCK];
-	float texel_weight_a[MAX_TEXELS_PER_BLOCK];
+	float texel_weight_r[BLOCK_MAX_TEXELS];
+	float texel_weight_g[BLOCK_MAX_TEXELS];
+	float texel_weight_b[BLOCK_MAX_TEXELS];
+	float texel_weight_a[BLOCK_MAX_TEXELS];
 };
 
 /**
@@ -751,7 +779,7 @@ struct symbolic_compressed_block
 	uint16_t partition_index;
 
 	/** @brief The endpoint color formats for each partition; valid for @c NONCONST blocks. */
-	uint8_t color_formats[4];
+	uint8_t color_formats[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The endpoint color formats for each partition; valid for @c NONCONST blocks. */
 	quant_method color_quant_level;
@@ -762,16 +790,16 @@ struct symbolic_compressed_block
 	// We can't have both of these at the same time
 	union {
 		/** @brief The constant color; valid for @c CONST blocks. */
-		int constant_color[4];
+		int constant_color[BLOCK_MAX_COMPONENTS];
 		/** @brief The quantized endpoint color pairs; valid for @c NONCONST blocks. */
-		uint8_t color_values[4][8];
+		uint8_t color_values[BLOCK_MAX_PARTITIONS][8];
 	};
 
 	/** @brief The quantized and decimated weights.
 	 *
-	 * If dual plane, the second plane starts at @c weights[PLANE2_WEIGHTS_OFFSET].
+	 * If dual plane, the second plane starts at @c weights[WEIGHTS_PLANE2_OFFSET].
 	 */
-	uint8_t weights[MAX_WEIGHTS_PER_BLOCK];
+	uint8_t weights[BLOCK_MAX_WEIGHTS];
 };
 
 struct physical_compressed_block
@@ -831,7 +859,7 @@ static inline const partition_info *get_partition_table(
 	if (partition_count == 1) {
 		partition_count = 5;
 	}
-	unsigned int index = (partition_count - 2) * PARTITION_COUNT;
+	unsigned int index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
 	return bsd->partitions + index;
 }
 
@@ -952,7 +980,7 @@ void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	partition_metrics pm[4]);
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
  * @brief Compute averages and dominant directions for each partition in a 3 component texture.
@@ -970,7 +998,7 @@ void compute_avgs_and_dirs_3_comp(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	unsigned int omitted_component,
-	partition_metrics pm[4]);
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
  * @brief Compute averages and dominant directions for each partition in a 2 component texture.
@@ -990,7 +1018,7 @@ void compute_avgs_and_dirs_2_comp(
 	const error_weight_block& ewb,
 	unsigned int component1,
 	unsigned int component2,
-	partition_metrics pm[4]);
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
  * @brief Compute the RGBA error for uncorrelated and same chroma projections.
@@ -1016,10 +1044,10 @@ void compute_error_squared_rgba(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	const processed_line4 uncor_plines[4],
-	const processed_line4 samec_plines[4],
-	float uncor_lengths[4],
-	float samec_lengths[4],
+	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
+	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
+	float uncor_lengths[BLOCK_MAX_PARTITIONS],
+	float samec_lengths[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error);
 
@@ -1044,7 +1072,7 @@ void compute_error_squared_rgb(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	partition_lines3 plines[4],
+	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error);
 
@@ -1088,7 +1116,7 @@ void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	unsigned int partition_count,
-	unsigned int partition_ordering[PARTITION_COUNT]);
+	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]);
 
 // *********************************************************
 // functions and data pertaining to images and imageblocks
@@ -1225,20 +1253,20 @@ void write_imageblock(
 struct endpoints
 {
 	unsigned int partition_count;
-	vfloat4 endpt0[4];
-	vfloat4 endpt1[4];
+	vfloat4 endpt0[BLOCK_MAX_PARTITIONS];
+	vfloat4 endpt1[BLOCK_MAX_PARTITIONS];
 };
 
 struct endpoints_and_weights
 {
 	endpoints ep;
 
-	alignas(ASTCENC_VECALIGN) float weights[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float weights[BLOCK_MAX_TEXELS];
 
 	/** @brief True if all active values in weight_error_scale are the same. */
 	bool is_constant_weight_error_scale;
 
-	alignas(ASTCENC_VECALIGN) float weight_error_scale[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float weight_error_scale[BLOCK_MAX_TEXELS];
 };
 
 /**
@@ -1488,8 +1516,8 @@ void unpack_weights(
 	const decimation_info& di,
 	bool is_dual_plane,
 	quant_method quant_level,
-	int weights_plane1[MAX_TEXELS_PER_BLOCK],
-	int weights_plane2[MAX_TEXELS_PER_BLOCK]);
+	int weights_plane1[BLOCK_MAX_TEXELS],
+	int weights_plane2[BLOCK_MAX_TEXELS]);
 
 struct encoding_choice_errors
 {
@@ -1512,12 +1540,12 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 {
 	endpoints_and_weights ei1;
 	endpoints_and_weights ei2;
-	endpoints_and_weights eix1[MAX_DECIMATION_MODES];
-	endpoints_and_weights eix2[MAX_DECIMATION_MODES];
-	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	alignas(ASTCENC_VECALIGN) float decimated_weights[2 * MAX_DECIMATION_MODES * MAX_WEIGHTS_PER_BLOCK];
-	alignas(ASTCENC_VECALIGN) float flt_quantized_decimated_quantized_weights[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
-	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * MAX_WEIGHT_MODES * MAX_WEIGHTS_PER_BLOCK];
+	endpoints_and_weights eix1[WEIGHTS_MAX_DECIMATION_MODES];
+	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
+	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) float decimated_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) float flt_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 };
 
 struct compress_symbolic_block_buffers
@@ -1555,7 +1583,7 @@ void compute_ideal_endpoint_formats(
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4],
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES]);
@@ -1584,8 +1612,8 @@ void recompute_ideal_colors_1plane(
 	int weight_quant_mode,
 	const uint8_t* weight_set8,
 	endpoints& ep,
-	vfloat4 rgbs_vectors[4],
-	vfloat4 rgbo_vectors[4]);
+	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]);
 
 /**
  * @brief For a given 2 plane weight set recompute the endpoint colors.
@@ -1614,8 +1642,8 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
 	endpoints& ep,
-	vfloat4 rgbs_vectors[4],
-	vfloat4 rgbo_vectors[4],
+	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
 	int plane2_component);
 
 void expand_deblock_weights(
@@ -1629,17 +1657,17 @@ void compute_angular_endpoints_1plane(
 	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
-	float low_value[MAX_WEIGHT_MODES],
-	float high_value[MAX_WEIGHT_MODES]);
+	float low_value[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value[WEIGHTS_MAX_BLOCK_MODES]);
 
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
-	float low_value1[MAX_WEIGHT_MODES],
-	float high_value1[MAX_WEIGHT_MODES],
-	float low_value2[MAX_WEIGHT_MODES],
-	float high_value2[MAX_WEIGHT_MODES]);
+	float low_value1[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value1[WEIGHTS_MAX_BLOCK_MODES],
+	float low_value2[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value2[WEIGHTS_MAX_BLOCK_MODES]);
 
 /* *********************************** high-level encode and decode functions ************************************ */
 
@@ -1735,7 +1763,7 @@ struct astcenc_context
 	pixel_region_variance_args arg;
 	avg_var_args ag;
 
-	float deblock_weights[MAX_TEXELS_PER_BLOCK];
+	float deblock_weights[BLOCK_MAX_TEXELS];
 
 	ParallelManager manage_avg_var;
 	ParallelManager manage_compress;

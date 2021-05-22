@@ -46,10 +46,10 @@ static void generate_canonical_partitioning(
 	// Store a mapping to reorder the raw partitions so that the the partitions are ordered such
 	// that the lowest texel index in partition N is smaller than the lowest texel index in
 	// partition N + 1.
-	int mapped_index[4];
+	int mapped_index[BLOCK_MAX_PARTITIONS];
 	int map_weight_count = 0;
 
-	for (int i = 0; i < 4; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
 	{
 		mapped_index[i] = -1;
 	}
@@ -98,11 +98,11 @@ static bool compare_canonical_partitionings(
  */
 static void remove_duplicate_partitionings(
 	int texel_count,
-	partition_info pt[PARTITION_COUNT]
+	partition_info pt[BLOCK_MAX_PARTITIONINGS]
 ) {
-	uint64_t bit_patterns[PARTITION_COUNT * 7];
+	uint64_t bit_patterns[BLOCK_MAX_PARTITIONINGS * 7];
 
-	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		generate_canonical_partitioning(texel_count, pt[i].partition_of_texel, bit_patterns + i * 7);
 
@@ -296,7 +296,7 @@ static void generate_one_partition_info_entry(
 
 	// Assign texels to partitions
 	int texel_idx = 0;
-	int counts[4] { 0 };
+	int counts[BLOCK_MAX_PARTITIONS] { 0 };
 	for (unsigned int z = 0; z < bsd.zdim; z++)
 	{
 		for (unsigned int y = 0; y <  bsd.ydim; y++)
@@ -342,16 +342,16 @@ static void generate_one_partition_info_entry(
 		pi.partition_count = 4;
 	}
 
-	for (int i = 0; i < 4; i++)
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
 	{
 		pi.partition_texel_count[i] = counts[i];
 		pi.coverage_bitmaps[i] = 0ULL;
 	}
 
-	int texels_to_process = bsd.kmeans_texel_count;
-	for (int i = 0; i < texels_to_process; i++)
+	unsigned int texels_to_process = bsd.kmeans_texel_count;
+	for (unsigned int i = 0; i < texels_to_process; i++)
 	{
-		int idx = bsd.kmeans_texels[i];
+		unsigned int idx = bsd.kmeans_texels[i];
 		pi.coverage_bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
 	}
 }
@@ -361,9 +361,9 @@ void init_partition_tables(
 	block_size_descriptor& bsd
 ) {
 	partition_info *par_tab2 = bsd.partitions;
-	partition_info *par_tab3 = par_tab2 + PARTITION_COUNT;
-	partition_info *par_tab4 = par_tab3 + PARTITION_COUNT;
-	partition_info *par_tab1 = par_tab4 + PARTITION_COUNT;
+	partition_info *par_tab3 = par_tab2 + BLOCK_MAX_PARTITIONINGS;
+	partition_info *par_tab4 = par_tab3 + BLOCK_MAX_PARTITIONINGS;
+	partition_info *par_tab1 = par_tab4 + BLOCK_MAX_PARTITIONINGS;
 
 	generate_one_partition_info_entry(bsd, 1, 0, *par_tab1);
 	for (int i = 0; i < 1024; i++)

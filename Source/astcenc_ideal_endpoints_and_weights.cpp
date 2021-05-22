@@ -51,16 +51,16 @@ static void compute_ideal_colors_and_weights_1_comp(
 	int texel_count = bsd.texel_count;
 	promise(texel_count > 0);
 
-	float lowvalues[4] { 1e10f, 1e10f, 1e10f, 1e10f };
-	float highvalues[4] { -1e10f, -1e10f, -1e10f, -1e10f };
+	float lowvalues[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
+	float highvalues[BLOCK_MAX_PARTITIONS] { -1e10f, -1e10f, -1e10f, -1e10f };
 
-	float partition_error_scale[4];
-	float linelengths_rcp[4];
+	float partition_error_scale[BLOCK_MAX_PARTITIONS];
+	float linelengths_rcp[BLOCK_MAX_PARTITIONS];
 
 	const float *error_weights = nullptr;
 	const float* data_vr = nullptr;
 
-	assert(component < 4);
+	assert(component < BLOCK_MAX_COMPONENTS);
 	switch (component)
 	{
 	case 0:
@@ -169,7 +169,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	int texel_count = bsd.texel_count;
 	promise(texel_count > 0);
 
-	partition_metrics pms[4];
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	const float *error_weights;
 	const float* data_vr = nullptr;
@@ -193,12 +193,12 @@ static void compute_ideal_colors_and_weights_2_comp(
 		data_vg = blk.data_b;
 	}
 
-	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
-	float highparam[4] { -1e10f, -1e10f, -1e10f, -1e10f };
+	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
+	float highparam[BLOCK_MAX_PARTITIONS] { -1e10f, -1e10f, -1e10f, -1e10f };
 
-	line2 lines[4];
-	float scale[4];
-	float length_squared[4];
+	line2 lines[BLOCK_MAX_PARTITIONS];
+	float scale[BLOCK_MAX_PARTITIONS];
+	float length_squared[BLOCK_MAX_PARTITIONS];
 
 	compute_avgs_and_dirs_2_comp(pi, blk, ewb, component1, component2, pms);
 
@@ -233,8 +233,8 @@ static void compute_ideal_colors_and_weights_2_comp(
 		}
 	}
 
-	vfloat4 lowvalues[4];
-	vfloat4 highvalues[4];
+	vfloat4 lowvalues[BLOCK_MAX_PARTITIONS];
+	vfloat4 highvalues[BLOCK_MAX_PARTITIONS];
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -325,7 +325,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	unsigned int texel_count= bsd.texel_count;
 	promise(texel_count > 0);
 
-	partition_metrics pms[4];
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	const float *error_weights;
 	const float* data_vr = nullptr;
@@ -360,12 +360,12 @@ static void compute_ideal_colors_and_weights_3_comp(
 		data_vb = blk.data_b;
 	}
 
-	float lowparam[4] { 1e10f, 1e10f, 1e10f, 1e10f };
-	float highparam[4] { -1e10f, -1e10f, -1e10f, -1e10f };
+	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
+	float highparam[BLOCK_MAX_PARTITIONS] { -1e10f, -1e10f, -1e10f, -1e10f };
 
-	line3 lines[4];
-	float scale[4];
-	float length_squared[4];
+	line3 lines[BLOCK_MAX_PARTITIONS];
+	float scale[BLOCK_MAX_PARTITIONS];
+	float length_squared[BLOCK_MAX_PARTITIONS];
 
 	compute_avgs_and_dirs_3_comp(pi, blk, ewb, omitted_component, pms);
 
@@ -426,7 +426,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 		vfloat4 bmax = blk.data_max;
 
 		// TODO: Probably a programmatic vector permute we can do here ...
-		assert(omitted_component < 4);
+		assert(omitted_component < BLOCK_MAX_COMPONENTS);
 		switch (omitted_component)
 		{
 			case 0:
@@ -500,15 +500,15 @@ static void compute_ideal_colors_and_weights_4_comp(
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
-	float lowparam[4] { 1e10, 1e10, 1e10, 1e10 };
-	float highparam[4] { -1e10, -1e10, -1e10, -1e10 };
+	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10, 1e10, 1e10, 1e10 };
+	float highparam[BLOCK_MAX_PARTITIONS] { -1e10, -1e10, -1e10, -1e10 };
 
-	line4 lines[4];
+	line4 lines[BLOCK_MAX_PARTITIONS];
 
-	float scale[4];
-	float length_squared[4];
+	float scale[BLOCK_MAX_PARTITIONS];
+	float length_squared[BLOCK_MAX_PARTITIONS];
 
-	partition_metrics pms[4];
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	compute_avgs_and_dirs_4_comp(pi, blk, ewb, pms);
 
@@ -627,7 +627,7 @@ void compute_ideal_colors_and_weights_2planes(
 ) {
 	bool uses_alpha = imageblock_uses_alpha(&blk);
 
-	assert(plane2_component < 4);
+	assert(plane2_component < BLOCK_MAX_COMPONENTS);
 	switch (plane2_component)
 	{
 	case 0: // Separate weights for red
@@ -809,7 +809,7 @@ void compute_ideal_weights_for_decimation(
 	}
 
 	// Otherwise compute an estimate and perform single refinement iteration
-	alignas(ASTCENC_VECALIGN) float infilled_weights[MAX_TEXELS_PER_BLOCK];
+	alignas(ASTCENC_VECALIGN) float infilled_weights[BLOCK_MAX_TEXELS];
 
 	// Compute an initial average for each decimated weight
 	bool constant_wes = eai_in.is_constant_weight_error_scale;
@@ -873,7 +873,7 @@ void compute_ideal_weights_for_decimation(
 	// Perform a single iteration of refinement
 	// Empirically determined step size; larger values don't help but smaller drops image quality
 	constexpr float stepsize = 0.25f;
-	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
+	constexpr float chd_scale = -WEIGHTS_TEXEL_SUM;
 
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
@@ -1053,8 +1053,8 @@ void recompute_ideal_colors_1plane(
 	int weight_quant_mode,
 	const uint8_t* weight_set8,
 	endpoints& ep,
-	vfloat4 rgbs_vectors[4],
-	vfloat4 rgbo_vectors[4]
+	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
 ) {
 	int weight_count = di.weight_count;
 	int partition_count = pi.partition_count;
@@ -1064,7 +1064,7 @@ void recompute_ideal_colors_1plane(
 
 	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
-	float weight_set[MAX_WEIGHTS_PER_BLOCK];
+	float weight_set[BLOCK_MAX_WEIGHTS];
 	for (int i = 0; i < weight_count; i++)
 	{
 		weight_set[i] = qat.unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
@@ -1257,8 +1257,8 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
 	endpoints& ep,
-	vfloat4 rgbs_vectors[4],
-	vfloat4 rgbo_vectors[4],
+	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
 	int plane2_component
 ) {
 	int weight_count = di.weight_count;
@@ -1269,8 +1269,8 @@ void recompute_ideal_colors_2planes(
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
-	float weight_set[MAX_WEIGHTS_PER_BLOCK];
-	float plane2_weight_set[MAX_WEIGHTS_PER_BLOCK];
+	float weight_set[BLOCK_MAX_WEIGHTS];
+	float plane2_weight_set[BLOCK_MAX_WEIGHTS];
 
 	for (int i = 0; i < weight_count; i++)
 	{

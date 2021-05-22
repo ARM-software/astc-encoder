@@ -425,7 +425,7 @@ static astcenc_error validate_config(
 	config.rgbm_m_scale = astc::max(config.rgbm_m_scale, 1.0f);
 
 	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
-	config.tune_partition_index_limit = astc::clamp(config.tune_partition_index_limit, 1u, (unsigned int)PARTITION_COUNT);
+	config.tune_partition_index_limit = astc::clamp(config.tune_partition_index_limit, 1u, (unsigned int)BLOCK_MAX_PARTITIONINGS);
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
 	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
@@ -1279,16 +1279,16 @@ astcenc_error astcenc_get_block_info(
 	}
 
 	// Unpack weights for each texel
-	int weight_plane1[MAX_TEXELS_PER_BLOCK];
-	int weight_plane2[MAX_TEXELS_PER_BLOCK];
+	int weight_plane1[BLOCK_MAX_TEXELS];
+	int weight_plane2[BLOCK_MAX_TEXELS];
 
 	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.get_quant_mode(), weight_plane1, weight_plane2);
 	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
-		info->weight_values_plane1[i] = (float)weight_plane1[i] * (1.0f / TEXEL_WEIGHT_SUM);
+		info->weight_values_plane1[i] = (float)weight_plane1[i] * (1.0f / WEIGHTS_TEXEL_SUM);
 		if (info->is_dual_plane_block)
 		{
-			info->weight_values_plane2[i] = (float)weight_plane2[i] * (1.0f / TEXEL_WEIGHT_SUM);
+			info->weight_values_plane2[i] = (float)weight_plane2[i] * (1.0f / WEIGHTS_TEXEL_SUM);
 		}
 	}
 

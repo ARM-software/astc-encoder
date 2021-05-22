@@ -106,7 +106,7 @@ static void compute_angular_offsets(
 	promise(sample_count > 0);
 	promise(max_angular_steps > 0);
 
-	alignas(ASTCENC_VECALIGN) int isamplev[MAX_WEIGHTS_PER_BLOCK] { 0 };
+	alignas(ASTCENC_VECALIGN) int isamplev[BLOCK_MAX_WEIGHTS] { 0 };
 
 	// Precompute isample; arrays are always allocated 64 elements long
 	for (int i = 0; i < sample_count; i += ASTCENC_SIMD_WIDTH)
@@ -365,11 +365,11 @@ void compute_angular_endpoints_1plane(
 	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
-	float low_value[MAX_WEIGHT_MODES],
-	float high_value[MAX_WEIGHT_MODES]
+	float low_value[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value[WEIGHTS_MAX_BLOCK_MODES]
 ) {
-	float low_values[MAX_DECIMATION_MODES][12];
-	float high_values[MAX_DECIMATION_MODES][12];
+	float low_values[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float high_values[WEIGHTS_MAX_DECIMATION_MODES][12];
 
 	promise(bsd.decimation_mode_count > 0);
 	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
@@ -383,8 +383,8 @@ void compute_angular_endpoints_1plane(
 		int sample_count = bsd.decimation_tables[i]->weight_count;
 		compute_angular_endpoints_for_quant_levels(
 		    sample_count,
-		    decimated_quantized_weights + i * MAX_WEIGHTS_PER_BLOCK,
-		    decimated_weights + i * MAX_WEIGHTS_PER_BLOCK,
+		    decimated_quantized_weights + i * BLOCK_MAX_WEIGHTS,
+		    decimated_weights + i * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
@@ -410,15 +410,15 @@ void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
 	const float* decimated_weights,
-	float low_value1[MAX_WEIGHT_MODES],
-	float high_value1[MAX_WEIGHT_MODES],
-	float low_value2[MAX_WEIGHT_MODES],
-	float high_value2[MAX_WEIGHT_MODES]
+	float low_value1[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value1[WEIGHTS_MAX_BLOCK_MODES],
+	float low_value2[WEIGHTS_MAX_BLOCK_MODES],
+	float high_value2[WEIGHTS_MAX_BLOCK_MODES]
 ) {
-	float low_values1[MAX_DECIMATION_MODES][12];
-	float high_values1[MAX_DECIMATION_MODES][12];
-	float low_values2[MAX_DECIMATION_MODES][12];
-	float high_values2[MAX_DECIMATION_MODES][12];
+	float low_values1[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float high_values1[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float low_values2[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float high_values2[WEIGHTS_MAX_DECIMATION_MODES][12];
 
 	promise(bsd.decimation_mode_count > 0);
 	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
@@ -433,14 +433,14 @@ void compute_angular_endpoints_2planes(
 
 		compute_angular_endpoints_for_quant_levels(
 		    sample_count,
-		    decimated_quantized_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
-		    decimated_weights + 2 * i * MAX_WEIGHTS_PER_BLOCK,
+		    decimated_quantized_weights + 2 * i * BLOCK_MAX_WEIGHTS,
+		    decimated_weights + 2 * i * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 		compute_angular_endpoints_for_quant_levels(
 		    sample_count,
-		    decimated_quantized_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
-		    decimated_weights + (2 * i + 1) * MAX_WEIGHTS_PER_BLOCK,
+		    decimated_quantized_weights + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
+		    decimated_weights + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 

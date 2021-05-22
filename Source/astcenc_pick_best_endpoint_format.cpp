@@ -61,7 +61,7 @@
 static void compute_partition_error_color_weightings(
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	partition_metrics pm[4]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -193,7 +193,7 @@ static void compute_encoding_choice_errors(
 	const partition_info& pi,
 	const error_weight_block& ewb,
 	const endpoints& ep,
-	encoding_choice_errors eci[4])
+	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS])
 {
 	int partition_count = pi.partition_count;
 	int texels_per_block = bsd.texel_count;
@@ -201,7 +201,7 @@ static void compute_encoding_choice_errors(
 	promise(partition_count > 0);
 	promise(texels_per_block > 0);
 
-	partition_metrics pms[4];
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	compute_avgs_and_dirs_3_comp(pi, blk, ewb, 3, pms);
 
@@ -1096,7 +1096,7 @@ void compute_ideal_endpoint_formats(
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
 	// output data
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4],
+	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES]
@@ -1111,16 +1111,16 @@ void compute_ideal_endpoint_formats(
 
 	// Compute the errors that result from various encoding choices (such as using luminance instead
 	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
-	encoding_choice_errors eci[4];
+	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS];
 	compute_encoding_choice_errors(bsd, blk, pi, ewb, ep, eci);
 
 	// For each partition, compute the error weights to apply for that partition
-	partition_metrics pms[4];
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	compute_partition_error_color_weightings(ewb, pi, pms);
 
-	float best_error[4][21][4];
-	int format_of_choice[4][21][4];
+	float best_error[BLOCK_MAX_PARTITIONS][21][4];
+	int format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
 	for (int i = 0; i < partition_count; i++)
 	{
 		compute_color_error_for_every_integer_count_and_quant_level(
@@ -1129,10 +1129,10 @@ void compute_ideal_endpoint_formats(
 		    format_of_choice[i]);
 	}
 
-	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[MAX_WEIGHT_MODES];
-	alignas(ASTCENC_VECALIGN) quant_method best_quant_levels[MAX_WEIGHT_MODES];
-	quant_method best_quant_levels_mod[MAX_WEIGHT_MODES];
-	int best_ep_formats[MAX_WEIGHT_MODES][4];
+	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[WEIGHTS_MAX_BLOCK_MODES];
+	alignas(ASTCENC_VECALIGN) quant_method best_quant_levels[WEIGHTS_MAX_BLOCK_MODES];
+	quant_method best_quant_levels_mod[WEIGHTS_MAX_BLOCK_MODES];
+	int best_ep_formats[WEIGHTS_MAX_BLOCK_MODES][4];
 
 	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
 	// that will never be picked as best candidate

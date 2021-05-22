@@ -29,7 +29,7 @@ void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	partition_metrics pm[4]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -139,7 +139,7 @@ void compute_avgs_and_dirs_3_comp(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	unsigned int omitted_component,
-	partition_metrics pm[4]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	const float *texel_weights = ewb.texel_weight_rgb;
 
@@ -295,7 +295,7 @@ void compute_avgs_and_dirs_2_comp(
 	const error_weight_block& ewb,
 	unsigned int component1,
 	unsigned int component2,
-	partition_metrics pm[4]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	const float *texel_weights;
 
@@ -414,10 +414,10 @@ void compute_error_squared_rgba(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	const processed_line4 uncor_plines[4],
-	const processed_line4 samec_plines[4],
-	float uncor_lengths[4],
-	float samec_lengths[4],
+	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
+	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
+	float uncor_lengths[BLOCK_MAX_PARTITIONS],
+	float samec_lengths[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error
 ) {
@@ -572,7 +572,7 @@ void compute_error_squared_rgb(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	partition_lines3 plines[4],
+	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error
 ) {
