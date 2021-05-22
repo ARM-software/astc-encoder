@@ -602,16 +602,16 @@ struct astcenc_block_info
 	astcenc_profile profile;
 
 	/** @brief The number of texels in the X dimension. */
-	int block_x;
+	unsigned int block_x;
 
 	/** @brief The number of texels in the Y dimension. */
-	int block_y;
+	unsigned int block_y;
 
 	/** @brief The number of texel in the Z dimension. */
-	int block_z;
+	unsigned int block_z;
 
 	/** @brief The number of texels in the block. */
-	int texel_count;
+	unsigned int texel_count;
 
 	/** @brief True if this block is an error block. */
 	bool is_error_block;
@@ -626,31 +626,31 @@ struct astcenc_block_info
 	bool is_dual_plane_block;
 
 	/** @brief The number of partitions if not constant color. */
-	int partition_count;
+	unsigned int partition_count;
 
 	/** @brief The partition index if 2 - 4 partitions used. */
-	int partition_index;
+	unsigned int partition_index;
 
 	/** @brief The component index of the second plane if dual plane. */
-	int dual_plane_component;
+	unsigned int dual_plane_component;
 
 	/** @brief The color endpoint encoding mode for each partition. */
-	int color_endpoint_modes[4];
+	unsigned int color_endpoint_modes[4];
 
 	/** @brief The number of color endpoint quantization levels. */
-	int color_level_count;
+	unsigned int color_level_count;
 
 	/** @brief The number of weight quantization levels. */
-	int weight_level_count;
+	unsigned int weight_level_count;
 
 	/** @brief The number of weights in the X dimension. */
-	int weight_x;
+	unsigned int weight_x;
 
 	/** @brief The number of weights in the Y dimension. */
-	int weight_y;
+	unsigned int weight_y;
 
 	/** @brief The number of weights in the Z dimension. */
-	int weight_z;
+	unsigned int weight_z;
 
 	/** @brief The unpacked color endpoints for each partition. */
 	float color_endpoints[4][2][4];
