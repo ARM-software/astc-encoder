@@ -474,7 +474,7 @@ void physical_to_symbolic(
 	}
 
 	int color_quant_level = quant_mode_table[color_integer_count >> 1][color_bits];
-	scb.color_quant_level = color_quant_level;
+	scb.color_quant_level = (quant_method)color_quant_level;
 	if (color_quant_level < 4)
 	{
 		scb.block_type = SYM_BTYPE_ERROR;

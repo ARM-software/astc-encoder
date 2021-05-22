@@ -606,6 +606,7 @@ struct imageblock
 	}
 };
 
+// TODO: Convert these to ib member functions
 static inline float imageblock_default_alpha(const imageblock * blk)
 {
 	return blk->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
@@ -723,9 +724,9 @@ struct symbolic_compressed_block
 
 	int color_formats[4];		// color format for each endpoint color pair.
 	int color_formats_matched;	// color format for all endpoint pairs are matched.
-	int color_quant_level;
+	quant_method color_quant_level;
 	int plane2_component;		// color component for second plane of weights
-	int color_values[4][8];	    // quantized endpoint color pairs.
+	uint8_t color_values[4][8];	    // quantized endpoint color pairs.
 	int constant_color[4];      // constant-color, as FP16 or UINT16. Used for constant-color blocks only.
 	// Quantized and decimated weights. In the case of dual plane, the second
 	// index plane starts at weights[PLANE2_WEIGHTS_OFFSET]
@@ -1396,13 +1397,14 @@ float compute_error_of_weight_set_2planes(
  *
  * @return The actual endpoint mode used.
  */
+// TODO: Format as enum?
 int pack_color_endpoints(
 	vfloat4 color0,
 	vfloat4 color1,
 	vfloat4 rgbs_color,
 	vfloat4 rgbo_color,
 	int format,
-	int* output,
+	uint8_t* output,
 	quant_method quant_level);
 
 /**
@@ -1418,11 +1420,12 @@ int pack_color_endpoints(
  * @param[out] output0       The output color for endpoint 0.
  * @param[out] output1       The output color for endpoint 1.
  */
+// TODO: Format as enum?
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
-	int quant_level,
-	const int* input,
+	quant_method quant_level,
+	const uint8_t* input,
 	bool& rgb_hdr,
 	bool& alpha_hdr,
 	vint4& output0,
@@ -1511,11 +1514,11 @@ void compute_ideal_endpoint_formats(
 	const endpoints& ep,
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
-	int tune_candidate_limit,
+	unsigned int tune_candidate_limit,
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
-	int quant_level[TUNE_MAX_TRIAL_CANDIDATES],
-	int quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES]);
+	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
+	quant_method quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES]);
 
 /**
  * @brief For a given 1 plane weight set recompute the endpoint colors.

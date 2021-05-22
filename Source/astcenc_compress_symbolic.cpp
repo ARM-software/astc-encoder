@@ -365,9 +365,8 @@ static float compress_symbolic_block_for_partition_1plane(
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
 	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 
-	// TODO: Make these enums?
-	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+	quant_method color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
+	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	compute_ideal_endpoint_formats(
 	    bsd, *pt, blk, ewb, ei.ep, qwt_bitcounts, qwt_errors,
@@ -450,7 +449,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
-				int colorvals[4][12];
+				uint8_t colorvals[4][12];
 				int color_formats_mod[4] { 0 };
 				for (int j = 0; j < partition_count; j++)
 				{
@@ -761,9 +760,8 @@ static float compress_symbolic_block_for_partition_2planes(
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][4];
 	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 
-	// TODO: Make these enums?
-	int color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
-	int color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
+	quant_method color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
+	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	endpoints epm;
 	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
@@ -852,7 +850,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
-				int colorvals[4][12];
+				uint8_t colorvals[4][12];
 				int color_formats_mod[4] { 0 };
 				for (int j = 0; j < partition_count; j++)
 				{
