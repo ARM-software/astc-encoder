@@ -151,7 +151,7 @@ void unpack_weights(
 			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
 		}
 
-		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
 		}
@@ -164,7 +164,7 @@ void unpack_weights(
 			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + PLANE2_WEIGHTS_OFFSET]];
 		}
 
-		for (int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
 			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane2_weights), weights_plane2 + i);
@@ -193,7 +193,7 @@ void decompress_symbolic_block(
 	// If we detected an error-block, blow up immediately.
 	if (scb.error_block)
 	{
-		for (int i = 0; i < bsd.texel_count; i++)
+		for (unsigned int i = 0; i < bsd.texel_count; i++)
 		{
 			blk.data_r[i] = std::numeric_limits<float>::quiet_NaN();
 			blk.data_g[i] = std::numeric_limits<float>::quiet_NaN();
@@ -243,7 +243,7 @@ void decompress_symbolic_block(
 		}
 
 		// TODO: Skip this and add constant color transfer to img block?
-		for (int i = 0; i < bsd.texel_count; i++)
+		for (unsigned int i = 0; i < bsd.texel_count; i++)
 		{
 			blk.data_r[i] = color.lane<0>();
 			blk.data_g[i] = color.lane<1>();

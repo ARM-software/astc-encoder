@@ -1149,7 +1149,7 @@ void compute_ideal_endpoint_formats(
 	if (partition_count == 1)
 	{
 		float error_of_best_combination;
-		for (int i = 0; i < bsd.block_mode_count; ++i)
+		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -1176,7 +1176,7 @@ void compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 
-		for (int i = 0; i < bsd.block_mode_count; ++i)
+		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -1202,7 +1202,7 @@ void compute_ideal_endpoint_formats(
 		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (int i = 0; i < bsd.block_mode_count; ++i)
+		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -1228,7 +1228,7 @@ void compute_ideal_endpoint_formats(
 		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (int i = 0; i < bsd.block_mode_count; ++i)
+		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{
 			if (qwt_errors[i] >= 1e29f)
 			{
@@ -1253,7 +1253,7 @@ void compute_ideal_endpoint_formats(
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(1e30f);
 		vint lane_ids = vint::lane_id();
-		for (int j = 0; j < bsd.block_mode_count; j += ASTCENC_SIMD_WIDTH)
+		for (unsigned int j = 0; j < bsd.block_mode_count; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat err = vfloat(&errors_of_best_combination[j]);
 			vmask mask1 = err < vbest_ep_error;

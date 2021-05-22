@@ -1282,7 +1282,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane2[MAX_TEXELS_PER_BLOCK];
 
 	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.quant_mode, weight_plane1, weight_plane2);
-	for (int i = 0; i < bsd.texel_count; i++)
+	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = (float)weight_plane1[i] / (float)TEXEL_WEIGHT_SUM;
 		if (info->is_dual_plane_block)
@@ -1292,7 +1292,7 @@ astcenc_error astcenc_get_block_info(
 	}
 
 	// Unpack partition assignments for each texel
-	for (int i = 0; i < bsd.texel_count; i++)
+	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
 		info->partition_assignment[i] = pt->partition_of_texel[i];
 	}

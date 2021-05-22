@@ -342,7 +342,7 @@ using mismatch_dispatch = int (*)(const uint64_t*, const uint64_t*);
  */
 static void count_partition_mismatch_bits(
 	const block_size_descriptor& bsd,
-	int partition_count,
+	unsigned int partition_count,
 	const uint64_t bitmaps[4],
 	int mismatch_counts[PARTITION_COUNT]
 ) {
@@ -355,7 +355,7 @@ static void count_partition_mismatch_bits(
 		partition_mismatch4
 	};
 
-	for (int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
 	{
 		int bitcount = 255;
 		if (pt->partition_count == partition_count)
@@ -381,7 +381,7 @@ static void get_partition_ordering_by_mismatch_bits(
 	int mscount[256] { 0 };
 
 	// Create the histogram of mismatch counts
-	for (int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
 	{
 		mscount[mismatch_count[i]]++;
 	}
@@ -398,7 +398,7 @@ static void get_partition_ordering_by_mismatch_bits(
 
 	// Use the running sum as the index, incrementing after read to allow
 	// sequential entries with the same count
-	for (int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
 	{
 		int idx = mscount[mismatch_count[i]]++;
 		partition_ordering[idx] = i;

@@ -271,7 +271,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	uint8_t *u8_quantized_decimated_quantized_weights = tmpbuf.u8_quantized_decimated_quantized_weights;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	for (int i = 0; i < bsd.decimation_mode_count; i++)
+	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (dm.maxprec_1plane < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
@@ -317,7 +317,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
 
-	for (int i = 0; i < bsd.block_mode_count; ++i)
+	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
 		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
@@ -633,7 +633,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	uint8_t *u8_quantized_decimated_quantized_weights = tmpbuf.u8_quantized_decimated_quantized_weights;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	for (int i = 0; i < bsd.decimation_mode_count; i++)
+	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
@@ -699,7 +699,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	int qwt_bitcounts[MAX_WEIGHT_MODES];
 	float qwt_errors[MAX_WEIGHT_MODES];
-	for (int i = 0; i < bsd.block_mode_count; ++i)
+	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
 		if (!bm.is_dual_plane || !bm.percentile_hit)
@@ -708,7 +708,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			continue;
 		}
 
-		int decimation_mode = bm.decimation_mode;
+		unsigned int decimation_mode = bm.decimation_mode;
 
 		if (weight_high_value1[i] > 1.02f * min_wt_cutoff1)
 		{
@@ -1067,11 +1067,11 @@ static float prepare_error_weight_block(
 	promise(bsd.ydim > 0);
 	promise(bsd.zdim > 0);
 
-	for (int z = 0; z < bsd.zdim; z++)
+	for (unsigned int z = 0; z < bsd.zdim; z++)
 	{
-		for (int y = 0; y < bsd.ydim; y++)
+		for (unsigned int y = 0; y < bsd.ydim; y++)
 		{
-			for (int x = 0; x < bsd.xdim; x++)
+			for (unsigned int x = 0; x < bsd.xdim; x++)
 			{
 				unsigned int xpos = x + blk.xpos;
 				unsigned int ypos = y + blk.ypos;

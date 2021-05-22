@@ -102,11 +102,11 @@ static void remove_duplicate_partitionings(
 ) {
 	uint64_t bit_patterns[PARTITION_COUNT * 7];
 
-	for (int i = 0; i < PARTITION_COUNT; i++)
+	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
 	{
 		generate_canonical_partitioning(texel_count, pt[i].partition_of_texel, bit_patterns + i * 7);
 
-		for (int j = 0; j < i; j++)
+		for (unsigned int j = 0; j < i; j++)
 		{
 			if (compare_canonical_partitionings(bit_patterns + 7 * i, bit_patterns + 7 * j))
 			{
@@ -297,11 +297,11 @@ static void generate_one_partition_info_entry(
 	// Assign texels to partitions
 	int texel_idx = 0;
 	int counts[4] { 0 };
-	for (int z = 0; z < bsd.zdim; z++)
+	for (unsigned int z = 0; z < bsd.zdim; z++)
 	{
-		for (int y = 0; y <  bsd.ydim; y++)
+		for (unsigned int y = 0; y <  bsd.ydim; y++)
 		{
-			for (int x = 0; x <  bsd.xdim; x++)
+			for (unsigned int x = 0; x <  bsd.xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				pi.texels_of_partition[part][counts[part]++] = texel_idx++;

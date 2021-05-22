@@ -66,14 +66,16 @@
 /* ============================================================================
   Constants
 ============================================================================ */
-#define MAX_TEXELS_PER_BLOCK 216
-#define MAX_KMEANS_TEXELS 64
-#define MAX_WEIGHTS_PER_BLOCK 64
-#define PLANE2_WEIGHTS_OFFSET (MAX_WEIGHTS_PER_BLOCK/2)
-#define MIN_WEIGHT_BITS_PER_BLOCK 24
-#define MAX_WEIGHT_BITS_PER_BLOCK 96
-#define PARTITION_BITS 10
-#define PARTITION_COUNT (1 << PARTITION_BITS)
+static const unsigned int MAX_TEXELS_PER_BLOCK { 216 };
+static const unsigned int MAX_KMEANS_TEXELS { 64 };
+
+static const unsigned int MAX_WEIGHTS_PER_BLOCK { 64 };
+static const unsigned int MIN_WEIGHT_BITS_PER_BLOCK { 24 };
+static const unsigned int MAX_WEIGHT_BITS_PER_BLOCK { 96 };
+
+static const unsigned int PLANE2_WEIGHTS_OFFSET { MAX_WEIGHTS_PER_BLOCK / 2 };
+static const unsigned int PARTITION_BITS { 10 };
+static const unsigned int PARTITION_COUNT { 1024 };
 
 // the sum of weights for one texel.
 #define TEXEL_WEIGHT_SUM 16
@@ -355,7 +357,7 @@ struct partition_lines3
 */
 struct partition_info
 {
-	int partition_count;
+	unsigned int partition_count;
 	uint8_t partition_texel_count[4];
 	uint8_t partition_of_texel[MAX_TEXELS_PER_BLOCK];
 	uint8_t texels_of_partition[4][MAX_TEXELS_PER_BLOCK];
@@ -446,20 +448,19 @@ struct decimation_mode
 struct block_size_descriptor
 {
 	/** @brief The block X dimension, in texels. */
-	int xdim;
+	unsigned int xdim;
 
 	/** @brief The block Y dimension, in texels. */
-	int ydim;
+	unsigned int ydim;
 
 	/** @brief The block Z dimension, in texels. */
-	int zdim;
+	unsigned int zdim;
 
 	/** @brief The block total texel count. */
-	int texel_count;
-
+	unsigned int texel_count;
 
 	/** @brief The number of stored decimation modes. */
-	int decimation_mode_count;
+	unsigned int decimation_mode_count;
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[MAX_DECIMATION_MODES];
@@ -467,22 +468,20 @@ struct block_size_descriptor
 	/** @brief The active decimation tables, stored in low indices. */
 	const decimation_info *decimation_tables[MAX_DECIMATION_MODES];
 
-
 	/** @brief The number of stored block modes. */
-	int block_mode_count;
-
-	/** @brief The active block modes, stored in low indices. */
-	block_mode block_modes[MAX_WEIGHT_MODES];
+	unsigned int block_mode_count;
 
 	/** @brief The block mode array index, or -1 if not valid in current config. */
 	int16_t block_mode_packed_index[MAX_WEIGHT_MODES];
 
+	/** @brief The active block modes, stored in low indices. */
+	block_mode block_modes[MAX_WEIGHT_MODES];
 
 	/** @brief The texel count for k-means partition selection. */
-	int kmeans_texel_count;
+	unsigned int kmeans_texel_count;
 
 	/** @brief The active texels for k-means partition selection. */
-	int kmeans_texels[MAX_KMEANS_TEXELS];
+	unsigned int kmeans_texels[MAX_KMEANS_TEXELS];
 
 	/** @brief The partion tables for all of the possible partitions. */
 	partition_info partitions[(3 * PARTITION_COUNT) + 1];
@@ -506,7 +505,9 @@ struct imageblock
 	uint8_t rgb_lns[MAX_TEXELS_PER_BLOCK];      // 1 if RGB data are being treated as LNS
 	uint8_t alpha_lns[MAX_TEXELS_PER_BLOCK];    // 1 if Alpha data are being treated as LNS
 
-	int xpos, ypos, zpos;
+	unsigned int xpos;
+	unsigned int ypos;
+	unsigned int zpos;
 
 	inline vfloat4 texel(int index) const
 	{
@@ -529,12 +530,12 @@ static inline float imageblock_default_alpha(const imageblock * blk)
 	return blk->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
 }
 
-static inline int imageblock_uses_alpha(const imageblock * blk)
+static inline bool imageblock_uses_alpha(const imageblock * blk)
 {
 	return blk->data_min.lane<3>() != blk->data_max.lane<3>();
 }
 
-static inline int imageblock_is_lum(const imageblock * blk)
+static inline bool imageblock_is_lum(const imageblock * blk)
 {
 	float default_alpha = imageblock_default_alpha(blk);
 	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
@@ -542,7 +543,7 @@ static inline int imageblock_is_lum(const imageblock * blk)
 	return blk->grayscale && alpha1;
 }
 
-static inline int imageblock_is_lumalp(const imageblock * blk)
+static inline bool imageblock_is_lumalp(const imageblock * blk)
 {
 	float default_alpha = imageblock_default_alpha(blk);
 	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
@@ -619,7 +620,7 @@ enum quant_method
 	QUANT_256 = 20
 };
 
-static inline int get_quant_method_levels(quant_method method)
+static inline unsigned int get_quant_method_levels(quant_method method)
 {
 	switch(method)
 	{
@@ -745,9 +746,9 @@ struct physical_compressed_block
  * @param[out] bsd              The descriptor to initialize.
  */
 void init_block_size_descriptor(
-	int x_texels,
-	int y_texels,
-	int z_texels,
+	unsigned int x_texels,
+	unsigned int y_texels,
+	unsigned int z_texels,
 	bool can_omit_modes,
 	float mode_cutoff,
 	block_size_descriptor& bsd);
@@ -1141,9 +1142,9 @@ void fetch_imageblock(
 	const astcenc_image& img,
 	imageblock& blk,
 	const block_size_descriptor& bsd,
-	int xpos,
-	int ypos,
-	int zpos,
+	unsigned int xpos,
+	unsigned int ypos,
+	unsigned int zpos,
 	const astcenc_swizzle& swz);
 
 /**
@@ -1161,9 +1162,9 @@ void write_imageblock(
 	astcenc_image& img,
 	const imageblock& blk,
 	const block_size_descriptor& bsd,
-	int xpos,
-	int ypos,
-	int zpos,
+	unsigned int xpos,
+	unsigned int ypos,
+	unsigned int zpos,
 	const astcenc_swizzle& swz);
 
 // ***********************************************************
@@ -1171,7 +1172,7 @@ void write_imageblock(
 // ***********************************************************
 struct endpoints
 {
-	int partition_count;
+	unsigned int partition_count;
 	vfloat4 endpt0[4];
 	vfloat4 endpt1[4];
 };
