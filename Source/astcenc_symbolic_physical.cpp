@@ -160,13 +160,12 @@ void symbolic_to_physical(
 	const block_mode& bm = bsd.block_modes[packed_index];
 
 	int weight_count = dt[bm.decimation_mode]->weight_count;
-	quant_method weight_quant_method = (quant_method)bm.quant_mode;
+	quant_method weight_quant_method = bm.get_quant_mode();
 	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
 
-	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count,
-	                                                 (quant_method)weight_quant_method);
+	int bits_for_weights = get_ise_sequence_bitcount(real_weight_count, weight_quant_method);
 
 	if (is_dual_plane)
 	{

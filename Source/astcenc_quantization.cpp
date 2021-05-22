@@ -540,19 +540,19 @@ int8_t quant_mode_table[17][128];
 /* See header for documentation. */
 void init_quant_mode_table()
 {
-	for (int i = 0; i <= 16; i++)
+	for (unsigned int i = 0; i <= 16; i++)
 	{
-		for (int j = 0; j < 128; j++)
+		for (unsigned int j = 0; j < 128; j++)
 		{
 			quant_mode_table[i][j] = -1;
 		}
 	}
 
-	for (int i = 0; i < 21; i++)
+	for (unsigned int i = 0; i < 21; i++)
 	{
-		for (int j = 1; j <= 16; j++)
+		for (unsigned int j = 1; j <= 16; j++)
 		{
-			int p = get_ise_sequence_bitcount(2 * j, (quant_method)i);
+			unsigned int p = get_ise_sequence_bitcount(2 * j, (quant_method)i);
 			if (p < 128)
 			{
 				quant_mode_table[j][p] = i;
@@ -563,7 +563,7 @@ void init_quant_mode_table()
 	for (int i = 0; i <= 16; i++)
 	{
 		int largest_value_so_far = -1;
-		for (int j = 0; j < 128; j++)
+		for (unsigned int j = 0; j < 128; j++)
 		{
 			if (quant_mode_table[i][j] > largest_value_so_far)
 			{

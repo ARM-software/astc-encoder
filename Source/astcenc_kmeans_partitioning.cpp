@@ -235,7 +235,7 @@ static void kmeans_update(
  *
  * @return    The number of bit mismatches.
  */
-static inline int partition_mismatch2(
+static inline unsigned int partition_mismatch2(
 	const uint64_t a[2],
 	const uint64_t b[2]
 ) {
@@ -252,7 +252,7 @@ static inline int partition_mismatch2(
  *
  * @return    The number of bit mismatches.
  */
-static inline int partition_mismatch3(
+static inline unsigned int partition_mismatch3(
 	const uint64_t a[3],
 	const uint64_t b[3]
 ) {
@@ -291,7 +291,7 @@ static inline int partition_mismatch3(
  *
  * @return    The number of bit mismatches.
  */
-static inline int partition_mismatch4(
+static inline unsigned int partition_mismatch4(
 	const uint64_t a[4],
 	const uint64_t b[4]
 ) {
@@ -330,7 +330,7 @@ static inline int partition_mismatch4(
 	return astc::min(v0, v1, v2, v3);
 }
 
-using mismatch_dispatch = int (*)(const uint64_t*, const uint64_t*);
+using mismatch_dispatch = unsigned int (*)(const uint64_t*, const uint64_t*);
 
 /**
  * @brief Count the partition table mismatches vs the data clustering.
@@ -344,7 +344,7 @@ static void count_partition_mismatch_bits(
 	const block_size_descriptor& bsd,
 	unsigned int partition_count,
 	const uint64_t bitmaps[4],
-	int mismatch_counts[PARTITION_COUNT]
+	unsigned int mismatch_counts[PARTITION_COUNT]
 ) {
 	const partition_info *pt = get_partition_table(&bsd, partition_count);
 
@@ -375,10 +375,10 @@ static void count_partition_mismatch_bits(
  * @param[out] partition_ordering   Partition index values, in mismatch order.
  */
 static void get_partition_ordering_by_mismatch_bits(
-	const int mismatch_count[PARTITION_COUNT],
-	int partition_ordering[PARTITION_COUNT]
+	const unsigned int mismatch_count[PARTITION_COUNT],
+	unsigned int partition_ordering[PARTITION_COUNT]
 ) {
-	int mscount[256] { 0 };
+	unsigned int mscount[256] { 0 };
 
 	// Create the histogram of mismatch counts
 	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
@@ -388,10 +388,10 @@ static void get_partition_ordering_by_mismatch_bits(
 
 	// Create a running sum from the histogram array
 	// Cells store previous values only; i.e. exclude self after sum
-	int summa = 0;
-	for (int i = 0; i < 256; i++)
+	unsigned int summa = 0;
+	for (unsigned int i = 0; i < 256; i++)
 	{
-		int cnt = mscount[i];
+		unsigned int cnt = mscount[i];
 		mscount[i] = summa;
 		summa += cnt;
 	}
@@ -400,7 +400,7 @@ static void get_partition_ordering_by_mismatch_bits(
 	// sequential entries with the same count
 	for (unsigned int i = 0; i < PARTITION_COUNT; i++)
 	{
-		int idx = mscount[mismatch_count[i]]++;
+		unsigned int idx = mscount[mismatch_count[i]]++;
 		partition_ordering[idx] = i;
 	}
 }
@@ -409,8 +409,8 @@ static void get_partition_ordering_by_mismatch_bits(
 void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
-	int partition_count,
-	int partition_ordering[PARTITION_COUNT]
+	unsigned int partition_count,
+	unsigned int partition_ordering[PARTITION_COUNT]
 ) {
 	vfloat4 cluster_centers[4];
 	int texel_partitions[MAX_TEXELS_PER_BLOCK];
@@ -432,16 +432,16 @@ void compute_partition_ordering(
 
 	// Construct the block bitmaps of texel assignments to each partition
 	uint64_t bitmaps[4] { 0 };
-	int texels_to_process = bsd.kmeans_texel_count;
+	unsigned int texels_to_process = bsd.kmeans_texel_count;
 	promise(texels_to_process > 0);
-	for (int i = 0; i < texels_to_process; i++)
+	for (unsigned int i = 0; i < texels_to_process; i++)
 	{
-		int idx = bsd.kmeans_texels[i];
+		unsigned int idx = bsd.kmeans_texels[i];
 		bitmaps[texel_partitions[idx]] |= 1ULL << i;
 	}
 
 	// Count the mismatch between the block and the format's partition tables
-	int mismatch_counts[PARTITION_COUNT];
+	unsigned int mismatch_counts[PARTITION_COUNT];
 	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
 	// Sort the partitions based on the number of mismatched bits

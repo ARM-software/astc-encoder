@@ -316,13 +316,13 @@ static void compute_ideal_colors_and_weights_3_comp(
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
-	int omitted_component
+	unsigned int omitted_component
 ) {
-	int partition_count = pi.partition_count;
+	unsigned int partition_count = pi.partition_count;
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	int texel_count= bsd.texel_count;
+	unsigned int texel_count= bsd.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[4];
@@ -369,7 +369,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 	compute_avgs_and_dirs_3_comp(pi, blk, ewb, omitted_component, pms);
 
-	for (int i = 0; i < partition_count; i++)
+	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
@@ -381,7 +381,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 		lines[i].b = normalize_safe(dir, unit3());
 	}
 
-	for (int i = 0; i < texel_count; i++)
+	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		if (error_weights[i] > 1e-10f)
 		{
@@ -400,7 +400,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 		}
 	}
 
-	for (int i = 0; i < partition_count; i++)
+	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
 		if (length < 0)			// Case for when none of the texels had any weight
@@ -452,7 +452,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	bool is_constant_wes = true;
 	float constant_wes = length_squared[pi.partition_of_texel[0]] * error_weights[0];
 
-	for (int i = 0; i < texel_count; i++)
+	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		int partition = pi.partition_of_texel[i];
 		float idx = (ei.weights[i] - lowparam[partition]) * scale[partition];
@@ -466,8 +466,8 @@ static void compute_ideal_colors_and_weights_3_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (int i = texel_count; i < texel_count_simd; i++)
+	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (unsigned int i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -621,11 +621,11 @@ void compute_ideal_colors_and_weights_2planes(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	int plane2_component,
+	unsigned int plane2_component,
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2
 ) {
-	int uses_alpha = imageblock_uses_alpha(&blk);
+	bool uses_alpha = imageblock_uses_alpha(&blk);
 
 	assert(plane2_component < 4);
 	switch (plane2_component)
@@ -682,10 +682,10 @@ float compute_error_of_weight_set_1plane(
 ) {
 	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
-	int texel_count = di.texel_count;
+	unsigned int texel_count = di.texel_count;
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
-	for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Compute the bilinear interpolation of the decimated weight grid
 		vfloat current_values = bilinear_infill_vla(di, weights, i);
@@ -715,10 +715,10 @@ float compute_error_of_weight_set_2planes(
 ) {
 	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
-	int texel_count = di.texel_count;
+	unsigned int texel_count = di.texel_count;
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
-	for (int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Plane 1
 		// Compute the bilinear interpolation of the decimated weight grid
@@ -755,8 +755,8 @@ void compute_ideal_weights_for_decimation(
 	float* weight_set,
 	float* weights
 ) {
-	int texel_count = di.texel_count;
-	int weight_count = di.weight_count;
+	unsigned int texel_count = di.texel_count;
+	unsigned int weight_count = di.weight_count;
 
 	promise(texel_count > 0);
 	promise(weight_count > 0);
@@ -769,8 +769,8 @@ void compute_ideal_weights_for_decimation(
 	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
 	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
 	// arrays always contain space for 64 elements
-	int weight_count_simd = round_up_to_simd_multiple_vla(weight_count);
-	for (int i = weight_count; i < weight_count_simd; i++)
+	unsigned int weight_count_simd = round_up_to_simd_multiple_vla(weight_count);
+	for (unsigned int i = weight_count; i < weight_count_simd; i++)
 	{
 		weight_set[i] = 0.0f;
 	}
@@ -779,11 +779,11 @@ void compute_ideal_weights_for_decimation(
 	// weight set and the output epw copy.
 
 	// Transfer enough to also copy zero initialized SIMD over-fetch region
-	int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
 	if (texel_count == weight_count)
 	{
 		// TODO: Use SIMD copies?
-		for (int i = 0; i < texel_count_simd; i++)
+		for (unsigned int i = 0; i < texel_count_simd; i++)
 		{
 			// Assert it's an identity map for valid texels, and last valid value for any overspill
 			assert(((i < texel_count) && (i == di.weight_texel[0][i])) ||
@@ -801,7 +801,7 @@ void compute_ideal_weights_for_decimation(
 	// the full algorithm to decimate weights.
 	else
 	{
-		for (int i = 0; i < texel_count_simd; i++)
+		for (unsigned int i = 0; i < texel_count_simd; i++)
 		{
 			eai_out.weights[i] = eai_in.weights[i];
 			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
@@ -817,7 +817,7 @@ void compute_ideal_weights_for_decimation(
 
 	// This overshoots - this is OK as we initialize the array tails in the
 	// decimation table structures to safe values ...
-	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
 		vfloat weight_weight(1e-10f);
@@ -825,10 +825,10 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		int max_texel_count = hmax(weight_texel_count).lane<0>();
+		unsigned int max_texel_count = hmax(weight_texel_count).lane<0>();
 		promise(max_texel_count > 0);
 
-		for (int j = 0; j < max_texel_count; j++)
+		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
 			// Not all lanes may actually use j texels, so mask out if idle
 			vmask active = weight_texel_count > vint(j);
@@ -856,8 +856,8 @@ void compute_ideal_weights_for_decimation(
 
 	// Populate the interpolated weight grid based on the initital average
 	// Process SIMD-width texel coordinates at at time while we can
-	int is = 0;
-	int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
+	unsigned int is = 0;
+	unsigned int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; is < clipped_texel_count; is += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight = bilinear_infill_vla(di, weight_set, is);
@@ -875,7 +875,7 @@ void compute_ideal_weights_for_decimation(
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -TEXEL_WEIGHT_SUM;
 
-	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight_val = loada(weight_set + i);
 
@@ -886,10 +886,10 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		int max_texel_count = hmax(weight_texel_count).lane<0>();
+		unsigned int max_texel_count = hmax(weight_texel_count).lane<0>();
 		promise(max_texel_count > 0);
 
-		for (int j = 0; j < max_texel_count; j++)
+		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
 			// Not all lanes may actually use j texels, so mask out if idle
 			vmask active = weight_texel_count > vint(j);
@@ -930,7 +930,7 @@ void compute_quantized_weights_for_decimation(
 	const float* weight_set_in,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
-	int quant_level
+	quant_method quant_level
 ) {
 	int weight_count = di.weight_count;
 	promise(weight_count > 0);

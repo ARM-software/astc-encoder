@@ -45,15 +45,15 @@ void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	int partition_count,
-	int partition_search_limit,
-	int& best_partition_uncor,
-	int& best_partition_samec,
-	int* best_partition_dualplane
+	unsigned int partition_count,
+	unsigned int partition_search_limit,
+	unsigned int& best_partition_uncor,
+	unsigned int& best_partition_samec,
+	unsigned int* best_partition_dualplane
 ) {
 	// Constant used to estimate quantization error for a given partitioning; the optimal value for
 	// this depends on bitrate. These values have been determined empirically.
-	int texels_per_block = bsd.texel_count;
+	unsigned int texels_per_block = bsd.texel_count;
 	float weight_imprecision_estim = 0.055f;
 	if (texels_per_block <= 20)
 	{
@@ -73,8 +73,7 @@ void find_best_partition_candidates(
 
 	weight_imprecision_estim = weight_imprecision_estim * weight_imprecision_estim;
 
-	int partition_sequence[PARTITION_COUNT];
-
+	unsigned int partition_sequence[PARTITION_COUNT];
 	compute_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
 	int uses_alpha = imageblock_uses_alpha(&blk);
@@ -99,11 +98,11 @@ void find_best_partition_candidates(
 
 	if (uses_alpha)
 	{
-		for (int i = 0; i < partition_search_limit; i++)
+		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
-			int partition = partition_sequence[i];
+			unsigned int partition = partition_sequence[i];
 
-			int bk_partition_count = ptab[partition].partition_count;
+			unsigned int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
 				break;
@@ -127,7 +126,7 @@ void find_best_partition_candidates(
 			float uncor_line_lens[4];
 			float samec_line_lens[4];
 
-			for (int j = 0; j < partition_count; j++)
+			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
 
@@ -189,7 +188,7 @@ void find_best_partition_candidates(
 			//     4(optimized): square the vector once, then do a dot-product with the average
 			//        texel error, then multiply by the number of texels.
 
-			for (int j = 0; j < partition_count; j++)
+			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
 				float tpp = (float)(ptab[partition].partition_texel_count[j]);
@@ -281,11 +280,11 @@ void find_best_partition_candidates(
 	}
 	else
 	{
-		for (int i = 0; i < partition_search_limit; i++)
+		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
-			int partition = partition_sequence[i];
+			unsigned int partition = partition_sequence[i];
 
-			int bk_partition_count = ptab[partition].partition_count;
+			unsigned int bk_partition_count = ptab[partition].partition_count;
 			if (bk_partition_count < partition_count)
 			{
 				break;
@@ -301,7 +300,7 @@ void find_best_partition_candidates(
 			line2 sep_g_lines[4];
 			line2 sep_b_lines[4];
 
-			for (int j = 0; j < partition_count; j++)
+			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
 				partition_lines3& pl = plines[j];
@@ -357,7 +356,7 @@ void find_best_partition_candidates(
 			//     4(optimized): square the vector once, then do a dot-product with the average
 			//        texel error, then multiply by the number of texels.
 
-			for (int j = 0; j < partition_count; j++)
+			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
 				partition_lines3& pl = plines[j];

@@ -322,6 +322,83 @@ public:
 	}
 };
 
+
+enum endpoint_formats
+{
+	FMT_LUMINANCE = 0,
+	FMT_LUMINANCE_DELTA = 1,
+	FMT_HDR_LUMINANCE_LARGE_RANGE = 2,
+	FMT_HDR_LUMINANCE_SMALL_RANGE = 3,
+	FMT_LUMINANCE_ALPHA = 4,
+	FMT_LUMINANCE_ALPHA_DELTA = 5,
+	FMT_RGB_SCALE = 6,
+	FMT_HDR_RGB_SCALE = 7,
+	FMT_RGB = 8,
+	FMT_RGB_DELTA = 9,
+	FMT_RGB_SCALE_ALPHA = 10,
+	FMT_HDR_RGB = 11,
+	FMT_RGBA = 12,
+	FMT_RGBA_DELTA = 13,
+	FMT_HDR_RGB_LDR_ALPHA = 14,
+	FMT_HDR_RGBA = 15
+};
+
+// enumeration of all the quantization methods we support under this format.
+enum quant_method
+{
+	QUANT_2 = 0,
+	QUANT_3 = 1,
+	QUANT_4 = 2,
+	QUANT_5 = 3,
+	QUANT_6 = 4,
+	QUANT_8 = 5,
+	QUANT_10 = 6,
+	QUANT_12 = 7,
+	QUANT_16 = 8,
+	QUANT_20 = 9,
+	QUANT_24 = 10,
+	QUANT_32 = 11,
+	QUANT_40 = 12,
+	QUANT_48 = 13,
+	QUANT_64 = 14,
+	QUANT_80 = 15,
+	QUANT_96 = 16,
+	QUANT_128 = 17,
+	QUANT_160 = 18,
+	QUANT_192 = 19,
+	QUANT_256 = 20
+};
+
+static inline unsigned int get_quant_method_levels(quant_method method)
+{
+	switch(method)
+	{
+	case QUANT_2:   return   2;
+	case QUANT_3:   return   3;
+	case QUANT_4:   return   4;
+	case QUANT_5:   return   5;
+	case QUANT_6:   return   6;
+	case QUANT_8:   return   8;
+	case QUANT_10:  return  10;
+	case QUANT_12:  return  12;
+	case QUANT_16:  return  16;
+	case QUANT_20:  return  20;
+	case QUANT_24:  return  24;
+	case QUANT_32:  return  32;
+	case QUANT_40:  return  40;
+	case QUANT_48:  return  48;
+	case QUANT_64:  return  64;
+	case QUANT_80:  return  80;
+	case QUANT_96:  return  96;
+	case QUANT_128: return 128;
+	case QUANT_160: return 160;
+	case QUANT_192: return 192;
+	case QUANT_256: return 256;
+	// Unreachable - the enum is fully described
+	default:        return   0;
+	}
+}
+
 struct partition_metrics
 {
 	vfloat4 range_sq;
@@ -413,6 +490,11 @@ struct block_mode
 	uint8_t percentile_hit : 1;
 	uint8_t percentile_always : 1;
 	int16_t mode_index;
+
+	inline quant_method get_quant_mode() const
+	{
+		return (quant_method)this->quant_mode;
+	}
 };
 
 /**
@@ -509,7 +591,7 @@ struct imageblock
 	unsigned int ypos;
 	unsigned int zpos;
 
-	inline vfloat4 texel(int index) const
+	inline vfloat4 texel(unsigned int index) const
 	{
 		return vfloat4(data_r[index],
 		               data_g[index],
@@ -517,7 +599,7 @@ struct imageblock
 		               data_a[index]);
 	}
 
-	inline vfloat4 texel3(int index) const
+	inline vfloat4 texel3(unsigned int index) const
 	{
 		return vfloat3(data_r[index],
 		               data_g[index],
@@ -594,62 +676,6 @@ struct error_weight_block
 	float texel_weight_a[MAX_TEXELS_PER_BLOCK];
 };
 
-// enumeration of all the quantization methods we support under this format.
-enum quant_method
-{
-	QUANT_2 = 0,
-	QUANT_3 = 1,
-	QUANT_4 = 2,
-	QUANT_5 = 3,
-	QUANT_6 = 4,
-	QUANT_8 = 5,
-	QUANT_10 = 6,
-	QUANT_12 = 7,
-	QUANT_16 = 8,
-	QUANT_20 = 9,
-	QUANT_24 = 10,
-	QUANT_32 = 11,
-	QUANT_40 = 12,
-	QUANT_48 = 13,
-	QUANT_64 = 14,
-	QUANT_80 = 15,
-	QUANT_96 = 16,
-	QUANT_128 = 17,
-	QUANT_160 = 18,
-	QUANT_192 = 19,
-	QUANT_256 = 20
-};
-
-static inline unsigned int get_quant_method_levels(quant_method method)
-{
-	switch(method)
-	{
-	case QUANT_2:   return   2;
-	case QUANT_3:   return   3;
-	case QUANT_4:   return   4;
-	case QUANT_5:   return   5;
-	case QUANT_6:   return   6;
-	case QUANT_8:   return   8;
-	case QUANT_10:  return  10;
-	case QUANT_12:  return  12;
-	case QUANT_16:  return  16;
-	case QUANT_20:  return  20;
-	case QUANT_24:  return  24;
-	case QUANT_32:  return  32;
-	case QUANT_40:  return  40;
-	case QUANT_48:  return  48;
-	case QUANT_64:  return  64;
-	case QUANT_80:  return  80;
-	case QUANT_96:  return  96;
-	case QUANT_128: return 128;
-	case QUANT_160: return 160;
-	case QUANT_192: return 192;
-	case QUANT_256: return 256;
-	// Unreachable - the enum is fully described
-	default:        return   0;
-	}
-}
-
 /**
  * @brief Weight quantization transfer table.
  *
@@ -683,26 +709,6 @@ struct quantization_and_transfer_table
 };
 
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
-
-enum endpoint_formats
-{
-	FMT_LUMINANCE = 0,
-	FMT_LUMINANCE_DELTA = 1,
-	FMT_HDR_LUMINANCE_LARGE_RANGE = 2,
-	FMT_HDR_LUMINANCE_SMALL_RANGE = 3,
-	FMT_LUMINANCE_ALPHA = 4,
-	FMT_LUMINANCE_ALPHA_DELTA = 5,
-	FMT_RGB_SCALE = 6,
-	FMT_HDR_RGB_SCALE = 7,
-	FMT_RGB = 8,
-	FMT_RGB_DELTA = 9,
-	FMT_RGB_SCALE_ALPHA = 10,
-	FMT_HDR_RGB = 11,
-	FMT_RGBA = 12,
-	FMT_RGBA_DELTA = 13,
-	FMT_HDR_RGB_LDR_ALPHA = 14,
-	FMT_HDR_RGBA = 15
-};
 
 struct symbolic_compressed_block
 {
@@ -774,12 +780,12 @@ void init_partition_tables(
 
 static inline const partition_info *get_partition_table(
 	const block_size_descriptor* bsd,
-	int partition_count
+	unsigned int partition_count
 ) {
 	if (partition_count == 1) {
 		partition_count = 5;
 	}
-	int index = (partition_count - 2) * PARTITION_COUNT;
+	unsigned int index = (partition_count - 2) * PARTITION_COUNT;
 	return bsd->partitions + index;
 }
 
@@ -797,8 +803,8 @@ static inline const partition_info *get_partition_table(
  * @return The unpacked table.
  */
 const float *get_2d_percentile_table(
-	int xdim,
-	int ydim);
+	unsigned int xdim,
+	unsigned int ydim);
 
 /**
  * @brief Query if a 2D block size is legal.
@@ -806,8 +812,8 @@ const float *get_2d_percentile_table(
  * @return True if legal, false otherwise.
  */
 bool is_legal_2d_block_size(
-	int xdim,
-	int ydim);
+	unsigned int xdim,
+	unsigned int ydim);
 
 /**
  * @brief Query if a 3D block size is legal.
@@ -815,9 +821,9 @@ bool is_legal_2d_block_size(
  * @return True if legal, false otherwise.
  */
 bool is_legal_3d_block_size(
-	int xdim,
-	int ydim,
-	int zdim);
+	unsigned int xdim,
+	unsigned int ydim,
+	unsigned int zdim);
 
 // ***********************************************************
 // functions and data pertaining to quantization and encoding
@@ -841,10 +847,10 @@ extern int8_t quant_mode_table[17][128];
  */
 void encode_ise(
 	quant_method quant_level,
-	int character_count,
+	unsigned int character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	int bit_offset);
+	unsigned int bit_offset);
 
 /**
  * @brief Decode a packed string using BISE.
@@ -860,10 +866,10 @@ void encode_ise(
  */
 void decode_ise(
 	quant_method quant_level,
-	int character_count,
+	unsigned int character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	int bit_offset);
+	unsigned int bit_offset);
 
 /**
  * @brief Return the number of bits needed to encode an ISE sequence.
@@ -876,8 +882,8 @@ void decode_ise(
  *
  * @return The number of bits needed to encode the BISE string.
  */
-int get_ise_sequence_bitcount(
-	int character_count,
+unsigned int get_ise_sequence_bitcount(
+	unsigned int character_count,
 	quant_method quant_level);
 
 void init_quant_mode_table(void);
@@ -917,7 +923,7 @@ void compute_avgs_and_dirs_3_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	int omitted_component,
+	unsigned int omitted_component,
 	partition_metrics pm[4]);
 
 /**
@@ -936,8 +942,8 @@ void compute_avgs_and_dirs_2_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	int component1,
-	int component2,
+	unsigned int component1,
+	unsigned int component2,
 	partition_metrics pm[4]);
 
 /**
@@ -1018,11 +1024,11 @@ void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	int partition_count,
-	int partition_search_limit,
-	int& best_partition_uncor,
-	int& best_partition_samec,
-	int* best_partition_dualplane);
+	unsigned int partition_count,
+	unsigned int partition_search_limit,
+	unsigned int& best_partition_uncor,
+	unsigned int& best_partition_samec,
+	unsigned int* best_partition_dualplane);
 
 /**
  * @brief Use k-means clustering to compute a partition ordering for a block..
@@ -1035,8 +1041,8 @@ void find_best_partition_candidates(
 void compute_partition_ordering(
 	const block_size_descriptor& bsd,
 	const imageblock& blk,
-	int partition_count,
-	int partition_ordering[PARTITION_COUNT]);
+	unsigned int partition_count,
+	unsigned int partition_ordering[PARTITION_COUNT]);
 
 // *********************************************************
 // functions and data pertaining to images and imageblocks
@@ -1229,7 +1235,7 @@ void compute_ideal_colors_and_weights_2planes(
 	const imageblock& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	int plane2_component,
+	unsigned int plane2_component,
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2);
 
@@ -1278,7 +1284,7 @@ void compute_quantized_weights_for_decimation(
 	const float* weight_set_in,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
-	int quant_level);
+	quant_method quant_level);
 
 /*********************************
   Utilties for bilinear filtering
@@ -1290,7 +1296,7 @@ void compute_quantized_weights_for_decimation(
 static inline float bilinear_infill(
 	const decimation_info& di,
 	const float* weights,
-	int index
+	unsigned int index
 ) {
 	return (weights[di.texel_weights_4t[0][index]] * di.texel_weights_float_4t[0][index] +
 	        weights[di.texel_weights_4t[1][index]] * di.texel_weights_float_4t[1][index]) +
@@ -1304,7 +1310,7 @@ static inline float bilinear_infill(
 static inline vfloat bilinear_infill_vla(
 	const decimation_info& di,
 	const float* weights,
-	int index
+	unsigned int index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
 	vint weight_idx0 = vint(di.texel_weights_4t[0] + index);
@@ -1433,7 +1439,7 @@ void unpack_weights(
 	const symbolic_compressed_block& scb,
 	const decimation_info& di,
 	bool is_dual_plane,
-	int quant_level,
+	quant_method quant_level,
 	int weights_plane1[MAX_TEXELS_PER_BLOCK],
 	int weights_plane2[MAX_TEXELS_PER_BLOCK]);
 

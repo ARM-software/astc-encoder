@@ -131,14 +131,14 @@ void unpack_weights(
 	const symbolic_compressed_block& scb,
 	const decimation_info& di,
 	bool is_dual_plane,
-	int quant_level,
+	quant_method quant_level,
 	int weights_plane1[MAX_TEXELS_PER_BLOCK],
 	int weights_plane2[MAX_TEXELS_PER_BLOCK]
 ) {
 	// First, unquantize the weights ...
 	int uq_plane1_weights[MAX_WEIGHTS_PER_BLOCK];
 	int uq_plane2_weights[MAX_WEIGHTS_PER_BLOCK];
-	int weight_count = di.weight_count;
+	unsigned int weight_count = di.weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
@@ -146,7 +146,7 @@ void unpack_weights(
 	// Safe to overshoot as all arrays are allocated to full size
 	if (!is_dual_plane)
 	{
-		for (int i = 0; i < weight_count; i++)
+		for (unsigned int i = 0; i < weight_count; i++)
 		{
 			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
 		}
@@ -158,7 +158,7 @@ void unpack_weights(
 	}
 	else
 	{
-		for (int i = 0; i < weight_count; i++)
+		for (unsigned int i = 0; i < weight_count; i++)
 		{
 			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
 			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + PLANE2_WEIGHTS_OFFSET]];
@@ -271,12 +271,10 @@ void decompress_symbolic_block(
 
 	int is_dual_plane = bm.is_dual_plane;
 
-	int quant_level = bm.quant_mode;
-
 	// Unquantize and undecimate the weights
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
-	unpack_weights(bsd, scb, di, is_dual_plane, quant_level, weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_quant_mode(), weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
@@ -355,7 +353,7 @@ float compute_symbolic_block_difference(
 	// Unquantize and undecimate the weights
 	int weights[MAX_TEXELS_PER_BLOCK];
 	int plane2_weights[MAX_TEXELS_PER_BLOCK];
-	unpack_weights(bsd, scb, di, is_dual_plane, bm.quant_mode, weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_quant_mode(), weights, plane2_weights);
 
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
