@@ -136,8 +136,6 @@ static void kmeans_init(
 /**
  * @brief Assign texels to clusters, based on a set of chosen center points.
  *
- * @todo Can partition of texel be uint8_t not int?
- *
  * @param      blk                  The image block color data to compress.
  * @param      texel_count          The number of texels in the block.
  * @param      partition_count      The number of partitions in the block.

@@ -143,12 +143,7 @@ void symbolic_to_physical(
 
 	// Compress the weights.
 	// They are encoded as an ordinary integer-sequence, then bit-reversed
-	// TODO: Use { 0 }?
-	uint8_t weightbuf[16] ;
-	for (unsigned int i = 0; i < 16; i++)
-	{
-		weightbuf[i] = 0;
-	}
+	uint8_t weightbuf[16] { 0 };
 
 	const auto& bm = bsd.get_block_mode(scb.block_mode);
 	const auto& di = bsd.get_decimation_info(bm.decimation_mode);

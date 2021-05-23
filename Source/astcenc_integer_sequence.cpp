@@ -666,7 +666,7 @@ void decode_ise(
 	// temporary results than the number of outputs. The maximum actual number of results is 64 bit,
 	// but we keep 4 additional character_count of padding.
 	uint8_t results[68];
-	uint8_t tq_blocks[22];		// Trit-blocks or quint-blocks
+	uint8_t tq_blocks[22] { 0 }; // Trit-blocks or quint-blocks, must be zeroed
 
 	unsigned int bits = btq_counts[quant_level].bits;
 	unsigned int trits = btq_counts[quant_level].trits;
@@ -674,12 +674,6 @@ void decode_ise(
 
 	unsigned int lcounter = 0;
 	unsigned int hcounter = 0;
-
-	// Trit-blocks or quint-blocks must be zeroed out before we collect them in the loop below
-	for (unsigned int i = 0; i < 22; i++)
-	{
-		tq_blocks[i] = 0;
-	}
 
 	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
 	for (unsigned int i = 0; i < character_count; i++)

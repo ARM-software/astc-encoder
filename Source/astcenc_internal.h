@@ -641,7 +641,6 @@ struct block_size_descriptor
 	 */
 	const partition_info* get_partition_table(unsigned int partition_count) const
 	{
-		// TODO: Why do we do this?
 		if (partition_count == 1)
 		{
 			partition_count = 5;
