@@ -374,7 +374,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
 		{
-			dir = vfloat4(0.0f) - dir;
+			dir = vfloat4::zero() - dir;
 		}
 
 		lines[i].a = pms[i].avg;

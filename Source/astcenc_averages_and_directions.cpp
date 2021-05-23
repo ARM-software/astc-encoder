@@ -279,11 +279,6 @@ void compute_avgs_and_dirs_3_comp(
 			best_vector = sum_zp;
 		}
 
-		if (dot3_s(best_vector, best_vector) < 1e-18f)
-		{
-			best_vector = vfloat3(1.0f, 1.0f, 1.0f);
-		}
-
 		pm[partition].dir = best_vector;
 	}
 }
