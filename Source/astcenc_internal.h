@@ -798,16 +798,16 @@ struct quantization_and_transfer_table
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
 
 /** @brief The block is an error block, and will return error color or NaN. */
-static constexpr unsigned int SYM_BTYPE_ERROR { 0 };
+static constexpr uint8_t SYM_BTYPE_ERROR { 0 };
 
 /** @brief The block is a constant color block using FP16 colors. */
-static constexpr unsigned int SYM_BTYPE_CONST_F16 { 1 };
+static constexpr uint8_t SYM_BTYPE_CONST_F16 { 1 };
 
 /** @brief The block is a constant color block using UNORM16 colors. */
-static constexpr unsigned int SYM_BTYPE_CONST_U16 { 2 };
+static constexpr uint8_t SYM_BTYPE_CONST_U16 { 2 };
 
 /** @brief The block is a normal non-constant color block. */
-static constexpr unsigned int SYM_BTYPE_NONCONST { 3 };
+static constexpr uint8_t SYM_BTYPE_NONCONST { 3 };
 
 /**
  * @brief A symbolic representation of a compressed block.
