@@ -79,7 +79,7 @@ static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
 static constexpr unsigned int BLOCK_MAX_TEXELS { 216 };
 
 /** @brief The maximum number of weights used during partition selection for texel clustering. */
-static constexpr unsigned int BLOCK_MAX_KMEANS_TEXELS { 64 };
+static constexpr uint8_t BLOCK_MAX_KMEANS_TEXELS { 64 };
 
 /** @brief The maximum number of weights a block can support. */
 static constexpr unsigned int BLOCK_MAX_WEIGHTS { 64 };
@@ -514,8 +514,8 @@ struct decimation_info
  */
 struct block_mode
 {
-	int16_t mode_index;
-	int8_t decimation_mode;
+	uint16_t mode_index;
+	uint8_t decimation_mode;
 	uint8_t quant_mode;
 	uint8_t is_dual_plane : 1;
 	uint8_t percentile_hit : 1;
@@ -560,19 +560,22 @@ struct decimation_mode
 struct block_size_descriptor
 {
 	/** @brief The block X dimension, in texels. */
-	unsigned int xdim;
+	uint8_t xdim;
 
 	/** @brief The block Y dimension, in texels. */
-	unsigned int ydim;
+	uint8_t ydim;
 
 	/** @brief The block Z dimension, in texels. */
-	unsigned int zdim;
+	uint8_t zdim;
 
 	/** @brief The block total texel count. */
-	unsigned int texel_count;
+	uint8_t texel_count;
 
 	/** @brief The number of stored decimation modes. */
 	unsigned int decimation_mode_count;
+
+	/** @brief The number of stored block modes. */
+	unsigned int block_mode_count;
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
@@ -580,23 +583,17 @@ struct block_size_descriptor
 	/** @brief The active decimation tables, stored in low indices. */
 	const decimation_info *decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
 
-	/** @brief The number of stored block modes. */
-	unsigned int block_mode_count;
-
 	/** @brief The packed block mode array index, or @c BLOCK_BAD_BLOCK_MODE if not active. */
 	uint16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The active block modes, stored in low indices. */
 	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
 
-	/** @brief The texel count for k-means partition selection. */
-	unsigned int kmeans_texel_count;
-
-	/** @brief The active texels for k-means partition selection. */
-	unsigned int kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
-
 	/** @brief The partion tables for all of the possible partitions. */
 	partition_info partitions[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
+
+	/** @brief The active texels for k-means partition selection. */
+	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
 
 	/**
 	 * @brief Get the block mode structure for index @c block_mode.

@@ -348,7 +348,7 @@ static void generate_one_partition_info_entry(
 		pi.coverage_bitmaps[i] = 0ULL;
 	}
 
-	unsigned int texels_to_process = bsd.kmeans_texel_count;
+	unsigned int texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
 	for (unsigned int i = 0; i < texels_to_process; i++)
 	{
 		unsigned int idx = bsd.kmeans_texels[i];

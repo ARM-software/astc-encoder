@@ -720,7 +720,6 @@ static void assign_kmeans_texels(
 			bsd.kmeans_texels[i] = i;
 		}
 
-		bsd.kmeans_texel_count = bsd.texel_count;
 		return;
 	}
 
@@ -747,8 +746,6 @@ static void assign_kmeans_texels(
 			seen[texel] = true;
 		}
 	}
-
-	bsd.kmeans_texel_count = BLOCK_MAX_KMEANS_TEXELS;
 }
 
 /**

@@ -453,7 +453,7 @@ static void compute_kmeans_partition_ordering(
 
 	// Construct the block bitmaps of texel assignments to each partition
 	uint64_t bitmaps[BLOCK_MAX_PARTITIONS] { 0 };
-	unsigned int texels_to_process = bsd.kmeans_texel_count;
+	unsigned int texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
 	promise(texels_to_process > 0);
 	for (unsigned int i = 0; i < texels_to_process; i++)
 	{
