@@ -261,14 +261,11 @@ void decompress_symbolic_block(
 
 	// Get the appropriate partition-table entry
 	int partition_count = scb.partition_count;
-	const partition_info *pt = get_partition_table(&bsd, partition_count);
-	pt += scb.partition_index;
+	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	// Get the appropriate block descriptors
-	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-
-	const decimation_info *const *dt = bsd.decimation_tables;
-	const decimation_info& di = *(dt[bm.decimation_mode]);
+	const auto& bm = bsd.get_block_mode(scb.block_mode);
+	const auto& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	int is_dual_plane = bm.is_dual_plane;
 
@@ -298,10 +295,10 @@ void decompress_symbolic_block(
 
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
-		int texel_count = pt->partition_texel_count[i];
+		int texel_count = pi.partition_texel_count[i];
 		for (int j = 0; j < texel_count; j++)
 		{
-			int tix = pt->texels_of_partition[i][j];
+			int tix = pi.texels_of_partition[i][j];
 			vint4 color = lerp_color_int(decode_mode,
 			                             ep0,
 			                             ep1,
@@ -339,9 +336,7 @@ float compute_symbolic_block_difference(
 
 	// Get the appropriate partition-table entry
 	int partition_count = scb.partition_count;
-
-	const partition_info *pt = get_partition_table(&bsd, partition_count);
-	pt += scb.partition_index;
+	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	// Get the appropriate block descriptor
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
@@ -376,10 +371,10 @@ float compute_symbolic_block_difference(
 		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
 		// Unpack and compute error for each texel in the partition
-		int texel_count = pt->partition_texel_count[i];
+		int texel_count = pi.partition_texel_count[i];
 		for (int j = 0; j < texel_count; j++)
 		{
-			int tix = pt->texels_of_partition[i][j];
+			int tix = pi.texels_of_partition[i][j];
 			vint4 colori = lerp_color_int(config.profile,
 			                              ep0, ep1,
 			                              weights[tix],

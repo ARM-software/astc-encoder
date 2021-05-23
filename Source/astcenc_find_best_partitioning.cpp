@@ -362,7 +362,7 @@ static void count_partition_mismatch_bits(
 	const uint64_t bitmaps[BLOCK_MAX_PARTITIONS],
 	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS]
 ) {
-	const partition_info *pt = get_partition_table(&bsd, partition_count);
+	const auto* pt = bsd.get_partition_table(partition_count);
 
 	// Function pointer dispatch table
 	const mismatch_dispatch dispatch[3] {
@@ -509,8 +509,6 @@ void find_best_partition_candidates(
 
 	int uses_alpha = imageblock_uses_alpha(&blk);
 
-	const partition_info* ptab = get_partition_table(&bsd, partition_count);
-
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncor_best_error { ERROR_CALC_DEFAULT };
 	unsigned int uncor_best_partition { 0 };
@@ -532,8 +530,9 @@ void find_best_partition_candidates(
 		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
 			unsigned int partition = partition_sequence[i];
+			const auto& pi = bsd.get_partition_info(partition_count, partition);
 
-			unsigned int bk_partition_count = ptab[partition].partition_count;
+			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
 				break;
@@ -542,7 +541,7 @@ void find_best_partition_candidates(
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-			compute_avgs_and_dirs_4_comp(*(ptab + partition), blk, ewb, pms);
+			compute_avgs_and_dirs_4_comp(pi, blk, ewb, pms);
 
 			line4 uncor_lines[BLOCK_MAX_PARTITIONS];
 			line4 samec_lines[BLOCK_MAX_PARTITIONS];
@@ -599,7 +598,7 @@ void find_best_partition_candidates(
 			float samec_error = 0.0f;
 			vfloat4 sep_error = vfloat4::zero();
 
-			compute_error_squared_rgba(*(ptab + partition),
+			compute_error_squared_rgba(pi,
 			                           blk,
 			                           ewb,
 			                           uncor_plines,
@@ -622,7 +621,7 @@ void find_best_partition_candidates(
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_metrics& pm = pms[j];
-				float tpp = (float)(ptab[partition].partition_texel_count[j]);
+				float tpp = (float)(pi.partition_texel_count[j]);
 
 				vfloat4 ics = pm.icolor_scale;
 				vfloat4 error_weights = pm.error_weight * (tpp * weight_imprecision_estim);
@@ -714,8 +713,9 @@ void find_best_partition_candidates(
 		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
 			unsigned int partition = partition_sequence[i];
+			const auto& pi = bsd.get_partition_info(partition_count, partition);
 
-			unsigned int bk_partition_count = ptab[partition].partition_count;
+			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
 				break;
@@ -723,7 +723,7 @@ void find_best_partition_candidates(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[BLOCK_MAX_PARTITIONS];
-			compute_avgs_and_dirs_3_comp(*(ptab + partition), blk, ewb, 3, pms);
+			compute_avgs_and_dirs_3_comp(pi, blk, ewb, 3, pms);
 
 			partition_lines3 plines[BLOCK_MAX_PARTITIONS];
 
@@ -770,7 +770,7 @@ void find_best_partition_candidates(
 			float samec_error = 0.0f;
 			vfloat4 sep_error = vfloat4::zero();
 
-			compute_error_squared_rgb(*(ptab + partition),
+			compute_error_squared_rgb(pi,
 			                          blk,
 			                          ewb,
 			                          plines,
@@ -792,7 +792,7 @@ void find_best_partition_candidates(
 				partition_metrics& pm = pms[j];
 				partition_lines3& pl = plines[j];
 
-				float tpp = (float)(ptab[partition].partition_texel_count[j]);
+				float tpp = (float)(pi.partition_texel_count[j]);
 
 				vfloat4 ics = pm.icolor_scale;
 				ics.set_lane<3>(0.0f);

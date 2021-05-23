@@ -1227,8 +1227,7 @@ astcenc_error astcenc_get_block_info(
 
 	// Otherwise handle a full block ; known to be valid after conditions above have been checked
 	int partition_count = scb.partition_count;
-	const partition_info* pt = get_partition_table(&bsd, partition_count);
-	pt += scb.partition_index;
+	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = *bsd.decimation_tables[bm.decimation_mode];
@@ -1292,7 +1291,7 @@ astcenc_error astcenc_get_block_info(
 	// Unpack partition assignments for each texel
 	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
-		info->partition_assignment[i] = pt->partition_of_texel[i];
+		info->partition_assignment[i] = pi.partition_of_texel[i];
 	}
 
 	return ASTCENC_SUCCESS;

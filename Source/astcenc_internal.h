@@ -611,6 +611,52 @@ struct block_size_descriptor
 		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count);
 		return block_modes[packed_index];
 	}
+
+	/**
+	 * @brief Get the decimation mode structure for index @c decimation_mode.
+	 *
+	 * This function can only return decimation modes that are enabled by the current compressor
+	 * config. The mode array is stored packed, but this is only ever indexed by the packed index
+	 * stored in the @c block_mode and never exists in an unpacked form.
+	 */
+	const decimation_mode& get_decimation_mode(unsigned int decimation_mode) const
+	{
+		return this->decimation_modes[decimation_mode];
+	}
+
+	/**
+	 * @brief Get the decimation info structure for index @c decimation_mode.
+	 *
+	 * This function can only return decimation modes that are enabled by the current compressor
+	 * config. The mode array is stored packed, but this is only ever indexed by the packed index
+	 * stored in the @c block_mode and never exists in an unpacked form.
+	 */
+	const decimation_info& get_decimation_info(unsigned int decimation_mode) const
+	{
+		return *this->decimation_tables[decimation_mode];
+	}
+
+	/**
+	 * @brief Get the partition info structure for a given partition count and seed.
+	 */
+	const partition_info* get_partition_table(unsigned int partition_count) const
+	{
+		// TODO: Why do we do this?
+		if (partition_count == 1)
+		{
+			partition_count = 5;
+		}
+		unsigned int index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
+		return this->partitions + index;
+	}
+
+	/**
+	 * @brief Get the partition info structure for a given partition count and seed.
+	 */
+	const partition_info& get_partition_info(unsigned int partition_count, unsigned int index) const
+	{
+		return  get_partition_table(partition_count)[index];
+	}
 };
 
 // data structure representing one block of an image.
@@ -868,17 +914,6 @@ void term_block_size_descriptor(
  */
 void init_partition_tables(
 	block_size_descriptor& bsd);
-
-static inline const partition_info *get_partition_table(
-	const block_size_descriptor* bsd,
-	unsigned int partition_count
-) {
-	if (partition_count == 1) {
-		partition_count = 5;
-	}
-	unsigned int index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
-	return bsd->partitions + index;
-}
 
 /**
  * @brief Get the percentile table for 2D block modes.
