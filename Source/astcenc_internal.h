@@ -90,6 +90,9 @@ static constexpr unsigned int BLOCK_MIN_WEIGHT_BITS { 24 };
 /** @brief The maximum number of weight bits a candidate encoding can encode. */
 static constexpr unsigned int BLOCK_MAX_WEIGHT_BITS { 96 };
 
+/** @brief The index indicating a bad (unused) block mode in the remap array. */
+static constexpr uint16_t BLOCK_BAD_BLOCK_MODE { 0xFFFFu };
+
 /** @brief The number of partition index bits supported by the ASTC format . */
 static constexpr unsigned int PARTITION_INDEX_BITS { 10 };
 
@@ -511,12 +514,12 @@ struct decimation_info
  */
 struct block_mode
 {
+	int16_t mode_index;
 	int8_t decimation_mode;
-	int8_t quant_mode;
+	uint8_t quant_mode;
 	uint8_t is_dual_plane : 1;
 	uint8_t percentile_hit : 1;
 	uint8_t percentile_always : 1;
-	int16_t mode_index;
 
 	inline quant_method get_quant_mode() const
 	{
@@ -580,8 +583,8 @@ struct block_size_descriptor
 	/** @brief The number of stored block modes. */
 	unsigned int block_mode_count;
 
-	/** @brief The block mode array index, or -1 if not valid in current config. */
-	int16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
+	/** @brief The packed block mode array index, or @c BLOCK_BAD_BLOCK_MODE if not active. */
+	uint16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The active block modes, stored in low indices. */
 	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
@@ -594,6 +597,20 @@ struct block_size_descriptor
 
 	/** @brief The partion tables for all of the possible partitions. */
 	partition_info partitions[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
+
+	/**
+	 * @brief Get the block mode structure for index @c block_mode.
+	 *
+	 * This function can only return block modes that are enabled by the current compressor config.
+	 * Decompression from an arbitrary source should not use this without first checking that the
+	 * packed block mode index is not @c BLOCK_BAD_BLOCK_MODE.
+	 */
+	const block_mode& get_block_mode(unsigned int block_mode) const
+	{
+		unsigned int packed_index = this->block_mode_packed_index[block_mode];
+		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count);
+		return block_modes[packed_index];
+	}
 };
 
 // data structure representing one block of an image.

@@ -151,10 +151,7 @@ void symbolic_to_physical(
 	}
 
 	const decimation_info *const *dt = bsd.decimation_tables;
-
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 
 	int weight_count = dt[bm.decimation_mode]->weight_count;
 	quant_method weight_quant_method = bm.get_quant_mode();
@@ -347,14 +344,13 @@ void physical_to_symbolic(
 		return;
 	}
 
-	const int packed_index = bsd.block_mode_packed_index[block_mode];
-	if (packed_index < 0)
+	unsigned int packed_index = bsd.block_mode_packed_index[block_mode];
+	if (packed_index == BLOCK_BAD_BLOCK_MODE)
 	{
 		scb.block_type = SYM_BTYPE_ERROR;
 		return;
 	}
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const struct block_mode& bm = bsd.block_modes[packed_index];
+	const struct block_mode& bm = bsd.get_block_mode(block_mode);
 
 	int weight_count = dt[bm.decimation_mode]->weight_count;
 	quant_method weight_quant_method = (quant_method)bm.quant_mode;

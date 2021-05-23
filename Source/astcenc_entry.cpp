@@ -1225,15 +1225,12 @@ astcenc_error astcenc_get_block_info(
 		return ASTCENC_SUCCESS;
 	}
 
-	// Otherwise, handle a full block with partition payload; values are known
-	// to be valid once the two conditions above have been checked
+	// Otherwise handle a full block ; known to be valid after conditions above have been checked
 	int partition_count = scb.partition_count;
 	const partition_info* pt = get_partition_table(&bsd, partition_count);
 	pt += scb.partition_index;
 
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = *bsd.decimation_tables[bm.decimation_mode];
 
 	info->weight_x = di.weight_x;

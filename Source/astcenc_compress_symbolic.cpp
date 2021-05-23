@@ -82,10 +82,7 @@ static bool realign_weights(
 	pt += scb.partition_index;
 
 	// Get the quantization table
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
-
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	unsigned int weight_quant_level = bm.quant_mode;
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 

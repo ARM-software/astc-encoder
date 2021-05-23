@@ -882,7 +882,7 @@ static void construct_block_size_descriptor_2d(
 		// Skip modes that are invalid, too large, or not selected by heuristic
 		if (!valid || !selected || (x_weights > x_texels) || (y_weights > y_texels))
 		{
-			bsd.block_mode_packed_index[i] = -1;
+			bsd.block_mode_packed_index[i] = BLOCK_BAD_BLOCK_MODE;
 			continue;
 		}
 
@@ -1061,9 +1061,9 @@ static void construct_block_size_descriptor_3d(
 			permit_encode = false;
 		}
 
-		bsd.block_mode_packed_index[i] = -1;
 		if (!permit_encode)
 		{
+			bsd.block_mode_packed_index[i] = BLOCK_BAD_BLOCK_MODE;
 			continue;
 		}
 

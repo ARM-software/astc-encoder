@@ -264,12 +264,10 @@ void decompress_symbolic_block(
 	const partition_info *pt = get_partition_table(&bsd, partition_count);
 	pt += scb.partition_index;
 
-	// Get the appropriate block descriptor
-	const decimation_info *const *dt = bsd.decimation_tables;
+	// Get the appropriate block descriptors
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
+	const decimation_info *const *dt = bsd.decimation_tables;
 	const decimation_info& di = *(dt[bm.decimation_mode]);
 
 	int is_dual_plane = bm.is_dual_plane;
@@ -346,9 +344,7 @@ float compute_symbolic_block_difference(
 	pt += scb.partition_index;
 
 	// Get the appropriate block descriptor
-	const int packed_index = bsd.block_mode_packed_index[scb.block_mode];
-	assert(packed_index >= 0 && packed_index < (int)bsd.block_mode_count);
-	const block_mode& bm = bsd.block_modes[packed_index];
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
 
 	bool is_dual_plane = bm.is_dual_plane != 0;
