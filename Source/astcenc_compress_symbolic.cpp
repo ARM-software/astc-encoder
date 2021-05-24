@@ -103,7 +103,6 @@ static bool realign_weights(
 
 	promise(partition_count > 0);
 	promise(weight_count > 0);
-	promise(max_plane >= 0);
 
 	for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
 	{
