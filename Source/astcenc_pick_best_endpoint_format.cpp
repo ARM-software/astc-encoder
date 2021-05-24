@@ -144,7 +144,7 @@ static void compute_error_squared_rgb_single_partition(
 		vfloat4 ews = ewb.error_weights[tix];
 
 		// Compute the error that arises from just ditching alpha
-		float default_alpha = imageblock_default_alpha(&blk);
+		float default_alpha = blk.get_default_alpha();
 		float omalpha = point.lane<3>() - default_alpha;
 		a_drop_err += omalpha * omalpha * ews.lane<3>();
 

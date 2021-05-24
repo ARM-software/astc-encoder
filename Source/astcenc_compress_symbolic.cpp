@@ -1391,11 +1391,11 @@ void compress_block(
 	trace_add_data("pos_z", blk->zpos);
 
 	// Set stricter block targets for luminance data as we have more bits to play with
-	bool block_is_l = imageblock_is_lum(&blk);
+	bool block_is_l = blk.is_luminance();
 	float block_is_l_scale = block_is_l ? 1.0f / 1.5f : 1.0f;
 
 	// Set slightly stricter block targets for lumalpha data as we have more bits to play with
-	bool block_is_la = imageblock_is_lumalp(&blk);
+	bool block_is_la = blk.is_luminancealpha();
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
 	bool block_skip_two_plane = false;
@@ -1472,7 +1472,7 @@ void compress_block(
 		best_errorvals_in_modes[i] = 1e30f;
 	}
 
-	int uses_alpha = imageblock_uses_alpha(&blk);
+	bool uses_alpha = blk.is_using_alpha();
 
 	// Trial using 1 plane of weights and 1 partition.
 

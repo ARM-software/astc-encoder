@@ -353,7 +353,11 @@ public:
 	}
 };
 
-
+/**
+ * @brief The ASTC endpoint formats.
+ *
+ * Note, the values here are used directly in the encoding in the format so do not rearrange.
+ */
 enum endpoint_formats
 {
 	FMT_LUMINANCE = 0,
@@ -374,7 +378,11 @@ enum endpoint_formats
 	FMT_HDR_RGBA = 15
 };
 
-// enumeration of all the quantization methods we support under this format.
+/**
+ * @brief The ASTC quantization methods.
+ *
+ * Note, the values here are used directly in the encoding in the format so do not rearrange.
+ */
 enum quant_method
 {
 	QUANT_2 = 0,
@@ -400,7 +408,14 @@ enum quant_method
 	QUANT_256 = 20
 };
 
-static inline unsigned int get_quant_method_levels(quant_method method)
+/**
+ * @brief The number of levels use by an ASTC quantization method.
+ *
+ * @param method   The quantization method
+ *
+ * @return   The number of levels used by @c method.
+ */
+static inline unsigned int get_quant_level(quant_method method)
 {
 	switch(method)
 	{
@@ -430,97 +445,177 @@ static inline unsigned int get_quant_method_levels(quant_method method)
 	}
 }
 
+/**
+ * @brief Computed metrics about a partition in a block.
+ */
 struct partition_metrics
 {
+ 	/** @brief The square of the color range (max - min) spanned by texels in this partition. */
 	vfloat4 range_sq;
+
+	 /** @brief The sum of the error weights for texels in this partition. */
 	vfloat4 error_weight;
-	vfloat4 icolor_scale;
+
+	/** @brief The color scale factor used to weight color channels. */
 	vfloat4 color_scale;
+
+	/** @brief The 1 / color_scale used to avoid divisions. */
+	vfloat4 icolor_scale;
+
+	/** @brief The error-weighted average color in the partition. */
 	vfloat4 avg;
+
+	/** @brief The dominant error-weighted direction in the partition. */
 	vfloat4 dir;
 };
 
+/**
+ * @brief Computed lines for a a three component analysis.
+ */
 struct partition_lines3
 {
+	/** @brief Line for uncorrelated chroma. */
 	line3 uncor_line;
+
+	/** @brief Line for correlated chroma, passing though the origin. */
 	line3 samec_line;
 
+	/** @brief Postprocessed line for uncorrelated chroma. */
 	processed_line3 uncor_pline;
+
+	/** @brief Postprocessed line for correlated chroma, passing though the origin. */
 	processed_line3 samec_pline;
 
+	/** @brief The length of the line for uncorrelated chroma. */
 	float uncor_line_len;
+
+	/** @brief The length of the line for correlated chroma. */
 	float samec_line_len;
 };
 
-/*
-	Partition table representation:
-	For each block size, we have 3 tables, each with 1024 partitionings;
-	these three tables correspond to 2, 3 and 4 partitions respectively.
-	For each partitioning, we have:
-	* a 4-entry table indicating how many texels there are in each of the 4 partitions.
-	  This may be from 0 to a very large value.
-	* a table indicating the partition index of each of the texels in the block.
-	  Each index may be 0, 1, 2 or 3.
-	* Each element in the table is an uint8_t indicating partition index (0, 1, 2 or 3)
-*/
+/**
+ * @brief The partition information for a single partition.
+ *
+ * ASTC has a total of 1024 candidate partitions for each of 2/3/4 partition counts, although this
+ * 1024 includes seeds that generate duplicates of other seeds and seeds that generate completely
+ * empty partitions. These are both valid encodings, but astcenc will skip both during compression
+ * as they are not useful.
+ */
 struct partition_info
 {
+	/** @brief The number of partitions in this partitioning. */
 	unsigned int partition_count;
+
+	/**
+	 * @brief The number of texels in each partition.
+	 *
+	 * Note that some seeds result in zero texels assigned to a partition are valid, but are skipped
+	 * by this compressor as there is no point spending bits encoding an unused color endpoint.
+	 */
 	uint8_t partition_texel_count[BLOCK_MAX_PARTITIONS];
+
+	/** @brief The partition of each texel in the block. */
 	uint8_t partition_of_texel[BLOCK_MAX_TEXELS];
+
+	/** @brief The list of texels in each partition. */
 	uint8_t texels_of_partition[BLOCK_MAX_PARTITIONS][BLOCK_MAX_TEXELS];
+
+	/** @brief The canonical partition coverage pattern used during block partition search. */
 	uint64_t coverage_bitmaps[BLOCK_MAX_PARTITIONS];
 };
 
-/*
-   In ASTC, we don't necessarily provide a weight for every texel.
-   As such, for each block size, there are a number of patterns where some texels
-   have their weights computed as a weighted average of more than 1 weight.
-   As such, the codec uses a data structure that tells us: for each texel, which
-   weights it is a combination of for each weight, which texels it contributes to.
-   The decimation_table is this data structure.
+/**
+ * @brief The weight grid information for a single decimation pattern.
+ *
+ * ASTC can store one weight per texel, but is also capable of storing lower resoution weight grids
+ * that are interpolated during decompression to assign a with to a texel. Storing fewer weights
+ * can free up a substantial amount of bits that we can then spend on more useful things, such as
+ * more accurate endpoints and weights, or additional partitions.
+ *
+ * This data structure is used to store information about a single weight grid decimation pattern,
+ * for a single block size.
 */
 struct decimation_info
 {
+	/** @brief The total number of texels in the block. */
 	uint8_t texel_count;
+
+	/** @brief The total number of weights stored. */
 	uint8_t weight_count;
+
+	/** @brief The number of stored weights in the X dimension. */
 	uint8_t weight_x;
+
+	/** @brief The number of stored weights in the Y dimension. */
 	uint8_t weight_y;
+
+	/** @brief The number of stored weights in the Z dimension. */
 	uint8_t weight_z;
 
-	uint8_t texel_weight_count[BLOCK_MAX_TEXELS];	// number of indices that go into the calculation for a texel
+	/** @brief The number of stored weights that contribute to each texel, between 1 and 4. */
+	uint8_t texel_weight_count[BLOCK_MAX_TEXELS];
 
-	// The 4t and t4 tables are the same data, but transposed to allow optimal
-	// data access patterns depending on how we can unroll loops
-	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][BLOCK_MAX_TEXELS];	// the weight to assign to each weight
-	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_4t[4][BLOCK_MAX_TEXELS];	// the weights that go into a texel calculation
-	alignas(ASTCENC_VECALIGN) uint8_t texel_weights_int_4t[4][BLOCK_MAX_TEXELS];	// the weight to assign to each weight
+	/** @brief The weight index of the N weights that need to be interpolated for each texel. */
+	uint8_t texel_weights_4t[4][BLOCK_MAX_TEXELS];
 
-	uint8_t weight_texel_count[BLOCK_MAX_WEIGHTS];	// the number of texels that a given weight contributes to
+	/** @brief The bilinear interpolation weighting of the N input weights for each texel, between 0 and 16. */
+	uint8_t texel_weights_int_4t[4][BLOCK_MAX_TEXELS];
 
-	// Stored transposed to give better access patterns
-	uint8_t weight_texel[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];	// the texels that the weight contributes to
-	alignas(ASTCENC_VECALIGN) float weights_flt[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];	// the weights that the weight contributes to a texel.
+	/** @brief The bilinear interpolation weighting of the N input weights for each texel, between 0 and 1. */
+	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][BLOCK_MAX_TEXELS];
 
-	// folded data structures:
-	//  * texel_weights_texel[i][j] = texel_weights[weight_texel[i][j]];
-	//  * texel_weights_float_texel[i][j] = texel_weights_float[weight_texel[i][j]]
+	/** @brief The number of texels that each stored weight contributes to. */
+	uint8_t weight_texel_count[BLOCK_MAX_WEIGHTS];
+
+	/** @brief The list of weights that contribute to each texel. */
+	uint8_t weight_texel[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+
+	/** @brief The list of weight indices that contribute to each texel. */
+	alignas(ASTCENC_VECALIGN) float weights_flt[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+
+	/**
+	 * @brief Folded structure for faster access:
+	 *     texel_weights_texel[i][j][.] = texel_weights[.][weight_texel[i][j]]
+	 */
 	uint8_t texel_weights_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
+
+	/**
+	 * @brief Folded structure for faster access:
+	 *     texel_weights_float_texel[i][j][.] = texel_weights_float[.][weight_texel[i][j]]
+	 */
 	float texel_weights_float_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
 };
 
 /**
- * @brief Metadata for single block mode for a specific BSD.
+ * @brief Metadata for single block mode for a specific block size.
  */
 struct block_mode
 {
+	/** @brief The block mode index in the ASTC encoded form. */
 	uint16_t mode_index;
+
+	/** @brief The decimation mode index in the compressor reindexed list. */
 	uint8_t decimation_mode;
+
+	/** @brief The weight quantization used by this block mode. */
 	uint8_t quant_mode;
+
+	/** @brief Is a dual weight plane used by this block mode? */
 	uint8_t is_dual_plane : 1;
+
+	/** @brief Is this mode enabled in the current search preset? */
 	uint8_t percentile_hit : 1;
+
+	/** @brief Is this mode enabled for early fast-path searches in the current search preset? */
 	uint8_t percentile_always : 1;
 
+	/**
+	 * @brief Get the weight quantization used by this block mode.
+	 *
+	 * @return The quantization level.
+	 */
+	// TODO: Rename this to get_weight_quant_mode, and add accessor to scb for
+	// get_color_quant_mode.
 	inline quant_method get_quant_mode() const
 	{
 		return (quant_method)this->quant_mode;
@@ -528,13 +623,20 @@ struct block_mode
 };
 
 /**
- * @brief Metadata for single decimation mode for a specific BSD.
+ * @brief Metadata for single decimation mode for a specific block size.
  */
 struct decimation_mode
 {
+	/** @brief The max weight precision for 1 plane, or -1 if not supported. */
 	int8_t maxprec_1plane;
+
+	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
 	int8_t maxprec_2planes;
+
+	/** @brief Is this mode enabled in the current search preset? */
 	uint8_t percentile_hit : 1;
+
+	/** @brief Is this mode enabled for early fast-path searches in the current search preset? */
 	uint8_t percentile_always : 1;
 };
 
@@ -601,6 +703,10 @@ struct block_size_descriptor
 	 * This function can only return block modes that are enabled by the current compressor config.
 	 * Decompression from an arbitrary source should not use this without first checking that the
 	 * packed block mode index is not @c BLOCK_BAD_BLOCK_MODE.
+	 *
+	 * @param block_mode   The packed block mode index.
+	 *
+	 * @return The block mode structure.
 	 */
 	const block_mode& get_block_mode(unsigned int block_mode) const
 	{
@@ -615,6 +721,10 @@ struct block_size_descriptor
 	 * This function can only return decimation modes that are enabled by the current compressor
 	 * config. The mode array is stored packed, but this is only ever indexed by the packed index
 	 * stored in the @c block_mode and never exists in an unpacked form.
+	 *
+	 * @param decimation_mode   The packed decimation mode index.
+	 *
+	 * @return The decimation mode structure.
 	 */
 	const decimation_mode& get_decimation_mode(unsigned int decimation_mode) const
 	{
@@ -627,6 +737,10 @@ struct block_size_descriptor
 	 * This function can only return decimation modes that are enabled by the current compressor
 	 * config. The mode array is stored packed, but this is only ever indexed by the packed index
 	 * stored in the @c block_mode and never exists in an unpacked form.
+	 *
+	 * @param decimation_mode   The packed decimation mode index.
+	 *
+	 * @return The decimation info structure.
 	 */
 	const decimation_info& get_decimation_info(unsigned int decimation_mode) const
 	{
@@ -634,7 +748,11 @@ struct block_size_descriptor
 	}
 
 	/**
-	 * @brief Get the partition info structure for a given partition count and seed.
+	 * @brief Get the partition info table for a given partition count.
+	 *
+	 * @param partition_count   The number of partitions we want the table for.
+	 *
+	 * @return The pointer to the table of 1024 entries (for 2/3/4 parts) or 1 entry (for 1 part).
 	 */
 	const partition_info* get_partition_table(unsigned int partition_count) const
 	{
@@ -648,6 +766,11 @@ struct block_size_descriptor
 
 	/**
 	 * @brief Get the partition info structure for a given partition count and seed.
+	 *
+	 * @param partition_count   The number of partitions we want the info for.
+	 * @param index             The partition seed (between 0 and 1023).
+	 *
+	 * @return The partition info structure.
 	 */
 	const partition_info& get_partition_info(unsigned int partition_count, unsigned int index) const
 	{
@@ -655,28 +778,65 @@ struct block_size_descriptor
 	}
 };
 
-// data structure representing one block of an image.
-// it is expanded to float prior to processing to save some computation time
-// on conversions to/from uint8_t (this also allows us to handle HDR textures easily)
+/**
+ * @brief The image data for a single block.
+ *
+ * The @c data_[rgba] fields store the image data in an encoded SoA float form designed for easy
+ * vectorization. Input data is converted to float and stored as values between 0 and 65535. LDR
+ * data is stored as direct UNORM data, HDR data is stored as LNS data.
+ *
+ * The @c rgb_lns and @c alpha_lns fields that assigned a per-texel use of HDR are only used during
+ * decompression. The current compressor will always use HDR endpoint formats when in HDR mode.
+ */
+// TODO: Rename this image_block?
 struct imageblock
 {
-	float data_r[BLOCK_MAX_TEXELS];  // the data that we will compress, either linear or LNS (0..65535 in both cases)
+	/** @brief The input (compress) or output (decompress) data for the red color component. */
+	float data_r[BLOCK_MAX_TEXELS];
+
+	/** @brief The input (compress) or output (decompress) data for the green color component. */
 	float data_g[BLOCK_MAX_TEXELS];
+
+	/** @brief The input (compress) or output (decompress) data for the blue color component. */
 	float data_b[BLOCK_MAX_TEXELS];
+
+	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
 	float data_a[BLOCK_MAX_TEXELS];
 
+	/** @brief The original data for texel 0 for constant color block encoding. */
 	vfloat4 origin_texel;
+
+	/** @brief The min component value of all texels in the block. */
 	vfloat4 data_min;
+
+	/** @brief The max component value of all texels in the block. */
 	vfloat4 data_max;
-	bool    grayscale;
 
-	uint8_t rgb_lns[BLOCK_MAX_TEXELS];      // 1 if RGB data are being treated as LNS
-	uint8_t alpha_lns[BLOCK_MAX_TEXELS];    // 1 if Alpha data are being treated as LNS
+	/** @brief Is this greyscale block where R == G == B for all texels? */
+	bool grayscale;
 
+	/** @brief Set to 1 if a texel is using HDR RGB endpoints (decompression only). */
+	uint8_t rgb_lns[BLOCK_MAX_TEXELS];
+
+	/** @brief Set to 1 if a texel is using HDR alpha endpoints (decompression only). */
+	uint8_t alpha_lns[BLOCK_MAX_TEXELS];
+
+	/** @brief The X position of this block in the input or output image. */
 	unsigned int xpos;
+
+	/** @brief The Y position of this block in the input or output image. */
 	unsigned int ypos;
+
+	/** @brief The Z position of this block in the input or output image. */
 	unsigned int zpos;
 
+	/**
+	 * @brief Get an RGBA texel value from the data.
+	 *
+	 * @param index   The texel index.
+	 *
+	 * @return The texel in RGBA component ordering.
+	 */
 	inline vfloat4 texel(unsigned int index) const
 	{
 		return vfloat4(data_r[index],
@@ -685,40 +845,72 @@ struct imageblock
 		               data_a[index]);
 	}
 
+	/**
+	 * @brief Get an RGB texel value from the data.
+	 *
+	 * @param index   The texel index.
+	 *
+	 * @return The texel in RGB0 component ordering.
+	 */
 	inline vfloat4 texel3(unsigned int index) const
 	{
 		return vfloat3(data_r[index],
 		               data_g[index],
 		               data_b[index]);
 	}
+
+	/**
+	 * @brief Get the default alpha value for endpoints that don't store it.
+	 *
+	 * The default depends on whether the alpha endpoint is LDR or HDR.
+	 *
+	 * @return The alpha value in the scaled range used by the compressor.
+	 */
+	inline float get_default_alpha() const
+	{
+		return this->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
+	}
+
+	/**
+	 * @brief Test if this block is using alpha.
+	 *
+	 * @todo This looks suspect, but matches the original astcenc 1.7 code. This checks that the
+	 * alpha is not constant (no weight needed), NOT that it is 1.0 and not stored as an endpoint.
+	 * Review all uses of this function and check that it is sensible ...
+	 *
+	 * @return @c true if the alpha value is not constant across the block, @c false otherwise.
+	 */
+	inline bool is_using_alpha() const
+	{
+		return this->data_min.lane<3>() != this->data_max.lane<3>();
+	}
+
+	/**
+	 * @brief Test if this block is a luminance block with constant 1.0 alpha.
+	 *
+	 * @return @c true if the block is a luminance block , @c false otherwise.
+	 */
+	inline bool is_luminance() const
+	{
+		float default_alpha = this->get_default_alpha();
+		bool alpha1 = (this->data_min.lane<3>() == default_alpha) &&
+		              (this->data_max.lane<3>() == default_alpha);
+		return this->grayscale && alpha1;
+	}
+
+	/**
+	 * @brief Test if this block is a luminance block with variable alpha.
+	 *
+	 * @return @c true if the block is a luminance + alpha block , @c false otherwise.
+	 */
+	inline bool is_luminancealpha() const
+	{
+		float default_alpha = this->get_default_alpha();
+		bool alpha1 = (this->data_min.lane<3>() == default_alpha) &&
+		              (this->data_max.lane<3>() == default_alpha);
+		return this->grayscale && !alpha1;
+	}
 };
-
-// TODO: Convert these to ib member functions
-static inline float imageblock_default_alpha(const imageblock * blk)
-{
-	return blk->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
-}
-
-static inline bool imageblock_uses_alpha(const imageblock * blk)
-{
-	return blk->data_min.lane<3>() != blk->data_max.lane<3>();
-}
-
-static inline bool imageblock_is_lum(const imageblock * blk)
-{
-	float default_alpha = imageblock_default_alpha(blk);
-	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
-	              (blk->data_max.lane<3>() == default_alpha);
-	return blk->grayscale && alpha1;
-}
-
-static inline bool imageblock_is_lumalp(const imageblock * blk)
-{
-	float default_alpha = imageblock_default_alpha(blk);
-	bool alpha1 = (blk->data_min.lane<3>() == default_alpha) &&
-	              (blk->data_max.lane<3>() == default_alpha);
-	return blk->grayscale && !alpha1;
-}
 
 /*
 	Data structure representing error weighting for one block of an image. this is used as

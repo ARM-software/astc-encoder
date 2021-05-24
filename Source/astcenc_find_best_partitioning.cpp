@@ -505,7 +505,7 @@ void find_best_partition_candidates(
 	unsigned int partition_sequence[BLOCK_MAX_PARTITIONINGS];
 	compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
-	int uses_alpha = imageblock_uses_alpha(&blk);
+	bool uses_alpha = blk.is_using_alpha();
 
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
 	float uncor_best_error { ERROR_CALC_DEFAULT };

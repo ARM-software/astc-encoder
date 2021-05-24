@@ -1242,8 +1242,8 @@ astcenc_error astcenc_get_block_info(
 	info->partition_index = scb.partition_index;
 	info->dual_plane_component = scb.plane2_component;
 
-	info->color_level_count =  get_quant_method_levels((quant_method)scb.color_quant_level);
-	info->weight_level_count = get_quant_method_levels(bm.get_quant_mode());
+	info->color_level_count = get_quant_level((quant_method)scb.color_quant_level);
+	info->weight_level_count = get_quant_level(bm.get_quant_mode());
 
 	// Unpack color endpoints for each active partition
 	for (unsigned int i = 0; i < scb.partition_count; i++)
