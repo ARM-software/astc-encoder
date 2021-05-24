@@ -353,6 +353,10 @@ public:
 	}
 };
 
+/* ============================================================================
+  Commonly used data structures
+============================================================================ */
+
 /**
  * @brief The ASTC endpoint formats.
  *
@@ -912,47 +916,180 @@ struct imageblock
 	}
 };
 
-/*
-	Data structure representing error weighting for one block of an image. this is used as
-	a multiplier for the error weight to apply to each color component when computing PSNR.
-
-	This weighting has several uses: it's usable for RA, GA, BA, A weighting, which is useful
-	for alpha-textures it's usable for HDR textures, where weighting should be approximately inverse to
-	luminance it's usable for perceptual weighting, where we assign higher weight to low-variability
-	regions than to high-variability regions. it's usable for suppressing off-edge block content in
-	case the texture doesn't actually extend to the edge of the block.
-
-	For the default case (everything is evenly weighted), every weight is 1. For the RA,GA,BA,A case,
-	we multiply the R,G,B weights with that of the alpha.
-
-	Putting the same weight in every component should result in the default case.
-	The following relations should hold:
-
-	texel_weight_rg[i] = (texel_weight_r[i] + texel_weight_g[i]) / 2
-	texel_weight_lum[i] = (texel_weight_r[i] + texel_weight_g[i] + texel_weight_b[i]) / 3
-	texel_weight[i] = (texel_weight_r[i] + texel_weight_g[i] + texel_weight_b[i] + texel_weight_a[i] / 4
+/**
+ * @brief Data structure representing per-texel and per-component error weights for a block.
+ *
+ * This structure stores a multiplier for the error weight to apply to each component when computing
+ * block errors. This can be used as a general purpose technique to to amplify or diminish the
+ * significance of texels and individual color components, based on what is being stored and the
+ * compressor heuristics. It can be applied in many different ways, some of which are outlined in
+ * the description below (this is not exhaustive).
+ *
+ * For blocks that span the edge of the texture, the weighting for texels outside of the texture
+ * bounds can zeroed to maximize the quality of the texels inside the texture.
+ *
+ * For textures storing fewer than 4 components the weighting for color components that are unused
+ * can be zeroed to maximize the quality of the components that are used. This is particularly
+ * important for two component textures, which must be imported in LLLA format to match the two
+ * component endpoint encoding. Without manual component weighting to correct significance the "L"
+ * would be treated as three times more important than A because of the replication.
+ *
+ * For HDR textures we can use perceptual weighting which os approximately inverse to the luminance
+ * of a texel.
+ *
+ * For normal maps we can use perceptual weighting which assigns higher weight to low-variability
+ * regions than to high-variability regions, ensuring smooth surfaces don't pick up artifacts.
+ *
+ * For transparent texels we can multiply the RGB weights by the alpha value, ensuring that
+ * the least transprent texels maintain the highest accuracy.
  */
-
 struct error_weight_block
 {
+	/** @brief The full per texel per component error weights. */
 	vfloat4 error_weights[BLOCK_MAX_TEXELS];
 
+	/** @brief The full per texel per component error weights. */
 	float texel_weight[BLOCK_MAX_TEXELS];
 
+
+	/** @brief The average of the GBA error weights per texel. */
 	float texel_weight_gba[BLOCK_MAX_TEXELS];
+
+	/** @brief The average of the RBA error weights per texel. */
 	float texel_weight_rba[BLOCK_MAX_TEXELS];
+
+	/** @brief The average of the RGA error weights per texel. */
 	float texel_weight_rga[BLOCK_MAX_TEXELS];
+
+	/** @brief The average of the RGB error weights per texel. */
 	float texel_weight_rgb[BLOCK_MAX_TEXELS];
 
-	float texel_weight_rg[BLOCK_MAX_TEXELS];
-	float texel_weight_rb[BLOCK_MAX_TEXELS];
-	float texel_weight_gb[BLOCK_MAX_TEXELS];
-	float texel_weight_ra[BLOCK_MAX_TEXELS];
 
+	/** @brief The average of the RG error weights per texel. */
+	float texel_weight_rg[BLOCK_MAX_TEXELS];
+
+	/** @brief The average of the RB error weights per texel. */
+	float texel_weight_rb[BLOCK_MAX_TEXELS];
+
+	/** @brief The average of the GB error weights per texel. */
+	float texel_weight_gb[BLOCK_MAX_TEXELS];
+
+
+	/** @brief The individual R component error weights per texel. */
 	float texel_weight_r[BLOCK_MAX_TEXELS];
+
+	/** @brief The individual G component error weights per texel. */
 	float texel_weight_g[BLOCK_MAX_TEXELS];
+
+	/** @brief The individual B component error weights per texel. */
 	float texel_weight_b[BLOCK_MAX_TEXELS];
+
+	/** @brief The individual A component error weights per texel. */
 	float texel_weight_a[BLOCK_MAX_TEXELS];
+};
+
+/**
+ * @brief Data structure storing the color endpoints for a block.
+ *
+ * @todo Store as interleaved array to get better locality?
+ */
+struct endpoints
+{
+	/** @brief The number of partition endpoints stored. */
+	unsigned int partition_count;
+
+	/** @brief The colors for endpoint 0. */
+	vfloat4 endpt0[BLOCK_MAX_PARTITIONS];
+
+	/** @brief The colors for endpoint 1. */
+	vfloat4 endpt1[BLOCK_MAX_PARTITIONS];
+};
+
+/**
+ * @brief Data structure storing the color endpoints and weights.
+ */
+struct endpoints_and_weights
+{
+	/** @brief True if all active values in weight_error_scale are the same. */
+	bool is_constant_weight_error_scale;
+
+	/** @brief The color endpoints. */
+	endpoints ep;
+
+	/** @brief The undecimated and unquantized weight for each texel. */
+	alignas(ASTCENC_VECALIGN) float weights[BLOCK_MAX_TEXELS];
+
+	/** @brief The undecimated and unquantized weight error scaling for each texel. */
+	alignas(ASTCENC_VECALIGN) float weight_error_scale[BLOCK_MAX_TEXELS];
+};
+
+/**
+ * @brief Utility storing estimated errors from choosing particular endpoint encodings.
+ */
+struct encoding_choice_errors
+{
+	/** @brief Error of using LDR RGB-scale instead of complete endpoints. */
+	float rgb_scale_error;
+
+	/** @brief Error of using HDR RGB-scale instead of complete endpoints. */
+	float rgb_luma_error;
+
+	/** @brief Error of using luminance instead of RGB. */
+	float luminance_error;
+
+	/** @brief Error of discarding alpha and using a constant 1.0 alpha. */
+	float alpha_drop_error;
+
+	/** @brief Can we use delta offset encoding? */
+	bool can_offset_encode;
+
+	/** @brief CAn we use blue contraction encoding? */
+	bool can_blue_contract;
+};
+
+/**
+ * @brief Preallocated working buffers, allocated per thread during context creation.
+ */
+struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
+{
+	/** @brief Ideal endpoints and weights for plane 1. */
+	endpoints_and_weights ei1;
+
+	/** @brief Ideal endpoints and weights for plane 2. */
+	endpoints_and_weights ei2;
+
+	/** @brief Ideal endpoints and weights for plane 1. */
+	endpoints_and_weights eix1[WEIGHTS_MAX_DECIMATION_MODES];
+
+	/** @brief Ideal endpoints and weights for plane 2. */
+	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
+
+	/** @brief Decimated and weight values, rounded to quantization points but not stored packed. */
+	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+
+	/** @brief Decimated and unquantized weight values. */
+	alignas(ASTCENC_VECALIGN) float decimated_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+
+	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
+	alignas(ASTCENC_VECALIGN) float flt_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+
+	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
+	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+};
+
+/**
+ * @brief Preallocated working buffers, allocated per thread during context creation.
+ *
+ * @todo Merge with compress_fixed_partition_buffers?
+ * @todo Allocated imageblock and scb here too?
+ */
+struct compress_symbolic_block_buffers
+{
+	/** @brief The error weight block for the current thread. */
+	error_weight_block ewb;
+
+	/** @brief The scratch working set for the current thread. */
+	compress_fixed_partition_buffers planes;
 };
 
 /**
@@ -968,17 +1105,20 @@ struct error_weight_block
 */
 struct quantization_and_transfer_table
 {
-	/** The quantization level used */
+	/** @brief The quantization level used */
 	quant_method method;
-	/** The unscrambled unquantized value. */
+
+	/** @brief The unscrambled unquantized value. */
 	float unquantized_value_unsc[33];
-	/** The scrambling order: value[map[i]] == value_unsc[i] */
+
+	/** @brief The scrambling order: value[map[i]] == value_unsc[i] */
 	int32_t scramble_map[32];
-	/** The scrambled unquantized values. */
+
+	/** @brief The scrambled unquantized values. */
 	uint8_t unquantized_value[32];
+
 	/**
-	 * An encoded table of previous-and-next weight values, indexed by the
-	 * current unquantized value.
+	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.
 	 *  * bits 7:0 = previous-index, unquantized
 	 *  * bits 15:8 = next-index, unquantized
 	 *  * bits 23:16 = previous-index, quantized
@@ -987,6 +1127,8 @@ struct quantization_and_transfer_table
 	uint32_t prev_next_values[65];
 };
 
+
+/** @brief The precomputed quant and transfer table. */
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
 
 /** @brief The block is an error block, and will return error color or NaN. */
@@ -1053,14 +1195,173 @@ struct symbolic_compressed_block
 	uint8_t weights[BLOCK_MAX_WEIGHTS];
 };
 
+/**
+ * @brief A physical representation of a compressed block.
+ *
+ * The physical representation stores the raw bytes of the format in memory.
+ */
 struct physical_compressed_block
 {
+	/** @brief The ASTC encoded data for a single block. */
 	uint8_t data[16];
 };
 
+
+/**
+ * @brief Parameter structure for @c compute_pixel_region_variance().
+ *
+ * This function takes a structure to avoid spilling arguments to the stack on every function
+ * invocation, as there are a lot of parameters.
+ */
+struct pixel_region_variance_args
+{
+	/** @brief The image to analyze. */
+	const astcenc_image* img;
+
+	/** @brief The RGB component power adjustment. */
+	float rgb_power;
+
+	/** @brief The alpha component power adjustment. */
+	float alpha_power;
+
+	/** @brief The component swizzle pattern. */
+	astcenc_swizzle swz;
+
+	/** @brief Should the algorithm bother with Z axis processing? */
+	bool have_z;
+
+	/** @brief The kernel radius for average and variance. */
+	unsigned int avg_var_kernel_radius;
+
+	/** @brief The kernel radius for alpha processing. */
+	unsigned int alpha_kernel_radius;
+
+	/** @brief The X dimension of the working data to process. */
+	unsigned int size_x;
+
+	/** @brief The Y dimension of the working data to process. */
+	unsigned int size_y;
+
+	/** @brief The Z dimension of the working data to process. */
+	unsigned int size_z;
+
+	/** @brief The X position of first src and dst data in the data set. */
+	unsigned int offset_x;
+
+	/** @brief The Y position of first src and dst data in the data set. */
+	unsigned int offset_y;
+
+	/** @brief The Z position of first src and dst data in the data set. */
+	unsigned int offset_z;
+
+	/** @brief The working memory buffer. */
+	vfloat4 *work_memory;
+};
+
+/**
+ * @brief Parameter structure for @c compute_averages_and_variances_proc().
+ */
+struct avg_var_args
+{
+	/** @brief The arguments for the nested variance computation. */
+	pixel_region_variance_args arg;
+
+	// The above has a reference to the image altread?
+	/** @brief The image X dimensions. */
+	unsigned int img_size_x;
+
+	/** @brief The image Y dimensions. */
+	unsigned int img_size_y;
+
+	/** @brief The image Z dimensions. */
+	unsigned int img_size_z;
+
+	/** @brief The maximum working block dimensions in X and Y dimensions. */
+	unsigned int blk_size_xy;
+
+	/** @brief The maximum working block dimensions in Z dimensions. */
+	unsigned int blk_size_z;
+
+	/** @brief The working block memory size. */
+	unsigned int work_memory_size;
+};
+
+#if defined(ASTCENC_DIAGNOSTICS)
+class TraceLog; // See astcenc_diagnostic_trace for details.
+#endif
+
+/**
+ * @brief The astcenc compression context.
+ */
+struct astcenc_context
+{
+	/** @brief The configuration this context was created with. */
+	astcenc_config config;
+
+	/** @brief The thread count supported by this context. */
+	unsigned int thread_count;
+
+	/** @brief The block size descriptor this context was created with. */
+	block_size_descriptor* bsd;
+
+	/*
+	 * Fields below here are not needed in a decompress-only build, but some remain as they are
+	 * small and it avoids littering the code with #ifdefs. The most significant contributors to
+	 * large structure size are omitted.
+	 */
+
+	/** @brief The input images averages table, may be @c nullptr if not needed. */
+	vfloat4 *input_averages;
+
+	/** @brief The input image RGBA channel variances table, may be @c nullptr if not needed. */
+	vfloat4 *input_variances;
+
+	/** @brief The input image alpha channel variances table, may be @c nullptr if not needed. */
+	float *input_alpha_averages;
+
+
+	/** @brief The scratch workign buffers, one per thread (see @c thread_count). */
+	compress_symbolic_block_buffers* working_buffers;
+
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	/** @brief The pixel region and variance arguments. */
+	// TODO: Do we need both? ag include an p_r_v_a structure too?
+	pixel_region_variance_args arg;
+
+	/** @brief The pixel region and variance worker arguments. */
+	// TODO: Can we give these better names. Merge them?
+	avg_var_args ag;
+
+	/** @brief The per-texel deblocking weights for the current block size. */
+	// TODO: Move to the BSD?
+	float deblock_weights[BLOCK_MAX_TEXELS];
+
+	/** @brief The parallel manager for averages and variances computation. */
+	ParallelManager manage_avg_var;
+
+	/** @brief The parallel manager for compression. */
+	ParallelManager manage_compress;
+#endif
+
+	/** @brief The parallel manager for decompression. */
+	ParallelManager manage_decompress;
+
+#if defined(ASTCENC_DIAGNOSTICS)
+	/**
+	 * @brief The diagnostic trace logger.
+	 *
+	 * Note that this is a singleton, so can only be used in single threaded mode. It only exists
+	 * here so we have a reference to close the file at the end of the capture.
+	 */
+	TraceLog* trace_log;
+#endif
+};
+
 /* ============================================================================
-  Functions and data pertaining to quantization and encoding
+  Functionality for managing block sizes and partition tables.
 ============================================================================ */
+
+// TODO: Make C++ constructor/destructor?
 
 /**
  * @brief Populate the block size descriptor for the target block size.
@@ -1139,13 +1440,40 @@ bool is_legal_3d_block_size(
 	unsigned int ydim,
 	unsigned int zdim);
 
-// ***********************************************************
-// functions and data pertaining to quantization and encoding
-// **********************************************************
+/* ============================================================================
+  Functionality for managing BISE quantization and unquantization.
+============================================================================ */
 
+/**
+ * @brief The precomputed table for quantizing color values.
+ *
+ * Indexed by [quant_mode][data_value].
+ */
 extern const uint8_t color_quant_tables[21][256];
+
+/**
+ * @brief The precomputed table for unquantizing color values.
+ *
+ * Indexed by [quant_mode][data_value].
+ */
 extern const uint8_t color_unquant_tables[21][256];
+
+/**
+ * @brief The precomputed quant mode storage table.
+ *
+ * Indexing by [integercount/2][bits] gives us the quantization level for a given integer count and
+ * number of compressed storage bits. Returns -1 for cases where the requested integer count cannot
+ * ever fit in the supplied storage size.
+ */
 extern int8_t quant_mode_table[17][128];
+
+/**
+ * @brief Initialize the quant mode table.
+ *
+ * This is stored in global memory so this only needs to be done once, but is typically done
+ * whenever a new context is created.
+ */
+void init_quant_mode_table();
 
 /**
  * @brief Encode a packed string using BISE.
@@ -1200,26 +1528,28 @@ unsigned int get_ise_sequence_bitcount(
 	unsigned int character_count,
 	quant_method quant_level);
 
-void init_quant_mode_table(void);
-
-// **********************************************
-// functions and data pertaining to partitioning
-// **********************************************
+/* ============================================================================
+  Functionality for managing color partitioning.
+============================================================================ */
 
 /**
- * @brief Compute averages and dominant directions for each partition in a 4 component texture.
+ * @brief Compute averages and dominant directions for each partition in a 2 component texture.
  *
- * @param      pi    The partition info for the current trial.
- * @param      blk   The image block color data to be compressed.
- * @param      ewb   The image block weighted error data.
- * @param[out] pm    The output partition metrics.
- *                   - Only pi.partition_count array entries actually get initialized.
- *                   - Direction vectors @c pm.dir are not normalized.
+ * @param      pi           The partition info for the current trial.
+ * @param      blk          The image block color data to be compressed.
+ * @param      ewb          The image block weighted error data.
+ * @param      component1   The first component included in the analysis.
+ * @param      component2   The second component included in the analysis.
+ * @param[out] pm           The output partition metrics.
+ *                          - Only pi.partition_count array entries actually get initialized.
+ *                          - Direction vectors @c pm.dir are not normalized.
  */
-void compute_avgs_and_dirs_4_comp(
+void compute_avgs_and_dirs_2_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
+	unsigned int component1,
+	unsigned int component2,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
@@ -1241,24 +1571,45 @@ void compute_avgs_and_dirs_3_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
- * @brief Compute averages and dominant directions for each partition in a 2 component texture.
+ * @brief Compute averages and dominant directions for each partition in a 4 component texture.
  *
- * @param      pi           The partition info for the current trial.
- * @param      blk          The image block color data to be compressed.
- * @param      ewb          The image block weighted error data.
- * @param      component1   The first component included in the analysis.
- * @param      component2   The second component included in the analysis.
- * @param[out] pm           The output partition metrics.
- *                          - Only pi.partition_count array entries actually get initialized.
- *                          - Direction vectors @c pm.dir are not normalized.
+ * @param      pi    The partition info for the current trial.
+ * @param      blk   The image block color data to be compressed.
+ * @param      ewb   The image block weighted error data.
+ * @param[out] pm    The output partition metrics.
+ *                   - Only pi.partition_count array entries actually get initialized.
+ *                   - Direction vectors @c pm.dir are not normalized.
  */
-void compute_avgs_and_dirs_2_comp(
+void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const imageblock& blk,
 	const error_weight_block& ewb,
-	unsigned int component1,
-	unsigned int component2,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
+
+/**
+ * @brief Compute the RGB error for uncorrelated and same chroma projections.
+ *
+ * The output of compute averages and dirs is post processed to define two lines, both of which go
+ * through the mean-color-value.  One line has a direction defined by the dominant direction; this
+ * is used to assess the error from using an uncorrelated color representation. The other line goes
+ * through (0,0,0) and is used to assess the error from using an RGBS color representation.
+ *
+ * This function computes the squared error when using these two representations.
+ *
+ * @param         pi              The partition info for the current trial.
+ * @param         blk             The image block color data to be compressed.
+ * @param         ewb             The image block weighted error data.
+ * @param[in,out] plines          Processed line inputs, and line length outputs.
+ * @param[out]    uncor_error     The cumulative error for using the uncorrelated line.
+ * @param[out]    samec_error     The cumulative error for using the same chroma line.
+ */
+void compute_error_squared_rgb(
+	const partition_info& pi,
+	const imageblock& blk,
+	const error_weight_block& ewb,
+	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
+	float& uncor_error,
+	float& samec_error);
 
 /**
  * @brief Compute the RGBA error for uncorrelated and same chroma projections.
@@ -1292,31 +1643,6 @@ void compute_error_squared_rgba(
 	float& samec_error);
 
 /**
- * @brief Compute the RGB error for uncorrelated and same chroma projections.
- *
- * The output of compute averages and dirs is post processed to define two lines, both of which go
- * through the mean-color-value.  One line has a direction defined by the dominant direction; this
- * is used to assess the error from using an uncorrelated color representation. The other line goes
- * through (0,0,0) and is used to assess the error from using an RGBS color representation.
- *
- * This function computes the squared error when using these two representations.
- *
- * @param         pi              The partition info for the current trial.
- * @param         blk             The image block color data to be compressed.
- * @param         ewb             The image block weighted error data.
- * @param[in,out] plines          Processed line inputs, and line length outputs.
- * @param[out]    uncor_error     The cumulative error for using the uncorrelated line.
- * @param[out]    samec_error     The cumulative error for using the same chroma line.
- */
-void compute_error_squared_rgb(
-	const partition_info& pi,
-	const imageblock& blk,
-	const error_weight_block& ewb,
-	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
-	float& uncor_error,
-	float& samec_error);
-
-/**
  * @brief Find the best set of partitions to trial for a given block.
  *
  * On return @c best_partition_uncor contains the best partition  assuming data has uncorrelated
@@ -1344,76 +1670,29 @@ void find_best_partition_candidates(
 	unsigned int& best_partition_samec,
 	unsigned int* best_partition_dualplane);
 
-// *********************************************************
-// functions and data pertaining to images and imageblocks
-// *********************************************************
+/* ============================================================================
+  Functionality for managing images and image related data.
+============================================================================ */
 
 /**
- * @brief Parameter structure for compute_pixel_region_variance().
+ * @brief Setup computation of regional averages and variances in an image.
  *
- * This function takes a structure to avoid spilling arguments to the stack on every function
- * invocation, as there are a lot of parameters.
- */
-struct pixel_region_variance_args
-{
-	/** The image to analyze. */
-	const astcenc_image* img;
-	/** The RGB component power adjustment. */
-	float rgb_power;
-	/** The alpha component power adjustment. */
-	float alpha_power;
-	/** The component swizzle pattern. */
-	astcenc_swizzle swz;
-	/** Should the algorithm bother with Z axis processing? */
-	bool have_z;
-	/** The kernel radius for average and variance. */
-	unsigned int avg_var_kernel_radius;
-	/** The kernel radius for alpha processing. */
-	unsigned int alpha_kernel_radius;
-	/** The size of the working data to process. */
-	unsigned int size_x;
-	unsigned int size_y;
-	unsigned int size_z;
-	/** The position of first src and dst data in the data set. */
-	unsigned int offset_x;
-	unsigned int offset_y;
-	unsigned int offset_z;
-	/** The working memory buffer. */
-	vfloat4 *work_memory;
-};
-
-/**
- * @brief Parameter structure for compute_averages_and_variances_proc().
- */
-struct avg_var_args
-{
-	/** The arguments for the nested variance computation. */
-	pixel_region_variance_args arg;
-	/** The image dimensions. */
-	unsigned int img_size_x;
-	unsigned int img_size_y;
-	unsigned int img_size_z;
-	/** The maximum working block dimensions. */
-	unsigned int blk_size_xy;
-	unsigned int blk_size_z;
-	/** The working block memory size. */
-	unsigned int work_memory_size;
-};
-
-/**
- * @brief Compute regional averages and variances in an image.
+ * This must be done by only a single thread per image, before any thread calls
+ * @c compute_averages_and_variances().
  *
  * Results are written back into @c img->input_averages, @c img->input_variances,
  * and @c img->input_alpha_averages.
  *
- * @param img                   The input image data, also holds output data.
- * @param rgb_power             The RGB component power.
- * @param alpha_power           The A component power.
- * @param avg_var_kernel_radius The kernel radius (in pixels) for avg and var.
- * @param alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
- * @param swz                   Input data component swizzle.
- * @param arg                   The pixel region arguments for this thread.
- * @param ag                    The average variance arguments for this thread.
+ * @todo Can img be const here?
+ *
+ * @param[in,out] img                     The input image data, also holds output data.
+ * @param         rgb_power               The RGB component power.
+ * @param         alpha_power             The A component power.
+ * @param         avg_var_kernel_radius   The kernel radius (in pixels) for avg and var.
+ * @param         alpha_kernel_radius     The kernel radius (in pixels) for alpha mods.
+ * @param         swz                     Input data component swizzle.
+ * @param[out]    arg                     The pixel region arguments to init.
+ * @param[out]    ag                      The average variance arguments to init.
  *
  * @return The number of tasks in the processing stage.
  */
@@ -1427,6 +1706,18 @@ unsigned int init_compute_averages_and_variances(
 	pixel_region_variance_args& arg,
 	avg_var_args& ag);
 
+/**
+ * @brief Compute regional averages and variances.
+ *
+ * This function can be called by multiple threads, but only after a single thread calls the setup
+ * function @c init_compute_averages_and_variances().
+ *
+ * Results are written back into @c img->input_averages, @c img->input_variances,
+ * and @c img->input_alpha_averages.
+ *
+ * @param[out] ctx   The context.
+ * @param      ag    The average and variance arguments created during setup.
+ */
 void compute_averages_and_variances(
 	astcenc_context& ctx,
 	const avg_var_args& ag);
@@ -1473,27 +1764,9 @@ void write_imageblock(
 	unsigned int zpos,
 	const astcenc_swizzle& swz);
 
-// ***********************************************************
-// functions pertaining to computing texel weights for a block
-// ***********************************************************
-struct endpoints
-{
-	unsigned int partition_count;
-	vfloat4 endpt0[BLOCK_MAX_PARTITIONS];
-	vfloat4 endpt1[BLOCK_MAX_PARTITIONS];
-};
-
-struct endpoints_and_weights
-{
-	endpoints ep;
-
-	alignas(ASTCENC_VECALIGN) float weights[BLOCK_MAX_TEXELS];
-
-	/** @brief True if all active values in weight_error_scale are the same. */
-	bool is_constant_weight_error_scale;
-
-	alignas(ASTCENC_VECALIGN) float weight_error_scale[BLOCK_MAX_TEXELS];
-};
+/* ============================================================================
+  Functionality for computing endpoint colors and weights for a block.
+============================================================================ */
 
 /**
  * @brief Compute ideal endpoint colors and weights for 1 plane of weights.
@@ -1585,10 +1858,6 @@ void compute_quantized_weights_for_decimation(
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
 	quant_method quant_level);
-
-/*********************************
-  Utilties for bilinear filtering
-*********************************/
 
 /**
  * @brief Compute the infilled weight for a texel index in a decimated grid.
@@ -1745,41 +2014,6 @@ void unpack_weights(
 	int weights_plane1[BLOCK_MAX_TEXELS],
 	int weights_plane2[BLOCK_MAX_TEXELS]);
 
-struct encoding_choice_errors
-{
-	// Error of using LDR RGB-scale instead of complete endpoints.
-	float rgb_scale_error;
-	// Error of using HDR RGB-scale instead of complete endpoints.
-	float rgb_luma_error;
-	// Error of using luminance instead of RGB.
-	float luminance_error;
-	// Error of discarding alpha.
-	float alpha_drop_error;
-	// Validity of using offset encoding.
-	bool can_offset_encode;
-	// Validity of using blue contraction encoding.
-	bool can_blue_contract;
-};
-
-// buffers used to store intermediate data in compress_symbolic_block_fixed_partition_*()
-struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
-{
-	endpoints_and_weights ei1;
-	endpoints_and_weights ei2;
-	endpoints_and_weights eix1[WEIGHTS_MAX_DECIMATION_MODES];
-	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
-	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
-	alignas(ASTCENC_VECALIGN) float decimated_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
-	alignas(ASTCENC_VECALIGN) float flt_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
-	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
-};
-
-struct compress_symbolic_block_buffers
-{
-	error_weight_block ewb;
-	compress_fixed_partition_buffers planes;
-};
-
 /**
  * @brief Identify, for each mode, which set of color endpoint produces the best result.
  *
@@ -1895,7 +2129,9 @@ void compute_angular_endpoints_2planes(
 	float low_value2[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value2[WEIGHTS_MAX_BLOCK_MODES]);
 
-/* *********************************** high-level encode and decode functions ************************************ */
+/* ============================================================================
+  Functionality for high level compression and decompression access.
+============================================================================ */
 
 /**
  * @brief Compress an image block into a physical block.
@@ -1963,72 +2199,37 @@ void physical_to_symbolic(
 	const physical_compressed_block& pcb,
 	symbolic_compressed_block& scb);
 
-#if defined(ASTCENC_DIAGNOSTICS)
-class TraceLog; // See astcenc_diagnostic_trace for details.
-#endif
-
-struct astcenc_context
-{
-	astcenc_config config;
-	unsigned int thread_count;
-	block_size_descriptor* bsd;
-
-	// Fields below here are not needed in a decompress-only build, but some remain as they are
-	// small and it avoids littering the code with #ifdefs. The most significant contributors to
-	// large structure size are omitted.
-
-	// Regional average-and-variance information, initialized by compute_averages_and_variances()
-	// only if the astc encoder is requested to do error weighting based on averages and variances.
-	vfloat4 *input_averages;
-	vfloat4 *input_variances;
-	float *input_alpha_averages;
-
-	compress_symbolic_block_buffers* working_buffers;
-
-#if !defined(ASTCENC_DECOMPRESS_ONLY)
-	pixel_region_variance_args arg;
-	avg_var_args ag;
-
-	float deblock_weights[BLOCK_MAX_TEXELS];
-
-	ParallelManager manage_avg_var;
-	ParallelManager manage_compress;
-#endif
-
-	ParallelManager manage_decompress;
-
-#if defined(ASTCENC_DIAGNOSTICS)
-	TraceLog* trace_log;
-#endif
-};
-
 /* ============================================================================
-  Platform-specific functions
+Platform-specific functions.
 ============================================================================ */
+// TODO: Make these bools
 /**
  * @brief Run-time detection if the host CPU supports the POPCNT extension.
+ *
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_popcnt();
 
 /**
  * @brief Run-time detection if the host CPU supports F16C extension.
+ *
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_f16c();
 
 /**
  * @brief Run-time detection if the host CPU supports SSE 4.1 extension.
+ *
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_sse41();
 
 /**
  * @brief Run-time detection if the host CPU supports AVX 2 extension.
+ *
  * @return Zero if not supported, positive value if it is.
  */
 int cpu_supports_avx2();
-
 
 /**
  * @brief Allocate an aligned memory buffer.
