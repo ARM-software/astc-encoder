@@ -1277,6 +1277,11 @@ unsigned int compute_ideal_endpoint_formats(
 		{
 			errors_of_best_combination[best_error_index] = 1e30f;
 		}
+		// Early-out if no more candidates are valid
+		else
+		{
+			break;
+		}
 	}
 
 	for (unsigned int i = 0; i < tune_candidate_limit; i++)
