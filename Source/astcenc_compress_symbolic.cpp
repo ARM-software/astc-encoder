@@ -365,7 +365,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	quant_method color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
 	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
-	compute_ideal_endpoint_formats(
+	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, ewb, ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
@@ -374,18 +374,11 @@ static float compress_symbolic_block_for_partition_1plane(
 	float best_errorval_in_mode = 1e30f;
 	float best_errorval_in_scb = scb.errorval;
 
-	for (unsigned int i = 0; i < config.tune_candidate_limit; i++)
+	for (unsigned int i = 0; i < candidate_count; i++)
 	{
 		TRACE_NODE(node0, "candidate");
 
-		// TODO: Can this ever happen?
 		const int bm_packed_index = block_mode_index[i];
-		if (bm_packed_index < 0)
-		{
-			trace_add_data("failed", "error_block");
-			continue;
-		}
-
 		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
@@ -764,7 +757,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	endpoints epm;
 	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
 
-	compute_ideal_endpoint_formats(
+	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, ewb, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
@@ -773,17 +766,11 @@ static float compress_symbolic_block_for_partition_2planes(
 	float best_errorval_in_mode = 1e30f;
 	float best_errorval_in_scb = scb.errorval;
 
-	for (unsigned int i = 0; i < config.tune_candidate_limit; i++)
+	for (unsigned int i = 0; i < candidate_count; i++)
 	{
 		TRACE_NODE(node0, "candidate");
 
 		const int bm_packed_index = block_mode_index[i];
-		if (bm_packed_index < 0)
-		{
-			trace_add_data("failed", "error_block");
-			continue;
-		}
-
 		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 

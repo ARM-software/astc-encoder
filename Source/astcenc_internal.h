@@ -2038,13 +2038,15 @@ void unpack_weights(
  * @param      ep                            The ideal endpoints.
  * @param      qwt_bitcounts                 Bit counts for different quantization methods.
  * @param      qwt_errors                    Errors for different quantization methods.
- * @param      tune_candidate_limit          The number of candidates to return.
+ * @param      tune_candidate_limit          The max number of candidates to return, may be less.
  * @param[out] partition_format_specifiers   The best formats per partition.
- * @param[out] block_mode                    The best packed block mode index.
+ * @param[out] block_mode                    The best packed block mode indexes.
  * @param[out] quant_level                   The best color quant level.
  * @param[out] quant_level_mod               The best color quant level if endpoints are the same.
+ *
+ * @return The actual number of candidate matches returned.
  */
-void compute_ideal_endpoint_formats(
+unsigned int compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const imageblock& blk,

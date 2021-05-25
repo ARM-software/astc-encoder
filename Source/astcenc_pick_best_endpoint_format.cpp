@@ -1085,7 +1085,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 }
 
 /* See header for documentation. */
-void compute_ideal_endpoint_formats(
+unsigned int compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const imageblock& blk,
@@ -1281,18 +1281,22 @@ void compute_ideal_endpoint_formats(
 
 	for (unsigned int i = 0; i < tune_candidate_limit; i++)
 	{
-		block_mode[i] = best_error_weights[i];
-		if (block_mode[i] >= 0)
+		if (best_error_weights[i] < 0)
 		{
-			quant_level[i] = best_quant_levels[best_error_weights[i]];
-			assert(quant_level[i] >= 0 && quant_level[i] < 21);
-			quant_level_mod[i] = best_quant_levels_mod[best_error_weights[i]];
-			for (int j = 0; j < partition_count; j++)
-			{
-				partition_format_specifiers[i][j] = best_ep_formats[best_error_weights[i]][j];
-			}
+			return i;
+		}
+
+		block_mode[i] = best_error_weights[i];
+		quant_level[i] = best_quant_levels[best_error_weights[i]];
+		assert(quant_level[i] >= 0 && quant_level[i] < 21);
+		quant_level_mod[i] = best_quant_levels_mod[best_error_weights[i]];
+		for (int j = 0; j < partition_count; j++)
+		{
+			partition_format_specifiers[i][j] = best_ep_formats[best_error_weights[i]][j];
 		}
 	}
+
+	return tune_candidate_limit;
 }
 
 #endif
