@@ -1150,7 +1150,6 @@ static float prepare_error_weight_block(
 		ewb->texel_weight_rg[i] = (wr + wg) * 0.5f;
 		ewb->texel_weight_rb[i] = (wr + wb) * 0.5f;
 		ewb->texel_weight_gb[i] = (wg + wb) * 0.5f;
-		ewb->texel_weight_ra[i] = (wr + wa) * 0.5f;
 
 		ewb->texel_weight_gba[i] = (wg + wb + wa) * 0.333333f;
 		ewb->texel_weight_rba[i] = (wr + wb + wa) * 0.333333f;
