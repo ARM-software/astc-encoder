@@ -239,7 +239,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	unsigned int partition_count,
 	unsigned int partition_index,
 	symbolic_compressed_block& scb,
-	compress_fixed_partition_buffers& tmpbuf
+	compression_working_buffers& tmpbuf
 ) {
 	promise(partition_count > 0);
 	promise(config.tune_candidate_limit > 0);
@@ -592,7 +592,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	unsigned int partition_index,
 	unsigned int plane2_component,
 	symbolic_compressed_block& scb,
-	compress_fixed_partition_buffers& tmpbuf
+	compression_working_buffers& tmpbuf
 ) {
 	promise(partition_count > 0);
 	promise(config.tune_candidate_limit > 0);
@@ -1363,7 +1363,7 @@ void compress_block(
 	const astcenc_image& input_image,
 	const imageblock& blk,
 	physical_compressed_block& pcb,
-	compress_symbolic_block_buffers& tmpbuf)
+	compression_working_buffers& tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
 	symbolic_compressed_block scb;
@@ -1485,7 +1485,7 @@ void compress_block(
 		float errorval = compress_symbolic_block_for_partition_1plane(
 		    ctx.config, *bsd, blk, ewb, i == 0,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
-		    1, 0,  scb, tmpbuf.planes);
+		    1, 0,  scb, tmpbuf);
 
 		// Mode 0
 		best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE] = errorval;
@@ -1534,7 +1534,7 @@ void compress_block(
 		    1,	// partition count
 		    0,	// partition index
 		    i,	// the color component to test a separate plane of weights for.
-		    scb, tmpbuf.planes);
+		    scb, tmpbuf);
 
 		best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R + i] = errorval;
 
@@ -1570,7 +1570,7 @@ void compress_block(
 			    ctx.config, *bsd, blk, ewb, false,
 			    error_threshold * errorval_overshoot,
 			    partition_count, partition_indices_1plane[i],
-			    scb, tmpbuf.planes);
+			    scb, tmpbuf);
 
 			// Modes 5, 6, 8, 9, 11, 12
 			best_errorvals_in_modes[3 * (partition_count - 2) + 5 + i] = errorval;
@@ -1653,7 +1653,7 @@ void compress_block(
 			partition_count,
 			partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1),
 			partition_index_2planes >> PARTITION_INDEX_BITS,
-			scb, tmpbuf.planes);
+			scb, tmpbuf);
 
 		// Modes 7, 10 (13 is unreachable)
 		if (errorval < error_threshold)

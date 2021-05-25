@@ -1049,7 +1049,7 @@ struct encoding_choice_errors
 /**
  * @brief Preallocated working buffers, allocated per thread during context creation.
  */
-struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
+struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 {
 	/** @brief Ideal endpoints and weights for plane 1. */
 	endpoints_and_weights ei1;
@@ -1063,6 +1063,9 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 	/** @brief Ideal endpoints and weights for plane 2. */
 	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
 
+	/** @brief The error weight block for the current thread. */
+	error_weight_block ewb;
+
 	/** @brief Decimated and weight values, rounded to quantization points but not stored packed. */
 	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
@@ -1074,21 +1077,6 @@ struct alignas(ASTCENC_VECALIGN) compress_fixed_partition_buffers
 
 	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
 	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
-};
-
-/**
- * @brief Preallocated working buffers, allocated per thread during context creation.
- *
- * @todo Merge with compress_fixed_partition_buffers?
- * @todo Allocated imageblock and scb here too?
- */
-struct compress_symbolic_block_buffers
-{
-	/** @brief The error weight block for the current thread. */
-	error_weight_block ewb;
-
-	/** @brief The scratch working set for the current thread. */
-	compress_fixed_partition_buffers planes;
 };
 
 /**
@@ -1331,7 +1319,7 @@ struct astcenc_context
 
 
 	/** @brief The scratch workign buffers, one per thread (see @c thread_count). */
-	compress_symbolic_block_buffers* working_buffers;
+	compression_working_buffers* working_buffers;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	/** @brief The pixel region and variance worker arguments. */
@@ -2150,7 +2138,7 @@ void compress_block(
 	const astcenc_image& image,
 	const imageblock& blk,
 	physical_compressed_block& pcb,
-	compress_symbolic_block_buffers& tmpbuf);
+	compression_working_buffers& tmpbuf);
 
 /**
  * @brief Decompress a symbolic block in to an image block.

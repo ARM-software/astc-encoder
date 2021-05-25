@@ -772,10 +772,10 @@ astcenc_error astcenc_context_alloc(
 			ctx->config.tune_db_limit = 0.0f;
 		}
 
-		size_t worksize = sizeof(compress_symbolic_block_buffers) * thread_count;
-		ctx->working_buffers = aligned_malloc<compress_symbolic_block_buffers>(worksize, ASTCENC_VECALIGN);
-		static_assert((sizeof(compress_symbolic_block_buffers) % ASTCENC_VECALIGN) == 0,
-		              "compress_symbolic_block_buffers size must be multiple of vector alignment");
+		size_t worksize = sizeof(compression_working_buffers) * thread_count;
+		ctx->working_buffers = aligned_malloc<compression_working_buffers>(worksize, ASTCENC_VECALIGN);
+		static_assert((sizeof(compression_working_buffers) % ASTCENC_VECALIGN) == 0,
+		              "compression_working_buffers size must be multiple of vector alignment");
 		if (!ctx->working_buffers)
 		{
 			term_block_size_descriptor(*bsd);
@@ -816,7 +816,7 @@ void astcenc_context_free(
 ) {
 	if (ctx)
 	{
-		aligned_free<compress_symbolic_block_buffers>(ctx->working_buffers);
+		aligned_free<compression_working_buffers>(ctx->working_buffers);
 		term_block_size_descriptor(*(ctx->bsd));
 #if defined(ASTCENC_DIAGNOSTICS)
 		delete ctx->trace_log;
