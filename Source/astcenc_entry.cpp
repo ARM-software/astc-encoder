@@ -1024,14 +1024,14 @@ astcenc_error astcenc_compress_image(
 			return init_compute_averages_and_variances(
 				image, ctx->config.v_rgb_power, ctx->config.v_a_power,
 				ctx->config.v_rgba_radius, ctx->config.a_scale_radius, *swizzle,
-				ctx->arg, ctx->ag);
+				ctx->avg_var_preprocess_args);
 		};
 
 		// Only the first thread actually runs the initializer
 		ctx->manage_avg_var.init(init_avg_var);
 
 		// All threads will enter this function and dynamically grab work
-		compute_averages_and_variances(*ctx, ctx->ag);
+		compute_averages_and_variances(*ctx, ctx->avg_var_preprocess_args);
 	}
 
 	// Wait for compute_averages_and_variances to complete before compressing

@@ -1334,13 +1334,8 @@ struct astcenc_context
 	compress_symbolic_block_buffers* working_buffers;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-	/** @brief The pixel region and variance arguments. */
-	// TODO: Do we need both? ag include an p_r_v_a structure too?
-	pixel_region_variance_args arg;
-
 	/** @brief The pixel region and variance worker arguments. */
-	// TODO: Can we give these better names. Merge them?
-	avg_var_args ag;
+	avg_var_args avg_var_preprocess_args;
 
 	/** @brief The per-texel deblocking weights for the current block size. */
 	// TODO: Move to the BSD?
@@ -1693,27 +1688,23 @@ void find_best_partition_candidates(
  * Results are written back into @c img->input_averages, @c img->input_variances,
  * and @c img->input_alpha_averages.
  *
- * @todo Can img be const here?
- *
- * @param[in,out] img                     The input image data, also holds output data.
- * @param         rgb_power               The RGB component power.
- * @param         alpha_power             The A component power.
- * @param         avg_var_kernel_radius   The kernel radius (in pixels) for avg and var.
- * @param         alpha_kernel_radius     The kernel radius (in pixels) for alpha mods.
- * @param         swz                     Input data component swizzle.
- * @param[out]    arg                     The pixel region arguments to init.
- * @param[out]    ag                      The average variance arguments to init.
+ * @param      img                     The input image data, also holds output data.
+ * @param      rgb_power               The RGB component power.
+ * @param      alpha_power             The A component power.
+ * @param      avg_var_kernel_radius   The kernel radius (in pixels) for avg and var.
+ * @param      alpha_kernel_radius     The kernel radius (in pixels) for alpha mods.
+ * @param      swz                     Input data component swizzle.
+ * @param[out] ag                      The average variance arguments to init.
  *
  * @return The number of tasks in the processing stage.
  */
 unsigned int init_compute_averages_and_variances(
-	astcenc_image& img,
+	const astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
 	unsigned int avg_var_kernel_radius,
 	unsigned int alpha_kernel_radius,
 	const astcenc_swizzle& swz,
-	pixel_region_variance_args& arg,
 	avg_var_args& ag);
 
 /**

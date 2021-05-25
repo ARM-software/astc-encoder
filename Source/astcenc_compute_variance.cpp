@@ -568,13 +568,12 @@ void compute_averages_and_variances(
 
 /* See header for documentation. */
 unsigned int init_compute_averages_and_variances(
-	astcenc_image& img,
+	const astcenc_image& img,
 	float rgb_power,
 	float alpha_power,
 	unsigned int avg_var_kernel_radius,
 	unsigned int alpha_kernel_radius,
 	const astcenc_swizzle& swz,
-	pixel_region_variance_args& arg,
 	avg_var_args& ag
 ) {
 	unsigned int size_x = img.dim_x;
@@ -594,23 +593,22 @@ unsigned int init_compute_averages_and_variances(
 
 	// Perform block-wise averages-and-variances calculations across the image
 	// Initialize fields which are not populated until later
-	arg.size_x = 0;
-	arg.size_y = 0;
-	arg.size_z = 0;
-	arg.offset_x = 0;
-	arg.offset_y = 0;
-	arg.offset_z = 0;
-	arg.work_memory = nullptr;
+	ag.arg.size_x = 0;
+	ag.arg.size_y = 0;
+	ag.arg.size_z = 0;
+	ag.arg.offset_x = 0;
+	ag.arg.offset_y = 0;
+	ag.arg.offset_z = 0;
+	ag.arg.work_memory = nullptr;
 
-	arg.img = &img;
-	arg.rgb_power = rgb_power;
-	arg.alpha_power = alpha_power;
-	arg.swz = swz;
-	arg.have_z = have_z;
-	arg.avg_var_kernel_radius = avg_var_kernel_radius;
-	arg.alpha_kernel_radius = alpha_kernel_radius;
+	ag.arg.img = &img;
+	ag.arg.rgb_power = rgb_power;
+	ag.arg.alpha_power = alpha_power;
+	ag.arg.swz = swz;
+	ag.arg.have_z = have_z;
+	ag.arg.avg_var_kernel_radius = avg_var_kernel_radius;
+	ag.arg.alpha_kernel_radius = alpha_kernel_radius;
 
-	ag.arg = arg;
 	ag.img_size_x = size_x;
 	ag.img_size_y = size_y;
 	ag.img_size_z = size_z;
