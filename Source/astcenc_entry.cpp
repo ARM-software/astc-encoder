@@ -1242,8 +1242,8 @@ astcenc_error astcenc_get_block_info(
 	info->partition_index = scb.partition_index;
 	info->dual_plane_component = scb.plane2_component;
 
-	info->color_level_count = get_quant_level((quant_method)scb.color_quant_level);
-	info->weight_level_count = get_quant_level(bm.get_quant_mode());
+	info->color_level_count = get_quant_level(scb.get_color_quant_mode());
+	info->weight_level_count = get_quant_level(bm.get_weight_quant_mode());
 
 	// Unpack color endpoints for each active partition
 	for (unsigned int i = 0; i < scb.partition_count; i++)
@@ -1254,7 +1254,7 @@ astcenc_error astcenc_get_block_info(
 
 		unpack_color_endpoints(ctx->config.profile,
 		                       scb.color_formats[i],
-		                       scb.color_quant_level,
+		                       scb.get_color_quant_mode(),
 		                       scb.color_values[i],
 		                       rgb_hdr, a_hdr,
 		                       endpnt[0], endpnt[1]);
@@ -1278,7 +1278,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane1[BLOCK_MAX_TEXELS];
 	int weight_plane2[BLOCK_MAX_TEXELS];
 
-	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.get_quant_mode(), weight_plane1, weight_plane2);
+	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.get_weight_quant_mode(), weight_plane1, weight_plane2);
 	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = (float)weight_plane1[i] * (1.0f / WEIGHTS_TEXEL_SUM);

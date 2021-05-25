@@ -108,7 +108,7 @@ static bool realign_weights(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[pa_idx],
-		                       scb.color_quant_level,
+		                       scb.get_color_quant_mode(),
 		                       scb.color_values[pa_idx],
 		                       rgb_hdr, alpha_hdr,
 		                       endpnt0[pa_idx],
@@ -332,7 +332,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		// Compute weight bitcount for the mode
 		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
 		    di.weight_count,
-		    bm.get_quant_mode());
+		    bm.get_weight_quant_mode());
 
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
@@ -349,7 +349,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		    decimated_quantized_weights + BLOCK_MAX_WEIGHTS * decimation_mode,
 		    flt_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * i,
 		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * i,
-		    bm.get_quant_mode());
+		    bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_1plane(
@@ -481,11 +481,11 @@ static float compress_symbolic_block_for_partition_1plane(
 			// Store header fields
 			workscb.partition_count = partition_count;
 			workscb.partition_index = partition_index;
-			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
+			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.block_type = SYM_BTYPE_NONCONST;
 
-			if (workscb.color_quant_level < 4)
+			if (workscb.quant_mode < QUANT_6)
 			{
 				workscb.block_type = SYM_BTYPE_ERROR;
 			}
@@ -719,7 +719,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		// Compute weight bitcount for the mode
 		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
 		    2 * di.weight_count,
-		    bm.get_quant_mode());
+		    bm.get_weight_quant_mode());
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
@@ -735,7 +735,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		    weight_high_value1[i],
 		    decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * decimation_mode),
 		    flt_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i),
-		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i), bm.get_quant_mode());
+		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i), bm.get_weight_quant_mode());
 
 		compute_quantized_weights_for_decimation(
 		    di,
@@ -743,7 +743,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		    weight_high_value2[i],
 		    decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * decimation_mode + 1),
 		    flt_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1),
-		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1), bm.get_quant_mode());
+		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1), bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_2planes(
@@ -882,12 +882,12 @@ static float compress_symbolic_block_for_partition_2planes(
 			// Store header fields
 			workscb.partition_count = partition_count;
 			workscb.partition_index = partition_index;
-			workscb.color_quant_level = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
+			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_component = plane2_component;
 			workscb.block_type = SYM_BTYPE_NONCONST;
 
-			if (workscb.color_quant_level < 4)
+			if (workscb.quant_mode < 4)
 			{
 				workscb.block_type = SYM_BTYPE_ERROR;
 			}

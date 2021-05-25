@@ -148,7 +148,7 @@ void symbolic_to_physical(
 	const auto& bm = bsd.get_block_mode(scb.block_mode);
 	const auto& di = bsd.get_decimation_info(bm.decimation_mode);
 	int weight_count = di.weight_count;
-	quant_method weight_quant_method = bm.get_quant_mode();
+	quant_method weight_quant_method = bm.get_weight_quant_mode();
 	int is_dual_plane = bm.is_dual_plane;
 
 	int real_weight_count = is_dual_plane ? 2 * weight_count : weight_count;
@@ -257,7 +257,8 @@ void symbolic_to_physical(
 		valuecount_to_encode += vals;
 	}
 
-	encode_ise((quant_method)scb.color_quant_level, valuecount_to_encode, values_to_encode, pcb.data, (scb.partition_count == 1 ? 17 : 19 + PARTITION_INDEX_BITS));
+	encode_ise(scb.get_color_quant_mode(), valuecount_to_encode, values_to_encode, pcb.data,
+	           scb.partition_count == 1 ? 17 : 19 + PARTITION_INDEX_BITS);
 }
 
 /* See header for documentation. */
@@ -464,8 +465,8 @@ void physical_to_symbolic(
 	}
 
 	int color_quant_level = quant_mode_table[color_integer_count >> 1][color_bits];
-	scb.color_quant_level = (quant_method)color_quant_level;
-	if (color_quant_level < 4)
+	scb.quant_mode = (quant_method)color_quant_level;
+	if (color_quant_level < QUANT_6)
 	{
 		scb.block_type = SYM_BTYPE_ERROR;
 	}

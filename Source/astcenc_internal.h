@@ -618,9 +618,7 @@ struct block_mode
 	 *
 	 * @return The quantization level.
 	 */
-	// TODO: Rename this to get_weight_quant_mode, and add accessor to scb for
-	// get_color_quant_mode.
-	inline quant_method get_quant_mode() const
+	inline quant_method get_weight_quant_mode() const
 	{
 		return (quant_method)this->quant_mode;
 	}
@@ -632,6 +630,7 @@ struct block_mode
 struct decimation_mode
 {
 	/** @brief The max weight precision for 1 plane, or -1 if not supported. */
+	// TODO: Try unsigned sentinel to avoid signext on load?
 	int8_t maxprec_1plane;
 
 	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
@@ -1163,6 +1162,7 @@ struct symbolic_compressed_block
 	uint8_t color_formats_matched;
 
 	/** @brief The plane 2 color component, or -1 if single plane; valid for @c NONCONST blocks. */
+	// Try unsigned sentintel to avoid signext on load
 	int8_t plane2_component;
 
 	/** @brief The block mode; valid for @c NONCONST blocks. */
@@ -1175,7 +1175,7 @@ struct symbolic_compressed_block
 	uint8_t color_formats[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The endpoint color formats for each partition; valid for @c NONCONST blocks. */
-	quant_method color_quant_level;
+	quant_method quant_mode;
 
 	/** @brief The error of the current encoding; valid for @c NONCONST blocks. */
 	float errorval;
@@ -1193,6 +1193,16 @@ struct symbolic_compressed_block
 	 * If dual plane, the second plane starts at @c weights[WEIGHTS_PLANE2_OFFSET].
 	 */
 	uint8_t weights[BLOCK_MAX_WEIGHTS];
+
+	/**
+	 * @brief Get the weight quantization used by this block mode.
+	 *
+	 * @return The quantization level.
+	 */
+	inline quant_method get_color_quant_mode() const
+	{
+		return this->quant_mode;
+	}
 };
 
 /**
