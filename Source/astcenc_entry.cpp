@@ -61,16 +61,16 @@ struct astcenc_preset_config {
 static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 	{
 		ASTCENC_PRE_FASTEST,
-		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 1.05f, 0.5f
+		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 0.65f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 12, 55, 3, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 1.05f, 0.5f
+		3, 12, 55, 3, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.65f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		4, 26, 76, 2, 2, 95.0f, 70.0f, 2.5f, 2.5f, 1.2f, 1.25f, 1.05f, 0.75f
+		4, 26, 76, 2, 2, 95.0f, 70.0f, 2.5f, 2.5f, 1.2f, 1.25f, 0.65f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 76, 93, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 1.05f, 0.95f
+		4, 76, 93, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 0.75f, 0.95f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
 		4, 1024, 100, 4, 4, 200.0f, 200.0f, 10.0f, 10.0f, 10.0f, 10.0f, 10.0f, 0.99f
@@ -85,16 +85,16 @@ static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 static const std::array<astcenc_preset_config, 5> preset_configs_mid {{
 	{
 		ASTCENC_PRE_FASTEST,
-		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 1.05f, 0.5f
+		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 0.65f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 12, 55, 3, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 1.05f, 0.5f
+		3, 12, 55, 3, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.65f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		4, 26, 76, 2, 2, 95.0f, 70.0f, 3.0f, 3.0f, 1.2f, 1.25f, 1.05f, 0.75f
+		4, 26, 76, 2, 2, 95.0f, 70.0f, 3.0f, 3.0f, 1.2f, 1.25f, 0.65f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 76, 93, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 1.05f, 0.95f
+		4, 76, 93, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 0.75f, 0.95f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
 		4, 1024, 100, 4, 4, 200.0f, 200.0f, 10.0f, 10.0f, 10.0f, 10.0f, 10.0f, 0.99f
@@ -109,13 +109,13 @@ static const std::array<astcenc_preset_config, 5> preset_configs_mid {{
 static const std::array<astcenc_preset_config, 5> preset_configs_low {{
 	{
 		ASTCENC_PRE_FASTEST,
-		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 1.05f, 0.5f
+		3, 2, 30, 1, 1, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 0.75f, 0.5f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 10, 53, 3, 2, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.1f, 1.05f, 0.5f
+		3, 10, 53, 3, 2, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.1f, 0.75f, 0.5f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		3, 26, 76, 3, 2, 95.0f, 70.0f, 3.5f, 3.5f, 1.2f, 1.25f, 1.05f, 0.75f
+		3, 26, 76, 3, 2, 95.0f, 70.0f, 3.5f, 3.5f, 1.2f, 1.25f, 0.75f, 0.75f
 	}, {
 		ASTCENC_PRE_THOROUGH,
 		4, 75, 92, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 1.05f, 0.95f

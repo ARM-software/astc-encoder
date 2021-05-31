@@ -1634,7 +1634,7 @@ void compress_block(
 		// partitions is even less likely to help, so skip those. This is NOT exposed as a heuristic that the user can
 		// control as we've found no need to - this is a very reliable heuristic even on torture
 		// test images.
-		if (best_1_partition_2_plane_result > best_1_partition_1_plane_result * ctx.config.tune_2_plane_early_out_limit_factor)
+		if (best_1_partition_2_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_plane_early_out_limit_factor))
 		{
 			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation_builtin");
 			continue;
