@@ -21,11 +21,13 @@
 
 #include "astcenccli_internal.h"
 
+/** @brief The version header. */
 static const char *astcenc_copyright_string =
 R"(astcenc v3.0-develop, %u-bit %s%s
 Copyright 2011-2021 Arm Limited, all rights reserved
 )";
 
+/** @brief The short-form help text. */
 static const char *astcenc_short_help =
 R"(
 Basic usage:
@@ -65,6 +67,7 @@ The -*H options configure the compressor for HDR across all 4 components.
 For full help documentation run 'astcenc -help'.
 )";
 
+/** @brief The long-form help text. */
 static const char *astcenc_long_help = R"(
 NAME
        astcenc - compress or decompress images using the ASTC format
@@ -572,7 +575,7 @@ QUICK REFERENCE
        Quality = -fastest/-fast/-medium/-thorough/-exhaustive/a float [0-100].
 )";
 
-// print version and basic build information
+/* See header for documentation. */
 void astcenc_print_header()
 {
 #if (ASTCENC_AVX == 2)
@@ -597,12 +600,14 @@ void astcenc_print_header()
 	printf(astcenc_copyright_string, bits, simdtype, pcnttype);
 }
 
+/* See header for documentation. */
 void astcenc_print_shorthelp()
 {
 	astcenc_print_header();
 	printf("%s", astcenc_short_help);
 }
 
+/* See header for documentation. */
 void astcenc_print_longhelp()
 {
 	astcenc_print_header();

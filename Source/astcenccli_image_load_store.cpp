@@ -2330,9 +2330,10 @@ static unsigned int unpack_bytes(
 }
 
 /* See header for documentation. */
+// TODO: Return a bool?
 int load_cimage(
 	const char* filename,
-	astc_compressed_image& out_image
+	astc_compressed_image& img
 ) {
 	std::ifstream file(filename, std::ios::in | std::ios::binary);
 	if (!file)
@@ -2385,20 +2386,21 @@ int load_cimage(
 		return 1;
 	}
 
-	out_image.data = buffer;
-	out_image.data_len = data_size;
-	out_image.block_x = block_x;
-	out_image.block_y = block_y;
-	out_image.block_z = block_z;
-	out_image.dim_x = dim_x;
-	out_image.dim_y = dim_y;
-	out_image.dim_z = dim_z;
+	img.data = buffer;
+	img.data_len = data_size;
+	img.block_x = block_x;
+	img.block_y = block_y;
+	img.block_z = block_z;
+	img.dim_x = dim_x;
+	img.dim_y = dim_y;
+	img.dim_z = dim_z;
 	return 0;
 }
 
 /* See header for documentation. */
+// TODO: Return a bool?
 int store_cimage(
-	const astc_compressed_image& comp_img,
+	const astc_compressed_image& img,
 	const char* filename
 ) {
 	astc_header hdr;
@@ -2407,21 +2409,21 @@ int store_cimage(
 	hdr.magic[2] = (ASTC_MAGIC_ID >> 16) & 0xFF;
 	hdr.magic[3] = (ASTC_MAGIC_ID >> 24) & 0xFF;
 
-	hdr.block_x = comp_img.block_x;
-	hdr.block_y = comp_img.block_y;
-	hdr.block_z = comp_img.block_z;
+	hdr.block_x = img.block_x;
+	hdr.block_y = img.block_y;
+	hdr.block_z = img.block_z;
 
-	hdr.dim_x[0] =  comp_img.dim_x        & 0xFF;
-	hdr.dim_x[1] = (comp_img.dim_x >>  8) & 0xFF;
-	hdr.dim_x[2] = (comp_img.dim_x >> 16) & 0xFF;
+	hdr.dim_x[0] =  img.dim_x        & 0xFF;
+	hdr.dim_x[1] = (img.dim_x >>  8) & 0xFF;
+	hdr.dim_x[2] = (img.dim_x >> 16) & 0xFF;
 
-	hdr.dim_y[0] =  comp_img.dim_y       & 0xFF;
-	hdr.dim_y[1] = (comp_img.dim_y >>  8) & 0xFF;
-	hdr.dim_y[2] = (comp_img.dim_y >> 16) & 0xFF;
+	hdr.dim_y[0] =  img.dim_y       & 0xFF;
+	hdr.dim_y[1] = (img.dim_y >>  8) & 0xFF;
+	hdr.dim_y[2] = (img.dim_y >> 16) & 0xFF;
 
-	hdr.dim_z[0] =  comp_img.dim_z        & 0xFF;
-	hdr.dim_z[1] = (comp_img.dim_z >>  8) & 0xFF;
-	hdr.dim_z[2] = (comp_img.dim_z >> 16) & 0xFF;
+	hdr.dim_z[0] =  img.dim_z        & 0xFF;
+	hdr.dim_z[1] = (img.dim_z >>  8) & 0xFF;
+	hdr.dim_z[2] = (img.dim_z >> 16) & 0xFF;
 
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
@@ -2431,6 +2433,6 @@ int store_cimage(
 	}
 
 	file.write((char*)&hdr, sizeof(astc_header));
-	file.write((char*)comp_img.data, comp_img.data_len);
+	file.write((char*)img.data, img.data_len);
 	return 0;
 }

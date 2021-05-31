@@ -44,30 +44,49 @@ struct mode_entry {
 	Constants and literals
 ============================================================================ */
 
+/** @brief Stage bit indicating we need to load a compressed image. */
 static const unsigned int ASTCENC_STAGE_LD_COMP    = 1 << 0;
+
+/** @brief Stage bit indicating we need to store a compressed image. */
 static const unsigned int ASTCENC_STAGE_ST_COMP    = 1 << 1;
 
+/** @brief Stage bit indicating we need to load an uncompressed image. */
 static const unsigned int ASTCENC_STAGE_LD_NCOMP   = 1 << 2;
+
+/** @brief Stage bit indicating we need to store an uncompressed image. */
 static const unsigned int ASTCENC_STAGE_ST_NCOMP   = 1 << 3;
 
+/** @brief Stage bit indicating we need compress an image. */
 static const unsigned int ASTCENC_STAGE_COMPRESS   = 1 << 4;
+
+/** @brief Stage bit indicating we need to decompress an image. */
 static const unsigned int ASTCENC_STAGE_DECOMPRESS = 1 << 5;
+
+/** @brief Stage bit indicating we need to compare an image with the original input. */
 static const unsigned int ASTCENC_STAGE_COMPARE    = 1 << 6;
 
+/** @brief Operation indicating an unknown request (should never happen). */
 static const astcenc_operation ASTCENC_OP_UNKNOWN  = 0;
+
+/** @brief Operation indicating the user wants to print long-form help text and version info. */
 static const astcenc_operation ASTCENC_OP_HELP     = 1 << 7;
+
+/** @brief Operation indicating the user wants to print short-form help text and version info. */
 static const astcenc_operation ASTCENC_OP_VERSION  = 1 << 8;
 
+/** @brief Operation indicating the user wants to compress and store an image. */
 static const astcenc_operation ASTCENC_OP_COMPRESS =
                                ASTCENC_STAGE_LD_NCOMP |
                                ASTCENC_STAGE_COMPRESS |
                                ASTCENC_STAGE_ST_COMP;
 
+/** @brief Operation indicating the user wants to decompress and store an image. */
 static const astcenc_operation ASTCENC_OP_DECOMPRESS =
                                ASTCENC_STAGE_LD_COMP |
                                ASTCENC_STAGE_DECOMPRESS |
                                ASTCENC_STAGE_ST_NCOMP;
 
+/** @brief Operation indicating the user wants to test a compression setting on an image. */
 static const astcenc_operation ASTCENC_OP_TEST =
                                ASTCENC_STAGE_LD_NCOMP |
                                ASTCENC_STAGE_COMPRESS |
@@ -88,6 +107,7 @@ enum astcenc_preprocess
 	ASTCENC_PP_PREMULTIPLY
 };
 
+/** @brief Decode table for command line operation modes. */
 static const mode_entry modes[] = {
 	{"-cl",      ASTCENC_OP_COMPRESS,   ASTCENC_PRF_LDR},
 	{"-dl",      ASTCENC_OP_DECOMPRESS, ASTCENC_PRF_LDR},
@@ -107,6 +127,9 @@ static const mode_entry modes[] = {
 	{"-version", ASTCENC_OP_VERSION,    ASTCENC_PRF_HDR}
 };
 
+/**
+ * @brief Compression workload definition for worker threads.
+ */
 struct compression_workload {
 	astcenc_context* context;
 	astcenc_image* image;
@@ -116,6 +139,9 @@ struct compression_workload {
 	astcenc_error error;
 };
 
+/**
+ * @brief Decompression workload definition for worker threads.
+ */
 struct decompression_workload {
 	astcenc_context* context;
 	uint8_t* data;
@@ -152,6 +178,13 @@ static bool ends_with(
 	       (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
 }
 
+/**
+ * @brief Runner callback function for a compression worker thread.
+ *
+ * @param thread_count   The number of threads in the worker pool.
+ * @param thread_id      The index of this thread in the worker pool.
+ * @param payload        The parameters for this thread.
+ */
 static void compression_workload_runner(
 	int thread_count,
 	int thread_id,
@@ -172,6 +205,13 @@ static void compression_workload_runner(
 	}
 }
 
+/**
+ * @brief Runner callback function for a decompression worker thread.
+ *
+ * @param thread_count   The number of threads in the worker pool.
+ * @param thread_id      The index of this thread in the worker pool.
+ * @param payload        The parameters for this thread.
+ */
 static void decompression_workload_runner(
 	int thread_count,
 	int thread_id,
@@ -357,8 +397,8 @@ static astcenc_image* load_uncomp_file(
 /**
  * @brief Parse the command line.
  *
- * @param argc             Command line argument count.
- * @param[in] argv         Command line argument vector.
+ * @param      argc        Command line argument count.
+ * @param[in]  argv        Command line argument vector.
  * @param[out] operation   Codec operation mode.
  * @param[out] profile     Codec color profile.
  *
@@ -595,7 +635,7 @@ static int init_astcenc_config(
  * @param[out]    cli_config   Command line config.
  * @param[in,out] config       Codec configuration.
  *
- * @return 0 if everything is Okay, 1 if there is some error
+ * @return 0 if everything is OK, 1 if there is some error
  */
 static int edit_astcenc_config(
 	int argc,
@@ -1253,6 +1293,7 @@ static void image_preprocess_normalize(
 
 /**
  * @brief Linearize an sRGB value.
+ *
  * @return The linearized value.
  */
 static float srgb_to_linear(
@@ -1268,6 +1309,7 @@ static float srgb_to_linear(
 
 /**
  * @brief sRGB gamma-encode a linear value.
+ *
  * @return The gamma encoded value.
  */
 static float linear_to_srgb(
@@ -1331,6 +1373,14 @@ static void image_preprocess_premultiply(
 	}
 }
 
+/**
+ * @brief The main entry point.
+ *
+ * @param argc   The number of arguments.
+ * @param argv   The vector of arguments.
+ *
+ * @return 0 on success, non-zero otherwise.
+ */
 int main(
 	int argc,
 	char **argv
