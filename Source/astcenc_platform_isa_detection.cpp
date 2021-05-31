@@ -115,47 +115,47 @@ static void detect_cpu_isa()
 #endif
 
 /* See header for documentation. */
-int cpu_supports_sse41()
+bool cpu_supports_sse41()
 {
 	if (g_cpu_has_sse41 == -1)
 	{
 		detect_cpu_isa();
 	}
 
-	return g_cpu_has_sse41;
+	return g_cpu_has_sse41 == 1;
 }
 
 /* See header for documentation. */
-int cpu_supports_popcnt()
+bool cpu_supports_popcnt()
 {
 	if (g_cpu_has_popcnt == -1)
 	{
 		detect_cpu_isa();
 	}
 
-	return g_cpu_has_popcnt;
+	return g_cpu_has_popcnt == 1;
 }
 
 /* See header for documentation. */
-int cpu_supports_f16c()
+bool cpu_supports_f16c()
 {
 	if (g_cpu_has_f16c == -1)
 	{
 		detect_cpu_isa();
 	}
 
-	return g_cpu_has_f16c;
+	return g_cpu_has_f16c == 1;
 }
 
 /* See header for documentation. */
-int cpu_supports_avx2()
+bool cpu_supports_avx2()
 {
 	if (g_cpu_has_avx2 == -1)
 	{
 		detect_cpu_isa();
 	}
 
-	return g_cpu_has_avx2;
+	return g_cpu_has_avx2 == 1;
 }
 
 #endif
