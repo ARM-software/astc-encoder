@@ -46,6 +46,8 @@ static bool g_cpu_has_f16c { false };
    Platform code for Visual Studio
 ============================================================================ */
 #if !defined(__clang__) && defined(_MSC_VER)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <intrin.h>
 
 /**
@@ -76,6 +78,8 @@ static void detect_cpu_isa()
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
 	}
 
+	// Ensure state bits are updated before init flag is updated
+	MemoryBarrier();
 	g_init = true;
 }
 
@@ -109,6 +113,9 @@ static void detect_cpu_isa()
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
 	}
 
+
+	// Ensure state bits are updated before init flag is updated
+	__sync_synchronize();
 	g_init = true;
 }
 #endif
