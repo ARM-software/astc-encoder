@@ -180,7 +180,7 @@ void decompress_symbolic_block(
 	int ypos,
 	int zpos,
 	const symbolic_compressed_block& scb,
-	imageblock& blk
+	image_block& blk
 ) {
 	blk.xpos = xpos;
 	blk.ypos = ypos;
@@ -323,7 +323,7 @@ float compute_symbolic_block_difference(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb
 ) {
 	// If we detected an error-block, blow up immediately.

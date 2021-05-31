@@ -110,7 +110,7 @@ static void compute_partition_error_color_weightings(
 static void compute_error_squared_rgb_single_partition(
 	const partition_info& pi,
 	int partition_index,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const processed_line3& uncor_pline,
 	float& uncor_err,
@@ -189,7 +189,7 @@ static void compute_error_squared_rgb_single_partition(
   */
 static void compute_encoding_choice_errors(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const partition_info& pi,
 	const error_weight_block& ewb,
 	const endpoints& ep,
@@ -1088,7 +1088,7 @@ static void four_partitions_find_best_combination_for_bitcount(
 unsigned int compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const endpoints& ep,
 	 // bitcounts and errors computed for the various quantization methods

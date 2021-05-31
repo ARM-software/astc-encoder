@@ -70,7 +70,7 @@ static void merge_endpoints(
 static bool realign_weights(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	symbolic_compressed_block& scb,
 	uint8_t* weight_set8_plane1,
@@ -232,7 +232,7 @@ static bool realign_weights(
 static float compress_symbolic_block_for_partition_1plane(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	bool only_always,
 	float tune_errorval_threshold,
@@ -585,7 +585,7 @@ static float compress_symbolic_block_for_partition_1plane(
 static float compress_symbolic_block_for_partition_2planes(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	float tune_errorval_threshold,
 	unsigned int partition_count,
@@ -1025,7 +1025,7 @@ static float prepare_error_weight_block(
 	const astcenc_context& ctx,
 	const astcenc_image& image,
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	error_weight_block& ewb
 ) {
 	unsigned int idx = 0;
@@ -1226,7 +1226,7 @@ static float prepare_error_weight_block(
  */
 static float prepare_block_statistics(
 	int texels_per_block,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb
 ) {
 	// Compute covariance matrix, as a collection of 10 scalars that form the upper-triangular row
@@ -1360,7 +1360,7 @@ enum trial_modes {
 void compress_block(
 	const astcenc_context& ctx,
 	const astcenc_image& input_image,
-	const imageblock& blk,
+	const image_block& blk,
 	physical_compressed_block& pcb,
 	compression_working_buffers& tmpbuf)
 {

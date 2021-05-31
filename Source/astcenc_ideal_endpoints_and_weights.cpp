@@ -38,7 +38,7 @@
  */
 static void compute_ideal_colors_and_weights_1_comp(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -155,7 +155,7 @@ static void compute_ideal_colors_and_weights_1_comp(
  */
 static void compute_ideal_colors_and_weights_2_comp(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -312,7 +312,7 @@ static void compute_ideal_colors_and_weights_2_comp(
  */
 static void compute_ideal_colors_and_weights_3_comp(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -487,7 +487,7 @@ static void compute_ideal_colors_and_weights_3_comp(
  */
 static void compute_ideal_colors_and_weights_4_comp(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei
@@ -599,7 +599,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 /* See header for documentation. */
 void compute_ideal_colors_and_weights_1plane(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei
@@ -617,7 +617,7 @@ void compute_ideal_colors_and_weights_1plane(
 /* See header for documentation. */
 void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	unsigned int plane2_component,
@@ -1045,7 +1045,7 @@ static inline vfloat4 compute_rgbo_vector(
 
 /* See header for documentation. */
 void recompute_ideal_colors_1plane(
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	const decimation_info& di,
@@ -1248,7 +1248,7 @@ void recompute_ideal_colors_1plane(
 
 /* See header for documentation. */
 void recompute_ideal_colors_2planes(
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	const decimation_info& di,

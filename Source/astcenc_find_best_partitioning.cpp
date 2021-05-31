@@ -57,7 +57,7 @@
  * @param[out] cluster_centers   The initital partition cluster center colors.
  */
 static void kmeans_init(
-	const imageblock& blk,
+	const image_block& blk,
 	unsigned int texel_count,
 	unsigned int partition_count,
 	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS]
@@ -143,7 +143,7 @@ static void kmeans_init(
  * @param[out] partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_assign(
-	const imageblock& blk,
+	const image_block& blk,
 	unsigned int texel_count,
 	unsigned int partition_count,
 	const vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS],
@@ -207,7 +207,7 @@ static void kmeans_assign(
  * @param       partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_update(
-	const imageblock& blk,
+	const image_block& blk,
 	unsigned int texel_count,
 	unsigned int partition_count,
 	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS],
@@ -429,7 +429,7 @@ static void get_partition_ordering_by_mismatch_bits(
   */
 static void compute_kmeans_partition_ordering(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
@@ -472,7 +472,7 @@ static void compute_kmeans_partition_ordering(
 /* See header for documentation. */
 void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,

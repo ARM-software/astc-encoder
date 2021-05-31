@@ -791,8 +791,7 @@ struct block_size_descriptor
  * The @c rgb_lns and @c alpha_lns fields that assigned a per-texel use of HDR are only used during
  * decompression. The current compressor will always use HDR endpoint formats when in HDR mode.
  */
-// TODO: Rename this image_block?
-struct imageblock
+struct image_block
 {
 	/** @brief The input (compress) or output (decompress) data for the red color component. */
 	float data_r[BLOCK_MAX_TEXELS];
@@ -1537,7 +1536,7 @@ unsigned int get_ise_sequence_bitcount(
  */
 void compute_avgs_and_dirs_2_comp(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int component1,
 	unsigned int component2,
@@ -1556,7 +1555,7 @@ void compute_avgs_and_dirs_2_comp(
  */
 void compute_avgs_and_dirs_3_comp(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int omitted_component,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
@@ -1573,7 +1572,7 @@ void compute_avgs_and_dirs_3_comp(
  */
 void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
@@ -1596,7 +1595,7 @@ void compute_avgs_and_dirs_4_comp(
  */
 void compute_error_squared_rgb(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
@@ -1624,7 +1623,7 @@ void compute_error_squared_rgb(
  */
 void compute_error_squared_rgba(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
 	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
@@ -1653,7 +1652,7 @@ void compute_error_squared_rgba(
  */
 void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
@@ -1721,10 +1720,10 @@ void compute_averages_and_variances(
  * @param      zpos          The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on load.
  */
-void fetch_imageblock(
+void fetch_image_block(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock& blk,
+	image_block& blk,
 	const block_size_descriptor& bsd,
 	unsigned int xpos,
 	unsigned int ypos,
@@ -1742,9 +1741,9 @@ void fetch_imageblock(
  * @param      zpos          The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on store.
  */
-void write_imageblock(
+void write_image_block(
 	astcenc_image& img,
-	const imageblock& blk,
+	const image_block& blk,
 	const block_size_descriptor& bsd,
 	unsigned int xpos,
 	unsigned int ypos,
@@ -1770,7 +1769,7 @@ void write_imageblock(
  */
 void compute_ideal_colors_and_weights_1plane(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	endpoints_and_weights& ei);
@@ -1792,7 +1791,7 @@ void compute_ideal_colors_and_weights_1plane(
  */
 void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	unsigned int plane2_component,
@@ -2026,7 +2025,7 @@ void unpack_weights(
 unsigned int compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const endpoints& ep,
 	const int* qwt_bitcounts,
@@ -2054,7 +2053,7 @@ unsigned int compute_ideal_endpoint_formats(
  * @param[out]    rgbo_vectors        The RGB+offset vectors for HDR blocks.
  */
 void recompute_ideal_colors_1plane(
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	const decimation_info& di,
@@ -2083,7 +2082,7 @@ void recompute_ideal_colors_1plane(
  * @param         plane2_component     The component assigned to plane 2.
  */
 void recompute_ideal_colors_2planes(
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const partition_info& pi,
 	const decimation_info& di,
@@ -2134,7 +2133,7 @@ void compute_angular_endpoints_2planes(
 void compress_block(
 	const astcenc_context& ctx,
 	const astcenc_image& image,
-	const imageblock& blk,
+	const image_block& blk,
 	physical_compressed_block& pcb,
 	compression_working_buffers& tmpbuf);
 
@@ -2155,7 +2154,7 @@ void decompress_symbolic_block(
 	int ypos,
 	int zpos,
 	const symbolic_compressed_block& scb,
-	imageblock& blk);
+	image_block& blk);
 
 /**
  * @brief Compute the error between a symbolic block and the original input data.
@@ -2175,7 +2174,7 @@ float compute_symbolic_block_difference(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb) ;
 
 void symbolic_to_physical(

@@ -27,7 +27,7 @@
 /* See header for documentation. */
 void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
@@ -136,7 +136,7 @@ void compute_avgs_and_dirs_4_comp(
 /* See header for documentation. */
 void compute_avgs_and_dirs_3_comp(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int omitted_component,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
@@ -286,7 +286,7 @@ void compute_avgs_and_dirs_3_comp(
 /* See header for documentation. */
 void compute_avgs_and_dirs_2_comp(
 	const partition_info& pt,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	unsigned int component1,
 	unsigned int component2,
@@ -407,7 +407,7 @@ void compute_avgs_and_dirs_2_comp(
 /* See header for documentation. */
 void compute_error_squared_rgba(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
 	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
@@ -565,7 +565,7 @@ void compute_error_squared_rgba(
 /* See header for documentation. */
 void compute_error_squared_rgb(
 	const partition_info& pi,
-	const imageblock& blk,
+	const image_block& blk,
 	const error_weight_block& ewb,
 	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,

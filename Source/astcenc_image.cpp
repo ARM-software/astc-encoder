@@ -148,10 +148,10 @@ static vfloat4 encode_texel_lns(
 }
 
 /* See header for documentation. */
-void fetch_imageblock(
+void fetch_image_block(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
-	imageblock& blk,
+	image_block& blk,
 	const block_size_descriptor& bsd,
 	unsigned int xpos,
 	unsigned int ypos,
@@ -264,9 +264,9 @@ void fetch_imageblock(
 }
 
 /* See header for documentation. */
-void write_imageblock(
+void write_image_block(
 	astcenc_image& img,
-	const imageblock& blk,
+	const image_block& blk,
 	const block_size_descriptor& bsd,
 	unsigned int xpos,
 	unsigned int ypos,
