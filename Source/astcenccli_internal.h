@@ -71,12 +71,30 @@ astcenc_image* load_ncimage(
 	bool& is_hdr,
 	unsigned int& component_count);
 
-int store_ncimage(
-	const astcenc_image* output_image,
-	const char* output_filename,
-	const char** file_format_name,
+/**
+ * @brief Save a DDS uncompressed image using a local store routine.
+ *
+ * @param img        The source data for the image.
+ * @param filename   The name of the file to save.
+ * @param y_flip     Should the image be vertically flipped?
+ *
+ * @return @c true if the image saved OK, @c false on error.
+ */
+bool store_ncimage(
+	const astcenc_image* img,
+	const char* filename,
 	int y_flip);
 
+/**
+ * @brief Check if the output file type requires a specific bitness.
+ *
+ * @param filename The file name, containing hte extension to check.
+ *
+ * @return Valid values are:
+ *     * -1 - no enforced bitness.
+ *     *  8 - enforced 8-bit UNORM.
+ *     * 16 - enforced 16-bit FP16.
+ */
 int get_output_filename_enforced_bitness(
 	const char* filename);
 

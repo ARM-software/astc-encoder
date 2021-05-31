@@ -1673,9 +1673,6 @@ int main(
 	// Store decompressed image
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
 	{
-		int store_result = -1;
-		const char *format_string = "";
-
 #if defined(_WIN32)
 		bool is_null = output_filename == "NUL" || output_filename == "nul";
 #else
@@ -1684,9 +1681,9 @@ int main(
 
 		if (!is_null)
 		{
-			store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
-			                             &format_string, cli_config.y_flip);
-			if (store_result < 0)
+			bool store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
+			                                  cli_config.y_flip);
+			if (!store_result)
 			{
 				printf("ERROR: Failed to write output image %s\n", output_filename.c_str());
 				return 1;
