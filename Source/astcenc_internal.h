@@ -877,7 +877,7 @@ struct imageblock
 	/**
 	 * @brief Test if this block is using alpha.
 	 *
-	 * @todo This looks suspect, but matches the original astcenc 1.7 code. This checks that the
+	 * TODO: This looks suspect, but matches the original astcenc 1.7 code. This checks that the
 	 * alpha is not constant (no weight needed), NOT that it is 1.0 and not stored as an endpoint.
 	 * Review all uses of this function and check that it is sensible ...
 	 *
@@ -989,8 +989,6 @@ struct error_weight_block
 
 /**
  * @brief Data structure storing the color endpoints for a block.
- *
- * @todo Store as interleaved array to get better locality?
  */
 struct endpoints
 {
