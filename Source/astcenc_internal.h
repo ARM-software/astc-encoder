@@ -630,7 +630,6 @@ struct block_mode
 struct decimation_mode
 {
 	/** @brief The max weight precision for 1 plane, or -1 if not supported. */
-	// TODO: Try unsigned sentinel to avoid signext on load?
 	int8_t maxprec_1plane;
 
 	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
