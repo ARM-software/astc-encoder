@@ -1339,7 +1339,6 @@ static float prepare_block_statistics(
 }
 
 // Do not reorder; we compute array indices programatically
-// TODO: This can be compacted - 1-4 are not used.
 enum trial_modes {
 	MODE_0_1_PARTITION_1_PLANE = 0,
 	MODE_1_1_PARTITION_2_PLANE_R,
@@ -1584,9 +1583,9 @@ void compress_block(
 		float best_1_partition_1_plane_result = best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE];
 
 		float best_1_partition_2_plane_result = astc::min(best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
-		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
-		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
-		                                                  best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R]);
+		                                                  best_errorvals_in_modes[MODE_2_1_PARTITION_2_PLANE_G],
+		                                                  best_errorvals_in_modes[MODE_3_1_PARTITION_2_PLANE_B],
+		                                                  best_errorvals_in_modes[MODE_4_1_PARTITION_2_PLANE_A]);
 
 		float best_2_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_5_2_PARTITION_1_PLANE_UNCOR],
 		                                                  best_errorvals_in_modes[MODE_6_2_PARTITION_1_PLANE_COR]);
