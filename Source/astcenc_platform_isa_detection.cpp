@@ -113,7 +113,6 @@ static void detect_cpu_isa()
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
 	}
 
-
 	// Ensure state bits are updated before init flag is updated
 	__sync_synchronize();
 	g_init = true;
