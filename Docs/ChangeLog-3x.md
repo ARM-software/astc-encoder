@@ -33,9 +33,11 @@ updated `astcenc.h` header.
     detailed documentation.
   * **Feature:** New heuristics have been added for controlling when to use
     2 planes. The previous `tune_two_plane_early_out_limit` has been renamed to
-    `tune_2_plane_early_out_limit_correlation` and a new heuristic
-    `tune_2_plane_early_out_limit_factor` has been added. See command line help
-    for more detailed documentation.
+    `tune_2_plane_early_out_limit_correlation`. See command line help for more
+    detailed documentation.
+  * **Feature:** Support for using dual weight planes has been restricted to
+    single partition blocks; it rarely helps blocks with 2+ partitions and
+    takes considerable compression search time.
   * **API Change:** The core APIs for `astcenc_compress_image()` and for
     `astcenc_decompress_image()` now accept swizzle structures by `const`
     pointer, instead of pass-by-value.

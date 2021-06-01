@@ -934,17 +934,6 @@ static int edit_astcenc_config(
 
 			config.tune_3_partition_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
 		}
-		else if (!strcmp(argv[argidx], "-2planelimitfactor"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("ERROR: -2planelimitfactor switch with no argument\n");
-				return 1;
-			}
-
-			config.tune_2_plane_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
-		}
 		else if (!strcmp(argv[argidx], "-2planelimitcorrelation"))
 		{
 			argidx += 2;
