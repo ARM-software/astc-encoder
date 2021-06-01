@@ -1783,7 +1783,6 @@ void compute_ideal_colors_and_weights_1plane(
  * @param      bsd                The block size information.
  * @param      blk                The image block color data to compress.
  * @param      ewb                The image block weighted error data.
- * @param      pi                 The partition info for the current trial.
  * @param      plane2_component   The component assigned to plane 2.
  * @param[out] ei1                The endpoint and weight values for plane 1.
  * @param[out] ei2                The endpoint and weight values for plane 2.
@@ -1792,7 +1791,6 @@ void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const error_weight_block& ewb,
-	const partition_info& pi,
 	unsigned int plane2_component,
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2);
@@ -2070,7 +2068,7 @@ void recompute_ideal_colors_1plane(
  *
  * @param         blk                  The image block color data to compress.
  * @param         ewb                  The image block weighted error data.
- * @param         pi                   The partition info for the current trial.
+ * @param         bsd                  The block_size descriptor.
  * @param         di                   The weight grid decimation table.
  * @param         weight_quant_mode    The weight grid quantization level.
  * @param         weight_set8_plane1   The quantized weight set for plane 1.
@@ -2083,12 +2081,13 @@ void recompute_ideal_colors_1plane(
 void recompute_ideal_colors_2planes(
 	const image_block& blk,
 	const error_weight_block& ewb,
-	const partition_info& pi,
+	const block_size_descriptor& bsd,
 	const decimation_info& di,
 	int weight_quant_mode,
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
 	endpoints& ep,
+	// TODOEX: Make these not vectors ...
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
 	int plane2_component);

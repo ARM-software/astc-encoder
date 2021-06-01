@@ -576,8 +576,6 @@ static float compress_symbolic_block_for_partition_1plane(
  * @param      blk                       The image block color data to compress.
  * @param      ewb                       The image block weighted error data.
  * @param      tune_errorval_threshold   The error value threshold.
- * @param      partition_count           The partition count.
- * @param      partition_index           The partition index if @c partition_count is 2-4.
  * @param      plane2_component          The component index for the second plane of weights.
  * @param[out] scb                       The symbolic compressed block output.
  * @param[out] tmpbuf                    The quantized weights for plane 1.
@@ -588,29 +586,20 @@ static float compress_symbolic_block_for_partition_2planes(
 	const image_block& blk,
 	const error_weight_block& ewb,
 	float tune_errorval_threshold,
-	unsigned int partition_count,
-	unsigned int partition_index,
 	unsigned int plane2_component,
 	symbolic_compressed_block& scb,
 	compression_working_buffers& tmpbuf
 ) {
-	promise(partition_count > 0);
 	promise(config.tune_candidate_limit > 0);
 	promise(config.tune_refinement_limit > 0);
 	promise(bsd.decimation_mode_count > 0);
-
-	static const int free_bits_for_partition_count[5] = {
-		0, 113 - 4, 109 - 4 - PARTITION_INDEX_BITS, 106 - 4 - PARTITION_INDEX_BITS, 103 - 4 - PARTITION_INDEX_BITS
-	};
-
-	const auto& pi = bsd.get_partition_info(partition_count, partition_index);
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei1 = tmpbuf.ei1;
 	endpoints_and_weights& ei2 = tmpbuf.ei2;
 	endpoints_and_weights* eix1 = tmpbuf.eix1;
 	endpoints_and_weights* eix2 = tmpbuf.eix2;
-	compute_ideal_colors_and_weights_2planes(bsd, blk, ewb, pi, plane2_component, ei1, ei2);
+	compute_ideal_colors_and_weights_2planes(bsd, blk, ewb, plane2_component, ei1, ei2);
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *decimated_quantized_weights = tmpbuf.decimated_quantized_weights;
@@ -648,16 +637,14 @@ static float compress_symbolic_block_for_partition_2planes(
 	// weight pair, compute the smallest weight that will result in a color value greater than 1
 	vfloat4 min_ep1(10.0f);
 	vfloat4 min_ep2(10.0f);
-	for (unsigned int i = 0; i < partition_count; i++)
-	{
-		vfloat4 ep1 = (vfloat4(1.0f) - ei1.ep.endpt0[i]) / (ei1.ep.endpt1[i] - ei1.ep.endpt0[i]);
-		vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
-		min_ep1 = select(min_ep1, ep1, use_ep1);
 
-		vfloat4 ep2 = (vfloat4(1.0f) - ei2.ep.endpt0[i]) / (ei2.ep.endpt1[i] - ei2.ep.endpt0[i]);
-		vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
-		min_ep2 = select(min_ep2, ep2, use_ep2);
-	}
+	vfloat4 ep1 = (vfloat4(1.0f) - ei1.ep.endpt0[0]) / (ei1.ep.endpt1[0] - ei1.ep.endpt0[0]);
+	vmask4 use_ep1 = (ep1 > vfloat4(0.5f)) & (ep1 < min_ep1);
+	min_ep1 = select(min_ep1, ep1, use_ep1);
+
+	vfloat4 ep2 = (vfloat4(1.0f) - ei2.ep.endpt0[0]) / (ei2.ep.endpt1[0] - ei2.ep.endpt0[0]);
+	vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
+	min_ep2 = select(min_ep2, ep2, use_ep2);
 
 	vfloat4 err_max(1e30f);
 	vmask4 err_mask = vint4::lane_id() == vint4(plane2_component);
@@ -713,7 +700,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
 		    2 * di.weight_count,
 		    bm.get_weight_quant_mode());
-		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
+		int bitcount = 113 - 4 - bits_used_by_weights;
 		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
 		{
 			qwt_errors[i] = 1e38f;
@@ -757,6 +744,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	endpoints epm;
 	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
 
+	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, ewb, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
@@ -809,67 +797,24 @@ static float compress_symbolic_block_for_partition_2planes(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_2planes(
-			    blk, ewb, pi, di,
+			    blk, ewb, bsd, di,
 			    weight_quant_mode, workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
 			    epm, rgbs_colors, rgbo_colors, plane2_component);
 
 			// Quantize the chosen color
-			for (unsigned int j = 0; j < partition_count; j++)
-			{
-				workscb.color_formats[j] = pack_color_endpoints(
-				                            epm.endpt0[j],
-				                            epm.endpt1[j],
-				                            rgbs_colors[j], rgbo_colors[j],
-				                            partition_format_specifiers[i][j],
-				                            workscb.color_values[j],
-				                            (quant_method)color_quant_level[i]);
-			}
-
-			// If all the color endpoint modes are the same, we get a few more bits to store colors;
-			// let's see if we can take advantage of this: requantize all the colors and see if the
-			// endpoint modes remain the same.
-			workscb.color_formats_matched = 0;
-
-			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
-			    && color_quant_level[i] != color_quant_level_mod[i])
-			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
-			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
-			{
-				uint8_t colorvals[BLOCK_MAX_PARTITIONS][12];
-				int color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
-				for (unsigned int j = 0; j < partition_count; j++)
-				{
-					color_formats_mod[j] = pack_color_endpoints(
-					    epm.endpt0[j],
-					    epm.endpt1[j],
-					    rgbs_colors[j],
-					    rgbo_colors[j],
-					    partition_format_specifiers[i][j],
-					    colorvals[j],
-					    (quant_method)color_quant_level_mod[i]);
-				}
-
-				if (color_formats_mod[0] == color_formats_mod[1]
-				    && (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2]
-				    && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
-				{
-					workscb.color_formats_matched = 1;
-					for (unsigned int j = 0; j < BLOCK_MAX_PARTITIONS; j++)
-					{
-						for (unsigned int k = 0; k < 8; k++)
-						{
-							workscb.color_values[j][k] = colorvals[j][k];
-						}
-
-						workscb.color_formats[j] = color_formats_mod[j];
-					}
-				}
-			}
+			workscb.color_formats[0] = pack_color_endpoints(
+			                               epm.endpt0[0],
+			                               epm.endpt1[0],
+			                               rgbs_colors[0], rgbo_colors[0],
+			                               partition_format_specifiers[i][0],
+			                               workscb.color_values[0],
+			                               (quant_method)color_quant_level[i]);
 
 			// Store header fields
-			workscb.partition_count = partition_count;
-			workscb.partition_index = partition_index;
+			workscb.partition_count = 1;
+			workscb.partition_index = 0;
 			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
+			workscb.color_formats_matched = 0;
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_component = plane2_component;
 			workscb.block_type = SYM_BTYPE_NONCONST;
@@ -1530,8 +1475,6 @@ void compress_block(
 		float errorval = compress_symbolic_block_for_partition_2planes(
 		    ctx.config, *bsd, blk, ewb,
 		    error_threshold * errorval_overshoot,
-		    1,	// partition count
-		    0,	// partition index
 		    i,	// the color component to test a separate plane of weights for.
 		    scb, tmpbuf);
 
@@ -1552,10 +1495,10 @@ void compress_block(
 		unsigned int partition_index_2planes { 0 };
 
 		find_best_partition_candidates(*bsd, blk, ewb, partition_count,
-		                        ctx.config.tune_partition_index_limit,
-		                        partition_indices_1plane[0],
-		                        partition_indices_1plane[1],
-		                        block_skip_two_plane ? nullptr : &partition_index_2planes);
+		                               ctx.config.tune_partition_index_limit,
+		                               partition_indices_1plane[0],
+		                               partition_indices_1plane[1],
+		                               block_skip_two_plane ? nullptr : &partition_index_2planes);
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -1582,11 +1525,6 @@ void compress_block(
 
 		float best_1_partition_1_plane_result = best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE];
 
-		float best_1_partition_2_plane_result = astc::min(best_errorvals_in_modes[MODE_1_1_PARTITION_2_PLANE_R],
-		                                                  best_errorvals_in_modes[MODE_2_1_PARTITION_2_PLANE_G],
-		                                                  best_errorvals_in_modes[MODE_3_1_PARTITION_2_PLANE_B],
-		                                                  best_errorvals_in_modes[MODE_4_1_PARTITION_2_PLANE_A]);
-
 		float best_2_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_5_2_PARTITION_1_PLANE_UNCOR],
 		                                                  best_errorvals_in_modes[MODE_6_2_PARTITION_1_PLANE_COR]);
 
@@ -1606,58 +1544,6 @@ void compress_block(
 		if (partition_count == 3 && (best_3_partition_1_plane_result > (best_2_partition_1_plane_result * ctx.config.tune_3_partition_early_out_limit_factor)))
 		{
 			trace_add_data("skip", "tune_3_partition_early_out_limit_factor");
-			goto END_OF_TESTS;
-		}
-
-		// Skip testing dual weight planes for:
-		// * 4 partitions (can't be encoded by the format)
-		if (partition_count == 4)
-		{
-			continue;
-		}
-
-		// * Luminance only blocks (never need for a second plane)
-		if (blk.grayscale && !uses_alpha)
-		{
-			trace_add_data("skip", "grayscale no alpha block ");
-			continue;
-		}
-
-		// * Blocks with higher component correlation than the tuning cutoff
-		if (block_skip_two_plane)
-		{
-			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation");
-			continue;
-		}
-
-		// If adding a 2nd plane to 1 partition doesn't help by some margin then trying with more
-		// partitions is even less likely to help, so skip those. This is NOT exposed as a heuristic that the user can
-		// control as we've found no need to - this is a very reliable heuristic even on torture
-		// test images.
-		if (best_1_partition_2_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_plane_early_out_limit_factor))
-		{
-			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation_builtin");
-			continue;
-		}
-
-		TRACE_NODE(node1, "pass");
-		trace_add_data("partition_count", partition_count);
-		trace_add_data("partition_index", partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1));
-		trace_add_data("plane_count", 2);
-		trace_add_data("plane_component", partition_index_2planes >> PARTITION_INDEX_BITS);
-
-		float errorval = compress_symbolic_block_for_partition_2planes(
-			ctx.config, *bsd, blk, ewb,
-			error_threshold * errorval_overshoot,
-			partition_count,
-			partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1),
-			partition_index_2planes >> PARTITION_INDEX_BITS,
-			scb, tmpbuf);
-
-		// Modes 7, 10 (13 is unreachable)
-		if (errorval < error_threshold)
-		{
-			trace_add_data("exit", "quality hit");
 			goto END_OF_TESTS;
 		}
 	}
