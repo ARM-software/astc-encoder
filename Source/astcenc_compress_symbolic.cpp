@@ -1623,6 +1623,15 @@ void compress_block(
 			continue;
 		}
 
+		int plane2_component = partition_index_2planes >> PARTITION_INDEX_BITS;
+		int plane2_partition_index = partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1);
+
+		// * Constant color channel match (never need for a second plane)
+		if (blk.is_constant_channel(plane2_component))
+		{
+			continue;
+		}
+
 		// * Blocks with higher component correlation than the tuning cutoff
 		if (block_skip_two_plane)
 		{
@@ -1631,9 +1640,9 @@ void compress_block(
 		}
 
 		// If adding a 2nd plane to 1 partition doesn't help by some margin then trying with more
-		// partitions is even less likely to help, so skip those. This is NOT exposed as a heuristic that the user can
-		// control as we've found no need to - this is a very reliable heuristic even on torture
-		// test images.
+		// partitions is even less likely to help, so skip those. This is NOT exposed as a heuristic
+		// that the user can control as we've found no need to - this is a very reliable heuristic
+		// even on stress test images.
 		if (best_1_partition_2_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_plane_early_out_limit_factor))
 		{
 			trace_add_data("skip", "tune_2_plane_early_out_limit_correlation_builtin");
@@ -1642,16 +1651,16 @@ void compress_block(
 
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", partition_count);
-		trace_add_data("partition_index", partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1));
+		trace_add_data("partition_index", plane2_partition_index);
 		trace_add_data("plane_count", 2);
-		trace_add_data("plane_component", partition_index_2planes >> PARTITION_INDEX_BITS);
+		trace_add_data("plane_component", plane2_component);
 
 		float errorval = compress_symbolic_block_for_partition_2planes(
 			ctx.config, *bsd, blk, ewb,
 			error_threshold * errorval_overshoot,
 			partition_count,
-			partition_index_2planes & (BLOCK_MAX_PARTITIONINGS - 1),
-			partition_index_2planes >> PARTITION_INDEX_BITS,
+			plane2_partition_index,
+			plane2_component,
 			scb, tmpbuf);
 
 		// Modes 7, 10 (13 is unreachable)
