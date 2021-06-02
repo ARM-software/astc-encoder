@@ -542,13 +542,6 @@ struct astcenc_config
 	float tune_3_partition_early_out_limit_factor;
 
 	/**
-	 * @brief The threshold for skipping two weight planes (-2planelimitfactor).
-	 *
-	 * This option is ineffective for normal maps.
-	 */
-	float tune_2_plane_early_out_limit_factor;
-
-	/**
 	 * @brief The threshold for skipping two weight planes (-2planelimitcorrelation).
 	 *
 	 * This option is ineffective for normal maps.

@@ -399,18 +399,6 @@ ADVANCED COMPRESSION
                -thorough   :  1.25
                -exhaustive : 10.00
 
-       -2planelimitfactor <factor>
-           Skip encodings with two weight planes, unless the best one
-           partition score using two weight planes is better than the
-           best one partition score using one weight plane by this
-           factor. Preset defaults are:
-
-               -fastest    :  1.05
-               -fast       :  1.05
-               -medium     :  1.05
-               -thorough   :  1.05
-               -exhaustive : 10.00
-
        -2planelimitcorrelation <factor>
            Stop compression after testing only one plane of weights, unless
            the minimum color correlation factor between any pair of color
