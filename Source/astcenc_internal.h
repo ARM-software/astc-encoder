@@ -1283,7 +1283,8 @@ struct avg_var_args
 };
 
 #if defined(ASTCENC_DIAGNOSTICS)
-class TraceLog; // See astcenc_diagnostic_trace for details.
+/* See astcenc_diagnostic_trace header for details. */
+class TraceLog;
 #endif
 
 /**
@@ -1848,6 +1849,12 @@ void compute_quantized_weights_for_decimation(
 
 /**
  * @brief Compute the infilled weight for a texel index in a decimated grid.
+ *
+ * @param di        The weight grid decimation to use.
+ * @param weights   The decimated weight values to use.
+ * @param index     The texel index to interpolate.
+ *
+ * @return The interpolated weight for the given texel.
  */
 static inline float bilinear_infill(
 	const decimation_info& di,
@@ -1862,6 +1869,12 @@ static inline float bilinear_infill(
 
 /**
  * @brief Compute the infilled weight for N texel indices in a decimated grid.
+ *
+ * @param di        The weight grid decimation to use.
+ * @param weights   The decimated weight values to use.
+ * @param index     The first texel index to interpolate.
+ *
+ * @return The interpolated weight for the given set of SIMD_WIDTH texels.
  */
 static inline vfloat bilinear_infill_vla(
 	const decimation_info& di,
@@ -2095,12 +2108,36 @@ void recompute_ideal_colors_2planes(
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
 	int plane2_component);
 
+/**
+ * @brief Expand the deblock weights based on the config deblocking parameter.
+ *
+ * The approach to deblocking is a general purpose approach which elevates the error weight
+ * significance of texels closest to the block periphery. This function computes the deblock weights
+ * for each texel, which can be mixed on a block-by-block basis with the other error weighting
+ * parameters to compute a specific per-texel weight for a trial.
+ *
+ * @param[in,out] ctx   The context to expand.
+ */
 void expand_deblock_weights(
 	astcenc_context& ctx);
 
-// functions pertaining to weight alignment
+/**
+ * @brief Expand the angular tables needed for the alternative to PCA that we use.
+ */
 void prepare_angular_tables();
 
+/**
+ * @brief Compute the angular endpoints for one plane for each block mode.
+ *
+ * // TODO: Terminology here is confusing and needs improving.
+ *
+ * @param     only_always                   Only consider block modes that are always enabled.
+ * @param     bsd                           The block size descriptor for the current trial.
+ * @param     decimated_quantized_weights   The decimated and quantized weight values.
+ * @param     decimated_weights             The significance of each weight.
+ * @param[out] low_value                    The lowest weight to consider for each block mode.
+ * @param[out] high_value                   The highest weight to consider for each block mode.
+ */
 void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
@@ -2109,6 +2146,19 @@ void compute_angular_endpoints_1plane(
 	float low_value[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value[WEIGHTS_MAX_BLOCK_MODES]);
 
+/**
+ * @brief Compute the angular endpoints for one plane for each block mode.
+ *
+ * // TODO: Terminology here is confusing and needs improving.
+ *
+ * @param     bsd                           The block size descriptor for the current trial.
+ * @param     decimated_quantized_weights   The decimated and quantized weight values.
+ * @param     decimated_weights             The significance of each weight.
+ * @param[out] low_value1                   The lowest weight p1 to consider for each block mode.
+ * @param[out] high_value1                  The highest weight p1 to consider for each block mode.
+ * @param[out] low_value2                   The lowest weight p2 to consider for each block mode.
+ * @param[out] high_value2                  The highest weight p2 to consider for each block mode.
+ */
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
 	const float* decimated_quantized_weights,
@@ -2178,11 +2228,31 @@ float compute_symbolic_block_difference(
 	const image_block& blk,
 	const error_weight_block& ewb) ;
 
+/**
+ * @brief Convert a symbolic representation into a binary physical encoding.
+ *
+ * It is assumed that the symbolic encoding is valid and encodable, or
+ * previously flagged as an error block if an error color it to be encoded.
+ *
+ * @param      bsd   The block size information.
+ * @param      scb   The symbolic representation.
+ * @param[out] pcb   The binary encoded data.
+ */
 void symbolic_to_physical(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
 	physical_compressed_block& pcb);
 
+/**
+ * @brief Convert a binary physical encoding into a symbolic representation.
+ *
+ * This function can cope with arbitrary input data; output blocks will be
+ * flagged as an error block if the encoding is invalid.
+ *
+ * @param      bsd   The block size information.
+ * @param      pcb   The binary encoded data.
+ * @param[out] scb   The output symbolic representation.
+ */
 void physical_to_symbolic(
 	const block_size_descriptor& bsd,
 	const physical_compressed_block& pcb,
