@@ -23,7 +23,7 @@
 
 /** @brief The version header. */
 static const char *astcenc_copyright_string =
-R"(astcenc v3.0-develop, %u-bit %s%s
+R"(astcenc v3.0, %u-bit %s%s
 Copyright 2011-2021 Arm Limited, all rights reserved
 )";
 
