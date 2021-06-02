@@ -1129,11 +1129,15 @@ static float prepare_error_weight_block(
 		}
 	}
 
-	vfloat4 error_weight_sum = vfloat4::zero();
+	// Small bias to avoid divide by zeros and NaN propagation later
+	vfloat4 texel_weight_sum(1e-17);
+	vfloat4 error_weight_sum(1e-17);
+
 	int texels_per_block = bsd.texel_count;
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		error_weight_sum = error_weight_sum + ewb.error_weights[i];
+		texel_weight_sum += ewb.error_weights[i] * blk.texel(i);
+		error_weight_sum += ewb.error_weights[i];
 
 		float wr = ewb.error_weights[i].lane<0>();
 		float wg = ewb.error_weights[i].lane<1>();
@@ -1156,6 +1160,9 @@ static float prepare_error_weight_block(
 
 		ewb.texel_weight[i] = (wr + wg + wb + wa) * 0.25f;
 	}
+
+	ewb.block_error_weighted_rgba_sum = texel_weight_sum;
+	ewb.block_error_weight_sum = error_weight_sum;
 
 	return hadd_s(error_weight_sum);
 }

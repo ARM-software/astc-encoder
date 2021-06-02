@@ -944,8 +944,15 @@ struct image_block
  */
 struct error_weight_block
 {
+	/** @brief Block error weighted RGBA sum for whole block / 1 partition. */
+	vfloat4 block_error_weighted_rgba_sum;
+
+	/** @brief Block error sum for whole block / 1 partition. */
+	vfloat4 block_error_weight_sum;
+
 	/** @brief The full per texel per component error weights. */
 	vfloat4 error_weights[BLOCK_MAX_TEXELS];
+
 
 	/** @brief The full per texel per component error weights. */
 	float texel_weight[BLOCK_MAX_TEXELS];

@@ -1338,19 +1338,10 @@ void recompute_ideal_colors_2planes(
 		plane2_weight_set[i] = qat->unquantized_value[weight_set8_plane2[i]] * (1.0f / 64.0f);
 	}
 
-	vfloat4 rgba_sum(1e-17f);
-	vfloat4 rgba_weight_sum(1e-17f);
+	vfloat4 rgba_sum = ewb.block_error_weighted_rgba_sum;
+	vfloat4 rgba_weight_sum = ewb.block_error_weight_sum;
 
 	int texel_count = bsd.texel_count;
-	for (int j = 0; j < texel_count; j++)
-	{
-		vfloat4 rgba = blk.texel(j);
-		vfloat4 error_weight = ewb.error_weights[j];
-
-		rgba_sum += rgba * error_weight;
-		rgba_weight_sum += error_weight;
-	}
-
 	vfloat4 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
 
 	float scale_max = 0.0f;
@@ -1406,8 +1397,8 @@ void recompute_ideal_colors_2planes(
 		vfloat4 right  = color_weight * (idx0 * idx0);
 
 		vfloat4 lmrs = vfloat3(om_idx0 * om_idx0,
-								om_idx0 * idx0,
-								idx0 * idx0) * ls_weight;
+		                       om_idx0 * idx0,
+		                       idx0 * idx0) * ls_weight;
 
 		left_sum   += left;
 		middle_sum += middle;
@@ -1493,12 +1484,12 @@ void recompute_ideal_colors_2planes(
 		float ls_rdet1 = 1.0f / ls_det1;
 
 		vfloat4 color_mss1 = (left_sum * left_sum)
-							+ (2.0f * middle_sum * middle_sum)
-							+ (right_sum * right_sum);
+		                   + (2.0f * middle_sum * middle_sum)
+		                   + (right_sum * right_sum);
 
 		float ls_mss1 = (lmrs_sum.lane<0>() * lmrs_sum.lane<0>())
-						+ (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
-						+ (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
+		              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
+		              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
 
 		vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
 		vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
@@ -1543,8 +1534,8 @@ void recompute_ideal_colors_2planes(
 		vfloat4 color_rdet2 = 1.0f / color_det2;
 
 		vfloat4 color_mss2 = (left2_sum * left2_sum)
-							+ (2.0f * middle2_sum * middle2_sum)
-							+ (right2_sum * right2_sum);
+		                   + (2.0f * middle2_sum * middle2_sum)
+		                   + (right2_sum * right2_sum);
 
 		vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 		vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
