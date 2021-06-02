@@ -775,8 +775,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		// Recompute the ideal color endpoints before storing them.
 		merge_endpoints(eix1[decimation_mode].ep, eix2[decimation_mode].ep, plane2_component, epm);
 
-		vfloat4 rgbs_colors[BLOCK_MAX_PARTITIONS];
-		vfloat4 rgbo_colors[BLOCK_MAX_PARTITIONS];
+		vfloat4 rgbs_color;
+		vfloat4 rgbo_color;
 
 		symbolic_compressed_block workscb;
 
@@ -799,13 +799,13 @@ static float compress_symbolic_block_for_partition_2planes(
 			recompute_ideal_colors_2planes(
 			    blk, ewb, bsd, di,
 			    weight_quant_mode, workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
-			    epm, rgbs_colors, rgbo_colors, plane2_component);
+			    epm, rgbs_color, rgbo_color, plane2_component);
 
 			// Quantize the chosen color
 			workscb.color_formats[0] = pack_color_endpoints(
 			                               epm.endpt0[0],
 			                               epm.endpt1[0],
-			                               rgbs_colors[0], rgbo_colors[0],
+			                               rgbs_color, rgbo_color,
 			                               partition_format_specifiers[i][0],
 			                               workscb.color_values[0],
 			                               (quant_method)color_quant_level[i]);

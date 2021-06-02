@@ -2089,8 +2089,8 @@ void recompute_ideal_colors_1plane(
  * @param         weight_set8_plane1   The quantized weight set for plane 1.
  * @param         weight_set8_plane2   The quantized weight set for plane 2.
  * @param[in,out] ep                   The color endpoints (modifed in place).
- * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
- * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
+ * @param[out]    rgbs_vector          The RGB+scale color for LDR blocks.
+ * @param[out]    rgbo_vector          The RGB+offset color for HDR blocks.
  * @param         plane2_component     The component assigned to plane 2.
  */
 void recompute_ideal_colors_2planes(
@@ -2102,9 +2102,8 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
 	endpoints& ep,
-	// TODOEX: Make these not vectors ...
-	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
-	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4& rgbs_vector,
+	vfloat4& rgbo_vector,
 	int plane2_component);
 
 /**

@@ -1318,8 +1318,8 @@ void recompute_ideal_colors_2planes(
 	const uint8_t* weight_set8_plane1,
 	const uint8_t* weight_set8_plane2,
 	endpoints& ep,
-	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
-	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS],
+	vfloat4& rgbs_vector,
+	vfloat4& rgbo_vector,
 	int plane2_component
 ) {
 	int weight_count = di.weight_count;
@@ -1341,7 +1341,6 @@ void recompute_ideal_colors_2planes(
 	vfloat4 rgba_sum(1e-17f);
 	vfloat4 rgba_weight_sum(1e-17f);
 
-	// TODOEX: Linearize this without PI
 	int texel_count = bsd.texel_count;
 	for (int j = 0; j < texel_count; j++)
 	{
@@ -1380,7 +1379,6 @@ void recompute_ideal_colors_2planes(
 	float psum = 1e-17f;
 
 	// TODO: This loop has too many responsibilities, making it inefficient
-	// TODOEX: Linearize this without PI
 	for (int j = 0; j < texel_count; j++)
 	{
 		vfloat4 rgba = blk.texel(j);
@@ -1453,13 +1451,12 @@ void recompute_ideal_colors_2planes(
 	vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 	rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
-	vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
-	rgbo_vectors[0] = rgbovec;
+	rgbo_vector = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
 
 	// We will occasionally get a failure due to the use of a singular (non-invertible) matrix.
 	// Record whether such a failure has taken place; if it did, compute rgbo_vectors[] with a
 	// different method later
-	float chkval = dot_s(rgbovec, rgbovec);
+	float chkval = dot_s(rgbo_vector, rgbo_vector);
 	int rgbo_fail = chkval != chkval;
 
 	// Initialize the luminance and scale vectors with a reasonable default
@@ -1468,7 +1465,7 @@ void recompute_ideal_colors_2planes(
 
 	vfloat4 sds = scale_direction * scale_max;
 
-	rgbs_vectors[0] = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
+	rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
 
 	if (wmin1 >= wmax1 * 0.999f)
 	{
@@ -1483,7 +1480,7 @@ void recompute_ideal_colors_2planes(
 		ep.endpt0[0] = select(ep.endpt0[0], avg, full_mask);
 		ep.endpt1[0] = select(ep.endpt1[0], avg, full_mask);
 
-		rgbs_vectors[0] = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
+		rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), 1.0f);
 	}
 	else
 	{
@@ -1521,7 +1518,7 @@ void recompute_ideal_colors_2planes(
 		{
 			float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
 			vfloat4 sdsm = scale_direction * scale_ep1;
-			rgbs_vectors[0] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
+			rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
 		}
 	}
 
@@ -1573,7 +1570,7 @@ void recompute_ideal_colors_2planes(
 		vfloat4 avg = (v0 + v1) * 0.5f;
 		vfloat4 ep0 = avg - vfloat4(avgdif) * 0.5f;
 
-		rgbo_vectors[0] = vfloat4(ep0.lane<0>(), ep0.lane<1>(), ep0.lane<2>(), avgdif);
+		rgbo_vector = vfloat4(ep0.lane<0>(), ep0.lane<1>(), ep0.lane<2>(), avgdif);
 	}
 }
 
