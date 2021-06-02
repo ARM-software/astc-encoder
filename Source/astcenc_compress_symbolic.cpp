@@ -1283,18 +1283,6 @@ static float prepare_block_statistics(
 	return lowest_correlation;
 }
 
-// Do not reorder; we compute array indices programatically
-enum trial_modes {
-	MODE_0_1_PARTITION_1_PLANE = 0,
-	MODE_5_2_PARTITION_1_PLANE_UNCOR,
-	MODE_6_2_PARTITION_1_PLANE_COR,
-	MODE_8_3_PARTITION_1_PLANE_UNCOR,
-	MODE_9_3_PARTITION_1_PLANE_COR,
-	MODE_11_4_PARTITION_1_PLANE_UNCOR,
-	MODE_12_4_PARTITION_1_PLANE_COR,
-	MODE_COUNT
-};
-
 /* See header for documentation. */
 void compress_block(
 	const astcenc_context& ctx,
@@ -1390,11 +1378,16 @@ void compress_block(
 	scb.errorval = 1e30f;
 	scb.block_type = SYM_BTYPE_ERROR;
 
-	float best_errorvals_in_modes[MODE_COUNT];
-	for (int i = 0; i < MODE_COUNT; i++)
-	{
-		best_errorvals_in_modes[i] = 1e30f;
-	}
+	float best_errorvals_for_pcount[BLOCK_MAX_PARTITIONS] {
+		 1e30f, 1e30f, 1e30f, 1e30f
+	};
+
+	float exit_thresholds_for_pcount[BLOCK_MAX_PARTITIONS] {
+		0.0f,
+		ctx.config.tune_2_partition_early_out_limit_factor,
+		ctx.config.tune_3_partition_early_out_limit_factor,
+		0.0f
+	};
 
 	// Trial using 1 plane of weights and 1 partition.
 
@@ -1423,8 +1416,7 @@ void compress_block(
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf);
 
-		// Mode 0
-		best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE] = errorval;
+		best_errorvals_for_pcount[0] = astc::min(best_errorvals_for_pcount[0], errorval);
 		if (errorval < (error_threshold * errorval_mult[i]))
 		{
 			trace_add_data("exit", "quality hit");
@@ -1467,10 +1459,8 @@ void compress_block(
 		float errorval = compress_symbolic_block_for_partition_2planes(
 		    ctx.config, *bsd, blk, ewb,
 		    error_threshold * errorval_overshoot,
-		    i,	// the color component to test a separate plane of weights for.
-		    scb, tmpbuf);
+		    i, scb, tmpbuf);
 
-		// Modes 7, 10 (13 is unreachable)
 		if (errorval < error_threshold)
 		{
 			trace_add_data("exit", "quality hit");
@@ -1504,8 +1494,7 @@ void compress_block(
 			    partition_count, partition_indices_1plane[i],
 			    scb, tmpbuf);
 
-			// Modes 5, 6, 8, 9, 11, 12
-			best_errorvals_in_modes[2 * (partition_count - 2) + 1 + i] = errorval;
+			best_errorvals_for_pcount[partition_count - 1] = astc::min(best_errorvals_for_pcount[partition_count - 1], errorval);
 			if (errorval < error_threshold)
 			{
 				trace_add_data("exit", "quality hit");
@@ -1513,27 +1502,13 @@ void compress_block(
 			}
 		}
 
-		float best_1_partition_1_plane_result = best_errorvals_in_modes[MODE_0_1_PARTITION_1_PLANE];
-
-		float best_2_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_5_2_PARTITION_1_PLANE_UNCOR],
-		                                                  best_errorvals_in_modes[MODE_6_2_PARTITION_1_PLANE_COR]);
-
-		float best_3_partition_1_plane_result = astc::min(best_errorvals_in_modes[MODE_8_3_PARTITION_1_PLANE_UNCOR],
-		                                                  best_errorvals_in_modes[MODE_9_3_PARTITION_1_PLANE_COR]);
-
-		// If adding a second partition doesn't improve much over using one partition then skip more
-		// thorough searches as it's not likely to help.
-		if (partition_count == 2 && (best_2_partition_1_plane_result > (best_1_partition_1_plane_result * ctx.config.tune_2_partition_early_out_limit_factor)))
+		// If using N partitions doesn't improve much over using N-1 partitions then skip trying N+1
+		float best_error = best_errorvals_for_pcount[partition_count - 1];
+		float best_error_in_prev = best_errorvals_for_pcount[partition_count - 2];
+		float best_error_scale = exit_thresholds_for_pcount[partition_count - 1];
+		if (best_error > (best_error_in_prev * best_error_scale))
 		{
-			trace_add_data("skip", "tune_2_partition_early_out_limit_factor");
-			goto END_OF_TESTS;
-		}
-
-		// If adding a third partition doesn't improve much over using two partitions then skip more
-		// thorough searches as it's not likely to help.
-		if (partition_count == 3 && (best_3_partition_1_plane_result > (best_2_partition_1_plane_result * ctx.config.tune_3_partition_early_out_limit_factor)))
-		{
-			trace_add_data("skip", "tune_3_partition_early_out_limit_factor");
+			trace_add_data("skip", "tune_partition_early_out_limit_factor");
 			goto END_OF_TESTS;
 		}
 	}
