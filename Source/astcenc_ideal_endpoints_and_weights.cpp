@@ -604,7 +604,9 @@ void compute_ideal_colors_and_weights_1plane(
 	const partition_info& pi,
 	endpoints_and_weights& ei
 ) {
-	if (blk.is_using_alpha())
+	bool uses_alpha = !blk.is_constant_channel(3);
+
+	if (uses_alpha)
 	{
 		compute_ideal_colors_and_weights_4_comp(bsd, blk, ewb, pi, ei);
 	}
@@ -624,8 +626,7 @@ void compute_ideal_colors_and_weights_2planes(
 	endpoints_and_weights& ei2
 ) {
 	const auto& pi = bsd.get_partition_info(1, 0);
-
-	bool uses_alpha = blk.is_using_alpha();;
+	bool uses_alpha = !blk.is_constant_channel(3);
 
 	assert(plane2_component < BLOCK_MAX_COMPONENTS);
 	switch (plane2_component)
@@ -986,8 +987,12 @@ void compute_quantized_weights_for_decimation(
 	promise(weight_count > 0);
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
 
-	static const int quant_levels[12] { 2,3,4,5,6,8,10,12,16,20,24,32 };
-	float quant_level_m1 = (float)(quant_levels[quant_level] - 1);
+	// The available quant levels, stored with a minus 1 bias
+	static const float quant_levels_m1[12] {
+		1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f, 11.0f, 15.0f, 19.0f, 23.0f, 31.0f
+	};
+
+	float quant_level_m1 = quant_levels_m1[quant_level];
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 	assert(high_bound > low_bound);
