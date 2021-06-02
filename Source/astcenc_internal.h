@@ -873,17 +873,19 @@ struct image_block
 	}
 
 	/**
-	 * @brief Test if this block is using alpha.
+	 * @brief Test if a single color channel is constant across the block.
 	 *
-	 * TODO: This looks suspect, but matches the original astcenc 1.7 code. This checks that the
-	 * alpha is not constant (no weight needed), NOT that it is 1.0 and not stored as an endpoint.
-	 * Review all uses of this function and check that it is sensible ...
+	 * Constant color channels are easier to compress as interpolating between two identical colors
+	 * always returns the same value, irrespective of the weight used. They therefore can be ignored
+	 * for the purposes of weight selection and use of a second weight plane.
 	 *
-	 * @return @c true if the alpha value is not constant across the block, @c false otherwise.
+	 * @return @c true if the channel is constant across the block, @c false otherwise.
 	 */
-	inline bool is_using_alpha() const
+	inline bool is_constant_channel(int channel) const
 	{
-		return this->data_min.lane<3>() != this->data_max.lane<3>();
+		vmask4 lane_mask = vint4::lane_id() == vint4(channel);
+		vmask4 color_mask = this->data_min == this->data_max;
+		return any(lane_mask & color_mask);
 	}
 
 	/**

@@ -1457,7 +1457,7 @@ void compress_block(
 		best_errorvals_in_modes[i] = 1e30f;
 	}
 
-	bool uses_alpha = blk.is_using_alpha();
+	bool uses_alpha = !blk.is_constant_channel(3);
 
 	// Trial using 1 plane of weights and 1 partition.
 
@@ -1521,9 +1521,9 @@ void compress_block(
 			continue;
 		}
 
-		if (!uses_alpha && i == 3)
+		if (blk.is_constant_channel(i))
 		{
-			trace_add_data("skip", "no alpha component");
+			trace_add_data("skip", "constant component");
 			continue;
 		}
 

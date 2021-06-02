@@ -604,7 +604,9 @@ void compute_ideal_colors_and_weights_1plane(
 	const partition_info& pi,
 	endpoints_and_weights& ei
 ) {
-	if (blk.is_using_alpha())
+	bool uses_alpha = !blk.is_constant_channel(3);
+
+	if (uses_alpha)
 	{
 		compute_ideal_colors_and_weights_4_comp(bsd, blk, ewb, pi, ei);
 	}
@@ -624,7 +626,7 @@ void compute_ideal_colors_and_weights_2planes(
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2
 ) {
-	bool uses_alpha = blk.is_using_alpha();;
+	bool uses_alpha = !blk.is_constant_channel(3);
 
 	assert(plane2_component < BLOCK_MAX_COMPONENTS);
 	switch (plane2_component)
