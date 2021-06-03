@@ -469,6 +469,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			// Store header fields
 			workscb.partition_count = partition_count;
 			workscb.partition_index = partition_index;
+			workscb.plane2_component = -1;
 			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.block_type = SYM_BTYPE_NONCONST;
