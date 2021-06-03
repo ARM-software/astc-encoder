@@ -1177,6 +1177,7 @@ struct symbolic_compressed_block
 	union {
 		/** @brief The constant color; valid for @c CONST blocks. */
 		int constant_color[BLOCK_MAX_COMPONENTS];
+
 		/** @brief The quantized endpoint color pairs; valid for @c NONCONST blocks. */
 		uint8_t color_values[BLOCK_MAX_PARTITIONS][8];
 	};

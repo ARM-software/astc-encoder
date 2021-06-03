@@ -398,11 +398,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		symbolic_compressed_block workscb;
 
-		for (unsigned int j = 0; j < BLOCK_MAX_COMPONENTS; j++)
-		{
-			workscb.constant_color[j] = 0;
-		}
-
 		uint8_t* u8_weight_src = u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * bm_packed_index;
 
 		for (unsigned int j = 0; j < di.weight_count; j++)
@@ -780,11 +775,6 @@ static float compress_symbolic_block_for_partition_2planes(
 
 		symbolic_compressed_block workscb;
 
-		for (unsigned int j = 0; j < BLOCK_MAX_COMPONENTS; j++)
-		{
-			workscb.constant_color[j] = 0;
-		}
-
 		uint8_t* u8_weight1_src = u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * bm_packed_index);
 		uint8_t* u8_weight2_src = u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * bm_packed_index + 1);
 
@@ -813,7 +803,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			// Store header fields
 			workscb.partition_count = 1;
 			workscb.partition_index = 0;
-			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
+			workscb.quant_mode = color_quant_level[i];
 			workscb.color_formats_matched = 0;
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_component = plane2_component;
