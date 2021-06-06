@@ -1817,18 +1817,18 @@ void compute_ideal_colors_and_weights_2planes(
  * Then, set step size to <some initial value> and attempt one step towards the original ideal
  * weight if it helps to reduce error.
  *
- * @param      eai_in       The non-decimated endpoints and weights.
- * @param      eai_out      A copy of eai_in we can modify later for refinement.
- * @param      di           The selected weight decimation.
- * @param[out] weight_set   The output decimated weight set.
- * @param[out] weights      The output decimated weights.
+ * @param      eai_in                   The non-decimated endpoints and weights.
+ * @param      eai_out                  A copy of eai_in we can modify later for refinement.
+ * @param      di                       The selected weight decimation.
+ * @param[out] dec_weight_ideal_value   The ideal values for the decimated weight set.
+ * @param[out] dec_weight_ideal_sig     The significance of each weight in the decimated weight_set.
  */
 void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
-	float* weight_set,
-	float* weights);
+	float* dec_weight_ideal_value,
+	float* dec_weight_ideal_sig);
 
 /**
  * @brief Compute the optimal quantized weights for a decimation table.
@@ -1836,21 +1836,21 @@ void compute_ideal_weights_for_decimation(
  * We test the two closest weight indices in the allowed quantization range and keep the weight that
  * is the closest match.
  *
- * @param      di                     The selected weight decimation.
- * @param      low_bound              The lowest weight allowed.
- * @param      high_bound             The highest weight allowed.
- * @param      weight_set_in          The ideal weight set.
- * @param[out] weight_set_out         The output quantized weight as a float.
- * @param[out] quantized_weight_set   The output quantized weight as encoded int.
- * @param      quant_level            The desired weight quant level.
+ * @param      di                        The selected weight decimation.
+ * @param      low_bound                 The lowest weight allowed.
+ * @param      high_bound                The highest weight allowed.
+ * @param      dec_weight_ideal_value    The ideal weight set.
+ * @param[out] dec_weight_quant_uvalue   The output quantized weight as a float.
+ * @param[out] dec_weight_quant_pvalue   The output quantized weight as encoded int.
+ * @param      quant_level               The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation(
 	const decimation_info& di,
 	float low_bound,
 	float high_bound,
-	const float* weight_set_in,
-	float* weight_set_out,
-	uint8_t* quantized_weight_set,
+	const float* dec_weight_ideal_value,
+	float* dec_weight_quant_uvalue,
+	uint8_t* dec_weight_quant_pvalue,
 	quant_method quant_level);
 
 /**
@@ -1917,16 +1917,16 @@ static inline vfloat bilinear_infill_vla(
  * error for decimated weight grids where weights are stored at a lower resolution. This function
  * computes the error of the reduced grid, compared to the full grid.
  *
- * @param eai       The ideal weights for the full grid.
- * @param di        The selected weight decimation.
- * @param weights   The ideal weights for the decimated grid.
+ * @param eai                       The ideal weights for the full grid.
+ * @param di                        The selected weight decimation.
+ * @param dec_weight_quant_uvalue   The quantized weights for the decimated grid.
  *
  * @return The accumulated error.
  */
 float compute_error_of_weight_set_1plane(
 	const endpoints_and_weights& eai,
 	const decimation_info& di,
-	const float *weights);
+	const float* dec_weight_quant_uvalue);
 
 /**
  * @brief Compute the error of a decimated weight set for 2 planes.
@@ -1935,11 +1935,11 @@ float compute_error_of_weight_set_1plane(
  * error for decimated weight grids where weights are stored at a lower resolution. This function
  * computes the error of the reduced grid, compared to the full grid.
  *
- * @param eai1       The ideal weights for the full grid and plane 1.
- * @param eai2       The ideal weights for the full grid and plane 2.
- * @param di         The selected weight decimation.
- * @param weights1   The ideal weights for the decimated grid plane 1.
- * @param weights2   The ideal weights for the decimated grid plane 2.
+ * @param eai1                             The ideal weights for the full grid and plane 1.
+ * @param eai2                             The ideal weights for the full grid and plane 2.
+ * @param di                               The selected weight decimation.
+ * @param dec_weight_quant_uvalue_plane1   The quantized weights for the decimated grid plane 1.
+ * @param dec_weight_quant_uvalue_plane2   The quantized weights for the decimated grid plane 2.
  *
  * @return The accumulated error.
  */
@@ -1947,8 +1947,8 @@ float compute_error_of_weight_set_2planes(
 	const endpoints_and_weights& eai1,
 	const endpoints_and_weights& eai2,
 	const decimation_info& di,
-	const float* weights1,
-	const float* weights2);
+	const float* dec_weight_quant_uvalue_plane1,
+	const float* dec_weight_quant_uvalue_plane2);
 
 /**
  * @brief Pack a single pair of color endpoints as effectively as possible.
@@ -2137,18 +2137,18 @@ void prepare_angular_tables();
  *
  * // TODO: Terminology here is confusing and needs improving.
  *
- * @param     only_always                   Only consider block modes that are always enabled.
- * @param     bsd                           The block size descriptor for the current trial.
- * @param     decimated_quantized_weights   The decimated and quantized weight values.
- * @param     decimated_weights             The significance of each weight.
- * @param[out] low_value                    The lowest weight to consider for each block mode.
- * @param[out] high_value                   The highest weight to consider for each block mode.
+ * @param     only_always                Only consider block modes that are always enabled.
+ * @param     bsd                        The block size descriptor for the current trial.
+ * @param     dec_weight_quant_uvalue    The decimated and quantized weight values.
+ * @param     dec_weight_quant_sig       The significance of each weight.
+ * @param[out] low_value                 The lowest weight to consider for each block mode.
+ * @param[out] high_value                The highest weight to consider for each block mode.
  */
 void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
-	const float* decimated_quantized_weights,
-	const float* decimated_weights,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	float low_value[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value[WEIGHTS_MAX_BLOCK_MODES]);
 
@@ -2157,18 +2157,18 @@ void compute_angular_endpoints_1plane(
  *
  * // TODO: Terminology here is confusing and needs improving.
  *
- * @param     bsd                           The block size descriptor for the current trial.
- * @param     decimated_quantized_weights   The decimated and quantized weight values.
- * @param     decimated_weights             The significance of each weight.
- * @param[out] low_value1                   The lowest weight p1 to consider for each block mode.
- * @param[out] high_value1                  The highest weight p1 to consider for each block mode.
- * @param[out] low_value2                   The lowest weight p2 to consider for each block mode.
- * @param[out] high_value2                  The highest weight p2 to consider for each block mode.
+ * @param     bsd                       The block size descriptor for the current trial.
+ * @param     dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param     dec_weight_quant_sig      The significance of each weight.
+ * @param[out] low_value1               The lowest weight p1 to consider for each block mode.
+ * @param[out] high_value1              The highest weight p1 to consider for each block mode.
+ * @param[out] low_value2               The lowest weight p2 to consider for each block mode.
+ * @param[out] high_value2              The highest weight p2 to consider for each block mode.
  */
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
-	const float* decimated_quantized_weights,
-	const float* decimated_weights,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	float low_value1[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value1[WEIGHTS_MAX_BLOCK_MODES],
 	float low_value2[WEIGHTS_MAX_BLOCK_MODES],

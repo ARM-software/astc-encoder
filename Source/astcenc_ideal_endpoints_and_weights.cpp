@@ -679,7 +679,7 @@ void compute_ideal_colors_and_weights_2planes(
 float compute_error_of_weight_set_1plane(
 	const endpoints_and_weights& eai,
 	const decimation_info& di,
-	const float* weights
+	const float* dec_weight_quant_uvalue
 ) {
 	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
@@ -693,7 +693,7 @@ float compute_error_of_weight_set_1plane(
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Compute the bilinear interpolation of the decimated weight grid
-			vfloat current_values = bilinear_infill_vla(di, weights, i);
+			vfloat current_values = bilinear_infill_vla(di, dec_weight_quant_uvalue, i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values = loada(eai.weights + i);
@@ -709,7 +709,7 @@ float compute_error_of_weight_set_1plane(
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Load the weight set directly, without interpolation
-			vfloat current_values = loada(weights + i);
+			vfloat current_values = loada(dec_weight_quant_uvalue + i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values = loada(eai.weights + i);
@@ -732,8 +732,8 @@ float compute_error_of_weight_set_2planes(
 	const endpoints_and_weights& eai1,
 	const endpoints_and_weights& eai2,
 	const decimation_info& di,
-	const float* weights1,
-	const float* weights2
+	const float* dec_weight_quant_uvalue_plane1,
+	const float* dec_weight_quant_uvalue_plane2
 ) {
 	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
@@ -747,7 +747,7 @@ float compute_error_of_weight_set_2planes(
 		{
 			// Plane 1
 			// Compute the bilinear interpolation of the decimated weight grid
-			vfloat current_values1 = bilinear_infill_vla(di, weights1, i);
+			vfloat current_values1 = bilinear_infill_vla(di, dec_weight_quant_uvalue_plane1, i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values1 = loada(eai1.weights + i);
@@ -756,7 +756,7 @@ float compute_error_of_weight_set_2planes(
 
 			// Plane 2
 			// Compute the bilinear interpolation of the decimated weight grid
-			vfloat current_values2 = bilinear_infill_vla(di, weights2, i);
+			vfloat current_values2 = bilinear_infill_vla(di, dec_weight_quant_uvalue_plane2, i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values2 = loada(eai2.weights + i);
@@ -772,7 +772,7 @@ float compute_error_of_weight_set_2planes(
 		{
 			// Plane 1
 			// Load the weight set directly, without interpolation
-			vfloat current_values1 = loada(weights1 + i);
+			vfloat current_values1 = loada(dec_weight_quant_uvalue_plane1 + i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values1 = loada(eai1.weights + i);
@@ -781,7 +781,7 @@ float compute_error_of_weight_set_2planes(
 
 			// Plane 2
 			// Load the weight set directly, without interpolation
-			vfloat current_values2 = loada(weights2 + i);
+			vfloat current_values2 = loada(dec_weight_quant_uvalue_plane2 + i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values2 = loada(eai2.weights + i);
@@ -803,8 +803,8 @@ void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
-	float* weight_set,
-	float* weights
+	float* dec_weight_ideal_value,
+	float* dec_weight_ideal_sig
 ) {
 	unsigned int texel_count = di.texel_count;
 	unsigned int weight_count = di.weight_count;
@@ -823,7 +823,7 @@ void compute_ideal_weights_for_decimation(
 	unsigned int weight_count_simd = round_up_to_simd_multiple_vla(weight_count);
 	for (unsigned int i = weight_count; i < weight_count_simd; i++)
 	{
-		weight_set[i] = 0.0f;
+		dec_weight_ideal_value[i] = 0.0f;
 	}
 
 	// If we have a 1:1 mapping just shortcut the computation - clone the weights into both the
@@ -839,8 +839,8 @@ void compute_ideal_weights_for_decimation(
 			// Assert it's an identity map for valid texels, and last valid value for any overspill
 			assert(((i < texel_count) && (i == di.weight_texel[0][i])) ||
 			       ((i >= texel_count) && (texel_count - 1 == di.weight_texel[0][i])));
-			weight_set[i] = eai_in.weights[i];
-			weights[i] = eai_in.weight_error_scale[i];
+			dec_weight_ideal_value[i] = eai_in.weights[i];
+			dec_weight_ideal_sig[i] = eai_in.weight_error_scale[i];
 
 			eai_out.weights[i] = eai_in.weights[i];
 			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
@@ -901,8 +901,8 @@ void compute_ideal_weights_for_decimation(
 			initial_weight += gatherf(eai_in.weights, texel) * contrib_weight;
 		}
 
-		storea(weight_weight, weights + i);
-		storea(initial_weight / weight_weight, weight_set + i);
+		storea(weight_weight, dec_weight_ideal_sig + i);
+		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
 	}
 
 	// Populate the interpolated weight grid based on the initital average
@@ -911,14 +911,14 @@ void compute_ideal_weights_for_decimation(
 	unsigned int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
 	for (/* */; is < clipped_texel_count; is += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat weight = bilinear_infill_vla(di, weight_set, is);
+		vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, is);
 		storea(weight, infilled_weights + is);
 	}
 
 	// Loop tail
 	for (/* */; is < texel_count; is++)
 	{
-		infilled_weights[is] = bilinear_infill(di, weight_set, is);
+		infilled_weights[is] = bilinear_infill(di, dec_weight_ideal_value, is);
 	}
 
 	// Perform a single iteration of refinement
@@ -928,7 +928,7 @@ void compute_ideal_weights_for_decimation(
 
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat weight_val = loada(weight_set + i);
+		vfloat weight_val = loada(dec_weight_ideal_value + i);
 
 		// Accumulate error weighting of all the texels using this weight
 		// Start with a small value to avoid div-by-zero later
@@ -968,8 +968,8 @@ void compute_ideal_weights_for_decimation(
 		vfloat step = (error_change1 * chd_scale) / error_change0;
 		step = clamp(-stepsize, stepsize, step);
 
-		// Update the weight
-		storea(weight_val + step, weight_set + i);
+		// Update the weight; note this can store negative values.
+		storea(weight_val + step, dec_weight_ideal_value + i);
 	}
 }
 
@@ -978,7 +978,7 @@ void compute_quantized_weights_for_decimation(
 	const decimation_info& di,
 	float low_bound,
 	float high_bound,
-	const float* weight_set_in,
+	const float* dec_weight_ideal_value,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
 	quant_method quant_level
@@ -1012,7 +1012,7 @@ void compute_quantized_weights_for_decimation(
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat ix = loada(&weight_set_in[i]) * scalev - scaled_low_boundv;
+		vfloat ix = loada(&dec_weight_ideal_value[i]) * scalev - scaled_low_boundv;
 		ix = clampzo(ix);
 
 		// Look up the two closest indexes and return the one that was closest
@@ -1120,10 +1120,10 @@ void recompute_ideal_colors_1plane(
 
 	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
-	float weight_set[BLOCK_MAX_WEIGHTS];
+	float dec_weight_ideal_value[BLOCK_MAX_WEIGHTS];
 	for (int i = 0; i < weight_count; i++)
 	{
-		weight_set[i] = qat.unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
+		dec_weight_ideal_value[i] = qat.unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -1178,10 +1178,10 @@ void recompute_ideal_colors_1plane(
 			// TODO: Move this calculation out to the color block?
 			float ls_weight = hadd_rgb_s(color_weight);
 
-			float idx0 = weight_set[tix];
+			float idx0 = dec_weight_ideal_value[tix];
 			if (is_decimated)
 			{
-				idx0 = bilinear_infill(di, weight_set, tix);
+				idx0 = bilinear_infill(di, dec_weight_ideal_value, tix);
 			}
 
 			float om_idx0 = 1.0f - idx0;
@@ -1329,12 +1329,12 @@ void recompute_ideal_colors_2planes(
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
-	float weight_set[BLOCK_MAX_WEIGHTS];
+	float dec_weight_ideal_value[BLOCK_MAX_WEIGHTS];
 	float plane2_weight_set[BLOCK_MAX_WEIGHTS];
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		weight_set[i] = qat->unquantized_value[weight_set8_plane1[i]] * (1.0f / 64.0f);
+		dec_weight_ideal_value[i] = qat->unquantized_value[weight_set8_plane1[i]] * (1.0f / 64.0f);
 		plane2_weight_set[i] = qat->unquantized_value[weight_set8_plane2[i]] * (1.0f / 64.0f);
 	}
 
@@ -1378,10 +1378,10 @@ void recompute_ideal_colors_2planes(
 		// TODO: Move this calculation out to the color block?
 		float ls_weight = hadd_rgb_s(color_weight);
 
-		float idx0 = weight_set[j];
+		float idx0 = dec_weight_ideal_value[j];
 		if (is_decimated)
 		{
-			idx0 = bilinear_infill(di, weight_set, j);
+			idx0 = bilinear_infill(di, dec_weight_ideal_value, j);
 		}
 
 		float om_idx0 = 1.0f - idx0;

@@ -91,29 +91,29 @@ void prepare_angular_tables()
 /**
  * @brief Compute the angular alignment factors and offsets.
  *
- * @param      sample_count         The number of samples.
- * @param      samples              The sample data.
- * @param      sample_weights       The weight of each sample.
- * @param      max_angular_steps    The maximum number of steps to be tested.
- * @param[out] offsets              The output angular offsets array.
+ * @param      weight_count              The number of (decimated) weights.
+ * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param      dec_weight_quant_sig      The significance of each weight.
+ * @param      max_angular_steps         The maximum number of steps to be tested.
+ * @param[out] offsets                   The output angular offsets array.
  */
 static void compute_angular_offsets(
-	unsigned int sample_count,
-	const float* samples,
-	const float* sample_weights,
+	unsigned int weight_count,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	unsigned int max_angular_steps,
 	float* offsets
 ) {
-	promise(sample_count > 0);
+	promise(weight_count > 0);
 	promise(max_angular_steps > 0);
 
 	alignas(ASTCENC_VECALIGN) int isamplev[BLOCK_MAX_WEIGHTS] { 0 };
 
 	// Precompute isample; arrays are always allocated 64 elements long
-	for (unsigned int i = 0; i < sample_count; i += ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Add 2^23 and interpreting bits extracts round-to-nearest int
-		vfloat sample = loada(samples + i) * (SINCOS_STEPS - 1.0f) + vfloat(12582912.0f);
+		vfloat sample = loada(dec_weight_quant_uvalue + i) * (SINCOS_STEPS - 1.0f) + vfloat(12582912.0f);
 		vint isample = float_as_int(sample) & vint((SINCOS_STEPS - 1));
 		storea(isample, isamplev + i);
 	}
@@ -126,10 +126,10 @@ static void compute_angular_offsets(
 		vfloat anglesum_x = vfloat::zero();
 		vfloat anglesum_y = vfloat::zero();
 
-		for (unsigned int j = 0; j < sample_count; j++)
+		for (unsigned int j = 0; j < weight_count; j++)
 		{
 			int isample = isamplev[j];
-			vfloat sample_weightv(sample_weights[j]);
+			vfloat sample_weightv(dec_weight_quant_sig[j]);
 			anglesum_x += loada(cos_table[isample] + i) * sample_weightv;
 			anglesum_y += loada(sin_table[isample] + i) * sample_weightv;
 		}
@@ -147,22 +147,22 @@ static void compute_angular_offsets(
  * offset, and then compute the resulting error. The cut errors indicate the error that results from
  * forcing samples that should have had one weight value one step up or down.
  *
- * @param      sample_count            The number of samples.
- * @param      samples                 The sample data.
- * @param      sample_weights          The weight of each sample.
- * @param      max_angular_steps       The maximum number of steps to be tested.
- * @param      max_quant_steps         The maximum quantization level to be tested.
- * @param      offsets                 The angular offsets array.
- * @param[out] lowest_weight           Per angular step, the lowest weight.
- * @param[out] weight_span             Per angular step, the span between lowest and highest weight.
- * @param[out] error                   Per angular step, the error.
- * @param[out] cut_low_weight_error    Per angular step, the low weight cut error.
- * @param[out] cut_high_weight_error   Per angular step, the high weight cut error.
+ * @param      weight_count              The number of (decimated) weights.
+ * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param      dec_weight_quant_sig      The significance of each weight.
+ * @param      max_angular_steps         The maximum number of steps to be tested.
+ * @param      max_quant_steps           The maximum quantization level to be tested.
+ * @param      offsets                   The angular offsets array.
+ * @param[out] lowest_weight             Per angular step, the lowest weight.
+ * @param[out] weight_span               Per angular step, the span between lowest and highest weight.
+ * @param[out] error                     Per angular step, the error.
+ * @param[out] cut_low_weight_error      Per angular step, the low weight cut error.
+ * @param[out] cut_high_weight_error     Per angular step, the high weight cut error.
  */
 static void compute_lowest_and_highest_weight(
-	unsigned int sample_count,
-	const float* samples,
-	const float* sample_weights,
+	unsigned int weight_count,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	unsigned int max_angular_steps,
 	unsigned int max_quant_steps,
 	const float* offsets,
@@ -172,7 +172,7 @@ static void compute_lowest_and_highest_weight(
 	float* cut_low_weight_error,
 	float* cut_high_weight_error
 ) {
-	promise(sample_count > 0);
+	promise(weight_count > 0);
 	promise(max_angular_steps > 0);
 
 	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
@@ -187,10 +187,10 @@ static void compute_lowest_and_highest_weight(
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(&offsets[sp]);
 
-		for (unsigned int j = 0; j < sample_count; ++j)
+		for (unsigned int j = 0; j < weight_count; ++j)
 		{
-			vfloat wt = load1(&sample_weights[j]);
-			vfloat sval = load1(&samples[j]) * rcp_stepsize - offset;
+			vfloat wt = load1(&dec_weight_quant_sig[j]);
+			vfloat sval = load1(&dec_weight_quant_uvalue[j]) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
 			vint idxv = float_to_int(svalrte);
 			vfloat dif = sval - svalrte;
@@ -240,17 +240,17 @@ static void compute_lowest_and_highest_weight(
 /**
  * @brief The main function for the angular algorithm.
  *
- * @param      sample_count      The number of samples.
- * @param      samples           The sample data.
- * @param      sample_weights    The weight of each sample.
- * @param      max_quant_level   The maximum quantization level to be tested.
- * @param[out] low_value         Per angular step, the lowest weight value.
- * @param[out] high_value        Per angular step, the highest weight value.
+ * @param      weight_count              The number of (decimated) weights.
+ * @param      dec_weight_quant_uvalue   The decimated and quantized weight value.
+ * @param      dec_weight_quant_sig      The significance of each weight.
+ * @param      max_quant_level           The maximum quantization level to be tested.
+ * @param[out] low_value                 Per angular step, the lowest weight value.
+ * @param[out] high_value                Per angular step, the highest weight value.
  */
 static void compute_angular_endpoints_for_quant_levels(
-	unsigned int sample_count,
-	const float* samples,
-	const float* sample_weights,
+	unsigned int weight_count,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	unsigned int max_quant_level,
 	float low_value[12],
 	float high_value[12]
@@ -259,7 +259,8 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
 	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
-	compute_angular_offsets(sample_count, samples, sample_weights, max_angular_steps, angular_offsets);
+	compute_angular_offsets(weight_count, dec_weight_quant_uvalue, dec_weight_quant_sig,
+	                        max_angular_steps, angular_offsets);
 
 	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) int32_t weight_span[ANGULAR_STEPS];
@@ -267,7 +268,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	alignas(ASTCENC_VECALIGN) float cut_low_weight_error[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float cut_high_weight_error[ANGULAR_STEPS];
 
-	compute_lowest_and_highest_weight(sample_count, samples, sample_weights,
+	compute_lowest_and_highest_weight(weight_count, dec_weight_quant_uvalue, dec_weight_quant_sig,
 	                                  max_angular_steps, max_quant_steps,
 	                                  angular_offsets, lowest_weight, weight_span, error,
 	                                  cut_low_weight_error, cut_high_weight_error);
@@ -363,8 +364,8 @@ else
 void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
-	const float* decimated_quantized_weights,
-	const float* decimated_weights,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	float low_value[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value[WEIGHTS_MAX_BLOCK_MODES]
 ) {
@@ -380,11 +381,10 @@ void compute_angular_endpoints_1plane(
 			continue;
 		}
 
-		int sample_count = bsd.decimation_tables[i]->weight_count;
 		compute_angular_endpoints_for_quant_levels(
-		    sample_count,
-		    decimated_quantized_weights + i * BLOCK_MAX_WEIGHTS,
-		    decimated_weights + i * BLOCK_MAX_WEIGHTS,
+		    bsd.decimation_tables[i]->weight_count,
+		    dec_weight_quant_uvalue + i * BLOCK_MAX_WEIGHTS,
+		    dec_weight_quant_sig + i * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_1plane, low_values[i], high_values[i]);
 	}
 
@@ -408,8 +408,8 @@ void compute_angular_endpoints_1plane(
 /* See header for documentation. */
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
-	const float* decimated_quantized_weights,
-	const float* decimated_weights,
+	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_quant_sig,
 	float low_value1[WEIGHTS_MAX_BLOCK_MODES],
 	float high_value1[WEIGHTS_MAX_BLOCK_MODES],
 	float low_value2[WEIGHTS_MAX_BLOCK_MODES],
@@ -429,18 +429,18 @@ void compute_angular_endpoints_2planes(
 			continue;
 		}
 
-		unsigned int sample_count = bsd.decimation_tables[i]->weight_count;
+		unsigned int weight_count = bsd.decimation_tables[i]->weight_count;
 
 		compute_angular_endpoints_for_quant_levels(
-		    sample_count,
-		    decimated_quantized_weights + 2 * i * BLOCK_MAX_WEIGHTS,
-		    decimated_weights + 2 * i * BLOCK_MAX_WEIGHTS,
+		    weight_count,
+		    dec_weight_quant_uvalue + 2 * i * BLOCK_MAX_WEIGHTS,
+		    dec_weight_quant_sig + 2 * i * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 		compute_angular_endpoints_for_quant_levels(
-		    sample_count,
-		    decimated_quantized_weights + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
-		    decimated_weights + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
+		    weight_count,
+		    dec_weight_quant_uvalue + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
+		    dec_weight_quant_sig + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
 		    dm.maxprec_2planes, low_values2[i], high_values2[i]);
 	}
 
