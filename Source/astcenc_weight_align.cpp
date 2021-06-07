@@ -326,16 +326,14 @@ static void compute_angular_endpoints_for_quant_levels(
 		int bsi = (int)best_results[q].lane<1>();
 
 		// Did we find anything?
-		// TODO: Can we do better than bsi = 0 here. We should at least propagate an error?
 #if !defined(NDEBUG)
 		if (bsi < 0)
 		{
 			printf("WARNING: Unable to find encoding within specified error limit\n");
-			bsi = 0;
 		}
-else
-		bsi = astc::max(0, bsi);
 #endif
+
+		bsi = astc::max(0, bsi);
 
 		float stepsize = 1.0f / (1.0f + (float)bsi);
 		int lwi = lowest_weight[bsi] + (int)best_results[q].lane<2>();
