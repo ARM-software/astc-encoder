@@ -62,10 +62,7 @@ def find_reference_results():
                 quality = match.group(2)
                 imageSet = os.path.basename(root)
 
-                if imageSet == "Small":
-                    continue
-
-                if imageSet == "Frymire":
+                if imageSet != "Kodak":
                     continue
 
                 testRef = trs.ResultSet(imageSet)
@@ -360,6 +357,32 @@ def main():
             "thorough",
             "relative-3.x-quality.png",
             (None, None)
+        ],
+        # --------------------------------------------------------
+        # Latest 3.x vs 2.5 release charts
+        [
+            # Relative scores
+            ["thorough", "medium", "fast", "fastest"],
+            ["ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            "ref-3.0-avx2",
+            None,
+            "relative-main-vs-3.x.png",
+            (None, None),
+            1
+        ],
+        [
+            # Relative scores
+            ["thorough", "medium", "fast"],
+            ["ref-main-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            "ref-1.7",
+            None,
+            "relative-main-vs-1.x.png",
+            (None, None),
+            1
         ],
     ]
 

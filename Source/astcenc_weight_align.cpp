@@ -442,15 +442,16 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	float high_value[12]
 ) {
 	unsigned int max_quant_steps = quantization_steps_for_level[max_quant_level];
+	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
-	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
-	compute_angular_offsets(weight_count, dec_weight_quant_uvalue, dec_weight_quant_sig,
-	                        max_angular_steps, angular_offsets);
-
 	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) int32_t weight_span[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float error[ANGULAR_STEPS];
+
+	compute_angular_offsets(weight_count, dec_weight_quant_uvalue, dec_weight_quant_sig,
+	                        max_angular_steps, angular_offsets);
+
 
 	compute_lowest_and_highest_weight_lwc(weight_count, dec_weight_quant_uvalue, dec_weight_quant_sig,
 	                                      max_angular_steps, max_quant_steps,
@@ -459,17 +460,16 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
 	// branches can become selects. This involves some integer to float casts, but the values are
 	// small enough so they never round the wrong way.
-	vfloat4 best_results[40];
+	float best_error[ANGULAR_STEPS];
+	int best_index[ANGULAR_STEPS];
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
 	// TODO: Why the + 4 in the current code?
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
-		// Lane<0> = Best error
-		// Lane<1> = Best scale; -1 indicates no solution found
-		// Lane<2> = Cut low weight
-		best_results[i] = vfloat4(ERROR_CALC_DEFAULT, -1.0f, 0.0f, 0.0f);
+		best_error[i] = ERROR_CALC_DEFAULT;
+		best_index[i] = -1;
 	}
 
 	promise(max_angular_steps > 0);
@@ -478,16 +478,18 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 		int idx_span = weight_span[i];
 
 		// Check best error against record N
-		vfloat4 best_result = best_results[idx_span];
-		vfloat4 new_result = vfloat4(error[i], (float)i, 0.0f, 0.0f);
-		vmask4 mask1(best_result.lane<0>() > error[i]);
-		best_results[idx_span] = select(best_result, new_result, mask1);
+		float current_best = best_error[idx_span];
+		if (error[i] < current_best)
+		{
+			best_error[idx_span] = error[i];
+			best_index[idx_span] = i;
+		}
 	}
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
 		unsigned int q = quantization_steps_for_level[i];
-		int bsi = (int)best_results[q].lane<1>();
+		int bsi = best_index[q];
 
 		// Did we find anything?
 #if !defined(NDEBUG)
@@ -499,13 +501,11 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 		bsi = astc::max(0, bsi);
 
-		float stepsize = 1.0f / (1.0f + (float)bsi);
-		int lwi = lowest_weight[bsi] + (int)best_results[q].lane<2>();
+		int lwi = lowest_weight[bsi];
 		int hwi = lwi + q - 1;
 
-		float offset = angular_offsets[bsi] * stepsize;
-		low_value[i] = offset + static_cast<float>(lwi) * stepsize;
-		high_value[i] = offset + static_cast<float>(hwi) * stepsize;
+		low_value[i]  = (angular_offsets[bsi] + static_cast<float>(lwi)) / (1.0f + (float)bsi);
+		high_value[i] = (angular_offsets[bsi] + static_cast<float>(hwi)) / (1.0f + (float)bsi);
 	}
 }
 
