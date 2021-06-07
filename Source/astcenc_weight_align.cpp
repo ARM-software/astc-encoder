@@ -280,12 +280,13 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
+	// TODO: Why the + 4 in the current code?
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error
 		// Lane<1> = Best scale; -1 indicates no solution found
 		// Lane<2> = Cut low weight
-		best_results[i] = vfloat4(1e30f, -1.0f, 0.0f, 0.0f);
+		best_results[i] = vfloat4(ERROR_CALC_DEFAULT, -1.0f, 0.0f, 0.0f);
 	}
 
 	promise(max_angular_steps > 0);

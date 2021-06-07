@@ -371,7 +371,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	    color_quant_level, color_quant_level_mod);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best
-	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
 	float best_errorval_in_scb = scb.errorval;
 
 	for (unsigned int i = 0; i < candidate_count; i++)
@@ -483,7 +483,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			if (l == 0)
 			{
 				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
-				if (errorval == -1e30f)
+				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
 					workscb.block_type = SYM_BTYPE_ERROR;
@@ -523,7 +523,7 @@ static float compress_symbolic_block_for_partition_1plane(
 
 			// Post-realign test
 			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
-			if (errorval == -1e30f)
+			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
 				workscb.block_type = SYM_BTYPE_ERROR;
@@ -642,7 +642,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	vmask4 use_ep2 = (ep2 > vfloat4(0.5f)) & (ep2 < min_ep2);
 	min_ep2 = select(min_ep2, ep2, use_ep2);
 
-	vfloat4 err_max(1e30f);
+	vfloat4 err_max(ERROR_CALC_DEFAULT);
 	vmask4 err_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Set the plane2 component to max error in ep1
@@ -747,7 +747,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	    color_quant_level, color_quant_level_mod);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best
-	float best_errorval_in_mode = 1e30f;
+	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
 	float best_errorval_in_scb = scb.errorval;
 
 	for (unsigned int i = 0; i < candidate_count; i++)
@@ -819,7 +819,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			if (l == 0)
 			{
 				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
-				if (errorval == -1e30f)
+				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
 					workscb.block_type = SYM_BTYPE_ERROR;
@@ -859,7 +859,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 			// Post-realign test
 			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
-			if (errorval == -1e30f)
+			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
 				workscb.block_type = SYM_BTYPE_ERROR;
@@ -1373,11 +1373,11 @@ void compress_block(
 #endif
 
 	// Set SCB and mode errors to a very high error value
-	scb.errorval = 1e30f;
+	scb.errorval = ERROR_CALC_DEFAULT;
 	scb.block_type = SYM_BTYPE_ERROR;
 
 	float best_errorvals_for_pcount[BLOCK_MAX_PARTITIONS] {
-		 1e30f, 1e30f, 1e30f, 1e30f
+		ERROR_CALC_DEFAULT, ERROR_CALC_DEFAULT, ERROR_CALC_DEFAULT, ERROR_CALC_DEFAULT
 	};
 
 	float exit_thresholds_for_pcount[BLOCK_MAX_PARTITIONS] {
