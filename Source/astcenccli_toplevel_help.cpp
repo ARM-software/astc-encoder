@@ -411,6 +411,16 @@ ADVANCED COMPRESSION
                -thorough   : 0.95
                -exhaustive : 0.99
 
+       -lowweightmodelimit <weight count>
+           Use a simpler weight search for weight counts less than or
+           equal to this threshold. Preset defaults are bitrate dependent:
+
+               -fastest    : 25
+               -fast       : 20
+               -medium     : 16
+               -thorough   : 12
+               -exhaustive : 0
+
        Other options
        -------------
 

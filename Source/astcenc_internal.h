@@ -2135,16 +2135,16 @@ void prepare_angular_tables();
 /**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
- * // TODO: Terminology here is confusing and needs improving.
- *
- * @param     only_always                Only consider block modes that are always enabled.
- * @param     bsd                        The block size descriptor for the current trial.
- * @param     dec_weight_quant_uvalue    The decimated and quantized weight values.
- * @param     dec_weight_quant_sig       The significance of each weight.
+ * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
+ * @param      only_always               Only consider block modes that are always enabled.
+ * @param      bsd                       The block size descriptor for the current trial.
+ * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param      dec_weight_quant_sig      The significance of each weight.
  * @param[out] low_value                 The lowest weight to consider for each block mode.
  * @param[out] high_value                The highest weight to consider for each block mode.
  */
 void compute_angular_endpoints_1plane(
+	unsigned int tune_low_weight_limit,
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_quant_uvalue,
@@ -2155,8 +2155,7 @@ void compute_angular_endpoints_1plane(
 /**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
- * // TODO: Terminology here is confusing and needs improving.
- *
+ * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
  * @param     bsd                       The block size descriptor for the current trial.
  * @param     dec_weight_quant_uvalue   The decimated and quantized weight values.
  * @param     dec_weight_quant_sig      The significance of each weight.
@@ -2166,6 +2165,7 @@ void compute_angular_endpoints_1plane(
  * @param[out] high_value2              The highest weight p2 to consider for each block mode.
  */
 void compute_angular_endpoints_2planes(
+	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_quant_uvalue,
 	const float* dec_weight_quant_sig,

@@ -548,6 +548,11 @@ struct astcenc_config
 	 */
 	float tune_2_plane_early_out_limit_correlation;
 
+	/**
+	 * @brief The threshold below which (inclusive) we stop testing low/high/low+high cutoffs.
+	 */
+	unsigned int tune_low_weight_count_limit;
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**
 	 * @brief The path to save the diagnostic trace data to.
