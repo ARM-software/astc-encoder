@@ -296,16 +296,13 @@ static void compute_angular_endpoints_for_quant_levels(
 		float error_cut_high = error[i] + cut_high_weight_error[i];
 		float error_cut_low_high = error[i] + cut_low_weight_error[i] + cut_high_weight_error[i];
 
-		vfloat4 best_result;
-		vfloat4 new_result;
-
 		// Check best error against record N
-		best_result = best_results[idx_span];
-		new_result = vfloat4(error[i], (float)i, 0.0f, 0.0f);
+		vfloat4 best_result = best_results[idx_span];
+		vfloat4 new_result = vfloat4(error[i], (float)i, 0.0f, 0.0f);
 		vmask4 mask1(best_result.lane<0>() > error[i]);
 		best_results[idx_span] = select(best_result, new_result, mask1);
 
-		// Check best error against record N-1 with both cut low and cut high
+		// Check best error against record N-1 with either cut low or cut high
 		best_result = best_results[idx_span - 1];
 
 		new_result = vfloat4(error_cut_low, (float)i, 1.0f, 0.0f);
@@ -316,21 +313,11 @@ static void compute_angular_endpoints_for_quant_levels(
 		vmask4 mask3(best_result.lane<0>() > error_cut_high);
 		best_results[idx_span - 1] = select(best_result, new_result, mask3);
 
-		// Check best error against record N-2 with cut low high
+		// Check best error against record N-2 with both cut low and high
 		best_result = best_results[idx_span - 2];
 		new_result = vfloat4(error_cut_low_high, (float)i, 1.0f, 0.0f);
 		vmask4 mask4(best_result.lane<0>() > error_cut_low_high);
 		best_results[idx_span - 2] = select(best_result, new_result, mask4);
-	}
-
-	// If we get a better error for lower sample count then use the lower sample count's error for
-	// the higher sample count as well.
-	for (unsigned int i = 3; i <= max_quant_steps; i++)
-	{
-		vfloat4 result = best_results[i];
-		vfloat4 prev_result = best_results[i - 1];
-		vmask4 mask(result.lane<0>() > prev_result.lane<0>());
-		best_results[i] = select(result, prev_result, mask);
 	}
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
