@@ -1020,10 +1020,10 @@ struct endpoints_and_weights
 	/** @brief The color endpoints. */
 	endpoints ep;
 
-	/** @brief The undecimated and unquantized weight for each texel. */
+	/** @brief The ideal weight for each texel; may be undecimated or decimated. */
 	alignas(ASTCENC_VECALIGN) float weights[BLOCK_MAX_TEXELS];
 
-	/** @brief The undecimated and unquantized weight error scaling for each texel. */
+	/** @brief The ideal weight error scaling for each texel; may be undecimated or decimated. */
 	alignas(ASTCENC_VECALIGN) float weight_error_scale[BLOCK_MAX_TEXELS];
 };
 
@@ -1062,26 +1062,26 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	/** @brief Ideal endpoints and weights for plane 2. */
 	endpoints_and_weights ei2;
 
-	/** @brief Ideal endpoints and weights for plane 1. */
+	/** @brief Ideal decimated endpoints and weights for plane 1. */
 	endpoints_and_weights eix1[WEIGHTS_MAX_DECIMATION_MODES];
 
-	/** @brief Ideal endpoints and weights for plane 2. */
+	/** @brief Ideal decimated endpoints and weights for plane 2. */
 	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The error weight block for the current thread. */
 	error_weight_block ewb;
 
-	/** @brief Decimated and weight values, rounded to quantization points but not stored packed. */
-	alignas(ASTCENC_VECALIGN) float decimated_quantized_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	/** @brief Decimated ideal weight values. */
+	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_value[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
-	/** @brief Decimated and unquantized weight values. */
-	alignas(ASTCENC_VECALIGN) float decimated_weights[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	/** @brief Decimated ideal weight significance. */
+	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_sig[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+
+	/** @brief Decimated and quantized weight values stored in the unpacked quantized weight range. */
+	alignas(ASTCENC_VECALIGN) float dec_weights_quant_uvalue[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 
 	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
-	alignas(ASTCENC_VECALIGN) float flt_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
-
-	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
-	alignas(ASTCENC_VECALIGN) uint8_t u8_quantized_decimated_quantized_weights[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_quant_pvalue[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 };
 
 /**
