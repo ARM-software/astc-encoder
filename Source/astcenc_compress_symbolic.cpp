@@ -59,13 +59,13 @@ static void merge_endpoints(
  * partition and per plane) and attempt to improve image quality by moving each weight up by one or
  * down by one quantization step.
  *
- * @param      decode_mode          The decode mode (LDR, HDR).
- * @param      bsd                  The block size information.
- * @param      blk                  The image block color data to compress.
- * @param      ewb                  The image block weighted error data.
- * @param[out] scb                  The symbolic compressed block output.
- * @param[out] weight_set8_plane1   The quantized weights for plane 1.
- * @param[out] weight_set8_plane2   The quantized weights for plane 2, @c nullptr if 1 plane.
+ * @param      decode_mode                       The decode mode (LDR, HDR).
+ * @param      bsd                               The block size information.
+ * @param      blk                               The image block color data to compress.
+ * @param      ewb                               The image block weighted error data.
+ * @param[out] scb                               The symbolic compressed block output.
+ * @param[out] dec_weights_quant_pvalue_plane1   The weights for plane 1.
+ * @param[out] dec_weights_quant_pvalue_plane2   The weights for plane 2, or @c nullptr if 1 plane.
  */
 static bool realign_weights(
 	astcenc_profile decode_mode,
@@ -73,8 +73,8 @@ static bool realign_weights(
 	const image_block& blk,
 	const error_weight_block& ewb,
 	symbolic_compressed_block& scb,
-	uint8_t* weight_set8_plane1,
-	uint8_t* weight_set8_plane2
+	uint8_t* dec_weights_quant_pvalue_plane1,
+	uint8_t* dec_weights_quant_pvalue_plane2
 ) {
 	// Get the partition descriptor
 	unsigned int partition_count = scb.partition_count;
@@ -116,7 +116,7 @@ static bool realign_weights(
 	}
 
 	uint8_t uq_pl_weights[BLOCK_MAX_WEIGHTS];
-	uint8_t* weight_set8 = weight_set8_plane1;
+	uint8_t* dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane1;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -135,7 +135,7 @@ static bool realign_weights(
 		// Create an unquantized weight grid for this decimation level
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
-			uq_pl_weights[we_idx] = qat->unquantized_value[weight_set8[we_idx]];
+			uq_pl_weights[we_idx] = qat->unquantized_value[dec_weights_quant_pvalue[we_idx]];
 		}
 
 		// For each weight compute previous, current, and next errors
@@ -196,19 +196,19 @@ static bool realign_weights(
 			if ((up_error < current_error) && (up_error < down_error))
 			{
 				uq_pl_weights[we_idx] = next_wt_uq;
-				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
 				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
 				uq_pl_weights[we_idx] = prev_wt_uq;
-				weight_set8[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
 				adjustments = true;
 			}
 		}
 
 		// Prepare iteration for plane 2
-		weight_set8 = weight_set8_plane2;
+		dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane2;
 		plane_mask = ~plane_mask;
 	}
 

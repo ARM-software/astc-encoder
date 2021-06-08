@@ -1106,7 +1106,7 @@ void recompute_ideal_colors_1plane(
 	const partition_info& pi,
 	const decimation_info& di,
 	int weight_quant_mode,
-	const uint8_t* weight_set8,
+	const uint8_t* dec_weights_quant_pvalue,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
@@ -1120,10 +1120,10 @@ void recompute_ideal_colors_1plane(
 
 	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
-	float dec_weight_ideal_value[BLOCK_MAX_WEIGHTS];
+	float dec_weight_quant_uvalue[BLOCK_MAX_WEIGHTS];
 	for (int i = 0; i < weight_count; i++)
 	{
-		dec_weight_ideal_value[i] = qat.unquantized_value[weight_set8[i]] * (1.0f / 64.0f);
+		dec_weight_quant_uvalue[i] = qat.unquantized_value[dec_weights_quant_pvalue[i]] * (1.0f / 64.0f);
 	}
 
 	for (int i = 0; i < partition_count; i++)
@@ -1178,10 +1178,10 @@ void recompute_ideal_colors_1plane(
 			// TODO: Move this calculation out to the color block?
 			float ls_weight = hadd_rgb_s(color_weight);
 
-			float idx0 = dec_weight_ideal_value[tix];
+			float idx0 = dec_weight_quant_uvalue[tix];
 			if (is_decimated)
 			{
-				idx0 = bilinear_infill(di, dec_weight_ideal_value, tix);
+				idx0 = bilinear_infill(di, dec_weight_quant_uvalue, tix);
 			}
 
 			float om_idx0 = 1.0f - idx0;
@@ -1315,8 +1315,8 @@ void recompute_ideal_colors_2planes(
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
 	int weight_quant_mode,
-	const uint8_t* weight_set8_plane1,
-	const uint8_t* weight_set8_plane2,
+	const uint8_t* dec_weights_quant_pvalue_plane1,
+	const uint8_t* dec_weights_quant_pvalue_plane2,
 	endpoints& ep,
 	vfloat4& rgbs_vector,
 	vfloat4& rgbo_vector,
@@ -1329,13 +1329,13 @@ void recompute_ideal_colors_2planes(
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
-	float dec_weight_ideal_value[BLOCK_MAX_WEIGHTS];
-	float plane2_weight_set[BLOCK_MAX_WEIGHTS];
+	float dec_weights_quant_uvalue_plane1[BLOCK_MAX_WEIGHTS];
+	float dec_weights_quant_uvalue_plane2[BLOCK_MAX_WEIGHTS];
 
 	for (int i = 0; i < weight_count; i++)
 	{
-		dec_weight_ideal_value[i] = qat->unquantized_value[weight_set8_plane1[i]] * (1.0f / 64.0f);
-		plane2_weight_set[i] = qat->unquantized_value[weight_set8_plane2[i]] * (1.0f / 64.0f);
+		dec_weights_quant_uvalue_plane1[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane1[i]] * (1.0f / 64.0f);
+		dec_weights_quant_uvalue_plane2[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane2[i]] * (1.0f / 64.0f);
 	}
 
 	vfloat4 rgba_sum = ewb.block_error_weighted_rgba_sum;
@@ -1378,10 +1378,10 @@ void recompute_ideal_colors_2planes(
 		// TODO: Move this calculation out to the color block?
 		float ls_weight = hadd_rgb_s(color_weight);
 
-		float idx0 = dec_weight_ideal_value[j];
+		float idx0 = dec_weights_quant_uvalue_plane1[j];
 		if (is_decimated)
 		{
-			idx0 = bilinear_infill(di, dec_weight_ideal_value, j);
+			idx0 = bilinear_infill(di, dec_weights_quant_uvalue_plane1, j);
 		}
 
 		float om_idx0 = 1.0f - idx0;
@@ -1405,10 +1405,10 @@ void recompute_ideal_colors_2planes(
 		right_sum  += right;
 		lmrs_sum   += lmrs;
 
-		float idx1 = plane2_weight_set[j];
+		float idx1 = dec_weights_quant_uvalue_plane2[j];
 		if (is_decimated)
 		{
-			idx1 = bilinear_infill(di, plane2_weight_set, j);
+			idx1 = bilinear_infill(di, dec_weights_quant_uvalue_plane2, j);
 		}
 
 		float om_idx1 = 1.0f - idx1;
