@@ -336,7 +336,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		    bm.get_weight_quant_mode());
 
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
-		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
+		if (bitcount <= 0)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -699,7 +699,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		    2 * di.weight_count,
 		    bm.get_weight_quant_mode());
 		int bitcount = 113 - 4 - bits_used_by_weights;
-		if (bitcount <= 0 || bits_used_by_weights < 24 || bits_used_by_weights > 96)
+		if (bitcount <= 0)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -713,7 +713,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		    weight_high_value1[i],
 		    decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * decimation_mode),
 		    flt_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i),
-		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i), bm.get_weight_quant_mode());
+		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i),
+		    bm.get_weight_quant_mode());
 
 		compute_quantized_weights_for_decimation(
 		    di,
@@ -721,7 +722,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		    weight_high_value2[i],
 		    decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * decimation_mode + 1),
 		    flt_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1),
-		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1), bm.get_weight_quant_mode());
+		    u8_quantized_decimated_quantized_weights + BLOCK_MAX_WEIGHTS * (2 * i + 1),
+		    bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_2planes(
