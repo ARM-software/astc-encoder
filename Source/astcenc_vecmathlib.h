@@ -381,7 +381,7 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
  *
  * Valid for all data values of @c a; will return a per-lane value [0, 32].
  */
-ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
+static ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 {
 	// This function is a horrible abuse of floating point exponents to convert
 	// the original integer value into a 2^N encoding we can recover easily.
@@ -403,7 +403,7 @@ ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
  *
  * Use of signed int mean that this is only valid for values in range [0, 31].
  */
-ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
+static ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 {
 	// 2^30 is the largest signed number than can be represented
 	assert(all(a < vint4(31)));
@@ -423,7 +423,7 @@ ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 /**
  * @brief Convert unorm16 [0, 65535] to float16 in range [0, 1].
  */
-ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
+static ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 {
 	vint4 fp16_one = vint4(0x3C00);
 	vint4 fp16_small = lsl<8>(p);
@@ -457,7 +457,7 @@ ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 /**
  * @brief Convert 16-bit LNS to float16.
  */
-ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
+static ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
 {
 	vint4 mc = p & 0x7FF;
 	vint4 ec = lsr<11>(p);
@@ -486,7 +486,7 @@ ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
  *
  * @return The mantissa.
  */
-static inline vfloat4 frexp(vfloat4 a, vint4& exp)
+static ASTCENC_SIMD_INLINE vfloat4 frexp(vfloat4 a, vint4& exp)
 {
 	// Interpret the bits as an integer
 	vint4 ai = float_as_int(a);
@@ -502,7 +502,7 @@ static inline vfloat4 frexp(vfloat4 a, vint4& exp)
 /**
  * @brief Convert float to 16-bit LNS.
  */
-static inline vfloat4 float_to_lns(vfloat4 a)
+static ASTCENC_SIMD_INLINE vfloat4 float_to_lns(vfloat4 a)
 {
 	vint4 exp;
 	vfloat4 mant = frexp(a, exp);
