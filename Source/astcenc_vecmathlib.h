@@ -431,7 +431,15 @@ ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 	vmask4 is_one = p == vint4(0xFFFF);
 	vmask4 is_small = p < vint4(4);
 
+// Manually inline clz() on Visual Studio to avoid release build codegen bug
+#if !defined(__clang__) && defined(_MSC_VER)
+	vint a = (~lsr<8>(p)) & p;
+	a = float_as_int(int_to_float(a));
+	a = vint4(127 + 31) - lsr<23>(a);
+	vint4 lz = clamp(0, 32, a) - 16;
+#else
 	vint4 lz = clz(p) - 16;
+#endif
 
 	// TODO: Could use AVX2 _mm_sllv_epi32() instead of p * 2^<shift>
 	p = p * two_to_the_n(lz + 1);
