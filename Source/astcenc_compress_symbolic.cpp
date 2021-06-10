@@ -1267,14 +1267,14 @@ static float prepare_block_statistics(
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ba_cov));
 
 	// Diagnostic trace points
-	trace_add_data("min_r", blk->data_min.lane<0>());
-	trace_add_data("max_r", blk->data_max.lane<0>());
-	trace_add_data("min_g", blk->data_min.lane<1>());
-	trace_add_data("max_g", blk->data_max.lane<1>());
-	trace_add_data("min_b", blk->data_min.lane<2>());
-	trace_add_data("max_b", blk->data_max.lane<2>());
-	trace_add_data("min_a", blk->data_min.lane<3>());
-	trace_add_data("max_a", blk->data_max.lane<3>());
+	trace_add_data("min_r", blk.data_min.lane<0>());
+	trace_add_data("max_r", blk.data_max.lane<0>());
+	trace_add_data("min_g", blk.data_min.lane<1>());
+	trace_add_data("max_g", blk.data_max.lane<1>());
+	trace_add_data("min_b", blk.data_min.lane<2>());
+	trace_add_data("max_b", blk.data_max.lane<2>());
+	trace_add_data("min_a", blk.data_min.lane<3>());
+	trace_add_data("max_a", blk.data_max.lane<3>());
 	trace_add_data("cov_rg", fabsf(rg_cov));
 	trace_add_data("cov_rb", fabsf(rb_cov));
 	trace_add_data("cov_ra", fabsf(ra_cov));
@@ -1300,9 +1300,9 @@ void compress_block(
 	float lowest_correl;
 
 	TRACE_NODE(node0, "block");
-	trace_add_data("pos_x", blk->xpos);
-	trace_add_data("pos_y", blk->ypos);
-	trace_add_data("pos_z", blk->zpos);
+	trace_add_data("pos_x", blk.xpos);
+	trace_add_data("pos_y", blk.ypos);
+	trace_add_data("pos_z", blk.zpos);
 
 	// Set stricter block targets for luminance data as we have more bits to play with
 	bool block_is_l = blk.is_luminance();
@@ -1325,14 +1325,14 @@ void compress_block(
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
-	float error_weight_sum = prepare_error_weight_block(ctx, input_image, *bsd, *blk, *ewb);
+	float error_weight_sum = prepare_error_weight_block(ctx, input_image, *bsd, blk, ewb);
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
 	                      * block_is_la_scale;
 
-	lowest_correl = prepare_block_statistics(bsd->texel_count, *blk, *ewb);
-
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	trace_add_data("lowest_correl", lowest_correl);
 	trace_add_data("tune_error_threshold", error_threshold);
 #endif
 
