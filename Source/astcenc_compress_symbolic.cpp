@@ -1432,8 +1432,9 @@ void compress_block(
 
 	block_skip_two_plane = lowest_correl > ctx.config.tune_2_plane_early_out_limit_correlation;
 
-	// Test the four possible 1-partition, 2-planes modes
-	for (unsigned int i = 0; i < BLOCK_MAX_COMPONENTS; i++)
+	// Test the four possible 1-partition, 2-planes modes. Do this in reverse, as
+	// alpha is the most likely to be non-correlated if it is present in the data.
+	for (int i = BLOCK_MAX_COMPONENTS - 1; i >= 0; i--)
 	{
 		TRACE_NODE(node1, "pass");
 		trace_add_data("partition_count", 1);
@@ -1462,6 +1463,13 @@ void compress_block(
 		    ctx.config, *bsd, blk, ewb,
 		    error_threshold * errorval_overshoot,
 		    i, scb, tmpbuf);
+
+		// If attempting two planes is much worse than the best one plane result
+		// then further two plane searches are unlikely to help so move on ...
+		if (errorval > (best_errorvals_for_pcount[0] * 2.0f))
+		{
+			break;
+		}
 
 		if (errorval < error_threshold)
 		{
