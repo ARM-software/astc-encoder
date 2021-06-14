@@ -130,7 +130,8 @@ static const mode_entry modes[] = {
 /**
  * @brief Compression workload definition for worker threads.
  */
-struct compression_workload {
+struct compression_workload
+{
 	astcenc_context* context;
 	astcenc_image* image;
 	astcenc_swizzle swizzle;
@@ -142,7 +143,8 @@ struct compression_workload {
 /**
  * @brief Decompression workload definition for worker threads.
  */
-struct decompression_workload {
+struct decompression_workload
+{
 	astcenc_context* context;
 	uint8_t* data;
 	size_t data_len;
