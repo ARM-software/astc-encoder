@@ -1220,8 +1220,9 @@ unsigned int compute_ideal_endpoint_formats(
 		}
 	}
 	// The block contains 4 partitions
-	else if (partition_count == 4)
+	else // if (partition_count == 4)
 	{
+		assert(partition_count == 4);
 		float combined_best_error[21][13];
 		int formats_of_choice[21][13][4];
 
