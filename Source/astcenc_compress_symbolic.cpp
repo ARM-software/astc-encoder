@@ -86,7 +86,7 @@ static bool realign_weights(
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
 
 	// Get the decimation table
-	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
+	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 	unsigned int weight_count = di.weight_count;
 
 	unsigned int max_plane = bm.is_dual_plane;
@@ -163,11 +163,18 @@ static bool realign_weights(
 				const uint8_t *texel_weights = di.texel_weights_texel[we_idx][te_idx];
 				const float *texel_weights_float = di.texel_weights_float_texel[we_idx][te_idx];
 				float twf0 = texel_weights_float[0];
-				float weight_base =
-				    ((static_cast<float>(uqw) * twf0
-				    + static_cast<float>(uq_pl_weights[texel_weights[1]])  * texel_weights_float[1])
-				    + (static_cast<float>(uq_pl_weights[texel_weights[2]]) * texel_weights_float[2]
-				    + static_cast<float>(uq_pl_weights[texel_weights[3]]) * texel_weights_float[3]));
+
+				float weight_base = static_cast<float>(uqw) * twf0;
+
+				// Don't interpolate filtered weights for a 1:1 weight grid
+				if (weight_count != bsd.texel_count)
+				{
+					weight_base =
+						(( weight_base
+						+ static_cast<float>(uq_pl_weights[texel_weights[1]])  * texel_weights_float[1])
+						+ (static_cast<float>(uq_pl_weights[texel_weights[2]]) * texel_weights_float[2]
+						+ static_cast<float>(uq_pl_weights[texel_weights[3]]) * texel_weights_float[3]));
+				}
 
 				unsigned int partition = pi.partition_of_texel[texel];
 
