@@ -1149,7 +1149,6 @@ unsigned int compute_ideal_endpoint_formats(
 	// The block contains 1 partition
 	if (partition_count == 1)
 	{
-		float error_of_best_combination;
 		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
@@ -1158,12 +1157,12 @@ unsigned int compute_ideal_endpoint_formats(
 				continue;
 			}
 
+			float error_of_best_combination;
 			one_partition_find_best_combination_for_bitcount(
 			    best_error[0], format_of_choice[0], qwt_bitcounts[i],
 			    best_quant_levels[i], best_ep_formats[i][0], error_of_best_combination);
-			error_of_best_combination += qwt_errors[i];
 
-			errors_of_best_combination[i] = error_of_best_combination;
+			errors_of_best_combination[i] = error_of_best_combination + qwt_errors[i];
 			best_quant_levels_mod[i] = best_quant_levels[i];
 		}
 	}
