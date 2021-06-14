@@ -1079,76 +1079,84 @@ static int edit_astcenc_config(
 	}
 #endif
 
-	if (operation & ASTCENC_STAGE_COMPRESS)
-	{
-		// print all encoding settings unless specifically told otherwise.
-		if (!cli_config.silentmode)
-		{
-			printf("Compressor settings\n");
-			printf("===================\n\n");
-
-			switch(config.profile)
-			{
-			case ASTCENC_PRF_LDR:
-				printf("    Color profile:              LDR linear\n");
-				break;
-			case ASTCENC_PRF_LDR_SRGB:
-				printf("    Color profile:              LDR sRGB\n");
-				break;
-			case ASTCENC_PRF_HDR_RGB_LDR_A:
-				printf("    Color profile:              HDR RGB + LDR A\n");
-				break;
-			case ASTCENC_PRF_HDR:
-				printf("    Color profile:              HDR RGBA\n");
-				break;
-			}
-
-			if (config.block_z == 1)
-			{
-				printf("    Block size:                 %ux%u\n", config.block_x, config.block_y);
-			}
-			else
-			{
-				printf("    Block size:                 %ux%ux%u\n", config.block_x, config.block_y, config.block_z);
-			}
-
-			printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (config.block_x * config.block_y * config.block_z));
-
-			printf("    Radius mean/stdev:          %u texels\n", config.v_rgba_radius);
-			printf("    RGB power:                  %g\n", (double)config.v_rgb_power );
-			printf("    RGB base weight:            %g\n", (double)config.v_rgb_base);
-			printf("    RGB mean weight:            %g\n", (double)config.v_rgb_mean);
-			printf("    RGB stdev weight:           %g\n", (double)config.v_rgba_mean_stdev_mix);
-			printf("    RGB mean/stdev mixing:      %g\n", (double)config.v_rgba_mean_stdev_mix);
-			printf("    Alpha power:                %g\n", (double)config.v_a_power);
-			printf("    Alpha base weight:          %g\n", (double)config.v_a_base);
-			printf("    Alpha mean weight:          %g\n", (double)config.v_a_mean);
-			printf("    Alpha stdev weight:         %g\n", (double)config.v_a_stdev);
-			printf("    RGB alpha scale weight:     %d\n", (config.flags & ASTCENC_FLG_MAP_NORMAL));
-			if ((config.flags & ASTCENC_FLG_MAP_NORMAL))
-			{
-				printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
-			}
-
-			printf("    R component weight:         %g\n",(double)config.cw_r_weight);
-			printf("    G component weight:         %g\n",(double)config.cw_g_weight);
-			printf("    B component weight:         %g\n",(double)config.cw_b_weight);
-			printf("    A component weight:         %g\n",(double)config.cw_a_weight);
-			printf("    Deblock artifact setting:   %g\n", (double)config.b_deblock_weight);
-			printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
-			printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
-			printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
-			printf("    2.2+ partition cutoff:      %g\n", (double)config.tune_2_partition_early_out_limit_factor);
-			printf("    3.2+ partition cutoff:      %g\n", (double)config.tune_3_partition_early_out_limit_factor);
-			printf("    2 plane correlation cutoff: %g\n", (double)config.tune_2_plane_early_out_limit_correlation);
-			printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
-			printf("    Max refinement cutoff:      %u iterations\n", config.tune_refinement_limit);
-			printf("    Compressor thread count:    %d\n", cli_config.thread_count);
-			printf("\n");
-		}
-	}
-
 	return 0;
+}
+
+/**
+ * @brief Print the config settings in a human readable form.
+ *
+ * @param[in] cli_config   Command line config.
+ * @param[in] config       Codec configuration.
+ */
+static void print_astcenc_config(
+	const cli_config_options& cli_config,
+	const astcenc_config& config
+) {
+	// Print all encoding settings unless specifically told otherwise
+	if (!cli_config.silentmode)
+	{
+		printf("Compressor settings\n");
+		printf("===================\n\n");
+
+		switch(config.profile)
+		{
+		case ASTCENC_PRF_LDR:
+			printf("    Color profile:              LDR linear\n");
+			break;
+		case ASTCENC_PRF_LDR_SRGB:
+			printf("    Color profile:              LDR sRGB\n");
+			break;
+		case ASTCENC_PRF_HDR_RGB_LDR_A:
+			printf("    Color profile:              HDR RGB + LDR A\n");
+			break;
+		case ASTCENC_PRF_HDR:
+			printf("    Color profile:              HDR RGBA\n");
+			break;
+		}
+
+		if (config.block_z == 1)
+		{
+			printf("    Block size:                 %ux%u\n", config.block_x, config.block_y);
+		}
+		else
+		{
+			printf("    Block size:                 %ux%ux%u\n", config.block_x, config.block_y, config.block_z);
+		}
+
+		printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (config.block_x * config.block_y * config.block_z));
+
+		printf("    Radius mean/stdev:          %u texels\n", config.v_rgba_radius);
+		printf("    RGB power:                  %g\n", (double)config.v_rgb_power );
+		printf("    RGB base weight:            %g\n", (double)config.v_rgb_base);
+		printf("    RGB mean weight:            %g\n", (double)config.v_rgb_mean);
+		printf("    RGB stdev weight:           %g\n", (double)config.v_rgba_mean_stdev_mix);
+		printf("    RGB mean/stdev mixing:      %g\n", (double)config.v_rgba_mean_stdev_mix);
+		printf("    Alpha power:                %g\n", (double)config.v_a_power);
+		printf("    Alpha base weight:          %g\n", (double)config.v_a_base);
+		printf("    Alpha mean weight:          %g\n", (double)config.v_a_mean);
+		printf("    Alpha stdev weight:         %g\n", (double)config.v_a_stdev);
+		printf("    RGB alpha scale weight:     %d\n", (config.flags & ASTCENC_FLG_MAP_NORMAL));
+		if ((config.flags & ASTCENC_FLG_MAP_NORMAL))
+		{
+			printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
+		}
+
+		printf("    R component weight:         %g\n",(double)config.cw_r_weight);
+		printf("    G component weight:         %g\n",(double)config.cw_g_weight);
+		printf("    B component weight:         %g\n",(double)config.cw_b_weight);
+		printf("    A component weight:         %g\n",(double)config.cw_a_weight);
+		printf("    Deblock artifact setting:   %g\n", (double)config.b_deblock_weight);
+		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
+		printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
+		printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
+		printf("    2.2+ partition cutoff:      %g\n", (double)config.tune_2_partition_early_out_limit_factor);
+		printf("    3.2+ partition cutoff:      %g\n", (double)config.tune_3_partition_early_out_limit_factor);
+		printf("    2 plane correlation cutoff: %g\n", (double)config.tune_2_plane_early_out_limit_correlation);
+		printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
+		printf("    Max refinement cutoff:      %u iterations\n", config.tune_refinement_limit);
+		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
+		printf("\n");
+	}
 }
 
 /**
@@ -1588,6 +1596,8 @@ int main(
 	// Compress an image
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
+		print_astcenc_config(cli_config, config);
+
 		unsigned int blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
 		unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
 		unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
