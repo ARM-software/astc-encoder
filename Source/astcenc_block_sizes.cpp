@@ -852,75 +852,96 @@ static void construct_block_size_descriptor_2d(
 
 	// Construct the list of block formats referencing the decimation tables
 	unsigned int packed_idx = 0;
-	for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
+
+	// Iterate twice; first time keep the "always" blocks, second time keep the "non-always" blocks.
+	// This ensures that the always block modes and decimation modes are at the start of the list.
+	for (unsigned int j = 0; j < 2; j ++)
 	{
-		unsigned int x_weights, y_weights;
-		bool is_dual_plane;
-
-		// TODO: Make this an enum? It's been validated.
-		unsigned int quant_mode;
-
-		bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode);
-
-#if !defined(ASTCENC_DECOMPRESS_ONLY)
-		float percentile = percentiles[i];
-		bool selected = (percentile <= mode_cutoff) || !can_omit_modes;
-#else
-		// Decompressor builds can never discard modes, as we cannot make any
-		// assumptions about the modes the original compressor used
-		bool selected = true;
-#endif
-
-		// ASSUMPTION: No compressor will use more weights in a dimension than
-		// the block has actual texels, because it wastes bits. Decompression
-		// of an image which violates this assumption will fail, even though it
-		// is technically permitted by the specification.
-
-		// Skip modes that are invalid, too large, or not selected by heuristic
-		if (!valid || !selected || (x_weights > x_texels) || (y_weights > y_texels))
+		for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 		{
-			bsd.block_mode_packed_index[i] = BLOCK_BAD_BLOCK_MODE;
-			continue;
-		}
+			unsigned int x_weights, y_weights;
+			bool is_dual_plane;
 
-		// Allocate and initialize the decimation table entry if we've not used it yet
-		int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
-		if (decimation_mode == -1)
-		{
-			decimation_mode = construct_dt_entry_2d(x_texels, y_texels, x_weights, y_weights, bsd);
-			decimation_mode_index[y_weights * 16 + x_weights] = decimation_mode;
-		}
+			// TODO: Make this an enum? It's been validated.
+			unsigned int quant_mode;
 
-#if !defined(ASTCENC_DECOMPRESS_ONLY)
-		// Flatten the block mode heuristic into some precomputed flags
-		if (percentile == 0.0f)
-		{
-			bsd.block_modes[packed_idx].percentile_always = true;
-			bsd.decimation_modes[decimation_mode].percentile_always = true;
+	#if !defined(ASTCENC_DECOMPRESS_ONLY)
+			float percentile = percentiles[i];
+			bool selected = (percentile <= mode_cutoff) || !can_omit_modes;
 
-			bsd.block_modes[packed_idx].percentile_hit = true;
-			bsd.decimation_modes[decimation_mode].percentile_hit = true;
-		}
-		else if (percentile <= mode_cutoff)
-		{
-			bsd.block_modes[packed_idx].percentile_always = false;
+			if (j == 0 && percentile != 0.0f)
+			{
+				continue;
+			}
 
-			bsd.block_modes[packed_idx].percentile_hit = true;
-			bsd.decimation_modes[decimation_mode].percentile_hit = true;
-		}
-		else
-		{
-			bsd.block_modes[packed_idx].percentile_always = false;
-			bsd.block_modes[packed_idx].percentile_hit = false;
-		}
-#endif
+			if (j == 1 && percentile == 0.0f)
+			{
+				continue;
+			}
 
-		bsd.block_modes[packed_idx].decimation_mode = decimation_mode;
-		bsd.block_modes[packed_idx].quant_mode = quant_mode;
-		bsd.block_modes[packed_idx].is_dual_plane = is_dual_plane;
-		bsd.block_modes[packed_idx].mode_index = i;
-		bsd.block_mode_packed_index[i] = packed_idx;
-		packed_idx++;
+	#else
+			// Decompressor builds can never discard modes, as we cannot make any
+			// assumptions about the modes the original compressor used
+			bool selected = true;
+
+			if (j == 1)
+			{
+				continue;
+			}
+	#endif
+
+			// ASSUMPTION: No compressor will use more weights in a dimension than
+			// the block has actual texels, because it wastes bits. Decompression
+			// of an image which violates this assumption will fail, even though it
+			// is technically permitted by the specification.
+
+			// Skip modes that are invalid, too large, or not selected by heuristic
+			bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode);
+			if (!selected || !valid || (x_weights > x_texels) || (y_weights > y_texels))
+			{
+				bsd.block_mode_packed_index[i] = BLOCK_BAD_BLOCK_MODE;
+				continue;
+			}
+
+			// Allocate and initialize the decimation table entry if we've not used it yet
+			int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
+			if (decimation_mode == -1)
+			{
+				decimation_mode = construct_dt_entry_2d(x_texels, y_texels, x_weights, y_weights, bsd);
+				decimation_mode_index[y_weights * 16 + x_weights] = decimation_mode;
+			}
+
+	#if !defined(ASTCENC_DECOMPRESS_ONLY)
+			// Flatten the block mode heuristic into some precomputed flags
+			if (percentile == 0.0f)
+			{
+				bsd.block_modes[packed_idx].percentile_always = true;
+				bsd.decimation_modes[decimation_mode].percentile_always = true;
+
+				bsd.block_modes[packed_idx].percentile_hit = true;
+				bsd.decimation_modes[decimation_mode].percentile_hit = true;
+			}
+			else if (percentile <= mode_cutoff)
+			{
+				bsd.block_modes[packed_idx].percentile_always = false;
+
+				bsd.block_modes[packed_idx].percentile_hit = true;
+				bsd.decimation_modes[decimation_mode].percentile_hit = true;
+			}
+			else
+			{
+				bsd.block_modes[packed_idx].percentile_always = false;
+				bsd.block_modes[packed_idx].percentile_hit = false;
+			}
+	#endif
+
+			bsd.block_modes[packed_idx].decimation_mode = decimation_mode;
+			bsd.block_modes[packed_idx].quant_mode = quant_mode;
+			bsd.block_modes[packed_idx].is_dual_plane = is_dual_plane;
+			bsd.block_modes[packed_idx].mode_index = i;
+			bsd.block_mode_packed_index[i] = packed_idx;
+			packed_idx++;
+		}
 	}
 
 	bsd.block_mode_count = packed_idx;

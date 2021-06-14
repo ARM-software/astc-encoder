@@ -267,7 +267,12 @@ static float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (dm.maxprec_1plane < 0 || (only_always && !dm.percentile_always) || !dm.percentile_hit)
+		if (only_always && !dm.percentile_always)
+		{
+			break;
+		}
+
+		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -315,10 +320,19 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
+		qwt_errors[i] = 1e38f;
+	}
+
+	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
+	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (bm.is_dual_plane || (only_always && !bm.percentile_always) || !bm.percentile_hit)
+		if (only_always && !bm.percentile_always)
 		{
-			qwt_errors[i] = 1e38f;
+			break;
+		}
+
+		if (bm.is_dual_plane || !bm.percentile_hit)
+		{
 			continue;
 		}
 
