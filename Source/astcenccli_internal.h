@@ -126,7 +126,8 @@ bool store_ncimage(
  * @param filename The file name, containing hte extension to check.
  *
  * @return Valid values are:
- *     * -1 - no enforced bitness.
+ *     * -1 - error - unknown file type.
+ *     *  0 - no enforced bitness.
  *     *  8 - enforced 8-bit UNORM.
  *     * 16 - enforced 16-bit FP16.
  */

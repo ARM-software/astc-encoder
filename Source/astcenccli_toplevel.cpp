@@ -1476,6 +1476,7 @@ int main(
 		else
 		{
 			printf("ERROR: Unknown compressed input file type\n");
+			return 1;
 		}
 	}
 
@@ -1506,6 +1507,32 @@ int main(
 	// TODO: Handle RAII resources so they get freed when out of scope
 	astcenc_error    codec_status;
 	astcenc_context* codec_context;
+
+
+	// Preflight - check we have valid extensions for storing a file
+	if (operation & ASTCENC_STAGE_ST_NCOMP)
+	{
+		int bitness = get_output_filename_enforced_bitness(output_filename.c_str());
+		if (bitness == -1)
+		{
+			return 1;
+		}
+	}
+
+	if (operation & ASTCENC_STAGE_ST_COMP)
+	{
+#if defined(_WIN32)
+		bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+		bool is_null = output_filename == "/dev/null";
+#endif
+
+		if (!(is_null || ends_with(output_filename, ".astc") || ends_with(output_filename, ".ktx")))
+		{
+			printf("ERROR: Unknown compressed output file type\n");
+			return 1;
+		}
+	}
 
 	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context);
 	if (codec_status != ASTCENC_SUCCESS)
@@ -1645,7 +1672,7 @@ int main(
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
 		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
-		if (out_bitness == -1)
+		if (out_bitness == 0)
 		{
 			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) || (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
 			// TODO: Make this 32 to use direct passthrough as float

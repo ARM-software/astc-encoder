@@ -2217,8 +2217,8 @@ static const struct
 	{".exr", ".EXR", 16, store_exr_image_with_tinyexr},
 	{".hdr", ".HDR", 16, store_hdr_image_with_stb},
 	// Container formats
-	{".dds", ".DDS", -1, store_dds_uncompressed_image},
-	{".ktx", ".KTX", -1, store_ktx_uncompressed_image}
+	{".dds", ".DDS",  0, store_dds_uncompressed_image},
+	{".ktx", ".KTX",  0, store_ktx_uncompressed_image}
 };
 
 static const int storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
@@ -2230,7 +2230,7 @@ int get_output_filename_enforced_bitness(
 	const char *eptr = strrchr(filename, '.');
 	if (!eptr)
 	{
-		return -1;
+		return 0;
 	}
 
 	for (int i = 0; i < storer_descr_count; i++)
@@ -2242,8 +2242,7 @@ int get_output_filename_enforced_bitness(
 		}
 	}
 
-	printf("ERROR: Unknown file extension for output file: %s\n", eptr);
-	exit(1);
+	return -1;
 }
 
 /* See header for documentation. */
