@@ -681,7 +681,8 @@ static uint32_t u32_byterev(uint32_t v)
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x5_OES   0x93E8
 #define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6x6_OES   0x93E9
 
-struct format_entry {
+struct format_entry
+{
 	unsigned int x;
 	unsigned int y;
 	unsigned int z;
@@ -793,7 +794,7 @@ struct ktx_header
 };
 
 // magic 12-byte sequence that must appear at the beginning of every KTX file.
-static uint8_t ktx_magic[12] = {
+static uint8_t ktx_magic[12] {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 };
 
@@ -1736,7 +1737,7 @@ static astcenc_image* load_dds_uncompressed_image(
 			uint32_t dxgi_format_number;
 		};
 
-		static const dxgi_params format_params[] = {
+		static const dxgi_params format_params[] {
 			{16, 4, 4, RGBA32F_TO_RGBA16F, DXGI_FORMAT_R32G32B32A32_FLOAT},
 			{16, 4, 3, RGB32F_TO_RGBA16F, DXGI_FORMAT_R32G32B32_FLOAT},
 			{16, 2, 4, RGBA16F_TO_RGBA16F, DXGI_FORMAT_R16G16B16A16_FLOAT},
@@ -2183,11 +2184,12 @@ static bool store_dds_uncompressed_image(
 /**
  * @brief Supported uncompressed image load functions, and their associated file extensions.
  */
-static const struct {
+static const struct
+{
 	const char* ending1;
 	const char* ending2;
 	astcenc_image* (*loader_func)(const char*, bool, bool&, unsigned int&);
-} loader_descs[] = {
+} loader_descs[] {
 	// HDR formats
 	{".exr",   ".EXR",  load_image_with_tinyexr },
 	// Container formats
@@ -2208,7 +2210,7 @@ static const struct
 	const char *ending2;
 	int enforced_bitness;
 	bool (*storer_func)(const astcenc_image *output_image, const char *filename, int y_flip);
-} storer_descs[] = {
+} storer_descs[] {
 	// LDR formats
 	{".bmp", ".BMP",  8, store_bmp_image_with_stb},
 	{".png", ".PNG",  8, store_png_image_with_stb},

@@ -34,7 +34,8 @@
 
 typedef unsigned int astcenc_operation;
 
-struct mode_entry {
+struct mode_entry
+{
 	const char* opt;
 	astcenc_operation operation;
 	astcenc_profile decode_mode;
@@ -108,7 +109,7 @@ enum astcenc_preprocess
 };
 
 /** @brief Decode table for command line operation modes. */
-static const mode_entry modes[] = {
+static const mode_entry modes[] {
 	{"-cl",      ASTCENC_OP_COMPRESS,   ASTCENC_PRF_LDR},
 	{"-dl",      ASTCENC_OP_DECOMPRESS, ASTCENC_PRF_LDR},
 	{"-tl",      ASTCENC_OP_TEST,       ASTCENC_PRF_LDR},

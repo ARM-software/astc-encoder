@@ -253,7 +253,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	promise(config.tune_refinement_limit > 0);
 	promise(bsd.decimation_mode_count > 0);
 
-	static const int free_bits_for_partition_count[5] = {
+	static const int free_bits_for_partition_count[5] {
 		0, 115 - 4, 111 - 4 - PARTITION_INDEX_BITS, 108 - 4 - PARTITION_INDEX_BITS, 105 - 4 - PARTITION_INDEX_BITS
 	};
 
@@ -1419,7 +1419,7 @@ void compress_block(
 	// optimization is disabled for 4x4 and 5x4 blocks where it nearly always slows down the
 	// compression and slightly reduces image quality.
 
-	float errorval_mult[2] = {
+	float errorval_mult[2] {
 		1.0f / ctx.config.tune_mode0_mse_overshoot,
 		1.0f
 	};

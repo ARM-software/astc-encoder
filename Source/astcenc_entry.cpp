@@ -36,7 +36,8 @@
  * A 20% overshoot is harder to hit for a higher base db_limit, so we may actually use lower ratios
  * for the more through search presets because the underlying db_limit is so much higher.
  */
-struct astcenc_preset_config {
+struct astcenc_preset_config
+{
 	float quality;
 	unsigned int tune_partition_count_limit;
 	unsigned int tune_partition_index_limit;

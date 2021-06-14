@@ -1059,7 +1059,7 @@ static void quantize_hdr_rgbo(
 		break;
 	}
 
-	static const int mode_bits[5][3] = {
+	static const int mode_bits[5][3] {
 		{11, 5, 7},
 		{11, 6, 5},
 		{10, 5, 8},
@@ -1067,7 +1067,7 @@ static void quantize_hdr_rgbo(
 		{8, 7, 6}
 	};
 
-	static const float mode_cutoffs[5][2] = {
+	static const float mode_cutoffs[5][2] {
 		{1024, 4096},
 		{2048, 1024},
 		{2048, 16384},
@@ -1075,7 +1075,7 @@ static void quantize_hdr_rgbo(
 		{32768, 16384}
 	};
 
-	static const float mode_rscales[5] = {
+	static const float mode_rscales[5] {
 		32.0f,
 		32.0f,
 		64.0f,
@@ -1083,7 +1083,7 @@ static void quantize_hdr_rgbo(
 		256.0f,
 	};
 
-	static const float mode_scales[5] = {
+	static const float mode_scales[5] {
 		1.0f / 32.0f,
 		1.0f / 32.0f,
 		1.0f / 64.0f,
@@ -1398,7 +1398,7 @@ static void quantize_hdr_rgb(
 	float d1_base = a_base - b1_base - c_base - color0.lane<2>();
 
 	// Number of bits in the various fields in the various modes
-	static const int mode_bits[8][4] = {
+	static const int mode_bits[8][4] {
 		{9, 7, 6, 7},
 		{9, 8, 6, 6},
 		{10, 6, 7, 7},
@@ -1411,7 +1411,7 @@ static void quantize_hdr_rgb(
 
 	// Cutoffs to use for the computed values of a,b,c,d, assuming the
 	// range 0..65535 are LNS values corresponding to fp16.
-	static const float mode_cutoffs[8][4] = {
+	static const float mode_cutoffs[8][4] {
 		{16384, 8192, 8192, 8},	// mode 0: 9,7,6,7
 		{32768, 8192, 4096, 8},	// mode 1: 9,8,6,6
 		{4096, 8192, 4096, 4},	// mode 2: 10,6,7,7
@@ -1422,7 +1422,7 @@ static void quantize_hdr_rgb(
 		{1024, 2048, 512, 1},	// mode 7: 12,6,7,6
 	};
 
-	static const float mode_scales[8] = {
+	static const float mode_scales[8] {
 		1.0f / 128.0f,
 		1.0f / 128.0f,
 		1.0f / 64.0f,
@@ -1434,7 +1434,7 @@ static void quantize_hdr_rgb(
 	};
 
 	// Scaling factors when going from what was encoded in the mode to 16 bits.
-	static const float mode_rscales[8] = {
+	static const float mode_rscales[8] {
 		128.0f,
 		128.0f,
 		64.0f,

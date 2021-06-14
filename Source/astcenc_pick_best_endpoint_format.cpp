@@ -322,7 +322,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 ) {
 	int partition_size = pi.partition_texel_count[partition_index];
 
-	static const float baseline_quant_error[21] = {
+	static const float baseline_quant_error[21] {
 		(65536.0f * 65536.0f / 18.0f),				// 2 values, 1 step
 		(65536.0f * 65536.0f / 18.0f) / (2 * 2),	// 3 values, 2 steps
 		(65536.0f * 65536.0f / 18.0f) / (3 * 3),	// 4 values, 3 steps

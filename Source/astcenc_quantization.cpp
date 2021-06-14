@@ -23,7 +23,7 @@
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 
-const uint8_t color_quant_tables[21][256] = {
+const uint8_t color_quant_tables[21][256] {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -406,7 +406,7 @@ const uint8_t color_quant_tables[21][256] = {
 
 #endif
 
-const uint8_t color_unquant_tables[21][256] = {
+const uint8_t color_unquant_tables[21][256] {
 	{
 		0, 255
 	},

@@ -86,7 +86,7 @@ static void kmeans_init(
 	}
 
 	// More numbers from random.org for weighted-random center selection
-	const float cluster_cutoffs[9] = {
+	const float cluster_cutoffs[9] {
 		0.626220f, 0.932770f, 0.275454f,
 		0.318558f, 0.240113f, 0.009190f,
 		0.347661f, 0.731960f, 0.156391f
