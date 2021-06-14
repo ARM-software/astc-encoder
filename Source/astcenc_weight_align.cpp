@@ -218,7 +218,6 @@ static void compute_lowest_and_highest_weight(
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
-		// TODO: Can we keeps these as floats?
 		vint span = float_to_int(maxidx - minidx + vfloat(1));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
@@ -406,7 +405,6 @@ static void compute_lowest_and_highest_weight_lwc(
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
-		// TODO: Can we keeps these as floats?
 		vint span = float_to_int(maxidx - minidx + vfloat(1.0f));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
