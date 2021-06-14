@@ -180,8 +180,8 @@ static void compute_lowest_and_highest_weight(
 	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
 	for (unsigned int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
-		vint minidx(128);
-		vint maxidx(-128);
+		vfloat minidx(128.0f);
+		vfloat maxidx(-128.0f);
 		vfloat errval = vfloat::zero();
 		vfloat cut_low_weight_err = vfloat::zero();
 		vfloat cut_high_weight_err = vfloat::zero();
@@ -192,37 +192,37 @@ static void compute_lowest_and_highest_weight(
 			vfloat wt = load1(&dec_weight_quant_sig[j]);
 			vfloat sval = load1(&dec_weight_quant_uvalue[j]) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
-			vint idxv = float_to_int(svalrte);
 			vfloat dif = sval - svalrte;
 			vfloat dwt = dif * wt;
 			errval += dwt * dif;
 
 			// Reset tracker on min hit
-			vmask mask = idxv < minidx;
-			minidx = select(minidx, idxv, mask);
+			vmask mask = svalrte < minidx;
+			minidx = select(minidx, svalrte, mask);
 			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), mask);
 
 			// Accumulate on min hit
-			mask = idxv == minidx;
+			mask = svalrte == minidx;
 			vfloat accum = cut_low_weight_err + wt - vfloat(2.0f) * dwt;
 			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
 
 			// Reset tracker on max hit
-			mask = idxv > maxidx;
-			maxidx = select(maxidx, idxv, mask);
+			mask = svalrte > maxidx;
+			maxidx = select(maxidx, svalrte, mask);
 			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), mask);
 
 			// Accumulate on max hit
-			mask = idxv == maxidx;
+			mask = svalrte == maxidx;
 			accum = cut_high_weight_err + wt + vfloat(2.0f) * dwt;
 			cut_high_weight_err = select(cut_high_weight_err, accum, mask);
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
-		vint span = maxidx - minidx + vint(1);
+		// TODO: Can we keeps these as floats?
+		vint span = float_to_int(maxidx - minidx + vfloat(1));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(minidx, &lowest_weight[sp]);
+		storea(float_to_int(minidx), &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
@@ -382,8 +382,8 @@ static void compute_lowest_and_highest_weight_lwc(
 	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
 	for (unsigned int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
-		vint minidx(128);
-		vint maxidx(-128);
+		vfloat minidx(128.0f);
+		vfloat maxidx(-128.0f);
 		vfloat errval = vfloat::zero();
 		vfloat offset = loada(&offsets[sp]);
 
@@ -392,25 +392,25 @@ static void compute_lowest_and_highest_weight_lwc(
 			vfloat wt = load1(&dec_weight_quant_sig[j]);
 			vfloat sval = load1(&dec_weight_quant_uvalue[j]) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
-			vint idxv = float_to_int(svalrte);
 			vfloat dif = sval - svalrte;
 			vfloat dwt = dif * wt;
 			errval += dwt * dif;
 
 			// Reset tracker on min hit
-			vmask mask = idxv < minidx;
-			minidx = select(minidx, idxv, mask);
+			vmask mask = svalrte < minidx;
+			minidx = select(minidx, svalrte, mask);
 
 			// Reset tracker on max hit
-			mask = idxv > maxidx;
-			maxidx = select(maxidx, idxv, mask);
+			mask = svalrte > maxidx;
+			maxidx = select(maxidx, svalrte, mask);
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
-		vint span = maxidx - minidx + vint(1);
+		// TODO: Can we keeps these as floats?
+		vint span = float_to_int(maxidx - minidx + vfloat(1.0f));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(minidx, &lowest_weight[sp]);
+		storea(float_to_int(minidx), &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
