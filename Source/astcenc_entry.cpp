@@ -65,10 +65,10 @@ static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 		3, 4, 30, 1, 2, 79.0f, 57.0f, 2.0f, 2.0f, 1.0f, 1.0f, 0.5f, 25
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 12, 55, 3, 3, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.5f, 20
+		3, 12, 55, 3, 3, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.65f, 20
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		4, 26, 76, 3, 3 , 95.0f, 70.0f, 2.5f, 2.5f, 1.2f, 1.25f, 0.75f, 16
+		4, 26, 76, 3, 3 , 95.0f, 70.0f, 2.5f, 2.5f, 1.2f, 1.25f, 0.85f, 16
 	}, {
 		ASTCENC_PRE_THOROUGH,
 		4, 76, 93, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 0.95f, 12
@@ -116,10 +116,10 @@ static const std::array<astcenc_preset_config, 5> preset_configs_low {{
 		3, 10, 53, 3, 3, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.1f, 0.5f, 16
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		3, 26, 76, 3, 3, 95.0f, 70.0f, 3.5f, 3.5f, 1.2f, 1.25f, 0.75f, 12
+		3, 26, 76, 3, 3, 95.0f, 70.0f, 3.5f, 3.5f, 1.2f, 1.25f, 0.65f, 12
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 75, 92, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 0.95f, 10
+		4, 75, 92, 4, 4, 105.0f, 77.0f, 10.0f, 10.0f, 2.5f, 1.25f, 0.85f, 10
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
 		4, 1024, 100, 4, 4, 200.0f, 200.0f, 10.0f, 10.0f, 10.0f, 10.0f, 0.99f, 0
