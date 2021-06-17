@@ -1146,8 +1146,8 @@ static float prepare_error_weight_block(
 	}
 
 	// Small bias to avoid divide by zeros and NaN propagation later
-	vfloat4 texel_weight_sum(1e-17);
-	vfloat4 error_weight_sum(1e-17);
+	vfloat4 texel_weight_sum(1e-17f);
+	vfloat4 error_weight_sum(1e-17f);
 
 	int texels_per_block = bsd.texel_count;
 	for (int i = 0; i < texels_per_block; i++)

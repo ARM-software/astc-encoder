@@ -64,10 +64,10 @@ static vfloat4 load_texel_f16(
 	int base_offset
 ) {
 	const uint16_t* data16 = static_cast<const uint16_t*>(data);
-	int r = static_cast<float>(data16[base_offset    ]);
-	int g = static_cast<float>(data16[base_offset + 1]);
-	int b = static_cast<float>(data16[base_offset + 2]);
-	int a = static_cast<float>(data16[base_offset + 3]);
+	int r = data16[base_offset    ];
+	int g = data16[base_offset + 1];
+	int b = data16[base_offset + 2];
+	int a = data16[base_offset + 3];
 	return float16_to_float(vint4(r, g, b, a));
 }
 

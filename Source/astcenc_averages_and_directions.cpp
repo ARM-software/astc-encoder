@@ -44,10 +44,10 @@ void compute_avgs_and_dirs_4_comp(
 		vfloat4 rgba_max(-1e38f);
 		float partition_weight = 0.0f;
 
-		int texel_count = pi.partition_texel_count[partition];
+		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		for (int i = 0; i < texel_count; i++)
+		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			int iwt = weights[i];
 			float weight = ewb.texel_weight[iwt];
@@ -65,7 +65,7 @@ void compute_avgs_and_dirs_4_comp(
 			error_sum += error_weight;
 		}
 
-		error_sum = error_sum / texel_count;
+		error_sum = error_sum / static_cast<float>(texel_count);
 		vfloat4 csf = normalize(sqrt(error_sum)) * 2.0f;
 
 		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
@@ -82,9 +82,9 @@ void compute_avgs_and_dirs_4_comp(
 		vfloat4 sum_zp = vfloat4::zero();
 		vfloat4 sum_wp = vfloat4::zero();
 
-		for (int i = 0; i < texel_count; i++)
+		for (unsigned int i = 0; i < texel_count; i++)
 		{
-			int iwt = weights[i];
+			unsigned int iwt = weights[i];
 			float weight = ewb.texel_weight[iwt];
 			vfloat4 texel_datum = blk.texel(iwt);
 			texel_datum = (texel_datum - average) * weight;
@@ -182,10 +182,10 @@ void compute_avgs_and_dirs_3_comp(
 		error_vb = ewb.texel_weight_a;
 	}
 
-	int partition_count = pi.partition_count;
+	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
-	for (int partition = 0; partition < partition_count; partition++)
+	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *weights = pi.texels_of_partition[partition];
 
@@ -195,12 +195,12 @@ void compute_avgs_and_dirs_3_comp(
 		vfloat4 rgb_max(-1e38f);
 		float partition_weight = 0.0f;
 
-		int texel_count = pi.partition_texel_count[partition];
+		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		for (int i = 0; i < texel_count; i++)
+		for (unsigned int i = 0; i < texel_count; i++)
 		{
-			int iwt = weights[i];
+			unsigned int iwt = weights[i];
 			float weight = texel_weights[iwt];
 
 			vfloat4 texel_datum(data_vr[iwt],
@@ -224,7 +224,7 @@ void compute_avgs_and_dirs_3_comp(
 			error_sum += error_weight;
 		}
 
-		error_sum = error_sum / texel_count;
+		error_sum = error_sum / static_cast<float>(texel_count);
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
 
 		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
@@ -240,9 +240,9 @@ void compute_avgs_and_dirs_3_comp(
 		vfloat4 sum_yp = vfloat4::zero();
 		vfloat4 sum_zp = vfloat4::zero();
 
-		for (int i = 0; i < texel_count; i++)
+		for (unsigned int i = 0; i < texel_count; i++)
 		{
-			int iwt = weights[i];
+			unsigned int iwt = weights[i];
 			float weight = texel_weights[iwt];
 			vfloat4 texel_datum = vfloat3(data_vr[iwt],
 			                              data_vg[iwt],
@@ -360,7 +360,7 @@ void compute_avgs_and_dirs_2_comp(
 			error_sum += error_weight;
 		}
 
-		error_sum = error_sum / texel_count;
+		error_sum = error_sum / static_cast<float>(texel_count);
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.41421356f;
 		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
 
