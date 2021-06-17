@@ -853,7 +853,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.rgbm_m_scale = atof(argv[argidx - 1]);
+			config.rgbm_m_scale = static_cast<float>(atof(argv[argidx - 1]));
 			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 		}
 		else if (!strcmp(argv[argidx], "-perceptual"))

@@ -172,7 +172,7 @@ static void kmeans_assign(
 			}
 		}
 
-		partition_of_texel[i] = best_partition;
+		partition_of_texel[i] = static_cast<uint8_t>(best_partition);
 		partition_texel_count[best_partition]++;
 	}
 
@@ -190,7 +190,7 @@ static void kmeans_assign(
 			{
 				partition_texel_count[partition_of_texel[i]]--;
 				partition_texel_count[i]++;
-				partition_of_texel[i] = i;
+				partition_of_texel[i] = static_cast<uint8_t>(i);
 				problem_case = true;
 			}
 		}

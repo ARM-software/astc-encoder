@@ -177,8 +177,9 @@ void fetch_image_block(
 	bool grayscale = true;
 
 	// This works because we impose the same choice everywhere during encode
-	int rgb_lns = (decode_mode == ASTCENC_PRF_HDR) || (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
-	int a_lns = decode_mode == ASTCENC_PRF_HDR;
+	uint8_t rgb_lns = (decode_mode == ASTCENC_PRF_HDR) ||
+	                  (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A) ? 1 : 0;
+	uint8_t a_lns = decode_mode == ASTCENC_PRF_HDR ? 1 : 0;
 	vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
 	vmask4 lns_mask = use_lns != vint4::zero();
 

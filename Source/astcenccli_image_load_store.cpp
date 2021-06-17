@@ -2410,9 +2410,9 @@ int store_cimage(
 	hdr.magic[2] = (ASTC_MAGIC_ID >> 16) & 0xFF;
 	hdr.magic[3] = (ASTC_MAGIC_ID >> 24) & 0xFF;
 
-	hdr.block_x = img.block_x;
-	hdr.block_y = img.block_y;
-	hdr.block_z = img.block_z;
+	hdr.block_x = static_cast<uint8_t>(img.block_x);
+	hdr.block_y = static_cast<uint8_t>(img.block_y);
+	hdr.block_z = static_cast<uint8_t>(img.block_z);
 
 	hdr.dim_x[0] =  img.dim_x        & 0xFF;
 	hdr.dim_x[1] = (img.dim_x >>  8) & 0xFF;

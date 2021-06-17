@@ -555,14 +555,14 @@ void init_quant_mode_table()
 			unsigned int p = get_ise_sequence_bitcount(2 * j, (quant_method)i);
 			if (p < 128)
 			{
-				quant_mode_table[j][p] = i;
+				quant_mode_table[j][p] = static_cast<int8_t>(i);
 			}
 		}
 	}
 
 	for (int i = 0; i <= 16; i++)
 	{
-		int largest_value_so_far = -1;
+		int8_t largest_value_so_far = -1;
 		for (unsigned int j = 0; j < 128; j++)
 		{
 			if (quant_mode_table[i][j] > largest_value_so_far)

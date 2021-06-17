@@ -1962,7 +1962,7 @@ float compute_error_of_weight_set_2planes(
  * @return The actual endpoint mode used.
  */
 // TODO: Format as enum?
-int pack_color_endpoints(
+uint8_t pack_color_endpoints(
 	vfloat4 color0,
 	vfloat4 color1,
 	vfloat4 rgbs_color,

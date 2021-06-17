@@ -680,7 +680,7 @@ void decode_ise(
 	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
 	for (unsigned int i = 0; i < character_count; i++)
 	{
-		results[i] = read_bits(bits, bit_offset, input_data);
+		results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));
 		bit_offset += bits;
 
 		if (trits)

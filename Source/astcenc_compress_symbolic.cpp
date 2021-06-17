@@ -202,13 +202,13 @@ static bool realign_weights(
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error))
 			{
-				uq_pl_weights[we_idx] = next_wt_uq;
+				uq_pl_weights[we_idx] = static_cast<uint8_t>(next_wt_uq);
 				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
 				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
-				uq_pl_weights[we_idx] = prev_wt_uq;
+				uq_pl_weights[we_idx] = static_cast<uint8_t>(prev_wt_uq);
 				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
 				adjustments = true;
 			}
@@ -458,7 +458,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
 			{
 				uint8_t colorvals[BLOCK_MAX_PARTITIONS][12];
-				int color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
+				uint8_t color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
 				for (unsigned int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
@@ -489,8 +489,8 @@ static float compress_symbolic_block_for_partition_1plane(
 			}
 
 			// Store header fields
-			workscb.partition_count = partition_count;
-			workscb.partition_index = partition_index;
+			workscb.partition_count = static_cast<uint8_t>(partition_count);
+			workscb.partition_index = static_cast<uint16_t>(partition_index);
 			workscb.plane2_component = -1;
 			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
@@ -832,7 +832,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			workscb.quant_mode = color_quant_level[i];
 			workscb.color_formats_matched = 0;
 			workscb.block_mode = qw_bm.mode_index;
-			workscb.plane2_component = plane2_component;
+			workscb.plane2_component = static_cast<int8_t>(plane2_component);
 			workscb.block_type = SYM_BTYPE_NONCONST;
 
 			if (workscb.quant_mode < 4)

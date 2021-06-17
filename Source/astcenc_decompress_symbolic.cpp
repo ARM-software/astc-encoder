@@ -210,7 +210,7 @@ void decompress_symbolic_block(
 	    (scb.block_type == SYM_BTYPE_CONST_U16))
 	{
 		vfloat4 color;
-		int use_lns = 0;
+		uint8_t use_lns = 0;
 
 		// UNORM16 constant color block
 		if (scb.block_type == SYM_BTYPE_CONST_U16)
