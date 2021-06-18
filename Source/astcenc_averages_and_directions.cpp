@@ -581,8 +581,8 @@ void compute_error_squared_rgba(
 		vfloat samec_hiparamv(-1e10f);
 		vfloat4 samec_errorsumv = vfloat4::zero();
 
-		// This implementation over-shoots, but this is safe as we initialize the texel_indexes array
-		// to extend the last value. This means min/max are not impacted, but we need to mask
+		// This implementation over-shoots, but this is safe as we initialize the texel_indexes
+		// array to extend the last value. This means min/max are not impacted, but we need to mask
 		// out the dummy values when we compute the line weighting.
 		vint lane_ids = vint::lane_id();
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
