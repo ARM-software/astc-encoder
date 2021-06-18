@@ -612,7 +612,7 @@ void compute_ideal_colors_and_weights_1plane(
 	}
 	else
 	{
-		compute_ideal_colors_and_weights_3_comp(bsd,blk, ewb,  pi, ei, 3);
+		compute_ideal_colors_and_weights_3_comp(bsd, blk, ewb,  pi, ei, 3);
 	}
 }
 
