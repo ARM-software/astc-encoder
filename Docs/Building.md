@@ -79,7 +79,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
-# x86-64 optimized for the local CPU's microarchitecture
+# Host builds optimized for the local CPU's microarchitecture
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
     -DISA_NATIVE=ON ..
 ```
