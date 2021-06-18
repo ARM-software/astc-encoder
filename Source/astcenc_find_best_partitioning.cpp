@@ -638,7 +638,7 @@ void find_best_partition_candidates(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[BLOCK_MAX_PARTITIONS];
-			compute_avgs_and_dirs_3_comp(pi, blk, ewb, 3, pms);
+			compute_avgs_and_dirs_3_comp_rgb(pi, blk, ewb, pms);
 
 			partition_lines3 plines[BLOCK_MAX_PARTITIONS];
 

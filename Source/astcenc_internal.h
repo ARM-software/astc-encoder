@@ -1571,6 +1571,25 @@ void compute_avgs_and_dirs_3_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
+ * @brief Compute averages and dominant directions for each partition in a 3 component texture.
+ *
+ * This is a specialization of @c compute_avgs_and_dirs_3_comp where the omitted component is
+ * always alpha, a common case during partition search.
+ *
+ * @param      pi                  The partition info for the current trial.
+ * @param      blk                 The image block color data to be compressed.
+ * @param      ewb                 The image block weighted error data.
+ * @param[out] pm                  The output partition metrics.
+ *                                 - Only pi.partition_count array entries actually get initialized.
+ *                                 - Direction vectors @c pm.dir are not normalized.
+ */
+void compute_avgs_and_dirs_3_comp_rgb(
+	const partition_info& pi,
+	const image_block& blk,
+	const error_weight_block& ewb,
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
+
+/**
  * @brief Compute averages and dominant directions for each partition in a 4 component texture.
  *
  * @param      pi    The partition info for the current trial.
