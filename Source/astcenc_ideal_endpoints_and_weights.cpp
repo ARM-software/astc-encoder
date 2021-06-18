@@ -906,19 +906,12 @@ void compute_ideal_weights_for_decimation(
 	}
 
 	// Populate the interpolated weight grid based on the initital average
-	// Process SIMD-width texel coordinates at at time while we can
-	unsigned int is = 0;
-	unsigned int clipped_texel_count = round_down_to_simd_multiple_vla(texel_count);
-	for (/* */; is < clipped_texel_count; is += ASTCENC_SIMD_WIDTH)
+	// Process SIMD-width texel coordinates at at time while we can. Safe to
+	// over-process full SIMD vectors - the tail is zeroed.
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, is);
-		storea(weight, infilled_weights + is);
-	}
-
-	// Loop tail
-	for (/* */; is < texel_count; is++)
-	{
-		infilled_weights[is] = bilinear_infill(di, dec_weight_ideal_value, is);
+		vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, i);
+		storea(weight, infilled_weights + i);
 	}
 
 	// Perform a single iteration of refinement
