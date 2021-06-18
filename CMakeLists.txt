@@ -79,6 +79,20 @@ else()
     message(STATUS "  No SIMD backend - OFF")
 endif()
 
+# Manually provide this as a tristate so we can distinguish the default
+# not set state from explicitly ON and OFF ...
+set(ISA_NATIVE AUTO CACHE STRING "Enable builds for the native local CPU")
+set_property(CACHE ISA_NATIVE PROPERTY STRINGS AUTO ON OFF)
+
+if(((NOT ${ANY_ISA}) AND (${ISA_NATIVE} STREQUAL AUTO)) OR (${ISA_NATIVE} STREQUAL ON))
+    set(ISA_NATIVE 1)
+    set(ANY_ISA 1)
+    message(STATUS "  Native SIMD backend - ON")
+else()
+    set(ISA_NATIVE 0)
+    message(STATUS "  Native SIMD backend - OFF")
+endif()
+
 option(DECOMPRESSOR "Enable builds for decompression only")
 if(${DECOMPRESSOR})
     message(STATUS "  Decompress-only backend - ON")
@@ -103,6 +117,7 @@ endif()
 if(NOT ${ANY_ISA})
     message(FATAL_ERROR "At least one backend ISA must be enabled")
 endif()
+
 
 # Project configuration
 
