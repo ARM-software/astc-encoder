@@ -533,7 +533,9 @@ static float compress_symbolic_block_for_partition_1plane(
 
 					if (errorval < tune_errorval_threshold)
 					{
-						return errorval;
+						// Skip remaining candidates - this is "good enough"
+						i = candidate_count;
+						break;
 					}
 				}
 			}
@@ -572,7 +574,9 @@ static float compress_symbolic_block_for_partition_1plane(
 
 				if (errorval < tune_errorval_threshold)
 				{
-					return errorval;
+					// Skip remaining candidates - this is "good enough"
+					i = candidate_count;
+					break;
 				}
 			}
 
@@ -872,7 +876,9 @@ static float compress_symbolic_block_for_partition_2planes(
 
 					if (errorval < tune_errorval_threshold)
 					{
-						return errorval;
+						// Skip remaining candidates - this is "good enough"
+						i = candidate_count;
+						break;
 					}
 				}
 			}
@@ -911,7 +917,9 @@ static float compress_symbolic_block_for_partition_2planes(
 
 				if (errorval < tune_errorval_threshold)
 				{
-					return errorval;
+					// Skip remaining candidates - this is "good enough"
+					i = candidate_count;
+					break;
 				}
 			}
 
