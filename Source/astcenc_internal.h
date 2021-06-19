@@ -457,10 +457,7 @@ static inline unsigned int get_quant_level(quant_method method)
  */
 struct partition_metrics
 {
- 	/** @brief The square of the color range (max - min) spanned by texels in this partition. */
-	vfloat4 range_sq;
-
-	 /** @brief The sum of the error weights for texels in this partition. */
+	/** @brief The sum of the error weights for texels in this partition. */
 	vfloat4 error_weight;
 
 	/** @brief The color scale factor used to weight color channels. */

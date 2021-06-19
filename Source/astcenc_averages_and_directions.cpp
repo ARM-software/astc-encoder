@@ -40,8 +40,6 @@ void compute_avgs_and_dirs_4_comp(
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
-		vfloat4 rgba_min(1e38f);
-		vfloat4 rgba_max(-1e38f);
 		float partition_weight = 0.0f;
 
 		unsigned int texel_count = pi.partition_texel_count[partition];
@@ -53,9 +51,6 @@ void compute_avgs_and_dirs_4_comp(
 			float weight = ewb.texel_weight[iwt];
 			vfloat4 texel_datum = blk.texel(iwt);
 			vfloat4 error_weight = ewb.error_weights[iwt];
-
-			rgba_min = min(texel_datum, rgba_min);
-			rgba_max = max(texel_datum, rgba_max);
 
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
@@ -71,8 +66,6 @@ void compute_avgs_and_dirs_4_comp(
 		pm[partition].avg = average * csf;
 		pm[partition].color_scale = csf;
 		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
-		vfloat4 range = max(rgba_max - rgba_min, 1e-10f);
-		pm[partition].range_sq = range * range;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -222,7 +215,6 @@ void compute_avgs_and_dirs_3_comp(
 		pm[partition].avg = average * csf;
 		pm[partition].color_scale = csf;
 		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
-		pm[partition].range_sq = vfloat4::zero();
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -289,8 +281,6 @@ void compute_avgs_and_dirs_3_comp_rgb(
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
-		vfloat4 rgb_min(1e38f);
-		vfloat4 rgb_max(-1e38f);
 		float partition_weight = 0.0f;
 
 		unsigned int texel_count = pi.partition_texel_count[partition];
@@ -308,8 +298,6 @@ void compute_avgs_and_dirs_3_comp_rgb(
 			                     ewb.texel_weight_b[iwt],
 			                     0.0f);
 
-			rgb_min = min(texel_datum, rgb_min);
-			rgb_max = max(texel_datum, rgb_max);
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
 			error_sum += error_weight;
@@ -324,8 +312,6 @@ void compute_avgs_and_dirs_3_comp_rgb(
 		pm[partition].avg = average * csf;
 		pm[partition].color_scale = csf;
 		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
-		vfloat4 range = max(rgb_max - rgb_min, 1e-10f);
-		pm[partition].range_sq = range * range;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
