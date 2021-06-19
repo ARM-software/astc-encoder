@@ -54,11 +54,8 @@ void compute_avgs_and_dirs_4_comp(
 			vfloat4 texel_datum = blk.texel(iwt);
 			vfloat4 error_weight = ewb.error_weights[iwt];
 
-			if (weight > 1e-10f)
-			{
-				rgba_min = min(texel_datum, rgba_min);
-				rgba_max = max(texel_datum, rgba_max);
-			}
+			rgba_min = min(texel_datum, rgba_min);
+			rgba_max = max(texel_datum, rgba_max);
 
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
@@ -213,12 +210,8 @@ void compute_avgs_and_dirs_3_comp(
 			                     error_vb[iwt],
 			                     0.0f);
 
-			if (weight > 1e-10f)
-			{
-				rgb_min = min(texel_datum, rgb_min);
-				rgb_max = max(texel_datum, rgb_max);
-			}
-
+			rgb_min = min(texel_datum, rgb_min);
+			rgb_max = max(texel_datum, rgb_max);
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
 			error_sum += error_weight;
@@ -320,12 +313,8 @@ void compute_avgs_and_dirs_3_comp_rgb(
 			                     ewb.texel_weight_b[iwt],
 			                     0.0f);
 
-			if (weight > 1e-10f)
-			{
-				rgb_min = min(texel_datum, rgb_min);
-				rgb_max = max(texel_datum, rgb_max);
-			}
-
+			rgb_min = min(texel_datum, rgb_min);
+			rgb_max = max(texel_datum, rgb_max);
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
 			error_sum += error_weight;
