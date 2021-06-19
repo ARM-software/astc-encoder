@@ -359,9 +359,9 @@ static float compress_symbolic_block_for_partition_1plane(
 		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
 		if (bitcount <= 0)
 		{
-			qwt_errors[i] = 1e38f;
 			continue;
 		}
+
 		qwt_bitcounts[i] = bitcount;
 
 		// Generate the optimized set of weights for the weight mode
@@ -723,12 +723,13 @@ static float compress_symbolic_block_for_partition_2planes(
 		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
 		    2 * di.weight_count,
 		    bm.get_weight_quant_mode());
+
 		int bitcount = 113 - 4 - bits_used_by_weights;
 		if (bitcount <= 0)
 		{
-			qwt_errors[i] = 1e38f;
 			continue;
 		}
+
 		qwt_bitcounts[i] = bitcount;
 
 		// Generate the optimized set of weights for the mode
