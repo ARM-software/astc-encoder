@@ -84,6 +84,9 @@ static constexpr uint8_t BLOCK_MAX_KMEANS_TEXELS { 64 };
 /** @brief The maximum number of weights a block can support. */
 static constexpr unsigned int BLOCK_MAX_WEIGHTS { 64 };
 
+/** @brief The maximum number of weights a block can support per plane in 2 plane mode. */
+static constexpr unsigned int BLOCK_MAX_WEIGHTS_2PLANE { BLOCK_MAX_WEIGHTS / 2 };
+
 /** @brief The minimum number of weight bits a candidate encoding must encode. */
 static constexpr unsigned int BLOCK_MIN_WEIGHT_BITS { 24 };
 
@@ -97,7 +100,7 @@ static constexpr uint16_t BLOCK_BAD_BLOCK_MODE { 0xFFFFu };
 static constexpr unsigned int PARTITION_INDEX_BITS { 10 };
 
 /** @brief The offset of the plane 2 weights in shared weight arrays. */
-static constexpr unsigned int WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS / 2 };
+static constexpr unsigned int WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS_2PLANE };
 
 /** @brief The sum of quantized weights for one texel. */
 static constexpr float WEIGHTS_TEXEL_SUM { 16.0f };
@@ -1071,17 +1074,33 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	/** @brief The error weight block for the current thread. */
 	error_weight_block ewb;
 
-	/** @brief Decimated ideal weight values. */
-	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_value[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief Decimated ideal weight values.
+	 *
+	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 */
+	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_value[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
-	/** @brief Decimated ideal weight significance. */
-	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_sig[2 * WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief Decimated ideal weight significance.
+	 *
+	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 */
+	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_sig[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
-	/** @brief Decimated and quantized weight values stored in the unpacked quantized weight range. */
-	alignas(ASTCENC_VECALIGN) float dec_weights_quant_uvalue[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief Decimated and quantized weight values stored in the unpacked quantized weight range.
+	 *
+	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 */
+	alignas(ASTCENC_VECALIGN) float dec_weights_quant_uvalue[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 
-	/** @brief Decimated and quantized weight values stored in the packed quantized weight range. */
-	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_quant_pvalue[2 * WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief Decimated and quantized weight values stored in the packed quantized weight range.
+	 *
+	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 */
+	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_quant_pvalue[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 };
 
 /**

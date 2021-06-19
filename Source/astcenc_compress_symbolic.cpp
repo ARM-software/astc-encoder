@@ -644,15 +644,15 @@ static float compress_symbolic_block_for_partition_2planes(
 		    ei1,
 		    eix1[i],
 		    di,
-		    dec_weights_ideal_value + (2 * i) * BLOCK_MAX_WEIGHTS,
-		    dec_weights_ideal_sig + (2 * i) * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS,
+		    dec_weights_ideal_sig + i * BLOCK_MAX_WEIGHTS);
 
 		compute_ideal_weights_for_decimation(
 		    ei2,
 		    eix2[i],
 		    di,
-		    dec_weights_ideal_value + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
-		    dec_weights_ideal_sig + (2 * i + 1) * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_ideal_sig +  i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
 	}
 
 	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
@@ -737,18 +737,18 @@ static float compress_symbolic_block_for_partition_2planes(
 		    di,
 		    weight_low_value1[i],
 		    weight_high_value1[i],
-		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * (2 * decimation_mode),
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * (2 * i),
-		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * (2 * i),
+		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * decimation_mode,
+		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
+		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * i,
 		    bm.get_weight_quant_mode());
 
 		compute_quantized_weights_for_decimation(
 		    di,
 		    weight_low_value2[i],
 		    weight_high_value2[i],
-		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * (2 * decimation_mode + 1),
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * (2 * i + 1),
-		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * (2 * i + 1),
+		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * decimation_mode + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET,
 		    bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
@@ -756,8 +756,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		    eix1[decimation_mode],
 		    eix2[decimation_mode],
 		    di,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * (2 * i),
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * (2 * i + 1));
+		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
+		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET);
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
@@ -806,8 +806,8 @@ static float compress_symbolic_block_for_partition_2planes(
 
 		symbolic_compressed_block workscb;
 
-		uint8_t* u8_weight1_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * (2 * bm_packed_index);
-		uint8_t* u8_weight2_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * (2 * bm_packed_index + 1);
+		uint8_t* u8_weight1_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index;
+		uint8_t* u8_weight2_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index + WEIGHTS_PLANE2_OFFSET;
 
 		for (int j = 0; j < di.weight_count; j++)
 		{

@@ -1322,8 +1322,8 @@ void recompute_ideal_colors_2planes(
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
 
-	float dec_weights_quant_uvalue_plane1[BLOCK_MAX_WEIGHTS];
-	float dec_weights_quant_uvalue_plane2[BLOCK_MAX_WEIGHTS];
+	float dec_weights_quant_uvalue_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
+	float dec_weights_quant_uvalue_plane2[BLOCK_MAX_WEIGHTS_2PLANE];
 
 	for (int i = 0; i < weight_count; i++)
 	{

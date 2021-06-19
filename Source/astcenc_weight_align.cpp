@@ -607,28 +607,28 @@ void compute_angular_endpoints_2planes(
 		{
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
-				dec_weight_quant_uvalue + 2 * i * BLOCK_MAX_WEIGHTS,
-				dec_weight_quant_sig + 2 * i * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_uvalue + i * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_sig + i * BLOCK_MAX_WEIGHTS,
 				dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
-				dec_weight_quant_uvalue + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
-				dec_weight_quant_sig + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_uvalue + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
+				dec_weight_quant_sig + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
 				dm.maxprec_2planes, low_values2[i], high_values2[i]);
 		}
 		else
 		{
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
-				dec_weight_quant_uvalue + 2 * i * BLOCK_MAX_WEIGHTS,
-				dec_weight_quant_sig + 2 * i * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_uvalue + i * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_sig + i * BLOCK_MAX_WEIGHTS,
 				dm.maxprec_2planes, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
-				dec_weight_quant_uvalue + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
-				dec_weight_quant_sig + (2 * i + 1) * BLOCK_MAX_WEIGHTS,
+				dec_weight_quant_uvalue + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
+				dec_weight_quant_sig + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
 				dm.maxprec_2planes, low_values2[i], high_values2[i]);
 		}
 	}
