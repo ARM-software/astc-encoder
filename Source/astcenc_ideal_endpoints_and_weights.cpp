@@ -419,8 +419,8 @@ static void compute_ideal_colors_and_weights_3_comp(
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ep0 = ep0 / pms[i].color_scale;
-		ep1 = ep1 / pms[i].color_scale;
+		ep0 = ep0 * pms[i].icolor_scale;
+		ep1 = ep1 * pms[i].icolor_scale;
 
 		vfloat4 bmin = blk.data_min;
 		vfloat4 bmax = blk.data_max;
@@ -565,8 +565,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
 
-		ei.ep.endpt0[i] = ep0 / pms[i].color_scale;
-		ei.ep.endpt1[i] = ep1 / pms[i].color_scale;
+		ei.ep.endpt0[i] = ep0 * pms[i].icolor_scale;
+		ei.ep.endpt1[i] = ep1 * pms[i].icolor_scale;
 	}
 
 	bool is_constant_wes = true;

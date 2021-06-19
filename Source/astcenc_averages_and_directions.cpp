@@ -188,8 +188,6 @@ void compute_avgs_and_dirs_3_comp(
 
 		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
-		vfloat4 rgb_min(1e38f);
-		vfloat4 rgb_max(-1e38f);
 		float partition_weight = 0.0f;
 
 		unsigned int texel_count = pi.partition_texel_count[partition];
@@ -210,8 +208,6 @@ void compute_avgs_and_dirs_3_comp(
 			                     error_vb[iwt],
 			                     0.0f);
 
-			rgb_min = min(texel_datum, rgb_min);
-			rgb_max = max(texel_datum, rgb_max);
 			partition_weight += weight;
 			base_sum += texel_datum * weight;
 			error_sum += error_weight;
@@ -226,8 +222,7 @@ void compute_avgs_and_dirs_3_comp(
 		pm[partition].avg = average * csf;
 		pm[partition].color_scale = csf;
 		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
-		vfloat4 range = max(rgb_max - rgb_min, 1e-10f);
-		pm[partition].range_sq = range * range;
+		pm[partition].range_sq = vfloat4::zero();
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
