@@ -988,6 +988,14 @@ void compute_quantized_weights_for_decimation(
 	float quant_level_m1 = quant_levels_m1[quant_level];
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
+
+	/* TODO: WTF issue that we need to examine some time. */
+	if (!((high_bound - low_bound) > 0.5f))
+	{
+		low_bound = 0.0f;
+		high_bound = 1.0f;
+	}
+
 	assert(high_bound > low_bound);
 	float rscale = high_bound - low_bound;
 	float scale = 1.0f / rscale;
