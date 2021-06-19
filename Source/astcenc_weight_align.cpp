@@ -65,6 +65,10 @@ static const unsigned int quantization_steps_for_level[13] {
 alignas(ASTCENC_VECALIGN) static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
 alignas(ASTCENC_VECALIGN) static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 
+#if !defined(NDEBUG)
+	static bool print_once { true };
+#endif
+
 /* See header for documentation. */
 void prepare_angular_tables()
 {
@@ -327,9 +331,10 @@ static void compute_angular_endpoints_for_quant_levels(
 
 		// Did we find anything?
 #if !defined(NDEBUG)
-		if (bsi < 0)
+		if ((bsi < 0) && print_once)
 		{
-			printf("WARNING: Unable to find encoding within specified error limit\n");
+			print_once = false;
+			printf("WARNING: Unable to find full encoding within search error limit\n\n");
 		}
 #endif
 
@@ -491,9 +496,10 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 		// Did we find anything?
 #if !defined(NDEBUG)
-		if (bsi < 0)
+		if ((bsi < 0) && print_once)
 		{
-			printf("WARNING: Unable to find encoding within specified error limit\n");
+			print_once = false;
+			printf("WARNING: Unable to find low weight encoding within search error limit\n\n");
 		}
 #endif
 
