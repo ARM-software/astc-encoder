@@ -203,7 +203,7 @@ static void compute_encoding_choice_errors(
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-	compute_avgs_and_dirs_3_comp(pi, blk, ewb, 3, pms);
+	compute_avgs_and_dirs_3_comp_rgb(pi, blk, ewb, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
