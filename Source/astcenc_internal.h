@@ -610,9 +610,6 @@ struct block_mode
 	/** @brief Is this mode enabled in the current search preset? */
 	uint8_t percentile_hit : 1;
 
-	/** @brief Is this mode enabled for early fast-path searches in the current search preset? */
-	uint8_t percentile_always : 1;
-
 	/**
 	 * @brief Get the weight quantization used by this block mode.
 	 *
@@ -636,10 +633,7 @@ struct decimation_mode
 	int8_t maxprec_2planes;
 
 	/** @brief Is this mode enabled in the current search preset? */
-	uint8_t percentile_hit : 1;
-
-	/** @brief Is this mode enabled for early fast-path searches in the current search preset? */
-	uint8_t percentile_always : 1;
+	uint8_t percentile_hit;
 };
 
 /**
@@ -678,8 +672,22 @@ struct block_size_descriptor
 	/** @brief The number of stored decimation modes. */
 	unsigned int decimation_mode_count;
 
+	/**
+	 * @brief The number of stored decimation modes which are "always" modes.
+	 *
+	 * Always modes are stored at the start of the decimation_modes list.
+	 */
+	unsigned int always_decimation_mode_count;
+
 	/** @brief The number of stored block modes. */
 	unsigned int block_mode_count;
+
+	/**
+	 * @brief The number of stored block modes which are "always" modes.
+	 *
+	 * Always modes are stored at the start of the block_modes list.
+	 */
+	unsigned int always_block_mode_count;
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];

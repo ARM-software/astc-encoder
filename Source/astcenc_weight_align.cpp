@@ -520,15 +520,12 @@ void compute_angular_endpoints_1plane(
 	float low_values[WEIGHTS_MAX_DECIMATION_MODES][12];
 	float high_values[WEIGHTS_MAX_DECIMATION_MODES][12];
 
-	promise(bsd.decimation_mode_count > 0);
-	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
+	unsigned int max_decimation_modes = only_always ? bsd.always_decimation_mode_count
+	                                                : bsd.decimation_mode_count;
+	promise(max_decimation_modes > 0);
+	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (only_always && !dm.percentile_always)
-		{
-			break;
-		}
-
 		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
 		{
 			continue;
@@ -554,15 +551,12 @@ void compute_angular_endpoints_1plane(
 		}
 	}
 
-	promise(bsd.block_mode_count > 0);
-	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
+	unsigned int max_block_modes = only_always ? bsd.always_block_mode_count
+	                                           : bsd.block_mode_count;
+	promise(max_block_modes > 0);
+	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (only_always && !bm.percentile_always)
-		{
-			break;
-		}
-
 		if (bm.is_dual_plane || !bm.percentile_hit)
 		{
 			continue;

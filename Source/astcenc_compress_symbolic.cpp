@@ -271,14 +271,12 @@ static float compress_symbolic_block_for_partition_1plane(
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
+	unsigned int max_decimation_modes = only_always ? bsd.always_decimation_mode_count
+	                                                : bsd.decimation_mode_count;
+	promise(max_decimation_modes > 0);
+	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (only_always && !dm.percentile_always)
-		{
-			break;
-		}
-
 		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
 		{
 			continue;
@@ -330,14 +328,12 @@ static float compress_symbolic_block_for_partition_1plane(
 		qwt_errors[i] = 1e38f;
 	}
 
-	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
+	unsigned int max_block_modes = only_always ? bsd.always_block_mode_count
+	                                           : bsd.block_mode_count;
+	promise(max_block_modes > 0);
+	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (only_always && !bm.percentile_always)
-		{
-			break;
-		}
-
 		if (bm.is_dual_plane || !bm.percentile_hit)
 		{
 			continue;
