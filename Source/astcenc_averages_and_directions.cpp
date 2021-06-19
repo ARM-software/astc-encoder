@@ -408,7 +408,6 @@ void compute_avgs_and_dirs_2_comp(
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
 
-
 		error_vr = ewb.texel_weight_g;
 		error_vg = ewb.texel_weight_b;
 	}
