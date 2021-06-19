@@ -54,15 +54,16 @@
  * deciding how to quantize colors, as not all partitions are equal. For example, some partitions
  * will have far fewer texels than others in the same block.
  *
- * @param      ewb   The block error weights.
- * @param      pi    The partiion info.
- * @param[out] pm    The output metrics; only writes to @c error_weight field.
+ * @param      ewb             The block error weights.
+ * @param      pi              The partiion info.
+ * @param[out] error_weights   The output per-partition error_weight sum.
  */
 static void compute_partition_error_color_weightings(
 	const error_weight_block& ewb,
 	const partition_info& pi,
-	partition_metrics pm[BLOCK_MAX_PARTITIONS]
+	vfloat4 error_weights[BLOCK_MAX_PARTITIONS]
 ) {
+	// TODO: Candidate for 4-group counting
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
@@ -76,11 +77,10 @@ static void compute_partition_error_color_weightings(
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tidx = pi.texels_of_partition[i][j];
-			error_weight = error_weight + ewb.error_weights[tidx];
+			error_weight += ewb.error_weights[tidx];
 		}
 
-		error_weight = error_weight / pi.partition_texel_count[i];
-		pm[i].error_weight = error_weight;
+		error_weights[i] = error_weight / pi.partition_texel_count[i];
 	}
 }
 
@@ -1123,9 +1123,9 @@ unsigned int compute_ideal_endpoint_formats(
 	compute_encoding_choice_errors(bsd, blk, pi, ewb, ep, eci);
 
 	// For each partition, compute the error weights to apply for that partition
-	partition_metrics pms[BLOCK_MAX_PARTITIONS];
+	vfloat4 error_weights[BLOCK_MAX_PARTITIONS];
 
-	compute_partition_error_color_weightings(ewb, pi, pms);
+	compute_partition_error_color_weightings(ewb, pi, error_weights);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
 	int format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
@@ -1133,7 +1133,7 @@ unsigned int compute_ideal_endpoint_formats(
 	{
 		compute_color_error_for_every_integer_count_and_quant_level(
 		    encode_hdr_rgb, encode_hdr_alpha, i,
-		    pi, eci[i], ep, pms[i].error_weight, best_error[i],
+		    pi, eci[i], ep, error_weights[i], best_error[i],
 		    format_of_choice[i]);
 	}
 
@@ -1146,7 +1146,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// that will never be picked as best candidate
 	const int packed_mode_count = bsd.block_mode_count;
 	const int packed_mode_count_simd_up = round_up_to_simd_multiple_vla(packed_mode_count);
-	for (int i = packed_mode_count; i < packed_mode_count_simd_up; ++i)
+	for (int i = packed_mode_count; i < packed_mode_count_simd_up; i++)
 	{
 		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
 		best_quant_levels[i] = QUANT_2;
@@ -1180,7 +1180,6 @@ unsigned int compute_ideal_endpoint_formats(
 
 		two_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
-
 
 		for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 		{

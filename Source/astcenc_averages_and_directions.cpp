@@ -31,6 +31,7 @@ void compute_avgs_and_dirs_4_comp(
 	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
+	// TODO: Candidate for 4-group counting
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
@@ -131,6 +132,7 @@ void compute_avgs_and_dirs_3_comp(
 	unsigned int omitted_component,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
+	// TODO: Candidate for 4-group counting
 	const float *texel_weights = ewb.texel_weight_rgb;
 
 	const float* data_vr = blk.data_r;
@@ -272,6 +274,7 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
+	// TODO: Candidate for 4-group counting
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
