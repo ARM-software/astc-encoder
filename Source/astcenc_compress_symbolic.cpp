@@ -1431,8 +1431,9 @@ void compress_block(
 
 	static const float errorval_overshoot = 1.0f / ctx.config.tune_refinement_mse_overshoot;
 
+	// Only enable MODE0 fast path (trial 0) if 2D and more than 25 texels
 	int start_trial = 1;
-	if ((bsd->texel_count < TUNE_MIN_TEXELS_MODE0_FASTPATH) && (bsd->zdim > 1))
+	if ((bsd->texel_count >= TUNE_MIN_TEXELS_MODE0_FASTPATH) && (bsd->zdim == 1))
 	{
 		start_trial = 0;
 	}
