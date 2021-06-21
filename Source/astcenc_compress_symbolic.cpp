@@ -1431,7 +1431,7 @@ void compress_block(
 
 	static const float errorval_overshoot = 1.0f / ctx.config.tune_refinement_mse_overshoot;
 
-	int start_trial = bsd->texel_count < (int)TUNE_MAX_TEXELS_MODE0_FASTPATH ? 1 : 0;
+	int start_trial = bsd->texel_count < TUNE_MIN_TEXELS_MODE0_FASTPATH ? 1 : 0;
 	for (int i = start_trial; i < 2; i++)
 	{
 		TRACE_NODE(node1, "pass");
