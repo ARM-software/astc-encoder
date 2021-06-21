@@ -1175,7 +1175,6 @@ struct symbolic_compressed_block
 	uint8_t partition_count;
 
 	/** @brief Non-zero if the color formats matched; valid for @c NONCONST blocks. */
-	// TODO: Do we need to store this?
 	uint8_t color_formats_matched;
 
 	/** @brief The plane 2 color component, or -1 if single plane; valid for @c NONCONST blocks. */
