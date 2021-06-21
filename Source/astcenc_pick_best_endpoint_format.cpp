@@ -159,7 +159,6 @@ static void compute_error_squared_rgb_single_partition(
 		vfloat4 dist2 = rp2 - point;
 		samec_err += dot3_s(ews, dist2 * dist2);
 
-		// TODO - this is only used for HDR textures. Can we skip?
 		float param3 = dot3_s(point,  rgbl_pline.bs);
 		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bis;
 		vfloat4 dist3 = rp3 - point;
@@ -209,7 +208,6 @@ static void compute_encoding_choice_errors(
 	{
 		partition_metrics& pm = pms[i];
 
-		// TODO: Can we skip rgb_luma_lines for LDR images?
 		line3 uncor_rgb_lines;
 		line3 samec_rgb_lines;	// for LDR-RGB-scale
 		line3 rgb_luma_lines;	// for HDR-RGB-scale
@@ -249,7 +247,6 @@ static void compute_encoding_choice_errors(
 		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
 		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
 
-		// TODO - this is only used for HDR textures. Can we skip?
 		rgb_luma_plines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
 		rgb_luma_plines.bs   = rgb_luma_lines.b * csf;
 		rgb_luma_plines.bis  = rgb_luma_lines.b * icsf;

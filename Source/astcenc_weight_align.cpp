@@ -283,7 +283,6 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
-	// TODO: Why the + 4 in the current code?
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error
@@ -468,7 +467,6 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
-	// TODO: Why the + 4 in the current code?
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		best_error[i] = ERROR_CALC_DEFAULT;

@@ -425,7 +425,6 @@ static void compute_ideal_colors_and_weights_3_comp(
 		vfloat4 bmin = blk.data_min;
 		vfloat4 bmax = blk.data_max;
 
-		// TODO: Probably a programmatic vector permute we can do here ...
 		assert(omitted_component < BLOCK_MAX_COMPONENTS);
 		switch (omitted_component)
 		{
@@ -833,7 +832,6 @@ void compute_ideal_weights_for_decimation(
 	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
 	if (texel_count == weight_count)
 	{
-		// TODO: Use SIMD copies?
 		for (unsigned int i = 0; i < texel_count_simd; i++)
 		{
 			// Assert it's an identity map for valid texels, and last valid value for any overspill
@@ -989,7 +987,7 @@ void compute_quantized_weights_for_decimation(
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 
-	/* TODO: WTF issue that we need to examine some time. Triggered by test in issue #265. */
+	// TODO: Oddity to investigate; triggered by test in issue #265.
 	if (high_bound < low_bound)
 	{
 		low_bound = 0.0f;
@@ -1167,7 +1165,6 @@ void recompute_ideal_colors_1plane(
 		vfloat4 weight_weight_sum = vfloat4(1e-17f);
 		float psum = 1e-17f;
 
-		// TODO: This loop has too many responsibilities, making it inefficient
 		for (int j = 0; j < texel_count; j++)
 		{
 			int tix = texel_indexes[j];
@@ -1218,7 +1215,6 @@ void recompute_ideal_colors_1plane(
 		}
 
 		// Calculations specific to mode #7, the HDR RGB-scale mode
-		// TODO: Can we skip this for LDR textures?
 		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 
@@ -1369,7 +1365,6 @@ void recompute_ideal_colors_2planes(
 	vfloat4 weight_weight_sum = vfloat4(1e-17f);
 	float psum = 1e-17f;
 
-	// TODO: This loop has too many responsibilities, making it inefficient
 	for (int j = 0; j < texel_count; j++)
 	{
 		vfloat4 rgba = blk.texel(j);
@@ -1438,7 +1433,6 @@ void recompute_ideal_colors_2planes(
 	}
 
 	// Calculations specific to mode #7, the HDR RGB-scale mode
-	// TODO: Can we skip this for LDR textures?
 	vfloat4 rgbq_sum = color_vec_x + color_vec_y;
 	rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
 

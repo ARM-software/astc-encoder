@@ -1356,7 +1356,6 @@ struct astcenc_context
 	avg_var_args avg_var_preprocess_args;
 
 	/** @brief The per-texel deblocking weights for the current block size. */
-	// TODO: Move to the BSD?
 	float deblock_weights[BLOCK_MAX_TEXELS];
 
 	/** @brief The parallel manager for averages and variances computation. */
@@ -1383,8 +1382,6 @@ struct astcenc_context
 /* ============================================================================
   Functionality for managing block sizes and partition tables.
 ============================================================================ */
-
-// TODO: Make C++ constructor/destructor?
 
 /**
  * @brief Populate the block size descriptor for the target block size.
@@ -2003,7 +2000,6 @@ float compute_error_of_weight_set_2planes(
  *
  * @return The actual endpoint mode used.
  */
-// TODO: Format as enum?
 uint8_t pack_color_endpoints(
 	vfloat4 color0,
 	vfloat4 color1,
@@ -2026,7 +2022,6 @@ uint8_t pack_color_endpoints(
  * @param[out] output0       The output color for endpoint 0.
  * @param[out] output1       The output color for endpoint 1.
  */
-// TODO: Format as enum?
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,

@@ -976,9 +976,6 @@ void expand_deblock_weights(
  * This approach creates relatively large error block tables, but it allows a very flexible level of
  * control over how specific texels and channels are prioritized by the compressor.
  *
- * TODO: Inline the expand_deblock_weights here? The computation is cheap, and it would remove some
- * memory allocation from the context, at the expense of recomputing per block.
- *
  * @param      ctx     The compressor context and configuration.
  * @param      image   The input image information.
  * @param      bsd     The block size information.
@@ -1035,7 +1032,6 @@ static float prepare_error_weight_block(
 					// Compute derivative if we have any use of LNS
 					if (any(lns_mask))
 					{
-						// TODO: Can we avoid some of the multi-type translation?
 						vfloat4 data = blk.texel(idx);
 						vint4 datai = lns_to_sf16(float_to_int(data));
 

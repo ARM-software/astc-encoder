@@ -863,7 +863,6 @@ static void construct_block_size_descriptor_2d(
 			unsigned int x_weights, y_weights;
 			bool is_dual_plane;
 
-			// TODO: Make this an enum? It's been validated.
 			unsigned int quant_mode;
 
 	#if !defined(ASTCENC_DECOMPRESS_ONLY)
