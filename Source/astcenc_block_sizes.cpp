@@ -1062,7 +1062,6 @@ static void construct_block_size_descriptor_3d(
 	}
 
 	bsd.decimation_mode_count = decimation_mode_count;
-	bsd.always_decimation_mode_count = 1;
 
 	// Construct the list of block formats
 	unsigned int packed_idx = 0;
@@ -1107,10 +1106,10 @@ static void construct_block_size_descriptor_3d(
 	}
 
 	bsd.block_mode_count = packed_idx;
-	bsd.always_block_mode_count = 1;
 
-	assert(bsd.always_block_mode_count > 0);
-	assert(bsd.always_decimation_mode_count > 0);
+	// These are never used = the MODE0 fast path is skipped for 3D blocks
+	bsd.always_block_mode_count = 0;
+	bsd.always_decimation_mode_count = 0;
 
 	// Determine the texels to use for kmeans clustering.
 	assign_kmeans_texels(bsd);
