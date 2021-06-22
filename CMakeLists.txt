@@ -118,6 +118,19 @@ if(NOT ${ANY_ISA})
     message(FATAL_ERROR "At least one backend ISA must be enabled")
 endif()
 
+
+# Project configuration
+
+# Must be done after project() but before compiler settings
+# or it gets overriden (this contradicts the official docs)
+if(${ARCH} MATCHES "aarch64")
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+
+elseif(${ARCH} MATCHES "x86_64")
+    set(CMAKE_OSX_ARCHITECTURES "x86_64")
+
+endif()
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
