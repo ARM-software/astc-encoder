@@ -15,36 +15,15 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-# - - - - - - - - - - - - - - - - - -
-# No architecture-specific SIMD
-
-if (${ISA_NONE})
-    set(ISA_SIMD none)
+if (${UNIVERSAL_BUILD})
     include(cmake_core.cmake)
-endif()
-
-# - - - - - - - - - - - - - - - - - -
-# Armv8-A architecture-specific SIMD
-
-if (${ISA_NEON})
-    set(ISA_SIMD neon)
-    include(cmake_core.cmake)
-endif()
-
-# - - - - - - - - - - - - - - - - - -
-# x86-64 architecture-specific SIMD
-
-if (${ISA_AVX2})
-    set(ISA_SIMD avx2)
-    include(cmake_core.cmake)
-endif()
-
-if (${ISA_SSE41})
-    set(ISA_SIMD sse4.1)
-    include(cmake_core.cmake)
-endif()
-
-if (${ISA_SSE2})
-    set(ISA_SIMD sse2)
-    include(cmake_core.cmake)
+else()
+    set(artefacts none native neon avx2 sse4.1 sse2)
+    set(configs ${ISA_NONE} ${ISA_NATIVE} ${ISA_NEON} ${ISA_AVX2} ${ISA_SSE41} ${ISA_SSE2})
+    foreach(artefact config IN ZIP_LISTS artefacts configs)
+        if(${config})
+            set(ISA_SIMD ${artefact})
+            include(cmake_core.cmake)
+        endif()
+    endforeach()
 endif()

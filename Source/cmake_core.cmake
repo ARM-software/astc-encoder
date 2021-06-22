@@ -15,12 +15,18 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-project(astc${CODEC}-${ISA_SIMD})
+if (${UNIVERSAL_BUILD})
+    set(astc_target astc${CODEC})
+else()
+    set(astc_target astc${CODEC}-${ISA_SIMD})
+endif()
+
+project(${astc_target})
 
 set(GNU_LIKE "GNU,Clang,AppleClang")
 set(CLANG_LIKE "Clang,AppleClang")
 
-add_library(astc${CODEC}-${ISA_SIMD}-static
+add_library(${astc_target}-static
     STATIC
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
@@ -46,11 +52,11 @@ add_library(astc${CODEC}-${ISA_SIMD}-static
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
 
-target_include_directories(astc${CODEC}-${ISA_SIMD}-static
+target_include_directories(${astc_target}-static
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(astc${CODEC}-${ISA_SIMD}
+add_executable(${astc_target}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -59,9 +65,9 @@ add_executable(astc${CODEC}-${ISA_SIMD}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_link_libraries(astc${CODEC}-${ISA_SIMD}
+target_link_libraries(${astc_target}
     PRIVATE
-        astc${CODEC}-${ISA_SIMD}-static)
+        ${astc_target}-static)
 
 macro(astcenc_set_properties NAME)
 
@@ -136,68 +142,72 @@ macro(astcenc_set_properties NAME)
         PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-    # Set up configuration for SIMD ISA builds
-    if(${ISA_SIMD} MATCHES "none")
-        target_compile_definitions(${NAME}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=0
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
+    if (NOT ${UNIVERSAL_BUILD})
+        # Set up configuration for SIMD ISA builds
+        if(${ISA_SIMD} MATCHES "none")
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NEON=0
+                    ASTCENC_SSE=0
+                    ASTCENC_AVX=0
+                    ASTCENC_POPCNT=0
+                    ASTCENC_F16C=0)
 
-    elseif(${ISA_SIMD} MATCHES "neon")
-        target_compile_definitions(${NAME}
-            PRIVATE
-                ASTCENC_NEON=1
-                ASTCENC_SSE=0
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
+        elseif(${ISA_SIMD} MATCHES "neon")
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NEON=1
+                    ASTCENC_SSE=0
+                    ASTCENC_AVX=0
+                    ASTCENC_POPCNT=0
+                    ASTCENC_F16C=0)
 
-    elseif(${ISA_SIMD} MATCHES "sse2")
-        target_compile_definitions(${NAME}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=20
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
+        elseif(${ISA_SIMD} MATCHES "sse2")
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NEON=0
+                    ASTCENC_SSE=20
+                    ASTCENC_AVX=0
+                    ASTCENC_POPCNT=0
+                    ASTCENC_F16C=0)
 
-    elseif(${ISA_SIMD} MATCHES "sse4.1")
-        target_compile_definitions(${NAME}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=41
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=1
-                ASTCENC_F16C=0)
+        elseif(${ISA_SIMD} MATCHES "sse4.1")
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NEON=0
+                    ASTCENC_SSE=41
+                    ASTCENC_AVX=0
+                    ASTCENC_POPCNT=1
+                    ASTCENC_F16C=0)
 
-        target_compile_options(${NAME}
-            PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
+        elseif(${ISA_SIMD} MATCHES "avx2")
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NEON=0
+                    ASTCENC_SSE=41
+                    ASTCENC_AVX=2
+                    ASTCENC_POPCNT=1
+                    ASTCENC_F16C=1)
+        endif()
+    endif()
 
-    elseif(${ISA_SIMD} MATCHES "avx2")
-        target_compile_definitions(${NAME}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=41
-                ASTCENC_AVX=2
-                ASTCENC_POPCNT=1
-                ASTCENC_F16C=1)
-
+    if(${ISA_SIMD} MATCHES "avx2")
         target_compile_options(${NAME}
             PRIVATE
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
                 $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 
+    elseif(${ISA_SIMD} MATCHES "sse4.1")
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
+
     elseif(${ISA_SIMD} MATCHES "native")
         target_compile_options(${NAME}
             PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-march=native>)
+                $<$<CXX_COMPILER_ID:GNU>: -march=native>)
 
     endif()
-
 endmacro()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -219,8 +229,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-astcenc_set_properties(astc${CODEC}-${ISA_SIMD})
+astcenc_set_properties(${astc_target})
 
-astcenc_set_properties(astc${CODEC}-${ISA_SIMD}-static)
+astcenc_set_properties(${astc_target}-static)
 
-install(TARGETS astc${CODEC}-${ISA_SIMD} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS ${astc_target} DESTINATION ${PACKAGE_ROOT})

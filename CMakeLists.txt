@@ -20,7 +20,14 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0069 NEW)  # LTO support
 cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
 
-project(astcenc VERSION 3.0.0)
+project(astcencoder VERSION 3.0.0)
+
+option(UNIVERSAL_BUILD "Build multi-architecture universal binary [only supported on MacOS]" OFF)
+
+if (CMAKE_OSX_ARCHITECTURES)
+    message(STATUS "Building universal binary for ${CMAKE_OSX_ARCHITECTURES}")
+    set(UNIVERSAL_BUILD ON)
+endif()
 
 # Command line configuration
 function(printopt optName optVal optArch tgtArch)
