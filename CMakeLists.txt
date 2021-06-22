@@ -129,6 +129,9 @@ if(${ARCH} MATCHES "aarch64")
 elseif(${ARCH} MATCHES "x86_64")
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
+else()
+    message(FATAL_ERROR "Unsupported architecture")
+
 endif()
 
 set(CMAKE_CXX_STANDARD 14)
