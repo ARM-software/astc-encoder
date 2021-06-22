@@ -120,29 +120,6 @@ To enable this binary variant add `-DISA_NONE=ON` to the CMake command line
 when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
 
-### 32-bit Armv8 builds
-
-The build system includes support for building for Armv8 32-bit binaries on
-Linux, using GCC 9.3 or higher, or Clang 9 or higher. The `aarch32` build uses
-the soft-float ABI and `aarch32hf` uses the hard-float ABI.
-
-We tested these builds using the following cross-compilers on Ubuntu 20.04:
-
-* `aarch32`: arm-linux-gnueabi-g++-9 (v 9.3.0)
-* `aarch32hf`:  arm-linux-gnueabihf-g++-9 (v 9.3.0)
-
-```shell
-# Arm aarch32 using the soft-float ABI
-export CXX=arm-linux-gnueabi-g++-9
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DARCH=aarch32 -DISA_NEON=ON ..
-
-# Arm aarch32 using the hard-float ABI
-export CXX=arm-linux-gnueabihf-g++-9
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DARCH=aarch32hf -DISA_NEON=ON ..
-```
-
 ### Build Types
 
 We support and test the following `CMAKE_BUILD_TYPE` options.

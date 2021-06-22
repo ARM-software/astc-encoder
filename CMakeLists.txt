@@ -35,7 +35,7 @@ function(printopt optName optVal optArch tgtArch)
     endif()
 endfunction()
 
-set(VALID_ARCH aarch64 aarch32 aarch32hf x64)
+set(VALID_ARCH aarch64 x64)
 set(ARCH x64 CACHE STRING "Target architecture")
 set_property(CACHE ARCH PROPERTY STRINGS ${VALID_ARCH})
 
@@ -66,8 +66,8 @@ if(${ISA_SSE2} AND ${ARCH} MATCHES "x64")
 endif()
 
 option(ISA_NEON "Enable builds for NEON SIMD")
-printopt("NEON" ${ISA_NEON} "aarch32|aarch32hf|aarch64" ${ARCH})
-if(${ISA_NEON} AND ${ARCH} MATCHES "aarch32|aarch32hf|aarch64")
+printopt("NEON" ${ISA_NEON} "aarch64" ${ARCH})
+if(${ISA_NEON} AND ${ARCH} MATCHES "aarch64")
     set(ANY_ISA 1)
 endif()
 
@@ -116,45 +116,6 @@ endif()
 
 if(NOT ${ANY_ISA})
     message(FATAL_ERROR "At least one backend ISA must be enabled")
-endif()
-
-
-# Project configuration
-
-# Must be done after project() but before compiler settings
-# or it gets overriden (this contradicts the official docs)
-if(${ARCH} MATCHES "aarch64")
-    set(CMAKE_OSX_ARCHITECTURES "arm64")
-
-elseif(${ARCH} MATCHES "aarch32|aarch32hf")
-    # Deliberately use Armv7 for Clang - its most compatible with the current
-    # code; we provide some fallbacks for a few missing v8 intrinsics.
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-
-        set(CMAKE_OSX_ARCHITECTURES "armv7")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv7-a")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-vfpv4")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-command-line-argument")
-        set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-
-    # For GCC we directly target Armv8-A A32, and provide some emulated
-    # fallback intrinsics for functionality that exists for A64 but not A32.
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=armv8-a")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon-fp-armv8")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfp16-format=ieee")
-
-        if(${ARCH} STREQUAL "aarch32")  # arm-linux-gnueabi-g++
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp")
-        elseif(${ARCH} STREQUAL "aarch32hf")  # arm-linux-gnueabihf-g++
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=hard")
-        endif()
-
-        # Workaround for Source/tinyexr.h:11025
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-type-limits")
-    endif()
-else()
-    set(CMAKE_OSX_ARCHITECTURES "x86_64")
 endif()
 
 set(CMAKE_CXX_STANDARD 14)
