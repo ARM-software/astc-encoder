@@ -29,6 +29,12 @@ if (CMAKE_OSX_ARCHITECTURES)
     set(UNIVERSAL_BUILD ON)
 endif()
 
+if (${UNIVERSAL_BUILD})
+    if (NOT CMAKE_OSX_ARCHITECTURES)
+        message(FATAL_ERROR "UNIVERSAL_BUILD requires -DCMAKE_OSX_ARCHITECTURES=\"arch1;arch2;...\"")
+    endif()
+endif()
+
 # Command line configuration
 function(printopt optName optVal optArch tgtArch)
     if(${optVal})
