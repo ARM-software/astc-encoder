@@ -142,9 +142,9 @@ macro(astcenc_set_properties NAME)
         PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-    if (NOT ${UNIVERSAL_BUILD})
-        # Set up configuration for SIMD ISA builds
-        if(${ISA_SIMD} MATCHES "none")
+    # Set up configuration for SIMD ISA builds
+    if(${ISA_SIMD} MATCHES "none")
+        if (NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -152,8 +152,10 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_AVX=0
                     ASTCENC_POPCNT=0
                     ASTCENC_F16C=0)
+        endif()
 
-        elseif(${ISA_SIMD} MATCHES "neon")
+    elseif(${ISA_SIMD} MATCHES "neon")
+        if (NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=1
@@ -161,8 +163,10 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_AVX=0
                     ASTCENC_POPCNT=0
                     ASTCENC_F16C=0)
+        endif()
 
-        elseif(${ISA_SIMD} MATCHES "sse2")
+    elseif(${ISA_SIMD} MATCHES "sse2")
+        if (NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -170,8 +174,10 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_AVX=0
                     ASTCENC_POPCNT=0
                     ASTCENC_F16C=0)
+        endif()
 
-        elseif(${ISA_SIMD} MATCHES "sse4.1")
+    elseif(${ISA_SIMD} MATCHES "sse4.1")
+        if (NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -179,8 +185,14 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_AVX=0
                     ASTCENC_POPCNT=1
                     ASTCENC_F16C=0)
+        endif()
 
-        elseif(${ISA_SIMD} MATCHES "avx2")
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
+
+    elseif(${ISA_SIMD} MATCHES "avx2")
+        if (NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -189,25 +201,20 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_POPCNT=1
                     ASTCENC_F16C=1)
         endif()
-    endif()
 
-    if(${ISA_SIMD} MATCHES "avx2")
         target_compile_options(${NAME}
             PRIVATE
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
                 $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 
-    elseif(${ISA_SIMD} MATCHES "sse4.1")
-        target_compile_options(${NAME}
-            PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
-
     elseif(${ISA_SIMD} MATCHES "native")
         target_compile_options(${NAME}
             PRIVATE
+                $<$<PLATFORM_ID:Linux>: -march=native>
                 $<$<CXX_COMPILER_ID:GNU>: -march=native>)
 
     endif()
+
 endmacro()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

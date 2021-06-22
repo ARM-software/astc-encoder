@@ -48,9 +48,9 @@ target_compile_options(${astc_test}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wdouble-promotion>)
 
-if (NOT ${UNIVERSAL_BUILD})
-    # Set up configuration for SIMD ISA builds
-    if(${ISA_SIMD} MATCHES "none")
+# Set up configuration for SIMD ISA builds
+if(${ISA_SIMD} MATCHES "none")
+    if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${astc_test}
             PRIVATE
                 ASTCENC_NEON=0
@@ -58,8 +58,17 @@ if (NOT ${UNIVERSAL_BUILD})
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
                 ASTCENC_F16C=0)
+    endif()
 
-    elseif(${ISA_SIMD} MATCHES "neon")
+    if (${ARCH} MATCHES x64)
+        target_compile_options(${astc_test}
+            PRIVATE
+                $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
+
+    endif()
+
+elseif(${ISA_SIMD} MATCHES "neon")
+    if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${astc_test}
             PRIVATE
                 ASTCENC_NEON=1
@@ -67,8 +76,10 @@ if (NOT ${UNIVERSAL_BUILD})
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
                 ASTCENC_F16C=0)
+    endif()
 
-    elseif(${ISA_SIMD} MATCHES "sse2")
+elseif(${ISA_SIMD} MATCHES "sse2")
+    if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${astc_test}
             PRIVATE
                 ASTCENC_NEON=0
@@ -76,8 +87,14 @@ if (NOT ${UNIVERSAL_BUILD})
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
                 ASTCENC_F16C=0)
+    endif()
 
-    elseif(${ISA_SIMD} MATCHES "sse4.1")
+    target_compile_options(${astc_test}
+        PRIVATE
+        $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
+
+elseif(${ISA_SIMD} MATCHES "sse4.1")
+    if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${astc_test}
             PRIVATE
                 ASTCENC_NEON=0
@@ -85,8 +102,14 @@ if (NOT ${UNIVERSAL_BUILD})
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=0)
+    endif()
 
-    elseif(${ISA_SIMD} MATCHES "avx2")
+    target_compile_options(${astc_test}
+        PRIVATE
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -msse4.1 -mpopcnt>)
+
+elseif(${ISA_SIMD} MATCHES "avx2")
+    if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${astc_test}
             PRIVATE
                 ASTCENC_NEON=0
@@ -94,32 +117,13 @@ if (NOT ${UNIVERSAL_BUILD})
                 ASTCENC_AVX=2
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=1)
-
-    endif()
-endif()
-
-if(${ISA_SIMD} MATCHES "none")
-    if (${ARCH} MATCHES x64)
-        target_compile_options(${astc_test}
-            PRIVATE
-                $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
     endif()
 
-elseif(${ISA_SIMD} MATCHES "sse2")
-    target_compile_options(${astc_test}
-        PRIVATE
-        $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
-
-elseif(${ISA_SIMD} MATCHES "sse4.1")
-    target_compile_options(${astc_test}
-        PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -msse4.1 -mpopcnt>)
-
-elseif(${ISA_SIMD} MATCHES "avx2")
     target_compile_options(${astc_test}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt -mf16c>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
+
 endif()
 
 target_link_libraries(${astc_test}

@@ -22,17 +22,11 @@ cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
 
 project(astcencoder VERSION 3.0.0)
 
-option(UNIVERSAL_BUILD "Build multi-architecture universal binary [only supported on MacOS]" OFF)
+set(UNIVERSAL_BUILD OFF)
 
 if (CMAKE_OSX_ARCHITECTURES)
     message(STATUS "Building universal binary for ${CMAKE_OSX_ARCHITECTURES}")
     set(UNIVERSAL_BUILD ON)
-endif()
-
-if (${UNIVERSAL_BUILD})
-    if (NOT CMAKE_OSX_ARCHITECTURES)
-        message(FATAL_ERROR "UNIVERSAL_BUILD requires -DCMAKE_OSX_ARCHITECTURES=\"arch1;arch2;...\"")
-    endif()
 endif()
 
 # Command line configuration

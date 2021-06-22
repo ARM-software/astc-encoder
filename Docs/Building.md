@@ -82,12 +82,21 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 # Host builds optimized for the local CPU's microarchitecture
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
     -DARCH=x64 -DISA_NATIVE=ON ..
+
+# macOS universal binary build
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
+    -DISA_AVX2=ON -DISA_NEON=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" ..
 ```
 
 This example shows all SIMD variants being enabled. It is possible to build a
 subset of the supported variants by enabling only the ones you require. If no
 variant is explicitly specified the build will compile a native binary for the
 build machine.
+
+In the case of macOS universal build, only a single combined universal binary
+is created for the two architectures specified in CMAKE_OSX_ARCHITECTURES.
+For x86_64 architecture one of ISA_AVX2|ISA_SSE41|ISA_SSE2 option is allowed
+while for arm64 ISA_NEON can be enabled.
 
 :warning: Compiling a native binary for the build machine usually gives the
 fastest binaries for that specific CPU type but may produce binaries that do
