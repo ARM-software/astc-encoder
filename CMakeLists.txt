@@ -22,78 +22,107 @@ cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
 
 project(astcencoder VERSION 3.0.0)
 
-set(UNIVERSAL_BUILD OFF)
-
-if (CMAKE_OSX_ARCHITECTURES)
-    message(STATUS "Building universal binary for ${CMAKE_OSX_ARCHITECTURES}")
-    set(UNIVERSAL_BUILD ON)
-endif()
-
-# Command line configuration
-function(printopt optName optVal optArch tgtArch)
-    if(${optVal})
-        if(${optArch} MATCHES ${tgtArch})
-            message(STATUS "  ${optName} backend - ON")
-        else()
-            message(STATUS "  ${optName} backend - SKIPPED (${optArch} only)")
-        endif()
-    else()
-        message(STATUS "  ${optName} backend - OFF")
-    endif()
-endfunction()
-
-set(VALID_ARCH aarch64 x64)
-set(ARCH x64 CACHE STRING "Target architecture")
-set_property(CACHE ARCH PROPERTY STRINGS ${VALID_ARCH})
-
-message(STATUS "Selecting target astcenc backends:")
-list(FIND VALID_ARCH ${ARCH} index)
-if(index EQUAL -1)
-    message(FATAL_ERROR "ARCH must be one of ${VALID_ARCH}")
-endif()
-
-set(ANY_ISA 0)
-
 option(ISA_AVX2 "Enable builds for AVX2 SIMD")
-printopt("AVX2" ${ISA_AVX2} "x64" ${ARCH})
-if(${ISA_AVX2} AND ${ARCH} MATCHES "x64")
-    set(ANY_ISA 1)
-endif()
-
 option(ISA_SSE41 "Enable builds for SSE4.1 SIMD")
-printopt("SSE4.1" ${ISA_SSE41} "x64" ${ARCH})
-if(${ISA_SSE41} AND ${ARCH} MATCHES "x64")
-    set(ANY_ISA 1)
-endif()
-
 option(ISA_SSE2 "Enable builds for SSE2 SIMD")
-printopt("SSE2" ${ISA_SSE2} "x64" ${ARCH})
-if(${ISA_SSE2} AND ${ARCH} MATCHES "x64")
-    set(ANY_ISA 1)
-endif()
-
 option(ISA_NEON "Enable builds for NEON SIMD")
-printopt("NEON" ${ISA_NEON} "aarch64" ${ARCH})
-if(${ISA_NEON} AND ${ARCH} MATCHES "aarch64")
-    set(ANY_ISA 1)
-endif()
-
 option(ISA_NONE "Enable builds for no SIMD")
-if(${ISA_NONE})
-    set(ANY_ISA 1)
-    message(STATUS "  No SIMD backend - ON")
-else()
-    message(STATUS "  No SIMD backend - OFF")
-endif()
-
 # Manually provide this as a tristate so we can distinguish the default
 # not set state from explicitly ON and OFF ...
 set(ISA_NATIVE AUTO CACHE STRING "Enable builds for the native local CPU")
 set_property(CACHE ISA_NATIVE PROPERTY STRINGS AUTO ON OFF)
 
-if(((NOT ${ANY_ISA}) AND (${ISA_NATIVE} STREQUAL AUTO)) OR (${ISA_NATIVE} STREQUAL ON))
+set(UNIVERSAL_BUILD OFF)
+set(X64_ISA_COUNT 0)
+
+set(configs ${ISA_NONE} ${ISA_NATIVE} ${ISA_AVX2} ${ISA_SSE41} ${ISA_SSE2})
+foreach(config ${configs})
+    if(${config})
+        math(EXPR X64_ISA_COUNT "${X64_ISA_COUNT} + 1")
+    endif()
+endforeach()
+
+math(EXPR BUILD_NON_UNIVERSAL "${X64_ISA_COUNT} >> 1")
+
+# Case when more than 1 x64 ISA and NEON is specified
+# This prevents ISA_AVX2 ISA_SSE41 ISA_NEON for example
+if (${BUILD_NON_UNIVERSAL} AND ${ISA_NEON})
+        message(FATAL_ERROR "Conflicting ISAs specified. Only one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is valid with ISA_NEON.")
+endif()
+
+# When universal build, either provide both ISA_<x64> and ISA_NEON or none
+if (CMAKE_OSX_ARCHITECTURES)
+    if ((${X64_ISA_COUNT} STREQUAL "1") AND (NOT ${ISA_NEON}))
+            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+    endif()
+
+    if ((${X64_ISA_COUNT} STREQUAL "0") AND ${ISA_NEON})
+            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+    endif()
+
+    if (${BUILD_NON_UNIVERSAL})
+        message(FATAL_ERROR "Conflicting ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+    endif()
+endif()
+
+# Build non-universal if only one ISA_<x64> is specified
+if ((${X64_ISA_COUNT} STREQUAL "1") AND
+    (NOT CMAKE_OSX_ARCHITECTURES) AND (NOT ${ISA_NEON}))
+        set(BUILD_NON_UNIVERSAL 1)
+endif()
+
+if ((${X64_ISA_COUNT} STREQUAL "0") AND
+    (NOT CMAKE_OSX_ARCHITECTURES) AND ${ISA_NEON})
+        set(BUILD_NON_UNIVERSAL 1)
+endif()
+
+if (NOT BUILD_NON_UNIVERSAL)
+    # Try to work out if Universal build is requested
+    if (CMAKE_OSX_ARCHITECTURES)
+        # Default to SSE2 if no other x64 ISA specified
+        if ((NOT ${ISA_NONE}) OR (NOT ${ISA_NATIVE}) OR (NOT ${ISA_AVX2}) OR (NOT ${ISA_SSE41}))
+            set(ISA_SSE2 ON)
+        endif()
+        set(ISA_NEON ON)
+        set(UNIVERSAL_BUILD ON)
+    else()
+        if ((${X64_ISA_COUNT} STREQUAL "1") AND (${ISA_NEON}))
+            set(UNIVERSAL_BUILD ON)
+            set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+        endif()
+    endif()
+
+    if (${UNIVERSAL_BUILD})
+        message(STATUS "Building universal binary for ${CMAKE_OSX_ARCHITECTURES}")
+    endif()
+
+    foreach(value ${CMAKE_OSX_ARCHITECTURES})
+        string(APPEND ARCH_STRING "_${value}")
+    endforeach()
+else()
+    if (${ISA_NEON})
+        string(APPEND ARCH_STRING "_arm64")
+    else()
+        string(APPEND ARCH_STRING "_${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+endif()
+
+function(printopt optName optVal)
+    if(${optVal})
+        message(STATUS "  ${optName} backend - ON")
+    else()
+        message(STATUS "  ${optName} backend - OFF")
+    endif()
+endfunction()
+
+printopt("AVX2"  ${ISA_AVX2})
+printopt("SSE41" ${ISA_SSE41})
+printopt("SSE2"  ${ISA_SSE2})
+printopt("NEON"  ${ISA_NEON})
+printopt("NONE"  ${ISA_NONE})
+
+if((${ISA_NATIVE} STREQUAL AUTO) OR (${ISA_NATIVE} STREQUAL ON))
     set(ISA_NATIVE 1)
-    set(ANY_ISA 1)
     message(STATUS "  Native SIMD backend - ON")
 else()
     set(ISA_NATIVE 0)
@@ -121,26 +150,6 @@ else()
     message(STATUS "  Unit tests - OFF")
 endif()
 
-if(NOT ${ANY_ISA})
-    message(FATAL_ERROR "At least one backend ISA must be enabled")
-endif()
-
-
-# Project configuration
-
-# Must be done after project() but before compiler settings
-# or it gets overriden (this contradicts the official docs)
-if(${ARCH} MATCHES "aarch64")
-    set(CMAKE_OSX_ARCHITECTURES "arm64")
-
-elseif(${ARCH} MATCHES "x64")
-    set(CMAKE_OSX_ARCHITECTURES "x86_64")
-
-else()
-    message(FATAL_ERROR "Unsupported architecture")
-
-endif()
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -160,7 +169,7 @@ endif()
 
 set(PKG_VER ${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR})
 
-set(CPACK_PACKAGE_FILE_NAME "astcenc-${PKG_VER}-${PKG_OS}-${ARCH}")
+set(CPACK_PACKAGE_FILE_NAME "astcenc-${PKG_VER}-${PKG_OS}${ARCH_STRING}")
 set(CPACK_INCLUDE_TOPLEVEL_DIRECTORY FALSE)
 set(CPACK_PACKAGE_CHECKSUM SHA256)
 set(CPACK_GENERATOR ZIP)
