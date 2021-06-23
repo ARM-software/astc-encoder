@@ -26,11 +26,11 @@ cd build
 
 # x86-64 using NMake
 cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=.\ ^
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+    -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 # x86-64 using Visual Studio solution
 cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=.\ ^
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+    -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 ```
 
@@ -77,11 +77,11 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 
 # x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+    -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 # Host builds optimized for the local CPU's microarchitecture
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_NATIVE=ON ..
+    -DARCH=x64 -DISA_NATIVE=ON ..
 ```
 
 This example shows all SIMD variants being enabled. It is possible to build a
