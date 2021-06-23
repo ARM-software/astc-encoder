@@ -126,7 +126,7 @@ endif()
 if(${ARCH} MATCHES "aarch64")
     set(CMAKE_OSX_ARCHITECTURES "arm64")
 
-elseif(${ARCH} MATCHES "x86_64")
+elseif(${ARCH} MATCHES "x64")
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
 
 else()
