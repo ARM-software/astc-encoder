@@ -47,21 +47,21 @@ math(EXPR BUILD_NON_UNIVERSAL "${X64_ISA_COUNT} >> 1")
 # Case when more than 1 x64 ISA and NEON is specified
 # This prevents ISA_AVX2 ISA_SSE41 ISA_NEON for example
 if (${BUILD_NON_UNIVERSAL} AND ${ISA_NEON})
-        message(FATAL_ERROR "Conflicting ISAs specified. Only one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is valid with ISA_NEON.")
+        message(FATAL_ERROR "Conflicting ISAs specified. Only one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is valid with ISA_NEON.")
 endif()
 
 # When universal build, either provide both ISA_<x64> and ISA_NEON or none
 if (CMAKE_OSX_ARCHITECTURES)
     if ((${X64_ISA_COUNT} STREQUAL "1") AND (NOT ${ISA_NEON}))
-            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
     endif()
 
     if ((${X64_ISA_COUNT} STREQUAL "0") AND ${ISA_NEON})
-            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+            message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
     endif()
 
     if (${BUILD_NON_UNIVERSAL})
-        message(FATAL_ERROR "Conflicting ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_NATIVE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
+        message(FATAL_ERROR "Conflicting ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
     endif()
 endif()
 
