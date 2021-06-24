@@ -77,22 +77,28 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 
 # x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ...
+    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 # macOS universal binary build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_AVX2=ON -DISA_NEON=ON -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" ..
+    -DISA_AVX2=ON -DISA_NEON=ON ..
 ```
 
 This example shows all SIMD variants being enabled. It is possible to build a
 subset of the supported variants by enabling only the ones you require.
 
-In the case of macOS universal build, only a single combined universal binary
-is created for the two or more architectures specified in CMAKE_OSX_ARCHITECTURES.
-For x86_64 architecture one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is required
-while for arm64 ISA_NEON is required. If a single ISA_<x64> and ISA_NEON is
-specified the CMAKE_OSX_ARCHITECTURES can be omitted. If only CMAKE_OSX_ARCHITECTURES
-is specified both ISA_<x64> and ISA_NEON can be omitted.
+For all platforms a single CMake configure can build multiple binaries for a
+single target CPU architecture, for example building x64 for both SSE2 and
+AVX2. The binary name will include the build variant as a postfix.
+
+The macOS platform additionally supports the ability to build a universal
+binary, combining one x86 and one arm64 variant into a single output binary.
+The OS select the correct variant to run for the machine being used to run the
+binary. To build a universal binary select a single x64 variant and a single
+arm64 variant, and both will be included in a single output binary. It is not
+required, but if `CMAKE_OSX_ARCHITECTURES` is set on the command line (e.g.
+by XCode-generated build commands) it will be validated against the other
+configuration variant settings.
 
 ### Building
 
