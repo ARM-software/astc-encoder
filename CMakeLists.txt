@@ -76,7 +76,7 @@ if ((${X64_ISA_COUNT} STREQUAL "0") AND
         set(BUILD_NON_UNIVERSAL 1)
 endif()
 
-if (NOT BUILD_NON_UNIVERSAL)
+if (NOT ${BUILD_NON_UNIVERSAL})
     # Try to work out if universal build is requested
     if (CMAKE_OSX_ARCHITECTURES)
         # Default to SSE2 if no other x64 ISA is specified
@@ -101,10 +101,10 @@ if (NOT BUILD_NON_UNIVERSAL)
     endforeach()
 else()
     if (${ISA_NEON})
-        string(APPEND ARCH_STRING "_arm64")
+        string(APPEND ARCH_STRING "_aarch64")
         set(CMAKE_OSX_ARCHITECTURES "arm64")
     else()
-        string(APPEND ARCH_STRING "_${CMAKE_SYSTEM_PROCESSOR}")
+        string(APPEND ARCH_STRING "_x64")
         set(CMAKE_OSX_ARCHITECTURES "x86_64")
     endif()
 endif()

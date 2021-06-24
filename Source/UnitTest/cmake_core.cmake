@@ -60,13 +60,6 @@ if(${ISA_SIMD} MATCHES "none")
                 ASTCENC_F16C=0)
     endif()
 
-    if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-        target_compile_options(${ASTC_TEST}
-            PRIVATE
-                $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
-
-    endif()
-
 elseif(${ISA_SIMD} MATCHES "neon")
     if (NOT ${UNIVERSAL_BUILD})
         target_compile_definitions(${ASTC_TEST}
