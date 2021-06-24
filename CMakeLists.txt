@@ -27,10 +27,11 @@ option(ISA_SSE41 "Enable builds for SSE4.1 SIMD")
 option(ISA_SSE2 "Enable builds for SSE2 SIMD")
 option(ISA_NEON "Enable builds for NEON SIMD")
 option(ISA_NONE "Enable builds for no SIMD")
+option(ISA_NATIVE "Enable builds for the native local CPU")
 # Manually provide this as a tristate so we can distinguish the default
 # not set state from explicitly ON and OFF ...
-set(ISA_NATIVE AUTO CACHE STRING "Enable builds for the native local CPU")
-set_property(CACHE ISA_NATIVE PROPERTY STRINGS AUTO ON OFF)
+# set(ISA_NATIVE AUTO CACHE STRING "Enable builds for the native local CPU")
+# set_property(CACHE ISA_NATIVE PROPERTY STRINGS AUTO ON OFF)
 
 set(UNIVERSAL_BUILD OFF)
 set(X64_ISA_COUNT 0)
@@ -123,12 +124,8 @@ printopt("SSE2"  ${ISA_SSE2})
 printopt("NEON"  ${ISA_NEON})
 printopt("NONE"  ${ISA_NONE})
 
-if((${ISA_NATIVE} STREQUAL AUTO) OR (${ISA_NATIVE} STREQUAL ON))
-    set(ISA_NATIVE 1)
-    message(STATUS "  Native SIMD backend - ON")
-else()
-    set(ISA_NATIVE 0)
-    message(STATUS "  Native SIMD backend - OFF")
+if ((${X64_ISA_COUNT} EQUAL 0) AND (NOT ${ISA_NEON}))
+    set(ISA_NONE 1)
 endif()
 
 option(DECOMPRESSOR "Enable builds for decompression only")
