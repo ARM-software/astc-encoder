@@ -52,11 +52,11 @@ endif()
 
 # When universal build, either provide both ISA_<x64> and ISA_NEON or none
 if (CMAKE_OSX_ARCHITECTURES)
-    if ((${X64_ISA_COUNT} STREQUAL "1") AND (NOT ${ISA_NEON}))
+    if ((${X64_ISA_COUNT} EQUAL 1) AND (NOT ${ISA_NEON}))
             message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
     endif()
 
-    if ((${X64_ISA_COUNT} STREQUAL "0") AND ${ISA_NEON})
+    if ((${X64_ISA_COUNT} EQUAL 0) AND ${ISA_NEON})
             message(FATAL_ERROR "Incomplete ISAs specified for universal build. Use ISA_NEON and one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 for universal build.")
     endif()
 
@@ -66,12 +66,12 @@ if (CMAKE_OSX_ARCHITECTURES)
 endif()
 
 # Build non-universal if only one ISA_<x64> is specified
-if ((${X64_ISA_COUNT} STREQUAL "1") AND
+if ((${X64_ISA_COUNT} EQUAL 1) AND
     (NOT CMAKE_OSX_ARCHITECTURES) AND (NOT ${ISA_NEON}))
         set(BUILD_NON_UNIVERSAL 1)
 endif()
 
-if ((${X64_ISA_COUNT} STREQUAL "0") AND
+if ((${X64_ISA_COUNT} EQUAL 0) AND
     (NOT CMAKE_OSX_ARCHITECTURES) AND ${ISA_NEON})
         set(BUILD_NON_UNIVERSAL 1)
 endif()
@@ -86,7 +86,7 @@ if (NOT ${BUILD_NON_UNIVERSAL})
         set(ISA_NEON ON)
         set(UNIVERSAL_BUILD ON)
     else()
-        if ((${X64_ISA_COUNT} STREQUAL "1") AND (${ISA_NEON}))
+        if ((${X64_ISA_COUNT} EQUAL 1) AND (${ISA_NEON}))
             set(UNIVERSAL_BUILD ON)
             set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
         endif()
