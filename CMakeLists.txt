@@ -44,8 +44,8 @@ endforeach()
 
 math(EXPR BUILD_NON_UNIVERSAL "${X64_ISA_COUNT} >> 1")
 
-# Case when more than 1 x64 ISA and NEON is specified
-# This prevents ISA_AVX2 ISA_SSE41 ISA_NEON for example
+# Case when more than one x64 ISA and NEON is specified
+# This prevents something like ISA_AVX2 ISA_SSE41 ISA_NEON all specified
 if (${BUILD_NON_UNIVERSAL} AND ${ISA_NEON})
         message(FATAL_ERROR "Conflicting ISAs specified. Only one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is valid with ISA_NEON.")
 endif()
@@ -77,9 +77,9 @@ if ((${X64_ISA_COUNT} STREQUAL "0") AND
 endif()
 
 if (NOT BUILD_NON_UNIVERSAL)
-    # Try to work out if Universal build is requested
+    # Try to work out if universal build is requested
     if (CMAKE_OSX_ARCHITECTURES)
-        # Default to SSE2 if no other x64 ISA specified
+        # Default to SSE2 if no other x64 ISA is specified
         if ((NOT ${ISA_NONE}) OR (NOT ${ISA_NATIVE}) OR (NOT ${ISA_AVX2}) OR (NOT ${ISA_SSE41}))
             set(ISA_SSE2 ON)
         endif()
