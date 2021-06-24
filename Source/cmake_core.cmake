@@ -16,17 +16,17 @@
 #  ----------------------------------------------------------------------------
 
 if (${UNIVERSAL_BUILD})
-    set(astc_target astc${CODEC})
+    set(ASTC_TARGET astc${CODEC})
 else()
-    set(astc_target astc${CODEC}-${ISA_SIMD})
+    set(ASTC_TARGET astc${CODEC}-${ISA_SIMD})
 endif()
 
-project(${astc_target})
+project(${ASTC_TARGET})
 
 set(GNU_LIKE "GNU,Clang,AppleClang")
 set(CLANG_LIKE "Clang,AppleClang")
 
-add_library(${astc_target}-static
+add_library(${ASTC_TARGET}-static
     STATIC
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
@@ -52,11 +52,11 @@ add_library(${astc_target}-static
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
 
-target_include_directories(${astc_target}-static
+target_include_directories(${ASTC_TARGET}-static
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${astc_target}
+add_executable(${ASTC_TARGET}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -65,9 +65,9 @@ add_executable(${astc_target}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_link_libraries(${astc_target}
+target_link_libraries(${ASTC_TARGET}
     PRIVATE
-        ${astc_target}-static)
+        ${ASTC_TARGET}-static)
 
 macro(astcenc_set_properties NAME)
 
@@ -236,8 +236,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-astcenc_set_properties(${astc_target})
+astcenc_set_properties(${ASTC_TARGET})
 
-astcenc_set_properties(${astc_target}-static)
+astcenc_set_properties(${ASTC_TARGET}-static)
 
-install(TARGETS ${astc_target} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})

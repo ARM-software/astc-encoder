@@ -16,23 +16,23 @@
 #  ----------------------------------------------------------------------------
 
 if (${UNIVERSAL_BUILD})
-    set(astc_test test-simd)
+    set(ASTC_TEST test-simd)
 else()
-    set(astc_test test-simd-${ISA_SIMD})
+    set(ASTC_TEST test-simd-${ISA_SIMD})
 endif()
 
-add_executable(${astc_test})
+add_executable(${ASTC_TEST})
 
-target_sources(${astc_test}
+target_sources(${ASTC_TEST}
     PRIVATE
         test_simd.cpp
         ../astcenc_mathlib_softfloat.cpp)
 
-target_include_directories(${astc_test}
+target_include_directories(${ASTC_TEST}
     PRIVATE
         ${gtest_SOURCE_DIR}/include)
 
-target_compile_options(${astc_test}
+target_compile_options(${ASTC_TEST}
     PRIVATE
         # Use pthreads on Linux/macOS
         $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
@@ -51,7 +51,7 @@ target_compile_options(${astc_test}
 # Set up configuration for SIMD ISA builds
 if(${ISA_SIMD} MATCHES "none")
     if (NOT ${UNIVERSAL_BUILD})
-        target_compile_definitions(${astc_test}
+        target_compile_definitions(${ASTC_TEST}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SSE=0
@@ -61,7 +61,7 @@ if(${ISA_SIMD} MATCHES "none")
     endif()
 
     if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
-        target_compile_options(${astc_test}
+        target_compile_options(${ASTC_TEST}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
 
@@ -69,7 +69,7 @@ if(${ISA_SIMD} MATCHES "none")
 
 elseif(${ISA_SIMD} MATCHES "neon")
     if (NOT ${UNIVERSAL_BUILD})
-        target_compile_definitions(${astc_test}
+        target_compile_definitions(${ASTC_TEST}
             PRIVATE
                 ASTCENC_NEON=1
                 ASTCENC_SSE=0
@@ -80,7 +80,7 @@ elseif(${ISA_SIMD} MATCHES "neon")
 
 elseif(${ISA_SIMD} MATCHES "sse2")
     if (NOT ${UNIVERSAL_BUILD})
-        target_compile_definitions(${astc_test}
+        target_compile_definitions(${ASTC_TEST}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SSE=20
@@ -89,13 +89,13 @@ elseif(${ISA_SIMD} MATCHES "sse2")
                 ASTCENC_F16C=0)
     endif()
 
-    target_compile_options(${astc_test}
+    target_compile_options(${ASTC_TEST}
         PRIVATE
         $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-mfpmath=sse -msse2>)
 
 elseif(${ISA_SIMD} MATCHES "sse4.1")
     if (NOT ${UNIVERSAL_BUILD})
-        target_compile_definitions(${astc_test}
+        target_compile_definitions(${ASTC_TEST}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SSE=41
@@ -104,13 +104,13 @@ elseif(${ISA_SIMD} MATCHES "sse4.1")
                 ASTCENC_F16C=0)
     endif()
 
-    target_compile_options(${astc_test}
+    target_compile_options(${ASTC_TEST}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -msse4.1 -mpopcnt>)
 
 elseif(${ISA_SIMD} MATCHES "avx2")
     if (NOT ${UNIVERSAL_BUILD})
-        target_compile_definitions(${astc_test}
+        target_compile_definitions(${ASTC_TEST}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SSE=41
@@ -119,18 +119,18 @@ elseif(${ISA_SIMD} MATCHES "avx2")
                 ASTCENC_F16C=1)
     endif()
 
-    target_compile_options(${astc_test}
+    target_compile_options(${ASTC_TEST}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfpmath=sse -mavx2 -mpopcnt -mf16c>
             $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
 
 endif()
 
-target_link_libraries(${astc_test}
+target_link_libraries(${ASTC_TEST}
     PRIVATE
         gtest_main)
 
-add_test(NAME ${astc_test}
-         COMMAND ${astc_test})
+add_test(NAME ${ASTC_TEST}
+         COMMAND ${ASTC_TEST})
 
-install(TARGETS ${astc_test} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS ${ASTC_TEST} DESTINATION ${PACKAGE_ROOT})
