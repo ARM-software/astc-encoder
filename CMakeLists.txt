@@ -98,6 +98,12 @@ if("${MACOS_BUILD}")
         endif()
 
     # Else is this a implicit multi-architecture universal build?
+    elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" GREATER 1))
+        message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+
+    elseif(("${X64_ISA_COUNT}" EQUAL 1) AND ("${ARM64_ISA_COUNT}" GREATER 1))
+        message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+
     elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" EQUAL 1))
         set(UNIVERSAL_BUILD ON)
         set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
