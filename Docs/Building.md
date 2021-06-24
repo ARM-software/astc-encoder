@@ -77,11 +77,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 
 # x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
-
-# Host builds optimized for the local CPU's microarchitecture
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
-    -DISA_NATIVE=ON ..
+    -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ...
 
 # macOS universal binary build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
@@ -89,9 +85,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./ \
 ```
 
 This example shows all SIMD variants being enabled. It is possible to build a
-subset of the supported variants by enabling only the ones you require. If no
-variant is explicitly specified the build will compile a native binary for the
-build machine.
+subset of the supported variants by enabling only the ones you require.
 
 In the case of macOS universal build, only a single combined universal binary
 is created for the two or more architectures specified in CMAKE_OSX_ARCHITECTURES.
@@ -99,11 +93,6 @@ For x86_64 architecture one of ISA_NONE|ISA_AVX2|ISA_SSE41|ISA_SSE2 is required
 while for arm64 ISA_NEON is required. If a single ISA_<x64> and ISA_NEON is
 specified the CMAKE_OSX_ARCHITECTURES can be omitted. If only CMAKE_OSX_ARCHITECTURES
 is specified both ISA_<x64> and ISA_NEON can be omitted.
-
-:warning: Compiling a native binary for the build machine usually gives the
-fastest binaries for that specific CPU type but may produce binaries that do
-not work (due to using ISA extensions) or run slowly (due to poor instruction
-scheduling) on other processors.
 
 ### Building
 

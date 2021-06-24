@@ -18,8 +18,8 @@
 if (${UNIVERSAL_BUILD})
     include(cmake_core.cmake)
 else()
-    set(ARTEFACTS none native neon avx2 sse4.1 sse2)
-    set(CONFIGS ${ISA_NONE} ${ISA_NATIVE} ${ISA_NEON} ${ISA_AVX2} ${ISA_SSE41} ${ISA_SSE2})
+    set(ARTEFACTS none neon avx2 sse4.1 sse2)
+    set(CONFIGS ${ISA_NONE} ${ISA_NEON} ${ISA_AVX2} ${ISA_SSE41} ${ISA_SSE2})
     list(LENGTH ARTEFACTS ARTEFACTS_LEN)
     math(EXPR ARTEFACTS_LEN "${ARTEFACTS_LEN} - 1")
 
