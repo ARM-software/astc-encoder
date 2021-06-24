@@ -73,7 +73,7 @@ spec:
                     mkdir build_cov
                     cd build_cov
 
-                    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=x64 -DISA_AVX2=ON ..
+                    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON ..
 
                     cov-configure --template --compiler cc --comptype gcc
                     cov-configure --template --compiler c++ --comptype g++
@@ -133,7 +133,7 @@ spec:
                   export CXX=clang++-9
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON ..
                   make install package -j4
                 '''
               }
@@ -144,7 +144,7 @@ spec:
                   export CXX=clang++-9
                   mkdir build_reldec
                   cd build_reldec
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DDECOMPRESSOR=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DDECOMPRESSOR=ON ..
                   make -j4
                 '''
               }
@@ -184,7 +184,7 @@ spec:
                   call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   nmake install package
                 '''
               }
@@ -223,7 +223,7 @@ spec:
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=x64 -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
                   make install package -j1
                 '''
               }
@@ -278,7 +278,7 @@ spec:
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DARCH=aarch64 -DISA_NEON=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_NEON=ON ..
                   make install package -j1
                 '''
               }
