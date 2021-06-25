@@ -94,10 +94,12 @@ if("${MACOS_BUILD}")
 
     # Set up defaults if no more specific ISA set - use XCode's own defaults
     if(IS_ARM64 AND ("${ARM64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
+        set(ARM64_ISA_COUNT 1)
         set(ISA_NEON ON)
     endif()
 
     if(IS_X64 AND ("${X64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
+        set(X64_ISA_COUNT 1)
         set(ISA_SSE41 ON)
     endif()
 
