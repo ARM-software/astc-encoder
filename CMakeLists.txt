@@ -165,7 +165,7 @@ printopt("Unit tests    " ${UNITTEST})
 add_subdirectory(Source)
 
 # Configure package archive
-if(${PACKAGE})
+if(PACKAGE)
     if("${MACOS_BUILD}")
         string(TOLOWER "macOS" PKG_OS)
     else()
