@@ -71,6 +71,7 @@ endforeach()
 if("${MACOS_BUILD}")
     list(FIND CMAKE_OSX_ARCHITECTURES x86_64 IS_X64)
     list(FIND CMAKE_OSX_ARCHITECTURES arm64 IS_ARM64)
+    list(FIND CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD) IS_AUTO)
 
     # Turn list index into boolean
     if(${IS_X64} EQUAL -1)
@@ -85,8 +86,22 @@ if("${MACOS_BUILD}")
         set(IS_ARM64 ON)
     endif()
 
+    if(${IS_AUTO} EQUAL -1)
+        set(IS_AUTO OFF)
+    else()
+        set(IS_AUTO ON)
+    endif()
+
+    # User might be doing multi-architecture - XCode sets this at runtime
+    if("${IS_AUTO}")
+        if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
+            message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+        endif()
+
+        set(UNIVERSAL_BUILD ON)
+
     # User requested explicit multi-architecture universal build
-    if("${MACOS_ARCH_LEN}" GREATER 2)
+    elseif("${MACOS_ARCH_LEN}" GREATER 2)
         message(FATAL_ERROR "For macOS universal builds only x86_64 and arm64 builds are allowed.")
 
     elseif("${MACOS_ARCH_LEN}" EQUAL 2)

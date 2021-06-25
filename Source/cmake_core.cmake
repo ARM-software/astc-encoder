@@ -177,10 +177,12 @@ macro(astcenc_set_properties NAME)
         endif()
 
         # These settings are needed on AppleClang as SSE4.1 is on by default
+        # Suppress unused argument for macOS universal build behavior
         target_compile_options(${NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
-                $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>)
+                $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
+                $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
     elseif((${ISA_SIMD} MATCHES "sse4.1") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE41}))
         if (NOT ${UNIVERSAL_BUILD})
@@ -193,9 +195,11 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=0)
         endif()
 
+        # Suppress unused argument for macOS universal build behavior
         target_compile_options(${NAME}
             PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>
+                $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
     elseif((${ISA_SIMD} MATCHES "avx2") OR (${UNIVERSAL_BUILD} AND ${ISA_AVX2}))
         if (NOT ${UNIVERSAL_BUILD})
@@ -208,10 +212,12 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=1)
         endif()
 
+        # Suppress unused argument for macOS universal build behavior
         target_compile_options(${NAME}
             PRIVATE
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
-                $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>)
+                $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>
+                $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
     endif()
 
