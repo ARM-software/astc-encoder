@@ -92,13 +92,13 @@ if("${MACOS_BUILD}")
         set(IS_AUTO ON)
     endif()
 
-    # Set up defaults if not more specific ISA set
-    if(IS_ARM64 AND ("${ARM64_ISA_COUNT}" EQUAL 0))
-        set(ISA_NONE ON)
+    # Set up defaults if no more specific ISA set - use XCode's own defaults
+    if(IS_ARM64 AND ("${ARM64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
+        set(ISA_NEON ON)
     endif()
 
-    if(IS_X64 AND ("${X64_ISA_COUNT}" EQUAL 0))
-        set(ISA_NONE ON)
+    if(IS_X64 AND ("${X64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
+        set(ISA_SSE41 ON)
     endif()
 
     # User might be doing multi-architecture - XCode sets this at runtime
