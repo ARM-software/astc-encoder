@@ -38,6 +38,7 @@ option(ISA_NONE "Enable builds for no SIMD")
 option(DECOMPRESSOR "Enable builds for decompression only")
 option(DIAGNOSTICS "Enable builds for diagnostic trace")
 option(UNITTEST "Enable builds for unit tests")
+option(CLI "Enable build of CLI" ON)
 
 set(UNIVERSAL_BUILD OFF)
 set(MACOS_BUILD OFF)
