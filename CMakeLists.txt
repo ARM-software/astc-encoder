@@ -170,7 +170,7 @@ else()
     endif()
 endif()
 
-if(("${ARM64_ISA_COUNT}" EQUAL 0) OR ("${X64_ISA_COUNT}" EQUAL 0))
+if(("${ARM64_ISA_COUNT}" EQUAL 0) AND ("${X64_ISA_COUNT}" EQUAL 0))
     set(ISA_NONE ON)
 endif()
 
