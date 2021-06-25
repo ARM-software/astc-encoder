@@ -179,8 +179,8 @@ macro(astcenc_set_properties NAME)
         # These settings are needed on AppleClang as SSE4.1 is on by default
         target_compile_options(${NAME}
             PRIVATE
-                <$<CXX_COMPILER_ID:AppleClang>:-msse2>
-                <$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>)
+                $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
+                $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>)
 
     elseif((${ISA_SIMD} MATCHES "sse4.1") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE41}))
         if (NOT ${UNIVERSAL_BUILD})
