@@ -56,7 +56,8 @@ target_include_directories(${ASTC_TARGET}-static
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(${ASTC_TARGET}
+if (${CLI})
+    add_executable(${ASTC_TARGET}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -65,9 +66,10 @@ add_executable(${ASTC_TARGET}
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-target_link_libraries(${ASTC_TARGET}
-    PRIVATE
-        ${ASTC_TARGET}-static)
+    target_link_libraries(${ASTC_TARGET}
+        PRIVATE
+            ${ASTC_TARGET}-static)
+endif()
 
 macro(astcenc_set_properties NAME)
 
@@ -242,8 +244,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-astcenc_set_properties(${ASTC_TARGET})
-
 astcenc_set_properties(${ASTC_TARGET}-static)
 
-install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
+if (${CLI})
+    astcenc_set_properties(${ASTC_TARGET})
+    install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
+endif()
