@@ -92,6 +92,15 @@ if("${MACOS_BUILD}")
         set(IS_AUTO ON)
     endif()
 
+    # Set up defaults if not more specific ISA set
+    if(IS_ARM64 AND ("${ARM64_ISA_COUNT}" EQUAL 0))
+        set(ISA_NONE ON)
+    endif()
+
+    if(IS_X64 AND ("${X64_ISA_COUNT}" EQUAL 0))
+        set(ISA_NONE ON)
+    endif()
+
     # User might be doing multi-architecture - XCode sets this at runtime
     if("${IS_AUTO}")
         if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
@@ -155,7 +164,7 @@ else()
     endif()
 endif()
 
-if(("${ARM64_ISA_COUNT}" EQUAL 0) AND ("${X64_ISA_COUNT}" EQUAL 0))
+if(("${ARM64_ISA_COUNT}" EQUAL 0) OR ("${X64_ISA_COUNT}" EQUAL 0))
     set(ISA_NONE ON)
 endif()
 
@@ -172,6 +181,9 @@ printopt("SSE4.1 backend" ${ISA_SSE41})
 printopt("SSE2 backend  " ${ISA_SSE2})
 printopt("NEON backend  " ${ISA_NEON})
 printopt("NONE backend  " ${ISA_NONE})
+if("${MACOS_BUILD}")
+    printopt("Universal bin " ${UNIVERSAL_BUILD})
+endif()
 printopt("Decompressor  " ${DECOMPRESSOR})
 printopt("Diagnostics   " ${DIAGNOSTICS})
 printopt("Unit tests    " ${UNITTEST})
