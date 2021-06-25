@@ -16,6 +16,13 @@
 #  ----------------------------------------------------------------------------
 
 if (${UNIVERSAL_BUILD})
+    if (${ISA_AVX2})
+        set(ISA_SIMD "avx2")
+    elseif (${ISA_SSE41})
+        set(ISA_SIMD "sse4.1")
+    elseif (${ISA_SSE2})
+        set(ISA_SIMD "sse2")
+    endif()
     include(cmake_core.cmake)
 else()
     set(ARTEFACTS none neon avx2 sse4.1 sse2)
