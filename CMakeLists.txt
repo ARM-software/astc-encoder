@@ -72,6 +72,19 @@ if("${MACOS_BUILD}")
     list(FIND CMAKE_OSX_ARCHITECTURES x86_64 IS_X64)
     list(FIND CMAKE_OSX_ARCHITECTURES arm64 IS_ARM64)
 
+    # Turn list index into boolean
+    if(${IS_X64} EQUAL -1)
+        set(IS_X64 OFF)
+    else()
+        set(IS_X64 ON)
+    endif()
+
+    if(${IS_ARM64} EQUAL -1)
+        set(IS_ARM64 OFF)
+    else()
+        set(IS_ARM64 ON)
+    endif()
+
     # User requested explicit multi-architecture universal build
     if("${MACOS_ARCH_LEN}" GREATER 2)
         message(FATAL_ERROR "For macOS universal builds only x86_64 and arm64 builds are allowed.")
