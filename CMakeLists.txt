@@ -106,22 +106,22 @@ if("${MACOS_BUILD}")
     # User might be doing multi-architecture - XCode sets this at runtime
     if("${IS_AUTO}")
         if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
-            message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+            message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
         endif()
 
         set(UNIVERSAL_BUILD ON)
 
     # User requested explicit multi-architecture universal build
     elseif("${MACOS_ARCH_LEN}" GREATER 2)
-        message(FATAL_ERROR "For macOS universal builds only x86_64 and arm64 builds are allowed.")
+        message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
 
     elseif("${MACOS_ARCH_LEN}" EQUAL 2)
         if (NOT (${IS_X64} AND ${IS_ARM64}))
-            message(FATAL_ERROR "For macOS universal builds only x86_64 and arm64 builds are allowed.")
+            message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
         endif()
 
         if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
-            message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+            message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
         endif()
 
         set(UNIVERSAL_BUILD ON)
@@ -138,10 +138,12 @@ if("${MACOS_BUILD}")
 
     # Else is this a implicit multi-architecture universal build?
     elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" GREATER 1))
-        message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+        message(STATUS "For macOS setting multiple architecture backends builds a universal binary.")
+        message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
 
     elseif(("${X64_ISA_COUNT}" EQUAL 1) AND ("${ARM64_ISA_COUNT}" GREATER 1))
-        message(FATAL_ERROR "For macOS universal builds only one backend per architecture is allowed.")
+        message(STATUS "For macOS setting multiple architecture backends builds a universal binary.")
+        message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
 
     elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" EQUAL 1))
         set(UNIVERSAL_BUILD ON)
