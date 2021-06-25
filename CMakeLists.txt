@@ -138,12 +138,12 @@ if("${MACOS_BUILD}")
 
     # Else is this a implicit multi-architecture universal build?
     elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" GREATER 1))
-        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary.\n"
+        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary."
                           "For macOS universal binaries only one backend per architecture is allowed.")
         message(FATAL_ERROR "${MSG}")
 
     elseif(("${X64_ISA_COUNT}" EQUAL 1) AND ("${ARM64_ISA_COUNT}" GREATER 1))
-        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary.\n"
+        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary."
                           "For macOS universal binaries only one backend per architecture is allowed.")
         message(FATAL_ERROR "${MSG}")
 
