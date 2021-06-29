@@ -144,7 +144,7 @@ macro(astcenc_set_properties NAME)
         set_property(TARGET ${NAME}
             PROPERTY
                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+    endif()
 
     # Set up configuration for SIMD ISA builds
     if(${ISA_SIMD} MATCHES "none")
