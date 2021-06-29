@@ -134,6 +134,7 @@ macro(astcenc_set_properties NAME)
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
+if (${CLI})
     # Enable LTO on release builds
     set_property(TARGET ${NAME}
         PROPERTY
@@ -143,6 +144,7 @@ macro(astcenc_set_properties NAME)
     set_property(TARGET ${NAME}
         PROPERTY
             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
 
     # Set up configuration for SIMD ISA builds
     if(${ISA_SIMD} MATCHES "none")
