@@ -15,7 +15,7 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-if (${UNIVERSAL_BUILD})
+if(${UNIVERSAL_BUILD})
     set(ASTC_TARGET astc${CODEC})
 else()
     set(ASTC_TARGET astc${CODEC}-${ISA_SIMD})
@@ -56,7 +56,7 @@ target_include_directories(${ASTC_TARGET}-static
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (${CLI})
+if(${CLI})
     add_executable(${ASTC_TARGET}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
@@ -134,7 +134,7 @@ macro(astcenc_set_properties NAME)
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
-    if (${CLI})
+    if(${CLI})
         # Enable LTO on release builds
         set_property(TARGET ${NAME}
             PROPERTY
@@ -148,7 +148,7 @@ macro(astcenc_set_properties NAME)
 
     # Set up configuration for SIMD ISA builds
     if(${ISA_SIMD} MATCHES "none")
-        if (NOT ${UNIVERSAL_BUILD})
+        if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -159,7 +159,7 @@ macro(astcenc_set_properties NAME)
         endif()
 
     elseif(${ISA_SIMD} MATCHES "neon")
-        if (NOT ${UNIVERSAL_BUILD})
+        if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=1
@@ -170,7 +170,7 @@ macro(astcenc_set_properties NAME)
         endif()
 
     elseif((${ISA_SIMD} MATCHES "sse2") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE2}))
-        if (NOT ${UNIVERSAL_BUILD})
+        if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -189,7 +189,7 @@ macro(astcenc_set_properties NAME)
                 $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
     elseif((${ISA_SIMD} MATCHES "sse4.1") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE41}))
-        if (NOT ${UNIVERSAL_BUILD})
+        if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -206,7 +206,7 @@ macro(astcenc_set_properties NAME)
                 $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
     elseif((${ISA_SIMD} MATCHES "avx2") OR (${UNIVERSAL_BUILD} AND ${ISA_AVX2}))
-        if (NOT ${UNIVERSAL_BUILD})
+        if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -248,7 +248,7 @@ endif()
 
 astcenc_set_properties(${ASTC_TARGET}-static)
 
-if (${CLI})
+if(${CLI})
     astcenc_set_properties(${ASTC_TARGET})
     install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
 endif()

@@ -121,7 +121,7 @@ if("${MACOS_BUILD}")
         message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
 
     elseif("${MACOS_ARCH_LEN}" EQUAL 2)
-        if (NOT (${IS_X64} AND ${IS_ARM64}))
+        if(NOT (${IS_X64} AND ${IS_ARM64}))
             message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
         endif()
 
