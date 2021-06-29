@@ -250,5 +250,17 @@ astcenc_set_properties(${ASTC_TARGET}-static)
 
 if(${CLI})
     astcenc_set_properties(${ASTC_TARGET})
+
+    string(TIMESTAMP astcencoder_YEAR "%Y")
+
+    configure_file(
+        astcenccli_version.h.in
+        astcenccli_version.h
+        ESCAPE_QUOTES @ONLY)
+
+    target_include_directories(${ASTC_TARGET}
+        PRIVATE
+            ${CMAKE_CURRENT_BINARY_DIR})
+
     install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
 endif()
