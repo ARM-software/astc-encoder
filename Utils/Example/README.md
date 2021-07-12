@@ -12,6 +12,8 @@ as a PNG file.
 
 ## Building
 
+### Linux and macOS
+
 From the `./Utils/Example` directory.
 
 ```
@@ -19,6 +21,17 @@ mkdir build
 cd build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 make -j8
+```
+
+### Windows
+
+From the `./Utils/Example` directory, in a Visual Studio command prompt.
+
+```
+mkdir build
+cd build
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+nmake
 ```
 
 ## Running
