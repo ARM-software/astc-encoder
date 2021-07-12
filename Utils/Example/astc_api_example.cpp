@@ -76,12 +76,12 @@ int main(int argc, char **argv)
 
 	// ------------------------------------------------------------------------
 	// Initialize the default configuration for the block size and quality
-	astcenc_config   config;
+	astcenc_config config;
 	config.block_x = block_x;
 	config.block_y = block_y;
 	config.profile = profile;
 
-	astcenc_error    status;
+	astcenc_error status;
 	status = astcenc_config_init(profile, block_x, block_y, block_z, quality, 0, &config);
 	if (status != ASTCENC_SUCCESS)
 	{
