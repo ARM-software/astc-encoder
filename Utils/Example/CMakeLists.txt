@@ -45,23 +45,21 @@ ExternalProject_Get_property(astcencoder
     BINARY_DIR)
 
 # Build the command line
-add_executable(astcencoder_example
-    astc_api_example.cpp)
+add_executable(astcenc_example astc_api_example.cpp)
 
 # ... with astcencoder as a dependency
-add_dependencies(astcencoder_example
-    astcencoder)
+add_dependencies(astcenc_example astcencoder)
 
 # ... with astcencoder Source dir on the include path
-target_include_directories(astcencoder_example
+target_include_directories(astcenc_example
     PRIVATE
         ${SOURCE_DIR}/Source)
 
 # ... with astcencoder Binary dir on the library path and as a library dep
-target_link_directories(astcencoder_example
+target_link_directories(astcenc_example
     PRIVATE
         ${BINARY_DIR}/Source)
 
-target_link_libraries(astcencoder_example
+target_link_libraries(astcenc_example
     PRIVATE
         astcenc-native-static)

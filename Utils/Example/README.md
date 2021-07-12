@@ -26,5 +26,5 @@ make -j8
 From the build directory above.
 
 ```
-astcencoder_example <input.png> <output.png>
+astcenc_example <input.png> <output.png>
 ```
