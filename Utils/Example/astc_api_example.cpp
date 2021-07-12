@@ -25,9 +25,7 @@
 // and the compression uses a fixed set of options, but the code is well
 // commented.
 
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "astcenc.h"
 
