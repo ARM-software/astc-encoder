@@ -22,8 +22,10 @@
 // the C library API.
 //
 // For sake of clarity the command line exposed by the sample is minimalistic,
-// and the compression uses a fixed set of options, but the code is well
-// commented.
+// and the compression uses a fixed set of options, but the code is commented
+// to indicate where extension would be possible. Errors handling points are
+// detected and logged, but resources are not cleaned up on error paths to keep
+// the sample control path simple, so resources will leak on error.
 
 #include <stdio.h>
 
@@ -150,10 +152,9 @@ int main(int argc, char **argv)
 
 	// ------------------------------------------------------------------------
 	// Cleanup library resources
-	astcenc_context_free(context);
-
-	delete[] comp_data;
 	stbi_image_free(image_data);
+	astcenc_context_free(context);
+	delete[] comp_data;
 
 	return 0;
 }
