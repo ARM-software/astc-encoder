@@ -37,17 +37,6 @@
 
 int main(int argc, char **argv)
 {
-	// For the purposes of this sample we hard-code the compressor settings
-	static const unsigned int thread_count = 1;
-	static const unsigned int block_x = 6;
-	static const unsigned int block_y = 6;
-	static const unsigned int block_z = 1;
-	static const astcenc_profile profile = ASTCENC_PRF_LDR;
-	static const float quality = ASTCENC_PRE_MEDIUM;
-	static const astcenc_swizzle swizzle {
-		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
-	};
-
 	// Parse command line
 	if (argc != 3)
 	{
@@ -58,6 +47,18 @@ int main(int argc, char **argv)
 		       , argv[0]);
 		return 1;
 	}
+
+	// ------------------------------------------------------------------------
+	// For the purposes of this sample we hard-code the compressor settings
+	static const unsigned int thread_count = 1;
+	static const unsigned int block_x = 6;
+	static const unsigned int block_y = 6;
+	static const unsigned int block_z = 1;
+	static const astcenc_profile profile = ASTCENC_PRF_LDR;
+	static const float quality = ASTCENC_PRE_MEDIUM;
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
 
 	// ------------------------------------------------------------------------
 	// Load input image, forcing 4 components
