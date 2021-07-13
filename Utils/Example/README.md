@@ -1,6 +1,7 @@
-# About
+# Library usage example
 
-This is a minimal example of using the astcenc codec API. This sample shows:
+This is a minimal example of using the astcenc codec as a library in another
+project. This sample shows:
 
   * How to include astcenc as an external project CMake dependency.
   * How to use the API to compress and decompress an image.
