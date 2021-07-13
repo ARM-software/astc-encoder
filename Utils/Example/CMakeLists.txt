@@ -29,10 +29,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Add the external project and pull out the project directories we need
 
-# Add e.g. "CMAKE_CACHE_ARGS -DISA_SSE41:String=ON" to ExternalProject_Add to
-# set configure settings usually found on the astcenc configure command line.
-# Remember that changing ISA changes the name of the library binary produced.
-
+# The default build is a native build which supports the highest level of SIMD
+# exposed by the compiler when using default compiler flags. Add a single
+# SIMD enable to the CMAKE_CACHE_ARGS option to force something specific, but
+# remember to change the link library in target_link_libraries() to match.
+#
+#  *  Add "-DISA_SSE2:String=ON" and link against "astcenc-sse2-static"
+#  *  Add "-DISA_SSE41:String=ON" and link against "astcenc-sse4.1-static"
+#  *  Add "-DISA_AVX2:String=ON" and link against "astcenc-avx2-static"
+#  *  Add "-DISA_NEON:String=ON" and link against "astcenc-neon-static"
 ExternalProject_Add(astcencoder
     GIT_REPOSITORY https://github.com/ARM-software/astc-encoder
     GIT_TAG main
