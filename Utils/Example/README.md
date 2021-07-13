@@ -13,6 +13,17 @@ as a PNG file.
 
 ## Building
 
+:warning: For sake of simplicity the example CMake project uses the CMake
+`ExternalProject` mechanism to import the astcenc project from GitHub. This is
+trivial to integrate, but requires network access during the build to pull the
+astcenc project.
+
+Most users will want to store a copy of astcenc in a project sub-directory,
+e.g. by using git submodules, and then use `add_subdirectory()` to include the
+project in their build. This allows the user to directly use the astcenc core
+library as a link requirement via `target_link_libraries()`, without the
+additional plumbing that `ExternalProject` requires.
+
 ### Linux and macOS
 
 From the `./Utils/Example` directory.
