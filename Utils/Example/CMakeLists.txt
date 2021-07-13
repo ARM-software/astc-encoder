@@ -36,6 +36,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 ExternalProject_Add(astcencoder
     GIT_REPOSITORY https://github.com/ARM-software/astc-encoder
     GIT_TAG main
+    CMAKE_CACHE_ARGS -DCLI:String=OFF
     INSTALL_COMMAND "")
 
 ExternalProject_Get_property(astcencoder
