@@ -21,12 +21,6 @@ include(ExternalProject)
 
 project(astcencoder_example VERSION 1.0.0)
 
-# Command line configuration
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
 # Add the external project and pull out the project directories we need
 
 # The default build is a native build which supports the highest level of SIMD
