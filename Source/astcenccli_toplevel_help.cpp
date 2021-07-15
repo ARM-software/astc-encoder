@@ -24,7 +24,7 @@
 
 /** @brief The version header. */
 static const char *astcenc_copyright_string =
-R"(astcenc v%s, %u-bit %s%s
+R"(astcenc v%s, %u-bit %s%s%s
 Copyright 2011-%s Arm Limited, all rights reserved
 )";
 
@@ -595,9 +595,15 @@ void astcenc_print_header()
 	const char* pcnttype = "";
 #endif
 
+#if (ASTCENC_F16C == 1)
+	const char* f16ctype = "+f16c";
+#else
+	const char* f16ctype = "";
+#endif
+
 	unsigned int bits = (int)(sizeof(void*) * 8);
 	printf(astcenc_copyright_string,
-	       VERSION_STRING, bits, simdtype, pcnttype, YEAR_STRING);
+	       VERSION_STRING, bits, simdtype, pcnttype, f16ctype, YEAR_STRING);
 }
 
 /* See header for documentation. */
