@@ -192,7 +192,7 @@ COMPRESSION
            The codec should optimize perceptual error, instead of direct
            RMS error. This aims to improves perceived image quality, but
            typically lowers the measured PSNR score. Perceptual methods are
-           currently only available for normal maps.
+           currently only available for normal maps and RGB color data.
 
        -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.
