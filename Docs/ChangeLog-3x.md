@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running astcenc using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 3.1
 
-**Status:** July 2021 (in development)
+**Status:** July 2021
 
 The 3.1 release is the second release in the 3.x series. This release gives
 another performance boost, typically between 5 and 20% faster than the 3.0
@@ -61,13 +61,9 @@ Key for charts:
 * Color = block size (see legend).
 * Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
 
-**Absolute performance vs 3.0 release:**
-
-TBD
-
 **Relative performance vs 3.0 release:**
 
-TBD
+![Relative scores 3.1 vs 3.0](./ChangeLogImg/relative-3.0-to-3.1.png)
 
 <!-- ---------------------------------------------------------------------- -->
 ## 3.0
