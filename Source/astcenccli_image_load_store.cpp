@@ -1706,7 +1706,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	// The bytes per component in the DDS file itself
 	int bytes_per_component = 0;
 	int components = 0;
-	scanline_transfer copy_method = R8_TO_RGBA8;;
+	scanline_transfer copy_method = R8_TO_RGBA8;
 
 	// figure out the format actually used in the DDS file.
 	if (use_dx10_header)
