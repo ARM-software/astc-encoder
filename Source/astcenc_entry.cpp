@@ -819,7 +819,6 @@ astcenc_error astcenc_context_alloc(
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	prepare_angular_tables();
 #endif
-	init_quant_mode_table();
 
 	return ASTCENC_SUCCESS;
 }

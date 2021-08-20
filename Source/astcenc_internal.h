@@ -1485,15 +1485,7 @@ extern const uint8_t color_unquant_tables[21][256];
  * number of compressed storage bits. Returns -1 for cases where the requested integer count cannot
  * ever fit in the supplied storage size.
  */
-extern int8_t quant_mode_table[17][128];
-
-/**
- * @brief Initialize the quant mode table.
- *
- * This is stored in global memory so this only needs to be done once, but is typically done
- * whenever a new context is created.
- */
-void init_quant_mode_table();
+extern const int8_t quant_mode_table[17][128];
 
 /**
  * @brief Encode a packed string using BISE.
