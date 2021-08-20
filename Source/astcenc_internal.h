@@ -853,7 +853,7 @@ int is_legal_3d_block_size(
 
 extern const uint8_t color_quant_tables[21][256];
 extern const uint8_t color_unquant_tables[21][256];
-extern int8_t quant_mode_table[17][128];
+extern const int8_t quant_mode_table[17][128];
 
 void encode_ise(
 	int quant_level,
@@ -882,8 +882,6 @@ void decode_ise(
 int get_ise_sequence_bitcount(
 	int items,
 	quant_method quant);
-
-void build_quant_mode_table(void);
 
 // **********************************************
 // functions and data pertaining to partitioning
