@@ -289,6 +289,7 @@ void physical_to_symbolic(
 			if (rsvbits != 3)
 			{
 				scb.error_block = 1;
+				return;
 			}
 
 			int vx_low_s = read_bits(8, 12, pcb.data) | (read_bits(5, 12 + 8, pcb.data) << 8);
@@ -301,6 +302,7 @@ void physical_to_symbolic(
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t) && !all_ones)
 			{
 				scb.error_block = 1;
+				return;
 			}
 		}
 		else
@@ -318,6 +320,7 @@ void physical_to_symbolic(
 			if ((vx_low_s >= vx_high_s || vx_low_t >= vx_high_t || vx_low_p >= vx_high_p) && !all_ones)
 			{
 				scb.error_block = 1;
+				return;
 			}
 		}
 
@@ -372,6 +375,7 @@ void physical_to_symbolic(
 	if (is_dual_plane && partition_count == 4)
 	{
 		scb.error_block = 1;
+		return;
 	}
 
 	scb.color_formats_matched = 0;
@@ -437,6 +441,7 @@ void physical_to_symbolic(
 	if (color_integer_count > 18)
 	{
 		scb.error_block = 1;
+		return;
 	}
 
 	// then, determine the color endpoint format to use for these integers
@@ -453,11 +458,13 @@ void physical_to_symbolic(
 	}
 
 	int color_quant_level = quant_mode_table[color_integer_count >> 1][color_bits];
-	scb.color_quant_level = color_quant_level;
 	if (color_quant_level < 4)
 	{
 		scb.error_block = 1;
+		return;
 	}
+
+	scb.color_quant_level = color_quant_level;
 
 	// then unpack the integer-bits
 	uint8_t values_to_decode[32];
