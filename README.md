@@ -195,9 +195,9 @@ help message for more details.
 
 # Documentation
 
-The [ASTC Format Overview](./Docs/FormatOverview.md) provides a high level
-introduction to the ASTC data format, how it encodes data, and why it is both
-flexible and efficient.
+The [ASTC Format Overview](./Docs/FormatOverview.md) page provides a high level
+introduction to the ASTC texture format, how it encodes data, and why it is
+both flexible and efficient.
 
 The [Effective ASTC Encoding](./Docs/Encoding.md) page looks at some of the
 guidelines that should be followed when compressing data using `astcenc`.
@@ -206,6 +206,9 @@ It covers:
 * How to efficiently encode data with fewer than 4 channels.
 * How to efficiently encode normal maps, sRGB data, and HDR data.
 * Coding equivalents to other compression formats.
+
+The [.astc File Format](./Docs/FileFormat.md) page provides a light-weight
+specification for the `.astc` file format and how to read or write it.
 
 The [Building ASTC Encoder](./Docs/Building.md) page provides instructions on
 how to build `astcenc` from the sources in this repository.
