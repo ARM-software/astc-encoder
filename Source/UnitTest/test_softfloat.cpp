@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2021 Arm Limited
+// Copyright 2021 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -16,19 +16,12 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Unit tests for the vectorized SIMD functionality.
- *
- * This test suite is a partial implementation, focussing on 4-wide vectors.
- * We're adding things as we touch related parts of the code, but there is some
- * technical debt to catch up on to get full coverage.
+ * @brief Unit tests for the software half-float library.
  */
-
-#include <limits>
 
 #include "gtest/gtest.h"
 
 #include "../astcenc_internal.h"
-#include "../astcenc_vecmathlib.h"
 
 namespace astcenc
 {
@@ -42,7 +35,7 @@ TEST(softfloat, FP16NormalNumbers)
 	EXPECT_NEAR(result,  1.00098f, 0.00005f);
 }
 
-/** @brief Test VLA loop limit round down. */
+/** @brief Test denormal numbers. */
 TEST(softfloat, FP16DenormalNumbers)
 {
 	float result = sf16_to_float((0 << 10) + 1);
@@ -56,11 +49,18 @@ TEST(softfloat, FP16Zero)
 	EXPECT_EQ(result, 0.0f);
 }
 
+/** @brief Test infinity. */
+TEST(softfloat, FP16Infinity)
+{
+	float result = sf16_to_float((31 << 10) + 0);
+	EXPECT_TRUE(std::isinf(result));
+}
+
 /** @brief Test NaN. */
 TEST(softfloat, FP16NaN)
 {
 	float result = sf16_to_float(0xFFFF);
-	EXPECT_FALSE(result == result);
+	EXPECT_TRUE(std::isnan(result));
 }
 
 #endif
