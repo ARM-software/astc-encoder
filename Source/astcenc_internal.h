@@ -2177,7 +2177,7 @@ void compute_angular_endpoints_1plane(
 	float high_value[WEIGHTS_MAX_BLOCK_MODES]);
 
 /**
- * @brief Compute the angular endpoints for one plane for each block mode.
+ * @brief Compute the angular endpoints for two planes for each block mode.
  *
  * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
  * @param     bsd                       The block size descriptor for the current trial.
