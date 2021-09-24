@@ -499,8 +499,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
-	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10, 1e10, 1e10, 1e10 };
-	float highparam[BLOCK_MAX_PARTITIONS] { -1e10, -1e10, -1e10, -1e10 };
+	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
+	float highparam[BLOCK_MAX_PARTITIONS] { -1e10f, -1e10f, -1e10f, -1e10f };
 
 	line4 lines[BLOCK_MAX_PARTITIONS];
 
