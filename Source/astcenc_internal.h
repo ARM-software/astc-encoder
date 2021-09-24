@@ -701,7 +701,7 @@ struct block_size_descriptor
 	/** @brief The active block modes, stored in low indices. */
 	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
 
-	/** @brief The partion tables for all of the possible partitions. */
+	/** @brief The partition tables for all of the possible partitions. */
 	partition_info partitions[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
 
 	/** @brief The active texels for k-means partition selection. */
