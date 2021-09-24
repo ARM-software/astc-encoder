@@ -322,7 +322,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count= bsd.texel_count;
+	unsigned int texel_count = bsd.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];

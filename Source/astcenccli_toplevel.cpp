@@ -955,7 +955,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_low_weight_count_limit= atoi(argv[argidx - 1]);
+			config.tune_low_weight_count_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
