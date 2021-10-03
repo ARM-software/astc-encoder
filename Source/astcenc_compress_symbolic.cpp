@@ -41,15 +41,13 @@ static void merge_endpoints(
 	endpoints& result
 ) {
 	unsigned int partition_count = ep_plane1.partition_count;
+	assert(partition_count == 1);
+
 	vmask4 sep_mask = vint4::lane_id() == vint4(component_plane2);
 
 	result.partition_count = partition_count;
-	promise(partition_count > 0);
-	for (unsigned int i = 0; i < partition_count; i++)
-	{
-		result.endpt0[i] = select(ep_plane1.endpt0[i], ep_plane2.endpt0[i], sep_mask);
-		result.endpt1[i] = select(ep_plane1.endpt1[i], ep_plane2.endpt1[i], sep_mask);
-	}
+	result.endpt0[0] = select(ep_plane1.endpt0[0], ep_plane2.endpt0[0], sep_mask);
+	result.endpt1[0] = select(ep_plane1.endpt1[0], ep_plane2.endpt1[0], sep_mask);
 }
 
 /**
