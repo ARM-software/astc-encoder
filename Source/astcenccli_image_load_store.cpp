@@ -2367,7 +2367,7 @@ int load_cimage(
 	unsigned int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
 	unsigned int dim_z = unpack_bytes(hdr.dim_z[0], hdr.dim_z[1], hdr.dim_z[2], 0);
 
-	if (dim_x == 0 || dim_z == 0 || dim_z == 0)
+	if (dim_x == 0 || dim_y == 0 || dim_z == 0)
 	{
 		printf("ERROR: File corrupt '%s'\n", filename);
 		return 1;
