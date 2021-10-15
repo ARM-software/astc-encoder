@@ -251,7 +251,7 @@ static std::string get_slice_filename(
 	unsigned int index,
 	bool& error
 ) {
-	size_t sep = basename.find_last_of(".");
+	size_t sep = basename.find_last_of('.');
 	if (sep == std::string::npos)
 	{
 		error = true;
