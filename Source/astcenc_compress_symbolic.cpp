@@ -1093,19 +1093,6 @@ static float prepare_error_weight_block(
 						error_weight = 1.0f / error_weight;
 					}
 
-					if (ctx.config.flags & ASTCENC_FLG_MAP_NORMAL)
-					{
-						// Convert from 0 to 1 to -1 to +1 range.
-						float xN = ((blk.data_r[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
-						float yN = ((blk.data_a[idx] * (1.0f / 65535.0f)) - 0.5f) * 2.0f;
-
-						float denom = 1.0f - xN * xN - yN * yN;
-						denom = astc::max(denom, 0.1f);
-						denom = 1.0f / denom;
-						error_weight.set_lane<0>(error_weight.lane<0>() * (1.0f + xN * xN * denom));
-						error_weight.set_lane<3>(error_weight.lane<3>() * (1.0f + yN * yN * denom));
-					}
-
 					if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 					{
 						float alpha_scale;

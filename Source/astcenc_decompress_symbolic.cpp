@@ -381,42 +381,78 @@ float compute_symbolic_block_difference(
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
 
-			// Compare error using a perceptual decode metric for RGBM textures
-			if (config.flags & ASTCENC_FLG_MAP_RGBM)
+
+			if (!(config.flags & ASTCENC_FLG_MAP_NORMAL))
 			{
-				// Fail encodings that result in zero weight M pixels. Note that this can cause
-				// "interesting" artifacts if we reject all useful encodings - we typically get max
-				// brightness encodings instead which look just as bad. We recommend users apply a
-				// bias to their stored M value, limiting the lower value to 16 or 32 to avoid
-				// getting small M values post-quantization, but we can't prove it would never
-				// happen, especially at low bit rates ...
-				if (color.lane<3>() == 0.0f)
+				// Compare error using a perceptual decode metric for RGBM textures
+				if (config.flags & ASTCENC_FLG_MAP_RGBM)
 				{
-					return -ERROR_CALC_DEFAULT;
+					// Fail encodings that result in zero weight M pixels. Note that this can cause
+					// "interesting" artifacts if we reject all useful encodings - we typically get max
+					// brightness encodings instead which look just as bad. We recommend users apply a
+					// bias to their stored M value, limiting the lower value to 16 or 32 to avoid
+					// getting small M values post-quantization, but we can't prove it would never
+					// happen, especially at low bit rates ...
+					if (color.lane<3>() == 0.0f)
+					{
+						return -ERROR_CALC_DEFAULT;
+					}
+
+					// Compute error based on decoded RGBM color
+					color = vfloat4(
+						color.lane<0>() * color.lane<3>() * config.rgbm_m_scale,
+						color.lane<1>() * color.lane<3>() * config.rgbm_m_scale,
+						color.lane<2>() * color.lane<3>() * config.rgbm_m_scale,
+						1.0f
+					);
+
+					oldColor = vfloat4(
+						oldColor.lane<0>() * oldColor.lane<3>() * config.rgbm_m_scale,
+						oldColor.lane<1>() * oldColor.lane<3>() * config.rgbm_m_scale,
+						oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
+						1.0f
+					);
 				}
 
-				// Compute error based on decoded RGBM color
-				color = vfloat4(
-					color.lane<0>() * color.lane<3>() * config.rgbm_m_scale,
-					color.lane<1>() * color.lane<3>() * config.rgbm_m_scale,
-					color.lane<2>() * color.lane<3>() * config.rgbm_m_scale,
-					1.0f
-				);
+				vfloat4 error = oldColor - color;
+				error = min(abs(error), 1e15f);
+				error = error * error;
 
-				oldColor = vfloat4(
-					oldColor.lane<0>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					oldColor.lane<1>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					1.0f
-				);
+				float metric = dot_s(error, ewb.error_weights[tix]);
+				summa += astc::min(metric, ERROR_CALC_DEFAULT);
 			}
+			else
+			// Compare error using a perceptual decode metric for normal maps
+			{
+				// Compute error based on actual angular error
+				float xN = ((color.lane<0>() / 65535.0f) - 0.5f) * 2.0f;
+				float yN = ((color.lane<3>() / 65535.0f) - 0.5f) * 2.0f;
+				float zN = astc::sqrt(1.0f - xN*xN - yN*yN);
+				vfloat4 newNormal(xN, yN, zN, 0.0f);
 
-			vfloat4 error = oldColor - color;
-			error = min(abs(error), 1e15f);
-			error = error * error;
+				float xO = ((oldColor.lane<0>() / 65535.0f) - 0.5f) * 2.0f;
+				float yO = ((oldColor.lane<3>() / 65535.0f) - 0.5f) * 2.0f;
+				float zO = astc::sqrt(1.0f - xO*xO - yO*yO);
+				vfloat4 oldNormal(xO, yO, zO, 0.0f);
 
-			float metric = dot_s(error, ewb.error_weights[tix]);
-			summa += astc::min(metric, ERROR_CALC_DEFAULT);
+				// Values might exceed valid acos range due to float rounding, so clamp
+				float cos_angle = clamp(-1.0f, +1.0f, dot3(newNormal, oldNormal)).lane<0>();
+
+				// TODO: acos in the core loop is bad for performance ...
+				// Fast approximations do exist, but common ones are only
+				// accurate to within 0.5 degrees, which is not accurate enough
+				// for this. Ideally want something around 0.1 degrees to be a
+				// useful discriminator.
+				float angular_error = std::acos(cos_angle) * (180.0f / astc::PI);
+
+				// Error is rescaled into some range similar to that expected for other data types
+				float error = angular_error * 65535.0f * 4.0f;
+
+				// Suppress error for pixels off the edge of the image
+				error = error * hmax_s(ewb.error_weights[tix]);
+
+				summa += astc::min(error, ERROR_CALC_DEFAULT);
+			}
 		}
 	}
 
