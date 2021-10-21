@@ -1713,9 +1713,11 @@ int main(
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
+		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
+
 		compute_error_metrics(
-		    image_uncomp_in_is_hdr, image_uncomp_in_component_count, image_uncomp_in,
-		    image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
+		    image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
+		    image_uncomp_in, image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
 	}
 
 	// Store compressed image
