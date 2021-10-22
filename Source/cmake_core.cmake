@@ -119,8 +119,17 @@ macro(astcenc_set_properties NAME)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
-
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
+
+    if(${ENABLE_ASAN})
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
+
+        target_link_options(${NAME}
+            PRIVATE
+                $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
+    endif()
 
 
     target_link_options(${NAME}
