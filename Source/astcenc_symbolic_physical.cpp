@@ -101,6 +101,8 @@ void symbolic_to_physical(
 	const symbolic_compressed_block& scb,
 	physical_compressed_block& pcb
 ) {
+	assert(scb.block_type != SYM_BTYPE_ERROR);
+
 	// Constant color block using UNORM16 colors
 	if (scb.block_type == SYM_BTYPE_CONST_U16)
 	{

@@ -1550,6 +1550,27 @@ void compress_block(
 	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
+	// If we still have an error block then convert to something we can encode
+	// TODO: Do something more sensible here, such as average color block
+	if (scb.block_type == SYM_BTYPE_ERROR)
+	{
+#if !defined(NDEBUG)
+		static bool printed_once = false;
+		if (!printed_once)
+		{
+			printed_once = true;
+			printf("WARN: At least one block failed to find a valid encoding.\n"
+			       "      Try increasing compression quality settings.\n\n");
+		}
+#endif
+
+		scb.block_type = SYM_BTYPE_CONST_U16;
+		scb.block_mode = -2;
+		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
+		vint4 color_u16 = float_to_int_rtn(color_f32);
+		store(color_u16, scb.constant_color);
+	}
+
 	// Compress to a physical block
 	symbolic_to_physical(*bsd, scb, pcb);
 }
