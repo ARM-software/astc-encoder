@@ -1563,6 +1563,18 @@ void compress_block(
 	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
+
+	// If we still have error blocks then convert them to something we can encode
+	// TODO: Do something more sensible here, such as average color block
+	if (scb.error_block)
+	{
+		scb.error_block = 0;
+		scb.block_mode = -2;
+		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk->origin_texel) * 65535.0f;
+		vint4 color_u16 = float_to_int_rtn(color_f32);
+		store(color_u16, scb.constant_color);
+	}
+
 	// Compress to a physical block
 	symbolic_to_physical(*bsd, scb, pcb);
 }

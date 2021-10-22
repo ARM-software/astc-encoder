@@ -331,7 +331,7 @@ static void compute_angular_endpoints_for_quant_levels(
 			printf("WARNING: Unable to find encoding within specified error limit\n");
 			bsi = 0;
 		}
-else
+#else
 		bsi = astc::max(0, bsi);
 #endif
 
