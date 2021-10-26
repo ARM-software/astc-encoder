@@ -664,6 +664,7 @@ astcenc_error astcenc_config_init(
 		// Normals are prone to blocking artifacts on smooth curves
 		// so force compressor to try harder here ...
 		config.b_deblock_weight = 1.8f;
+		config.tune_db_limit *= 1.03f;
 
 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
