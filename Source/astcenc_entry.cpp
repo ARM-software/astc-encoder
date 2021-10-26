@@ -661,9 +661,12 @@ astcenc_error astcenc_config_init(
 		config.tune_3_partition_early_out_limit_factor *= 1.5f;
 		config.tune_2_plane_early_out_limit_correlation = 0.99f;
 
+		// Normals are prone to blocking artifacts on smooth curves
+		// so force compressor to try harder here ...
+		config.b_deblock_weight = 1.8f;
+
 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
-			config.b_deblock_weight = 1.8f;
 			config.v_rgba_radius = 3;
 			config.v_rgba_mean_stdev_mix = 0.0f;
 			config.v_rgb_mean = 0.0f;
