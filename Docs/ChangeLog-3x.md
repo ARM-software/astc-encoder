@@ -4,7 +4,42 @@ This page summarizes the major functional and performance changes in each
 release of the 3.x series.
 
 All performance data on this page is measured on an Intel Core i5-9600K
-clocked at 4.2 GHz, running astcenc using AVX2 and 6 threads.
+clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
+
+
+<!-- ---------------------------------------------------------------------- -->
+## 3.3
+
+**Status:** November 2021
+
+The 3.3 release improves image quality for normal maps, and two component
+textures. Normal maps are expected to compress 25% slower than the 3.2
+release, although it should be noted that they are still faster to compress
+in 3.3 than when using the 2.5 series. This release also fixes one reported
+stability issue.
+
+* **General:**
+  * **Feature:** Normal map image quality has been improved.
+  * **Feature:** Two component image quality has been improved, provided
+    that unused components are correctly zero-weighted using e.g. `-cw` on the
+    command line.
+  * **Bug-fix:** Improved stability when trying to compress complex blocks that
+    could not beat even the starting quality threshold. These will now always
+    compress in to a constant color blocks.
+
+<!-- ---------------------------------------------------------------------- -->
+## 3.2
+
+**Status:** August 2021
+
+The 3.2 release is a bugfix release; no significant image quality or
+performance differences are expected.
+
+* **General:**
+  * **Bug-fix:** Improved stability when new contexts were created while other
+    contexts were compressing or decompressing an image.
+  * **Bug-fix:** Improved stability when decompressing blocks with invalid
+    block encodings.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 3.1
