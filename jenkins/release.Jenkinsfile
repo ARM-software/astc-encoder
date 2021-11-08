@@ -75,9 +75,9 @@ spec:
 
                     cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON ..
 
-                    cov-configure --template --compiler cc --comptype gcc
-                    cov-configure --template --compiler c++ --comptype g++
-                    cov-build --dir ${WORKSPACE}/intermediate make install
+                    cov-configure --config ${WORKSPACE}/coverity.conf --template --compiler cc --comptype gcc
+                    cov-configure --config ${WORKSPACE}/coverity.conf --template --compiler c++ --comptype g++
+                    cov-build --config ${WORKSPACE}/coverity.conf --dir ${WORKSPACE}/intermediate make install
                     cov-analyze --dir ${WORKSPACE}/intermediate
                     cov-commit-defects --dir ${WORKSPACE}/intermediate \\
                                        --stream astcenc-master \\
