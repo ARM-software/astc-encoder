@@ -29,7 +29,7 @@ cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=.\ 
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 # x86-64 using Visual Studio solution
-cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=.\ ^
+cmake -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=.\ ^
     -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON ..
 
 ```
