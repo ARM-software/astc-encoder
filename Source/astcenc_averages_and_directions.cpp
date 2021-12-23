@@ -619,7 +619,7 @@ void compute_error_squared_rgba(
 			samec_err = select(vfloat::zero(), samec_err, mask);
 			haccumulate(samec_errorsumv, samec_err);
 
-			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
+			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);
@@ -765,7 +765,7 @@ void compute_error_squared_rgb(
 			samec_err = select(vfloat::zero(), samec_err, mask);
 			haccumulate(samec_errorsumv, samec_err);
 
-			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
+			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		uncor_loparam = hmin_s(uncor_loparamv);

@@ -209,12 +209,12 @@ static void compute_encoding_choice_errors(
 		partition_metrics& pm = pms[i];
 
 		line3 uncor_rgb_lines;
-		line3 samec_rgb_lines;	// for LDR-RGB-scale
-		line3 rgb_luma_lines;	// for HDR-RGB-scale
+		line3 samec_rgb_lines;  // for LDR-RGB-scale
+		line3 rgb_luma_lines;   // for HDR-RGB-scale
 
 		processed_line3 uncor_rgb_plines;
-		processed_line3 samec_rgb_plines;	// for LDR-RGB-scale
-		processed_line3 rgb_luma_plines;	// for HDR-RGB-scale
+		processed_line3 samec_rgb_plines;
+		processed_line3 rgb_luma_plines;
 		processed_line3 luminance_plines;
 
 		float uncorr_rgb_error;
@@ -284,9 +284,9 @@ static void compute_encoding_choice_errors(
 		bool can_blue_contract = (mask(endpt_can_bc_lo & endpt_can_bc_hi) & 0x7) == 0x7;
 
 		// Store out the settings
-		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;	// empirical
-		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;	// wild guess
-		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;	// empirical
+		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
+		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;        // wild guess
+		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // empirical
 		eci[i].alpha_drop_error = alpha_drop_error * 3.0f;
 		eci[i].can_offset_encode = can_offset_encode;
 		eci[i].can_blue_contract = can_blue_contract;
@@ -1301,7 +1301,7 @@ unsigned int compute_ideal_endpoint_formats(
 			vmask mask = mask1 & mask2;
 			vbest_ep_error = select(vbest_ep_error, err, mask);
 			vbest_error_index = select(vbest_error_index, lane_ids, mask);
-			lane_ids = lane_ids + vint(ASTCENC_SIMD_WIDTH);
+			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		// Pick best mode from the SIMD result, using lowest matching index to ensure invariance
