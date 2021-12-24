@@ -30,7 +30,7 @@
  * @param[out] is_dual_plane   True if this block mode has two weight planes.
  * @param[out] quant_mode      The quantization level for the weights.
  *
- * @return Returns true of valid mode, false otherwise.
+ * @return Returns true if a valid mode, false otherwise.
  */
 static bool decode_block_mode_2d(
 	unsigned int block_mode,
@@ -144,7 +144,7 @@ static bool decode_block_mode_2d(
  * @param[out] is_dual_plane   True if this block mode has two weight planes.
  * @param[out] quant_mode      The quantization level for the weights.
  *
- * @return Returns true of valid mode, false otherwise.
+ * @return Returns true if a valid mode, false otherwise.
  */
 static bool decode_block_mode_3d(
 	unsigned int block_mode,
