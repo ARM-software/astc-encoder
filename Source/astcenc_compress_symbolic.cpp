@@ -1494,25 +1494,24 @@ void compress_block(
 	// Find best blocks for 2, 3 and 4 partitions
 	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
-		unsigned int partition_indices_1plane[2] { 0, 0 };
+		unsigned int partition_indices[2] { 0 };
 
 		find_best_partition_candidates(*bsd, blk, ewb, partition_count,
 		                               ctx.config.tune_partition_index_limit,
-		                               partition_indices_1plane[0],
-		                               partition_indices_1plane[1]);
+		                               partition_indices);
 
-		for (int i = 0; i < 2; i++)
+		for (unsigned int i = 0; i < 2; i++)
 		{
 			TRACE_NODE(node1, "pass");
 			trace_add_data("partition_count", partition_count);
-			trace_add_data("partition_index", partition_indices_1plane[i]);
+			trace_add_data("partition_index", partition_indices[i]);
 			trace_add_data("plane_count", 1);
 			trace_add_data("search_mode", i);
 
 			float errorval = compress_symbolic_block_for_partition_1plane(
 			    ctx.config, *bsd, blk, ewb, false,
 			    error_threshold * errorval_overshoot,
-			    partition_count, partition_indices_1plane[i],
+			    partition_count, partition_indices[i],
 			    scb, tmpbuf);
 
 			best_errorvals_for_pcount[partition_count - 1] = astc::min(best_errorvals_for_pcount[partition_count - 1], errorval);

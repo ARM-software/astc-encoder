@@ -1677,16 +1677,16 @@ void compute_error_squared_rgba(
 /**
  * @brief Find the best set of partitions to trial for a given block.
  *
- * On return @c best_partition_uncor contains the best partition  assuming data has uncorrelated
- * chroma, @c best_partition_samec contains the best partition assuming data has corelated chroma.
+ * On return the @c best_partitions list will contain the two best partition
+ * candidates; one assuming data has uncorrelated chroma and one assuming the
+ * data has corelated chroma. The best candidate is returned first in the list.
  *
  * @param      bsd                        The block size information.
  * @param      blk                        The image block color data to compress.
  * @param      ewb                        The image block weighted error data.
  * @param      partition_count            The number of partitions in the block.
  * @param      partition_search_limit     The number of candidate partition encodings to trial.
- * @param[out] best_partition_uncor       The best partition for uncorrelated chroma.
- * @param[out] best_partition_samec       The best partition for correlated chroma.
+ * @param[out] best_partitions            The best partition candidates.
  */
 void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
@@ -1694,8 +1694,7 @@ void find_best_partition_candidates(
 	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int& best_partition_uncor,
-	unsigned int& best_partition_samec);
+	unsigned int best_partitions[2]);
 
 /* ============================================================================
   Functionality for managing images and image related data.

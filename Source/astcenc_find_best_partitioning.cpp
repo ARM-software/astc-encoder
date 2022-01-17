@@ -485,8 +485,7 @@ void find_best_partition_candidates(
 	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int& best_partition_uncor,
-	unsigned int& best_partition_samec
+	unsigned int best_partitions[2]
 ) {
 	// Constant used to estimate quantization error for a given partitioning; the optimal value for
 	// this depends on bitrate. These values have been determined empirically.
@@ -736,10 +735,24 @@ void find_best_partition_candidates(
 		}
 	}
 
-	best_partition_uncor = uncor_best_partition;
-
-	unsigned int index = samec_best_partitions[0] != uncor_best_partition ? 0 : 1;
-	best_partition_samec = samec_best_partitions[index];
+	// Same parition is best for both, so use this first unconditionally
+	if (uncor_best_partition == samec_best_partitions[0])
+	{
+		best_partitions[0] = samec_best_partitions[0];
+		best_partitions[1] = samec_best_partitions[1];
+	}
+	// Uncor is best
+	else if (uncor_best_error <= samec_best_errors[0])
+	{
+		best_partitions[0] = uncor_best_partition;
+		best_partitions[1] = samec_best_partitions[0];
+	}
+	// Samec is best
+	else
+	{
+		best_partitions[0] = samec_best_partitions[0];
+		best_partitions[1] = uncor_best_partition;
+	}
 }
 
 #endif
