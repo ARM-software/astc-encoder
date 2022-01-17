@@ -1541,7 +1541,7 @@ END_OF_TESTS:
 	// TODO: Do something more sensible here, such as average color block
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
-#if !defined(NDEBUG)
+#if defined(ASTCENC_DIAGNOSTICS)
 		static bool printed_once = false;
 		if (!printed_once)
 		{
