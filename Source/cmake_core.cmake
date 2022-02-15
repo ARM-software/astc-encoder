@@ -33,7 +33,6 @@ add_library(${ASTC_TARGET}-static
         astcenc_color_quantize.cpp
         astcenc_color_unquantize.cpp
         astcenc_compress_symbolic.cpp
-        astcenc_compute_variance.cpp
         astcenc_decompress_symbolic.cpp
         astcenc_diagnostic_trace.cpp
         astcenc_entry.cpp

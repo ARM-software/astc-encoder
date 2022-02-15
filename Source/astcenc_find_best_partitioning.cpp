@@ -52,14 +52,12 @@
  * @brief Pick some initital kmeans cluster centers.
  *
  * @param      blk               The image block color data to compress.
- * @param      ewb               The image error weight block.
  * @param      texel_count       The number of texels in the block.
  * @param      partition_count   The number of partitions in the block.
  * @param[out] cluster_centers   The initital partition cluster center colors.
  */
 static void kmeans_init(
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int texel_count,
 	unsigned int partition_count,
 	vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS]
@@ -82,7 +80,6 @@ static void kmeans_init(
 	{
 		vfloat4 color = blk.texel(i);
 		vfloat4 diff = color - center_color;
-		diff = diff * ewb.error_weights[i];
 		float distance = dot_s(diff, diff);
 		distance_sum += distance;
 		distances[i] = distance;
@@ -128,7 +125,6 @@ static void kmeans_init(
 		{
 			vfloat4 color = blk.texel(i);
 			vfloat4 diff = color - center_color;
-			diff = diff * ewb.error_weights[i];
 			float distance = dot_s(diff, diff);
 			distance = astc::min(distance, distances[i]);
 			distance_sum += distance;
@@ -141,7 +137,6 @@ static void kmeans_init(
  * @brief Assign texels to clusters, based on a set of chosen center points.
  *
  * @param      blk                  The image block color data to compress.
- * @param      ewb                  The image error weight block.
  * @param      texel_count          The number of texels in the block.
  * @param      partition_count      The number of partitions in the block.
  * @param      cluster_centers      The partition cluster center colors.
@@ -149,7 +144,6 @@ static void kmeans_init(
  */
 static void kmeans_assign(
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int texel_count,
 	unsigned int partition_count,
 	const vfloat4 cluster_centers[BLOCK_MAX_PARTITIONS],
@@ -170,7 +164,6 @@ static void kmeans_assign(
 		for (unsigned int j = 0; j < partition_count; j++)
 		{
 			vfloat4 diff = color - cluster_centers[j];
-			diff = diff * ewb.error_weights[i];
 			float distance = dot_s(diff, diff);
 			if (distance < best_distance)
 			{
@@ -431,14 +424,12 @@ static void get_partition_ordering_by_mismatch_bits(
  *
  * @param      bsd                  The block size information.
  * @param      blk                  The image block color data to compress.
- * @param      ewb                  The image error weight block.
  * @param      partition_count      The desired number of partitions in the block.
  * @param[out] partition_ordering   The list of recommended partition indices, in priority order.
   */
 static void compute_kmeans_partition_ordering(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
@@ -450,14 +441,14 @@ static void compute_kmeans_partition_ordering(
 	{
 		if (i == 0)
 		{
-			kmeans_init(blk, ewb, bsd.texel_count, partition_count, cluster_centers);
+			kmeans_init(blk, bsd.texel_count, partition_count, cluster_centers);
 		}
 		else
 		{
 			kmeans_update(blk, bsd.texel_count, partition_count, cluster_centers, texel_partitions);
 		}
 
-		kmeans_assign(blk, ewb, bsd.texel_count, partition_count, cluster_centers, texel_partitions);
+		kmeans_assign(blk, bsd.texel_count, partition_count, cluster_centers, texel_partitions);
 	}
 
 	// Construct the block bitmaps of texel assignments to each partition
@@ -482,7 +473,6 @@ static void compute_kmeans_partition_ordering(
 void find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
 	unsigned int best_partitions[2]
@@ -510,7 +500,7 @@ void find_best_partition_candidates(
 	weight_imprecision_estim = weight_imprecision_estim * weight_imprecision_estim;
 
 	unsigned int partition_sequence[BLOCK_MAX_PARTITIONINGS];
-	compute_kmeans_partition_ordering(bsd, blk, ewb, partition_count, partition_sequence);
+	compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_sequence);
 
 	bool uses_alpha = !blk.is_constant_channel(3);
 
@@ -539,7 +529,7 @@ void find_best_partition_candidates(
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-			compute_avgs_and_dirs_4_comp(pi, blk, ewb, pms);
+			compute_avgs_and_dirs_4_comp(pi, blk, pms);
 
 			line4 uncor_lines[BLOCK_MAX_PARTITIONS];
 			line4 samec_lines[BLOCK_MAX_PARTITIONS];
@@ -557,16 +547,14 @@ void find_best_partition_candidates(
 				uncor_lines[j].a = pm.avg;
 				uncor_lines[j].b = normalize_safe(pm.dir, unit4());
 
-				uncor_plines[j].amod = (uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b)) * pm.icolor_scale;
-				uncor_plines[j].bs   = uncor_lines[j].b * pm.color_scale;
-				uncor_plines[j].bis  = uncor_lines[j].b * pm.icolor_scale;
+				uncor_plines[j].amod = (uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b));
+				uncor_plines[j].bs   = uncor_lines[j].b;
 
 				samec_lines[j].a = vfloat4::zero();
 				samec_lines[j].b = normalize_safe(pm.avg, unit4());
 
 				samec_plines[j].amod = vfloat4::zero();
-				samec_plines[j].bs   = samec_lines[j].b * pm.color_scale;
-				samec_plines[j].bis  = samec_lines[j].b * pm.icolor_scale;
+				samec_plines[j].bs   = samec_lines[j].b;
 			}
 
 			float uncor_error = 0.0f;
@@ -574,7 +562,6 @@ void find_best_partition_candidates(
 
 			compute_error_squared_rgba(pi,
 			                           blk,
-			                           ewb,
 			                           uncor_plines,
 			                           samec_plines,
 			                           uncor_line_lens,
@@ -594,20 +581,15 @@ void find_best_partition_candidates(
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
-				partition_metrics& pm = pms[j];
 				float tpp = (float)(pi.partition_texel_count[j]);
 
-				vfloat4 ics = pm.icolor_scale;
-				vfloat4 error_weights = pm.error_weight * (tpp * weight_imprecision_estim);
+				float error_weights = tpp * weight_imprecision_estim;
 
-				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j] * ics;
-				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j] * ics;
+				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j];
+				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j];
 
-				uncor_vector = uncor_vector * uncor_vector;
-				samec_vector = samec_vector * samec_vector;
-
-				uncor_error += dot_s(uncor_vector, error_weights);
-				samec_error += dot_s(samec_vector, error_weights);
+				uncor_error += dot3_s(uncor_vector, uncor_vector * error_weights);
+				samec_error += dot3_s(samec_vector, samec_vector * error_weights);
 			}
 
 			if (uncor_error < uncor_best_error)
@@ -646,7 +628,7 @@ void find_best_partition_candidates(
 
 			// Compute weighting to give to each component in each partition
 			partition_metrics pms[BLOCK_MAX_PARTITIONS];
-			compute_avgs_and_dirs_3_comp_rgb(pi, blk, ewb, pms);
+			compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
 
 			partition_lines3 plines[BLOCK_MAX_PARTITIONS];
 
@@ -661,13 +643,11 @@ void find_best_partition_candidates(
 				pl.samec_line.a = vfloat4::zero();
 				pl.samec_line.b = normalize_safe(pm.avg.swz<0, 1, 2>(), unit3());
 
-				pl.uncor_pline.amod = (pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b)) * pm.icolor_scale.swz<0, 1, 2, 3>();
-				pl.uncor_pline.bs   = (pl.uncor_line.b * pm.color_scale.swz<0, 1, 2, 3>());
-				pl.uncor_pline.bis  = (pl.uncor_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
+				pl.uncor_pline.amod = (pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b));
+				pl.uncor_pline.bs   = pl.uncor_line.b;
 
 				pl.samec_pline.amod = vfloat4::zero();
-				pl.samec_pline.bs   = (pl.samec_line.b * pm.color_scale.swz<0, 1, 2, 3>());
-				pl.samec_pline.bis  = (pl.samec_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
+				pl.samec_pline.bs   = pl.samec_line.b;
 			}
 
 			float uncor_error = 0.0f;
@@ -675,7 +655,6 @@ void find_best_partition_candidates(
 
 			compute_error_squared_rgb(pi,
 			                          blk,
-			                          ewb,
 			                          plines,
 			                          uncor_error,
 			                          samec_error);
@@ -692,25 +671,17 @@ void find_best_partition_candidates(
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
-				partition_metrics& pm = pms[j];
 				partition_lines3& pl = plines[j];
 
 				float tpp = (float)(pi.partition_texel_count[j]);
 
-				vfloat4 ics = pm.icolor_scale;
-				ics.set_lane<3>(0.0f);
+				float error_weights = tpp * weight_imprecision_estim;
 
-				vfloat4 error_weights = pm.error_weight * (tpp * weight_imprecision_estim);
-				error_weights.set_lane<3>(0.0f);
+				vfloat4 uncor_vector = pl.uncor_line.b * pl.uncor_line_len;
+				vfloat4 samec_vector = pl.samec_line.b * pl.samec_line_len;
 
-				vfloat4 uncor_vector = (pl.uncor_line.b * pl.uncor_line_len) * ics;
-				vfloat4 samec_vector = (pl.samec_line.b * pl.samec_line_len) * ics;
-
-				uncor_vector = uncor_vector * uncor_vector;
-				samec_vector = samec_vector * samec_vector;
-
-				uncor_error += dot3_s(uncor_vector, error_weights);
-				samec_error += dot3_s(samec_vector, error_weights);
+				uncor_error += dot3_s(uncor_vector, uncor_vector * error_weights);
+				samec_error += dot3_s(samec_vector, samec_vector * error_weights);
 			}
 
 			if (uncor_error < uncor_best_error)

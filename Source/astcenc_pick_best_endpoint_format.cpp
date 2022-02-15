@@ -48,43 +48,6 @@
 #include <assert.h>
 
 /**
- * @brief Compute cumulative error weight of each partition.
- *
- * The cumulative error weight is used to determine the relative importance of each partiton when
- * deciding how to quantize colors, as not all partitions are equal. For example, some partitions
- * will have far fewer texels than others in the same block.
- *
- * @param      ewb             The block error weights.
- * @param      pi              The partiion info.
- * @param[out] error_weights   The output per-partition error_weight sum.
- */
-static void compute_partition_error_color_weightings(
-	const error_weight_block& ewb,
-	const partition_info& pi,
-	vfloat4 error_weights[BLOCK_MAX_PARTITIONS]
-) {
-	// TODO: Candidate for 4-group counting
-	int partition_count = pi.partition_count;
-	promise(partition_count > 0);
-
-	for (int i = 0; i < partition_count; i++)
-	{
-		vfloat4 error_weight(1e-12f);
-
-		int texel_count = pi.partition_texel_count[i];
-		promise(texel_count > 0);
-
-		for (int j = 0; j < texel_count; j++)
-		{
-			int tidx = pi.texels_of_partition[i][j];
-			error_weight += ewb.error_weights[tidx];
-		}
-
-		error_weights[i] = error_weight / pi.partition_texel_count[i];
-	}
-}
-
-/**
  * @brief Compute the errors of the endpoint line options for one partition.
  *
  * Uncorrelated data assumes storing completely independent RGBA channels for each endpoint. Same
@@ -96,7 +59,6 @@ static void compute_partition_error_color_weightings(
  * @param      pi                The partition info data.
  * @param      partition_index   The partition index to compule the error for.
  * @param      blk               The image block.
- * @param      ewb               The error weight block.
  * @param      uncor_pline       The endpoint line assuming uncorrelated endpoints.
  * @param[out] uncor_err         The computed error for the uncorrelated endpoint line.
  * @param      samec_pline       The endpoint line assuming the same chroma for both endpoints.
@@ -111,7 +73,6 @@ static void compute_error_squared_rgb_single_partition(
 	const partition_info& pi,
 	int partition_index,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	const processed_line3& uncor_pline,
 	float& uncor_err,
 	const processed_line3& samec_pline,
@@ -134,41 +95,35 @@ static void compute_error_squared_rgb_single_partition(
 	for (int i = 0; i < texels_in_partition; i++)
 	{
 		int tix = pi.texels_of_partition[partition_index][i];
-		float texel_weight = ewb.texel_weight_rgb[tix];
-		if (texel_weight < 1e-20f)
-		{
-			continue;
-		}
 
 		vfloat4 point = blk.texel(tix);
-		vfloat4 ews = ewb.error_weights[tix];
 
 		// Compute the error that arises from just ditching alpha
 		float default_alpha = blk.get_default_alpha();
 		float omalpha = point.lane<3>() - default_alpha;
-		a_drop_err += omalpha * omalpha * ews.lane<3>();
+		a_drop_err += omalpha * omalpha;
 
 		float param1 = dot3_s(point, uncor_pline.bs);
-		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bis;
+		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bs;
 		vfloat4 dist1 = rp1 - point;
-		uncor_err += dot3_s(ews, dist1 * dist1);
+		uncor_err += dot3_s(dist1, dist1);
 
 		float param2 = dot3_s(point, samec_pline.bs);
 		// No samec amod - we know it's always zero
-		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bis;
+		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bs;
 		vfloat4 dist2 = rp2 - point;
-		samec_err += dot3_s(ews, dist2 * dist2);
+		samec_err += dot3_s(dist2, dist2);
 
 		float param3 = dot3_s(point,  rgbl_pline.bs);
-		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bis;
+		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bs;
 		vfloat4 dist3 = rp3 - point;
-		rgbl_err += dot3_s(ews, dist3 * dist3);
+		rgbl_err += dot3_s(dist3, dist3);
 
 		float param4 = dot3_s(point, l_pline.bs);
 		// No luma amod - we know it's always zero
-		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bis;
+		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bs;
 		vfloat4 dist4 = rp4 - point;
-		l_err += dot3_s(ews, dist4 * dist4);
+		l_err += dot3_s(dist4, dist4);
 	}
 }
 
@@ -182,7 +137,6 @@ static void compute_error_squared_rgb_single_partition(
  * @param      bsd   The block size information.
  * @param      blk   The image block.
  * @param      pi    The partition info data.
- * @param      ewb   The error weight block.
  * @param      ep    The idealized endpoints.
  * @param[out] eci   The resulting encoding choice error metrics.
   */
@@ -190,7 +144,6 @@ static void compute_encoding_choice_errors(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
-	const error_weight_block& ewb,
 	const endpoints& ep,
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS])
 {
@@ -202,7 +155,7 @@ static void compute_encoding_choice_errors(
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-	compute_avgs_and_dirs_3_comp_rgb(pi, blk, ewb, pms);
+	compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -223,41 +176,31 @@ static void compute_encoding_choice_errors(
 		float luminance_rgb_error;
 		float alpha_drop_error;
 
-		vfloat4 csf = pm.color_scale;
-		vfloat4 csfn = normalize(csf);
-
-		vfloat4 icsf = pm.icolor_scale;
-		icsf.set_lane<3>(0.0f);
-
 		uncor_rgb_lines.a = pm.avg;
-		uncor_rgb_lines.b = normalize_safe(pm.dir, csfn);
+		uncor_rgb_lines.b = normalize_safe(pm.dir, unit3());
 
 		samec_rgb_lines.a = vfloat4::zero();
-		samec_rgb_lines.b = normalize_safe(pm.avg, csfn);
+		samec_rgb_lines.b = normalize_safe(pm.avg, unit3());
 
 		rgb_luma_lines.a = pm.avg;
-		rgb_luma_lines.b = csfn;
+		rgb_luma_lines.b = unit3();
 
-		uncor_rgb_plines.amod = (uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b)) * icsf;
-		uncor_rgb_plines.bs   = uncor_rgb_lines.b * csf;
-		uncor_rgb_plines.bis  = uncor_rgb_lines.b * icsf;
+		uncor_rgb_plines.amod = uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b);
+		uncor_rgb_plines.bs   = uncor_rgb_lines.b;
 
 		// Same chroma always goes though zero, so this is simpler than the others
 		samec_rgb_plines.amod = vfloat4::zero();
-		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
-		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
+		samec_rgb_plines.bs   = samec_rgb_lines.b;
 
-		rgb_luma_plines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
-		rgb_luma_plines.bs   = rgb_luma_lines.b * csf;
-		rgb_luma_plines.bis  = rgb_luma_lines.b * icsf;
+		rgb_luma_plines.amod = rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b);
+		rgb_luma_plines.bs   = rgb_luma_lines.b;
 
 		// Luminance always goes though zero, so this is simpler than the others
 		luminance_plines.amod = vfloat4::zero();
-		luminance_plines.bs   = csfn * csf;
-		luminance_plines.bis  = csfn * icsf;
+		luminance_plines.bs   = unit3();
 
 		compute_error_squared_rgb_single_partition(
-		    pi, i, blk, ewb,
+		    pi, i, blk,
 		    uncor_rgb_plines, uncorr_rgb_error,
 		    samec_rgb_plines, samechroma_rgb_error,
 		    rgb_luma_plines,  rgb_luma_error,
@@ -302,7 +245,6 @@ static void compute_encoding_choice_errors(
  * @param      pi                 The partition info.
  * @param      eci                The encoding choice error metrics.
  * @param      ep                 The idealized endpoints.
- * @param      error_weight       The resulting encoding choice error metrics.
  * @param[out] best_error         The best error for each integer count and quant level.
  * @param[out] format_of_choice   The preferred endpoint format for each integer count and quant level.
  */
@@ -313,7 +255,6 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	const partition_info& pi,
 	const encoding_choice_errors& eci,
 	const endpoints& ep,
-	vfloat4 error_weight,
 	float best_error[21][4],
 	int format_of_choice[21][4]
 ) {
@@ -349,7 +290,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float ep1_min = hmin_rgb_s(ep1);
 	ep1_min = astc::max(ep1_min, 0.0f);
 
-	float error_weight_rgbsum = hadd_rgb_s(error_weight);
+	float error_weight_rgbsum = 3.0f;
 
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
@@ -374,9 +315,10 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		(ep0_range_error_high * ep0_range_error_high) +
 		(ep1_range_error_high * ep1_range_error_high);
 
-	float rgb_range_error = dot3_s(sum_range_error, error_weight)
+	// TODO: Vectorize this?
+	float rgb_range_error = hadd_rgb_s(sum_range_error)
 	                      * 0.5f * static_cast<float>(partition_size);
-	float alpha_range_error = sum_range_error.lane<3>() * error_weight.lane<3>()
+	float alpha_range_error = sum_range_error.lane<3>()
 	                        * 0.5f * static_cast<float>(partition_size);
 
 	if (encode_hdr_rgb)
@@ -529,7 +471,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 
 			float base_quant_error = baseline_quant_error[i] * static_cast<float>(partition_size);
 			float rgb_quantization_error = error_weight_rgbsum * base_quant_error * 2.0f;
-			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error * 2.0f;
+			float alpha_quantization_error = base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
 			// For 8 integers, we have two encodings: one with HDR A and another one with LDR A
@@ -571,7 +513,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		}
 
 		float base_quant_error_rgb = error_weight_rgbsum * static_cast<float>(partition_size);
-		float base_quant_error_a = error_weight.lane<3>() * static_cast<float>(partition_size);
+		float base_quant_error_a = static_cast<float>(partition_size);
 		float base_quant_error_rgba = base_quant_error_rgb + base_quant_error_a;
 
 		float error_scale_bc_rgba = eci.can_blue_contract ? 0.625f : 1.0f;
@@ -1094,7 +1036,6 @@ unsigned int compute_ideal_endpoint_formats(
 	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	const endpoints& ep,
 	 // bitcounts and errors computed for the various quantization methods
 	const int* qwt_bitcounts,
@@ -1117,12 +1058,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// Compute the errors that result from various encoding choices (such as using luminance instead
 	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS];
-	compute_encoding_choice_errors(bsd, blk, pi, ewb, ep, eci);
-
-	// For each partition, compute the error weights to apply for that partition
-	vfloat4 error_weights[BLOCK_MAX_PARTITIONS];
-
-	compute_partition_error_color_weightings(ewb, pi, error_weights);
+	compute_encoding_choice_errors(bsd, blk, pi, ep, eci);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
 	int format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
@@ -1130,7 +1066,7 @@ unsigned int compute_ideal_endpoint_formats(
 	{
 		compute_color_error_for_every_integer_count_and_quant_level(
 		    encode_hdr_rgb, encode_hdr_alpha, i,
-		    pi, eci[i], ep, error_weights[i], best_error[i],
+		    pi, eci[i], ep, best_error[i],
 		    format_of_choice[i]);
 	}
 

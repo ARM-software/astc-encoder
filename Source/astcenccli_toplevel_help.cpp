@@ -176,18 +176,6 @@ COMPRESSION
                nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
                nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
 
-       -rgbm <max>
-           The input texture is an RGBM encoded texture, storing values HDR
-           values between 0 and <max> in an LDR container format with a
-           shared multiplier. Shaders reconstruct the HDR value as:
-
-               vec3 hdr_value = tex.rgb * tex.a * max;
-
-           The compression behavior of the ASTC format for RGBM data
-           requires that the user's RGBM encoding preprocess keeps values
-           of M above a lower threshold to avoid them quantizing to zero
-           during compression. We recommend trying 16/255 or 32/255.
-
        -perceptual
            The codec should optimize perceptual error, instead of direct
            RMS error. This aims to improves perceived image quality, but
@@ -215,86 +203,12 @@ COMPRESSION
 // will concatenate these two strings together ...
 R"(
 
-COMPRESSION TIPS & TRICKS
-       ASTC is a block-based format that can be prone to block artifacts.
-       If block artifacts are a problem when compressing a given texture,
-       adding some or all of following command-line options may help:
-
-           -b 1.8
-           -v 2 1 1 0 25 0.1
-           -va 1 1 0 25
-           -dblimit 60
-
-       The -b option is a general-purpose block-artifact reduction option.
-       The -v and -va option settings will concentrate effort where smooth
-       regions lie next to regions with high detail, which are particularly
-       prone to block artifacts.
-
-       If a texture exhibits severe block artifacts in only some of the
-       color components, which is a common problem for mask textures, then
-       using the -cw option to raise the weighting of the affected color
-       component(s) may help. For example, if the green color component is
-       particularly badly encoded then try '-cw 1 6 1 1'.
-
 ADVANCED COMPRESSION
        Error weighting options
        -----------------------
 
-       These options provide low-level control of the codec error metric
-       computation, used to determine what good compression looks like.
-
-       -v <radius> <power> <base> <mean> <stdev> <mix>
-           Compute the per-texel relative error weighting for the RGB color
-           components as follows:
-
-           weight = 1 / (<base> + <mean> * mean^2 + <stdev> * stdev^2)
-
-           The <radius> argument specifies the texel radius of the
-           neighborhood over which the average and standard deviation are
-           computed.
-
-           The <mix> parameter is used to control the degree of mixing of
-           the average and stddev error values across the color components.
-           Setting this parameter to 0 causes the computation to be done
-           separately for each color component; setting it to 1 causes the
-           results from the RGB components to be combined and applied to
-           all three components. Intermediate values between these two
-           settings do a linear mix of the two.
-
-           The <power> argument is a power used to raise the values of the
-           input texels before computing average and standard deviation;
-           e.g. a power of 0.5 causes the codec to take the square root
-           of every input texel value.
-
-       -va <power> <base> <mean> <stdev>
-           Compute the per-texel relative error weighting for the alpha
-           component, when used in conjunction with -v. See documentation
-           of -v for individual parameter documentation.
-
-       -a <radius>
-           For textures with alpha component, scale per-texel weights by
-           the alpha value. The alpha value chosen for scaling of any
-           particular texel is taken as an average across a neighborhood of
-           the texel defined by the <radius> argument. Setting <radius> to
-           0 causes only the texel's own alpha to be used.
-
-           ASTC blocks that are entirely zero weighted, after the radius is
-           taken into account, are replaced by constant color blocks. This
-           is an RDO-like technique to improve compression ratio in any
-           application packaging compression that is applied.
-
-       -cw <red> <green> <blue> <alpha>
-           Assign an additional weight scaling to each color component,
-           allowing the components to be treated differently in terms of
-           error significance. Set values above 1 to increase a component's
-           significance, and values below 1 to decrease it. Set to 0 to
-           exclude a component from error computation.
-
-       -b <weight>
-           Assign an additional weight scaling for texels at compression
-           block edges and corners. Setting this to a value above 1
-           increases the significance of texels closer to the edges of a
-           block, and can help to reduce block artifacts.
+       These options provide control of the codec error metric, used to
+       determine what good compression looks like.
 
        -mpsnr <low> <high>
            Set the low and high f-stop values for the mPSNR error metric.
@@ -432,18 +346,6 @@ ADVANCED COMPRESSION
            [rgba01], selecting either input color components or a literal
            zero or one. For example to swap the RG components, and replace
            alpha with 1, the swizzle 'grb1' should be used.
-
-           The input swizzle takes place before any compression, and all
-           error weighting applied using the -cw option is applied to the
-           post-swizzle component ordering.
-
-           By default all 4 post-swizzle components are included in the
-           error metrics during compression. When using -esw to map two
-           component data to the L+A endpoint (e.g. -esw rrrg) the
-           luminance data stored in the RGB components will be weighted 3
-           times more strongly than the alpha component. This can be
-           corrected using the -cw option to zero the weights of unused
-           components; e.g. using -cw 1 0 0 1.
 
        -dsw <swizzle>
            Swizzle the color components after decompression. The swizzle is

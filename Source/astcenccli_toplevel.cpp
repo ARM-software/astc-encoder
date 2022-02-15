@@ -539,25 +539,13 @@ static int init_astcenc_config(
 	// Gather the flags that we need
 	while (argidx < argc)
 	{
-		if (!strcmp(argv[argidx], "-a"))
-		{
-			// Skip over the data value for now
-			argidx++;
-			flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
-		}
-		else if (!strcmp(argv[argidx], "-mask"))
+		if (!strcmp(argv[argidx], "-mask"))
 		{
 			flags |= ASTCENC_FLG_MAP_MASK;
 		}
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			flags |= ASTCENC_FLG_MAP_NORMAL;
-		}
-		else if (!strcmp(argv[argidx], "-rgbm"))
-		{
-			// Skip over the data value for now
-			argidx++;
-			flags |= ASTCENC_FLG_MAP_RGBM;
 		}
 		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
@@ -654,73 +642,6 @@ static int edit_astcenc_config(
 		{
 			argidx++;
 			cli_config.silentmode = 1;
-		}
-		else
-			if (!strcmp(argv[argidx], "-v"))
-		{
-			argidx += 7;
-			if (argidx > argc)
-			{
-				printf("ERROR: -v switch with less than 6 arguments\n");
-				return 1;
-			}
-
-			config.v_rgba_radius = atoi(argv[argidx - 6]);
-			config.v_rgb_power = static_cast<float>(atof(argv[argidx - 5]));
-			config.v_rgb_base = static_cast<float>(atof(argv[argidx - 4]));
-			config.v_rgb_mean = static_cast<float>(atof(argv[argidx - 3]));
-			config.v_rgb_stdev = static_cast<float>(atof(argv[argidx - 2]));
-			config.v_rgba_mean_stdev_mix = static_cast<float>(atof(argv[argidx - 1]));
-		}
-		else if (!strcmp(argv[argidx], "-va"))
-		{
-			argidx += 5;
-			if (argidx > argc)
-			{
-				printf("ERROR: -va switch with less than 4 arguments\n");
-				return 1;
-			}
-
-			config.v_a_power= static_cast<float>(atof(argv[argidx - 4]));
-			config.v_a_base = static_cast<float>(atof(argv[argidx - 3]));
-			config.v_a_mean = static_cast<float>(atof(argv[argidx - 2]));
-			config.v_a_stdev = static_cast<float>(atof(argv[argidx - 1]));
-		}
-		else if (!strcmp(argv[argidx], "-cw"))
-		{
-			argidx += 5;
-			if (argidx > argc)
-			{
-				printf("ERROR: -cw switch with less than 4 arguments\n");
-				return 1;
-			}
-
-			config.cw_r_weight = static_cast<float>(atof(argv[argidx - 4]));
-			config.cw_g_weight = static_cast<float>(atof(argv[argidx - 3]));
-			config.cw_b_weight = static_cast<float>(atof(argv[argidx - 2]));
-			config.cw_a_weight = static_cast<float>(atof(argv[argidx - 1]));
-		}
-		else if (!strcmp(argv[argidx], "-a"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("ERROR: -a switch with no argument\n");
-				return 1;
-			}
-
-			config.a_scale_radius = atoi(argv[argidx - 1]);
-		}
-		else if (!strcmp(argv[argidx], "-b"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("ERROR: -b switch with no argument\n");
-				return 1;
-			}
-
-			config.b_deblock_weight = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
@@ -841,18 +762,6 @@ static int edit_astcenc_config(
 			cli_config.swz_decode.g = ASTCENC_SWZ_A;
 			cli_config.swz_decode.b = ASTCENC_SWZ_Z;
 			cli_config.swz_decode.a = ASTCENC_SWZ_1;
-		}
-		else if (!strcmp(argv[argidx], "-rgbm"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("ERROR: -rgbm switch with no argument\n");
-				return 1;
-			}
-
-			config.rgbm_m_scale = static_cast<float>(atof(argv[argidx - 1]));
-			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 		}
 		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
@@ -1125,28 +1034,6 @@ static void print_astcenc_config(
 		}
 
 		printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (config.block_x * config.block_y * config.block_z));
-
-		printf("    Radius mean/stdev:          %u texels\n", config.v_rgba_radius);
-		printf("    RGB power:                  %g\n", (double)config.v_rgb_power );
-		printf("    RGB base weight:            %g\n", (double)config.v_rgb_base);
-		printf("    RGB mean weight:            %g\n", (double)config.v_rgb_mean);
-		printf("    RGB stdev weight:           %g\n", (double)config.v_rgb_stdev);
-		printf("    RGB mean/stdev mixing:      %g\n", (double)config.v_rgba_mean_stdev_mix);
-		printf("    Alpha power:                %g\n", (double)config.v_a_power);
-		printf("    Alpha base weight:          %g\n", (double)config.v_a_base);
-		printf("    Alpha mean weight:          %g\n", (double)config.v_a_mean);
-		printf("    Alpha stdev weight:         %g\n", (double)config.v_a_stdev);
-		printf("    RGB alpha scale weight:     %d\n", (config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT));
-		if ((config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT))
-		{
-			printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
-		}
-
-		printf("    R component weight:         %g\n",(double)config.cw_r_weight);
-		printf("    G component weight:         %g\n",(double)config.cw_g_weight);
-		printf("    B component weight:         %g\n",(double)config.cw_b_weight);
-		printf("    A component weight:         %g\n",(double)config.cw_a_weight);
-		printf("    Deblock artifact setting:   %g\n", (double)config.b_deblock_weight);
 		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 		printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
 		printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);

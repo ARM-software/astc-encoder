@@ -186,6 +186,7 @@ void decompress_symbolic_block(
 	blk.zpos = zpos;
 
 	blk.data_min = vfloat4::zero();
+	blk.data_mean = vfloat4::zero();
 	blk.data_max = vfloat4::zero();
 	blk.grayscale = false;
 
@@ -321,8 +322,7 @@ float compute_symbolic_block_difference(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	const image_block& blk,
-	const error_weight_block& ewb
+	const image_block& blk
 ) {
 	// If we detected an error-block, blow up immediately.
 	if (scb.block_type == SYM_BTYPE_ERROR)
@@ -381,41 +381,11 @@ float compute_symbolic_block_difference(
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
 
-			// Compare error using a perceptual decode metric for RGBM textures
-			if (config.flags & ASTCENC_FLG_MAP_RGBM)
-			{
-				// Fail encodings that result in zero weight M pixels. Note that this can cause
-				// "interesting" artifacts if we reject all useful encodings - we typically get max
-				// brightness encodings instead which look just as bad. We recommend users apply a
-				// bias to their stored M value, limiting the lower value to 16 or 32 to avoid
-				// getting small M values post-quantization, but we can't prove it would never
-				// happen, especially at low bit rates ...
-				if (color.lane<3>() == 0.0f)
-				{
-					return -ERROR_CALC_DEFAULT;
-				}
-
-				// Compute error based on decoded RGBM color
-				color = vfloat4(
-					color.lane<0>() * color.lane<3>() * config.rgbm_m_scale,
-					color.lane<1>() * color.lane<3>() * config.rgbm_m_scale,
-					color.lane<2>() * color.lane<3>() * config.rgbm_m_scale,
-					1.0f
-				);
-
-				oldColor = vfloat4(
-					oldColor.lane<0>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					oldColor.lane<1>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					oldColor.lane<2>() * oldColor.lane<3>() * config.rgbm_m_scale,
-					1.0f
-				);
-			}
-
 			vfloat4 error = oldColor - color;
 			error = min(abs(error), 1e15f);
 			error = error * error;
 
-			float metric = dot_s(error, ewb.error_weights[tix]);
+			float metric = hadd_s(error);
 			summa += astc::min(metric, ERROR_CALC_DEFAULT);
 		}
 	}
