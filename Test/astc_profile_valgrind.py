@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2020-2021 Arm Limited
+# Copyright 2020-2022 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -21,9 +21,9 @@ post-process the output into an call graph image.
 
 Only runs on Linux and requires the following tools available on the PATH:
 
-  * valgrind
-  * gprof2dot
-  * dot
+  * valgrind (apt-get install valgrind)
+  * gprof2dot (python3 -m pip install gprof2dot)
+  * dot (apt-get install graphviz)
 """
 
 
@@ -116,7 +116,7 @@ def run_pass(image, noStartup, encoder, blocksize, quality):
 
     if noStartup:
         args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
-                "-s", "-z", "compress_block(astcenc_context const&, astcenc_image const&, image_block const&, physical_compressed_block&, compression_working_buffers&)"]
+                "-s", "-z", "compress_block(astcenc_context const&, image_block const&, physical_compressed_block&, compression_working_buffers&)"]
     else:
         args = ["gprof2dot", "--format=callgrind", "--output=out.dot", "callgrind.txt",
                 "-s",  "-z", "main"]
@@ -148,8 +148,9 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=encoders, help="select encoder variant")
 
-    testqualities = ["fastest", "fast", "medium", "thorough", "20", "30", "40", "50"]
-    qualities = testqualities + ["all"]
+    testqualities = ["fastest", "fast", "medium", "thorough"]
+    testnumerics = [str(x) for x in range(0, 101, 10)]
+    qualities = testqualities + testnumerics + ["all"]
     parser.add_argument("--test-quality", dest="qualities", default="medium",
                         choices=qualities, help="select compression quality")
 
