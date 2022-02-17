@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -905,7 +905,7 @@ static void construct_block_size_descriptor_2d(
 
 			// Allocate and initialize the decimation table entry if we've not used it yet
 			int decimation_mode = decimation_mode_index[y_weights * 16 + x_weights];
-			if (decimation_mode == -1)
+			if (decimation_mode < 0)
 			{
 				decimation_mode = construct_dt_entry_2d(x_texels, y_texels, x_weights, y_weights, bsd);
 				decimation_mode_index[y_weights * 16 + x_weights] = decimation_mode;

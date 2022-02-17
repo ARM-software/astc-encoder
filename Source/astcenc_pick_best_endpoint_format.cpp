@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -688,7 +688,7 @@ static float one_partition_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level == -1)
+		if (quant_level < 0)
 		{
 			continue;
 		}
@@ -791,7 +791,7 @@ static float two_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level == -1)
+		if (quant_level < 0)
 		{
 			break;
 		}
@@ -916,7 +916,7 @@ static float three_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level == -1)
+		if (quant_level < 0)
 		{
 			break;
 		}
@@ -1052,7 +1052,7 @@ static float four_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level == -1)
+		if (quant_level < 0)
 		{
 			break;
 		}

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1512,7 +1512,7 @@ int main(
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
 	{
 		int bitness = get_output_filename_enforced_bitness(output_filename.c_str());
-		if (bitness == -1)
+		if (bitness < 0)
 		{
 			return 1;
 		}
