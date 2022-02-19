@@ -101,29 +101,29 @@ static void compute_error_squared_rgb_single_partition(
 		// Compute the error that arises from just ditching alpha
 		float default_alpha = blk.get_default_alpha();
 		float omalpha = point.lane<3>() - default_alpha;
-		a_drop_err += omalpha * omalpha;
+		a_drop_err += omalpha * omalpha * blk.channel_weight.lane<3>() ;
 
 		float param1 = dot3_s(point, uncor_pline.bs);
 		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bs;
 		vfloat4 dist1 = rp1 - point;
-		uncor_err += dot3_s(dist1, dist1);
+		uncor_err += dot3_s(dist1, dist1 * blk.channel_weight);
 
 		float param2 = dot3_s(point, samec_pline.bs);
 		// No samec amod - we know it's always zero
 		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bs;
 		vfloat4 dist2 = rp2 - point;
-		samec_err += dot3_s(dist2, dist2);
+		samec_err += dot3_s(dist2, dist2 * blk.channel_weight);
 
 		float param3 = dot3_s(point,  rgbl_pline.bs);
 		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bs;
 		vfloat4 dist3 = rp3 - point;
-		rgbl_err += dot3_s(dist3, dist3);
+		rgbl_err += dot3_s(dist3, dist3 * blk.channel_weight);
 
 		float param4 = dot3_s(point, l_pline.bs);
 		// No luma amod - we know it's always zero
 		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bs;
 		vfloat4 dist4 = rp4 - point;
-		l_err += dot3_s(dist4, dist4);
+		l_err += dot3_s(dist4, dist4 * blk.channel_weight);
 	}
 }
 

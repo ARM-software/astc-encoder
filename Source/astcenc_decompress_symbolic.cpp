@@ -185,10 +185,12 @@ void decompress_symbolic_block(
 	blk.ypos = ypos;
 	blk.zpos = zpos;
 
+	// We only use these during compression, but ensure initialized
 	blk.data_min = vfloat4::zero();
 	blk.data_mean = vfloat4::zero();
 	blk.data_max = vfloat4::zero();
 	blk.grayscale = false;
+	blk.channel_weight = vfloat4::zero();
 
 	// If we detected an error-block, blow up immediately.
 	if (scb.block_type == SYM_BTYPE_ERROR)
@@ -381,7 +383,7 @@ float compute_symbolic_block_difference(
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
 
-			vfloat4 error = oldColor - color;
+			vfloat4 error = (oldColor - color) * blk.channel_weight;
 			error = min(abs(error), 1e15f);
 			error = error * error;
 

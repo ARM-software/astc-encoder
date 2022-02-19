@@ -161,20 +161,26 @@ static void compute_ideal_colors_and_weights_2_comp(
 
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
+	vfloat4 channel_weight;
+
 	if (component1 == 0 && component2 == 1)
 	{
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
+		channel_weight = blk.channel_weight.swz<0, 1>();
 	}
 	else if (component1 == 0 && component2 == 2)
 	{
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
+		channel_weight = blk.channel_weight.swz<0, 2>();
 	}
 	else // (component1 == 1 && component2 == 2)
 	{
+		assert(component1 == 1 && component2 == 2);
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
+		channel_weight = blk.channel_weight.swz<1, 2>();
 	}
 
 	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
@@ -203,7 +209,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 		int partition = pi.partition_of_texel[i];
 		vfloat4 point = vfloat2(data_vr[i], data_vg[i]);
 		line2 l = lines[partition];
-		float param = dot_s(point - l.a, l.b);
+		float param = dot_s(point - l.a, l.b * channel_weight);
 		ei.weights[i] = param;
 
 		lowparam[partition] = astc::min(param, lowparam[partition]);
@@ -216,7 +222,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0.0f) // Case for when none of the texels had any weight
+		if (length <= 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
@@ -301,29 +307,34 @@ static void compute_ideal_colors_and_weights_3_comp(
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
 	const float* data_vb = nullptr;
+	vfloat4 channel_weight;
 	if (omitted_component == 0)
 	{
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
+		channel_weight = blk.channel_weight.swz<1, 2, 3>();
 	}
 	else if (omitted_component == 1)
 	{
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
+		channel_weight = blk.channel_weight.swz<0, 2, 3>();
 	}
 	else if (omitted_component == 2)
 	{
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
 		data_vb = blk.data_a;
+		channel_weight = blk.channel_weight.swz<0, 1, 3>();
 	}
 	else
 	{
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
 		data_vb = blk.data_b;
+		channel_weight = blk.channel_weight.swz<0, 1, 2>();
 	}
 
 	float lowparam[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
@@ -352,7 +363,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 		int partition = pi.partition_of_texel[i];
 		vfloat4 point = vfloat3(data_vr[i], data_vg[i], data_vb[i]);
 		line3 l = lines[partition];
-		float param = dot3_s(point - l.a, l.b);
+		float param = dot3_s(point - l.a, l.b * channel_weight);
 		ei.weights[i] = param;
 
 		lowparam[partition] = astc::min(param, lowparam[partition]);
@@ -362,7 +373,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)			// Case for when none of the texels had any weight
+		if (length <= 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
@@ -483,7 +494,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 		vfloat4 point = blk.texel(i);
 		line4 l = lines[partition];
 
-		float param = dot_s(point - l.a, l.b);
+		float param = dot_s(point - l.a, l.b * blk.channel_weight);
 		ei.weights[i] = param;
 
 		lowparam[partition] = astc::min(param, lowparam[partition]);
@@ -493,7 +504,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)
+		if (length <= 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;

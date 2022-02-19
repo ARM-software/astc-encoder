@@ -265,6 +265,13 @@ void fetch_image_block(
 	blk.data_mean = data_mean;
 	blk.data_max = data_max;
 	blk.grayscale = grayscale;
+
+	blk.channel_weight = vfloat4(1.0f);
+	if (blk.is_luminancealpha())
+	{
+		// For luminance + alpha blocks only count one of the RGB channels
+		blk.channel_weight = vfloat4(1.0f, 0.0f, 0.0f, 1.0f);
+	}
 }
 
 /* See header for documentation. */

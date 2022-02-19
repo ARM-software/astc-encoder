@@ -79,7 +79,7 @@ static void kmeans_init(
 	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		vfloat4 color = blk.texel(i);
-		vfloat4 diff = color - center_color;
+		vfloat4 diff = (color - center_color) * blk.channel_weight;
 		float distance = dot_s(diff, diff);
 		distance_sum += distance;
 		distances[i] = distance;
@@ -124,7 +124,7 @@ static void kmeans_init(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			vfloat4 color = blk.texel(i);
-			vfloat4 diff = color - center_color;
+			vfloat4 diff = (color - center_color) * blk.channel_weight;
 			float distance = dot_s(diff, diff);
 			distance = astc::min(distance, distances[i]);
 			distance_sum += distance;
@@ -163,7 +163,7 @@ static void kmeans_assign(
 		vfloat4 color = blk.texel(i);
 		for (unsigned int j = 0; j < partition_count; j++)
 		{
-			vfloat4 diff = color - cluster_centers[j];
+			vfloat4 diff = (color - cluster_centers[j]) * blk.channel_weight;
 			float distance = dot_s(diff, diff);
 			if (distance < best_distance)
 			{
@@ -581,9 +581,9 @@ void find_best_partition_candidates(
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
-				float tpp = (float)(pi.partition_texel_count[j]);
+				float tpp = static_cast<float>(pi.partition_texel_count[j]);
 
-				float error_weights = tpp * weight_imprecision_estim;
+				vfloat4 error_weights = blk.channel_weight * tpp * weight_imprecision_estim;
 
 				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j];
 				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j];
@@ -673,9 +673,9 @@ void find_best_partition_candidates(
 			{
 				partition_lines3& pl = plines[j];
 
-				float tpp = (float)(pi.partition_texel_count[j]);
+				float tpp = static_cast<float>(pi.partition_texel_count[j]);
 
-				float error_weights = tpp * weight_imprecision_estim;
+				vfloat4 error_weights = blk.channel_weight * tpp * weight_imprecision_estim;
 
 				vfloat4 uncor_vector = pl.uncor_line.b * pl.uncor_line_len;
 				vfloat4 samec_vector = pl.samec_line.b * pl.samec_line_len;

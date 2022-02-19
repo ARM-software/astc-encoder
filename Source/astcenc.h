@@ -301,22 +301,6 @@ enum astcenc_type
 static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
 
 /**
- * @brief Enable mask map compression.
- *
- * Input data will be treated a multi-layer mask map, where is is desirable for the color components
- * to be treated independently for the purposes of error analysis.
- */
-static const unsigned int ASTCENC_FLG_MAP_MASK             = 1 << 1;
-
-/**
- * @brief Enable perceptual error metrics.
- *
- * This mode enables perceptual compression mode, which will optimize for perceptual error rather
- * than best PSNR. Only some input modes support perceptual error metrics.
- */
-static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
-
-/**
  * @brief Create a decompression-only context.
  *
  * This mode disables support for compression. This enables context allocation to skip some
@@ -338,9 +322,7 @@ static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
  * @brief The bit mask of all valid flags.
  */
 static const unsigned int ASTCENC_ALL_FLAGS =
-                              ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_MAP_NORMAL |
-                              ASTCENC_FLG_USE_PERCEPTUAL |
                               ASTCENC_FLG_DECOMPRESS_ONLY |
                               ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 

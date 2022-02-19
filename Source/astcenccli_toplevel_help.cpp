@@ -158,29 +158,16 @@ COMPRESSION
        to consider for common usage, based on the type of image data being
        compressed.
 
-       -mask
-           The input texture is a mask texture with unrelated data stored
-           in the various color components, so enable error heuristics that
-           aim to improve perceptual quality by minimizing the effect of
-           error cross-talk across the color components.
-
        -normal
            The input texture is a three component linear LDR normal map
            storing unit length normals as (R=X, G=Y, B=Z). The output will
-           be a two component X+Y normal map stored as (RGB=X, A=Y),
-           optimized for angular error instead of simple PSNR. The Z
+           be a two component X+Y normal map stored as (RGB=X, A=Y). The Z
            component can be recovered programmatically in shader code by
            using the equation:
 
                nml.xy = texture(...).ga;              // Load in [0,1]
                nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
                nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
-
-       -perceptual
-           The codec should optimize perceptual error, instead of direct
-           RMS error. This aims to improves perceived image quality, but
-           typically lowers the measured PSNR score. Perceptual methods are
-           currently only available for normal maps and RGB color data.
 
        -array <size>
            Loads an array of <size> 2D image slices to use as a 3D image.

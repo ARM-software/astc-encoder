@@ -258,8 +258,7 @@ static astcenc_error validate_flags(
 	}
 
 	// Flags field must only contain at most a single map type
-	exMask = ASTCENC_FLG_MAP_MASK
-	       | ASTCENC_FLG_MAP_NORMAL;
+	exMask = ASTCENC_FLG_MAP_NORMAL;
 	if (astc::popcount(flags & exMask) > 1)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
@@ -582,9 +581,9 @@ astcenc_error astcenc_config_init(
 		config.tune_2_partition_early_out_limit_factor *= 1.5f;
 		config.tune_3_partition_early_out_limit_factor *= 1.5f;
 		config.tune_2_plane_early_out_limit_correlation = 0.99f;
-		config.tune_db_limit *= 1.03f;
+		config.tune_db_limit *= 1.08f;
 	}
-	
+
 	config.flags = flags;
 
 	return ASTCENC_SUCCESS;

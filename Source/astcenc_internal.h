@@ -816,7 +816,10 @@ struct image_block
 	/** @brief The mean value of all texels in the block. */
 	vfloat4 data_mean;
 
-	/** @brief Is this greyscale block where R == G == B for all texels? */
+	/** @brief The relative significance of the color channels. */
+	vfloat4 channel_weight;
+
+	/** @brief Is this grayscale block where R == G == B for all texels? */
 	bool grayscale;
 
 	/** @brief Set to 1 if a texel is using HDR RGB endpoints (decompression only). */

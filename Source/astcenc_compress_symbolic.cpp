@@ -125,7 +125,7 @@ static bool realign_weights(
 			epd = select(epd, vint4::zero(), plane_mask);
 
 			endpnt0f[pa_idx] = int_to_float(endpnt0[pa_idx]);
-			offset[pa_idx] = int_to_float(epd) * (1.0f / 64.0f);
+			offset[pa_idx] = (int_to_float(epd) * (1.0f / 64.0f)) * blk.channel_weight;
 		}
 
 		// Create an unquantized weight grid for this decimation level
@@ -186,7 +186,7 @@ static bool realign_weights(
 
 				vfloat4 origcolor    = blk.texel(texel);
 
-				vfloat4 colordiff       = color - origcolor;
+				vfloat4 colordiff       = (color - origcolor) * blk.channel_weight;
 				vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
 				vfloat4 color_down_diff = colordiff + color_offset * plane_down_weight;
 				current_error += dot_s(colordiff, colordiff);
@@ -1058,7 +1058,7 @@ void compress_block(
 
 	// Set slightly stricter block targets for lumalpha data as we have more bits to play with
 	bool block_is_la = blk.is_luminancealpha();
-	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
+	float block_is_la_scale = block_is_la ? 1.0f / 1.25f : 1.0f;
 
 	bool block_skip_two_plane = false;
 
@@ -1214,7 +1214,7 @@ void compress_block(
 		}
 
 		float errorval = compress_symbolic_block_for_partition_2planes(
-		    ctx.config, *bsd, blk, 
+		    ctx.config, *bsd, blk,
 		    error_threshold * errorval_overshoot,
 		    i, scb, tmpbuf);
 
