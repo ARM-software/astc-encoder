@@ -1337,11 +1337,10 @@ void recompute_ideal_colors_2planes(
 		dec_weights_quant_uvalue_plane2[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane2[i]] * (1.0f / 64.0f);
 	}
 
-	vfloat4 rgba_sum = ewb.block_error_weighted_rgba_sum;
 	vfloat4 rgba_weight_sum = ewb.block_error_weight_sum;
 
 	unsigned int texel_count = bsd.texel_count;
-	vfloat4 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
+	vfloat4 scale_direction = normalize(blk.data_mean.swz<0, 1, 2>());
 
 	float scale_max = 0.0f;
 	float scale_min = 1e10f;

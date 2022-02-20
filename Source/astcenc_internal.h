@@ -819,6 +819,9 @@ struct image_block
 	/** @brief The min component value of all texels in the block. */
 	vfloat4 data_min;
 
+	/** @brief The mean component value of all texels in the block. */
+	vfloat4 data_mean;
+
 	/** @brief The max component value of all texels in the block. */
 	vfloat4 data_max;
 
@@ -953,19 +956,14 @@ struct image_block
  */
 struct error_weight_block
 {
-	/** @brief Block error weighted RGBA sum for whole block / 1 partition. */
-	vfloat4 block_error_weighted_rgba_sum;
-
 	/** @brief Block error sum for whole block / 1 partition. */
 	vfloat4 block_error_weight_sum;
 
 	/** @brief The full per texel per component error weights. */
 	vfloat4 error_weights[BLOCK_MAX_TEXELS];
 
-
 	/** @brief The full per texel per component error weights. */
 	float texel_weight[BLOCK_MAX_TEXELS];
-
 
 	/** @brief The average of the GBA error weights per texel. */
 	float texel_weight_gba[BLOCK_MAX_TEXELS];
@@ -978,7 +976,6 @@ struct error_weight_block
 
 	/** @brief The average of the RGB error weights per texel. */
 	float texel_weight_rgb[BLOCK_MAX_TEXELS];
-
 
 	/** @brief The average of the RG error weights per texel. */
 	float texel_weight_rg[BLOCK_MAX_TEXELS];
