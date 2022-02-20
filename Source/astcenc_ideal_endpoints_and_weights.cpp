@@ -213,7 +213,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	for (int i = 0; i < texel_count; i++)
 	{
 		int partition = pi.partition_of_texel[i];
-		vfloat4 point = vfloat2(data_vr[i], data_vg[i]) * pms[partition].color_scale.swz<0, 1>();
+		vfloat4 point = vfloat2(data_vr[i], data_vg[i]);
 		line2 l = lines[partition];
 		float param = dot_s(point - l.a, l.b);
 		ei.weights[i] = param;
@@ -240,16 +240,11 @@ static void compute_ideal_colors_and_weights_2_comp(
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
-		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
-		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
-
-		ep0 = ep0.swz<0, 1>() / pms[i].color_scale;
-		ep1 = ep1.swz<0, 1>() / pms[i].color_scale;
-
-		lowvalues[i] = ep0;
-		highvalues[i] = ep1;
+		lowvalues[i] = lines[i].a + lines[i].b * lowparam[i];
+		highvalues[i] = lines[i].a + lines[i].b * highparam[i];
 	}
 
+	// TODO: Merge this into loop above?
 	vmask4 comp1_mask = vint4::lane_id() == vint4(component1);
 	vmask4 comp2_mask = vint4::lane_id() == vint4(component2);
 	for (int i = 0; i < partition_count; i++)
@@ -370,7 +365,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		int partition = pi.partition_of_texel[i];
-		vfloat4 point = vfloat3(data_vr[i], data_vg[i], data_vb[i]) * pms[partition].color_scale;
+		vfloat4 point = vfloat3(data_vr[i], data_vg[i], data_vb[i]);
 		line3 l = lines[partition];
 		float param = dot3_s(point - l.a, l.b);
 		ei.weights[i] = param;
@@ -396,9 +391,6 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
 		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
-
-		ep0 = ep0 * pms[i].icolor_scale;
-		ep1 = ep1 * pms[i].icolor_scale;
 
 		vfloat4 bmin = blk.data_min;
 		vfloat4 bmax = blk.data_max;
@@ -504,7 +496,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 	{
 		int partition = pi.partition_of_texel[i];
 
-		vfloat4 point = blk.texel(i) * pms[partition].color_scale;
+		vfloat4 point = blk.texel(i);
 		line4 l = lines[partition];
 
 		float param = dot_s(point - l.a, l.b);
@@ -529,11 +521,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
-		vfloat4 ep0 = lines[i].a + lines[i].b * lowparam[i];
-		vfloat4 ep1 = lines[i].a + lines[i].b * highparam[i];
-
-		ei.ep.endpt0[i] = ep0 * pms[i].icolor_scale;
-		ei.ep.endpt1[i] = ep1 * pms[i].icolor_scale;
+		ei.ep.endpt0[i] = lines[i].a + lines[i].b * lowparam[i];
+		ei.ep.endpt1[i] = lines[i].a + lines[i].b * highparam[i];
 	}
 
 	bool is_constant_wes = true;

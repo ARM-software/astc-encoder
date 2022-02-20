@@ -547,16 +547,14 @@ void find_best_partition_candidates(
 				uncor_lines[j].a = pm.avg;
 				uncor_lines[j].b = normalize_safe(pm.dir, unit4());
 
-				uncor_plines[j].amod = (uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b)) * pm.icolor_scale;
-				uncor_plines[j].bs   = uncor_lines[j].b * pm.color_scale;
-				uncor_plines[j].bis  = uncor_lines[j].b * pm.icolor_scale;
+				uncor_plines[j].amod = uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b);
+				uncor_plines[j].bs   = uncor_lines[j].b;
 
 				samec_lines[j].a = vfloat4::zero();
 				samec_lines[j].b = normalize_safe(pm.avg, unit4());
 
 				samec_plines[j].amod = vfloat4::zero();
-				samec_plines[j].bs   = samec_lines[j].b * pm.color_scale;
-				samec_plines[j].bis  = samec_lines[j].b * pm.icolor_scale;
+				samec_plines[j].bs   = samec_lines[j].b;
 			}
 
 			float uncor_error = 0.0f;
@@ -583,20 +581,14 @@ void find_best_partition_candidates(
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
-				partition_metrics& pm = pms[j];
-				float tpp = (float)(pi.partition_texel_count[j]);
+				float tpp = static_cast<float>(pi.partition_texel_count[j]);
+				vfloat4 error_weights(tpp * weight_imprecision_estim);
 
-				vfloat4 ics = pm.icolor_scale;
-				vfloat4 error_weights = pm.error_weight * (tpp * weight_imprecision_estim);
+				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j];
+				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j];
 
-				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j] * ics;
-				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j] * ics;
-
-				uncor_vector = uncor_vector * uncor_vector;
-				samec_vector = samec_vector * samec_vector;
-
-				uncor_error += dot_s(uncor_vector, error_weights);
-				samec_error += dot_s(samec_vector, error_weights);
+				uncor_error += dot_s(uncor_vector * uncor_vector, error_weights);
+				samec_error += dot_s(samec_vector * samec_vector, error_weights);
 			}
 
 			if (uncor_error < uncor_best_error)
@@ -650,13 +642,11 @@ void find_best_partition_candidates(
 				pl.samec_line.a = vfloat4::zero();
 				pl.samec_line.b = normalize_safe(pm.avg.swz<0, 1, 2>(), unit3());
 
-				pl.uncor_pline.amod = (pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b)) * pm.icolor_scale.swz<0, 1, 2, 3>();
-				pl.uncor_pline.bs   = (pl.uncor_line.b * pm.color_scale.swz<0, 1, 2, 3>());
-				pl.uncor_pline.bis  = (pl.uncor_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
+				pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b);
+				pl.uncor_pline.bs   = pl.uncor_line.b;
 
 				pl.samec_pline.amod = vfloat4::zero();
-				pl.samec_pline.bs   = (pl.samec_line.b * pm.color_scale.swz<0, 1, 2, 3>());
-				pl.samec_pline.bis  = (pl.samec_line.b * pm.icolor_scale.swz<0, 1, 2, 3>());
+				pl.samec_pline.bs   = pl.samec_line.b;
 			}
 
 			float uncor_error = 0.0f;
@@ -680,25 +670,16 @@ void find_best_partition_candidates(
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
-				partition_metrics& pm = pms[j];
 				partition_lines3& pl = plines[j];
 
-				float tpp = (float)(pi.partition_texel_count[j]);
+				float tpp = static_cast<float>(pi.partition_texel_count[j]);
+				vfloat4 error_weights(tpp * weight_imprecision_estim);
 
-				vfloat4 ics = pm.icolor_scale;
-				ics.set_lane<3>(0.0f);
+				vfloat4 uncor_vector = pl.uncor_line.b * pl.uncor_line_len;
+				vfloat4 samec_vector = pl.samec_line.b * pl.samec_line_len;
 
-				vfloat4 error_weights = pm.error_weight * (tpp * weight_imprecision_estim);
-				error_weights.set_lane<3>(0.0f);
-
-				vfloat4 uncor_vector = (pl.uncor_line.b * pl.uncor_line_len) * ics;
-				vfloat4 samec_vector = (pl.samec_line.b * pl.samec_line_len) * ics;
-
-				uncor_vector = uncor_vector * uncor_vector;
-				samec_vector = samec_vector * samec_vector;
-
-				uncor_error += dot3_s(uncor_vector, error_weights);
-				samec_error += dot3_s(samec_vector, error_weights);
+				uncor_error += dot3_s(uncor_vector * uncor_vector, error_weights);
+				samec_error += dot3_s(samec_vector * samec_vector, error_weights);
 			}
 
 			if (uncor_error < uncor_best_error)

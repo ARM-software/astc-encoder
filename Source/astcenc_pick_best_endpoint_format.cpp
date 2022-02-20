@@ -110,24 +110,24 @@ static void compute_error_squared_rgb_single_partition(
 		a_drop_err += omalpha * omalpha * ews.lane<3>();
 
 		float param1 = dot3_s(point, uncor_pline.bs);
-		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bis;
+		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bs;
 		vfloat4 dist1 = rp1 - point;
 		uncor_err += dot3_s(ews, dist1 * dist1);
 
 		float param2 = dot3_s(point, samec_pline.bs);
 		// No samec amod - we know it's always zero
-		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bis;
+		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bs;
 		vfloat4 dist2 = rp2 - point;
 		samec_err += dot3_s(ews, dist2 * dist2);
 
 		float param3 = dot3_s(point,  rgbl_pline.bs);
-		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bis;
+		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bs;
 		vfloat4 dist3 = rp3 - point;
 		rgbl_err += dot3_s(ews, dist3 * dist3);
 
 		float param4 = dot3_s(point, l_pline.bs);
 		// No luma amod - we know it's always zero
-		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bis;
+		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bs;
 		vfloat4 dist4 = rp4 - point;
 		l_err += dot3_s(ews, dist4 * dist4);
 	}
@@ -182,38 +182,28 @@ static void compute_encoding_choice_errors(
 		float luminance_rgb_error;
 		float alpha_drop_error;
 
-		vfloat4 csf = pm.color_scale;
-		vfloat4 csfn = normalize(csf);
-
-		vfloat4 icsf = pm.icolor_scale;
-		icsf.set_lane<3>(0.0f);
-
 		uncor_rgb_lines.a = pm.avg;
-		uncor_rgb_lines.b = normalize_safe(pm.dir, csfn);
+		uncor_rgb_lines.b = normalize_safe(pm.dir, unit3());
 
 		samec_rgb_lines.a = vfloat4::zero();
-		samec_rgb_lines.b = normalize_safe(pm.avg, csfn);
+		samec_rgb_lines.b = normalize_safe(pm.avg, unit3());
 
 		rgb_luma_lines.a = pm.avg;
-		rgb_luma_lines.b = csfn;
+		rgb_luma_lines.b = unit3();
 
-		uncor_rgb_plines.amod = (uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b)) * icsf;
-		uncor_rgb_plines.bs   = uncor_rgb_lines.b * csf;
-		uncor_rgb_plines.bis  = uncor_rgb_lines.b * icsf;
+		uncor_rgb_plines.amod = uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b);
+		uncor_rgb_plines.bs   = uncor_rgb_lines.b;
 
 		// Same chroma always goes though zero, so this is simpler than the others
 		samec_rgb_plines.amod = vfloat4::zero();
-		samec_rgb_plines.bs   = samec_rgb_lines.b * csf;
-		samec_rgb_plines.bis  = samec_rgb_lines.b * icsf;
+		samec_rgb_plines.bs   = samec_rgb_lines.b;
 
-		rgb_luma_plines.amod = (rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b)) * icsf;
-		rgb_luma_plines.bs   = rgb_luma_lines.b * csf;
-		rgb_luma_plines.bis  = rgb_luma_lines.b * icsf;
+		rgb_luma_plines.amod = rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b);
+		rgb_luma_plines.bs   = rgb_luma_lines.b;
 
 		// Luminance always goes though zero, so this is simpler than the others
 		luminance_plines.amod = vfloat4::zero();
-		luminance_plines.bs   = csfn * csf;
-		luminance_plines.bis  = csfn * icsf;
+		luminance_plines.bs   = unit3();
 
 		compute_error_squared_rgb_single_partition(
 		    pi, i, blk,
