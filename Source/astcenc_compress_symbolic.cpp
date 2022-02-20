@@ -586,7 +586,6 @@ static float compress_symbolic_block_for_partition_1plane(
  * @param      config                    The compressor configuration.
  * @param      bsd                       The block size information.
  * @param      blk                       The image block color data to compress.
- * @param      ewb                       The image block weighted error data.
  * @param      tune_errorval_threshold   The error value threshold.
  * @param      plane2_component          The component index for the second plane of weights.
  * @param[out] scb                       The symbolic compressed block output.
@@ -596,7 +595,6 @@ static float compress_symbolic_block_for_partition_2planes(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	float tune_errorval_threshold,
 	unsigned int plane2_component,
 	symbolic_compressed_block& scb,
@@ -808,8 +806,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_2planes(
-			    blk, ewb, bsd, di,
-			    weight_quant_mode, workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
+			    blk, bsd, di, weight_quant_mode,
+			    workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
 			    epm, rgbs_color, rgbo_color, plane2_component);
 
 			// Quantize the chosen color
@@ -922,35 +920,6 @@ static float compress_symbolic_block_for_partition_2planes(
 	}
 
 	return best_errorval_in_mode;
-}
-
-/**
- * @brief Create a per-texel and per-channel expansion of the error weights.
- *
- * This approach creates relatively large error block tables, but it allows a very flexible level of
- * control over how specific texels and channels are prioritized by the compressor.
- *
- * @param      ctx     The compressor context and configuration.
- * @param      bsd     The block size information.
- * @param[out] blk     The image block color data to compress.
- * @param[out] ewb     The image block weighted error data.
- *
- * @return Return the total error weight sum for all texels and channels.
- */
-static float prepare_error_weight_block(
-	const astcenc_context& ctx,
-	const block_size_descriptor& bsd,
-	image_block& blk,
-	error_weight_block& ewb
-) {
-	// TODO: Find a better home for this later and drop EWB completely ...
-	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
-	                             ctx.config.cw_g_weight,
-	                             ctx.config.cw_b_weight,
-	                             ctx.config.cw_a_weight);
-
-	ewb.block_error_weight_sum = blk.channel_weight * static_cast<float>(bsd.texel_count);
-	return hadd_s(ewb.block_error_weight_sum);
 }
 
 /**
@@ -1077,13 +1046,12 @@ static float prepare_block_statistics(
 /* See header for documentation. */
 void compress_block(
 	const astcenc_context& ctx,
-	image_block& blk,
+	const image_block& blk,
 	physical_compressed_block& pcb,
 	compression_working_buffers& tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
 	symbolic_compressed_block scb;
-	error_weight_block& ewb = tmpbuf.ewb;
 	const block_size_descriptor* bsd = ctx.bsd;
 	float lowest_correl;
 
@@ -1113,7 +1081,7 @@ void compress_block(
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
-	float error_weight_sum = prepare_error_weight_block(ctx, *bsd, blk, ewb);
+	float error_weight_sum = hadd_s(blk.channel_weight) * bsd->texel_count;
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
@@ -1157,7 +1125,7 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	float error_weight_sum = prepare_error_weight_block(ctx, *bsd, blk, ewb);
+	float error_weight_sum = hadd_s(blk.channel_weight) * bsd->texel_count;
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
@@ -1254,8 +1222,7 @@ void compress_block(
 		}
 
 		float errorval = compress_symbolic_block_for_partition_2planes(
-		    ctx.config, *bsd, blk, ewb,
-		    error_threshold * errorval_overshoot,
+		    ctx.config, *bsd, blk, error_threshold * errorval_overshoot,
 		    i, scb, tmpbuf);
 
 		// If attempting two planes is much worse than the best one plane result

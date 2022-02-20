@@ -931,39 +931,6 @@ struct image_block
 };
 
 /**
- * @brief Data structure representing per-texel and per-component error weights for a block.
- *
- * This structure stores a multiplier for the error weight to apply to each component when computing
- * block errors. This can be used as a general purpose technique to to amplify or diminish the
- * significance of texels and individual color components, based on what is being stored and the
- * compressor heuristics. It can be applied in many different ways, some of which are outlined in
- * the description below (this is not exhaustive).
- *
- * For blocks that span the edge of the texture, the weighting for texels outside of the texture
- * bounds can zeroed to maximize the quality of the texels inside the texture.
- *
- * For textures storing fewer than 4 components the weighting for color components that are unused
- * can be zeroed to maximize the quality of the components that are used. This is particularly
- * important for two component textures, which must be imported in LLLA format to match the two
- * component endpoint encoding. Without manual component weighting to correct significance the "L"
- * would be treated as three times more important than A because of the replication.
- *
- * For HDR textures we can use perceptual weighting which os approximately inverse to the luminance
- * of a texel.
- *
- * For normal maps we can use perceptual weighting which assigns higher weight to low-variability
- * regions than to high-variability regions, ensuring smooth surfaces don't pick up artifacts.
- *
- * For transparent texels we can multiply the RGB weights by the alpha value, ensuring that
- * the least transprent texels maintain the highest accuracy.
- */
-struct error_weight_block
-{
-	/** @brief Block error sum for whole block / 1 partition. */
-	vfloat4 block_error_weight_sum;
-};
-
-/**
  * @brief Data structure storing the color endpoints for a block.
  */
 struct endpoints
@@ -1036,9 +1003,6 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 
 	/** @brief Ideal decimated endpoints and weights for plane 2. */
 	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
-
-	/** @brief The error weight block for the current thread. */
-	error_weight_block ewb;
 
 	/**
 	 * @brief Decimated ideal weight values.
@@ -2028,7 +1992,6 @@ void recompute_ideal_colors_1plane(
  * recompute the ideal colors for a specific weight set.
  *
  * @param         blk                               The image block color data to compress.
- * @param         ewb                               The image block weighted error data.
  * @param         bsd                               The block_size descriptor.
  * @param         di                                The weight grid decimation table.
  * @param         weight_quant_mode                 The weight grid quantization level.
@@ -2041,7 +2004,6 @@ void recompute_ideal_colors_1plane(
  */
 void recompute_ideal_colors_2planes(
 	const image_block& blk,
-	const error_weight_block& ewb,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
 	int weight_quant_mode,
@@ -2113,7 +2075,7 @@ void compute_angular_endpoints_2planes(
  */
 void compress_block(
 	const astcenc_context& ctx,
-	image_block& blk,
+	const image_block& blk,
 	physical_compressed_block& pcb,
 	compression_working_buffers& tmpbuf);
 
