@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -60,7 +60,6 @@ static void merge_endpoints(
  * @param      decode_mode                       The decode mode (LDR, HDR).
  * @param      bsd                               The block size information.
  * @param      blk                               The image block color data to compress.
- * @param      ewb                               The image block weighted error data.
  * @param[out] scb                               The symbolic compressed block output.
  * @param[out] dec_weights_quant_pvalue_plane1   The weights for plane 1.
  * @param[out] dec_weights_quant_pvalue_plane2   The weights for plane 2, or @c nullptr if 1 plane.
@@ -69,7 +68,6 @@ static bool realign_weights(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	symbolic_compressed_block& scb,
 	uint8_t* dec_weights_quant_pvalue_plane1,
 	uint8_t* dec_weights_quant_pvalue_plane2
@@ -187,7 +185,7 @@ static bool realign_weights(
 				vfloat4 color = color_base + color_offset * plane_weight;
 
 				vfloat4 origcolor    = blk.texel(texel);
-				vfloat4 error_weight = ewb.error_weights[texel];
+				vfloat4 error_weight = blk.channel_weight;
 
 				vfloat4 colordiff       = color - origcolor;
 				vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
@@ -226,7 +224,6 @@ static bool realign_weights(
  * @param      config                    The compressor configuration.
  * @param      bsd                       The block size information.
  * @param      blk                       The image block color data to compress.
- * @param      ewb                       The image block weighted error data.
  * @param      only_always               True if we only use "always" percentile block modes.
  * @param      tune_errorval_threshold   The error value threshold.
  * @param      partition_count           The partition count.
@@ -238,7 +235,6 @@ static float compress_symbolic_block_for_partition_1plane(
 	const astcenc_config& config,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	bool only_always,
 	float tune_errorval_threshold,
 	unsigned int partition_count,
@@ -260,7 +256,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei = tmpbuf.ei1;
 	endpoints_and_weights *eix = tmpbuf.eix1;
-	compute_ideal_colors_and_weights_1plane(bsd, blk, ewb, pi, ei);
+	compute_ideal_colors_and_weights_1plane(bsd, blk, pi, ei);
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
@@ -382,7 +378,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    bsd, pi, blk, ewb, ei.ep, qwt_bitcounts, qwt_errors,
+	    bsd, pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
 
@@ -424,7 +420,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_1plane(
-			    blk, ewb, pi, di,
+			    blk, pi, di,
 			    weight_quant_mode, workscb.weights,
 			    eix[decimation_mode].ep, rgbs_colors, rgbo_colors);
 
@@ -498,7 +494,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			// Pre-realign test
 			if (l == 0)
 			{
-				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
 				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
@@ -536,11 +532,11 @@ static float compress_symbolic_block_for_partition_1plane(
 
 			// Perform a final pass over the weights to try to improve them.
 			bool adjustments = realign_weights(
-			    config.profile, bsd, blk, ewb, workscb,
+			    config.profile, bsd, blk, workscb,
 			    workscb.weights, nullptr);
 
 			// Post-realign test
-			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
@@ -615,7 +611,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	endpoints_and_weights& ei2 = tmpbuf.ei2;
 	endpoints_and_weights* eix1 = tmpbuf.eix1;
 	endpoints_and_weights* eix2 = tmpbuf.eix2;
-	compute_ideal_colors_and_weights_2planes(bsd, blk, ewb, plane2_component, ei1, ei2);
+	compute_ideal_colors_and_weights_2planes(bsd, blk, plane2_component, ei1, ei2);
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
@@ -766,7 +762,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    bsd, pi, blk, ewb, epm, qwt_bitcounts, qwt_errors,
+	    bsd, pi, blk, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod);
 
@@ -842,7 +838,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			// Pre-realign test
 			if (l == 0)
 			{
-				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
+				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
 				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
@@ -880,11 +876,11 @@ static float compress_symbolic_block_for_partition_2planes(
 
 			// Perform a final pass over the weights to try to improve them
 			bool adjustments = realign_weights(
-			    config.profile, bsd, blk, ewb, workscb,
+			    config.profile, bsd, blk, workscb,
 			    workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET);
 
 			// Post-realign test
-			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk, ewb);
+			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
@@ -929,241 +925,32 @@ static float compress_symbolic_block_for_partition_2planes(
 }
 
 /**
- * @brief Create a per-texel expansion of the error weights for deblocking.
- *
- * Deblockign works by assigning a higher error weight to blocks the closer they are the edge of the
- * block. The encourages the compressor to keep the periphery colors more accurate, which can help
- * reduce block artifacts when compressing gradients.
- *
- * @param[in,out] ctx   The context containing both deblog memory and config.
- */
-void expand_deblock_weights(
-	astcenc_context& ctx
-) {
-	unsigned int xdim = ctx.config.block_x;
-	unsigned int ydim = ctx.config.block_y;
-	unsigned int zdim = ctx.config.block_z;
-
-	float centerpos_x = static_cast<float>(xdim - 1) * 0.5f;
-	float centerpos_y = static_cast<float>(ydim - 1) * 0.5f;
-	float centerpos_z = static_cast<float>(zdim - 1) * 0.5f;
-	float *bef = ctx.deblock_weights;
-
-	for (unsigned int z = 0; z < zdim; z++)
-	{
-		for (unsigned int y = 0; y < ydim; y++)
-		{
-			for (unsigned int x = 0; x < xdim; x++)
-			{
-				float xdif = (static_cast<float>(x) - centerpos_x) / static_cast<float>(xdim);
-				float ydif = (static_cast<float>(y) - centerpos_y) / static_cast<float>(ydim);
-				float zdif = (static_cast<float>(z) - centerpos_z) / static_cast<float>(zdim);
-
-				float wdif = 0.36f;
-				float dist = astc::sqrt(xdif * xdif + ydif * ydif + zdif * zdif + wdif * wdif);
-				*bef = astc::pow(dist, ctx.config.b_deblock_weight);
-				bef++;
-			}
-		}
-	}
-}
-
-/**
  * @brief Create a per-texel and per-channel expansion of the error weights.
  *
  * This approach creates relatively large error block tables, but it allows a very flexible level of
  * control over how specific texels and channels are prioritized by the compressor.
  *
  * @param      ctx     The compressor context and configuration.
- * @param      image   The input image information.
  * @param      bsd     The block size information.
- * @param      blk     The image block color data to compress.
+ * @param[out] blk     The image block color data to compress.
  * @param[out] ewb     The image block weighted error data.
  *
  * @return Return the total error weight sum for all texels and channels.
  */
 static float prepare_error_weight_block(
 	const astcenc_context& ctx,
-	const astcenc_image& image,
 	const block_size_descriptor& bsd,
-	const image_block& blk,
+	image_block& blk,
 	error_weight_block& ewb
 ) {
-	unsigned int idx = 0;
-	bool any_mean_stdev_weight =
-	    ctx.config.v_rgb_mean != 0.0f || ctx.config.v_rgb_stdev != 0.0f || \
-	    ctx.config.v_a_mean != 0.0f || ctx.config.v_a_stdev != 0.0f;
+	// TODO: Find a better home for this later and drop EWB completely ...
+	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
+	                             ctx.config.cw_g_weight,
+	                             ctx.config.cw_b_weight,
+	                             ctx.config.cw_a_weight);
 
-	vfloat4 color_weights(ctx.config.cw_r_weight,
-	                      ctx.config.cw_g_weight,
-	                      ctx.config.cw_b_weight,
-	                      ctx.config.cw_a_weight);
-
-	// This works because HDR is imposed globally at compression time
-	unsigned int rgb_lns = blk.rgb_lns[0];
-	unsigned int a_lns = blk.alpha_lns[0];
-	vint4 use_lns(rgb_lns, rgb_lns, rgb_lns, a_lns);
-	vmask4 lns_mask = use_lns != vint4::zero();
-
-	promise(bsd.xdim > 0);
-	promise(bsd.ydim > 0);
-	promise(bsd.zdim > 0);
-
-	for (unsigned int z = 0; z < bsd.zdim; z++)
-	{
-		for (unsigned int y = 0; y < bsd.ydim; y++)
-		{
-			for (unsigned int x = 0; x < bsd.xdim; x++)
-			{
-				unsigned int xpos = x + blk.xpos;
-				unsigned int ypos = y + blk.ypos;
-				unsigned int zpos = z + blk.zpos;
-
-				if (xpos >= image.dim_x || ypos >= image.dim_y || zpos >= image.dim_z)
-				{
-					ewb.error_weights[idx] = vfloat4(1e-11f);
-				}
-				else
-				{
-					vfloat4 derv(65535.0f);
-
-					// Compute derivative if we have any use of LNS
-					if (any(lns_mask))
-					{
-						vfloat4 data = blk.texel(idx);
-						vint4 datai = lns_to_sf16(float_to_int(data));
-
-						vfloat4 dataf = float16_to_float(datai);
-						dataf = max(dataf, 6e-5f);
-
-						vfloat4 data_lns1 = dataf * 1.05f;
-						data_lns1 = float_to_lns(data_lns1);
-
-						vfloat4 data_lns2 = dataf;
-						data_lns2 = float_to_lns(data_lns2);
-
-						vfloat4 divisor_lns = dataf * 0.05f;
-
-						// Clamp derivatives between 1/32 and 2^25
-						float lo = 1.0f / 32.0f;
-						float hi = 33554432.0f;
-						vfloat4 derv_lns = clamp(lo, hi, (data_lns1 - data_lns2) / divisor_lns);
-						derv = select(derv, derv_lns, lns_mask);
-					}
-
-					// Compute error weight
-					vfloat4 error_weight(ctx.config.v_rgb_base,
-					                     ctx.config.v_rgb_base,
-					                     ctx.config.v_rgb_base,
-					                     ctx.config.v_a_base);
-
-					unsigned int ydt = image.dim_x;
-					unsigned int zdt = image.dim_x * image.dim_y;
-
-					if (any_mean_stdev_weight)
-					{
-						vfloat4 avg = ctx.input_averages[zpos * zdt + ypos * ydt + xpos];
-						avg = max(avg, 6e-5f);
-						avg = avg * avg;
-
-						vfloat4 variance = ctx.input_variances[zpos * zdt + ypos * ydt + xpos];
-						variance = variance * variance;
-
-						float favg = hadd_rgb_s(avg) * (1.0f / 3.0f);
-						float fvar = hadd_rgb_s(variance) * (1.0f / 3.0f);
-
-						float mixing = ctx.config.v_rgba_mean_stdev_mix;
-						avg.set_lane<0>(favg * mixing + avg.lane<0>() * (1.0f - mixing));
-						avg.set_lane<1>(favg * mixing + avg.lane<1>() * (1.0f - mixing));
-						avg.set_lane<2>(favg * mixing + avg.lane<2>() * (1.0f - mixing));
-
-						variance.set_lane<0>(fvar * mixing + variance.lane<0>() * (1.0f - mixing));
-						variance.set_lane<1>(fvar * mixing + variance.lane<1>() * (1.0f - mixing));
-						variance.set_lane<2>(fvar * mixing + variance.lane<2>() * (1.0f - mixing));
-
-						vfloat4 stdev = sqrt(max(variance, 0.0f));
-
-						vfloat4 scalea(ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_rgb_mean, ctx.config.v_a_mean);
-						avg = avg * scalea;
-
-						vfloat4 scales(ctx.config.v_rgb_stdev, ctx.config.v_rgb_stdev, ctx.config.v_rgb_stdev, ctx.config.v_a_stdev);
-						stdev = stdev * scales;
-
-						error_weight = error_weight + avg + stdev;
-						error_weight = 1.0f / error_weight;
-					}
-
-					if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
-					{
-						float alpha_scale;
-						if (ctx.config.a_scale_radius != 0)
-						{
-							alpha_scale = ctx.input_alpha_averages[zpos * zdt + ypos * ydt + xpos];
-						}
-						else
-						{
-							alpha_scale = blk.data_a[idx] * (1.0f / 65535.0f);
-						}
-
-						alpha_scale = astc::max(alpha_scale, 0.0001f);
-
-						alpha_scale *= alpha_scale;
-						error_weight.set_lane<0>(error_weight.lane<0>() * alpha_scale);
-						error_weight.set_lane<1>(error_weight.lane<1>() * alpha_scale);
-						error_weight.set_lane<2>(error_weight.lane<2>() * alpha_scale);
-					}
-
-					error_weight = error_weight * color_weights;
-					error_weight = error_weight * ctx.deblock_weights[idx];
-
-					// When we loaded the block to begin with, we applied a transfer function and
-					// computed the derivative of the transfer function. However, the error-weight
-					// computation so far is based on the original color values, not the
-					// transfer-function values. As such, we must multiply the error weights by the
-					// derivative of the inverse of the transfer function, which is equivalent to
-					// dividing by the derivative of the transfer function.
-
-					error_weight = error_weight / (derv * derv * 1e-10f);
-					ewb.error_weights[idx] = error_weight;
-				}
-				idx++;
-			}
-		}
-	}
-
-	// Small bias to avoid divide by zeros and NaN propagation later
-	vfloat4 error_weight_sum(1e-17f);
-
-	int texels_per_block = bsd.texel_count;
-	for (int i = 0; i < texels_per_block; i++)
-	{
-		error_weight_sum += ewb.error_weights[i];
-
-		float wr = ewb.error_weights[i].lane<0>();
-		float wg = ewb.error_weights[i].lane<1>();
-		float wb = ewb.error_weights[i].lane<2>();
-		float wa = ewb.error_weights[i].lane<3>();
-
-		ewb.texel_weight_r[i] = wr;
-		ewb.texel_weight_g[i] = wg;
-		ewb.texel_weight_b[i] = wb;
-		ewb.texel_weight_a[i] = wa;
-
-		ewb.texel_weight_rg[i] = (wr + wg) * 0.5f;
-		ewb.texel_weight_rb[i] = (wr + wb) * 0.5f;
-		ewb.texel_weight_gb[i] = (wg + wb) * 0.5f;
-
-		ewb.texel_weight_gba[i] = (wg + wb + wa) * 0.333333f;
-		ewb.texel_weight_rba[i] = (wr + wb + wa) * 0.333333f;
-		ewb.texel_weight_rga[i] = (wr + wg + wa) * 0.333333f;
-		ewb.texel_weight_rgb[i] = (wr + wg + wb) * 0.333333f;
-
-		ewb.texel_weight[i] = (wr + wg + wb + wa) * 0.25f;
-	}
-
-	ewb.block_error_weight_sum = error_weight_sum;
-
-	return hadd_s(error_weight_sum);
+	ewb.block_error_weight_sum = blk.channel_weight * static_cast<float>(bsd.texel_count);
+	return hadd_s(ewb.block_error_weight_sum);
 }
 
 /**
@@ -1171,14 +958,12 @@ static float prepare_error_weight_block(
  *
  * @param texels_per_block   The number of texels in a block.
  * @param blk                The image block color data to compress.
- * @param ewb                The image block weighted error data.
  *
  * @return Return the lowest correlation factor.
  */
 static float prepare_block_statistics(
 	int texels_per_block,
-	const image_block& blk,
-	const error_weight_block& ewb
+	const image_block& blk
 ) {
 	// Compute covariance matrix, as a collection of 10 scalars that form the upper-triangular row
 	// of the matrix. The matrix is symmetric, so this is all we need for this use case.
@@ -1202,7 +987,7 @@ static float prepare_block_statistics(
 	promise(texels_per_block > 0);
 	for (int i = 0; i < texels_per_block; i++)
 	{
-		float weight = ewb.texel_weight[i];
+		float weight = hadd_s(blk.channel_weight) / 4.0f;
 		assert(weight >= 0.0f);
 		weight_sum += weight;
 
@@ -1292,8 +1077,7 @@ static float prepare_block_statistics(
 /* See header for documentation. */
 void compress_block(
 	const astcenc_context& ctx,
-	const astcenc_image& input_image,
-	const image_block& blk,
+	image_block& blk,
 	physical_compressed_block& pcb,
 	compression_working_buffers& tmpbuf)
 {
@@ -1329,13 +1113,13 @@ void compress_block(
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
-	float error_weight_sum = prepare_error_weight_block(ctx, input_image, *bsd, blk, ewb);
+	float error_weight_sum = prepare_error_weight_block(ctx, *bsd, blk, ewb);
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
 	                      * block_is_la_scale;
 
-	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk);
 	trace_add_data("lowest_correl", lowest_correl);
 	trace_add_data("tune_error_threshold", error_threshold);
 #endif
@@ -1373,7 +1157,7 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	float error_weight_sum = prepare_error_weight_block(ctx, input_image, *bsd, blk, ewb);
+	float error_weight_sum = prepare_error_weight_block(ctx, *bsd, blk, ewb);
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
@@ -1424,7 +1208,7 @@ void compress_block(
 		trace_add_data("search_mode", i);
 
 		float errorval = compress_symbolic_block_for_partition_1plane(
-		    ctx.config, *bsd, blk, ewb, i == 0,
+		    ctx.config, *bsd, blk, i == 0,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf);
 
@@ -1437,7 +1221,7 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	lowest_correl = prepare_block_statistics(bsd->texel_count, blk, ewb);
+	lowest_correl = prepare_block_statistics(bsd->texel_count, blk);
 #endif
 
 	block_skip_two_plane = lowest_correl > ctx.config.tune_2_plane_early_out_limit_correlation;
@@ -1493,7 +1277,7 @@ void compress_block(
 	{
 		unsigned int partition_indices[2] { 0 };
 
-		find_best_partition_candidates(*bsd, blk, ewb, partition_count,
+		find_best_partition_candidates(*bsd, blk, partition_count,
 		                               ctx.config.tune_partition_index_limit,
 		                               partition_indices);
 
@@ -1506,7 +1290,7 @@ void compress_block(
 			trace_add_data("search_mode", i);
 
 			float errorval = compress_symbolic_block_for_partition_1plane(
-			    ctx.config, *bsd, blk, ewb, false,
+			    ctx.config, *bsd, blk, false,
 			    error_threshold * errorval_overshoot,
 			    partition_count, partition_indices[i],
 			    scb, tmpbuf);

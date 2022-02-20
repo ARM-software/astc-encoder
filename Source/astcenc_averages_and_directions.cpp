@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -28,18 +28,18 @@
 void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	// TODO: Candidate for 4-group counting
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
+
+	float texel_weight = hadd_s(blk.channel_weight) / 4.0f;
+	vfloat4 channel_weight = blk.channel_weight;
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
 
-		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
@@ -49,19 +49,14 @@ void compute_avgs_and_dirs_4_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			int iwt = texel_indexes[i];
-			float weight = ewb.texel_weight[iwt];
 			vfloat4 texel_datum = blk.texel(iwt);
-			vfloat4 error_weight = ewb.error_weights[iwt];
-
-			partition_weight += weight;
-			base_sum += texel_datum * weight;
-			error_sum += error_weight;
+			partition_weight += texel_weight;
+			base_sum += texel_datum * texel_weight;
 		}
 
-		error_sum = error_sum / static_cast<float>(texel_count);
+		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 2.0f;
-
-		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
+		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -76,9 +71,8 @@ void compute_avgs_and_dirs_4_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = ewb.texel_weight[iwt];
 			vfloat4 texel_datum = blk.texel(iwt);
-			texel_datum = (texel_datum - average) * weight;
+			texel_datum = (texel_datum - average) * texel_weight;
 
 			vfloat4 zero = vfloat4::zero();
 
@@ -128,50 +122,39 @@ void compute_avgs_and_dirs_4_comp(
 void compute_avgs_and_dirs_3_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int omitted_component,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	// TODO: Candidate for 4-group counting
-	const float *texel_weights = ewb.texel_weight_rgb;
+	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3.0f;
+	vfloat4 channel_weight = blk.channel_weight.swz<0, 1, 2>();
 
 	const float* data_vr = blk.data_r;
 	const float* data_vg = blk.data_g;
 	const float* data_vb = blk.data_b;
 
-	const float* error_vr = ewb.texel_weight_r;
-	const float* error_vg = ewb.texel_weight_g;
-	const float* error_vb = ewb.texel_weight_b;
-
 	if (omitted_component == 0)
 	{
-		texel_weights = ewb.texel_weight_gba;
+		texel_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>()) / 3.0f;
+		channel_weight = blk.channel_weight.swz<1, 2, 3>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
-
-		error_vr = ewb.texel_weight_g;
-		error_vg = ewb.texel_weight_b;
-		error_vb = ewb.texel_weight_a;
 	}
 	else if (omitted_component == 1)
 	{
-		texel_weights = ewb.texel_weight_rba;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>()) / 3.0f;
+		channel_weight = blk.channel_weight.swz<0, 2, 3>();
 
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
-
-		error_vg = ewb.texel_weight_b;
-		error_vb = ewb.texel_weight_a;
 	}
 	else if (omitted_component == 2)
 	{
-		texel_weights = ewb.texel_weight_rga;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>()) / 3.0f;
+		channel_weight = blk.channel_weight.swz<0, 1, 3>();
 
 		data_vb = blk.data_a;
-
-		error_vb = ewb.texel_weight_a;
 	}
 
 	unsigned int partition_count = pi.partition_count;
@@ -181,7 +164,6 @@ void compute_avgs_and_dirs_3_comp(
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
 
-		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
@@ -191,27 +173,19 @@ void compute_avgs_and_dirs_3_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = texel_weights[iwt];
 
-			vfloat4 texel_datum(data_vr[iwt],
-			                    data_vg[iwt],
-			                    data_vb[iwt],
-			                    0.0f);
+			vfloat4 texel_datum = vfloat3(data_vr[iwt],
+			                              data_vg[iwt],
+			                              data_vb[iwt]);
 
-			vfloat4 error_weight(error_vr[iwt],
-			                     error_vg[iwt],
-			                     error_vb[iwt],
-			                     0.0f);
-
-			partition_weight += weight;
-			base_sum += texel_datum * weight;
-			error_sum += error_weight;
+			partition_weight += texel_weight;
+			base_sum += texel_datum * texel_weight;
 		}
 
-		error_sum = error_sum / static_cast<float>(texel_count);
+		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
 
-		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
+		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -225,13 +199,12 @@ void compute_avgs_and_dirs_3_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = texel_weights[iwt];
 
 			vfloat4 texel_datum = vfloat3(data_vr[iwt],
 			                              data_vg[iwt],
 			                              data_vb[iwt]);
 
-			texel_datum = (texel_datum - average) * weight;
+			texel_datum = (texel_datum - average) * texel_weight;
 
 			vfloat4 zero = vfloat4::zero();
 
@@ -271,10 +244,11 @@ void compute_avgs_and_dirs_3_comp(
 void compute_avgs_and_dirs_3_comp_rgb(
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	// TODO: Candidate for 4-group counting
+	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3;
+	vfloat4 channel_weight = blk.channel_weight.swz<0, 1, 2>();
+
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
@@ -282,7 +256,6 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
 
-		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
@@ -292,24 +265,17 @@ void compute_avgs_and_dirs_3_comp_rgb(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = ewb.texel_weight_rgb[iwt];
 
 			vfloat4 texel_datum = blk.texel3(iwt);
 
-			vfloat4 error_weight(ewb.texel_weight_r[iwt],
-			                     ewb.texel_weight_g[iwt],
-			                     ewb.texel_weight_b[iwt],
-			                     0.0f);
-
-			partition_weight += weight;
-			base_sum += texel_datum * weight;
-			error_sum += error_weight;
+			partition_weight += texel_weight;
+			base_sum += texel_datum * texel_weight;
 		}
 
-		error_sum = error_sum / static_cast<float>(texel_count);
+		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
 
-		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
+		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -323,11 +289,10 @@ void compute_avgs_and_dirs_3_comp_rgb(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = ewb.texel_weight_rgb[iwt];
 
 			vfloat4 texel_datum = blk.texel3(iwt);
 
-			texel_datum = (texel_datum - average) * weight;
+			texel_datum = (texel_datum - average) * texel_weight;
 
 			vfloat4 zero = vfloat4::zero();
 
@@ -367,49 +332,41 @@ void compute_avgs_and_dirs_3_comp_rgb(
 void compute_avgs_and_dirs_2_comp(
 	const partition_info& pt,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	unsigned int component1,
 	unsigned int component2,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	const float *texel_weights;
+	float texel_weight;
+	vfloat4 channel_weight;
 
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
 
-	const float* error_vr = nullptr;
-	const float* error_vg = nullptr;
-
 	if (component1 == 0 && component2 == 1)
 	{
-		texel_weights = ewb.texel_weight_rg;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 1>()) / 2.0f;
+		channel_weight = blk.channel_weight.swz<0, 1>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
-
-		error_vr = ewb.texel_weight_r;
-		error_vg = ewb.texel_weight_g;
 	}
 	else if (component1 == 0 && component2 == 2)
 	{
-		texel_weights = ewb.texel_weight_rb;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 2>()) / 2.0f;
+		channel_weight = blk.channel_weight.swz<0, 2>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
-
-		error_vr = ewb.texel_weight_r;
-		error_vg = ewb.texel_weight_b;
 	}
 	else // (component1 == 1 && component2 == 2)
 	{
 		assert(component1 == 1 && component2 == 2);
-		texel_weights = ewb.texel_weight_gb;
+
+		texel_weight = hadd_s(blk.channel_weight.swz<1, 2>()) / 2.0f;
+		channel_weight = blk.channel_weight.swz<1, 2>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
-
-		error_vr = ewb.texel_weight_g;
-		error_vg = ewb.texel_weight_b;
 	}
 
 	unsigned int partition_count = pt.partition_count;
@@ -419,7 +376,6 @@ void compute_avgs_and_dirs_2_comp(
 	{
 		const uint8_t *texel_indexes = pt.texels_of_partition[partition];
 
-		vfloat4 error_sum = vfloat4::zero();
 		vfloat4 base_sum = vfloat4::zero();
 		float partition_weight = 0.0f;
 
@@ -429,19 +385,15 @@ void compute_avgs_and_dirs_2_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = texel_weights[iwt];
-			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]) * weight;
+			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]) * texel_weight;
 
-			vfloat4 error_weight = vfloat2(error_vr[iwt], error_vg[iwt]);
-
-			partition_weight += weight;
+			partition_weight += texel_weight;
 			base_sum += texel_datum;
-			error_sum += error_weight;
 		}
 
-		error_sum = error_sum / static_cast<float>(texel_count);
+		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.41421356f;
-		vfloat4 average = base_sum * (1.0f / astc::max(partition_weight, 1e-7f));
+		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
 
 
 		pm[partition].error_weight = error_sum;
@@ -455,9 +407,8 @@ void compute_avgs_and_dirs_2_comp(
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			float weight = texel_weights[iwt];
 			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]);
-			texel_datum = (texel_datum - average) * weight;
+			texel_datum = (texel_datum - average) * texel_weight;
 
 			vfloat4 zero = vfloat4::zero();
 
@@ -487,7 +438,6 @@ void compute_avgs_and_dirs_2_comp(
 void compute_error_squared_rgba(
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
 	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
 	float uncor_lengths[BLOCK_MAX_PARTITIONS],
@@ -553,6 +503,11 @@ void compute_error_squared_rgba(
 		vfloat samec_hiparamv(-1e10f);
 		vfloat4 samec_errorsumv = vfloat4::zero();
 
+		vfloat ew_r(blk.channel_weight.lane<0>());
+		vfloat ew_g(blk.channel_weight.lane<1>());
+		vfloat ew_b(blk.channel_weight.lane<2>());
+		vfloat ew_a(blk.channel_weight.lane<3>());
+
 		// This implementation over-shoots, but this is safe as we initialize the texel_indexes
 		// array to extend the last value. This means min/max are not impacted, but we need to mask
 		// out the dummy values when we compute the line weighting.
@@ -566,11 +521,6 @@ void compute_error_squared_rgba(
 			vfloat data_g = gatherf(blk.data_g, texel_idxs);
 			vfloat data_b = gatherf(blk.data_b, texel_idxs);
 			vfloat data_a = gatherf(blk.data_a, texel_idxs);
-
-			vfloat ew_r = gatherf(ewb.texel_weight_r, texel_idxs);
-			vfloat ew_g = gatherf(ewb.texel_weight_g, texel_idxs);
-			vfloat ew_b = gatherf(ewb.texel_weight_b, texel_idxs);
-			vfloat ew_a = gatherf(ewb.texel_weight_a, texel_idxs);
 
 			vfloat uncor_param  = (data_r * l_uncor_bs0)
 			                    + (data_g * l_uncor_bs1)
@@ -645,7 +595,6 @@ void compute_error_squared_rgba(
 void compute_error_squared_rgb(
 	const partition_info& pi,
 	const image_block& blk,
-	const error_weight_block& ewb,
 	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error
@@ -707,6 +656,10 @@ void compute_error_squared_rgb(
 		vfloat samec_hiparamv(-1e10f);
 		vfloat4 samec_errorsumv = vfloat4::zero();
 
+		vfloat ew_r(blk.channel_weight.lane<0>());
+		vfloat ew_g(blk.channel_weight.lane<1>());
+		vfloat ew_b(blk.channel_weight.lane<2>());
+
 		// This implementation over-shoots, but this is safe as we initialize the weights array
 		// to extend the last value. This means min/max are not impacted, but we need to mask
 		// out the dummy values when we compute the line weighting.
@@ -719,10 +672,6 @@ void compute_error_squared_rgb(
 			vfloat data_r = gatherf(blk.data_r, texel_idxs);
 			vfloat data_g = gatherf(blk.data_g, texel_idxs);
 			vfloat data_b = gatherf(blk.data_b, texel_idxs);
-
-			vfloat ew_r = gatherf(ewb.texel_weight_r, texel_idxs);
-			vfloat ew_g = gatherf(ewb.texel_weight_g, texel_idxs);
-			vfloat ew_b = gatherf(ewb.texel_weight_b, texel_idxs);
 
 			vfloat uncor_param  = (data_r * l_uncor_bs0)
 			                    + (data_g * l_uncor_bs1)
