@@ -94,7 +94,7 @@ updated `astcenc.h` header.
 Key for charts:
 
 * Color = block size (see legend).
-* Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
 
 **Relative performance vs 3.0 release:**
 
@@ -145,7 +145,7 @@ updated `astcenc.h` header.
 Key for charts:
 
 * Color = block size (see legend).
-* Letter = image format (N = normal map, G = greyscale, L = LDR, H = HDR).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
 
 **Absolute performance vs 2.5 release:**
 
