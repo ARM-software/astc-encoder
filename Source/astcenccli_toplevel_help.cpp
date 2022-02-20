@@ -161,14 +161,13 @@ COMPRESSION
        -mask
            The input texture is a mask texture with unrelated data stored
            in the various color components, so enable error heuristics that
-           aim to improve perceptual quality by minimizing the effect of
-           error cross-talk across the color components.
+           aim to improve quality by minimizing the effect of error
+           cross-talk across the color components.
 
        -normal
            The input texture is a three component linear LDR normal map
            storing unit length normals as (R=X, G=Y, B=Z). The output will
-           be a two component X+Y normal map stored as (RGB=X, A=Y),
-           optimized for angular error instead of simple PSNR. The Z
+           be a two component X+Y normal map stored as (RGB=X, A=Y). The Z
            component can be recovered programmatically in shader code by
            using the equation:
 
