@@ -186,6 +186,7 @@ void decompress_symbolic_block(
 	blk.zpos = zpos;
 
 	blk.data_min = vfloat4::zero();
+	blk.data_mean = vfloat4::zero();
 	blk.data_max = vfloat4::zero();
 	blk.grayscale = false;
 

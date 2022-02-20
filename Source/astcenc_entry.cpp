@@ -951,8 +951,9 @@ static void compress_image(
 			{
 				blk.origin_texel = vfloat4::zero();
 				blk.data_min = vfloat4::zero();
-				blk.data_max = blk.data_min;
-				blk.grayscale = false;
+				blk.data_mean = vfloat4::zero();
+				blk.data_max = vfloat4::zero();
+				blk.grayscale = true;
 			}
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
