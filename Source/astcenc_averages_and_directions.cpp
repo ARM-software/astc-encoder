@@ -30,33 +30,30 @@ void compute_avgs_and_dirs_4_comp(
 	const image_block& blk,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	int partition_count = pi.partition_count;
-	promise(partition_count > 0);
-
 	float texel_weight = hadd_s(blk.channel_weight) / 4.0f;
 	vfloat4 channel_weight = blk.channel_weight;
+
+	int partition_count = pi.partition_count;
+	promise(partition_count > 0);
 
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
-
-		vfloat4 base_sum = vfloat4::zero();
-		float partition_weight = 0.0f;
-
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
+
+		// TODO: Try gathers?
+		vfloat4 base_sum = vfloat4::zero();
 
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			int iwt = texel_indexes[i];
-			vfloat4 texel_datum = blk.texel(iwt);
-			partition_weight += texel_weight;
-			base_sum += texel_datum * texel_weight;
+			base_sum += blk.texel(iwt);
 		}
 
 		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 2.0f;
-		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
+		vfloat4 average = base_sum / static_cast<float>(texel_count);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -163,29 +160,20 @@ void compute_avgs_and_dirs_3_comp(
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
-
-		vfloat4 base_sum = vfloat4::zero();
-		float partition_weight = 0.0f;
-
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
+		vfloat4 base_sum = vfloat4::zero();
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-
-			vfloat4 texel_datum = vfloat3(data_vr[iwt],
-			                              data_vg[iwt],
-			                              data_vb[iwt]);
-
-			partition_weight += texel_weight;
-			base_sum += texel_datum * texel_weight;
+			base_sum += vfloat3(data_vr[iwt], data_vg[iwt], data_vb[iwt]);
 		}
 
 		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
 
-		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
+		vfloat4 average = base_sum / static_cast<float>(texel_count);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -255,27 +243,19 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
-
-		vfloat4 base_sum = vfloat4::zero();
-		float partition_weight = 0.0f;
-
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
+		vfloat4 base_sum = vfloat4::zero();
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-
-			vfloat4 texel_datum = blk.texel3(iwt);
-
-			partition_weight += texel_weight;
-			base_sum += texel_datum * texel_weight;
+			base_sum += blk.texel3(iwt);
 		}
 
 		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
-
-		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
+		vfloat4 average = base_sum / static_cast<float>(texel_count);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
@@ -375,26 +355,19 @@ void compute_avgs_and_dirs_2_comp(
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pt.texels_of_partition[partition];
-
-		vfloat4 base_sum = vfloat4::zero();
-		float partition_weight = 0.0f;
-
 		unsigned int texel_count = pt.partition_texel_count[partition];
 		promise(texel_count > 0);
 
+		vfloat4 base_sum = vfloat4::zero();
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]) * texel_weight;
-
-			partition_weight += texel_weight;
-			base_sum += texel_datum;
+			base_sum += vfloat2(data_vr[iwt], data_vg[iwt]);
 		}
 
 		vfloat4 error_sum = channel_weight;
 		vfloat4 csf = normalize(sqrt(error_sum)) * 1.41421356f;
-		vfloat4 average = base_sum / astc::max(partition_weight, 1e-7f);
-
+		vfloat4 average = base_sum / static_cast<float>(texel_count);
 
 		pm[partition].error_weight = error_sum;
 		pm[partition].avg = average * csf;
