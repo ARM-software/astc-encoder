@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -54,8 +54,8 @@ static void compute_ideal_colors_and_weights_1_comp(
 	float lowvalues[BLOCK_MAX_PARTITIONS] { 1e10f, 1e10f, 1e10f, 1e10f };
 	float highvalues[BLOCK_MAX_PARTITIONS] { -1e10f, -1e10f, -1e10f, -1e10f };
 
-	float partition_error_scale[BLOCK_MAX_PARTITIONS];
-	float linelengths_rcp[BLOCK_MAX_PARTITIONS];
+	float length_squared[BLOCK_MAX_PARTITIONS];
+	float scale[BLOCK_MAX_PARTITIONS];
 
 	const float *error_weights = nullptr;
 	const float* data_vr = nullptr;
@@ -96,36 +96,34 @@ static void compute_ideal_colors_and_weights_1_comp(
 	vmask4 sep_mask = vint4::lane_id() == vint4(component);
 	for (int i = 0; i < partition_count; i++)
 	{
-		float diff = highvalues[i] - lowvalues[i];
-
-		if (diff < 0)
+		float length = highvalues[i] - lowvalues[i];
+		if (length < 0.0f)
 		{
 			lowvalues[i] = 0.0f;
 			highvalues[i] = 0.0f;
 		}
 
-		diff = astc::max(diff, 1e-7f);
-
-		partition_error_scale[i] = diff * diff;
-		linelengths_rcp[i] = 1.0f / diff;
+		length = astc::max(length, 1e-7f);
+		length_squared[i] = length * length;
+		scale[i] = 1.0f / length;
 
 		ei.ep.endpt0[i] = select(blk.data_min, vfloat4(lowvalues[i]), sep_mask);
 		ei.ep.endpt1[i] = select(blk.data_max, vfloat4(highvalues[i]), sep_mask);
 	}
 
 	bool is_constant_wes = true;
-	float constant_wes = partition_error_scale[pi.partition_of_texel[0]] * error_weights[0];
+	float constant_wes = length_squared[pi.partition_of_texel[0]] * error_weights[0];
 
 	for (int i = 0; i < texel_count; i++)
 	{
 		float value = data_vr[i];
 		int partition = pi.partition_of_texel[i];
 		value -= lowvalues[partition];
-		value *= linelengths_rcp[partition];
+		value *= scale[partition];
 		value = astc::clamp1f(value);
 
 		ei.weights[i] = value;
-		ei.weight_error_scale[i] = partition_error_scale[partition] * error_weights[i];
+		ei.weight_error_scale[i] = length_squared[partition] * error_weights[i];
 		assert(!astc::isnan(ei.weight_error_scale[i]));
 
 		is_constant_wes = is_constant_wes && ei.weight_error_scale[i] == constant_wes;
@@ -188,6 +186,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	}
 	else // (component1 == 1 && component2 == 2)
 	{
+		assert(component1 == 1 && component2 == 2);
 		error_weights = ewb.texel_weight_gb;
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
@@ -242,7 +241,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 		if (length < 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
-			highparam[i] = 1e-7f;
+			highparam[i] = 0.0f;
 		}
 
 		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
@@ -403,7 +402,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)			// Case for when none of the texels had any weight
+		if (length < 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
 			highparam[i] = 1e-7f;
@@ -412,7 +411,6 @@ static void compute_ideal_colors_and_weights_3_comp(
 		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
 		// so set to a small value to avoid this problem.
 		length = astc::max(length, 1e-7f);
-
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
@@ -548,16 +546,15 @@ static void compute_ideal_colors_and_weights_4_comp(
 	for (int i = 0; i < partition_count; i++)
 	{
 		float length = highparam[i] - lowparam[i];
-		if (length < 0)
+		if (length < 0.0f) // Case for when none of the texels had any weight
 		{
 			lowparam[i] = 0.0f;
-			highparam[i] = 1e-7f;
+			highparam[i] = 0.0f;
 		}
 
 		// It is possible for a uniform-color partition to produce length=0; this causes NaN issues
 		// so set to a small value to avoid this problem.
 		length = astc::max(length, 1e-7f);
-
 		length_squared[i] = length * length;
 		scale[i] = 1.0f / length;
 
