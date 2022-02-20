@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -822,7 +822,7 @@ struct image_block
 	/** @brief The max component value of all texels in the block. */
 	vfloat4 data_max;
 
-	/** @brief Is this greyscale block where R == G == B for all texels? */
+	/** @brief Is this grayscale block where R == G == B for all texels? */
 	bool grayscale;
 
 	/** @brief Set to 1 if a texel is using HDR RGB endpoints (decompression only). */
