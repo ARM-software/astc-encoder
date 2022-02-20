@@ -458,15 +458,6 @@ static inline unsigned int get_quant_level(quant_method method)
  */
 struct partition_metrics
 {
-	/** @brief The sum of the error weights for texels in this partition. */
-	vfloat4 error_weight;
-
-	/** @brief The color scale factor used to weight color channels. */
-	vfloat4 color_scale;
-
-	/** @brief The 1 / color_scale used to avoid divisions. */
-	vfloat4 icolor_scale;
-
 	/** @brief The error-weighted average color in the partition. */
 	vfloat4 avg;
 

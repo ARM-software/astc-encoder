@@ -31,7 +31,6 @@ void compute_avgs_and_dirs_4_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight = hadd_s(blk.channel_weight) / 4.0f;
-	vfloat4 channel_weight = blk.channel_weight;
 
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -51,14 +50,8 @@ void compute_avgs_and_dirs_4_comp(
 			base_sum += blk.texel(iwt);
 		}
 
-		vfloat4 error_sum = channel_weight;
-		vfloat4 csf = normalize(sqrt(error_sum)) * 2.0f;
 		vfloat4 average = base_sum / static_cast<float>(texel_count);
-
-		pm[partition].error_weight = error_sum;
-		pm[partition].avg = average * csf;
-		pm[partition].color_scale = csf;
-		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
+		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -170,15 +163,8 @@ void compute_avgs_and_dirs_3_comp(
 			base_sum += vfloat3(data_vr[iwt], data_vg[iwt], data_vb[iwt]);
 		}
 
-		vfloat4 error_sum = channel_weight;
-		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
-
 		vfloat4 average = base_sum / static_cast<float>(texel_count);
-
-		pm[partition].error_weight = error_sum;
-		pm[partition].avg = average * csf;
-		pm[partition].color_scale = csf;
-		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
+		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -235,7 +221,6 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3;
-	vfloat4 channel_weight = blk.channel_weight.swz<0, 1, 2>();
 
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -253,14 +238,8 @@ void compute_avgs_and_dirs_3_comp_rgb(
 			base_sum += blk.texel3(iwt);
 		}
 
-		vfloat4 error_sum = channel_weight;
-		vfloat4 csf = normalize(sqrt(error_sum)) * 1.73205080f;
 		vfloat4 average = base_sum / static_cast<float>(texel_count);
-
-		pm[partition].error_weight = error_sum;
-		pm[partition].avg = average * csf;
-		pm[partition].color_scale = csf;
-		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
+		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -365,14 +344,8 @@ void compute_avgs_and_dirs_2_comp(
 			base_sum += vfloat2(data_vr[iwt], data_vg[iwt]);
 		}
 
-		vfloat4 error_sum = channel_weight;
-		vfloat4 csf = normalize(sqrt(error_sum)) * 1.41421356f;
 		vfloat4 average = base_sum / static_cast<float>(texel_count);
-
-		pm[partition].error_weight = error_sum;
-		pm[partition].avg = average * csf;
-		pm[partition].color_scale = csf;
-		pm[partition].icolor_scale = 1.0f / max(csf, 1e-7f);
+		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
 		vfloat4 sum_yp = vfloat4::zero();
@@ -451,22 +424,12 @@ void compute_error_squared_rgba(
 		vfloat l_uncor_amod2(l_uncor.amod.lane<2>());
 		vfloat l_uncor_amod3(l_uncor.amod.lane<3>());
 
-		vfloat l_uncor_bis0(l_uncor.bis.lane<0>());
-		vfloat l_uncor_bis1(l_uncor.bis.lane<1>());
-		vfloat l_uncor_bis2(l_uncor.bis.lane<2>());
-		vfloat l_uncor_bis3(l_uncor.bis.lane<3>());
-
 		vfloat l_samec_bs0(l_samec.bs.lane<0>());
 		vfloat l_samec_bs1(l_samec.bs.lane<1>());
 		vfloat l_samec_bs2(l_samec.bs.lane<2>());
 		vfloat l_samec_bs3(l_samec.bs.lane<3>());
 
 		assert(all(l_samec.amod == vfloat4(0.0f)));
-
-		vfloat l_samec_bis0(l_samec.bis.lane<0>());
-		vfloat l_samec_bis1(l_samec.bis.lane<1>());
-		vfloat l_samec_bis2(l_samec.bis.lane<2>());
-		vfloat l_samec_bis3(l_samec.bis.lane<3>());
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
@@ -504,13 +467,13 @@ void compute_error_squared_rgba(
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
 			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
-			                   + (uncor_param * l_uncor_bis0);
+			                   + (uncor_param * l_uncor_bs0);
 			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
-			                   + (uncor_param * l_uncor_bis1);
+			                   + (uncor_param * l_uncor_bs1);
 			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
-			                   + (uncor_param * l_uncor_bis2);
+			                   + (uncor_param * l_uncor_bs2);
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
-			                   + (uncor_param * l_uncor_bis3);
+			                   + (uncor_param * l_uncor_bs3);
 
 			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
 			                 + (ew_g * uncor_dist1 * uncor_dist1)
@@ -529,10 +492,10 @@ void compute_error_squared_rgba(
 			samec_loparamv = min(samec_param, samec_loparamv);
 			samec_hiparamv = max(samec_param, samec_hiparamv);
 
-			vfloat samec_dist0 = samec_param * l_samec_bis0 - data_r;
-			vfloat samec_dist1 = samec_param * l_samec_bis1 - data_g;
-			vfloat samec_dist2 = samec_param * l_samec_bis2 - data_b;
-			vfloat samec_dist3 = samec_param * l_samec_bis3 - data_a;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
 
 			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
 			                 + (ew_g * samec_dist1 * samec_dist1)
@@ -607,19 +570,11 @@ void compute_error_squared_rgb(
 		vfloat l_uncor_amod1(l_uncor.amod.lane<1>());
 		vfloat l_uncor_amod2(l_uncor.amod.lane<2>());
 
-		vfloat l_uncor_bis0(l_uncor.bis.lane<0>());
-		vfloat l_uncor_bis1(l_uncor.bis.lane<1>());
-		vfloat l_uncor_bis2(l_uncor.bis.lane<2>());
-
 		vfloat l_samec_bs0(l_samec.bs.lane<0>());
 		vfloat l_samec_bs1(l_samec.bs.lane<1>());
 		vfloat l_samec_bs2(l_samec.bs.lane<2>());
 
 		assert(all(l_samec.amod == vfloat4(0.0f)));
-
-		vfloat l_samec_bis0(l_samec.bis.lane<0>());
-		vfloat l_samec_bis1(l_samec.bis.lane<1>());
-		vfloat l_samec_bis2(l_samec.bis.lane<2>());
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
@@ -654,11 +609,11 @@ void compute_error_squared_rgb(
 			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
 
 			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
-			                   + (uncor_param * l_uncor_bis0);
+			                   + (uncor_param * l_uncor_bs0);
 			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
-			                   + (uncor_param * l_uncor_bis1);
+			                   + (uncor_param * l_uncor_bs1);
 			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
-			                   + (uncor_param * l_uncor_bis2);
+			                   + (uncor_param * l_uncor_bs2);
 
 			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
 			                 + (ew_g * uncor_dist1 * uncor_dist1)
@@ -676,9 +631,9 @@ void compute_error_squared_rgb(
 			samec_hiparamv = max(samec_param, samec_hiparamv);
 
 
-			vfloat samec_dist0 = samec_param * l_samec_bis0 - data_r;
-			vfloat samec_dist1 = samec_param * l_samec_bis1 - data_g;
-			vfloat samec_dist2 = samec_param * l_samec_bis2 - data_b;
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
 
 			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
 			                 + (ew_g * samec_dist1 * samec_dist1)
