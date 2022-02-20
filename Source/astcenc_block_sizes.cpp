@@ -854,6 +854,8 @@ static void construct_block_size_descriptor_2d(
 	unsigned int always_block_mode_count = 0;
 	unsigned int always_decimation_mode_count = 0;
 
+	float always_threshold = 0.0f;
+
 	// Iterate twice; first time keep the "always" blocks, second time keep the "non-always" blocks.
 	// This ensures that the always block modes and decimation modes are at the start of the list.
 	for (unsigned int j = 0; j < 2; j ++)
@@ -869,12 +871,12 @@ static void construct_block_size_descriptor_2d(
 			float percentile = percentiles[i];
 			bool selected = (percentile <= mode_cutoff) || !can_omit_modes;
 
-			if (j == 0 && percentile != 0.0f)
+			if (j == 0 && percentile > always_threshold)
 			{
 				continue;
 			}
 
-			if (j == 1 && percentile == 0.0f)
+			if (j == 1 && percentile <= always_threshold)
 			{
 				continue;
 			}
@@ -911,7 +913,7 @@ static void construct_block_size_descriptor_2d(
 				decimation_mode_index[y_weights * 16 + x_weights] = decimation_mode;
 
 	#if !defined(ASTCENC_DECOMPRESS_ONLY)
-				if (percentile == 0.0f)
+				if (percentile <= always_threshold)
 				{
 					always_decimation_mode_count++;
 				}
@@ -920,7 +922,7 @@ static void construct_block_size_descriptor_2d(
 
 	#if !defined(ASTCENC_DECOMPRESS_ONLY)
 			// Flatten the block mode heuristic into some precomputed flags
-			if (percentile == 0.0f)
+			if (percentile <= always_threshold)
 			{
 				always_block_mode_count++;
 				bsd.block_modes[packed_idx].percentile_hit = true;
