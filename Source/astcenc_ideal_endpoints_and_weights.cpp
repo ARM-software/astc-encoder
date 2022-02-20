@@ -1275,7 +1275,6 @@ void recompute_ideal_colors_1plane(
 /* See header for documentation. */
 void recompute_ideal_colors_2planes(
 	const image_block& blk,
-	const error_weight_block& ewb,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
 	int weight_quant_mode,
@@ -1303,7 +1302,7 @@ void recompute_ideal_colors_2planes(
 		dec_weights_quant_uvalue_plane2[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane2[i]] * (1.0f / 64.0f);
 	}
 
-	vfloat4 rgba_weight_sum = ewb.block_error_weight_sum;
+	vfloat4 rgba_weight_sum = blk.channel_weight * bsd.texel_count;
 
 	unsigned int texel_count = bsd.texel_count;
 	vfloat4 scale_direction = normalize(blk.data_mean.swz<0, 1, 2>());

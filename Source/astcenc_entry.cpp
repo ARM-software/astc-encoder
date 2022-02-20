@@ -891,6 +891,12 @@ static void compress_image(
 				blk.grayscale = true;
 			}
 
+			// Populate the block channel weights
+			blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
+			                             ctx.config.cw_g_weight,
+			                             ctx.config.cw_b_weight,
+			                             ctx.config.cw_a_weight);
+
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
 			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
