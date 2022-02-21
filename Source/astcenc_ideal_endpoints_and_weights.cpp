@@ -1149,13 +1149,13 @@ void recompute_ideal_colors_1plane(
 			weight_weight_sum_s += idx0;
 
 			vfloat4 color_idx(idx0);
-			vfloat4 cwprod = color_weight * rgba;
+			vfloat4 cwprod = rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y += cwiprod;
 			color_vec_x += cwprod - cwiprod;
 
-			scale_vec += vfloat2(om_idx0, idx0) * scale;
+			scale_vec += vfloat2(om_idx0, idx0) * (scale * ls_weight);
 		}
 
 		vfloat4 left_sum   = vfloat4(left_sum_s) * color_weight;
@@ -1164,8 +1164,10 @@ void recompute_ideal_colors_1plane(
 		vfloat4 lmrs_sum   = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
 		vfloat4 weight_weight_sum = vfloat4(weight_weight_sum_s) * color_weight;
-		scale_vec = scale_vec * ls_weight;
 		float psum = right_sum_s * hadd_rgb_s(color_weight);
+
+		color_vec_x = color_vec_x * color_weight;
+		color_vec_y = color_vec_y * color_weight;
 
 		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
@@ -1361,7 +1363,7 @@ void recompute_ideal_colors_2planes(
 
 		vfloat4 color_idx = select(vfloat4(idx0), vfloat4(idx1), p2_mask);
 
-		vfloat4 cwprod = color_weight * rgba;
+		vfloat4 cwprod = rgba;
 		vfloat4 cwiprod = cwprod * color_idx;
 
 		color_vec_y += cwiprod;
@@ -1380,10 +1382,15 @@ void recompute_ideal_colors_2planes(
 	vfloat4 middle2_sum = vfloat4(middle2_sum_s) * color_weight;
 	vfloat4 right2_sum  = vfloat4(right2_sum_s) * color_weight;
 
+	float psum = dot3_s(select(right1_sum, right2_sum, p2_mask), color_weight);
+
+	color_vec_x = color_vec_x * color_weight;
+	color_vec_y = color_vec_y * color_weight;
+
 	// Initialize the luminance and scale vectors with a reasonable default
 	float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 	scalediv = astc::clamp1f(scalediv);
-	float psum = dot3_s(select(right1_sum, right2_sum, p2_mask), color_weight);
+
 	vfloat4 sds = scale_dir * scale_max;
 
 	rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
