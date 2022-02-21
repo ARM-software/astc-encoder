@@ -116,7 +116,6 @@ void compute_avgs_and_dirs_3_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3.0f;
-	vfloat4 channel_weight = blk.channel_weight.swz<0, 1, 2>();
 
 	const float* data_vr = blk.data_r;
 	const float* data_vg = blk.data_g;
@@ -125,7 +124,6 @@ void compute_avgs_and_dirs_3_comp(
 	if (omitted_component == 0)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>()) / 3.0f;
-		channel_weight = blk.channel_weight.swz<1, 2, 3>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
@@ -134,7 +132,6 @@ void compute_avgs_and_dirs_3_comp(
 	else if (omitted_component == 1)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>()) / 3.0f;
-		channel_weight = blk.channel_weight.swz<0, 2, 3>();
 
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
@@ -142,7 +139,6 @@ void compute_avgs_and_dirs_3_comp(
 	else if (omitted_component == 2)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>()) / 3.0f;
-		channel_weight = blk.channel_weight.swz<0, 1, 3>();
 
 		data_vb = blk.data_a;
 	}
@@ -296,7 +292,6 @@ void compute_avgs_and_dirs_2_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight;
-	vfloat4 channel_weight;
 
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
@@ -304,7 +299,6 @@ void compute_avgs_and_dirs_2_comp(
 	if (component1 == 0 && component2 == 1)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 1>()) / 2.0f;
-		channel_weight = blk.channel_weight.swz<0, 1>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
@@ -312,7 +306,6 @@ void compute_avgs_and_dirs_2_comp(
 	else if (component1 == 0 && component2 == 2)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 2>()) / 2.0f;
-		channel_weight = blk.channel_weight.swz<0, 2>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
@@ -322,7 +315,6 @@ void compute_avgs_and_dirs_2_comp(
 		assert(component1 == 1 && component2 == 2);
 
 		texel_weight = hadd_s(blk.channel_weight.swz<1, 2>()) / 2.0f;
-		channel_weight = blk.channel_weight.swz<1, 2>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
