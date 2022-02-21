@@ -1113,7 +1113,7 @@ void recompute_ideal_colors_1plane(
 
 		vfloat4 scale_vec = vfloat4::zero();
 
-		vfloat4 weight_weight_sum = vfloat4(1e-17f);
+		float weight_weight_sum_s = 1e-17f;
 		float psum = 1e-17f;
 
 		vfloat4 color_weight = blk.channel_weight;
@@ -1147,6 +1147,7 @@ void recompute_ideal_colors_1plane(
 			left_sum_s   += om_idx0 * om_idx0;
 			middle_sum_s += om_idx0 * idx0;
 			right_sum_s  += idx0 * idx0;
+			weight_weight_sum_s += idx0;
 
 			vfloat4 color_idx(idx0);
 			vfloat4 cwprod = color_weight * rgba;
@@ -1155,8 +1156,7 @@ void recompute_ideal_colors_1plane(
 			color_vec_y += cwiprod;
 			color_vec_x += cwprod - cwiprod;
 
-			scale_vec += vfloat2(om_idx0, idx0) * (ls_weight * scale);
-			weight_weight_sum += color_weight * color_idx;
+			scale_vec += vfloat2(om_idx0, idx0) * scale;
 			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
@@ -1165,19 +1165,8 @@ void recompute_ideal_colors_1plane(
 		vfloat4 right_sum  = vfloat4(right_sum_s) * color_weight;
 		vfloat4 lmrs_sum   = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
-		// Calculations specific to mode #7, the HDR RGB-scale mode
-		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
-		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
-
-		vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum,
-		                                      rgbq_sum, psum);
-		rgbo_vectors[i] = rgbovec;
-
-		// We will occasionally get a failure due to the use of a singular (non-invertible) matrix.
-		// Record whether such a failure has taken place; if it did, compute rgbo_vectors[] with a
-		// different method later
-		float chkval = dot_s(rgbovec, rgbovec);
-		int rgbo_fail = chkval != chkval;
+		vfloat4 weight_weight_sum = vfloat4(weight_weight_sum_s) * color_weight;
+		scale_vec = scale_vec * ls_weight;
 
 		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
@@ -1238,8 +1227,16 @@ void recompute_ideal_colors_1plane(
 			}
 		}
 
-		// If the calculation of an RGB-offset vector failed, try to compute a value another way
-		if (rgbo_fail)
+		// Calculations specific to mode #7, the HDR RGB-scale mode
+		vfloat4 rgbq_sum = color_vec_x + color_vec_y;
+		rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
+
+		vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
+		rgbo_vectors[i] = rgbovec;
+
+		// We can get a failure due to the use of a singular (non-invertible) matrix
+		// If it failed, compute rgbo_vectors[] with a different method ...
+		if (astc::isnan(dot_s(rgbovec, rgbovec)))
 		{
 			vfloat4 v0 = ep.endpt0[i];
 			vfloat4 v1 = ep.endpt1[i];
@@ -1249,7 +1246,6 @@ void recompute_ideal_colors_1plane(
 
 			vfloat4 avg = (v0 + v1) * 0.5f;
 			vfloat4 ep0 = avg - vfloat4(avgdif) * 0.5f;
-
 			rgbo_vectors[i] = vfloat4(ep0.lane<0>(), ep0.lane<1>(), ep0.lane<2>(), avgdif);
 		}
 	}
@@ -1387,18 +1383,6 @@ void recompute_ideal_colors_2planes(
 	vfloat4 middle2_sum = vfloat4(middle2_sum_s) * color_weight;
 	vfloat4 right2_sum  = vfloat4(right2_sum_s) * color_weight;
 
-	// Calculations specific to mode #7, the HDR RGB-scale mode
-	vfloat4 rgbq_sum = color_vec_x + color_vec_y;
-	rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
-
-	rgbo_vector = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
-
-	// We will occasionally get a failure due to the use of a singular (non-invertible) matrix.
-	// Record whether such a failure has taken place; if it did, compute rgbo_vectors[] with a
-	// different method later
-	float chkval = dot_s(rgbo_vector, rgbo_vector);
-	int rgbo_fail = chkval != chkval;
-
 	// Initialize the luminance and scale vectors with a reasonable default
 	float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 	scalediv = astc::clamp1f(scalediv);
@@ -1498,8 +1482,15 @@ void recompute_ideal_colors_2planes(
 		ep.endpt1[0] = select(ep.endpt1[0], ep1, full_mask);
 	}
 
-	// If the calculation of an RGB-offset vector failed, try to compute a value another way
-	if (rgbo_fail)
+	// Calculations specific to mode #7, the HDR RGB-scale mode
+	vfloat4 rgbq_sum = color_vec_x + color_vec_y;
+	rgbq_sum.set_lane<3>(hadd_rgb_s(color_vec_y));
+
+	rgbo_vector = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
+
+	// We can get a failure due to the use of a singular (non-invertible) matrix
+	// If it failed, compute rgbo_vectors[] with a different method ...
+	if (astc::isnan(dot_s(rgbo_vector, rgbo_vector)))
 	{
 		vfloat4 v0 = ep.endpt0[0];
 		vfloat4 v1 = ep.endpt1[0];
