@@ -1114,7 +1114,6 @@ void recompute_ideal_colors_1plane(
 		vfloat4 scale_vec = vfloat4::zero();
 
 		float weight_weight_sum_s = 1e-17f;
-		float psum = 1e-17f;
 
 		vfloat4 color_weight = blk.channel_weight;
 		float ls_weight = hadd_rgb_s(color_weight);
@@ -1157,7 +1156,6 @@ void recompute_ideal_colors_1plane(
 			color_vec_x += cwprod - cwiprod;
 
 			scale_vec += vfloat2(om_idx0, idx0) * scale;
-			psum += dot3_s(color_weight * color_idx, color_idx);
 		}
 
 		vfloat4 left_sum   = vfloat4(left_sum_s) * color_weight;
@@ -1167,6 +1165,7 @@ void recompute_ideal_colors_1plane(
 
 		vfloat4 weight_weight_sum = vfloat4(weight_weight_sum_s) * color_weight;
 		scale_vec = scale_vec * ls_weight;
+		float psum = right_sum_s * hadd_rgb_s(color_weight);
 
 		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
@@ -1309,8 +1308,8 @@ void recompute_ideal_colors_2planes(
 	vfloat4 scale_vec = vfloat4::zero();
 
 	vfloat4 weight_weight_sum = vfloat4(1e-17f);
-	float psum = 1e-17f;
 
+	vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 	vfloat4 color_weight = blk.channel_weight;
 	float ls_weight = hadd_rgb_s(color_weight);
 
@@ -1360,7 +1359,6 @@ void recompute_ideal_colors_2planes(
 		middle2_sum_s += om_idx1 * idx1;
 		right2_sum_s  += idx1 * idx1;
 
-		vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 		vfloat4 color_idx = select(vfloat4(idx0), vfloat4(idx1), p2_mask);
 
 		vfloat4 cwprod = color_weight * rgba;
@@ -1371,7 +1369,6 @@ void recompute_ideal_colors_2planes(
 
 		scale_vec += vfloat2(om_idx0, idx0) * (ls_weight * scale);
 		weight_weight_sum += (color_weight * color_idx);
-		psum += dot3_s(color_weight * color_idx, color_idx);
 	}
 
 	vfloat4 left1_sum   = vfloat4(left1_sum_s) * color_weight;
@@ -1386,7 +1383,7 @@ void recompute_ideal_colors_2planes(
 	// Initialize the luminance and scale vectors with a reasonable default
 	float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
 	scalediv = astc::clamp1f(scalediv);
-
+	float psum = dot3_s(select(right1_sum, right2_sum, p2_mask), color_weight);
 	vfloat4 sds = scale_dir * scale_max;
 
 	rgbs_vector = vfloat4(sds.lane<0>(), sds.lane<1>(), sds.lane<2>(), scalediv);
@@ -1452,7 +1449,6 @@ void recompute_ideal_colors_2planes(
 		// the partition and use that as both endpoint colors
 		vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
 
-		vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 		vmask4 notnan_mask = avg == avg;
 		vmask4 full_mask = p2_mask & notnan_mask;
 
@@ -1473,7 +1469,6 @@ void recompute_ideal_colors_2planes(
 		vfloat4 ep0 = (right2_sum * color_vec_x - middle2_sum * color_vec_y) * color_rdet2;
 		vfloat4 ep1 = (left2_sum * color_vec_y - middle2_sum * color_vec_x) * color_rdet2;
 
-		vmask4 p2_mask = vint4::lane_id() == vint4(plane2_component);
 		vmask4 det_mask = abs(color_det2) > (color_mss2 * 1e-4f);
 		vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 		vmask4 full_mask = p2_mask & det_mask & notnan_mask;
