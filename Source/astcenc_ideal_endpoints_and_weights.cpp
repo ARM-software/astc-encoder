@@ -1053,6 +1053,7 @@ static inline vfloat4 compute_rgbo_vector(
 }
 
 /* See header for documentation. */
+// TODO: Specialize for 1 partition?
 void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
@@ -1081,24 +1082,21 @@ void recompute_ideal_colors_1plane(
 	for (int i = 0; i < partition_count; i++)
 	{
 		vfloat4 rgba_sum(1e-17f);
-		vfloat4 rgba_weight_sum(1e-17f);
 
 		unsigned int texel_count = pi.partition_texel_count[i];
 		const uint8_t *texel_indexes = pi.texels_of_partition[i];
 
+		// TODO: Use gathers?
 		promise(texel_count > 0);
 		for (unsigned int j = 0; j < texel_count; j++)
 		{
 			unsigned int tix = texel_indexes[j];
-
-			vfloat4 rgba = blk.texel(tix);
-			vfloat4 error_weight = blk.channel_weight;
-
-			rgba_sum += rgba * error_weight;
-			rgba_weight_sum += error_weight;
+			rgba_sum += blk.texel(tix);
 		}
 
-		vfloat4 scale_direction = normalize((rgba_sum * (1.0f / rgba_weight_sum)).swz<0, 1, 2>());
+		rgba_sum = rgba_sum * blk.channel_weight;
+		vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
+		vfloat4 scale_direction = normalize((rgba_sum / rgba_weight_sum).swz<0, 1, 2>());
 
 		float scale_max = 0.0f;
 		float scale_min = 1e10f;
