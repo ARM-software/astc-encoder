@@ -1282,9 +1282,8 @@ void recompute_ideal_colors_2planes(
 		dec_weights_quant_uvalue_plane2[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane2[i]] * (1.0f / 64.0f);
 	}
 
-	vfloat4 rgba_weight_sum = blk.channel_weight * bsd.texel_count;
-
 	unsigned int texel_count = bsd.texel_count;
+	vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
 	vfloat4 scale_dir = normalize(blk.data_mean.swz<0, 1, 2>());
 
 	float scale_max = 0.0f;
@@ -1399,7 +1398,7 @@ void recompute_ideal_colors_2planes(
 	{
 		// If all weights in the partition were equal, then just take average of all colors in
 		// the partition and use that as both endpoint colors
-		vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
+		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
 		vmask4 notnan_mask = avg == avg;
@@ -1454,7 +1453,7 @@ void recompute_ideal_colors_2planes(
 	{
 		// If all weights in the partition were equal, then just take average of all colors in
 		// the partition and use that as both endpoint colors
-		vfloat4 avg = (color_vec_x + color_vec_y) * (1.0f / rgba_weight_sum);
+		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 notnan_mask = avg == avg;
 		vmask4 full_mask = p2_mask & notnan_mask;
