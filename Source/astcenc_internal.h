@@ -66,6 +66,13 @@
 /* ============================================================================
   Constants
 ============================================================================ */
+#if !defined(ASTCENC_BLOCK_MAX_TEXELS)
+	#define ASTCENC_BLOCK_MAX_TEXELS 216 // A 3D 6x6x6 block
+#endif
+
+/** @brief The maximum number of texels a block can support (6x6x6 block). */
+static constexpr unsigned int BLOCK_MAX_TEXELS { ASTCENC_BLOCK_MAX_TEXELS };
+
 /** @brief The maximum number of components a block can support. */
 static constexpr unsigned int BLOCK_MAX_COMPONENTS { 4 };
 
@@ -74,9 +81,6 @@ static constexpr unsigned int BLOCK_MAX_PARTITIONS { 4 };
 
 /** @brief The number of partitionings, per partition count, suported by the ASTC format. */
 static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
-
-/** @brief The maximum number of texels a block can support (6x6x6 block). */
-static constexpr unsigned int BLOCK_MAX_TEXELS { 216 };
 
 /** @brief The maximum number of weights used during partition selection for texel clustering. */
 static constexpr uint8_t BLOCK_MAX_KMEANS_TEXELS { 64 };

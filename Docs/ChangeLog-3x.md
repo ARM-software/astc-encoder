@@ -16,6 +16,9 @@ The 3.4 release introduces another round of optimizations, removing a number
 of power-user configuration options to simplify the core compressor data path.
 
 * **General:**
+  * **Feature:** Builds now support `-DBLOCK_MAX_TEXELS=<count>` to allow a
+    compressor to support a subset of block sizes. This can reduce binary size
+    and runtime memory footprint, and improve performance.
   * **Feature:** The `-v` and `-va` options to set a per-texel error weight
     function are no longer supported.
   * **Feature:** The `-b` option to set a per-texel error weight boost for

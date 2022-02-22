@@ -89,6 +89,12 @@ macro(astcenc_set_properties NAME)
                 ASTCENC_DECOMPRESS_ONLY)
     endif()
 
+    if(${BLOCK_MAX_TEXELS})
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_BLOCK_MAX_TEXELS=${BLOCK_MAX_TEXELS})
+    endif()
+
     if(${DIAGNOSTICS})
         target_compile_definitions(${NAME}
             PUBLIC
