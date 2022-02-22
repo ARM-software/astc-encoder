@@ -44,6 +44,9 @@ updated `astcenc.h` header.
     returning the expected error color (magenta for LDR, NaN for HDR). Note
     that astcenc determines the error color to use based on the output image
     data type not the decoder profile.
+* **Binary releases:**
+  * **Improvement:** Windows binaries changed to use ClangCL 12.0, which gives
+    up to 10% performance improvement.
 
 ### Performance:
 
