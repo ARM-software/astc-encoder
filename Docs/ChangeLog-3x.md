@@ -16,6 +16,10 @@ The 3.4 release introduces another round of optimizations, removing a number
 of power-user configuration options to simplify the core compressor data path.
 
 * **General:**
+  * **Feature:** Many memory allocations have been moved off the stack into
+    dynamically allocated working memory. This significantly reduces the peak
+    stack usage, allowing the compressor to run in systems with 128KB stack
+    limits.
   * **Feature:** Builds now support `-DBLOCK_MAX_TEXELS=<count>` to allow a
     compressor to support a subset of block sizes. This can reduce binary size
     and runtime memory footprint, and improve performance.
