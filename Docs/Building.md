@@ -195,3 +195,7 @@ integrated into other projects using CMake. An example of the CMake integration
 and the codec API usage can be found in the `./Utils/Example` directory in the
 repository. See the [Example Readme](../Utils/Example/README.md) for more
 details.
+
+- - -
+
+_Copyright © 2019-2022, Arm Limited and contributors. All rights reserved._

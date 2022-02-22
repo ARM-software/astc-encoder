@@ -189,3 +189,7 @@ Key for charts:
 **Relative performance vs 2.5 release:**
 
 ![Relative scores 3.0 vs 2.5](./ChangeLogImg/relative-2.5-to-3.0.png)
+
+- - -
+
+_Copyright © 2021-2022, Arm Limited and contributors. All rights reserved._
