@@ -8,6 +8,39 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 
 <!-- ---------------------------------------------------------------------- -->
+## 3.4
+
+**Status:** In development
+
+The 3.4 release introduces another round of optimizations, removing a number
+of power-user configuration options to simplify the core compressor data path.
+
+* **General:**
+  * **Feature:** The `-v` and `-va` options to set a per-texel error weight
+    function are no longer supported.
+  * **Feature:** The `-b` option to set a per-texel error weight boost for
+    block border texels is no longer supported.
+  * **Feature:** The `-a` option to set a per-texel error weight based on texel
+    alpha value is no longer supported as an error weighting tool, but is still
+    supported for providing sprite-sheet RDO.
+  * **Feature:** The `-mask` option to set an error metric for mask map
+    textures is still supported, but is currently a no-op in the compressor.
+  * **Feature:** The `-perceptual` option to set a perceptual error metric is
+    still supported, but is currently a no-op in the compressor for mask map
+    and normal map textures.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 3.3 release:**
+
+Pending ...
+
+<!-- ---------------------------------------------------------------------- -->
 ## 3.3
 
 **Status:** November 2021
@@ -46,12 +79,11 @@ performance differences are expected.
 
 **Status:** July 2021
 
-The 3.1 release is the second release in the 3.x series. This release gives
-another performance boost, typically between 5 and 20% faster than the 3.0
-release, as well as further incremental improvements to image quality. A number
-of build system improvements make astcenc easier and faster to integrate into
-other projects as a library, including support for building universal binaries
-on macOS. Full change list is shown below.
+The 3.1 release gives another performance boost, typically between 5 and 20%
+faster than the 3.0 release, as well as further incremental improvements to
+image quality. A number of build system improvements make astcenc easier and
+faster to integrate into other projects as a library, including support for
+building universal binaries on macOS. Full change list is shown below.
 
 Reminder for users of the library interface - the API is not designed to be
 binary compatible across versions, and this release is not compatible with
