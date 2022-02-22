@@ -300,22 +300,21 @@ static float compress_symbolic_block_for_partition_1plane(
 	float min_wt_cutoff = hmin_s(min_ep);
 
 	// For each mode, use the angular method to compute a shift
-	float weight_low_value[WEIGHTS_MAX_BLOCK_MODES];
-	float weight_high_value[WEIGHTS_MAX_BLOCK_MODES];
-
 	compute_angular_endpoints_1plane(
 	    config.tune_low_weight_count_limit,
 	    only_always, bsd,
 	    dec_weights_ideal_value, dec_weights_ideal_sig,
-	    weight_low_value, weight_high_value);
+	    tmpbuf);
+
+	float* weight_low_value = tmpbuf.weight_low_value1;
+	float* weight_high_value = tmpbuf.weight_high_value1;
+	int* qwt_bitcounts = tmpbuf.qwt_bitcounts;
+	float* qwt_errors = tmpbuf.qwt_errors;
 
 	// For each mode (which specifies a decimation and a quantization):
 	//     * Compute number of bits needed for the quantized weights
 	//     * Generate an optimized set of quantized weights
 	//     * Compute quantization errors for the mode
-
-	int qwt_bitcounts[WEIGHTS_MAX_BLOCK_MODES];
-	float qwt_errors[WEIGHTS_MAX_BLOCK_MODES];
 
 	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
@@ -380,7 +379,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
-	    color_quant_level, color_quant_level_mod);
+	    color_quant_level, color_quant_level_mod, tmpbuf);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best
 	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
@@ -667,24 +666,24 @@ static float compress_symbolic_block_for_partition_2planes(
 	// Set the minwt2 to the plane2 component min in ep2
 	float min_wt_cutoff2 = hmin_s(select(err_max, min_ep2, err_mask));
 
-	float weight_low_value1[WEIGHTS_MAX_BLOCK_MODES];
-	float weight_high_value1[WEIGHTS_MAX_BLOCK_MODES];
-	float weight_low_value2[WEIGHTS_MAX_BLOCK_MODES];
-	float weight_high_value2[WEIGHTS_MAX_BLOCK_MODES];
-
 	compute_angular_endpoints_2planes(
 	    config.tune_low_weight_count_limit,
 	    bsd, dec_weights_ideal_value, dec_weights_ideal_sig,
-	    weight_low_value1, weight_high_value1,
-	    weight_low_value2, weight_high_value2);
+	    tmpbuf);
 
 	// For each mode (which specifies a decimation and a quantization):
 	//     * Compute number of bits needed for the quantized weights
 	//     * Generate an optimized set of quantized weights
 	//     * Compute quantization errors for the mode
 
-	int qwt_bitcounts[WEIGHTS_MAX_BLOCK_MODES];
-	float qwt_errors[WEIGHTS_MAX_BLOCK_MODES];
+	float* weight_low_value1 = tmpbuf.weight_low_value1;
+	float* weight_high_value1 = tmpbuf.weight_high_value1;
+	float* weight_low_value2 = tmpbuf.weight_low_value2;
+	float* weight_high_value2 = tmpbuf.weight_high_value2;
+
+	int* qwt_bitcounts = tmpbuf.qwt_bitcounts;
+	float* qwt_errors = tmpbuf.qwt_errors;
+
 	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
@@ -762,7 +761,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
-	    color_quant_level, color_quant_level_mod);
+	    color_quant_level, color_quant_level_mod, tmpbuf);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best
 	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
