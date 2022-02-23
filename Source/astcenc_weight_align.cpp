@@ -111,7 +111,7 @@ static void compute_angular_offsets(
 	promise(weight_count > 0);
 	promise(max_angular_steps > 0);
 
-	alignas(ASTCENC_VECALIGN) int isamplev[BLOCK_MAX_WEIGHTS] { 0 };
+	alignas(ASTCENC_VECALIGN) int isamplev[BLOCK_MAX_WEIGHTS];
 
 	// Precompute isample; arrays are always allocated 64 elements long
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
