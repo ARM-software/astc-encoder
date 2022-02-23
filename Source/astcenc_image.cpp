@@ -318,9 +318,9 @@ void write_image_block(
 				{
 					vint4 colori = vint4::zero();
 
-					if (blk.data_r[idx] == std::numeric_limits<float>::quiet_NaN())
+					// Errors are NaN encoded - convert to magenta error color
+					if (blk.data_r[idx] != blk.data_r[idx])
 					{
-						// Can't display NaN - show magenta error color
 						colori = vint4(0xFF, 0x00, 0xFF, 0xFF);
 					}
 					else if (needs_swz)
@@ -374,7 +374,8 @@ void write_image_block(
 				{
 					vint4 color;
 
-					if (blk.data_r[idx] == std::numeric_limits<float>::quiet_NaN())
+					// Errors are NaN encoded - convert to FP16 NaN
+					if (blk.data_r[idx] != blk.data_r[idx])
 					{
 						color = vint4(0xFFFF);
 					}
@@ -433,7 +434,8 @@ void write_image_block(
 				{
 					vfloat4 color = blk.texel(idx);
 
-					if (color.lane<0>() == std::numeric_limits<float>::quiet_NaN())
+					// Errors are NaN encoded - convert to FP32 NaN
+					if (color.lane<0>() != color.lane<0>())
 					{
 						color = vfloat4(std::numeric_limits<float>::quiet_NaN());
 					}

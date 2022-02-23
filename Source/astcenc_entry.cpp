@@ -1119,7 +1119,7 @@ astcenc_error astcenc_decompress_image(
 			                          scb, blk);
 
 			write_image_block(image_out, blk, *ctx->bsd,
-			                 x * block_x, y * block_y, z * block_z, *swizzle);
+			                  x * block_x, y * block_y, z * block_z, *swizzle);
 		}
 
 		ctx->manage_decompress.complete_task_assignment(count);
