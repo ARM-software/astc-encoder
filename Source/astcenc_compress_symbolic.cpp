@@ -128,52 +128,46 @@ static bool realign_weights_undecimated(
 
 		// For each weight compute previous, current, and next errors
 		promise(bsd.texel_count > 0);
-		for (unsigned int we_idx = 0; we_idx < bsd.texel_count; we_idx++)
+		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			unsigned int texel = we_idx;  // Undecimated, so 1:1 mapping
-			unsigned int uqw = qat->unquantized_value[dec_weights_quant_pvalue[we_idx]];
-			unsigned int uqwf = static_cast<float>(uqw);
+			unsigned int uqw = qat->unquantized_value[dec_weights_quant_pvalue[texel]];
 
 			uint32_t prev_and_next = qat->prev_next_values[uqw];
-			unsigned int prev_wt_uq = prev_and_next & 0xFF;
-			unsigned int next_wt_uq = (prev_and_next >> 8) & 0xFF;
-
-			float uqw_next_dif = static_cast<float>(next_wt_uq) - uqwf;
-			float uqw_prev_dif = static_cast<float>(prev_wt_uq) - uqwf;
+			int prev_wt_uq = prev_and_next & 0xFF;
+			int next_wt_uq = (prev_and_next >> 8) & 0xFF;
 
 			// Interpolate the colors to create the diffs
 			unsigned int partition = pi.partition_of_texel[texel];
 
-			float weight_base = uqwf + 0.5f;
-			float plane_weight = astc::flt_rd(weight_base);
-			float plane_up_weight = astc::flt_rd(weight_base + uqw_next_dif) - plane_weight;
-			float plane_down_weight = astc::flt_rd(weight_base + uqw_prev_dif) - plane_weight;
+			int plane_weight = uqw;
+			int plane_up_weight = next_wt_uq - uqw;
+			int plane_down_weight = prev_wt_uq - uqw;
 
 			vfloat4 color_offset = offset[partition];
 			vfloat4 color_base   = endpnt0f[partition];
 
 			vfloat4 color = color_base + color_offset * plane_weight;
 
-			vfloat4 origcolor    = blk.texel(texel);
+			vfloat4 orig_color   = blk.texel(texel);
 			vfloat4 error_weight = blk.channel_weight;
 
-			vfloat4 colordiff       = color - origcolor;
-			vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
-			vfloat4 color_down_diff = colordiff + color_offset * plane_down_weight;
+			vfloat4 color_diff      = color - orig_color;
+			vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
+			vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
 
-			float current_error = dot_s(colordiff       * colordiff,       error_weight);
+			float current_error = dot_s(color_diff      * color_diff,      error_weight);
 			float up_error      = dot_s(color_up_diff   * color_up_diff,   error_weight);
 			float down_error    = dot_s(color_down_diff * color_down_diff, error_weight);
 
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error))
 			{
-				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[texel] = (uint8_t)((prev_and_next >> 24) & 0xFF);
 				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
-				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[texel] = (uint8_t)((prev_and_next >> 16) & 0xFF);
 				adjustments = true;
 			}
 		}
@@ -325,13 +319,13 @@ static bool realign_weights_generic(
 
 				vfloat4 color = color_base + color_offset * plane_weight;
 
-				vfloat4 origcolor    = blk.texel(texel);
+				vfloat4 orig_color    = blk.texel(texel);
 				vfloat4 error_weight = blk.channel_weight;
 
-				vfloat4 colordiff       = color - origcolor;
-				vfloat4 color_up_diff   = colordiff + color_offset * plane_up_weight;
-				vfloat4 color_down_diff = colordiff + color_offset * plane_down_weight;
-				current_error += dot_s(colordiff       * colordiff,       error_weight);
+				vfloat4 color_diff      = color - orig_color;
+				vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
+				vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
+				current_error += dot_s(color_diff      * color_diff,      error_weight);
 				up_error      += dot_s(color_up_diff   * color_up_diff,   error_weight);
 				down_error    += dot_s(color_down_diff * color_down_diff, error_weight);
 			}
