@@ -307,18 +307,18 @@ static bool realign_weights_generic(
 					twf0 = texel_weights_float[0];
 
 					weight_base =
-						((uqwf                              * twf0
+						  (uqwf                             * twf0
 						 + uq_pl_weightsf[texel_weights[1]] * texel_weights_float[1])
 						+ (uq_pl_weightsf[texel_weights[2]] * texel_weights_float[2]
-						 + uq_pl_weightsf[texel_weights[3]] * texel_weights_float[3]));
+						 + uq_pl_weightsf[texel_weights[3]] * texel_weights_float[3]);
 				}
 
 				unsigned int partition = pi.partition_of_texel[texel];
 
 				weight_base = weight_base + 0.5f;
 				float plane_weight = astc::flt_rd(weight_base);
-				float plane_up_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_next_dif) * twf0) - plane_weight;
-				float plane_down_weight = astc::flt_rd(weight_base + static_cast<float>(uqw_prev_dif) * twf0) - plane_weight;
+				float plane_up_weight = astc::flt_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
+				float plane_down_weight = astc::flt_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
 
 				vfloat4 color_offset = offset[partition];
 				vfloat4 color_base   = endpnt0f[partition];
@@ -360,7 +360,6 @@ static bool realign_weights_generic(
 
 	return adjustments;
 }
-
 
 /**
  * @brief Compress a block using a chosen partitioning and 1 plane of weights.
