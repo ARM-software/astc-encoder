@@ -762,7 +762,7 @@ void compute_ideal_weights_for_decimation(
 ) {
 	unsigned int texel_count = di.texel_count;
 	unsigned int weight_count = di.weight_count;
-
+	bool is_direct = texel_count == weight_count;
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
@@ -774,42 +774,34 @@ void compute_ideal_weights_for_decimation(
 	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
 	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
 	// arrays always contain space for 64 elements
-	unsigned int weight_count_simd = round_up_to_simd_multiple_vla(weight_count);
-	for (unsigned int i = weight_count; i < weight_count_simd; i++)
-	{
-		dec_weight_ideal_value[i] = 0.0f;
-	}
+	unsigned int prev_weight_count_simd = round_down_to_simd_multiple_vla(weight_count - 1);
+	storea(vfloat::zero(), dec_weight_ideal_value + prev_weight_count_simd);
 
 	// If we have a 1:1 mapping just shortcut the computation - clone the weights into both the
 	// weight set and the output epw copy.
 
 	// Transfer enough to also copy zero initialized SIMD over-fetch region
 	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	if (texel_count == weight_count)
+	for (unsigned int i = 0; i < texel_count_simd; i +=  ASTCENC_SIMD_WIDTH)
 	{
-		for (unsigned int i = 0; i < texel_count_simd; i++)
+		vfloat weight(eai_in.weights + i);
+		vfloat weight_error_scale(eai_in.weight_error_scale + i);
+
+		storea(weight, eai_out.weights + i);
+		storea(weight_error_scale, eai_out.weight_error_scale + i);
+
+		// Direct 1:1 weight mapping, so clone weights directly
+		// TODO: Can we just avoid the copy for direct cases?
+		if (is_direct)
 		{
-			// Assert it's an identity map for valid texels, and last valid value for any overspill
-			assert(((i < texel_count) && (i == di.weight_texel[0][i])) ||
-			       ((i >= texel_count) && (texel_count - 1 == di.weight_texel[0][i])));
-			dec_weight_ideal_value[i] = eai_in.weights[i];
-			dec_weight_ideal_sig[i] = eai_in.weight_error_scale[i];
-
-			eai_out.weights[i] = eai_in.weights[i];
-			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
+			storea(weight, dec_weight_ideal_value + i);
+			storea(weight_error_scale, dec_weight_ideal_sig + i);
 		}
-
-		return;
 	}
-	// If we don't have a 1:1 mapping just clone the weights into the output epw copy and then do
-	// the full algorithm to decimate weights.
-	else
+
+	if (is_direct)
 	{
-		for (unsigned int i = 0; i < texel_count_simd; i++)
-		{
-			eai_out.weights[i] = eai_in.weights[i];
-			eai_out.weight_error_scale[i] = eai_in.weight_error_scale[i];
-		}
+		return;
 	}
 
 	// Otherwise compute an estimate and perform single refinement iteration
