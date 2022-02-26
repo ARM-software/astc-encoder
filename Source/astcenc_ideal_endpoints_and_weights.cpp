@@ -826,14 +826,8 @@ void compute_ideal_weights_for_decimation(
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
-			// Not all lanes may actually use j texels, so mask out if idle
-			vmask active = weight_texel_count > vint(j);
-
 			vint texel(di.weight_texel[j] + i);
-			texel = select(vint::zero(), texel, active);
-
 			vfloat weight = loada(di.weights_flt[j] + i);
-			weight = select(vfloat::zero(), weight, active);
 
 			if (!constant_wes)
 			{
@@ -880,14 +874,8 @@ void compute_ideal_weights_for_decimation(
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
-			// Not all lanes may actually use j texels, so mask out if idle
-			vmask active = weight_texel_count > vint(j);
-
 			vint texel(di.weight_texel[j] + i);
-			texel = select(vint::zero(), texel, active);
-
 			vfloat contrib_weight = loada(di.weights_flt[j] + i);
-			contrib_weight = select(vfloat::zero(), contrib_weight, active);
 
 			if (!constant_wes)
 			{
@@ -901,7 +889,6 @@ void compute_ideal_weights_for_decimation(
 			error_change0 += contrib_weight * scale;
 			error_change1 += (old_weight - ideal_weight) * scale;
 		}
-
 
 		vfloat step = (error_change1 * chd_scale) / error_change0;
 		step = clamp(-stepsize, stepsize, step);
