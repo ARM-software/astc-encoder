@@ -309,17 +309,21 @@ static bool realign_weights_generic(
 
 				unsigned int partition = pi.partition_of_texel[texel];
 
-				weight_base = weight_base + 0.5f;
-				float plane_weight = astc::flt_rd(weight_base);
-				float plane_up_weight = astc::flt_rd(weight_base + uqw_next_dif * twf0) - plane_weight;
-				float plane_down_weight = astc::flt_rd(weight_base + uqw_prev_dif * twf0) - plane_weight;
+				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
+				// float plane_weight = astc::flt_rd(weight_base + 0.5f);
+				// float plane_up_weight = astc::flt_rd(weight_base + 0.5f + uqw_next_dif * twf0) - plane_weight;
+				// float plane_down_weight = astc::flt_rd(weight_base + 0.5f + uqw_prev_dif * twf0) - plane_weight;
+
+				float plane_weight = weight_base;
+				float plane_up_weight = weight_base + uqw_next_dif * twf0 - plane_weight;
+				float plane_down_weight = weight_base + uqw_prev_dif * twf0 - plane_weight;
 
 				vfloat4 color_offset = offset[partition];
 				vfloat4 color_base   = endpnt0f[partition];
 
 				vfloat4 color = color_base + color_offset * plane_weight;
 
-				vfloat4 orig_color    = blk.texel(texel);
+				vfloat4 orig_color   = blk.texel(texel);
 				vfloat4 error_weight = blk.channel_weight;
 
 				vfloat4 color_diff      = color - orig_color;
