@@ -397,7 +397,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float *dec_weights_ideal_sig = tmpbuf.dec_weights_ideal_sig;
 	float *dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
@@ -419,8 +418,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		    ei,
 		    eix[i],
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS,
-		    dec_weights_ideal_sig + i * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
 	}
 
 	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
@@ -440,7 +438,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	compute_angular_endpoints_1plane(
 	    config.tune_low_weight_count_limit,
 	    only_always, bsd,
-	    dec_weights_ideal_value, dec_weights_ideal_sig,
+	    dec_weights_ideal_value,
 	    tmpbuf);
 
 	float* weight_low_value = tmpbuf.weight_low_value1;
@@ -758,7 +756,6 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float *dec_weights_ideal_sig = tmpbuf.dec_weights_ideal_sig;
 	float *dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
@@ -777,15 +774,13 @@ static float compress_symbolic_block_for_partition_2planes(
 		    ei1,
 		    eix1[i],
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS,
-		    dec_weights_ideal_sig + i * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
 
 		compute_ideal_weights_for_decimation(
 		    ei2,
 		    eix2[i],
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
-		    dec_weights_ideal_sig +  i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
+		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
 	}
 
 	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
@@ -814,7 +809,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	compute_angular_endpoints_2planes(
 	    config.tune_low_weight_count_limit,
-	    bsd, dec_weights_ideal_value, dec_weights_ideal_sig,
+	    bsd, dec_weights_ideal_value,
 	    tmpbuf);
 
 	// For each mode (which specifies a decimation and a quantization):

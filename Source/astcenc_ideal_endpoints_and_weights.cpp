@@ -757,8 +757,7 @@ void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
-	float* dec_weight_ideal_value,
-	float* dec_weight_ideal_sig
+	float* dec_weight_ideal_value
 ) {
 	unsigned int texel_count = di.texel_count;
 	unsigned int weight_count = di.weight_count;
@@ -795,7 +794,6 @@ void compute_ideal_weights_for_decimation(
 		if (is_direct)
 		{
 			storea(weight, dec_weight_ideal_value + i);
-			storea(weight_error_scale, dec_weight_ideal_sig + i);
 		}
 	}
 
@@ -840,7 +838,6 @@ void compute_ideal_weights_for_decimation(
 			initial_weight += gatherf(eai_in.weights, texel) * contrib_weight;
 		}
 
-		storea(weight_weight, dec_weight_ideal_sig + i);
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
 	}
 

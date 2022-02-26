@@ -1007,13 +1007,6 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_value[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
 	/**
-	 * @brief Decimated ideal weight significance.
-	 *
-	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
-	 */
-	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_sig[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
-
-	/**
 	 * @brief Decimated and quantized weight values stored in the unpacked quantized weight range.
 	 *
 	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
@@ -1777,14 +1770,12 @@ void compute_ideal_colors_and_weights_2planes(
  * @param      eai_out                  A copy of eai_in we can modify later for refinement.
  * @param      di                       The selected weight decimation.
  * @param[out] dec_weight_ideal_value   The ideal values for the decimated weight set.
- * @param[out] dec_weight_ideal_sig     The significance of each weight in the decimated weight_set.
  */
 void compute_ideal_weights_for_decimation(
 	const endpoints_and_weights& eai_in,
 	endpoints_and_weights& eai_out,
 	const decimation_info& di,
-	float* dec_weight_ideal_value,
-	float* dec_weight_ideal_sig);
+	float* dec_weight_ideal_value);
 
 /**
  * @brief Compute the optimal quantized weights for a decimation table.
@@ -2076,7 +2067,6 @@ void prepare_angular_tables();
  * @param      only_always               Only consider block modes that are always enabled.
  * @param      bsd                       The block size descriptor for the current trial.
  * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
- * @param      dec_weight_quant_sig      The significance of each weight.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
@@ -2084,7 +2074,6 @@ void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_quant_uvalue,
-	const float* dec_weight_quant_sig,
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2093,14 +2082,12 @@ void compute_angular_endpoints_1plane(
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      bsd                       The block size descriptor for the current trial.
  * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
- * @param      dec_weight_quant_sig      The significance of each weight.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_quant_uvalue,
-	const float* dec_weight_quant_sig,
 	compression_working_buffers& tmpbuf);
 
 /* ============================================================================
