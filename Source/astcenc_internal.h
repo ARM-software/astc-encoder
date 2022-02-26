@@ -600,6 +600,9 @@ struct block_mode
 	/** @brief The weight quantization used by this block mode. */
 	uint8_t quant_mode;
 
+	/** @brief The weight quantization used by this block mode. */
+	uint8_t weight_bits;
+
 	/** @brief Is a dual weight plane used by this block mode? */
 	uint8_t is_dual_plane : 1;
 
@@ -1979,6 +1982,7 @@ void unpack_weights(
  * @param      qwt_bitcounts                 Bit counts for different quantization methods.
  * @param      qwt_errors                    Errors for different quantization methods.
  * @param      tune_candidate_limit          The max number of candidates to return, may be less.
+ * @param      block_mode_count              The number of blocks mofdes candidates to inspect.
  * @param[out] partition_format_specifiers   The best formats per partition.
  * @param[out] block_mode                    The best packed block mode indexes.
  * @param[out] quant_level                   The best color quant level.
@@ -1995,6 +1999,7 @@ unsigned int compute_ideal_endpoint_formats(
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
+	unsigned int block_mode_count,
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],

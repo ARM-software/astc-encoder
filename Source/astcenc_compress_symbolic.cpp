@@ -388,10 +388,6 @@ static float compress_symbolic_block_for_partition_1plane(
 	promise(config.tune_refinement_limit > 0);
 	promise(bsd.decimation_mode_count > 0);
 
-	static const int free_bits_for_partition_count[5] {
-		0, 115 - 4, 111 - 4 - PARTITION_INDEX_BITS, 108 - 4 - PARTITION_INDEX_BITS, 105 - 4 - PARTITION_INDEX_BITS
-	};
-
 	const auto& pi = bsd.get_partition_info(partition_count, partition_index);
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
@@ -455,10 +451,10 @@ static float compress_symbolic_block_for_partition_1plane(
 	//     * Generate an optimized set of quantized weights
 	//     * Compute quantization errors for the mode
 
-	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
-	{
-		qwt_errors[i] = 1e38f;
-	}
+
+	static const int8_t free_bits_for_partition_count[4] {
+		115 - 4, 111 - 4 - PARTITION_INDEX_BITS, 108 - 4 - PARTITION_INDEX_BITS, 105 - 4 - PARTITION_INDEX_BITS
+	};
 
 	unsigned int max_block_modes = only_always ? bsd.always_block_mode_count
 	                                           : bsd.block_mode_count;
@@ -466,8 +462,10 @@ static float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (bm.is_dual_plane || !bm.percentile_hit)
+		int bitcount = free_bits_for_partition_count[partition_count - 1] - bm.weight_bits;
+		if (bm.is_dual_plane || !bm.percentile_hit || bitcount <= 0)
 		{
+			qwt_errors[i] = 1e38f;
 			continue;
 		}
 
@@ -478,17 +476,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		int decimation_mode = bm.decimation_mode;
 		const auto& di = bsd.get_decimation_info(decimation_mode);
-
-		// Compute weight bitcount for the mode
-		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
-		    di.weight_count,
-		    bm.get_weight_quant_mode());
-
-		int bitcount = free_bits_for_partition_count[partition_count] - bits_used_by_weights;
-		if (bitcount <= 0)
-		{
-			continue;
-		}
 
 		qwt_bitcounts[i] = bitcount;
 
@@ -517,7 +504,8 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
+	    config.tune_candidate_limit, max_block_modes,
+	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best
@@ -832,14 +820,14 @@ static float compress_symbolic_block_for_partition_2planes(
 	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (!bm.is_dual_plane || !bm.percentile_hit)
+		int bitcount = 109 - bm.weight_bits;
+		if (!bm.is_dual_plane || !bm.percentile_hit || bitcount <= 0)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
 		}
 
-		unsigned int decimation_mode = bm.decimation_mode;
-		const auto& di = bsd.get_decimation_info(decimation_mode);
+		qwt_bitcounts[i] = bitcount;
 
 		if (weight_high_value1[i] > 1.02f * min_wt_cutoff1)
 		{
@@ -851,18 +839,8 @@ static float compress_symbolic_block_for_partition_2planes(
 			weight_high_value2[i] = 1.0f;
 		}
 
-		// Compute weight bitcount for the mode
-		unsigned int bits_used_by_weights = get_ise_sequence_bitcount(
-		    2 * di.weight_count,
-		    bm.get_weight_quant_mode());
-
-		int bitcount = 113 - 4 - bits_used_by_weights;
-		if (bitcount <= 0)
-		{
-			continue;
-		}
-
-		qwt_bitcounts[i] = bitcount;
+		unsigned int decimation_mode = bm.decimation_mode;
+		const auto& di = bsd.get_decimation_info(decimation_mode);
 
 		// Generate the optimized set of weights for the mode
 		compute_quantized_weights_for_decimation(
@@ -905,7 +883,8 @@ static float compress_symbolic_block_for_partition_2planes(
 	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    bsd, pi, blk, epm, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, partition_format_specifiers, block_mode_index,
+	    config.tune_candidate_limit, bsd.block_mode_count,
+	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
 	// Iterate over the N believed-to-be-best modes to find out which one is actually best

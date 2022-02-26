@@ -29,6 +29,7 @@
  * @param[out] y_weights       The number of weights in the Y dimension.
  * @param[out] is_dual_plane   True if this block mode has two weight planes.
  * @param[out] quant_mode      The quantization level for the weights.
+ * @param[out] weight_bits     The storage bit count for the weights.
  *
  * @return Returns true if a valid mode, false otherwise.
  */
@@ -37,7 +38,8 @@ static bool decode_block_mode_2d(
 	unsigned int& x_weights,
 	unsigned int& y_weights,
 	bool& is_dual_plane,
-	unsigned int& quant_mode
+	unsigned int& quant_mode,
+	unsigned int& weight_bits
 ) {
 	unsigned int base_quant_mode = (block_mode >> 4) & 1;
 	unsigned int H = (block_mode >> 9) & 1;
@@ -128,7 +130,7 @@ static bool decode_block_mode_2d(
 	quant_mode = (base_quant_mode - 2) + 6 * H;
 	is_dual_plane = D != 0;
 
-	unsigned int weight_bits = get_ise_sequence_bitcount(weight_count, (quant_method)quant_mode);
+	weight_bits = get_ise_sequence_bitcount(weight_count, (quant_method)quant_mode);
 	return (weight_count <= BLOCK_MAX_WEIGHTS &&
 	        weight_bits >= BLOCK_MIN_WEIGHT_BITS &&
 	        weight_bits <= BLOCK_MAX_WEIGHT_BITS);
@@ -143,6 +145,7 @@ static bool decode_block_mode_2d(
  * @param[out] z_weights       The number of weights in the Z dimension.
  * @param[out] is_dual_plane   True if this block mode has two weight planes.
  * @param[out] quant_mode      The quantization level for the weights.
+ * @param[out] weight_bits     The storage bit count for the weights.
  *
  * @return Returns true if a valid mode, false otherwise.
  */
@@ -152,7 +155,8 @@ static bool decode_block_mode_3d(
 	unsigned int& y_weights,
 	unsigned int& z_weights,
 	bool& is_dual_plane,
-	unsigned int& quant_mode
+	unsigned int& quant_mode,
+	unsigned int& weight_bits
 ) {
 	unsigned int base_quant_mode = (block_mode >> 4) & 1;
 	unsigned int H = (block_mode >> 9) & 1;
@@ -229,7 +233,7 @@ static bool decode_block_mode_3d(
 	quant_mode = (base_quant_mode - 2) + 6 * H;
 	is_dual_plane = D != 0;
 
-	unsigned int weight_bits = get_ise_sequence_bitcount(weight_count, (quant_method)quant_mode);
+	weight_bits = get_ise_sequence_bitcount(weight_count, (quant_method)quant_mode);
 	return (weight_count <= BLOCK_MAX_WEIGHTS &&
 	        weight_bits >= BLOCK_MIN_WEIGHT_BITS &&
 	        weight_bits <= BLOCK_MAX_WEIGHT_BITS);
@@ -857,10 +861,11 @@ static void construct_block_size_descriptor_2d(
 	{
 		for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 		{
-			unsigned int x_weights, y_weights;
+			unsigned int x_weights;
+			unsigned int y_weights;
 			bool is_dual_plane;
-
 			unsigned int quant_mode;
+			unsigned int weight_bits;
 
 	#if !defined(ASTCENC_DECOMPRESS_ONLY)
 			float percentile = percentiles[i];
@@ -893,7 +898,7 @@ static void construct_block_size_descriptor_2d(
 			// is technically permitted by the specification.
 
 			// Skip modes that are invalid, too large, or not selected by heuristic
-			bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode);
+			bool valid = decode_block_mode_2d(i, x_weights, y_weights, is_dual_plane, quant_mode, weight_bits);
 			if (!selected || !valid || (x_weights > x_texels) || (y_weights > y_texels))
 			{
 				bsd.block_mode_packed_index[i] = BLOCK_BAD_BLOCK_MODE;
@@ -937,6 +942,7 @@ static void construct_block_size_descriptor_2d(
 			bsd.block_modes[packed_idx].decimation_mode = static_cast<uint8_t>(decimation_mode);
 			bsd.block_modes[packed_idx].quant_mode = static_cast<uint8_t>(quant_mode);
 			bsd.block_modes[packed_idx].is_dual_plane = static_cast<uint8_t>(is_dual_plane);
+			bsd.block_modes[packed_idx].weight_bits = static_cast<uint8_t>(weight_bits);
 			bsd.block_modes[packed_idx].mode_index = static_cast<uint16_t>(i);
 			bsd.block_mode_packed_index[i] = static_cast<uint16_t>(packed_idx);
 			packed_idx++;
@@ -1067,12 +1073,15 @@ static void construct_block_size_descriptor_3d(
 	unsigned int packed_idx = 0;
 	for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 	{
-		unsigned int x_weights, y_weights, z_weights;
+		unsigned int x_weights;
+		unsigned int y_weights;
+		unsigned int z_weights;
 		bool is_dual_plane;
 		unsigned int quant_mode;
+		unsigned int weight_bits;
 		bool permit_encode = true;
 
-		if (decode_block_mode_3d(i, x_weights, y_weights, z_weights, is_dual_plane, quant_mode))
+		if (decode_block_mode_3d(i, x_weights, y_weights, z_weights, is_dual_plane, quant_mode, weight_bits))
 		{
 			if (x_weights > x_texels || y_weights > y_texels || z_weights > z_texels)
 			{
@@ -1093,6 +1102,7 @@ static void construct_block_size_descriptor_3d(
 		int decimation_mode = decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights];
 		bsd.block_modes[packed_idx].decimation_mode = static_cast<uint8_t>(decimation_mode);
 		bsd.block_modes[packed_idx].quant_mode = static_cast<uint8_t>(quant_mode);
+		bsd.block_modes[packed_idx].weight_bits = static_cast<uint8_t>(weight_bits);
 		bsd.block_modes[packed_idx].is_dual_plane = static_cast<uint8_t>(is_dual_plane);
 		bsd.block_modes[packed_idx].mode_index = static_cast<uint16_t>(i);
 
