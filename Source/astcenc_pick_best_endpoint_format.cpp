@@ -95,12 +95,6 @@ static void compute_error_squared_rgb_single_partition(
 	for (int i = 0; i < texels_in_partition; i++)
 	{
 		int tix = pi.texels_of_partition[partition_index][i];
-		float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3.0f;
-		if (texel_weight < 1e-20f)
-		{
-			continue;
-		}
-
 		vfloat4 point = blk.texel(tix);
 		vfloat4 ews = blk.channel_weight;
 
@@ -116,7 +110,7 @@ static void compute_error_squared_rgb_single_partition(
 
 		float param2 = dot3_s(point, samec_pline.bs);
 		// No samec amod - we know it's always zero
-		vfloat4 rp2 = /* samec_pline.amod + */ param2 * samec_pline.bs;
+		vfloat4 rp2 = param2 * samec_pline.bs;
 		vfloat4 dist2 = rp2 - point;
 		samec_err += dot3_s(ews, dist2 * dist2);
 
@@ -127,7 +121,7 @@ static void compute_error_squared_rgb_single_partition(
 
 		float param4 = dot3_s(point, l_pline.bs);
 		// No luma amod - we know it's always zero
-		vfloat4 rp4 = /* l_pline.amod + */ param4 * l_pline.bs;
+		vfloat4 rp4 = param4 * l_pline.bs;
 		vfloat4 dist4 = rp4 - point;
 		l_err += dot3_s(ews, dist4 * dist4);
 	}

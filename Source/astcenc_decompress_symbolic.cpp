@@ -283,9 +283,9 @@ void decompress_symbolic_block(
 	int is_dual_plane = bm.is_dual_plane;
 
 	// Unquantize and undecimate the weights
-	int weights[BLOCK_MAX_TEXELS];
+	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_weight_quant_mode(), weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_weight_quant_mode(), plane1_weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
@@ -315,7 +315,7 @@ void decompress_symbolic_block(
 			vint4 color = lerp_color_int(decode_mode,
 			                             ep0,
 			                             ep1,
-			                             weights[tix],
+			                             plane1_weights[tix],
 			                             plane2_weights[tix],
 			                             plane2_mask);
 
@@ -353,13 +353,12 @@ float compute_symbolic_block_difference(
 	// Get the appropriate block descriptor
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
-
 	bool is_dual_plane = bm.is_dual_plane != 0;
 
 	// Unquantize and undecimate the weights
-	int weights[BLOCK_MAX_TEXELS];
+	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_weight_quant_mode(), weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_weight_quant_mode(), plane1_weights, plane2_weights);
 
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
@@ -380,8 +379,6 @@ float compute_symbolic_block_difference(
 		                       rgb_lns, a_lns,
 		                       ep0, ep1);
 
-		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
-
 		// Unpack and compute error for each texel in the partition
 		int texel_count = pi.partition_texel_count[i];
 		for (int j = 0; j < texel_count; j++)
@@ -389,7 +386,7 @@ float compute_symbolic_block_difference(
 			int tix = pi.texels_of_partition[i][j];
 			vint4 colori = lerp_color_int(config.profile,
 			                              ep0, ep1,
-			                              weights[tix],
+			                              plane1_weights[tix],
 			                              plane2_weights[tix], plane2_mask);
 
 			vfloat4 color = int_to_float(colori);
