@@ -10,10 +10,15 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 3.4
 
-**Status:** In development
+**Status:** March 2022
 
 The 3.4 release introduces another round of optimizations, removing a number
 of power-user configuration options to simplify the core compressor data path.
+
+Reminder for users of the library interface - the API is not designed to be
+binary compatible across versions, and this release is not compatible with
+earlier releases. Please update and rebuild your client-side code using the
+updated `astcenc.h` header.
 
 * **General:**
   * **Feature:** Many memory allocations have been moved off the stack into
@@ -35,6 +40,10 @@ of power-user configuration options to simplify the core compressor data path.
   * **Feature:** The `-perceptual` option to set a perceptual error metric is
     still supported, but is currently a no-op in the compressor for mask map
     and normal map textures.
+  * **Bug-fix:** Corrected decompression of error blocks in some cases, so now
+    returning the expected error color (magenta for LDR, NaN for HDR). Note
+    that astcenc determines the error color to use based on the output image
+    data type not the decoder profile.
 
 ### Performance:
 
@@ -45,7 +54,8 @@ Key for charts:
 
 **Relative performance vs 3.3 release:**
 
-Pending ...
+![Relative scores 3.4 vs 3.3](./ChangeLogImg/relative-3.3-to-3.4.png)
+
 
 <!-- ---------------------------------------------------------------------- -->
 ## 3.3
