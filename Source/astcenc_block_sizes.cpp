@@ -842,6 +842,7 @@ static void construct_block_size_descriptor_2d(
 	// Gather all the decimation grids that can be used with the current block
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	const float *percentiles = get_2d_percentile_table(x_texels, y_texels);
+	float always_threshold = 0.0f;
 #else
 	// Unused in decompress-only builds
 	(void)can_omit_modes;
@@ -852,8 +853,6 @@ static void construct_block_size_descriptor_2d(
 	unsigned int packed_idx = 0;
 	unsigned int always_block_mode_count = 0;
 	unsigned int always_decimation_mode_count = 0;
-
-	float always_threshold = 0.0f;
 
 	// Iterate twice; first time keep the "always" blocks, second time keep the "non-always" blocks.
 	// This ensures that the always block modes and decimation modes are at the start of the list.
