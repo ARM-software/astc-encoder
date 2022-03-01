@@ -1301,7 +1301,7 @@ struct astcenc_context
 	/** @brief The input image alpha channel averages table, may be @c nullptr if not needed. */
 	float *input_alpha_averages;
 
-	/** @brief The scratch workign buffers, one per thread (see @c thread_count). */
+	/** @brief The scratch working buffers, one per thread (see @c thread_count). */
 	compression_working_buffers* working_buffers;
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
