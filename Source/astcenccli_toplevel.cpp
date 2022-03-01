@@ -1461,6 +1461,9 @@ int main(
 		int bitness = get_output_filename_enforced_bitness(output_filename.c_str());
 		if (bitness < 0)
 		{
+			const char *eptr = strrchr(output_filename.c_str(), '.');
+			eptr = eptr ? eptr : "";
+			printf("ERROR: Unknown uncompressed output file type '%s'\n", eptr);
 			return 1;
 		}
 	}
@@ -1475,7 +1478,9 @@ int main(
 
 		if (!(is_null || ends_with(output_filename, ".astc") || ends_with(output_filename, ".ktx")))
 		{
-			printf("ERROR: Unknown compressed output file type\n");
+			const char *eptr = strrchr(output_filename.c_str(), '.');
+			eptr = eptr ? eptr : "";
+			printf("ERROR: Unknown compressed output file type '%s'\n", eptr);
 			return 1;
 		}
 	}
