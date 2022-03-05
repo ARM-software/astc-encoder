@@ -393,7 +393,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei = tmpbuf.ei1;
 	endpoints_and_weights *eix = tmpbuf.eix1;
-	compute_ideal_colors_and_weights_1plane(bsd, blk, pi, ei);
+	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;

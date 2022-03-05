@@ -29,14 +29,12 @@
 /**
  * @brief Compute the ideal endpoints and weights for 1 color component.
  *
- * @param      bsd         The block size information.
  * @param      blk         The image block color data to compress.
  * @param      pi          The partition info for the current trial.
  * @param[out] ei          The computed ideal endpoints and weights.
  * @param      component   The color component to compute.
  */
 static void compute_ideal_colors_and_weights_1_comp(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -46,7 +44,7 @@ static void compute_ideal_colors_and_weights_1_comp(
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = bsd.texel_count;
+	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	float error_weight;
@@ -140,7 +138,6 @@ static void compute_ideal_colors_and_weights_1_comp(
 /**
  * @brief Compute the ideal endpoints and weights for 2 color components.
  *
- * @param      bsd          The block size information.
  * @param      blk          The image block color data to compress.
  * @param      pi           The partition info for the current trial.
  * @param[out] ei           The computed ideal endpoints and weights.
@@ -148,7 +145,6 @@ static void compute_ideal_colors_and_weights_1_comp(
  * @param      component2   The second color component to compute.
  */
 static void compute_ideal_colors_and_weights_2_comp(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -159,7 +155,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = bsd.texel_count;
+	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
@@ -280,14 +276,12 @@ static void compute_ideal_colors_and_weights_2_comp(
 /**
  * @brief Compute the ideal endpoints and weights for 3 color components.
  *
- * @param      bsd                 The block size information.
  * @param      blk                 The image block color data to compress.
  * @param      pi                  The partition info for the current trial.
  * @param[out] ei                  The computed ideal endpoints and weights.
  * @param      omitted_component   The color component excluded from the calculation.
  */
 static void compute_ideal_colors_and_weights_3_comp(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
@@ -297,7 +291,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = bsd.texel_count;
+	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
@@ -440,13 +434,11 @@ static void compute_ideal_colors_and_weights_3_comp(
 /**
  * @brief Compute the ideal endpoints and weights for 4 color components.
  *
- * @param      bsd                 The block size information.
- * @param      blk                 The image block color data to compress.
- * @param      pi                  The partition info for the current trial.
- * @param[out] ei                  The computed ideal endpoints and weights.
+ * @param      blk   The image block color data to compress.
+ * @param      pi    The partition info for the current trial.
+ * @param[out] ei    The computed ideal endpoints and weights.
  */
 static void compute_ideal_colors_and_weights_4_comp(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei
@@ -455,7 +447,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 
 	unsigned int partition_count = pi.partition_count;
 
-	unsigned int texel_count= bsd.texel_count;
+	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
@@ -539,7 +531,6 @@ static void compute_ideal_colors_and_weights_4_comp(
 
 /* See header for documentation. */
 void compute_ideal_colors_and_weights_1plane(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei
@@ -548,11 +539,11 @@ void compute_ideal_colors_and_weights_1plane(
 
 	if (uses_alpha)
 	{
-		compute_ideal_colors_and_weights_4_comp(bsd, blk, pi, ei);
+		compute_ideal_colors_and_weights_4_comp(blk, pi, ei);
 	}
 	else
 	{
-		compute_ideal_colors_and_weights_3_comp(bsd, blk, pi, ei, 3);
+		compute_ideal_colors_and_weights_3_comp(blk, pi, ei, 3);
 	}
 }
 
@@ -573,43 +564,43 @@ void compute_ideal_colors_and_weights_2planes(
 	case 0: // Separate weights for red
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(bsd, blk, pi, ei1, 0);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 0);
 		}
 		else
 		{
-			compute_ideal_colors_and_weights_2_comp(bsd, blk, pi, ei1, 1, 2);
+			compute_ideal_colors_and_weights_2_comp(blk, pi, ei1, 1, 2);
 		}
-		compute_ideal_colors_and_weights_1_comp(bsd, blk, pi, ei2, 0);
+		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 0);
 		break;
 
 	case 1: // Separate weights for green
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(bsd,blk, pi, ei1, 1);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 1);
 		}
 		else
 		{
-			compute_ideal_colors_and_weights_2_comp(bsd, blk, pi, ei1, 0, 2);
+			compute_ideal_colors_and_weights_2_comp(blk, pi, ei1, 0, 2);
 		}
-		compute_ideal_colors_and_weights_1_comp(bsd, blk, pi, ei2, 1);
+		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 1);
 		break;
 
 	case 2: // Separate weights for blue
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(bsd, blk, pi, ei1, 2);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 2);
 		}
 		else
 		{
-			compute_ideal_colors_and_weights_2_comp(bsd, blk, pi, ei1, 0, 1);
+			compute_ideal_colors_and_weights_2_comp(blk, pi, ei1, 0, 1);
 		}
-		compute_ideal_colors_and_weights_1_comp(bsd, blk, pi, ei2, 2);
+		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 2);
 		break;
 
 	default: // Separate weights for alpha
 		assert(uses_alpha);
-		compute_ideal_colors_and_weights_3_comp(bsd, blk, pi, ei1, 3);
-		compute_ideal_colors_and_weights_1_comp(bsd, blk, pi, ei2, 3);
+		compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 3);
+		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 3);
 		break;
 	}
 }

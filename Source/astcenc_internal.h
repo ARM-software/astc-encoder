@@ -811,6 +811,9 @@ struct image_block
 	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
 	float data_a[BLOCK_MAX_TEXELS];
 
+	/** @brief The number of texels in the block. */
+	uint8_t texel_count;
+
 	/** @brief The original data for texel 0 for constant color block encoding. */
 	vfloat4 origin_texel;
 
@@ -1727,13 +1730,11 @@ void write_image_block(
  * defines an exact position on the partition color line. We can then use these to assess the error
  * introduced by removing and quantizing the weight grid.
  *
- * @param      bsd   The block size information.
  * @param      blk   The image block color data to compress.
  * @param      pi    The partition info for the current trial.
  * @param[out] ei    The endpoint and weight values.
  */
 void compute_ideal_colors_and_weights_1plane(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei);
