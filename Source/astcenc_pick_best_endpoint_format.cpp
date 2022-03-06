@@ -299,17 +299,12 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 
 	// It is possible to get endpoint colors significantly outside [0,upper-limit] even if the
 	// input data are safely contained in [0,upper-limit]; we need to add an error term for this
-	vfloat4 ep0_range_error_high;
-	vfloat4 ep1_range_error_high;
-	vfloat4 ep0_range_error_low;
-	vfloat4 ep1_range_error_low;
-
 	vfloat4 offset(range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_alpha);
-	ep0_range_error_high = max(ep0 - offset, 0.0f);
-	ep1_range_error_high = max(ep1 - offset, 0.0f);
+	vfloat4 ep0_range_error_high = max(ep0 - offset, 0.0f);
+	vfloat4 ep1_range_error_high = max(ep1 - offset, 0.0f);
 
-	ep0_range_error_low = min(ep0, 0.0f);
-	ep1_range_error_low = min(ep1, 0.0f);
+	vfloat4 ep0_range_error_low = min(ep0, 0.0f);
+	vfloat4 ep1_range_error_low = min(ep1, 0.0f);
 
 	vfloat4 sum_range_error =
 		(ep0_range_error_low * ep0_range_error_low) +
