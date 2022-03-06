@@ -388,6 +388,12 @@ static float compress_symbolic_block_for_partition_1plane(
 	promise(config.tune_refinement_limit > 0);
 	promise(bsd.decimation_mode_count > 0);
 
+	auto compute_difference = &compute_symbolic_block_difference_1plane;
+	if ((partition_count == 1) && !(config.flags & ASTCENC_FLG_MAP_RGBM))
+	{
+		compute_difference = &compute_symbolic_block_difference_1plane_1partition;
+	}
+
 	const auto& pi = bsd.get_partition_info(partition_count, partition_index);
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
@@ -620,7 +626,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			// Pre-realign test
 			if (l == 0)
 			{
-				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
+				float errorval = compute_difference(config, bsd, workscb, blk);
 				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
@@ -671,7 +677,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			}
 
 			// Post-realign test
-			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
+			float errorval = compute_difference(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
@@ -959,7 +965,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			// Pre-realign test
 			if (l == 0)
 			{
-				float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
+				float errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
 				if (errorval == -ERROR_CALC_DEFAULT)
 				{
 					errorval = -errorval;
@@ -1011,7 +1017,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			}
 
 			// Post-realign test
-			float errorval = compute_symbolic_block_difference(config, bsd, workscb, blk);
+			float errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
 			if (errorval == -ERROR_CALC_DEFAULT)
 			{
 				errorval = -errorval;
