@@ -194,7 +194,7 @@ static bool realign_weights_undecimated(
  * @param[out] dec_weights_quant_pvalue_plane1   The weights for plane 1.
  * @param[out] dec_weights_quant_pvalue_plane2   The weights for plane 2, or @c nullptr if 1 plane.
  */
-static bool realign_weights_generic(
+static bool realign_weights_decimated(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
@@ -214,7 +214,7 @@ static bool realign_weights_generic(
 	// Get the decimation table
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 	unsigned int weight_count = di.weight_count;
-	bool is_decimated = weight_count != bsd.texel_count;
+	assert(weight_count != bsd.texel_count);
 
 	unsigned int max_plane = bm.is_dual_plane;
 	int plane2_component = bm.is_dual_plane ? scb.plane2_component : -1;
@@ -291,21 +291,15 @@ static bool realign_weights_generic(
 			{
 				unsigned int texel = di.weight_texel[te_idx][we_idx];
 				float weight_base = uqwf;
-				float twf0 = 1.0f;
 
-				// Don't interpolate filtered weights for a 1:1 weight grid
-				if (is_decimated)
-				{
-					const uint8_t *texel_weights = di.texel_weights_texel[we_idx][te_idx];
-					const float *texel_weights_float = di.texel_weights_float_texel[we_idx][te_idx];
-					twf0 = texel_weights_float[0];
+				const uint8_t *texel_weights = di.texel_weights_texel[we_idx][te_idx];
+				const float *texel_weights_float = di.texel_weights_float_texel[we_idx][te_idx];
+				float twf0 = texel_weights_float[0];
 
-					weight_base =
-						  (uqwf                             * twf0
-						 + uq_pl_weightsf[texel_weights[1]] * texel_weights_float[1])
-						+ (uq_pl_weightsf[texel_weights[2]] * texel_weights_float[2]
-						 + uq_pl_weightsf[texel_weights[3]] * texel_weights_float[3]);
-				}
+				weight_base = (uqwf                             * twf0
+				             + uq_pl_weightsf[texel_weights[1]] * texel_weights_float[1])
+				            + (uq_pl_weightsf[texel_weights[2]] * texel_weights_float[2]
+				             + uq_pl_weightsf[texel_weights[3]] * texel_weights_float[3]);
 
 				unsigned int partition = pi.partition_of_texel[texel];
 
@@ -665,7 +659,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			bool adjustments;
 			if (di.weight_count != bsd.texel_count)
 			{
-				adjustments = realign_weights_generic(
+				adjustments = realign_weights_decimated(
 					config.profile, bsd, blk, workscb,
 					workscb.weights, nullptr);
 			}
@@ -1005,7 +999,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			bool adjustments;
 			if (di.weight_count != bsd.texel_count)
 			{
-				adjustments = realign_weights_generic(
+				adjustments = realign_weights_decimated(
 					config.profile, bsd, blk, workscb,
 					workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET);
 			}
