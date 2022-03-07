@@ -800,16 +800,16 @@ struct block_size_descriptor
 struct image_block
 {
 	/** @brief The input (compress) or output (decompress) data for the red color component. */
-	float data_r[BLOCK_MAX_TEXELS];
+	alignas(ASTCENC_VECALIGN) float data_r[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the green color component. */
-	float data_g[BLOCK_MAX_TEXELS];
+	alignas(ASTCENC_VECALIGN) float data_g[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the blue color component. */
-	float data_b[BLOCK_MAX_TEXELS];
+	alignas(ASTCENC_VECALIGN) float data_b[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
-	float data_a[BLOCK_MAX_TEXELS];
+	alignas(ASTCENC_VECALIGN) float data_a[BLOCK_MAX_TEXELS];
 
 	/** @brief The number of texels in the block. */
 	uint8_t texel_count;
