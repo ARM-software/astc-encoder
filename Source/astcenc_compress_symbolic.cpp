@@ -139,9 +139,9 @@ static bool realign_weights_undecimated(
 			// Interpolate the colors to create the diffs
 			unsigned int partition = pi.partition_of_texel[texel];
 
-			int plane_weight = uqw;
-			int plane_up_weight = next_wt_uq - uqw;
-			int plane_down_weight = prev_wt_uq - uqw;
+			float plane_weight = static_cast<float>(uqw);
+			float plane_up_weight = static_cast<float>(next_wt_uq - uqw);
+			float plane_down_weight = static_cast<float>(prev_wt_uq - uqw);
 
 			vfloat4 color_offset = offset[partition];
 			vfloat4 color_base   = endpnt0f[partition];
@@ -271,7 +271,7 @@ static bool realign_weights_decimated(
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
 			unsigned int uqw = uq_pl_weights[we_idx];
-			unsigned int uqwf = uq_pl_weightsf[we_idx];
+			float uqwf = uq_pl_weightsf[we_idx];
 
 			uint32_t prev_and_next = qat->prev_next_values[uqw];
 			unsigned int prev_wt_uq = prev_and_next & 0xFF;
