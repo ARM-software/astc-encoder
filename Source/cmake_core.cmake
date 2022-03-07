@@ -133,6 +133,8 @@ macro(astcenc_set_properties NAME)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-shift-sign-overflow>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-reserved-identifier>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-function-type>
 
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
@@ -256,6 +258,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
+            " $<$<CXX_COMPILER_ID:Clang>: -Wno-reserved-identifier>"
             " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>")
 
     set_source_files_properties(astcenccli_image_external.cpp

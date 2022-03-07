@@ -130,7 +130,7 @@ static bool realign_weights_undecimated(
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			unsigned int uqw = qat->unquantized_value[dec_weights_quant_pvalue[texel]];
+			int uqw = qat->unquantized_value[dec_weights_quant_pvalue[texel]];
 
 			uint32_t prev_and_next = qat->prev_next_values[uqw];
 			int prev_wt_uq = prev_and_next & 0xFF;
