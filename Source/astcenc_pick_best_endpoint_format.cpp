@@ -83,48 +83,132 @@ static void compute_error_squared_rgb_single_partition(
 	float& l_err,
 	float& a_drop_err
 ) {
-	uncor_err = 0.0f;
-	samec_err = 0.0f;
-	rgbl_err = 0.0f;
-	l_err = 0.0f;
-	a_drop_err = 0.0f;
+	vfloat4 ews = blk.channel_weight;
 
-	int texels_in_partition = pi.partition_texel_count[partition_index];
-	promise(texels_in_partition > 0);
+	unsigned int texel_count = pi.partition_texel_count[partition_index];
+	const uint8_t* texel_indexes = pi.texels_of_partition[partition_index];
+	promise(texel_count > 0);
 
-	for (int i = 0; i < texels_in_partition; i++)
+	vfloat4 a_drop_errv = vfloat4::zero();
+	vfloat default_a(blk.get_default_alpha());
+
+	vfloat4 uncor_errv = vfloat4::zero();
+	vfloat uncor_bs0(uncor_pline.bs.lane<0>());
+	vfloat uncor_bs1(uncor_pline.bs.lane<1>());
+	vfloat uncor_bs2(uncor_pline.bs.lane<2>());
+
+	vfloat uncor_amod0(uncor_pline.amod.lane<0>());
+	vfloat uncor_amod1(uncor_pline.amod.lane<1>());
+	vfloat uncor_amod2(uncor_pline.amod.lane<2>());
+
+	vfloat4 samec_errv = vfloat4::zero();
+	vfloat samec_bs0(samec_pline.bs.lane<0>());
+	vfloat samec_bs1(samec_pline.bs.lane<1>());
+	vfloat samec_bs2(samec_pline.bs.lane<2>());
+
+	vfloat4 rgbl_errv = vfloat4::zero();
+	vfloat rgbl_bs0(rgbl_pline.bs.lane<0>());
+	vfloat rgbl_bs1(rgbl_pline.bs.lane<1>());
+	vfloat rgbl_bs2(rgbl_pline.bs.lane<2>());
+
+	vfloat rgbl_amod0(rgbl_pline.amod.lane<0>());
+	vfloat rgbl_amod1(rgbl_pline.amod.lane<1>());
+	vfloat rgbl_amod2(rgbl_pline.amod.lane<2>());
+
+	vfloat4 l_errv = vfloat4::zero();
+	vfloat l_bs0(l_pline.bs.lane<0>());
+	vfloat l_bs1(l_pline.bs.lane<1>());
+	vfloat l_bs2(l_pline.bs.lane<2>());
+
+	vint lane_ids = vint::lane_id();
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		int tix = pi.texels_of_partition[partition_index][i];
-		vfloat4 point = blk.texel(tix);
-		vfloat4 ews = blk.channel_weight;
+		vint tix(texel_indexes + i);
+
+		vmask mask = lane_ids < vint(texel_count);
+		lane_ids += vint(ASTCENC_SIMD_WIDTH);
 
 		// Compute the error that arises from just ditching alpha
-		float default_alpha = blk.get_default_alpha();
-		float omalpha = point.lane<3>() - default_alpha;
-		a_drop_err += omalpha * omalpha * ews.lane<3>();
+		vfloat data_a = gatherf(blk.data_a, tix);
+		vfloat alpha_diff = data_a - default_a;
+		alpha_diff = alpha_diff * alpha_diff;
+		alpha_diff = select(vfloat::zero(), alpha_diff, mask);
+		haccumulate(a_drop_errv, alpha_diff);
 
-		float param1 = dot3_s(point, uncor_pline.bs);
-		vfloat4 rp1 = uncor_pline.amod + param1 * uncor_pline.bs;
-		vfloat4 dist1 = rp1 - point;
-		uncor_err += dot3_s(ews, dist1 * dist1);
+		vfloat data_r = gatherf(blk.data_r, tix);
+		vfloat data_g = gatherf(blk.data_g, tix);
+		vfloat data_b = gatherf(blk.data_b, tix);
 
-		float param2 = dot3_s(point, samec_pline.bs);
-		// No samec amod - we know it's always zero
-		vfloat4 rp2 = param2 * samec_pline.bs;
-		vfloat4 dist2 = rp2 - point;
-		samec_err += dot3_s(ews, dist2 * dist2);
+		// Compute uncorrelated error
+		vfloat param = data_r * uncor_bs0
+		             + data_g * uncor_bs1
+		             + data_b * uncor_bs2;
 
-		float param3 = dot3_s(point,  rgbl_pline.bs);
-		vfloat4 rp3 = rgbl_pline.amod + param3 * rgbl_pline.bs;
-		vfloat4 dist3 = rp3 - point;
-		rgbl_err += dot3_s(ews, dist3 * dist3);
+		vfloat dist0 = (uncor_amod0 + param * uncor_bs0) - data_r;
+		vfloat dist1 = (uncor_amod1 + param * uncor_bs1) - data_g;
+		vfloat dist2 = (uncor_amod2 + param * uncor_bs2) - data_b;
 
-		float param4 = dot3_s(point, l_pline.bs);
-		// No luma amod - we know it's always zero
-		vfloat4 rp4 = param4 * l_pline.bs;
-		vfloat4 dist4 = rp4 - point;
-		l_err += dot3_s(ews, dist4 * dist4);
+		vfloat error = dist0 * dist0 * ews.lane<0>()
+		             + dist1 * dist1 * ews.lane<1>()
+		             + dist2 * dist2 * ews.lane<2>();
+
+		error = select(vfloat::zero(), error, mask);
+		haccumulate(uncor_errv, error);
+
+		// Compute same chroma error - no "amod", its always zero
+		param = data_r * samec_bs0
+		      + data_g * samec_bs1
+		      + data_b * samec_bs2;
+
+		dist0 = (param * samec_bs0) - data_r;
+		dist1 = (param * samec_bs1) - data_g;
+		dist2 = (param * samec_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		error = select(vfloat::zero(), error, mask);
+		haccumulate(samec_errv, error);
+
+		// Compute rgbl error
+		param = data_r * rgbl_bs0
+		      + data_g * rgbl_bs1
+		      + data_b * rgbl_bs2;
+
+		dist0 = (rgbl_amod0 + param * rgbl_bs0) - data_r;
+		dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
+		dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		error = select(vfloat::zero(), error, mask);
+		haccumulate(rgbl_errv, error);
+
+		// Compute luma error - no "amod", its always zero
+		param = data_r * l_bs0
+		      + data_g * l_bs1
+		      + data_b * l_bs2;
+
+		dist0 = (param * l_bs0) - data_r;
+		dist1 = (param * l_bs1) - data_g;
+		dist2 = (param * l_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		error = select(vfloat::zero(), error, mask);
+		haccumulate(l_errv, error);
 	}
+
+	a_drop_err = hadd_s(a_drop_errv * ews.lane<3>());
+	uncor_err = hadd_s(uncor_errv);
+	samec_err = hadd_s(samec_errv);
+	rgbl_err = hadd_s(rgbl_errv);
+	l_err = hadd_s(l_errv);
 }
 
 /**
