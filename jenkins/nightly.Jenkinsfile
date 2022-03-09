@@ -298,8 +298,11 @@ spec:
             dir('upload/linux-x64') {
               unstash 'astcenc-linux-x64'
             }
-            dir('upload/windows-x64') {
-              unstash 'astcenc-windows-x64'
+            dir('upload/windows-x64-cl') {
+              unstash 'astcenc-windows-x64-cl'
+            }
+            dir('upload/windows-x64-clangcl') {
+              unstash 'astcenc-windows-x64-clangcl'
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
