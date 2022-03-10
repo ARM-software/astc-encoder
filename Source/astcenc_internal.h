@@ -525,9 +525,6 @@ struct partition_info
 
 	/** @brief The list of texels in each partition. */
 	uint8_t texels_of_partition[BLOCK_MAX_PARTITIONS][BLOCK_MAX_TEXELS];
-
-	/** @brief The canonical partition coverage pattern used during block partition search. */
-	uint64_t coverage_bitmaps[BLOCK_MAX_PARTITIONS];
 };
 
 /**
@@ -540,9 +537,12 @@ struct partition_info
  *
  * This data structure is used to store information about a single weight grid decimation pattern,
  * for a single block size.
-*/
+ */
 struct decimation_info
 {
+	// TODO: These structures are large. Any partitioning opportunities to
+	// improve caching and reduce miss rates?
+
 	/** @brief The total number of texels in the block. */
 	uint8_t texel_count;
 
@@ -721,6 +721,34 @@ struct block_size_descriptor
 
 	/** @brief The active texels for k-means partition selection. */
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
+
+	/**
+	 * @brief Is 0 if this partition is valid for compression 255 otherwise.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint8_t partitioning_valid[BLOCK_MAX_PARTITIONINGS];
+
+	/**
+	 * @brief The canonical 2 partition coverage pattern used during block partition search.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint64_t coverage_bitmaps_2[BLOCK_MAX_PARTITIONINGS][2];
+
+	/**
+	 * @brief The canonical 3 partition coverage pattern used during block partition search.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint64_t coverage_bitmaps_3[BLOCK_MAX_PARTITIONINGS][3];
+
+	/**
+	 * @brief The canonical 4 partition coverage pattern used during block partition search.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint64_t coverage_bitmaps_4[BLOCK_MAX_PARTITIONINGS][4];
 
 	/**
 	 * @brief Get the block mode structure for index @c block_mode.
