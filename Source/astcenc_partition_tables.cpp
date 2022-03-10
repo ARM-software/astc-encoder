@@ -33,12 +33,12 @@
  * @param[out] bit_pattern           The output bit pattern representation.
  */
 static void generate_canonical_partitioning(
-	int texel_count,
+	unsigned int texel_count,
 	const uint8_t* partition_of_texel,
 	uint64_t bit_pattern[7]
 ) {
 	// Clear the pattern
-	for (int i = 0; i < 7; i++)
+	for (unsigned int i = 0; i < 7; i++)
 	{
 		bit_pattern[i] = 0;
 	}
@@ -54,10 +54,9 @@ static void generate_canonical_partitioning(
 		mapped_index[i] = -1;
 	}
 
-	for (int i = 0; i < texel_count; i++)
+	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		int index = partition_of_texel[i];
-
 		if (mapped_index[index] < 0)
 		{
 			mapped_index[index] = map_weight_count++;
@@ -84,37 +83,6 @@ static bool compare_canonical_partitionings(
 	       (part1[2] == part2[2]) && (part1[3] == part2[3]) &&
 	       (part1[4] == part2[4]) && (part1[5] == part2[5]) &&
 	       (part1[6] == part2[6]);
-}
-
-/**
- * @brief Compare all partition patterns and remove duplicates.
- *
- * The partitioning algorithm uses a hash function for texel assignment that can produce partitions
- * which have the same texel assignment groupings. It is only useful for the compressor to test one
- * of each, so we mark duplicates as invalid.
- *
-* @param          bit_patterns   The scratch memory for the bit patterns.
- * @param         texel_count    The first canonical bit pattern to check.
- * @param[in,out] pt             The table of partitioning information entries.
- */
-static void remove_duplicate_partitionings(
-	uint64_t* bit_patterns,
-	int texel_count,
-	partition_info pt[BLOCK_MAX_PARTITIONINGS]
-) {
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
-	{
-		generate_canonical_partitioning(texel_count, pt[i].partition_of_texel, bit_patterns + i * 7);
-
-		for (unsigned int j = 0; j < i; j++)
-		{
-			if (compare_canonical_partitionings(bit_patterns + 7 * i, bit_patterns + 7 * j))
-			{
-				pt[i].partition_count = 0;
-				break;
-			}
-		}
-	}
 }
 
 /**
@@ -363,18 +331,46 @@ static bool generate_one_partition_info_entry(
 
 static void build_partition_table_for_one_partition_count(
 	block_size_descriptor& bsd,
+	bool can_omit_partitionings,
+	unsigned int partition_count_cutoff,
 	unsigned int partition_count,
-	partition_info* ptab
+	partition_info* ptab,
+	uint64_t* canonical_patterns
 ) {
 	unsigned int next_index = 0;
 	bsd.partitioning_count[partition_count - 1] = 0;
+
+	if (partition_count > partition_count_cutoff)
+	{
+		return;
+	}
+
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, ptab[next_index]);
+		if (!keep && can_omit_partitionings)
+		{
+			bsd.partitioning_packed_index[partition_count - 1][i] = BLOCK_BAD_PARTITIONING;
+			continue;
+		}
+
+		generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * 7);
+		keep = true;
+		for (unsigned int j = 0; j < next_index; j++)
+		{
+			bool match = compare_canonical_partitionings(canonical_patterns + 7 * next_index, canonical_patterns + 7 * j);
+			if (match)
+			{
+				ptab[next_index].partition_count = 0;
+				keep = !can_omit_partitionings;
+				break;
+			}
+		}
+
 		if (keep)
 		{
 			bsd.partitioning_packed_index[partition_count - 1][i] = next_index;
-			bsd.partitioning_count[partition_count - 1]++;
+			bsd.partitioning_count[partition_count - 1] = next_index + 1;
 			next_index++;
 		}
 		else
@@ -386,7 +382,9 @@ static void build_partition_table_for_one_partition_count(
 
 /* See header for documentation. */
 void init_partition_tables(
-	block_size_descriptor& bsd
+	block_size_descriptor& bsd,
+	bool can_omit_partitionings,
+	unsigned int partition_count_cutoff
 ) {
 	partition_info* par_tab2 = bsd.partitionings;
 	partition_info* par_tab3 = par_tab2 + BLOCK_MAX_PARTITIONINGS;
@@ -397,15 +395,11 @@ void init_partition_tables(
 	bsd.partitioning_count[0] = 1;
 	bsd.partitioning_packed_index[0][0] = 0;
 
-	build_partition_table_for_one_partition_count(bsd, 2, par_tab2);
-	build_partition_table_for_one_partition_count(bsd, 3, par_tab3);
-	build_partition_table_for_one_partition_count(bsd, 4, par_tab4);
+	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
 
-	uint64_t* bit_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
+	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 2, par_tab2, canonical_patterns);
+	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 3, par_tab3, canonical_patterns);
+	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 4, par_tab4, canonical_patterns);
 
-	remove_duplicate_partitionings(bit_patterns, bsd.texel_count, par_tab2);
-	remove_duplicate_partitionings(bit_patterns, bsd.texel_count, par_tab3);
-	remove_duplicate_partitionings(bit_patterns, bsd.texel_count, par_tab4);
-
-	delete[] bit_patterns;
+	delete[] canonical_patterns;
 }
