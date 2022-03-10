@@ -340,7 +340,7 @@ static void build_partition_table_for_one_partition_count(
 	unsigned int next_index = 0;
 	bsd.partitioning_count[partition_count - 1] = 0;
 
-	if (partition_count > partition_count_cutoff)
+	if (can_omit_partitionings && (partition_count > partition_count_cutoff))
 	{
 		return;
 	}
@@ -348,7 +348,7 @@ static void build_partition_table_for_one_partition_count(
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, ptab[next_index]);
-		if (!keep && can_omit_partitionings)
+		if (can_omit_partitionings && !keep)
 		{
 			bsd.partitioning_packed_index[partition_count - 1][i] = BLOCK_BAD_PARTITIONING;
 			continue;
