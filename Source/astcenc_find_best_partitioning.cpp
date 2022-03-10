@@ -369,8 +369,9 @@ static void count_partition_mismatch_bits(
 		partition_mismatch4
 	};
 
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
 	{
+		// TODO: Shouldn't need this once we squash out dupes ...
 		int bitcount = 255;
 		if (pt->partition_count == partition_count)
 		{
@@ -385,17 +386,19 @@ static void count_partition_mismatch_bits(
 /**
  * @brief Use counting sort on the mismatch array to sort partition candidates.
  *
+ * @param      partitioning_count   The number of packed partitionings.
  * @param      mismatch_count       Partitioning mismatch counts, in index order.
  * @param[out] partition_ordering   Partition index values, in mismatch order.
  */
 static void get_partition_ordering_by_mismatch_bits(
+	unsigned int partitioning_count,
 	const unsigned int mismatch_count[BLOCK_MAX_PARTITIONINGS],
 	unsigned int partition_ordering[BLOCK_MAX_PARTITIONINGS]
 ) {
 	unsigned int mscount[256] { 0 };
 
 	// Create the histogram of mismatch counts
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	for (unsigned int i = 0; i < partitioning_count; i++)
 	{
 		mscount[mismatch_count[i]]++;
 	}
@@ -412,7 +415,7 @@ static void get_partition_ordering_by_mismatch_bits(
 
 	// Use the running sum as the index, incrementing after read to allow
 	// sequential entries with the same count
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	for (unsigned int i = 0; i < partitioning_count; i++)
 	{
 		unsigned int idx = mscount[mismatch_count[i]]++;
 		partition_ordering[idx] = i;
@@ -466,7 +469,8 @@ static void compute_kmeans_partition_ordering(
 	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
 	// Sort the partitions based on the number of mismatched bits
-	get_partition_ordering_by_mismatch_bits(mismatch_counts, partition_ordering);
+	get_partition_ordering_by_mismatch_bits(bsd.partitioning_count[partition_count - 1],
+	                                        mismatch_counts, partition_ordering);
 }
 
 /* See header for documentation. */
@@ -501,6 +505,8 @@ void find_best_partition_candidates(
 
 	unsigned int partition_sequence[BLOCK_MAX_PARTITIONINGS];
 	compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_sequence);
+	partition_search_limit = astc::min(partition_search_limit,
+	                                   bsd.partitioning_count[partition_count - 1]);
 
 	bool uses_alpha = !blk.is_constant_channel(3);
 
@@ -518,8 +524,9 @@ void find_best_partition_candidates(
 		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
 			unsigned int partition = partition_sequence[i];
-			const auto& pi = bsd.get_partition_info(partition_count, partition);
+			const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
 
+			// TODO: This escape shouldn't be needed eventually ...
 			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
@@ -617,8 +624,9 @@ void find_best_partition_candidates(
 		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
 			unsigned int partition = partition_sequence[i];
-			const auto& pi = bsd.get_partition_info(partition_count, partition);
+			const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
 
+			// TODO: This escape shouldn't be needed eventually ...
 			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
@@ -722,6 +730,10 @@ void find_best_partition_candidates(
 		best_partitions[0] = samec_best_partitions[0];
 		best_partitions[1] = uncor_best_partition;
 	}
+
+	// Convert these back into canonical partition IDs for the rest of the codec
+	best_partitions[0] = bsd.get_raw_partition_info(partition_count, best_partitions[0]).partition_index;
+	best_partitions[1] = bsd.get_raw_partition_info(partition_count, best_partitions[1]).partition_index;
 }
 
 #endif

@@ -282,11 +282,13 @@ static uint8_t select_partition(
  * @param      partition_count   The partition count of this partitioning.
  * @param      partition_index   The partition index / see of this partitioning.
  * @param[out] pi                The partition info structure to populate.
+ *
+ * @return True if this is a useful partition index, False if we can skip it.
  */
-static void generate_one_partition_info_entry(
+static bool generate_one_partition_info_entry(
 	const block_size_descriptor& bsd,
-	int partition_count,
-	int partition_index,
+	unsigned int partition_count,
+	unsigned int partition_index,
 	partition_info& pi
 ) {
 	int texels_per_block = bsd.texel_count;
@@ -311,7 +313,7 @@ static void generate_one_partition_info_entry(
 	}
 
 	// Fill loop tail so we can overfetch later
-	for (int i = 0; i < partition_count; i++)
+	for (unsigned int i = 0; i < partition_count; i++)
 	{
 		int ptex_count = counts[i];
 		int ptex_count_simd = round_up_to_simd_multiple_vla(ptex_count);
@@ -354,24 +356,50 @@ static void generate_one_partition_info_entry(
 		unsigned int idx = bsd.kmeans_texels[i];
 		pi.coverage_bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
 	}
+
+	pi.partition_index = partition_index;
+	return pi.partition_count == partition_count;
+}
+
+static void build_partition_table_for_one_partition_count(
+	block_size_descriptor& bsd,
+	unsigned int partition_count,
+	partition_info* ptab
+) {
+	unsigned int next_index = 0;
+	bsd.partitioning_count[partition_count - 1] = 0;
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	{
+		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, ptab[next_index]);
+		if (keep)
+		{
+			bsd.partitioning_packed_index[partition_count - 1][i] = next_index;
+			bsd.partitioning_count[partition_count - 1]++;
+			next_index++;
+		}
+		else
+		{
+			bsd.partitioning_packed_index[partition_count - 1][i] = BLOCK_BAD_PARTITIONING;
+		}
+	}
 }
 
 /* See header for documentation. */
 void init_partition_tables(
 	block_size_descriptor& bsd
 ) {
-	partition_info *par_tab2 = bsd.partitions;
-	partition_info *par_tab3 = par_tab2 + BLOCK_MAX_PARTITIONINGS;
-	partition_info *par_tab4 = par_tab3 + BLOCK_MAX_PARTITIONINGS;
-	partition_info *par_tab1 = par_tab4 + BLOCK_MAX_PARTITIONINGS;
+	partition_info* par_tab2 = bsd.partitionings;
+	partition_info* par_tab3 = par_tab2 + BLOCK_MAX_PARTITIONINGS;
+	partition_info* par_tab4 = par_tab3 + BLOCK_MAX_PARTITIONINGS;
+	partition_info* par_tab1 = par_tab4 + BLOCK_MAX_PARTITIONINGS;
 
 	generate_one_partition_info_entry(bsd, 1, 0, *par_tab1);
-	for (int i = 0; i < 1024; i++)
-	{
-		generate_one_partition_info_entry(bsd, 2, i, par_tab2[i]);
-		generate_one_partition_info_entry(bsd, 3, i, par_tab3[i]);
-		generate_one_partition_info_entry(bsd, 4, i, par_tab4[i]);
-	}
+	bsd.partitioning_count[0] = 1;
+	bsd.partitioning_packed_index[0][0] = 0;
+
+	build_partition_table_for_one_partition_count(bsd, 2, par_tab2);
+	build_partition_table_for_one_partition_count(bsd, 3, par_tab3);
+	build_partition_table_for_one_partition_count(bsd, 4, par_tab4);
 
 	uint64_t* bit_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
 

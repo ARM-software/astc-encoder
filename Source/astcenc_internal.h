@@ -100,6 +100,9 @@ static constexpr unsigned int BLOCK_MAX_WEIGHT_BITS { 96 };
 /** @brief The index indicating a bad (unused) block mode in the remap array. */
 static constexpr uint16_t BLOCK_BAD_BLOCK_MODE { 0xFFFFu };
 
+/** @brief The index indicating a bad (unused) partitioning in the remap array. */
+static constexpr uint16_t BLOCK_BAD_PARTITIONING { 0xFFFFu };
+
 /** @brief The number of partition index bits supported by the ASTC format . */
 static constexpr unsigned int PARTITION_INDEX_BITS { 10 };
 
@@ -504,7 +507,10 @@ struct partition_lines3
 struct partition_info
 {
 	/** @brief The number of partitions in this partitioning. */
-	unsigned int partition_count;
+	uint16_t partition_count;
+
+	/** @brief The index (seed) of this partitioning. */
+	uint16_t partition_index;
 
 	/**
 	 * @brief The number of texels in each partition.
@@ -681,6 +687,9 @@ struct block_size_descriptor
 	/** @brief The number of stored block modes. */
 	unsigned int block_mode_count;
 
+	/** @brief The number of active partitionings for 1/2/3/4 partitionings. */
+	unsigned int partitioning_count[BLOCK_MAX_PARTITIONS];
+
 	/**
 	 * @brief The number of stored block modes which are "always" modes.
 	 *
@@ -700,8 +709,12 @@ struct block_size_descriptor
 	/** @brief The active block modes, stored in low indices. */
 	block_mode block_modes[WEIGHTS_MAX_BLOCK_MODES];
 
-	/** @brief The partition tables for all of the possible partitions. */
-	partition_info partitions[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
+	/** @brief The active partition tables, stored in low indices per-count. */
+	partition_info partitionings[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
+
+	/** @brief The packed partition table array index, or @c BLOCK_BAD_PARTITIONING if not active. */
+	// TODO: Index 0 in this contains nothing ...
+	uint16_t partitioning_packed_index[4][BLOCK_MAX_PARTITIONINGS];
 
 	/** @brief The active texels for k-means partition selection. */
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
@@ -721,7 +734,7 @@ struct block_size_descriptor
 	{
 		unsigned int packed_index = this->block_mode_packed_index[block_mode];
 		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count);
-		return block_modes[packed_index];
+		return this->block_modes[packed_index];
 	}
 
 	/**
@@ -770,7 +783,7 @@ struct block_size_descriptor
 			partition_count = 5;
 		}
 		unsigned int index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
-		return this->partitions + index;
+		return this->partitionings + index;
 	}
 
 	/**
@@ -783,7 +796,26 @@ struct block_size_descriptor
 	 */
 	const partition_info& get_partition_info(unsigned int partition_count, unsigned int index) const
 	{
-		return  get_partition_table(partition_count)[index];
+		unsigned int packed_index = this->partitioning_packed_index[partition_count - 1][index];
+		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count[partition_count - 1]);
+		auto& result = get_partition_table(partition_count)[packed_index];
+		assert(index == result.partition_index);
+		return result;
+	}
+
+	/**
+	 * @brief Get the partition info structure for a given partition count and seed.
+	 *
+	 * @param partition_count   The number of partitions we want the info for.
+	 * @param packed_index      The raw array offset.
+	 *
+	 * @return The partition info structure.
+	 */
+	const partition_info& get_raw_partition_info(unsigned int partition_count, unsigned int packed_index) const
+	{
+		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count[partition_count - 1]);
+		auto& result = get_partition_table(partition_count)[packed_index];
+		return result;
 	}
 };
 
