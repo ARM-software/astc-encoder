@@ -529,7 +529,10 @@ void find_best_partition_candidates(
 			unsigned int partition = partition_sequence[i];
 			const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
 
-			// TODO: This escape shouldn't be needed eventually ...
+			// TODO: This escape shouldn't really be needed. We should return
+			// the number of blocks which have usable (!= 255) mismatch count
+			// from compute_kmeans_partition_ordering and use that as the upper
+			// loop limit.
 			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
@@ -629,7 +632,10 @@ void find_best_partition_candidates(
 			unsigned int partition = partition_sequence[i];
 			const auto& pi = bsd.get_raw_partition_info(partition_count, partition);
 
-			// TODO: This escape shouldn't be needed eventually ...
+			// TODO: This escape shouldn't really be needed. We should return
+			// the number of blocks which have usable (!= 255) mismatch count
+			// from compute_kmeans_partition_ordering and use that as the upper
+			// loop limit.
 			unsigned int bk_partition_count = pi.partition_count;
 			if (bk_partition_count < partition_count)
 			{
