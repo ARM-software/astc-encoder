@@ -618,6 +618,11 @@ astcenc_error astcenc_config_init(
 
 	if (flags & ASTCENC_FLG_MAP_NORMAL)
 	{
+		// Normal map encoding uses L+A blocks, so allow one more partitioning
+		// than normal. We need need fewer bits for endpoints, so more likely
+		// to be able to use more partitions than an RGB/RGBA block
+		config.tune_partition_count_limit = astc::min(config.tune_partition_count_limit + 1u, 4u);
+
 		config.cw_g_weight = 0.0f;
 		config.cw_b_weight = 0.0f;
 		config.tune_2_partition_early_out_limit_factor *= 1.5f;
