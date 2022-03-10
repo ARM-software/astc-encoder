@@ -246,17 +246,19 @@ static uint8_t select_partition(
 /**
  * @brief Generate a single partition info structure.
  *
- * @param      bsd               The block size information.
- * @param      partition_count   The partition count of this partitioning.
- * @param      partition_index   The partition index / see of this partitioning.
- * @param[out] pi                The partition info structure to populate.
+ * @param[out] bsd                     The block size information.
+ * @param      partition_count         The partition count of this partitioning.
+ * @param      partition_index         The partition index / seed of this partitioning.
+ * @param      partition_remap_index   The remapped partition index of this partitioning.
+ * @param[out] pi                      The partition info structure to populate.
  *
  * @return True if this is a useful partition index, False if we can skip it.
  */
 static bool generate_one_partition_info_entry(
-	const block_size_descriptor& bsd,
+	block_size_descriptor& bsd,
 	unsigned int partition_count,
 	unsigned int partition_index,
+	unsigned int partition_remap_index,
 	partition_info& pi
 ) {
 	int texels_per_block = bsd.texel_count;
@@ -291,6 +293,7 @@ static bool generate_one_partition_info_entry(
 		}
 	}
 
+	// Populate the actual procedural partition count
 	if (counts[0] == 0)
 	{
 		pi.partition_count = 0;
@@ -312,21 +315,48 @@ static bool generate_one_partition_info_entry(
 		pi.partition_count = 4;
 	}
 
+	// Populate the partition index
+	pi.partition_index = partition_index;
+
+	// Populate the coverage bitmaps for 2/3/4 partitions
+	uint64_t* bitmaps { nullptr };
+	if (partition_count == 2)
+	{
+		bitmaps = bsd.coverage_bitmaps_2[partition_remap_index];
+	}
+	else if (partition_count == 3)
+	{
+		bitmaps = bsd.coverage_bitmaps_3[partition_remap_index];
+	}
+	else if (partition_count == 4)
+	{
+		bitmaps = bsd.coverage_bitmaps_4[partition_remap_index];
+	}
+
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
 	{
 		pi.partition_texel_count[i] = static_cast<uint8_t>(counts[i]);
-		pi.coverage_bitmaps[i] = 0ULL;
 	}
 
-	unsigned int texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
-	for (unsigned int i = 0; i < texels_to_process; i++)
+	if (bitmaps)
 	{
-		unsigned int idx = bsd.kmeans_texels[i];
-		pi.coverage_bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
+		for (unsigned int i = 0; i < partition_count; i++)
+		{
+			bitmaps[i] = 0ULL;
+		}
+
+		unsigned int texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
+		for (unsigned int i = 0; i < texels_to_process; i++)
+		{
+			unsigned int idx = bsd.kmeans_texels[i];
+			bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
+		}
 	}
 
-	pi.partition_index = partition_index;
-	return pi.partition_count == partition_count;
+	// Populate the validity mask
+	bool valid = pi.partition_count == partition_count;
+	bsd.partitioning_valid[partition_remap_index] = valid ? 0 : 255;
+	return valid;
 }
 
 static void build_partition_table_for_one_partition_count(
@@ -347,7 +377,7 @@ static void build_partition_table_for_one_partition_count(
 
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
-		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, ptab[next_index]);
+		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, next_index, ptab[next_index]);
 		if (can_omit_partitionings && !keep)
 		{
 			bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
@@ -391,7 +421,7 @@ void init_partition_tables(
 	partition_info* par_tab4 = par_tab3 + BLOCK_MAX_PARTITIONINGS;
 	partition_info* par_tab1 = par_tab4 + BLOCK_MAX_PARTITIONINGS;
 
-	generate_one_partition_info_entry(bsd, 1, 0, *par_tab1);
+	generate_one_partition_info_entry(bsd, 1, 0, 0, *par_tab1);
 	bsd.partitioning_count[0] = 1;
 
 	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];

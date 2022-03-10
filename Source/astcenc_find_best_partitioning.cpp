@@ -360,26 +360,29 @@ static void count_partition_mismatch_bits(
 	const uint64_t bitmaps[BLOCK_MAX_PARTITIONS],
 	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS]
 ) {
-	const auto* pt = bsd.get_partition_table(partition_count);
-
-	// Function pointer dispatch table
-	const mismatch_dispatch dispatch[3] {
-		partition_mismatch2,
-		partition_mismatch3,
-		partition_mismatch4
-	};
-
-	for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+	if (partition_count == 2)
 	{
-		// TODO: Shouldn't need this once we squash out dupes ...
-		int bitcount = 255;
-		if (pt->partition_count == partition_count)
+		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
 		{
-			bitcount = dispatch[partition_count - 2](bitmaps, pt->coverage_bitmaps);
+			int bitcount = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
+			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid[i]));
 		}
-
-		mismatch_counts[i] = bitcount;
-		pt++;
+	}
+	else if (partition_count == 3)
+	{
+		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+		{
+			int bitcount = partition_mismatch3(bitmaps, bsd.coverage_bitmaps_3[i]);
+			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid[i]));
+		}
+	}
+	else
+	{
+		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+		{
+			int bitcount = partition_mismatch4(bitmaps, bsd.coverage_bitmaps_4[i]);
+			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid[i]));
+		}
 	}
 }
 
