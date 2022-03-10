@@ -350,7 +350,7 @@ static void build_partition_table_for_one_partition_count(
 		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, ptab[next_index]);
 		if (can_omit_partitionings && !keep)
 		{
-			bsd.partitioning_packed_index[partition_count - 1][i] = BLOCK_BAD_PARTITIONING;
+			bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
 			continue;
 		}
 
@@ -369,13 +369,13 @@ static void build_partition_table_for_one_partition_count(
 
 		if (keep)
 		{
-			bsd.partitioning_packed_index[partition_count - 1][i] = next_index;
+			bsd.partitioning_packed_index[partition_count - 2][i] = next_index;
 			bsd.partitioning_count[partition_count - 1] = next_index + 1;
 			next_index++;
 		}
 		else
 		{
-			bsd.partitioning_packed_index[partition_count - 1][i] = BLOCK_BAD_PARTITIONING;
+			bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
 		}
 	}
 }
@@ -393,10 +393,8 @@ void init_partition_tables(
 
 	generate_one_partition_info_entry(bsd, 1, 0, *par_tab1);
 	bsd.partitioning_count[0] = 1;
-	bsd.partitioning_packed_index[0][0] = 0;
 
 	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
-
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 2, par_tab2, canonical_patterns);
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 3, par_tab3, canonical_patterns);
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 4, par_tab4, canonical_patterns);

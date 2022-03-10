@@ -712,9 +712,12 @@ struct block_size_descriptor
 	/** @brief The active partition tables, stored in low indices per-count. */
 	partition_info partitionings[(3 * BLOCK_MAX_PARTITIONINGS) + 1];
 
-	/** @brief The packed partition table array index, or @c BLOCK_BAD_PARTITIONING if not active. */
-	// TODO: Index 0 in this contains nothing ...
-	uint16_t partitioning_packed_index[4][BLOCK_MAX_PARTITIONINGS];
+	/**
+	 * @brief The packed partition table array index, or @c BLOCK_BAD_PARTITIONING if not active.
+	 *
+	 * Indexed by partition_count - 2, containing 2, 3 and 4 partitions.
+	 */
+	uint16_t partitioning_packed_index[3][BLOCK_MAX_PARTITIONINGS];
 
 	/** @brief The active texels for k-means partition selection. */
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
@@ -796,7 +799,12 @@ struct block_size_descriptor
 	 */
 	const partition_info& get_partition_info(unsigned int partition_count, unsigned int index) const
 	{
-		unsigned int packed_index = this->partitioning_packed_index[partition_count - 1][index];
+		unsigned int packed_index = 0;
+		if (partition_count >= 2)
+		{
+			packed_index = this->partitioning_packed_index[partition_count - 2][index];
+		}
+
 		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count[partition_count - 1]);
 		auto& result = get_partition_table(partition_count)[packed_index];
 		assert(index == result.partition_index);
