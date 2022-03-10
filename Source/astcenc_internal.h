@@ -723,28 +723,42 @@ struct block_size_descriptor
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
 
 	/**
-	 * @brief Is 0 if this partition is valid for compression 255 otherwise.
+	 * @brief Is 0 if this 2-partition is valid for compression 255 otherwise.
 	 *
 	 * Indexed by remapped index, not physical index.
 	 */
-	uint8_t partitioning_valid[BLOCK_MAX_PARTITIONINGS];
+	uint8_t partitioning_valid_2[BLOCK_MAX_PARTITIONINGS];
 
 	/**
-	 * @brief The canonical 2 partition coverage pattern used during block partition search.
+	 * @brief The canonical 2-partition coverage pattern used during block partition search.
 	 *
 	 * Indexed by remapped index, not physical index.
 	 */
 	uint64_t coverage_bitmaps_2[BLOCK_MAX_PARTITIONINGS][2];
 
 	/**
-	 * @brief The canonical 3 partition coverage pattern used during block partition search.
+	 * @brief Is 0 if this 3-partition is valid for compression 255 otherwise.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint8_t partitioning_valid_3[BLOCK_MAX_PARTITIONINGS];
+
+	/**
+	 * @brief The canonical 3-partition coverage pattern used during block partition search.
 	 *
 	 * Indexed by remapped index, not physical index.
 	 */
 	uint64_t coverage_bitmaps_3[BLOCK_MAX_PARTITIONINGS][3];
 
 	/**
-	 * @brief The canonical 4 partition coverage pattern used during block partition search.
+	 * @brief Is 0 if this 4-partition is valid for compression 255 otherwise.
+	 *
+	 * Indexed by remapped index, not physical index.
+	 */
+	uint8_t partitioning_valid_4[BLOCK_MAX_PARTITIONINGS];
+
+	/**
+	 * @brief The canonical 4-partition coverage pattern used during block partition search.
 	 *
 	 * Indexed by remapped index, not physical index.
 	 */

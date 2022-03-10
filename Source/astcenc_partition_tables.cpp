@@ -320,17 +320,21 @@ static bool generate_one_partition_info_entry(
 
 	// Populate the coverage bitmaps for 2/3/4 partitions
 	uint64_t* bitmaps { nullptr };
+	uint8_t* valids { nullptr };
 	if (partition_count == 2)
 	{
 		bitmaps = bsd.coverage_bitmaps_2[partition_remap_index];
+		valids = bsd.partitioning_valid_2;
 	}
 	else if (partition_count == 3)
 	{
 		bitmaps = bsd.coverage_bitmaps_3[partition_remap_index];
+		valids = bsd.partitioning_valid_3;
 	}
 	else if (partition_count == 4)
 	{
 		bitmaps = bsd.coverage_bitmaps_4[partition_remap_index];
+		valids = bsd.partitioning_valid_4;
 	}
 
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
@@ -338,8 +342,14 @@ static bool generate_one_partition_info_entry(
 		pi.partition_texel_count[i] = static_cast<uint8_t>(counts[i]);
 	}
 
+	// Valid partitionings have texels in all of the requested partitions
+	bool valid = pi.partition_count == partition_count;
+
 	if (bitmaps)
 	{
+		// Populate the bitmap validity mask
+		valids[partition_remap_index] = valid ? 0 : 255;
+
 		for (unsigned int i = 0; i < partition_count; i++)
 		{
 			bitmaps[i] = 0ULL;
@@ -353,9 +363,6 @@ static bool generate_one_partition_info_entry(
 		}
 	}
 
-	// Populate the validity mask
-	bool valid = pi.partition_count == partition_count;
-	bsd.partitioning_valid[partition_remap_index] = valid ? 0 : 255;
 	return valid;
 }
 
