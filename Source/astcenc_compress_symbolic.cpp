@@ -1202,14 +1202,7 @@ void compress_block(
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
 	bool block_skip_two_plane = false;
-
-	// Default max partition, but +1 if only have 1 or 2 active components
 	int max_partitions = ctx.config.tune_partition_count_limit;
-	if (block_is_l || block_is_la)
-	{
-		max_partitions = astc::min(max_partitions + 1, 4);
-	}
-
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics

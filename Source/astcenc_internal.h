@@ -1378,18 +1378,20 @@ struct astcenc_context
  * structure. All initialized block size descriptors must be terminated using a call to
  * @c term_block_size_descriptor() to free resources.
  *
- * @param      x_texels         The number of texels in the block X dimension.
- * @param      y_texels         The number of texels in the block Y dimension.
- * @param      z_texels         The number of texels in the block Z dimension.
- * @param      can_omit_modes   Can we discard modes that astcenc won't use, even if legal?
- * @param      mode_cutoff      The block mode percentile cutoff [0-1].
- * @param[out] bsd              The descriptor to initialize.
+ * @param      x_texels                 The number of texels in the block X dimension.
+ * @param      y_texels                 The number of texels in the block Y dimension.
+ * @param      z_texels                 The number of texels in the block Z dimension.
+ * @param      can_omit_modes           Can we discard modes and partitionings that astcenc won't use?
+ * @param      partition_count_cutoff   The partition count cutoff to use, if we can omit partitionings.
+ * @param      mode_cutoff              The block mode percentile cutoff [0-1].
+ * @param[out] bsd                      The descriptor to initialize.
  */
 void init_block_size_descriptor(
 	unsigned int x_texels,
 	unsigned int y_texels,
 	unsigned int z_texels,
 	bool can_omit_modes,
+	unsigned int partition_count_cutoff,
 	float mode_cutoff,
 	block_size_descriptor& bsd);
 
@@ -1407,10 +1409,14 @@ void term_block_size_descriptor(
  * Note the @c bsd descriptor must be initialized by calling @c init_block_size_descriptor() before
  * calling this function.
  *
- * @param[out] bsd   The block size information structure to populate.
+ * @param[out] bsd                      The block size information structure to populate.
+ * @param      can_omit_partitionings   True if we can we drop partitionings that astcenc won't use.
+ * @param      partition_count_cutoff   The partition count cutoff to use, if we can omit partitionings.
  */
 void init_partition_tables(
-	block_size_descriptor& bsd);
+	block_size_descriptor& bsd,
+	bool can_omit_partitionings,
+	unsigned int partition_count_cutoff);
 
 /**
  * @brief Get the percentile table for 2D block modes.

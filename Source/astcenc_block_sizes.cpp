@@ -1132,6 +1132,7 @@ void init_block_size_descriptor(
 	unsigned int y_texels,
 	unsigned int z_texels,
 	bool can_omit_modes,
+	unsigned int partition_count_cutoff,
 	float mode_cutoff,
 	block_size_descriptor& bsd
 ) {
@@ -1144,7 +1145,7 @@ void init_block_size_descriptor(
 		construct_block_size_descriptor_2d(x_texels, y_texels, can_omit_modes, mode_cutoff, bsd);
 	}
 
-	init_partition_tables(bsd);
+	init_partition_tables(bsd, can_omit_modes, partition_count_cutoff);
 }
 
 /* See header for documentation. */
