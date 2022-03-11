@@ -1185,7 +1185,7 @@ void compress_block(
 {
 	astcenc_profile decode_mode = ctx.config.profile;
 	symbolic_compressed_block scb;
-	const block_size_descriptor* bsd = ctx.bsd;
+	const block_size_descriptor& bsd = ctx.bsd;
 	float lowest_correl;
 
 	TRACE_NODE(node0, "block");
@@ -1246,12 +1246,12 @@ void compress_block(
 
 		trace_add_data("exit", "quality hit");
 
-		symbolic_to_physical(*bsd, scb, pcb);
+		symbolic_to_physical(bsd, scb, pcb);
 		return;
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	float error_weight_sum = hadd_s(blk.channel_weight) * bsd->texel_count;
+	float error_weight_sum = hadd_s(blk.channel_weight) * bsd.texel_count;
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
@@ -1289,7 +1289,7 @@ void compress_block(
 
 	// Only enable MODE0 fast path (trial 0) if 2D and more than 25 texels
 	int start_trial = 1;
-	if ((bsd->texel_count >= TUNE_MIN_TEXELS_MODE0_FASTPATH) && (bsd->zdim == 1))
+	if ((bsd.texel_count >= TUNE_MIN_TEXELS_MODE0_FASTPATH) && (bsd.zdim == 1))
 	{
 		start_trial = 0;
 	}
@@ -1302,7 +1302,7 @@ void compress_block(
 		trace_add_data("search_mode", i);
 
 		float errorval = compress_symbolic_block_for_partition_1plane(
-		    ctx.config, *bsd, blk, i == 0,
+		    ctx.config, bsd, blk, i == 0,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf);
 
@@ -1315,7 +1315,7 @@ void compress_block(
 	}
 
 #if !defined(ASTCENC_DIAGNOSTICS)
-	lowest_correl = prepare_block_statistics(bsd->texel_count, blk);
+	lowest_correl = prepare_block_statistics(bsd.texel_count, blk);
 #endif
 
 	block_skip_two_plane = lowest_correl > ctx.config.tune_2_plane_early_out_limit_correlation;
@@ -1348,7 +1348,7 @@ void compress_block(
 		}
 
 		float errorval = compress_symbolic_block_for_partition_2planes(
-		    ctx.config, *bsd, blk, error_threshold * errorval_overshoot,
+		    ctx.config, bsd, blk, error_threshold * errorval_overshoot,
 		    i, scb, tmpbuf);
 
 		// If attempting two planes is much worse than the best one plane result
@@ -1370,7 +1370,7 @@ void compress_block(
 	{
 		unsigned int partition_indices[2] { 0 };
 
-		find_best_partition_candidates(*bsd, blk, partition_count,
+		find_best_partition_candidates(bsd, blk, partition_count,
 		                               ctx.config.tune_partition_index_limit,
 		                               partition_indices);
 
@@ -1383,7 +1383,7 @@ void compress_block(
 			trace_add_data("search_mode", i);
 
 			float errorval = compress_symbolic_block_for_partition_1plane(
-			    ctx.config, *bsd, blk, false,
+			    ctx.config, bsd, blk, false,
 			    error_threshold * errorval_overshoot,
 			    partition_count, partition_indices[i],
 			    scb, tmpbuf);
@@ -1432,7 +1432,7 @@ END_OF_TESTS:
 	}
 
 	// Compress to a physical block
-	symbolic_to_physical(*bsd, scb, pcb);
+	symbolic_to_physical(bsd, scb, pcb);
 }
 
 #endif

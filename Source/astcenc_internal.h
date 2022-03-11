@@ -701,7 +701,7 @@ struct block_size_descriptor
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The active decimation tables, stored in low indices. */
-	const decimation_info *decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
+	alignas(ASTCENC_VECALIGN) decimation_info decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The packed block mode array index, or @c BLOCK_BAD_BLOCK_MODE if not active. */
 	uint16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
@@ -811,7 +811,7 @@ struct block_size_descriptor
 	 */
 	const decimation_info& get_decimation_info(unsigned int decimation_mode) const
 	{
-		return *this->decimation_tables[decimation_mode];
+		return this->decimation_tables[decimation_mode];
 	}
 
 	/**
@@ -1375,7 +1375,7 @@ struct astcenc_context
 	unsigned int thread_count;
 
 	/** @brief The block size descriptor this context was created with. */
-	block_size_descriptor* bsd;
+	alignas(ASTCENC_VECALIGN) block_size_descriptor bsd;
 
 	/*
 	 * Fields below here are not needed in a decompress-only build, but some remain as they are
@@ -1425,8 +1425,7 @@ struct astcenc_context
  * @brief Populate the block size descriptor for the target block size.
  *
  * This will also initialize the partition table metadata, which is stored as part of the BSD
- * structure. All initialized block size descriptors must be terminated using a call to
- * @c term_block_size_descriptor() to free resources.
+ * structure.
  *
  * @param      x_texels                 The number of texels in the block X dimension.
  * @param      y_texels                 The number of texels in the block Y dimension.
@@ -1443,14 +1442,6 @@ void init_block_size_descriptor(
 	bool can_omit_modes,
 	unsigned int partition_count_cutoff,
 	float mode_cutoff,
-	block_size_descriptor& bsd);
-
-/**
- * @brief Terminate a block size descriptor and free associated resources.
- *
- * @param bsd   The descriptor to terminate.
- */
-void term_block_size_descriptor(
 	block_size_descriptor& bsd);
 
 /**
