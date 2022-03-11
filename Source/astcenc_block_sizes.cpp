@@ -768,8 +768,8 @@ static int construct_dt_entry_2d(
 
 	bool try_2planes = (2 * weight_count) <= BLOCK_MAX_WEIGHTS;
 
-	decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
-	init_decimation_info_2d(x_texels, y_texels, x_weights, y_weights, *di, wb);
+	decimation_info& di = bsd.decimation_tables[dm_index];
+	init_decimation_info_2d(x_texels, y_texels, x_weights, y_weights, di, wb);
 
 	int maxprec_1plane = -1;
 	int maxprec_2planes = -1;
@@ -798,8 +798,6 @@ static int construct_dt_entry_2d(
 
 	// Default to not enabled - we'll populate these based on active block modes
 	bsd.decimation_modes[dm_index].percentile_hit = false;
-
-	bsd.decimation_tables[dm_index] = di;
 
 	bsd.decimation_mode_count++;
 	return dm_index;
@@ -965,7 +963,6 @@ static void construct_block_size_descriptor_2d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].percentile_hit = false;
-		bsd.decimation_tables[i] = nullptr;
 	}
 
 	// Determine the texels to use for kmeans clustering.
@@ -1022,9 +1019,9 @@ static void construct_block_size_descriptor_3d(
 					continue;
 				}
 
-				decimation_info *di = aligned_malloc<decimation_info>(sizeof(decimation_info), ASTCENC_VECALIGN);
+				decimation_info& di = bsd.decimation_tables[decimation_mode_count];
 				decimation_mode_index[z_weights * 64 + y_weights * 8 + x_weights] = decimation_mode_count;
-				init_decimation_info_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, *di, *wb);
+				init_decimation_info_3d(x_texels, y_texels, z_texels, x_weights, y_weights, z_weights, di, *wb);
 
 				int maxprec_1plane = -1;
 				int maxprec_2planes = -1;
@@ -1051,7 +1048,6 @@ static void construct_block_size_descriptor_3d(
 				bsd.decimation_modes[decimation_mode_count].maxprec_1plane = static_cast<int8_t>(maxprec_1plane);
 				bsd.decimation_modes[decimation_mode_count].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 				bsd.decimation_modes[decimation_mode_count].percentile_hit = false;
-				bsd.decimation_tables[decimation_mode_count] = di;
 				decimation_mode_count++;
 			}
 		}
@@ -1063,7 +1059,6 @@ static void construct_block_size_descriptor_3d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].percentile_hit = false;
-		bsd.decimation_tables[i] = nullptr;
 	}
 
 	bsd.decimation_mode_count = decimation_mode_count;
@@ -1146,14 +1141,4 @@ void init_block_size_descriptor(
 	}
 
 	init_partition_tables(bsd, can_omit_modes, partition_count_cutoff);
-}
-
-/* See header for documentation. */
-void term_block_size_descriptor(
-	block_size_descriptor& bsd
-) {
-	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
-	{
-		aligned_free<const decimation_info>(bsd.decimation_tables[i]);
-	}
 }

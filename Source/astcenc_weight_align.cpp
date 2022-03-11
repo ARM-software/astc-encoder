@@ -521,7 +521,7 @@ void compute_angular_endpoints_1plane(
 			continue;
 		}
 
-		unsigned int weight_count = bsd.decimation_tables[i]->weight_count;
+		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
 
 		if (weight_count < tune_low_weight_limit)
 		{
@@ -584,7 +584,7 @@ void compute_angular_endpoints_2planes(
 			continue;
 		}
 
-		unsigned int weight_count = bsd.decimation_tables[i]->weight_count;
+		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
 
 		if (weight_count < tune_low_weight_limit)
 		{

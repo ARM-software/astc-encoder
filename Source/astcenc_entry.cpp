@@ -675,8 +675,6 @@ astcenc_error astcenc_context_alloc(
 	astcenc_context** context
 ) {
 	astcenc_error status;
-	astcenc_context* ctx = nullptr;
-	block_size_descriptor* bsd = nullptr;
 	const astcenc_config& config = *configp;
 
 	status = validate_cpu_float();
@@ -704,7 +702,7 @@ astcenc_error astcenc_context_alloc(
 	}
 #endif
 
-	ctx = new astcenc_context;
+	astcenc_context* ctx = aligned_malloc<astcenc_context>(sizeof(astcenc_context), ASTCENC_VECALIGN);
 	ctx->thread_count = thread_count;
 	ctx->config = config;
 	ctx->working_buffers = nullptr;
@@ -720,15 +718,12 @@ astcenc_error astcenc_context_alloc(
 		return status;
 	}
 
-	bsd = new block_size_descriptor;
-	ctx->bsd = bsd;
-
 	bool can_omit_modes = config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 	init_block_size_descriptor(config.block_x, config.block_y, config.block_z,
 	                           can_omit_modes,
 	                           config.tune_partition_count_limit,
 	                           static_cast<float>(config.tune_block_mode_limit) / 100.0f,
-	                           *bsd);
+	                           ctx->bsd);
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	// Do setup only needed by compression
@@ -750,8 +745,6 @@ astcenc_error astcenc_context_alloc(
 		              "compression_working_buffers size must be multiple of vector alignment");
 		if (!ctx->working_buffers)
 		{
-			term_block_size_descriptor(*bsd);
-			delete bsd;
 			delete ctx;
 			*context = nullptr;
 			return ASTCENC_ERR_OUT_OF_MEM;
@@ -787,12 +780,10 @@ void astcenc_context_free(
 	if (ctx)
 	{
 		aligned_free<compression_working_buffers>(ctx->working_buffers);
-		term_block_size_descriptor(*(ctx->bsd));
 #if defined(ASTCENC_DIAGNOSTICS)
 		delete ctx->trace_log;
 #endif
-		delete ctx->bsd;
-		delete ctx;
+		aligned_free<astcenc_context>(ctx);
 	}
 }
 
@@ -814,14 +805,14 @@ static void compress_image(
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
 ) {
-	const block_size_descriptor *bsd = ctx.bsd;
+	const block_size_descriptor& bsd = ctx.bsd;
 	astcenc_profile decode_mode = ctx.config.profile;
 
 	image_block blk;
 
-	int block_x = bsd->xdim;
-	int block_y = bsd->ydim;
-	int block_z = bsd->zdim;
+	int block_x = bsd.xdim;
+	int block_y = bsd.ydim;
+	int block_z = bsd.zdim;
 	blk.texel_count = block_x * block_y * block_z;
 
 	int dim_x = image.dim_x;
@@ -899,7 +890,7 @@ static void compress_image(
 			// Fetch the full block for compression
 			if (use_full_block)
 			{
-				fetch_image_block(decode_mode, image, blk, *bsd, x * block_x, y * block_y, z * block_z, swizzle);
+				fetch_image_block(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 			}
 			// Apply alpha scale RDO - substitute constant color block
 			else
@@ -1124,13 +1115,13 @@ astcenc_error astcenc_decompress_image(
 			physical_compressed_block pcb = *(const physical_compressed_block*)bp;
 			symbolic_compressed_block scb;
 
-			physical_to_symbolic(*ctx->bsd, pcb, scb);
+			physical_to_symbolic(ctx->bsd, pcb, scb);
 
-			decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
+			decompress_symbolic_block(ctx->config.profile, ctx->bsd,
 			                          x * block_x, y * block_y, z * block_z,
 			                          scb, blk);
 
-			write_image_block(image_out, blk, *ctx->bsd,
+			write_image_block(image_out, blk, ctx->bsd,
 			                  x * block_x, y * block_y, z * block_z, *swizzle);
 		}
 
@@ -1163,10 +1154,10 @@ astcenc_error astcenc_get_block_info(
 	// Decode the compressed data into a symbolic form
 	physical_compressed_block pcb = *(const physical_compressed_block*)data;
 	symbolic_compressed_block scb;
-	physical_to_symbolic(*ctx->bsd, pcb, scb);
+	physical_to_symbolic(ctx->bsd, pcb, scb);
 
 	// Fetch the appropriate partition and decimation tables
-	block_size_descriptor& bsd = *ctx->bsd;
+	block_size_descriptor& bsd = ctx->bsd;
 
 	// Start from a clean slate
 	memset(info, 0, sizeof(*info));
@@ -1199,7 +1190,7 @@ astcenc_error astcenc_get_block_info(
 	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-	const decimation_info& di = *bsd.decimation_tables[bm.decimation_mode];
+	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	info->weight_x = di.weight_x;
 	info->weight_y = di.weight_y;

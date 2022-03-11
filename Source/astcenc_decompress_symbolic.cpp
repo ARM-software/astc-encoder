@@ -342,7 +342,7 @@ float compute_symbolic_block_difference_2plane(
 
 	// Get the appropriate block descriptor
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
+	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	// Unquantize and undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
@@ -439,7 +439,7 @@ float compute_symbolic_block_difference_1plane(
 
 	// Get the appropriate block descriptor
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
+	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	// Unquantize and undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
@@ -532,7 +532,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 
 	// Get the appropriate block descriptor
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-	const decimation_info& di = *(bsd.decimation_tables[bm.decimation_mode]);
+	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	// Unquantize and undecimate the weights
 	alignas(ASTCENC_VECALIGN) int plane1_weights[BLOCK_MAX_TEXELS];
