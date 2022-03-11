@@ -48,6 +48,7 @@ add_library(${ASTC_TARGET}-static
         astcenc_pick_best_endpoint_format.cpp
         astcenc_platform_isa_detection.cpp
         astcenc_quantization.cpp
+        astcenc_simd_decode_imp.cpp
         astcenc_symbolic_physical.cpp
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
@@ -135,6 +136,7 @@ macro(astcenc_set_properties NAME)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-format-nonliteral>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-reserved-identifier>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-function-type>
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unused-function>
 
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 

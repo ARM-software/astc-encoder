@@ -1134,7 +1134,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
 			unsigned int ydst = ymod;
-			void *dst;
+			void* dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{

@@ -33,6 +33,7 @@
 #include <mutex>
 #include <type_traits>
 
+#include "astcenc_simd_decode.h"
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
 #include "astcenc_vecmathlib.h"
@@ -1405,6 +1406,8 @@ struct astcenc_context
 
 	/** @brief The parallel manager for decompression. */
 	ParallelManager manage_decompress;
+
+	astc_simd_decode_processed_params_t decompressor_params;
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**

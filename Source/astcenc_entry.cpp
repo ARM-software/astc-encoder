@@ -766,6 +766,8 @@ astcenc_error astcenc_context_alloc(
 
 	*context = ctx;
 
+	astc_simd_decode_precompute();
+
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	prepare_angular_tables();
 #endif
@@ -1070,9 +1072,6 @@ astcenc_error astcenc_decompress_image(
 	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
 	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
 
-	int row_blocks = xblocks;
-	int plane_blocks = xblocks * yblocks;
-
 	// Check we have enough output space (16 bytes per block)
 	size_t size_needed = xblocks * yblocks * zblocks * 16;
 	if (data_len < size_needed)
@@ -1089,40 +1088,61 @@ astcenc_error astcenc_decompress_image(
 		astcenc_decompress_reset(ctx);
 	}
 
+	auto init_decomp = [ctx, &image_outp, data]() {
+		bool do_hdr_decode = image_outp->data_type != ASTCENC_TYPE_U8;
+
+		unsigned int block_x = ctx->config.block_x;
+		unsigned int block_y = ctx->config.block_y;
+		unsigned int block_z = ctx->config.block_z;
+
+		unsigned int xblocks = (image_outp->dim_x + block_x - 1) / block_x;
+		unsigned int yblocks = (image_outp->dim_y + block_y - 1) / block_y;
+
+		unsigned int dim_x = image_outp->dim_x;
+		unsigned int dim_y = image_outp->dim_y;
+		unsigned int dim_z = image_outp->dim_z;
+
+		intptr_t src_row_stride    = xblocks * 16;
+		intptr_t src_layer_stride  = xblocks * yblocks * 16;
+		intptr_t dest_row_stride   = dim_x * (do_hdr_decode ? 8 : 4);
+		intptr_t dest_layer_stride = dim_x * dim_y * (do_hdr_decode ? 8 : 4);
+
+		astc_simd_decode_params_t pars;
+
+		pars.dst_start_ptr    = image_outp->data[0];
+		pars.dst_row_stride   = dest_row_stride;
+		pars.dst_layer_stride = dest_layer_stride;
+
+		pars.src_start_ptr    = data;
+		pars.src_row_stride   = src_row_stride;
+		pars.src_layer_stride = src_layer_stride;
+		pars.xres = dim_x;
+		pars.yres = dim_y;
+		pars.zres = dim_z;
+		pars.block_xdim = block_x;
+		pars.block_ydim = block_y;
+		pars.block_zdim = block_z;
+		pars.decode_flags = do_hdr_decode ? 1 : 0;
+
+		return astc_simd_decode_prepare(&ctx->decompressor_params, &pars);
+	};
+
 	// Only the first thread actually runs the initializer
-	ctx->manage_decompress.init(zblocks * yblocks * xblocks);
+	ctx->manage_decompress.init(init_decomp);
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
 		unsigned int count;
-		unsigned int base = ctx->manage_decompress.get_task_assignment(128, count);
+		unsigned int base = ctx->manage_decompress.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for(unsigned int i = 0; i < count; i++)
 		{
-			// Decode i into x, y, z block indices
-			int z = i / plane_blocks;
-			unsigned int rem = i - (z * plane_blocks);
-			int y = rem / row_blocks;
-			int x = rem - (y * row_blocks);
-
-			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
-			const uint8_t* bp = data + offset;
-			physical_compressed_block pcb = *(const physical_compressed_block*)bp;
-			symbolic_compressed_block scb;
-
-			physical_to_symbolic(ctx->bsd, pcb, scb);
-
-			decompress_symbolic_block(ctx->config.profile, ctx->bsd,
-			                          x * block_x, y * block_y, z * block_z,
-			                          scb, blk);
-
-			write_image_block(image_out, blk, ctx->bsd,
-			                  x * block_x, y * block_y, z * block_z, *swizzle);
+			astc_simd_decode_row_iterate(&ctx->decompressor_params, i + base);
 		}
 
 		ctx->manage_decompress.complete_task_assignment(count);
