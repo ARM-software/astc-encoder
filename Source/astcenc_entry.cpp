@@ -754,7 +754,7 @@ astcenc_error astcenc_context_alloc(
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	ctx->trace_log = new TraceLog(ctx->config.trace_file_path);
-	if(!ctx->trace_log->m_file)
+	if (!ctx->trace_log->m_file)
 	{
 		return ASTCENC_ERR_DTRACE_FAILURE;
 	}
