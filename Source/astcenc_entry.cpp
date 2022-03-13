@@ -714,7 +714,7 @@ astcenc_error astcenc_context_alloc(
 	status = validate_config(ctx->config);
 	if (status != ASTCENC_SUCCESS)
 	{
-		delete ctx;
+		aligned_free<astcenc_context>(ctx);
 		return status;
 	}
 
@@ -745,7 +745,7 @@ astcenc_error astcenc_context_alloc(
 		              "compression_working_buffers size must be multiple of vector alignment");
 		if (!ctx->working_buffers)
 		{
-			delete ctx;
+			aligned_free<astcenc_context>(ctx);
 			*context = nullptr;
 			return ASTCENC_ERR_OUT_OF_MEM;
 		}
