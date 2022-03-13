@@ -1185,7 +1185,7 @@ void compress_block(
 {
 	astcenc_profile decode_mode = ctx.config.profile;
 	symbolic_compressed_block scb;
-	const block_size_descriptor& bsd = ctx.bsd;
+	const block_size_descriptor& bsd = *ctx.bsd;
 	float lowest_correl;
 
 	TRACE_NODE(node0, "block");

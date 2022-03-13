@@ -1375,7 +1375,7 @@ struct astcenc_context
 	unsigned int thread_count;
 
 	/** @brief The block size descriptor this context was created with. */
-	alignas(ASTCENC_VECALIGN) block_size_descriptor bsd;
+	block_size_descriptor* bsd;
 
 	/*
 	 * Fields below here are not needed in a decompress-only build, but some remain as they are
