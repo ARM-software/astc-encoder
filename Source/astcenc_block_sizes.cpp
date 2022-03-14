@@ -322,9 +322,11 @@ static void init_decimation_info_2d(
 		}
 	}
 
+	uint8_t max_texel_weight_count = 0;
 	for (unsigned int i = 0; i < texels_per_block; i++)
 	{
 		di.texel_weight_count[i] = wb.weight_count_of_texel[i];
+		max_texel_weight_count = astc::max(max_texel_weight_count, di.texel_weight_count[i]);
 
 		for (unsigned int j = 0; j < wb.weight_count_of_texel[i]; j++)
 		{
@@ -341,6 +343,8 @@ static void init_decimation_info_2d(
 			di.texel_weights_4t[j][i] = 0;
 		}
 	}
+
+	di.max_texel_weight_count = max_texel_weight_count;
 
 	for (unsigned int i = 0; i < weights_per_block; i++)
 	{
@@ -587,9 +591,11 @@ static void init_decimation_info_3d(
 		}
 	}
 
+	uint8_t max_texel_weight_count = 0;
 	for (unsigned int i = 0; i < texels_per_block; i++)
 	{
 		di.texel_weight_count[i] = wb.weight_count_of_texel[i];
+		max_texel_weight_count = astc::max(max_texel_weight_count, di.texel_weight_count[i]);
 
 		// Init all 4 entries so we can rely on zeros for vectorization
 		for (unsigned int j = 0; j < 4; j++)
@@ -606,6 +612,8 @@ static void init_decimation_info_3d(
 			di.texel_weights_4t[j][i] = wb.grid_weights_of_texel[i][j];
 		}
 	}
+
+	di.max_texel_weight_count = max_texel_weight_count;
 
 	for (unsigned int i = 0; i < weights_per_block; i++)
 	{
