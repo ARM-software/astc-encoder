@@ -431,7 +431,7 @@ enum quant_method
  */
 static inline unsigned int get_quant_level(quant_method method)
 {
-	switch(method)
+	switch (method)
 	{
 	case QUANT_2:   return   2;
 	case QUANT_3:   return   3;

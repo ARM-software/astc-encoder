@@ -1057,7 +1057,7 @@ static void print_astcenc_config(
 		printf("Compressor settings\n");
 		printf("===================\n\n");
 
-		switch(config.profile)
+		switch (config.profile)
 		{
 		case ASTCENC_PRF_LDR:
 			printf("    Color profile:              LDR linear\n");

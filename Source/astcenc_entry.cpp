@@ -205,7 +205,7 @@ static astcenc_error validate_profile(
 ) {
 	// Values in this enum are from an external user, so not guaranteed to be
 	// bounded to the enum values
-	switch(static_cast<int>(profile))
+	switch (static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR_SRGB:
 	case ASTCENC_PRF_LDR:
@@ -291,7 +291,7 @@ static astcenc_error validate_compression_swz(
 	astcenc_swz swizzle
 ) {
 	// Not all enum values are handled; SWZ_Z is invalid for compression
-	switch(static_cast<int>(swizzle))
+	switch (static_cast<int>(swizzle))
 	{
 	case ASTCENC_SWZ_R:
 	case ASTCENC_SWZ_G:
@@ -339,7 +339,7 @@ static astcenc_error validate_decompression_swz(
 ) {
 	// Values in this enum are from an external user, so not guaranteed to be
 	// bounded to the enum values
-	switch(static_cast<int>(swizzle))
+	switch (static_cast<int>(swizzle))
 	{
 	case ASTCENC_SWZ_R:
 	case ASTCENC_SWZ_G:
@@ -596,7 +596,7 @@ astcenc_error astcenc_config_init(
 
 	// Values in this enum are from an external user, so not guaranteed to be
 	// bounded to the enum values
-	switch(static_cast<int>(profile))
+	switch (static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR:
 	case ASTCENC_PRF_LDR_SRGB:
@@ -825,15 +825,22 @@ static void compress_image(
 	int xblocks = (dim_x + block_x - 1) / block_x;
 	int yblocks = (dim_y + block_y - 1) / block_y;
 	int zblocks = (dim_z + block_z - 1) / block_z;
+	int block_count = zblocks * yblocks * xblocks;
 
 	int row_blocks = xblocks;
 	int plane_blocks = xblocks * yblocks;
+
+	// Populate the block channel weights
+	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
+									ctx.config.cw_g_weight,
+									ctx.config.cw_b_weight,
+									ctx.config.cw_a_weight);
 
 	// Use preallocated scratch buffer
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread actually runs the initializer
-	ctx.manage_compress.init(zblocks * yblocks * xblocks);
+	ctx.manage_compress.init(block_count);
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)
@@ -904,12 +911,6 @@ static void compress_image(
 				blk.data_max = vfloat4::zero();
 				blk.grayscale = true;
 			}
-
-			// Populate the block channel weights
-			blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
-			                             ctx.config.cw_g_weight,
-			                             ctx.config.cw_b_weight,
-			                             ctx.config.cw_a_weight);
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
@@ -1267,7 +1268,7 @@ const char* astcenc_get_error_string(
 ) {
 	// Values in this enum are from an external user, so not guaranteed to be
 	// bounded to the enum values
-	switch(static_cast<int>(status))
+	switch (static_cast<int>(status))
 	{
 	case ASTCENC_SUCCESS:
 		return "ASTCENC_SUCCESS";
