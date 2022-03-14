@@ -546,6 +546,9 @@ struct decimation_info
 	/** @brief The total number of texels in the block. */
 	uint8_t texel_count;
 
+	/** @brief The maximum number of stored weights that contribute to each texel, between 1 and 4. */
+	uint8_t max_texel_weight_count;
+
 	/** @brief The total number of weights stored. */
 	uint8_t weight_count;
 
@@ -1904,6 +1907,28 @@ static inline float bilinear_infill(
 }
 
 /**
+ * @brief Compute the infilled weight for a texel index in a decimated grid.
+ *
+ * This is specialized version which computes only two weights per texel for
+ * encodings that are only decimated in a single axis.
+ *
+ * @param di        The weight grid decimation to use.
+ * @param weights   The decimated weight values to use.
+ * @param index     The texel index to interpolate.
+ *
+ * @return The interpolated weight for the given texel.
+ */
+static inline float bilinear_infill_2(
+	const decimation_info& di,
+	const float* weights,
+	unsigned int index
+) {
+	return (weights[di.texel_weights_4t[0][index]] * di.texel_weights_float_4t[0][index] +
+	        weights[di.texel_weights_4t[1][index]] * di.texel_weights_float_4t[1][index]);
+}
+
+
+/**
  * @brief Compute the infilled weight for N texel indices in a decimated grid.
  *
  * @param di        The weight grid decimation to use.
@@ -1938,6 +1963,39 @@ static inline vfloat bilinear_infill_vla(
 	// Compute the bilinear interpolation to generate the per-texel weight
 	return (weight_val0 * tex_weight_float0 + weight_val1 * tex_weight_float1) +
 	       (weight_val2 * tex_weight_float2 + weight_val3 * tex_weight_float3);
+}
+
+/**
+ * @brief Compute the infilled weight for N texel indices in a decimated grid.
+ *
+ * This is specialized version which computes only two weights per texel for
+ * encodings that are only decimated in a single axis.
+ *
+ * @param di        The weight grid decimation to use.
+ * @param weights   The decimated weight values to use.
+ * @param index     The first texel index to interpolate.
+ *
+ * @return The interpolated weight for the given set of SIMD_WIDTH texels.
+ */
+static inline vfloat bilinear_infill_vla_2(
+	const decimation_info& di,
+	const float* weights,
+	unsigned int index
+) {
+	// Load the bilinear filter texel weight indexes in the decimated grid
+	vint weight_idx0 = vint(di.texel_weights_4t[0] + index);
+	vint weight_idx1 = vint(di.texel_weights_4t[1] + index);
+
+	// Load the bilinear filter weights from the decimated grid
+	vfloat weight_val0 = gatherf(weights, weight_idx0);
+	vfloat weight_val1 = gatherf(weights, weight_idx1);
+
+	// Load the weight contribution factors for each decimated weight
+	vfloat tex_weight_float0 = loada(di.texel_weights_float_4t[0] + index);
+	vfloat tex_weight_float1 = loada(di.texel_weights_float_4t[1] + index);
+
+	// Compute the bilinear interpolation to generate the per-texel weight
+	return (weight_val0 * tex_weight_float0 + weight_val1 * tex_weight_float1);
 }
 
 /**

@@ -615,15 +615,29 @@ float compute_error_of_weight_set_1plane(
 	float error_summa = 0.0f;
 	unsigned int texel_count = di.texel_count;
 
-	bool is_decimated = di.texel_count != di.weight_count;
-
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
-	if (is_decimated)
+	if (di.max_texel_weight_count > 2)
 	{
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Compute the bilinear interpolation of the decimated weight grid
 			vfloat current_values = bilinear_infill_vla(di, dec_weight_quant_uvalue, i);
+
+			// Compute the error between the computed value and the ideal weight
+			vfloat actual_values = loada(eai.weights + i);
+			vfloat diff = current_values - actual_values;
+			vfloat significance = loada(eai.weight_error_scale + i);
+			vfloat error = diff * diff * significance;
+
+			haccumulate(error_summav, error);
+		}
+	}
+	else if (di.max_texel_weight_count > 1)
+	{
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			// Compute the bilinear interpolation of the decimated weight grid
+			vfloat current_values = bilinear_infill_vla_2(di, dec_weight_quant_uvalue, i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values = loada(eai.weights + i);
@@ -668,10 +682,9 @@ float compute_error_of_weight_set_2planes(
 	vfloat4 error_summav = vfloat4::zero();
 	float error_summa = 0.0f;
 	unsigned int texel_count = di.texel_count;
-	bool is_decimated = di.texel_count != di.weight_count;
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
-	if (is_decimated)
+	if (di.max_texel_weight_count > 2)
 	{
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -687,6 +700,31 @@ float compute_error_of_weight_set_2planes(
 			// Plane 2
 			// Compute the bilinear interpolation of the decimated weight grid
 			vfloat current_values2 = bilinear_infill_vla(di, dec_weight_quant_uvalue_plane2, i);
+
+			// Compute the error between the computed value and the ideal weight
+			vfloat actual_values2 = loada(eai2.weights + i);
+			diff = current_values2 - actual_values2;
+			vfloat error2 = diff * diff * loada(eai2.weight_error_scale + i);
+
+			haccumulate(error_summav, error1 + error2);
+		}
+	}
+	else if (di.max_texel_weight_count > 1)
+	{
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			// Plane 1
+			// Compute the bilinear interpolation of the decimated weight grid
+			vfloat current_values1 = bilinear_infill_vla_2(di, dec_weight_quant_uvalue_plane1, i);
+
+			// Compute the error between the computed value and the ideal weight
+			vfloat actual_values1 = loada(eai1.weights + i);
+			vfloat diff = current_values1 - actual_values1;
+			vfloat error1 = diff * diff * loada(eai1.weight_error_scale + i);
+
+			// Plane 2
+			// Compute the bilinear interpolation of the decimated weight grid
+			vfloat current_values2 = bilinear_infill_vla_2(di, dec_weight_quant_uvalue_plane2, i);
 
 			// Compute the error between the computed value and the ideal weight
 			vfloat actual_values2 = loada(eai2.weights + i);
@@ -820,10 +858,21 @@ void compute_ideal_weights_for_decimation(
 	// Populate the interpolated weight grid based on the initital average
 	// Process SIMD-width texel coordinates at at time while we can. Safe to
 	// over-process full SIMD vectors - the tail is zeroed.
-	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	if (di.max_texel_weight_count <= 2)
 	{
-		vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, i);
-		storea(weight, infilled_weights + i);
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat weight = bilinear_infill_vla_2(di, dec_weight_ideal_value, i);
+			storea(weight, infilled_weights + i);
+		}
+	}
+	else
+	{
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, i);
+			storea(weight, infilled_weights + i);
+		}
 	}
 
 	// Perform a single iteration of refinement
@@ -1018,7 +1067,6 @@ void recompute_ideal_colors_1plane(
 ) {
 	int weight_count = di.weight_count;
 	int partition_count = pi.partition_count;
-	bool is_decimated = di.weight_count != di.texel_count;
 
 	promise(weight_count > 0);
 	promise(partition_count > 0);
@@ -1077,10 +1125,14 @@ void recompute_ideal_colors_1plane(
 			vfloat4 rgba = blk.texel(tix);
 
 			float idx0;
-			if (!is_decimated)
+			if (di.max_texel_weight_count == 1)
 			{
 				assert(tix < BLOCK_MAX_WEIGHTS);
  				idx0 = dec_weight_quant_uvalue[tix];
+			}
+			else if (di.max_texel_weight_count == 2)
+			{
+				idx0 = bilinear_infill_2(di, dec_weight_quant_uvalue, tix);
 			}
 			else
 			{
@@ -1218,8 +1270,6 @@ void recompute_ideal_colors_2planes(
 	int plane2_component
 ) {
 	unsigned int weight_count = di.weight_count;
-	bool is_decimated = di.weight_count != di.texel_count;
-
 	promise(weight_count > 0);
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
@@ -1271,10 +1321,14 @@ void recompute_ideal_colors_2planes(
 		vfloat4 rgba = blk.texel(j);
 
 		float idx0;
-		if (!is_decimated)
+		if (di.max_texel_weight_count == 1)
 		{
 			assert(j < BLOCK_MAX_WEIGHTS_2PLANE);
 		 	idx0 = dec_weights_quant_uvalue_plane1[j];
+		}
+		else if (di.max_texel_weight_count == 2)
+		{
+			idx0 = bilinear_infill_2(di, dec_weights_quant_uvalue_plane1, j);
 		}
 		else
 		{
@@ -1294,10 +1348,14 @@ void recompute_ideal_colors_2planes(
 		right1_sum_s  += idx0 * idx0;
 
 		float idx1;
-		if (!is_decimated)
+		if (di.max_texel_weight_count == 1)
 		{
 			assert(j < BLOCK_MAX_WEIGHTS_2PLANE);
 			idx1 = dec_weights_quant_uvalue_plane2[j];
+		}
+		else if (di.max_texel_weight_count == 2)
+		{
+			idx1 = bilinear_infill_2(di, dec_weights_quant_uvalue_plane2, j);
 		}
 		else
 		{
