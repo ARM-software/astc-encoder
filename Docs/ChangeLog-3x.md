@@ -6,11 +6,40 @@ release of the 3.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
-
 <!-- ---------------------------------------------------------------------- -->
 ## 3.4
 
 **Status:** March 2022
+
+The 3.5 release contains another round of performance optimizations.
+
+There are no interface changes in this release, but in general the API is not
+designed to be binary compatible across versions. We always recommend
+rebuilding your client-side code using the updated `astcenc.h` header.
+
+* **General:**
+  * **Feature:** Compressor configurations using `SELF_DECOMPRESS_ONLY` mode
+    store compacted partition tables, which significantly improves both
+    context create time and runtime performance.
+  * **Feature:** Bilinear infill for decimated weight grids supports a new
+    variant for half-decimated grids which are only decimated in one axis.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 3.4 release:**
+
+![Relative scores 3.5 vs 3.4](./ChangeLogImg/relative-3.4-to-3.5.png)
+
+
+<!-- ---------------------------------------------------------------------- -->
+## 3.4
+
+**Status:** February 2022
 
 The 3.4 release introduces another round of optimizations, removing a number
 of power-user configuration options to simplify the core compressor data path.
