@@ -374,6 +374,12 @@ static void build_partition_table_for_one_partition_count(
 	partition_info* ptab,
 	uint64_t* canonical_patterns
 ) {
+	uint8_t* partitioning_valid[3] {
+		bsd.partitioning_valid_2,
+		bsd.partitioning_valid_3,
+		bsd.partitioning_valid_4
+	};
+
 	unsigned int next_index = 0;
 	bsd.partitioning_count[partition_count - 1] = 0;
 
@@ -399,6 +405,7 @@ static void build_partition_table_for_one_partition_count(
 			if (match)
 			{
 				ptab[next_index].partition_count = 0;
+				partitioning_valid[partition_count - 2][i] = 255;
 				keep = !can_omit_partitionings;
 				break;
 			}

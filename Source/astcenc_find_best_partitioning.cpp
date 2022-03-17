@@ -360,9 +360,11 @@ static void count_partition_mismatch_bits(
 	const uint64_t bitmaps[BLOCK_MAX_PARTITIONS],
 	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS]
 ) {
+	unsigned int active_count = bsd.partitioning_count[partition_count - 1];
+
 	if (partition_count == 2)
 	{
-		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+		for (unsigned int i = 0; i < active_count; i++)
 		{
 			int bitcount = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
 			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_2[i]));
@@ -370,7 +372,7 @@ static void count_partition_mismatch_bits(
 	}
 	else if (partition_count == 3)
 	{
-		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+		for (unsigned int i = 0; i < active_count; i++)
 		{
 			int bitcount = partition_mismatch3(bitmaps, bsd.coverage_bitmaps_3[i]);
 			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_3[i]));
@@ -378,7 +380,7 @@ static void count_partition_mismatch_bits(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < bsd.partitioning_count[partition_count - 1]; i++)
+		for (unsigned int i = 0; i < active_count; i++)
 		{
 			int bitcount = partition_mismatch4(bitmaps, bsd.coverage_bitmaps_4[i]);
 			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_4[i]));
