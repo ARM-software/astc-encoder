@@ -405,7 +405,7 @@ static void build_partition_table_for_one_partition_count(
 			if (match)
 			{
 				ptab[next_index].partition_count = 0;
-				partitioning_valid[partition_count - 2][i] = 255;
+				partitioning_valid[partition_count - 2][next_index] = 255;
 				keep = !can_omit_partitionings;
 				break;
 			}
