@@ -280,9 +280,9 @@ static bool realign_weights_decimated(
 			float uqw_next_dif = static_cast<float>(next_wt_uq) - uqwf;
 			float uqw_prev_dif = static_cast<float>(prev_wt_uq) - uqwf;
 
-			float current_error = 0.0f;
-			float up_error = 0.0f;
-			float down_error = 0.0f;
+			vfloat4 current_errorv = vfloat4::zero();
+			vfloat4 up_errorv = vfloat4::zero();
+			vfloat4 down_errorv = vfloat4::zero();
 
 			// Interpolate the colors to create the diffs
 			unsigned int texels_to_evaluate = di.weight_texel_count[we_idx];
@@ -323,10 +323,14 @@ static bool realign_weights_decimated(
 				vfloat4 color_diff      = color - orig_color;
 				vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
 				vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
-				current_error += dot_s(color_diff      * color_diff,      error_weight);
-				up_error      += dot_s(color_up_diff   * color_up_diff,   error_weight);
-				down_error    += dot_s(color_down_diff * color_down_diff, error_weight);
+				current_errorv += dot(color_diff      * color_diff,      error_weight);
+				up_errorv      += dot(color_up_diff   * color_up_diff,   error_weight);
+				down_errorv    += dot(color_down_diff * color_down_diff, error_weight);
 			}
+
+			float current_error = current_errorv.lane<0>();
+			float up_error = up_errorv.lane<0>();
+			float down_error = down_errorv.lane<0>();
 
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error))
