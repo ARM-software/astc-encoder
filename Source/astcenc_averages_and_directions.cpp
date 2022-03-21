@@ -41,9 +41,7 @@ void compute_avgs_and_dirs_4_comp(
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		// TODO: Try gathers?
 		vfloat4 base_sum = vfloat4::zero();
-
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			int iwt = texel_indexes[i];
@@ -62,47 +60,46 @@ void compute_avgs_and_dirs_4_comp(
 		{
 			unsigned int iwt = texel_indexes[i];
 			vfloat4 texel_datum = blk.texel(iwt);
-			texel_datum = (texel_datum - average) * texel_weight;
+			texel_datum = texel_datum - average;
 
 			vfloat4 zero = vfloat4::zero();
 
-			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
+			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
 			sum_xp += select(zero, texel_datum, tdm0);
 
-			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
+			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
 			sum_yp += select(zero, texel_datum, tdm1);
 
-			vmask4 tdm2 = vfloat4(texel_datum.lane<2>()) > zero;
+			vmask4 tdm2 = texel_datum.swz<2,2,2,2>() > zero;
 			sum_zp += select(zero, texel_datum, tdm2);
 
-			vmask4 tdm3 = vfloat4(texel_datum.lane<3>()) > zero;
+			vmask4 tdm3 = texel_datum.swz<3,3,3,3>() > zero;
 			sum_wp += select(zero, texel_datum, tdm3);
 		}
 
-		float prod_xp = dot_s(sum_xp, sum_xp);
-		float prod_yp = dot_s(sum_yp, sum_yp);
-		float prod_zp = dot_s(sum_zp, sum_zp);
-		float prod_wp = dot_s(sum_wp, sum_wp);
+		sum_xp = sum_xp * texel_weight;
+		sum_yp = sum_yp * texel_weight;
+		sum_zp = sum_zp * texel_weight;
+		sum_wp = sum_wp * texel_weight;
+
+		vfloat4 prod_xp = dot(sum_xp, sum_xp);
+		vfloat4 prod_yp = dot(sum_yp, sum_yp);
+		vfloat4 prod_zp = dot(sum_zp, sum_zp);
+		vfloat4 prod_wp = dot(sum_wp, sum_wp);
 
 		vfloat4 best_vector = sum_xp;
-		float best_sum = prod_xp;
+		vfloat4 best_sum = prod_xp;
 
-		if (prod_yp > best_sum)
-		{
-			best_vector = sum_yp;
-			best_sum = prod_yp;
-		}
+		vmask4 mask = prod_yp > best_sum;
+		best_vector = select(best_vector, sum_yp, mask);
+		best_sum = select(best_sum, prod_yp, mask);
 
-		if (prod_zp > best_sum)
-		{
-			best_vector = sum_zp;
-			best_sum = prod_zp;
-		}
+		mask = prod_zp > best_sum;
+		best_vector = select(best_vector, sum_zp, mask);
+		best_sum = select(best_sum, prod_zp, mask);
 
-		if (prod_wp > best_sum)
-		{
-			best_vector = sum_wp;
-		}
+		mask = prod_wp > best_sum;
+		best_vector = select(best_vector, sum_wp, mask);
 
 		pm[partition].dir = best_vector;
 	}
@@ -173,38 +170,37 @@ void compute_avgs_and_dirs_3_comp(
 			vfloat4 texel_datum = vfloat3(data_vr[iwt],
 			                              data_vg[iwt],
 			                              data_vb[iwt]);
-
-			texel_datum = (texel_datum - average) * texel_weight;
+			texel_datum = texel_datum - average;
 
 			vfloat4 zero = vfloat4::zero();
 
-			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
+			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
 			sum_xp += select(zero, texel_datum, tdm0);
 
-			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
+			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
 			sum_yp += select(zero, texel_datum, tdm1);
 
-			vmask4 tdm2 = vfloat4(texel_datum.lane<2>()) > zero;
+			vmask4 tdm2 = texel_datum.swz<2,2,2,2>() > zero;
 			sum_zp += select(zero, texel_datum, tdm2);
 		}
 
-		float prod_xp = dot3_s(sum_xp, sum_xp);
-		float prod_yp = dot3_s(sum_yp, sum_yp);
-		float prod_zp = dot3_s(sum_zp, sum_zp);
+		sum_xp = sum_xp * texel_weight;
+		sum_yp = sum_yp * texel_weight;
+		sum_zp = sum_zp * texel_weight;
+
+		vfloat4 prod_xp = dot(sum_xp, sum_xp);
+		vfloat4 prod_yp = dot(sum_yp, sum_yp);
+		vfloat4 prod_zp = dot(sum_zp, sum_zp);
 
 		vfloat4 best_vector = sum_xp;
-		float best_sum = prod_xp;
+		vfloat4 best_sum = prod_xp;
 
-		if (prod_yp > best_sum)
-		{
-			best_vector = sum_yp;
-			best_sum = prod_yp;
-		}
+		vmask4 mask = prod_yp > best_sum;
+		best_vector = select(best_vector, sum_yp, mask);
+		best_sum = select(best_sum, prod_yp, mask);
 
-		if (prod_zp > best_sum)
-		{
-			best_vector = sum_zp;
-		}
+		mask = prod_zp > best_sum;
+		best_vector = select(best_vector, sum_zp, mask);
 
 		pm[partition].dir = best_vector;
 	}
@@ -246,38 +242,37 @@ void compute_avgs_and_dirs_3_comp_rgb(
 			unsigned int iwt = texel_indexes[i];
 
 			vfloat4 texel_datum = blk.texel3(iwt);
-
-			texel_datum = (texel_datum - average) * texel_weight;
+			texel_datum = texel_datum - average;
 
 			vfloat4 zero = vfloat4::zero();
 
-			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
+			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
 			sum_xp += select(zero, texel_datum, tdm0);
 
-			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
+			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
 			sum_yp += select(zero, texel_datum, tdm1);
 
-			vmask4 tdm2 = vfloat4(texel_datum.lane<2>()) > zero;
+			vmask4 tdm2 = texel_datum.swz<2,2,2,2>() > zero;
 			sum_zp += select(zero, texel_datum, tdm2);
 		}
 
-		float prod_xp = dot3_s(sum_xp, sum_xp);
-		float prod_yp = dot3_s(sum_yp, sum_yp);
-		float prod_zp = dot3_s(sum_zp, sum_zp);
+		sum_xp = sum_xp * texel_weight;
+		sum_yp = sum_yp * texel_weight;
+		sum_zp = sum_zp * texel_weight;
+
+		vfloat4 prod_xp = dot(sum_xp, sum_xp);
+		vfloat4 prod_yp = dot(sum_yp, sum_yp);
+		vfloat4 prod_zp = dot(sum_zp, sum_zp);
 
 		vfloat4 best_vector = sum_xp;
-		float best_sum = prod_xp;
+		vfloat4 best_sum = prod_xp;
 
-		if (prod_yp > best_sum)
-		{
-			best_vector = sum_yp;
-			best_sum = prod_yp;
-		}
+		vmask4 mask = prod_yp > best_sum;
+		best_vector = select(best_vector, sum_yp, mask);
+		best_sum = select(best_sum, prod_yp, mask);
 
-		if (prod_zp > best_sum)
-		{
-			best_vector = sum_zp;
-		}
+		mask = prod_zp > best_sum;
+		best_vector = select(best_vector, sum_zp, mask);
 
 		pm[partition].dir = best_vector;
 	}
@@ -346,27 +341,28 @@ void compute_avgs_and_dirs_2_comp(
 		{
 			unsigned int iwt = texel_indexes[i];
 			vfloat4 texel_datum = vfloat2(data_vr[iwt], data_vg[iwt]);
-			texel_datum = (texel_datum - average) * texel_weight;
+			texel_datum = texel_datum - average;
 
 			vfloat4 zero = vfloat4::zero();
 
-			vmask4 tdm0 = vfloat4(texel_datum.lane<0>()) > zero;
+			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
 			sum_xp += select(zero, texel_datum, tdm0);
 
-			vmask4 tdm1 = vfloat4(texel_datum.lane<1>()) > zero;
+			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
 			sum_yp += select(zero, texel_datum, tdm1);
 		}
 
-		float prod_xp = dot_s(sum_xp, sum_xp);
-		float prod_yp = dot_s(sum_yp, sum_yp);
+		sum_xp = sum_xp * texel_weight;
+		sum_yp = sum_yp * texel_weight;
+
+		vfloat4 prod_xp = dot(sum_xp, sum_xp);
+		vfloat4 prod_yp = dot(sum_yp, sum_yp);
 
 		vfloat4 best_vector = sum_xp;
-		float best_sum = prod_xp;
+		vfloat4 best_sum = prod_xp;
 
-		if (prod_yp > best_sum)
-		{
-			best_vector = sum_yp;
-		}
+		vmask4 mask = prod_yp > best_sum;
+		best_vector = select(best_vector, sum_yp, mask);
 
 		pm[partition].dir = best_vector;
 	}
