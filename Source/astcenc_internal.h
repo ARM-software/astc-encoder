@@ -1396,9 +1396,6 @@ struct astcenc_context
 	/** @brief The pixel region and variance worker arguments. */
 	avg_args avg_preprocess_args;
 
-	/** @brief The per-texel deblocking weights for the current block size. */
-	float deblock_weights[BLOCK_MAX_TEXELS];
-
 	/** @brief The parallel manager for averages computation. */
 	ParallelManager manage_avg;
 
