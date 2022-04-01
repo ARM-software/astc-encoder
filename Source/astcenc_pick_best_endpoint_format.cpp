@@ -218,24 +218,19 @@ static void compute_error_squared_rgb_single_partition(
  * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
  * the endpoints are eligible for offset encoding or blue-contraction
  *
- * @param      bsd   The block size information.
  * @param      blk   The image block.
  * @param      pi    The partition info data.
  * @param      ep    The idealized endpoints.
  * @param[out] eci   The resulting encoding choice error metrics.
   */
 static void compute_encoding_choice_errors(
-	const block_size_descriptor& bsd,
 	const image_block& blk,
 	const partition_info& pi,
 	const endpoints& ep,
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS])
 {
 	int partition_count = pi.partition_count;
-	int texels_per_block = bsd.texel_count;
-
 	promise(partition_count > 0);
-	promise(texels_per_block > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
@@ -1113,7 +1108,6 @@ static float four_partitions_find_best_combination_for_bitcount(
 
 /* See header for documentation. */
 unsigned int compute_ideal_endpoint_formats(
-	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
@@ -1140,7 +1134,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// Compute the errors that result from various encoding choices (such as using luminance instead
 	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS];
-	compute_encoding_choice_errors(bsd, blk, pi, ep, eci);
+	compute_encoding_choice_errors(blk, pi, ep, eci);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
 	int format_of_choice[BLOCK_MAX_PARTITIONS][21][4];

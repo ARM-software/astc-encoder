@@ -2110,7 +2110,6 @@ void unpack_weights(
  * combination for each. The modified quantization level can be used when all formats are the same,
  * as this frees up two additional bits of storage.
  *
- * @param      bsd                           The block size information.
  * @param      pi                            The partition info for the current trial.
  * @param      blk                           The image block color data to compress.
  * @param      ep                            The ideal endpoints.
@@ -2127,7 +2126,6 @@ void unpack_weights(
  * @return The actual number of candidate matches returned.
  */
 unsigned int compute_ideal_endpoint_formats(
-	const block_size_descriptor& bsd,
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,

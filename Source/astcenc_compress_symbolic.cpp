@@ -507,7 +507,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    bsd, pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
+	    pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, max_block_modes,
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
@@ -886,7 +886,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    bsd, pi, blk, epm, qwt_bitcounts, qwt_errors,
+	    pi, blk, epm, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, bsd.block_mode_count,
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
