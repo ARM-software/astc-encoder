@@ -91,7 +91,7 @@ struct cli_config_options
 };
 
 /**
- * Functions to load image from file.
+ * @brief Load uncompressed image.
  *
  * @param filename               The file path on disk.
  * @param y_flip                 Should this image be Y flipped?
@@ -107,7 +107,7 @@ astcenc_image* load_ncimage(
 	unsigned int& component_count);
 
 /**
- * @brief Save a DDS uncompressed image using a local store routine.
+ * @brief Save an uncompressed image.
  *
  * @param img        The source data for the image.
  * @param filename   The name of the file to save.

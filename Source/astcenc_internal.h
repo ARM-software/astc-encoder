@@ -112,10 +112,10 @@ static constexpr unsigned int WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS_2PLANE }
 /** @brief The sum of quantized weights for one texel. */
 static constexpr float WEIGHTS_TEXEL_SUM { 16.0f };
 
-/** @brief The number of block modes suported by the ASTC format. */
+/** @brief The number of block modes supported by the ASTC format. */
 static constexpr unsigned int WEIGHTS_MAX_BLOCK_MODES { 2048 };
 
-/** @brief The number of weight grid decimation modes suported by the ASTC format. */
+/** @brief The number of weight grid decimation modes supported by the ASTC format. */
 static constexpr unsigned int WEIGHTS_MAX_DECIMATION_MODES { 87 };
 
 /** @brief The high default error used to initialize error trackers. */
