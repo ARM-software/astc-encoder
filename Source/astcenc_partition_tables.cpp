@@ -420,7 +420,7 @@ static void build_partition_table_for_one_partition_count(
 				bool match = compare_canonical_partitionings(canonical_patterns + 7 * next_index, canonical_patterns + 7 * j);
 				if (match)
 				{
-					keep_canonical = false;;
+					keep_canonical = false;
 					break;
 				}
 			}

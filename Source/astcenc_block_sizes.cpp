@@ -761,7 +761,7 @@ static void assign_kmeans_texels(
  * @param wb          The decimation table init scratch working buffers.
  * @param index       The packed array index to populate.
  */
-void construct_dt_entry_2d(
+static void construct_dt_entry_2d(
 	unsigned int x_texels,
 	unsigned int y_texels,
 	unsigned int x_weights,
