@@ -856,7 +856,7 @@ struct block_size_descriptor
 			packed_index = this->partitioning_packed_index[partition_count - 2][index];
 		}
 
-		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count[partition_count - 1]);
+		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count_all[partition_count - 1]);
 		auto& result = get_partition_table(partition_count)[packed_index];
 		assert(index == result.partition_index);
 		return result;
@@ -872,7 +872,7 @@ struct block_size_descriptor
 	 */
 	const partition_info& get_raw_partition_info(unsigned int partition_count, unsigned int packed_index) const
 	{
-		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count[partition_count - 1]);
+		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count_all[partition_count - 1]);
 		auto& result = get_partition_table(partition_count)[packed_index];
 		return result;
 	}
