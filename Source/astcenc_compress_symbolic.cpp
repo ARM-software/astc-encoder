@@ -384,7 +384,6 @@ static float compress_symbolic_block_for_partition_1plane(
 	promise(partition_count > 0);
 	promise(config.tune_candidate_limit > 0);
 	promise(config.tune_refinement_limit > 0);
-	promise(bsd.decimation_mode_count > 0);
 
 	auto compute_difference = &compute_symbolic_block_difference_1plane;
 	if ((partition_count == 1) && !(config.flags & ASTCENC_FLG_MAP_RGBM))
@@ -405,13 +404,13 @@ static float compress_symbolic_block_for_partition_1plane(
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	unsigned int max_decimation_modes = only_always ? bsd.always_decimation_mode_count
-	                                                : bsd.decimation_mode_count;
+	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
+	                                                : bsd.decimation_mode_count_selected;
 	promise(max_decimation_modes > 0);
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
+		if (dm.maxprec_1plane < 0)
 		{
 			continue;
 		}
@@ -460,14 +459,15 @@ static float compress_symbolic_block_for_partition_1plane(
 		115 - 4, 111 - 4 - PARTITION_INDEX_BITS, 108 - 4 - PARTITION_INDEX_BITS, 105 - 4 - PARTITION_INDEX_BITS
 	};
 
-	unsigned int max_block_modes = only_always ? bsd.always_block_mode_count
-	                                           : bsd.block_mode_count;
+	unsigned int max_block_modes = only_always ? bsd.block_mode_count_1plane_always
+	                                           : bsd.block_mode_count_1plane_selected;
 	promise(max_block_modes > 0);
 	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
+		assert(!bm.is_dual_plane);
 		int bitcount = free_bits_for_partition_count[partition_count - 1] - bm.weight_bits;
-		if (bm.is_dual_plane || !bm.percentile_hit || bitcount <= 0)
+		if (bitcount <= 0)
 		{
 			qwt_errors[i] = 1e38f;
 			continue;
@@ -508,7 +508,7 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, max_block_modes,
+	    config.tune_candidate_limit, 0, max_block_modes,
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
@@ -521,7 +521,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		TRACE_NODE(node0, "candidate");
 
 		const int bm_packed_index = block_mode_index[i];
-		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
+		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count_1plane_selected);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
@@ -741,7 +741,7 @@ static float compress_symbolic_block_for_partition_2planes(
 ) {
 	promise(config.tune_candidate_limit > 0);
 	promise(config.tune_refinement_limit > 0);
-	promise(bsd.decimation_mode_count > 0);
+	promise(bsd.decimation_mode_count_selected > 0);
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei1 = tmpbuf.ei1;
@@ -756,10 +756,11 @@ static float compress_symbolic_block_for_partition_2planes(
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
+	// TODO: Try to split this list into separate 1 and 2 plane lists?
+	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
+		if (dm.maxprec_2planes < 0)
 		{
 			continue;
 		}
@@ -821,17 +822,15 @@ static float compress_symbolic_block_for_partition_2planes(
 	int* qwt_bitcounts = tmpbuf.qwt_bitcounts;
 	float* qwt_errors = tmpbuf.qwt_errors;
 
-	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
+	unsigned int start_2plane = bsd.block_mode_count_1plane_selected;
+	unsigned int end_2plane = bsd.block_mode_count_1plane_2plane_selected;
+
+	for (unsigned int i = start_2plane; i < end_2plane; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		int bitcount = 109 - bm.weight_bits;
-		if (!bm.is_dual_plane || !bm.percentile_hit || bitcount <= 0)
-		{
-			qwt_errors[i] = 1e38f;
-			continue;
-		}
+		assert(bm.is_dual_plane);
 
-		qwt_bitcounts[i] = bitcount;
+		qwt_bitcounts[i] = 109 - bm.weight_bits;
 
 		if (weight_high_value1[i] > 1.02f * min_wt_cutoff1)
 		{
@@ -887,7 +886,8 @@ static float compress_symbolic_block_for_partition_2planes(
 	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
 	    pi, blk, epm, qwt_bitcounts, qwt_errors,
-	    config.tune_candidate_limit, bsd.block_mode_count,
+	    config.tune_candidate_limit,
+		bsd.block_mode_count_1plane_selected, bsd.block_mode_count_1plane_2plane_selected,
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
@@ -900,7 +900,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		TRACE_NODE(node0, "candidate");
 
 		const int bm_packed_index = block_mode_index[i];
-		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count);
+		assert(bm_packed_index >= (int)bsd.block_mode_count_1plane_selected && bm_packed_index < (int)bsd.block_mode_count_1plane_2plane_selected);
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;

@@ -1115,7 +1115,8 @@ unsigned int compute_ideal_endpoint_formats(
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
-	unsigned int block_mode_count,
+	unsigned int start_block_mode,
+	unsigned int end_block_mode,
 	// output data
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
@@ -1126,7 +1127,6 @@ unsigned int compute_ideal_endpoint_formats(
 	int partition_count = pi.partition_count;
 
 	promise(partition_count > 0);
-	promise(block_mode_count > 0);
 
 	int encode_hdr_rgb = blk.rgb_lns[0];
 	int encode_hdr_alpha = blk.alpha_lns[0];
@@ -1153,8 +1153,17 @@ unsigned int compute_ideal_endpoint_formats(
 
 	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
 	// that will never be picked as best candidate
-	const int packed_mode_count_simd_up = round_up_to_simd_multiple_vla(block_mode_count);
-	for (int i = block_mode_count; i < packed_mode_count_simd_up; i++)
+	const unsigned int packed_end_block_mode = round_up_to_simd_multiple_vla(end_block_mode);
+
+	// TODO: Can we avoid this?
+	for (unsigned int i = 0; i < start_block_mode; i++)
+	{
+		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
+		best_quant_levels[i] = QUANT_2;
+		best_quant_levels_mod[i] = QUANT_2;
+	}
+
+	for (unsigned int i = end_block_mode; i < packed_end_block_mode; i++)
 	{
 		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
 		best_quant_levels[i] = QUANT_2;
@@ -1168,7 +1177,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// The block contains 1 partition
 	if (partition_count == 1)
 	{
-		for (unsigned int i = 0; i < block_mode_count; ++i)
+		for (unsigned int i = start_block_mode; i < end_block_mode; ++i)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1200,7 +1209,8 @@ unsigned int compute_ideal_endpoint_formats(
 		two_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (unsigned int i = 0; i < block_mode_count; ++i)
+		assert(start_block_mode == 0);
+		for (unsigned int i = 0; i < end_block_mode; ++i)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1232,7 +1242,8 @@ unsigned int compute_ideal_endpoint_formats(
 		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (unsigned int i = 0; i < block_mode_count; ++i)
+		assert(start_block_mode == 0);
+		for (unsigned int i = 0; i < end_block_mode; ++i)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1265,7 +1276,8 @@ unsigned int compute_ideal_endpoint_formats(
 		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
-		for (unsigned int i = 0; i < block_mode_count; ++i)
+		assert(start_block_mode == 0);
+		for (unsigned int i = 0; i < end_block_mode; ++i)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1303,8 +1315,10 @@ unsigned int compute_ideal_endpoint_formats(
 	{
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(ERROR_CALC_DEFAULT);
-		vint lane_ids = vint::lane_id();
-		for (unsigned int j = 0; j < block_mode_count; j += ASTCENC_SIMD_WIDTH)
+
+		start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
+		vint lane_ids = vint::lane_id() + vint(start_block_mode);
+		for (unsigned int j = start_block_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat err = vfloat(&errors_of_best_combination[j]);
 			vmask mask1 = err < vbest_ep_error;

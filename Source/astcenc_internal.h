@@ -615,9 +615,6 @@ struct block_mode
 	/** @brief Is a dual weight plane used by this block mode? */
 	uint8_t is_dual_plane : 1;
 
-	/** @brief Is this mode enabled in the current search preset? */
-	uint8_t percentile_hit : 1;
-
 	/**
 	 * @brief Get the weight quantization used by this block mode.
 	 *
@@ -639,9 +636,6 @@ struct decimation_mode
 
 	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
 	int8_t maxprec_2planes;
-
-	/** @brief Is this mode enabled in the current search preset? */
-	uint8_t percentile_hit;
 };
 
 /**
@@ -677,28 +671,37 @@ struct block_size_descriptor
 	/** @brief The block total texel count. */
 	uint8_t texel_count;
 
-	/** @brief The number of stored decimation modes. */
-	unsigned int decimation_mode_count;
-
 	/**
 	 * @brief The number of stored decimation modes which are "always" modes.
 	 *
 	 * Always modes are stored at the start of the decimation_modes list.
 	 */
-	unsigned int always_decimation_mode_count;
+	unsigned int decimation_mode_count_always;
 
-	/** @brief The number of stored block modes. */
-	unsigned int block_mode_count;
+	/** @brief The number of stored decimation modes for selected encodings. */
+	unsigned int decimation_mode_count_selected;
 
-	/** @brief The number of active partitionings for 1/2/3/4 partitionings. */
-	unsigned int partitioning_count[BLOCK_MAX_PARTITIONS];
+	/** @brief The number of stored decimation modes for any encoding. */
+	unsigned int decimation_mode_count_all;
 
 	/**
 	 * @brief The number of stored block modes which are "always" modes.
 	 *
 	 * Always modes are stored at the start of the block_modes list.
 	 */
-	unsigned int always_block_mode_count;
+	unsigned int block_mode_count_1plane_always;
+
+	/** @brief The number of stored block modes for active 1 plane encodings. */
+	unsigned int block_mode_count_1plane_selected;
+
+	/** @brief The number of stored block modes for active 1 and 2 plane encodings. */
+	unsigned int block_mode_count_1plane_2plane_selected;
+
+	/** @brief The number of stored block modes for any encoding. */
+	unsigned int block_mode_count_all;
+
+	/** @brief The number of active partitionings for 1/2/3/4 partitionings. */
+	unsigned int partitioning_count[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
@@ -781,7 +784,7 @@ struct block_size_descriptor
 	const block_mode& get_block_mode(unsigned int block_mode) const
 	{
 		unsigned int packed_index = this->block_mode_packed_index[block_mode];
-		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count);
+		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count_all);
 		return this->block_modes[packed_index];
 	}
 
@@ -2116,7 +2119,8 @@ void unpack_weights(
  * @param      qwt_bitcounts                 Bit counts for different quantization methods.
  * @param      qwt_errors                    Errors for different quantization methods.
  * @param      tune_candidate_limit          The max number of candidates to return, may be less.
- * @param      block_mode_count              The number of blocks modes candidates to inspect.
+ * @param      start_block_mode              The first block mode to inspect.
+ * @param      end_block_mode                The last block mode to inspect.
  * @param[out] partition_format_specifiers   The best formats per partition.
  * @param[out] block_mode                    The best packed block mode indexes.
  * @param[out] quant_level                   The best color quant level.
@@ -2132,7 +2136,8 @@ unsigned int compute_ideal_endpoint_formats(
 	const int* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
-	unsigned int block_mode_count,
+	unsigned int start_block_mode,
+	unsigned int end_block_mode,
 	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],

@@ -510,13 +510,13 @@ void compute_angular_endpoints_1plane(
 	float (&low_values)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_low_values1;
 	float (&high_values)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values1;
 
-	unsigned int max_decimation_modes = only_always ? bsd.always_decimation_mode_count
-	                                                : bsd.decimation_mode_count;
+	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
+	                                                : bsd.decimation_mode_count_selected;
 	promise(max_decimation_modes > 0);
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
+		if (dm.maxprec_1plane < 0)
 		{
 			continue;
 		}
@@ -539,16 +539,13 @@ void compute_angular_endpoints_1plane(
 		}
 	}
 
-	unsigned int max_block_modes = only_always ? bsd.always_block_mode_count
-	                                           : bsd.block_mode_count;
+	unsigned int max_block_modes = only_always ? bsd.block_mode_count_1plane_always
+	                                           : bsd.block_mode_count_1plane_selected;
 	promise(max_block_modes > 0);
 	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (bm.is_dual_plane || !bm.percentile_hit)
-		{
-			continue;
-		}
+		assert(!bm.is_dual_plane);
 
 		unsigned int quant_mode = bm.quant_mode;
 		unsigned int decim_mode = bm.decimation_mode;
@@ -575,11 +572,12 @@ void compute_angular_endpoints_2planes(
 	float (&low_values2)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_low_values2;
 	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values2;
 
-	promise(bsd.decimation_mode_count > 0);
-	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
+	promise(bsd.decimation_mode_count_selected > 0);
+	// TODO: Split the list into two parts for this one?
+	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
+		if (dm.maxprec_2planes < 0)
 		{
 			continue;
 		}
@@ -612,11 +610,12 @@ void compute_angular_endpoints_2planes(
 		}
 	}
 
-	promise(bsd.block_mode_count > 0);
-	for (unsigned int i = 0; i < bsd.block_mode_count; ++i)
+	// TODO: Skip start of list!
+	promise(bsd.block_mode_count_1plane_2plane_selected > 0);
+	for (unsigned int i = 0; i < bsd.block_mode_count_1plane_2plane_selected; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (!bm.is_dual_plane || !bm.percentile_hit)
+		if (!bm.is_dual_plane)
 		{
 			continue;
 		}
