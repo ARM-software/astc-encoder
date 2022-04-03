@@ -360,7 +360,7 @@ static void count_partition_mismatch_bits(
 	const uint64_t bitmaps[BLOCK_MAX_PARTITIONS],
 	unsigned int mismatch_counts[BLOCK_MAX_PARTITIONINGS]
 ) {
-	unsigned int active_count = bsd.partitioning_count[partition_count - 1];
+	unsigned int active_count = bsd.partitioning_count_selected[partition_count - 1];
 
 	if (partition_count == 2)
 	{
@@ -474,7 +474,7 @@ static void compute_kmeans_partition_ordering(
 	count_partition_mismatch_bits(bsd, partition_count, bitmaps, mismatch_counts);
 
 	// Sort the partitions based on the number of mismatched bits
-	get_partition_ordering_by_mismatch_bits(bsd.partitioning_count[partition_count - 1],
+	get_partition_ordering_by_mismatch_bits(bsd.partitioning_count_selected[partition_count - 1],
 	                                        mismatch_counts, partition_ordering);
 }
 
@@ -511,7 +511,7 @@ void find_best_partition_candidates(
 	unsigned int partition_sequence[BLOCK_MAX_PARTITIONINGS];
 	compute_kmeans_partition_ordering(bsd, blk, partition_count, partition_sequence);
 	partition_search_limit = astc::min(partition_search_limit,
-	                                   bsd.partitioning_count[partition_count - 1]);
+	                                   bsd.partitioning_count_selected[partition_count - 1]);
 
 	bool uses_alpha = !blk.is_constant_channel(3);
 

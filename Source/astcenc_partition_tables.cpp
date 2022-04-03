@@ -381,45 +381,71 @@ static void build_partition_table_for_one_partition_count(
 	};
 
 	unsigned int next_index = 0;
-	bsd.partitioning_count[partition_count - 1] = 0;
+	bsd.partitioning_count_selected[partition_count - 1] = 0;
+	bsd.partitioning_count_all[partition_count - 1] = 0;
 
+	// Skip tables larger than config max partition count if we can omit modes
 	if (can_omit_partitionings && (partition_count > partition_count_cutoff))
 	{
 		return;
 	}
 
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	// Iterate through twice
+	//   - Pass 0: Keep selected partitionings
+	//   - Pass 1: Keep non-selected partitionings (skip if in omit mode)
+	unsigned int max_iter = can_omit_partitionings ? 1 : 2;
+
+	// Tracker for things we built in the first iteration
+	uint8_t build[BLOCK_MAX_PARTITIONINGS] { 0 };
+		for (unsigned int x = 0; x < max_iter; x++)
 	{
-		bool keep = generate_one_partition_info_entry(bsd, partition_count, i, next_index, ptab[next_index]);
-		if (can_omit_partitionings && !keep)
+		for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 		{
-			bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
-			continue;
-		}
-
-		generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * 7);
-		keep = true;
-		for (unsigned int j = 0; j < next_index; j++)
-		{
-			bool match = compare_canonical_partitionings(canonical_patterns + 7 * next_index, canonical_patterns + 7 * j);
-			if (match)
+			// Don't include things we built in the first pass
+			if ((x == 1) && build[i])
 			{
-				ptab[next_index].partition_count = 0;
-				partitioning_valid[partition_count - 2][next_index] = 255;
-				keep = !can_omit_partitionings;
-				break;
+				continue;
 			}
-		}
 
-		if (keep)
-		{
-			bsd.partitioning_packed_index[partition_count - 2][i] = next_index;
-			bsd.partitioning_count[partition_count - 1] = next_index + 1;
-			next_index++;
-		}
-		else
-		{
-			bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
+			bool keep_useful = generate_one_partition_info_entry(bsd, partition_count, i, next_index, ptab[next_index]);
+			if ((x == 0) && !keep_useful)
+			{
+				continue;
+			}
+
+			generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * 7);
+			bool keep_canonical = true;
+			for (unsigned int j = 0; j < next_index; j++)
+			{
+				bool match = compare_canonical_partitionings(canonical_patterns + 7 * next_index, canonical_patterns + 7 * j);
+				if (match)
+				{
+					keep_canonical = false;;
+					break;
+				}
+			}
+
+			if (keep_useful && keep_canonical)
+			{
+				if (x == 0)
+				{
+					bsd.partitioning_packed_index[partition_count - 2][i] = next_index;
+					bsd.partitioning_count_selected[partition_count - 1]++;
+					bsd.partitioning_count_all[partition_count - 1]++;
+					build[i] = 1;
+					next_index++;
+				}
+			}
+			else
+			{
+				if (x == 1)
+				{
+					bsd.partitioning_packed_index[partition_count - 2][i] = next_index;
+					bsd.partitioning_count_all[partition_count - 1]++;
+					partitioning_valid[partition_count - 2][next_index] = 255;
+					next_index++;
+				}
+			}
 		}
 	}
 }
@@ -436,7 +462,8 @@ void init_partition_tables(
 	partition_info* par_tab1 = par_tab4 + BLOCK_MAX_PARTITIONINGS;
 
 	generate_one_partition_info_entry(bsd, 1, 0, 0, *par_tab1);
-	bsd.partitioning_count[0] = 1;
+	bsd.partitioning_count_selected[0] = 1;
+	bsd.partitioning_count_all[0] = 1;
 
 	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 2, par_tab2, canonical_patterns);

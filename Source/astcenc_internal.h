@@ -700,8 +700,11 @@ struct block_size_descriptor
 	/** @brief The number of stored block modes for any encoding. */
 	unsigned int block_mode_count_all;
 
-	/** @brief The number of active partitionings for 1/2/3/4 partitionings. */
-	unsigned int partitioning_count[BLOCK_MAX_PARTITIONS];
+	/** @brief The number of selected partitionings for 1/2/3/4 partitionings. */
+	unsigned int partitioning_count_selected[BLOCK_MAX_PARTITIONS];
+
+	/** @brief The number of partitionings for 1/2/3/4 partitionings. */
+	unsigned int partitioning_count_all[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
