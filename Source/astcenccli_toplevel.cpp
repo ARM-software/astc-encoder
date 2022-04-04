@@ -612,7 +612,7 @@ static int init_astcenc_config(
 	{
 		printf("ERROR: Required SIMD ISA support missing on this CPU\n");
 		return 1;
-	}
+
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
 	{
 		printf("ERROR: astcenc must not be compiled with -ffast-math\n");
