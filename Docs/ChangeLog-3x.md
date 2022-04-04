@@ -7,7 +7,33 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 3.4
+## 3.6
+
+**Status:** In development
+
+There are no planned major improvements for the 3.6 release. We will release it
+later in the year with a round up of any small improvements made since the 3.5
+release was made.
+
+* **General:**
+  * **Feature:** Data tables are now optimized for contexts without the
+    `SELF_DECOMPRESS_ONLY` flag set. The flag therefore no longer improves
+    compression performance, but still reduces context creation time and
+    context data table memory footprint.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 3.5 release:**
+
+TBD ...
+
+<!-- ---------------------------------------------------------------------- -->
+## 3.5
 
 **Status:** March 2022
 
