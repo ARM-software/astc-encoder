@@ -2212,14 +2212,14 @@ void prepare_angular_tables();
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      only_always               Only consider block modes that are always enabled.
  * @param      bsd                       The block size descriptor for the current trial.
- * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
 	unsigned int tune_low_weight_limit,
 	bool only_always,
 	const block_size_descriptor& bsd,
-	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_ideal_value,
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2227,13 +2227,13 @@ void compute_angular_endpoints_1plane(
  *
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      bsd                       The block size descriptor for the current trial.
- * @param      dec_weight_quant_uvalue   The decimated and quantized weight values.
+ * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
-	const float* dec_weight_quant_uvalue,
+	const float* dec_weight_ideal_value,
 	compression_working_buffers& tmpbuf);
 
 /* ============================================================================
