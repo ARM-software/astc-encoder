@@ -1064,8 +1064,8 @@ void recompute_ideal_colors_1plane(
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
 ) {
-	int weight_count = di.weight_count;
-	int partition_count = pi.partition_count;
+	unsigned int weight_count = di.weight_count;
+	unsigned int partition_count = pi.partition_count;
 
 	promise(weight_count > 0);
 	promise(partition_count > 0);
@@ -1073,23 +1073,28 @@ void recompute_ideal_colors_1plane(
 	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
 	float dec_weight_quant_uvalue[BLOCK_MAX_WEIGHTS];
-	for (int i = 0; i < weight_count; i++)
+	for (unsigned int i = 0; i < weight_count; i++)
 	{
 		dec_weight_quant_uvalue[i] = qat.unquantized_value[dec_weights_quant_pvalue[i]] * (1.0f / 64.0f);
 	}
 
-	for (int i = 0; i < partition_count; i++)
-	{
-		vfloat4 rgba_sum(1e-17f);
+	vfloat4 rgba_sum(blk.data_mean * static_cast<float>(blk.texel_count));
 
+	for (unsigned int i = 0; i < partition_count; i++)
+	{
 		unsigned int texel_count = pi.partition_texel_count[i];
 		const uint8_t *texel_indexes = pi.texels_of_partition[i];
 
-		promise(texel_count > 0);
-		for (unsigned int j = 0; j < texel_count; j++)
+		// Only compute a partition mean if more than one partition
+		if (partition_count > 1)
 		{
-			unsigned int tix = texel_indexes[j];
-			rgba_sum += blk.texel(tix);
+			rgba_sum = vfloat4(1e-17f);
+			promise(texel_count > 0);
+			for (unsigned int j = 0; j < texel_count; j++)
+			{
+				unsigned int tix = texel_indexes[j];
+				rgba_sum += blk.texel(tix);
+			}
 		}
 
 		rgba_sum = rgba_sum * blk.channel_weight;

@@ -35,20 +35,27 @@ void compute_avgs_and_dirs_4_comp(
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
+	vfloat4 average = blk.data_mean;
+
 	for (int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		vfloat4 base_sum = vfloat4::zero();
-		for (unsigned int i = 0; i < texel_count; i++)
+		// Only compute a partition mean if more than one partition
+		if (partition_count > 1)
 		{
-			int iwt = texel_indexes[i];
-			base_sum += blk.texel(iwt);
+			average = vfloat4::zero();
+			for (unsigned int i = 0; i < texel_count; i++)
+			{
+				int iwt = texel_indexes[i];
+				average += blk.texel(iwt);
+			}
+
+			average = average * (1.0f / static_cast<float>(texel_count));
 		}
 
-		vfloat4 average = base_sum / static_cast<float>(texel_count);
 		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
@@ -113,6 +120,7 @@ void compute_avgs_and_dirs_3_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3.0f;
+	vfloat4 average = blk.data_mean.swz<0, 1, 2>();
 
 	const float* data_vr = blk.data_r;
 	const float* data_vg = blk.data_g;
@@ -121,6 +129,7 @@ void compute_avgs_and_dirs_3_comp(
 	if (omitted_component == 0)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>()) / 3.0f;
+		average = blk.data_mean.swz<1, 2, 3>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
@@ -129,6 +138,7 @@ void compute_avgs_and_dirs_3_comp(
 	else if (omitted_component == 1)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>()) / 3.0f;
+		average = blk.data_mean.swz<0, 2, 3>();
 
 		data_vg = blk.data_b;
 		data_vb = blk.data_a;
@@ -136,6 +146,7 @@ void compute_avgs_and_dirs_3_comp(
 	else if (omitted_component == 2)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>()) / 3.0f;
+		average = blk.data_mean.swz<0, 1, 3>();
 
 		data_vb = blk.data_a;
 	}
@@ -149,14 +160,19 @@ void compute_avgs_and_dirs_3_comp(
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		vfloat4 base_sum = vfloat4::zero();
-		for (unsigned int i = 0; i < texel_count; i++)
+		// Only compute a partition mean if more than one partition
+		if (partition_count > 1)
 		{
-			unsigned int iwt = texel_indexes[i];
-			base_sum += vfloat3(data_vr[iwt], data_vg[iwt], data_vb[iwt]);
+			average = vfloat4::zero();
+			for (unsigned int i = 0; i < texel_count; i++)
+			{
+				unsigned int iwt = texel_indexes[i];
+				average += vfloat3(data_vr[iwt], data_vg[iwt], data_vb[iwt]);
+			}
+
+			average = average * (1.0f / static_cast<float>(texel_count));
 		}
 
-		vfloat4 average = base_sum / static_cast<float>(texel_count);
 		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
@@ -217,20 +233,27 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
+	vfloat4 average = blk.data_mean.swz<0, 1, 2>();
+
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
 		unsigned int texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		vfloat4 base_sum = vfloat4::zero();
-		for (unsigned int i = 0; i < texel_count; i++)
+		// Only compute a partition mean if more than one partition
+		if (partition_count > 1)
 		{
-			unsigned int iwt = texel_indexes[i];
-			base_sum += blk.texel3(iwt);
+			average = vfloat4::zero();
+			for (unsigned int i = 0; i < texel_count; i++)
+			{
+				unsigned int iwt = texel_indexes[i];
+				average += blk.texel3(iwt);
+			}
+
+			average = average * (1.0f / static_cast<float>(texel_count));
 		}
 
-		vfloat4 average = base_sum / static_cast<float>(texel_count);
 		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
@@ -287,6 +310,7 @@ void compute_avgs_and_dirs_2_comp(
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
 	float texel_weight;
+	vfloat4 average;
 
 	const float* data_vr = nullptr;
 	const float* data_vg = nullptr;
@@ -294,6 +318,7 @@ void compute_avgs_and_dirs_2_comp(
 	if (component1 == 0 && component2 == 1)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 1>()) / 2.0f;
+		average = blk.data_mean.swz<0, 1>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_g;
@@ -301,6 +326,7 @@ void compute_avgs_and_dirs_2_comp(
 	else if (component1 == 0 && component2 == 2)
 	{
 		texel_weight = hadd_s(blk.channel_weight.swz<0, 2>()) / 2.0f;
+		average = blk.data_mean.swz<0, 2>();
 
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
@@ -310,6 +336,7 @@ void compute_avgs_and_dirs_2_comp(
 		assert(component1 == 1 && component2 == 2);
 
 		texel_weight = hadd_s(blk.channel_weight.swz<1, 2>()) / 2.0f;
+		average = blk.data_mean.swz<1, 2>();
 
 		data_vr = blk.data_g;
 		data_vg = blk.data_b;
@@ -324,14 +351,19 @@ void compute_avgs_and_dirs_2_comp(
 		unsigned int texel_count = pt.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		vfloat4 base_sum = vfloat4::zero();
-		for (unsigned int i = 0; i < texel_count; i++)
+		// Only compute a partition mean if more than one partition
+		if (partition_count > 1)
 		{
-			unsigned int iwt = texel_indexes[i];
-			base_sum += vfloat2(data_vr[iwt], data_vg[iwt]);
+			average = vfloat4::zero();
+			for (unsigned int i = 0; i < texel_count; i++)
+			{
+				unsigned int iwt = texel_indexes[i];
+				average += vfloat2(data_vr[iwt], data_vg[iwt]);
+			}
+
+			average = average * (1.0f / static_cast<float>(texel_count));
 		}
 
-		vfloat4 average = base_sum / static_cast<float>(texel_count);
 		pm[partition].avg = average;
 
 		vfloat4 sum_xp = vfloat4::zero();
