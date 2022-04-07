@@ -1158,7 +1158,6 @@ static void construct_block_size_descriptor_3d(
 		}
 	}
 
-	// TODO: Probably need to do the 1/2 split for 3d modes too ...
 	bsd.block_mode_count_1plane_always = 0;  // Skipped for 3D modes
 	bsd.block_mode_count_1plane_selected = bm_counts[0];
 	bsd.block_mode_count_1plane_2plane_selected = bm_counts[0] + bm_counts[1];

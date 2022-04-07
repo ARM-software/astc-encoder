@@ -756,7 +756,6 @@ static float compress_symbolic_block_for_partition_2planes(
 	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
-	// TODO: Try to split this list into separate 1 and 2 plane lists?
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
