@@ -573,7 +573,6 @@ void compute_angular_endpoints_2planes(
 	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values2;
 
 	promise(bsd.decimation_mode_count_selected > 0);
-	// TODO: Split the list into two parts for this one?
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
@@ -610,16 +609,11 @@ void compute_angular_endpoints_2planes(
 		}
 	}
 
-	// TODO: Skip start of list!
-	promise(bsd.block_mode_count_1plane_2plane_selected > 0);
-	for (unsigned int i = 0; i < bsd.block_mode_count_1plane_2plane_selected; ++i)
+	unsigned int start = bsd.block_mode_count_1plane_selected;
+	unsigned int end = bsd.block_mode_count_1plane_2plane_selected;
+	for (unsigned int i = start; i < end; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		if (!bm.is_dual_plane)
-		{
-			continue;
-		}
-
 		unsigned int quant_mode = bm.quant_mode;
 		unsigned int decim_mode = bm.decimation_mode;
 

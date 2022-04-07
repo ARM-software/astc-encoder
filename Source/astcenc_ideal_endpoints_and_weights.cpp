@@ -1054,7 +1054,6 @@ static inline vfloat4 compute_rgbo_vector(
 }
 
 /* See header for documentation. */
-// TODO: Specialize for 1 partition?
 void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
@@ -1086,7 +1085,6 @@ void recompute_ideal_colors_1plane(
 		unsigned int texel_count = pi.partition_texel_count[i];
 		const uint8_t *texel_indexes = pi.texels_of_partition[i];
 
-		// TODO: Use gathers?
 		promise(texel_count > 0);
 		for (unsigned int j = 0; j < texel_count; j++)
 		{

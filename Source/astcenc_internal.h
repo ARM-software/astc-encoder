@@ -540,9 +540,6 @@ struct partition_info
  */
 struct decimation_info
 {
-	// TODO: These structures are large. Any partitioning opportunities to
-	// improve caching and reduce miss rates?
-
 	/** @brief The total number of texels in the block. */
 	uint8_t texel_count;
 
