@@ -953,7 +953,7 @@ static void construct_block_size_descriptor_2d(
 
 			if (is_dual_plane)
 			{
-				dm.ref_2_planes= 1;
+				dm.ref_2_planes = 1;
 			}
 			else
 			{
@@ -1081,7 +1081,7 @@ static void construct_block_size_descriptor_3d(
 				bsd.decimation_modes[decimation_mode_count].maxprec_1plane = static_cast<int8_t>(maxprec_1plane);
 				bsd.decimation_modes[decimation_mode_count].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 				bsd.decimation_modes[decimation_mode_count].ref_1_plane = maxprec_1plane == -1 ? 0 : 1;
-				bsd.decimation_modes[decimation_mode_count].ref_2_planes= maxprec_2planes == -1 ? 0 : 1;
+				bsd.decimation_modes[decimation_mode_count].ref_2_planes = maxprec_2planes == -1 ? 0 : 1;
 				decimation_mode_count++;
 			}
 		}

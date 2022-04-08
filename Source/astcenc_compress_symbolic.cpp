@@ -318,19 +318,20 @@ static bool realign_weights_decimated(
 				vfloat4 color = color_base + color_offset * plane_weight;
 
 				vfloat4 orig_color   = blk.texel(texel);
-				vfloat4 error_weight = blk.channel_weight;
 
 				vfloat4 color_diff      = color - orig_color;
 				vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
 				vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
-				current_errorv += dot(color_diff      * color_diff,      error_weight);
-				up_errorv      += dot(color_up_diff   * color_up_diff,   error_weight);
-				down_errorv    += dot(color_down_diff * color_down_diff, error_weight);
+
+				current_errorv += color_diff * color_diff;
+				up_errorv      += color_up_diff * color_up_diff;
+				down_errorv    += color_down_diff * color_down_diff;
 			}
 
-			float current_error = current_errorv.lane<0>();
-			float up_error = up_errorv.lane<0>();
-			float down_error = down_errorv.lane<0>();
+			vfloat4 error_weight = blk.channel_weight;
+			float current_error = hadd_s(current_errorv * error_weight);
+			float up_error = hadd_s(up_errorv * error_weight);
+			float down_error = hadd_s(down_errorv * error_weight);
 
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error))
