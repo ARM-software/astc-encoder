@@ -633,6 +633,12 @@ struct decimation_mode
 
 	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
 	int8_t maxprec_2planes;
+
+	/** @brief Was this actually referenced by an active 1 plane mode? */
+	uint8_t ref_1_plane;
+
+	/** @brief Was this actually referenced by an active 2 plane mode? */
+	uint8_t ref_2_planes;
 };
 
 /**
