@@ -804,6 +804,10 @@ static int construct_dt_entry_2d(
 	bsd.decimation_modes[dm_index].maxprec_1plane = static_cast<int8_t>(maxprec_1plane);
 	bsd.decimation_modes[dm_index].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 
+	// Populate these later based on block modes active in the config
+	bsd.decimation_modes[dm_index].ref_1_plane = 0;
+	bsd.decimation_modes[dm_index].ref_2_planes = 0;
+
 	// Default to not enabled - we'll populate these based on active block modes
 	bsd.decimation_modes[dm_index].percentile_hit = false;
 
@@ -942,6 +946,15 @@ static void construct_block_size_descriptor_2d(
 			{
 				bsd.block_modes[packed_idx].percentile_hit = false;
 			}
+
+			if (is_dual_plane)
+			{
+				bsd.decimation_modes[decimation_mode].ref_2_planes = 1;
+			}
+			else
+			{
+				bsd.decimation_modes[decimation_mode].ref_1_plane = 1;
+			}
 	#endif
 
 			bsd.block_modes[packed_idx].decimation_mode = static_cast<uint8_t>(decimation_mode);
@@ -971,6 +984,8 @@ static void construct_block_size_descriptor_2d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].percentile_hit = false;
+		bsd.decimation_modes[i].ref_1_plane = 0;
+		bsd.decimation_modes[i].ref_2_planes = 0;
 	}
 
 	// Determine the texels to use for kmeans clustering.
@@ -1056,6 +1071,8 @@ static void construct_block_size_descriptor_3d(
 				bsd.decimation_modes[decimation_mode_count].maxprec_1plane = static_cast<int8_t>(maxprec_1plane);
 				bsd.decimation_modes[decimation_mode_count].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 				bsd.decimation_modes[decimation_mode_count].percentile_hit = false;
+				bsd.decimation_modes[decimation_mode_count].ref_1_plane = maxprec_1plane == -1 ? 0 : 1;
+				bsd.decimation_modes[decimation_mode_count].ref_2_planes= maxprec_2planes == -1 ? 0 : 1;
 				decimation_mode_count++;
 			}
 		}
@@ -1067,6 +1084,8 @@ static void construct_block_size_descriptor_3d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].percentile_hit = false;
+		bsd.decimation_modes[i].ref_1_plane = 0;
+		bsd.decimation_modes[i].ref_2_planes = 0;
 	}
 
 	bsd.decimation_mode_count = decimation_mode_count;

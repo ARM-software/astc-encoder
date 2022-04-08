@@ -516,7 +516,7 @@ void compute_angular_endpoints_1plane(
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (dm.maxprec_1plane < 0 || !dm.percentile_hit)
+		if (!dm.ref_1_plane || !dm.percentile_hit)
 		{
 			continue;
 		}
@@ -579,7 +579,7 @@ void compute_angular_endpoints_2planes(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (dm.maxprec_2planes < 0 || !dm.percentile_hit)
+		if (!dm.ref_2_planes || !dm.percentile_hit)
 		{
 			continue;
 		}

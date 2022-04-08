@@ -642,6 +642,12 @@ struct decimation_mode
 
 	/** @brief Is this mode enabled in the current search preset? */
 	uint8_t percentile_hit;
+
+	/** @brief Was this actually referenced by an active 1 plane mode? */
+	uint8_t ref_1_plane;
+
+	/** @brief Was this actually referenced by an active 2 plane mode? */
+	uint8_t ref_2_planes;
 };
 
 /**
