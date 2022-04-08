@@ -803,7 +803,7 @@ static void construct_dt_entry_2d(
 	bsd.decimation_modes[index].maxprec_1plane = static_cast<int8_t>(maxprec_1plane);
 	bsd.decimation_modes[index].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 	bsd.decimation_modes[index].ref_1_plane = 0;
-	bsd.decimation_modes[index].ref_2_planes= 0;
+	bsd.decimation_modes[index].ref_2_planes = 0;
 }
 
 /**
@@ -995,7 +995,7 @@ static void construct_block_size_descriptor_2d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].ref_1_plane = 0;
-		bsd.decimation_modes[i].ref_2_planes= 0;
+		bsd.decimation_modes[i].ref_2_planes = 0;
 	}
 
 	// Determine the texels to use for kmeans clustering.
@@ -1093,7 +1093,7 @@ static void construct_block_size_descriptor_3d(
 		bsd.decimation_modes[i].maxprec_1plane = -1;
 		bsd.decimation_modes[i].maxprec_2planes = -1;
 		bsd.decimation_modes[i].ref_1_plane = 0;
-		bsd.decimation_modes[i].ref_2_planes= 0;
+		bsd.decimation_modes[i].ref_2_planes = 0;
 	}
 
 	bsd.decimation_mode_count_always = 0; // Skipped for 3D modes
