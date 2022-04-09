@@ -832,15 +832,32 @@ static void compress_image(
 
 	// Populate the block channel weights
 	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
-									ctx.config.cw_g_weight,
-									ctx.config.cw_b_weight,
-									ctx.config.cw_a_weight);
+	                             ctx.config.cw_g_weight,
+	                             ctx.config.cw_b_weight,
+	                             ctx.config.cw_a_weight);
 
 	// Use preallocated scratch buffer
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread actually runs the initializer
 	ctx.manage_compress.init(block_count);
+
+
+	// Determine if we can use an optimized load function
+	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
+	                 (swizzle.b != ASTCENC_SWZ_B) || (swizzle.a != ASTCENC_SWZ_A);
+
+	bool needs_hdr = (decode_mode == ASTCENC_PRF_HDR) ||
+	                 (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+
+	bool use_fast_load = !needs_swz && !needs_hdr &&
+	                     block_z == 1 && image.data_type == ASTCENC_TYPE_U8;
+
+	auto load_func = fetch_image_block;
+	if (use_fast_load)
+	{
+		load_func = fetch_image_block_fast_ldr;
+	}
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)
@@ -900,7 +917,7 @@ static void compress_image(
 			// Fetch the full block for compression
 			if (use_full_block)
 			{
-				fetch_image_block(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 			}
 			// Apply alpha scale RDO - substitute constant color block
 			else

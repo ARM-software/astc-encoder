@@ -1766,7 +1766,7 @@ void compute_averages(
 	const avg_args& ag);
 
 /**
- * @brief Fetch a single image block from the input image
+ * @brief Fetch a single image block from the input image.
  *
  * @param      decode_mode   The compression color profile.
  * @param      img           The input image data.
@@ -1788,7 +1788,32 @@ void fetch_image_block(
 	const astcenc_swizzle& swz);
 
 /**
- * @brief Write a single image block from the output image
+ * @brief Fetch a single image block from the input image.
+ *
+ * This specialized variant can be used only if the block is 2D LDR U8 data,
+ * with no swizzle.
+ *
+ * @param      decode_mode   The compression color profile.
+ * @param      img           The input image data.
+ * @param[out] blk           The image block to populate.
+ * @param      bsd           The block size information.
+ * @param      xpos          The block X coordinate in the input image.
+ * @param      ypos          The block Y coordinate in the input image.
+ * @param      zpos          The block Z coordinate in the input image.
+ * @param      swz           The swizzle to apply on load.
+ */
+void fetch_image_block_fast_ldr(
+	astcenc_profile decode_mode,
+	const astcenc_image& img,
+	image_block& blk,
+	const block_size_descriptor& bsd,
+	unsigned int xpos,
+	unsigned int ypos,
+	unsigned int zpos,
+	const astcenc_swizzle& swz);
+
+/**
+ * @brief Write a single image block from the output image.
  *
  * @param[out] img           The input image data.
  * @param      blk           The image block to populate.
