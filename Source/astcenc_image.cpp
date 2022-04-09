@@ -288,13 +288,11 @@ void fetch_image_block_fast_ldr(
 	blk.ypos = ypos;
 	blk.zpos = zpos;
 
-	// True if any non-identity swizzle
-	int idx = 0;
-
 	vfloat4 data_min(1e38f);
 	vfloat4 data_mean = vfloat4::zero();
 	vfloat4 data_max(-1e38f);
 	bool grayscale = true;
+	int idx = 0;
 
 	const uint8_t* plane = static_cast<const uint8_t*>(img.data[0]);
 	for (unsigned int y = ypos; y < ypos + bsd.ydim; y++)
