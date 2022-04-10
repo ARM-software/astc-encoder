@@ -9,17 +9,26 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 3.6
 
-**Status:** In development
+**Status:** April 2022
 
-There are no planned major improvements for the 3.6 release. We will release it
-later in the year with a round up of any small improvements made since the 3.5
-release was made.
+The 3.6 release contains another round of performance optimizations.
+
+There are no interface changes in this release, but in general the API is not
+designed to be binary compatible across versions. We always recommend
+rebuilding your client-side code using the updated `astcenc.h` header.
 
 * **General:**
   * **Feature:** Data tables are now optimized for contexts without the
     `SELF_DECOMPRESS_ONLY` flag set. The flag therefore no longer improves
     compression performance, but still reduces context creation time and
     context data table memory footprint.
+  * **Feature:** Decimation modes are reliably excluded from processing when
+    they are only partially selected in the compressor configuration (e.g. if
+    used for single plane, but not dual plane modes). This is a significant
+    performance optimization for all quality levels.
+  * **Feature:** Fast-path block load function variant added for 2D LDR images
+    with no swizzle. This is a moderate performance optimization for the fast
+    and fastest quality levels.
 
 ### Performance:
 
@@ -30,7 +39,7 @@ Key for charts:
 
 **Relative performance vs 3.5 release:**
 
-TBD ...
+![Relative scores 3.6 vs 3.5](./ChangeLogImg/relative-3.5-to-3.6.png)
 
 <!-- ---------------------------------------------------------------------- -->
 ## 3.5
