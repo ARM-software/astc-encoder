@@ -22,11 +22,12 @@ rebuilding your client-side code using the updated `astcenc.h` header.
     `SELF_DECOMPRESS_ONLY` flag set. The flag therefore no longer improves
     compression performance, but still reduces context creation time and
     context data table memory footprint.
-  * **Feature:** Decimation modes are reliably excluded from processing when
+  * **Feature:** Image quality for 4x4 `-fastest` configuration has been improved.
+  * **Optimization:** Decimation modes are reliably excluded from processing when
     they are only partially selected in the compressor configuration (e.g. if
     used for single plane, but not dual plane modes). This is a significant
     performance optimization for all quality levels.
-  * **Feature:** Fast-path block load function variant added for 2D LDR images
+  * **Optimization:** Fast-path block load function variant added for 2D LDR images
     with no swizzle. This is a moderate performance optimization for the fast
     and fastest quality levels.
 
