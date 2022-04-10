@@ -711,7 +711,7 @@ void find_best_partition_candidates(
 		}
 	}
 
-	// Same parition is best for both, so use this first unconditionally
+	// Same partition is best for both, so use this first unconditionally
 	if (uncor_best_partition == samec_best_partitions[0])
 	{
 		best_partitions[0] = samec_best_partitions[0];

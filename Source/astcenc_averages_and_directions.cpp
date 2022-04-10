@@ -650,7 +650,6 @@ void compute_error_squared_rgb(
 			samec_loparamv = min(samec_param, samec_loparamv);
 			samec_hiparamv = max(samec_param, samec_hiparamv);
 
-
 			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
 			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
 			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
