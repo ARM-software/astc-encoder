@@ -61,20 +61,16 @@ static void merge_endpoints(
  * therefore primarily improving the performance of 4x4 and 5x5 blocks where grid decimation
  * is needed less often.
  *
- * @param      decode_mode                       The decode mode (LDR, HDR).
- * @param      bsd                               The block size information.
- * @param      blk                               The image block color data to compress.
- * @param[out] scb                               The symbolic compressed block output.
- * @param[out] dec_weights_quant_pvalue_plane1   The weights for plane 1.
- * @param[out] dec_weights_quant_pvalue_plane2   The weights for plane 2, or @c nullptr if 1 plane.
+ * @param      decode_mode   The decode mode (LDR, HDR).
+ * @param      bsd           The block size information.
+ * @param      blk           The image block color data to compress.
+ * @param[out] scb           The symbolic compressed block output.
  */
 static bool realign_weights_undecimated(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	symbolic_compressed_block& scb,
-	uint8_t* dec_weights_quant_pvalue_plane1,
-	uint8_t* dec_weights_quant_pvalue_plane2
+	symbolic_compressed_block& scb
 ) {
 	// Get the partition descriptor
 	unsigned int partition_count = scb.partition_count;
@@ -110,7 +106,7 @@ static bool realign_weights_undecimated(
 		                       endpnt1[pa_idx]);
 	}
 
-	uint8_t* dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane1;
+	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -173,7 +169,7 @@ static bool realign_weights_undecimated(
 		}
 
 		// Prepare iteration for plane 2
-		dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane2;
+		dec_weights_quant_pvalue += WEIGHTS_PLANE2_OFFSET;
 		plane_mask = ~plane_mask;
 	}
 
@@ -187,20 +183,16 @@ static bool realign_weights_undecimated(
  * partition and per plane) and attempt to improve image quality by moving each weight up by one or
  * down by one quantization step.
  *
- * @param      decode_mode                       The decode mode (LDR, HDR).
- * @param      bsd                               The block size information.
- * @param      blk                               The image block color data to compress.
- * @param[out] scb                               The symbolic compressed block output.
- * @param[out] dec_weights_quant_pvalue_plane1   The weights for plane 1.
- * @param[out] dec_weights_quant_pvalue_plane2   The weights for plane 2, or @c nullptr if 1 plane.
+ * @param      decode_mode   The decode mode (LDR, HDR).
+ * @param      bsd           The block size information.
+ * @param      blk           The image block color data to compress.
+ * @param[out] scb           The symbolic compressed block output.
  */
 static bool realign_weights_decimated(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	symbolic_compressed_block& scb,
-	uint8_t* dec_weights_quant_pvalue_plane1,
-	uint8_t* dec_weights_quant_pvalue_plane2
+	symbolic_compressed_block& scb
 ) {
 	// Get the partition descriptor
 	unsigned int partition_count = scb.partition_count;
@@ -244,7 +236,7 @@ static bool realign_weights_decimated(
 
 	uint8_t uq_pl_weights[BLOCK_MAX_WEIGHTS];
 	float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
-	uint8_t* dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane1;
+	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -351,7 +343,7 @@ static bool realign_weights_decimated(
 		}
 
 		// Prepare iteration for plane 2
-		dec_weights_quant_pvalue = dec_weights_quant_pvalue_plane2;
+		dec_weights_quant_pvalue += WEIGHTS_PLANE2_OFFSET;
 		plane_mask = ~plane_mask;
 	}
 
@@ -660,14 +652,12 @@ static float compress_symbolic_block_for_partition_1plane(
 			if (di.weight_count != bsd.texel_count)
 			{
 				adjustments = realign_weights_decimated(
-					config.profile, bsd, blk, workscb,
-					workscb.weights, nullptr);
+					config.profile, bsd, blk, workscb);
 			}
 			else
 			{
 				adjustments = realign_weights_undecimated(
-					config.profile, bsd, blk, workscb,
-					workscb.weights, nullptr);
+					config.profile, bsd, blk, workscb);
 			}
 
 			// Post-realign test
@@ -994,14 +984,12 @@ static float compress_symbolic_block_for_partition_2planes(
 			if (di.weight_count != bsd.texel_count)
 			{
 				adjustments = realign_weights_decimated(
-					config.profile, bsd, blk, workscb,
-					workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET);
+					config.profile, bsd, blk, workscb);
 			}
 			else
 			{
 				adjustments = realign_weights_undecimated(
-					config.profile, bsd, blk, workscb,
-					workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET);
+					config.profile, bsd, blk, workscb);
 			}
 
 			// Post-realign test
