@@ -526,7 +526,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		mode23mult *= 0.0005f;  // Empirically determined ....
 
 		// Pick among the available HDR endpoint modes
-		for (int i = 0; i < 8; i++)
+		for (int i = QUANT_2; i < QUANT_16; i++)
 		{
 			best_error[i][3] = ERROR_CALC_DEFAULT;
 			best_error[i][2] = ERROR_CALC_DEFAULT;
@@ -539,7 +539,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			format_of_choice[i][0] = FMT_HDR_LUMINANCE_LARGE_RANGE;
 		}
 
-		for (int i = 8; i < 21; i++)
+		for (int i = QUANT_16; i <= QUANT_256; i++)
 		{
 			// The base_quant_error should depend on the scale-factor that would be used during
 			// actual encode of the color value
@@ -574,7 +574,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	}
 	else
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = QUANT_2; i < QUANT_6; i++)
 		{
 			best_error[i][3] = ERROR_CALC_DEFAULT;
 			best_error[i][2] = ERROR_CALC_DEFAULT;
@@ -598,10 +598,10 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float error_scale_oe_rgb = eci.can_offset_encode ? 0.25f : 1.0f;
 
 		// Pick among the available LDR endpoint modes
-		for (int i = 4; i < 21; i++)
+		for (int i = QUANT_6; i <= QUANT_256; i++)
 		{
 			// Offset encoding not possible at higher quant levels
-			if (i == 19)
+			if (i >= QUANT_192)
 			{
 				error_scale_oe_rgba = 1.0f;
 				error_scale_oe_rgb = 1.0f;
@@ -697,7 +697,7 @@ static float one_partition_find_best_combination_for_bitcount(
 	int& best_format
 ) {
 	int best_integer_count = 0;
-	float best_integer_count_error = 1e20f;
+	float best_integer_count_error = ERROR_CALC_DEFAULT;
 
 	for (int integer_count = 1; integer_count <= 4;  integer_count++)
 	{
@@ -705,7 +705,7 @@ static float one_partition_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level < 0)
+		if (quant_level < QUANT_6)
 		{
 			continue;
 		}
@@ -723,7 +723,7 @@ static float one_partition_find_best_combination_for_bitcount(
 	best_quant_level = (quant_method)ql;
 	best_format = FMT_LUMINANCE;
 
-	if (ql >= 0)
+	if (ql >= QUANT_6)
 	{
 		best_format = best_combined_format[ql][best_integer_count];
 	}
@@ -745,7 +745,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 	float best_combined_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
 	int best_combined_format[21][7][2]
 ) {
-	for (int i = 0; i < 21; i++)
+	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
 		for (int j = 0; j < 7; j++)
 		{
@@ -753,7 +753,7 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 		}
 	}
 
-	for (int quant = 5; quant < 21; quant++)
+	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
@@ -800,7 +800,7 @@ static float two_partitions_find_best_combination_for_bitcount(
 	int* best_formats
 ) {
 	int best_integer_count = 0;
-	float best_integer_count_error = 1e20f;
+	float best_integer_count_error = ERROR_CALC_DEFAULT;
 
 	for (int integer_count = 2; integer_count <= 8; integer_count++)
 	{
@@ -808,7 +808,7 @@ static float two_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level < 0)
+		if (quant_level < QUANT_6)
 		{
 			break;
 		}
@@ -827,7 +827,7 @@ static float two_partitions_find_best_combination_for_bitcount(
 	best_quant_level = (quant_method)ql;
 	best_quant_level_mod = (quant_method)ql_mod;
 
-	if (ql >= 0)
+	if (ql >= QUANT_6)
 	{
 		for (int i = 0; i < 2; i++)
 		{
@@ -859,7 +859,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 	float best_combined_error[21][10],
 	int best_combined_format[21][10][3]
 ) {
-	for (int i = 0; i < 21; i++)
+	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
 		for (int j = 0; j < 10; j++)
 		{
@@ -867,7 +867,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 		}
 	}
 
-	for (int quant = 5; quant < 21; quant++)
+	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
@@ -925,7 +925,7 @@ static float three_partitions_find_best_combination_for_bitcount(
 	int* best_formats
 ) {
 	int best_integer_count = 0;
-	float best_integer_count_error = 1e20f;
+	float best_integer_count_error = ERROR_CALC_DEFAULT;
 
 	for (int integer_count = 3; integer_count <= 9; integer_count++)
 	{
@@ -933,7 +933,7 @@ static float three_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level < 0)
+		if (quant_level < QUANT_6)
 		{
 			break;
 		}
@@ -952,7 +952,7 @@ static float three_partitions_find_best_combination_for_bitcount(
 	best_quant_level = (quant_method)ql;
 	best_quant_level_mod = (quant_method)ql_mod;
 
-	if (ql >= 0)
+	if (ql >= QUANT_6)
 	{
 		for (int i = 0; i < 3; i++)
 		{
@@ -984,7 +984,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 	float best_combined_error[21][13],
 	int best_combined_format[21][13][4]
 ) {
-	for (int i = 0; i < 21; i++)
+	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
 		for (int j = 0; j < 13; j++)
 		{
@@ -992,7 +992,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 		}
 	}
 
-	for (int quant = 5; quant < 21; quant++)
+	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
@@ -1061,7 +1061,7 @@ static float four_partitions_find_best_combination_for_bitcount(
 	int* best_formats
 ) {
 	int best_integer_count = 0;
-	float best_integer_count_error = 1e20f;
+	float best_integer_count_error = ERROR_CALC_DEFAULT;
 
 	for (int integer_count = 4; integer_count <= 9; integer_count++)
 	{
@@ -1069,7 +1069,7 @@ static float four_partitions_find_best_combination_for_bitcount(
 		int quant_level = quant_mode_table[integer_count][bits_available];
 
 		// Don't have enough bits to represent a given endpoint format at all!
-		if (quant_level < 0)
+		if (quant_level < QUANT_6)
 		{
 			break;
 		}
@@ -1088,7 +1088,7 @@ static float four_partitions_find_best_combination_for_bitcount(
 	best_quant_level = (quant_method)ql;
 	best_quant_level_mod = (quant_method)ql_mod;
 
-	if (ql >= 0)
+	if (ql >= QUANT_6)
 	{
 		for (int i = 0; i < 4; i++)
 		{
@@ -1357,9 +1357,13 @@ unsigned int compute_ideal_endpoint_formats(
 		}
 
 		block_mode[i] = best_error_weights[i];
+
 		quant_level[i] = best_quant_levels[best_error_weights[i]];
-		assert(quant_level[i] >= 0 && quant_level[i] < 21);
 		quant_level_mod[i] = best_quant_levels_mod[best_error_weights[i]];
+
+		assert(quant_level[i] >= QUANT_6 && quant_level[i] <= QUANT_256);
+		assert(quant_level_mod[i] >= QUANT_6 && quant_level_mod[i] <= QUANT_256);
+
 		for (int j = 0; j < partition_count; j++)
 		{
 			partition_format_specifiers[i][j] = best_ep_formats[best_error_weights[i]][j];

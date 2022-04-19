@@ -565,7 +565,7 @@ static float compress_symbolic_block_for_partition_1plane(
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
 				    workscb.color_values[j],
-				    (quant_method)color_quant_level[i]);
+				    color_quant_level[i]);
 			}
 
 			// If all the color endpoint modes are the same, we get a few more bits to store colors;
@@ -589,7 +589,7 @@ static float compress_symbolic_block_for_partition_1plane(
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
-					    (quant_method)color_quant_level_mod[i]);
+					    color_quant_level_mod[i]);
 				}
 
 				if (color_formats_mod[0] == color_formats_mod[1]
@@ -616,11 +616,6 @@ static float compress_symbolic_block_for_partition_1plane(
 			workscb.quant_mode = workscb.color_formats_matched ? color_quant_level_mod[i] : color_quant_level[i];
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.block_type = SYM_BTYPE_NONCONST;
-
-			if (workscb.quant_mode < QUANT_6)
-			{
-				workscb.block_type = SYM_BTYPE_ERROR;
-			}
 
 			// Pre-realign test
 			if (l == 0)
@@ -944,7 +939,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			                               rgbs_color, rgbo_color,
 			                               partition_format_specifiers[i][0],
 			                               workscb.color_values[0],
-			                               (quant_method)color_quant_level[i]);
+			                               color_quant_level[i]);
 
 			// Store header fields
 			workscb.partition_count = 1;
@@ -954,11 +949,6 @@ static float compress_symbolic_block_for_partition_2planes(
 			workscb.block_mode = qw_bm.mode_index;
 			workscb.plane2_component = static_cast<int8_t>(plane2_component);
 			workscb.block_type = SYM_BTYPE_NONCONST;
-
-			if (workscb.quant_mode < 4)
-			{
-				workscb.block_type = SYM_BTYPE_ERROR;
-			}
 
 			// Pre-realign test
 			if (l == 0)
