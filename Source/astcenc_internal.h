@@ -1511,16 +1511,20 @@ bool is_legal_3d_block_size(
 /**
  * @brief The precomputed table for quantizing color values.
  *
- * Indexed by [quant_mode][data_value].
+ * Returned value is in the ASTC BISE scrambled order.
+ *
+ * Indexed by [quant_mode - 4][data_value].
  */
-extern const uint8_t color_quant_tables[21][256];
+extern const uint8_t color_quant_tables[17][256];
 
 /**
  * @brief The precomputed table for unquantizing color values.
  *
- * Indexed by [quant_mode][data_value].
+ * Returned value is in the ASTC BISE scrambled order.
+ *
+ * Indexed by [quant_mode - 4][data_value].
  */
-extern const uint8_t color_unquant_tables[21][256];
+extern const uint8_t color_unquant_tables[17][256];
 
 /**
  * @brief The precomputed quant mode storage table.
@@ -1529,7 +1533,7 @@ extern const uint8_t color_unquant_tables[21][256];
  * number of compressed storage bits. Returns -1 for cases where the requested integer count cannot
  * ever fit in the supplied storage size.
  */
-extern const int8_t quant_mode_table[17][128];
+extern const int8_t quant_mode_table[10][128];
 
 /**
  * @brief Encode a packed string using BISE.
