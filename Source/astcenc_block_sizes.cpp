@@ -976,7 +976,7 @@ static void construct_block_size_descriptor_2d(
 	bsd.block_mode_count_1plane_always = bm_counts[0];
 	bsd.block_mode_count_1plane_selected = bm_counts[0] + bm_counts[1];
 	bsd.block_mode_count_1plane_2plane_selected = bm_counts[0] + bm_counts[1] + bm_counts[2];
-	bsd.block_mode_count_all =  bm_counts[0] + bm_counts[1] + bm_counts[2] + bm_counts[3];
+	bsd.block_mode_count_all = bm_counts[0] + bm_counts[1] + bm_counts[2] + bm_counts[3];
 
 	bsd.decimation_mode_count_always = dm_counts[0];
 	bsd.decimation_mode_count_selected = dm_counts[0] + dm_counts[1] + dm_counts[2];

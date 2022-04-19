@@ -795,7 +795,7 @@ void compute_ideal_weights_for_decimation(
 
 	// Transfer enough to also copy zero initialized SIMD over-fetch region
 	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = 0; i < texel_count_simd; i +=  ASTCENC_SIMD_WIDTH)
+	for (unsigned int i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight(eai_in.weights + i);
 		vfloat weight_error_scale(eai_in.weight_error_scale + i);
