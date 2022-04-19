@@ -292,7 +292,7 @@ static void compute_angular_endpoints_for_quant_levels(
 
 		// Check best error against record N
 		vfloat4 best_result = best_results[idx_span];
-		vfloat4 new_result = vfloat4(error[i], (float)i, 0.0f, 0.0f);
+		vfloat4 new_result = vfloat4(error[i], static_cast<float>(i), 0.0f, 0.0f);
 		vmask4 mask1(best_result.lane<0>() > error[i]);
 		best_results[idx_span] = select(best_result, new_result, mask1);
 
@@ -317,7 +317,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
 		unsigned int q = quantization_steps_for_level[i];
-		int bsi = (int)best_results[q].lane<1>();
+		int bsi = static_cast<int>(best_results[q].lane<1>());
 
 		// Did we find anything?
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -447,15 +447,13 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
 	// branches can become selects. This involves some integer to float casts, but the values are
 	// small enough so they never round the wrong way.
-	float best_error[ANGULAR_STEPS];
-	int best_index[ANGULAR_STEPS];
+	vfloat4 best_results[ANGULAR_STEPS];
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
-		best_error[i] = ERROR_CALC_DEFAULT;
-		best_index[i] = -1;
+		best_results[i] = vfloat4(ERROR_CALC_DEFAULT, -1.0f, 0.0f, 0.0f);
 	}
 
 	promise(max_angular_steps > 0);
@@ -464,18 +462,16 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 		int idx_span = weight_span[i];
 
 		// Check best error against record N
-		float current_best = best_error[idx_span];
-		if (error[i] < current_best)
-		{
-			best_error[idx_span] = error[i];
-			best_index[idx_span] = i;
-		}
+		vfloat4 current_best = best_results[idx_span];
+		vfloat4 candidate = vfloat4(error[i], static_cast<float>(i), 0.0f, 0.0f);
+		vmask4 mask(current_best.lane<0>() > error[i]);
+		best_results[idx_span] = select(current_best, candidate, mask);
 	}
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
 		unsigned int q = quantization_steps_for_level[i];
-		int bsi = best_index[q];
+		int bsi = static_cast<int>(best_results[q].lane<1>());
 
 		// Did we find anything?
 #if defined(ASTCENC_DIAGNOSTICS)
