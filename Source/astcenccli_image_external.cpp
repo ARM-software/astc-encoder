@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -28,10 +28,22 @@
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_PNM
+#define STBI_NO_PNG
 #define STBI_NO_PSD
 
 // Configure the TinyEXR library build.
 #define TINYEXR_IMPLEMENTATION
+
+// Configure the Wuffs library build.
+#define WUFFS_IMPLEMENTATION
+#define WUFFS_CONFIG__MODULES
+#define WUFFS_CONFIG__MODULE__ADLER32
+#define WUFFS_CONFIG__MODULE__BASE
+#define WUFFS_CONFIG__MODULE__CRC32
+#define WUFFS_CONFIG__MODULE__DEFLATE
+#define WUFFS_CONFIG__MODULE__PNG
+#define WUFFS_CONFIG__MODULE__ZLIB
+#include "wuffs-v0.3.c"
 
 // For both libraries force asserts (which can be triggered by corrupt input
 // images) to be handled at runtime in release builds to avoid security issues.
