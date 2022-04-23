@@ -7,6 +7,29 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 3.7
+
+**Status:** In development
+
+The 3.7 release is in development ...
+
+* **General:**
+  * **Feature:** The command line tool PNG loader has been switched to use
+    the Wuffs library, which is robust and significantly faster than the
+    current stb_image implementation.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 3.5 release:**
+
+![Relative scores 3.6 vs 3.5](./ChangeLogImg/relative-3.5-to-3.6.png)
+
+<!-- ---------------------------------------------------------------------- -->
 ## 3.6
 
 **Status:** April 2022
@@ -22,14 +45,15 @@ rebuilding your client-side code using the updated `astcenc.h` header.
     `SELF_DECOMPRESS_ONLY` flag set. The flag therefore no longer improves
     compression performance, but still reduces context creation time and
     context data table memory footprint.
-  * **Feature:** Image quality for 4x4 `-fastest` configuration has been improved.
-  * **Optimization:** Decimation modes are reliably excluded from processing when
-    they are only partially selected in the compressor configuration (e.g. if
-    used for single plane, but not dual plane modes). This is a significant
+  * **Feature:** Image quality for 4x4 `-fastest` configuration has been
+    improved.
+  * **Optimization:** Decimation modes are reliably excluded from processing
+    when they are only partially selected in the compressor configuration (e.g.
+    if used for single plane, but not dual plane modes). This is a significant
     performance optimization for all quality levels.
-  * **Optimization:** Fast-path block load function variant added for 2D LDR images
-    with no swizzle. This is a moderate performance optimization for the fast
-    and fastest quality levels.
+  * **Optimization:** Fast-path block load function variant added for 2D LDR
+    images with no swizzle. This is a moderate performance optimization for the
+    fast and fastest quality levels.
 
 ### Performance:
 
