@@ -24,8 +24,27 @@
 
 #include <cassert>
 
-/* See header for documentation. */
-void compute_partition_averages_rgb(
+/**
+ * @brief Compute the average RGB color of each partition.
+ *
+ * The algorithm here uses a vectorized sequential scan and per-partition
+ * color accumulators, using select() to mask texel lanes in other partitions.
+ *
+ * We only accumulate sums for N-1 partitions during the scan; the value for
+ * the last partition can be computed given that we know the block-wide average
+ * already.
+ *
+ * Because of this we could reduce the loop iteration count so it "just" spans
+ * the max texel index needed for the N-1 partitions, which could need fewer
+ * iterations than the full block texel count. However, this makes the loop
+ * count erratic and causes more branch mispredictions so is a net loss.
+ *
+ * @param      pi         The partitioning to use.
+ * @param      blk        The block data to process.
+ * @param[out] averages   The output averages. Unused partition indices will
+ *                        not be initialized, and lane<3> will be zero.
+ */
+static void compute_partition_averages_rgb(
 	const partition_info& pi,
 	const image_block& blk,
 	vfloat4 averages[BLOCK_MAX_PARTITIONS]
@@ -176,8 +195,27 @@ void compute_partition_averages_rgb(
 	}
 }
 
-/* See header for documentation. */
-void compute_partition_averages_rgba(
+/**
+ * @brief Compute the average RGBA color of each partition.
+ *
+ * The algorithm here uses a vectorized sequential scan and per-partition
+ * color accumulators, using select() to mask texel lanes in other partitions.
+ *
+ * We only accumulate sums for N-1 partitions during the scan; the value for
+ * the last partition can be computed given that we know the block-wide average
+ * already.
+ *
+ * Because of this we could reduce the loop iteration count so it "just" spans
+ * the max texel index needed for the N-1 partitions, which could need fewer
+ * iterations than the full block texel count. However, this makes the loop
+ * count erratic and causes more branch mispredictions so is a net loss.
+ *
+ * @param      pi         The partitioning to use.
+ * @param      blk        The block data to process.
+ * @param[out] averages   The output averages. Unused partition indices will
+ *                        not be initialized.
+ */
+static void compute_partition_averages_rgba(
 	const partition_info& pi,
 	const image_block& blk,
 	vfloat4 averages[BLOCK_MAX_PARTITIONS]
