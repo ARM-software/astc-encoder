@@ -331,7 +331,14 @@ static void compute_ideal_colors_and_weights_3_comp(
 		data_vb = blk.data_b;
 	}
 
-	compute_avgs_and_dirs_3_comp(pi, blk, omitted_component, pms);
+	if (omitted_component == 3)
+	{
+		compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
+	}
+	else
+	{
+		compute_avgs_and_dirs_3_comp(pi, blk, omitted_component, pms);
+	}
 
 	bool is_constant_wes { true };
 	float partition0_len_sq { 0.0f };
