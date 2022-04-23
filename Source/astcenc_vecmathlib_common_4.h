@@ -129,17 +129,6 @@ ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
-/**
- * @brief Debug function to print a vector of ints.
- */
-ASTCENC_SIMD_INLINE void print(vint4 a)
-{
-	alignas(16) int v[4];
-	storea(a, v);
-	printf("v4_i32:\n  %8d %8d %8d %8d\n",
-	       v[0], v[1], v[2], v[3]);
-}
-
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================
@@ -298,6 +287,15 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 }
 
 /**
+ * @brief Accumulate lane-wise sums for a masked vector.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
+{
+	a = select(vfloat4::zero(), a, m);
+	accum = accum + a;
+}
+
+/**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
  */
 ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
@@ -351,6 +349,17 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 }
 
 /**
+ * @brief Debug function to print a vector of ints.
+ */
+ASTCENC_SIMD_INLINE void print(vint4 a)
+{
+	alignas(16) int v[4];
+	storea(a, v);
+	printf("v4_i32:\n  %8d %8d %8d %8d\n",
+	       v[0], v[1], v[2], v[3]);
+}
+
+/**
  * @brief Debug function to print a vector of floats.
  */
 ASTCENC_SIMD_INLINE void print(vfloat4 a)
@@ -359,6 +368,14 @@ ASTCENC_SIMD_INLINE void print(vfloat4 a)
 	storea(a, v);
 	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
 	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
+}
+
+/**
+ * @brief Debug function to print a vector of masks.
+ */
+ASTCENC_SIMD_INLINE void print(vmask4 a)
+{
+	print(select(vint4(0), vint4(1), a));
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_COMMON_4_H_INCLUDED

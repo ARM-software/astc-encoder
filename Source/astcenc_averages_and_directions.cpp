@@ -500,8 +500,7 @@ void compute_error_squared_rgba(
 			                 + (ew_b * uncor_dist2 * uncor_dist2)
 			                 + (ew_a * uncor_dist3 * uncor_dist3);
 
-			uncor_err = select(vfloat::zero(), uncor_err, mask);
-			haccumulate(uncor_errorsumv, uncor_err);
+			haccumulate(uncor_errorsumv, uncor_err, mask);
 
 			// Process samechroma data
 			vfloat samec_param = (data_r * l_samec_bs0)
@@ -522,8 +521,7 @@ void compute_error_squared_rgba(
 			                 + (ew_b * samec_dist2 * samec_dist2)
 			                 + (ew_a * samec_dist3 * samec_dist3);
 
-			samec_err = select(vfloat::zero(), samec_err, mask);
-			haccumulate(samec_errorsumv, samec_err);
+			haccumulate(samec_errorsumv, samec_err, mask);
 
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
@@ -639,8 +637,7 @@ void compute_error_squared_rgb(
 			                 + (ew_g * uncor_dist1 * uncor_dist1)
 			                 + (ew_b * uncor_dist2 * uncor_dist2);
 
-			uncor_err = select(vfloat::zero(), uncor_err, mask);
-			haccumulate(uncor_errorsumv, uncor_err);
+			haccumulate(uncor_errorsumv, uncor_err, mask);
 
 			// Process samechroma data
 			vfloat samec_param = (data_r * l_samec_bs0)
@@ -658,8 +655,7 @@ void compute_error_squared_rgb(
 			                 + (ew_g * samec_dist1 * samec_dist1)
 			                 + (ew_b * samec_dist2 * samec_dist2);
 
-			samec_err = select(vfloat::zero(), samec_err, mask);
-			haccumulate(samec_errorsumv, samec_err);
+			haccumulate(samec_errorsumv, samec_err, mask);
 
 			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}

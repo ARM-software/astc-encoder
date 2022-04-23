@@ -132,8 +132,8 @@ static void compute_error_squared_rgb_single_partition(
 		vfloat data_a = gatherf(blk.data_a, tix);
 		vfloat alpha_diff = data_a - default_a;
 		alpha_diff = alpha_diff * alpha_diff;
-		alpha_diff = select(vfloat::zero(), alpha_diff, mask);
-		haccumulate(a_drop_errv, alpha_diff);
+
+		haccumulate(a_drop_errv, alpha_diff, mask);
 
 		vfloat data_r = gatherf(blk.data_r, tix);
 		vfloat data_g = gatherf(blk.data_g, tix);
@@ -152,8 +152,7 @@ static void compute_error_squared_rgb_single_partition(
 		             + dist1 * dist1 * ews.lane<1>()
 		             + dist2 * dist2 * ews.lane<2>();
 
-		error = select(vfloat::zero(), error, mask);
-		haccumulate(uncor_errv, error);
+		haccumulate(uncor_errv, error, mask);
 
 		// Compute same chroma error - no "amod", its always zero
 		param = data_r * samec_bs0
@@ -168,8 +167,7 @@ static void compute_error_squared_rgb_single_partition(
 		      + dist1 * dist1 * ews.lane<1>()
 		      + dist2 * dist2 * ews.lane<2>();
 
-		error = select(vfloat::zero(), error, mask);
-		haccumulate(samec_errv, error);
+		haccumulate(samec_errv, error, mask);
 
 		// Compute rgbl error
 		param = data_r * rgbl_bs0
@@ -184,8 +182,7 @@ static void compute_error_squared_rgb_single_partition(
 		      + dist1 * dist1 * ews.lane<1>()
 		      + dist2 * dist2 * ews.lane<2>();
 
-		error = select(vfloat::zero(), error, mask);
-		haccumulate(rgbl_errv, error);
+		haccumulate(rgbl_errv, error, mask);
 
 		// Compute luma error - no "amod", its always zero
 		param = data_r * l_bs0
@@ -200,8 +197,7 @@ static void compute_error_squared_rgb_single_partition(
 		      + dist1 * dist1 * ews.lane<1>()
 		      + dist2 * dist2 * ews.lane<2>();
 
-		error = select(vfloat::zero(), error, mask);
-		haccumulate(l_errv, error);
+		haccumulate(l_errv, error, mask);
 	}
 
 	a_drop_err = hadd_s(a_drop_errv * ews.lane<3>());

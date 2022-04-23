@@ -617,9 +617,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 		// Mask off bad lanes
 		vmask mask = lane_id < vint(texel_count);
 		lane_id += vint(ASTCENC_SIMD_WIDTH);
-		metric = select(vfloat::zero(), metric, mask);
-
-		haccumulate(summav, metric);
+		haccumulate(summav, metric, mask);
 	}
 
 	return hadd_s(summav);

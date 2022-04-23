@@ -598,17 +598,6 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 	return vint8(_mm256_castps_si256(_mm256_blendv_ps(av, bv, cond.m)));
 }
 
-/**
- * @brief Debug function to print a vector of ints.
- */
-ASTCENC_SIMD_INLINE void print(vint8 a)
-{
-	alignas(ASTCENC_VECALIGN) int v[8];
-	storea(a, v);
-	printf("v8_i32:\n  %8d %8d %8d %8d %8d %8d %8d %8d\n",
-	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
-}
-
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================
@@ -886,6 +875,14 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 }
 
 /**
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ */
+ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
+{
+	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
+}
+
+/**
  * @brief Accumulate the full horizontal sum of a vector.
  */
 ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
@@ -916,19 +913,28 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 }
 
 /**
+ * @brief Accumulate masked lane-wise sums for a vector, folded 4-wide.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
+{
+	a = select(vfloat8::zero(), a, m);
+
+	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
+	// Note that this approach gives higher error in the sum; adding the two
+	// smaller numbers together first would be more accurate.
+	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	haccumulate(accum, lo);
+
+	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	haccumulate(accum, hi);
+}
+
+/**
  * @brief Return the sqrt of the lanes in the vector.
  */
 ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 {
 	return vfloat8(_mm256_sqrt_ps(a.m));
-}
-
-/**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
- */
-ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
-{
-	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
 }
 
 /**
@@ -996,6 +1002,17 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 }
 
 /**
+ * @brief Debug function to print a vector of ints.
+ */
+ASTCENC_SIMD_INLINE void print(vint8 a)
+{
+	alignas(ASTCENC_VECALIGN) int v[8];
+	storea(a, v);
+	printf("v8_i32:\n  %8d %8d %8d %8d %8d %8d %8d %8d\n",
+	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+}
+
+/**
  * @brief Debug function to print a vector of floats.
  */
 ASTCENC_SIMD_INLINE void print(vfloat8 a)
@@ -1005,6 +1022,14 @@ ASTCENC_SIMD_INLINE void print(vfloat8 a)
 	printf("v8_f32:\n  %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f\n",
 	       (double)v[0], (double)v[1], (double)v[2], (double)v[3],
 	       (double)v[4], (double)v[5], (double)v[6], (double)v[7]);
+}
+
+/**
+ * @brief Debug function to print a vector of masks.
+ */
+ASTCENC_SIMD_INLINE void print(vmask8 a)
+{
+	print(select(vint8(0), vint8(1), a));
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
