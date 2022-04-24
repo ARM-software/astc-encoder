@@ -61,7 +61,7 @@ static void compute_partition_averages_rgb(
 	// For 2 partitions scan results for partition 0, compute partition 1
 	else if (partition_count == 2)
 	{
-		vfloat4 pp_avg_rgb[3] {};
+		vfloatacc pp_avg_rgb[3] {};
 
 		vint lane_id = vint::lane_id();
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -97,7 +97,7 @@ static void compute_partition_averages_rgb(
 	// For 3 partitions scan results for partition 0/1, compute partition 2
 	else if (partition_count == 3)
 	{
-		vfloat4 pp_avg_rgb[2][3] {};
+		vfloatacc pp_avg_rgb[2][3] {};
 
 		vint lane_id = vint::lane_id();
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -142,7 +142,7 @@ static void compute_partition_averages_rgb(
 	else
 	{
 		// For 4 partitions scan results for partition 0/1/2, compute partition 3
-		vfloat4 pp_avg_rgb[3][3] {};
+		vfloatacc pp_avg_rgb[3][3] {};
 
 		vint lane_id = vint::lane_id();
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -765,8 +765,8 @@ void compute_error_squared_rgba(
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
-	uncor_error = 0.0f;
-	samec_error = 0.0f;
+	vfloatacc uncor_errorsumv = vfloatacc::zero();
+	vfloatacc samec_errorsumv = vfloatacc::zero();
 
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
@@ -804,11 +804,9 @@ void compute_error_squared_rgba(
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
-		vfloat4 uncor_errorsumv = vfloat4::zero();
 
 		vfloat samec_loparamv(1e10f);
 		vfloat samec_hiparamv(-1e10f);
-		vfloat4 samec_errorsumv = vfloat4::zero();
 
 		vfloat ew_r(blk.channel_weight.lane<0>());
 		vfloat ew_g(blk.channel_weight.lane<1>());
@@ -883,10 +881,6 @@ void compute_error_squared_rgba(
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
 
-		// Resolve the final scalar accumulator sum
-		haccumulate(uncor_error, uncor_errorsumv);
-		haccumulate(samec_error, samec_errorsumv);
-
 		float uncor_linelen = uncor_hiparam - uncor_loparam;
 		float samec_linelen = samec_hiparam - samec_loparam;
 
@@ -894,6 +888,9 @@ void compute_error_squared_rgba(
 		uncor_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
 		samec_lengths[partition] = astc::max(samec_linelen, 1e-7f);
 	}
+
+	uncor_error = hadd_s(uncor_errorsumv);
+	samec_error = hadd_s(samec_errorsumv);
 }
 
 /* See header for documentation. */
@@ -907,8 +904,8 @@ void compute_error_squared_rgb(
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
-	uncor_error = 0.0f;
-	samec_error = 0.0f;
+	vfloatacc uncor_errorsumv = vfloatacc::zero();
+	vfloatacc samec_errorsumv = vfloatacc::zero();
 
 	for (unsigned int partition = 0; partition < partition_count; partition++)
 	{
@@ -947,11 +944,9 @@ void compute_error_squared_rgb(
 
 		vfloat uncor_loparamv(1e10f);
 		vfloat uncor_hiparamv(-1e10f);
-		vfloat4 uncor_errorsumv = vfloat4::zero();
 
 		vfloat samec_loparamv(1e10f);
 		vfloat samec_hiparamv(-1e10f);
-		vfloat4 samec_errorsumv = vfloat4::zero();
 
 		vfloat ew_r(blk.channel_weight.lane<0>());
 		vfloat ew_g(blk.channel_weight.lane<1>());
@@ -1017,10 +1012,6 @@ void compute_error_squared_rgb(
 		samec_loparam = hmin_s(samec_loparamv);
 		samec_hiparam = hmax_s(samec_hiparamv);
 
-		// Resolve the final scalar accumulator sum
-		haccumulate(uncor_error, uncor_errorsumv);
-		haccumulate(samec_error, samec_errorsumv);
-
 		float uncor_linelen = uncor_hiparam - uncor_loparam;
 		float samec_linelen = samec_hiparam - samec_loparam;
 
@@ -1028,6 +1019,9 @@ void compute_error_squared_rgb(
 		pl.uncor_line_len = astc::max(uncor_linelen, 1e-7f);
 		pl.samec_line_len = astc::max(samec_linelen, 1e-7f);
 	}
+
+	uncor_error = hadd_s(uncor_errorsumv);
+	samec_error = hadd_s(samec_errorsumv);
 }
 
 #endif

@@ -89,10 +89,10 @@ static void compute_error_squared_rgb_single_partition(
 	const uint8_t* texel_indexes = pi.texels_of_partition[partition_index];
 	promise(texel_count > 0);
 
-	vfloat4 a_drop_errv = vfloat4::zero();
+	vfloatacc a_drop_errv = vfloatacc::zero();
 	vfloat default_a(blk.get_default_alpha());
 
-	vfloat4 uncor_errv = vfloat4::zero();
+	vfloatacc uncor_errv = vfloatacc::zero();
 	vfloat uncor_bs0(uncor_pline.bs.lane<0>());
 	vfloat uncor_bs1(uncor_pline.bs.lane<1>());
 	vfloat uncor_bs2(uncor_pline.bs.lane<2>());
@@ -101,12 +101,12 @@ static void compute_error_squared_rgb_single_partition(
 	vfloat uncor_amod1(uncor_pline.amod.lane<1>());
 	vfloat uncor_amod2(uncor_pline.amod.lane<2>());
 
-	vfloat4 samec_errv = vfloat4::zero();
+	vfloatacc samec_errv = vfloatacc::zero();
 	vfloat samec_bs0(samec_pline.bs.lane<0>());
 	vfloat samec_bs1(samec_pline.bs.lane<1>());
 	vfloat samec_bs2(samec_pline.bs.lane<2>());
 
-	vfloat4 rgbl_errv = vfloat4::zero();
+	vfloatacc rgbl_errv = vfloatacc::zero();
 	vfloat rgbl_bs0(rgbl_pline.bs.lane<0>());
 	vfloat rgbl_bs1(rgbl_pline.bs.lane<1>());
 	vfloat rgbl_bs2(rgbl_pline.bs.lane<2>());
@@ -115,7 +115,7 @@ static void compute_error_squared_rgb_single_partition(
 	vfloat rgbl_amod1(rgbl_pline.amod.lane<1>());
 	vfloat rgbl_amod2(rgbl_pline.amod.lane<2>());
 
-	vfloat4 l_errv = vfloat4::zero();
+	vfloatacc l_errv = vfloatacc::zero();
 	vfloat l_bs0(l_pline.bs.lane<0>());
 	vfloat l_bs1(l_pline.bs.lane<1>());
 	vfloat l_bs2(l_pline.bs.lane<2>());
@@ -200,7 +200,7 @@ static void compute_error_squared_rgb_single_partition(
 		haccumulate(l_errv, error, mask);
 	}
 
-	a_drop_err = hadd_s(a_drop_errv * ews.lane<3>());
+	a_drop_err = hadd_s(a_drop_errv) * ews.lane<3>();
 	uncor_err = hadd_s(uncor_errv);
 	samec_err = hadd_s(samec_errv);
 	rgbl_err = hadd_s(rgbl_errv);

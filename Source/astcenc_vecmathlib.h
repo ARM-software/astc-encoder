@@ -75,6 +75,7 @@
 	#define ASTCENC_SIMD_WIDTH 8
 
 	using vfloat = vfloat8;
+	using vfloatacc = vfloat4;  // Use vfloat8 for fast but non-invariant accumulators
 	using vint = vint8;
 	using vmask = vmask8;
 
@@ -89,6 +90,7 @@
 	#define ASTCENC_SIMD_WIDTH 4
 
 	using vfloat = vfloat4;
+	using vfloatacc = vfloat4;
 	using vint = vint4;
 	using vmask = vmask4;
 
@@ -103,6 +105,7 @@
 	#define ASTCENC_SIMD_WIDTH 4
 
 	using vfloat = vfloat4;
+	using vfloatacc = vfloat4;
 	using vint = vint4;
 	using vmask = vmask4;
 
@@ -134,6 +137,7 @@
 	#define ASTCENC_SIMD_WIDTH 4
 
 	using vfloat = vfloat4;
+	using vfloatacc = vfloat4;
 	using vint = vint4;
 	using vmask = vmask4;
 

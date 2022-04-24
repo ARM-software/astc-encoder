@@ -559,7 +559,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	}
 
 	// Unpack and compute error for each texel in the partition
-	vfloat4 summav = vfloat4::zero();
+	vfloatacc summav = vfloatacc::zero();
 
 	vint lane_id = vint::lane_id();
 	vint srgb_scale(config.profile == ASTCENC_PRF_LDR_SRGB ? 257 : 1);

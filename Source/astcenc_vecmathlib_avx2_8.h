@@ -883,13 +883,12 @@ ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
 }
 
 /**
- * @brief Accumulate the full horizontal sum of a vector.
+ * @brief Accumulate lane-wise sums for a vector, folded 4-wide.
+ *
+ * This is invariant with 4-wide implementations.
  */
-ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
+ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 {
-	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
-	// Note that this approach gives higher error in the sum; adding the two
-	// smaller numbers together first would be more accurate.
 	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
 	haccumulate(accum, lo);
 
@@ -898,35 +897,35 @@ ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
 }
 
 /**
- * @brief Accumulate lane-wise sums for a vector, folded 4-wide.
+ * @brief Accumulate lane-wise sums for a vector.
+ *
+ * This is NOT invariant with 4-wide implementations.
  */
-ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
+ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a)
 {
-	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
-	// Note that this approach gives higher error in the sum; adding the two
-	// smaller numbers together first would be more accurate.
-	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
-	haccumulate(accum, lo);
-
-	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
-	haccumulate(accum, hi);
+	accum += a;
 }
 
 /**
  * @brief Accumulate masked lane-wise sums for a vector, folded 4-wide.
+ *
+ * This is invariant with 4-wide implementations.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
 {
 	a = select(vfloat8::zero(), a, m);
+	haccumulate(accum, a);
+}
 
-	// Two sequential 4-wide accumulates gives invariance with 4-wide code.
-	// Note that this approach gives higher error in the sum; adding the two
-	// smaller numbers together first would be more accurate.
-	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
-	haccumulate(accum, lo);
-
-	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
-	haccumulate(accum, hi);
+/**
+ * @brief Accumulate masked lane-wise sums for a vector.
+ *
+ * This is NOT invariant with 4-wide implementations.
+ */
+ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
+{
+	a = select(vfloat8::zero(), a, m);
+	haccumulate(accum, a);
 }
 
 /**

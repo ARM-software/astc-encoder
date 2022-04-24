@@ -618,7 +618,7 @@ float compute_error_of_weight_set_1plane(
 	const decimation_info& di,
 	const float* dec_weight_quant_uvalue
 ) {
-	vfloat4 error_summav = vfloat4::zero();
+	vfloatacc error_summav = vfloatacc::zero();
 	float error_summa = 0.0f;
 	unsigned int texel_count = di.texel_count;
 
@@ -673,9 +673,7 @@ float compute_error_of_weight_set_1plane(
 	}
 
 	// Resolve the final scalar accumulator sum
-	haccumulate(error_summa, error_summav);
-
-	return error_summa;
+	return error_summa = hadd_s(error_summav);
 }
 
 /* See header for documentation. */
@@ -686,8 +684,7 @@ float compute_error_of_weight_set_2planes(
 	const float* dec_weight_quant_uvalue_plane1,
 	const float* dec_weight_quant_uvalue_plane2
 ) {
-	vfloat4 error_summav = vfloat4::zero();
-	float error_summa = 0.0f;
+	vfloatacc error_summav = vfloatacc::zero();
 	unsigned int texel_count = di.texel_count;
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
@@ -768,9 +765,7 @@ float compute_error_of_weight_set_2planes(
 	}
 
 	// Resolve the final scalar accumulator sum
-	haccumulate(error_summa, error_summav);
-
-	return error_summa;
+	return hadd_s(error_summav);
 }
 
 /* See header for documentation. */

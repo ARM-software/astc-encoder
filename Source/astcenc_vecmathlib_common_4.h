@@ -271,14 +271,6 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
 }
 
 /**
- * @brief Accumulate the full horizontal sum of a vector.
- */
-ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat4 a)
-{
-	accum += hadd_s(a);
-}
-
-/**
  * @brief Accumulate lane-wise sums for a vector.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
@@ -292,7 +284,7 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
 {
 	a = select(vfloat4::zero(), a, m);
-	accum = accum + a;
+	haccumulate(accum, a);
 }
 
 /**
