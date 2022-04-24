@@ -153,6 +153,12 @@ macro(astcenc_set_properties NAME)
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
     endif()
 
+    if(${ENABLE_NO_INVARIANCE})
+            target_compile_definitions(${NAME}
+                PRIVATE
+                    ASTCENC_NO_INVARIANCE=1)
+    endif()
+
     if(${CLI})
         # Enable LTO on release builds
         set_property(TARGET ${NAME}

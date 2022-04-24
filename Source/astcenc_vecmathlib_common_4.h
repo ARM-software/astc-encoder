@@ -295,6 +295,8 @@ ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
+#if !defined(ASTCENC_USE_NATIVE_DOT_PRODUCT)
+
 /**
  * @brief Return the dot product for the full 4 lanes, returning scalar.
  */
@@ -332,13 +334,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 	return vfloat4(d3, d3, d3, 0.0f);
 }
 
-/**
- * @brief Generate a reciprocal of a vector.
- */
-ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
-{
-	return 1.0f / b;
-}
+#endif
 
 /**
  * @brief Debug function to print a vector of ints.
