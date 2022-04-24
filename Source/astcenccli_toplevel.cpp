@@ -1096,8 +1096,8 @@ static void print_astcenc_config(
 		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 		printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
 		printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
-		printf("    2.2+ partition cutoff:      %g\n", (double)config.tune_2_partition_early_out_limit_factor);
-		printf("    3.2+ partition cutoff:      %g\n", (double)config.tune_3_partition_early_out_limit_factor);
+		printf("    3 partition cutoff:         %g\n", (double)config.tune_2_partition_early_out_limit_factor);
+		printf("    4 partition cutoff:         %g\n", (double)config.tune_3_partition_early_out_limit_factor);
 		printf("    2 plane correlation cutoff: %g\n", (double)config.tune_2_plane_early_out_limit_correlation);
 		printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
