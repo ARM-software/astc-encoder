@@ -473,7 +473,7 @@ void compute_avgs_and_dirs_3_comp(
 	vfloat4 partition_averages[BLOCK_MAX_PARTITIONS];
 	compute_partition_averages_rgba(pi, blk, partition_averages);
 
-	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3.0f;
+	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>());
 
 	const float* data_vr = blk.data_r;
 	const float* data_vg = blk.data_g;
@@ -482,7 +482,7 @@ void compute_avgs_and_dirs_3_comp(
 	// TODO: Data-driven permute would be useful to avoid this ...
 	if (omitted_component == 0)
 	{
-		texel_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>()) / 3.0f;
+		texel_weight = hadd_s(blk.channel_weight.swz<1, 2, 3>());
 
 		partition_averages[0] = partition_averages[0].swz<1, 2, 3>();
 		partition_averages[1] = partition_averages[1].swz<1, 2, 3>();
@@ -495,7 +495,7 @@ void compute_avgs_and_dirs_3_comp(
 	}
 	else if (omitted_component == 1)
 	{
-		texel_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>()) / 3.0f;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 2, 3>());
 
 		partition_averages[0] = partition_averages[0].swz<0, 2, 3>();
 		partition_averages[1] = partition_averages[1].swz<0, 2, 3>();
@@ -507,7 +507,7 @@ void compute_avgs_and_dirs_3_comp(
 	}
 	else if (omitted_component == 2)
 	{
-		texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>()) / 3.0f;
+		texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 3>());
 
 		partition_averages[0] = partition_averages[0].swz<0, 1, 3>();
 		partition_averages[1] = partition_averages[1].swz<0, 1, 3>();
@@ -523,6 +523,8 @@ void compute_avgs_and_dirs_3_comp(
 		partition_averages[2] = partition_averages[2].swz<0, 1, 2>();
 		partition_averages[3] = partition_averages[3].swz<0, 1, 2>();
 	}
+
+ 	texel_weight = texel_weight * (1.0f / 3.0f);
 
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -589,7 +591,7 @@ void compute_avgs_and_dirs_3_comp_rgb(
 	const image_block& blk,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
 ) {
-	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) / 3;
+	float texel_weight = hadd_s(blk.channel_weight.swz<0, 1, 2>()) * (1.0f / 3.0f);
 
 	unsigned int partition_count = pi.partition_count;
 	promise(partition_count > 0);
