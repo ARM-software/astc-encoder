@@ -264,11 +264,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-implicit-fallthrough>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
-            " $<$<CXX_COMPILER_ID:Clang>: -Wno-reserved-identifier>"
-            " $<$<CXX_COMPILER_ID:Clang>: -Wno-missing-prototypes>"
-            " $<$<CXX_COMPILER_ID:Clang>: -Wno-suggest-override>"
-            " $<$<CXX_COMPILER_ID:Clang>: -Wno-used-but-marked-unused>"
-            " $<$<CXX_COMPILER_ID:Clang>: -Wno-noexcept-type>")
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-reserved-identifier>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-missing-prototypes>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-suggest-override>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-used-but-marked-unused>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-noexcept-type>")
 
     set_source_files_properties(astcenccli_image_external.cpp
         PROPERTIES
