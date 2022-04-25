@@ -123,7 +123,6 @@ static void quantize_rgb(
 	int ri0b, gi0b, bi0b, ri1b, gi1b, bi1b;
 	float rgb0_addon = 0.5f;
 	float rgb1_addon = 0.5f;
-	int iters = 0;
 	do
 	{
 		ri0 = quant_color_clamp(quant_level, astc::flt2int_rd(r0 + rgb0_addon));
@@ -142,7 +141,6 @@ static void quantize_rgb(
 
 		rgb0_addon -= 0.2f;
 		rgb1_addon += 0.2f;
-		iters++;
 	} while (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b);
 
 	output[0] = static_cast<uint8_t>(ri0);
