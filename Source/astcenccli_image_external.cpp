@@ -90,6 +90,12 @@ astcenc_image* load_png_with_wuffs(
 	component_count = 4;
 
 	std::ifstream file(filename, std::ios::binary | std::ios::ate);
+	if (!file)
+	{
+		printf("ERROR: Failed to load image %s (can't fopen)\n", filename);
+		return nullptr;
+	}
+
 	std::streamsize size = file.tellg();
 	file.seekg(0, std::ios::beg);
 
