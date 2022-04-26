@@ -324,6 +324,34 @@ static inline int flt2int_rd(float v)
 }
 
 /**
+ * @brief SP float bit-interpreted as an integer.
+ *
+ * @param v   The value to bitcast.
+ *
+ * @return The converted value.
+ */
+static inline int float_as_int(float v)
+{
+	union { int a; float b; } u;
+	u.b = v;
+	return u.a;
+}
+
+/**
+ * @brief Integer bit-interpreted as an SP float.
+ *
+ * @param v   The value to bitcast.
+ *
+ * @return The converted value.
+ */
+static inline float int_as_float(int v)
+{
+	union { int a; float b; } u;
+	u.a = v;
+	return u.b;
+}
+
+/**
  * @brief Population bit count.
  *
  * @param v   The value to population count.
