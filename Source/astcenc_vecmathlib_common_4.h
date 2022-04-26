@@ -355,7 +355,8 @@ ASTCENC_SIMD_INLINE void print(vfloat4 a)
 	alignas(16) float v[4];
 	storea(a, v);
 	printf("v4_f32:\n  %0.4f %0.4f %0.4f %0.4f\n",
-	       (double)v[0], (double)v[1], (double)v[2], (double)v[3]);
+	       static_cast<double>(v[0]), static_cast<double>(v[1]),
+	       static_cast<double>(v[2]), static_cast<double>(v[3]));
 }
 
 /**

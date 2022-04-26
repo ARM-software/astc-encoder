@@ -420,9 +420,9 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		// Estimate of color-component spread in low endpoint color
 		float df = hmax_s(abs(pdif));
 
-		int b = (int)bf;
-		int c = (int)cf;
-		int d = (int)df;
+		int b = static_cast<int>(bf);
+		int c = static_cast<int>(cf);
+		int d = static_cast<int>(df);
 
 		// Determine which one of the 6 submodes is likely to be used in case of an RGBO-mode
 		int rgbo_mode = 5;		// 7 bits per component
@@ -716,7 +716,7 @@ static float one_partition_find_best_combination_for_bitcount(
 
 	int ql = quant_mode_table[best_integer_count + 1][bits_available];
 
-	best_quant_level = (quant_method)ql;
+	best_quant_level = static_cast<quant_method>(ql);
 	best_format = FMT_LUMINANCE;
 
 	if (ql >= QUANT_6)
@@ -820,8 +820,8 @@ static float two_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 2];
 
-	best_quant_level = (quant_method)ql;
-	best_quant_level_mod = (quant_method)ql_mod;
+	best_quant_level = static_cast<quant_method>(ql);
+	best_quant_level_mod = static_cast<quant_method>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -945,8 +945,8 @@ static float three_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 5];
 
-	best_quant_level = (quant_method)ql;
-	best_quant_level_mod = (quant_method)ql_mod;
+	best_quant_level = static_cast<quant_method>(ql);
+	best_quant_level_mod = static_cast<quant_method>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -1081,8 +1081,8 @@ static float four_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 8];
 
-	best_quant_level = (quant_method)ql;
-	best_quant_level_mod = (quant_method)ql_mod;
+	best_quant_level = static_cast<quant_method>(ql);
+	best_quant_level_mod = static_cast<quant_method>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -1318,7 +1318,7 @@ unsigned int compute_ideal_endpoint_formats(
 		{
 			vfloat err = vfloat(&errors_of_best_combination[j]);
 			vmask mask1 = err < vbest_ep_error;
-			vmask mask2 = vint((int*)(&best_quant_levels[j])) > vint(4);
+			vmask mask2 = vint(reinterpret_cast<int*>(best_quant_levels + j)) > vint(4);
 			vmask mask = mask1 & mask2;
 			vbest_ep_error = select(vbest_ep_error, err, mask);
 			vbest_error_index = select(vbest_error_index, lane_ids, mask);

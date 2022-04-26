@@ -164,7 +164,7 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const int *p)
 	{
-		m = _mm256_loadu_si256((const __m256i*)p);
+		m = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(p));
 	}
 
 	/**
@@ -173,7 +173,7 @@ struct vint8
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
 		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC
-		m = _mm256_cvtepu8_epi32(_mm_cvtsi64_si128(*(const long long*)p));
+		m = _mm256_cvtepu8_epi32(_mm_cvtsi64_si128(*reinterpret_cast<const long long*>(p)));
 	}
 
 	/**
@@ -242,7 +242,7 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)
 	{
-		return vint8(_mm256_load_si256((const __m256i*)p));
+		return vint8(_mm256_load_si256(reinterpret_cast<const __m256i*>(p)));
 	}
 
 	/**
@@ -534,7 +534,7 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
  */
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
 {
-	_mm256_store_si256((__m256i*)p, a.m);
+	_mm256_store_si256(reinterpret_cast<__m256i*>(p), a.m);
 }
 
 /**
@@ -542,7 +542,7 @@ ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
  */
 ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
 {
-	_mm256_storeu_si256((__m256i*)p, a.m);
+	_mm256_storeu_si256(reinterpret_cast<__m256i*>(p), a.m);
 }
 
 /**
@@ -553,7 +553,7 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 	// This is the most logical implementation, but the convenience intrinsic
 	// is missing on older compilers (supported in g++ 9 and clang++ 9).
 	// _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0))
-	_mm_storel_epi64((__m128i*)p, _mm256_extracti128_si256(a.m, 0));
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(p), _mm256_extracti128_si256(a.m, 0));
 }
 
 /**
@@ -1019,8 +1019,10 @@ ASTCENC_SIMD_INLINE void print(vfloat8 a)
 	alignas(ASTCENC_VECALIGN) float v[8];
 	storea(a, v);
 	printf("v8_f32:\n  %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f\n",
-	       (double)v[0], (double)v[1], (double)v[2], (double)v[3],
-	       (double)v[4], (double)v[5], (double)v[6], (double)v[7]);
+	       static_cast<double>(v[0]), static_cast<double>(v[1]),
+	       static_cast<double>(v[2]), static_cast<double>(v[3]),
+	       static_cast<double>(v[4]), static_cast<double>(v[5]),
+	       static_cast<double>(v[6]), static_cast<double>(v[7]));
 }
 
 /**

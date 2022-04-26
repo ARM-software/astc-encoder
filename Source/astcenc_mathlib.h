@@ -308,7 +308,7 @@ static inline float flt_rd(float v)
 static inline int flt2int_rtn(float v)
 {
 
-	return (int)(v + 0.5f);
+	return static_cast<int>(v + 0.5f);
 }
 
 /**
@@ -320,7 +320,7 @@ static inline int flt2int_rtn(float v)
  */
 static inline int flt2int_rd(float v)
 {
-	return (int)(v);
+	return static_cast<int>(v);
 }
 
 /**
@@ -361,7 +361,7 @@ static inline float int_as_float(int v)
 static inline int popcount(uint64_t v)
 {
 #if ASTCENC_POPCNT >= 1
-	return (int)_mm_popcnt_u64(v);
+	return static_cast<int>(_mm_popcnt_u64(v));
 #else
 	uint64_t mask1 = 0x5555555555555555ULL;
 	uint64_t mask2 = 0x3333333333333333ULL;
@@ -372,7 +372,7 @@ static inline int popcount(uint64_t v)
 	v &= mask3;
 	v *= 0x0101010101010101ULL;
 	v >>= 56;
-	return (int)v;
+	return static_cast<int>(v);
 #endif
 }
 

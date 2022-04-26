@@ -619,7 +619,7 @@ struct block_mode
 	 */
 	inline quant_method get_weight_quant_mode() const
 	{
-		return (quant_method)this->quant_mode;
+		return static_cast<quant_method>(this->quant_mode);
 	}
 };
 
@@ -979,7 +979,7 @@ struct image_block
 	 */
 	inline float get_default_alpha() const
 	{
-		return this->alpha_lns[0] ? (float)0x7800 : (float)0xFFFF;
+		return this->alpha_lns[0] ? static_cast<float>(0x7800) : static_cast<float>(0xFFFF);
 	}
 
 	/**
@@ -2470,7 +2470,7 @@ void aligned_free(T* ptr)
 #if defined(_WIN32)
 	_aligned_free((void*)ptr);
 #else
-	free((void*)ptr);
+	free(reinterpret_cast<void*>(ptr));
 #endif
 }
 

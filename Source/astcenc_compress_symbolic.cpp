@@ -158,12 +158,12 @@ static bool realign_weights_undecimated(
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error))
 			{
-				dec_weights_quant_pvalue[texel] = (uint8_t)((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[texel] = static_cast<uint8_t>((prev_and_next >> 24) & 0xFF);
 				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
-				dec_weights_quant_pvalue[texel] = (uint8_t)((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[texel] = static_cast<uint8_t>((prev_and_next >> 16) & 0xFF);
 				adjustments = true;
 			}
 		}
@@ -330,14 +330,14 @@ static bool realign_weights_decimated(
 			{
 				uq_pl_weights[we_idx] = static_cast<uint8_t>(next_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(next_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = static_cast<uint8_t>((prev_and_next >> 24) & 0xFF);
 				adjustments = true;
 			}
 			else if (down_error < current_error)
 			{
 				uq_pl_weights[we_idx] = static_cast<uint8_t>(prev_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(prev_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = (uint8_t)((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = static_cast<uint8_t>((prev_and_next >> 16) & 0xFF);
 				adjustments = true;
 			}
 		}

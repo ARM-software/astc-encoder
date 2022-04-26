@@ -127,7 +127,6 @@ macro(astcenc_set_properties NAME)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-atomic-implicit-seq-cst>
 
             # Clang 10 also throws up warnings we need to investigate (ours)
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-old-style-cast>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-align>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-sign-conversion>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-implicit-int-conversion>
@@ -256,6 +255,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     string(CONCAT EXTERNAL_CXX_FLAGS
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -fno-strict-aliasing>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-unused-parameter>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-old-style-cast>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-double-promotion>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-zero-as-null-pointer-constant>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-disabled-macro-expansion>"

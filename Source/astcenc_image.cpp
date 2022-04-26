@@ -467,10 +467,10 @@ void write_image_block(
 						color = float_to_float16(colorf);
 					}
 
-					data16[(4 * xsize * y) + (4 * x    )] = (uint16_t)color.lane<0>();
-					data16[(4 * xsize * y) + (4 * x + 1)] = (uint16_t)color.lane<1>();
-					data16[(4 * xsize * y) + (4 * x + 2)] = (uint16_t)color.lane<2>();
-					data16[(4 * xsize * y) + (4 * x + 3)] = (uint16_t)color.lane<3>();
+					data16[(4 * xsize * y) + (4 * x    )] = static_cast<uint16_t>(color.lane<0>());
+					data16[(4 * xsize * y) + (4 * x + 1)] = static_cast<uint16_t>(color.lane<1>());
+					data16[(4 * xsize * y) + (4 * x + 2)] = static_cast<uint16_t>(color.lane<2>());
+					data16[(4 * xsize * y) + (4 * x + 3)] = static_cast<uint16_t>(color.lane<3>());
 
 					idx++;
 				}

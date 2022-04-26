@@ -211,7 +211,7 @@ ASTCENC_SIMD_INLINE vfloat change_sign(vfloat a, vfloat b)
 {
 	vint ia = float_as_int(a);
 	vint ib = float_as_int(b);
-	vint sign_mask((int)0x80000000);
+	vint sign_mask(static_cast<int>(0x80000000));
 	vint r = ia ^ (ib & sign_mask);
 	return int_as_float(r);
 }

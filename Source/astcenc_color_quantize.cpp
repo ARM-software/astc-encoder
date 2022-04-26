@@ -842,7 +842,7 @@ static void quantize_rgbs(
 	int bu = unquant_color(quant_level, bi);
 
 	float oldcolorsum = hadd_rgb_s(color) * scale;
-	float newcolorsum = (float)(ru + gu + bu);
+	float newcolorsum = static_cast<float>(ru + gu + bu);
 
 	float scalea = astc::clamp1f(color.lane<3>() * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
 	int scale_idx = astc::flt2int_rtn(scalea * 256.0f);

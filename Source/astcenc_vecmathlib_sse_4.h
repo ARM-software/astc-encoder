@@ -206,7 +206,7 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const int *p)
 	{
-		m = _mm_loadu_si128((const __m128i*)p);
+		m = _mm_loadu_si128(reinterpret_cast<const __m128i*>(p));
 	}
 
 	/**
@@ -215,7 +215,7 @@ struct vint4
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
 		// _mm_loadu_si32 would be nicer syntax, but missing on older GCC
-		__m128i t = _mm_cvtsi32_si128(*(const int*)p);
+		__m128i t = _mm_cvtsi32_si128(*reinterpret_cast<const int*>(p));
 
 #if ASTCENC_SSE >= 41
 		m = _mm_cvtepu8_epi32(t);
@@ -297,7 +297,7 @@ struct vint4
 	 */
 	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
 	{
-		return vint4(_mm_load_si128((const __m128i*)p));
+		return vint4(_mm_load_si128(reinterpret_cast<const __m128i*>(p)));
 	}
 
 	/**
@@ -613,7 +613,7 @@ ASTCENC_SIMD_INLINE int hadd_s(vint4 a)
  */
 ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 {
-	_mm_store_si128((__m128i*)p, a.m);
+	_mm_store_si128(reinterpret_cast<__m128i*>(p), a.m);
 }
 
 /**
@@ -622,7 +622,7 @@ ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
 {
 	// Cast due to missing intrinsics
-	_mm_storeu_ps((float*)p, _mm_castsi128_ps(a.m));
+	_mm_storeu_ps(reinterpret_cast<float*>(p), _mm_castsi128_ps(a.m));
 }
 
 /**
@@ -631,7 +631,7 @@ ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
 	// Cast due to missing intrinsics
-	_mm_store_ss((float*)p, _mm_castsi128_ps(a.m));
+	_mm_store_ss(reinterpret_cast<float*>(p), _mm_castsi128_ps(a.m));
 }
 
 /**
@@ -955,7 +955,7 @@ static inline uint16_t float_to_float16(float a)
 {
 #if ASTCENC_F16C >= 1
 	__m128i f16 = _mm_cvtps_ph(_mm_set1_ps(a), 0);
-	return  (uint16_t)_mm_cvtsi128_si32(f16);
+	return  static_cast<uint16_t>(_mm_cvtsi128_si32(f16));
 #else
 	return float_to_sf16(a);
 #endif
