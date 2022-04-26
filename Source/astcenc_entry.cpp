@@ -1134,8 +1134,7 @@ astcenc_error astcenc_decompress_image(
 			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
 			const uint8_t* bp = data + offset;
 
-			// TODO: Shouldn't this just be a const reference rather than a copy?
-			physical_compressed_block pcb = *reinterpret_cast<const physical_compressed_block*>(bp);
+			const physical_compressed_block& pcb = *reinterpret_cast<const physical_compressed_block*>(bp);
 			symbolic_compressed_block scb;
 
 			physical_to_symbolic(*ctx->bsd, pcb, scb);
@@ -1175,8 +1174,7 @@ astcenc_error astcenc_get_block_info(
 	return ASTCENC_ERR_BAD_CONTEXT;
 #else
 	// Decode the compressed data into a symbolic form
-	// TODO: Shouldn't this be a const reference rather than a copy?
-	physical_compressed_block pcb = *reinterpret_cast<const physical_compressed_block*>(data);
+	const physical_compressed_block&pcb = *reinterpret_cast<const physical_compressed_block*>(data);
 	symbolic_compressed_block scb;
 	physical_to_symbolic(*ctx->bsd, pcb, scb);
 
