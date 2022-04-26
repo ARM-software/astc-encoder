@@ -54,11 +54,11 @@ static constexpr unsigned int SINCOS_STEPS { 64 };
 static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
               "ANGULAR_STEPS must be multiple of ASTCENC_SIMD_WIDTH");
 
-static unsigned int max_angular_steps_needed_for_quant_level[13];
+static uint8_t max_angular_steps_needed_for_quant_level[13];
 
 // The next-to-last entry is supposed to have the value 33. This because the 32-weight mode leaves a
 // double-sized hole in the middle of the weight space, so we are better off matching 33 weights.
-static const unsigned int quantization_steps_for_level[13] {
+static const uint8_t quantization_steps_for_level[13] {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36
 };
 
