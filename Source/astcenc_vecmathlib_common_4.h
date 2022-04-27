@@ -345,7 +345,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
  *
  * @return The number of 1 bits.
  */
-static int popcount(uint64_t v)
+static inline int popcount(uint64_t v)
 {
 	uint64_t mask1 = 0x5555555555555555ULL;
 	uint64_t mask2 = 0x3333333333333333ULL;

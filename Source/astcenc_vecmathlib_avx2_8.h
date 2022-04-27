@@ -875,9 +875,17 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
+{
+	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
+}
+
+/**
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ */
+ASTCENC_SIMD_INLINE vfloat8 select_msb(vfloat8 a, vfloat8 b, vmask8 cond)
 {
 	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
 }
