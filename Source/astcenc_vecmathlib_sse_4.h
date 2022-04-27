@@ -863,9 +863,21 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
+{
+#if ASTCENC_SSE >= 41
+	return vfloat4(_mm_blendv_ps(a.m, b.m, cond.m));
+#else
+	return vfloat4(_mm_or_ps(_mm_and_ps(cond.m, b.m), _mm_andnot_ps(cond.m, a.m)));
+#endif
+}
+
+/**
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ */
+ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
 {
 #if ASTCENC_SSE >= 41
 	return vfloat4(_mm_blendv_ps(a.m, b.m, cond.m));

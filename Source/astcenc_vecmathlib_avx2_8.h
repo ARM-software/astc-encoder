@@ -901,6 +901,14 @@ ASTCENC_SIMD_INLINE void haccumulate(float& accum, vfloat8 a)
 }
 
 /**
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ */
+ASTCENC_SIMD_INLINE vfloat8 select_msb(vfloat8 a, vfloat8 b, vmask8 cond)
+{
+	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
+}
+
+/**
  * @brief Accumulate lane-wise sums for a vector, folded 4-wide.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)

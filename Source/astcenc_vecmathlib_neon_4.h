@@ -783,9 +783,17 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
+{
+	return vfloat4(vbslq_f32(cond.m, b.m, a.m));
+}
+
+/**
+ * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ */
+ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
 {
 	static const uint32x4_t msb = vdupq_n_u32(0x80000000u);
 	uint32x4_t mask = vcgeq_u32(cond.m, msb);

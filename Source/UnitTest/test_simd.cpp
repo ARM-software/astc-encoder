@@ -921,14 +921,14 @@ TEST(vfloat4, select_msb)
 	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
 
 	// Select in one direction
-	vfloat4 r1 = select(a, b, cond);
+	vfloat4 r1 = select_msb(a, b, cond);
 	EXPECT_EQ(r1.lane<0>(), 4.0f);
 	EXPECT_EQ(r1.lane<1>(), 3.0f);
 	EXPECT_EQ(r1.lane<2>(), 2.0f);
 	EXPECT_EQ(r1.lane<3>(), 1.0f);
 
 	// Select in the other
-	vfloat4 r2 = select(b, a, cond);
+	vfloat4 r2 = select_msb(b, a, cond);
 	EXPECT_EQ(r2.lane<0>(), 1.0f);
 	EXPECT_EQ(r2.lane<1>(), 2.0f);
 	EXPECT_EQ(r2.lane<2>(), 3.0f);
@@ -1815,28 +1815,6 @@ TEST(vint4, select)
 	EXPECT_EQ(r2.lane<3>(), 4);
 }
 
-/** @brief Test vint4 select MSB. */
-TEST(vint4, select_msb)
-{
-	vint4 msb(0x80000000, 0, 0x80000000, 0);
-	vmask4 cond(msb.m);
-
-	vint4 a(1, 3, 3, 1);
-	vint4 b(4, 2, 2, 4);
-
-	vint4 r1 = select(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4);
-	EXPECT_EQ(r1.lane<1>(), 3);
-	EXPECT_EQ(r1.lane<2>(), 2);
-	EXPECT_EQ(r1.lane<3>(), 1);
-
-	vint4 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1);
-	EXPECT_EQ(r2.lane<1>(), 2);
-	EXPECT_EQ(r2.lane<2>(), 3);
-	EXPECT_EQ(r2.lane<3>(), 4);
-}
-
 // VMASK4 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /** @brief Test vmask4 scalar literal constructor. */
 TEST(vmask4, scalar_literal_construct)
@@ -2586,7 +2564,7 @@ TEST(vfloat8, select_msb)
 	vfloat8 b(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
 
 	// Select in one direction
-	vfloat8 r1 = select(a, b, cond);
+	vfloat8 r1 = select_msb(a, b, cond);
 	EXPECT_EQ(r1.lane<0>(), 4.0f);
 	EXPECT_EQ(r1.lane<1>(), 3.0f);
 	EXPECT_EQ(r1.lane<2>(), 2.0f);
@@ -2598,7 +2576,7 @@ TEST(vfloat8, select_msb)
 
 
 	// Select in the other
-	vfloat8 r2 = select(b, a, cond);
+	vfloat8 r2 = select_msb(b, a, cond);
 	EXPECT_EQ(r2.lane<0>(), 1.0f);
 	EXPECT_EQ(r2.lane<1>(), 2.0f);
 	EXPECT_EQ(r2.lane<2>(), 3.0f);
@@ -3238,36 +3216,6 @@ TEST(vint8, select)
 	vint8 m1(1, 1, 1, 1, 1, 1, 1, 1);
 	vint8 m2(1, 2, 1, 2, 1, 2, 1, 2);
 	vmask8 cond = m1 == m2;
-
-	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);
-	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);
-
-	vint8 r1 = select(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4);
-	EXPECT_EQ(r1.lane<1>(), 3);
-	EXPECT_EQ(r1.lane<2>(), 2);
-	EXPECT_EQ(r1.lane<3>(), 1);
-	EXPECT_EQ(r1.lane<4>(), 4);
-	EXPECT_EQ(r1.lane<5>(), 3);
-	EXPECT_EQ(r1.lane<6>(), 2);
-	EXPECT_EQ(r1.lane<7>(), 1);
-
-	vint8 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1);
-	EXPECT_EQ(r2.lane<1>(), 2);
-	EXPECT_EQ(r2.lane<2>(), 3);
-	EXPECT_EQ(r2.lane<3>(), 4);
-	EXPECT_EQ(r2.lane<4>(), 1);
-	EXPECT_EQ(r2.lane<5>(), 2);
-	EXPECT_EQ(r2.lane<6>(), 3);
-	EXPECT_EQ(r2.lane<7>(), 4);
-}
-
-/** @brief Test vint8 select MSB. */
-TEST(vint8, select_msb)
-{
-	vint8 msb(0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0);
-	vmask8 cond(msb.m);
 
 	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);
 	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);

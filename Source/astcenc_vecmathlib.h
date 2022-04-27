@@ -227,7 +227,7 @@ ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 {
 	vfloat z = atan(abs(y / x));
 	vmask xmask = vmask(float_as_int(x).m);
-	return change_sign(select(z, vfloat(astc::PI) - z, xmask), y);
+	return change_sign(select_msb(z, vfloat(astc::PI) - z, xmask), y);
 }
 
 /*
