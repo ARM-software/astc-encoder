@@ -17,6 +17,12 @@ The 3.7 release is in development ...
   * **Feature:** The command line tool PNG loader has been switched to use
     the Wuffs library, which is robust and significantly faster than the
     current stb_image implementation.
+  * **Optimization:** Changed SIMD `select()` so that it matches the default
+    NEON behavior (bitwise select), rather than the default x86-64 behavior
+    (lane select on MSB). Specialization `select_msb()` added for the one case
+    we want to select on a sign-bit, where NEON needs a different
+    implementation. This provides a significant (20-25%) performance uplift on
+    NEON implementations.
 
 ### Performance:
 
