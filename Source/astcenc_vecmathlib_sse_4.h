@@ -1055,4 +1055,22 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 
 #endif // #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
 
+#if ASTCENC_POPCNT >= 1
+
+#define ASTCENC_USE_NATIVE_POPCOUNT 1
+
+/**
+ * @brief Population bit count.
+ *
+ * @param v   The value to population count.
+ *
+ * @return The number of 1 bits.
+ */
+ASTCENC_SIMD_INLINE int popcount(uint64_t v)
+{
+	return static_cast<int>(_mm_popcnt_u64(v));
+}
+
+#endif // ASTCENC_POPCNT >= 1
+
 #endif // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED

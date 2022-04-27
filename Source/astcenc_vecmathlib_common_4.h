@@ -336,6 +336,31 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 
 #endif
 
+#if !defined(ASTCENC_USE_NATIVE_POPCOUNT)
+
+/**
+ * @brief Population bit count.
+ *
+ * @param v   The value to population count.
+ *
+ * @return The number of 1 bits.
+ */
+static int popcount(uint64_t v)
+{
+	uint64_t mask1 = 0x5555555555555555ULL;
+	uint64_t mask2 = 0x3333333333333333ULL;
+	uint64_t mask3 = 0x0F0F0F0F0F0F0F0FULL;
+	v -= (v >> 1) & mask1;
+	v = (v & mask2) + ((v >> 2) & mask2);
+	v += v >> 4;
+	v &= mask3;
+	v *= 0x0101010101010101ULL;
+	v >>= 56;
+	return static_cast<int>(v);
+}
+
+#endif
+
 /**
  * @brief Debug function to print a vector of ints.
  */

@@ -918,4 +918,18 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
 	return vfloat4(vreinterpretq_f32_s32(v.m));
 }
 
+#define ASTCENC_USE_NATIVE_POPCOUNT 1
+
+/**
+ * @brief Population bit count.
+ *
+ * @param v   The value to population count.
+ *
+ * @return The number of 1 bits.
+ */
+ASTCENC_SIMD_INLINE int popcount(uint64_t v)
+{
+	return static_cast<int>(vaddlv_u8(vcnt_u8(vcreate_u8(v))));
+}
+
 #endif // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED

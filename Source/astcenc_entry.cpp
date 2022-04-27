@@ -261,7 +261,7 @@ static astcenc_error validate_flags(
 ) {
 	// Flags field must not contain any unknown flag bits
 	unsigned int exMask = ~ASTCENC_ALL_FLAGS;
-	if (astc::popcount(flags & exMask) != 0)
+	if (popcount(flags & exMask) != 0)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
 	}
@@ -270,7 +270,7 @@ static astcenc_error validate_flags(
 	exMask = ASTCENC_FLG_MAP_MASK
 	       | ASTCENC_FLG_MAP_NORMAL
 	       | ASTCENC_FLG_MAP_RGBM;
-	if (astc::popcount(flags & exMask) > 1)
+	if (popcount(flags & exMask) > 1)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
 	}
