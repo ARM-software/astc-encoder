@@ -269,7 +269,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-suggest-override>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-used-but-marked-unused>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-noexcept-type>"
-            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-comma>")
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-comma>"
+            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-c99-extensions>")
 
     set_source_files_properties(astcenccli_image_external.cpp
         PROPERTIES
