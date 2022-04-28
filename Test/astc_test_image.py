@@ -296,8 +296,8 @@ def parse_command_line():
     # All reference encoders
     refcoders = ["ref-1.7",
                  "ref-2.5-neon", "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
-                 "ref-3.5-neon", "ref-3.5-sse2", "ref-3.5-sse4.1", "ref-3.5-avx2",
                  "ref-3.6-neon", "ref-3.6-sse2", "ref-3.6-sse4.1", "ref-3.6-avx2",
+                 "ref-3.7-neon", "ref-3.7-sse2", "ref-3.7-sse4.1", "ref-3.7-avx2",
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders
@@ -310,7 +310,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-main-avx2",
+    parser.add_argument("--reference", dest="reference", default="ref-3.7-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
