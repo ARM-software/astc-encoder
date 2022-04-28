@@ -514,7 +514,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		TRACE_NODE(node0, "candidate");
 
 		const int bm_packed_index = block_mode_index[i];
-		assert(bm_packed_index >= 0 && bm_packed_index < (int)bsd.block_mode_count_1plane_selected);
+		assert(bm_packed_index >= 0 && bm_packed_index < static_cast<int>(bsd.block_mode_count_1plane_selected));
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
@@ -885,7 +885,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		TRACE_NODE(node0, "candidate");
 
 		const int bm_packed_index = block_mode_index[i];
-		assert(bm_packed_index >= (int)bsd.block_mode_count_1plane_selected && bm_packed_index < (int)bsd.block_mode_count_1plane_2plane_selected);
+		assert(bm_packed_index >= static_cast<int>(bsd.block_mode_count_1plane_selected) &&
+		       bm_packed_index < static_cast<int>(bsd.block_mode_count_1plane_2plane_selected));
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
