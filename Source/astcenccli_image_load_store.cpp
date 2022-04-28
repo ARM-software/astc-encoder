@@ -60,7 +60,7 @@ static astcenc_image* load_image_with_tinyexr(
 	if (load_res != TINYEXR_SUCCESS)
 	{
 		printf("ERROR: Failed to load image %s (%s)\n", filename, err);
-		free((void*)err);
+		free(reinterpret_cast<void*>(err));
 		return nullptr;
 	}
 
@@ -176,7 +176,7 @@ static bool store_tga_image_with_stb(
 	int y_flip
 ) {
 	assert(img->data_type == ASTCENC_TYPE_U8);
-	uint8_t* buf = (uint8_t*)img->data[0];
+	uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[0]);
 
 	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_tga(filename, img->dim_x, img->dim_y, 4, buf);
@@ -198,7 +198,7 @@ static bool store_bmp_image_with_stb(
 	int y_flip
 ) {
 	assert(img->data_type == ASTCENC_TYPE_U8);
-	uint8_t* buf = (uint8_t*)img->data[0];
+	uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[0]);
 
 	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_bmp(filename, img->dim_x, img->dim_y, 4, buf);
@@ -228,8 +228,9 @@ static bool store_hdr_image_with_stb(
 /* ============================================================================
 Native Load and store of KTX and DDS file formats.
 
-Unlike "regular" 2D image formats, which are mostly supported through stb_image and tinyexr, these
-formats are supported directly; this involves a relatively large number of pixel formats.
+Unlike "regular" 2D image formats, which are mostly supported through stb_image
+and tinyexr, these formats are supported directly; this involves a relatively
+large number of pixel formats.
 
 The following restrictions apply to loading of these file formats:
 
@@ -302,8 +303,8 @@ static void copy_scanline(
 
 #define COPY_R(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
@@ -316,8 +317,8 @@ static void copy_scanline(
 
 #define COPY_RG(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
@@ -330,8 +331,8 @@ static void copy_scanline(
 
 #define COPY_RGB(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i    ]); \
@@ -344,8 +345,8 @@ static void copy_scanline(
 
 #define COPY_BGR(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i + 2]); \
@@ -358,8 +359,8 @@ static void copy_scanline(
 
 #define COPY_RGBX(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
@@ -372,8 +373,8 @@ static void copy_scanline(
 
 #define COPY_BGRX(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
@@ -386,8 +387,8 @@ static void copy_scanline(
 
 #define COPY_RGBA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
@@ -400,8 +401,8 @@ static void copy_scanline(
 
 #define COPY_BGRA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
@@ -414,8 +415,8 @@ static void copy_scanline(
 
 #define COPY_L(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
@@ -428,8 +429,8 @@ static void copy_scanline(
 
 #define COPY_LA(dsttype, srctype, convfunc, oneval) \
 	do { \
-		const srctype* s = (const srctype*)src; \
-		dsttype* d = (dsttype*)dst; \
+		const srctype* s = reinterpret_cast<const srctype*>(src); \
+		dsttype* d = reinterpret_cast<dsttype*>(dst); \
 		for (int i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
