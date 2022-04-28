@@ -154,7 +154,7 @@ static bool store_png_image_with_stb(
 	int y_flip
 ) {
 	assert(img->data_type == ASTCENC_TYPE_U8);
-	uint8_t* buf = (uint8_t*)img->data[0];
+	uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[0]);
 
 	stbi_flip_vertically_on_write(y_flip);
 	int res = stbi_write_png(filename, img->dim_x, img->dim_y, 4, buf, img->dim_x * 4);
@@ -527,7 +527,7 @@ static void switch_endianness2(
 	void* dataptr,
 	int byte_count
 ) {
-	uint8_t *data = (uint8_t *) dataptr;
+	uint8_t* data = reinterpret_cast<uint8_t*>(dataptr);
 	for (int i = 0; i < byte_count / 2; i++)
 	{
 		uint8_t d0 = data[0];
@@ -548,7 +548,7 @@ static void switch_endianness4(
 	void* dataptr,
 	int byte_count
 ) {
-	uint8_t *data = (uint8_t *) dataptr;
+	uint8_t* data = reinterpret_cast<uint8_t*>(dataptr);
 	for (int i = 0; i < byte_count / 4; i++)
 	{
 		uint8_t d0 = data[0];
@@ -1505,7 +1505,9 @@ static bool store_ktx_uncompressed_image(
 	FILE *wf = fopen(filename, "wb");
 	if (wf)
 	{
-		void *dataptr = (bitness == 16) ? (void *)(row_pointers16[0][0]) : (void *)(row_pointers8[0][0]);
+		void* dataptr = (bitness == 16) ?
+			reinterpret_cast<void*>(row_pointers16[0][0]) :
+			reinterpret_cast<void*>(row_pointers8[0][0]);
 
 		size_t expected_bytes_written = sizeof(ktx_header) + image_write_bytes + 4;
 		size_t hdr_bytes_written = fwrite(&hdr, 1, sizeof(ktx_header), wf);
@@ -2135,7 +2137,9 @@ static bool store_dds_uncompressed_image(
 	FILE *wf = fopen(filename, "wb");
 	if (wf)
 	{
-		void *dataptr = (bitness == 16) ? (void *)(row_pointers16[0][0]) : (void *)(row_pointers8[0][0]);
+		void *dataptr = (bitness == 16) ?
+			reinterpret_cast<void*>(row_pointers16[0][0]) :
+			reinterpret_cast<void*>(row_pointers8[0][0]);
 
 		size_t expected_bytes_written = 4 + sizeof(dds_header) + (bitness > 8 ? sizeof(dds_header_dx10) : 0) + image_bytes;
 
@@ -2327,10 +2331,10 @@ static unsigned int unpack_bytes(
 	uint8_t c,
 	uint8_t d
 ) {
-	return ((unsigned int)(a))       +
-	       ((unsigned int)(b) << 8)  +
-	       ((unsigned int)(c) << 16) +
-	       ((unsigned int)(d) << 24);
+	return (static_cast<unsigned int>(a)      ) +
+	       (static_cast<unsigned int>(b) <<  8) +
+	       (static_cast<unsigned int>(c) << 16) +
+	       (static_cast<unsigned int>(d) << 24);
 }
 
 /* See header for documentation. */
@@ -2347,7 +2351,7 @@ int load_cimage(
 	}
 
 	astc_header hdr;
-	file.read((char*)&hdr, sizeof(astc_header));
+	file.read(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
 	if (!file)
 	{
 		printf("ERROR: File read failed '%s'\n", filename);
@@ -2362,9 +2366,9 @@ int load_cimage(
 	}
 
 	// Ensure these are not zero to avoid div by zero
-	unsigned int block_x = astc::max((unsigned int)hdr.block_x, 1u);
-	unsigned int block_y = astc::max((unsigned int)hdr.block_y, 1u);
-	unsigned int block_z = astc::max((unsigned int)hdr.block_z, 1u);
+	unsigned int block_x = astc::max(static_cast<unsigned int>(hdr.block_x), 1u);
+	unsigned int block_y = astc::max(static_cast<unsigned int>(hdr.block_y), 1u);
+	unsigned int block_z = astc::max(static_cast<unsigned int>(hdr.block_z), 1u);
 
 	unsigned int dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
 	unsigned int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
@@ -2383,7 +2387,7 @@ int load_cimage(
 	size_t data_size = xblocks * yblocks * zblocks * 16;
 	uint8_t *buffer = new uint8_t[data_size];
 
-	file.read((char*)buffer, data_size);
+	file.read(reinterpret_cast<char*>(buffer), data_size);
 	if (!file)
 	{
 		printf("ERROR: File read failed '%s'\n", filename);
@@ -2436,7 +2440,7 @@ int store_cimage(
 		return 1;
 	}
 
-	file.write((char*)&hdr, sizeof(astc_header));
-	file.write((char*)img.data, img.data_len);
+	file.write(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
+	file.write(reinterpret_cast<char*>(img.data), img.data_len);
 	return 0;
 }
