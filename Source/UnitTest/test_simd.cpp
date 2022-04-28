@@ -901,14 +901,14 @@ TEST(vfloat4, select_msb)
 	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
 
 	// Select in one direction
-	vfloat4 r1 = select(a, b, cond);
+	vfloat4 r1 = select_msb(a, b, cond);
 	EXPECT_EQ(r1.lane<0>(), 4.0f);
 	EXPECT_EQ(r1.lane<1>(), 3.0f);
 	EXPECT_EQ(r1.lane<2>(), 2.0f);
 	EXPECT_EQ(r1.lane<3>(), 1.0f);
 
 	// Select in the other
-	vfloat4 r2 = select(b, a, cond);
+	vfloat4 r2 = select_msb(b, a, cond);
 	EXPECT_EQ(r2.lane<0>(), 1.0f);
 	EXPECT_EQ(r2.lane<1>(), 2.0f);
 	EXPECT_EQ(r2.lane<2>(), 3.0f);
