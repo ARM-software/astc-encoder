@@ -55,7 +55,7 @@ static int pthread_create(
 	void* (*threadfunc)(void*),
 	void* thread_arg
 ) {
-	(void)attribs;
+	static_cast<void>(attribs);
 	LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)threadfunc;
 	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
 	return 0;
@@ -68,7 +68,7 @@ static int pthread_join(
 	pthread_t thread,
 	void** value
 ) {
-	(void)value;
+	static_cast<void>(value);
 	WaitForSingleObject(thread, INFINITE);
 	return 0;
 }
@@ -88,7 +88,7 @@ double get_time()
 	GetSystemTimePreciseAsFileTime(&tv);
 	unsigned long long ticks = tv.dwHighDateTime;
 	ticks = (ticks << 32) | tv.dwLowDateTime;
-	return ((double)ticks) / 1.0e7;
+	return static_cast<double>(ticks) / 1.0e7;
 }
 
 /* ============================================================================
@@ -111,7 +111,7 @@ double get_time()
 {
 	timeval tv;
 	gettimeofday(&tv, 0);
-	return (double)tv.tv_sec + (double)tv.tv_usec * 1.0e-6;
+	return static_cast<double>(tv.tv_sec) + static_cast<double>(tv.tv_usec) * 1.0e-6;
 }
 
 #endif
