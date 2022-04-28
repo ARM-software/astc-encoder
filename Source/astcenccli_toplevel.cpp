@@ -1089,17 +1089,17 @@ static void print_astcenc_config(
 			printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
 		}
 
-		printf("    R component weight:         %g\n",(double)config.cw_r_weight);
-		printf("    G component weight:         %g\n",(double)config.cw_g_weight);
-		printf("    B component weight:         %g\n",(double)config.cw_b_weight);
-		printf("    A component weight:         %g\n",(double)config.cw_a_weight);
+		printf("    R component weight:         %g\n", static_cast<double>(config.cw_r_weight));
+		printf("    G component weight:         %g\n", static_cast<double>(config.cw_g_weight));
+		printf("    B component weight:         %g\n", static_cast<double>(config.cw_b_weight));
+		printf("    A component weight:         %g\n", static_cast<double>(config.cw_a_weight));
 		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
 		printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
-		printf("    PSNR cutoff:                %g dB\n", (double)config.tune_db_limit);
-		printf("    3 partition cutoff:         %g\n", (double)config.tune_2_partition_early_out_limit_factor);
-		printf("    4 partition cutoff:         %g\n", (double)config.tune_3_partition_early_out_limit_factor);
-		printf("    2 plane correlation cutoff: %g\n", (double)config.tune_2_plane_early_out_limit_correlation);
-		printf("    Block mode centile cutoff:  %g%%\n", (double)(config.tune_block_mode_limit));
+		printf("    PSNR cutoff:                %g dB\n", static_cast<double>(config.tune_db_limit));
+		printf("    3 partition cutoff:         %g\n", static_cast<double>(config.tune_2_partition_early_out_limit_factor));
+		printf("    4 partition cutoff:         %g\n", static_cast<double>(config.tune_3_partition_early_out_limit_factor));
+		printf("    2 plane correlation cutoff: %g\n", static_cast<double>(config.tune_2_plane_early_out_limit_correlation));
+		printf("    Block mode centile cutoff:  %g%%\n", static_cast<double>(config.tune_block_mode_limit));
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
@@ -1560,15 +1560,15 @@ int main(
 	double image_size = 0.0;
 	if (image_uncomp_in)
 	{
-		image_size = (double)image_uncomp_in->dim_x *
-		             (double)image_uncomp_in->dim_y *
-		             (double)image_uncomp_in->dim_z;
+		image_size = static_cast<double>(image_uncomp_in->dim_x) *
+		             static_cast<double>(image_uncomp_in->dim_y) *
+		             static_cast<double>(image_uncomp_in->dim_z);
 	}
 	else
 	{
-		image_size = (double)image_comp.dim_x *
-		             (double)image_comp.dim_y *
-		             (double)image_comp.dim_z;
+		image_size = static_cast<double>(image_comp.dim_x) *
+		             static_cast<double>(image_comp.dim_y) *
+		             static_cast<double>(image_comp.dim_z);
 	}
 
 	// Compress an image
