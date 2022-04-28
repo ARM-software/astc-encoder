@@ -270,9 +270,9 @@ struct vint4
 		m = _mm_insert_epi32(m, a, l);
 #else
 		alignas(16) int idx[4];
-		_mm_store_si128((__m128i*)idx, m);
+		_mm_store_si128(reinterpret_cast<__m128i*>(idx), m);
 		idx[l] = a;
-		m = _mm_load_si128((const __m128i*)idx);
+		m = _mm_load_si128(reinterpret_cast<const __m128i*>(idx));
 #endif
 	}
 
