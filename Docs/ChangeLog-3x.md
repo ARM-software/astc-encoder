@@ -9,19 +9,24 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 3.7
 
-**Status:** In development
+**Status:** April 2022
 
-The 3.7 release is in development ...
+The 3.7 release contains another round of performance optimizations, including
+significant improvements to the command line front-end (faster PNG loader) and
+the arm64 build of the codec (faster NEON implementation).
 
 * **General:**
   * **Feature:** The command line tool PNG loader has been switched to use
     the Wuffs library, which is robust and significantly faster than the
     current stb_image implementation.
+  * **Feature:** Support for non-invariant builds returns. Opt-in to slightly
+    faster, but not bit-exact, builds by setting `-DNO_INVARIANCE=ON` for the
+    CMake configuration. This improves performance by around 2%.
   * **Optimization:** Changed SIMD `select()` so that it matches the default
     NEON behavior (bitwise select), rather than the default x86-64 behavior
     (lane select on MSB). Specialization `select_msb()` added for the one case
     we want to select on a sign-bit, where NEON needs a different
-    implementation. This provides a significant (20-25%) performance uplift on
+    implementation. This provides a significant (>25%) performance uplift on
     NEON implementations.
 
 ### Performance:
@@ -33,7 +38,7 @@ Key for charts:
 
 **Relative performance vs 3.5 release:**
 
-![Relative scores 3.6 vs 3.5](./ChangeLogImg/relative-3.5-to-3.6.png)
+![Relative scores 3.7 vs 3.6](./ChangeLogImg/relative-3.6-to-3.7.png)
 
 <!-- ---------------------------------------------------------------------- -->
 ## 3.6
