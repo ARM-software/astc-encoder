@@ -586,16 +586,12 @@ ASTCENC_SIMD_INLINE vint8 pack_low_bytes(vint8 v)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 {
-	// Don't use _mm256_blendv_epi8 directly, as it doesn't give the select on
-	// float sign-bit in the mask behavior which is useful. Performance is the
-	// same, these casts are free.
-	__m256 av = _mm256_castsi256_ps(a.m);
-	__m256 bv = _mm256_castsi256_ps(b.m);
-	return vint8(_mm256_castps_si256(_mm256_blendv_ps(av, bv, cond.m)));
+	__m256i condi = _mm256_castps_si256(cond.m);
+	return vint8(_mm256_blendv_epi8(a.m, b.m, condi));
 }
 
 // ============================================================================
