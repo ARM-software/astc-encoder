@@ -56,7 +56,7 @@ static int pthread_create(
 	void* thread_arg
 ) {
 	static_cast<void>(attribs);
-	LPTHREAD_START_ROUTINE func = (LPTHREAD_START_ROUTINE)threadfunc;
+	LPTHREAD_START_ROUTINE func = reinterpret_cast<LPTHREAD_START_ROUTINE>(threadfunc);
 	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
 	return 0;
 }
@@ -144,7 +144,7 @@ struct launch_desc
 static void* launch_threads_helper(
 	void *p
 ) {
-	launch_desc* ltd = (launch_desc*)p;
+	launch_desc* ltd = reinterpret_cast<launch_desc*>(p);
 	ltd->func(ltd->thread_count, ltd->thread_id, ltd->payload);
 	return nullptr;
 }
@@ -172,7 +172,7 @@ void launch_threads(
 		thread_descs[i].func = func;
 
 		pthread_create(&(thread_descs[i].thread_handle), nullptr,
-		               launch_threads_helper, (void*)&(thread_descs[i]));
+		               launch_threads_helper, reinterpret_cast<void*>(thread_descs + i));
 	}
 
 	// ... and then wait for them to complete
