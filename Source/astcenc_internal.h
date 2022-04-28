@@ -2468,7 +2468,7 @@ template<typename T>
 void aligned_free(T* ptr)
 {
 #if defined(_WIN32)
-	_aligned_free((void*)ptr);
+	_aligned_free(reinterpret_cast<void*>(ptr));
 #else
 	free(reinterpret_cast<void*>(ptr));
 #endif
