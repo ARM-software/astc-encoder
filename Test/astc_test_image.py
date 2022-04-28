@@ -301,9 +301,9 @@ def parse_command_line():
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders
-    testcoders = ["none", "neon", "sse2", "sse4.1", "avx2"]
-    testcodersAArch64 = ["none", "neon"]
-    testcodersX86 = ["none", "sse2", "sse4.1", "avx2"]
+    testcoders = ["none", "neon", "sse2", "sse4.1", "avx2", "native"]
+    testcodersAArch64 = ["none", "neon", "native"]
+    testcodersX86 = ["none", "sse2", "sse4.1", "avx2", "native"]
 
     coders = refcoders + testcoders + ["all-aarch64", "all-x86"]
 

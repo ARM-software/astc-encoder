@@ -142,7 +142,7 @@ macro(astcenc_set_properties NAME)
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
-    if(${ENABLE_ASAN})
+    if(${ASAN})
         target_compile_options(${NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
@@ -152,7 +152,7 @@ macro(astcenc_set_properties NAME)
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
     endif()
 
-    if(${ENABLE_NO_INVARIANCE})
+    if(${NO_INVARIANCE})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NO_INVARIANCE=1)
