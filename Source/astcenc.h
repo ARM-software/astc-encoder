@@ -332,7 +332,7 @@ static const unsigned int ASTCENC_FLG_MAP_MASK             = 1 << 1;
  * scale, ensuring that the M value is accurately encoded. This defaults to 10 when in RGBM mode,
  * matching the default scale factor.
  */
-static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
+static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 2;
 
 /**
  * @brief Enable alpha weighting.
@@ -341,7 +341,7 @@ static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
  * the transparency level. This allows the codec to more accurately encode the alpha value in areas
  * where the color value is less significant.
  */
-static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
+static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 3;
 
 /**
  * @brief Enable perceptual error metrics.
@@ -349,7 +349,7 @@ static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
  * This mode enables perceptual compression mode, which will optimize for perceptual error rather
  * than best PSNR. Only some input modes support perceptual error metrics.
  */
-static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
+static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 4;
 
 /**
  * @brief Create a decompression-only context.
@@ -357,7 +357,7 @@ static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
  * This mode disables support for compression. This enables context allocation to skip some
  * transient buffer allocation, resulting in lower memory usage.
  */
-static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
+static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 5;
 
 /**
  * @brief Create a self-decompression context.
@@ -367,7 +367,7 @@ static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
  * cases, and setting this flag enables additional optimizations, but does mean that the context
  * cannot reliably decompress arbitrary ASTC images.
  */
-static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
+static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 6;
 
 /**
  * @brief The bit mask of all valid flags.
