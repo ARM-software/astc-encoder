@@ -44,22 +44,20 @@
 #include <cassert>
 #include <cstring>
 
-
-static constexpr unsigned int ANGULAR_STEPS { 40 };
-
-// Store a reduced sin/cos table for 64 possible weight values; this causes slight quality loss
-// compared to using sin() and cos() directly. Must be 2^N.
-static constexpr unsigned int SINCOS_STEPS { 64 };
+static constexpr unsigned int ANGULAR_STEPS { 32 };
 
 static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
               "ANGULAR_STEPS must be multiple of ASTCENC_SIMD_WIDTH");
 
-static uint8_t max_angular_steps_needed_for_quant_level[13];
+static_assert(ANGULAR_STEPS >= 32,
+              "ANGULAR_STEPS must be at least max(steps_for_quant_level)");
 
-// The next-to-last entry is supposed to have the value 33. This because the 32-weight mode leaves a
-// double-sized hole in the middle of the weight space, so we are better off matching 33 weights.
-static const uint8_t quantization_steps_for_level[13] {
-	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 33, 36
+// Store a reduced sin/cos table for 64 possible weight values; this causes
+// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
+static constexpr unsigned int SINCOS_STEPS { 64 };
+
+static const uint8_t steps_for_quant_level[12] {
+	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32
 };
 
 alignas(ASTCENC_VECALIGN) static float sin_table[SINCOS_STEPS][ANGULAR_STEPS];
@@ -72,7 +70,6 @@ alignas(ASTCENC_VECALIGN) static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 /* See header for documentation. */
 void prepare_angular_tables()
 {
-	unsigned int max_angular_steps_needed_for_quant_steps[ANGULAR_STEPS + 1];
 	for (unsigned int i = 0; i < ANGULAR_STEPS; i++)
 	{
 		float angle_step = static_cast<float>(i + 1);
@@ -82,13 +79,6 @@ void prepare_angular_tables()
 			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
 			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
 		}
-
-		max_angular_steps_needed_for_quant_steps[i + 1] = astc::min(i + 1, ANGULAR_STEPS - 1);
-	}
-
-	for (unsigned int i = 0; i < 13; i++)
-	{
-		max_angular_steps_needed_for_quant_level[i] = max_angular_steps_needed_for_quant_steps[quantization_steps_for_level[i]];
 	}
 }
 
@@ -249,10 +239,11 @@ static void compute_angular_endpoints_for_quant_levels(
 	float low_value[12],
 	float high_value[12]
 ) {
-	unsigned int max_quant_steps = quantization_steps_for_level[max_quant_level];
+	unsigned int max_quant_steps = steps_for_quant_level[max_quant_level];
+	unsigned int max_angular_steps = steps_for_quant_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
-	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
+
 	compute_angular_offsets(weight_count, dec_weight_ideal_value,
 	                        max_angular_steps, angular_offsets);
 
@@ -270,7 +261,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
 	// branches can become selects. This involves some integer to float casts, but the values are
 	// small enough so they never round the wrong way.
-	vfloat4 best_results[40];
+	vfloat4 best_results[36];
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
@@ -319,7 +310,7 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
-		unsigned int q = quantization_steps_for_level[i];
+		unsigned int q = steps_for_quant_level[i];
 		int bsi = static_cast<int>(best_results[q].lane<1>());
 
 		// Did we find anything?
@@ -430,8 +421,8 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	float low_value[12],
 	float high_value[12]
 ) {
-	unsigned int max_quant_steps = quantization_steps_for_level[max_quant_level];
-	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
+	unsigned int max_quant_steps = steps_for_quant_level[max_quant_level];
+	unsigned int max_angular_steps = steps_for_quant_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float lowest_weight[ANGULAR_STEPS];
@@ -449,7 +440,7 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
 	// branches can become selects. This involves some integer to float casts, but the values are
 	// small enough so they never round the wrong way.
-	vfloat4 best_results[ANGULAR_STEPS];
+	vfloat4 best_results[36];
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
@@ -472,7 +463,7 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
-		unsigned int q = quantization_steps_for_level[i];
+		unsigned int q = steps_for_quant_level[i];
 		int bsi = static_cast<int>(best_results[q].lane<1>());
 
 		// Did we find anything?
