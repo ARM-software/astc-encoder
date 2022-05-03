@@ -165,7 +165,7 @@ static void compute_lowest_and_highest_weight(
 	unsigned int max_angular_steps,
 	unsigned int max_quant_steps,
 	const float* offsets,
-	int* lowest_weight,
+	float* lowest_weight,
 	int* weight_span,
 	float* error,
 	float* cut_low_weight_error,
@@ -218,7 +218,7 @@ static void compute_lowest_and_highest_weight(
 		vint span = float_to_int(maxidx - minidx + vfloat(1));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(float_to_int(minidx), &lowest_weight[sp]);
+		storea(minidx, &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
@@ -256,7 +256,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	compute_angular_offsets(weight_count, dec_weight_ideal_value,
 	                        max_angular_steps, angular_offsets);
 
-	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float lowest_weight[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) int32_t weight_span[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float error[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float cut_low_weight_error[ANGULAR_STEPS];
@@ -333,13 +333,12 @@ static void compute_angular_endpoints_for_quant_levels(
 
 		bsi = astc::max(0, bsi);
 
-		float stepsize = 1.0f / (1.0f + static_cast<float>(bsi));
-		int lwi = lowest_weight[bsi] + static_cast<int>(best_results[q].lane<2>());
-		int hwi = lwi + q - 1;
+		float lwi = lowest_weight[bsi] + best_results[q].lane<2>();
+		float hwi = lwi + static_cast<float>(q) - 1.0f;
 
-		float offset = angular_offsets[bsi] * stepsize;
-		low_value[i] = offset + static_cast<float>(lwi) * stepsize;
-		high_value[i] = offset + static_cast<float>(hwi) * stepsize;
+		float stepsize = 1.0f / (1.0f + static_cast<float>(bsi));
+		low_value[i]  = (angular_offsets[bsi] + lwi) * stepsize;
+		high_value[i] = (angular_offsets[bsi] + hwi) * stepsize;
 	}
 }
 
@@ -365,7 +364,7 @@ static void compute_lowest_and_highest_weight_lwc(
 	unsigned int max_angular_steps,
 	unsigned int max_quant_steps,
 	const float* offsets,
-	int* lowest_weight,
+	float* lowest_weight,
 	int* weight_span,
 	float* error
 ) {
@@ -402,7 +401,7 @@ static void compute_lowest_and_highest_weight_lwc(
 		vint span = float_to_int(maxidx - minidx + vfloat(1.0f));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(float_to_int(minidx), &lowest_weight[sp]);
+		storea(minidx, &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
@@ -435,7 +434,7 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	unsigned int max_angular_steps = max_angular_steps_needed_for_quant_level[max_quant_level];
 
 	alignas(ASTCENC_VECALIGN) float angular_offsets[ANGULAR_STEPS];
-	alignas(ASTCENC_VECALIGN) int32_t lowest_weight[ANGULAR_STEPS];
+	alignas(ASTCENC_VECALIGN) float lowest_weight[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) int32_t weight_span[ANGULAR_STEPS];
 	alignas(ASTCENC_VECALIGN) float error[ANGULAR_STEPS];
 
@@ -487,11 +486,12 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 		bsi = astc::max(0, bsi);
 
-		int lwi = lowest_weight[bsi];
-		int hwi = lwi + q - 1;
+		float lwi = lowest_weight[bsi];
+		float hwi = lwi + static_cast<float>(q) - 1.0f;
 
-		low_value[i]  = (angular_offsets[bsi] + static_cast<float>(lwi)) / (1.0f + static_cast<float>(bsi));
-		high_value[i] = (angular_offsets[bsi] + static_cast<float>(hwi)) / (1.0f + static_cast<float>(bsi));
+		float stepsize = 1.0f / (1.0f + static_cast<float>(bsi));
+		low_value[i]  = (angular_offsets[bsi] + lwi) * stepsize;
+		high_value[i] = (angular_offsets[bsi] + hwi) * stepsize;
 	}
 }
 
