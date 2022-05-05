@@ -121,6 +121,21 @@ static constexpr unsigned int WEIGHTS_MAX_DECIMATION_MODES { 87 };
 /** @brief The high default error used to initialize error trackers. */
 static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 
+/** @brief The maximum texel count for a block to use high weight_quant levels. */
+static constexpr unsigned int TUNE_WEIGHT_QUANT_HQ_TEXELS { 24 };
+
+/** @brief The maximum texel count for a block to use high weight_quant levels. */
+static constexpr unsigned int TUNE_WEIGHT_QUANT_1PLANE_HQ_MAX { 11 }; // QUANT_32
+
+/** @brief The maximum texel count for a block to use high weight_quant levels. */
+static constexpr unsigned int TUNE_WEIGHT_QUANT_1PLANE_LQ_MAX { 10 }; // QUANT_24
+
+/** @brief The maximum texel count for a block to use high weight_quant levels. */
+static constexpr unsigned int TUNE_WEIGHT_QUANT_2PLANES_HQ_MAX { 8 }; // QUANT_16
+
+/** @brief The maximum texel count for a block to use high weight_quant levels. */
+static constexpr unsigned int TUNE_WEIGHT_QUANT_2PLANES_LQ_MAX { 7 }; // QUANT_12
+
 /**
  * @brief The minimum texel count for a block to use the one partition fast path.
  *
@@ -2227,6 +2242,7 @@ void prepare_angular_tables();
 /**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
+ * @param      tune_max_quant_limit      Weight quantization cutoff (inclusive).
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      only_always               Only consider block modes that are always enabled.
  * @param      bsd                       The block size descriptor for the current trial.
@@ -2234,6 +2250,7 @@ void prepare_angular_tables();
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
+	int tune_max_quant_limit,
 	unsigned int tune_low_weight_limit,
 	bool only_always,
 	const block_size_descriptor& bsd,
@@ -2243,12 +2260,14 @@ void compute_angular_endpoints_1plane(
 /**
  * @brief Compute the angular endpoints for two planes for each block mode.
  *
+ * @param      tune_max_quant_limit      Weight quantization cutoff (inclusive).
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      bsd                       The block size descriptor for the current trial.
  * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
+	int tune_max_quant_limit,
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,

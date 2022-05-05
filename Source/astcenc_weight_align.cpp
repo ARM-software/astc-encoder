@@ -484,6 +484,7 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 
 /* See header for documentation. */
 void compute_angular_endpoints_1plane(
+	int tune_max_quant_limit,
 	unsigned int tune_low_weight_limit,
 	bool only_always,
 	const block_size_descriptor& bsd,
@@ -508,20 +509,22 @@ void compute_angular_endpoints_1plane(
 		}
 
 		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
+		int dm_max_quant = dm.maxprec_1plane;
+		dm_max_quant = astc::min(dm_max_quant, tune_max_quant_limit);
 
 		if (weight_count < tune_low_weight_limit)
 		{
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_1plane, low_values[i], high_values[i]);
+				dm_max_quant, low_values[i], high_values[i]);
 		}
 		else
 		{
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_1plane, low_values[i], high_values[i]);
+				dm_max_quant, low_values[i], high_values[i]);
 		}
 	}
 
@@ -533,7 +536,8 @@ void compute_angular_endpoints_1plane(
 		const block_mode& bm = bsd.block_modes[i];
 		assert(!bm.is_dual_plane);
 
-		unsigned int quant_mode = bm.quant_mode;
+		int bm_quant_mode = bm.quant_mode;
+		unsigned int quant_mode = astc::min(bm_quant_mode, tune_max_quant_limit);
 		unsigned int decim_mode = bm.decimation_mode;
 
 		low_value[i] = low_values[decim_mode][quant_mode];
@@ -543,6 +547,7 @@ void compute_angular_endpoints_1plane(
 
 /* See header for documentation. */
 void compute_angular_endpoints_2planes(
+	int tune_max_quant_limit,
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
@@ -568,30 +573,32 @@ void compute_angular_endpoints_2planes(
 		}
 
 		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
+		int dm_max_quant = dm.maxprec_2planes;
+		dm_max_quant = astc::min(dm_max_quant, tune_max_quant_limit);
 
 		if (weight_count < tune_low_weight_limit)
 		{
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_2planes, low_values1[i], high_values1[i]);
+				dm_max_quant, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
-				dm.maxprec_2planes, low_values2[i], high_values2[i]);
+				dm_max_quant, low_values2[i], high_values2[i]);
 		}
 		else
 		{
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_2planes, low_values1[i], high_values1[i]);
+				dm_max_quant, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
-				dm.maxprec_2planes, low_values2[i], high_values2[i]);
+				dm_max_quant, low_values2[i], high_values2[i]);
 		}
 	}
 
@@ -600,7 +607,10 @@ void compute_angular_endpoints_2planes(
 	for (unsigned int i = start; i < end; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		unsigned int quant_mode = bm.quant_mode;
+		assert(bm.is_dual_plane);
+
+		int bm_quant_mode = bm.quant_mode;
+		unsigned int quant_mode = astc::min(bm_quant_mode, tune_max_quant_limit);
 		unsigned int decim_mode = bm.decimation_mode;
 
 		low_value1[i] = low_values1[decim_mode][quant_mode];

@@ -894,7 +894,7 @@ static void construct_block_size_descriptor_2d(
 			}
 
 			// Selectively skip dual plane encodings
-			if (((j <= 1) && is_dual_plane) || (j == 2 && !is_dual_plane))
+			if (((j <= 1) && is_dual_plane) || ((j == 2) && !is_dual_plane))
 			{
 				continue;
 			}
@@ -928,6 +928,29 @@ static void construct_block_size_descriptor_2d(
 			else
 			{
 				percentile_hit = percentiles[i] <= mode_cutoff;
+			}
+
+			if (percentile_hit && !is_dual_plane)
+			{
+				if (bsd.texel_count <= TUNE_WEIGHT_QUANT_HQ_TEXELS)
+				{
+				 	percentile_hit = quant_mode <= TUNE_WEIGHT_QUANT_1PLANE_HQ_MAX;
+				}
+				else
+				{
+					percentile_hit = quant_mode <= TUNE_WEIGHT_QUANT_1PLANE_LQ_MAX;
+				}
+			}
+			else if (percentile_hit && is_dual_plane)
+			{
+				if (bsd.texel_count <= TUNE_WEIGHT_QUANT_HQ_TEXELS)
+				{
+				 	percentile_hit = quant_mode <= TUNE_WEIGHT_QUANT_2PLANES_HQ_MAX;
+				}
+				else
+				{
+					percentile_hit = quant_mode <= TUNE_WEIGHT_QUANT_2PLANES_LQ_MAX;
+				}
 			}
 	#endif
 

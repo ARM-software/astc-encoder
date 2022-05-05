@@ -426,8 +426,16 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	float min_wt_cutoff = hmin_s(min_ep);
 
-	// For each mode, use the angular method to compute a shift
+	// Heuristic to dynamically trim high quant levels if we're unlikely to
+	// have the bitrate needed to use them regularly
+	int max_quant_clamp = TUNE_WEIGHT_QUANT_1PLANE_HQ_MAX;
+	if (blk.texel_count > TUNE_WEIGHT_QUANT_HQ_TEXELS)
+	{
+		max_quant_clamp = TUNE_WEIGHT_QUANT_1PLANE_LQ_MAX;
+	}
+
 	compute_angular_endpoints_1plane(
+	    max_quant_clamp,
 	    config.tune_low_weight_count_limit,
 	    only_always, bsd,
 	    dec_weights_ideal,
@@ -783,7 +791,16 @@ static float compress_symbolic_block_for_partition_2planes(
 	// Set the minwt2 to the plane2 component min in ep2
 	float min_wt_cutoff2 = hmin_s(select(err_max, min_ep2, err_mask));
 
+	// Heuristic to dynamically trim high quant levels if we're unlikely to
+	// have the bitrate needed to use them regularly
+	int max_quant_clamp = TUNE_WEIGHT_QUANT_2PLANES_HQ_MAX;
+	if (blk.texel_count > TUNE_WEIGHT_QUANT_HQ_TEXELS)
+	{
+		max_quant_clamp = TUNE_WEIGHT_QUANT_2PLANES_LQ_MAX;
+	}
+
 	compute_angular_endpoints_2planes(
+	    max_quant_clamp,
 	    config.tune_low_weight_count_limit,
 	    bsd, dec_weights_ideal,
 	    tmpbuf);
