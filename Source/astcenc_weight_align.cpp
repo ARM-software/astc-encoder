@@ -379,13 +379,9 @@ static void compute_lowest_and_highest_weight_lwc(
 			vfloat diff = sval - svalrte;
 			errval += diff * diff;
 
-			// Reset tracker on min hit
-			vmask mask = svalrte < minidx;
-			minidx = select(minidx, svalrte, mask);
-
-			// Reset tracker on max hit
-			mask = svalrte > maxidx;
-			maxidx = select(maxidx, svalrte, mask);
+			// Compute min and max quantized weight spans for each step
+			minidx = min(minidx, svalrte);
+			maxidx = max(maxidx, svalrte);
 		}
 
 		// Write out min weight and weight span; clamp span to a usable range
@@ -395,8 +391,8 @@ static void compute_lowest_and_highest_weight_lwc(
 		storea(minidx, &lowest_weight[sp]);
 		storea(span, &weight_span[sp]);
 
-		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
-		// samples that should have had the weight value one step (up/down).
+		// The cut_(lowest/highest)_weight_error indicate the error that results from
+		// forcing samples that should have had the weight value one step (up/down).
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, &error[sp]);
