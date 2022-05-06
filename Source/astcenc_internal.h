@@ -1093,12 +1093,6 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	/** @brief Ideal endpoints and weights for plane 2. */
 	endpoints_and_weights ei2;
 
-	/** @brief Ideal decimated endpoints and weights for plane 1. */
-	endpoints_and_weights eix1[WEIGHTS_MAX_DECIMATION_MODES];
-
-	/** @brief Ideal decimated endpoints and weights for plane 2. */
-	endpoints_and_weights eix2[WEIGHTS_MAX_DECIMATION_MODES];
-
 	/**
 	 * @brief Decimated ideal weight values.
 	 *
@@ -1887,14 +1881,12 @@ void compute_ideal_colors_and_weights_2planes(
  * Then, set step size to <some initial value> and attempt one step towards the original ideal
  * weight if it helps to reduce error.
  *
- * @param      eai_in                   The non-decimated endpoints and weights.
- * @param      eai_out                  A copy of eai_in we can modify later for refinement.
+ * @param      ei                       The non-decimated endpoints and weights.
  * @param      di                       The selected weight decimation.
  * @param[out] dec_weight_ideal_value   The ideal values for the decimated weight set.
  */
 void compute_ideal_weights_for_decimation(
-	const endpoints_and_weights& eai_in,
-	endpoints_and_weights& eai_out,
+	const endpoints_and_weights& ei,
 	const decimation_info& di,
 	float* dec_weight_ideal_value);
 

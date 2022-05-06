@@ -772,8 +772,7 @@ float compute_error_of_weight_set_2planes(
 
 /* See header for documentation. */
 void compute_ideal_weights_for_decimation(
-	const endpoints_and_weights& eai_in,
-	endpoints_and_weights& eai_out,
+	const endpoints_and_weights& ei,
 	const decimation_info& di,
 	float* dec_weight_ideal_value
 ) {
@@ -783,40 +782,23 @@ void compute_ideal_weights_for_decimation(
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// This function includes a copy of the epw from eai_in to eai_out. We do it here because we
-	// want to load the data anyway, so we can avoid loading it from memory twice.
-	eai_out.ep = eai_in.ep;
-	eai_out.is_constant_weight_error_scale = eai_in.is_constant_weight_error_scale;
-
 	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
 	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
 	// arrays always contain space for 64 elements
 	unsigned int prev_weight_count_simd = round_down_to_simd_multiple_vla(weight_count - 1);
 	storea(vfloat::zero(), dec_weight_ideal_value + prev_weight_count_simd);
 
-	// If we have a 1:1 mapping just shortcut the computation - clone the weights into both the
-	// weight set and the output epw copy.
-
-	// Transfer enough to also copy zero initialized SIMD over-fetch region
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
-	{
-		vfloat weight(eai_in.weights + i);
-		vfloat weight_error_scale(eai_in.weight_error_scale + i);
-
-		storea(weight, eai_out.weights + i);
-		storea(weight_error_scale, eai_out.weight_error_scale + i);
-
-		// Direct 1:1 weight mapping, so clone weights directly
-		// TODO: Can we just avoid the copy for direct cases?
-		if (is_direct)
-		{
-			storea(weight, dec_weight_ideal_value + i);
-		}
-	}
-
+	// If we have a 1:1 mapping just shortcut the computation. Transfer enough to also copy the
+	// zero-initialized SIMD over-fetch region
 	if (is_direct)
 	{
+		unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+		for (unsigned int i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat weight(ei.weights + i);
+			storea(weight, dec_weight_ideal_value + i);
+		}
+
 		return;
 	}
 
@@ -824,8 +806,8 @@ void compute_ideal_weights_for_decimation(
 	alignas(ASTCENC_VECALIGN) float infilled_weights[BLOCK_MAX_TEXELS];
 
 	// Compute an initial average for each decimated weight
-	bool constant_wes = eai_in.is_constant_weight_error_scale;
-	vfloat weight_error_scale(eai_in.weight_error_scale[0]);
+	bool constant_wes = ei.is_constant_weight_error_scale;
+	vfloat weight_error_scale(ei.weight_error_scale[0]);
 
 	// This overshoots - this is OK as we initialize the array tails in the
 	// decimation table structures to safe values ...
@@ -847,13 +829,13 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf(eai_in.weight_error_scale, texel);
+				weight_error_scale = gatherf(ei.weight_error_scale, texel);
 			}
 
 			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight += contrib_weight;
-			initial_weight += gatherf(eai_in.weights, texel) * contrib_weight;
+			initial_weight += gatherf(ei.weights, texel) * contrib_weight;
 		}
 
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
@@ -905,12 +887,12 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
- 				weight_error_scale = gatherf(eai_in.weight_error_scale, texel);
+ 				weight_error_scale = gatherf(ei.weight_error_scale, texel);
 			}
 
 			vfloat scale = weight_error_scale * contrib_weight;
 			vfloat old_weight = gatherf(infilled_weights, texel);
-			vfloat ideal_weight = gatherf(eai_in.weights, texel);
+			vfloat ideal_weight = gatherf(ei.weights, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += (old_weight - ideal_weight) * scale;

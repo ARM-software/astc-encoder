@@ -388,7 +388,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei = tmpbuf.ei1;
-	endpoints_and_weights *eix = tmpbuf.eix1;
 	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
 
 	// Compute ideal weights and endpoint colors for every decimation
@@ -412,7 +411,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		compute_ideal_weights_for_decimation(
 		    ei,
-		    eix[i],
 		    di,
 		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
 	}
@@ -487,7 +485,7 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_1plane(
-		    eix[decimation_mode],
+		    ei,
 		    di,
 		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i);
 	}
@@ -532,6 +530,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		vfloat4 rgbo_colors[BLOCK_MAX_PARTITIONS];
 
 		symbolic_compressed_block workscb;
+		endpoints workep = ei.ep;
 
 		uint8_t* u8_weight_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index;
 
@@ -545,14 +544,14 @@ static float compress_symbolic_block_for_partition_1plane(
 			recompute_ideal_colors_1plane(
 			    blk, pi, di,
 			    weight_quant_mode, workscb.weights,
-			    eix[decimation_mode].ep, rgbs_colors, rgbo_colors);
+			    workep, rgbs_colors, rgbo_colors);
 
 			// Quantize the chosen color
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
-				    eix[decimation_mode].ep.endpt0[j],
-				    eix[decimation_mode].ep.endpt1[j],
+				    workep.endpt0[j],
+				    workep.endpt1[j],
 				    rgbs_colors[j],
 				    rgbo_colors[j],
 				    partition_format_specifiers[i][j],
@@ -575,8 +574,8 @@ static float compress_symbolic_block_for_partition_1plane(
 				for (unsigned int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
-					    eix[decimation_mode].ep.endpt0[j],
-					    eix[decimation_mode].ep.endpt1[j],
+					    workep.endpt0[j],
+					    workep.endpt1[j],
 					    rgbs_colors[j],
 					    rgbo_colors[j],
 					    partition_format_specifiers[i][j],
@@ -732,8 +731,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei1 = tmpbuf.ei1;
 	endpoints_and_weights& ei2 = tmpbuf.ei2;
-	endpoints_and_weights* eix1 = tmpbuf.eix1;
-	endpoints_and_weights* eix2 = tmpbuf.eix2;
+
 	compute_ideal_colors_and_weights_2planes(bsd, blk, plane2_component, ei1, ei2);
 
 	// Compute ideal weights and endpoint colors for every decimation
@@ -754,13 +752,11 @@ static float compress_symbolic_block_for_partition_2planes(
 
 		compute_ideal_weights_for_decimation(
 		    ei1,
-		    eix1[i],
 		    di,
 		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
 
 		compute_ideal_weights_for_decimation(
 		    ei2,
-		    eix2[i],
 		    di,
 		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
 	}
@@ -851,8 +847,8 @@ static float compress_symbolic_block_for_partition_2planes(
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_2planes(
-		    eix1[decimation_mode],
-		    eix2[decimation_mode],
+		    ei1,
+		    ei2,
 		    di,
 		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
 		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET);
@@ -899,13 +895,11 @@ static float compress_symbolic_block_for_partition_2planes(
 		trace_add_data("weight_z", di.weight_z);
 		trace_add_data("weight_quant", weight_quant_mode);
 
-		// Recompute the ideal color endpoints before storing them.
-		merge_endpoints(eix1[decimation_mode].ep, eix2[decimation_mode].ep, plane2_component, epm);
-
 		vfloat4 rgbs_color;
 		vfloat4 rgbo_color;
 
 		symbolic_compressed_block workscb;
+		endpoints workep = epm;
 
 		uint8_t* u8_weight1_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index;
 		uint8_t* u8_weight2_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index + WEIGHTS_PLANE2_OFFSET;
@@ -921,12 +915,12 @@ static float compress_symbolic_block_for_partition_2planes(
 			recompute_ideal_colors_2planes(
 			    blk, bsd, di, weight_quant_mode,
 			    workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
-			    epm, rgbs_color, rgbo_color, plane2_component);
+			    workep, rgbs_color, rgbo_color, plane2_component);
 
 			// Quantize the chosen color
 			workscb.color_formats[0] = pack_color_endpoints(
-			                               epm.endpt0[0],
-			                               epm.endpt1[0],
+			                               workep.endpt0[0],
+			                               workep.endpt1[0],
 			                               rgbs_color, rgbo_color,
 			                               partition_format_specifiers[i][0],
 			                               workscb.color_values[0],
