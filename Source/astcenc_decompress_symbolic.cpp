@@ -132,8 +132,8 @@ void unpack_weights(
 	int weights_plane2[BLOCK_MAX_TEXELS]
 ) {
 	// First, unquantize the weights ...
-	int uq_plane1_weights[BLOCK_MAX_WEIGHTS];
-	int uq_plane2_weights[BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) int uq_plane1_weights[BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) int uq_plane2_weights[BLOCK_MAX_WEIGHTS];
 	unsigned int weight_count = di.weight_count;
 
 	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
@@ -142,9 +142,11 @@ void unpack_weights(
 	// Safe to overshoot as all arrays are allocated to full size
 	if (!is_dual_plane)
 	{
-		for (unsigned int i = 0; i < weight_count; i++)
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
+			vint quant_value(scb.weights + i);
+			vint unquant_value = gatheri(qat->unquantized_value, quant_value);
+			storea(unquant_value, uq_plane1_weights + i);
 		}
 
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -154,12 +156,18 @@ void unpack_weights(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < weight_count; i++)
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			uq_plane1_weights[i] = qat->unquantized_value[scb.weights[i]];
-			uq_plane2_weights[i] = qat->unquantized_value[scb.weights[i + WEIGHTS_PLANE2_OFFSET]];
+			vint quant_value1(scb.weights + i);
+			vint unquant_value1 = gatheri(qat->unquantized_value, quant_value1);
+			storea(unquant_value1, uq_plane1_weights + i);
+
+			vint quant_value2(scb.weights + i + WEIGHTS_PLANE2_OFFSET);
+			vint unquant_value2 = gatheri(qat->unquantized_value, quant_value2);
+			storea(unquant_value2, uq_plane2_weights + i);
 		}
 
+		// TODO: Scope for merging this into a single pass sharing "di" data?
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);

@@ -1060,10 +1060,13 @@ void recompute_ideal_colors_1plane(
 
 	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
-	float dec_weight[BLOCK_MAX_WEIGHTS];
-	for (unsigned int i = 0; i < weight_count; i++)
+	alignas(ASTCENC_VECALIGN) float dec_weight[BLOCK_MAX_WEIGHTS];
+	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		dec_weight[i] = qat.unquantized_value[dec_weights_quant_pvalue[i]] * (1.0f / 64.0f);
+		vint quant_value(dec_weights_quant_pvalue + i);
+		vint unquant_value = gatheri(qat.unquantized_value, quant_value);
+		vfloat unquant_valuef = int_to_float(unquant_value) * vfloat(1.0f / 64.0f);
+		storea(unquant_valuef, dec_weight + i);
 	}
 
 	alignas(ASTCENC_VECALIGN) float undec_weight[BLOCK_MAX_TEXELS];
@@ -1280,16 +1283,25 @@ void recompute_ideal_colors_2planes(
 	promise(total_texel_count > 0);
 	promise(weight_count > 0);
 
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_mode]);
+	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
-	float dec_weight_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
-	float dec_weight_plane2[BLOCK_MAX_WEIGHTS_2PLANE];
+	alignas(ASTCENC_VECALIGN) float dec_weight_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
+	alignas(ASTCENC_VECALIGN) float dec_weight_plane2[BLOCK_MAX_WEIGHTS_2PLANE];
 
 	assert(weight_count <= BLOCK_MAX_WEIGHTS_2PLANE);
-	for (unsigned int i = 0; i < weight_count; i++)
+
+	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		dec_weight_plane1[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane1[i]] * (1.0f / 64.0f);
-		dec_weight_plane2[i] = qat->unquantized_value[dec_weights_quant_pvalue_plane2[i]] * (1.0f / 64.0f);
+		vint quant_value1(dec_weights_quant_pvalue_plane1 + i);
+		vint unquant_value1 = gatheri(qat.unquantized_value, quant_value1);
+		vfloat unquant_value1f = int_to_float(unquant_value1) * vfloat(1.0f / 64.0f);
+		storea(unquant_value1f, dec_weight_plane1 + i);
+
+		vint quant_value2(dec_weights_quant_pvalue_plane2 + i);
+		vint unquant_value2 = gatheri(qat.unquantized_value, quant_value2);
+		vfloat unquant_value2f = int_to_float(unquant_value2) * vfloat(1.0f / 64.0f);
+		storea(unquant_value2f, dec_weight_plane2 + i);
+
 	}
 
 	alignas(ASTCENC_VECALIGN) float undec_weight_plane1[BLOCK_MAX_TEXELS];

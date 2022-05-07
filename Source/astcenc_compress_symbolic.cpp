@@ -234,8 +234,9 @@ static bool realign_weights_decimated(
 		                       endpnt1[pa_idx]);
 	}
 
-	uint8_t uq_pl_weights[BLOCK_MAX_WEIGHTS];
-	float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) int uq_pl_weights[BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
+
 	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
@@ -253,10 +254,15 @@ static bool realign_weights_decimated(
 		}
 
 		// Create an unquantized weight grid for this decimation level
-		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
+		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx += ASTCENC_SIMD_WIDTH)
 		{
-			uq_pl_weights[we_idx] = qat->unquantized_value[dec_weights_quant_pvalue[we_idx]];
-			uq_pl_weightsf[we_idx] = static_cast<float>(uq_pl_weights[we_idx]);
+			vint quant_value(dec_weights_quant_pvalue + we_idx);
+
+			vint unquant_value = gatheri(qat->unquantized_value, quant_value);
+			storea(unquant_value, uq_pl_weights + we_idx);
+
+			vfloat unquant_valuef = int_to_float(unquant_value);
+			storea(unquant_valuef, uq_pl_weightsf + we_idx);
 		}
 
 		// For each weight compute previous, current, and next errors

@@ -1191,7 +1191,7 @@ struct quantization_and_transfer_table
 	int32_t scramble_map[32];
 
 	/** @brief The scrambled unquantized values. */
-	uint8_t unquantized_value[32];
+	int32_t unquantized_value[32];
 
 	/**
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.
@@ -1202,7 +1202,6 @@ struct quantization_and_transfer_table
 	 */
 	uint32_t prev_next_values[65];
 };
-
 
 /** @brief The precomputed quant and transfer table. */
 extern const quantization_and_transfer_table quant_and_xfer_tables[12];
