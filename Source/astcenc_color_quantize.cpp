@@ -81,7 +81,7 @@ static inline int quant_color(
  * @param quant_level   The quantization level to use.
  * @param value         The value to convert.
  *
- * @return The encoded quantized value. These are not necessarily in the order; the compressor
+ * @return The encoded quantized value. These are not necessarily in order; the compressor
  *         scrambles the values slightly to make hardware implementation easier.
  */
 static inline int unquant_color(
