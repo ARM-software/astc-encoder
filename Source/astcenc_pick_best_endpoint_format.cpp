@@ -1316,7 +1316,7 @@ unsigned int compute_ideal_endpoint_formats(
 		vint lane_ids = vint::lane_id() + vint(start_block_mode);
 		for (unsigned int j = start_block_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)
 		{
-			vfloat err = vfloat(&errors_of_best_combination[j]);
+			vfloat err = vfloat(errors_of_best_combination + j);
 			vmask mask1 = err < vbest_ep_error;
 			vmask mask2 = vint(reinterpret_cast<int*>(best_quant_levels + j)) > vint(4);
 			vmask mask = mask1 & mask2;

@@ -174,11 +174,11 @@ static void compute_lowest_and_highest_weight(
 		vfloat errval = vfloat::zero();
 		vfloat cut_low_weight_err = vfloat::zero();
 		vfloat cut_high_weight_err = vfloat::zero();
-		vfloat offset = loada(&offsets[sp]);
+		vfloat offset = loada(offsets + sp);
 
 		for (unsigned int j = 0; j < weight_count; ++j)
 		{
-			vfloat sval = load1(&dec_weight_ideal_value[j]) * rcp_stepsize - offset;
+			vfloat sval = load1(dec_weight_ideal_value + j) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
 			vfloat diff = sval - svalrte;
 			errval += diff * diff;
@@ -208,16 +208,16 @@ static void compute_lowest_and_highest_weight(
 		vint span = float_to_int(maxidx - minidx + vfloat(1));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(minidx, &lowest_weight[sp]);
-		storea(span, &weight_span[sp]);
+		storea(minidx, lowest_weight + sp);
+		storea(span, weight_span + sp);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
 		// samples that should have had the weight value one step (up/down).
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
-		storea(errval * errscale, &error[sp]);
-		storea(cut_low_weight_err * errscale, &cut_low_weight_error[sp]);
-		storea(cut_high_weight_err * errscale, &cut_high_weight_error[sp]);
+		storea(errval * errscale, error + sp);
+		storea(cut_low_weight_err * errscale, cut_low_weight_error + sp);
+		storea(cut_high_weight_err * errscale, cut_high_weight_error + sp);
 
 		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
 	}
@@ -370,11 +370,11 @@ static void compute_lowest_and_highest_weight_lwc(
 		vfloat minidx(128.0f);
 		vfloat maxidx(-128.0f);
 		vfloat errval = vfloat::zero();
-		vfloat offset = loada(&offsets[sp]);
+		vfloat offset = loada(offsets + sp);
 
 		for (unsigned int j = 0; j < weight_count; ++j)
 		{
-			vfloat sval = load1(&dec_weight_quant_uvalue[j]) * rcp_stepsize - offset;
+			vfloat sval = load1(dec_weight_quant_uvalue + j) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
 			vfloat diff = sval - svalrte;
 			errval += diff * diff;
@@ -388,14 +388,14 @@ static void compute_lowest_and_highest_weight_lwc(
 		vint span = float_to_int(maxidx - minidx + vfloat(1.0f));
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
-		storea(minidx, &lowest_weight[sp]);
-		storea(span, &weight_span[sp]);
+		storea(minidx, lowest_weight + sp);
+		storea(span, weight_span + sp);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from
 		// forcing samples that should have had the weight value one step (up/down).
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
-		storea(errval * errscale, &error[sp]);
+		storea(errval * errscale, error + sp);
 
 		rcp_stepsize = rcp_stepsize + vfloat(ASTCENC_SIMD_WIDTH);
 	}

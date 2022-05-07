@@ -952,7 +952,7 @@ void compute_quantized_weights_for_decimation(
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat ix = loada(&dec_weight_ideal_value[i]) * scalev - scaled_low_boundv;
+		vfloat ix = loada(dec_weight_ideal_value + i) * scalev - scaled_low_boundv;
 		ix = clampzo(ix);
 
 		// Look up the two closest indexes and return the one that was closest
@@ -969,10 +969,10 @@ void compute_quantized_weights_for_decimation(
 		ixl = select(ixl, ixh, mask);
 
 		// Invert the weight-scaling that was done initially
-		storea(ixl * rscalev + low_boundv, &weight_set_out[i]);
+		storea(ixl * rscalev + low_boundv, weight_set_out + i);
 		vint scm = gatheri(qat.scramble_map, weight);
 		vint scn = pack_low_bytes(scm);
-		store_nbytes(scn, &quantized_weight_set[i]);
+		store_nbytes(scn, quantized_weight_set + i);
 	}
 }
 
