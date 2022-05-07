@@ -1179,7 +1179,7 @@ struct dt_init_working_buffers
  * floating-point weight. For each quantized weight, the corresponding unquantized values. For each
  * quantized weight, a previous-value and a next-value.
 */
-struct quantization_and_transfer_table
+struct quant_and_transfer_table
 {
 	/** @brief The quantization level used */
 	quant_method method;
@@ -1204,7 +1204,7 @@ struct quantization_and_transfer_table
 };
 
 /** @brief The precomputed quant and transfer table. */
-extern const quantization_and_transfer_table quant_and_xfer_tables[12];
+extern const quant_and_transfer_table quant_and_xfer_tables[12];
 
 /** @brief The block is an error block, and will return error color or NaN. */
 static constexpr uint8_t SYM_BTYPE_ERROR { 0 };

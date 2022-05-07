@@ -918,7 +918,7 @@ void compute_quantized_weights_for_decimation(
 ) {
 	int weight_count = di.weight_count;
 	promise(weight_count > 0);
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[quant_level]);
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[quant_level];
 
 	// The available quant levels, stored with a minus 1 bias
 	static const float quant_levels_m1[12] {
@@ -961,8 +961,8 @@ void compute_quantized_weights_for_decimation(
 		vint weightl = float_to_int(ix1);
 		vint weighth = weightl + vint(1);
 
-		vfloat ixl = gatherf(qat->unquantized_value_unsc, weightl);
-		vfloat ixh = gatherf(qat->unquantized_value_unsc, weighth);
+		vfloat ixl = gatherf(qat.unquantized_value_unsc, weightl);
+		vfloat ixh = gatherf(qat.unquantized_value_unsc, weighth);
 
 		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
 		vint weight = select(weightl, weighth, mask);
@@ -970,7 +970,7 @@ void compute_quantized_weights_for_decimation(
 
 		// Invert the weight-scaling that was done initially
 		storea(ixl * rscalev + low_boundv, &weight_set_out[i]);
-		vint scm = gatheri(qat->scramble_map, weight);
+		vint scm = gatheri(qat.scramble_map, weight);
 		vint scn = pack_low_bytes(scm);
 		store_nbytes(scn, &quantized_weight_set[i]);
 	}
@@ -1058,7 +1058,7 @@ void recompute_ideal_colors_1plane(
 	promise(total_texel_count > 0);
 	promise(partition_count > 0);
 
-	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
 	alignas(ASTCENC_VECALIGN) float dec_weight[BLOCK_MAX_WEIGHTS];
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
@@ -1283,7 +1283,7 @@ void recompute_ideal_colors_2planes(
 	promise(total_texel_count > 0);
 	promise(weight_count > 0);
 
-	const quantization_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
 
 	alignas(ASTCENC_VECALIGN) float dec_weight_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
 	alignas(ASTCENC_VECALIGN) float dec_weight_plane2[BLOCK_MAX_WEIGHTS_2PLANE];

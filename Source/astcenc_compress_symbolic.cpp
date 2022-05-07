@@ -79,7 +79,7 @@ static bool realign_weights_undecimated(
 	// Get the quantization table
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	unsigned int weight_quant_level = bm.quant_mode;
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_level];
 
 	unsigned int max_plane = bm.is_dual_plane;
 	int plane2_component = bm.is_dual_plane ? scb.plane2_component : -1;
@@ -126,9 +126,9 @@ static bool realign_weights_undecimated(
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			int uqw = qat->unquantized_value[dec_weights_quant_pvalue[texel]];
+			int uqw = qat.unquantized_value[dec_weights_quant_pvalue[texel]];
 
-			uint32_t prev_and_next = qat->prev_next_values[uqw];
+			uint32_t prev_and_next = qat.prev_next_values[uqw];
 			int prev_wt_uq = prev_and_next & 0xFF;
 			int next_wt_uq = (prev_and_next >> 8) & 0xFF;
 
@@ -201,7 +201,7 @@ static bool realign_weights_decimated(
 	// Get the quantization table
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	unsigned int weight_quant_level = bm.quant_mode;
-	const quantization_and_transfer_table *qat = &(quant_and_xfer_tables[weight_quant_level]);
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_level];
 
 	// Get the decimation table
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
@@ -258,7 +258,7 @@ static bool realign_weights_decimated(
 		{
 			vint quant_value(dec_weights_quant_pvalue + we_idx);
 
-			vint unquant_value = gatheri(qat->unquantized_value, quant_value);
+			vint unquant_value = gatheri(qat.unquantized_value, quant_value);
 			storea(unquant_value, uq_pl_weights + we_idx);
 
 			vfloat unquant_valuef = int_to_float(unquant_value);
@@ -271,7 +271,7 @@ static bool realign_weights_decimated(
 			unsigned int uqw = uq_pl_weights[we_idx];
 			float uqwf = uq_pl_weightsf[we_idx];
 
-			uint32_t prev_and_next = qat->prev_next_values[uqw];
+			uint32_t prev_and_next = qat.prev_next_values[uqw];
 			unsigned int prev_wt_uq = prev_and_next & 0xFF;
 			unsigned int next_wt_uq = (prev_and_next >> 8) & 0xFF;
 
@@ -397,9 +397,9 @@ static float compress_symbolic_block_for_partition_1plane(
 	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
 
 	// Compute ideal weights and endpoint colors for every decimation
-	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float *dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
-	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
+	float* dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
+	float* dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
+	uint8_t* dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
 	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
@@ -741,9 +741,9 @@ static float compress_symbolic_block_for_partition_2planes(
 	compute_ideal_colors_and_weights_2planes(bsd, blk, plane2_component, ei1, ei2);
 
 	// Compute ideal weights and endpoint colors for every decimation
-	float *dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float *dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
-	uint8_t *dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
+	float* dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
+	float* dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
+	uint8_t* dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
