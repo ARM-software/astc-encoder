@@ -2113,11 +2113,13 @@ void unpack_color_endpoints(
 /**
  * @brief Unpack a set of quantized and decimated weights.
  *
+ * TODO: Can we skip this for non-decimated weights now that the @c scb is
+ * already storing unquantized weights?
+ *
  * @param      bsd              The block size information.
  * @param      scb              The symbolic compressed encoding.
  * @param      di               The weight grid decimation table.
  * @param      is_dual_plane    @c true if this is a dual plane block, @c false otherwise.
- * @param      quant_level      The weight quantization level.
  * @param[out] weights_plane1   The output array for storing the plane 1 weights.
  * @param[out] weights_plane2   The output array for storing the plane 2 weights.
  */
@@ -2126,7 +2128,6 @@ void unpack_weights(
 	const symbolic_compressed_block& scb,
 	const decimation_info& di,
 	bool is_dual_plane,
-	quant_method quant_level,
 	int weights_plane1[BLOCK_MAX_TEXELS],
 	int weights_plane2[BLOCK_MAX_TEXELS]);
 
@@ -2177,7 +2178,6 @@ unsigned int compute_ideal_endpoint_formats(
  * @param         blk                        The image block color data to compress.
  * @param         pi                         The partition info for the current trial.
  * @param         di                         The weight grid decimation table.
- * @param         weight_quant_mode          The weight grid quantization level.
  * @param         dec_weights_quant_pvalue   The quantized weight set.
  * @param[in,out] ep                         The color endpoints (modifed in place).
  * @param[out]    rgbs_vectors               The RGB+scale vectors for LDR blocks.
@@ -2187,7 +2187,6 @@ void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
 	const decimation_info& di,
-	int weight_quant_mode,
 	const uint8_t* dec_weights_quant_pvalue,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
@@ -2202,7 +2201,6 @@ void recompute_ideal_colors_1plane(
  * @param         blk                               The image block color data to compress.
  * @param         bsd                               The block_size descriptor.
  * @param         di                                The weight grid decimation table.
- * @param         weight_quant_mode                 The weight grid quantization level.
  * @param         dec_weights_quant_pvalue_plane1   The quantized weight set for plane 1.
  * @param         dec_weights_quant_pvalue_plane2   The quantized weight set for plane 2.
  * @param[in,out] ep                                The color endpoints (modifed in place).
@@ -2214,7 +2212,6 @@ void recompute_ideal_colors_2planes(
 	const image_block& blk,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
-	int weight_quant_mode,
 	const uint8_t* dec_weights_quant_pvalue_plane1,
 	const uint8_t* dec_weights_quant_pvalue_plane2,
 	endpoints& ep,
@@ -2461,6 +2458,20 @@ void aligned_free(T* ptr)
 #else
 	free(reinterpret_cast<void*>(ptr));
 #endif
+}
+
+static inline void dump_weights(const char* label, uint8_t* weights, int weight_count)
+{
+	printf("%s\n", label);
+	vint lane = vint::lane_id();
+	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vmask mask = lane < vint(weight_count);
+		vint val(weights + i);
+		val = select(vint::zero(), val, mask);
+		print(val);
+		lane += vint(ASTCENC_SIMD_WIDTH);
+	}
 }
 
 #endif

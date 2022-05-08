@@ -109,8 +109,6 @@ static bool realign_weights_undecimated(
 	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
-	int max_qw = get_quant_level(bm.get_weight_quant_mode()) - 1;
-
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
@@ -128,8 +126,7 @@ static bool realign_weights_undecimated(
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			int qw = dec_weights_quant_pvalue[texel];
-			int uqw = qat.unquantized_value_unsc[qw];
+			int uqw = dec_weights_quant_pvalue[texel];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
 			int prev_wt_uq = prev_and_next & 0xFF;
@@ -159,14 +156,14 @@ static bool realign_weights_undecimated(
 			float down_error    = dot_s(color_down_diff * color_down_diff, error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error) && (qw < max_qw))
+			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
 			{
-				dec_weights_quant_pvalue[texel] = qw + 1;
+				dec_weights_quant_pvalue[texel] = next_wt_uq;
 				adjustments = true;
 			}
-			else if ((down_error < current_error) && (qw > 0))
+			else if ((down_error < current_error) && (uqw > 0))
 			{
-				dec_weights_quant_pvalue[texel] = qw - 1;
+				dec_weights_quant_pvalue[texel] = prev_wt_uq;
 				adjustments = true;
 			}
 		}
@@ -237,13 +234,10 @@ static bool realign_weights_decimated(
 		                       endpnt1[pa_idx]);
 	}
 
-	alignas(ASTCENC_VECALIGN) int uq_pl_weights[BLOCK_MAX_WEIGHTS];
 	alignas(ASTCENC_VECALIGN) float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
 
 	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
-
-	int max_qw = get_quant_level(bm.get_weight_quant_mode()) - 1;
 
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
@@ -261,11 +255,8 @@ static bool realign_weights_decimated(
 		// Create an unquantized weight grid for this decimation level
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx += ASTCENC_SIMD_WIDTH)
 		{
-			vint quant_value(dec_weights_quant_pvalue + we_idx);
-
-			vint unquant_value = gatheri(qat.unquantized_value_unsc, quant_value);
-			storea(unquant_value, uq_pl_weights + we_idx);
-
+			// TODO: Is this still worth doing?
+			vint unquant_value(dec_weights_quant_pvalue + we_idx);
 			vfloat unquant_valuef = int_to_float(unquant_value);
 			storea(unquant_valuef, uq_pl_weightsf + we_idx);
 		}
@@ -273,8 +264,7 @@ static bool realign_weights_decimated(
 		// For each weight compute previous, current, and next errors
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
-			int qw = dec_weights_quant_pvalue[we_idx];
-			unsigned int uqw = uq_pl_weights[we_idx];
+			int uqw = dec_weights_quant_pvalue[we_idx];
 			float uqwf = uq_pl_weightsf[we_idx];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
@@ -338,18 +328,16 @@ static bool realign_weights_decimated(
 			float down_error = hadd_s(down_errorv * error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error) && (qw < max_qw))
+			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
 			{
-				uq_pl_weights[we_idx] = static_cast<uint8_t>(next_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(next_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = qw + 1;
+				dec_weights_quant_pvalue[we_idx] = next_wt_uq;
 				adjustments = true;
 			}
-			else if ((down_error < current_error) && (qw > 0))
+			else if ((down_error < current_error) && (uqw > 0))
 			{
-				uq_pl_weights[we_idx] = static_cast<uint8_t>(prev_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(prev_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = qw - 1;
+				dec_weights_quant_pvalue[we_idx] = prev_wt_uq;
 				adjustments = true;
 			}
 		}
@@ -528,7 +516,6 @@ static float compress_symbolic_block_for_partition_1plane(
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
-		int weight_quant_mode = qw_bm.quant_mode;
 		const auto& di = bsd.get_decimation_info(decimation_mode);
 		promise(di.weight_count > 0);
 
@@ -554,8 +541,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_1plane(
-			    blk, pi, di,
-			    weight_quant_mode, workscb.weights,
+			    blk, pi, di, workscb.weights,
 			    workep, rgbs_colors, rgbo_colors);
 
 			// Quantize the chosen color
@@ -898,7 +884,6 @@ static float compress_symbolic_block_for_partition_2planes(
 		const block_mode& qw_bm = bsd.block_modes[bm_packed_index];
 
 		int decimation_mode = qw_bm.decimation_mode;
-		int weight_quant_mode = qw_bm.quant_mode;
 		const auto& di = bsd.get_decimation_info(decimation_mode);
 		promise(di.weight_count > 0);
 
@@ -925,7 +910,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		for (unsigned int l = 0; l < config.tune_refinement_limit; l++)
 		{
 			recompute_ideal_colors_2planes(
-			    blk, bsd, di, weight_quant_mode,
+			    blk, bsd, di,
 			    workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
 			    workep, rgbs_color, rgbo_color, plane2_component);
 

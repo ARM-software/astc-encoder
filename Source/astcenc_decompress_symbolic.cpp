@@ -127,7 +127,6 @@ void unpack_weights(
 	const symbolic_compressed_block& scb,
 	const decimation_info& di,
 	bool is_dual_plane,
-	quant_method quant_level,
 	int weights_plane1[BLOCK_MAX_TEXELS],
 	int weights_plane2[BLOCK_MAX_TEXELS]
 ) {
@@ -136,16 +135,13 @@ void unpack_weights(
 	alignas(ASTCENC_VECALIGN) int uq_plane2_weights[BLOCK_MAX_WEIGHTS];
 	unsigned int weight_count = di.weight_count;
 
-	const quant_and_transfer_table& qat = quant_and_xfer_tables[quant_level];
-
 	// Second, undecimate the weights ...
 	// Safe to overshoot as all arrays are allocated to full size
 	if (!is_dual_plane)
 	{
 		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			vint quant_value(scb.weights + i);
-			vint unquant_value = gatheri(qat.unquantized_value_unsc, quant_value);
+			vint unquant_value(scb.weights + i);
 			storea(unquant_value, uq_plane1_weights + i);
 		}
 
@@ -158,12 +154,10 @@ void unpack_weights(
 	{
 		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			vint quant_value1(scb.weights + i);
-			vint unquant_value1 = gatheri(qat.unquantized_value_unsc, quant_value1);
+			vint unquant_value1(scb.weights + i);
 			storea(unquant_value1, uq_plane1_weights + i);
 
-			vint quant_value2(scb.weights + i + WEIGHTS_PLANE2_OFFSET);
-			vint unquant_value2 = gatheri(qat.unquantized_value_unsc, quant_value2);
+			vint unquant_value2(scb.weights + i + WEIGHTS_PLANE2_OFFSET);
 			storea(unquant_value2, uq_plane2_weights + i);
 		}
 
@@ -290,7 +284,7 @@ void decompress_symbolic_block(
 	// Unquantize and undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, is_dual_plane, bm.get_weight_quant_mode(), plane1_weights, plane2_weights);
+	unpack_weights(bsd, scb, di, is_dual_plane, plane1_weights, plane2_weights);
 
 	// Now that we have endpoint colors and weights, we can unpack texel colors
 	int plane2_component = is_dual_plane ? scb.plane2_component : -1;
@@ -355,7 +349,7 @@ float compute_symbolic_block_difference_2plane(
 	// Unquantize and undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, true, bm.get_weight_quant_mode(), plane1_weights, plane2_weights);
+	unpack_weights(bsd, scb, di, true, plane1_weights, plane2_weights);
 
 	vmask4 plane2_mask = vint4::lane_id() == vint4(scb.plane2_component);
 
@@ -451,7 +445,7 @@ float compute_symbolic_block_difference_1plane(
 
 	// Unquantize and undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, false, bm.get_weight_quant_mode(), plane1_weights, nullptr);
+	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
 	vfloat4 summa = vfloat4::zero();
 	for (unsigned int i = 0; i < partition_count; i++)
@@ -543,7 +537,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 
 	// Unquantize and undecimate the weights
 	alignas(ASTCENC_VECALIGN) int plane1_weights[BLOCK_MAX_TEXELS];
-	unpack_weights(bsd, scb, di, false, bm.get_weight_quant_mode(), plane1_weights, nullptr);
+	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
 	// Decode the color endpoints for this partition
 	vint4 ep0;

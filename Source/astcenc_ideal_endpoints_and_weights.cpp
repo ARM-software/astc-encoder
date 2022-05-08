@@ -961,11 +961,15 @@ void compute_quantized_weights_for_decimation(
 		vint weightl = float_to_int(ix1);
 		vint weighth = weightl + vint(1);
 
-		vfloat ixl = int_to_float(gatheri(qat.unquantized_value_unsc, weightl));
-		vfloat ixh = int_to_float(gatheri(qat.unquantized_value_unsc, weighth));
+		// TODO: Can we just do more of this just as integers?
+		vint ixli = gatheri(qat.unquantized_value_unsc, weightl);
+		vint ixhi = gatheri(qat.unquantized_value_unsc, weighth);
+
+		vfloat ixl = int_to_float(ixli);
+		vfloat ixh = int_to_float(ixhi);
 
 		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
-		vint weight = select(weightl, weighth, mask);
+		vint weight = select(ixli, ixhi, mask);
 		ixl = select(ixl, ixh, mask);
 
 		// Invert the weight-scaling that was done initially
@@ -1043,7 +1047,6 @@ void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
 	const decimation_info& di,
-	int weight_quant_mode,
 	const uint8_t* dec_weights_quant_pvalue,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
@@ -1057,13 +1060,11 @@ void recompute_ideal_colors_1plane(
 	promise(total_texel_count > 0);
 	promise(partition_count > 0);
 
-	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
-
 	alignas(ASTCENC_VECALIGN) float dec_weight[BLOCK_MAX_WEIGHTS];
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint quant_value(dec_weights_quant_pvalue + i);
-		vfloat unquant_valuef = int_to_float(gatheri(qat.unquantized_value_unsc, quant_value)) * vfloat(1.0f / 64.0f);
+		vint unquant_value(dec_weights_quant_pvalue + i);
+		vfloat unquant_valuef = int_to_float(unquant_value) * vfloat(1.0f / 64.0f);
 		storea(unquant_valuef, dec_weight + i);
 	}
 
@@ -1267,7 +1268,6 @@ void recompute_ideal_colors_2planes(
 	const image_block& blk,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
-	int weight_quant_mode,
 	const uint8_t* dec_weights_quant_pvalue_plane1,
 	const uint8_t* dec_weights_quant_pvalue_plane2,
 	endpoints& ep,
@@ -1281,8 +1281,6 @@ void recompute_ideal_colors_2planes(
 	promise(total_texel_count > 0);
 	promise(weight_count > 0);
 
-	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_mode];
-
 	alignas(ASTCENC_VECALIGN) float dec_weight_plane1[BLOCK_MAX_WEIGHTS_2PLANE];
 	alignas(ASTCENC_VECALIGN) float dec_weight_plane2[BLOCK_MAX_WEIGHTS_2PLANE];
 
@@ -1290,13 +1288,11 @@ void recompute_ideal_colors_2planes(
 
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint quant_value1(dec_weights_quant_pvalue_plane1 + i);
-		vint unquant_value1 = gatheri(qat.unquantized_value_unsc, quant_value1);
+		vint unquant_value1(dec_weights_quant_pvalue_plane1 + i);
 		vfloat unquant_value1f = int_to_float(unquant_value1) * vfloat(1.0f / 64.0f);
 		storea(unquant_value1f, dec_weight_plane1 + i);
 
-		vint quant_value2(dec_weights_quant_pvalue_plane2 + i);
-		vint unquant_value2 = gatheri(qat.unquantized_value_unsc, quant_value2);
+		vint unquant_value2(dec_weights_quant_pvalue_plane2 + i);
 		vfloat unquant_value2f = int_to_float(unquant_value2) * vfloat(1.0f / 64.0f);
 		storea(unquant_value2f, dec_weight_plane2 + i);
 	}
