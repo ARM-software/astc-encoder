@@ -109,6 +109,8 @@ static bool realign_weights_undecimated(
 	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
+	int max_qw = get_quant_level(bm.get_weight_quant_mode()) - 1;
+
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
@@ -126,7 +128,8 @@ static bool realign_weights_undecimated(
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			int uqw = qat.unquantized_value[dec_weights_quant_pvalue[texel]];
+			int qw = dec_weights_quant_pvalue[texel];
+			int uqw = qat.unquantized_value_unsc[qw];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
 			int prev_wt_uq = prev_and_next & 0xFF;
@@ -156,14 +159,14 @@ static bool realign_weights_undecimated(
 			float down_error    = dot_s(color_down_diff * color_down_diff, error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error))
+			if ((up_error < current_error) && (up_error < down_error) && (qw < max_qw))
 			{
-				dec_weights_quant_pvalue[texel] = static_cast<uint8_t>((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[texel] = qw + 1;
 				adjustments = true;
 			}
-			else if (down_error < current_error)
+			else if ((down_error < current_error) && (qw > 0))
 			{
-				dec_weights_quant_pvalue[texel] = static_cast<uint8_t>((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[texel] = qw - 1;
 				adjustments = true;
 			}
 		}
@@ -240,6 +243,8 @@ static bool realign_weights_decimated(
 	uint8_t* dec_weights_quant_pvalue = scb.weights;
 	bool adjustments = false;
 
+	int max_qw = get_quant_level(bm.get_weight_quant_mode()) - 1;
+
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
@@ -258,7 +263,7 @@ static bool realign_weights_decimated(
 		{
 			vint quant_value(dec_weights_quant_pvalue + we_idx);
 
-			vint unquant_value = gatheri(qat.unquantized_value, quant_value);
+			vint unquant_value = gatheri(qat.unquantized_value_unsc, quant_value);
 			storea(unquant_value, uq_pl_weights + we_idx);
 
 			vfloat unquant_valuef = int_to_float(unquant_value);
@@ -268,6 +273,7 @@ static bool realign_weights_decimated(
 		// For each weight compute previous, current, and next errors
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
+			int qw = dec_weights_quant_pvalue[we_idx];
 			unsigned int uqw = uq_pl_weights[we_idx];
 			float uqwf = uq_pl_weightsf[we_idx];
 
@@ -332,18 +338,18 @@ static bool realign_weights_decimated(
 			float down_error = hadd_s(down_errorv * error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error))
+			if ((up_error < current_error) && (up_error < down_error) && (qw < max_qw))
 			{
 				uq_pl_weights[we_idx] = static_cast<uint8_t>(next_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(next_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = static_cast<uint8_t>((prev_and_next >> 24) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = qw + 1;
 				adjustments = true;
 			}
-			else if (down_error < current_error)
+			else if ((down_error < current_error) && (qw > 0))
 			{
 				uq_pl_weights[we_idx] = static_cast<uint8_t>(prev_wt_uq);
 				uq_pl_weightsf[we_idx] = static_cast<float>(prev_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = static_cast<uint8_t>((prev_and_next >> 16) & 0xFF);
+				dec_weights_quant_pvalue[we_idx] = qw - 1;
 				adjustments = true;
 			}
 		}

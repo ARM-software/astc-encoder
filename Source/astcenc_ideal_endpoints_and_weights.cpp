@@ -961,8 +961,8 @@ void compute_quantized_weights_for_decimation(
 		vint weightl = float_to_int(ix1);
 		vint weighth = weightl + vint(1);
 
-		vfloat ixl = gatherf(qat.unquantized_value_unsc, weightl);
-		vfloat ixh = gatherf(qat.unquantized_value_unsc, weighth);
+		vfloat ixl = int_to_float(gatheri(qat.unquantized_value_unsc, weightl));
+		vfloat ixh = int_to_float(gatheri(qat.unquantized_value_unsc, weighth));
 
 		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
 		vint weight = select(weightl, weighth, mask);
@@ -970,8 +970,7 @@ void compute_quantized_weights_for_decimation(
 
 		// Invert the weight-scaling that was done initially
 		storea(ixl * rscalev + low_boundv, weight_set_out + i);
-		vint scm = gatheri(qat.scramble_map, weight);
-		vint scn = pack_low_bytes(scm);
+		vint scn = pack_low_bytes(weight);
 		store_nbytes(scn, quantized_weight_set + i);
 	}
 }
@@ -1064,8 +1063,7 @@ void recompute_ideal_colors_1plane(
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vint quant_value(dec_weights_quant_pvalue + i);
-		vint unquant_value = gatheri(qat.unquantized_value, quant_value);
-		vfloat unquant_valuef = int_to_float(unquant_value) * vfloat(1.0f / 64.0f);
+		vfloat unquant_valuef = int_to_float(gatheri(qat.unquantized_value_unsc, quant_value)) * vfloat(1.0f / 64.0f);
 		storea(unquant_valuef, dec_weight + i);
 	}
 
@@ -1293,15 +1291,14 @@ void recompute_ideal_colors_2planes(
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vint quant_value1(dec_weights_quant_pvalue_plane1 + i);
-		vint unquant_value1 = gatheri(qat.unquantized_value, quant_value1);
+		vint unquant_value1 = gatheri(qat.unquantized_value_unsc, quant_value1);
 		vfloat unquant_value1f = int_to_float(unquant_value1) * vfloat(1.0f / 64.0f);
 		storea(unquant_value1f, dec_weight_plane1 + i);
 
 		vint quant_value2(dec_weights_quant_pvalue_plane2 + i);
-		vint unquant_value2 = gatheri(qat.unquantized_value, quant_value2);
+		vint unquant_value2 = gatheri(qat.unquantized_value_unsc, quant_value2);
 		vfloat unquant_value2f = int_to_float(unquant_value2) * vfloat(1.0f / 64.0f);
 		storea(unquant_value2f, dec_weight_plane2 + i);
-
 	}
 
 	alignas(ASTCENC_VECALIGN) float undec_weight_plane1[BLOCK_MAX_TEXELS];

@@ -1181,17 +1181,20 @@ struct dt_init_working_buffers
 */
 struct quant_and_transfer_table
 {
-	/** @brief The quantization level used */
+	/** @brief The quantization level used. */
 	quant_method method;
 
 	/** @brief The unscrambled unquantized value. */
-	float unquantized_value_unsc[33];
-
-	/** @brief The scrambling order: value[map[i]] == value_unsc[i] */
-	int32_t scramble_map[32];
+	int32_t unquantized_value_unsc[33];
 
 	/** @brief The scrambled unquantized values. */
-	int32_t unquantized_value[32];
+	int32_t unquantized_value_sc[32];
+
+	/** @brief The scrambling order: scrambled_quant = map[unscrambed_quant]. */
+	int32_t scramble_map[32];
+
+	/** @brief The unscrambling order: unscrambled_quant = map[scrambed_quant]. */
+	int32_t unscramble_map[32];
 
 	/**
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.

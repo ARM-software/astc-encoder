@@ -145,7 +145,7 @@ void unpack_weights(
 		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint quant_value(scb.weights + i);
-			vint unquant_value = gatheri(qat.unquantized_value, quant_value);
+			vint unquant_value = gatheri(qat.unquantized_value_unsc, quant_value);
 			storea(unquant_value, uq_plane1_weights + i);
 		}
 
@@ -159,11 +159,11 @@ void unpack_weights(
 		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint quant_value1(scb.weights + i);
-			vint unquant_value1 = gatheri(qat.unquantized_value, quant_value1);
+			vint unquant_value1 = gatheri(qat.unquantized_value_unsc, quant_value1);
 			storea(unquant_value1, uq_plane1_weights + i);
 
 			vint quant_value2(scb.weights + i + WEIGHTS_PLANE2_OFFSET);
-			vint unquant_value2 = gatheri(qat.unquantized_value, quant_value2);
+			vint unquant_value2 = gatheri(qat.unquantized_value_unsc, quant_value2);
 			storea(unquant_value2, uq_plane2_weights + i);
 		}
 
