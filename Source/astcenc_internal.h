@@ -1197,10 +1197,8 @@ struct quant_and_transfer_table
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.
 	 *  * bits 7:0 = previous-index, unquantized
 	 *  * bits 15:8 = next-index, unquantized
-	 *  * bits 23:16 = previous-index, quantized
-	 *  * bits 31:24 = next-index, quantized
 	 */
-	uint32_t prev_next_values[65];
+	uint16_t prev_next_values[65];
 };
 
 /** @brief The precomputed quant and transfer table. */
