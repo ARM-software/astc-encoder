@@ -106,7 +106,7 @@ static bool realign_weights_undecimated(
 		                       endpnt1[pa_idx]);
 	}
 
-	uint8_t* dec_weights_quant_pvalue = scb.weights;
+	uint8_t* dec_weights_uquant = scb.weights;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -126,7 +126,7 @@ static bool realign_weights_undecimated(
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
-			int uqw = dec_weights_quant_pvalue[texel];
+			int uqw = dec_weights_uquant[texel];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
 			int prev_wt_uq = prev_and_next & 0xFF;
@@ -158,18 +158,18 @@ static bool realign_weights_undecimated(
 			// Check if the prev or next error is better, and if so use it
 			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
 			{
-				dec_weights_quant_pvalue[texel] = next_wt_uq;
+				dec_weights_uquant[texel] = next_wt_uq;
 				adjustments = true;
 			}
 			else if ((down_error < current_error) && (uqw > 0))
 			{
-				dec_weights_quant_pvalue[texel] = prev_wt_uq;
+				dec_weights_uquant[texel] = prev_wt_uq;
 				adjustments = true;
 			}
 		}
 
 		// Prepare iteration for plane 2
-		dec_weights_quant_pvalue += WEIGHTS_PLANE2_OFFSET;
+		dec_weights_uquant += WEIGHTS_PLANE2_OFFSET;
 		plane_mask = ~plane_mask;
 	}
 
@@ -236,7 +236,7 @@ static bool realign_weights_decimated(
 
 	alignas(ASTCENC_VECALIGN) float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
 
-	uint8_t* dec_weights_quant_pvalue = scb.weights;
+	uint8_t* dec_weights_uquant = scb.weights;
 	bool adjustments = false;
 
 	// For each plane and partition ...
@@ -255,8 +255,7 @@ static bool realign_weights_decimated(
 		// Create an unquantized weight grid for this decimation level
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx += ASTCENC_SIMD_WIDTH)
 		{
-			// TODO: Is this still worth doing?
-			vint unquant_value(dec_weights_quant_pvalue + we_idx);
+			vint unquant_value(dec_weights_uquant + we_idx);
 			vfloat unquant_valuef = int_to_float(unquant_value);
 			storea(unquant_valuef, uq_pl_weightsf + we_idx);
 		}
@@ -264,7 +263,7 @@ static bool realign_weights_decimated(
 		// For each weight compute previous, current, and next errors
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
-			int uqw = dec_weights_quant_pvalue[we_idx];
+			int uqw = dec_weights_uquant[we_idx];
 			float uqwf = uq_pl_weightsf[we_idx];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
@@ -331,19 +330,19 @@ static bool realign_weights_decimated(
 			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
 			{
 				uq_pl_weightsf[we_idx] = static_cast<float>(next_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = next_wt_uq;
+				dec_weights_uquant[we_idx] = next_wt_uq;
 				adjustments = true;
 			}
 			else if ((down_error < current_error) && (uqw > 0))
 			{
 				uq_pl_weightsf[we_idx] = static_cast<float>(prev_wt_uq);
-				dec_weights_quant_pvalue[we_idx] = prev_wt_uq;
+				dec_weights_uquant[we_idx] = prev_wt_uq;
 				adjustments = true;
 			}
 		}
 
 		// Prepare iteration for plane 2
-		dec_weights_quant_pvalue += WEIGHTS_PLANE2_OFFSET;
+		dec_weights_uquant += WEIGHTS_PLANE2_OFFSET;
 		plane_mask = ~plane_mask;
 	}
 
@@ -391,9 +390,8 @@ static float compress_symbolic_block_for_partition_1plane(
 	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
 
 	// Compute ideal weights and endpoint colors for every decimation
-	float* dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float* dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
-	uint8_t* dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
+	float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
+	uint8_t* dec_weights_uquant = tmpbuf.dec_weights_uquant;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
 	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
@@ -412,7 +410,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		compute_ideal_weights_for_decimation(
 		    ei,
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal + i * BLOCK_MAX_WEIGHTS);
 	}
 
 	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
@@ -432,7 +430,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	compute_angular_endpoints_1plane(
 	    config.tune_low_weight_count_limit,
 	    only_always, bsd,
-	    dec_weights_ideal_value,
+	    dec_weights_ideal,
 	    tmpbuf);
 
 	float* weight_low_value = tmpbuf.weight_low_value1;
@@ -474,20 +472,23 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		qwt_bitcounts[i] = bitcount;
 
+
+		alignas(ASTCENC_VECALIGN) float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
+
 		// Generate the optimized set of weights for the weight mode
 		compute_quantized_weights_for_decimation(
 		    di,
 		    weight_low_value[i], weight_high_value[i],
-		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * decimation_mode,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
-		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * i,
+		    dec_weights_ideal + BLOCK_MAX_WEIGHTS * decimation_mode,
+		    dec_weights_uquantf,
+		    dec_weights_uquant + BLOCK_MAX_WEIGHTS * i,
 		    bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
 		qwt_errors[i] = compute_error_of_weight_set_1plane(
 		    ei,
 		    di,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i);
+		    dec_weights_uquantf);
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
@@ -531,7 +532,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		symbolic_compressed_block workscb;
 		endpoints workep = ei.ep;
 
-		uint8_t* u8_weight_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index;
+		uint8_t* u8_weight_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index;
 
 		for (unsigned int j = 0; j < di.weight_count; j++)
 		{
@@ -733,9 +734,8 @@ static float compress_symbolic_block_for_partition_2planes(
 	compute_ideal_colors_and_weights_2planes(bsd, blk, plane2_component, ei1, ei2);
 
 	// Compute ideal weights and endpoint colors for every decimation
-	float* dec_weights_ideal_value = tmpbuf.dec_weights_ideal_value;
-	float* dec_weights_quant_uvalue = tmpbuf.dec_weights_quant_uvalue;
-	uint8_t* dec_weights_quant_pvalue = tmpbuf.dec_weights_quant_pvalue;
+	float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
+	uint8_t* dec_weights_uquant = tmpbuf.dec_weights_uquant;
 
 	// For each decimation mode, compute an ideal set of weights with no quantization
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
@@ -751,12 +751,12 @@ static float compress_symbolic_block_for_partition_2planes(
 		compute_ideal_weights_for_decimation(
 		    ei1,
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS);
+		    dec_weights_ideal + i * BLOCK_MAX_WEIGHTS);
 
 		compute_ideal_weights_for_decimation(
 		    ei2,
 		    di,
-		    dec_weights_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
+		    dec_weights_ideal + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET);
 	}
 
 	// Compute maximum colors for the endpoints and ideal weights, then for each endpoint and ideal
@@ -785,7 +785,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	compute_angular_endpoints_2planes(
 	    config.tune_low_weight_count_limit,
-	    bsd, dec_weights_ideal_value,
+	    bsd, dec_weights_ideal,
 	    tmpbuf);
 
 	// For each mode (which specifies a decimation and a quantization):
@@ -824,23 +824,25 @@ static float compress_symbolic_block_for_partition_2planes(
 		unsigned int decimation_mode = bm.decimation_mode;
 		const auto& di = bsd.get_decimation_info(decimation_mode);
 
+		alignas(ASTCENC_VECALIGN) float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
+
 		// Generate the optimized set of weights for the mode
 		compute_quantized_weights_for_decimation(
 		    di,
 		    weight_low_value1[i],
 		    weight_high_value1[i],
-		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * decimation_mode,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
-		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * i,
+		    dec_weights_ideal + BLOCK_MAX_WEIGHTS * decimation_mode,
+		    dec_weights_uquantf,
+		    dec_weights_uquant + BLOCK_MAX_WEIGHTS * i,
 		    bm.get_weight_quant_mode());
 
 		compute_quantized_weights_for_decimation(
 		    di,
 		    weight_low_value2[i],
 		    weight_high_value2[i],
-		    dec_weights_ideal_value + BLOCK_MAX_WEIGHTS * decimation_mode + WEIGHTS_PLANE2_OFFSET,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET,
-		    dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_ideal + BLOCK_MAX_WEIGHTS * decimation_mode + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_uquantf + WEIGHTS_PLANE2_OFFSET,
+		    dec_weights_uquant + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET,
 		    bm.get_weight_quant_mode());
 
 		// Compute weight quantization errors for the block mode
@@ -848,8 +850,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		    ei1,
 		    ei2,
 		    di,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i,
-		    dec_weights_quant_uvalue + BLOCK_MAX_WEIGHTS * i + WEIGHTS_PLANE2_OFFSET);
+		    dec_weights_uquantf,
+		    dec_weights_uquantf + WEIGHTS_PLANE2_OFFSET);
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
@@ -898,8 +900,8 @@ static float compress_symbolic_block_for_partition_2planes(
 		symbolic_compressed_block workscb;
 		endpoints workep = epm;
 
-		uint8_t* u8_weight1_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index;
-		uint8_t* u8_weight2_src = dec_weights_quant_pvalue + BLOCK_MAX_WEIGHTS * bm_packed_index + WEIGHTS_PLANE2_OFFSET;
+		uint8_t* u8_weight1_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index;
+		uint8_t* u8_weight2_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index + WEIGHTS_PLANE2_OFFSET;
 
 		for (int j = 0; j < di.weight_count; j++)
 		{

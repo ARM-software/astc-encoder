@@ -1094,25 +1094,21 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	endpoints_and_weights ei2;
 
 	/**
-	 * @brief Decimated ideal weight values.
+	 * @brief Decimated ideal weight values in the ~0-1 range.
 	 *
-	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 * Note that values can be slightly below zero or higher than one due to
+	 * endpoint extents being inside the ideal color representation.
+	 *
+	 * For two planes, second plane starts at @c WEIGHTS_PLANE2_OFFSET offsets.
 	 */
-	alignas(ASTCENC_VECALIGN) float dec_weights_ideal_value[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) float dec_weights_ideal[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
 	/**
-	 * @brief Decimated and quantized weight values stored in the unpacked quantized weight range.
+	 * @brief Decimated quantized weight values in the unquantized 0-64 range.
 	 *
-	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
+	 * For two planes, second plane starts at @c WEIGHTS_PLANE2_OFFSET offsets.
 	 */
-	alignas(ASTCENC_VECALIGN) float dec_weights_quant_uvalue[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
-
-	/**
-	 * @brief Decimated and quantized weight values stored in the packed quantized weight range.
-	 *
-	 * For two plane encodings, second plane weights start at @c WEIGHTS_PLANE2_OFFSET offsets.
-	 */
-	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_quant_pvalue[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_uquant[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 
 	/** @brief Error of the best encoding combination for each block mode. */
 	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[WEIGHTS_MAX_BLOCK_MODES];
@@ -1263,6 +1259,10 @@ struct symbolic_compressed_block
 	};
 
 	/** @brief The quantized and decimated weights.
+	 *
+	 * Weights are stored in the 0-64 unpacked range allowing them to be used
+	 * directly in encoding passes without per-use unpacking. Packing happens
+	 * when converting to\from the physical bitstream encoding.
 	 *
 	 * If dual plane, the second plane starts at @c weights[WEIGHTS_PLANE2_OFFSET].
 	 */
@@ -1898,7 +1898,7 @@ void compute_ideal_weights_for_decimation(
  * @param      high_bound                The highest weight allowed.
  * @param      dec_weight_ideal_value    The ideal weight set.
  * @param[out] dec_weight_quant_uvalue   The output quantized weight as a float.
- * @param[out] dec_weight_quant_pvalue   The output quantized weight as encoded int.
+ * @param[out] dec_weight_uquant   The output quantized weight as encoded int.
  * @param      quant_level               The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation(
@@ -1907,7 +1907,7 @@ void compute_quantized_weights_for_decimation(
 	float high_bound,
 	const float* dec_weight_ideal_value,
 	float* dec_weight_quant_uvalue,
-	uint8_t* dec_weight_quant_pvalue,
+	uint8_t* dec_weight_uquant,
 	quant_method quant_level);
 
 /**
@@ -2178,7 +2178,7 @@ unsigned int compute_ideal_endpoint_formats(
  * @param         blk                        The image block color data to compress.
  * @param         pi                         The partition info for the current trial.
  * @param         di                         The weight grid decimation table.
- * @param         dec_weights_quant_pvalue   The quantized weight set.
+ * @param         dec_weights_uquant   The quantized weight set.
  * @param[in,out] ep                         The color endpoints (modifed in place).
  * @param[out]    rgbs_vectors               The RGB+scale vectors for LDR blocks.
  * @param[out]    rgbo_vectors               The RGB+offset vectors for HDR blocks.
@@ -2187,7 +2187,7 @@ void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
 	const decimation_info& di,
-	const uint8_t* dec_weights_quant_pvalue,
+	const uint8_t* dec_weights_uquant,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]);
@@ -2201,8 +2201,8 @@ void recompute_ideal_colors_1plane(
  * @param         blk                               The image block color data to compress.
  * @param         bsd                               The block_size descriptor.
  * @param         di                                The weight grid decimation table.
- * @param         dec_weights_quant_pvalue_plane1   The quantized weight set for plane 1.
- * @param         dec_weights_quant_pvalue_plane2   The quantized weight set for plane 2.
+ * @param         dec_weights_uquant_plane1   The quantized weight set for plane 1.
+ * @param         dec_weights_uquant_plane2   The quantized weight set for plane 2.
  * @param[in,out] ep                                The color endpoints (modifed in place).
  * @param[out]    rgbs_vector                       The RGB+scale color for LDR blocks.
  * @param[out]    rgbo_vector                       The RGB+offset color for HDR blocks.
@@ -2212,8 +2212,8 @@ void recompute_ideal_colors_2planes(
 	const image_block& blk,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
-	const uint8_t* dec_weights_quant_pvalue_plane1,
-	const uint8_t* dec_weights_quant_pvalue_plane2,
+	const uint8_t* dec_weights_uquant_plane1,
+	const uint8_t* dec_weights_uquant_plane2,
 	endpoints& ep,
 	vfloat4& rgbs_vector,
 	vfloat4& rgbo_vector,

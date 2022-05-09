@@ -1047,7 +1047,7 @@ void recompute_ideal_colors_1plane(
 	const image_block& blk,
 	const partition_info& pi,
 	const decimation_info& di,
-	const uint8_t* dec_weights_quant_pvalue,
+	const uint8_t* dec_weights_uquant,
 	endpoints& ep,
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
@@ -1063,7 +1063,7 @@ void recompute_ideal_colors_1plane(
 	alignas(ASTCENC_VECALIGN) float dec_weight[BLOCK_MAX_WEIGHTS];
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint unquant_value(dec_weights_quant_pvalue + i);
+		vint unquant_value(dec_weights_uquant + i);
 		vfloat unquant_valuef = int_to_float(unquant_value) * vfloat(1.0f / 64.0f);
 		storea(unquant_valuef, dec_weight + i);
 	}
@@ -1268,8 +1268,8 @@ void recompute_ideal_colors_2planes(
 	const image_block& blk,
 	const block_size_descriptor& bsd,
 	const decimation_info& di,
-	const uint8_t* dec_weights_quant_pvalue_plane1,
-	const uint8_t* dec_weights_quant_pvalue_plane2,
+	const uint8_t* dec_weights_uquant_plane1,
+	const uint8_t* dec_weights_uquant_plane2,
 	endpoints& ep,
 	vfloat4& rgbs_vector,
 	vfloat4& rgbo_vector,
@@ -1288,11 +1288,11 @@ void recompute_ideal_colors_2planes(
 
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint unquant_value1(dec_weights_quant_pvalue_plane1 + i);
+		vint unquant_value1(dec_weights_uquant_plane1 + i);
 		vfloat unquant_value1f = int_to_float(unquant_value1) * vfloat(1.0f / 64.0f);
 		storea(unquant_value1f, dec_weight_plane1 + i);
 
-		vint unquant_value2(dec_weights_quant_pvalue_plane2 + i);
+		vint unquant_value2(dec_weights_uquant_plane2 + i);
 		vfloat unquant_value2f = int_to_float(unquant_value2) * vfloat(1.0f / 64.0f);
 		storea(unquant_value2f, dec_weight_plane2 + i);
 	}
