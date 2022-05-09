@@ -1262,7 +1262,7 @@ struct symbolic_compressed_block
 	 *
 	 * Weights are stored in the 0-64 unpacked range allowing them to be used
 	 * directly in encoding passes without per-use unpacking. Packing happens
-	 * when converting to\from the physical bitstream encoding.
+	 * when converting to/from the physical bitstream encoding.
 	 *
 	 * If dual plane, the second plane starts at @c weights[WEIGHTS_PLANE2_OFFSET].
 	 */
