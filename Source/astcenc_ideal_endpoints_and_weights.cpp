@@ -962,8 +962,8 @@ void compute_quantized_weights_for_decimation(
 		vint weighth = weightl + vint(1);
 
 		// TODO: Can we just do more of this just as integers?
-		vint ixli = gatheri(qat.unquantized_value_unsc, weightl);
-		vint ixhi = gatheri(qat.unquantized_value_unsc, weighth);
+		vint ixli = gatheri(qat.quant_to_unquant, weightl);
+		vint ixhi = gatheri(qat.quant_to_unquant, weighth);
 
 		vfloat ixl = int_to_float(ixli);
 		vfloat ixh = int_to_float(ixhi);

@@ -1181,7 +1181,7 @@ struct quant_and_transfer_table
 	quant_method method;
 
 	/** @brief The unscrambled unquantized value. */
-	int32_t unquantized_value_unsc[33];
+	int32_t quant_to_unquant[33];
 
 	/** @brief The scrambling order: scrambled_quant = map[unscrambed_quant]. */
 	int32_t scramble_map[32];

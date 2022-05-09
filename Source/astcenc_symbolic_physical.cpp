@@ -400,8 +400,8 @@ void physical_to_symbolic(
 			int qw_p1 = qat.unscramble_map[indices[2 * i]];
 			int qw_p2 = qat.unscramble_map[indices[2 * i + 1]];
 
-			scb.weights[i] = qat.unquantized_value_unsc[qw_p1];
-			scb.weights[i + WEIGHTS_PLANE2_OFFSET] = qat.unquantized_value_unsc[qw_p2];
+			scb.weights[i] = qat.quant_to_unquant[qw_p1];
+			scb.weights[i + WEIGHTS_PLANE2_OFFSET] = qat.quant_to_unquant[qw_p2];
 		}
 	}
 	else
@@ -409,7 +409,7 @@ void physical_to_symbolic(
 		for (int i = 0; i < weight_count; i++)
 		{
 			int qw = qat.unscramble_map[indices[i]];
-			scb.weights[i] =  qat.unquantized_value_unsc[qw];
+			scb.weights[i] =  qat.quant_to_unquant[qw];
 		}
 	}
 
