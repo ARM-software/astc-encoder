@@ -1260,7 +1260,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane1[BLOCK_MAX_TEXELS];
 	int weight_plane2[BLOCK_MAX_TEXELS];
 
-	unpack_weights(bsd, scb, di, bm.is_dual_plane, bm.get_weight_quant_mode(), weight_plane1, weight_plane2);
+	unpack_weights(bsd, scb, di, bm.is_dual_plane, weight_plane1, weight_plane2);
 	for (unsigned int i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = static_cast<float>(weight_plane1[i]) * (1.0f / WEIGHTS_TEXEL_SUM);
