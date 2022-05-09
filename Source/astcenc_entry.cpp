@@ -842,7 +842,6 @@ static void compress_image(
 	// Only the first thread actually runs the initializer
 	ctx.manage_compress.init(block_count);
 
-
 	// Determine if we can use an optimized load function
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
 	                 (swizzle.b != ASTCENC_SWZ_B) || (swizzle.a != ASTCENC_SWZ_A);
@@ -853,10 +852,10 @@ static void compress_image(
 	bool use_fast_load = !needs_swz && !needs_hdr &&
 	                     block_z == 1 && image.data_type == ASTCENC_TYPE_U8;
 
-	auto load_func = fetch_image_block;
+	auto load_func = load_image_block;
 	if (use_fast_load)
 	{
-		load_func = fetch_image_block_fast_ldr;
+		load_func = load_image_block_fast_ldr;
 	}
 
 	// All threads run this processing loop until there is no work remaining
@@ -1143,7 +1142,7 @@ astcenc_error astcenc_decompress_image(
 			                          x * block_x, y * block_y, z * block_z,
 			                          scb, blk);
 
-			write_image_block(image_out, blk, *ctx->bsd,
+			store_image_block(image_out, blk, *ctx->bsd,
 			                  x * block_x, y * block_y, z * block_z, *swizzle);
 		}
 

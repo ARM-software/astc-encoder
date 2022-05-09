@@ -1761,7 +1761,7 @@ void compute_averages(
 	const avg_args& ag);
 
 /**
- * @brief Fetch a single image block from the input image.
+ * @brief Load a single image block from the input image.
  *
  * @param      decode_mode   The compression color profile.
  * @param      img           The input image data.
@@ -1772,7 +1772,7 @@ void compute_averages(
  * @param      zpos          The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on load.
  */
-void fetch_image_block(
+void load_image_block(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
 	image_block& blk,
@@ -1783,7 +1783,7 @@ void fetch_image_block(
 	const astcenc_swizzle& swz);
 
 /**
- * @brief Fetch a single image block from the input image.
+ * @brief Load a single image block from the input image.
  *
  * This specialized variant can be used only if the block is 2D LDR U8 data,
  * with no swizzle.
@@ -1797,7 +1797,7 @@ void fetch_image_block(
  * @param      zpos          The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on load.
  */
-void fetch_image_block_fast_ldr(
+void load_image_block_fast_ldr(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
 	image_block& blk,
@@ -1808,17 +1808,17 @@ void fetch_image_block_fast_ldr(
 	const astcenc_swizzle& swz);
 
 /**
- * @brief Write a single image block from the output image.
+ * @brief Store a single image block to the output image.
  *
- * @param[out] img           The input image data.
- * @param      blk           The image block to populate.
+ * @param[out] img           The output image data.
+ * @param      blk           The image block to export.
  * @param      bsd           The block size information.
  * @param      xpos          The block X coordinate in the input image.
  * @param      ypos          The block Y coordinate in the input image.
  * @param      zpos          The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on store.
  */
-void write_image_block(
+void store_image_block(
 	astcenc_image& img,
 	const image_block& blk,
 	const block_size_descriptor& bsd,

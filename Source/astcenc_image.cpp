@@ -148,7 +148,7 @@ static vfloat4 encode_texel_lns(
 }
 
 /* See header for documentation. */
-void fetch_image_block(
+void load_image_block(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
 	image_block& blk,
@@ -265,7 +265,7 @@ void fetch_image_block(
 }
 
 /* See header for documentation. */
-void fetch_image_block_fast_ldr(
+void load_image_block_fast_ldr(
 	astcenc_profile decode_mode,
 	const astcenc_image& img,
 	image_block& blk,
@@ -332,7 +332,7 @@ void fetch_image_block_fast_ldr(
 }
 
 /* See header for documentation. */
-void write_image_block(
+void store_image_block(
 	astcenc_image& img,
 	const image_block& blk,
 	const block_size_descriptor& bsd,
