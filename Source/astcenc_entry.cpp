@@ -78,7 +78,6 @@ static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 	}
 }};
 
-
 /**
  * @brief The static quality presets that are built-in for medium bandwidth
  * presets (25 <= x < 64 texels per block).
