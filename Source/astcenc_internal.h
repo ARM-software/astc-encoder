@@ -129,11 +129,26 @@ static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 static constexpr unsigned int TUNE_MIN_TEXELS_MODE0_FASTPATH { 24 };
 
 /**
- * @brief The maximum number of candidate encodings tested for each encoding mode..
+ * @brief The maximum number of candidate encodings tested for each encoding mode.
  *
  * This can be dynamically reduced by the compression quality preset.
  */
 static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
+
+/**
+ * @brief The maximum quant level using full angular endpoint search method.
+ *
+ * The angular endpoint search is used to find the min/max weight that should
+ * be used for a given quantization level. It is effective but expensive, so
+ * we only use it where it has the most value - low quant levels with wide
+ * spacing. It is used below TUNE_MAX_ANGULAR_QUANT (inclusive). Above this we
+ * assume the min weight is 0.0f, and the max weight is 1.0f.
+ *
+ * Note the angular algorithm is vectorized, and using QUANT_12 exactly fills
+ * one 8-wide vector. Decreasing by one doesn't buy much performance, and
+ * increasing by one is disproportionately expensive.
+ */
+static constexpr unsigned int TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
 
 
 static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
@@ -1135,10 +1150,10 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	float weight_high_value1[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The low weight value in plane 1 for each quant level and decimation mode. */
-	float weight_low_values1[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float weight_low_values1[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1];
 
 	/** @brief The high weight value in plane 1 for each quant level and decimation mode. */
-	float weight_high_values1[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float weight_high_values1[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1];
 
 	/** @brief The low weight value in plane 2 for each block mode. */
 	float weight_low_value2[WEIGHTS_MAX_BLOCK_MODES];
@@ -1147,10 +1162,10 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	float weight_high_value2[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The low weight value in plane 2 for each quant level and decimation mode. */
-	float weight_low_values2[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float weight_low_values2[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1];
 
 	/** @brief The high weight value in plane 2 for each quant level and decimation mode. */
-	float weight_high_values2[WEIGHTS_MAX_DECIMATION_MODES][12];
+	float weight_high_values2[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1];
 };
 
 struct dt_init_working_buffers
