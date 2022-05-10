@@ -1100,7 +1100,6 @@ static void construct_block_size_descriptor_3d(
 	bsd.decimation_mode_count_selected = decimation_mode_count;
 	bsd.decimation_mode_count_all = decimation_mode_count;
 
-	// Construct the list of block formats
 	// Construct the list of block formats referencing the decimation tables
 
 	// Clear the list to a known-bad value
