@@ -497,14 +497,14 @@ struct astcenc_config
 	float tune_refinement_mse_overshoot;
 
 	/**
-	 * @brief The threshold for skipping 2.2/3.1/3.2/4.1 trials (-2partitionlimitfactor).
+	 * @brief The threshold for skipping 3.1/4.1 trials (-2partitionlimitfactor).
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
 	float tune_2_partition_early_out_limit_factor;
 
 	/**
-	 * @brief The threshold for skipping 3.2/4.1 trials (-3partitionlimitfactor).
+	 * @brief The threshold for skipping 4.1 trials (-3partitionlimitfactor).
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
