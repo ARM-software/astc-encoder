@@ -804,6 +804,8 @@ static void construct_dt_entry_2d(
 	bsd.decimation_modes[index].maxprec_2planes = static_cast<int8_t>(maxprec_2planes);
 	bsd.decimation_modes[index].ref_1_plane = 0;
 	bsd.decimation_modes[index].ref_2_planes = 0;
+	bsd.decimation_modes[index].refprec_1_plane = 0;
+	bsd.decimation_modes[index].refprec_2_planes = 0;
 }
 
 /**
@@ -953,11 +955,11 @@ static void construct_block_size_descriptor_2d(
 
 			if (is_dual_plane)
 			{
-				dm.ref_2_planes = 1;
+				dm.set_ref_2_plane(bm.get_weight_quant_mode());
 			}
 			else
 			{
-				dm.ref_1_plane = 1;
+				dm.set_ref_1_plane(bm.get_weight_quant_mode());
 			}
 
 			bm.decimation_mode = static_cast<uint8_t>(decimation_mode);

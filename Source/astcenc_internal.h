@@ -654,6 +654,36 @@ struct decimation_mode
 
 	/** @brief Was this actually referenced by an active 2 plane mode? */
 	uint8_t ref_2_planes;
+
+	/** @brief Was this actually referenced by an active 2 plane mode? */
+	uint16_t refprec_1_plane;
+
+	/** @brief Was this actually referenced by an active 2 plane mode? */
+	uint16_t refprec_2_planes;
+
+	void set_ref_1_plane(int weight_quant)
+	{
+		ref_1_plane = 1;
+		refprec_1_plane |= (1 << weight_quant);
+	}
+
+	bool is_ref_1_plane(int max_weight_quant) const
+	{
+		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
+		return (refprec_1_plane & mask) != 0;
+	}
+
+	void set_ref_2_plane(int weight_quant)
+	{
+		ref_2_planes = 1;
+		refprec_2_planes |= (1 << weight_quant);
+	}
+
+	bool is_ref_2_plane(int max_weight_quant) const
+	{
+		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
+		return (refprec_2_planes & mask) != 0;
+	}
 };
 
 /**
@@ -2253,6 +2283,7 @@ void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
+	unsigned int max_weight_quant,
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2267,6 +2298,7 @@ void compute_angular_endpoints_2planes(
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
+	unsigned int max_weight_quant,
 	compression_working_buffers& tmpbuf);
 
 /* ============================================================================

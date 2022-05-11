@@ -488,6 +488,7 @@ void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
+	unsigned int max_weight_quant,
 	compression_working_buffers& tmpbuf
 ) {
 	float (&low_value)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value1;
@@ -502,7 +503,7 @@ void compute_angular_endpoints_1plane(
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.ref_1_plane)
+		if (!dm.is_ref_1_plane(max_weight_quant))
 		{
 			continue;
 		}
@@ -513,6 +514,11 @@ void compute_angular_endpoints_1plane(
 		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
 		{
 			max_precision = TUNE_MAX_ANGULAR_QUANT;
+		}
+
+		if (max_precision > max_weight_quant)
+		{
+			max_precision = max_weight_quant;
 		}
 
 		if (weight_count < tune_low_weight_limit)
@@ -560,6 +566,7 @@ void compute_angular_endpoints_2planes(
 	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
+	unsigned int max_weight_quant,
 	compression_working_buffers& tmpbuf
 ) {
 	float (&low_value1)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value1;
@@ -576,7 +583,7 @@ void compute_angular_endpoints_2planes(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.ref_2_planes)
+		if (!dm.is_ref_2_plane(max_weight_quant))
 		{
 			continue;
 		}
@@ -587,6 +594,11 @@ void compute_angular_endpoints_2planes(
 		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
 		{
 			max_precision = TUNE_MAX_ANGULAR_QUANT;
+		}
+
+		if (max_precision > max_weight_quant)
+		{
+			max_precision = max_weight_quant;
 		}
 
 		if (weight_count < tune_low_weight_limit)
