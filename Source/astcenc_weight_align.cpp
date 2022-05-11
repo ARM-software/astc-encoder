@@ -236,8 +236,8 @@ static void compute_angular_endpoints_for_quant_levels(
 	unsigned int weight_count,
 	const float* dec_weight_ideal_value,
 	unsigned int max_quant_level,
-	float low_value[12],
-	float high_value[12]
+	float low_value[TUNE_MAX_ANGULAR_QUANT + 1],
+	float high_value[TUNE_MAX_ANGULAR_QUANT + 1]
 ) {
 	unsigned int max_quant_steps = steps_for_quant_level[max_quant_level];
 	unsigned int max_angular_steps = steps_for_quant_level[max_quant_level];
@@ -414,8 +414,8 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 	unsigned int weight_count,
 	const float* dec_weight_ideal_value,
 	unsigned int max_quant_level,
-	float low_value[12],
-	float high_value[12]
+	float low_value[TUNE_MAX_ANGULAR_QUANT + 1],
+	float high_value[TUNE_MAX_ANGULAR_QUANT + 1]
 ) {
 	unsigned int max_quant_steps = steps_for_quant_level[max_quant_level];
 	unsigned int max_angular_steps = steps_for_quant_level[max_quant_level];
@@ -493,8 +493,8 @@ void compute_angular_endpoints_1plane(
 	float (&low_value)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value1;
 	float (&high_value)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_high_value1;
 
-	float (&low_values)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_low_values1;
-	float (&high_values)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values1;
+	float (&low_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values1;
+	float (&high_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values1;
 
 	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
 	                                                : bsd.decimation_mode_count_selected;
@@ -509,19 +509,25 @@ void compute_angular_endpoints_1plane(
 
 		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
 
+		unsigned int max_precision = dm.maxprec_1plane;
+		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
+		{
+			max_precision = TUNE_MAX_ANGULAR_QUANT;
+		}
+
 		if (weight_count < tune_low_weight_limit)
 		{
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_1plane, low_values[i], high_values[i]);
+				max_precision, low_values[i], high_values[i]);
 		}
 		else
 		{
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_1plane, low_values[i], high_values[i]);
+				max_precision, low_values[i], high_values[i]);
 		}
 	}
 
@@ -536,8 +542,16 @@ void compute_angular_endpoints_1plane(
 		unsigned int quant_mode = bm.quant_mode;
 		unsigned int decim_mode = bm.decimation_mode;
 
-		low_value[i] = low_values[decim_mode][quant_mode];
-		high_value[i] = high_values[decim_mode][quant_mode];
+		if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
+		{
+			low_value[i] = low_values[decim_mode][quant_mode];
+			high_value[i] = high_values[decim_mode][quant_mode];
+		}
+		else
+		{
+			low_value[i] = 0.0f;
+			high_value[i] = 1.0f;
+		}
 	}
 }
 
@@ -553,10 +567,10 @@ void compute_angular_endpoints_2planes(
 	float (&low_value2)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value2;
 	float (&high_value2)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_high_value2;
 
-	float (&low_values1)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_low_values1;
-	float (&high_values1)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values1;
-	float (&low_values2)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_low_values2;
-	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][12] = tmpbuf.weight_high_values2;
+	float (&low_values1)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values1;
+	float (&high_values1)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values1;
+	float (&low_values2)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values2;
+	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values2;
 
 	promise(bsd.decimation_mode_count_selected > 0);
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
@@ -569,29 +583,35 @@ void compute_angular_endpoints_2planes(
 
 		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
 
+		unsigned int max_precision = dm.maxprec_2planes;
+		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
+		{
+			max_precision = TUNE_MAX_ANGULAR_QUANT;
+		}
+
 		if (weight_count < tune_low_weight_limit)
 		{
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_2planes, low_values1[i], high_values1[i]);
+				max_precision, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels_lwc(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
-				dm.maxprec_2planes, low_values2[i], high_values2[i]);
+				max_precision, low_values2[i], high_values2[i]);
 		}
 		else
 		{
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS,
-				dm.maxprec_2planes, low_values1[i], high_values1[i]);
+				max_precision, low_values1[i], high_values1[i]);
 
 			compute_angular_endpoints_for_quant_levels(
 				weight_count,
 				dec_weight_ideal_value + i * BLOCK_MAX_WEIGHTS + WEIGHTS_PLANE2_OFFSET,
-				dm.maxprec_2planes, low_values2[i], high_values2[i]);
+				max_precision, low_values2[i], high_values2[i]);
 		}
 	}
 
@@ -603,10 +623,20 @@ void compute_angular_endpoints_2planes(
 		unsigned int quant_mode = bm.quant_mode;
 		unsigned int decim_mode = bm.decimation_mode;
 
-		low_value1[i] = low_values1[decim_mode][quant_mode];
-		high_value1[i] = high_values1[decim_mode][quant_mode];
-		low_value2[i] = low_values2[decim_mode][quant_mode];
-		high_value2[i] = high_values2[decim_mode][quant_mode];
+		if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
+		{
+			low_value1[i] = low_values1[decim_mode][quant_mode];
+			high_value1[i] = high_values1[decim_mode][quant_mode];
+			low_value2[i] = low_values2[decim_mode][quant_mode];
+			high_value2[i] = high_values2[decim_mode][quant_mode];
+		}
+		else
+		{
+			low_value1[i] = 0.0f;
+			high_value1[i] = 1.0f;
+			low_value2[i] = 0.0f;
+			high_value2[i] = 1.0f;
+		}
 	}
 }
 
