@@ -953,11 +953,16 @@ static int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -repeat switch with no argument\n");
+				printf("ERROR: -repeats switch with no argument\n");
 				return 1;
 			}
 
 			cli_config.repeat_count = atoi(argv[argidx - 1]);
+			if (cli_config.repeat_count <= 0)
+			{
+				printf("ERROR: -repeats value must be at least one\n");
+				return 1;
+			}
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
@@ -1380,7 +1385,6 @@ int main(
 		break;
 	}
 
-
 	std::string input_filename = argc >= 3 ? argv[2] : "";
 	std::string output_filename = argc >= 4 ? argv[3] : "";
 
@@ -1566,8 +1570,6 @@ int main(
 		}
 	}
 
-	double start_coding_time = get_time();
-
 	double image_size = 0.0;
 	if (image_uncomp_in)
 	{
@@ -1583,6 +1585,8 @@ int main(
 	}
 
 	// Compress an image
+	double start_compression_time = 0.0;
+	double end_compression_time = 0.0;
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
 		print_astcenc_config(cli_config, config);
@@ -1603,6 +1607,7 @@ int main(
 
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
+		start_compression_time = get_time();
 		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
 		{
 			if (cli_config.thread_count > 1)
@@ -1618,6 +1623,7 @@ int main(
 
 			astcenc_compress_reset(codec_context);
 		}
+		end_compression_time = get_time();
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
@@ -1636,6 +1642,8 @@ int main(
 	}
 
 	// Decompress an image
+	double start_decompression_time = 0.0;
+	double end_decompression_time = 0.0;
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
 		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
@@ -1658,6 +1666,7 @@ int main(
 
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
+		start_decompression_time = get_time();
 		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
 		{
 			if (cli_config.thread_count > 1)
@@ -1673,6 +1682,7 @@ int main(
 
 			astcenc_decompress_reset(codec_context);
 		}
+		end_decompression_time = get_time();
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
@@ -1680,8 +1690,6 @@ int main(
 			return 1;
 		}
 	}
-
-	double end_coding_time = get_time();
 
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
@@ -1762,17 +1770,28 @@ int main(
 		double end_time = get_time();
 
 		double repeats = static_cast<double>(cli_config.repeat_count);
-		double coding_time = (end_coding_time - start_coding_time) / repeats;
-		double total_time = (end_time - start_time) - ((repeats - 1.0) * coding_time);
-
-		double tex_rate = image_size / coding_time;
-		tex_rate = tex_rate / 1000000.0;
+		double compression_time = (end_compression_time - start_compression_time) / repeats;
+		double decompression_time = (end_decompression_time - start_decompression_time) / repeats;
+		double total_time = (end_time - start_time) - ((repeats - 1.0) * compression_time)  - ((repeats - 1.0) * decompression_time);
 
 		printf("Performance metrics\n");
 		printf("===================\n\n");
 		printf("    Total time:                %8.4f s\n", total_time);
-		printf("    Coding time:               %8.4f s\n", coding_time);
-		printf("    Coding rate:               %8.4f MT/s\n", tex_rate);
+
+		if (operation & ASTCENC_STAGE_COMPRESS)
+		{
+			double compression_rate = image_size / (compression_time * 1000000.0);
+
+			printf("    Coding time:               %8.4f s\n", compression_time);
+			printf("    Coding rate:               %8.4f MT/s\n", compression_rate);
+		}
+
+		if (operation & ASTCENC_STAGE_DECOMPRESS)
+		{
+			double decompression_rate = image_size / (decompression_time * 1000000.0);
+			printf("    Decoding time:             %8.4f s\n", decompression_time);
+			printf("    Decoding rate:             %8.4f MT/s\n", decompression_rate);
+		}
 	}
 
 	return 0;
