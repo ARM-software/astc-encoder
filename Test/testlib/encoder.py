@@ -46,6 +46,7 @@ class EncoderBase():
     VERSION = None
     SWITCHES = None
     OUTPUTS = None
+    HAS_REPEATS = False
 
     def __init__(self, name, variant, binary):
         """
@@ -210,6 +211,12 @@ class EncoderBase():
         # pylint: disable=assignment-from-no-return
         command = self.build_cli(image, blockSize, preset, keepOutput, threads)
 
+        # Inline repeats if the compressor supports it
+        if self.HAS_REPEATS:
+            command.append("-repeats")
+            command.append(f"{testRuns}")
+            testRuns = 1
+
         # Execute test runs
         bestPSNR = 0
         bestTTime = sys.float_info.max
@@ -232,7 +239,6 @@ class EncoderBase():
 class Encoder2x(EncoderBase):
     """
     This class wraps the latest `astcenc` 2.x series binaries from main branch.
-    branch.
     """
     VERSION = "main"
 
@@ -323,6 +329,30 @@ class Encoder2xRel(Encoder2x):
     """
     This class wraps a released 2.x series binary.
     """
+    def __init__(self, version, variant):
+
+        self.VERSION = version
+
+        if os.name == 'nt':
+            binary = f"./Binaries/{version}/astcenc-{variant}.exe"
+        else:
+            binary = f"./Binaries/{version}/astcenc-{variant}"
+
+        super().__init__(variant, binary)
+
+
+class Encoder4x(Encoder2x):
+    """
+    This class wraps the latest `astcenc` 4.x series binaries from main branch.
+    """
+    HAS_REPEATS = True
+
+
+class Encoder4xRel(Encoder4x):
+    """
+    This class wraps a released 4.x series binary.
+    """
+
     def __init__(self, version, variant):
 
         self.VERSION = version
