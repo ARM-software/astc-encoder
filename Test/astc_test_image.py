@@ -269,7 +269,7 @@ def get_encoder_params(encoderName, referenceName, imageSet):
 
         # Latest main
         if version == "main":
-            encoder = te.Encoder2x(simd)
+            encoder = te.Encoder4x(simd)
             name = f"reference-{version}-{simd}"
             outDir = "Test/Images/%s" % imageSet
             refName = None
@@ -277,7 +277,7 @@ def get_encoder_params(encoderName, referenceName, imageSet):
 
         assert False, f"Encoder {encoderName} not recognized"
 
-    encoder = te.Encoder2x(encoderName)
+    encoder = te.Encoder4x(encoderName)
     name = "develop-%s" % encoderName
     outDir = "TestOutput/%s" % imageSet
     refName = referenceName.replace("ref", "reference")
