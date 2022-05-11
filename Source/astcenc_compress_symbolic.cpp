@@ -371,11 +371,14 @@ static float compress_symbolic_block_for_partition_1plane(
 	unsigned int partition_count,
 	unsigned int partition_index,
 	symbolic_compressed_block& scb,
-	compression_working_buffers& tmpbuf
+	compression_working_buffers& tmpbuf,
+	int quant_limit
 ) {
 	promise(partition_count > 0);
 	promise(config.tune_candidate_limit > 0);
 	promise(config.tune_refinement_limit > 0);
+
+	int max_weight_quant = astc::min(static_cast<int>(QUANT_32), quant_limit);
 
 	auto compute_difference = &compute_symbolic_block_difference_1plane;
 	if ((partition_count == 1) && !(config.flags & ASTCENC_FLG_MAP_RGBM))
@@ -400,7 +403,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (!dm.ref_1_plane)
+		if (!dm.is_ref_1_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}
@@ -431,6 +434,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	    config.tune_low_weight_count_limit,
 	    only_always, bsd,
 	    dec_weights_ideal,
+	    max_weight_quant,
 	    tmpbuf);
 
 	float* weight_low_value = tmpbuf.weight_low_value1;
@@ -454,6 +458,13 @@ static float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < max_block_modes; ++i)
 	{
 		const block_mode& bm = bsd.block_modes[i];
+
+		if (bm.quant_mode > max_weight_quant)
+		{
+			qwt_errors[i] = 1e38f;
+			continue;
+		}
+
 		assert(!bm.is_dual_plane);
 		int bitcount = free_bits_for_partition_count[partition_count - 1] - bm.weight_bits;
 		if (bitcount <= 0)
@@ -721,11 +732,14 @@ static float compress_symbolic_block_for_partition_2planes(
 	float tune_errorval_threshold,
 	unsigned int plane2_component,
 	symbolic_compressed_block& scb,
-	compression_working_buffers& tmpbuf
+	compression_working_buffers& tmpbuf,
+	int quant_limit
 ) {
 	promise(config.tune_candidate_limit > 0);
 	promise(config.tune_refinement_limit > 0);
 	promise(bsd.decimation_mode_count_selected > 0);
+
+	int max_weight_quant = astc::min(static_cast<int>(QUANT_32), quant_limit);
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei1 = tmpbuf.ei1;
@@ -741,7 +755,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (!dm.ref_2_planes)
+		if (!dm.is_ref_2_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}
@@ -785,7 +799,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	compute_angular_endpoints_2planes(
 	    config.tune_low_weight_count_limit,
-	    bsd, dec_weights_ideal,
+	    bsd, dec_weights_ideal, max_weight_quant,
 	    tmpbuf);
 
 	// For each mode (which specifies a decimation and a quantization):
@@ -808,6 +822,12 @@ static float compress_symbolic_block_for_partition_2planes(
 	{
 		const block_mode& bm = bsd.block_modes[i];
 		assert(bm.is_dual_plane);
+
+		if (bm.quant_mode > max_weight_quant)
+		{
+			qwt_errors[i] = 1e38f;
+			continue;
+		}
 
 		qwt_bitcounts[i] = 109 - bm.weight_bits;
 
@@ -1270,6 +1290,7 @@ void compress_block(
 		start_trial = 0;
 	}
 
+	int quant_limit = QUANT_32;
 	for (int i = start_trial; i < 2; i++)
 	{
 		TRACE_NODE(node1, "pass");
@@ -1280,7 +1301,11 @@ void compress_block(
 		float errorval = compress_symbolic_block_for_partition_1plane(
 		    ctx.config, bsd, blk, i == 0,
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
-		    1, 0,  scb, tmpbuf);
+		    1, 0,  scb, tmpbuf, QUANT_32);
+
+		// Record the quant level so we can use the filter later searches
+		const auto& bm = bsd.get_block_mode(scb.block_mode);
+		quant_limit = bm.get_weight_quant_mode();
 
 		best_errorvals_for_pcount[0] = astc::min(best_errorvals_for_pcount[0], errorval);
 		if (errorval < (error_threshold * errorval_mult[i]))
@@ -1325,7 +1350,7 @@ void compress_block(
 
 		float errorval = compress_symbolic_block_for_partition_2planes(
 		    ctx.config, bsd, blk, error_threshold * errorval_overshoot,
-		    i, scb, tmpbuf);
+		    i, scb, tmpbuf, quant_limit);
 
 		// If attempting two planes is much worse than the best one plane result
 		// then further two plane searches are unlikely to help so move on ...
@@ -1362,7 +1387,7 @@ void compress_block(
 			    ctx.config, bsd, blk, false,
 			    error_threshold * errorval_overshoot,
 			    partition_count, partition_indices[i],
-			    scb, tmpbuf);
+			    scb, tmpbuf, quant_limit);
 
 			best_errorvals_for_pcount[partition_count - 1] = astc::min(best_errorvals_for_pcount[partition_count - 1], errorval);
 			if (errorval < error_threshold)
