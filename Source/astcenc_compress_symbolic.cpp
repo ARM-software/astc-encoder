@@ -403,7 +403,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (!dm.is_ref_1_plane(max_weight_quant))
+		if (!dm.is_ref_1_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}
@@ -755,7 +755,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const auto& dm = bsd.get_decimation_mode(i);
-		if (!dm.is_ref_2_plane(max_weight_quant))
+		if (!dm.is_ref_2_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}
@@ -1303,6 +1303,7 @@ void compress_block(
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf, QUANT_32);
 
+		// Record the quant level so we can use the filter later searches
 		const auto& bm = bsd.get_block_mode(scb.block_mode);
 		quant_limit = bm.get_weight_quant_mode();
 

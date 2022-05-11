@@ -503,7 +503,7 @@ void compute_angular_endpoints_1plane(
 	for (unsigned int i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.is_ref_1_plane(max_weight_quant))
+		if (!dm.is_ref_1_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}
@@ -583,7 +583,7 @@ void compute_angular_endpoints_2planes(
 	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
-		if (!dm.is_ref_2_plane(max_weight_quant))
+		if (!dm.is_ref_2_plane(static_cast<quant_method>(max_weight_quant)))
 		{
 			continue;
 		}

@@ -649,37 +649,57 @@ struct decimation_mode
 	/** @brief The max weight precision for 2 planes, or -1 if not supported. */
 	int8_t maxprec_2planes;
 
-	/** @brief Was this actually referenced by an active 1 plane mode? */
-	uint8_t ref_1_plane;
-
-	/** @brief Was this actually referenced by an active 2 plane mode? */
-	uint8_t ref_2_planes;
-
-	/** @brief Was this actually referenced by an active 2 plane mode? */
+	/**
+	 * @brief Bitvector indicating weight quant modes used by active 1 plane block modes.
+	 *
+	 * Bit 0 = QUANT_2, Bit 1 = QUANT_3, etc.
+	 */
 	uint16_t refprec_1_plane;
 
-	/** @brief Was this actually referenced by an active 2 plane mode? */
+	/**
+	 * @brief Bitvector indicating weight quant methods used by active 2 plane block modes.
+	 *
+	 * Bit 0 = QUANT_2, Bit 1 = QUANT_3, etc.
+	 */
 	uint16_t refprec_2_planes;
 
-	void set_ref_1_plane(int weight_quant)
+	/**
+	 * @brief Set a 1 plane weight quant as active.
+	 *
+	 * @param weight_quant   The quant method to set.
+	 */
+	void set_ref_1_plane(quant_method weight_quant)
 	{
-		ref_1_plane = 1;
 		refprec_1_plane |= (1 << weight_quant);
 	}
 
-	bool is_ref_1_plane(int max_weight_quant) const
+	/**
+	 * @brief Test if this mode is active below a given 1 plane weight quant (inclusive).
+	 *
+	 * @param max_weight_quant   The max quant method to test.
+	 */
+	bool is_ref_1_plane(quant_method max_weight_quant) const
 	{
 		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
 		return (refprec_1_plane & mask) != 0;
 	}
 
-	void set_ref_2_plane(int weight_quant)
+	/**
+	 * @brief Set a 2 plane weight quant as active.
+	 *
+	 * @param weight_quant   The quant method to set.
+	 */
+	void set_ref_2_plane(quant_method weight_quant)
 	{
-		ref_2_planes = 1;
 		refprec_2_planes |= (1 << weight_quant);
 	}
 
-	bool is_ref_2_plane(int max_weight_quant) const
+	/**
+	 * @brief Test if this mode is active below a given 2 plane weight quant (inclusive).
+	 *
+	 * @param max_weight_quant   The max quant method to test.
+	 */
+	bool is_ref_2_plane(quant_method max_weight_quant) const
 	{
 		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
 		return (refprec_2_planes & mask) != 0;
@@ -2276,6 +2296,7 @@ void prepare_angular_tables();
  * @param      only_always               Only consider block modes that are always enabled.
  * @param      bsd                       The block size descriptor for the current trial.
  * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
+ * @param      max_weight_quant          The maximum block mode weight quantization allowed.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
@@ -2292,6 +2313,7 @@ void compute_angular_endpoints_1plane(
  * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
  * @param      bsd                       The block size descriptor for the current trial.
  * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
+ * @param      max_weight_quant          The maximum block mode weight quantization allowed.
  * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
