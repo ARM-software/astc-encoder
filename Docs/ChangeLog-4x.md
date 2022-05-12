@@ -17,6 +17,11 @@ cost:quality trade off.
 
 * **General:**
   * **Feature:** The command line tool now has `-repeats <count>` for testing.
+  * **Optimization:** Weight scrambling and range reduction into the packed
+    quantized range has been moved into the physical layer for compression and
+    decompression. The rest of the codec now uses linear order weights unpacked
+    into the 0-64 range, which removes some lookup tables and improves access
+    locality.
   * **Optimization:** Angular weight endpoint selection is restricted to
     QUANT_11 or lower. Higher quantization levels assume default 0-1 range,
     which is less accurate but faster.
