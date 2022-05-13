@@ -1585,8 +1585,8 @@ int main(
 	}
 
 	// Compress an image
-	double start_compression_time = 0.0;
-	double end_compression_time = 0.0;
+	double best_compression_time = 100000.0;
+	double total_compression_time = 0.0;
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
 		print_astcenc_config(cli_config, config);
@@ -1607,9 +1607,10 @@ int main(
 
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
-		start_compression_time = get_time();
+		double start_compression_time = get_time();
 		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
 		{
+			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)
 			{
 				launch_threads(cli_config.thread_count, compression_workload_runner, &work);
@@ -1622,8 +1623,11 @@ int main(
 			}
 
 			astcenc_compress_reset(codec_context);
+
+			double iter_time = get_time() - start_iter_time;
+			best_compression_time = astc::min(iter_time, best_compression_time);
 		}
-		end_compression_time = get_time();
+		total_compression_time = get_time() - start_compression_time;
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
@@ -1642,8 +1646,8 @@ int main(
 	}
 
 	// Decompress an image
-	double start_decompression_time = 0.0;
-	double end_decompression_time = 0.0;
+	double best_decompression_time = 100000.0;
+	double total_decompression_time = 0.0;
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
 		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
@@ -1666,9 +1670,10 @@ int main(
 
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
-		start_decompression_time = get_time();
+		double start_decompression_time = get_time();
 		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
 		{
+			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)
 			{
 				launch_threads(cli_config.thread_count, decompression_workload_runner, &work);
@@ -1681,8 +1686,11 @@ int main(
 			}
 
 			astcenc_decompress_reset(codec_context);
+
+			double iter_time = get_time() - start_iter_time;
+			best_decompression_time = astc::min(iter_time, best_decompression_time);
 		}
-		end_decompression_time = get_time();
+		total_decompression_time = get_time() - start_decompression_time;
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
@@ -1770,9 +1778,9 @@ int main(
 		double end_time = get_time();
 
 		double repeats = static_cast<double>(cli_config.repeat_count);
-		double compression_time = (end_compression_time - start_compression_time) / repeats;
-		double decompression_time = (end_decompression_time - start_decompression_time) / repeats;
-		double total_time = (end_time - start_time) - ((repeats - 1.0) * compression_time)  - ((repeats - 1.0) * decompression_time);
+		double avg_compression_time = total_compression_time / repeats;
+		double avg_decompression_time = total_decompression_time / repeats;
+		double total_time = (end_time - start_time) - ((repeats - 1.0) * avg_compression_time)  - ((repeats - 1.0) * avg_decompression_time);
 
 		printf("Performance metrics\n");
 		printf("===================\n\n");
@@ -1780,16 +1788,16 @@ int main(
 
 		if (operation & ASTCENC_STAGE_COMPRESS)
 		{
-			double compression_rate = image_size / (compression_time * 1000000.0);
+			double compression_rate = image_size / (best_compression_time * 1000000.0);
 
-			printf("    Coding time:               %8.4f s\n", compression_time);
+			printf("    Coding time:               %8.4f s\n", best_compression_time);
 			printf("    Coding rate:               %8.4f MT/s\n", compression_rate);
 		}
 
 		if (operation & ASTCENC_STAGE_DECOMPRESS)
 		{
-			double decompression_rate = image_size / (decompression_time * 1000000.0);
-			printf("    Decoding time:             %8.4f s\n", decompression_time);
+			double decompression_rate = image_size / (best_decompression_time * 1000000.0);
+			printf("    Decoding time:             %8.4f s\n", best_decompression_time);
 			printf("    Decoding rate:             %8.4f MT/s\n", decompression_rate);
 		}
 	}
