@@ -556,7 +556,8 @@ static float compress_symbolic_block_for_partition_1plane(
 			    blk, pi, di, workscb.weights,
 			    workep, rgbs_colors, rgbo_colors);
 
-			// Quantize the chosen color
+			// Quantize the chosen color, tracking if worth trying the mod value
+			bool all_same = color_quant_level[i] != color_quant_level_mod[i];
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				workscb.color_formats[j] = pack_color_endpoints(
@@ -567,20 +568,19 @@ static float compress_symbolic_block_for_partition_1plane(
 				    partition_format_specifiers[i][j],
 				    workscb.color_values[j],
 				    color_quant_level[i]);
+
+				all_same = all_same && workscb.color_formats[j] == workscb.color_formats[0];
 			}
 
 			// If all the color endpoint modes are the same, we get a few more bits to store colors;
 			// let's see if we can take advantage of this: requantize all the colors and see if the
 			// endpoint modes remain the same.
 			workscb.color_formats_matched = 0;
-
-			if ((partition_count >= 2 && workscb.color_formats[0] == workscb.color_formats[1]
-			    && color_quant_level[i] != color_quant_level_mod[i])
-			    && (partition_count == 2 || (workscb.color_formats[0] == workscb.color_formats[2]
-			    && (partition_count == 3 || (workscb.color_formats[0] == workscb.color_formats[3])))))
+			if (partition_count >= 2 && all_same)
 			{
 				uint8_t colorvals[BLOCK_MAX_PARTITIONS][12];
 				uint8_t color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
+				bool all_same_mod = true;
 				for (unsigned int j = 0; j < partition_count; j++)
 				{
 					color_formats_mod[j] = pack_color_endpoints(
@@ -591,11 +591,16 @@ static float compress_symbolic_block_for_partition_1plane(
 					    partition_format_specifiers[i][j],
 					    colorvals[j],
 					    color_quant_level_mod[i]);
+
+					// Early out as soon as it's no longer possible to use mod
+					if (color_formats_mod[j] != color_formats_mod[0])
+					{
+						all_same_mod = false;
+						break;
+					}
 				}
 
-				if (color_formats_mod[0] == color_formats_mod[1]
-				    && (partition_count == 2 || (color_formats_mod[0] == color_formats_mod[2]
-				    && (partition_count == 3 || (color_formats_mod[0] == color_formats_mod[3])))))
+				if (all_same_mod)
 				{
 					workscb.color_formats_matched = 1;
 					for (unsigned int j = 0; j < BLOCK_MAX_PARTITIONS; j++)

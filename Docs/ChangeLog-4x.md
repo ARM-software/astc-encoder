@@ -35,7 +35,8 @@ cost:quality trade off.
     grids when they are needed.
   * **Optimization:** Remove redundant per-decimation mode copies of endpoint
     and weight structures, which were really read-only.
-
+  * **Optimization:** Early-out the same endpoint mode color calculation if it
+    cannot be applied.
 - - -
 
 _Copyright © 2022, Arm Limited and contributors. All rights reserved._
