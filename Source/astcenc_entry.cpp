@@ -654,7 +654,7 @@ astcenc_error astcenc_config_init(
 		//
 		// ... but we scale these up to keep a better balance between color and alpha. Note
 		// that if the content is using alpha we'd recommend using the -a option to weight
-		// the color conribution by the alpha transparency.
+		// the color contribution by the alpha transparency.
 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
 			config.cw_r_weight = 0.30f * 2.25f;
@@ -916,6 +916,18 @@ static void compress_image(
 			if (use_full_block)
 			{
 				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+
+				// Scale RGB error contribution by the maximum alpha in the block
+				// This encourages preserving alpha accuracy in regions with high
+				// transparency, and can buy up to 0.5 dB PSNR.
+				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
+				{
+					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
+					blk.channel_weight = vfloat4(ctx.config.cw_r_weight * alpha_scale,
+					                             ctx.config.cw_g_weight * alpha_scale,
+					                             ctx.config.cw_b_weight * alpha_scale,
+					                             ctx.config.cw_a_weight);
+				}
 			}
 			// Apply alpha scale RDO - substitute constant color block
 			else
