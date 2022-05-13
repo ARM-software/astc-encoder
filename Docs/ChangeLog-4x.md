@@ -16,6 +16,10 @@ of larger changes to the heuristics used in the codec to find a more effective
 cost:quality trade off.
 
 * **General:**
+  * **Feature:** The `-a` alpha weighting option has been re-enabled in the
+    backend, and now again applies alpha scaling to the RGB error metrics when
+    encoding. This is based on the maximum alpha in each block, not the
+    individual texel alpha values used in the earlier implementation.
   * **Feature:** The command line tool now has `-repeats <count>` for testing,
     which will iterate around compression and decompression `count` times.
     Reported performance metrics also now separate compression and
