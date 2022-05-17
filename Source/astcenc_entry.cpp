@@ -62,7 +62,7 @@ struct astcenc_preset_config
 static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 14, 44, 2, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 25
+		2, 10, 42, 2, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 25
 	}, {
 		ASTCENC_PRE_FAST,
 		3, 14, 55, 3, 3, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.65f, 20
@@ -85,7 +85,7 @@ static const std::array<astcenc_preset_config, 5> preset_configs_high {{
 static const std::array<astcenc_preset_config, 5> preset_configs_mid {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 14, 43, 2, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 20
+		2, 10, 42, 2, 2, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 20
 	}, {
 		ASTCENC_PRE_FAST,
 		3, 15, 55, 3, 3, 85.2f, 63.2f, 3.5f, 3.5f, 1.0f, 1.1f, 0.5f, 16
@@ -109,7 +109,7 @@ static const std::array<astcenc_preset_config, 5> preset_configs_mid {{
 static const std::array<astcenc_preset_config, 5> preset_configs_low {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 14, 42, 2, 2, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 20
+		2, 10, 40, 2, 2, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.0f, 0.5f, 20
 	}, {
 		ASTCENC_PRE_FAST,
 		2, 15, 55, 3, 3, 85.0f, 63.0f, 3.5f, 3.5f, 1.0f, 1.1f, 0.5f, 16
