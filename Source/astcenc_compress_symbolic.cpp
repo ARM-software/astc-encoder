@@ -129,41 +129,39 @@ static bool realign_weights_undecimated(
 			int uqw = dec_weights_uquant[texel];
 
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
-			int prev_wt_uq = prev_and_next & 0xFF;
-			int next_wt_uq = (prev_and_next >> 8) & 0xFF;
+			int uqw_down = prev_and_next & 0xFF;
+			int uqw_up = (prev_and_next >> 8) & 0xFF;
 
 			// Interpolate the colors to create the diffs
+			float weight_base = static_cast<float>(uqw);
+			float weight_down = static_cast<float>(uqw_down - uqw);
+			float weight_up = static_cast<float>(uqw_up - uqw);
+
 			unsigned int partition = pi.partition_of_texel[texel];
-
-			float plane_weight = static_cast<float>(uqw);
-			float plane_up_weight = static_cast<float>(next_wt_uq - uqw);
-			float plane_down_weight = static_cast<float>(prev_wt_uq - uqw);
-
 			vfloat4 color_offset = offset[partition];
 			vfloat4 color_base   = endpnt0f[partition];
 
-			vfloat4 color = color_base + color_offset * plane_weight;
-
+			vfloat4 color = color_base + color_offset * weight_base;
 			vfloat4 orig_color   = blk.texel(texel);
 			vfloat4 error_weight = blk.channel_weight;
 
 			vfloat4 color_diff      = color - orig_color;
-			vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
-			vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
+			vfloat4 color_diff_down = color_diff + color_offset * weight_down;
+			vfloat4 color_diff_up   = color_diff + color_offset * weight_up;
 
-			float current_error = dot_s(color_diff      * color_diff,      error_weight);
-			float up_error      = dot_s(color_up_diff   * color_up_diff,   error_weight);
-			float down_error    = dot_s(color_down_diff * color_down_diff, error_weight);
+			float error_base = dot_s(color_diff      * color_diff,      error_weight);
+			float error_down = dot_s(color_diff_down * color_diff_down, error_weight);
+			float error_up   = dot_s(color_diff_up   * color_diff_up,   error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
+			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
 			{
-				dec_weights_uquant[texel] = next_wt_uq;
+				dec_weights_uquant[texel] = uqw_up;
 				adjustments = true;
 			}
-			else if ((down_error < current_error) && (uqw > 0))
+			else if ((error_down < error_base) && (uqw > 0))
 			{
-				dec_weights_uquant[texel] = prev_wt_uq;
+				dec_weights_uquant[texel] = uqw_down;
 				adjustments = true;
 			}
 		}
@@ -234,8 +232,6 @@ static bool realign_weights_decimated(
 		                       endpnt1[pa_idx]);
 	}
 
-	alignas(ASTCENC_VECALIGN) float uq_pl_weightsf[BLOCK_MAX_WEIGHTS];
-
 	uint8_t* dec_weights_uquant = scb.weights;
 	bool adjustments = false;
 
@@ -253,29 +249,30 @@ static bool realign_weights_decimated(
 		}
 
 		// Create an unquantized weight grid for this decimation level
+		alignas(ASTCENC_VECALIGN) float uq_weightsf[BLOCK_MAX_WEIGHTS];
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx += ASTCENC_SIMD_WIDTH)
 		{
 			vint unquant_value(dec_weights_uquant + we_idx);
 			vfloat unquant_valuef = int_to_float(unquant_value);
-			storea(unquant_valuef, uq_pl_weightsf + we_idx);
+			storea(unquant_valuef, uq_weightsf + we_idx);
 		}
 
 		// For each weight compute previous, current, and next errors
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
 			int uqw = dec_weights_uquant[we_idx];
-			float uqwf = uq_pl_weightsf[we_idx];
-
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
-			unsigned int prev_wt_uq = prev_and_next & 0xFF;
-			unsigned int next_wt_uq = (prev_and_next >> 8) & 0xFF;
 
-			float uqw_next_dif = static_cast<float>(next_wt_uq) - uqwf;
-			float uqw_prev_dif = static_cast<float>(prev_wt_uq) - uqwf;
+			float uqw_base = uq_weightsf[we_idx];
+			float uqw_down =  static_cast<float>(prev_and_next & 0xFF);
+			float uqw_up =  static_cast<float>((prev_and_next >> 8) & 0xFF);
 
-			vfloat4 current_errorv = vfloat4::zero();
-			vfloat4 up_errorv = vfloat4::zero();
-			vfloat4 down_errorv = vfloat4::zero();
+			float uqw_diff_down = uqw_down - uqw_base;
+			float uqw_diff_up = uqw_up - uqw_base;
+
+			vfloat4 error_basev = vfloat4::zero();
+			vfloat4 error_downv = vfloat4::zero();
+			vfloat4 error_upv = vfloat4::zero();
 
 			// Interpolate the colors to create the diffs
 			unsigned int texels_to_evaluate = di.weight_texel_count[we_idx];
@@ -283,60 +280,56 @@ static bool realign_weights_decimated(
 			for (unsigned int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
 				unsigned int texel = di.weight_texel[te_idx][we_idx];
-				float weight_base = uqwf;
 
 				const uint8_t *texel_weights = di.texel_weights_texel[we_idx][te_idx];
 				const float *texel_weights_float = di.texel_weights_float_texel[we_idx][te_idx];
-				float twf0 = texel_weights_float[0];
 
-				weight_base = (uqwf                             * twf0
-				             + uq_pl_weightsf[texel_weights[1]] * texel_weights_float[1])
-				            + (uq_pl_weightsf[texel_weights[2]] * texel_weights_float[2]
-				             + uq_pl_weightsf[texel_weights[3]] * texel_weights_float[3]);
+				float tw_base = texel_weights_float[0];
 
-				unsigned int partition = pi.partition_of_texel[texel];
+				float weight_base = (uqw_base                      * tw_base
+				                   + uq_weightsf[texel_weights[1]] * texel_weights_float[1])
+				                  + (uq_weightsf[texel_weights[2]] * texel_weights_float[2]
+				                   + uq_weightsf[texel_weights[3]] * texel_weights_float[3]);
 
 				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
-				// float plane_weight = astc::flt_rd(weight_base + 0.5f);
-				// float plane_up_weight = astc::flt_rd(weight_base + 0.5f + uqw_next_dif * twf0) - plane_weight;
-				// float plane_down_weight = astc::flt_rd(weight_base + 0.5f + uqw_prev_dif * twf0) - plane_weight;
+				// float weight = astc::flt_rd(weight_base + 0.5f);
+				// float weight_down = astc::flt_rd(weight_base + 0.5f + uqw_diff_down * tw_base) - weight;
+				// float weight_up = astc::flt_rd(weight_base + 0.5f + uqw_diff_up * tw_base) - weight;
+				float weight_down = weight_base + uqw_diff_down * tw_base - weight_base;
+				float weight_up = weight_base + uqw_diff_up * tw_base - weight_base;
 
-				float plane_weight = weight_base;
-				float plane_up_weight = weight_base + uqw_next_dif * twf0 - plane_weight;
-				float plane_down_weight = weight_base + uqw_prev_dif * twf0 - plane_weight;
-
+				unsigned int partition = pi.partition_of_texel[texel];
 				vfloat4 color_offset = offset[partition];
 				vfloat4 color_base   = endpnt0f[partition];
 
-				vfloat4 color = color_base + color_offset * plane_weight;
-
+				vfloat4 color = color_base + color_offset * weight_base;
 				vfloat4 orig_color   = blk.texel(texel);
 
 				vfloat4 color_diff      = color - orig_color;
-				vfloat4 color_up_diff   = color_diff + color_offset * plane_up_weight;
-				vfloat4 color_down_diff = color_diff + color_offset * plane_down_weight;
+				vfloat4 color_down_diff = color_diff + color_offset * weight_down;
+				vfloat4 color_up_diff   = color_diff + color_offset * weight_up;
 
-				current_errorv += color_diff * color_diff;
-				up_errorv      += color_up_diff * color_up_diff;
-				down_errorv    += color_down_diff * color_down_diff;
+				error_basev += color_diff * color_diff;
+				error_downv += color_down_diff * color_down_diff;
+				error_upv   += color_up_diff * color_up_diff;
 			}
 
 			vfloat4 error_weight = blk.channel_weight;
-			float current_error = hadd_s(current_errorv * error_weight);
-			float up_error = hadd_s(up_errorv * error_weight);
-			float down_error = hadd_s(down_errorv * error_weight);
+			float error_base = hadd_s(error_basev * error_weight);
+			float error_down = hadd_s(error_downv * error_weight);
+			float error_up   = hadd_s(error_upv   * error_weight);
 
 			// Check if the prev or next error is better, and if so use it
-			if ((up_error < current_error) && (up_error < down_error) && (uqw < 64))
+			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
 			{
-				uq_pl_weightsf[we_idx] = static_cast<float>(next_wt_uq);
-				dec_weights_uquant[we_idx] = next_wt_uq;
+				uq_weightsf[we_idx] = uqw_up;
+				dec_weights_uquant[we_idx] = uqw_up;
 				adjustments = true;
 			}
-			else if ((down_error < current_error) && (uqw > 0))
+			else if ((error_down < error_base) && (uqw > 0))
 			{
-				uq_pl_weightsf[we_idx] = static_cast<float>(prev_wt_uq);
-				dec_weights_uquant[we_idx] = prev_wt_uq;
+				uq_weightsf[we_idx] = uqw_down;
+				dec_weights_uquant[we_idx] = uqw_down;
 				adjustments = true;
 			}
 		}
