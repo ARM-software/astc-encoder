@@ -1567,7 +1567,7 @@ bool is_legal_3d_block_size(
 /**
  * @brief The precomputed table for quantizing color values.
  *
- * Returned value is in the ASTC BISE scrambled order.
+ * Returned value is in the ASTC BISE scrambled order in the packed range.
  *
  * Indexed by [quant_mode - 4][data_value].
  */
@@ -1576,11 +1576,20 @@ extern const uint8_t color_quant_tables[17][256];
 /**
  * @brief The precomputed table for unquantizing color values.
  *
- * Returned value is in the ASTC BISE scrambled order.
+ * Returned value is in the ASTC BISE scrambled order in the packed range.
  *
  * Indexed by [quant_mode - 4][data_value].
  */
 extern const uint8_t color_unquant_tables[17][256];
+
+/**
+ * @brief The precomputed table for quantizing color values.
+ *
+ * Returned value is in linear order in the unpacked 0-255 range.
+ *
+ * Indexed by [quant_mode - 4][data_value].
+ */
+extern const uint8_t color_quant_unquant_tables[17][256];
 
 /**
  * @brief The precomputed quant mode storage table.
@@ -2153,11 +2162,10 @@ uint8_t pack_color_endpoints(
 	quant_method quant_level);
 
 /**
- * @brief Unpack a single pair of encoded and quantized color endpoints.
+ * @brief Unpack a single pair of encoded color endpoints.
  *
  * @param      decode_mode   The decode mode (LDR, HDR).
  * @param      format        The color endpoint mode used.
- * @param      quant_level   The quantization level used.
  * @param      input         The raw array of encoded input integers. The length of this array
  *                           depends on @c format; it can be safely assumed to be large enough.
  * @param[out] rgb_hdr       Is the endpoint using HDR for the RGB channels?
@@ -2168,7 +2176,6 @@ uint8_t pack_color_endpoints(
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
-	quant_method quant_level,
 	const uint8_t* input,
 	bool& rgb_hdr,
 	bool& alpha_hdr,

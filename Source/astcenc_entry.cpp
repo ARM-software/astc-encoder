@@ -1246,7 +1246,6 @@ astcenc_error astcenc_get_block_info(
 
 		unpack_color_endpoints(ctx->config.profile,
 		                       scb.color_formats[i],
-		                       scb.get_color_quant_mode(),
 		                       scb.color_values[i],
 		                       rgb_hdr, a_hdr,
 		                       endpnt[0], endpnt[1]);

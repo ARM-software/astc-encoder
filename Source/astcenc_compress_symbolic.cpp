@@ -99,7 +99,6 @@ static bool realign_weights_undecimated(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[pa_idx],
-		                       scb.get_color_quant_mode(),
 		                       scb.color_values[pa_idx],
 		                       rgb_hdr, alpha_hdr,
 		                       endpnt0[pa_idx],
@@ -225,7 +224,6 @@ static bool realign_weights_decimated(
 	{
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[pa_idx],
-		                       scb.get_color_quant_mode(),
 		                       scb.color_values[pa_idx],
 		                       rgb_hdr, alpha_hdr,
 		                       endpnt0[pa_idx],

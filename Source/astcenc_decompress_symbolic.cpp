@@ -299,7 +299,6 @@ void decompress_symbolic_block(
 
 		unpack_color_endpoints(decode_mode,
 		                       scb.color_formats[i],
-		                       scb.get_color_quant_mode(),
 		                       scb.color_values[i],
 		                       rgb_lns, a_lns,
 		                       ep0, ep1);
@@ -362,7 +361,6 @@ float compute_symbolic_block_difference_2plane(
 
 	unpack_color_endpoints(config.profile,
 	                       scb.color_formats[0],
-	                       scb.get_color_quant_mode(),
 	                       scb.color_values[0],
 	                       rgb_lns, a_lns,
 	                       ep0, ep1);
@@ -457,7 +455,6 @@ float compute_symbolic_block_difference_1plane(
 
 		unpack_color_endpoints(config.profile,
 		                       scb.color_formats[i],
-		                       scb.get_color_quant_mode(),
 		                       scb.color_values[i],
 		                       rgb_lns, a_lns,
 		                       ep0, ep1);
@@ -546,7 +543,6 @@ float compute_symbolic_block_difference_1plane_1partition(
 
 	unpack_color_endpoints(config.profile,
 	                       scb.color_formats[0],
-	                       scb.get_color_quant_mode(),
 	                       scb.color_values[0],
 	                       rgb_lns, a_lns,
 	                       ep0, ep1);
