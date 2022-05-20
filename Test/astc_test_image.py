@@ -251,16 +251,8 @@ def get_encoder_params(encoderName, referenceName, imageSet):
     if encoderName.startswith("ref"):
         _, version, simd = encoderName.split("-")
 
-        # 2.x variants
-        if version.startswith("2."):
-            encoder = te.Encoder2xRel(version, simd)
-            name = f"reference-{version}-{simd}"
-            outDir = "Test/Images/%s" % imageSet
-            refName = None
-            return (encoder, name, outDir, refName)
-
-        # 3.x variants
-        if version.startswith("3."):
+        # 2.x and 3.x variants
+        if version.startswith("2.") or version.startswith("3."):
             encoder = te.Encoder2xRel(version, simd)
             name = f"reference-{version}-{simd}"
             outDir = "Test/Images/%s" % imageSet
@@ -269,7 +261,7 @@ def get_encoder_params(encoderName, referenceName, imageSet):
 
         # Latest main
         if version == "main":
-            encoder = te.Encoder4x(simd)
+            encoder = te.Encoder2x(simd)
             name = f"reference-{version}-{simd}"
             outDir = "Test/Images/%s" % imageSet
             refName = None
@@ -277,7 +269,7 @@ def get_encoder_params(encoderName, referenceName, imageSet):
 
         assert False, f"Encoder {encoderName} not recognized"
 
-    encoder = te.Encoder4x(encoderName)
+    encoder = te.Encoder2x(encoderName)
     name = "develop-%s" % encoderName
     outDir = "TestOutput/%s" % imageSet
     refName = referenceName.replace("ref", "reference")
