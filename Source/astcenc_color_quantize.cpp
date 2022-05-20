@@ -223,9 +223,8 @@ static int try_quantize_rgba_blue_contract(
 	quant_method quant_level
 ) {
 	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float a0 = color0.lane<3>() * scale;
+	float a1 = color1.lane<3>() * scale;
 
 	output[6] = quant_unquant_color(quant_level, astc::flt2int_rtn(a1));
 	output[7] = quant_unquant_color(quant_level, astc::flt2int_rtn(a0));
@@ -254,118 +253,70 @@ static bool try_quantize_rgb_delta(
 	quant_method quant_level
 ) {
 	float scale = 1.0f / 257.0f;
+	color0 = color0 * scale;
+	color1 = color1 * scale;
 
-	float r0 = astc::clamp255f(color0.lane<0>() * scale);
-	float g0 = astc::clamp255f(color0.lane<1>() * scale);
-	float b0 = astc::clamp255f(color0.lane<2>() * scale);
-
-	float r1 = astc::clamp255f(color1.lane<0>() * scale);
-	float g1 = astc::clamp255f(color1.lane<1>() * scale);
-	float b1 = astc::clamp255f(color1.lane<2>() * scale);
-
-	// Transform r0 to unorm9
-	int r0a = astc::flt2int_rtn(r0);
-	int g0a = astc::flt2int_rtn(g0);
-	int b0a = astc::flt2int_rtn(b0);
-
-	r0a <<= 1;
-	g0a <<= 1;
-	b0a <<= 1;
+	// Convert ep0 to unorm9
+	vint4 color0a = lsl<1>(float_to_int_rtn(color0));
 
 	// Mask off the top bit
-	int r0b = r0a & 0xFF;
-	int g0b = g0a & 0xFF;
-	int b0b = b0a & 0xFF;
+	vint4 color0b = color0a & 0xFF;
 
-	// Quantize then unquantize in order to get a value that we take differences against
-	int r0be = quant_unquant_color(quant_level, r0b);
-	int g0be = quant_unquant_color(quant_level, g0b);
-	int b0be = quant_unquant_color(quant_level, b0b);
+	// Quantize in order to get a value that we take differences against
+	vint4 color0be = quant_unquant_color3(quant_level, color0b);
 
-	r0b = r0be | (r0a & 0x100);
-	g0b = g0be | (g0a & 0x100);
-	b0b = b0be | (b0a & 0x100);
+	color0b = color0be | (color0a & 0x100);
 
-	// Get hold of the second value
-	int r1d = astc::flt2int_rtn(r1);
-	int g1d = astc::flt2int_rtn(g1);
-	int b1d = astc::flt2int_rtn(b1);
+	// Convert ep1 to unorm9 and take the difference
+	vint4 color1d =  float_to_int_rtn(color1);
+	color1d = lsl<1>(color1d);
+	color1d = color1d - color0b;
 
-	r1d <<= 1;
-	g1d <<= 1;
-	b1d <<= 1;
-
-	// ... and take differences
-	r1d -= r0b;
-	g1d -= g0b;
-	b1d -= b0b;
-
-	// Check if the difference is too large to be encodable
-	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
+	// Check if any diff is too large to be encodable
+	int lanes = mask((color1d > 63) | (color1d < -64));
+	if (lanes & 0x7)
 	{
 		return false;
 	}
 
 	// Insert top bit of the base into the offset
-	r1d &= 0x7F;
-	g1d &= 0x7F;
-	b1d &= 0x7F;
-
-	r1d |= (r0b & 0x100) >> 1;
-	g1d |= (g0b & 0x100) >> 1;
-	b1d |= (b0b & 0x100) >> 1;
+	color1d = (color1d & 0x7F) | lsr<1>(color0b & 0x100);
 
 	// Then quantize and unquantize; if this causes either top two bits to flip, then encoding fails
 	// since we have then corrupted either the top bit of the base or the sign bit of the offset
-	int r1de = quant_unquant_color(quant_level, r1d);
-	int g1de = quant_unquant_color(quant_level, g1d);
-	int b1de = quant_unquant_color(quant_level, b1d);
-
-	if (((r1d ^ r1de) | (g1d ^ g1de) | (b1d ^ b1de)) & 0xC0)
+	vint4 color1de = quant_unquant_color3(quant_level, color1d);
+	// Check if we have a bit-flip
+	lanes = mask(((color1d ^ color1de) & 0xC0) != 0);
+	if (lanes & 0x7)
 	{
 		return false;
 	}
 
-	// Check that the sum of the encoded offsets is nonnegative, else encoding fails
-	int r1du = r1de & 0x7f;
-	int g1du = g1de & 0x7f;
-	int b1du = b1de & 0x7f;
-
-	if (r1du & 0x40)
-	{
-		r1du -= 0x80;
-	}
-
-	if (g1du & 0x40)
-	{
-		g1du -= 0x80;
-	}
-
-	if (b1du & 0x40)
-	{
-		b1du -= 0x80;
-	}
-
-	if (r1du + g1du + b1du < 0)
+	// Check that the sum of the encoded offsets is non-negative, else encoding fails
+	vint4 color1du = color1de & 0x7F;
+	vmask4 lane_mask = (color1du & 0x40) != 0;
+	vint4 offset = select(vint4::zero(), vint4(0x80), lane_mask);
+	color1du = color1du - offset;
+	if (hadd_rgb_s(color1du) < 0)
 	{
 		return false;
 	}
 
-	// Check that the offsets produce legitimate sums as well
-	r1du += r0b;
-	g1du += g0b;
-	b1du += b0b;
-	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
+	// Check that the RGB offsets produce legitimate sums as well
+	color1du += color0b;
+	lanes = mask((color1du < 0) | (color1du > 0x1FF));
+	if (lanes & 0x7)
 	{
 		return false;
 	}
 
-	output[0] = static_cast<uint8_t>(r0be);
-	output[1] = static_cast<uint8_t>(r1de);
-	output[2] = static_cast<uint8_t>(g0be);
-	output[3] = static_cast<uint8_t>(g1de);
-	output[4] = static_cast<uint8_t>(b0be);
-	output[5] = static_cast<uint8_t>(b1de);
+	// TODO: Is there a better way of writing these?
+	output[0] = static_cast<uint8_t>(color0be.lane<0>());
+	output[1] = static_cast<uint8_t>(color1de.lane<0>());
+	output[2] = static_cast<uint8_t>(color0be.lane<1>());
+	output[3] = static_cast<uint8_t>(color1de.lane<1>());
+	output[4] = static_cast<uint8_t>(color0be.lane<2>());
+	output[5] = static_cast<uint8_t>(color1de.lane<2>());
 
 	return true;
 }
