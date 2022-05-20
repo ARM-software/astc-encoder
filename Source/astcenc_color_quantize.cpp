@@ -144,14 +144,12 @@ static void quantize_rgba(
 	quant_method quant_level
 ) {
 	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
-
-	output[6] = quant_unquant_color(quant_level, astc::flt2int_rtn(a0));
-	output[7] = quant_unquant_color(quant_level, astc::flt2int_rtn(a1));
+	float a0 = color0.lane<3>() * scale;
+	float a1 = color1.lane<3>() * scale;
 
 	quantize_rgb(color0, color1, output, quant_level);
+	output[6] = quant_unquant_color(quant_level, astc::flt2int_rtn(a0));
+	output[7] = quant_unquant_color(quant_level, astc::flt2int_rtn(a1));
 }
 
 /**
