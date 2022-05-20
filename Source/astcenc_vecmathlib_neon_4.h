@@ -838,15 +838,6 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 }
 
 /**
- * @brief Return a integer value for a float vector, using round-to-nearest.
- */
-ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
-{
-	a = round(a);
-	return vint4(vcvtq_s32_f32(a.m));
-}
-
-/**
  * @brief Return a float value for an integer vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)

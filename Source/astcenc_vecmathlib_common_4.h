@@ -336,6 +336,17 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 
 #endif
 
+/**
+ * @brief Return a integer value for a float vector, using round-to-nearest.
+ *
+ * This method rounds up from 0.5 offsets, rather than round-to-even.
+ *
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
+{
+	return float_to_int(a + vfloat4(0.5f));
+}
+
 #if !defined(ASTCENC_USE_NATIVE_POPCOUNT)
 
 /**

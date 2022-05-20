@@ -1069,12 +1069,12 @@ TEST(vfloat4, float_to_int)
 /** @brief Test vfloat4 round. */
 TEST(vfloat4, float_to_int_rtn)
 {
-	vfloat4 a(1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat4 a(1.1f, 1.5f, 1.6f, 2.5f);
 	vint4 r = float_to_int_rtn(a);
 	EXPECT_EQ(r.lane<0>(), 1);
 	EXPECT_EQ(r.lane<1>(), 2);
 	EXPECT_EQ(r.lane<2>(), 2);
-	EXPECT_EQ(r.lane<3>(), 4);
+	EXPECT_EQ(r.lane<3>(), 3);
 }
 
 /** @brief Test vfloat4 round. */
