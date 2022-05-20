@@ -100,7 +100,6 @@ static void quantize_rgb(
 
 	vint4 color0i;
 	vint4 color1i;
-	vint4 diff;
 
 	do
 	{
@@ -112,8 +111,7 @@ static void quantize_rgb(
 
 		color0 = color0 - inc_diff;
 		color1 = color1 + inc_diff;
-		diff = color0i - color1i;
-	} while (hadd_rgb_s(diff) > 0);
+	} while (hadd_rgb_s(color0i) > hadd_rgb_s(color1i));
 
 	// TODO: Is there a better way of writing these?
 	output[0] = static_cast<uint8_t>(color0i.lane<0>());
@@ -170,50 +168,38 @@ static bool try_quantize_rgb_blue_contract(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float scale = 1 / 257.0f;
+	vfloat4 scalev(scale, scale, scale, 0.0f);
+	color0 = color0 * scalev;
+	color1 = color1 * scalev;
 
-	float r0 = color0.lane<0>() * scale;
-	float g0 = color0.lane<1>() * scale;
-	float b0 = color0.lane<2>() * scale;
+	// Try to apply inverse blue-contraction
+	color0 += color0 - color0.swz<2, 2, 2, 3>();
+	color1 += color1 - color1.swz<2, 2, 2, 3>();
 
-	float r1 = color1.lane<0>() * scale;
-	float g1 = color1.lane<1>() * scale;
-	float b1 = color1.lane<2>() * scale;
-
-	// Apply inverse blue-contraction. This can produce an overflow; which means BC cannot be used.
-	r0 += (r0 - b0);
-	g0 += (g0 - b0);
-	r1 += (r1 - b1);
-	g1 += (g1 - b1);
-
-	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
-		r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
+	if (any((min(color0, color1) < 0.0f) | (max(color0, color1) > 255.0f)))
 	{
 		return false;
 	}
 
 	// Quantize the inverse-blue-contracted color
-	int ru0 = quant_unquant_color(quant_level, astc::flt2int_rtn(r0));
-	int gu0 = quant_unquant_color(quant_level, astc::flt2int_rtn(g0));
-	int bu0 = quant_unquant_color(quant_level, astc::flt2int_rtn(b0));
+	vint4 color0i = quant_unquant_color3(quant_level, float_to_int_rtn(color0));
+	vint4 color1i = quant_unquant_color3(quant_level, float_to_int_rtn(color1));
 
-	int ru1 = quant_unquant_color(quant_level, astc::flt2int_rtn(r1));
-	int gu1 = quant_unquant_color(quant_level, astc::flt2int_rtn(g1));
-	int bu1 = quant_unquant_color(quant_level, astc::flt2int_rtn(b1));
-
-	// If color #1 is not larger than color #0 then blue-contraction cannot be used. Note that
-	// blue-contraction and quantization change this order, which is why we must test aftwards.
-	if (ru1 + gu1 + bu1 <= ru0 + gu0 + bu0)
+	// If color #1 is not larger than color #0 then contraction cannot be used.
+	// Quantization can change this order, which is why we must test afterwards.
+	if (hadd_rgb_s(color1i) <= hadd_rgb_s(color0i))
 	{
 		return false;
 	}
 
-	output[0] = static_cast<uint8_t>(ru1);
-	output[1] = static_cast<uint8_t>(ru0);
-	output[2] = static_cast<uint8_t>(gu1);
-	output[3] = static_cast<uint8_t>(gu0);
-	output[4] = static_cast<uint8_t>(bu1);
-	output[5] = static_cast<uint8_t>(bu0);
+	// TODO: Is there a better way of writing these?
+	output[0] = static_cast<uint8_t>(color1i.lane<0>());
+	output[1] = static_cast<uint8_t>(color0i.lane<0>());
+	output[2] = static_cast<uint8_t>(color1i.lane<1>());
+	output[3] = static_cast<uint8_t>(color0i.lane<1>());
+	output[4] = static_cast<uint8_t>(color1i.lane<2>());
+	output[5] = static_cast<uint8_t>(color0i.lane<2>());
 
 	return true;
 }
