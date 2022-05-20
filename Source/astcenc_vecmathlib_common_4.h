@@ -114,6 +114,38 @@ ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
 }
 
 /**
+ * @brief Overload: vector by scalar equality.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator==(vint4 a, int b)
+{
+	return a == vint4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar inequality.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator!=(vint4 a, int b)
+{
+	return a != vint4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar less than.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, int b)
+{
+	return a < vint4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar greater than.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, int b)
+{
+	return a > vint4(b);
+}
+
+/**
  * @brief Return the clamped value between min and max.
  */
 ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
@@ -122,7 +154,7 @@ ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 }
 
 /**
- * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ * @brief Return the horizontal sum of RGoB vector lanes as a scalar.
  */
 ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 {
@@ -188,6 +220,54 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
 ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
 {
 	return vfloat4(a) / b;
+}
+
+/**
+ * @brief Overload: vector by scalar equality.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, float b)
+{
+	return a == vfloat4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar inequality.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator!=(vfloat4 a, float b)
+{
+	return a != vfloat4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar less than.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator<(vfloat4 a, float b)
+{
+	return a < vfloat4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar greater than.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator>(vfloat4 a, float b)
+{
+	return a > vfloat4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar less than or equal.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator<=(vfloat4 a, float b)
+{
+	return a <= vfloat4(b);
+}
+
+/**
+ * @brief Overload: vector by scalar greater than or equal.
+ */
+ASTCENC_SIMD_INLINE vmask4 operator>=(vfloat4 a, float b)
+{
+	return a >= vfloat4(b);
 }
 
 /**
