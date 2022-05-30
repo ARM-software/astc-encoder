@@ -264,8 +264,8 @@ static bool realign_weights_decimated(
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
 
 			float uqw_base = uq_weightsf[we_idx];
-			float uqw_down =  static_cast<float>(prev_and_next & 0xFF);
-			float uqw_up =  static_cast<float>((prev_and_next >> 8) & 0xFF);
+			float uqw_down = static_cast<float>(prev_and_next & 0xFF);
+			float uqw_up = static_cast<float>((prev_and_next >> 8) & 0xFF);
 
 			float uqw_diff_down = uqw_down - uqw_base;
 			float uqw_diff_up = uqw_up - uqw_base;
@@ -323,13 +323,13 @@ static bool realign_weights_decimated(
 			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
 			{
 				uq_weightsf[we_idx] = uqw_up;
-				dec_weights_uquant[we_idx] = uqw_up;
+				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_up);
 				adjustments = true;
 			}
 			else if ((error_down < error_base) && (uqw > 0))
 			{
 				uq_weightsf[we_idx] = uqw_down;
-				dec_weights_uquant[we_idx] = uqw_down;
+				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_down);
 				adjustments = true;
 			}
 		}
