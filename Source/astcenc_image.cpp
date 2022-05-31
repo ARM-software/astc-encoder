@@ -341,20 +341,21 @@ void store_image_block(
 	unsigned int zpos,
 	const astcenc_swizzle& swz
 ) {
-	unsigned int xsize = img.dim_x;
-	unsigned int ysize = img.dim_y;
-	unsigned int zsize = img.dim_z;
-
+	unsigned int x_size = img.dim_x;
 	unsigned int x_start = xpos;
-	unsigned int x_end = std::min(xsize, xpos + bsd.xdim);
-	unsigned int x_nudge = bsd.xdim - (x_end - x_start);
+	unsigned int x_end = astc::min(x_size, xpos + bsd.xdim);
+	unsigned int x_count = x_end - x_start;
+	unsigned int x_nudge = bsd.xdim - x_count;
 
+	unsigned int y_size = img.dim_y;
 	unsigned int y_start = ypos;
-	unsigned int y_end = std::min(ysize, ypos + bsd.ydim);
-	unsigned int y_nudge = (bsd.ydim - (y_end - y_start)) * bsd.xdim;
+	unsigned int y_end = astc::min(y_size, ypos + bsd.ydim);
+	unsigned int y_count = y_end - y_start;
+	unsigned int y_nudge = (bsd.ydim - y_count) * bsd.xdim;
 
+	unsigned int z_size = img.dim_z;
 	unsigned int z_start = zpos;
-	unsigned int z_end = std::min(zsize, zpos + bsd.zdim);
+	unsigned int z_end = astc::min(z_size, zpos + bsd.zdim);
 
 	float data[7];
 	data[ASTCENC_SWZ_0] = 0.0f;
@@ -378,9 +379,11 @@ void store_image_block(
 
 			for (unsigned int y = y_start; y < y_end; y++)
 			{
-				for (unsigned int x = x_start; x < x_end; x++)
+				uint8_t* data8_row = data8 + (4 * x_size * y) + (4 * x_start);
+
+				for (unsigned int x = 0; x < x_count; x++)
 				{
-					vint4 colori = vint4::zero();
+					vint4 colori;
 
 					// Errors are NaN encoded - convert to magenta error color
 					if (blk.data_r[idx] != blk.data_r[idx])
@@ -416,8 +419,8 @@ void store_image_block(
 					}
 
 					colori = pack_low_bytes(colori);
-					store_nbytes(colori, data8 + (4 * xsize * y) + (4 * x    ));
-
+					store_nbytes(colori, data8_row);
+					data8_row += 4;
 					idx++;
 				}
 				idx += x_nudge;
@@ -434,7 +437,9 @@ void store_image_block(
 
 			for (unsigned int y = y_start; y < y_end; y++)
 			{
-				for (unsigned int x = x_start; x < x_end; x++)
+				uint16_t* data16_row = data16 + (4 * x_size * y) + (4 * x_start);
+
+				for (unsigned int x = 0; x < x_count; x++)
 				{
 					vint4 color;
 
@@ -467,11 +472,12 @@ void store_image_block(
 						color = float_to_float16(colorf);
 					}
 
-					data16[(4 * xsize * y) + (4 * x    )] = static_cast<uint16_t>(color.lane<0>());
-					data16[(4 * xsize * y) + (4 * x + 1)] = static_cast<uint16_t>(color.lane<1>());
-					data16[(4 * xsize * y) + (4 * x + 2)] = static_cast<uint16_t>(color.lane<2>());
-					data16[(4 * xsize * y) + (4 * x + 3)] = static_cast<uint16_t>(color.lane<3>());
-
+					// TODO: Vectorize with store N shorts?
+					data16_row[0] = static_cast<uint16_t>(color.lane<0>());
+					data16_row[1] = static_cast<uint16_t>(color.lane<1>());
+					data16_row[2] = static_cast<uint16_t>(color.lane<2>());
+					data16_row[3] = static_cast<uint16_t>(color.lane<3>());
+					data16_row += 4;
 					idx++;
 				}
 				idx += x_nudge;
@@ -490,7 +496,9 @@ void store_image_block(
 
 			for (unsigned int y = y_start; y < y_end; y++)
 			{
-				for (unsigned int x = x_start; x < x_end; x++)
+				float* data32_row = data32 + (4 * x_size * y) + (4 * x_start);
+
+				for (unsigned int x = 0; x < x_count; x++)
 				{
 					vfloat4 color = blk.texel(idx);
 
@@ -517,8 +525,8 @@ void store_image_block(
 						color = vfloat4(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
 					}
 
-					store(color, data32 + (4 * xsize * y) + (4 * x    ));
-
+					store(color, data32_row);
+					data32_row += 4;
 					idx++;
 				}
 				idx += x_nudge;
