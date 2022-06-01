@@ -726,6 +726,16 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 }
 
 /**
+ * @brief Return the min vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
+{
+	return min(a, vfloat8(b));
+}
+
+/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -733,6 +743,16 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 {
 	return vfloat8(_mm256_max_ps(a.m, b.m));
+}
+
+/**
+ * @brief Return the max vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
+{
+	return max(a, vfloat8(b));
 }
 
 /**
@@ -967,6 +987,16 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 }
 
 /**
+ * @brief Return a integer value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
+{
+	a = round(a);
+	return vint8(_mm256_cvttps_epi32(a.m));
+}
+
+
+/**
  * @brief Return a float value for an integer vector.
  */
 ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
@@ -1093,6 +1123,30 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
 	result = _mm256_xor_si256(result, result2);
 
 	return vint8(result);
+
+/**
+ * @brief Return a vector of interleaved RGBA data.
+ *
+ * Input vectors have the value stored in the bottom 8 bits of each lane,
+ * with high  bits set to zero.
+ *
+ * Output vector stores a single RGBA texel packed in each lane.
+ */
+ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
+{
+	__m256i value = r.m;
+	value = _mm256_add_epi32(value, _mm256_bslli_epi128(g.m, 1));
+	value = _mm256_add_epi32(value, _mm256_bslli_epi128(b.m, 2));
+	value = _mm256_add_epi32(value, _mm256_bslli_epi128(a.m, 3));
+	return vint8(value);
+}
+
+/**
+ * @brief Store a vector, skipping masked lanes.
+ */
+ASTCENC_SIMD_INLINE void store_bytes_masked(int* base, vint8 data, vmask8 mask)
+{
+	_mm256_maskstore_epi32(base, mask.m, data.m);
 }
 
 /**
