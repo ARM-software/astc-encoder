@@ -1248,11 +1248,11 @@ struct quant_and_transfer_table
 	/** @brief The unscrambled unquantized value. */
 	int32_t quant_to_unquant[33];
 
-	/** @brief The scrambling order: scrambled_quant = map[unscrambed_quant]. */
-	int32_t scramble_map[32];
+	/** @brief The scrambling order: scrambled_quant = map[unscrambled_quant]. */
+	int8_t scramble_map[32];
 
-	/** @brief The unscrambling order: unscrambled_quant = map[scrambed_quant]. */
-	int32_t unscramble_map[32];
+	/** @brief The unscrambling order: unscrambled_unquant = map[scrambled_quant]. */
+	int8_t unscramble_and_unquant_map[32];
 
 	/**
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.

@@ -397,19 +397,15 @@ void physical_to_symbolic(
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			int qw_p1 = qat.unscramble_map[indices[2 * i]];
-			int qw_p2 = qat.unscramble_map[indices[2 * i + 1]];
-
-			scb.weights[i] = qat.quant_to_unquant[qw_p1];
-			scb.weights[i + WEIGHTS_PLANE2_OFFSET] = qat.quant_to_unquant[qw_p2];
+			scb.weights[i] = qat.unscramble_and_unquant_map[indices[2 * i]];
+			scb.weights[i + WEIGHTS_PLANE2_OFFSET] = qat.unscramble_and_unquant_map[indices[2 * i + 1]];
 		}
 	}
 	else
 	{
 		for (int i = 0; i < weight_count; i++)
 		{
-			int qw = qat.unscramble_map[indices[i]];
-			scb.weights[i] =  qat.quant_to_unquant[qw];
+			scb.weights[i] = qat.unscramble_and_unquant_map[indices[i]];
 		}
 	}
 
