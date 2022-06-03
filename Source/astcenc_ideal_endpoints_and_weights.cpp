@@ -949,8 +949,8 @@ void compute_quantized_weights_for_decimation(
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
 
-	vint4 table0((int*)(qat.quant_to_unquant));
-	vint4 table1((int*)(qat.quant_to_unquant + 16));
+	vint4 table0(reinterpret_cast<const int*>(qat.quant_to_unquant));
+	vint4 table1(reinterpret_cast<const int*>(qat.quant_to_unquant + 16));
 
 	vint table0p;
 	vint table1p;
@@ -969,7 +969,6 @@ void compute_quantized_weights_for_decimation(
 		vint weightl = float_to_int(ix1);
 		vint weighth = min(weightl + vint(1), steps_m1);
 
-		// TODO: Can we just do more of this just as integers?
 		vint ixli = vtable_8bt_32bi(table0p, table1p, weightl);
 		vint ixhi = vtable_8bt_32bi(table0p, table1p, weighth);
 

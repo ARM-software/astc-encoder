@@ -940,6 +940,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 {
 	int8x16x2_t table {t0.m, t1.m};
 
+	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	int8x16_t idx_bytes= vreinterpretq_u8_s32(idx_masked);
 

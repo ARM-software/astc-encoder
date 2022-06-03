@@ -1011,13 +1011,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t
 {
 	// AVX2 duplicates the table within each 128-bit lane
 	__m128i t0n = t0.m;
-	__m256i t0x = _mm256_set_m128i(t0n, t0n);
+	t0p = vint8(_mm256_set_m128i(t0n, t0n));
 
 	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	__m256i t1x = _mm256_set_m128i(t1n, t1n);
-
-	t0p = vint8(t0x);
-	t1p = vint8(t1x);
+	t1p = vint8(_mm256_set_m128i(t1n, t1n));
 }
 
 /**
