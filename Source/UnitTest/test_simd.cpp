@@ -1888,6 +1888,25 @@ TEST(vmask4, not)
 	EXPECT_EQ(mask(r), 0x5);
 }
 
+/** @brief Test vint4 table permute. */
+TEST(vint4, vtable_8bt_32bi)
+{
+	vint4 table0(0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c);
+	vint4 table1(0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c);
+
+	vint4 table0p;
+	vint4 table1p;
+	vtable_prepare(table0, table1, table0p, table1p);
+
+	vint4 index(7, 5, 3, 1);
+
+	vint4 result = vtable_8bt_32bi(table0p, table1p, index);
+	EXPECT_EQ(result.lane<0>(), 7);
+	EXPECT_EQ(result.lane<1>(), 5);
+	EXPECT_EQ(result.lane<2>(), 3);
+	EXPECT_EQ(result.lane<3>(), 1);
+}
+
 # if ASTCENC_SIMD_WIDTH == 8
 
 // VFLOAT8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3274,8 +3293,8 @@ TEST(vint8, vtable_8bt_32bi)
 	vint4 table0(0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c);
 	vint4 table1(0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c);
 
-	vint table0p;
-	vint table1p;
+	vint8 table0p;
+	vint8 table1p;
 	vtable_prepare(table0, table1, table0p, table1p);
 
 	vint8 index(2, 4, 6, 8, 10, 12, 14, 16);
