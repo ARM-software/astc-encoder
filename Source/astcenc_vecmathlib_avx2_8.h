@@ -1123,6 +1123,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
 	result = _mm256_xor_si256(result, result2);
 
 	return vint8(result);
+}
 
 /**
  * @brief Return a vector of interleaved RGBA data.
