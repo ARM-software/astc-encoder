@@ -143,7 +143,7 @@ static vfloat4 encode_texel_lns(
 	vmask4 lns_mask
 ) {
 	vfloat4 datav_unorm = data * 65535.0f;
-	vfloat4 datav_lns   = float_to_lns(data);
+	vfloat4 datav_lns = float_to_lns(data);
 	return select(datav_unorm, datav_lns, lns_mask);
 }
 

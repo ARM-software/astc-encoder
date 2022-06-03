@@ -303,7 +303,7 @@ static bool realign_weights_decimated(
 				vfloat4 color_base   = endpnt0f[partition];
 
 				vfloat4 color = color_base + color_offset * weight_base;
-				vfloat4 orig_color   = blk.texel(texel);
+				vfloat4 orig_color = blk.texel(texel);
 
 				vfloat4 color_diff      = color - orig_color;
 				vfloat4 color_down_diff = color_diff + color_offset * weight_down;

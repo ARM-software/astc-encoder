@@ -805,13 +805,13 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 {
 	__m128 vlow = _mm256_castps256_ps128(a.m);
 	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
-	vlow  = _mm_min_ps(vlow, vhigh);
+	vlow = _mm_min_ps(vlow, vhigh);
 
 	// First do an horizontal reduction.
 	__m128 shuf = _mm_shuffle_ps(vlow, vlow, _MM_SHUFFLE(2, 3, 0, 1));
 	__m128 mins = _mm_min_ps(vlow, shuf);
-	shuf        = _mm_movehl_ps(shuf, mins);
-	mins        = _mm_min_ss(mins, shuf);
+	shuf = _mm_movehl_ps(shuf, mins);
+	mins = _mm_min_ss(mins, shuf);
 
 	// This is the most logical implementation, but the convenience intrinsic
 	// is missing on older compilers (supported in g++ 9 and clang++ 9).
@@ -836,13 +836,13 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 {
 	__m128 vlow = _mm256_castps256_ps128(a.m);
 	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
-	vhigh  = _mm_max_ps(vlow, vhigh);
+	vhigh = _mm_max_ps(vlow, vhigh);
 
 	// First do an horizontal reduction.
 	__m128 shuf = _mm_shuffle_ps(vhigh, vhigh, _MM_SHUFFLE(2, 3, 0, 1));
 	__m128 maxs = _mm_max_ps(vhigh, shuf);
-	shuf        = _mm_movehl_ps(shuf,maxs);
-	maxs        = _mm_max_ss(maxs, shuf);
+	shuf = _mm_movehl_ps(shuf,maxs);
+	maxs = _mm_max_ss(maxs, shuf);
 
 	// This is the most logical implementation, but the convenience intrinsic
 	// is missing on older compilers (supported in g++ 9 and clang++ 9).
