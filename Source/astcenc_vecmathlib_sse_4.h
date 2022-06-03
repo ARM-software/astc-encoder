@@ -1040,6 +1040,26 @@ ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint4& t0p, vint4& t
 }
 
 /**
+ * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ */
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
+	vint4& t0p, vint4& t1p, vint4& t2p, vint4& t3p)
+{
+#if ASTCENC_SSE >= 30
+	t0p = t0;
+	t1p = t0 ^ t1;
+	t2p = t1 ^ t2;
+	t3p = t2 ^ t3;
+#else
+	t0p = t0;
+	t1p = t1;
+	t2p = t2;
+	t3p = t3;
+#endif
+}
+
+/**
  * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
  */
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
@@ -1057,7 +1077,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 	return vint4(result);
 #else
 	alignas(ASTCENC_VECALIGN) uint8_t table[32];
-	storea(t0, reinterpret_cast<int*>(table));
+	storea(t0, reinterpret_cast<int*>(table +  0));
 	storea(t1, reinterpret_cast<int*>(table + 16));
 
 	return vint4(table[idx.lane<0>()],
@@ -1066,6 +1086,45 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 	             table[idx.lane<3>()]);
 #endif
 }
+
+/**
+ * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3, vint4 idx)
+{
+#if ASTCENC_SSE >= 30
+	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
+	__m128i idxx = _mm_or_si128(idx.m, _mm_set1_epi32(0xFFFFFF00));
+
+	__m128i result = _mm_shuffle_epi8(t0.m, idxx);
+	idxx = _mm_sub_epi8(idxx, _mm_set1_epi8(16));
+
+	__m128i result2 = _mm_shuffle_epi8(t1.m, idxx);
+	result = _mm_xor_si128(result, result2);
+	idxx = _mm_sub_epi8(idxx, _mm_set1_epi8(16));
+
+	result2 = _mm_shuffle_epi8(t2.m, idxx);
+	result = _mm_xor_si128(result, result2);
+	idxx = _mm_sub_epi8(idxx, _mm_set1_epi8(16));
+
+	result2 = _mm_shuffle_epi8(t3.m, idxx);
+	result = _mm_xor_si128(result, result2);
+
+	return vint4(result);
+#else
+	alignas(ASTCENC_VECALIGN) uint8_t table[64];
+	storea(t0, reinterpret_cast<int*>(table +  0));
+	storea(t1, reinterpret_cast<int*>(table + 16));
+	storea(t2, reinterpret_cast<int*>(table + 32));
+	storea(t3, reinterpret_cast<int*>(table + 48));
+
+	return vint4(table[idx.lane<0>()],
+	             table[idx.lane<1>()],
+	             table[idx.lane<2>()],
+	             table[idx.lane<3>()]);
+#endif
+}
+
 
 #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
 

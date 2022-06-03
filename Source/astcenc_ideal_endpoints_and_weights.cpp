@@ -949,12 +949,10 @@ void compute_quantized_weights_for_decimation(
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
 
-	vint4 table0(reinterpret_cast<const int*>(qat.quant_to_unquant));
-	vint4 table1(reinterpret_cast<const int*>(qat.quant_to_unquant + 16));
-
-	vint table0p;
-	vint table1p;
-	vtable_prepare(table0, table1, table0p, table1p);
+	vint4 tab0(reinterpret_cast<const int*>(qat.quant_to_unquant));
+	vint4 tab1(reinterpret_cast<const int*>(qat.quant_to_unquant + 16));
+	vint tab0p, tab1p;
+	vtable_prepare(tab0, tab1, tab0p, tab1p);
 
 	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
@@ -969,8 +967,8 @@ void compute_quantized_weights_for_decimation(
 		vint weightl = float_to_int(ix1);
 		vint weighth = min(weightl + vint(1), steps_m1);
 
-		vint ixli = vtable_8bt_32bi(table0p, table1p, weightl);
-		vint ixhi = vtable_8bt_32bi(table0p, table1p, weighth);
+		vint ixli = vtable_8bt_32bi(tab0p, tab1p, weightl);
+		vint ixhi = vtable_8bt_32bi(tab0p, tab1p, weighth);
 
 		vfloat ixl = int_to_float(ixli);
 		vfloat ixh = int_to_float(ixhi);
