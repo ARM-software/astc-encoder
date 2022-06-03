@@ -1928,6 +1928,23 @@ TEST(vint4, vtable_8bt_32bi_64entry)
 	EXPECT_EQ(result.lane<3>(), 60);
 }
 
+/** @brief Test vint4 rgba byte interleave. */
+TEST(vint4, interleave_rgba8)
+{
+	vint4 r(0x01, 0x11, 0x21, 0x31);
+	vint4 g(0x02, 0x12, 0x22, 0x32);
+	vint4 b(0x03, 0x13, 0x23, 0x33);
+	vint4 a(0x04, 0x14, 0x24, 0x34);
+
+	vint4 result = interleave_rgba8(r, g, b, a);
+
+	EXPECT_EQ(result.lane<0>(), 0x04030201);
+	EXPECT_EQ(result.lane<1>(), 0x14131211);
+	EXPECT_EQ(result.lane<2>(), 0x24232221);
+	EXPECT_EQ(result.lane<3>(), 0x34333231);
+}
+
+
 # if ASTCENC_SIMD_WIDTH == 8
 
 // VFLOAT8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -1144,6 +1144,8 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 
 /**
  * @brief Store a vector, skipping masked lanes.
+ *
+ * All masked lanes must be at the end of vector, after all non-masked lanes.
  */
 ASTCENC_SIMD_INLINE void store_bytes_masked(int* base, vint8 data, vmask8 mask)
 {
