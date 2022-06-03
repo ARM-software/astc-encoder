@@ -960,11 +960,11 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
  */
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 {
-	int8x16x2_t table { t0.m };
+	int8x16_t table { t0.m };
 
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
-	int8x16_t idx_bytes= vreinterpretq_u8_s32(idx_masked);
+	int8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
 	return vint4(vqtbl1q_s8(table, idx_bytes));
 }
@@ -978,7 +978,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
-	int8x16_t idx_bytes= vreinterpretq_u8_s32(idx_masked);
+	int8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
 	return vint4(vqtbl2q_s8(table, idx_bytes));
 }
