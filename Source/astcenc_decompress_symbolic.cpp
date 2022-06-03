@@ -25,36 +25,6 @@
 #include <assert.h>
 
 /**
- * @brief Compute a vector of texel weights by interpolating the decimated weight grid.
- *
- * @param base_texel_index   The first texel to get; N (SIMD width) consecutive texels are loaded.
- * @param di                 The weight grid decimation to use.
- * @param weights            The raw weights.
- *
- * @return The undecimated weight for N (SIMD width) texels.
- */
-static vint compute_value_of_texel_weight_int_vla(
-	int base_texel_index,
-	const decimation_info& di,
-	const int* weights
-) {
-	vint summed_value(8);
-	vint weight_count(di.texel_weight_count + base_texel_index);
-	int max_weight_count = hmax(weight_count).lane<0>();
-
-	promise(max_weight_count > 0);
-	for (int i = 0; i < max_weight_count; i++)
-	{
-		vint texel_weights(di.texel_weights_4t[i] + base_texel_index);
-		vint texel_weights_int(di.texel_weights_int_4t[i] + base_texel_index);
-
-		summed_value += gatheri(weights, texel_weights) * texel_weights_int;
-	}
-
-	return lsr<4>(summed_value);
-}
-
-/**
  * @brief Compute the integer linear interpolation of two color endpoints.
  *
  * @param decode_mode   The ASTC profile (linear or sRGB)
@@ -130,42 +100,71 @@ void unpack_weights(
 	int weights_plane1[BLOCK_MAX_TEXELS],
 	int weights_plane2[BLOCK_MAX_TEXELS]
 ) {
-	// First, unquantize the weights ...
-	alignas(ASTCENC_VECALIGN) int uq_plane1_weights[BLOCK_MAX_WEIGHTS];
-	alignas(ASTCENC_VECALIGN) int uq_plane2_weights[BLOCK_MAX_WEIGHTS];
-	unsigned int weight_count = di.weight_count;
-
-	// Second, undecimate the weights ...
 	// Safe to overshoot as all arrays are allocated to full size
 	if (!is_dual_plane)
 	{
-		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
-		{
-			vint unquant_value(scb.weights + i);
-			storea(unquant_value, uq_plane1_weights + i);
-		}
+		// Build full 64-entry weight lookup table
+		vint4 tab0(reinterpret_cast<const int*>(scb.weights +  0));
+		vint4 tab1(reinterpret_cast<const int*>(scb.weights + 16));
+		vint4 tab2(reinterpret_cast<const int*>(scb.weights + 32));
+		vint4 tab3(reinterpret_cast<const int*>(scb.weights + 48));
+
+		vint tab0p, tab1p, tab2p, tab3p;
+		vtable_prepare(tab0, tab1, tab2, tab3, tab0p, tab1p, tab2p, tab3p);
 
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
+			vint summed_value(8);
+			vint weight_count(di.texel_weight_count + i);
+			int max_weight_count = hmax(weight_count).lane<0>();
+
+			promise(max_weight_count > 0);
+			for (int j = 0; j < max_weight_count; j++)
+			{
+				vint texel_weights(di.texel_weights_4t[j] + i);
+				vint texel_weights_int(di.texel_weights_int_4t[j] + i);
+
+				summed_value += vtable_8bt_32bi(tab0p, tab1p, tab2p, tab3p, texel_weights) * texel_weights_int;
+			}
+
+			store(lsr<4>(summed_value), weights_plane1 + i);
 		}
 	}
 	else
 	{
-		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
-		{
-			vint unquant_value1(scb.weights + i);
-			storea(unquant_value1, uq_plane1_weights + i);
+		// Build a 32-entry weight lookup table per plane
+		// Plane 1
+		vint4 tab0_plane1(reinterpret_cast<const int*>(scb.weights +  0));
+		vint4 tab1_plane1(reinterpret_cast<const int*>(scb.weights + 16));
+		vint tab0_plane1p, tab1_plane1p;
+		vtable_prepare(tab0_plane1, tab1_plane1, tab0_plane1p, tab1_plane1p);
 
-			vint unquant_value2(scb.weights + i + WEIGHTS_PLANE2_OFFSET);
-			storea(unquant_value2, uq_plane2_weights + i);
-		}
+		// Plane 2
+		vint4 tab0_plane2(reinterpret_cast<const int*>(scb.weights + 32));
+		vint4 tab1_plane2(reinterpret_cast<const int*>(scb.weights + 48));
+		vint tab0_plane2p, tab1_plane2p;
+		vtable_prepare(tab0_plane2, tab1_plane2, tab0_plane2p, tab1_plane2p);
 
-		// TODO: Scope for merging this into a single pass sharing "di" data?
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane1_weights), weights_plane1 + i);
-			store(compute_value_of_texel_weight_int_vla(i, di, uq_plane2_weights), weights_plane2 + i);
+			vint sum_plane1(8);
+			vint sum_plane2(8);
+
+			vint weight_count(di.texel_weight_count + i);
+			int max_weight_count = hmax(weight_count).lane<0>();
+
+			promise(max_weight_count > 0);
+			for (int j = 0; j < max_weight_count; j++)
+			{
+				vint texel_weights(di.texel_weights_4t[j] + i);
+				vint texel_weights_int(di.texel_weights_int_4t[j] + i);
+
+				sum_plane1 += vtable_8bt_32bi(tab0_plane1p, tab1_plane1p, texel_weights) * texel_weights_int;
+				sum_plane2 += vtable_8bt_32bi(tab0_plane2p, tab1_plane2p, texel_weights) * texel_weights_int;
+			}
+
+			store(lsr<4>(sum_plane1), weights_plane1 + i);
+			store(lsr<4>(sum_plane2), weights_plane2 + i);
 		}
 	}
 }
