@@ -925,6 +925,7 @@ void compute_quantized_weights_for_decimation(
 		1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f, 11.0f, 15.0f, 19.0f, 23.0f, 31.0f
 	};
 
+	vint steps_m1(get_quant_level(quant_level) - 1);
 	float quant_level_m1 = quant_levels_m1[quant_level];
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
@@ -948,6 +949,14 @@ void compute_quantized_weights_for_decimation(
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
 
+	vint4 table0((int*)(qat.quant_to_unquant));
+	vint4 table1((int*)(qat.quant_to_unquant + 16));
+
+	vint table0p;
+	vint table1p;
+	vtable_prepare(table0, table1, table0p, table1p);
+
+
 	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
@@ -959,11 +968,11 @@ void compute_quantized_weights_for_decimation(
 		vfloat ix1 = ix * quant_level_m1v;
 
 		vint weightl = float_to_int(ix1);
-		vint weighth = weightl + vint(1);
+		vint weighth = min(weightl + vint(1), steps_m1);
 
 		// TODO: Can we just do more of this just as integers?
-		vint ixli = gatheri(qat.quant_to_unquant, weightl);
-		vint ixhi = gatheri(qat.quant_to_unquant, weighth);
+		vint ixli = vtable_8bt_32bi(table0p, table1p, weightl);
+		vint ixhi = vtable_8bt_32bi(table0p, table1p, weighth);
 
 		vfloat ixl = int_to_float(ixli);
 		vfloat ixh = int_to_float(ixhi);

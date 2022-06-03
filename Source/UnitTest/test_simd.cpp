@@ -3268,6 +3268,29 @@ TEST(vmask8, not)
 	EXPECT_EQ(mask(r), 0x55);
 }
 
+/** @brief Test vint8 table permute. */
+TEST(vint8, vtable_8bt_32bi)
+{
+	vint4 table0(0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c);
+	vint4 table1(0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c);
+
+	vint table0p;
+	vint table1p;
+	vtable_prepare(table0, table1, table0p, table1p);
+
+	vint8 index(2, 4, 6, 8, 10, 12, 14, 16);
+
+	vint8 result = vtable_8bt_32bi(table0p, table1p, index);
+	EXPECT_EQ(result.lane<0>(), 2);
+	EXPECT_EQ(result.lane<1>(), 4);
+	EXPECT_EQ(result.lane<2>(), 6);
+	EXPECT_EQ(result.lane<3>(), 8);
+	EXPECT_EQ(result.lane<4>(), 10);
+	EXPECT_EQ(result.lane<5>(), 12);
+	EXPECT_EQ(result.lane<6>(), 14);
+	EXPECT_EQ(result.lane<7>(), 16);
+}
+
 #endif
 
 }

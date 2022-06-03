@@ -1025,6 +1025,24 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
 	return vfloat4(_mm_castsi128_ps(v.m));
 }
 
+ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
+{
+	// TODO: Add table precompute step
+	__m128i t0x = t0.m;
+	__m128i t1x = _mm_xor_si128(t1.m, t0.m);
+	__m128i idxx = idx.m;
+
+	// Set high lanes to zero
+	idxx = _mm_and_si128(idxx, _mm_set1_epi32(0xFFFFFF00));
+
+	__m128i result = _mm_shuffle_epi8(t0x, idxx);
+	idxx = _mm_sub_epi8(idxx, _mm_set1_epi8(16));
+
+	__m128i result2 = _mm_shuffle_epi8(t1x, idxx);
+	result = _mm_xor_si128(result, result2);
+	return vint4(result);
+}
+
 #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
 
 #define ASTCENC_USE_NATIVE_DOT_PRODUCT 1

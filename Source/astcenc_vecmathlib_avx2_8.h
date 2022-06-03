@@ -1016,6 +1016,18 @@ ASTCENC_SIMD_INLINE void print(vint8 a)
 }
 
 /**
+ * @brief Debug function to print a vector of ints.
+ */
+ASTCENC_SIMD_INLINE void printx(vint8 a)
+{
+	alignas(ASTCENC_VECALIGN) int v[8];
+	storea(a, v);
+	printf("v8_i32:\n  %08x %08x %08x %08x %08x %08x %08x %08x\n",
+	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+}
+
+
+/**
  * @brief Debug function to print a vector of floats.
  */
 ASTCENC_SIMD_INLINE void print(vfloat8 a)
@@ -1035,6 +1047,35 @@ ASTCENC_SIMD_INLINE void print(vfloat8 a)
 ASTCENC_SIMD_INLINE void print(vmask8 a)
 {
 	print(select(vint8(0), vint8(1), a));
+}
+
+ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t1p)
+{
+	__m128i t0n = t0.m;
+	__m256i t0x = _mm256_set_m128i(t0n, t0n);
+
+	__m128i t1n = _mm_xor_si128(t1.m, t0.m);
+	__m256i t1x = _mm256_set_m128i(t1n, t1n);
+
+	t0p = vint8(t0x);
+	t1p = vint8(t1x);
+}
+
+ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
+{
+	__m256i t0x = t0.m;
+	__m256i t1x = t1.m;
+	__m256i idxx = idx.m;
+
+	// Set high lanes to zero
+	idxx = _mm256_or_si256(idxx, _mm256_set1_epi32(0xFFFFFF00));
+
+	__m256i result = _mm256_shuffle_epi8(t0x, idxx);
+	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
+
+	__m256i result2 = _mm256_shuffle_epi8(t1x, idxx);
+	result = _mm256_xor_si256(result, result2);
+	return vint8(result);
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
