@@ -109,10 +109,7 @@ void unpack_weights(
 		vint4 tab2(reinterpret_cast<const int*>(scb.weights + 32));
 		vint4 tab3(reinterpret_cast<const int*>(scb.weights + 48));
 
-		vint tab0p;
-		vint tab1p;
-		vint tab2p;
-		vint tab3p;
+		vint tab0p, tab1p, tab2p, tab3p;
 		vtable_prepare(tab0, tab1, tab2, tab3, tab0p, tab1p, tab2p, tab3p);
 
 		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
