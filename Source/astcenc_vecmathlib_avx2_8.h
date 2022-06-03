@@ -1007,6 +1007,16 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 /**
  * @brief Prepare a vtable lookup table for use with the native SIMD size.
  */
+ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
+{
+	// AVX2 duplicates the table within each 128-bit lane
+	__m128i t0n = t0.m;
+	t0p = vint8(_mm256_set_m128i(t0n, t0n));
+}
+
+/**
+ * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ */
 ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t1p)
 {
 	// AVX2 duplicates the table within each 128-bit lane
@@ -1036,6 +1046,18 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 
 	__m128i t3n = _mm_xor_si128(t2.m, t3.m);
 	t3p = vint8(_mm256_set_m128i(t3n, t3n));
+}
+
+/**
+ * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ */
+ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
+{
+	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
+	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(0xFFFFFF00));
+
+	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
+	return vint8(result);
 }
 
 /**

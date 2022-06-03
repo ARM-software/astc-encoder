@@ -927,6 +927,15 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
 /**
  * @brief Prepare a vtable lookup table for use with the native SIMD size.
  */
+ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4& t0p)
+{
+	t0p = t0;
+}
+
+
+/**
+ * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ */
 ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint4& t0p, vint4& t1p)
 {
 	t0p = t0;
@@ -944,6 +953,20 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	t1p = t1;
 	t2p = t2;
 	t3p = t3;
+}
+
+/**
+ * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
+{
+	int8x16x2_t table { t0.m };
+
+	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
+	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
+	int8x16_t idx_bytes= vreinterpretq_u8_s32(idx_masked);
+
+	return vint4(vqtbl1q_s8(table, idx_bytes));
 }
 
 /**

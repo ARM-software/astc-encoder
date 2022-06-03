@@ -949,38 +949,74 @@ void compute_quantized_weights_for_decimation(
 	vfloat rscalev(rscale);
 	vfloat low_boundv(low_bound);
 
-	vint4 tab0(reinterpret_cast<const int*>(qat.quant_to_unquant));
-	vint4 tab1(reinterpret_cast<const int*>(qat.quant_to_unquant + 16));
-	vint tab0p, tab1p;
-	vtable_prepare(tab0, tab1, tab0p, tab1p);
-
 	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
-	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	if (get_quant_level(quant_level) <= 16)
 	{
-		vfloat ix = loada(dec_weight_ideal_value + i) * scalev - scaled_low_boundv;
-		ix = clampzo(ix);
+		vint4 tab0(reinterpret_cast<const int*>(qat.quant_to_unquant));
+		vint tab0p;
+		vtable_prepare(tab0, tab0p);
 
-		// Look up the two closest indexes and return the one that was closest
-		vfloat ix1 = ix * quant_level_m1v;
+		for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat ix = loada(dec_weight_ideal_value + i) * scalev - scaled_low_boundv;
+			ix = clampzo(ix);
 
-		vint weightl = float_to_int(ix1);
-		vint weighth = min(weightl + vint(1), steps_m1);
+			// Look up the two closest indexes and return the one that was closest
+			vfloat ix1 = ix * quant_level_m1v;
 
-		vint ixli = vtable_8bt_32bi(tab0p, tab1p, weightl);
-		vint ixhi = vtable_8bt_32bi(tab0p, tab1p, weighth);
+			vint weightl = float_to_int(ix1);
+			vint weighth = min(weightl + vint(1), steps_m1);
 
-		vfloat ixl = int_to_float(ixli);
-		vfloat ixh = int_to_float(ixhi);
+			vint ixli = vtable_8bt_32bi(tab0p, weightl);
+			vint ixhi = vtable_8bt_32bi(tab0p, weighth);
 
-		vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
-		vint weight = select(ixli, ixhi, mask);
-		ixl = select(ixl, ixh, mask);
+			vfloat ixl = int_to_float(ixli);
+			vfloat ixh = int_to_float(ixhi);
 
-		// Invert the weight-scaling that was done initially
-		storea(ixl * rscalev + low_boundv, weight_set_out + i);
-		vint scn = pack_low_bytes(weight);
-		store_nbytes(scn, quantized_weight_set + i);
+			vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
+			vint weight = select(ixli, ixhi, mask);
+			ixl = select(ixl, ixh, mask);
+
+			// Invert the weight-scaling that was done initially
+			storea(ixl * rscalev + low_boundv, weight_set_out + i);
+			vint scn = pack_low_bytes(weight);
+			store_nbytes(scn, quantized_weight_set + i);
+		}
+	}
+	else
+	{
+		vint4 tab0(reinterpret_cast<const int*>(qat.quant_to_unquant));
+		vint4 tab1(reinterpret_cast<const int*>(qat.quant_to_unquant + 16));
+		vint tab0p, tab1p;
+		vtable_prepare(tab0, tab1, tab0p, tab1p);
+
+		for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat ix = loada(dec_weight_ideal_value + i) * scalev - scaled_low_boundv;
+			ix = clampzo(ix);
+
+			// Look up the two closest indexes and return the one that was closest
+			vfloat ix1 = ix * quant_level_m1v;
+
+			vint weightl = float_to_int(ix1);
+			vint weighth = min(weightl + vint(1), steps_m1);
+
+			vint ixli = vtable_8bt_32bi(tab0p, tab1p, weightl);
+			vint ixhi = vtable_8bt_32bi(tab0p, tab1p, weighth);
+
+			vfloat ixl = int_to_float(ixli);
+			vfloat ixh = int_to_float(ixhi);
+
+			vmask mask = (ixl + ixh) < (vfloat(128.0f) * ix);
+			vint weight = select(ixli, ixhi, mask);
+			ixl = select(ixl, ixh, mask);
+
+			// Invert the weight-scaling that was done initially
+			storea(ixl * rscalev + low_boundv, weight_set_out + i);
+			vint scn = pack_low_bytes(weight);
+			store_nbytes(scn, quantized_weight_set + i);
+		}
 	}
 }
 
