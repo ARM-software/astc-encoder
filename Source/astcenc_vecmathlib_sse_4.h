@@ -1030,8 +1030,13 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint4& t0p, vint4& t1p)
 {
+#if ASTCENC_SSE >= 30
 	t0p = t0;
-	t1p = vint4(_mm_xor_si128(t0.m, t1.m));
+	t1p = t0 ^ t1;
+#else
+	t0p = t0;
+	t1p = t1;
+#endif
 }
 
 /**

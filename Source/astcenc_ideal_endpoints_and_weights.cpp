@@ -956,7 +956,6 @@ void compute_quantized_weights_for_decimation(
 	vint table1p;
 	vtable_prepare(table0, table1, table0p, table1p);
 
-
 	// This runs to the rounded-up SIMD size, which is safe as the loop tail is filled with known
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
