@@ -1118,6 +1118,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3
 	             table[idx.lane<1>()],
 	             table[idx.lane<2>()],
 	             table[idx.lane<3>()]);
+}
 
 /**
  * @brief Return a vector of interleaved RGBA data.
