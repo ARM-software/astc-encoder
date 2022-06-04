@@ -154,7 +154,7 @@ ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 }
 
 /**
- * @brief Return the horizontal sum of RGoB vector lanes as a scalar.
+ * @brief Return the horizontal sum of RGB vector lanes as a scalar.
  */
 ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 {
