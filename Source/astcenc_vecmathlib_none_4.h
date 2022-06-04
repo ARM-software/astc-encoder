@@ -1118,6 +1118,47 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3
 	             table[idx.lane<1>()],
 	             table[idx.lane<2>()],
 	             table[idx.lane<3>()]);
+
+/**
+ * @brief Return a vector of interleaved RGBA data.
+ *
+ * Input vectors have the value stored in the bottom 8 bits of each lane,
+ * with high  bits set to zero.
+ *
+ * Output vector stores a single RGBA texel packed in each lane.
+ */
+ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
+{
+	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
+}
+
+/**
+ * @brief Store a vector, skipping masked lanes.
+ *
+ * All masked lanes must be at the end of vector, after all non-masked lanes.
+ */
+ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
+{
+	if (mask.m[3])
+	{
+		store(data, base);
+	}
+	else if(mask.m[2])
+	{
+		base[0] = data.lane<0>();
+		base[1] = data.lane<1>();
+		base[2] = data.lane<2>();
+	}
+	else if(mask.m[1])
+	{
+		base[0] = data.lane<0>();
+		base[1] = data.lane<1>();
+	}
+	else if(mask.m[0])
+	{
+		base[0] = data.lane<0>();
+		base[1] = data.lane<1>();
+	}
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_NONE_4_H_INCLUDED

@@ -465,6 +465,14 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 }
 
 /**
+ * @brief Logical shift left.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
+{
+	return vint8(_mm256_slli_epi32(a.m, s));
+}
+
+/**
  * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
@@ -726,6 +734,16 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 }
 
 /**
+ * @brief Return the min vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
+{
+	return min(a, vfloat8(b));
+}
+
+/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -733,6 +751,16 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 {
 	return vfloat8(_mm256_max_ps(a.m, b.m));
+}
+
+/**
+ * @brief Return the max vector of a vector and a scalar.
+ *
+ * If either lane value is NaN, @c b will be returned for that lane.
+ */
+ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
+{
+	return max(a, vfloat8(b));
 }
 
 /**
@@ -967,6 +995,16 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 }
 
 /**
+ * @brief Return a integer value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
+{
+	a = round(a);
+	return vint8(_mm256_cvttps_epi32(a.m));
+}
+
+
+/**
  * @brief Return a float value for an integer vector.
  */
 ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
@@ -1093,6 +1131,29 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
 	result = _mm256_xor_si256(result, result2);
 
 	return vint8(result);
+}
+
+/**
+ * @brief Return a vector of interleaved RGBA data.
+ *
+ * Input vectors have the value stored in the bottom 8 bits of each lane,
+ * with high  bits set to zero.
+ *
+ * Output vector stores a single RGBA texel packed in each lane.
+ */
+ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
+{
+	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
+}
+
+/**
+ * @brief Store a vector, skipping masked lanes.
+ *
+ * All masked lanes must be at the end of vector, after all non-masked lanes.
+ */
+ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint8 data, vmask8 mask)
+{
+	_mm256_maskstore_epi32(base, mask.m, data.m);
 }
 
 /**
