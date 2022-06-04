@@ -841,7 +841,7 @@ void compute_ideal_weights_for_decimation(
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
 	}
 
-	// Populate the interpolated weight grid based on the initital average
+	// Populate the interpolated weight grid based on the initial average
 	// Process SIMD-width texel coordinates at at time while we can. Safe to
 	// over-process full SIMD vectors - the tail is zeroed.
 	if (di.max_texel_weight_count <= 2)
