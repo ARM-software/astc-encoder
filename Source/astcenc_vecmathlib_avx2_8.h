@@ -36,6 +36,9 @@
 
 #include <cstdio>
 
+// Define convenience intrinsics that are missing on older compilers
+#define astcenc_mm256_set_m128i(m, n) _mm256_insertf128_si256(_mm256_castsi128_si256((n)), (m), 1)
+
 // ============================================================================
 // vfloat8 data type
 // ============================================================================
@@ -503,10 +506,7 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
 	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
 
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128i(m, m)
-	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(m), m, 1);
+	__m256i r = astcenc_mm256_set_m128i(m, m);
 	vint8 vmin(r);
 	return vmin;
 }
@@ -521,10 +521,7 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
 	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
 
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128i(m, m)
-	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(m), m, 1);
+	__m256i r = astcenc_mm256_set_m128i(m, m);
 	vint8 vmax(r);
 	return vmax;
 }
@@ -578,10 +575,7 @@ ASTCENC_SIMD_INLINE vint8 pack_low_bytes(vint8 v)
 	__m128i a1 = _mm256_extracti128_si256(a, 1);
 	__m128i b = _mm_unpacklo_epi32(a0, a1);
 
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128i(b, b)
-	__m256i r = _mm256_insertf128_si256(_mm256_castsi128_si256(b), b, 1);
+	__m256i r = astcenc_mm256_set_m128i(b, b);
 	return vint8(r);
 }
 
@@ -1011,7 +1005,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
 {
 	// AVX2 duplicates the table within each 128-bit lane
 	__m128i t0n = t0.m;
-	t0p = vint8(_mm256_set_m128i(t0n, t0n));
+	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
 }
 
 /**
@@ -1021,10 +1015,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t
 {
 	// AVX2 duplicates the table within each 128-bit lane
 	__m128i t0n = t0.m;
-	t0p = vint8(_mm256_set_m128i(t0n, t0n));
+	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
 
 	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(_mm256_set_m128i(t1n, t1n));
+	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
 }
 
 /**
@@ -1036,16 +1030,16 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 {
 	// AVX2 duplicates the table within each 128-bit lane
 	__m128i t0n = t0.m;
-	t0p = vint8(_mm256_set_m128i(t0n, t0n));
+	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
 
 	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(_mm256_set_m128i(t1n, t1n));
+	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
 
 	__m128i t2n = _mm_xor_si128(t1.m, t2.m);
-	t2p = vint8(_mm256_set_m128i(t2n, t2n));
+	t2p = vint8(astcenc_mm256_set_m128i(t2n, t2n));
 
 	__m128i t3n = _mm_xor_si128(t2.m, t3.m);
-	t3p = vint8(_mm256_set_m128i(t3n, t3n));
+	t3p = vint8(astcenc_mm256_set_m128i(t3n, t3n));
 }
 
 /**
