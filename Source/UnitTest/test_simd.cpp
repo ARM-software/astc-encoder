@@ -1944,7 +1944,6 @@ TEST(vint4, interleave_rgba8)
 	EXPECT_EQ(result.lane<3>(), 0x34333231);
 }
 
-
 # if ASTCENC_SIMD_WIDTH == 8
 
 // VFLOAT8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3028,6 +3027,42 @@ TEST(vint8, max)
 	EXPECT_EQ(r.lane<5>(), 3);
 	EXPECT_EQ(r.lane<6>(), 3);
 	EXPECT_EQ(r.lane<7>(), 5);
+}
+
+/** @brief Test vint8 lsl. */
+TEST(vint8, lsl)
+{
+	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	a = lsl<0>(a);
+	EXPECT_EQ(a.lane<0>(), 1);
+	EXPECT_EQ(a.lane<1>(), 2);
+	EXPECT_EQ(a.lane<2>(), 4);
+	EXPECT_EQ(a.lane<3>(), 0xFFFFFFFC);
+	EXPECT_EQ(a.lane<4>(), 1);
+	EXPECT_EQ(a.lane<5>(), 2);
+	EXPECT_EQ(a.lane<6>(), 4);
+	EXPECT_EQ(a.lane<7>(), 0xFFFFFFFC);
+
+
+	a = lsl<1>(a);
+	EXPECT_EQ(a.lane<0>(), 2);
+	EXPECT_EQ(a.lane<1>(), 4);
+	EXPECT_EQ(a.lane<2>(), 8);
+	EXPECT_EQ(a.lane<3>(), 0xFFFFFFF8);
+	EXPECT_EQ(a.lane<4>(), 2);
+	EXPECT_EQ(a.lane<5>(), 4);
+	EXPECT_EQ(a.lane<6>(), 8);
+	EXPECT_EQ(a.lane<7>(), 0xFFFFFFF8);
+
+	a = lsl<2>(a);
+	EXPECT_EQ(a.lane<0>(), 8);
+	EXPECT_EQ(a.lane<1>(), 16);
+	EXPECT_EQ(a.lane<2>(), 32);
+	EXPECT_EQ(a.lane<3>(), 0xFFFFFFE0);
+	EXPECT_EQ(a.lane<4>(), 8);
+	EXPECT_EQ(a.lane<5>(), 16);
+	EXPECT_EQ(a.lane<6>(), 32);
+	EXPECT_EQ(a.lane<7>(), 0xFFFFFFE0);
 }
 
 /** @brief Test vint8 lsr. */

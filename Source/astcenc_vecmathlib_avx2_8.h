@@ -465,6 +465,14 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 }
 
 /**
+ * @brief Logical shift left.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
+{
+	return vint8(_mm256_slli_epi32(a.m, s));
+}
+
+/**
  * @brief Arithmetic shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
@@ -1135,11 +1143,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
  */
 ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 {
-	__m256i value = r.m;
-	value = _mm256_add_epi32(value, _mm256_bslli_epi128(g.m, 1));
-	value = _mm256_add_epi32(value, _mm256_bslli_epi128(b.m, 2));
-	value = _mm256_add_epi32(value, _mm256_bslli_epi128(a.m, 3));
-	return vint8(value);
+	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
 }
 
 /**
