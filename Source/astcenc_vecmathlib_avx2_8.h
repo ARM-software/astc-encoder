@@ -999,10 +999,8 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
 {
-	a = round(a);
-	return vint8(_mm256_cvttps_epi32(a.m));
+	return float_to_int(a + vfloat8(0.5f));
 }
-
 
 /**
  * @brief Return a float value for an integer vector.
