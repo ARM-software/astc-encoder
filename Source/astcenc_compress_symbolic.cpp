@@ -527,7 +527,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		trace_add_data("weight_x", di.weight_x);
 		trace_add_data("weight_y", di.weight_y);
 		trace_add_data("weight_z", di.weight_z);
-		trace_add_data("weight_quant", weight_quant_mode);
+		trace_add_data("weight_quant", qw_bm.quant_mode);
 
 		// Recompute the ideal color endpoints before storing them
 		vfloat4 rgbs_colors[BLOCK_MAX_PARTITIONS];
@@ -910,7 +910,7 @@ static float compress_symbolic_block_for_partition_2planes(
 		trace_add_data("weight_x", di.weight_x);
 		trace_add_data("weight_y", di.weight_y);
 		trace_add_data("weight_z", di.weight_z);
-		trace_add_data("weight_quant", weight_quant_mode);
+		trace_add_data("weight_quant", qw_bm.quant_mode);
 
 		vfloat4 rgbs_color;
 		vfloat4 rgbo_color;
@@ -1201,13 +1201,13 @@ void compress_block(
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
-	float error_weight_sum = hadd_s(blk.channel_weight) * bsd->texel_count;
+	float error_weight_sum = hadd_s(blk.channel_weight) * bsd.texel_count;
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
 	                      * block_is_l_scale
 	                      * block_is_la_scale;
 
-	lowest_correl = prepare_block_statistics(bsd->texel_count, blk);
+	lowest_correl = prepare_block_statistics(bsd.texel_count, blk);
 	trace_add_data("lowest_correl", lowest_correl);
 	trace_add_data("tune_error_threshold", error_threshold);
 #endif
