@@ -1121,19 +1121,6 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3
 }
 
 /**
- * @brief Return a vector of interleaved RGBA data.
- *
- * Input vectors have the value stored in the bottom 8 bits of each lane,
- * with high  bits set to zero.
- *
- * Output vector stores a single RGBA texel packed in each lane.
- */
-ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
-{
-	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
-}
-
-/**
  * @brief Store a vector, skipping masked lanes.
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.

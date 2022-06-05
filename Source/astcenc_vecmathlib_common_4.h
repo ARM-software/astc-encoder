@@ -295,6 +295,19 @@ ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
+/**
+ * @brief Return a vector of interleaved RGBA data.
+ *
+ * Input vectors have the value stored in the bottom 8 bits of each lane,
+ * with high  bits set to zero.
+ *
+ * Output vector stores a single RGBA texel packed in each lane.
+ */
+ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
+{
+	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
+}
+
 #if !defined(ASTCENC_USE_NATIVE_DOT_PRODUCT)
 
 /**
