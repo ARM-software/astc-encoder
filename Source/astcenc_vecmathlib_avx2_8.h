@@ -1153,7 +1153,7 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint8 data, vmask8 mask)
 {
-	_mm256_maskstore_epi32(base, mask.m, data.m);
+	_mm256_maskstore_epi32(base, _mm256_castps_si256(mask.m), data.m);
 }
 
 /**

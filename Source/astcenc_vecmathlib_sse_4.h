@@ -1180,9 +1180,9 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
 {
 #if ASTCENC_AVX >= 2
-	_mm_maskstore_epi32(base, mask.m, data.m);
+	_mm_maskstore_epi32(base, _mm_castps_si128(mask.m), data.m);
 #else
-	_mm_maskmoveu_si128(data.m, mask.m, (char*)base);
+	_mm_maskmoveu_si128(data.m, _mm_castps_si128(mask.m), (char*)base);
 #endif
 }
 
