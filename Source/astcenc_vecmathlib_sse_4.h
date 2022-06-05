@@ -1165,11 +1165,21 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
+// Workaround an XCode compiler internal fault; note is slower than slli_epi32
+// so we should revert this when we get the opportunity
+#if __APPLE__
+	__m128i value = r.m;
+	value = _mm_add_epi32(value, _mm_bslli_si128(g.m, 1));
+	value = _mm_add_epi32(value, _mm_bslli_si128(b.m, 2));
+	value = _mm_add_epi32(value, _mm_bslli_si128(a.m, 3));
+	return vint4(value);
+#else
 	__m128i value = r.m;
 	value = _mm_add_epi32(value, _mm_slli_epi32(g.m,  8));
 	value = _mm_add_epi32(value, _mm_slli_epi32(b.m, 16));
 	value = _mm_add_epi32(value, _mm_slli_epi32(a.m, 24));
 	return vint4(value);
+#endif
 }
 
 /**
