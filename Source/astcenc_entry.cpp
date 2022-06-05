@@ -815,7 +815,7 @@ static void compress_image(
 	int block_x = bsd.xdim;
 	int block_y = bsd.ydim;
 	int block_z = bsd.zdim;
-	blk.texel_count = block_x * block_y * block_z;
+	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
 
 	int dim_x = image.dim_x;
 	int dim_y = image.dim_y;
@@ -1112,7 +1112,7 @@ astcenc_error astcenc_decompress_image(
 	}
 
 	image_block blk;
-	blk.texel_count = block_x * block_y * block_z;
+	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
 
 	// If context thread count is one then implicitly reset
 	if (ctx->thread_count == 1)

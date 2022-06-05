@@ -980,10 +980,10 @@ ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
 	return vfloat4(f32);
 #else
 	return vfloat4(
-		sf16_to_float(a.lane<0>()),
-		sf16_to_float(a.lane<1>()),
-		sf16_to_float(a.lane<2>()),
-		sf16_to_float(a.lane<3>()));
+		sf16_to_float(static_cast<uint16_t>(a.lane<0>())),
+		sf16_to_float(static_cast<uint16_t>(a.lane<1>())),
+		sf16_to_float(static_cast<uint16_t>(a.lane<2>())),
+		sf16_to_float(static_cast<uint16_t>(a.lane<3>())));
 #endif
 }
 

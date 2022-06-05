@@ -118,7 +118,8 @@ macro(astcenc_set_properties NAME)
 
             # MSVC compiler defines
             $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
-            $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
+            $<$<CXX_COMPILER_ID:MSVC>:/W4>
+            $<$<CXX_COMPILER_ID:MSVC>:/wd"4324">
 
             # G++ and Clang++ compiler defines
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
@@ -291,6 +292,10 @@ astcenc_set_properties(${ASTC_TARGET}-static)
 
 if(${CLI})
     astcenc_set_properties(${ASTC_TARGET})
+
+    target_compile_options(${ASTC_TARGET}
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W3>)
 
     string(TIMESTAMP astcencoder_YEAR "%Y")
 

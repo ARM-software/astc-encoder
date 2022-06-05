@@ -53,7 +53,7 @@ static ASTCENC_SIMD_INLINE vint4 unquant_color(
  * @return The encoded quantized value. These are not necessarily in order; the compressor
  *         scrambles the values slightly to make hardware implementation easier.
  */
-static inline int unquant_color(
+static inline uint8_t unquant_color(
 	quant_method quant_level,
 	int value
 ) {

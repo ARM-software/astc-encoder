@@ -156,12 +156,12 @@ static bool realign_weights_undecimated(
 			// Check if the prev or next error is better, and if so use it
 			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
 			{
-				dec_weights_uquant[texel] = uqw_up;
+				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_up);
 				adjustments = true;
 			}
 			else if ((error_down < error_base) && (uqw > 0))
 			{
-				dec_weights_uquant[texel] = uqw_down;
+				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_down);
 				adjustments = true;
 			}
 		}
@@ -1424,7 +1424,8 @@ END_OF_TESTS:
 #endif
 
 		scb.block_type = SYM_BTYPE_CONST_U16;
-		scb.block_mode = -2;
+		// TODO: Replace these block modes with symbolic values
+		scb.block_mode =  static_cast<uint16_t>(-2);
 		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
 		vint4 color_u16 = float_to_int_rtn(color_f32);
 		store(color_u16, scb.constant_color);
