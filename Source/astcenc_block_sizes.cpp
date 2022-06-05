@@ -949,6 +949,13 @@ static void construct_block_size_descriptor_2d(
 			}
 
 			auto& bm = bsd.block_modes[packed_bm_idx];
+
+			bm.decimation_mode = static_cast<uint8_t>(decimation_mode);
+			bm.quant_mode = static_cast<uint8_t>(quant_mode);
+			bm.is_dual_plane = static_cast<uint8_t>(is_dual_plane);
+			bm.weight_bits = static_cast<uint8_t>(weight_bits);
+			bm.mode_index = static_cast<uint16_t>(i);
+
 			auto& dm = bsd.decimation_modes[decimation_mode];
 
 			if (is_dual_plane)
@@ -959,12 +966,6 @@ static void construct_block_size_descriptor_2d(
 			{
 				dm.set_ref_1_plane(bm.get_weight_quant_mode());
 			}
-
-			bm.decimation_mode = static_cast<uint8_t>(decimation_mode);
-			bm.quant_mode = static_cast<uint8_t>(quant_mode);
-			bm.is_dual_plane = static_cast<uint8_t>(is_dual_plane);
-			bm.weight_bits = static_cast<uint8_t>(weight_bits);
-			bm.mode_index = static_cast<uint16_t>(i);
 
 			bsd.block_mode_packed_index[i] = static_cast<uint16_t>(packed_bm_idx);
 
