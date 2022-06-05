@@ -1158,7 +1158,6 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
 	else if(mask.m[0])
 	{
 		base[0] = data.lane<0>();
-		base[1] = data.lane<1>();
 	}
 }
 
