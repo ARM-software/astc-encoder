@@ -118,8 +118,7 @@ macro(astcenc_set_properties NAME)
 
             # MSVC compiler defines
             $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
-            $<$<CXX_COMPILER_ID:MSVC>:/W4>
-            $<$<CXX_COMPILER_ID:MSVC>:/wd"4324">
+            $<$<CXX_COMPILER_ID:MSVC>:/wd4324>
 
             # G++ and Clang++ compiler defines
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
@@ -289,6 +288,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 astcenc_set_properties(${ASTC_TARGET}-static)
+
+    target_compile_options(${ASTC_TARGET}-static
+        PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
 if(${CLI})
     astcenc_set_properties(${ASTC_TARGET})
