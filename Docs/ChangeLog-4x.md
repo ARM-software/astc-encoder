@@ -49,6 +49,9 @@ cost:quality trade off.
     and weight structures, which were really read-only.
   * **Optimization:** Early-out the same endpoint mode color calculation if it
     cannot be applied.
+  * **Optimization:** `NO_INVARIANCE` builds with AVX2 will enable `-mfma` and
+    `-ffp-contract=fast` when using Clang or GCC. This reduces image quality
+    by up to 0.2dB (normally much less), but improves performance by 10-15%.
 - - -
 
 _Copyright © 2022, Arm Limited and contributors. All rights reserved._
