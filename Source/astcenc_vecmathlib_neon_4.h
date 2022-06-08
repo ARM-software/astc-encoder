@@ -346,6 +346,16 @@ struct vmask4
 		m = vreinterpretq_u32_s32(ms);
 	}
 
+	ASTCENC_SIMD_INLINE uint32_t operator[] (int32_t i)
+	{
+		// Workaround for how msvc handles intrinsic types
+#if defined(_MSC_VER)
+		return m.n128_u32[i];
+#else
+		return m[i];
+#endif
+	}
+
 	/**
 	 * @brief The vector ...
 	 */
@@ -1017,22 +1027,22 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
 {
-	if (mask.m[3])
+	if (mask[3])
 	{
 		store(data, base);
 	}
-	else if(mask.m[2])
+	else if(mask[2])
 	{
 		base[0] = data.lane<0>();
 		base[1] = data.lane<1>();
 		base[2] = data.lane<2>();
 	}
-	else if(mask.m[1])
+	else if(mask[1])
 	{
 		base[0] = data.lane<0>();
 		base[1] = data.lane<1>();
 	}
-	else if(mask.m[0])
+	else if(mask[0])
 	{
 		base[0] = data.lane<0>();
 	}
