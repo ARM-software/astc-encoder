@@ -204,6 +204,12 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=0)
         endif()
 
+        # Workaround MSVC codegen bug for NEON builds see:
+        # https://developercommunity.visualstudio.com/t/inlining-turns-constant-into-register-operand-for/1394798
+        target_compile_options(${NAME}
+            PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
+
     elseif((${ISA_SIMD} MATCHES "sse2") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE2}))
         if(NOT ${UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
