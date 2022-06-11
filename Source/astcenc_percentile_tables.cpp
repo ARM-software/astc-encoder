@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -39,7 +39,7 @@ struct packed_percentile_table
 	uint16_t itemcounts[2];
 	/** The accumulator divisor for 1 and 2 plane data. */
 	uint16_t difscales[2];
-	/** The initital accumulator values for 1 and 2 plane data. */
+	/** The initial accumulator values for 1 and 2 plane data. */
 	uint16_t initial_percs[2];
 	/** The packed data for the 1 and 2 plane data. */
 	const uint16_t *items[2];

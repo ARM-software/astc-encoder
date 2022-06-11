@@ -479,8 +479,8 @@ struct astcenc_config
 	 * @brief The amount of overshoot needed to early-out mode 0 fast path.
 	 *
 	 * We have a fast-path for mode 0 (1 partition, 1 plane) which uses only essential block modes
-	 * as an initital search. This can short-cut compression for simple blocks, but to avoid
-	 * shortcutting too much we* force this to overshoot the MSE threshold needed to hit the
+	 * as an initial search. This can short-cut compression for simple blocks, but to avoid
+	 * short-cutting too much we force this to overshoot the MSE threshold needed to hit the
 	 * block-local db_limit e.g. 1.0 = no overshoot, 2.0 = need half the error to trigger.
 	 */
 	float tune_mode0_mse_overshoot;
