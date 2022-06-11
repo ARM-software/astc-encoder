@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2021 Arm Limited
+// Copyright 2019-2022 Arm Limited
 // Copyright 2008 Jose Fonseca
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -60,10 +60,13 @@
 
 #if !defined(__clang__) && defined(_MSC_VER)
 	#define ASTCENC_SIMD_INLINE __forceinline
+	#define ASTCENC_NO_INLINE
 #elif defined(__GNUC__) && !defined(__clang__)
 	#define ASTCENC_SIMD_INLINE __attribute__((always_inline)) inline
+	#define ASTCENC_NO_INLINE __attribute__ ((noinline))
 #else
 	#define ASTCENC_SIMD_INLINE __attribute__((always_inline, nodebug)) inline
+	#define ASTCENC_NO_INLINE __attribute__ ((noinline))
 #endif
 
 #if ASTCENC_AVX >= 2
