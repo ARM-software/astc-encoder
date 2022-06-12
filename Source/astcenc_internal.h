@@ -1173,16 +1173,16 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	 *
 	 * For two planes, second plane starts at @c WEIGHTS_PLANE2_OFFSET offsets.
 	 */
-	alignas(ASTCENC_VECALIGN) uint8_t dec_weights_uquant[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
+	uint8_t dec_weights_uquant[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 
 	/** @brief Error of the best encoding combination for each block mode. */
 	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The best color quant for each block mode. */
-	alignas(ASTCENC_VECALIGN) quant_method best_quant_levels[WEIGHTS_MAX_BLOCK_MODES];
+	uint8_t best_quant_levels[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The best color quant for each block mode if modes are the same and we have spare bits. */
-	quant_method best_quant_levels_mod[WEIGHTS_MAX_BLOCK_MODES];
+	uint8_t best_quant_levels_mod[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The best endpoint format for each partition. */
 	uint8_t best_ep_formats[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS];

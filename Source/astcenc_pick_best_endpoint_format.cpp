@@ -677,7 +677,7 @@ static float one_partition_find_best_combination_for_bitcount(
 	const float best_combined_error[21][4],
 	const uint8_t best_combined_format[21][4],
 	int bits_available,
-	quant_method& best_quant_level,
+	uint8_t& best_quant_level,
 	uint8_t& best_format
 ) {
 	int best_integer_count = 0;
@@ -704,7 +704,7 @@ static float one_partition_find_best_combination_for_bitcount(
 
 	int ql = quant_mode_table[best_integer_count + 1][bits_available];
 
-	best_quant_level = static_cast<quant_method>(ql);
+	best_quant_level = static_cast<uint8_t>(ql);
 	best_format = FMT_LUMINANCE;
 
 	if (ql >= QUANT_6)
@@ -779,8 +779,8 @@ static float two_partitions_find_best_combination_for_bitcount(
 	float best_combined_error[21][7],
 	uint8_t best_combined_format[21][7][2],
 	int bits_available,
-	quant_method& best_quant_level,
-	quant_method& best_quant_level_mod,
+	uint8_t& best_quant_level,
+	uint8_t& best_quant_level_mod,
 	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
@@ -808,8 +808,8 @@ static float two_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 2];
 
-	best_quant_level = static_cast<quant_method>(ql);
-	best_quant_level_mod = static_cast<quant_method>(ql_mod);
+	best_quant_level = static_cast<uint8_t>(ql);
+	best_quant_level_mod = static_cast<uint8_t>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -904,8 +904,8 @@ static float three_partitions_find_best_combination_for_bitcount(
 	const float best_combined_error[21][10],
 	const uint8_t best_combined_format[21][10][3],
 	int bits_available,
-	quant_method& best_quant_level,
-	quant_method& best_quant_level_mod,
+	uint8_t& best_quant_level,
+	uint8_t& best_quant_level_mod,
 	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
@@ -933,8 +933,8 @@ static float three_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 5];
 
-	best_quant_level = static_cast<quant_method>(ql);
-	best_quant_level_mod = static_cast<quant_method>(ql_mod);
+	best_quant_level = static_cast<uint8_t>(ql);
+	best_quant_level_mod = static_cast<uint8_t>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -1040,8 +1040,8 @@ static float four_partitions_find_best_combination_for_bitcount(
 	const float best_combined_error[21][13],
 	const uint8_t best_combined_format[21][13][4],
 	int bits_available,
-	quant_method& best_quant_level,
-	quant_method& best_quant_level_mod,
+	uint8_t& best_quant_level,
+	uint8_t& best_quant_level_mod,
 	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
@@ -1069,8 +1069,8 @@ static float four_partitions_find_best_combination_for_bitcount(
 	int ql = quant_mode_table[best_integer_count][bits_available];
 	int ql_mod = quant_mode_table[best_integer_count][bits_available + 8];
 
-	best_quant_level = static_cast<quant_method>(ql);
-	best_quant_level_mod = static_cast<quant_method>(ql_mod);
+	best_quant_level = static_cast<uint8_t>(ql);
+	best_quant_level_mod = static_cast<uint8_t>(ql_mod);
 
 	if (ql >= QUANT_6)
 	{
@@ -1131,8 +1131,8 @@ unsigned int compute_ideal_endpoint_formats(
 	}
 
 	float* errors_of_best_combination = tmpbuf.errors_of_best_combination;
-	quant_method* best_quant_levels = tmpbuf.best_quant_levels;
-	quant_method* best_quant_levels_mod = tmpbuf.best_quant_levels_mod;
+	uint8_t* best_quant_levels = tmpbuf.best_quant_levels;
+	uint8_t* best_quant_levels_mod = tmpbuf.best_quant_levels_mod;
 	uint8_t (&best_ep_formats)[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS] = tmpbuf.best_ep_formats;
 
 	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
@@ -1340,8 +1340,8 @@ unsigned int compute_ideal_endpoint_formats(
 
 		block_mode[i] = best_error_weights[i];
 
-		quant_level[i] = best_quant_levels[best_error_weights[i]];
-		quant_level_mod[i] = best_quant_levels_mod[best_error_weights[i]];
+		quant_level[i] = static_cast<quant_method>(best_quant_levels[best_error_weights[i]]);
+		quant_level_mod[i] = static_cast<quant_method>(best_quant_levels_mod[best_error_weights[i]]);
 
 		assert(quant_level[i] >= QUANT_6 && quant_level[i] <= QUANT_256);
 		assert(quant_level_mod[i] >= QUANT_6 && quant_level_mod[i] <= QUANT_256);
