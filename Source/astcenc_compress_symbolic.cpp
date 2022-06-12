@@ -432,7 +432,7 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	float* weight_low_value = tmpbuf.weight_low_value1;
 	float* weight_high_value = tmpbuf.weight_high_value1;
-	int* qwt_bitcounts = tmpbuf.qwt_bitcounts;
+	int8_t* qwt_bitcounts = tmpbuf.qwt_bitcounts;
 	float* qwt_errors = tmpbuf.qwt_errors;
 
 	// For each mode (which specifies a decimation and a quantization):
@@ -474,8 +474,7 @@ static float compress_symbolic_block_for_partition_1plane(
 		int decimation_mode = bm.decimation_mode;
 		const auto& di = bsd.get_decimation_info(decimation_mode);
 
-		qwt_bitcounts[i] = bitcount;
-
+		qwt_bitcounts[i] = static_cast<int8_t>(bitcount);
 
 		alignas(ASTCENC_VECALIGN) float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
 
@@ -810,7 +809,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	float* weight_low_value2 = tmpbuf.weight_low_value2;
 	float* weight_high_value2 = tmpbuf.weight_high_value2;
 
-	int* qwt_bitcounts = tmpbuf.qwt_bitcounts;
+	int8_t* qwt_bitcounts = tmpbuf.qwt_bitcounts;
 	float* qwt_errors = tmpbuf.qwt_errors;
 
 	unsigned int start_2plane = bsd.block_mode_count_1plane_selected;
@@ -827,7 +826,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			continue;
 		}
 
-		qwt_bitcounts[i] = 109 - bm.weight_bits;
+		qwt_bitcounts[i] = static_cast<int8_t>(109 - bm.weight_bits);
 
 		if (weight_high_value1[i] > 1.02f * min_wt_cutoff1)
 		{

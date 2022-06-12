@@ -1096,7 +1096,7 @@ unsigned int compute_ideal_endpoint_formats(
 	const image_block& blk,
 	const endpoints& ep,
 	 // bitcounts and errors computed for the various quantization methods
-	const int* qwt_bitcounts,
+	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
 	unsigned int start_block_mode,

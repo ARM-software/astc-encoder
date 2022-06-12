@@ -1188,7 +1188,7 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	uint8_t best_ep_formats[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS];
 
 	/** @brief The total bit storage needed for quantized weights for each block mode. */
-	int qwt_bitcounts[WEIGHTS_MAX_BLOCK_MODES];
+	int8_t qwt_bitcounts[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The cumulative error for quantized weights for each block mode. */
 	float qwt_errors[WEIGHTS_MAX_BLOCK_MODES];
@@ -2223,7 +2223,7 @@ unsigned int compute_ideal_endpoint_formats(
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
-	const int* qwt_bitcounts,
+	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
 	unsigned int start_block_mode,
