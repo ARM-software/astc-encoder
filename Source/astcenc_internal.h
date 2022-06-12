@@ -1185,7 +1185,7 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	quant_method best_quant_levels_mod[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The best endpoint format for each partition. */
-	int best_ep_formats[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS];
+	uint8_t best_ep_formats[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS];
 
 	/** @brief The total bit storage needed for quantized weights for each block mode. */
 	int qwt_bitcounts[WEIGHTS_MAX_BLOCK_MODES];
@@ -2228,7 +2228,7 @@ unsigned int compute_ideal_endpoint_formats(
 	unsigned int tune_candidate_limit,
 	unsigned int start_block_mode,
 	unsigned int end_block_mode,
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
+	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES],

@@ -321,7 +321,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	const endpoints& ep,
 	vfloat4 error_weight,
 	float best_error[21][4],
-	int format_of_choice[21][4]
+	uint8_t format_of_choice[21][4]
 ) {
 	int partition_size = pi.partition_texel_count[partition_index];
 
@@ -675,10 +675,10 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
  */
 static float one_partition_find_best_combination_for_bitcount(
 	const float best_combined_error[21][4],
-	const int best_combined_format[21][4],
+	const uint8_t best_combined_format[21][4],
 	int bits_available,
 	quant_method& best_quant_level,
-	int& best_format
+	uint8_t& best_format
 ) {
 	int best_integer_count = 0;
 	float best_integer_count_error = ERROR_CALC_DEFAULT;
@@ -725,9 +725,9 @@ static float one_partition_find_best_combination_for_bitcount(
  */
 static void two_partitions_find_best_combination_for_every_quantization_and_integer_count(
 	const float best_error[2][21][4],	// indexed by (partition, quant-level, integer-pair-count-minus-1)
-	const int best_format[2][21][4],
+	const uint8_t best_format[2][21][4],
 	float best_combined_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
-	int best_combined_format[21][7][2]
+	uint8_t best_combined_format[21][7][2]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
@@ -777,11 +777,11 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
  */
 static float two_partitions_find_best_combination_for_bitcount(
 	float best_combined_error[21][7],
-	int best_combined_format[21][7][2],
+	uint8_t best_combined_format[21][7][2],
 	int bits_available,
 	quant_method& best_quant_level,
 	quant_method& best_quant_level_mod,
-	int* best_formats
+	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
 	float best_integer_count_error = ERROR_CALC_DEFAULT;
@@ -839,9 +839,9 @@ static float two_partitions_find_best_combination_for_bitcount(
  */
 static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 	const float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
-	const int best_format[3][21][4],
+	const uint8_t best_format[3][21][4],
 	float best_combined_error[21][10],
-	int best_combined_format[21][10][3]
+	uint8_t best_combined_format[21][10][3]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
@@ -902,11 +902,11 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
  */
 static float three_partitions_find_best_combination_for_bitcount(
 	const float best_combined_error[21][10],
-	const int best_combined_format[21][10][3],
+	const uint8_t best_combined_format[21][10][3],
 	int bits_available,
 	quant_method& best_quant_level,
 	quant_method& best_quant_level_mod,
-	int* best_formats
+	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
 	float best_integer_count_error = ERROR_CALC_DEFAULT;
@@ -964,9 +964,9 @@ static float three_partitions_find_best_combination_for_bitcount(
  */
 static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 	const float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
-	const int best_format[4][21][4],
+	const uint8_t best_format[4][21][4],
 	float best_combined_error[21][13],
-	int best_combined_format[21][13][4]
+	uint8_t best_combined_format[21][13][4]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
@@ -1038,11 +1038,11 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
  */
 static float four_partitions_find_best_combination_for_bitcount(
 	const float best_combined_error[21][13],
-	const int best_combined_format[21][13][4],
+	const uint8_t best_combined_format[21][13][4],
 	int bits_available,
 	quant_method& best_quant_level,
 	quant_method& best_quant_level_mod,
-	int* best_formats
+	uint8_t* best_formats
 ) {
 	int best_integer_count = 0;
 	float best_integer_count_error = ERROR_CALC_DEFAULT;
@@ -1102,7 +1102,7 @@ unsigned int compute_ideal_endpoint_formats(
 	unsigned int start_block_mode,
 	unsigned int end_block_mode,
 	// output data
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
+	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES],
@@ -1121,7 +1121,7 @@ unsigned int compute_ideal_endpoint_formats(
 	compute_encoding_choice_errors(blk, pi, ep, eci);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
-	int format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
+	uint8_t format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
 	for (int i = 0; i < partition_count; i++)
 	{
 		compute_color_error_for_every_integer_count_and_quant_level(
@@ -1133,7 +1133,7 @@ unsigned int compute_ideal_endpoint_formats(
 	float* errors_of_best_combination = tmpbuf.errors_of_best_combination;
 	quant_method* best_quant_levels = tmpbuf.best_quant_levels;
 	quant_method* best_quant_levels_mod = tmpbuf.best_quant_levels_mod;
-	int (&best_ep_formats)[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS] = tmpbuf.best_ep_formats;
+	uint8_t (&best_ep_formats)[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS] = tmpbuf.best_ep_formats;
 
 	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
 	// that will never be picked as best candidate
@@ -1188,7 +1188,7 @@ unsigned int compute_ideal_endpoint_formats(
 	else if (partition_count == 2)
 	{
 		float combined_best_error[21][7];
-		int formats_of_choice[21][7][2];
+		uint8_t formats_of_choice[21][7][2];
 
 		two_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
@@ -1221,7 +1221,7 @@ unsigned int compute_ideal_endpoint_formats(
 	else if (partition_count == 3)
 	{
 		float combined_best_error[21][10];
-		int formats_of_choice[21][10][3];
+		uint8_t formats_of_choice[21][10][3];
 
 		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
@@ -1255,7 +1255,7 @@ unsigned int compute_ideal_endpoint_formats(
 	{
 		assert(partition_count == 4);
 		float combined_best_error[21][13];
-		int formats_of_choice[21][13][4];
+		uint8_t formats_of_choice[21][13][4];
 
 		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);

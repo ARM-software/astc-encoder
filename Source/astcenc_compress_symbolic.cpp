@@ -496,7 +496,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS];
+	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS];
 	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 
 	quant_method color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
@@ -873,7 +873,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings
-	int partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS];
+	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS];
 	int block_mode_index[TUNE_MAX_TRIAL_CANDIDATES];
 
 	quant_method color_quant_level[TUNE_MAX_TRIAL_CANDIDATES];
