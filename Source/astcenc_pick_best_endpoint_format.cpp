@@ -289,25 +289,13 @@ static void compute_encoding_choice_errors(
 		vmask4 endpt_can_offset = endpt_diff < vfloat4(0.12f * 65535.0f);
 		bool can_offset_encode = (mask(endpt_can_offset) & 0x7) == 0x7;
 
-		// Determine if we can blue contract encode RGB lanes
-		vfloat4 endpt_diff_bc(
-			endpt0.lane<0>() + (endpt0.lane<0>() - endpt0.lane<2>()),
-			endpt1.lane<0>() + (endpt1.lane<0>() - endpt1.lane<2>()),
-			endpt0.lane<1>() + (endpt0.lane<1>() - endpt0.lane<2>()),
-			endpt1.lane<1>() + (endpt1.lane<1>() - endpt1.lane<2>())
-		);
-
-		vmask4 endpt_can_bc_lo = endpt_diff_bc > vfloat4(0.01f * 65535.0f);
-		vmask4 endpt_can_bc_hi = endpt_diff_bc < vfloat4(0.99f * 65535.0f);
-		bool can_blue_contract = (mask(endpt_can_bc_lo & endpt_can_bc_hi) & 0x7) == 0x7;
-
 		// Store out the settings
 		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
 		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;        // wild guess
 		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // empirical
 		eci[i].alpha_drop_error = alpha_drop_error * 3.0f;
 		eci[i].can_offset_encode = can_offset_encode;
-		eci[i].can_blue_contract = can_blue_contract;
+		eci[i].can_blue_contract = !blk.is_luminance();
 	}
 }
 
