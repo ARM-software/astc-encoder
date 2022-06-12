@@ -26,6 +26,11 @@ cost:quality trade off.
     decompression scores.
   * **Feature:** The core codec is now warning clean up to /W4 for both MSVC
     `cl.exe` and `clangcl.exe` compilers.
+  * **Feature:** The core codec now supports arm64 for both MSVC `cl.exe` and
+    `clangcl.exe` compilers.
+  * **Feature:** `NO_INVARIANCE` builds with AVX2 will enable `-mfma` and
+    `-ffp-contract=fast` when using Clang or GCC. This reduces image quality
+    by up to 0.2dB (normally much less), but improves performance by 10-15%.
   * **Optimization:** Angular endpoint min/max weight selection is restricted
     to weight `QUANT_11` or lower. Higher quantization levels assume default
     0-1 range, which is less accurate but much faster.
@@ -46,12 +51,11 @@ cost:quality trade off.
   * **Optimization:** Consistently vectorize the creation of unquantized weight
     grids when they are needed.
   * **Optimization:** Remove redundant per-decimation mode copies of endpoint
-    and weight structures, which were really read-only.
+    and weight structures, which were really read-only duplicates.
   * **Optimization:** Early-out the same endpoint mode color calculation if it
     cannot be applied.
-  * **Optimization:** `NO_INVARIANCE` builds with AVX2 will enable `-mfma` and
-    `-ffp-contract=fast` when using Clang or GCC. This reduces image quality
-    by up to 0.2dB (normally much less), but improves performance by 10-15%.
+  * **Optimization:** Numerous type size reductions applied to arrays to reduce
+    both context working buffer size usage and stack usage.
 - - -
 
 _Copyright © 2022, Arm Limited and contributors. All rights reserved._
