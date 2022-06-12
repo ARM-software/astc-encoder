@@ -1143,7 +1143,7 @@ struct encoding_choice_errors
 	/** @brief Can we use delta offset encoding? */
 	bool can_offset_encode;
 
-	/** @brief CAn we use blue contraction encoding? */
+	/** @brief Can we use blue contraction encoding? */
 	bool can_blue_contract;
 };
 
