@@ -175,6 +175,9 @@ COMPRESSION
                nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
                nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
 
+           Alternative component swizzles can be set with -esw and -dsw
+           parameters.
+
        -rgbm <max>
            The input texture is an RGBM encoded texture, storing values HDR
            values between 0 and <max> in an LDR container format with a
