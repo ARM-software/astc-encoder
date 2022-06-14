@@ -89,12 +89,12 @@ For Apple silicon macOS devices we provide:
 ## Repository branches
 
 The `main` branch is an active development branch for the compressor. It aims
-to be a stable branch, but as it is used for ongoing development expect it to
-have some volatility.
+to be a stable branch for the latest major release series, but as it is used
+for ongoing development expect it to have some volatility.
 
-The `2.x` branch is a stable branch for the 2.x release series. It is no longer
-under active development, but is a supported branch that will continue to get
-backported bug fixes.
+The `2.x` and `3.x` branches are a stable branches for the 2.x and 3.x release
+series. They are no longer under active development, but are supported branches
+that will continue to get backported bug fixes.
 
 The `1.x` branch is a stable branch for the 1.x release series. It is no longer
 under active development or getting bug fixes.
