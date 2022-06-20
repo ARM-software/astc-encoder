@@ -194,6 +194,13 @@ the CMake command line when configuring.
 We support building a release bundle of all enabled binary configurations in
 the current CMake configuration using the `package` build target
 
+Configure CMake with:
+
+* `-DPACAKGE=<arch>` to set the package architecture/variant name used to name
+  the package archive (not set by default).
+* `-DPACKAGE_ROOT=<dir>` to change the root directory name in the package
+  archive (default=`bin`). The upstream CI builds expect this to be `astcenc`.
+
 ```shell
 # Run a build and package build outputs in `./astcenc-<ver>-<os>-<arch>.<fmt>`
 cd build
