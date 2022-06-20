@@ -31,15 +31,15 @@ namespace astcenc
 
 // Misc utility tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-static int round_down(int x)
+static unsigned int round_down(unsigned int x)
 {
-	int remainder = x % ASTCENC_SIMD_WIDTH;
+	unsigned int remainder = x % ASTCENC_SIMD_WIDTH;
 	return x - remainder;
 }
 
-static int round_up(int x)
+static unsigned int round_up(unsigned int x)
 {
-	int remainder = x % ASTCENC_SIMD_WIDTH;
+	unsigned int remainder = x % ASTCENC_SIMD_WIDTH;
 	if (!remainder)
 	{
 		return x;
@@ -57,10 +57,10 @@ TEST(misc, RoundDownVLA)
 	EXPECT_EQ(round_down_to_simd_multiple_vla(16), 16u);
 
 	// Variable ones which depend on VLA width
-	EXPECT_EQ(round_down_to_simd_multiple_vla(3),   static_cast<unsigned int>(round_down(3)));
-	EXPECT_EQ(round_down_to_simd_multiple_vla(5),   static_cast<unsigned int>(round_down(5)));
-	EXPECT_EQ(round_down_to_simd_multiple_vla(7),   static_cast<unsigned int>(round_down(7)));
-	EXPECT_EQ(round_down_to_simd_multiple_vla(231), static_cast<unsigned int>(round_down(231)));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(3),   round_down(3));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(5),   round_down(5));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(7),   round_down(7));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(231), round_down(231));
 }
 
 /** @brief Test VLA loop limit round up. */
@@ -72,10 +72,10 @@ TEST(misc, RoundUpVLA)
 	EXPECT_EQ(round_up_to_simd_multiple_vla(16), 16u);
 
 	// Variable ones which depend on VLA width
-	EXPECT_EQ(round_up_to_simd_multiple_vla(3),   static_cast<unsigned int>(round_up(3)));
-	EXPECT_EQ(round_up_to_simd_multiple_vla(5),   static_cast<unsigned int>(round_up(5)));
-	EXPECT_EQ(round_up_to_simd_multiple_vla(7),   static_cast<unsigned int>(round_up(7)));
-	EXPECT_EQ(round_up_to_simd_multiple_vla(231), static_cast<unsigned int>(round_up(231)));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(3),   round_up(3));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(5),   round_up(5));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(7),   round_up(7));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(231), round_up(231));
 }
 
 #if ASTCENC_SIMD_WIDTH == 1
