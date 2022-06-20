@@ -52,6 +52,7 @@ target_compile_options(${ASTC_TEST}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
 
         # Ignore things that the googletest build triggers
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-double-promotion>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-undef>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-reserved-identifier>
