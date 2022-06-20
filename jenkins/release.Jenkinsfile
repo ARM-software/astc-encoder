@@ -133,7 +133,7 @@ spec:
                   export CXX=clang++-9
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DPACKAGE=x64 ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DPACKAGE=x64 ..
                   make install package -j4
                 '''
               }
@@ -144,7 +144,7 @@ spec:
                   export CXX=clang++-9
                   mkdir build_reldec
                   cd build_reldec
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DISA_NONE=ON -DDECOMPRESSOR=ON ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DISA_AVX2=ON -DISA_SSE41=ON -DISA_SSE2=ON -DDECOMPRESSOR=ON ..
                   make -j4
                 '''
               }
