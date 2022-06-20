@@ -5,13 +5,14 @@
 *.log
 *.diff
 *.user
-*.o 
+*.o
 *.a
 __pycache__
 Scratch
 Proto
 
 # Precompiled reference binaries for comparison tests
+bin
 Binaries
 
 # Build artifacts

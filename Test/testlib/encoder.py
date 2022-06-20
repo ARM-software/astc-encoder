@@ -253,9 +253,9 @@ class Encoder2x(EncoderBase):
         name = "astcenc-%s-%s" % (variant, self.VERSION)
         if binary is None:
             if os.name == 'nt':
-                binary = "./astcenc/astcenc-%s.exe" % variant
+                binary = "./bin/astcenc-%s.exe" % variant
             else:
-                binary = "./astcenc/astcenc-%s" % variant
+                binary = "./bin/astcenc-%s" % variant
 
         super().__init__(name, variant, binary)
 

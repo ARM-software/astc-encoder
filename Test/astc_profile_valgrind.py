@@ -110,7 +110,7 @@ def run_pass(image, noStartup, encoder, blocksize, quality):
     Raises:
         CalledProcessException: Any subprocess failed.
     """
-    binary =  "./astcenc/astcenc-%s" % encoder
+    binary =  "./bin/astcenc-%s" % encoder
     args = ["valgrind", "--tool=callgrind", "--callgrind-out-file=callgrind.txt",
             binary, "-cl", image, "out.astc", blocksize, quality, "-j", "1"]
 

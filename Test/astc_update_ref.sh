@@ -8,7 +8,7 @@ fi
 echo "Generating new ref-$1 results"
 
 if [ "$1" = "main" ]; then
-    echo "Using binary from ./astcenc/${1}/"
+    echo "Using binary from ./bin/${1}/"
 else
     echo "Using binary from ./Binaries/${1}/"
 fi

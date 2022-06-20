@@ -49,7 +49,7 @@ Once you have configured the build you can use NMake to compile the project
 from your build dir, and install to your target install directory.
 
 ```shell
-# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/astcenc/`
+# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/bin/`
 cd build
 nmake install
 ```
@@ -109,7 +109,7 @@ Once you have configured the build you can use Make to compile the project from
 your build dir, and install to your target install directory.
 
 ```shell
-# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/astcenc/`
+# Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/bin/`
 cd build
 make install -j16
 ```
@@ -193,6 +193,11 @@ the CMake command line when configuring.
 
 We support building a release bundle of all enabled binary configurations in
 the current CMake configuration using the `package` build target
+
+Configure CMake with:
+
+* `-DPACAKGE=<arch>` to set the package architecture/variant name used to name
+  the package archive (not set by default).
 
 ```shell
 # Run a build and package build outputs in `./astcenc-<ver>-<os>-<arch>.<fmt>`
