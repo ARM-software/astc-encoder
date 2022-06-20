@@ -680,7 +680,7 @@ struct decimation_mode
 	 */
 	bool is_ref_1_plane(quant_method max_weight_quant) const
 	{
-		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
+		uint16_t mask = static_cast<uint16_t>((1 << (max_weight_quant + 1)) - 1);
 		return (refprec_1_plane & mask) != 0;
 	}
 
@@ -691,7 +691,7 @@ struct decimation_mode
 	 */
 	void set_ref_2_plane(quant_method weight_quant)
 	{
-		refprec_2_planes |= (1 << weight_quant);
+		refprec_2_planes |= static_cast<uint16_t>(1 << weight_quant);
 	}
 
 	/**
@@ -701,7 +701,7 @@ struct decimation_mode
 	 */
 	bool is_ref_2_plane(quant_method max_weight_quant) const
 	{
-		uint16_t mask = (1 << (max_weight_quant + 1)) - 1;
+		uint16_t mask = static_cast<uint16_t>((1 << (max_weight_quant + 1)) - 1);
 		return (refprec_2_planes & mask) != 0;
 	}
 };
