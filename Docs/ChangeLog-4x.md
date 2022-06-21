@@ -18,6 +18,9 @@ cost:quality trade off.
 * **General:**
   * **Change:** The `-array` option for specifying the number of volumetric
     image planes for ASTC 3D block compression been renamed to `-zdim`.
+  * **Change:** The build root package directory is now `bin` instead of
+    `astcenc`, allowing the CMake install step to write binaries into
+    `/usr/local/bin` if the user wishes to do so.
   * **Feature:** The `-a` alpha weighting option has been re-enabled in the
     backend, and now again applies alpha scaling to the RGB error metrics when
     encoding. This is based on the maximum alpha in each block, not the
