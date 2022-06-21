@@ -196,8 +196,8 @@ COMPRESSION
            typically lowers the measured PSNR score. Perceptual methods are
            currently only available for normal maps and RGB color data.
 
-       -array <size>
-           Loads an array of <size> 2D image slices to use as a 3D image.
+       -zdim <zdim>
+           Load a sequence of <zdim> 2D image slices to use as a 3D image.
            The input filename given is used is decorated with the postfix
            "_<slice>" to find the file to load. For example, an input named
            "input.png" would load as input_0.png, input_1.png, etc.

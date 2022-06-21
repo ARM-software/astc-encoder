@@ -986,20 +986,20 @@ static int edit_astcenc_config(
 				return 1;
 			}
 		}
-		// Option: Encode a 3D image from an array of 2D images.
-		else if (!strcmp(argv[argidx], "-array"))
+		// Option: Encode a 3D image from a sequence of 2D images.
+		else if (!strcmp(argv[argidx], "-zdim"))
 		{
 			// Only supports compressing
 			if (!(operation & ASTCENC_STAGE_COMPRESS))
 			{
-				printf("ERROR: -array switch is only valid for compression\n");
+				printf("ERROR: -zdim switch is only valid for compression\n");
 				return 1;
 			}
 
 			// Image depth must be specified.
 			if (argidx + 2 > argc)
 			{
-				printf("ERROR: -array switch with no argument\n");
+				printf("ERROR: -zdim switch with no argument\n");
 				return 1;
 			}
 			argidx++;
@@ -1007,13 +1007,13 @@ static int edit_astcenc_config(
 			// Read array size (image depth).
 			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
 			{
-				printf("ERROR: -array size '%s' is invalid\n", argv[argidx]);
+				printf("ERROR: -zdim size '%s' is invalid\n", argv[argidx]);
 				return 1;
 			}
 
 			if ((cli_config.array_size > 1) && (config.block_z == 1))
 			{
-				printf("ERROR: -array with 3D input data for a 2D output format\n");
+				printf("ERROR: -zdim with 3D input data for a 2D output format\n");
 				return 1;
 			}
 			argidx++;

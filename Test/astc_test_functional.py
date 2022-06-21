@@ -1437,7 +1437,7 @@ class CLINTest(CLITestBase):
             self.binary, "-cl",
             "./Test/Data/Tiles/ldr.png",
             self.get_tmp_image_path("LDR", "comp"),
-            "3x3x3", "-fast", "-array", "3"]
+            "3x3x3", "-fast", "-zdim", "3"]
 
         self.exec(command)
 
@@ -1550,7 +1550,7 @@ class CLINTest(CLITestBase):
             self.binary, "-cl",
             "./Test/Data/Tiles/ldr.png",
             self.get_tmp_image_path("LDR", "comp"),
-            "4x4", "-fast", "-array", "2"]
+            "4x4", "-fast", "-zdim", "2"]
 
         self.exec(command)
 
@@ -1563,7 +1563,7 @@ class CLINTest(CLITestBase):
             self.binary, "-cl",
             "./Test/Data/Tiles/ldr.png",
             self.get_tmp_image_path("LDR", "comp"),
-            "4x4x4", "-fast", "-array", "2"]
+            "4x4x4", "-fast", "-zdim", "2"]
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)
