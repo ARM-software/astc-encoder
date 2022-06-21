@@ -1885,6 +1885,50 @@ class CLINTest(CLITestBase):
                 command[blockIndex] = badSwizzle
                 self.exec(command)
 
+    def test_cl_ssw_missing_args(self):
+        """
+        Test -cl with -ssw and missing arguments.
+        """
+        # Build a valid command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-ssw", "rgba"]
+
+        # Run the command, incrementally omitting arguments
+        self.exec_with_omit(command, 7)
+
+    def test_cl_ssw_invalid_swizzle(self):
+        """
+        Test -cl with -ssw and invalid swizzles.
+        """
+        badSwizzles = [
+            "",  # Short swizzles
+            "rrrrr",  # Long swizzles
+        ]
+
+        # Create swizzles with all invalid printable ascii codes
+        good = ["r", "g", "b", "a"]
+        for channel in string.printable:
+            if channel not in good:
+                badSwizzles.append(channel * 4)
+
+        # Build a valid base command
+        command = [
+            self.binary, "-cl",
+            self.get_ref_image_path("LDR", "input", "A"),
+            self.get_tmp_image_path("LDR", "comp"),
+            "4x4", "-fast",
+            "-ssw", "rgba"]
+
+        blockIndex = command.index("rgba")
+        for badSwizzle in badSwizzles:
+            with self.subTest(swizzle=badSwizzle):
+                command[blockIndex] = badSwizzle
+                self.exec(command)
+
     def test_dl_dsw_missing_args(self):
         """
         Test -dl with -dsw and missing arguments.

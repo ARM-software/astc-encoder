@@ -21,6 +21,13 @@ cost:quality trade off.
   * **Change:** The build root package directory is now `bin` instead of
     `astcenc`, allowing the CMake install step to write binaries into
     `/usr/local/bin` if the user wishes to do so.
+  * **Feature:** A new `-ssw` option for specifying the shader sampling swizzle
+    has been added as convenience alternative to the `-cw` option. This is
+    needed to correct error weighting during compression if not all components
+    are read in the shader. For example, to extract and compress two components
+    from an RGBA input image, weighting the two components equally when
+    sampling through .ra in the shader, use `-esw ggga -ssw ra`. In this
+    example `-ssw ra` is equivalent to the alternative `-cw 1 0 0 1` encoding.
   * **Feature:** The `-a` alpha weighting option has been re-enabled in the
     backend, and now again applies alpha scaling to the RGB error metrics when
     encoding. This is based on the maximum alpha in each block, not the

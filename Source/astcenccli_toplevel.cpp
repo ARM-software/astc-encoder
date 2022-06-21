@@ -729,6 +729,60 @@ static int edit_astcenc_config(
 			cli_config.swz_encode.b = swizzle_components[2];
 			cli_config.swz_encode.a = swizzle_components[3];
 		}
+		else if (!strcmp(argv[argidx], "-ssw"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -ssw switch with no argument\n");
+				return 1;
+			}
+
+			int char_count = strlen(argv[argidx - 1]);
+			if (char_count == 0)
+			{
+				printf("ERROR: -ssw pattern contains no characters\n");
+				return 1;
+			}
+
+			if (char_count > 4)
+			{
+				printf("ERROR: -ssw pattern contains more than 4 characters\n");
+				return 1;
+			}
+
+			bool found_r = false;
+			bool found_g = false;
+			bool found_b = false;
+			bool found_a = false;
+
+			for (int i = 0; i < char_count; i++)
+			{
+				switch (argv[argidx - 1][i])
+				{
+				case 'r':
+					found_r = true;
+					break;
+				case 'g':
+					found_g = true;
+					break;
+				case 'b':
+					found_b = true;
+					break;
+				case 'a':
+					found_a = true;
+					break;
+				default:
+					printf("ERROR: -ssw component '%c' is not valid\n", argv[argidx - 1][i]);
+					return 1;
+				}
+			}
+
+			config.cw_r_weight = found_r ? 1.0f : 0.0f;
+			config.cw_g_weight = found_g ? 1.0f : 0.0f;
+			config.cw_b_weight = found_b ? 1.0f : 0.0f;
+			config.cw_a_weight = found_a ? 1.0f : 0.0f;
+		}
 		else if (!strcmp(argv[argidx], "-dsw"))
 		{
 			argidx += 2;

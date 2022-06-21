@@ -385,33 +385,43 @@ ADVANCED COMPRESSION
        -------------
 
        -esw <swizzle>
-           Swizzle the color components before compression. The swizzle is
-           specified using a 4-character string, which defines the output
-           format ordering. The characters may be taken from the set
-           [rgba01], selecting either input color components or a literal
-           zero or one. For example to swap the RG components, and replace
-           alpha with 1, the swizzle 'grb1' should be used.
+           Specify an encoding swizzle to reorder the color components
+           before compression. The swizzle is specified using a four
+           character string, which defines the format ordering used by
+           the compressor.
 
-           The input swizzle takes place before any compression, and all
-           error weighting applied using the -cw option is applied to the
-           post-swizzle component ordering.
+           The characters may be taken from the set [rgba01], selecting
+           either input color components or a literal zero or one. For
+           example to swap the RG components, and replace alpha with 1,
+           the swizzle 'grb1' should be used.
 
            By default all 4 post-swizzle components are included in the
-           error metrics during compression. When using -esw to map two
+           compression error metrics. When using -esw to map two
            component data to the L+A endpoint (e.g. -esw rrrg) the
            luminance data stored in the RGB components will be weighted 3
            times more strongly than the alpha component. This can be
-           corrected using the -cw option to zero the weights of unused
-           components; e.g. using -cw 1 0 0 1.
+           corrected using the -ssw option to specify which components
+           will be sampled at runtime e.g. -ssw ra.
+
+       -ssw <swizzle>
+           Specify a sampling swizzle to identify which color components
+           are actually read by the application shader program. For example,
+           using -ssw ra tells the compressor that the green and blue error
+           does not matter because the data is not actually read.
+
+           The sampling swizzle is based on the channel ordering after the
+           -esw transform has been applied. Note -ssw exposes the same
+           functionality as -cw, but in a more user-friendly form.
 
        -dsw <swizzle>
-           Swizzle the color components after decompression. The swizzle is
-           specified using the same method as the -esw option, with support
-           for an additional "z" character. This is used to specify that
-           the compressed data stores an X+Y normal map, and that the Z
-           output component should be reconstructed from the two components
-           stored in the data. For the typical ASTC normal encoding, which
-           uses an 'rrrg' compression swizzle, you should specify an 'raz1'
+           Specify a decompression swizzle used to reorder the color
+           components after decompression. The swizzle is specified using
+           the same method as the -esw option, with support for an extra
+           "z" character. This is used to specify that the compressed data
+           stores an X+Y normal map, and that the Z output component
+           should be reconstructed from the two components stored in the
+           data. For the typical ASTC normal encoding, which uses an
+           'rrrg' compression swizzle, you should specify an 'raz1'
            swizzle for decompression.
 
        -yflip
