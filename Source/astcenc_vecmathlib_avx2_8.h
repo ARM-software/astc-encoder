@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2021 Arm Limited
+// Copyright 2019-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -345,7 +345,7 @@ ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
 {
-	return _mm256_movemask_ps(a.m);
+	return static_cast<unsigned int>(_mm256_movemask_ps(a.m));
 }
 
 /**
@@ -1086,7 +1086,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
 {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(0xFFFFFF00));
+	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
 	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
 	return vint8(result);
@@ -1098,7 +1098,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
 {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(0xFFFFFF00));
+	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
 	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
@@ -1114,7 +1114,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3, vint8 idx)
 {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(0xFFFFFF00));
+	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
 	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));

@@ -163,7 +163,7 @@
  */
 ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_8(unsigned int count)
 {
-	return count & ~(8 - 1);
+	return count & static_cast<unsigned int>(~(8 - 1));
 }
 
 /**
@@ -175,7 +175,7 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_8(unsigned int coun
  */
 ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int count)
 {
-	return count & ~(4 - 1);
+	return count & static_cast<unsigned int>(~(4 - 1));
 }
 
 /**
@@ -189,7 +189,7 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int coun
  */
 ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int count)
 {
-	return count & ~(ASTCENC_SIMD_WIDTH - 1);
+	return count & static_cast<unsigned int>(~(ASTCENC_SIMD_WIDTH - 1));
 }
 
 /**
@@ -203,7 +203,7 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int co
  */
 ASTCENC_SIMD_INLINE unsigned int round_up_to_simd_multiple_vla(unsigned int count)
 {
-	int multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
+	unsigned int multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
 	return multiples * ASTCENC_SIMD_WIDTH;
 }
 
@@ -510,7 +510,7 @@ static ASTCENC_SIMD_INLINE vfloat4 frexp(vfloat4 a, vint4& exp)
 	exp = (lsr<23>(ai) & 0xFF) - 126;
 
 	// Extract and unbias the mantissa
-	vint4 manti = (ai & 0x807FFFFF) | 0x3F000000;
+	vint4 manti = (ai &  static_cast<int>(0x807FFFFF)) | 0x3F000000;
 	return int_as_float(manti);
 }
 
