@@ -738,7 +738,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			int char_count = strlen(argv[argidx - 1]);
+			size_t char_count = strlen(argv[argidx - 1]);
 			if (char_count == 0)
 			{
 				printf("ERROR: -ssw pattern contains no characters\n");
@@ -756,7 +756,7 @@ static int edit_astcenc_config(
 			bool found_b = false;
 			bool found_a = false;
 
-			for (int i = 0; i < char_count; i++)
+			for (size_t i = 0; i < char_count; i++)
 			{
 				switch (argv[argidx - 1][i])
 				{
