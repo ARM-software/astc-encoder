@@ -7,11 +7,11 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 4.0
+## 4.0.0
 
 **Status:** In development
 
-The 4.0 release introduces some major performance enhancement, and a number
+The 4.0.0 release introduces some major performance enhancement, and a number
 of larger changes to the heuristics used in the codec to find a more effective
 cost:quality trade off.
 
