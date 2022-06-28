@@ -183,11 +183,6 @@ The compression speed can be controlled from `-fastest`, through `-fast`,
 encoder has to spend looking for good encodings the better the results, but it
 does result in increasingly small improvements for the amount of time required.
 
-:warning: The `-fastest` quality preset is designed for quickly roughing-out
-new content. It is tuned to give the fastest possible compression, often at the
-expense of significant image quality loss compared to `-fast`. We do not
-recommend using it for production builds.
-
 There are many other command line options for tuning the encoder parameters
 which can be used to fine tune the compression algorithm. See the command line
 help message for more details.
