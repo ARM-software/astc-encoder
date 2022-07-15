@@ -164,9 +164,13 @@ macro(astcenc_set_properties NAME)
     endif()
 
     if(${NO_INVARIANCE})
-            target_compile_definitions(${NAME}
-                PRIVATE
-                    ASTCENC_NO_INVARIANCE=1)
+        target_compile_definitions(${NAME}
+            PRIVATE
+                ASTCENC_NO_INVARIANCE=1)
+
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
     endif()
 
     if(${CLI})
@@ -273,8 +277,7 @@ macro(astcenc_set_properties NAME)
         if(${NO_INVARIANCE})
             target_compile_options(${NAME}
                 PRIVATE
-                    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>
-                    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
+                    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>)
         endif()
 
     endif()
