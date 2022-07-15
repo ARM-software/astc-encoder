@@ -40,9 +40,10 @@ cost:quality trade off.
     `cl.exe` and `clangcl.exe` compilers.
   * **Feature:** The core codec now supports arm64 for both MSVC `cl.exe` and
     `clangcl.exe` compilers.
-  * **Feature:** `NO_INVARIANCE` builds with AVX2 will enable `-mfma` and
-    `-ffp-contract=fast` when using Clang or GCC. This reduces image quality
-    by up to 0.2dB (normally much less), but improves performance by 10-15%.
+  * **Feature:** `NO_INVARIANCE` builds will enable the `-ffp-contract=fast`
+    option for all targets when using Clang or GCC. In addition AVX2 targets
+    will also set the `-mfma` option. This reduces image quality by up to 0.2dB
+    (normally much less), but improves performance by up to 5-20%.
   * **Optimization:** Angular endpoint min/max weight selection is restricted
     to weight `QUANT_11` or lower. Higher quantization levels assume default
     0-1 range, which is less accurate but much faster.
