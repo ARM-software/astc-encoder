@@ -215,9 +215,9 @@ how to test any modifications to the source code in this repository.
 If you have issues with the `astcenc` encoder, or questions about the ASTC
 texture format itself, please raise them in the GitHub issue tracker.
 
-If you have any questions about Arm Mali GPUs, application development for Arm
-Mali GPUs, or general graphics technology please submit them on the [Arm Mali
-Graphics forums](https://community.arm.com/graphics/).
+If you have any questions about Arm GPUs, application development for Arm GPUs,
+or general mobile graphics development or technology please submit them on the
+[Arm Community graphics forums][4].
 
 - - -
 
@@ -226,3 +226,4 @@ _Copyright © 2013-2022, Arm Limited and contributors. All rights reserved._
 [1]: ./Docs/FormatOverview.md
 [2]: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.html#ASTC
 [3]: https://github.com/ARM-software/astc-encoder/releases
+[4]: https://community.arm.com/support-forums/f/graphics-gaming-and-vr-forum/
