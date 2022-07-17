@@ -159,8 +159,8 @@ vector is unit length.
 
 To encode this we need to store only two input components in the compressed
 data, and therefore use the `rrrg` coding swizzle to align the data with the
-ASTC lumiance+alpha endpoint. We can sample this in shader code using the `.ga`
-sampling swizzle, and reconstruct the Z value with:
+ASTC luminance+alpha endpoint. We can sample this in shader code using the
+`.ga` sampling swizzle, and reconstruct the Z value with:
 
     vec3 nml;
     nml.xy = texture(...).ga;                // Load normals (range 0 to 1)
@@ -171,7 +171,7 @@ The encoding swizzle and appropriate component weighting is enabled by using
 the `-normal` command line option. If you wish to use a different pair of
 components you can specify a custom swizzle after setting the `-normal`
 parameter. For example, to match BC5n component ordering use
-`-normal -esw gggr` for compression and `-normmal -dsw arz1` for decompression.
+`-normal -esw gggr` for compression and `-normal -dsw arz1` for decompression.
 
 ## Encoding sRGB data
 
