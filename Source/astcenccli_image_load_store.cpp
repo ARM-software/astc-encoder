@@ -2338,7 +2338,6 @@ static unsigned int unpack_bytes(
 }
 
 /* See header for documentation. */
-// TODO: Return a bool?
 int load_cimage(
 	const char* filename,
 	astc_compressed_image& img
@@ -2406,7 +2405,6 @@ int load_cimage(
 }
 
 /* See header for documentation. */
-// TODO: Return a bool?
 int store_cimage(
 	const astc_compressed_image& img,
 	const char* filename
