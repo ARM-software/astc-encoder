@@ -57,7 +57,7 @@ static error_accum4& operator+=(
 }
 
 /**
- * @brief mPSNR tonemapping operator for HDR images.
+ * @brief mPSNR tone-mapping operator for HDR images.
  *
  * @param val     The color value to tone map
  * @param fstop   The exposure fstop; should be in range [-125, 125]

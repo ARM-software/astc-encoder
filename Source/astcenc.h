@@ -46,7 +46,7 @@
  * Threading
  * =========
  *
- * In pseudocode, the usage for manual user threading looks like this:
+ * In pseudo-code, the usage for manual user threading looks like this:
  *
  *     // Configure the compressor run
  *     astcenc_config my_config;
@@ -82,7 +82,7 @@
  * Images can be any dimension; there is no requirement to be a multiple of the ASTC block size.
  *
  * Data is always passed in as 4 color components, and accessed as an array of 2D image slices. Data
- * within an image slice is always tightly packed without padding. Addresing looks like this:
+ * within an image slice is always tightly packed without padding. Addressing looks like this:
  *
  *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4    ]   // Red
  *     data[z_coord][y_coord * x_dim * 4 + x_coord * 4 + 1]   // Green
@@ -112,8 +112,8 @@
  * Input images must contain unit-length normalized and should be passed in using a two component
  * swizzle. The astcenc command line tool defaults to an RRRG swizzle, but some developers prefer
  * to use GGGR for compatability with BC5n which will work just as well. The Z component can be
- * recovered programatically in shader code, using knowledge that the vector is unit length and that
- * Z must be positive for a tangent-space normal map.
+ * recovered programmatically in shader code, using knowledge that the vector is unit length and
+ * that Z must be positive for a tangent-space normal map.
  *
  * Decompress-only usage
  * =====================
@@ -238,7 +238,7 @@ static const float ASTCENC_PRE_FAST = 10.0f;
 /** @brief The medium quality search preset. */
 static const float ASTCENC_PRE_MEDIUM = 60.0f;
 
-/** @brief The throrough quality search preset. */
+/** @brief The thorough quality search preset. */
 static const float ASTCENC_PRE_THOROUGH = 98.0f;
 
 /** @brief The exhaustive, highest quality, search preset. */
@@ -425,7 +425,7 @@ struct astcenc_config
 	 *
 	 * It is recommended that this is set to 1 when using FLG_USE_ALPHA_WEIGHT on a texture that
 	 * will be sampled using linear texture filtering to minimize color bleed out of transparent
-	 * texels that are adjcent to non-transparent texels.
+	 * texels that are adjacent to non-transparent texels.
 	 */
 	unsigned int a_scale_radius;
 
@@ -776,7 +776,7 @@ ASTCENC_PUBLIC void astcenc_context_free(
  * advanced content packaging pipelines.
  *
  * @param context   Codec context.
- * @param data      One block of compressesd ASTC data.
+ * @param data      One block of compressed ASTC data.
  * @param info      The output info structure to populate.
  *
  * @return @c ASTCENC_SUCCESS if the block was decoded, or an error otherwise. Note that this
