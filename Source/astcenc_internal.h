@@ -234,7 +234,7 @@ private:
 	/** @brief True if the stage term() step has been executed. */
 	bool m_term_done;
 
-	/** @brief Contition variable for tracking stage processing completion. */
+	/** @brief Condition variable for tracking stage processing completion. */
 	std::condition_variable m_complete;
 
 	/** @brief Number of tasks started, but not necessarily finished. */
@@ -256,7 +256,7 @@ public:
 	/**
 	 * @brief Reset the tracker for a new processing batch.
 	 *
-	 * This must be called from single-threaded code before starting the multi-threaded procesing
+	 * This must be called from single-threaded code before starting the multi-threaded processing
 	 * operations.
 	 */
 	void reset()
@@ -362,8 +362,8 @@ public:
 	 * @brief Trigger the pipeline stage term step.
 	 *
 	 * This can be called from multi-threaded code. The first thread to hit this will process the
-	 * thread termintion. Caller must have called @c wait() prior to calling this function to ensure
-	 * that processing is complete.
+	 * work pool termination. Caller must have called @c wait() prior to calling this function to
+	 * ensure that processing is complete.
 	 *
 	 * @param term_func   Callable which executes the stage termination.
 	 */
@@ -498,10 +498,10 @@ struct partition_lines3
 	/** @brief Line for correlated chroma, passing though the origin. */
 	line3 samec_line;
 
-	/** @brief Postprocessed line for uncorrelated chroma. */
+	/** @brief Post-processed line for uncorrelated chroma. */
 	processed_line3 uncor_pline;
 
-	/** @brief Postprocessed line for correlated chroma, passing though the origin. */
+	/** @brief Post-processed line for correlated chroma, passing though the origin. */
 	processed_line3 samec_pline;
 
 	/** @brief The length of the line for uncorrelated chroma. */
@@ -545,7 +545,7 @@ struct partition_info
 /**
  * @brief The weight grid information for a single decimation pattern.
  *
- * ASTC can store one weight per texel, but is also capable of storing lower resoution weight grids
+ * ASTC can store one weight per texel, but is also capable of storing lower resolution weight grids
  * that are interpolated during decompression to assign a with to a texel. Storing fewer weights
  * can free up a substantial amount of bits that we can then spend on more useful things, such as
  * more accurate endpoints and weights, or additional partitions.
@@ -714,7 +714,7 @@ struct decimation_mode
  * modes will be unused (too many weights for the current block size or disabled by heuristics). The
  * actual number of weights stored is @c decimation_mode_count, and the @c decimation_modes and
  * @c decimation_tables arrays store the active modes contiguously at the start of the array. These
- * entries are not stored in any particuar order.
+ * entries are not stored in any particular order.
  *
  * The block mode tables store the unpacked block mode settings. Block modes are stored in the
  * compressed block as an 11 bit field, but for any given block size and set of compressor
@@ -1296,7 +1296,6 @@ struct symbolic_compressed_block
 	uint8_t color_formats_matched;
 
 	/** @brief The plane 2 color component, or -1 if single plane; valid for @c NONCONST blocks. */
-	// Try unsigned sentintel to avoid signext on load
 	int8_t plane2_component;
 
 	/** @brief The block mode; valid for @c NONCONST blocks. */
@@ -1406,7 +1405,6 @@ struct avg_args
 	/** @brief The arguments for the nested variance computation. */
 	pixel_region_args arg;
 
-	// The above has a reference to the image altread?
 	/** @brief The image X dimensions. */
 	unsigned int img_size_x;
 
@@ -1452,7 +1450,7 @@ struct astcenc_context
 	 */
 
 	/** @brief The input image alpha channel averages table, may be @c nullptr if not needed. */
-	float *input_alpha_averages;
+	float* input_alpha_averages;
 
 	/** @brief The scratch working buffers, one per thread (see @c thread_count). */
 	compression_working_buffers* working_buffers;
@@ -1537,7 +1535,7 @@ void init_partition_tables(
  *
  * @return The unpacked table.
  */
-const float *get_2d_percentile_table(
+const float* get_2d_percentile_table(
 	unsigned int xdim,
 	unsigned int ydim);
 
@@ -1585,7 +1583,7 @@ extern const uint8_t color_unquant_tables[17][256];
 /**
  * @brief The precomputed quant mode storage table.
  *
- * Indexing by [integercount/2][bits] gives us the quantization level for a given integer count and
+ * Indexing by [integer_count/2][bits] gives us the quantization level for a given integer count and
  * number of compressed storage bits. Returns -1 for cases where the requested integer count cannot
  * ever fit in the supplied storage size.
  */
@@ -1616,11 +1614,11 @@ void encode_ise(
  * Note that BISE input strings are not a whole number of bytes in length, and ASTC can start
  * strings at arbitrary bit offsets in the encoded data.
  *
- * @param         quant_level      The BISE alphabet size.
- * @param         character_count  The number of characters in the string.
- * @param         input_data       The packed string.
- * @param[in,out] output_data      The output storage, one byte per character.
- * @param         bit_offset       The starting offset in the output storage.
+ * @param         quant_level       The BISE alphabet size.
+ * @param         character_count   The number of characters in the string.
+ * @param         input_data        The packed string.
+ * @param[in,out] output_data       The output storage, one byte per character.
+ * @param         bit_offset        The starting offset in the output storage.
  */
 void decode_ise(
 	quant_method quant_level,
@@ -1770,7 +1768,7 @@ void compute_error_squared_rgba(
  *
  * On return the @c best_partitions list will contain the two best partition
  * candidates; one assuming data has uncorrelated chroma and one assuming the
- * data has corelated chroma. The best candidate is returned first in the list.
+ * data has correlated chroma. The best candidate is returned first in the list.
  *
  * @param      bsd                        The block size information.
  * @param      blk                        The image block color data to compress.
@@ -1875,13 +1873,13 @@ void load_image_block_fast_ldr(
 /**
  * @brief Store a single image block to the output image.
  *
- * @param[out] img           The output image data.
- * @param      blk           The image block to export.
- * @param      bsd           The block size information.
- * @param      xpos          The block X coordinate in the input image.
- * @param      ypos          The block Y coordinate in the input image.
- * @param      zpos          The block Z coordinate in the input image.
- * @param      swz           The swizzle to apply on store.
+ * @param[out] img    The output image data.
+ * @param      blk    The image block to export.
+ * @param      bsd    The block size information.
+ * @param      xpos   The block X coordinate in the input image.
+ * @param      ypos   The block Y coordinate in the input image.
+ * @param      zpos   The block Z coordinate in the input image.
+ * @param      swz    The swizzle to apply on store.
  */
 void store_image_block(
 	astcenc_image& img,
