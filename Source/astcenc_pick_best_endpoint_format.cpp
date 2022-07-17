@@ -1135,18 +1135,17 @@ unsigned int compute_ideal_endpoint_formats(
 	uint8_t* best_quant_levels_mod = tmpbuf.best_quant_levels_mod;
 	uint8_t (&best_ep_formats)[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS] = tmpbuf.best_ep_formats;
 
-	// Ensure that the "overstep" of the last iteration in the vectorized loop will contain data
-	// that will never be picked as best candidate
-	const unsigned int packed_end_block_mode = round_up_to_simd_multiple_vla(end_block_mode);
-
-	// TODO: Can we avoid this?
-	for (unsigned int i = 0; i < start_block_mode; i++)
+	// Ensure that the first iteration understep contains data that will never be picked
+	unsigned int packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
+	for (unsigned int i = packed_start_block_mode; i < start_block_mode; i++)
 	{
 		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
 		best_quant_levels[i] = QUANT_2;
 		best_quant_levels_mod[i] = QUANT_2;
 	}
 
+	// Ensure that last iteration overstep contains data that will never be picked
+	const unsigned int packed_end_block_mode = round_up_to_simd_multiple_vla(end_block_mode);
 	for (unsigned int i = end_block_mode; i < packed_end_block_mode; i++)
 	{
 		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
