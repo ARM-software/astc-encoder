@@ -222,7 +222,7 @@ ASTCENC_SIMD_INLINE vfloat change_sign(vfloat a, vfloat b)
 /**
  * @brief Return fast, but approximate, vector atan(x).
  *
- * Max error of this implementaiton is 0.004883.
+ * Max error of this implementation is 0.004883.
  */
 ASTCENC_SIMD_INLINE vfloat atan(vfloat x)
 {
