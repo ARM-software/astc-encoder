@@ -520,7 +520,7 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 }
 
 /**
- * @brief Return the horizontal minimum of a vector.
+ * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 {
