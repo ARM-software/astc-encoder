@@ -357,7 +357,7 @@ ASTCENC_SIMD_INLINE bool any(vmask8 a)
 }
 
 /**
- * @brief True if any lanes are enabled, false otherwise.
+ * @brief True if all lanes are enabled, false otherwise.
  */
 ASTCENC_SIMD_INLINE bool all(vmask8 a)
 {
