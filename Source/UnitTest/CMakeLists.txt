@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2021 Arm Limited
+#  Copyright 2020-2022 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -31,10 +31,10 @@ else()
     math(EXPR ARTIFACTS_LEN "${ARTIFACTS_LEN} - 1")
 
     foreach(INDEX RANGE ${ARTIFACTS_LEN})
-        list(GET ARTIFACTS ${INDEX} ARTEFACT)
+        list(GET ARTIFACTS ${INDEX} ARTIFACT)
         list(GET CONFIGS ${INDEX} CONFIG)
         if(${CONFIG})
-            set(ISA_SIMD ${ARTEFACT})
+            set(ISA_SIMD ${ARTIFACT})
             include(cmake_core.cmake)
         endif()
     endforeach()
