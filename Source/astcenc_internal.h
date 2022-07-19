@@ -1961,7 +1961,7 @@ void compute_ideal_weights_for_decimation(
  * @param      high_bound                The highest weight allowed.
  * @param      dec_weight_ideal_value    The ideal weight set.
  * @param[out] dec_weight_quant_uvalue   The output quantized weight as a float.
- * @param[out] dec_weight_uquant   The output quantized weight as encoded int.
+ * @param[out] dec_weight_uquant         The output quantized weight as encoded int.
  * @param      quant_level               The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation(
