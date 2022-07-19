@@ -160,7 +160,7 @@ static void compute_ideal_colors_and_weights_1_comp(
 			highvalue = astc::max(value, highvalue);
 		}
 
-		if (highvalue < lowvalue)
+		if (highvalue <= lowvalue)
 		{
 			lowvalue = 0.0f;
 			highvalue = 1e-7f;
@@ -292,7 +292,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 
 		// It is possible for a uniform-color partition to produce length=0;
 		// this causes NaN issues so set to small value to avoid this problem
-		if (highparam < lowparam)
+		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
 			highparam = 1e-7f;
@@ -441,7 +441,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 		// It is possible for a uniform-color partition to produce length=0;
 		// this causes NaN issues so set to small value to avoid this problem
-		if (highparam < lowparam)
+		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
 			highparam = 1e-7f;
@@ -563,7 +563,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 
 		// It is possible for a uniform-color partition to produce length=0;
 		// this causes NaN issues so set to small value to avoid this problem
-		if (highparam < lowparam)
+		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
 			highparam = 1e-7f;
@@ -1001,7 +1001,7 @@ void compute_quantized_weights_for_decimation(
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 
 	// TODO: Oddity to investigate; triggered by test in issue #265.
-	if (high_bound < low_bound)
+	if (high_bound <= low_bound)
 	{
 		low_bound = 0.0f;
 		high_bound = 1.0f;
