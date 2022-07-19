@@ -82,7 +82,7 @@ TraceNode::TraceNode(
 	vsnprintf (buffer, bufsz, format, args);
 	va_end (args);
 
-	// Guarantee there is a nul termintor
+	// Guarantee there is a nul terminator
 	buffer[bufsz - 1] = 0;
 
 	// Generate the node
@@ -189,7 +189,7 @@ void trace_add_data(
 	vsnprintf (buffer, bufsz, format, args);
 	va_end (args);
 
-	// Guarantee there is a nul termintor
+	// Guarantee there is a nul terminator
 	buffer[bufsz - 1] = 0;
 
 	std::string value = "\"" + std::string(buffer) + "\"";
