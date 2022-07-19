@@ -1974,48 +1974,6 @@ void compute_quantized_weights_for_decimation(
 	quant_method quant_level);
 
 /**
- * @brief Compute the infilled weight for a texel index in a decimated grid.
- *
- * @param di        The weight grid decimation to use.
- * @param weights   The decimated weight values to use.
- * @param index     The texel index to interpolate.
- *
- * @return The interpolated weight for the given texel.
- */
-static inline float bilinear_infill(
-	const decimation_info& di,
-	const float* weights,
-	unsigned int index
-) {
-	return (weights[di.texel_weights_4t[0][index]] * di.texel_weights_float_4t[0][index] +
-	        weights[di.texel_weights_4t[1][index]] * di.texel_weights_float_4t[1][index]) +
-	       (weights[di.texel_weights_4t[2][index]] * di.texel_weights_float_4t[2][index] +
-	        weights[di.texel_weights_4t[3][index]] * di.texel_weights_float_4t[3][index]);
-}
-
-/**
- * @brief Compute the infilled weight for a texel index in a decimated grid.
- *
- * This is specialized version which computes only two weights per texel for
- * encodings that are only decimated in a single axis.
- *
- * @param di        The weight grid decimation to use.
- * @param weights   The decimated weight values to use.
- * @param index     The texel index to interpolate.
- *
- * @return The interpolated weight for the given texel.
- */
-static inline float bilinear_infill_2(
-	const decimation_info& di,
-	const float* weights,
-	unsigned int index
-) {
-	return (weights[di.texel_weights_4t[0][index]] * di.texel_weights_float_4t[0][index] +
-	        weights[di.texel_weights_4t[1][index]] * di.texel_weights_float_4t[1][index]);
-}
-
-
-/**
  * @brief Compute the infilled weight for N texel indices in a decimated grid.
  *
  * @param di        The weight grid decimation to use.
