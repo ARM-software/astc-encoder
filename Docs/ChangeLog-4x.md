@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.0.0
 
-**Status:** In development
+**Status:** July 2022
 
 The 4.0.0 release introduces some major performance enhancement, and a number
 of larger changes to the heuristics used in the codec to find a more effective
@@ -69,6 +69,19 @@ cost:quality trade off.
     cannot be applied.
   * **Optimization:** Numerous type size reductions applied to arrays to reduce
     both context working buffer size usage and stack usage.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 3.5 release:**
+
+![Relative scores 4.0 vs 3.7](./ChangeLogImg/relative-3.7-to-4.0.png)
+
+
 - - -
 
 _Copyright © 2022, Arm Limited and contributors. All rights reserved._

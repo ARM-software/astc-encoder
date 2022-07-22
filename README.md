@@ -64,9 +64,6 @@ Release build binaries for the `astcenc` stable releases are provided in the
 **Latest 3.x stable release:** 3.7
 * Change log: [3.x series](./Docs/ChangeLog-3x.md)
 
-**Latest 2.x stable release:** 2.5
-* Change log: [2.x series](./Docs/ChangeLog-2x.md)
-
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux. The
 builds of the astcenc are provided as multiple binaries, each tuned for a
 specific SIMD instruction set.
