@@ -58,7 +58,7 @@ from 0.89 bits/pixel up to 8 bits/pixel.
 Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
-**Latest 4.x stable release:** TBD
+**Latest 4.x stable release:** 4.0
 * Change log: [4.x series](./Docs/ChangeLog-4x.md)
 
 **Latest 3.x stable release:** 3.7
@@ -90,7 +90,8 @@ For Apple silicon macOS devices we provide:
 
 The `main` branch is an active development branch for the compressor. It aims
 to be a stable branch for the latest major release series, but as it is used
-for ongoing development expect it to have some volatility.
+for ongoing development expect it to have some volatility. We recommend using
+the latest stable release tag for production development.
 
 The `2.x` and `3.x` branches are a stable branches for the 2.x and 3.x release
 series. They are no longer under active development, but are supported branches
