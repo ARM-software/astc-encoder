@@ -77,7 +77,7 @@ Key for charts:
 * Color = block size (see legend).
 * Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
 
-**Relative performance vs 3.5 release:**
+**Relative performance vs 3.7 release:**
 
 ![Relative scores 4.0 vs 3.7](./ChangeLogImg/relative-3.7-to-4.0.png)
 
