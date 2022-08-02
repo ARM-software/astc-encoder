@@ -25,7 +25,7 @@
 /** @brief The version header. */
 static const char *astcenc_copyright_string =
 R"(astcenc v%s, %u-bit %s%s%s
-Copyright 2011-%s Arm Limited, all rights reserved
+Copyright (c) 2011-%s Arm Limited. All rights reserved.
 )";
 
 /** @brief The short-form help text. */
