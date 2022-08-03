@@ -189,6 +189,43 @@ We support building with ASAN on Linux and macOS when using a compiler that
 supports it. To build binaries with ASAN checking enabled add `-DASAN=ON` to
 the CMake command line when configuring.
 
+### Android builds
+
+Builds of the command line utility for Android are not officially supported, but can be a useful
+development build for testing on e.g. different Arm CPU microarchitectures.
+
+The build script below shows one possible route to building the command line tool for Android. Once
+built the application can be pushed to e.g. `/data/local/tmp` and executed from an Android shell
+terminal over `adb`.
+
+```shell
+ANDROID_ABI=arm64-v8a
+ANDROID_NDK=/work/tools/android/ndk/22.1.7171670
+
+BUILD_TYPE=RelWithDebInfo
+
+BUILD_DIR=build
+
+mkdir -p ${BUILD_DIR}
+cd ${BUILD_DIR}
+
+cmake \
+    -DCMAKE_INSTALL_PREFIX=./ \
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+    -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+    -DANDROID_ABI=${ANDROID_ABI} \
+    -DANDROID_ARM_NEON=ON \
+    -DANDROID_PLATFORM=android-21 \
+    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
+    -DANDROID_TOOLCHAIN=clang \
+    -DANDROID_STL=c++_static \
+    -DARCH=aarch64 \
+    -DISA_NEON=ON \
+    ..
+
+make -j16
+```
+
 ## Packaging a release bundle
 
 We support building a release bundle of all enabled binary configurations in
