@@ -7,6 +7,16 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.1.0
+
+**Status:** TBD
+
+The 4.1.0 release is a maintenance release.
+
+* **General:**
+  *  **Bug-fix:** Fixed GCC9 compiler warnings on Arm aarch64.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.0.0
 
 **Status:** July 2022
