@@ -215,7 +215,7 @@ pipeline {
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac'
+            label 'mac && x86_64'
           }
           stages {
             stage('Clean') {
