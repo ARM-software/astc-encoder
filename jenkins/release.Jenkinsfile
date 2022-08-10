@@ -212,7 +212,7 @@ spec:
         /* Build for macOS on x86-64 using Clang */
         stage('macOS') {
           agent {
-            label 'mac && notarizer'
+            label 'mac && x86_64 && notarizer'
           }
           stages {
             stage('Clean') {
@@ -267,7 +267,7 @@ spec:
         /* Build for macOS on x86-64 using Clang */
         stage('macOS arm64') {
           agent {
-            label 'mac && notarizer'
+            label 'mac && x86_64 && notarizer'
           }
           stages {
             stage('Clean') {
