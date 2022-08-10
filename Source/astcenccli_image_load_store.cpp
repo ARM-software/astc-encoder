@@ -1155,7 +1155,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	delete[] buf;
-	is_hdr = bitness == 32;
+	is_hdr = bitness => 16;
 	component_count = components;
 	return astc_img;
 }
@@ -1915,7 +1915,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	}
 
 	delete[] buf;
-	is_hdr = bitness == 16;
+	is_hdr = bitness >= 16;
 	component_count = components;
 	return astc_img;
 }
