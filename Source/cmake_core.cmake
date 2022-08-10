@@ -83,16 +83,6 @@ macro(astcenc_set_properties NAME)
             # MSVC defines
             $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
-    # Work around compiler bug in MSVC when targeting arm64
-    # https://developercommunity.visualstudio.com/t/inlining-turns-constant-into-register-operand-for/1394798
-    # https://github.com/microsoft/vcpkg/pull/24869
-    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        if(CPU_ARCHITECTURE STREQUAL armv8 OR CPU_ARCHITECTURE STREQUAL arm64)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /d2ssa-cfg-sink-")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /d2ssa-cfg-sink-")
-        endif()
-    endif()
-
     if(${DECOMPRESSOR})
         target_compile_definitions(${NAME}
             PRIVATE
@@ -208,11 +198,13 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=0)
         endif()
 
-        # Workaround MSVC codegen bug for NEON builds see:
+        # Workaround MSVC codegen bug for NEON builds on VS 2022 17.2 or older
         # https://developercommunity.visualstudio.com/t/inlining-turns-constant-into-register-operand-for/1394798
-        target_compile_options(${NAME}
-            PRIVATE
-            $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND MSVC_VERSION LESS 1933)
+            target_compile_options(${NAME}
+                PRIVATE
+                    $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
+        endif()
 
     elseif((${ISA_SIMD} MATCHES "sse2") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE2}))
         if(NOT ${UNIVERSAL_BUILD})
