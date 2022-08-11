@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2020 Arm Limited
+# Copyright 2019-2022 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -96,7 +96,7 @@ class TestImage():
         FORMATS: Tuple of valid color format values.
         FLAGS: Map of valid flags (key) and their meaning (value).
     """
-    TEST_EXTS = (".jpg", ".png", ".tga", ".dds", ".hdr")
+    TEST_EXTS = (".jpg", ".png", ".tga", ".dds", ".hdr", ".ktx")
 
     PROFILES = ("ldr", "ldrs", "hdr")
 
