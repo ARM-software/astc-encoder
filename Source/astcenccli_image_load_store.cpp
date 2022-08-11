@@ -1136,7 +1136,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		}
 	}
 
-	// then transfer data from the surface to our own image-data-structure.
+	// Transfer data from the surface to our own image data structure
 	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
@@ -1152,11 +1152,16 @@ static astcenc_image* load_ktx_uncompressed_image(
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
 				dst = static_cast<void*>(&data8[4 * dim_x * ydst]);
 			}
-			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
+			else if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
-				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
+			}
+			else // if (astc_img->data_type == ASTCENC_TYPE_F32)
+			{
+				assert(astc_img->data_type == ASTCENC_TYPE_F32);
+				float* data32 = static_cast<float*>(astc_img->data[z]);
+				dst = static_cast<void*>(&data32[4 * dim_x * ydst]);
 			}
 
 			uint8_t *src = buf + (z * ystride) + (y * xstride);
