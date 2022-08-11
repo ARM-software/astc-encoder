@@ -625,6 +625,16 @@ static uint32_t u32_byterev(uint32_t v)
 #define GL_LUMINANCE                                0x1909
 #define GL_LUMINANCE_ALPHA                          0x190A
 
+#define GL_R8                                       0x8229
+#define GL_RG8                                      0x822B
+#define GL_RGB8                                     0x8051
+#define GL_RGBA8                                    0x8058
+
+#define GL_R16F                                     0x822D
+#define GL_RG16F                                    0x822F
+#define GL_RGB16F                                   0x881B
+#define GL_RGBA16F                                  0x881A
+
 #define GL_UNSIGNED_BYTE                            0x1401
 #define GL_UNSIGNED_SHORT                           0x1403
 #define GL_HALF_FLOAT                               0x140B
@@ -1352,7 +1362,15 @@ static bool store_ktx_uncompressed_image(
 	ktx_header hdr;
 
 	static const int gl_format_of_components[4] {
-		GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_RGB, GL_RGBA
+		GL_RED, GL_RG, GL_RGB, GL_RGBA
+	};
+
+	static const int gl_sized_format_of_components_ldr[4] {
+		GL_R8, GL_RG8, GL_RGB8, GL_RGBA8
+	};
+
+	static const int gl_sized_format_of_components_hdr[4] {
+		GL_R16F, GL_RG16F, GL_RGB16F, GL_RGBA16F
 	};
 
 	memcpy(hdr.magic, ktx_magic, 12);
@@ -1360,8 +1378,15 @@ static bool store_ktx_uncompressed_image(
 	hdr.gl_type = (bitness == 16) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
 	hdr.gl_type_size = bitness / 8;
 	hdr.gl_format = gl_format_of_components[image_components - 1];
-	hdr.gl_internal_format = gl_format_of_components[image_components - 1];
-	hdr.gl_base_internal_format = gl_format_of_components[image_components - 1];
+	if (bitness == 16)
+	{
+		hdr.gl_internal_format = gl_sized_format_of_components_hdr[image_components - 1];
+	}
+	else
+	{
+		hdr.gl_internal_format = gl_sized_format_of_components_ldr[image_components - 1];
+	}
+	hdr.gl_base_internal_format = hdr.gl_format;
 	hdr.pixel_width = dim_x;
 	hdr.pixel_height = dim_y;
 	hdr.pixel_depth = (dim_z == 1) ? 0 : dim_z;
