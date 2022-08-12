@@ -14,7 +14,15 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 4.1.0 release is a maintenance release.
 
 * **General:**
-  *  **Bug-fix:** Fixed GCC9 compiler warnings on Arm aarch64.
+  * **Change:** Command line decompressor no longer uses the legacy
+    `GL_LUMINANCE` or `GL_LUMINANCE_ALPHA` format enums when writing KTX
+    output files. Luminance textures now use the `GL_RED` format and
+    luminance_alpha textures now use the `GL_RG` format.
+  * **Bug-fix:** Command line decompressor now correctly uses sized type enums
+    for the internal format when writing output KTX files.
+  * **Bug-fix:** Command line compressor now correctly loads 32-bit per
+    component input KTX files.
+  * **Bug-fix:** Fixed GCC9 compiler warnings on Arm aarch64.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.0.0
