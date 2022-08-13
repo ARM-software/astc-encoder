@@ -921,7 +921,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	// Although these are set up later, use default initializer to remove warnings
 	int bitness = 8;              // Internal precision after conversion
-	int bytes_per_component = 1;  // Bytes per component in the KTX file.
+	int bytes_per_component = 1;  // Bytes per component in the KTX file
 	scanline_transfer copy_method = R8_TO_RGBA8;
 
 	switch (hdr.gl_type)
