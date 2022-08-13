@@ -1016,7 +1016,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		}
 	case GL_FLOAT:
 		{
-			bitness = 32;
+			bitness = 16;
 			bytes_per_component = 4;
 			switch (hdr.gl_format)
 			{
@@ -1154,7 +1154,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	delete[] buf;
-	is_hdr = bitness == 32;
+	is_hdr = bitness == 16;
 	component_count = components;
 	return astc_img;
 }
