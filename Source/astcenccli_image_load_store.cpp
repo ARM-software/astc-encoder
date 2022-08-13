@@ -804,7 +804,7 @@ struct ktx_header
 	uint32_t bytes_of_key_value_data;	// size in bytes of the key-and-value area immediately following the header.
 };
 
-// magic 12-byte sequence that must appear at the beginning of every KTX file.
+// Magic 12-byte sequence that must appear at the beginning of every KTX file.
 static uint8_t ktx_magic[12] {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 };
@@ -919,9 +919,9 @@ static astcenc_image* load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	// Although these are set up later, we include a default initializer to remove warnings
-	int bytes_per_component = 1;	// bytes per component in the KTX file.
-	int bitness = 8;			// internal precision we will use in the codec.
+	// Although these are set up later, use default initializer to remove warnings
+	int bitness = 8;              // Internal precision after conversion
+	int bytes_per_component = 1;  // Bytes per component in the KTX file
 	scanline_transfer copy_method = R8_TO_RGBA8;
 
 	switch (hdr.gl_type)
@@ -1027,7 +1027,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		}
 	case GL_FLOAT:
 		{
-			bitness = 32;
+			bitness = 16;
 			bytes_per_component = 4;
 			switch (hdr.gl_format)
 			{
@@ -1136,7 +1136,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		}
 	}
 
-	// then transfer data from the surface to our own image-data-structure.
+	// Transfer data from the surface to our own image data structure
 	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
