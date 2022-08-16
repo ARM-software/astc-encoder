@@ -24,9 +24,11 @@
 
 #include <cassert>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <memory>
 
 /* ============================================================================
 	Data structure definitions
@@ -1271,6 +1273,30 @@ static void image_set_pixel(
 }
 
 /**
+ * @brief Set the value of a single pixel in an image.
+ *
+ * @param[out] img     The output image; must use F32 texture components.
+ * @param      x       The pixel x coordinate.
+ * @param      y       The pixel y coordinate.
+ * @param      pixel   The pixel color value to write.
+ */
+void image_set_pixel_u8(
+	astcenc_image& img,
+	unsigned int x,
+	unsigned int y,
+	vint4 pixel
+) {
+	// We should never escape bounds
+	assert(x < img.dim_x);
+	assert(y < img.dim_y);
+	assert(img.data_type == ASTCENC_TYPE_U8);
+
+	uint8_t* data = static_cast<uint8_t*>(img.data[0]);
+	pixel = pack_low_bytes(pixel);
+	store_nbytes(pixel, data + (4 * img.dim_x * y) + (4 * x    ));
+}
+
+/**
  * @brief Create a copy of @c input with forced unit-length normal vectors.
  *
  * It is assumed that all normal vectors are stored in the RGB components, and
@@ -1397,6 +1423,225 @@ static void image_preprocess_premultiply(
 			}
 		}
 	}
+}
+
+void print_diagnostic_image(
+	astcenc_context* context,
+	astc_compressed_image& image,
+	astcenc_image& diag_image,
+	std::function<vint4(astcenc_block_info&, int, int)> texel_func
+) {
+	size_t block_cols = (image.dim_x + image.block_x - 1) / image.block_x;
+	size_t block_rows = (image.dim_y + image.block_y - 1) / image.block_y;
+
+	uint8_t* data = image.data;
+	for (size_t block_y = 0; block_y < block_rows; block_y++)
+	{
+		for (size_t block_x = 0; block_x < block_cols; block_x++)
+		{
+			astcenc_block_info block_info;
+			astcenc_get_block_info(context, data, &block_info);
+			data += 16;
+
+			size_t start_row = block_y * image.block_y;
+			size_t start_col = block_x * image.block_x;
+
+			size_t end_row = astc::min(start_row + image.block_y, static_cast<size_t>(image.dim_y));
+			size_t end_col = astc::min(start_col + image.block_x, static_cast<size_t>(image.dim_x));
+
+			for (size_t texel_y = start_row; texel_y < end_row; texel_y++)
+			{
+				for (size_t texel_x = start_col; texel_x < end_col; texel_x++)
+				{
+					vint4 color = texel_func(block_info, texel_x - start_col, texel_y - start_row);
+					image_set_pixel_u8(diag_image, texel_x, texel_y, color);
+				}
+			}
+		}
+	}
+}
+
+void print_diagnostic_images(
+	astcenc_context* context,
+	astc_compressed_image& image
+) {
+	if (image.dim_z != 1)
+	{
+		return;
+	}
+
+	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+
+	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
+	auto partition_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int partition { 0 };
+		if (info.is_constant_block)
+		{
+			partition = 0;
+		}
+		else
+		{
+			partition = info.partition_assignment[texel_index] + 1;
+		}
+
+		return colors[partition];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, partition_func);
+	store_ncimage(diag_image, "diag_partitioning.png", false);
+
+	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
+	auto plane_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		int partition { 0 };
+		if (!info.is_dual_plane_block)
+		{
+			partition = 0;
+		}
+		else
+		{
+			partition = info.dual_plane_component + 1;
+		}
+
+		return colors[partition];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, plane_func);
+	store_ncimage(diag_image, "diag_weight_plane2.png", false);
+
+	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
+	auto wdecim_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		float density = 1.0f;
+		if (info.is_constant_block)
+		{
+			density = 1.0f;
+		}
+		else
+		{
+			float texel_count = info.block_x * info.block_y;
+			float weight_count = info.weight_x * info.weight_y;
+			density = weight_count / texel_count;
+		}
+
+		int densityi = (int)(255.0f * density);
+		return vint4(densityi, densityi, densityi, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, wdecim_func);
+	store_ncimage(diag_image, "diag_weight_density.png", false);
+
+	// ---- ---- ---- ---- Weight density - x  ---- ---- ---- ----
+	auto wdecimx_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		float density = 1.0f;
+		if (info.is_constant_block)
+		{
+			density = 1.0f;
+		}
+		else
+		{
+			float texel_count = info.block_x;
+			float weight_count = info.weight_x;
+			density = weight_count / texel_count;
+		}
+
+		int densityi = (int)(255.0f * density);
+		return vint4(densityi, densityi, densityi, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, wdecimx_func);
+	store_ncimage(diag_image, "diag_weight_density_x.png", false);
+
+	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
+	auto wdecimy_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		float density = 1.0f;
+		if (info.is_constant_block)
+		{
+			density = 1.0f;
+		}
+		else
+		{
+			float texel_count = info.block_y;
+			float weight_count = info.weight_y;
+			density = weight_count / texel_count;
+		}
+
+		int densityi = (int)(255.0f * density);
+		return vint4(densityi, densityi, densityi, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, wdecimy_func);
+	store_ncimage(diag_image, "diag_weight_density_y.png", false);
+
+	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
+	auto wquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		int quant { 0 };
+		if (info.is_constant_block)
+		{
+			quant = 0;
+		}
+		else
+		{
+			quant = info.weight_level_count * 2;
+		}
+		return vint4(quant, quant, quant, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, wquant_func);
+	store_ncimage(diag_image, "diag_weight_quant.png", false);
+
+	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
+	auto cquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		int quant { 0 };
+		if (info.is_constant_block)
+		{
+			quant = 0;
+		}
+		else
+		{
+			quant = info.color_level_count;
+		}
+		return vint4(quant, quant, quant, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, cquant_func);
+	store_ncimage(diag_image, "diag_color_quant.png", false);
+
+	free_image(diag_image);
 }
 
 /**
@@ -1752,6 +1997,8 @@ int main(
 			return 1;
 		}
 	}
+
+	print_diagnostic_images(codec_context, image_comp);
 
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
