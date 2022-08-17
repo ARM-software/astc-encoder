@@ -1430,9 +1430,17 @@ static void image_preprocess_premultiply(
 	}
 }
 
+/**
+ * @brief Populate a single diagnostic image showing aspects of the encoding.
+ *
+ * @param context      The context to use.
+ * @param image        The compressed image to analyze.
+ * @param diag_image   The output visualization image to populate.
+ * @param texel_func   The per-texel callback used to determine output color.
+ */
 static void print_diagnostic_image(
 	astcenc_context* context,
-	astc_compressed_image& image,
+	const astc_compressed_image& image,
 	astcenc_image& diag_image,
 	std::function<vint4(astcenc_block_info&, int, int)> texel_func
 ) {
@@ -1466,9 +1474,16 @@ static void print_diagnostic_image(
 	}
 }
 
+/**
+ * @brief Print a set of diagnostic images showing aspects of the encoding.
+ *
+ * @param context       The context to use.
+ * @param image         The compressed image to analyze.
+ * @param output_file   The output file name to use as a stem for new names.
+ */
 static void print_diagnostic_images(
 	astcenc_context* context,
-	astc_compressed_image& image,
+	const astc_compressed_image& image,
 	const std::string& output_file
 ) {
 	if (image.dim_z != 1)
@@ -1499,11 +1514,7 @@ static void print_diagnostic_images(
 		size_t texel_index = texel_y * info.block_x + texel_x;
 
 		int partition { 0 };
-		if (info.is_constant_block)
-		{
-			partition = 0;
-		}
-		else
+		if (!info.is_constant_block)
 		{
 			partition = info.partition_assignment[texel_index] + 1;
 		}
@@ -1528,17 +1539,13 @@ static void print_diagnostic_images(
 			vint4(255, 255, 255, 255)
 		};
 
-		int partition { 0 };
-		if (!info.is_dual_plane_block)
+		int component { 0 };
+		if (info.is_dual_plane_block)
 		{
-			partition = 0;
-		}
-		else
-		{
-			partition = info.dual_plane_component + 1;
+			component = info.dual_plane_component + 1;
 		}
 
-		return colors[partition];
+		return colors[component];
 	};
 
 	print_diagnostic_image(context, image, *diag_image, plane_func);
@@ -1550,12 +1557,8 @@ static void print_diagnostic_images(
 		(void)texel_x;
 		(void)texel_y;
 
-		float density = 1.0f;
-		if (info.is_constant_block)
-		{
-			density = 0.0f;
-		}
-		else
+		float density = 0.0f;
+		if (!info.is_constant_block)
 		{
 			float texel_count = info.block_x * info.block_y;
 			float weight_count = info.weight_x * info.weight_y;
@@ -1576,14 +1579,11 @@ static void print_diagnostic_images(
 		(void)texel_y;
 
 		int quant { 0 };
-		if (info.is_constant_block)
-		{
-			quant = 0;
-		}
-		else
+		if (!info.is_constant_block)
 		{
 			quant = info.weight_level_count - 1;
 		}
+
 		return vint4(quant, quant, quant, 255);
 	};
 
@@ -1597,14 +1597,11 @@ static void print_diagnostic_images(
 		(void)texel_y;
 
 		int quant { 0 };
-		if (info.is_constant_block)
-		{
-			quant = 0;
-		}
-		else
+		if (!info.is_constant_block)
 		{
 			quant = info.color_level_count - 1;
 		}
+
 		return vint4(quant, quant, quant, 255);
 	};
 
@@ -1975,12 +1972,7 @@ int main(
 	bool is_null = output_filename == "/dev/null";
 #endif
 
-	if (cli_config.diagnostic_images && !is_null)
-	{
-		print_diagnostic_images(codec_context, image_comp, output_filename);
-	}
-
-	// Print metrics in comparison mode
+   // Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
 		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
@@ -2035,6 +2027,12 @@ int main(
 				return 1;
 			}
 		}
+	}
+
+	// Store diagnostic images
+	if (cli_config.diagnostic_images && !is_null)
+	{
+		print_diagnostic_images(codec_context, image_comp, output_filename);
 	}
 
 	free_image(image_uncomp_in);
