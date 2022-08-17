@@ -23,7 +23,7 @@ quality change in this release.
     `maskmovdqu` instructions, as they can generate faults on masked lanes.
   * **Bug-fix:** Command line decompressor now correctly uses sized type enums
     for the internal format when writing output KTX files.
-  * **Bug-fix:** Command line compressor now correctly loads 32-bit per
+  * **Bug-fix:** Command line compressor now correctly loads 16 and 32-bit per
     component input KTX files.
   * **Bug-fix:** Fixed GCC9 compiler warnings on Arm aarch64.
 
