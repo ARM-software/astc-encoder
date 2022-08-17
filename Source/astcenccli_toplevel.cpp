@@ -1075,18 +1075,23 @@ static int edit_astcenc_config(
 			argidx++;
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
-		else if (!strcmp(argv[argidx], "-dtrace-out"))
+		else if (!strcmp(argv[argidx], "-dtrace"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -dtrace-out switch with no argument\n");
+				printf("ERROR: -dtrace switch with no argument\n");
 				return 1;
 			}
 
 			config.trace_file_path = argv[argidx - 1];
 		}
 #endif
+		else if (!strcmp(argv[argidx], "-dimage"))
+		{
+			argidx += 1;
+			cli_config.diagnostic_images = true;
+		}
 		else // check others as well
 		{
 			printf("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1105,7 +1110,7 @@ static int edit_astcenc_config(
 
 	if (!config.trace_file_path)
 	{
-		printf("ERROR: Diagnostics builds must set -dtrace-out\n");
+		printf("ERROR: Diagnostics builds must set -dtrace\n");
 		return 1;
 	}
 #endif
@@ -1280,10 +1285,10 @@ static void image_set_pixel(
  * @param      y       The pixel y coordinate.
  * @param      pixel   The pixel color value to write.
  */
-void image_set_pixel_u8(
+static void image_set_pixel_u8(
 	astcenc_image& img,
-	unsigned int x,
-	unsigned int y,
+	size_t x,
+	size_t y,
 	vint4 pixel
 ) {
 	// We should never escape bounds
@@ -1425,7 +1430,7 @@ static void image_preprocess_premultiply(
 	}
 }
 
-void print_diagnostic_image(
+static void print_diagnostic_image(
 	astcenc_context* context,
 	astc_compressed_image& image,
 	astcenc_image& diag_image,
@@ -1461,13 +1466,22 @@ void print_diagnostic_image(
 	}
 }
 
-void print_diagnostic_images(
+static void print_diagnostic_images(
 	astcenc_context* context,
-	astc_compressed_image& image
+	astc_compressed_image& image,
+	const std::string& output_file
 ) {
 	if (image.dim_z != 1)
 	{
 		return;
+	}
+
+	// Try to find a file extension we know about
+	size_t index = output_file.find_last_of(".");
+	std::string stem = output_file;
+	if (index != std::string::npos)
+	{
+		stem = stem.substr(0, index);
 	}
 
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
@@ -1498,7 +1512,8 @@ void print_diagnostic_images(
 	};
 
 	print_diagnostic_image(context, image, *diag_image, partition_func);
-	store_ncimage(diag_image, "diag_partitioning.png", false);
+	std::string fname = stem + "_diag_partitioning.png";
+	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
 	auto plane_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
@@ -1527,7 +1542,8 @@ void print_diagnostic_images(
 	};
 
 	print_diagnostic_image(context, image, *diag_image, plane_func);
-	store_ncimage(diag_image, "diag_weight_plane2.png", false);
+	fname = stem + "_diag_weight_plane2.png";
+	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
 	auto wdecim_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
@@ -1537,7 +1553,7 @@ void print_diagnostic_images(
 		float density = 1.0f;
 		if (info.is_constant_block)
 		{
-			density = 1.0f;
+			density = 0.0f;
 		}
 		else
 		{
@@ -1546,60 +1562,13 @@ void print_diagnostic_images(
 			density = weight_count / texel_count;
 		}
 
-		int densityi = (int)(255.0f * density);
+		int densityi = static_cast<int>(255.0f * density);
 		return vint4(densityi, densityi, densityi, 255);
 	};
 
 	print_diagnostic_image(context, image, *diag_image, wdecim_func);
-	store_ncimage(diag_image, "diag_weight_density.png", false);
-
-	// ---- ---- ---- ---- Weight density - x  ---- ---- ---- ----
-	auto wdecimx_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
-		(void)texel_x;
-		(void)texel_y;
-
-		float density = 1.0f;
-		if (info.is_constant_block)
-		{
-			density = 1.0f;
-		}
-		else
-		{
-			float texel_count = info.block_x;
-			float weight_count = info.weight_x;
-			density = weight_count / texel_count;
-		}
-
-		int densityi = (int)(255.0f * density);
-		return vint4(densityi, densityi, densityi, 255);
-	};
-
-	print_diagnostic_image(context, image, *diag_image, wdecimx_func);
-	store_ncimage(diag_image, "diag_weight_density_x.png", false);
-
-	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
-	auto wdecimy_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
-		(void)texel_x;
-		(void)texel_y;
-
-		float density = 1.0f;
-		if (info.is_constant_block)
-		{
-			density = 1.0f;
-		}
-		else
-		{
-			float texel_count = info.block_y;
-			float weight_count = info.weight_y;
-			density = weight_count / texel_count;
-		}
-
-		int densityi = (int)(255.0f * density);
-		return vint4(densityi, densityi, densityi, 255);
-	};
-
-	print_diagnostic_image(context, image, *diag_image, wdecimy_func);
-	store_ncimage(diag_image, "diag_weight_density_y.png", false);
+	fname = stem + "_diag_weight_density.png";
+	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
 	auto wquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
@@ -1613,13 +1582,14 @@ void print_diagnostic_images(
 		}
 		else
 		{
-			quant = info.weight_level_count * 2;
+			quant = info.weight_level_count - 1;
 		}
 		return vint4(quant, quant, quant, 255);
 	};
 
 	print_diagnostic_image(context, image, *diag_image, wquant_func);
-	store_ncimage(diag_image, "diag_weight_quant.png", false);
+	fname = stem + "_diag_weight_quant.png";
+	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
 	auto cquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
@@ -1633,13 +1603,14 @@ void print_diagnostic_images(
 		}
 		else
 		{
-			quant = info.color_level_count;
+			quant = info.color_level_count - 1;
 		}
 		return vint4(quant, quant, quant, 255);
 	};
 
 	print_diagnostic_image(context, image, *diag_image, cquant_func);
-	store_ncimage(diag_image, "diag_color_quant.png", false);
+	fname = stem + "_diag_color_quant.png";
+	store_ncimage(diag_image, fname.c_str(), false);
 
 	free_image(diag_image);
 }
@@ -1749,7 +1720,7 @@ int main(
 	}
 
 	// Initialize cli_config_options with default values
-	cli_config_options cli_config { 0, 1, 1, false, false, -10, 10,
+	cli_config_options cli_config { 0, 1, 1, false, false, false, -10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A } };
 
@@ -1998,7 +1969,16 @@ int main(
 		}
 	}
 
-	print_diagnostic_images(codec_context, image_comp);
+#if defined(_WIN32)
+	bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+	bool is_null = output_filename == "/dev/null";
+#endif
+
+	if (cli_config.diagnostic_images && !is_null)
+	{
+		print_diagnostic_images(codec_context, image_comp, output_filename);
+	}
 
 	// Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
@@ -2034,11 +2014,6 @@ int main(
 		}
 		else
 		{
-#if defined(_WIN32)
-			bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-			bool is_null = output_filename == "/dev/null";
-#endif
 			if (!is_null)
 			{
 				printf("ERROR: Unknown compressed output file type\n");
@@ -2050,12 +2025,6 @@ int main(
 	// Store decompressed image
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
 	{
-#if defined(_WIN32)
-		bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-		bool is_null = output_filename == "/dev/null";
-#endif
-
 		if (!is_null)
 		{
 			bool store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
