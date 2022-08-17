@@ -9,9 +9,10 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.1.0
 
-**Status:** TBD
+**Status:** August 2022
 
-The 4.1.0 release is a maintenance release.
+The 4.1.0 release is a maintenance release. There is no performance or image
+quality change in this release.
 
 * **General:**
   * **Change:** Command line decompressor no longer uses the legacy
