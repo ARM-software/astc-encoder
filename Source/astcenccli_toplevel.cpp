@@ -24,9 +24,11 @@
 
 #include <cassert>
 #include <cstring>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <memory>
 
 /* ============================================================================
 	Data structure definitions
@@ -1073,18 +1075,23 @@ static int edit_astcenc_config(
 			argidx++;
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
-		else if (!strcmp(argv[argidx], "-dtrace-out"))
+		else if (!strcmp(argv[argidx], "-dtrace"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -dtrace-out switch with no argument\n");
+				printf("ERROR: -dtrace switch with no argument\n");
 				return 1;
 			}
 
 			config.trace_file_path = argv[argidx - 1];
 		}
 #endif
+		else if (!strcmp(argv[argidx], "-dimage"))
+		{
+			argidx += 1;
+			cli_config.diagnostic_images = true;
+		}
 		else // check others as well
 		{
 			printf("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1103,7 +1110,7 @@ static int edit_astcenc_config(
 
 	if (!config.trace_file_path)
 	{
-		printf("ERROR: Diagnostics builds must set -dtrace-out\n");
+		printf("ERROR: Diagnostics builds must set -dtrace\n");
 		return 1;
 	}
 #endif
@@ -1271,6 +1278,30 @@ static void image_set_pixel(
 }
 
 /**
+ * @brief Set the value of a single pixel in an image.
+ *
+ * @param[out] img     The output image; must use F32 texture components.
+ * @param      x       The pixel x coordinate.
+ * @param      y       The pixel y coordinate.
+ * @param      pixel   The pixel color value to write.
+ */
+static void image_set_pixel_u8(
+	astcenc_image& img,
+	size_t x,
+	size_t y,
+	vint4 pixel
+) {
+	// We should never escape bounds
+	assert(x < img.dim_x);
+	assert(y < img.dim_y);
+	assert(img.data_type == ASTCENC_TYPE_U8);
+
+	uint8_t* data = static_cast<uint8_t*>(img.data[0]);
+	pixel = pack_low_bytes(pixel);
+	store_nbytes(pixel, data + (4 * img.dim_x * y) + (4 * x    ));
+}
+
+/**
  * @brief Create a copy of @c input with forced unit-length normal vectors.
  *
  * It is assumed that all normal vectors are stored in the RGB components, and
@@ -1400,6 +1431,365 @@ static void image_preprocess_premultiply(
 }
 
 /**
+ * @brief Populate a single diagnostic image showing aspects of the encoding.
+ *
+ * @param context      The context to use.
+ * @param image        The compressed image to analyze.
+ * @param diag_image   The output visualization image to populate.
+ * @param texel_func   The per-texel callback used to determine output color.
+ */
+static void print_diagnostic_image(
+	astcenc_context* context,
+	const astc_compressed_image& image,
+	astcenc_image& diag_image,
+	std::function<vint4(astcenc_block_info&, size_t, size_t)> texel_func
+) {
+	size_t block_cols = (image.dim_x + image.block_x - 1) / image.block_x;
+	size_t block_rows = (image.dim_y + image.block_y - 1) / image.block_y;
+
+	uint8_t* data = image.data;
+	for (size_t block_y = 0; block_y < block_rows; block_y++)
+	{
+		for (size_t block_x = 0; block_x < block_cols; block_x++)
+		{
+			astcenc_block_info block_info;
+			astcenc_get_block_info(context, data, &block_info);
+			data += 16;
+
+			size_t start_row = block_y * image.block_y;
+			size_t start_col = block_x * image.block_x;
+
+			size_t end_row = astc::min(start_row + image.block_y, static_cast<size_t>(image.dim_y));
+			size_t end_col = astc::min(start_col + image.block_x, static_cast<size_t>(image.dim_x));
+
+			for (size_t texel_y = start_row; texel_y < end_row; texel_y++)
+			{
+				for (size_t texel_x = start_col; texel_x < end_col; texel_x++)
+				{
+					vint4 color = texel_func(block_info, texel_x - start_col, texel_y - start_row);
+					image_set_pixel_u8(diag_image, texel_x, texel_y, color);
+				}
+			}
+		}
+	}
+}
+
+/**
+ * @brief Print a set of diagnostic images showing aspects of the encoding.
+ *
+ * @param context       The context to use.
+ * @param image         The compressed image to analyze.
+ * @param output_file   The output file name to use as a stem for new names.
+ */
+static void print_diagnostic_images(
+	astcenc_context* context,
+	const astc_compressed_image& image,
+	const std::string& output_file
+) {
+	if (image.dim_z != 1)
+	{
+		return;
+	}
+
+	// Try to find a file extension we know about
+	size_t index = output_file.find_last_of(".");
+	std::string stem = output_file;
+	if (index != std::string::npos)
+	{
+		stem = stem.substr(0, index);
+	}
+
+	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+
+	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
+	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int partition { 0 };
+		if (!info.is_constant_block)
+		{
+			partition = info.partition_assignment[texel_index] + 1;
+		}
+
+		return colors[partition];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, partition_func);
+	std::string fname = stem + "_diag_partitioning.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
+	auto texel_func1 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		int component { 0 };
+		if (info.is_dual_plane_block)
+		{
+			component = info.dual_plane_component + 1;
+		}
+
+		return colors[component];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func1);
+	fname = stem + "_diag_weight_plane2.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
+	auto texel_func2 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		float density = 0.0f;
+		if (!info.is_constant_block)
+		{
+			float texel_count = static_cast<float>(info.block_x * info.block_y);
+			float weight_count = static_cast<float>(info.weight_x * info.weight_y);
+			density = weight_count / texel_count;
+		}
+
+		int densityi = static_cast<int>(255.0f * density);
+		return vint4(densityi, densityi, densityi, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func2);
+	fname = stem + "_diag_weight_density.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
+	auto texel_func3 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		int quant { 0 };
+		if (!info.is_constant_block)
+		{
+			quant = info.weight_level_count - 1;
+		}
+
+		return vint4(quant, quant, quant, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func3);
+	fname = stem + "_diag_weight_quant.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
+	auto texel_func4 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		int quant { 0 };
+		if (!info.is_constant_block)
+		{
+			quant = info.color_level_count - 1;
+		}
+
+		return vint4(quant, quant, quant, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func4);
+	fname = stem + "_diag_color_quant.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Index ---- ---- ---- ----
+	auto texel_func5 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int cem { 255 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			cem = info.color_endpoint_modes[partition] * 16;
+		}
+
+		return vint4(cem, cem, cem, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func5);
+	fname = stem + "_diag_cem_index.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Components ---- ---- ---- ----
+	auto texel_func6 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int components { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					components = 1;
+					break;
+				case 4:
+				case 5:
+					components = 2;
+					break;
+				case 6:
+				case 7:
+				case 8:
+				case 9:
+				case 11:
+					components = 3;
+					break;
+				default:
+					components = 4;
+					break;
+			}
+		}
+
+		return colors[components];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func6);
+	fname = stem + "_diag_cem_components.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
+	auto texel_func7 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int style { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				// Direct - two absolute endpoints
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 8:
+				case 11:
+				case 12:
+				case 14:
+				case 15:
+					style = 1;
+					break;
+				// Offset - one absolute plus delta
+				case 5:
+				case 9:
+				case 13:
+					style = 2;
+					break;
+				// Scale - one absolute plus scale
+				case 6:
+				case 7:
+				case 10:
+					style = 3;
+					break;
+				// Shouldn't happen ...
+				default:
+					style = 0;
+					break;
+			}
+		}
+
+		return colors[style];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func7);
+	fname = stem + "_diag_cem_style.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
+	auto texel_func8 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int style { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				// LDR blocks
+				case 0:
+				case 1:
+				case 4:
+				case 5:
+				case 6:
+				case 8:
+				case 9:
+				case 10:
+				case 12:
+				case 13:
+					style = 128;
+					break;
+				// HDR blocks
+				default:
+					style = 155;
+					break;
+			}
+		}
+
+		return vint4(style, style, style, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func8);
+	fname = stem + "_diag_cem_hdr.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	free_image(diag_image);
+}
+
+/**
  * @brief The main entry point.
  *
  * @param argc   The number of arguments.
@@ -1504,7 +1894,7 @@ int main(
 	}
 
 	// Initialize cli_config_options with default values
-	cli_config_options cli_config { 0, 1, 1, false, false, -10, 10,
+	cli_config_options cli_config { 0, 1, 1, false, false, false, -10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A } };
 
@@ -1753,7 +2143,13 @@ int main(
 		}
 	}
 
-	// Print metrics in comparison mode
+#if defined(_WIN32)
+	bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+	bool is_null = output_filename == "/dev/null";
+#endif
+
+   // Print metrics in comparison mode
 	if (operation & ASTCENC_STAGE_COMPARE)
 	{
 		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
@@ -1787,11 +2183,6 @@ int main(
 		}
 		else
 		{
-#if defined(_WIN32)
-			bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-			bool is_null = output_filename == "/dev/null";
-#endif
 			if (!is_null)
 			{
 				printf("ERROR: Unknown compressed output file type\n");
@@ -1803,12 +2194,6 @@ int main(
 	// Store decompressed image
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
 	{
-#if defined(_WIN32)
-		bool is_null = output_filename == "NUL" || output_filename == "nul";
-#else
-		bool is_null = output_filename == "/dev/null";
-#endif
-
 		if (!is_null)
 		{
 			bool store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
@@ -1819,6 +2204,12 @@ int main(
 				return 1;
 			}
 		}
+	}
+
+	// Store diagnostic images
+	if (cli_config.diagnostic_images && !is_null)
+	{
+		print_diagnostic_images(codec_context, image_comp, output_filename);
 	}
 
 	free_image(image_uncomp_in);
