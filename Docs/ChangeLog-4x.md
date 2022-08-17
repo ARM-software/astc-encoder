@@ -18,6 +18,8 @@ The 4.1.0 release is a maintenance release.
     `GL_LUMINANCE` or `GL_LUMINANCE_ALPHA` format enums when writing KTX
     output files. Luminance textures now use the `GL_RED` format and
     luminance_alpha textures now use the `GL_RG` format.
+  * **Bug-fix:** Library decompressor builds for SSE no longer use masked store
+    `maskmovdqu` instructions, as they can generate faults on masked lanes.
   * **Bug-fix:** Command line decompressor now correctly uses sized type enums
     for the internal format when writing output KTX files.
   * **Bug-fix:** Command line compressor now correctly loads 32-bit per
