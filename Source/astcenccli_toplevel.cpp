@@ -1527,7 +1527,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
-	auto plane_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func1 = [](astcenc_block_info& info, int texel_x, int texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1548,12 +1548,12 @@ static void print_diagnostic_images(
 		return colors[component];
 	};
 
-	print_diagnostic_image(context, image, *diag_image, plane_func);
+	print_diagnostic_image(context, image, *diag_image, texel_func1);
 	fname = stem + "_diag_weight_plane2.png";
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
-	auto wdecim_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func2 = [](astcenc_block_info& info, int texel_x, int texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1569,12 +1569,12 @@ static void print_diagnostic_images(
 		return vint4(densityi, densityi, densityi, 255);
 	};
 
-	print_diagnostic_image(context, image, *diag_image, wdecim_func);
+	print_diagnostic_image(context, image, *diag_image, texel_func2);
 	fname = stem + "_diag_weight_density.png";
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
-	auto wquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func3 = [](astcenc_block_info& info, int texel_x, int texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1587,12 +1587,12 @@ static void print_diagnostic_images(
 		return vint4(quant, quant, quant, 255);
 	};
 
-	print_diagnostic_image(context, image, *diag_image, wquant_func);
+	print_diagnostic_image(context, image, *diag_image, texel_func3);
 	fname = stem + "_diag_weight_quant.png";
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
-	auto cquant_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func4 = [](astcenc_block_info& info, int texel_x, int texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1605,8 +1605,185 @@ static void print_diagnostic_images(
 		return vint4(quant, quant, quant, 255);
 	};
 
-	print_diagnostic_image(context, image, *diag_image, cquant_func);
+	print_diagnostic_image(context, image, *diag_image, texel_func4);
 	fname = stem + "_diag_color_quant.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Index ---- ---- ---- ----
+	auto texel_func5 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int cem { 255 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			cem = info.color_endpoint_modes[partition] * 16;
+		}
+
+		return vint4(cem, cem, cem, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func5);
+	fname = stem + "_diag_cem_index.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Components ---- ---- ---- ----
+	auto texel_func6 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+			vint4(255, 255, 255, 255)
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int components { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+					components = 1;
+					break;
+				case 4:
+				case 5:
+					components = 2;
+					break;
+				case 6:
+				case 7:
+				case 8:
+				case 9:
+				case 11:
+					components = 3;
+					break;
+				default:
+					components = 4;
+					break;
+			}
+		}
+
+		return colors[components];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func6);
+	fname = stem + "_diag_cem_components.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
+	auto texel_func7 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		const vint4 colors[] {
+			vint4(  0,   0,   0, 255),
+			vint4(255,   0,   0, 255),
+			vint4(  0, 255,   0, 255),
+			vint4(  0,   0, 255, 255),
+		};
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int style { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				// Direct - two absolute endpoints
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+				case 4:
+				case 8:
+				case 11:
+				case 12:
+				case 14:
+				case 15:
+					style = 1;
+					break;
+				// Offset - one absolute plus delta
+				case 5:
+				case 9:
+				case 13:
+					style = 2;
+					break;
+				// Scale - one absolute plus scale
+				case 6:
+				case 7:
+				case 10:
+					style = 3;
+					break;
+				// Shouldn't happen ...
+				default:
+					style = 0;
+					break;
+			}
+		}
+
+		return colors[style];
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func7);
+	fname = stem + "_diag_cem_style.png";
+	store_ncimage(diag_image, fname.c_str(), false);
+
+	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
+	auto texel_func8 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+		(void)texel_x;
+		(void)texel_y;
+
+		size_t texel_index = texel_y * info.block_x + texel_x;
+
+		int style { 0 };
+		if (!info.is_constant_block)
+		{
+			uint8_t partition = info.partition_assignment[texel_index];
+			uint8_t cem = info.color_endpoint_modes[partition];
+
+			switch (cem)
+			{
+				// LDR blocks
+				case 0:
+				case 1:
+				case 4:
+				case 5:
+				case 6:
+				case 8:
+				case 9:
+				case 10:
+				case 12:
+				case 13:
+					style = 128;
+					break;
+				// HDR blocks
+				default:
+					style = 155;
+					break;
+			}
+		}
+
+		return vint4(style, style, style, 255);
+	};
+
+	print_diagnostic_image(context, image, *diag_image, texel_func8);
+	fname = stem + "_diag_cem_hdr.png";
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	free_image(diag_image);
