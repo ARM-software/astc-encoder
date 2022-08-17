@@ -1442,7 +1442,7 @@ static void print_diagnostic_image(
 	astcenc_context* context,
 	const astc_compressed_image& image,
 	astcenc_image& diag_image,
-	std::function<vint4(astcenc_block_info&, int, int)> texel_func
+	std::function<vint4(astcenc_block_info&, size_t, size_t)> texel_func
 ) {
 	size_t block_cols = (image.dim_x + image.block_x - 1) / image.block_x;
 	size_t block_rows = (image.dim_y + image.block_y - 1) / image.block_y;
@@ -1502,7 +1502,7 @@ static void print_diagnostic_images(
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
 
 	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
-	auto partition_func = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		const vint4 colors[] {
 			vint4(  0,   0,   0, 255),
 			vint4(255,   0,   0, 255),
@@ -1527,7 +1527,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
-	auto texel_func1 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func1 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1553,15 +1553,15 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
-	auto texel_func2 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func2 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
 		float density = 0.0f;
 		if (!info.is_constant_block)
 		{
-			float texel_count = info.block_x * info.block_y;
-			float weight_count = info.weight_x * info.weight_y;
+			float texel_count = static_cast<float>(info.block_x * info.block_y);
+			float weight_count = static_cast<float>(info.weight_x * info.weight_y);
 			density = weight_count / texel_count;
 		}
 
@@ -1574,7 +1574,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
-	auto texel_func3 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func3 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1592,7 +1592,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
-	auto texel_func4 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func4 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1610,7 +1610,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Index ---- ---- ---- ----
-	auto texel_func5 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func5 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1631,7 +1631,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Components ---- ---- ---- ----
-	auto texel_func6 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func6 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1684,7 +1684,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
-	auto texel_func7 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func7 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
@@ -1745,7 +1745,7 @@ static void print_diagnostic_images(
 	store_ncimage(diag_image, fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
-	auto texel_func8 = [](astcenc_block_info& info, int texel_x, int texel_y) {
+	auto texel_func8 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
 		(void)texel_x;
 		(void)texel_y;
 
