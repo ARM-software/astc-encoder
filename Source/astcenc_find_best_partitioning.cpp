@@ -46,6 +46,7 @@
  * lines for endpoint selection.
  */
 
+#include <limits>
 #include "astcenc_internal.h"
 
 /**
