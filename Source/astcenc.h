@@ -74,7 +74,7 @@
  *
  * The codec supports compressing single images, which can be either 2D images or volumetric 3D
  * images. Calling code is responsible for any handling of aggregate types, such as mipmap chains,
- * texture arrays, or sliced 3D textures
+ * texture arrays, or sliced 3D textures.
  *
  * Images are passed in as an astcenc_image structure. Inputs can be either 8-bit unorm, 16-bit
  * half-float, or 32-bit float, as indicated by the data_type field.
