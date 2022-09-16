@@ -64,9 +64,9 @@ static float linear_to_srgb(
 int main(int argc, char **argv)
 {
 	// Parse command line
-	if (argc != 5)
+	if (argc != 6)
 	{
-		printf("Usage: astc_blend_test <source> <dest> <format> <blend_mode>\n");
+		printf("Usage: astc_blend_test <source> <dest> <format> <blend_mode> <filter>\n");
 		exit(1);
 	}
 
@@ -103,6 +103,21 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	bool use_filter = false;
+	if (!strcmp(argv[5], "on"))
+	{
+		use_filter = true;
+	}
+	else if (!strcmp(argv[5], "off"))
+	{
+		use_filter == false;
+	}
+	else
+	{
+		printf("<filter> must be either 'on' or 'off'\n");
+		exit(1);
+	}
+
 	// Load the input image
 	int dim_x;
 	int dim_y;
@@ -122,75 +137,162 @@ int main(int argc, char **argv)
 	}
 
 	// For each pixel apply RGBM encoding
-	for (int y = 0; y < dim_y; y++)
+	if (!use_filter)
 	{
-		const uint8_t* row_in = data_in + (4 * dim_x * y);
-		uint8_t* row_out = data_out + (4 * dim_x * y);
-
-		for (int x = 0; x < dim_x; x++)
+		for (int y = 0; y < dim_y; y++)
 		{
-			const uint8_t* pixel_in = row_in + 4 * x;
-			uint8_t* pixel_out = row_out + 4 * x;
+			const uint8_t* row_in = data_in + (4 * dim_x * y);
+			uint8_t* row_out = data_out + (4 * dim_x * y);
 
-			float r_src = static_cast<float>(pixel_in[0]) / 255.0f;
-			float g_src = static_cast<float>(pixel_in[1]) / 255.0f;
-			float b_src = static_cast<float>(pixel_in[2]) / 255.0f;
-			float a_src = static_cast<float>(pixel_in[3]) / 255.0f;
-
-			if (use_linear == false)
+			for (int x = 0; x < dim_x; x++)
 			{
-				r_src = srgb_to_linear(r_src);
-				g_src = srgb_to_linear(g_src);
-				b_src = srgb_to_linear(b_src);
+				const uint8_t* pixel_in = row_in + 4 * x;
+				uint8_t* pixel_out = row_out + 4 * x;
+
+				float r_src = static_cast<float>(pixel_in[0]) / 255.0f;
+				float g_src = static_cast<float>(pixel_in[1]) / 255.0f;
+				float b_src = static_cast<float>(pixel_in[2]) / 255.0f;
+				float a_src = static_cast<float>(pixel_in[3]) / 255.0f;
+
+				if (use_linear == false)
+				{
+					r_src = srgb_to_linear(r_src);
+					g_src = srgb_to_linear(g_src);
+					b_src = srgb_to_linear(b_src);
+				}
+
+				float r_dst = 0.8f;
+				float g_dst = 1.0f;
+				float b_dst = 0.8f;
+
+				float r_out; 
+				float g_out; 
+				float b_out; 
+				float a_out; 
+
+				// Post-multiply blending
+				if (use_post_blend)
+				{
+					r_out = (r_dst * (1.0f - a_src)) + (r_src * a_src);
+					g_out = (g_dst * (1.0f - a_src)) + (g_src * a_src);
+					b_out = (b_dst * (1.0f - a_src)) + (b_src * a_src);
+					a_out = 1.0f;
+				}
+				// Pre-multiply blending
+				else
+				{
+					r_out = (r_dst * (1.0f - a_src)) + (r_src * 1.0f);
+					g_out = (g_dst * (1.0f - a_src)) + (g_src * 1.0f);
+					b_out = (b_dst * (1.0f - a_src)) + (b_src * 1.0f);
+					a_out = 1.0f;
+				}
+
+				// Clamp color between 0 and 1.0f
+				r_out = astc::min(r_out, 1.0f);
+				g_out = astc::min(g_out, 1.0f);
+				b_out = astc::min(b_out, 1.0f);
+
+				if (use_linear == false)
+				{
+					r_out = linear_to_srgb(r_out);
+					g_out = linear_to_srgb(g_out);
+					b_out = linear_to_srgb(b_out);
+				}
+
+				pixel_out[0] = (uint8_t)(r_out * 255.0f);
+				pixel_out[1] = (uint8_t)(g_out * 255.0f);
+				pixel_out[2] = (uint8_t)(b_out * 255.0f);
+				pixel_out[3] = (uint8_t)(a_out * 255.0f);
 			}
+		}
+	}
+	else
+	{
+		for (int y = 0; y < dim_y - 1; y++)
+		{
+			const uint8_t* row_in_0 = data_in + (4 * dim_x * y);
+			const uint8_t* row_in_1 = data_in + (4 * dim_x * (y + 1));
 
-			float r_dst = 0.8f;
-			float g_dst = 1.0f;
-			float b_dst = 0.8f;
+			uint8_t* row_out = data_out + (4 * (dim_x - 1) * y);
 
-			float r_out; 
-			float g_out; 
-			float b_out; 
-			float a_out; 
-
-			// Post-multiply blending
-			if (use_post_blend)
+			for (int x = 0; x < dim_x - 1; x++)
 			{
-				r_out = (r_dst * (1.0f - a_src)) + (r_src * a_src);
-				g_out = (g_dst * (1.0f - a_src)) + (g_src * a_src);
-				b_out = (b_dst * (1.0f - a_src)) + (b_src * a_src);
-				a_out = 1.0f;
-			}
-			// Pre-multiply blending
-			else
-			{
-				r_out = (r_dst * (1.0f - a_src)) + (r_src * 1.0f);
-				g_out = (g_dst * (1.0f - a_src)) + (g_src * 1.0f);
-				b_out = (b_dst * (1.0f - a_src)) + (b_src * 1.0f);
-				a_out = 1.0f;
-			}
+				const uint8_t* pixel_in_00 = row_in_0 + 4 * x;
+				const uint8_t* pixel_in_01 = row_in_0 + 4 * (x + 1);
+				const uint8_t* pixel_in_10 = row_in_1 + 4 * x;
+				const uint8_t* pixel_in_11 = row_in_1 + 4 * (x + 1);
 
-			// Clamp color between 0 and 1.0f
-			r_out = astc::min(r_out, 1.0f);
-			g_out = astc::min(g_out, 1.0f);
-			b_out = astc::min(b_out, 1.0f);
+				uint8_t* pixel_out = row_out + 4 * x;
 
-			if (use_linear == false)
-			{
-				r_out = linear_to_srgb(r_out);
-				g_out = linear_to_srgb(g_out);
-				b_out = linear_to_srgb(b_out);
+				// Bilinear filter with a half-pixel offset
+				float r_src = static_cast<float>(pixel_in_00[0] + pixel_in_01[0] + pixel_in_10[0] + pixel_in_11[0]) / (255.0f * 4.0f);
+				float g_src = static_cast<float>(pixel_in_00[1] + pixel_in_01[1] + pixel_in_10[1] + pixel_in_11[2]) / (255.0f * 4.0f);
+				float b_src = static_cast<float>(pixel_in_00[2] + pixel_in_01[2] + pixel_in_10[2] + pixel_in_11[3]) / (255.0f * 4.0f);
+				float a_src = static_cast<float>(pixel_in_00[3] + pixel_in_01[3] + pixel_in_10[3] + pixel_in_11[4]) / (255.0f * 4.0f);
+
+				if (use_linear == false)
+				{
+					r_src = srgb_to_linear(r_src);
+					g_src = srgb_to_linear(g_src);
+					b_src = srgb_to_linear(b_src);
+				}
+
+				float r_dst = 0.8f;
+				float g_dst = 1.0f;
+				float b_dst = 0.8f;
+
+				float r_out; 
+				float g_out; 
+				float b_out; 
+				float a_out; 
+
+				// Post-multiply blending
+				if (use_post_blend)
+				{
+					r_out = (r_dst * (1.0f - a_src)) + (r_src * a_src);
+					g_out = (g_dst * (1.0f - a_src)) + (g_src * a_src);
+					b_out = (b_dst * (1.0f - a_src)) + (b_src * a_src);
+					a_out = 1.0f;
+				}
+				// Pre-multiply blending
+				else
+				{
+					r_out = (r_dst * (1.0f - a_src)) + (r_src * 1.0f);
+					g_out = (g_dst * (1.0f - a_src)) + (g_src * 1.0f);
+					b_out = (b_dst * (1.0f - a_src)) + (b_src * 1.0f);
+					a_out = 1.0f;
+				}
+
+				// Clamp color between 0 and 1.0f
+				r_out = astc::min(r_out, 1.0f);
+				g_out = astc::min(g_out, 1.0f);
+				b_out = astc::min(b_out, 1.0f);
+
+				if (use_linear == false)
+				{
+					r_out = linear_to_srgb(r_out);
+					g_out = linear_to_srgb(g_out);
+					b_out = linear_to_srgb(b_out);
+				}
+
+				pixel_out[0] = (uint8_t)(r_out * 255.0f);
+				pixel_out[1] = (uint8_t)(g_out * 255.0f);
+				pixel_out[2] = (uint8_t)(b_out * 255.0f);
+				pixel_out[3] = (uint8_t)(a_out * 255.0f);
 			}
-
-			pixel_out[0] = (uint8_t)(r_out * 255.0f);
-			pixel_out[1] = (uint8_t)(g_out * 255.0f);
-			pixel_out[2] = (uint8_t)(b_out * 255.0f);
-			pixel_out[3] = (uint8_t)(a_out * 255.0f);
 		}
 	}
 
 	// Write out the result
-	stbi_write_png(dst_file, dim_x, dim_y, 4, data_out, 4 * dim_x);
+	if (!use_filter)
+	{
+		stbi_write_png(dst_file, dim_x, dim_y, 4, data_out, 4 * dim_x);
+	}
+	else
+	{
+		stbi_write_png(dst_file, dim_x - 1, dim_y - 1, 4, data_out, 4 * (dim_x - 1));
+	}
+
 
 	return 0;
 }
