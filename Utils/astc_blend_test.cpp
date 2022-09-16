@@ -226,9 +226,9 @@ int main(int argc, char **argv)
 
 				// Bilinear filter with a half-pixel offset
 				float r_src = static_cast<float>(pixel_in_00[0] + pixel_in_01[0] + pixel_in_10[0] + pixel_in_11[0]) / (255.0f * 4.0f);
-				float g_src = static_cast<float>(pixel_in_00[1] + pixel_in_01[1] + pixel_in_10[1] + pixel_in_11[2]) / (255.0f * 4.0f);
-				float b_src = static_cast<float>(pixel_in_00[2] + pixel_in_01[2] + pixel_in_10[2] + pixel_in_11[3]) / (255.0f * 4.0f);
-				float a_src = static_cast<float>(pixel_in_00[3] + pixel_in_01[3] + pixel_in_10[3] + pixel_in_11[4]) / (255.0f * 4.0f);
+				float g_src = static_cast<float>(pixel_in_00[1] + pixel_in_01[1] + pixel_in_10[1] + pixel_in_11[1]) / (255.0f * 4.0f);
+				float b_src = static_cast<float>(pixel_in_00[2] + pixel_in_01[2] + pixel_in_10[2] + pixel_in_11[2]) / (255.0f * 4.0f);
+				float a_src = static_cast<float>(pixel_in_00[3] + pixel_in_01[3] + pixel_in_10[3] + pixel_in_11[3]) / (255.0f * 4.0f);
 
 				if (use_linear == false)
 				{
