@@ -397,7 +397,7 @@ static void build_partition_table_for_one_partition_count(
 
 	// Tracker for things we built in the first iteration
 	uint8_t build[BLOCK_MAX_PARTITIONINGS] { 0 };
-		for (unsigned int x = 0; x < max_iter; x++)
+	for (unsigned int x = 0; x < max_iter; x++)
 	{
 		for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 		{
