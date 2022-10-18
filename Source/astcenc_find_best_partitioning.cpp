@@ -367,24 +367,21 @@ static void count_partition_mismatch_bits(
 	{
 		for (unsigned int i = 0; i < active_count; i++)
 		{
-			int bitcount = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
-			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_2[i]));
+			mismatch_counts[i] = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
 		}
 	}
 	else if (partition_count == 3)
 	{
 		for (unsigned int i = 0; i < active_count; i++)
 		{
-			int bitcount = partition_mismatch3(bitmaps, bsd.coverage_bitmaps_3[i]);
-			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_3[i]));
+			mismatch_counts[i] = partition_mismatch3(bitmaps, bsd.coverage_bitmaps_3[i]);
 		}
 	}
 	else
 	{
 		for (unsigned int i = 0; i < active_count; i++)
 		{
-			int bitcount = partition_mismatch4(bitmaps, bsd.coverage_bitmaps_4[i]);
-			mismatch_counts[i] = astc::max(bitcount, static_cast<int>(bsd.partitioning_valid_4[i]));
+			mismatch_counts[i] = partition_mismatch4(bitmaps, bsd.coverage_bitmaps_4[i]);
 		}
 	}
 }

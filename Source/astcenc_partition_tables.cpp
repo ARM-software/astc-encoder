@@ -320,21 +320,17 @@ static bool generate_one_partition_info_entry(
 
 	// Populate the coverage bitmaps for 2/3/4 partitions
 	uint64_t* bitmaps { nullptr };
-	uint8_t* valids { nullptr };
 	if (partition_count == 2)
 	{
 		bitmaps = bsd.coverage_bitmaps_2[partition_remap_index];
-		valids = bsd.partitioning_valid_2;
 	}
 	else if (partition_count == 3)
 	{
 		bitmaps = bsd.coverage_bitmaps_3[partition_remap_index];
-		valids = bsd.partitioning_valid_3;
 	}
 	else if (partition_count == 4)
 	{
 		bitmaps = bsd.coverage_bitmaps_4[partition_remap_index];
-		valids = bsd.partitioning_valid_4;
 	}
 
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
@@ -347,9 +343,7 @@ static bool generate_one_partition_info_entry(
 
 	if (bitmaps)
 	{
-		// Populate the bitmap validity mask
-		valids[partition_remap_index] = valid ? 0 : 255;
-
+		// Populate the partition coverage bitmap
 		for (unsigned int i = 0; i < partition_count; i++)
 		{
 			bitmaps[i] = 0ULL;
@@ -374,12 +368,6 @@ static void build_partition_table_for_one_partition_count(
 	partition_info* ptab,
 	uint64_t* canonical_patterns
 ) {
-	uint8_t* partitioning_valid[3] {
-		bsd.partitioning_valid_2,
-		bsd.partitioning_valid_3,
-		bsd.partitioning_valid_4
-	};
-
 	unsigned int next_index = 0;
 	bsd.partitioning_count_selected[partition_count - 1] = 0;
 	bsd.partitioning_count_all[partition_count - 1] = 0;
@@ -442,7 +430,6 @@ static void build_partition_table_for_one_partition_count(
 				{
 					bsd.partitioning_packed_index[partition_count - 2][i] = static_cast<uint16_t>(next_index);
 					bsd.partitioning_count_all[partition_count - 1]++;
-					partitioning_valid[partition_count - 2][next_index] = 255;
 					next_index++;
 				}
 			}
