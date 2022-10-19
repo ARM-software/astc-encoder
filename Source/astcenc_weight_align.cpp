@@ -391,8 +391,6 @@ static void compute_lowest_and_highest_weight_lwc(
 		storea(minidx, lowest_weight + sp);
 		storea(span, weight_span + sp);
 
-		// The cut_(lowest/highest)_weight_error indicate the error that results from
-		// forcing samples that should have had the weight value one step (up/down).
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, error + sp);
