@@ -683,7 +683,7 @@ void compute_avgs_and_dirs_2_comp(
 				average += vfloat2(data_vr[iwt], data_vg[iwt]);
 			}
 
-			average = average * (1.0f / static_cast<float>(texel_count));
+			average = average / static_cast<float>(texel_count);
 		}
 
 		pm[partition].avg = average;

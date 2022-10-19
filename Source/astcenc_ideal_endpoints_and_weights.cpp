@@ -1292,7 +1292,7 @@ void recompute_ideal_colors_1plane(
 		color_vec_y = color_vec_y * color_weight;
 
 		// Initialize the luminance and scale vectors with a reasonable default
-		float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
+		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
 		scalediv = astc::clamp1f(scalediv);
 
 		vfloat4 sds = scale_dir * scale_max;
@@ -1344,7 +1344,7 @@ void recompute_ideal_colors_1plane(
 
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
-				float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
+				float scalediv2 = scale_ep0 / scale_ep1;
 				vfloat4 sdsm = scale_dir * scale_ep1;
 				rgbs_vectors[i] = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
 			}
@@ -1535,7 +1535,7 @@ void recompute_ideal_colors_2planes(
 	color_vec_y = color_vec_y * color_weight;
 
 	// Initialize the luminance and scale vectors with a reasonable default
-	float scalediv = scale_min * (1.0f / astc::max(scale_max, 1e-10f));
+	float scalediv = scale_min / astc::max(scale_max, 1e-10f);
 	scalediv = astc::clamp1f(scalediv);
 
 	vfloat4 sds = scale_dir * scale_max;
@@ -1591,7 +1591,7 @@ void recompute_ideal_colors_2planes(
 
 		if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 		{
-			float scalediv2 = scale_ep0 * (1.0f / scale_ep1);
+			float scalediv2 = scale_ep0 / scale_ep1;
 			vfloat4 sdsm = scale_dir * scale_ep1;
 			rgbs_vector = vfloat4(sdsm.lane<0>(), sdsm.lane<1>(), sdsm.lane<2>(), scalediv2);
 		}
