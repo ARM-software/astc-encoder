@@ -448,7 +448,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	unsigned int max_block_modes = only_always ? bsd.block_mode_count_1plane_always
 	                                           : bsd.block_mode_count_1plane_selected;
 	promise(max_block_modes > 0);
-	for (unsigned int i = 0; i < max_block_modes; ++i)
+	for (unsigned int i = 0; i < max_block_modes; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
 

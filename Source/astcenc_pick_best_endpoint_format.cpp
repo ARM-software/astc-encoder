@@ -1160,7 +1160,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// The block contains 1 partition
 	if (partition_count == 1)
 	{
-		for (unsigned int i = start_block_mode; i < end_block_mode; ++i)
+		for (unsigned int i = start_block_mode; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1193,7 +1193,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; ++i)
+		for (unsigned int i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1226,7 +1226,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; ++i)
+		for (unsigned int i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1260,7 +1260,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; ++i)
+		for (unsigned int i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{

@@ -176,7 +176,7 @@ static void compute_lowest_and_highest_weight(
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(offsets + sp);
 
-		for (unsigned int j = 0; j < weight_count; ++j)
+		for (unsigned int j = 0; j < weight_count; j++)
 		{
 			vfloat sval = load1(dec_weight_ideal_value + j) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
@@ -372,7 +372,7 @@ static void compute_lowest_and_highest_weight_lwc(
 		vfloat errval = vfloat::zero();
 		vfloat offset = loada(offsets + sp);
 
-		for (unsigned int j = 0; j < weight_count; ++j)
+		for (unsigned int j = 0; j < weight_count; j++)
 		{
 			vfloat sval = load1(dec_weight_quant_uvalue + j) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
@@ -538,7 +538,7 @@ void compute_angular_endpoints_1plane(
 	unsigned int max_block_modes = only_always ? bsd.block_mode_count_1plane_always
 	                                           : bsd.block_mode_count_1plane_selected;
 	promise(max_block_modes > 0);
-	for (unsigned int i = 0; i < max_block_modes; ++i)
+	for (unsigned int i = 0; i < max_block_modes; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
 		assert(!bm.is_dual_plane);
