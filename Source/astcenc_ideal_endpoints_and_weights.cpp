@@ -268,13 +268,13 @@ static void compute_ideal_colors_and_weights_2_comp(
 
 	for (unsigned int i = 0; i < partition_count; i++)
 	{
-		vfloat4 dir = pms[i].dir.swz<0, 1>();
+		vfloat4 dir = pms[i].dir;
 		if (hadd_s(dir) < 0.0f)
 		{
 			dir = vfloat4::zero() - dir;
 		}
 
-		line2 line { pms[i].avg.swz<0, 1>(), normalize_safe(dir, unit2()) };
+		line2 line { pms[i].avg, normalize_safe(dir, unit2()) };
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 

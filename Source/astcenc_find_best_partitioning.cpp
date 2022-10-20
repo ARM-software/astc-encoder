@@ -642,10 +642,10 @@ void find_best_partition_candidates(
 				partition_lines3& pl = plines[j];
 
 				pl.uncor_line.a = pm.avg;
-				pl.uncor_line.b = normalize_safe(pm.dir.swz<0, 1, 2>(), unit3());
+				pl.uncor_line.b = normalize_safe(pm.dir, unit3());
 
 				pl.samec_line.a = vfloat4::zero();
-				pl.samec_line.b = normalize_safe(pm.avg.swz<0, 1, 2>(), unit3());
+				pl.samec_line.b = normalize_safe(pm.avg, unit3());
 
 				pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b);
 				pl.uncor_pline.bs   = pl.uncor_line.b;
