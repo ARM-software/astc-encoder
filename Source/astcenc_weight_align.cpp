@@ -287,25 +287,25 @@ static void compute_angular_endpoints_for_quant_levels(
 		// Check best error against record N
 		vfloat4 best_result = best_results[idx_span];
 		vfloat4 new_result = vfloat4(error[i], i_flt, 0.0f, 0.0f);
-		vmask4 mask1(best_result.lane<0>() > error[i]);
-		best_results[idx_span] = select(best_result, new_result, mask1);
+		vmask4 mask = vfloat4(best_result.lane<0>()) > vfloat4(error[i]);
+		best_results[idx_span] = select(best_result, new_result, mask);
 
 		// Check best error against record N-1 with either cut low or cut high
 		best_result = best_results[idx_span - 1];
 
 		new_result = vfloat4(error_cut_low, i_flt, 1.0f, 0.0f);
-		vmask4 mask2(best_result.lane<0>() > error_cut_low);
-		best_result = select(best_result, new_result, mask2);
+		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_low);
+		best_result = select(best_result, new_result, mask);
 
 		new_result = vfloat4(error_cut_high, i_flt, 0.0f, 0.0f);
-		vmask4 mask3(best_result.lane<0>() > error_cut_high);
-		best_results[idx_span - 1] = select(best_result, new_result, mask3);
+		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_high);
+		best_results[idx_span - 1] = select(best_result, new_result, mask);
 
 		// Check best error against record N-2 with both cut low and high
 		best_result = best_results[idx_span - 2];
 		new_result = vfloat4(error_cut_low_high, i_flt, 1.0f, 0.0f);
-		vmask4 mask4(best_result.lane<0>() > error_cut_low_high);
-		best_results[idx_span - 2] = select(best_result, new_result, mask4);
+		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_low_high);
+		best_results[idx_span - 2] = select(best_result, new_result, mask);
 	}
 
 	for (unsigned int i = 0; i <= max_quant_level; i++)
@@ -451,7 +451,7 @@ static void compute_angular_endpoints_for_quant_levels_lwc(
 		// Check best error against record N
 		vfloat4 current_best = best_results[idx_span];
 		vfloat4 candidate = vfloat4(error[i], static_cast<float>(i), 0.0f, 0.0f);
-		vmask4 mask(current_best.lane<0>() > error[i]);
+		vmask4 mask = vfloat4(current_best.lane<0>()) > vfloat4(error[i]);
 		best_results[idx_span] = select(current_best, candidate, mask);
 	}
 
