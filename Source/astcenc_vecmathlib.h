@@ -416,7 +416,7 @@ static ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 /**
  * @brief Return lanewise 2^a for each lane in @c a.
  *
- * Use of signed int mean that this is only valid for values in range [0, 31].
+ * Use of signed int means that this is only valid for values in range [0, 31].
  */
 static ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 {
