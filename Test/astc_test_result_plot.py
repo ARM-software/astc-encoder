@@ -379,7 +379,8 @@ def main():
             f"ref-{last4x}-avx2",
             None,
             "results-relative-main-vs-4.x.png",
-            (None, None)
+            (None, None), 
+            1
         ]
     ]
 

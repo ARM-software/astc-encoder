@@ -7,6 +7,25 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.2.0
+
+**Status:** In Development
+
+The 4.2.0 release is an optimization release. There are significant performance
+improvements and minor image quality changes in this release.
+
+* **General:**
+  * **Optimization:** Reduce early-out threshold for 3/4 partition searches
+    based on 2/3 partition results. This signficantly improves performance,
+    especially for `-thorough` searches, for a minor loss in image quality.
+  * **Optimization:** Use direct vector compare to create a SIMD mask instead
+    of a scalar compare that is broadcast to a vector mask.
+  * **Optimization:** Remove obsolete partition validity masks from the
+    partition selection algorithm.
+  * **Optimization:** Removed obsolete channel scaling from partition
+    `avgs_and_dirs()` calculation.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.1.0
 
 **Status:** August 2022
