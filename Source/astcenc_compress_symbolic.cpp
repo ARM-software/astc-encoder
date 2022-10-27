@@ -1408,7 +1408,6 @@ void compress_block(
 				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
 			}
-
 		}
 
 		// If using N partitions doesn't improve much over using N-1 partitions then skip trying N+1

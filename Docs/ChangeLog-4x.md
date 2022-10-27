@@ -15,6 +15,10 @@ The 4.2.0 release is an optimization release. There are significant performance
 improvements and minor image quality changes in this release.
 
 * **General:**
+  * **Optimization:** Introduce early-out threshold for 2/3/4 partition
+    searches based on the results after 1 of 2 trials. This signficantly
+    improves performance for `-medium` and `-thorough` searches, for a minor
+    loss in image quality.
   * **Optimization:** Reduce early-out threshold for 3/4 partition searches
     based on 2/3 partition results. This signficantly improves performance,
     especially for `-thorough` searches, for a minor loss in image quality.
