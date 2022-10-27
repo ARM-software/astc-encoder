@@ -1372,6 +1372,8 @@ void compress_block(
 		                               ctx.config.tune_partition_index_limit,
 		                               partition_indices);
 
+		float best_error_in_prev = best_errorvals_for_pcount[partition_count - 2];
+
 		for (unsigned int i = 0; i < 2; i++)
 		{
 			TRACE_NODE(node1, "pass");
@@ -1387,16 +1389,30 @@ void compress_block(
 			    scb, tmpbuf, quant_limit);
 
 			best_errorvals_for_pcount[partition_count - 1] = astc::min(best_errorvals_for_pcount[partition_count - 1], errorval);
+
+			// If using N partitions doesn't improve much over using N-1 partitions then skip trying
+			// N+1. Error can dramatically improve if the data is correlated or non-correlated and
+			// aligns with a partitioning that suits that encoding, so for this inner loop check add
+			// a large error scale because the "other" trial could be a lot better. In total the
+			// error must be at least 2x worse than the best existing error to early-out.
+			float best_error = best_errorvals_for_pcount[partition_count - 1];
+			float best_error_scale = exit_thresholds_for_pcount[partition_count - 1] * 2.0f;
+			if (best_error > (best_error_in_prev * best_error_scale))
+			{
+				trace_add_data("skip", "tune_partition_early_out_limit_factor");
+				goto END_OF_TESTS;
+			}
+
 			if (errorval < error_threshold)
 			{
 				trace_add_data("exit", "quality hit");
 				goto END_OF_TESTS;
 			}
+
 		}
 
 		// If using N partitions doesn't improve much over using N-1 partitions then skip trying N+1
 		float best_error = best_errorvals_for_pcount[partition_count - 1];
-		float best_error_in_prev = best_errorvals_for_pcount[partition_count - 2];
 		float best_error_scale = exit_thresholds_for_pcount[partition_count - 1];
 		if (best_error > (best_error_in_prev * best_error_scale))
 		{
