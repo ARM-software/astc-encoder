@@ -133,6 +133,13 @@ static constexpr unsigned int TUNE_MIN_TEXELS_MODE0_FASTPATH { 24 };
 static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
 
 /**
+ * @brief The maximum number of candidate partitionings tested for each encoding mode.
+ *
+ * This can be dynamically reduced by the compression quality preset.
+ */
+static constexpr unsigned int TUNE_MAX_PARTITIION_CANDIDATES { 16 };
+
+/**
  * @brief The maximum quant level using full angular endpoint search method.
  *
  * The angular endpoint search is used to find the min/max weight that should
@@ -1525,13 +1532,15 @@ void compute_error_squared_rgba(
  * @param      partition_count            The number of partitions in the block.
  * @param      partition_search_limit     The number of candidate partition encodings to trial.
  * @param[out] best_partitions            The best partition candidates.
+ * @param      requested                  The number of requsted partitionings.
  */
-void find_best_partition_candidates(
+unsigned int find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int best_partitions[2]);
+	unsigned int best_partitions[TUNE_MAX_PARTITIION_CANDIDATES],
+	unsigned int requested);
 
 /* ============================================================================
   Functionality for managing images and image related data.

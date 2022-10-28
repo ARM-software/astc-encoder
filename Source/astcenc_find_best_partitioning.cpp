@@ -485,13 +485,43 @@ static unsigned int compute_kmeans_partition_ordering(
 	    mismatch_counts, partition_ordering);
 }
 
+static void insert_result(
+	unsigned int max_values,
+	float this_error,
+	unsigned int this_partition,
+	float* best_errors,
+	unsigned int* best_partitions)
+{
+	for (unsigned int i = 0; i < max_values;  i++)
+	{
+		// Existing result is better - move on ...
+		if (this_error > best_errors[i])
+		{
+			continue;
+		}
+
+		// Move existing results down one
+		for (unsigned int j = max_values - 1; j > i; j--)
+		{
+			best_errors[j] = best_errors[j - 1];
+			best_partitions[j] = best_partitions[j - 1];
+		}
+
+		// Insert new result
+		best_errors[i] = this_error;
+		best_partitions[i] = this_partition;
+		break;
+	}
+}
+
 /* See header for documentation. */
-void find_best_partition_candidates(
+unsigned int find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int best_partitions[2]
+	unsigned int best_partitions[BLOCK_MAX_PARTITIONINGS],
+	unsigned int requested
 ) {
 	// Constant used to estimate quantization error for a given partitioning; the optimal value for
 	// this depends on bitrate. These values have been determined empirically.
@@ -522,13 +552,19 @@ void find_best_partition_candidates(
 	bool uses_alpha = !blk.is_constant_channel(3);
 
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
-	float uncor_best_error { ERROR_CALC_DEFAULT };
-	unsigned int uncor_best_partition { 0 };
+	unsigned int best_error_count { 0 };
+	float uncor_best_errors[TUNE_MAX_PARTITIION_CANDIDATES];
+	unsigned int uncor_best_partitions[TUNE_MAX_PARTITIION_CANDIDATES];
 
 	// Partitioning errors assuming same-chrominance endpoints
-	// Store two so we can always return one different to uncorr
-	float samec_best_errors[2] { ERROR_CALC_DEFAULT, ERROR_CALC_DEFAULT };
-	unsigned int samec_best_partitions[2] { 0, 0 };
+	float samec_best_errors[TUNE_MAX_PARTITIION_CANDIDATES];
+	unsigned int samec_best_partitions[TUNE_MAX_PARTITIION_CANDIDATES];
+
+	for (unsigned int i = 0; i < requested; i++)
+	{
+		uncor_best_errors[i] = ERROR_CALC_DEFAULT;
+		samec_best_errors[i] = ERROR_CALC_DEFAULT;
+	}
 
 	if (uses_alpha)
 	{
@@ -602,25 +638,9 @@ void find_best_partition_candidates(
 				samec_error += dot_s(samec_vector * samec_vector, error_weights);
 			}
 
-			if (uncor_error < uncor_best_error)
-			{
-				uncor_best_error = uncor_error;
-				uncor_best_partition = partition;
-			}
-
-			if (samec_error < samec_best_errors[0])
-			{
-				samec_best_errors[1] = samec_best_errors[0];
-				samec_best_partitions[1] = samec_best_partitions[0];
-
-				samec_best_errors[0] = samec_error;
-				samec_best_partitions[0] = partition;
-			}
-			else if (samec_error < samec_best_errors[1])
-			{
-				samec_best_errors[1] = samec_error;
-				samec_best_partitions[1] = partition;
-			}
+			best_error_count++;
+			insert_result(requested, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
+			insert_result(requested, samec_error, partition, samec_best_errors, samec_best_partitions);
 		}
 	}
 	else
@@ -687,50 +707,48 @@ void find_best_partition_candidates(
 				samec_error += dot3_s(samec_vector * samec_vector, error_weights);
 			}
 
-			if (uncor_error < uncor_best_error)
-			{
-				uncor_best_error = uncor_error;
-				uncor_best_partition = partition;
-			}
+			best_error_count++;
+			insert_result(requested, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
+			insert_result(requested, samec_error, partition, samec_best_errors, samec_best_partitions);
+		}
+	}
 
-			if (samec_error < samec_best_errors[0])
-			{
-				samec_best_errors[1] = samec_best_errors[0];
-				samec_best_partitions[1] = samec_best_partitions[0];
+	best_error_count = astc::min(best_error_count, requested);
 
-				samec_best_errors[0] = samec_error;
-				samec_best_partitions[0] = partition;
-			}
-			else if (samec_error < samec_best_errors[1])
+	unsigned int interleave[2 * TUNE_MAX_PARTITIION_CANDIDATES];
+	for (unsigned int i = 0; i < best_error_count; i++)
+	{
+		interleave[2 * i] = bsd.get_raw_partition_info(partition_count, uncor_best_partitions[i]).partition_index;
+		interleave[2 * i + 1] = bsd.get_raw_partition_info(partition_count, samec_best_partitions[i]).partition_index;
+	}
+
+	uint64_t bitmasks[1024/64] { 0 };
+	unsigned int emitted = 0;
+
+	// Deduplicate the first "requested" entries
+	for (unsigned int i = 0; i < best_error_count * 2;  i++)
+	{
+		unsigned int partition = interleave[i];
+
+		unsigned int word = partition / 64;
+		unsigned int bit = partition % 64;
+
+		bool written = bitmasks[word] & (1ull << bit);
+
+		if (!written)
+		{
+			best_partitions[emitted] = partition;
+			bitmasks[word] |= 1ull << bit;
+			emitted++;
+
+			if (emitted == requested)
 			{
-				samec_best_errors[1] = samec_error;
-				samec_best_partitions[1] = partition;
+				break;
 			}
 		}
 	}
 
-	// Same partition is best for both, so use this first unconditionally
-	if (uncor_best_partition == samec_best_partitions[0])
-	{
-		best_partitions[0] = samec_best_partitions[0];
-		best_partitions[1] = samec_best_partitions[1];
-	}
-	// Uncor is best
-	else if (uncor_best_error <= samec_best_errors[0])
-	{
-		best_partitions[0] = uncor_best_partition;
-		best_partitions[1] = samec_best_partitions[0];
-	}
-	// Samec is best
-	else
-	{
-		best_partitions[0] = samec_best_partitions[0];
-		best_partitions[1] = uncor_best_partition;
-	}
-
-	// Convert these back into canonical partition IDs for the rest of the codec
-	best_partitions[0] = bsd.get_raw_partition_info(partition_count, best_partitions[0]).partition_index;
-	best_partitions[1] = bsd.get_raw_partition_info(partition_count, best_partitions[1]).partition_index;
+	return emitted;
 }
 
 #endif

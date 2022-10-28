@@ -469,6 +469,13 @@ struct astcenc_config
 	unsigned int tune_candidate_limit;
 
 	/**
+	 * @brief The number of trial partitionings per search (-partitioncandidatelimit).
+	 *
+	 * Valid values are between 1 and 1024.
+	 */
+	unsigned int tune_partitioning_candidate_limit;
+
+	/**
 	 * @brief The dB threshold for stopping block search (-dblimit).
 	 *
 	 * This option is ineffective for HDR textures.

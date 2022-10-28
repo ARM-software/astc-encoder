@@ -1366,15 +1366,15 @@ void compress_block(
 	// Find best blocks for 2, 3 and 4 partitions
 	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
-		unsigned int partition_indices[2] { 0 };
-
-		find_best_partition_candidates(bsd, blk, partition_count,
-		                               ctx.config.tune_partition_index_limit,
-		                               partition_indices);
+		unsigned int partition_indices[TUNE_MAX_PARTITIION_CANDIDATES];
+		unsigned int requested = astc::min(ctx.config.tune_partitioning_candidate_limit, ctx.config.tune_partition_index_limit);
+		unsigned int actual = find_best_partition_candidates(bsd, blk, partition_count,
+		                                                     ctx.config.tune_partition_index_limit,
+		                                                     partition_indices, requested);
 
 		float best_error_in_prev = best_errorvals_for_pcount[partition_count - 2];
 
-		for (unsigned int i = 0; i < 2; i++)
+		for (unsigned int i = 0; i < actual; i++)
 		{
 			TRACE_NODE(node1, "pass");
 			trace_add_data("partition_count", partition_count);
