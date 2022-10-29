@@ -15,12 +15,28 @@ The 4.2.0 release is an optimization release. There are significant performance
 improvements and minor image quality changes in this release.
 
 * **General:**
+  * **Feature:** The `-exhaustive` mode now runs full trials on more
+    partitioning candidates and block candidates. This improves image quality
+    by 0.1 to 0.25 dB, but slows down compression by 3x. The `-verythorough`
+    and `-thorough` modes also test more candidates.
+  * **Feature:** A new preset, `-verythorough`, has been introduced to provide
+    a standard performance point between `-thorough` and the re-tuned
+    `-exhaustive` mode. This new mode is faster and higher quality than the
+    `-exhaustive` preset in the 4.1 release.
+  * **Feature:** The compressor can now independently vary the number of
+    partitionings considered for error estimation for 2/3/4 partitions. This
+    allows heuristics to put more effort into 2 partitions, and less in to
+    3/4 partitions.
+  * **Feature:** The compressor can now run trials on a variable number of
+    candidate partitionings, allowing high quality modes to explore more of the
+    search space at the expensive of slower compression. The number of trials
+    is independently configurable for 2/3/4 partition cases.
   * **Optimization:** Introduce early-out threshold for 2/3/4 partition
-    searches based on the results after 1 of 2 trials. This signficantly
+    searches based on the results after 1 of 2 trials. This significantly
     improves performance for `-medium` and `-thorough` searches, for a minor
     loss in image quality.
   * **Optimization:** Reduce early-out threshold for 3/4 partition searches
-    based on 2/3 partition results. This signficantly improves performance,
+    based on 2/3 partition results. This significantly improves performance,
     especially for `-thorough` searches, for a minor loss in image quality.
   * **Optimization:** Use direct vector compare to create a SIMD mask instead
     of a scalar compare that is broadcast to a vector mask.
