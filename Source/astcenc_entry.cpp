@@ -76,7 +76,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		4, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 2.5f, 2.5f, 1.1f, 1.05f, 0.85f, 16
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 94, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.3f, 1.1f, 0.95f, 12
+		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.35f, 1.15f, 0.95f, 12
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
 		4, 256, 128, 64, 98, 4, 6, 20, 14, 8, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
@@ -102,7 +102,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		4, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.0f, 3.0f, 1.1f, 1.05f, 0.75f, 14
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 94, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.3f, 1.15f, 0.95f, 10
+		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.4f, 1.2f, 0.95f, 10
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
 		4, 256, 128, 64, 98, 4, 6, 12, 8, 3, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
@@ -128,7 +128,7 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		3, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.5f, 3.5f, 1.1f, 1.05f, 0.65f, 12
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 93, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.2f, 1.1f, 0.85f, 10
+		4, 82, 60, 30, 93, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.3f, 1.2f, 0.85f, 10
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
 		4, 256, 128, 64, 98, 4, 6, 9, 5, 2, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
