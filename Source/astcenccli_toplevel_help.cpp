@@ -141,12 +141,12 @@ COMPRESSION
        can be set to any value between 0 (fastest) and 100 (exhaustive),
        or to a fixed quality preset:
 
-           -fastest       (equivalent to quality =   0)
-           -fast          (equivalent to quality =  10)
-           -medium        (equivalent to quality =  60)
-           -thorough      (equivalent to quality =  98)
-           -verythorough  (equivalent to quality =  99)
-           -exhaustive    (equivalent to quality = 100)
+           -fastest      (equivalent to quality =   0)
+           -fast         (equivalent to quality =  10)
+           -medium       (equivalent to quality =  60)
+           -thorough     (equivalent to quality =  98)
+           -verythorough (equivalent to quality =  99)
+           -exhaustive   (equivalent to quality = 100)
 
        For compression of production content we recommend using a quality
        level equivalent to -medium or higher.
@@ -291,7 +291,7 @@ ADVANCED COMPRESSION
                -fast         :   18 |  10 |   8
                -medium       :   34 |  28 |  16
                -thorough     :   82 |  60 |  30
-               -vertthorough :  256 | 128 |  64
+               -verythorough :  256 | 128 |  64
                -exhaustive   :  512 | 512 | 512
 
        -[2|3|4]partitioncandidatelimit <number>
@@ -303,7 +303,7 @@ ADVANCED COMPRESSION
                -fastest      :   2 |  2 |  2
                -fast         :   2 |  2 |  2
                -medium       :   2 |  2 |  2
-               -thorough     :   2 |  2 |  2
+               -thorough     :   3 |  2 |  2
                -verythorough :  20 | 14 |  8
                -exhaustive   :  32 | 32 | 32
 
@@ -363,7 +363,7 @@ ADVANCED COMPRESSION
                -fastest       : 1.00 | 1.00
                -fast          : 1.00 | 1.00
                -medium        : 1.10 | 1.05
-               -thorough      : 1.30 | 1.10
+               -thorough      : 1.35 | 1.15
                -verythrorough : 1.60 | 1.40
                -exhaustive    : 2.00 | 2.00
 
