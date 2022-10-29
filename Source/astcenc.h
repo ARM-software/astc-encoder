@@ -241,6 +241,9 @@ static const float ASTCENC_PRE_MEDIUM = 60.0f;
 /** @brief The thorough quality search preset. */
 static const float ASTCENC_PRE_THOROUGH = 98.0f;
 
+/** @brief The thorough quality search preset. */
+static const float ASTCENC_PRE_VERYTHOROUGH = 99.0f;
+
 /** @brief The exhaustive, highest quality, search preset. */
 static const float ASTCENC_PRE_EXHAUSTIVE = 100.0f;
 
@@ -440,11 +443,25 @@ struct astcenc_config
 	unsigned int tune_partition_count_limit;
 
 	/**
-	 * @brief The maximum number of partitions searched (-partitionindexlimit).
+	 * @brief The maximum number of partitions searched (-2partitionindexlimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_partition_index_limit;
+	unsigned int tune_2partition_index_limit;
+
+	/**
+	 * @brief The maximum number of partitions searched (-3partitionindexlimit).
+	 *
+	 * Valid values are between 1 and 1024.
+	 */
+	unsigned int tune_3partition_index_limit;
+
+	/**
+	 * @brief The maximum number of partitions searched (-4partitionindexlimit).
+	 *
+	 * Valid values are between 1 and 1024.
+	 */
+	unsigned int tune_4partition_index_limit;
 
 	/**
 	 * @brief The maximum centile for block modes searched (-blockmodelimit).
@@ -469,11 +486,25 @@ struct astcenc_config
 	unsigned int tune_candidate_limit;
 
 	/**
-	 * @brief The number of trial partitionings per search (-partitioncandidatelimit).
+	 * @brief The number of trial partitionings per search (-2partitioncandidatelimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_partitioning_candidate_limit;
+	unsigned int tune_2partitioning_candidate_limit;
+
+	/**
+	 * @brief The number of trial partitionings per search (-3partitioncandidatelimit).
+	 *
+	 * Valid values are between 1 and 1024.
+	 */
+	unsigned int tune_3partitioning_candidate_limit;
+
+	/**
+	 * @brief The number of trial partitionings per search (-4partitioncandidatelimit).
+	 *
+	 * Valid values are between 1 and 1024.
+	 */
+	unsigned int tune_4partitioning_candidate_limit;
 
 	/**
 	 * @brief The dB threshold for stopping block search (-dblimit).

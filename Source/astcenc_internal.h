@@ -137,7 +137,7 @@ static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
  *
  * This can be dynamically reduced by the compression quality preset.
  */
-static constexpr unsigned int TUNE_MAX_PARTITIION_CANDIDATES { 16 };
+static constexpr unsigned int TUNE_MAX_PARTITIION_CANDIDATES { 32 };
 
 /**
  * @brief The maximum quant level using full angular endpoint search method.

@@ -1197,6 +1197,18 @@ void compress_block(
 	bool block_skip_two_plane = false;
 	int max_partitions = ctx.config.tune_partition_count_limit;
 
+	unsigned int requested_partition_indices[3] {
+		ctx.config.tune_2partition_index_limit,
+		ctx.config.tune_3partition_index_limit,
+		ctx.config.tune_4partition_index_limit
+	};
+
+	unsigned int requested_partition_trials[3] {
+		ctx.config.tune_2partitioning_candidate_limit,
+		ctx.config.tune_3partitioning_candidate_limit,
+		ctx.config.tune_4partitioning_candidate_limit
+	};
+
 #if defined(ASTCENC_DIAGNOSTICS)
 	// Do this early in diagnostic builds so we can dump uniform metrics
 	// for every block. Do it later in release builds to avoid redundant work!
@@ -1367,14 +1379,18 @@ void compress_block(
 	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
 		unsigned int partition_indices[TUNE_MAX_PARTITIION_CANDIDATES];
-		unsigned int requested = astc::min(ctx.config.tune_partitioning_candidate_limit, ctx.config.tune_partition_index_limit);
-		unsigned int actual = find_best_partition_candidates(bsd, blk, partition_count,
-		                                                     ctx.config.tune_partition_index_limit,
-		                                                     partition_indices, requested);
+
+		unsigned int requested_indices = requested_partition_indices[partition_count - 2];
+
+		unsigned int requested_trials = requested_partition_trials[partition_count - 2];
+		requested_trials = astc::min(requested_trials, requested_indices);
+
+		unsigned int actual_trials = find_best_partition_candidates(
+		    bsd, blk, partition_count, requested_indices, partition_indices, requested_trials);
 
 		float best_error_in_prev = best_errorvals_for_pcount[partition_count - 2];
 
-		for (unsigned int i = 0; i < actual; i++)
+		for (unsigned int i = 0; i < actual_trials; i++)
 		{
 			TRACE_NODE(node1, "pass");
 			trace_add_data("partition_count", partition_count);
