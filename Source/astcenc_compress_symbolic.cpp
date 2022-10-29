@@ -1378,7 +1378,7 @@ void compress_block(
 	// Find best blocks for 2, 3 and 4 partitions
 	for (int partition_count = 2; partition_count <= max_partitions; partition_count++)
 	{
-		unsigned int partition_indices[TUNE_MAX_PARTITIION_CANDIDATES];
+		unsigned int partition_indices[TUNE_MAX_PARTITIIONING_CANDIDATES];
 
 		unsigned int requested_indices = requested_partition_indices[partition_count - 2];
 

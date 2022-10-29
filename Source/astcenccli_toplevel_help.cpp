@@ -337,8 +337,8 @@ ADVANCED COMPRESSION
                -fast         : 3
                -medium       : 3
                -thorough     : 4
-               -verythorough : 4
-               -exhaustive   : 4
+               -verythorough : 6
+               -exhaustive   : 8
 
        -dblimit <number>
            Stop compression work on a block as soon as the PSNR of the

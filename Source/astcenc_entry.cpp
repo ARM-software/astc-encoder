@@ -79,10 +79,10 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 		4, 82, 60, 30, 94, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.3f, 1.1f, 0.95f, 12
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 4, 20, 14, 8, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
+		4, 256, 128, 64, 98, 4, 6, 20, 14, 8, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 512, 512, 512, 100, 4, 4, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
+		4, 512, 512, 512, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
 	}
 }};
 
@@ -105,10 +105,10 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 		4, 82, 60, 30, 94, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.3f, 1.15f, 0.95f, 10
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 4, 12, 8, 3, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
+		4, 256, 128, 64, 98, 4, 6, 12, 8, 3, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 256, 256, 256, 100, 4, 4, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
+		4, 256, 256, 256, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
 	}
 }};
 
@@ -131,10 +131,10 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 		4, 82, 60, 30, 93, 4, 4, 2, 2, 2, 105.0f, 77.0f, 10.0f, 10.0f, 1.2f, 1.1f, 0.85f, 10
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 4, 9, 5, 2, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
+		4, 256, 128, 64, 98, 4, 6, 9, 5, 2, 200.0f, 200.0f, 10.0f, 10.0f, 1.6f, 1.4f, 0.98f, 4
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 256, 256, 256, 100, 4, 4, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
+		4, 256, 256, 256, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0
 	}
 }};
 
@@ -441,9 +441,9 @@ static astcenc_error validate_config(
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
 	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
-	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIION_CANDIDATES);
-	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIION_CANDIDATES);
-	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIION_CANDIDATES);
+	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
+	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
+	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
 	config.tune_mode0_mse_overshoot = astc::max(config.tune_mode0_mse_overshoot, 1.0f);
 	config.tune_refinement_mse_overshoot = astc::max(config.tune_refinement_mse_overshoot, 1.0f);
@@ -549,9 +549,9 @@ astcenc_error astcenc_config_init(
 		config.tune_block_mode_limit = (*preset_configs)[start].tune_block_mode_limit;
 		config.tune_refinement_limit = (*preset_configs)[start].tune_refinement_limit;
 		config.tune_candidate_limit = astc::min((*preset_configs)[start].tune_candidate_limit, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIION_CANDIDATES);
-		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIION_CANDIDATES);
-		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIION_CANDIDATES);
+		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
+		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
+		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
 		config.tune_db_limit = astc::max((*preset_configs)[start].tune_db_limit_a_base - 35 * ltexels,
 		                                 (*preset_configs)[start].tune_db_limit_b_base - 19 * ltexels);
 

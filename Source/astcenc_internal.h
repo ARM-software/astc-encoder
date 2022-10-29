@@ -130,14 +130,14 @@ static constexpr unsigned int TUNE_MIN_TEXELS_MODE0_FASTPATH { 24 };
  *
  * This can be dynamically reduced by the compression quality preset.
  */
-static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 4 };
+static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 8 };
 
 /**
  * @brief The maximum number of candidate partitionings tested for each encoding mode.
  *
  * This can be dynamically reduced by the compression quality preset.
  */
-static constexpr unsigned int TUNE_MAX_PARTITIION_CANDIDATES { 32 };
+static constexpr unsigned int TUNE_MAX_PARTITIIONING_CANDIDATES { 32 };
 
 /**
  * @brief The maximum quant level using full angular endpoint search method.
@@ -1539,7 +1539,7 @@ unsigned int find_best_partition_candidates(
 	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int best_partitions[TUNE_MAX_PARTITIION_CANDIDATES],
+	unsigned int best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES],
 	unsigned int requested);
 
 /* ============================================================================

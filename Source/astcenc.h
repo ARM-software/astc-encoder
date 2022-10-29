@@ -488,21 +488,21 @@ struct astcenc_config
 	/**
 	 * @brief The number of trial partitionings per search (-2partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and 1024.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
 	 */
 	unsigned int tune_2partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-3partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and 1024.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
 	 */
 	unsigned int tune_3partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-4partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and 1024.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
 	 */
 	unsigned int tune_4partitioning_candidate_limit;
 

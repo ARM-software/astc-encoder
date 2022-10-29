@@ -553,12 +553,12 @@ unsigned int find_best_partition_candidates(
 
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
 	unsigned int best_error_count { 0 };
-	float uncor_best_errors[TUNE_MAX_PARTITIION_CANDIDATES];
-	unsigned int uncor_best_partitions[TUNE_MAX_PARTITIION_CANDIDATES];
+	float uncor_best_errors[TUNE_MAX_PARTITIIONING_CANDIDATES];
+	unsigned int uncor_best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES];
 
 	// Partitioning errors assuming same-chrominance endpoints
-	float samec_best_errors[TUNE_MAX_PARTITIION_CANDIDATES];
-	unsigned int samec_best_partitions[TUNE_MAX_PARTITIION_CANDIDATES];
+	float samec_best_errors[TUNE_MAX_PARTITIIONING_CANDIDATES];
+	unsigned int samec_best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES];
 
 	for (unsigned int i = 0; i < requested; i++)
 	{
@@ -715,7 +715,7 @@ unsigned int find_best_partition_candidates(
 
 	best_error_count = astc::min(best_error_count, requested);
 
-	unsigned int interleave[2 * TUNE_MAX_PARTITIION_CANDIDATES];
+	unsigned int interleave[2 * TUNE_MAX_PARTITIIONING_CANDIDATES];
 	for (unsigned int i = 0; i < best_error_count; i++)
 	{
 		interleave[2 * i] = bsd.get_raw_partition_info(partition_count, uncor_best_partitions[i]).partition_index;
