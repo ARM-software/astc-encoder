@@ -519,6 +519,10 @@ static int init_astcenc_config(
 		{
 			quality = ASTCENC_PRE_THOROUGH;
 		}
+		else if (!strcmp(argv[5], "-verythorough"))
+		{
+			quality = ASTCENC_PRE_VERYTHOROUGH;
+		}
 		else if (!strcmp(argv[5], "-exhaustive"))
 		{
 			quality = ASTCENC_PRE_EXHAUSTIVE;
@@ -902,16 +906,71 @@ static int edit_astcenc_config(
 
 			config.tune_partition_count_limit = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-partitionindexlimit"))
+		else if (!strcmp(argv[argidx], "-2partitionindexlimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -partitionindexlimit switch with no argument\n");
+				printf("ERROR: -2partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_partition_index_limit = atoi(argv[argidx - 1]);
+			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-3partitionindexlimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -3partitionindexlimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -4partitionindexlimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-2partitioncandiatelimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -2partitioncandidatelimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_2partitioning_candidate_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-3partitioncandiatelimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -3partitioncandiatelimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_3partitioning_candidate_limit = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-4partitioncandiatelimit"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				printf("ERROR: -4partitioncandiatelimit switch with no argument\n");
+				return 1;
+			}
+
+			config.tune_4partitioning_candidate_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
@@ -1171,7 +1230,9 @@ static void print_astcenc_config(
 		printf("    B component weight:         %g\n", static_cast<double>(config.cw_b_weight));
 		printf("    A component weight:         %g\n", static_cast<double>(config.cw_a_weight));
 		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
-		printf("    Partition index cutoff:     %u partition ids\n", config.tune_partition_index_limit);
+		printf("    2 partition index cutoff:   %u partition ids\n", config.tune_2partition_index_limit);
+		printf("    3 partition index cutoff:   %u partition ids\n", config.tune_3partition_index_limit);
+		printf("    4 partition index cutoff:   %u partition ids\n", config.tune_4partition_index_limit);
 		printf("    PSNR cutoff:                %g dB\n", static_cast<double>(config.tune_db_limit));
 		printf("    3 partition cutoff:         %g\n", static_cast<double>(config.tune_2_partition_early_out_limit_factor));
 		printf("    4 partition cutoff:         %g\n", static_cast<double>(config.tune_3_partition_early_out_limit_factor));

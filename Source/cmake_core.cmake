@@ -105,6 +105,7 @@ macro(astcenc_set_properties NAME)
         PRIVATE
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
+            -gdwarf-4
 
             # MSVC compiler defines
             $<$<CXX_COMPILER_ID:MSVC>:/EHsc>

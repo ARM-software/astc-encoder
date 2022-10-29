@@ -47,10 +47,9 @@ RESULT_THRESHOLD_FAIL = -0.00
 RESULT_THRESHOLD_3D_FAIL = -0.00
 
 
-TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12",
-                    "3x3x3", "6x6x6"]
+TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12", "3x3x3", "6x6x6"]
 
-TEST_QUALITIES = ["fastest", "fast", "medium", "thorough"]
+TEST_QUALITIES = ["fastest", "fast", "medium", "thorough", "verythorough", "exhaustive"]
 
 
 def is_3d(blockSize):

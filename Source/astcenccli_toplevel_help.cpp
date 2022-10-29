@@ -138,14 +138,15 @@ COMPRESSION
        The quality level configures the quality-performance tradeoff for
        the compressor; more complete searches of the search space improve
        image quality at the expense of compression time. The quality level
-       can be set to any value between 0 (fastest) and 100 (thorough), or
-       to a fixed quality preset:
+       can be set to any value between 0 (fastest) and 100 (exhaustive),
+       or to a fixed quality preset:
 
-           -fastest       (equivalent to quality =   0)
-           -fast          (equivalent to quality =  10)
-           -medium        (equivalent to quality =  60)
-           -thorough      (equivalent to quality =  98)
-           -exhaustive    (equivalent to quality = 100)
+           -fastest      (equivalent to quality =   0)
+           -fast         (equivalent to quality =  10)
+           -medium       (equivalent to quality =  60)
+           -thorough     (equivalent to quality =  98)
+           -verythorough (equivalent to quality =  99)
+           -exhaustive   (equivalent to quality = 100)
 
        For compression of production content we recommend using a quality
        level equivalent to -medium or higher.
@@ -273,53 +274,71 @@ ADVANCED COMPRESSION
            Higher numbers give better quality, as more complex blocks can
            be encoded, but will increase search time. Preset defaults are:
 
-               -fastest    : 2
-               -fast       : 3
-               -medium     : 4
-               -thorough   : 4
-               -exhaustive : 4
+               -fastest      : 2
+               -fast         : 3
+               -medium       : 4
+               -thorough     : 4
+               -verythorough : 4
+               -exhaustive   : 4
 
-       -partitionindexlimit <number>
-           Test <number> block partition indices for each partition count.
-           Higher numbers give better quality, however large values give
-           diminishing returns especially for smaller block sizes. Preset
-           defaults are:
+       -[2|3|4]partitionindexlimit <number>
+           Estimate errors for <number> block partition indices for this
+           partition count. Higher numbers give better quality, however
+           large values give diminishing returns especially for smaller
+           block sizes. Preset defaults are:
 
-               -fastest    :    8
-               -fast       :   12
-               -medium     :   26
-               -thorough   :   76
-               -exhaustive : 1024
+               -fastest      :   10 |   6 |   4
+               -fast         :   18 |  10 |   8
+               -medium       :   34 |  28 |  16
+               -thorough     :   82 |  60 |  30
+               -verythorough :  256 | 128 |  64
+               -exhaustive   :  512 | 512 | 512
+
+       -[2|3|4]partitioncandidatelimit <number>
+           Calculate errors for <number> block partition indices for this
+           partition count. Higher numbers give better quality, however
+           large values give diminishing returns especially for smaller
+           block sizes. Preset defaults are:
+
+               -fastest      :   2 |  2 |  2
+               -fast         :   2 |  2 |  2
+               -medium       :   2 |  2 |  2
+               -thorough     :   3 |  2 |  2
+               -verythorough :  20 | 14 |  8
+               -exhaustive   :  32 | 32 | 32
 
        -blockmodelimit <number>
            Test block modes below <number> usage centile in an empirically
            determined distribution of block mode frequency. This option is
            ineffective for 3D textures. Preset defaults are:
 
-               -fastest    :  40
-               -fast       :  55
-               -medium     :  76
-               -thorough   :  93
-               -exhaustive : 100
+               -fastest      :  43
+               -fast         :  55
+               -medium       :  77
+               -thorough     :  94
+               -verythorough :  98
+               -exhaustive   : 100
 
-       -refinementlimit <value>
-           Iterate only <value> refinement iterations on colors and
+       -refinementlimit <number>
+           Iterate <number> refinement iterations on colors and
            weights. Minimum value is 1. Preset defaults are:
 
-               -fastest    : 2
-               -fast       : 3
-               -medium     : 3
-               -thorough   : 4
-               -exhaustive : 4
+               -fastest      : 2
+               -fast         : 3
+               -medium       : 3
+               -thorough     : 4
+               -verythorough : 4
+               -exhaustive   : 4
 
-       -candidatelimit <value>
-           Trial only <value> candidate encodings for each block mode:
+       -candidatelimit <number>
+           Trial <number> candidate encodings for each block mode:
 
-               -fastest    : 2
-               -fast       : 3
-               -medium     : 3
-               -thorough   : 4
-               -exhaustive : 4
+               -fastest      : 2
+               -fast         : 3
+               -medium       : 3
+               -thorough     : 4
+               -verythorough : 6
+               -exhaustive   : 8
 
        -dblimit <number>
            Stop compression work on a block as soon as the PSNR of the
@@ -327,37 +346,26 @@ ADVANCED COMPRESSION
            ineffective for HDR textures. Preset defaults, where N is the
            number of texels in a block, are:
 
-               -fastest    : MAX(63-19*log10(N),  85-35*log10(N))
-               -fast       : MAX(63-19*log10(N),  85-35*log10(N))
-               -medium     : MAX(70-19*log10(N),  95-35*log10(N))
-               -thorough   : MAX(77-19*log10(N), 105-35*log10(N))
-               -exhaustive : 999
+               -fastest      : MAX(63-19*log10(N),  85-35*log10(N))
+               -fast         : MAX(63-19*log10(N),  85-35*log10(N))
+               -medium       : MAX(70-19*log10(N),  95-35*log10(N))
+               -thorough     : MAX(77-19*log10(N), 105-35*log10(N))
+               -verythorough : 999
+               -exhaustive   : 999
 
-       -2partitionlimitfactor <factor>
+       -[2|3]partitionlimitfactor <factor>
            Stop compression work on a block after only testing blocks with
-           up to two partitions and one plane of weights, unless the two
+           up to 2/3 partitions and one plane of weights, unless the 2/3
            partition error term is lower than the error term from encoding
-           with one partition by more than the specified factor. Preset
+           with 1/2 partitions by more than the specified factor. Preset
            defaults are:
 
-               -fastest    :  1.0
-               -fast       :  1.0
-               -medium     :  1.2
-               -thorough   :  2.5
-               -exhaustive : 10.0
-
-       -3partitionlimitfactor <factor>
-           Stop compression work on a block after only testing blocks with
-           up to three partitions and one plane of weights, unless the three
-           partition error term is lower than the error term from encoding
-           with two partitions by more than the specified factor. Preset
-           defaults are:
-
-               -fastest    :  1.00
-               -fast       :  1.10
-               -medium     :  1.25
-               -thorough   :  1.25
-               -exhaustive : 10.00
+               -fastest       : 1.00 | 1.00
+               -fast          : 1.00 | 1.00
+               -medium        : 1.10 | 1.05
+               -thorough      : 1.35 | 1.15
+               -verythrorough : 1.60 | 1.40
+               -exhaustive    : 2.00 | 2.00
 
        -2planelimitcorrelation <factor>
            Stop compression after testing only one plane of weights, unless
@@ -365,22 +373,26 @@ ADVANCED COMPRESSION
            components is below this factor. This option is ineffective for
            normal maps. Preset defaults are:
 
-               -fastest    : 0.50
-               -fast       : 0.65
-               -medium     : 0.85
-               -thorough   : 0.95
-               -exhaustive : 0.99
+               -fastest      : 0.50
+               -fast         : 0.65
+               -medium       : 0.85
+               -thorough     : 0.95
+               -verythorough : 0.98
+               -exhaustive   : 0.99
 
        -lowweightmodelimit <weight count>
            Use a simpler weight search for weight counts less than or
            equal to this threshold. Preset defaults are bitrate dependent:
 
-               -fastest    : 25
-               -fast       : 20
-               -medium     : 16
-               -thorough   : 12
-               -exhaustive : 0
-
+               -fastest      : 25
+               -fast         : 20
+               -medium       : 16
+               -thorough     : 12
+               -verythorough : 4
+               -exhaustive   : 0)"
+// This split in the literals is needed for Visual Studio; the compiler
+// will concatenate these two strings together ...
+R"(
        Other options
        -------------
 
@@ -540,7 +552,7 @@ QUICK REFERENCE
            astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
 
        Mode -*l = linear LDR, -*s = sRGB LDR, -*h = HDR RGB/LDR A, -*H = HDR.
-       Quality = -fastest/-fast/-medium/-thorough/-exhaustive/a float [0-100].
+       Quality = -fastest/-fast/-medium/-thorough/-verythorough/-exhaustive/a float [0-100].
 )";
 
 /* See header for documentation. */
