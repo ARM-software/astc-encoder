@@ -1352,11 +1352,11 @@ extern const int8_t quant_mode_table[10][128];
  * Note that BISE can return strings that are not a whole number of bytes in length, and ASTC can
  * start storing strings in a block at arbitrary bit offsets in the encoded data.
  *
- * @param         quant_level      The BISE alphabet size.
- * @param         character_count  The number of characters in the string.
- * @param         input_data       The unpacked string, one byte per character.
- * @param[in,out] output_data      The output packed string.
- * @param         bit_offset       The starting offset in the output storage.
+ * @param         quant_level       The BISE alphabet size.
+ * @param         character_count   The number of characters in the string.
+ * @param         input_data        The unpacked string, one byte per character.
+ * @param[in,out] output_data       The output packed string.
+ * @param         bit_offset        The starting offset in the output storage.
  */
 void encode_ise(
 	quant_method quant_level,
@@ -1443,11 +1443,11 @@ void compute_avgs_and_dirs_3_comp(
  * This is a specialization of @c compute_avgs_and_dirs_3_comp where the omitted component is
  * always alpha, a common case during partition search.
  *
- * @param      pi                  The partition info for the current trial.
- * @param      blk                 The image block color data to be compressed.
- * @param[out] pm                  The output partition metrics.
- *                                 - Only pi.partition_count array entries actually get initialized.
- *                                 - Direction vectors @c pm.dir are not normalized.
+ * @param      pi    The partition info for the current trial.
+ * @param      blk   The image block color data to be compressed.
+ * @param[out] pm    The output partition metrics.
+ *                   - Only pi.partition_count array entries actually get initialized.
+ *                   - Direction vectors @c pm.dir are not normalized.
  */
 void compute_avgs_and_dirs_3_comp_rgb(
 	const partition_info& pi,
@@ -1478,11 +1478,11 @@ void compute_avgs_and_dirs_4_comp(
  *
  * This function computes the squared error when using these two representations.
  *
- * @param         pi              The partition info for the current trial.
- * @param         blk             The image block color data to be compressed.
- * @param[in,out] plines          Processed line inputs, and line length outputs.
- * @param[out]    uncor_error     The cumulative error for using the uncorrelated line.
- * @param[out]    samec_error     The cumulative error for using the same chroma line.
+ * @param         pi            The partition info for the current trial.
+ * @param         blk           The image block color data to be compressed.
+ * @param[in,out] plines        Processed line inputs, and line length outputs.
+ * @param[out]    uncor_error   The cumulative error for using the uncorrelated line.
+ * @param[out]    samec_error   The cumulative error for using the same chroma line.
  */
 void compute_error_squared_rgb(
 	const partition_info& pi,
@@ -1527,12 +1527,15 @@ void compute_error_squared_rgba(
  * candidates; one assuming data has uncorrelated chroma and one assuming the
  * data has correlated chroma. The best candidate is returned first in the list.
  *
- * @param      bsd                        The block size information.
- * @param      blk                        The image block color data to compress.
- * @param      partition_count            The number of partitions in the block.
- * @param      partition_search_limit     The number of candidate partition encodings to trial.
- * @param[out] best_partitions            The best partition candidates.
- * @param      requested                  The number of requsted partitionings.
+ * @param      bsd                      The block size information.
+ * @param      blk                      The image block color data to compress.
+ * @param      partition_count          The number of partitions in the block.
+ * @param      partition_search_limit   The number of candidate partition encodings to trial.
+ * @param[out] best_partitions          The best partition candidates.
+ * @param      requested_candidates     The number of requsted partitionings. May return fewer if
+ *                                      candidates are not avaiable.
+ *
+ * @return The actual number of candidates returned.
  */
 unsigned int find_best_partition_candidates(
 	const block_size_descriptor& bsd,
@@ -1540,7 +1543,7 @@ unsigned int find_best_partition_candidates(
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
 	unsigned int best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES],
-	unsigned int requested);
+	unsigned int requested_candidates);
 
 /* ============================================================================
   Functionality for managing images and image related data.
@@ -1554,10 +1557,10 @@ unsigned int find_best_partition_candidates(
  *
  * Results are written back into @c img->input_alpha_averages.
  *
- * @param      img                     The input image data, also holds output data.
- * @param      alpha_kernel_radius     The kernel radius (in pixels) for alpha mods.
- * @param      swz                     Input data component swizzle.
- * @param[out] ag                      The average variance arguments to init.
+ * @param      img                   The input image data, also holds output data.
+ * @param      alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
+ * @param      swz                   Input data component swizzle.
+ * @param[out] ag                    The average variance arguments to init.
  *
  * @return The number of tasks in the processing stage.
  */
@@ -1775,13 +1778,13 @@ float compute_error_of_weight_set_2planes(
  * The user requests a base color endpoint mode in @c format, but the quantizer may choose a
  * delta-based representation. It will report back the format variant it actually used.
  *
- * @param      color0       The input unquantized color0 endpoint for absolute endpoint pairs.
- * @param      color1       The input unquantized color1 endpoint for absolute endpoint pairs.
- * @param      rgbs_color   The input unquantized RGBS variant endpoint for same chroma endpoints.
- * @param      rgbo_color   The input unquantized RGBS variant endpoint for HDR endpoints..
- * @param      format       The desired base format.
- * @param[out] output       The output storage for the quantized colors/
- * @param      quant_level  The quantization level requested.
+ * @param      color0        The input unquantized color0 endpoint for absolute endpoint pairs.
+ * @param      color1        The input unquantized color1 endpoint for absolute endpoint pairs.
+ * @param      rgbs_color    The input unquantized RGBS variant endpoint for same chroma endpoints.
+ * @param      rgbo_color    The input unquantized RGBS variant endpoint for HDR endpoints.
+ * @param      format        The desired base format.
+ * @param[out] output        The output storage for the quantized colors/
+ * @param      quant_level   The quantization level requested.
  *
  * @return The actual endpoint mode used.
  */
@@ -1882,13 +1885,13 @@ unsigned int compute_ideal_endpoint_formats(
  * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
  * recompute the ideal colors for a specific weight set.
  *
- * @param         blk                        The image block color data to compress.
- * @param         pi                         The partition info for the current trial.
- * @param         di                         The weight grid decimation table.
+ * @param         blk                  The image block color data to compress.
+ * @param         pi                   The partition info for the current trial.
+ * @param         di                   The weight grid decimation table.
  * @param         dec_weights_uquant   The quantized weight set.
- * @param[in,out] ep                         The color endpoints (modifed in place).
- * @param[out]    rgbs_vectors               The RGB+scale vectors for LDR blocks.
- * @param[out]    rgbo_vectors               The RGB+offset vectors for HDR blocks.
+ * @param[in,out] ep                   The color endpoints (modifed in place).
+ * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
+ * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
  */
 void recompute_ideal_colors_1plane(
 	const image_block& blk,
@@ -1905,15 +1908,15 @@ void recompute_ideal_colors_1plane(
  * As we quantize and decimate weights the optimal endpoint colors may change slightly, so we must
  * recompute the ideal colors for a specific weight set.
  *
- * @param         blk                               The image block color data to compress.
- * @param         bsd                               The block_size descriptor.
- * @param         di                                The weight grid decimation table.
+ * @param         blk                         The image block color data to compress.
+ * @param         bsd                         The block_size descriptor.
+ * @param         di                          The weight grid decimation table.
  * @param         dec_weights_uquant_plane1   The quantized weight set for plane 1.
  * @param         dec_weights_uquant_plane2   The quantized weight set for plane 2.
- * @param[in,out] ep                                The color endpoints (modifed in place).
- * @param[out]    rgbs_vector                       The RGB+scale color for LDR blocks.
- * @param[out]    rgbo_vector                       The RGB+offset color for HDR blocks.
- * @param         plane2_component                  The component assigned to plane 2.
+ * @param[in,out] ep                          The color endpoints (modifed in place).
+ * @param[out]    rgbs_vector                 The RGB+scale color for LDR blocks.
+ * @param[out]    rgbo_vector                 The RGB+offset color for HDR blocks.
+ * @param         plane2_component            The component assigned to plane 2.
  */
 void recompute_ideal_colors_2planes(
 	const image_block& blk,
@@ -1934,12 +1937,12 @@ void prepare_angular_tables();
 /**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
- * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
- * @param      only_always               Only consider block modes that are always enabled.
- * @param      bsd                       The block size descriptor for the current trial.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_weight_quant          The maximum block mode weight quantization allowed.
- * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
+ * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
+ * @param      only_always              Only consider block modes that are always enabled.
+ * @param      bsd                      The block size descriptor for the current trial.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_weight_quant         The maximum block mode weight quantization allowed.
+ * @param[out] tmpbuf                   Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
 	unsigned int tune_low_weight_limit,
@@ -1952,11 +1955,11 @@ void compute_angular_endpoints_1plane(
 /**
  * @brief Compute the angular endpoints for two planes for each block mode.
  *
- * @param      tune_low_weight_limit     Weight count cutoff below which we use simpler searches.
- * @param      bsd                       The block size descriptor for the current trial.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_weight_quant          The maximum block mode weight quantization allowed.
- * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
+ * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
+ * @param      bsd                      The block size descriptor for the current trial.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_weight_quant         The maximum block mode weight quantization allowed.
+ * @param[out] tmpbuf                   Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
 	unsigned int tune_low_weight_limit,
@@ -2169,20 +2172,6 @@ void aligned_free(T* ptr)
 #else
 	free(reinterpret_cast<void*>(ptr));
 #endif
-}
-
-static inline void dump_weights(const char* label, uint8_t* weights, int weight_count)
-{
-	printf("%s\n", label);
-	vint lane = vint::lane_id();
-	for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
-	{
-		vmask mask = lane < vint(weight_count);
-		vint val(weights + i);
-		val = select(vint::zero(), val, mask);
-		print(val);
-		lane += vint(ASTCENC_SIMD_WIDTH);
-	}
 }
 
 #endif
