@@ -1019,17 +1019,6 @@ static int edit_astcenc_config(
 
 			config.tune_2_plane_early_out_limit_correlation = static_cast<float>(atof(argv[argidx - 1]));
 		}
-		else if (!strcmp(argv[argidx], "-lowweightmodelimit"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				printf("ERROR: -lowweightmodelimit switch with no argument\n");
-				return 1;
-			}
-
-			config.tune_low_weight_count_limit = atoi(argv[argidx - 1]);
-		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
 			argidx += 2;

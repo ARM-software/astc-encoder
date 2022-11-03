@@ -379,17 +379,7 @@ ADVANCED COMPRESSION
                -thorough     : 0.95
                -verythorough : 0.98
                -exhaustive   : 0.99
-
-       -lowweightmodelimit <weight count>
-           Use a simpler weight search for weight counts less than or
-           equal to this threshold. Preset defaults are bitrate dependent:
-
-               -fastest      : 25
-               -fast         : 20
-               -medium       : 16
-               -thorough     : 12
-               -verythorough : 4
-               -exhaustive   : 0)"
+)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(

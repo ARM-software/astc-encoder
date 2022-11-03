@@ -1937,7 +1937,6 @@ void prepare_angular_tables();
 /**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
- * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
  * @param      only_always              Only consider block modes that are always enabled.
  * @param      bsd                      The block size descriptor for the current trial.
  * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
@@ -1945,7 +1944,6 @@ void prepare_angular_tables();
  * @param[out] tmpbuf                   Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_1plane(
-	unsigned int tune_low_weight_limit,
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
@@ -1955,14 +1953,12 @@ void compute_angular_endpoints_1plane(
 /**
  * @brief Compute the angular endpoints for two planes for each block mode.
  *
- * @param      tune_low_weight_limit    Weight count cutoff below which we use simpler searches.
  * @param      bsd                      The block size descriptor for the current trial.
  * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
  * @param      max_weight_quant         The maximum block mode weight quantization allowed.
  * @param[out] tmpbuf                   Preallocated scratch buffers for the compressor.
  */
 void compute_angular_endpoints_2planes(
-	unsigned int tune_low_weight_limit,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
 	unsigned int max_weight_quant,

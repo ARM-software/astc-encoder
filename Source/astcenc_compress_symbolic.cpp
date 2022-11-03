@@ -424,11 +424,7 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	// For each mode, use the angular method to compute a shift
 	compute_angular_endpoints_1plane(
-	    config.tune_low_weight_count_limit,
-	    only_always, bsd,
-	    dec_weights_ideal,
-	    max_weight_quant,
-	    tmpbuf);
+	    only_always, bsd, dec_weights_ideal, max_weight_quant, tmpbuf);
 
 	float* weight_low_value = tmpbuf.weight_low_value1;
 	float* weight_high_value = tmpbuf.weight_high_value1;
@@ -795,9 +791,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	float min_wt_cutoff2 = hmin_s(select(err_max, min_ep2, err_mask));
 
 	compute_angular_endpoints_2planes(
-	    config.tune_low_weight_count_limit,
-	    bsd, dec_weights_ideal, max_weight_quant,
-	    tmpbuf);
+	    bsd, dec_weights_ideal, max_weight_quant, tmpbuf);
 
 	// For each mode (which specifies a decimation and a quantization):
 	//     * Compute number of bits needed for the quantized weights
