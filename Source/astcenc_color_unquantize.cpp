@@ -97,15 +97,8 @@ static void rgba_delta_unpack(
 	vint4 input0 = unquant_color(quant_level, input0q);
 	vint4 input1 = unquant_color(quant_level, input1q);
 
-	// Perform bit-transfer
-	input0 = input0 | lsl<1>(input1 & 0x80);
-	input1 = input1 & 0x7F;
-	vmask4 mask = (input1 & 0x40) != vint4::zero();
-	input1 = select(input1, input1 - 0x80, mask);
-
-	// Scale
-	input0 = asr<1>(input0);
-	input1 = asr<1>(input1);
+	// Apply bit transfer
+	bit_transfer_signed(input1, input0);
 
 	// Apply blue-uncontraction if needed
 	int rgb_sum = hadd_rgb_s(input1);

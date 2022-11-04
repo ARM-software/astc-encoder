@@ -334,13 +334,13 @@ static bool try_quantize_rgb_delta(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	r0b = unquant_color(quant_level, r0be);
-	g0b = unquant_color(quant_level, g0be);
-	b0b = unquant_color(quant_level, b0be);
+	int r0bu = unquant_color(quant_level, r0be);
+	int g0bu = unquant_color(quant_level, g0be);
+	int b0bu = unquant_color(quant_level, b0be);
 
-	r0b |= r0a & 0x100;
-	g0b |= g0a & 0x100;
-	b0b |= b0a & 0x100;
+	r0b = r0bu | (r0a & 0x100);
+	g0b = g0bu | (g0a & 0x100);
+	b0b = b0bu | (b0a & 0x100);
 
 	// Get hold of the second value
 	int r1d = astc::flt2int_rtn(r1);
@@ -386,36 +386,18 @@ static bool try_quantize_rgb_delta(
 		return false;
 	}
 
-	// Check that the sum of the encoded offsets is nonnegative, else encoding fails
-	r1du &= 0x7f;
-	g1du &= 0x7f;
-	b1du &= 0x7f;
-
-	if (r1du & 0x40)
-	{
-		r1du -= 0x80;
-	}
-
-	if (g1du & 0x40)
-	{
-		g1du -= 0x80;
-	}
-
-	if (b1du & 0x40)
-	{
-		b1du -= 0x80;
-	}
-
-	if (r1du + g1du + b1du < 0)
+	// If the sum of offsets triggers blue-contraction then encoding fails
+	vint4 ep0(r0bu, g0bu, b0bu, 0);
+	vint4 ep1(r1du, g1du, b1du, 0);
+	bit_transfer_signed(ep1, ep0);
+	if (hadd_rgb_s(ep1) < 0)
 	{
 		return false;
 	}
 
 	// Check that the offsets produce legitimate sums as well
-	r1du += r0b;
-	g1du += g0b;
-	b1du += b0b;
-	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
+	ep0 = ep0 + ep1;
+	if (any((ep0 < vint4(0)) | (ep0 > vint4(0xFF))))
 	{
 		return false;
 	}
@@ -477,13 +459,13 @@ static bool try_quantize_rgb_delta_blue_contract(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	r0b = unquant_color(quant_level, r0be);
-	g0b = unquant_color(quant_level, g0be);
-	b0b = unquant_color(quant_level, b0be);
+	int r0bu = unquant_color(quant_level, r0be);
+	int g0bu = unquant_color(quant_level, g0be);
+	int b0bu = unquant_color(quant_level, b0be);
 
-	r0b |= r0a & 0x100;
-	g0b |= g0a & 0x100;
-	b0b |= b0a & 0x100;
+	r0b = r0bu | (r0a & 0x100);
+	g0b = g0bu | (g0a & 0x100);
+	b0b = b0bu | (b0a & 0x100);
 
 	// Get hold of the second value
 	int r1d = astc::flt2int_rtn(r1);
@@ -530,38 +512,18 @@ static bool try_quantize_rgb_delta_blue_contract(
 		return false;
 	}
 
-	// Check that the sum of the encoded offsets is negative, else encoding fails
-	// Note that this is inverse of the test for non-blue-contracted RGB.
-	r1du &= 0x7f;
-	g1du &= 0x7f;
-	b1du &= 0x7f;
-
-	if (r1du & 0x40)
-	{
-		r1du -= 0x80;
-	}
-
-	if (g1du & 0x40)
-	{
-		g1du -= 0x80;
-	}
-
-	if (b1du & 0x40)
-	{
-		b1du -= 0x80;
-	}
-
-	if (r1du + g1du + b1du >= 0)
+	// If the sum of offsets does not trigger blue-contraction then encoding fails
+	vint4 ep0(r0bu, g0bu, b0bu, 0);
+	vint4 ep1(r1du, g1du, b1du, 0);
+	bit_transfer_signed(ep1, ep0);
+	if (hadd_rgb_s(ep1) >= 0)
 	{
 		return false;
 	}
 
 	// Check that the offsets produce legitimate sums as well
-	r1du += r0b;
-	g1du += g0b;
-	b1du += b0b;
-
-	if (r1du < 0 || r1du > 0x1FF || g1du < 0 || g1du > 0x1FF || b1du < 0 || b1du > 0x1FF)
+	ep0 = ep0 + ep1;
+	if (any((ep0 < vint4(0)) | (ep0 > vint4(0xFF))))
 	{
 		return false;
 	}
