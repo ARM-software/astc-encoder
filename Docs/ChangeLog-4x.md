@@ -12,9 +12,19 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 **Status:** In Development
 
 The 4.2.0 release is an optimization release. There are significant performance
-improvements and minor image quality changes in this release.
+improvements, minor image quality improvements, and API/ABI changes in this
+release.
+
+Reminder - the codec library API is not designed to be binary compatible across
+versions. We always recommend rebuilding your client-side code using the updated
+`astcenc.h` header.
 
 * **General:**
+  * **Bug-fix:** Compression for RGB and RGBA base+offset encodings no
+    longer generate endpoints with the incorrect blue-contract behavior.
+  * **Change:** Removed the low-weight count optimization, as more recent
+    changes had significantly reduced its performance benefit. Option removed
+    from both command line and configuration structure.
   * **Feature:** The `-exhaustive` mode now runs full trials on more
     partitioning candidates and block candidates. This improves image quality
     by 0.1 to 0.25 dB, but slows down compression by 3x. The `-verythorough`
