@@ -22,6 +22,9 @@ versions. We always recommend rebuilding your client-side code using the updated
 * **General:**
   * **Bug-fix:** Compression for RGB and RGBA base+offset encodings no
     longer generate endpoints with the incorrect blue-contract behavior.
+  * **Bug-fix:** Lowest channel correlation calculation now correctly ignores
+    constant color channels for the purposes of filtering 2 plane encodings.
+    On average this improves both performance and image quality.
   * **Change:** Removed the low-weight count optimization, as more recent
     changes had significantly reduced its performance benefit. Option removed
     from both command line and configuration structure.

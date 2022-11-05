@@ -334,7 +334,7 @@ def parse_command_line():
     parser.add_argument("--test-image", dest="testImage", default=None,
                         help="select a specific test image from the test set")
 
-    choices = list(TEST_QUALITIES) + ["all"]
+    choices = list(TEST_QUALITIES) + ["all", "all+"]
     parser.add_argument("--test-quality", dest="testQual", default="thorough",
                         choices=choices, help="select a specific test quality")
 
@@ -358,8 +358,14 @@ def parse_command_line():
     else:
         args.encoders = [args.encoders]
 
-    args.testQual = TEST_QUALITIES if args.testQual == "all" \
-        else [args.testQual]
+    if args.testQual == "all+":
+        args.testQual = TEST_QUALITIES
+    elif args.testQual == "all":
+        args.testQual = TEST_QUALITIES
+        args.testQual.remove("verythorough")
+        args.testQual.remove("exhaustive")
+    else:
+        args.testQual = [args.testQual]
 
     if not args.blockSizes or ("all" in args.blockSizes):
         args.blockSizes = TEST_BLOCK_SIZES
@@ -435,6 +441,10 @@ def main():
         return 1
 
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 
 
 if __name__ == "__main__":

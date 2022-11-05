@@ -1124,12 +1124,13 @@ static float prepare_block_statistics(
 
 	aa_var -= as * (as * rpt);
 
-	rg_cov *= astc::rsqrt(astc::max(rr_var * gg_var, 1e-30f));
-	rb_cov *= astc::rsqrt(astc::max(rr_var * bb_var, 1e-30f));
-	ra_cov *= astc::rsqrt(astc::max(rr_var * aa_var, 1e-30f));
-	gb_cov *= astc::rsqrt(astc::max(gg_var * bb_var, 1e-30f));
-	ga_cov *= astc::rsqrt(astc::max(gg_var * aa_var, 1e-30f));
-	ba_cov *= astc::rsqrt(astc::max(bb_var * aa_var, 1e-30f));
+	// These will give a NaN if a channel is constant - these are fixed up in the next step
+	rg_cov *= astc::rsqrt(rr_var * gg_var);
+	rb_cov *= astc::rsqrt(rr_var * bb_var);
+	ra_cov *= astc::rsqrt(rr_var * aa_var);
+	gb_cov *= astc::rsqrt(gg_var * bb_var);
+	ga_cov *= astc::rsqrt(gg_var * aa_var);
+	ba_cov *= astc::rsqrt(bb_var * aa_var);
 
 	if (astc::isnan(rg_cov)) rg_cov = 1.0f;
 	if (astc::isnan(rb_cov)) rb_cov = 1.0f;
@@ -1138,7 +1139,7 @@ static float prepare_block_statistics(
 	if (astc::isnan(ga_cov)) ga_cov = 1.0f;
 	if (astc::isnan(ba_cov)) ba_cov = 1.0f;
 
-	float lowest_correlation = astc::min(fabsf(rg_cov), fabsf(rb_cov));
+	float lowest_correlation = astc::min(fabsf(rg_cov),      fabsf(rb_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ra_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(gb_cov));
 	lowest_correlation       = astc::min(lowest_correlation, fabsf(ga_cov));
