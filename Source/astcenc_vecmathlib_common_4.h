@@ -351,6 +351,23 @@ ASTCENC_SIMD_INLINE vfloat4 recip(vfloat4 b)
 }
 
 /**
+ * @brief Apply signed bit transfer.
+ *
+ * @param input0   The first encoded endpoint.
+ * @param input1   The second encoded endpoint.
+ */
+static ASTCENC_SIMD_INLINE void bit_transfer_signed(
+	vint4& input0,
+	vint4& input1
+) {
+	input1 = lsr<1>(input1) | (input0 & 0x80);
+	input0 = lsr<1>(input0) & 0x3F;
+
+	vmask4 mask = (input0 & 0x20) != vint4::zero();
+	input0 = select(input0, input0 - 0x40, mask);
+}
+
+/**
  * @brief Debug function to print a vector of floats.
  */
 ASTCENC_SIMD_INLINE void print(vfloat4 a)
