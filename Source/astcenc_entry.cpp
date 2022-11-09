@@ -741,7 +741,7 @@ astcenc_error astcenc_context_alloc(
 	status = validate_config(ctx->config);
 	if (status != ASTCENC_SUCCESS)
 	{
-		delete ctx;
+		delete ctxo;
 		return status;
 	}
 
