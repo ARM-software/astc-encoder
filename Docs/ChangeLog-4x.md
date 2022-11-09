@@ -9,11 +9,11 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.2.0
 
-**Status:** In Development
+**Status:** November 2022
 
 The 4.2.0 release is an optimization release. There are significant performance
-improvements, minor image quality improvements, and API/ABI changes in this
-release.
+improvements, minor image quality improvements, and library interface changes in
+this release.
 
 Reminder - the codec library API is not designed to be binary compatible across
 versions. We always recommend rebuilding your client-side code using the updated
