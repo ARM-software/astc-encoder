@@ -25,7 +25,7 @@ their compressed bitrate are shown in the table below.
 | BC3nm    | G+R          | 8          | BC1 G   + BC4 R  |
 | BC4      | R            | 4          | L8               |
 | BC5      | R+G          | 8          | BC1 R + BC1 G    |
-| BC6      | RGB (HDR)    | 8          |                  |
+| BC6H     | RGB (HDR)    | 8          |                  |
 | BC7      | RGB / RGBA   | 8          |                  |
 | EAC_R11  | R            | 4          | R11              |
 | EAC_RG11 | RG           | 8          | RG11             |
@@ -105,7 +105,7 @@ use today.
 | BC3nm    | `gggr`              | `.ag`                 |                  |
 | BC4      | `rrr1`              | `.r`                  |                  |
 | BC5      | `rrrg`              | `.ra` <sup>2</sup>    |                  |
-| BC6      | `rgb1`              | `.rgb`                | HDR profile only |
+| BC6H     | `rgb1`              | `.rgb` <sup>3</sup>   | HDR profile only |
 | BC7      | `rgba`              | `.rgba`               |                  |
 | EAC_R11  | `rrr1`              | `.r`                  |                  |
 | EAC_RG11 | `rrrg`              | `.ra` <sup>2</sup>    |                  |
@@ -124,6 +124,9 @@ format sampled though the `.rg` components such as BC5 or EAC_RG11. This can
 be emulated by setting texture component swizzles in the runtime API - e.g. via
 `glTexParameteri()` for OpenGL ES - although it has been noted that API
 controlled swizzles are not available in WebGL.
+
+**3:** ASTC can only store unsigned values, and has no equivalent of the BC6
+signed endpoint mode.
 
 # Other Considerations
 
