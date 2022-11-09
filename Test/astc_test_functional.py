@@ -1064,7 +1064,7 @@ class CLIPTest(CLITestBase):
         # RMSE should get worse (higher) if we reduce search space
         self.assertGreater(testRMSE, refRMSE)
 
-    def test_partition_index_limit(self):
+    def test_2partition_index_limit(self):
         """
         Test partition index limit.
         """
@@ -1079,7 +1079,51 @@ class CLIPTest(CLITestBase):
         self.exec(command)
         refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
-        command += ["-partitionindexlimit", "1"]
+        command += ["-2partitionindexlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_3partition_index_limit(self):
+        """
+        Test partition index limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-3partitionindexlimit", "1"]
+        self.exec(command)
+        testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        # RMSE should get worse (higher) if we reduce search space
+        self.assertGreater(testRMSE, refRMSE)
+
+    def test_4partition_index_limit(self):
+        """
+        Test partition index limit.
+        """
+        inputFile = "./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png"
+        decompFile = self.get_tmp_image_path("LDR", "decomp")
+
+        # Compute the basic image without any channel weights
+        command = [
+            self.binary, "-tl",
+            inputFile, decompFile, "4x4", "-medium"]
+
+        self.exec(command)
+        refRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
+
+        command += ["-4partitionindexlimit", "1"]
         self.exec(command)
         testRMSE = sum(self.get_channel_rmse(inputFile, decompFile))
 
