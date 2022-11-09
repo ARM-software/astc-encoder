@@ -7,7 +7,7 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 3.4
+## 3.5
 
 **Status:** March 2022
 

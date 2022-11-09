@@ -296,7 +296,6 @@ def parse_command_line():
     # All reference encoders
     refcoders = ["ref-1.7",
                  "ref-2.5-neon", "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
-                 "ref-3.4-neon", "ref-3.4-sse2", "ref-3.4-sse4.1", "ref-3.4-avx2",
                  "ref-3.5-neon", "ref-3.5-sse2", "ref-3.5-sse4.1", "ref-3.5-avx2",
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
