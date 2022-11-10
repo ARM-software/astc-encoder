@@ -38,9 +38,8 @@ static ASTCENC_SIMD_INLINE vint4 unquant_color(
 	quant_method quant_level,
 	vint4 inputq
 ) {
-	const uint8_t* unq = color_unquant_tables[quant_level - QUANT_6];
-	return vint4(unq[inputq.lane<0>()], unq[inputq.lane<1>()],
-	             unq[inputq.lane<2>()], unq[inputq.lane<3>()]);
+	(void)quant_level;
+	return inputq;
 }
 
 /**
@@ -57,7 +56,8 @@ static inline uint8_t unquant_color(
 	quant_method quant_level,
 	int value
 ) {
-	return color_unquant_tables[quant_level - QUANT_6][value];
+	(void)quant_level;
+	return value;
 }
 
 /**

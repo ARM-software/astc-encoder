@@ -54,8 +54,9 @@ static inline int quant_color_clamp(
 	quant_method quant_level,
 	int value
 ) {
+	// TODO: Is clamp needed?
 	value = astc::clamp(value, 0, 255);
-	return color_quant_tables[quant_level - QUANT_6][value];
+	return color_unquant_to_uquant_tables[quant_level - QUANT_6][value];
 }
 
 /**
@@ -72,7 +73,7 @@ static inline uint8_t quant_color(
 	quant_method quant_level,
 	int value
 ) {
-	return color_quant_tables[quant_level - QUANT_6][value];
+	return color_unquant_to_uquant_tables[quant_level - QUANT_6][value];
 }
 
 /**
@@ -88,7 +89,8 @@ static inline uint8_t unquant_color(
 	quant_method quant_level,
 	int value
 ) {
-	return color_unquant_tables[quant_level - QUANT_6][value];
+	(void)quant_level;
+	return value;
 }
 
 /**

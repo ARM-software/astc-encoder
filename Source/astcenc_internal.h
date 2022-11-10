@@ -1322,20 +1322,32 @@ bool is_legal_3d_block_size(
 /**
  * @brief The precomputed table for quantizing color values.
  *
- * Returned value is in the ASTC BISE scrambled order.
+ * Converts unquant value in 0-255 range into quant value in 0-255 range.
+ * No BISE scrambling is applied at this stage.
  *
  * Indexed by [quant_mode - 4][data_value].
  */
-extern const uint8_t color_quant_tables[17][256];
+extern const uint8_t color_unquant_to_uquant_tables[17][256];
 
 /**
- * @brief The precomputed table for unquantizing color values.
+ * @brief The precomputed table for packing quantized color values.
  *
- * Returned value is in the ASTC BISE scrambled order.
+ * Converts quant value in 0-255 range into packed quant value in 0-N range,
+ * with BISE scrambling applied.
  *
  * Indexed by [quant_mode - 4][data_value].
  */
-extern const uint8_t color_unquant_tables[17][256];
+extern const uint8_t color_uquant_to_scrambled_pquant_tables[17][256];
+
+/**
+ * @brief The precomputed table for unpacking color values.
+ *
+ * Converts quant value in 0-N range into unpacked value in 0-255 range,
+ * with BISE unscrambling applied.
+ *
+ * Indexed by [quant_mode - 4][data_value].
+ */
+extern const uint8_t color_scrambled_pquant_to_uquant_tables[17][256];
 
 /**
  * @brief The precomputed quant mode storage table.
