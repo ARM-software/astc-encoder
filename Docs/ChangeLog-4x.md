@@ -44,8 +44,8 @@ versions. We always recommend rebuilding your client-side code using the updated
     3/4 partitions.
   * **Feature:** The compressor can now run trials on a variable number of
     candidate partitionings, allowing high quality modes to explore more of the
-    search space at the expensive of slower compression. The number of trials
-    is independently configurable for 2/3/4 partition cases.
+    search space at the expense of slower compression. The number of trials is
+    independently configurable for 2/3/4 partition cases.
   * **Optimization:** Introduce early-out threshold for 2/3/4 partition
     searches based on the results after 1 of 2 trials. This significantly
     improves performance for `-medium` and `-thorough` searches, for a minor
