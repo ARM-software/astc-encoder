@@ -1,0 +1,21 @@
+Image Set,Block Size,Name,PSNR,Total Time,Coding Time,Coding Rate
+KodakSim,4x4,ldr-rgba-kodak22+24+nca.png,39.3093,0.3911,0.3696,1.0639
+KodakSim,4x4,ldr-rgba-kodak22+ca.png,43.1655,0.2530,0.2317,1.6968
+KodakSim,4x4,ldr-rgba-kodak23+20+nca.png,43.6016,0.3320,0.3111,1.2641
+KodakSim,4x4,ldr-rgba-kodak23+ca.png,46.1247,0.2434,0.2235,1.7592
+KodakSim,5x5,ldr-rgba-kodak22+24+nca.png,35.9809,0.4622,0.4391,0.8955
+KodakSim,5x5,ldr-rgba-kodak22+ca.png,39.7584,0.3029,0.2800,1.4044
+KodakSim,5x5,ldr-rgba-kodak23+20+nca.png,40.6677,0.3968,0.3746,1.0498
+KodakSim,5x5,ldr-rgba-kodak23+ca.png,43.1598,0.3048,0.2831,1.3888
+KodakSim,6x6,ldr-rgba-kodak22+24+nca.png,33.7099,0.5099,0.4863,0.8086
+KodakSim,6x6,ldr-rgba-kodak22+ca.png,37.1224,0.3567,0.3340,1.1774
+KodakSim,6x6,ldr-rgba-kodak23+20+nca.png,38.5226,0.4345,0.4118,0.9550
+KodakSim,6x6,ldr-rgba-kodak23+ca.png,40.8439,0.3557,0.3338,1.1779
+KodakSim,8x8,ldr-rgba-kodak22+24+nca.png,30.8806,0.6197,0.5906,0.6657
+KodakSim,8x8,ldr-rgba-kodak22+ca.png,33.8514,0.4317,0.4037,0.9741
+KodakSim,8x8,ldr-rgba-kodak23+20+nca.png,35.5836,0.4348,0.4073,0.9654
+KodakSim,8x8,ldr-rgba-kodak23+ca.png,37.7714,0.3176,0.2909,1.3520
+KodakSim,12x12,ldr-rgba-kodak22+24+nca.png,28.0238,0.6743,0.6360,0.6182
+KodakSim,12x12,ldr-rgba-kodak22+ca.png,30.5644,0.4578,0.4202,0.9358
+KodakSim,12x12,ldr-rgba-kodak23+20+nca.png,32.1816,0.4469,0.4097,0.9597
+KodakSim,12x12,ldr-rgba-kodak23+ca.png,34.1004,0.2937,0.2569,1.5304

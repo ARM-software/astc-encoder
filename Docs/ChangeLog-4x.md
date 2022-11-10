@@ -58,6 +58,18 @@ versions. We always recommend rebuilding your client-side code using the updated
   * **Optimization:** Removed obsolete channel scaling from partition
     `avgs_and_dirs()` calculation.
 
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 4.0 and 4.1 release:**
+
+![Relative scores 4.2 vs 4.0](./ChangeLogImg/relative-4.0-to-4.2.png)
+
+
 <!-- ---------------------------------------------------------------------- -->
 ## 4.1.0
 
