@@ -681,6 +681,19 @@ class CLIPTest(CLITestBase):
                 if tli.Image.is_format_supported(imgFormat):
                     colIn = tli.Image(imIn).get_colors((7, 7))
                     colOut = tli.Image(imOut).get_colors((7, 7))
+
+                    # Catch exception and add fallback for tga handling
+                    # having unstable origin in ImageMagick
+                    try:
+                        self.assertColorSame(colIn, colOut)
+                        continue
+                    except AssertionError as ex:
+                        if imgFormat != "tga":
+                            raise ex
+
+                    # Try yflipped TGA image
+                    colIn = tli.Image(imIn).get_colors((7, 7))
+                    colOut = tli.Image(imOut).get_colors((7, 1))
                     self.assertColorSame(colIn, colOut)
 
     def test_valid_uncomp_ldr_output_formats(self):
