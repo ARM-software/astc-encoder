@@ -484,13 +484,13 @@ astcenc_error astcenc_config_init(
 
 	// Check basic library compatibility options here so they are checked early. Note, these checks
 	// are repeated in context_alloc for cases where callers use a manually defined config struct
-	status = validate_cpu_float();
+	status = validate_cpu_isa();
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
 	}
 
-	status = validate_cpu_isa();
+	status = validate_cpu_float();
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
@@ -717,13 +717,13 @@ astcenc_error astcenc_context_alloc(
 	astcenc_error status;
 	const astcenc_config& config = *configp;
 
-	status = validate_cpu_float();
+	status = validate_cpu_isa();
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
 	}
 
-	status = validate_cpu_isa();
+	status = validate_cpu_float();
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
