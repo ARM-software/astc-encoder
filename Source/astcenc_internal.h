@@ -1810,11 +1810,12 @@ uint8_t pack_color_endpoints(
 	quant_method quant_level);
 
 /**
- * @brief Unpack a single pair of encoded and quantized color endpoints.
+ * @brief Unpack a single pair of encoded endpoints.
+ *
+ * Endpoints must be unscrambled and converted into the 0-255 range before calling this functions.
  *
  * @param      decode_mode   The decode mode (LDR, HDR).
  * @param      format        The color endpoint mode used.
- * @param      quant_level   The quantization level used.
  * @param      input         The raw array of encoded input integers. The length of this array
  *                           depends on @c format; it can be safely assumed to be large enough.
  * @param[out] rgb_hdr       Is the endpoint using HDR for the RGB channels?
@@ -1825,7 +1826,6 @@ uint8_t pack_color_endpoints(
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
 	int format,
-	quant_method quant_level,
 	const uint8_t* input,
 	bool& rgb_hdr,
 	bool& alpha_hdr,

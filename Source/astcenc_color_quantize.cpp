@@ -77,23 +77,6 @@ static inline uint8_t quant_color(
 }
 
 /**
- * @brief Determine the unquantized value given a quantization level.
- *
- * @param quant_level   The quantization level to use.
- * @param value         The value to convert.
- *
- * @return The encoded quantized value. These are not necessarily in order; the compressor
- *         scrambles the values slightly to make hardware implementation easier.
- */
-static inline uint8_t unquant_color(
-	quant_method quant_level,
-	int value
-) {
-	(void)quant_level;
-	return value;
-}
-
-/**
  * @brief Quantize an LDR RGB color.
  *
  * Since this is a fall-back encoding, we cannot actually fail but must produce a sensible result.
@@ -122,7 +105,6 @@ static void quantize_rgb(
 	float b1 = astc::clamp255f(color1.lane<2>() * scale);
 
 	int ri0, gi0, bi0, ri1, gi1, bi1;
-	int ri0b, gi0b, bi0b, ri1b, gi1b, bi1b;
 	float rgb0_addon = 0.5f;
 	float rgb1_addon = 0.5f;
 	do
@@ -134,16 +116,9 @@ static void quantize_rgb(
 		gi1 = quant_color_clamp(quant_level, astc::flt2int_rd(g1 + rgb1_addon));
 		bi1 = quant_color_clamp(quant_level, astc::flt2int_rd(b1 + rgb1_addon));
 
-		ri0b = unquant_color(quant_level, ri0);
-		gi0b = unquant_color(quant_level, gi0);
-		bi0b = unquant_color(quant_level, bi0);
-		ri1b = unquant_color(quant_level, ri1);
-		gi1b = unquant_color(quant_level, gi1);
-		bi1b = unquant_color(quant_level, bi1);
-
 		rgb0_addon -= 0.2f;
 		rgb1_addon += 0.2f;
-	} while (ri0b + gi0b + bi0b > ri1b + gi1b + bi1b);
+	} while (ri0 + gi0 + bi0 > ri1 + gi1 + bi1);
 
 	output[0] = static_cast<uint8_t>(ri0);
 	output[1] = static_cast<uint8_t>(ri1);
@@ -232,18 +207,9 @@ static bool try_quantize_rgb_blue_contract(
 	int gi1 = quant_color(quant_level, astc::flt2int_rtn(g1));
 	int bi1 = quant_color(quant_level, astc::flt2int_rtn(b1));
 
-	// Then unquantize again
-	int ru0 = unquant_color(quant_level, ri0);
-	int gu0 = unquant_color(quant_level, gi0);
-	int bu0 = unquant_color(quant_level, bi0);
-
-	int ru1 = unquant_color(quant_level, ri1);
-	int gu1 = unquant_color(quant_level, gi1);
-	int bu1 = unquant_color(quant_level, bi1);
-
 	// If color #1 is not larger than color #0 then blue-contraction cannot be used. Note that
 	// blue-contraction and quantization change this order, which is why we must test aftwards.
-	if (ru1 + gu1 + bu1 <= ru0 + gu0 + bu0)
+	if (ri1 + gi1 + bi1 <= ri0 + gi0 + bi0)
 	{
 		return false;
 	}
@@ -336,9 +302,9 @@ static bool try_quantize_rgb_delta(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	int r0bu = unquant_color(quant_level, r0be);
-	int g0bu = unquant_color(quant_level, g0be);
-	int b0bu = unquant_color(quant_level, b0be);
+	int r0bu = r0be;
+	int g0bu = g0be;
+	int b0bu = b0be;
 
 	r0b = r0bu | (r0a & 0x100);
 	g0b = g0bu | (g0a & 0x100);
@@ -379,9 +345,9 @@ static bool try_quantize_rgb_delta(
 	int g1de = quant_color(quant_level, g1d);
 	int b1de = quant_color(quant_level, b1d);
 
-	int r1du = unquant_color(quant_level, r1de);
-	int g1du = unquant_color(quant_level, g1de);
-	int b1du = unquant_color(quant_level, b1de);
+	int r1du = r1de;
+	int g1du = g1de;
+	int b1du = b1de;
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
@@ -461,9 +427,9 @@ static bool try_quantize_rgb_delta_blue_contract(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	int r0bu = unquant_color(quant_level, r0be);
-	int g0bu = unquant_color(quant_level, g0be);
-	int b0bu = unquant_color(quant_level, b0be);
+	int r0bu = r0be;
+	int g0bu = g0be;
+	int b0bu = b0be;
 
 	r0b = r0bu | (r0a & 0x100);
 	g0b = g0bu | (g0a & 0x100);
@@ -505,9 +471,9 @@ static bool try_quantize_rgb_delta_blue_contract(
 	int g1de = quant_color(quant_level, g1d);
 	int b1de = quant_color(quant_level, b1d);
 
-	int r1du = unquant_color(quant_level, r1de);
-	int g1du = unquant_color(quant_level, g1de);
-	int b1du = unquant_color(quant_level, b1de);
+	int r1du = r1de;
+	int g1du = g1de;
+	int b1du = b1de;
 
 	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
 	{
@@ -571,7 +537,7 @@ static bool try_quantize_alpha_delta(
 	a0a <<= 1;
 	int a0b = a0a & 0xFF;
 	int a0be = quant_color(quant_level, a0b);
-	a0b = unquant_color(quant_level, a0be);
+	a0b = a0be;
 	a0b |= a0a & 0x100;
 	int a1d = astc::flt2int_rtn(a1);
 	a1d <<= 1;
@@ -586,7 +552,7 @@ static bool try_quantize_alpha_delta(
 	a1d |= (a0b & 0x100) >> 1;
 
 	int a1de = quant_color(quant_level, a1d);
-	int a1du = unquant_color(quant_level, a1de);
+	int a1du = a1de;
 	if ((a1d ^ a1du) & 0xC0)
 	{
 		return false;
@@ -649,8 +615,8 @@ static bool try_quantize_luminance_alpha_delta(
 	int a0b = a0a & 0xFF;
 	int l0be = quant_color(quant_level, l0b);
 	int a0be = quant_color(quant_level, a0b);
-	l0b = unquant_color(quant_level, l0be);
-	a0b = unquant_color(quant_level, a0be);
+	l0b = l0be;
+	a0b = a0be;
 	l0b |= l0a & 0x100;
 	a0b |= a0a & 0x100;
 
@@ -678,8 +644,8 @@ static bool try_quantize_luminance_alpha_delta(
 
 	int l1de = quant_color(quant_level, l1d);
 	int a1de = quant_color(quant_level, a1d);
-	int l1du = unquant_color(quant_level, l1de);
-	int a1du = unquant_color(quant_level, a1de);
+	int l1du = l1de;
+	int a1du = a1de;
 
 	if ((l1d ^ l1du) & 0xC0)
 	{
@@ -801,12 +767,8 @@ static void quantize_rgbs(
 	int gi = quant_color(quant_level, astc::flt2int_rtn(g));
 	int bi = quant_color(quant_level, astc::flt2int_rtn(b));
 
-	int ru = unquant_color(quant_level, ri);
-	int gu = unquant_color(quant_level, gi);
-	int bu = unquant_color(quant_level, bi);
-
 	float oldcolorsum = hadd_rgb_s(color) * scale;
-	float newcolorsum = static_cast<float>(ru + gu + bu);
+	float newcolorsum = static_cast<float>(ri + gi + bi);
 
 	float scalea = astc::clamp1f(color.lane<3>() * (oldcolorsum + 1e-10f) / (newcolorsum + 1e-10f));
 	int scale_idx = astc::flt2int_rtn(scalea * 256.0f);
@@ -965,8 +927,9 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
 
 	do
 	{
+		// TODO: Can we simplify this?
 		quantval = quant_color(quant_level, value);
-		uquantval = unquant_color(quant_level, quantval);
+		uquantval = quantval;
 
 		// Perform looping if the top two bits were modified by quant/unquant
 		perform_loop = (value & 0xC0) != (uquantval & 0xC0);
@@ -1009,8 +972,9 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 
 	do
 	{
+		// TODO: Can we simplify this?
 		quantval = quant_color(quant_level, value);
-		uquantval = unquant_color(quant_level, quantval);
+		uquantval = quantval;
 
 		// Perform looping if the top four bits were modified by quant/unquant
 		perform_loop = (value & 0xF0) != (uquantval & 0xF0);
@@ -1499,7 +1463,7 @@ static void quantize_hdr_rgb(
 		int a_lowbits = a_intval & 0xFF;
 
 		int a_quantval = quant_color(quant_level, a_lowbits);
-		int a_uquantval = unquant_color(quant_level, a_quantval);
+		int a_uquantval = a_quantval;
 		a_intval = (a_intval & ~0xFF) | a_uquantval;
 		float a_fval = static_cast<float>(a_intval) * mode_rscale;
 
@@ -1883,7 +1847,7 @@ static bool try_quantize_hdr_luminance_small_range(
 
 	v0 = lowval & 0x7F;
 	v0e = quant_color(quant_level, v0);
-	v0d = unquant_color(quant_level, v0e);
+	v0d = v0e;
 
 	if (v0d < 0x80)
 	{
@@ -1893,7 +1857,7 @@ static bool try_quantize_hdr_luminance_small_range(
 		{
 			v1 = ((lowval >> 3) & 0xF0) | diffval;
 			v1e = quant_color(quant_level, v1);
-			v1d = unquant_color(quant_level, v1e);
+			v1d = v1e;
 			if ((v1d & 0xF0) == (v1 & 0xF0))
 			{
 				output[0] = static_cast<uint8_t>(v0e);
@@ -1912,7 +1876,7 @@ static bool try_quantize_hdr_luminance_small_range(
 
 	v0 = (lowval & 0x7F) | 0x80;
 	v0e = quant_color(quant_level, v0);
-	v0d = unquant_color(quant_level, v0e);
+	v0d = v0e;
 	if ((v0d & 0x80) == 0)
 	{
 		return false;
@@ -1927,7 +1891,7 @@ static bool try_quantize_hdr_luminance_small_range(
 
 	v1 = ((lowval >> 2) & 0xE0) | diffval;
 	v1e = quant_color(quant_level, v1);
-	v1d = unquant_color(quant_level, v1e);
+	v1d = v1e;
 	if ((v1d & 0xE0) != (v1 & 0xE0))
 	{
 		return false;
@@ -1971,7 +1935,7 @@ static void quantize_hdr_alpha(
 
 		v6 = (val0 & 0x7F) | ((i & 1) << 7);
 		v6e = quant_color(quant_level, v6);
-		v6d = unquant_color(quant_level, v6e);
+		v6d = v6e;
 
 		if ((v6 ^ v6d) & 0x80)
 		{
@@ -1990,7 +1954,7 @@ static void quantize_hdr_alpha(
 
 		v7 = ((i & 2) << 6) | ((val0 >> 7) << (6 - i)) | (diffval & mask);
 		v7e = quant_color(quant_level, v7);
-		v7d = unquant_color(quant_level, v7e);
+		v7d = v7e;
 
 		static const int testbits[3] { 0xE0, 0xF0, 0xF8 };
 
