@@ -649,7 +649,8 @@ class CLIPTest(CLITestBase):
         """
         Test all valid presets are accepted
         """
-        presets = ["-fastest", "-fast", "-medium", "-thorough", "-exhaustive"]
+        presets = ["-fastest", "-fast", "-medium",
+                   "-thorough", "-verythorough", "-exhaustive"]
 
         imIn = self.get_ref_image_path("LDR", "input", "A")
         imOut = self.get_tmp_image_path("LDR", "decomp")
