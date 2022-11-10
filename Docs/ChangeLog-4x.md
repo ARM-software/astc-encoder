@@ -25,6 +25,8 @@ versions. We always recommend rebuilding your client-side code using the updated
   * **Bug-fix:** Lowest channel correlation calculation now correctly ignores
     constant color channels for the purposes of filtering 2 plane encodings.
     On average this improves both performance and image quality.
+  * **Bug-fix:** ISA compatibility now checked in `config_init()` as well as
+    in `context_alloc()`.
   * **Change:** Removed the low-weight count optimization, as more recent
     changes had significantly reduced its performance benefit. Option removed
     from both command line and configuration structure.
