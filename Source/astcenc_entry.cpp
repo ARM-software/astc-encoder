@@ -481,9 +481,23 @@ astcenc_error astcenc_config_init(
 	astcenc_config* configp
 ) {
 	astcenc_error status;
-	astcenc_config& config = *configp;
+
+	// Check basic library compatibility options here so they are checked early. Note, these checks
+	// are repeated in context_alloc for cases where callers use a manually defined config struct
+	status = validate_cpu_float();
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	status = validate_cpu_isa();
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
 
 	// Zero init all config fields; although most of will be over written
+	astcenc_config& config = *configp;
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
