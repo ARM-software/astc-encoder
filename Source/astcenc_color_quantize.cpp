@@ -189,7 +189,7 @@ static bool try_quantize_rgb_blue_contract(
 	int bi1 = quant_color(quant_level, astc::flt2int_rtn(b1));
 
 	// If color #1 is not larger than color #0 then blue-contraction cannot be used. Note that
-	// blue-contraction and quantization change this order, which is why we must test aftwards.
+	// blue-contraction and quantization change this order, which is why we must test afterwards.
 	if (ri1 + gi1 + bi1 <= ri0 + gi0 + bi0)
 	{
 		return false;
