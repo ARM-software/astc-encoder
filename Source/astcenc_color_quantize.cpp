@@ -50,25 +50,6 @@
  * @return The encoded quantized value. These are not necessarily in order; the compressor
  *         scrambles the values slightly to make hardware implementation easier.
  */
-static inline int quant_color_clamp(
-	quant_method quant_level,
-	int value
-) {
-	// TODO: Is clamp needed?
-	value = astc::clamp(value, 0, 255);
-	return color_unquant_to_uquant_tables[quant_level - QUANT_6][value];
-}
-
-/**
- * @brief Determine the quantized value given a quantization level.
- *
- * @param quant_level   The quantization level to use.
- * @param value         The value to convert. This may be outside of the 0-255 range and will be
- *                      clamped before the value is looked up.
- *
- * @return The encoded quantized value. These are not necessarily in order; the compressor
- *         scrambles the values slightly to make hardware implementation easier.
- */
 static inline uint8_t quant_color(
 	quant_method quant_level,
 	int value
@@ -109,12 +90,12 @@ static void quantize_rgb(
 	float rgb1_addon = 0.5f;
 	do
 	{
-		ri0 = quant_color_clamp(quant_level, astc::flt2int_rd(r0 + rgb0_addon));
-		gi0 = quant_color_clamp(quant_level, astc::flt2int_rd(g0 + rgb0_addon));
-		bi0 = quant_color_clamp(quant_level, astc::flt2int_rd(b0 + rgb0_addon));
-		ri1 = quant_color_clamp(quant_level, astc::flt2int_rd(r1 + rgb1_addon));
-		gi1 = quant_color_clamp(quant_level, astc::flt2int_rd(g1 + rgb1_addon));
-		bi1 = quant_color_clamp(quant_level, astc::flt2int_rd(b1 + rgb1_addon));
+		ri0 = quant_color(quant_level, astc::max(astc::flt2int_rd(r0 + rgb0_addon), 0));
+		gi0 = quant_color(quant_level, astc::max(astc::flt2int_rd(g0 + rgb0_addon), 0));
+		bi0 = quant_color(quant_level, astc::max(astc::flt2int_rd(b0 + rgb0_addon), 0));
+		ri1 = quant_color(quant_level, astc::min(astc::flt2int_rd(r1 + rgb1_addon), 255));
+		gi1 = quant_color(quant_level, astc::min(astc::flt2int_rd(g1 + rgb1_addon), 255));
+		bi1 = quant_color(quant_level, astc::min(astc::flt2int_rd(b1 + rgb1_addon), 255));
 
 		rgb0_addon -= 0.2f;
 		rgb1_addon += 0.2f;
@@ -913,34 +894,29 @@ static void quantize_luminance_alpha(
  * @param      quant_level     The quantization level to use.
  * @param      value           The input unquantized value.
  * @param[out] quant_value     The quantized value.
- * @param[out] unquant_value   The unquantized value after quantization.
  */
 static inline void quantize_and_unquantize_retain_top_two_bits(
 	quant_method quant_level,
 	uint8_t value,
-	uint8_t& quant_value,
-	uint8_t& unquant_value
+	uint8_t& quant_value
 ) {
 	int perform_loop;
 	uint8_t quantval;
-	uint8_t uquantval;
 
 	do
 	{
-		// TODO: Can we simplify this?
 		quantval = quant_color(quant_level, value);
-		uquantval = quantval;
 
 		// Perform looping if the top two bits were modified by quant/unquant
-		perform_loop = (value & 0xC0) != (uquantval & 0xC0);
+		perform_loop = (value & 0xC0) != (quantval & 0xC0);
 
-		if ((uquantval & 0xC0) > (value & 0xC0))
+		if ((quantval & 0xC0) > (value & 0xC0))
 		{
 			// Quant/unquant rounded UP so that the top two bits changed;
 			// decrement the input in hopes that this will avoid rounding up.
 			value--;
 		}
-		else if ((uquantval & 0xC0) < (value & 0xC0))
+		else if ((quantval & 0xC0) < (value & 0xC0))
 		{
 			// Quant/unquant rounded DOWN so that the top two bits changed;
 			// decrement the input in hopes that this will avoid rounding down.
@@ -949,7 +925,6 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
 	} while (perform_loop);
 
 	quant_value = quantval;
-	unquant_value = uquantval;
 }
 
 /**
@@ -957,35 +932,29 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
  *
  * @param      quant_level     The quantization level to use.
  * @param      value           The input unquantized value.
- * @param[out] quant_value     The quantized value.
- * @param[out] unquant_value   The unquantized value after quantization.
+ * @param[out] quant_value     The quantized value in 0-255 range.
  */
 static inline void quantize_and_unquantize_retain_top_four_bits(
 	quant_method quant_level,
 	uint8_t value,
-	uint8_t& quant_value,
-	uint8_t& unquant_value
+	uint8_t& quant_value
 ) {
 	uint8_t perform_loop;
 	uint8_t quantval;
-	uint8_t uquantval;
 
 	do
 	{
-		// TODO: Can we simplify this?
 		quantval = quant_color(quant_level, value);
-		uquantval = quantval;
-
 		// Perform looping if the top four bits were modified by quant/unquant
-		perform_loop = (value & 0xF0) != (uquantval & 0xF0);
+		perform_loop = (value & 0xF0) != (quantval & 0xF0);
 
-		if ((uquantval & 0xF0) > (value & 0xF0))
+		if ((quantval & 0xF0) > (value & 0xF0))
 		{
 			// Quant/unquant rounded UP so that the top four bits changed;
 			// decrement the input value in hopes that this will avoid rounding up.
 			value--;
 		}
-		else if ((uquantval & 0xF0) < (value & 0xF0))
+		else if ((quantval & 0xF0) < (value & 0xF0))
 		{
 			// Quant/unquant rounded DOWN so that the top four bits changed;
 			// decrement the input value in hopes that this will avoid rounding down.
@@ -994,7 +963,6 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 	} while (perform_loop);
 
 	quant_value = quantval;
-	unquant_value = uquantval;
 }
 
 /**
@@ -1105,11 +1073,10 @@ static void quantize_hdr_rgbo(
 		r_lowbits |= (mode_enc & 3) << 6;
 
 		uint8_t r_quantval;
-		uint8_t r_uquantval;
 		quantize_and_unquantize_retain_top_two_bits(
-		    quant_level, static_cast<uint8_t>(r_lowbits), r_quantval, r_uquantval);
+		    quant_level, static_cast<uint8_t>(r_lowbits), r_quantval);
 
-		r_intval = (r_intval & ~0x3f) | (r_uquantval & 0x3f);
+		r_intval = (r_intval & ~0x3f) | (r_quantval & 0x3f);
 		float r_fval = static_cast<float>(r_intval) * mode_rscale;
 
 		// Recompute G and B, then quantize and unquantize them
@@ -1205,16 +1172,14 @@ static void quantize_hdr_rgbo(
 
 		uint8_t g_quantval;
 		uint8_t b_quantval;
-		uint8_t g_uquantval;
-		uint8_t b_uquantval;
 
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(g_lowbits), g_quantval, g_uquantval);
+		    quant_level, static_cast<uint8_t>(g_lowbits), g_quantval);
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(b_lowbits), b_quantval, b_uquantval);
+		    quant_level, static_cast<uint8_t>(b_lowbits), b_quantval);
 
-		g_intval = (g_intval & ~0x1f) | (g_uquantval & 0x1f);
-		b_intval = (b_intval & ~0x1f) | (b_uquantval & 0x1f);
+		g_intval = (g_intval & ~0x1f) | (g_quantval & 0x1f);
+		b_intval = (b_intval & ~0x1f) | (b_quantval & 0x1f);
 
 		g_fval = static_cast<float>(g_intval) * mode_rscale;
 		b_fval = static_cast<float>(b_intval) * mode_rscale;
@@ -1278,10 +1243,9 @@ static void quantize_hdr_rgbo(
 		s_lowbits |= bit4 << 7;
 
 		uint8_t s_quantval;
-		uint8_t s_uquantval;
 
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(s_lowbits), s_quantval, s_uquantval);
+		    quant_level, static_cast<uint8_t>(s_lowbits), s_quantval);
 
 		output[0] = r_quantval;
 		output[1] = g_quantval;
@@ -1321,9 +1285,8 @@ static void quantize_hdr_rgbo(
 
 	for (uint8_t i = 0; i < 4; i++)
 	{
-		uint8_t dummy;
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(encvals[i]), output[i], dummy);
+		    quant_level, static_cast<uint8_t>(encvals[i]), output[i]);
 	}
 
 	return;
@@ -1484,12 +1447,11 @@ static void quantize_hdr_rgb(
 		c_lowbits |= (a_intval & 0x100) >> 2;
 
 		uint8_t c_quantval;
-		uint8_t c_uquantval;
 
 		quantize_and_unquantize_retain_top_two_bits(
-		    quant_level, static_cast<uint8_t>(c_lowbits), c_quantval, c_uquantval);
+		    quant_level, static_cast<uint8_t>(c_lowbits), c_quantval);
 
-		c_intval = (c_intval & ~0x3F) | (c_uquantval & 0x3F);
+		c_intval = (c_intval & ~0x3F) | (c_quantval & 0x3F);
 		c_fval = static_cast<float>(c_intval) * mode_rscale;
 
 		// Recompute B0 and B1, then quantize and unquantize them
@@ -1553,16 +1515,14 @@ static void quantize_hdr_rgb(
 
 		uint8_t b0_quantval;
 		uint8_t b1_quantval;
-		uint8_t b0_uquantval;
-		uint8_t b1_uquantval;
 
 		quantize_and_unquantize_retain_top_two_bits(
-		    quant_level, static_cast<uint8_t>(b0_lowbits), b0_quantval, b0_uquantval);
+		    quant_level, static_cast<uint8_t>(b0_lowbits), b0_quantval);
 		quantize_and_unquantize_retain_top_two_bits(
-		    quant_level, static_cast<uint8_t>(b1_lowbits), b1_quantval, b1_uquantval);
+		    quant_level, static_cast<uint8_t>(b1_lowbits), b1_quantval);
 
-		b0_intval = (b0_intval & ~0x3f) | (b0_uquantval & 0x3f);
-		b1_intval = (b1_intval & ~0x3f) | (b1_uquantval & 0x3f);
+		b0_intval = (b0_intval & ~0x3f) | (b0_quantval & 0x3f);
+		b1_intval = (b1_intval & ~0x3f) | (b1_quantval & 0x3f);
 		b0_fval = static_cast<float>(b0_intval) * mode_rscale;
 		b1_fval = static_cast<float>(b1_intval) * mode_rscale;
 
@@ -1650,13 +1610,11 @@ static void quantize_hdr_rgb(
 
 		uint8_t d0_quantval;
 		uint8_t d1_quantval;
-		uint8_t d0_uquantval;
-		uint8_t d1_uquantval;
 
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(d0_lowbits), d0_quantval, d0_uquantval);
+		    quant_level, static_cast<uint8_t>(d0_lowbits), d0_quantval);
 		quantize_and_unquantize_retain_top_four_bits(
-		    quant_level, static_cast<uint8_t>(d1_lowbits), d1_quantval, d1_uquantval);
+		    quant_level, static_cast<uint8_t>(d1_lowbits), d1_quantval);
 
 		output[0] = static_cast<uint8_t>(a_quantval);
 		output[1] = c_quantval;
@@ -1692,10 +1650,9 @@ static void quantize_hdr_rgb(
 
 	for (int i = 4; i < 6; i++)
 	{
-		uint8_t dummy;
 		int idx = astc::flt2int_rtn(vals[i] * 1.0f / 512.0f) + 128;
 		quantize_and_unquantize_retain_top_two_bits(
-		    quant_level, static_cast<uint8_t>(idx), output[i], dummy);
+		    quant_level, static_cast<uint8_t>(idx), output[i]);
 	}
 
 	return;

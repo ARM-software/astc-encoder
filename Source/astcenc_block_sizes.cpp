@@ -1006,7 +1006,7 @@ static void construct_block_size_descriptor_2d(
 }
 
 /**
- * @brief Allocate block modes and decimation tables for a single £D block size.
+ * @brief Allocate block modes and decimation tables for a single 3D block size.
  *
  * TODO: This function doesn't include all of the heuristics that we use for 2D block sizes such as
  * the percentile mode cutoffs. If 3D becomes more widely used we should look at this.
