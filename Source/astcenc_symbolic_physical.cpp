@@ -265,13 +265,15 @@ void symbolic_to_physical(
 	// Encode the color components
 	uint8_t values_to_encode[32];
 	int valuecount_to_encode = 0;
+
+	const uint8_t* pack_table = color_uquant_to_scrambled_pquant_tables[scb.quant_mode - QUANT_6];
 	for (unsigned int i = 0; i < scb.partition_count; i++)
 	{
 		int vals = 2 * (scb.color_formats[i] >> 2) + 2;
 		assert(vals <= 8);
 		for (int j = 0; j < vals; j++)
 		{
-			values_to_encode[j + valuecount_to_encode] = scb.color_values[i][j];
+			values_to_encode[j + valuecount_to_encode] = pack_table[scb.color_values[i][j]];
 		}
 		valuecount_to_encode += vals;
 	}
@@ -503,17 +505,19 @@ void physical_to_symbolic(
 
 	// Unpack the integer color values and assign to endpoints
 	scb.quant_mode = static_cast<quant_method>(color_quant_level);
+
 	uint8_t values_to_decode[32];
 	decode_ise(static_cast<quant_method>(color_quant_level), color_integer_count, pcb.data,
 	           values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_INDEX_BITS));
 
 	int valuecount_to_decode = 0;
+	const uint8_t* unpack_table = color_scrambled_pquant_to_uquant_tables[scb.quant_mode - QUANT_6];
 	for (int i = 0; i < partition_count; i++)
 	{
 		int vals = 2 * (color_formats[i] >> 2) + 2;
 		for (int j = 0; j < vals; j++)
 		{
-			scb.color_values[i][j] = values_to_decode[j + valuecount_to_decode];
+			scb.color_values[i][j] = unpack_table[values_to_decode[j + valuecount_to_decode]];
 		}
 		valuecount_to_decode += vals;
 	}
