@@ -1532,8 +1532,8 @@ void compute_error_squared_rgba(
  * @param      partition_count          The number of partitions in the block.
  * @param      partition_search_limit   The number of candidate partition encodings to trial.
  * @param[out] best_partitions          The best partition candidates.
- * @param      requested_candidates     The number of requsted partitionings. May return fewer if
- *                                      candidates are not avaiable.
+ * @param      requested_candidates     The number of requested partitionings. May return fewer if
+ *                                      candidates are not available.
  *
  * @return The actual number of candidates returned.
  */
