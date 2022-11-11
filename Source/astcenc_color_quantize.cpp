@@ -283,13 +283,9 @@ static bool try_quantize_rgb_delta(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	int r0bu = r0be;
-	int g0bu = g0be;
-	int b0bu = b0be;
-
-	r0b = r0bu | (r0a & 0x100);
-	g0b = g0bu | (g0a & 0x100);
-	b0b = b0bu | (b0a & 0x100);
+	r0b = r0be | (r0a & 0x100);
+	g0b = g0be | (g0a & 0x100);
+	b0b = b0be | (b0a & 0x100);
 
 	// Get hold of the second value
 	int r1d = astc::flt2int_rtn(r1);
@@ -326,18 +322,14 @@ static bool try_quantize_rgb_delta(
 	int g1de = quant_color(quant_level, g1d);
 	int b1de = quant_color(quant_level, b1d);
 
-	int r1du = r1de;
-	int g1du = g1de;
-	int b1du = b1de;
-
-	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
+	if (((r1d ^ r1de) | (g1d ^ g1de) | (b1d ^ b1de)) & 0xC0)
 	{
 		return false;
 	}
 
 	// If the sum of offsets triggers blue-contraction then encoding fails
-	vint4 ep0(r0bu, g0bu, b0bu, 0);
-	vint4 ep1(r1du, g1du, b1du, 0);
+	vint4 ep0(r0be, g0be, b0be, 0);
+	vint4 ep1(r1de, g1de, b1de, 0);
 	bit_transfer_signed(ep1, ep0);
 	if (hadd_rgb_s(ep1) < 0)
 	{
@@ -408,13 +400,9 @@ static bool try_quantize_rgb_delta_blue_contract(
 	int g0be = quant_color(quant_level, g0b);
 	int b0be = quant_color(quant_level, b0b);
 
-	int r0bu = r0be;
-	int g0bu = g0be;
-	int b0bu = b0be;
-
-	r0b = r0bu | (r0a & 0x100);
-	g0b = g0bu | (g0a & 0x100);
-	b0b = b0bu | (b0a & 0x100);
+	r0b = r0be | (r0a & 0x100);
+	g0b = g0be | (g0a & 0x100);
+	b0b = b0be | (b0a & 0x100);
 
 	// Get hold of the second value
 	int r1d = astc::flt2int_rtn(r1);
@@ -452,18 +440,14 @@ static bool try_quantize_rgb_delta_blue_contract(
 	int g1de = quant_color(quant_level, g1d);
 	int b1de = quant_color(quant_level, b1d);
 
-	int r1du = r1de;
-	int g1du = g1de;
-	int b1du = b1de;
-
-	if (((r1d ^ r1du) | (g1d ^ g1du) | (b1d ^ b1du)) & 0xC0)
+	if (((r1d ^ r1de) | (g1d ^ g1de) | (b1d ^ b1de)) & 0xC0)
 	{
 		return false;
 	}
 
 	// If the sum of offsets does not trigger blue-contraction then encoding fails
-	vint4 ep0(r0bu, g0bu, b0bu, 0);
-	vint4 ep1(r1du, g1du, b1du, 0);
+	vint4 ep0(r0be, g0be, b0be, 0);
+	vint4 ep1(r1de, g1de, b1de, 0);
 	bit_transfer_signed(ep1, ep0);
 	if (hadd_rgb_s(ep1) >= 0)
 	{
