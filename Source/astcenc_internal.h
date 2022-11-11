@@ -1347,7 +1347,7 @@ extern const uint8_t color_uquant_to_scrambled_pquant_tables[17][256];
  *
  * Indexed by [quant_mode - 4][data_value].
  */
-extern const uint8_t color_scrambled_pquant_to_uquant_tables[17][256];
+extern const uint8_t* color_scrambled_pquant_to_uquant_tables[17];
 
 /**
  * @brief The precomputed quant mode storage table.
