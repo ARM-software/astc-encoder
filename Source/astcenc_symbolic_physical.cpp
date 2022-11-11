@@ -506,13 +506,12 @@ void physical_to_symbolic(
 	// Unpack the integer color values and assign to endpoints
 	scb.quant_mode = static_cast<quant_method>(color_quant_level);
 
-	const uint8_t* unpack_table = color_scrambled_pquant_to_uquant_tables[scb.quant_mode - QUANT_6];
-
 	uint8_t values_to_decode[32];
 	decode_ise(static_cast<quant_method>(color_quant_level), color_integer_count, pcb.data,
 	           values_to_decode, (partition_count == 1 ? 17 : 19 + PARTITION_INDEX_BITS));
 
 	int valuecount_to_decode = 0;
+	const uint8_t* unpack_table = color_scrambled_pquant_to_uquant_tables[scb.quant_mode - QUANT_6];
 	for (int i = 0; i < partition_count; i++)
 	{
 		int vals = 2 * (color_formats[i] >> 2) + 2;
