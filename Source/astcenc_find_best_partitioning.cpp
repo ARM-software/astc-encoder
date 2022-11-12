@@ -536,7 +536,7 @@ unsigned int find_best_partition_candidates(
 	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int best_partitions[BLOCK_MAX_PARTITIONINGS],
+	unsigned int best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES],
 	unsigned int requested_candidates
 ) {
 	// Constant used to estimate quantization error for a given partitioning; the optimal value for
