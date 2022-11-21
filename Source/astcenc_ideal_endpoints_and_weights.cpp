@@ -691,7 +691,6 @@ float compute_error_of_weight_set_1plane(
 	const float* dec_weight_quant_uvalue
 ) {
 	vfloatacc error_summav = vfloatacc::zero();
-	float error_summa = 0.0f;
 	unsigned int texel_count = di.texel_count;
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
@@ -745,7 +744,7 @@ float compute_error_of_weight_set_1plane(
 	}
 
 	// Resolve the final scalar accumulator sum
-	return error_summa = hadd_s(error_summav);
+	return hadd_s(error_summav);
 }
 
 /* See header for documentation. */
