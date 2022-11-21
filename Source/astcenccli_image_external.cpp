@@ -26,7 +26,7 @@
 
 #include "astcenccli_internal.h"
 
-// Configure the STB image imagewrite library build.
+// Configure the STB image write library build.
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_NO_GIF

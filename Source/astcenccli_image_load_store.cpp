@@ -33,7 +33,7 @@
 #include "tinyexr.h"
 
 /* ============================================================================
-  Image load and store through the stb_iamge and tinyexr libraries
+  Image load and store through the stb_image and tinyexr libraries
 ============================================================================ */
 
 /**
