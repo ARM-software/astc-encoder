@@ -861,8 +861,7 @@ void compute_ideal_weights_for_decimation(
 	// zero-initialized SIMD over-fetch region
 	if (is_direct)
 	{
-		unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-		for (unsigned int i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
+		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight(ei.weights + i);
 			storea(weight, dec_weight_ideal_value + i);
@@ -970,7 +969,7 @@ void compute_ideal_weights_for_decimation(
 		vfloat step = (error_change1 * chd_scale) / error_change0;
 		step = clamp(-stepsize, stepsize, step);
 
-		// Update the weight; note this can store negative values.
+		// Update the weight; note this can store negative values
 		storea(weight_val + step, dec_weight_ideal_value + i);
 	}
 }
