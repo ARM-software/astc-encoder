@@ -334,9 +334,6 @@ static const uint8_t integer_of_trits[3][3][3][3][3] {
  */
 struct btq_count
 {
-	/** @brief The quantization level. */
-	uint8_t quant;
-
 	/** @brief The number of bits. */
 	uint8_t bits;
 
@@ -351,27 +348,27 @@ struct btq_count
  * @brief The table of bits, trits, and quints needed for a quant encode.
  */
 static const std::array<btq_count, 21> btq_counts {{
-	{   QUANT_2, 1, 0, 0 },
-	{   QUANT_3, 0, 1, 0 },
-	{   QUANT_4, 2, 0, 0 },
-	{   QUANT_5, 0, 0, 1 },
-	{   QUANT_6, 1, 1, 0 },
-	{   QUANT_8, 3, 0, 0 },
-	{  QUANT_10, 1, 0, 1 },
-	{  QUANT_12, 2, 1, 0 },
-	{  QUANT_16, 4, 0, 0 },
-	{  QUANT_20, 2, 0, 1 },
-	{  QUANT_24, 3, 1, 0 },
-	{  QUANT_32, 5, 0, 0 },
-	{  QUANT_40, 3, 0, 1 },
-	{  QUANT_48, 4, 1, 0 },
-	{  QUANT_64, 6, 0, 0 },
-	{  QUANT_80, 4, 0, 1 },
-	{  QUANT_96, 5, 1, 0 },
-	{ QUANT_128, 7, 0, 0 },
-	{ QUANT_160, 5, 0, 1 },
-	{ QUANT_192, 6, 1, 0 },
-	{ QUANT_256, 8, 0, 0 }
+	{ 1, 0, 0 }, // QUANT_2
+	{ 0, 1, 0 }, // QUANT_3
+	{ 2, 0, 0 }, // QUANT_4
+	{ 0, 0, 1 }, // QUANT_5
+	{ 1, 1, 0 }, // QUANT_6
+	{ 3, 0, 0 }, // QUANT_8
+	{ 1, 0, 1 }, // QUANT_10
+	{ 2, 1, 0 }, // QUANT_12
+	{ 4, 0, 0 }, // QUANT_16
+	{ 2, 0, 1 }, // QUANT_20
+	{ 3, 1, 0 }, // QUANT_24
+	{ 5, 0, 0 }, // QUANT_32
+	{ 3, 0, 1 }, // QUANT_40
+	{ 4, 1, 0 }, // QUANT_48
+	{ 6, 0, 0 }, // QUANT_64
+	{ 4, 0, 1 }, // QUANT_80
+	{ 5, 1, 0 }, // QUANT_96
+	{ 7, 0, 0 }, // QUANT_128
+	{ 5, 0, 1 }, // QUANT_160
+	{ 6, 1, 0 }, // QUANT_192
+	{ 8, 0, 0 }  // QUANT_256
 }};
 
 /**
