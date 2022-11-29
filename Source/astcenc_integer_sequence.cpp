@@ -379,9 +379,6 @@ static const std::array<btq_count, 21> btq_counts {{
  */
 struct ise_size
 {
-	/** @brief The quantization level. */
-	uint8_t quant;
-
 	/** @brief The scaling parameter. */
 	uint8_t scale;
 
@@ -396,27 +393,27 @@ struct ise_size
  * @brief The table of scale, round, and divisors needed for quant sizing.
  */
 static const std::array<ise_size, 21> ise_sizes {{
-	{   QUANT_2,  1, 0, 1 },
-	{   QUANT_3,  8, 4, 5 },
-	{   QUANT_4,  2, 0, 1 },
-	{   QUANT_5,  7, 2, 3 },
-	{   QUANT_6, 13, 4, 5 },
-	{   QUANT_8,  3, 0, 1 },
-	{  QUANT_10, 10, 2, 3 },
-	{  QUANT_12, 18, 4, 5 },
-	{  QUANT_16,  4, 0, 1 },
-	{  QUANT_20, 13, 2, 3 },
-	{  QUANT_24, 23, 4, 5 },
-	{  QUANT_32,  5, 0, 1 },
-	{  QUANT_40, 16, 2, 3 },
-	{  QUANT_48, 28, 4, 5 },
-	{  QUANT_64,  6, 0, 1 },
-	{  QUANT_80, 19, 2, 3 },
-	{  QUANT_96, 33, 4, 5 },
-	{ QUANT_128,  7, 0, 1 },
-	{ QUANT_160, 22, 2, 3 },
-	{ QUANT_192, 38, 4, 5 },
-	{ QUANT_256,  8, 0, 1 }
+	{  1, 0, 1 }, // QUANT_2
+	{  8, 4, 5 }, // QUANT_3
+	{  2, 0, 1 }, // QUANT_4
+	{  7, 2, 3 }, // QUANT_5
+	{ 13, 4, 5 }, // QUANT_6
+	{  3, 0, 1 }, // QUANT_8
+	{ 10, 2, 3 }, // QUANT_10
+	{ 18, 4, 5 }, // QUANT_12
+	{  4, 0, 1 }, // QUANT_16
+	{ 13, 2, 3 }, // QUANT_20
+	{ 23, 4, 5 }, // QUANT_24
+	{  5, 0, 1 }, // QUANT_32
+	{ 16, 2, 3 }, // QUANT_40
+	{ 28, 4, 5 }, // QUANT_48
+	{  6, 0, 1 }, // QUANT_64
+	{ 19, 2, 3 }, // QUANT_80
+	{ 33, 4, 5 }, // QUANT_96
+	{  7, 0, 1 }, // QUANT_128
+	{ 22, 2, 3 }, // QUANT_160
+	{ 38, 4, 5 }, // QUANT_192
+	{  8, 0, 1 }  // QUANT_256
 }};
 
 /* See header for documentation. */
