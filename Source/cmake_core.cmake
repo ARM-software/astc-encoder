@@ -136,6 +136,8 @@ macro(astcenc_set_properties NAME)
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-reserved-identifier>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-cast-function-type>
 
+            # Force DWARF4 for Valgrind profiling
+            $<$<CXX_COMPILER_ID:Clang>:-gdwarf-4>
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
     target_link_options(${NAME}
