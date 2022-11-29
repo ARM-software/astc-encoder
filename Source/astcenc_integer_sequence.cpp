@@ -24,6 +24,7 @@
 #include <array>
 
 /** @brief Unpacked quint triplets <low,middle,high> for each packed value */
+// TODO: Bitpack these into a uint16_t?
 static const uint8_t quints_of_integer[128][3] {
 	{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0},
 	{4, 0, 0}, {0, 4, 0}, {4, 4, 0}, {4, 4, 4},
@@ -99,6 +100,7 @@ static const uint8_t integer_of_quints[5][5][5] {
 };
 
 /** @brief Unpacked trit quintuplets <low,...,high> for each packed value */
+// TODO: Bitpack these into a uint16_t?
 static const uint8_t trits_of_integer[256][5] {
 	{0, 0, 0, 0, 0}, {1, 0, 0, 0, 0}, {2, 0, 0, 0, 0}, {0, 0, 2, 0, 0},
 	{0, 1, 0, 0, 0}, {1, 1, 0, 0, 0}, {2, 1, 0, 0, 0}, {1, 0, 2, 0, 0},
