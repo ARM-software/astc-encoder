@@ -382,9 +382,6 @@ struct ise_size
 	/** @brief The scaling parameter. */
 	uint8_t scale;
 
-	/** @brief The rounding parameter. */
-	uint8_t round;
-
 	/** @brief The divisor parameter. */
 	uint8_t divisor;
 };
@@ -393,27 +390,27 @@ struct ise_size
  * @brief The table of scale, round, and divisors needed for quant sizing.
  */
 static const std::array<ise_size, 21> ise_sizes {{
-	{  1, 0, 1 }, // QUANT_2
-	{  8, 4, 5 }, // QUANT_3
-	{  2, 0, 1 }, // QUANT_4
-	{  7, 2, 3 }, // QUANT_5
-	{ 13, 4, 5 }, // QUANT_6
-	{  3, 0, 1 }, // QUANT_8
-	{ 10, 2, 3 }, // QUANT_10
-	{ 18, 4, 5 }, // QUANT_12
-	{  4, 0, 1 }, // QUANT_16
-	{ 13, 2, 3 }, // QUANT_20
-	{ 23, 4, 5 }, // QUANT_24
-	{  5, 0, 1 }, // QUANT_32
-	{ 16, 2, 3 }, // QUANT_40
-	{ 28, 4, 5 }, // QUANT_48
-	{  6, 0, 1 }, // QUANT_64
-	{ 19, 2, 3 }, // QUANT_80
-	{ 33, 4, 5 }, // QUANT_96
-	{  7, 0, 1 }, // QUANT_128
-	{ 22, 2, 3 }, // QUANT_160
-	{ 38, 4, 5 }, // QUANT_192
-	{  8, 0, 1 }  // QUANT_256
+	{  1, 1 }, // QUANT_2
+	{  8, 5 }, // QUANT_3
+	{  2, 1 }, // QUANT_4
+	{  7, 3 }, // QUANT_5
+	{ 13, 5 }, // QUANT_6
+	{  3, 1 }, // QUANT_8
+	{ 10, 3 }, // QUANT_10
+	{ 18, 5 }, // QUANT_12
+	{  4, 1 }, // QUANT_16
+	{ 13, 3 }, // QUANT_20
+	{ 23, 5 }, // QUANT_24
+	{  5, 1 }, // QUANT_32
+	{ 16, 3 }, // QUANT_40
+	{ 28, 5 }, // QUANT_48
+	{  6, 1 }, // QUANT_64
+	{ 19, 3 }, // QUANT_80
+	{ 33, 5 }, // QUANT_96
+	{  7, 1 }, // QUANT_128
+	{ 22, 3 }, // QUANT_160
+	{ 38, 5 }, // QUANT_192
+	{  8, 1 }  // QUANT_256
 }};
 
 /* See header for documentation. */
@@ -429,7 +426,7 @@ unsigned int get_ise_sequence_bitcount(
 	}
 
 	auto& entry = ise_sizes[quant_level];
-	return (entry.scale * character_count + entry.round) / entry.divisor;
+	return (entry.scale * character_count + entry.divisor - 1) / entry.divisor;
 }
 
 /**
