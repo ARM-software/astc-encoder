@@ -1973,7 +1973,7 @@ uint8_t pack_color_endpoints(
 				break;
 			}
 		}
-		if (try_quantize_rgb_blue_contract(color0, color1, output, quant_level))
+		if (quant_level < QUANT_256 && try_quantize_rgb_blue_contract(color0, color1, output, quant_level))
 		{
 			retval = FMT_RGB;
 			break;
@@ -1996,7 +1996,7 @@ uint8_t pack_color_endpoints(
 				break;
 			}
 		}
-		if (try_quantize_rgba_blue_contract(color0, color1, output, quant_level))
+		if (quant_level < QUANT_256 && try_quantize_rgba_blue_contract(color0, color1, output, quant_level))
 		{
 			retval = FMT_RGBA;
 			break;
