@@ -337,13 +337,13 @@ static const uint8_t integer_of_trits[3][3][3][3][3] {
 struct btq_count
 {
 	/** @brief The number of bits. */
-	uint8_t bits;
+	uint8_t bits:6;
 
 	/** @brief The number of trits. */
-	uint8_t trits;
+	uint8_t trits:1;
 
 	/** @brief The number of quints. */
-	uint8_t quints;
+	uint8_t quints:1;
 };
 
 /**
@@ -382,37 +382,37 @@ static const std::array<btq_count, 21> btq_counts {{
 struct ise_size
 {
 	/** @brief The scaling parameter. */
-	uint8_t scale;
+	uint8_t scale:6;
 
 	/** @brief The divisor parameter. */
-	uint8_t divisor;
+	uint8_t divisor:2;
 };
 
 /**
  * @brief The table of scale, round, and divisors needed for quant sizing.
  */
 static const std::array<ise_size, 21> ise_sizes {{
-	{  1, 1 }, // QUANT_2
-	{  8, 5 }, // QUANT_3
-	{  2, 1 }, // QUANT_4
-	{  7, 3 }, // QUANT_5
-	{ 13, 5 }, // QUANT_6
-	{  3, 1 }, // QUANT_8
-	{ 10, 3 }, // QUANT_10
-	{ 18, 5 }, // QUANT_12
-	{  4, 1 }, // QUANT_16
-	{ 13, 3 }, // QUANT_20
-	{ 23, 5 }, // QUANT_24
-	{  5, 1 }, // QUANT_32
-	{ 16, 3 }, // QUANT_40
-	{ 28, 5 }, // QUANT_48
-	{  6, 1 }, // QUANT_64
-	{ 19, 3 }, // QUANT_80
-	{ 33, 5 }, // QUANT_96
-	{  7, 1 }, // QUANT_128
-	{ 22, 3 }, // QUANT_160
-	{ 38, 5 }, // QUANT_192
-	{  8, 1 }  // QUANT_256
+	{  1, 0 }, // QUANT_2
+	{  8, 2 }, // QUANT_3
+	{  2, 0 }, // QUANT_4
+	{  7, 1 }, // QUANT_5
+	{ 13, 2 }, // QUANT_6
+	{  3, 0 }, // QUANT_8
+	{ 10, 1 }, // QUANT_10
+	{ 18, 2 }, // QUANT_12
+	{  4, 0 }, // QUANT_16
+	{ 13, 1 }, // QUANT_20
+	{ 23, 2 }, // QUANT_24
+	{  5, 0 }, // QUANT_32
+	{ 16, 1 }, // QUANT_40
+	{ 28, 2 }, // QUANT_48
+	{  6, 0 }, // QUANT_64
+	{ 19, 1 }, // QUANT_80
+	{ 33, 2 }, // QUANT_96
+	{  7, 0 }, // QUANT_128
+	{ 22, 1 }, // QUANT_160
+	{ 38, 2 }, // QUANT_192
+	{  8, 0 }  // QUANT_256
 }};
 
 /* See header for documentation. */
@@ -428,7 +428,8 @@ unsigned int get_ise_sequence_bitcount(
 	}
 
 	auto& entry = ise_sizes[quant_level];
-	return (entry.scale * character_count + entry.divisor - 1) / entry.divisor;
+	unsigned int divisor = (entry.divisor << 1) + 1;
+	return (entry.scale * character_count + divisor - 1) / divisor;
 }
 
 /**
@@ -678,10 +679,10 @@ void decode_ise(
 
 		if (trits)
 		{
-			static const unsigned int bits_to_read[5]  { 2, 2, 1, 2, 1 };
-			static const unsigned int block_shift[5]   { 0, 2, 4, 5, 7 };
-			static const unsigned int next_lcounter[5] { 1, 2, 3, 4, 0 };
-			static const unsigned int hcounter_incr[5] { 0, 0, 0, 0, 1 };
+			static const uint8_t bits_to_read[5]  { 2, 2, 1, 2, 1 };
+			static const uint8_t block_shift[5]   { 0, 2, 4, 5, 7 };
+			static const uint8_t next_lcounter[5] { 1, 2, 3, 4, 0 };
+			static const uint8_t hcounter_incr[5] { 0, 0, 0, 0, 1 };
 			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
@@ -691,10 +692,10 @@ void decode_ise(
 
 		if (quints)
 		{
-			static const unsigned int bits_to_read[3]  { 3, 2, 2 };
-			static const unsigned int block_shift[3]   { 0, 3, 5 };
-			static const unsigned int next_lcounter[3] { 1, 2, 0 };
-			static const unsigned int hcounter_incr[3] { 0, 0, 1 };
+			static const uint8_t bits_to_read[3]  { 3, 2, 2 };
+			static const uint8_t block_shift[3]   { 0, 3, 5 };
+			static const uint8_t next_lcounter[3] { 1, 2, 0 };
+			static const uint8_t hcounter_incr[3] { 0, 0, 1 };
 			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
