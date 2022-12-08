@@ -1132,22 +1132,19 @@ unsigned int compute_ideal_endpoint_formats(
 	uint8_t (&best_ep_formats)[WEIGHTS_MAX_BLOCK_MODES][BLOCK_MAX_PARTITIONS] = tmpbuf.best_ep_formats;
 
 	// Ensure that the first iteration understep contains data that will never be picked
+	vfloat clear_error(ERROR_CALC_DEFAULT);
+	vint clear_quant(0);
+
 	unsigned int packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
-	for (unsigned int i = packed_start_block_mode; i < start_block_mode; i++)
-	{
-		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
-		best_quant_levels[i] = QUANT_2;
-		best_quant_levels_mod[i] = QUANT_2;
-	}
+	storea(clear_error, errors_of_best_combination + packed_start_block_mode);
+	store_nbytes(clear_quant, best_quant_levels + packed_start_block_mode);
+	store_nbytes(clear_quant, best_quant_levels_mod + packed_start_block_mode);
 
 	// Ensure that last iteration overstep contains data that will never be picked
-	const unsigned int packed_end_block_mode = round_up_to_simd_multiple_vla(end_block_mode);
-	for (unsigned int i = end_block_mode; i < packed_end_block_mode; i++)
-	{
-		errors_of_best_combination[i] = ERROR_CALC_DEFAULT;
-		best_quant_levels[i] = QUANT_2;
-		best_quant_levels_mod[i] = QUANT_2;
-	}
+	unsigned int packed_end_block_mode = round_down_to_simd_multiple_vla(end_block_mode - 1);
+	storea(clear_error, errors_of_best_combination + packed_end_block_mode);
+	store_nbytes(clear_quant, best_quant_levels + packed_end_block_mode);
+	store_nbytes(clear_quant, best_quant_levels_mod + packed_end_block_mode);
 
 	// Track a scalar best to avoid expensive search at least once ...
 	float error_of_best_combination = ERROR_CALC_DEFAULT;
