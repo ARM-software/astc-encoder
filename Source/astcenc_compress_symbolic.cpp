@@ -82,7 +82,7 @@ static bool realign_weights_undecimated(
 	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_level];
 
 	unsigned int max_plane = bm.is_dual_plane;
-	int plane2_component = bm.is_dual_plane ? scb.plane2_component : -1;
+	int plane2_component = scb.plane2_component;
 	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
@@ -206,7 +206,7 @@ static bool realign_weights_decimated(
 	assert(weight_count != bsd.texel_count);
 
 	unsigned int max_plane = bm.is_dual_plane;
-	int plane2_component = bm.is_dual_plane ? scb.plane2_component : -1;
+	int plane2_component = scb.plane2_component;
 	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
 
 	// Decode the color endpoints
