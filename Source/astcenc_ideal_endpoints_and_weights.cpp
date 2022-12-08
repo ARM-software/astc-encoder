@@ -692,6 +692,7 @@ float compute_error_of_weight_set_1plane(
 ) {
 	vfloatacc error_summav = vfloatacc::zero();
 	unsigned int texel_count = di.texel_count;
+	promise(texel_count > 0);
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
 	if (di.max_texel_weight_count > 2)
@@ -757,6 +758,7 @@ float compute_error_of_weight_set_2planes(
 ) {
 	vfloatacc error_summav = vfloatacc::zero();
 	unsigned int texel_count = di.texel_count;
+	promise(texel_count > 0);
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
 	if (di.max_texel_weight_count > 2)

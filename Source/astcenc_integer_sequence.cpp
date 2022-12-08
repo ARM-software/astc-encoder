@@ -639,7 +639,6 @@ void encode_ise(
 	// Write out just bits
 	else
 	{
-		promise(character_count > 0);
 		for (unsigned int i = 0; i < character_count; i++)
 		{
 			write_bits(input_data[i], bits, bit_offset, output_data);
@@ -708,6 +707,7 @@ void decode_ise(
 	if (trits)
 	{
 		unsigned int trit_blocks = (character_count + 4) / 5;
+		promise(trit_blocks > 0);
 		for (unsigned int i = 0; i < trit_blocks; i++)
 		{
 			const uint8_t *tritptr = trits_of_integer[tq_blocks[i]];
@@ -722,6 +722,7 @@ void decode_ise(
 	if (quints)
 	{
 		unsigned int quint_blocks = (character_count + 2) / 3;
+		promise(quint_blocks > 0);
 		for (unsigned int i = 0; i < quint_blocks; i++)
 		{
 			const uint8_t *quintptr = quints_of_integer[tq_blocks[i]];
