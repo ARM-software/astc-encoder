@@ -17,6 +17,8 @@ and image quality improvements in this release.
 * **General:**
   * **Optimization:** Always skip blue-contraction for `QUANT_256` encodings.
     This gives a small image quality improvement for the 4x4 block size.
+  * **Optimization:** Always skip RGBO vector calculation for LDR encodings.
+  * **Optimization:** Defer color packing and scrambling to physical layer.
   * **Optimization:** Remove folded `decimation_info` lookup tables. This
     reduces compressor memory footprint and improves context creation time.
     Impact increases with the active block size.
