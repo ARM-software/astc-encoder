@@ -22,6 +22,7 @@ and image quality improvements in this release.
   * **Optimization:** Remove folded `decimation_info` lookup tables. This
     reduces compressor memory footprint and improves context creation time.
     Impact increases with the active block size.
+  * **Bug-fix:** Use lower case `windows.h` include for MinGW compatibility.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.2.0
