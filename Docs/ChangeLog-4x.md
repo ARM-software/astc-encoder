@@ -7,6 +7,21 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.3.0
+
+**Status:** In development
+
+The 4.3.0 release is an optimization release. There are minor performance
+and image quality improvements in this release.
+
+* **General:**
+  * **Optimization:** Always skip blue-contraction for `QUANT_256` encodings.
+    This gives a small image quality improvement for the 4x4 block size.
+  * **Optimization:** Remove folded `decimation_info` lookup tables. This
+    reduces compressor memory footprint and improves context creation time.
+    Impact increases with the active block size.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.2.0
 
 **Status:** November 2022
@@ -175,4 +190,4 @@ Key for charts:
 
 - - -
 
-_Copyright © 2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2023, Arm Limited and contributors. All rights reserved._

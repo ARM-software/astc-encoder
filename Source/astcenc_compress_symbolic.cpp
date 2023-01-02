@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -279,15 +279,12 @@ static bool realign_weights_decimated(
 			{
 				unsigned int texel = di.weight_texel[te_idx][we_idx];
 
-				const uint8_t *texel_weights = di.texel_weights_texel[we_idx][te_idx];
-				const float *texel_weights_float = di.texel_weights_float_texel[we_idx][te_idx];
+				float tw_base = di.texel_weight_for_weight[we_idx][te_idx];
 
-				float tw_base = texel_weights_float[0];
-
-				float weight_base = (uqw_base                      * tw_base
-				                   + uq_weightsf[texel_weights[1]] * texel_weights_float[1])
-				                  + (uq_weightsf[texel_weights[2]] * texel_weights_float[2]
-				                   + uq_weightsf[texel_weights[3]] * texel_weights_float[3]);
+				float weight_base = (uq_weightsf[di.texel_weights_4t[0][texel]] * di.texel_weights_float_4t[0][texel]
+				                   + uq_weightsf[di.texel_weights_4t[1][texel]] * di.texel_weights_float_4t[1][texel])
+					              + (uq_weightsf[di.texel_weights_4t[2][texel]] * di.texel_weights_float_4t[2][texel]
+				                   + uq_weightsf[di.texel_weights_4t[3][texel]] * di.texel_weights_float_4t[3][texel]);
 
 				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
 				// float weight = astc::flt_rd(weight_base + 0.5f);

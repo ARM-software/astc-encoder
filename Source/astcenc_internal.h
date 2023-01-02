@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -381,17 +381,8 @@ struct decimation_info
 	/** @brief The list of weight indices that contribute to each texel. */
 	alignas(ASTCENC_VECALIGN) float weights_flt[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
 
-	/**
-	 * @brief Folded structure for faster access:
-	 *     texel_weights_texel[i][j][.] = texel_weights[.][weight_texel[i][j]]
-	 */
-	uint8_t texel_weights_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
-
-	/**
-	 * @brief Folded structure for faster access:
-	 *     texel_weights_float_texel[i][j][.] = texel_weights_float[.][weight_texel[i][j]]
-	 */
-	float texel_weights_float_texel[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS][4];
+	/** @brief The weight contribution to the total texel weighting for each weight and texel. */
+	float texel_weight_for_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
 };
 
 /**

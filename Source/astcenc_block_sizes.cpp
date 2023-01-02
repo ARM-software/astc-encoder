@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -359,30 +359,17 @@ static void init_decimation_info_2d(
 			di.weight_texel[j][i] = texel;
 			di.weights_flt[j][i] = static_cast<float>(wb.texel_weights_of_weight[i][j]);
 
-			// perform a layer of array unrolling. An aspect of this unrolling is that
-			// one of the texel-weight indexes is an identity-mapped index; we will use this
-			// fact to reorder the indexes so that the first one is the identity index.
-			int swap_idx = -1;
+			// Store the per-texel contribution of this weight for each texel it contributes to
+			di.texel_weight_for_weight[i][j] = 0.0f;
 			for (unsigned int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = di.texel_weights_4t[k][texel];
 				float dttwf = di.texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
-					swap_idx = k;
+					di.texel_weight_for_weight[i][j] = di.texel_weights_float_4t[k][texel];
+					break;
 				}
-				di.texel_weights_texel[i][j][k] = dttw;
-				di.texel_weights_float_texel[i][j][k] = dttwf;
-			}
-
-			if (swap_idx != 0)
-			{
-				uint8_t vi = di.texel_weights_texel[i][j][0];
-				float vf = di.texel_weights_float_texel[i][j][0];
-				di.texel_weights_texel[i][j][0] = di.texel_weights_texel[i][j][swap_idx];
-				di.texel_weights_float_texel[i][j][0] = di.texel_weights_float_texel[i][j][swap_idx];
-				di.texel_weights_texel[i][j][swap_idx] = vi;
-				di.texel_weights_float_texel[i][j][swap_idx] = vf;
 			}
 		}
 
@@ -628,30 +615,17 @@ static void init_decimation_info_3d(
 			di.weight_texel[j][i] = static_cast<uint8_t>(texel);
 			di.weights_flt[j][i] = static_cast<float>(wb.texel_weights_of_weight[i][j]);
 
-			// perform a layer of array unrolling. An aspect of this unrolling is that
-			// one of the texel-weight indexes is an identity-mapped index; we will use this
-			// fact to reorder the indexes so that the first one is the identity index.
-			int swap_idx = -1;
+			// Store the per-texel contribution of this weight for each texel it contributes to
+			di.texel_weight_for_weight[i][j] = 0.0f;
 			for (unsigned int k = 0; k < 4; k++)
 			{
 				uint8_t dttw = di.texel_weights_4t[k][texel];
 				float dttwf = di.texel_weights_float_4t[k][texel];
 				if (dttw == i && dttwf != 0.0f)
 				{
-					swap_idx = k;
+					di.texel_weight_for_weight[i][j] = di.texel_weights_float_4t[k][texel];
+					break;
 				}
-				di.texel_weights_texel[i][j][k] = dttw;
-				di.texel_weights_float_texel[i][j][k] = dttwf;
-			}
-
-			if (swap_idx != 0)
-			{
-				uint8_t vi = di.texel_weights_texel[i][j][0];
-				float vf = di.texel_weights_float_texel[i][j][0];
-				di.texel_weights_texel[i][j][0] = di.texel_weights_texel[i][j][swap_idx];
-				di.texel_weights_float_texel[i][j][0] = di.texel_weights_float_texel[i][j][swap_idx];
-				di.texel_weights_texel[i][j][swap_idx] = vi;
-				di.texel_weights_float_texel[i][j][swap_idx] = vf;
 			}
 		}
 
