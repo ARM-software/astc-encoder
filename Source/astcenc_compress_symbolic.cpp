@@ -619,12 +619,12 @@ static float compress_symbolic_block_for_partition_1plane(
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-				// Average refinement improvement is 3.5% per iteration (allow 5%), but the first
-				// iteration can help more so we give it a extra 10% leeway. Use this knowledge to
+				// Average refinement improvement is 3.5% per iteration (allow 4.5%), but the first
+				// iteration can help more so we give it a extra 8% leeway. Use this knowledge to
 				// drive a heuristic to skip blocks that are unlikely to catch up with the best
 				// block we have already.
 				unsigned int iters_remaining = config.tune_refinement_limit - l;
-				float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.1f;
+				float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.08f;
 				if (errorval > (threshold * best_errorval_in_scb))
 				{
 					break;
@@ -669,10 +669,10 @@ static float compress_symbolic_block_for_partition_1plane(
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			// Average refinement improvement is 3.5% per iteration, so skip blocks that are
-			// unlikely to catch up with the best block we have already. Assume a 5% per step to
+			// unlikely to catch up with the best block we have already. Assume a 4.5% per step to
 			// give benefit of the doubt ...
 			unsigned int iters_remaining = config.tune_refinement_limit - 1 - l;
-			float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.0f;
+			float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
 			{
 				break;
@@ -953,12 +953,12 @@ static float compress_symbolic_block_for_partition_2planes(
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-				// Average refinement improvement is 3.5% per iteration (allow 5%), but the first
-				// iteration can help more so we give it a extra 10% leeway. Use this knowledge to
+				// Average refinement improvement is 3.5% per iteration (allow 4.5%), but the first
+				// iteration can help more so we give it a extra 8% leeway. Use this knowledge to
 				// drive a heuristic to skip blocks that are unlikely to catch up with the best
 				// block we have already.
 				unsigned int iters_remaining = config.tune_refinement_limit - l;
-				float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.1f;
+				float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.08f;
 				if (errorval > (threshold * best_errorval_in_scb))
 				{
 					break;
@@ -1004,10 +1004,10 @@ static float compress_symbolic_block_for_partition_2planes(
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
 			// Average refinement improvement is 3.5% per iteration, so skip blocks that are
-			// unlikely to catch up with the best block we have already. Assume a 5% per step to
+			// unlikely to catch up with the best block we have already. Assume a 4.5% per step to
 			// give benefit of the doubt ...
 			unsigned int iters_remaining = config.tune_refinement_limit - 1 - l;
-			float threshold = (0.05f * static_cast<float>(iters_remaining)) + 1.0f;
+			float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
 			{
 				break;
