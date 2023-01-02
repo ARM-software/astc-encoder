@@ -360,29 +360,50 @@ struct decimation_info
 	/** @brief The number of stored weights in the Z dimension. */
 	uint8_t weight_z;
 
-	/** @brief The number of stored weights that contribute to each texel, between 1 and 4. */
+	/**
+	 * @brief The number of weights that contribute to each texel.
+	 * Value is between 1 and 4.
+	 */
 	uint8_t texel_weight_count[BLOCK_MAX_TEXELS];
 
-	/** @brief The weight index of the N weights that need to be interpolated for each texel. */
-	uint8_t texel_weights_4t[4][BLOCK_MAX_TEXELS];
+	/**
+	 * @brief The weight index of the N weights that are interpolated for each texel.
+	 * Stored transposed to improve vectorization.
+	 */
+	uint8_t texel_weights_tr[4][BLOCK_MAX_TEXELS];
 
-	/** @brief The bilinear interpolation weighting of the N input weights for each texel, between 0 and 16. */
-	uint8_t texel_weights_int_4t[4][BLOCK_MAX_TEXELS];
+	/**
+	 * @brief The bilinear contribution of the N weights that are interpolated for each texel.
+	 * Value is between 0 and 16, stored transposed to improve vectorization.
+	 */
+	uint8_t texel_weight_contribs_int_tr[4][BLOCK_MAX_TEXELS];
 
-	/** @brief The bilinear interpolation weighting of the N input weights for each texel, between 0 and 1. */
-	alignas(ASTCENC_VECALIGN) float texel_weights_float_4t[4][BLOCK_MAX_TEXELS];
+	/**
+	 * @brief The bilinear contribution of the N weights that are interpolated for each texel.
+	 * Value is between 0 and 1, stored transposed to improve vectorization.
+	 */
+	alignas(ASTCENC_VECALIGN) float texel_weight_contribs_float_tr[4][BLOCK_MAX_TEXELS];
 
 	/** @brief The number of texels that each stored weight contributes to. */
 	uint8_t weight_texel_count[BLOCK_MAX_WEIGHTS];
 
-	/** @brief The list of weights that contribute to each texel. */
-	uint8_t weight_texel[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief The list of texels that use a specific weight index.
+	 * Stored transposed to improve vectorization.
+	 */
+	uint8_t weight_texels_tr[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
 
-	/** @brief The list of weight indices that contribute to each texel. */
-	alignas(ASTCENC_VECALIGN) float weights_flt[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+	/**
+	 * @brief The bilinear contribution to the N texels that use each weight.
+	 * Value is between 0 and 1, stored transposed to improve vectorization.
+	 */
+	alignas(ASTCENC_VECALIGN) float weights_texel_contribs_tr[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
 
-	/** @brief The weight contribution to the total texel weighting for each weight and texel. */
-	float texel_weight_for_weight[BLOCK_MAX_WEIGHTS][BLOCK_MAX_TEXELS];
+	/**
+	 * @brief The bilinear contribution to the Nth texel that uses each weight.
+	 * Value is between 0 and 1, stored transposed to improve vectorization.
+	 */
+	float texel_contrib_for_weight[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
 };
 
 /**

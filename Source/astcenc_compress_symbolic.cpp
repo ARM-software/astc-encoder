@@ -277,14 +277,14 @@ static bool realign_weights_decimated(
 			promise(texels_to_evaluate > 0);
 			for (unsigned int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
-				unsigned int texel = di.weight_texel[te_idx][we_idx];
+				unsigned int texel = di.weight_texels_tr[te_idx][we_idx];
 
-				float tw_base = di.texel_weight_for_weight[we_idx][te_idx];
+				float tw_base = di.texel_contrib_for_weight[te_idx][we_idx];
 
-				float weight_base = (uq_weightsf[di.texel_weights_4t[0][texel]] * di.texel_weights_float_4t[0][texel]
-				                   + uq_weightsf[di.texel_weights_4t[1][texel]] * di.texel_weights_float_4t[1][texel])
-					              + (uq_weightsf[di.texel_weights_4t[2][texel]] * di.texel_weights_float_4t[2][texel]
-				                   + uq_weightsf[di.texel_weights_4t[3][texel]] * di.texel_weights_float_4t[3][texel]);
+				float weight_base = (uq_weightsf[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
+				                   + uq_weightsf[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel])
+					              + (uq_weightsf[di.texel_weights_tr[2][texel]] * di.texel_weight_contribs_float_tr[2][texel]
+				                   + uq_weightsf[di.texel_weights_tr[3][texel]] * di.texel_weight_contribs_float_tr[3][texel]);
 
 				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
 				// float weight = astc::flt_rd(weight_base + 0.5f);
