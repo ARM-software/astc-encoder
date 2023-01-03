@@ -21,6 +21,9 @@
 
 #include "astcenc_internal.h"
 
+/** @brief The number of 64-bit words needed to represent a canonical partition bit pattern. */
+static const int BIT_PATTERN_WORDS { (BLOCK_MAX_TEXELS + 63) / 32 };
+
 /**
  * @brief Generate a canonical representation of a partition pattern.
  *
@@ -35,10 +38,10 @@
 static void generate_canonical_partitioning(
 	unsigned int texel_count,
 	const uint8_t* partition_of_texel,
-	uint64_t bit_pattern[7]
+	uint64_t bit_pattern[BIT_PATTERN_WORDS]
 ) {
 	// Clear the pattern
-	for (unsigned int i = 0; i < 7; i++)
+	for (unsigned int i = 0; i < BIT_PATTERN_WORDS; i++)
 	{
 		bit_pattern[i] = 0;
 	}
@@ -76,8 +79,8 @@ static void generate_canonical_partitioning(
  * @return @c true if the patterns are the same, @c false otherwise.
  */
 static bool compare_canonical_partitionings(
-	const uint64_t part1[7],
-	const uint64_t part2[7]
+	const uint64_t part1[BIT_PATTERN_WORDS],
+	const uint64_t part2[BIT_PATTERN_WORDS]
 ) {
 	return (part1[0] == part2[0]) && (part1[1] == part2[1]) &&
 	       (part1[2] == part2[2]) && (part1[3] == part2[3]) &&
@@ -401,11 +404,11 @@ static void build_partition_table_for_one_partition_count(
 				continue;
 			}
 
-			generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * 7);
+			generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * BIT_PATTERN_WORDS);
 			bool keep_canonical = true;
 			for (unsigned int j = 0; j < next_index; j++)
 			{
-				bool match = compare_canonical_partitionings(canonical_patterns + 7 * next_index, canonical_patterns + 7 * j);
+				bool match = compare_canonical_partitionings(canonical_patterns + next_index * BIT_PATTERN_WORDS, canonical_patterns +  j * BIT_PATTERN_WORDS);
 				if (match)
 				{
 					keep_canonical = false;
@@ -452,7 +455,8 @@ void init_partition_tables(
 	bsd.partitioning_count_selected[0] = 1;
 	bsd.partitioning_count_all[0] = 1;
 
-	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * 7];
+	uint64_t* canonical_patterns = new uint64_t[BLOCK_MAX_PARTITIONINGS * BIT_PATTERN_WORDS];
+
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 2, par_tab2, canonical_patterns);
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 3, par_tab3, canonical_patterns);
 	build_partition_table_for_one_partition_count(bsd, can_omit_partitionings, partition_count_cutoff, 4, par_tab4, canonical_patterns);
