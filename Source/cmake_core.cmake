@@ -139,6 +139,9 @@ macro(astcenc_set_properties NAME)
             # Force DWARF4 for Valgrind profiling
             $<$<AND:$<PLATFORM_ID:Linux,Darwin>,$<CXX_COMPILER_ID:Clang>>:-gdwarf-4>
 
+            # Disable non-portable Windows.h warning (fixing it fails builds on MinGW)
+            $<$<AND:$<PLATFORM_ID:Windows>,$<CXX_COMPILER_ID:Clang>>:-Wno-nonportable-system-include-path>
+
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
     target_link_options(${NAME}
