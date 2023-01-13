@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -435,9 +435,9 @@ static astcenc_error validate_config(
 	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
 	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
 	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
-	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
-	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
-	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIIONING_CANDIDATES);
+	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
+	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
+	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
 	config.tune_mse_overshoot = astc::max(config.tune_mse_overshoot, 1.0f);
 	config.tune_2_partition_early_out_limit_factor = astc::max(config.tune_2_partition_early_out_limit_factor, 0.0f);
@@ -556,9 +556,9 @@ astcenc_error astcenc_config_init(
 		config.tune_block_mode_limit = (*preset_configs)[start].tune_block_mode_limit;
 		config.tune_refinement_limit = (*preset_configs)[start].tune_refinement_limit;
 		config.tune_candidate_limit = astc::min((*preset_configs)[start].tune_candidate_limit, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
-		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
-		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIIONING_CANDIDATES);
+		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
+		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
+		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
 		config.tune_db_limit = astc::max((*preset_configs)[start].tune_db_limit_a_base - 35 * ltexels,
 		                                 (*preset_configs)[start].tune_db_limit_b_base - 19 * ltexels);
 

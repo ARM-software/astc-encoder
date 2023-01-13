@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -540,7 +540,7 @@ unsigned int find_best_partition_candidates(
 	const image_block& blk,
 	unsigned int partition_count,
 	unsigned int partition_search_limit,
-	unsigned int best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES],
+	unsigned int best_partitions[TUNE_MAX_PARTITIONING_CANDIDATES],
 	unsigned int requested_candidates
 ) {
 	// Constant used to estimate quantization error for a given partitioning; the optimal value for
@@ -573,12 +573,12 @@ unsigned int find_best_partition_candidates(
 	bool uses_alpha = !blk.is_constant_channel(3);
 
 	// Partitioning errors assuming uncorrelated-chrominance endpoints
-	float uncor_best_errors[TUNE_MAX_PARTITIIONING_CANDIDATES];
-	unsigned int uncor_best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES];
+	float uncor_best_errors[TUNE_MAX_PARTITIONING_CANDIDATES];
+	unsigned int uncor_best_partitions[TUNE_MAX_PARTITIONING_CANDIDATES];
 
 	// Partitioning errors assuming same-chrominance endpoints
-	float samec_best_errors[TUNE_MAX_PARTITIIONING_CANDIDATES];
-	unsigned int samec_best_partitions[TUNE_MAX_PARTITIIONING_CANDIDATES];
+	float samec_best_errors[TUNE_MAX_PARTITIONING_CANDIDATES];
+	unsigned int samec_best_partitions[TUNE_MAX_PARTITIONING_CANDIDATES];
 
 	for (unsigned int i = 0; i < requested_candidates; i++)
 	{
@@ -733,7 +733,7 @@ unsigned int find_best_partition_candidates(
 
 	bool best_is_uncor = uncor_best_partitions[0] > samec_best_partitions[0];
 
-	unsigned int interleave[2 * TUNE_MAX_PARTITIIONING_CANDIDATES];
+	unsigned int interleave[2 * TUNE_MAX_PARTITIONING_CANDIDATES];
 	for (unsigned int i = 0; i < requested_candidates; i++)
 	{
 		if (best_is_uncor)

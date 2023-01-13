@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2022 Arm Limited
+// Copyright 2020-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -488,21 +488,21 @@ struct astcenc_config
 	/**
 	 * @brief The number of trial partitionings per search (-2partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
 	unsigned int tune_2partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-3partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
 	unsigned int tune_3partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-4partitioncandidatelimit).
 	 *
-	 * Valid values are between 1 and TUNE_MAX_PARTITIIONING_CANDIDATES.
+	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
 	unsigned int tune_4partitioning_candidate_limit;
 
