@@ -22,7 +22,7 @@
 #include "astcenc_internal.h"
 
 /** @brief The number of 64-bit words needed to represent a canonical partition bit pattern. */
-static const int BIT_PATTERN_WORDS { (BLOCK_MAX_TEXELS + 63) / 32 };
+#define BIT_PATTERN_WORDS (((ASTCENC_BLOCK_MAX_TEXELS * 2) + 63) / 64)
 
 /**
  * @brief Generate a canonical representation of a partition pattern.
