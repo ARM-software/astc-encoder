@@ -82,10 +82,26 @@ static bool compare_canonical_partitionings(
 	const uint64_t part1[BIT_PATTERN_WORDS],
 	const uint64_t part2[BIT_PATTERN_WORDS]
 ) {
-	return (part1[0] == part2[0]) && (part1[1] == part2[1]) &&
-	       (part1[2] == part2[2]) && (part1[3] == part2[3]) &&
-	       (part1[4] == part2[4]) && (part1[5] == part2[5]) &&
-	       (part1[6] == part2[6]);
+	return (part1[0] == part2[0])
+#if BIT_PATTERN_WORDS > 1
+	    && (part1[1] == part2[1])
+#endif
+#if BIT_PATTERN_WORDS > 2
+	    && (part1[2] == part2[2])
+#endif
+#if BIT_PATTERN_WORDS > 3
+	    && (part1[3] == part2[3])
+#endif
+#if BIT_PATTERN_WORDS > 4
+	    && (part1[4] == part2[4])
+#endif
+#if BIT_PATTERN_WORDS > 5
+	    && (part1[5] == part2[5])
+#endif
+#if BIT_PATTERN_WORDS > 6
+	    && (part1[6] == part2[6])
+#endif
+	    ;
 }
 
 /**

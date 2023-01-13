@@ -154,9 +154,11 @@ static constexpr unsigned int TUNE_MAX_PARTITIIONING_CANDIDATES { 32 };
  */
 static constexpr unsigned int TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
 
-
 static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_TEXELS must be multiple of ASTCENC_SIMD_WIDTH");
+
+static_assert(BLOCK_MAX_TEXELS <= 216,
+              "BLOCK_MAX_TEXELS must not be greater than 216");
 
 static_assert((BLOCK_MAX_WEIGHTS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_WEIGHTS must be multiple of ASTCENC_SIMD_WIDTH");
