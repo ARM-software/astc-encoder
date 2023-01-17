@@ -59,7 +59,6 @@ class TestImage():
         colorFormat: The image color format.
         name: The image human name.
         is3D: True if the image is 3D, else False.
-        isMask: True if the image is a non-correlated mask texture, else False.
         isAlphaScaled: True if the image wants alpha scaling, else False.
         TEST_EXTS: Expected test image extensions.
         PROFILES: Tuple of valid color profile values.
@@ -150,7 +149,6 @@ class TestImage():
 
         # Set default values for the optional fields
         self.is3D = False
-        self.isMask = False
         self.isAlphaScaled = False
 
         # Decode the flags field if present
@@ -165,7 +163,6 @@ class TestImage():
                 seenFlags.add(flag)
 
             self.is3D = "3" in seenFlags
-            self.isMask = "m" in seenFlags
             self.isAlphaScaled = "a" in seenFlags
 
     def get_size(self):

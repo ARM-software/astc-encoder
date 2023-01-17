@@ -804,27 +804,6 @@ class CLIPTest(CLITestBase):
                     colOut = tli.Image(imOut2).get_colors((7, 7))
                     self.assertColorSame(colIn, colOut2)
 
-    def test_compress_mask(self):
-        """
-        Test compression of mask textures.
-        """
-        decompFile = self.get_tmp_image_path("LDR", "decomp")
-
-        command = [
-            self.binary, "-tl",
-            "./Test/Images/Small/LDR-RGB/ldr-rgb-10.png",
-            decompFile, "4x4", "-medium"]
-
-        noMaskdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
-
-        command.append("-mask")
-        maskdB = float(self.exec(command, LDR_RGB_PSNR_PATTERN))
-
-        # Note that this test simply asserts that the "-mask" is connected and
-        # affects the output. We don't test it does something useful; that it
-        # outside the scope of this test case.
-        self.assertNotEqual(noMaskdB, maskdB)
-
     def test_compress_normal_psnr(self):
         """
         Test compression of normal textures using PSNR error metrics.

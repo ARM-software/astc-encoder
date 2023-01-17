@@ -285,9 +285,6 @@ class Encoder2x(EncoderBase):
         if image.colorFormat == "xy":
             command.append("-normal")
 
-        if image.isMask:
-            command.append("-mask")
-
         if image.isAlphaScaled:
             command.append("-a")
             command.append("1")
@@ -388,9 +385,6 @@ class Encoder1_7(EncoderBase):
 
         if image.colorProfile == "hdr":
             command.append("-hdr")
-
-        if image.isMask:
-            command.append("-mask")
 
         if image.isAlphaScaled:
             command.append("-alphablend")

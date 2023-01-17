@@ -307,14 +307,6 @@ enum astcenc_type
 static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
 
 /**
- * @brief Enable mask map compression.
- *
- * Input data will be treated a multi-layer mask map, where is is desirable for the color components
- * to be treated independently for the purposes of error analysis.
- */
-static const unsigned int ASTCENC_FLG_MAP_MASK             = 1 << 1;
-
-/**
  * @brief Enable alpha weighting.
  *
  * The input alpha value is used for transparency, so errors in the RGB components are weighted by
@@ -376,7 +368,6 @@ static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
  * @brief The bit mask of all valid flags.
  */
 static const unsigned int ASTCENC_ALL_FLAGS =
-                              ASTCENC_FLG_MAP_MASK |
                               ASTCENC_FLG_MAP_NORMAL |
                               ASTCENC_FLG_MAP_RGBM |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |

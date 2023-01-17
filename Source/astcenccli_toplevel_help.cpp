@@ -159,12 +159,6 @@ COMPRESSION
        to consider for common usage, based on the type of image data being
        compressed.
 
-       -mask
-           The input texture is a mask texture with unrelated data stored
-           in the various color components, so enable error heuristics that
-           aim to improve quality by minimizing the effect of error
-           cross-talk across the color components.
-
        -normal
            The input texture is a three component linear LDR normal map
            storing unit length normals as (R=X, G=Y, B=Z). The output will

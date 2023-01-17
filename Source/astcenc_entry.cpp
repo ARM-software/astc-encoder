@@ -273,8 +273,7 @@ static astcenc_error validate_flags(
 	}
 
 	// Flags field must only contain at most a single map type
-	exMask = ASTCENC_FLG_MAP_MASK
-	       | ASTCENC_FLG_MAP_NORMAL
+	exMask = ASTCENC_FLG_MAP_NORMAL
 	       | ASTCENC_FLG_MAP_RGBM;
 	if (popcount(flags & exMask) > 1)
 	{
@@ -662,12 +661,6 @@ astcenc_error astcenc_config_init(
 		config.tune_2_plane_early_out_limit_correlation = 0.99f;
 
 		// Normals are prone to blocking artifacts on smooth curves
-		// so force compressor to try harder here ...
-		config.tune_db_limit *= 1.03f;
-	}
-	else if (flags & ASTCENC_FLG_MAP_MASK)
-	{
-		// Masks are prone to blocking artifacts on mask edges
 		// so force compressor to try harder here ...
 		config.tune_db_limit *= 1.03f;
 	}

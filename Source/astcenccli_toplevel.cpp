@@ -551,10 +551,6 @@ static int init_astcenc_config(
 			argidx++;
 			flags |= ASTCENC_FLG_USE_ALPHA_WEIGHT;
 		}
-		else if (!strcmp(argv[argidx], "-mask"))
-		{
-			flags |= ASTCENC_FLG_MAP_MASK;
-		}
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			flags |= ASTCENC_FLG_MAP_NORMAL;
@@ -842,10 +838,6 @@ static int edit_astcenc_config(
 			cli_config.swz_decode.a = swizzle_components[3];
 		}
 		// presets begin here
-		else if (!strcmp(argv[argidx], "-mask"))
-		{
-			argidx++;
-		}
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			argidx++;

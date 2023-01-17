@@ -14,7 +14,14 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 4.3.0 release is an optimization release. There are minor performance
 and image quality improvements in this release.
 
+Reminder - the codec library API is not designed to be binary compatible across
+versions. We always recommend rebuilding your client-side code using the updated
+`astcenc.h` header.
+
 * **General:**
+  * **Bug-fix:** Use lower case `windows.h` include for MinGW compatibility.
+  * **Change:** The `-mask` command line option, `ASTCENC_FLG_MAP_MASK` in the
+    library API, has been removed.
   * **Optimization:** Always skip blue-contraction for `QUANT_256` encodings.
     This gives a small image quality improvement for the 4x4 block size.
   * **Optimization:** Always skip RGBO vector calculation for LDR encodings.
@@ -24,7 +31,6 @@ and image quality improvements in this release.
     Impact increases with the active block size.
   * **Optimization:** Increased trial and refinement pruning by using stricter
     target errors when determining whether to skip iterations.
-  * **Bug-fix:** Use lower case `windows.h` include for MinGW compatibility.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.2.0
