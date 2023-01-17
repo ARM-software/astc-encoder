@@ -1353,7 +1353,7 @@ void compress_block(
 
 		// If attempting two planes is much worse than the best one plane result
 		// then further two plane searches are unlikely to help so move on ...
-		if (errorval > (best_errorvals_for_pcount[0] * 1.75f))
+		if (errorval > (best_errorvals_for_pcount[0] * 1.85f))
 		{
 			break;
 		}
@@ -1401,7 +1401,7 @@ void compress_block(
 			// aligns with a partitioning that suits that encoding, so for this inner loop check add
 			// a large error scale because the "other" trial could be a lot better.
 			float best_error = best_errorvals_for_pcount[partition_count - 1];
-			float best_error_scale = exit_thresholds_for_pcount[partition_count - 1] * 1.75f;
+			float best_error_scale = exit_thresholds_for_pcount[partition_count - 1] * 1.85f;
 			if (best_error > (best_error_in_prev * best_error_scale))
 			{
 				trace_add_data("skip", "tune_partition_early_out_limit_factor");
