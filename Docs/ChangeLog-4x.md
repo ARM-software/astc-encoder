@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.3.0
 
-**Status:** In development
+**Status:** January 2023
 
 The 4.3.0 release is an optimization release. There are minor performance
 and image quality improvements in this release.
