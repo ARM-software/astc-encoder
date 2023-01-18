@@ -27,10 +27,22 @@ versions. We always recommend rebuilding your client-side code using the updated
   * **Optimization:** Always skip RGBO vector calculation for LDR encodings.
   * **Optimization:** Defer color packing and scrambling to physical layer.
   * **Optimization:** Remove folded `decimation_info` lookup tables. This
-    reduces compressor memory footprint and improves context creation time.
-    Impact increases with the active block size.
+    significantly reduces compressor memory footprint and improves context
+    creation time. Impact increases with the active block size.
   * **Optimization:** Increased trial and refinement pruning by using stricter
     target errors when determining whether to skip iterations.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 4.2 release:**
+
+![Relative scores 4.3 vs 4.2](./ChangeLogImg/relative-4.2-to-4.3.png)
+
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.2.0
