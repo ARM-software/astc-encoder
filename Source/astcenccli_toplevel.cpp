@@ -918,7 +918,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+			config.tune_3partition_index_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
 		{
@@ -929,7 +929,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+			config.tune_4partition_index_limit = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
