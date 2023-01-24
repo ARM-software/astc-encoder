@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -931,7 +931,7 @@ static int edit_astcenc_config(
 
 			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-2partitioncandiatelimit"))
+		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
@@ -942,23 +942,23 @@ static int edit_astcenc_config(
 
 			config.tune_2partitioning_candidate_limit = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-3partitioncandiatelimit"))
+		else if (!strcmp(argv[argidx], "-3partitioncandidatelimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -3partitioncandiatelimit switch with no argument\n");
+				printf("ERROR: -3partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
 			config.tune_3partitioning_candidate_limit = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-4partitioncandiatelimit"))
+		else if (!strcmp(argv[argidx], "-4partitioncandidatelimit"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				printf("ERROR: -4partitioncandiatelimit switch with no argument\n");
+				printf("ERROR: -4partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
