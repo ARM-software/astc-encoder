@@ -7,6 +7,20 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.4.0
+
+**Status:** In development
+
+The 4.4.0 release is a minor maintenance release. No performance or image
+quality changes are expected.
+
+* **General:**
+  * **Bug-fix:** Fixed typo in -2/3/4partitioncandidatelimit CLI options.
+  * **Bug-fix:** Fixed handling for -3/4partitionindexlimit CLI options.
+  * **Bug-fix:** Updated to stb_image.h v2.28, which includes multiple fixes
+    and improvements for image loading.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.3.0
 
 **Status:** January 2023
