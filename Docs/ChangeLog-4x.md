@@ -7,11 +7,11 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 4.4.0
+## 4.3.1
 
-**Status:** In development
+**Status:** January 2023
 
-The 4.4.0 release is a minor maintenance release. No performance or image
+The 4.3.1 release is a minor maintenance release. No performance or image
 quality changes are expected.
 
 * **General:**
