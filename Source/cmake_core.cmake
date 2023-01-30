@@ -296,7 +296,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-tautological-type-limit-compare>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-cast-qual>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-reserved-identifier>"
-            " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-missing-prototypes>"
+            " $<$<CXX_COMPILER_ID:${CLANG_LIKE}>: -Wno-missing-prototypes>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-missing-field-initializers>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-suggest-override>"
             " $<$<NOT:$<CXX_COMPILER_ID:MSVC>>: -Wno-used-but-marked-unused>"
