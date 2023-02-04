@@ -217,7 +217,7 @@ static bool try_quantize_rgb_blue_contract(
  *
  * @return Returns @c false on failure, @c true on success.
  */
-static int try_quantize_rgba_blue_contract(
+static bool try_quantize_rgba_blue_contract(
 	vfloat4 color0,
 	vfloat4 color1,
 	uint8_t output[8],
