@@ -561,7 +561,7 @@ static float compress_symbolic_block_for_partition_1plane(
 			workscb.color_formats_matched = 0;
 			if (partition_count >= 2 && all_same)
 			{
-				uint8_t colorvals[BLOCK_MAX_PARTITIONS][12];
+				uint8_t colorvals[BLOCK_MAX_PARTITIONS][8];
 				uint8_t color_formats_mod[BLOCK_MAX_PARTITIONS] { 0 };
 				bool all_same_mod = true;
 				for (unsigned int j = 0; j < partition_count; j++)
