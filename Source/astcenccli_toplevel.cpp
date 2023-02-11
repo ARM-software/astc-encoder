@@ -30,7 +30,10 @@
 #include <vector>
 #include <memory>
 
-#define print_error(format, ...) fprintf(stderr, format, ##__VA_ARGS__)
+inline void print_error(const char* arg1) { fprintf(stderr, "%s", arg1); }
+
+template<typename ... _Args>
+inline void print_error(const char* arg1, _Args...args) { fprintf(stderr, arg1, args...); }
 
 /* ============================================================================
 	Data structure definitions
