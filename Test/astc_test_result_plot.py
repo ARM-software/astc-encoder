@@ -381,6 +381,19 @@ def main():
             None,
             "results-relative-4.x-vs-4.x.png",
             (relXLimits, None)
+        ],
+        # --------------------------------------------------------
+        # Latest 4.x vs previous 4.x release charts
+        [
+            # Relative scores
+            ["thorough", "medium", "fast", "fastest"],
+            [f"ref-{lastMain}-avx2"],
+            ["4x4", "6x6", "8x8"],
+            True,
+            f"ref-{last4x}-avx2",
+            None,
+            "results-relative-main-vs-4.x.png",
+            (relXLimits, None)
         ]
     ]
 
