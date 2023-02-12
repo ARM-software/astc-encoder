@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -95,6 +95,26 @@ struct cli_config_options
 	/** @brief The  post-decode swizzle. */
 	astcenc_swizzle swz_decode;
 };
+
+/**
+ * @brief Print a string to stderr.
+ */
+static inline void print_error(
+	const char* format
+) {
+	fprintf(stderr, "%s", format);
+}
+
+/**
+ * @brief Print a formatted string to stderr.
+ */
+template<typename ... _Args>
+static inline void print_error(
+	const char* format,
+	_Args...args
+) {
+	fprintf(stderr, format, args...);
+}
 
 /**
  * @brief Load uncompressed image.

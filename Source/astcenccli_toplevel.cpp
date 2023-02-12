@@ -30,11 +30,6 @@
 #include <vector>
 #include <memory>
 
-inline void print_error(const char* arg1) { fprintf(stderr, "%s", arg1); }
-
-template<typename ... _Args>
-inline void print_error(const char* arg1, _Args...args) { fprintf(stderr, arg1, args...); }
-
 /* ============================================================================
 	Data structure definitions
 ============================================================================ */
@@ -2006,7 +2001,7 @@ int main(
 		    image_uncomp_in_is_hdr, image_uncomp_in_component_count);
 		if (!image_uncomp_in)
 		{
-			printf ("ERROR: Failed to load uncompressed image file\n");
+			print_error("ERROR: Failed to load uncompressed image file\n");
 			return 1;
 		}
 
@@ -2021,7 +2016,7 @@ int main(
 			                                      image_uncomp_in->dim_z);
 			if (!image_pp)
 			{
-				printf ("ERROR: Failed to allocate preprocessed image\n");
+				print_error("ERROR: Failed to allocate preprocessed image\n");
 				return 1;
 			}
 
@@ -2214,7 +2209,7 @@ int main(
 			error = store_cimage(image_comp, output_filename.c_str());
 			if (error)
 			{
-				printf ("ERROR: Failed to store compressed image\n");
+				print_error("ERROR: Failed to store compressed image\n");
 				return 1;
 			}
 		}
@@ -2224,7 +2219,7 @@ int main(
 			error = store_ktx_compressed_image(image_comp, output_filename.c_str(), srgb);
 			if (error)
 			{
-				printf ("ERROR: Failed to store compressed image\n");
+				print_error("ERROR: Failed to store compressed image\n");
 				return 1;
 			}
 		}
