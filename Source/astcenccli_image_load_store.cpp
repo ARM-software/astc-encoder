@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -59,7 +59,7 @@ static astcenc_image* load_image_with_tinyexr(
 	int load_res = LoadEXR(&image, &dim_x, &dim_y, filename, &err);
 	if (load_res != TINYEXR_SUCCESS)
 	{
-		printf("ERROR: Failed to load image %s (%s)\n", filename, err);
+		print_error("ERROR: Failed to load image %s (%s)\n", filename, err);
 		free(reinterpret_cast<void*>(const_cast<char*>(err)));
 		return nullptr;
 	}
@@ -115,7 +115,7 @@ static astcenc_image* load_image_with_stb(
 		}
 	}
 
-	printf("ERROR: Failed to load image %s (%s)\n", filename, stbi_failure_reason());
+	print_error("ERROR: Failed to load image %s (%s)\n", filename, stbi_failure_reason());
 	return nullptr;
 }
 
@@ -2370,7 +2370,7 @@ int load_cimage(
 	std::ifstream file(filename, std::ios::in | std::ios::binary);
 	if (!file)
 	{
-		printf("ERROR: File open failed '%s'\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return 1;
 	}
 
@@ -2378,14 +2378,14 @@ int load_cimage(
 	file.read(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
 	if (!file)
 	{
-		printf("ERROR: File read failed '%s'\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		return 1;
 	}
 
 	unsigned int magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
 	if (magicval != ASTC_MAGIC_ID)
 	{
-		printf("ERROR: File not recognized '%s'\n", filename);
+		print_error("ERROR: File not recognized '%s'\n", filename);
 		return 1;
 	}
 
@@ -2400,7 +2400,7 @@ int load_cimage(
 
 	if (dim_x == 0 || dim_y == 0 || dim_z == 0)
 	{
-		printf("ERROR: File corrupt '%s'\n", filename);
+		print_error("ERROR: File corrupt '%s'\n", filename);
 		return 1;
 	}
 
@@ -2414,7 +2414,7 @@ int load_cimage(
 	file.read(reinterpret_cast<char*>(buffer), data_size);
 	if (!file)
 	{
-		printf("ERROR: File read failed '%s'\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		return 1;
 	}
 
@@ -2459,7 +2459,7 @@ int store_cimage(
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
 	{
-		printf("ERROR: File open failed '%s'\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return 1;
 	}
 
