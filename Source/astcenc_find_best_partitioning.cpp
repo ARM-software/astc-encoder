@@ -604,8 +604,7 @@ unsigned int find_best_partition_candidates(
 			processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS];
 			processed_line4 samec_plines[BLOCK_MAX_PARTITIONS];
 
-			float uncor_line_lens[BLOCK_MAX_PARTITIONS];
-			float samec_line_lens[BLOCK_MAX_PARTITIONS];
+			float line_lengths[BLOCK_MAX_PARTITIONS];
 
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
@@ -631,8 +630,7 @@ unsigned int find_best_partition_candidates(
 			                           blk,
 			                           uncor_plines,
 			                           samec_plines,
-			                           uncor_line_lens,
-			                           samec_line_lens,
+			                           line_lengths,
 			                           uncor_error,
 			                           samec_error);
 
@@ -651,8 +649,8 @@ unsigned int find_best_partition_candidates(
 				float tpp = static_cast<float>(pi.partition_texel_count[j]);
 				vfloat4 error_weights(tpp * weight_imprecision_estim);
 
-				vfloat4 uncor_vector = uncor_lines[j].b * uncor_line_lens[j];
-				vfloat4 samec_vector = samec_lines[j].b * samec_line_lens[j];
+				vfloat4 uncor_vector = uncor_lines[j].b * line_lengths[j];
+				vfloat4 samec_vector = samec_lines[j].b * line_lengths[j];
 
 				uncor_error += dot_s(uncor_vector * uncor_vector, error_weights);
 				samec_error += dot_s(samec_vector * samec_vector, error_weights);
@@ -719,8 +717,8 @@ unsigned int find_best_partition_candidates(
 				float tpp = static_cast<float>(pi.partition_texel_count[j]);
 				vfloat4 error_weights(tpp * weight_imprecision_estim);
 
-				vfloat4 uncor_vector = pl.uncor_line.b * pl.uncor_line_len;
-				vfloat4 samec_vector = pl.samec_line.b * pl.samec_line_len;
+				vfloat4 uncor_vector = pl.uncor_line.b * pl.line_length;
+				vfloat4 samec_vector = pl.samec_line.b * pl.line_length;
 
 				uncor_error += dot3_s(uncor_vector * uncor_vector, error_weights);
 				samec_error += dot3_s(samec_vector * samec_vector, error_weights);

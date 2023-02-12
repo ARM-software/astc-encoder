@@ -293,11 +293,13 @@ struct partition_lines3
 	/** @brief Post-processed line for correlated chroma, passing though the origin. */
 	processed_line3 samec_pline;
 
-	/** @brief The length of the line for uncorrelated chroma. */
-	float uncor_line_len;
-
-	/** @brief The length of the line for correlated chroma. */
-	float samec_line_len;
+	/**
+	 * @brief The length of the line for uncorrelated chroma.
+	 *
+	 * This is used for both the uncorrelated and same chroma lines - they are normally very similar
+	 * and only used for the relative ranking of partitionings against one another.
+	 */
+	float line_length;
 };
 
 /**
@@ -1528,8 +1530,7 @@ void compute_error_squared_rgb(
  * @param      blk             The image block color data to be compressed.
  * @param      uncor_plines    Processed uncorrelated partition lines for each partition.
  * @param      samec_plines    Processed same chroma partition lines for each partition.
- * @param[out] uncor_lengths   The length of each components deviation from the line.
- * @param[out] samec_lengths   The length of each components deviation from the line.
+ * @param[out] line_lengths    The length of each components deviation from the line.
  * @param[out] uncor_error     The cumulative error for using the uncorrelated line.
  * @param[out] samec_error     The cumulative error for using the same chroma line.
  */
@@ -1538,8 +1539,7 @@ void compute_error_squared_rgba(
 	const image_block& blk,
 	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
 	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
-	float uncor_lengths[BLOCK_MAX_PARTITIONS],
-	float samec_lengths[BLOCK_MAX_PARTITIONS],
+	float line_lengths[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error);
 
