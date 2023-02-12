@@ -1471,7 +1471,7 @@ class CLINTest(CLITestBase):
         # If we expected a pass, then rcode == 0
         if expectPass:
             self.assertEqual(rcode, 0, "Exec did not pass as expected")
-            self.assertNotIn("ERROR", result.stdout)
+            self.assertNotIn("ERROR", result.stderr)
             return
 
         # If we got a negative that's always bad (signal of some kind)
@@ -1481,7 +1481,7 @@ class CLINTest(CLITestBase):
 
         # Otherwise just assert that we got an error log, and some positive
         # return code value was returned
-        self.assertIn("ERROR", result.stdout)
+        self.assertIn("ERROR", result.stderr)
         self.assertGreater(rcode, 0, "Exec did not fail as expected")
 
     def exec_with_omit(self, command, startOmit):
