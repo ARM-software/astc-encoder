@@ -321,8 +321,8 @@ struct partition_info
 	/**
 	 * @brief The number of texels in each partition.
 	 *
-	 * Note that some seeds result in zero texels assigned to a partition are valid, but are skipped
-	 * by this compressor as there is no point spending bits encoding an unused color endpoint.
+	 * Note that some seeds result in zero texels assigned to a partition. These are valid, but are
+	 * skipped by this compressor as there is no point spending bits encoding an unused endpoints.
 	 */
 	uint8_t partition_texel_count[BLOCK_MAX_PARTITIONS];
 
@@ -457,23 +457,23 @@ struct decimation_mode
 	 *
 	 * Bit 0 = QUANT_2, Bit 1 = QUANT_3, etc.
 	 */
-	uint16_t refprec_1_plane;
+	uint16_t refprec_1plane;
 
 	/**
 	 * @brief Bitvector indicating weight quant methods used by active 2 plane block modes.
 	 *
 	 * Bit 0 = QUANT_2, Bit 1 = QUANT_3, etc.
 	 */
-	uint16_t refprec_2_planes;
+	uint16_t refprec_2planes;
 
 	/**
 	 * @brief Set a 1 plane weight quant as active.
 	 *
 	 * @param weight_quant   The quant method to set.
 	 */
-	void set_ref_1_plane(quant_method weight_quant)
+	void set_ref_1plane(quant_method weight_quant)
 	{
-		refprec_1_plane |= (1 << weight_quant);
+		refprec_1plane |= (1 << weight_quant);
 	}
 
 	/**
@@ -481,10 +481,10 @@ struct decimation_mode
 	 *
 	 * @param max_weight_quant   The max quant method to test.
 	 */
-	bool is_ref_1_plane(quant_method max_weight_quant) const
+	bool is_ref_1plane(quant_method max_weight_quant) const
 	{
 		uint16_t mask = static_cast<uint16_t>((1 << (max_weight_quant + 1)) - 1);
-		return (refprec_1_plane & mask) != 0;
+		return (refprec_1plane & mask) != 0;
 	}
 
 	/**
@@ -492,9 +492,9 @@ struct decimation_mode
 	 *
 	 * @param weight_quant   The quant method to set.
 	 */
-	void set_ref_2_plane(quant_method weight_quant)
+	void set_ref_2plane(quant_method weight_quant)
 	{
-		refprec_2_planes |= static_cast<uint16_t>(1 << weight_quant);
+		refprec_2planes |= static_cast<uint16_t>(1 << weight_quant);
 	}
 
 	/**
@@ -502,10 +502,10 @@ struct decimation_mode
 	 *
 	 * @param max_weight_quant   The max quant method to test.
 	 */
-	bool is_ref_2_plane(quant_method max_weight_quant) const
+	bool is_ref_2plane(quant_method max_weight_quant) const
 	{
 		uint16_t mask = static_cast<uint16_t>((1 << (max_weight_quant + 1)) - 1);
-		return (refprec_2_planes & mask) != 0;
+		return (refprec_2planes & mask) != 0;
 	}
 };
 

@@ -520,21 +520,21 @@ struct astcenc_config
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
-	float tune_2_partition_early_out_limit_factor;
+	float tune_2partition_early_out_limit_factor;
 
 	/**
 	 * @brief The threshold for skipping 4.1 trials (-3partitionlimitfactor).
 	 *
 	 * This option is further scaled for normal maps, so it skips less often.
 	 */
-	float tune_3_partition_early_out_limit_factor;
+	float tune_3partition_early_out_limit_factor;
 
 	/**
 	 * @brief The threshold for skipping two weight planes (-2planelimitcorrelation).
 	 *
 	 * This option is ineffective for normal maps.
 	 */
-	float tune_2_plane_early_out_limit_correlation;
+	float tune_2plane_early_out_limit_correlation;
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**

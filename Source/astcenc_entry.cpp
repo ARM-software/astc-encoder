@@ -52,9 +52,9 @@ struct astcenc_preset_config
 	float tune_db_limit_a_base;
 	float tune_db_limit_b_base;
 	float tune_mse_overshoot;
-	float tune_2_partition_early_out_limit_factor;
-	float tune_3_partition_early_out_limit_factor;
-	float tune_2_plane_early_out_limit_correlation;
+	float tune_2partition_early_out_limit_factor;
+	float tune_3partition_early_out_limit_factor;
+	float tune_2plane_early_out_limit_correlation;
 };
 
 /**
@@ -439,9 +439,9 @@ static astcenc_error validate_config(
 	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
 	config.tune_mse_overshoot = astc::max(config.tune_mse_overshoot, 1.0f);
-	config.tune_2_partition_early_out_limit_factor = astc::max(config.tune_2_partition_early_out_limit_factor, 0.0f);
-	config.tune_3_partition_early_out_limit_factor = astc::max(config.tune_3_partition_early_out_limit_factor, 0.0f);
-	config.tune_2_plane_early_out_limit_correlation = astc::max(config.tune_2_plane_early_out_limit_correlation, 0.0f);
+	config.tune_2partition_early_out_limit_factor = astc::max(config.tune_2partition_early_out_limit_factor, 0.0f);
+	config.tune_3partition_early_out_limit_factor = astc::max(config.tune_3partition_early_out_limit_factor, 0.0f);
+	config.tune_2plane_early_out_limit_correlation = astc::max(config.tune_2plane_early_out_limit_correlation, 0.0f);
 
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
@@ -563,9 +563,9 @@ astcenc_error astcenc_config_init(
 
 		config.tune_mse_overshoot = (*preset_configs)[start].tune_mse_overshoot;
 
-		config.tune_2_partition_early_out_limit_factor = (*preset_configs)[start].tune_2_partition_early_out_limit_factor;
-		config.tune_3_partition_early_out_limit_factor =(*preset_configs)[start].tune_3_partition_early_out_limit_factor;
-		config.tune_2_plane_early_out_limit_correlation = (*preset_configs)[start].tune_2_plane_early_out_limit_correlation;
+		config.tune_2partition_early_out_limit_factor = (*preset_configs)[start].tune_2partition_early_out_limit_factor;
+		config.tune_3partition_early_out_limit_factor = (*preset_configs)[start].tune_3partition_early_out_limit_factor;
+		config.tune_2plane_early_out_limit_correlation = (*preset_configs)[start].tune_2plane_early_out_limit_correlation;
 	}
 	// Start and end node are not the same - so interpolate between them
 	else
@@ -605,9 +605,9 @@ astcenc_error astcenc_config_init(
 
 		config.tune_mse_overshoot = LERP(tune_mse_overshoot);
 
-		config.tune_2_partition_early_out_limit_factor = LERP(tune_2_partition_early_out_limit_factor);
-		config.tune_3_partition_early_out_limit_factor = LERP(tune_3_partition_early_out_limit_factor);
-		config.tune_2_plane_early_out_limit_correlation = LERP(tune_2_plane_early_out_limit_correlation);
+		config.tune_2partition_early_out_limit_factor = LERP(tune_2partition_early_out_limit_factor);
+		config.tune_3partition_early_out_limit_factor = LERP(tune_3partition_early_out_limit_factor);
+		config.tune_2plane_early_out_limit_correlation = LERP(tune_2plane_early_out_limit_correlation);
 		#undef LERP
 		#undef LERPI
 		#undef LERPUI
@@ -656,9 +656,9 @@ astcenc_error astcenc_config_init(
 
 		config.cw_g_weight = 0.0f;
 		config.cw_b_weight = 0.0f;
-		config.tune_2_partition_early_out_limit_factor *= 1.5f;
-		config.tune_3_partition_early_out_limit_factor *= 1.5f;
-		config.tune_2_plane_early_out_limit_correlation = 0.99f;
+		config.tune_2partition_early_out_limit_factor *= 1.5f;
+		config.tune_3partition_early_out_limit_factor *= 1.5f;
+		config.tune_2plane_early_out_limit_correlation = 0.99f;
 
 		// Normals are prone to blocking artifacts on smooth curves
 		// so force compressor to try harder here ...
