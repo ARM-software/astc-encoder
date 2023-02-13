@@ -472,7 +472,7 @@ struct astcenc_config
 	/**
 	 * @brief The number of trial candidates per mode search (-candidatelimit).
 	 *
-	 * Valid values are between 1 and TUNE_MAX_TRIAL_CANDIDATES (default 4).
+	 * Valid values are between 1 and TUNE_MAX_TRIAL_CANDIDATES.
 	 */
 	unsigned int tune_candidate_limit;
 
