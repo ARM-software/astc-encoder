@@ -729,21 +729,11 @@ unsigned int find_best_partition_candidates(
 		}
 	}
 
-	bool best_is_uncor = uncor_best_partitions[0] > samec_best_partitions[0];
-
 	unsigned int interleave[2 * TUNE_MAX_PARTITIONING_CANDIDATES];
 	for (unsigned int i = 0; i < requested_candidates; i++)
 	{
-		if (best_is_uncor)
-		{
-			interleave[2 * i] = bsd.get_raw_partition_info(partition_count, uncor_best_partitions[i]).partition_index;
-			interleave[2 * i + 1] = bsd.get_raw_partition_info(partition_count, samec_best_partitions[i]).partition_index;
-		}
-		else
-		{
-			interleave[2 * i] = bsd.get_raw_partition_info(partition_count, samec_best_partitions[i]).partition_index;
-			interleave[2 * i + 1] = bsd.get_raw_partition_info(partition_count, uncor_best_partitions[i]).partition_index;
-		}
+		interleave[2 * i] = bsd.get_raw_partition_info(partition_count, uncor_best_partitions[i]).partition_index;
+		interleave[2 * i + 1] = bsd.get_raw_partition_info(partition_count, samec_best_partitions[i]).partition_index;
 	}
 
 	uint64_t bitmasks[1024/64] { 0 };
