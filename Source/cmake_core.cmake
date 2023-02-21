@@ -26,7 +26,7 @@ project(${ASTC_TARGET})
 set(GNU_LIKE "GNU,Clang,AppleClang")
 set(CLANG_LIKE "Clang,AppleClang")
 
-add_library(${ASTC_TARGET}-static
+add_library(${ASTC_TARGET}-core-static
     STATIC
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
@@ -46,13 +46,22 @@ add_library(${ASTC_TARGET}-static
         astcenc_partition_tables.cpp
         astcenc_percentile_tables.cpp
         astcenc_pick_best_endpoint_format.cpp
-        astcenc_platform_isa_detection.cpp
         astcenc_quantization.cpp
         astcenc_symbolic_physical.cpp
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
 
-target_include_directories(${ASTC_TARGET}-static
+target_include_directories(${ASTC_TARGET}-core-static
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:.>)
+
+add_library(${ASTC_TARGET}-entry-static
+    STATIC
+        astcenc_entry_veneer.cpp
+        astcenc_platform_isa_detection.cpp)
+
+target_include_directories(${ASTC_TARGET}-entry-static
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
@@ -69,10 +78,11 @@ if(${CLI})
 
     target_link_libraries(${ASTC_TARGET}
         PRIVATE
-            ${ASTC_TARGET}-static)
+            ${ASTC_TARGET}-entry-static
+            ${ASTC_TARGET}-core-static)
 endif()
 
-macro(astcenc_set_properties NAME)
+macro(astcenc_set_properties NAME IS_VENEER)
 
     target_compile_features(${NAME}
         PRIVATE
@@ -223,8 +233,7 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=0)
         endif()
 
-        # These settings are needed on AppleClang as SSE4.1 is on by default
-        # Suppress unused argument for macOS universal build behavior
+        # Force SSE2 on AppleClang (normally SSE4.1 is the default)
         target_compile_options(${NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
@@ -242,11 +251,19 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=0)
         endif()
 
-        # Suppress unused argument for macOS universal build behavior
-        target_compile_options(${NAME}
-            PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>
-                $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        if (${IS_VENEER})
+            # Force SSE2 on AppleClang (normally SSE4.1 is the default)
+            target_compile_options(${NAME}
+                PRIVATE
+                    $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        else()
+            target_compile_options(${NAME}
+                PRIVATE
+                    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        endif()
 
     elseif((${ISA_SIMD} MATCHES "avx2") OR (${UNIVERSAL_BUILD} AND ${ISA_AVX2}))
         if(NOT ${UNIVERSAL_BUILD})
@@ -259,12 +276,20 @@ macro(astcenc_set_properties NAME)
                     ASTCENC_F16C=1)
         endif()
 
-        # Suppress unused argument for macOS universal build behavior
-        target_compile_options(${NAME}
-            PRIVATE
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
-                $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>
-                $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        if (${IS_VENEER})
+            # Force SSE2 on AppleClang (normally SSE4.1 is the default)
+            target_compile_options(${NAME}
+                PRIVATE
+                    $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        else()
+            target_compile_options(${NAME}
+                PRIVATE
+                    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
+                    $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>
+                    $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
+        endif()
 
         # Non-invariant builds enable us to loosen the compiler constraints on
         # floating point, but this is only worth doing on CPUs with AVX2 because
@@ -272,7 +297,7 @@ macro(astcenc_set_properties NAME)
         # which significantly improve performance. Note that this DOES reduce
         # image quality by up to 0.2 dB (normally much less), but buys an
         # average of 10-15% performance improvement ...
-        if(${NO_INVARIANCE})
+        if(${NO_INVARIANCE} AND NOT ${IS_VENEER})
             target_compile_options(${NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>)
@@ -309,14 +334,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-astcenc_set_properties(${ASTC_TARGET}-static)
+astcenc_set_properties(${ASTC_TARGET}-core-static OFF)
 
-    target_compile_options(${ASTC_TARGET}-static
-        PRIVATE
-            $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+astcenc_set_properties(${ASTC_TARGET}-entry-static ON)
+
+# TODO: Move this inside set_properties?
+target_compile_options(${ASTC_TARGET}-core-static
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+
+target_compile_options(${ASTC_TARGET}-entry-static
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
 if(${CLI})
-    astcenc_set_properties(${ASTC_TARGET})
+    astcenc_set_properties(${ASTC_TARGET} OFF)
 
     target_compile_options(${ASTC_TARGET}
         PRIVATE

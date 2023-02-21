@@ -28,18 +28,19 @@
 #if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
+/** Have the global trackers been initialized? */
 static bool g_init { false };
 
-/** Does this CPU support SSE 4.1? Set to -1 if not yet initialized. */
+/** Does this CPU support SSE 4.1? Set to false if not yet initialized. */
 static bool g_cpu_has_sse41 { false };
 
-/** Does this CPU support AVX2? Set to -1 if not yet initialized. */
+/** Does this CPU support AVX2? Set to false if not yet initialized. */
 static bool g_cpu_has_avx2 { false };
 
-/** Does this CPU support POPCNT? Set to -1 if not yet initialized. */
+/** Does this CPU support POPCNT? Set to false if not yet initialized. */
 static bool g_cpu_has_popcnt { false };
 
-/** Does this CPU support F16C? Set to -1 if not yet initialized. */
+/** Does this CPU support F16C? Set to false if not yet initialized. */
 static bool g_cpu_has_f16c { false };
 
 /* ============================================================================
