@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2021 Arm Limited
+#  Copyright 2021-2023 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -19,20 +19,21 @@
 cmake_minimum_required(VERSION 3.15)
 include(ExternalProject)
 
-project(astcencoder_example VERSION 1.0.0)
+project(astcencoder_example VERSION 1.1.0)
 
 # Add the external project and pull out the project directories we need
 
 # The default build is a native build which supports the highest level of SIMD
 # exposed by the compiler when using default compiler flags. Add a single
 # SIMD enable to the CMAKE_CACHE_ARGS option to force something specific, but
-# remember to change the link library in target_link_libraries() to match.
+# remember to change the link libraries in target_link_libraries() to match.
 #
-# Two libraries are created per target instruction set:
+# Note that two libraries are created per target instruction set:
+#
 #  * astcenc-<ISA>-veneer-static
 #  * astcenc-<ISA>-core-static
 #
-# You must link against BOTH libraries, with the veneer first on the link line.
+# You must link against BOTH libraries, with the veneer first in the link order.
 #
 #  *  Add "-DISA_SSE2:String=ON" and link against the libraries with ISA=sse2
 #  *  Add "-DISA_SSE41:String=ON" and link against the libraries with ISA=sse4.1
@@ -40,7 +41,7 @@ project(astcencoder_example VERSION 1.0.0)
 #  *  Add "-DISA_NEON:String=ON" and link against the libraries with ISA=neon
 ExternalProject_Add(astcencoder
     GIT_REPOSITORY https://github.com/ARM-software/astc-encoder
-    GIT_TAG origin/384_isacheck
+    GIT_TAG main
     CMAKE_CACHE_ARGS -DCLI:STRING=OFF -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
     INSTALL_COMMAND "")
 
