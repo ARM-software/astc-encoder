@@ -2149,6 +2149,11 @@ bool cpu_supports_sse41();
 bool cpu_supports_avx2();
 
 /**
+ * @brief Instruction stream barrier to stop out-of-order execution over the barrier.
+ */
+void cpu_isb();
+
+/**
  * @brief Allocate an aligned memory buffer.
  *
  * Allocated memory must be freed by aligned_free;

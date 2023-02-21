@@ -102,6 +102,8 @@ astcenc_error astcenc_config_init(
 		return status;
 	}
 
+	cpu_isb();
+
 	return astcenc_config_init_actual(
 		profile, block_x, block_y, block_z, quality, flags, configp);
 }
@@ -118,6 +120,8 @@ astcenc_error astcenc_context_alloc(
 	{
 		return status;
 	}
+
+	cpu_isb();
 
 	return astcenc_context_alloc_actual(
 		configp, thread_count, context);

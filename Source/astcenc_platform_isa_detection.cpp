@@ -164,4 +164,16 @@ bool cpu_supports_avx2()
 	return g_cpu_has_avx2;
 }
 
+void cpu_isb()
+{
+	_mm_lfence();
+}
+
+#else
+
+void cpu_isb()
+{
+	// Only need this today for x86_64 implementations using SIMD
+}
+
 #endif
