@@ -95,7 +95,7 @@ astcenc_error astcenc_config_init(
 	unsigned int flags,
 	astcenc_config* configp
 ) {
-	// Check ISA compatability in the veneer before handing off to main implementation
+	// Check ISA compatability in the veneer before handing off
 	astcenc_error status = validate_cpu_isa();
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -112,7 +112,7 @@ astcenc_error astcenc_context_alloc(
 	unsigned int thread_count,
 	astcenc_context** context
 ) {
-	// Check ISA compatability in the veneer before handing off to main implementation
+	// Check ISA compatability in the veneer before handing off
 	astcenc_error status = validate_cpu_isa();
 	if (status != ASTCENC_SUCCESS)
 	{
