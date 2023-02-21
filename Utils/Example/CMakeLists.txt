@@ -28,13 +28,19 @@ project(astcencoder_example VERSION 1.0.0)
 # SIMD enable to the CMAKE_CACHE_ARGS option to force something specific, but
 # remember to change the link library in target_link_libraries() to match.
 #
-#  *  Add "-DISA_SSE2:String=ON" and link against "astcenc-sse2-static"
-#  *  Add "-DISA_SSE41:String=ON" and link against "astcenc-sse4.1-static"
-#  *  Add "-DISA_AVX2:String=ON" and link against "astcenc-avx2-static"
-#  *  Add "-DISA_NEON:String=ON" and link against "astcenc-neon-static"
+# Two libraries are created per target instruction set:
+#  * astcenc-<ISA>-veneer-static
+#  * astcenc-<ISA>-core-static
+#
+# You must link against BOTH libraries, with the veneer first on the link line.
+#
+#  *  Add "-DISA_SSE2:String=ON" and link against the libraries with ISA=sse2
+#  *  Add "-DISA_SSE41:String=ON" and link against the libraries with ISA=sse4.1
+#  *  Add "-DISA_AVX2:String=ON" and link against the libraries with ISA=avx2
+#  *  Add "-DISA_NEON:String=ON" and link against the libraries with ISA=neon
 ExternalProject_Add(astcencoder
     GIT_REPOSITORY https://github.com/ARM-software/astc-encoder
-    GIT_TAG main
+    GIT_TAG origin/384_isacheck
     CMAKE_CACHE_ARGS -DCLI:STRING=OFF -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}
     INSTALL_COMMAND "")
 
@@ -62,4 +68,5 @@ target_link_directories(astcenc_example
 
 target_link_libraries(astcenc_example
     PRIVATE
-        astcenc-native-static)
+        astcenc-native-veneer-static
+        astcenc-native-core-static)

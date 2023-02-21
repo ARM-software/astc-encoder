@@ -56,12 +56,12 @@ target_include_directories(${ASTC_TARGET}-core-static
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
 
-add_library(${ASTC_TARGET}-entry-static
+add_library(${ASTC_TARGET}-veneer-static
     STATIC
         astcenc_entry_veneer.cpp
         astcenc_platform_isa_detection.cpp)
 
-target_include_directories(${ASTC_TARGET}-entry-static
+target_include_directories(${ASTC_TARGET}-veneer-static
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
@@ -78,7 +78,7 @@ if(${CLI})
 
     target_link_libraries(${ASTC_TARGET}
         PRIVATE
-            ${ASTC_TARGET}-entry-static
+            ${ASTC_TARGET}-veneer-static
             ${ASTC_TARGET}-core-static)
 endif()
 
@@ -336,14 +336,14 @@ endif()
 
 astcenc_set_properties(${ASTC_TARGET}-core-static OFF)
 
-astcenc_set_properties(${ASTC_TARGET}-entry-static ON)
+astcenc_set_properties(${ASTC_TARGET}-veneer-static ON)
 
 # TODO: Move this inside set_properties?
 target_compile_options(${ASTC_TARGET}-core-static
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
-target_compile_options(${ASTC_TARGET}-entry-static
+target_compile_options(${ASTC_TARGET}-veneer-static
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
