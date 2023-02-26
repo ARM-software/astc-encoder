@@ -7,6 +7,22 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.4.0
+
+**Status:** In development
+
+The 4.3.1 release is a minor development release.
+
+* **General:**
+  * **Change:** Command line errors now print to stderr instead of stdout.
+  * **Change:** Color encoding uses new quantization tables, that now factor
+    in floating-point rounding if a distance tie is found using the integer
+    quant256 value. This improves image quality for 4x4 and 5x5 block sizes.
+  * **Optimization:** Simplified partition selection line calculations with a
+    faster approximation.
+  * **Bug-fix:** Fixed infinity handling in debug trace JSON files.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.3.1
 
 **Status:** January 2023
