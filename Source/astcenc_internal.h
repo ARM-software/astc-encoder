@@ -1338,9 +1338,14 @@ bool is_legal_3d_block_size(
  * Converts unquant value in 0-255 range into quant value in 0-255 range.
  * No BISE scrambling is applied at this stage.
  *
- * Indexed by [quant_mode - 4][data_value].
+ * The BISE encoding results in ties where available quant<256> values are
+ * equidistant the available quant<BISE> values. This table stores two values
+ * for each input - one for use with a negative residual, and one for use with
+ * a positive residual.
+ *
+ * Indexed by [quant_mode - 4][data_value * 2 + residual].
  */
-extern const uint8_t color_unquant_to_uquant_tables[17][256];
+extern const uint8_t color_unquant_to_uquant_tables[17][512];
 
 /**
  * @brief The precomputed table for packing quantized color values.

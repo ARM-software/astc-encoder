@@ -374,7 +374,7 @@ void generate_unquant_to_unpacked_quant(
 			printf("\t\t");
 		}
 
-		printf("%3u", val_hi);
+		printf("%3u, %3u", val_lo, val_hi);
 
 		if (i != 255)
 		{
@@ -390,7 +390,7 @@ void generate_unquant_to_unpacked_quant(
 
 int main(void)
 {
-	printf("const uint8_t color_unquant_to_uquant_tables[17][256] {\n");
+	printf("const uint8_t color_unquant_to_uquant_tables[17][512] {\n");
 	for (size_t i = 0; i < quant_configs.size(); i++)
 	{
 		const auto& config = quant_configs[i];
