@@ -110,6 +110,7 @@ your build dir, and install to your target install directory.
 
 ```shell
 # Run a build and install build outputs in `${CMAKE_INSTALL_PREFIX}/bin/`
+# for executable binaries and `${CMAKE_INSTALL_PREFIX}/lib/` for libraries
 cd build
 make install -j16
 ```
@@ -131,6 +132,14 @@ We support and test the following `CMAKE_BUILD_TYPE` options.
 
 Note that optimized release builds are compiled with link-time optimization,
 which can make profiling more challenging ...
+
+### Shared Libraries
+
+We support building the core library as a shared object by setting the CMake
+option `-DSHAREDLIB=ON` at configure time.
+
+Note that the command line tool is always statically linked; the shared objects
+are an extra build output that are not currently used by the command line tool.
 
 ### Constrained block size builds
 
@@ -255,4 +264,4 @@ details.
 
 - - -
 
-_Copyright © 2019-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2023, Arm Limited and contributors. All rights reserved._
