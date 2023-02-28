@@ -610,11 +610,6 @@ static int init_astcenc_config(
 		print_error("ERROR: Block size '%s' is invalid\n", argv[4]);
 		return 1;
 	}
-	else if (status == ASTCENC_ERR_BAD_CPU_ISA)
-	{
-		print_error("ERROR: Required SIMD ISA support missing on this CPU\n");
-		return 1;
-	}
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
 	{
 		print_error("ERROR: astcenc must not be compiled with -ffast-math\n");
@@ -1839,7 +1834,7 @@ static void print_diagnostic_images(
  *
  * @return 0 on success, non-zero otherwise.
  */
-int main(
+int astcenc_main(
 	int argc,
 	char **argv
 ) {

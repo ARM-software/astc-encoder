@@ -43,6 +43,14 @@
  *       for faster processing. The caller is responsible for creating the worker threads, and
  *       synchronizing between images.
  *
+ * Extended instruction set support
+ * ================================
+ *
+ * This library supports use of extended instruction sets, such as SSE4.1 and AVX2. These are
+ * enabled at compile time when building the library. There is no runtime checking in the core
+ * library that the instruction sets used are actually available. Checking compatibility is the
+ * responsibility of the calling code.
+ *
  * Threading
  * =========
  *
@@ -191,8 +199,6 @@ enum astcenc_error {
 	ASTCENC_ERR_OUT_OF_MEM,
 	/** @brief The call failed due to the build using fast math. */
 	ASTCENC_ERR_BAD_CPU_FLOAT,
-	/** @brief The call failed due to the build using an unsupported ISA. */
-	ASTCENC_ERR_BAD_CPU_ISA,
 	/** @brief The call failed due to an out-of-spec parameter. */
 	ASTCENC_ERR_BAD_PARAM,
 	/** @brief The call failed due to an out-of-spec block size. */
