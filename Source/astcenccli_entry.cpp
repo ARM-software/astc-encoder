@@ -18,16 +18,8 @@
 /**
  * @brief Platform-specific function implementations.
  *
- * This module contains functions with strongly OS-dependent implementations:
- *
- *  * CPU count queries
- *  * Threading
- *  * Time
- *
- * In addition to the basic thread abstraction (which is native pthreads on
- * all platforms, except Windows where it is an emulation of pthreads), a
- * utility function to create N threads and wait for them to complete a batch
- * task has also been provided.
+ * This module contains the CLI entry point which also performs the role of
+ * validating the host extended ISA support meets the needs of the tools.
  */
 
 #include "astcenccli_internal.h"
