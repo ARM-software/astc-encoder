@@ -56,6 +56,38 @@ target_include_directories(${ASTC_TARGET}-static
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
 
+if(${SHAREDLIB})
+    add_library(${ASTC_TARGET}-shared
+        SHARED
+            astcenc_averages_and_directions.cpp
+            astcenc_block_sizes.cpp
+            astcenc_color_quantize.cpp
+            astcenc_color_unquantize.cpp
+            astcenc_compress_symbolic.cpp
+            astcenc_compute_variance.cpp
+            astcenc_decompress_symbolic.cpp
+            astcenc_diagnostic_trace.cpp
+            astcenc_entry.cpp
+            astcenc_find_best_partitioning.cpp
+            astcenc_ideal_endpoints_and_weights.cpp
+            astcenc_image.cpp
+            astcenc_integer_sequence.cpp
+            astcenc_mathlib.cpp
+            astcenc_mathlib_softfloat.cpp
+            astcenc_partition_tables.cpp
+            astcenc_percentile_tables.cpp
+            astcenc_pick_best_endpoint_format.cpp
+            astcenc_quantization.cpp
+            astcenc_symbolic_physical.cpp
+            astcenc_weight_align.cpp
+            astcenc_weight_quant_xfer_tables.cpp)
+
+    target_include_directories(${ASTC_TARGET}-shared
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:.>)
+endif()
+
 if(${CLI})
     # Veneer is compiled without any extended ISA so we can safely do
     # ISA compatability checks without triggering a SIGILL
@@ -331,9 +363,22 @@ endif()
 
 astcenc_set_properties(${ASTC_TARGET}-static OFF)
 
-    target_compile_options(${ASTC_TARGET}-static
+target_compile_options(${ASTC_TARGET}-static
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+
+if(${SHAREDLIB})
+    astcenc_set_properties(${ASTC_TARGET}-shared OFF)
+
+    target_compile_definitions(${ASTC_TARGET}-shared
         PRIVATE
+            ASTCENC_DYNAMIC_LIBRARY=1)
+
+    target_compile_options(${ASTC_TARGET}-shared
+        PRIVATE
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-fvisibility=hidden>
             $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+endif()
 
 if(${CLI})
     astcenc_set_properties(${ASTC_TARGET}-veneer ON)
