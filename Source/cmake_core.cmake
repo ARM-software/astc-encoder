@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2022 Arm Limited
+#  Copyright 2020-2023 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -57,6 +57,8 @@ target_include_directories(${ASTC_TARGET}-static
         $<INSTALL_INTERFACE:.>)
 
 if(${CLI})
+    # Veneer is compiled without any extended ISA so we can safely do
+    # ISA compatability checks without triggering a SIGILL
     add_library(${ASTC_TARGET}-veneer
         astcenccli_entry.cpp)
 
