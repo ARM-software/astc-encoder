@@ -13,6 +13,7 @@ Proto
 
 # Precompiled reference binaries for comparison tests
 bin
+lib
 Binaries
 
 # Build artifacts
