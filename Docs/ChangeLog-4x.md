@@ -14,7 +14,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 4.4.0 release is a minor development release.
 
 * **General:**
-  * **Change:** Core library no longer checks availability of required extended
+  * **Change:** Core library no longer checks availability of required
     instruction set extensions, such as SSE4.1 or AVX2. Checking compatibility
     is now the responsibility of the caller. See `astcenc_entry.cpp` for an
     example of code performing this check.
