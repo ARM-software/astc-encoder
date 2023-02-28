@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2022 Arm Limited
+// Copyright 2011-2022 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -18,12 +18,19 @@
 /**
  * @brief Platform-specific function implementations.
  *
- * This module contains functions for querying the host extended ISA support.
+ * This module contains functions with strongly OS-dependent implementations:
+ *
+ *  * CPU count queries
+ *  * Threading
+ *  * Time
+ *
+ * In addition to the basic thread abstraction (which is native pthreads on
+ * all platforms, except Windows where it is an emulation of pthreads), a
+ * utility function to create N threads and wait for them to complete a batch
+ * task has also been provided.
  */
 
-// Include before the defines below to pick up any auto-setup based on compiler
-// built-in config, if not being set explicitly by the build system
-#include "astcenc_internal.h"
+#include "astcenccli_internal.h"
 
 #if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
@@ -163,4 +170,62 @@ bool cpu_supports_avx2()
 	return g_cpu_has_avx2;
 }
 
+/**
+ * @brief Validate CPU ISA support meets the requirements of this build of the library.
+ *
+ * Each library build is statically compiled for a particular set of CPU ISA features, such as the
+ * SIMD support or other ISA extensions such as POPCNT. This function checks that the host CPU
+ * actually supports everything this build needs.
+ *
+ * @return Return @c true if validated, @c false otherwise.
+ */
+static bool validate_cpu_isa()
+{
+	#if ASTCENC_AVX >= 2
+		if (!cpu_supports_avx2())
+		{
+			print_error("ERROR: Host does not support AVX2 ISA extension\n");
+			return false;
+		}
+	#endif
+
+	#if ASTCENC_F16C >= 1
+		if (!cpu_supports_f16c())
+		{
+			print_error("ERROR: Host does not support F16C ISA extension\n");
+			return false;
+		}
+	#endif
+
+	#if ASTCENC_SSE >= 41
+		if (!cpu_supports_sse41())
+		{
+			print_error("ERROR: Host does not support SSE4.1 ISA extension\n");
+			return false;
+		}
+	#endif
+
+	#if ASTCENC_POPCNT >= 1
+		if (!cpu_supports_popcnt())
+		{
+			print_error("ERROR: Host does not support POPCNT ISA extension\n");
+			return false;
+		}
+	#endif
+
+	return true;
+}
+
 #endif
+
+int main(
+	int argc,
+	char **argv
+) {
+	if (!validate_cpu_isa())
+	{
+		return 1;
+	}
+
+	return astcenc_main(argc, argv);
+}
