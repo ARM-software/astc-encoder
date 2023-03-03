@@ -404,5 +404,8 @@ if(${CLI})
             ${CMAKE_CURRENT_BINARY_DIR})
 
     install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
+endif()
+
+if(${SHAREDLIB})
     install(TARGETS ${ASTC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
 endif()
