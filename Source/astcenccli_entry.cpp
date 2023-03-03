@@ -208,6 +208,14 @@ static bool validate_cpu_isa()
 	return true;
 }
 
+#else
+
+// Fallback for cases with no dynamic ISA availability
+bool validate_cpu_isa()
+{
+	return true;
+}
+
 #endif
 
 int main(
