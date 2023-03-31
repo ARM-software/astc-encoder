@@ -297,18 +297,20 @@ astcenc_image* astc_img_from_unorm8x4_array(
 	bool y_flip);
 
 /**
- * @brief Create a flattened RGBA FLOAT32 data array from an image structure.
+ * @brief Create a flattened RGBA FLOAT32 data array for a single slice from an image structure.
  *
  * The returned data array is allocated with @c new[] and must be freed with a @c delete[] call.
  *
- * @param img      The input image.
- * @param y_flip   Should the data in the array be Y flipped?
+ * @param img       The input image.
+ * @param y_flip    Should the data in the array be Y flipped?
+ * @param z_index   The slice index to convert.
  *
  * @return The data array.
  */
 float* floatx4_array_from_astc_img(
 	const astcenc_image* img,
-	bool y_flip);
+	bool y_flip,
+	unsigned int z_index);
 
 /**
  * @brief Create a flattened RGBA UNORM8 data array from an image structure.
