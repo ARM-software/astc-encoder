@@ -58,7 +58,7 @@ from 0.89 bits/pixel up to 8 bits/pixel.
 Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
-**Latest 4.x stable release:** 4.3.1
+**Latest 4.x stable release:** 4.4
 * Change log: [4.x series](./Docs/ChangeLog-4x.md)
 
 **Latest 3.x stable release:** 3.7
@@ -219,7 +219,7 @@ or general mobile graphics development or technology please submit them on the
 
 - - -
 
-_Copyright © 2013-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2013-2023, Arm Limited and contributors. All rights reserved._
 
 [1]: ./Docs/FormatOverview.md
 [2]: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.html#ASTC
