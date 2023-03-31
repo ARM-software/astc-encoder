@@ -1,6 +1,0 @@
-Image Set,Block Size,Name,PSNR,Total Time,Coding Time,Coding Rate
-KodakMnt,4x4,ldr-rgb-montage.png,43.6711,0.7354,0.3531,26.7303
-KodakMnt,5x5,ldr-rgb-montage.png,39.8509,0.6909,0.3115,30.2923
-KodakMnt,6x6,ldr-rgb-montage.png,36.8595,0.7350,0.3542,26.6457
-KodakMnt,8x8,ldr-rgb-montage.png,32.8186,0.8312,0.4553,20.7282
-KodakMnt,12x12,ldr-rgb-montage.png,28.7286,0.6927,0.3129,30.1611

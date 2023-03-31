@@ -256,8 +256,8 @@ def main():
     last1x = "1.7"
     last2x = "2.5"
     last3x = "3.7"
-    prev4x = "4.2"
-    last4x = "4.3"
+    prev4x = "4.3"
+    last4x = "4.4"
     lastMain = "main"
 
     charts = [

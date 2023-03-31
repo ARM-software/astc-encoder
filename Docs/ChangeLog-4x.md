@@ -9,9 +9,10 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.4.0
 
-**Status:** In development
+**Status:** March 2023
 
-The 4.4.0 release is a minor development release.
+The 4.4.0 release is a minor release with image quality improvements, a small
+performance boost, and a few new quality-of-life features.
 
 * **General:**
   * **Change:** Core library no longer checks availability of required
@@ -21,6 +22,8 @@ The 4.4.0 release is a minor development release.
   * **Change:** Core library can be built as a shared object by setting the
     `-DSHAREDLIB=ON` CMake option, resulting in e.g. `libastcenc-avx2-shared.so`.
     Note that the command line tool is always statically linked.
+  * **Change:** Decompressed 3D images will now write one output file per
+    slice, if the target format is a 2D image format.
   * **Change:** Command line errors print to stderr instead of stdout.
   * **Change:** Color encoding uses new quantization tables, that now factor
     in floating-point rounding if a distance tie is found when using the
@@ -28,7 +31,19 @@ The 4.4.0 release is a minor development release.
     sizes.
   * **Optimization:** Partition selection uses a simplified line calculation
     with a faster approximation. This improves performance for all block sizes.
+  * **Bug-fix:** Fixed missing symbol error in decompressor-only builds.
   * **Bug-fix:** Fixed infinity handling in debug trace JSON files.
+
+### Performance:
+
+Key for charts:
+
+* Color = block size (see legend).
+* Letter = image format (N = normal map, G = grayscale, L = LDR, H = HDR).
+
+**Relative performance vs 4.0 and 4.1 release:**
+
+![Relative scores 4.4 vs 4.3](./ChangeLogImg/relative-4.3-to-4.4.png)
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.3.1
