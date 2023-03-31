@@ -54,9 +54,9 @@ The 4.3.1 release is a minor maintenance release. No performance or image
 quality changes are expected.
 
 * **General:**
-  * **Bug-fix:** Fixed typo in -2/3/4partitioncandidatelimit CLI options.
-  * **Bug-fix:** Fixed handling for -3/4partitionindexlimit CLI options.
-  * **Bug-fix:** Updated to stb_image.h v2.28, which includes multiple fixes
+  * **Bug-fix:** Fixed typo in `-2/3/4partitioncandidatelimit` CLI options.
+  * **Bug-fix:** Fixed handling for `-3/4partitionindexlimit` CLI options.
+  * **Bug-fix:** Updated to `stb_image.h` v2.28, which includes multiple fixes
     and improvements for image loading.
 
 <!-- ---------------------------------------------------------------------- -->
