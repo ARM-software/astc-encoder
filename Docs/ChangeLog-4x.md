@@ -17,8 +17,8 @@ performance boost, and a few new quality-of-life features.
 * **General:**
   * **Change:** Core library no longer checks availability of required
     instruction set extensions, such as SSE4.1 or AVX2. Checking compatibility
-    is now the responsibility of the caller. See `astcenc_entry.cpp` for an
-    example of code performing this check.
+    is now the responsibility of the caller. See `astcenccli_entry.cpp` for
+    an example of code performing this check.
   * **Change:** Core library can be built as a shared object by setting the
     `-DSHAREDLIB=ON` CMake option, resulting in e.g. `libastcenc-avx2-shared.so`.
     Note that the command line tool is always statically linked.
