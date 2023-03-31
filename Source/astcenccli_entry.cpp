@@ -24,7 +24,7 @@
 
 #include "astcenccli_internal.h"
 
-#if (ASTCENC_SSE > 0)    || (ASTCENC_AVX > 0) || \
+#if (ASTCENC_SSE > 20)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
 static bool g_init { false };
@@ -118,8 +118,13 @@ static void detect_cpu_isa()
 }
 #endif
 
-/* See header for documentation. */
-bool cpu_supports_popcnt()
+#if ASTCENC_POPCNT > 0
+/**
+ * @brief Run-time detection if the host CPU supports the POPCNT extension.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_popcnt()
 {
 	if (!g_init)
 	{
@@ -128,9 +133,15 @@ bool cpu_supports_popcnt()
 
 	return g_cpu_has_popcnt;
 }
+#endif
 
-/* See header for documentation. */
-bool cpu_supports_f16c()
+#if ASTCENC_F16C > 0
+/**
+ * @brief Run-time detection if the host CPU supports F16C extension.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_f16c()
 {
 	if (!g_init)
 	{
@@ -139,9 +150,15 @@ bool cpu_supports_f16c()
 
 	return g_cpu_has_f16c;
 }
+#endif
 
-/* See header for documentation. */
-bool cpu_supports_sse41()
+#if ASTCENC_SSE >= 41
+/**
+ * @brief Run-time detection if the host CPU supports SSE 4.1 extension.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_sse41()
 {
 	if (!g_init)
 	{
@@ -150,9 +167,15 @@ bool cpu_supports_sse41()
 
 	return g_cpu_has_sse41;
 }
+#endif
 
-/* See header for documentation. */
-bool cpu_supports_avx2()
+#if ASTCENC_AVX >= 2
+/**
+ * @brief Run-time detection if the host CPU supports AVX 2 extension.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx2()
 {
 	if (!g_init)
 	{
@@ -161,6 +184,7 @@ bool cpu_supports_avx2()
 
 	return g_cpu_has_avx2;
 }
+#endif
 
 /**
  * @brief Validate CPU ISA support meets the requirements of this build of the library.
@@ -211,7 +235,7 @@ static bool validate_cpu_isa()
 #else
 
 // Fallback for cases with no dynamic ISA availability
-bool validate_cpu_isa()
+static bool validate_cpu_isa()
 {
 	return true;
 }
