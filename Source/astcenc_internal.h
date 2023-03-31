@@ -2126,34 +2126,6 @@ void physical_to_symbolic(
 Platform-specific functions.
 ============================================================================ */
 /**
- * @brief Run-time detection if the host CPU supports the POPCNT extension.
- *
- * @return @c true if supported, @c false if not.
- */
-bool cpu_supports_popcnt();
-
-/**
- * @brief Run-time detection if the host CPU supports F16C extension.
- *
- * @return @c true if supported, @c false if not.
- */
-bool cpu_supports_f16c();
-
-/**
- * @brief Run-time detection if the host CPU supports SSE 4.1 extension.
- *
- * @return @c true if supported, @c false if not.
- */
-bool cpu_supports_sse41();
-
-/**
- * @brief Run-time detection if the host CPU supports AVX 2 extension.
- *
- * @return @c true if supported, @c false if not.
- */
-bool cpu_supports_avx2();
-
-/**
  * @brief Allocate an aligned memory buffer.
  *
  * Allocated memory must be freed by aligned_free;
