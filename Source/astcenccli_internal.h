@@ -395,16 +395,4 @@ void launch_threads(
 	void (*func)(int, int, void*),
 	void *payload);
 
-/**
- * @brief The main entry point.
- *
- * @param argc   The number of arguments.
- * @param argv   The vector of arguments.
- *
- * @return 0 on success, non-zero otherwise.
- */
-int astcenc_main(
-	int argc,
-	char **argv);
-
 #endif

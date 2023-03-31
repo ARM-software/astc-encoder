@@ -22,7 +22,19 @@
  * validating the host extended ISA support meets the needs of the tools.
  */
 
-#include "astcenccli_internal.h"
+#include <cstdio>
+
+/**
+ * @brief The main entry point.
+ *
+ * @param argc   The number of arguments.
+ * @param argv   The vector of arguments.
+ *
+ * @return 0 on success, non-zero otherwise.
+ */
+int astcenc_main(
+	int argc,
+	char **argv);
 
 #if (ASTCENC_SSE > 20)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
@@ -185,6 +197,15 @@ static bool cpu_supports_avx2()
 	return g_cpu_has_avx2;
 }
 #endif
+
+/**
+ * @brief Print a string to stderr.
+ */
+static inline void print_error(
+	const char* format
+) {
+	fprintf(stderr, "%s", format);
+}
 
 /**
  * @brief Validate CPU ISA support meets the requirements of this build of the library.
