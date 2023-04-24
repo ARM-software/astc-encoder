@@ -78,6 +78,7 @@ endforeach()
 # macOS builds
 if("${MACOS_BUILD}")
     list(FIND CMAKE_OSX_ARCHITECTURES "x86_64" IS_X64)
+    list(FIND CMAKE_OSX_ARCHITECTURES "x86_64h" IS_X64H)
     list(FIND CMAKE_OSX_ARCHITECTURES "arm64" IS_ARM64)
     list(FIND CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)" IS_AUTO)
 
@@ -86,6 +87,12 @@ if("${MACOS_BUILD}")
         set(IS_X64 OFF)
     else()
         set(IS_X64 ON)
+    endif()
+
+    if(${IS_X64H} EQUAL -1)
+        set(IS_X64H OFF)
+    else()
+        set(IS_X64H ON)
     endif()
 
     if(${IS_ARM64} EQUAL -1)
@@ -106,29 +113,38 @@ if("${MACOS_BUILD}")
         set(ISA_NEON ON)
     endif()
 
-    if((IS_X64 OR IS_AUTO) AND ("${X64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
-        set(X64_ISA_COUNT 1)
-        set(ISA_SSE41 ON)
+    if((IS_X64 OR IS_X64H OR IS_AUTO) AND ("${X64_ISA_COUNT}" EQUAL 0) AND (NOT "${ISA_NONE}"))
+        if (IS_X64H AND IS_X64)
+            set(X64_ISA_COUNT 2)
+            set(ISA_SSE41 ON)
+            set(ISA_AVX2 ON)
+        elseif(IS_X64H)
+            set(X64_ISA_COUNT 1)
+            set(ISA_AVX2 ON)
+        elseif(IS_X64)
+            set(X64_ISA_COUNT 1)
+            set(ISA_SSE41 ON)
+        endif()
     endif()
 
     # User might be doing multi-architecture - XCode sets this at runtime
     if("${IS_AUTO}")
-        if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
+        if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 2))
             message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
         endif()
 
         set(UNIVERSAL_BUILD ON)
 
-    # User requested explicit multi-architecture universal build
-    elseif("${MACOS_ARCH_LEN}" GREATER 2)
-        message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
+        # User requested explicit multi-architecture universal build
+    elseif("${MACOS_ARCH_LEN}" GREATER 3)
+        message(FATAL_ERROR "For macOS universal binaries only x86_64, x86_64h, and arm64 builds are allowed.")
 
-    elseif("${MACOS_ARCH_LEN}" EQUAL 2)
-        if(NOT (${IS_X64} AND ${IS_ARM64}))
-            message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
+    elseif(("${MACOS_ARCH_LEN}" EQUAL 2) OR ("${MACOS_ARCH_LEN}" EQUAL 3))
+        if(NOT ((${IS_X64} AND ${IS_ARM64}) OR (${IS_X64H} AND ${IS_ARM64}) OR (${IS_X64} AND ${IS_X64H})))
+            message(FATAL_ERROR "For macOS universal binaries only x86_64, x86_64h, and arm64 builds are allowed.")
         endif()
 
-        if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 1))
+        if(("${ARM64_ISA_COUNT}" GREATER 1) OR ("${X64_ISA_COUNT}" GREATER 2))
             message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
         endif()
 
@@ -136,8 +152,8 @@ if("${MACOS_BUILD}")
 
     # User requested explicit single architecture build
     elseif("${MACOS_ARCH_LEN}" EQUAL 1)
-        if("${IS_X64}" AND "${ARM64_ISA_COUNT}")
-            message(FATAL_ERROR "For macOS x86_64 builds an arm64 backend cannot be specified.")
+        if(("${IS_X64}" OR "${IS_X64H}") AND "${ARM64_ISA_COUNT}")
+            message(FATAL_ERROR "For macOS x86_64 or x86_64h builds an arm64 backend cannot be specified.")
         endif()
 
         if("${IS_ARM64}" AND "${X64_ISA_COUNT}")
@@ -145,19 +161,26 @@ if("${MACOS_BUILD}")
         endif()
 
     # Else is this a implicit multi-architecture universal build?
-    elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" GREATER 1))
+    elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" GREATER 2))
         string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary. "
                           "For universal binaries only one backend per architecture is allowed.")
         message(FATAL_ERROR "${MSG}")
 
-    elseif(("${X64_ISA_COUNT}" EQUAL 1) AND ("${ARM64_ISA_COUNT}" GREATER 1))
+    elseif((("${X64_ISA_COUNT}" EQUAL 1) OR ("${X64_ISA_COUNT}" EQUAL 2)) AND ("${ARM64_ISA_COUNT}" GREATER 1))
         string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary. "
                           "For universal binaries only one backend per architecture is allowed.")
         message(FATAL_ERROR "${MSG}")
+
+    elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" EQUAL 2))
+        set(UNIVERSAL_BUILD ON)
+        set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64;x86_64h")
 
     elseif(("${ARM64_ISA_COUNT}" EQUAL 1) AND ("${X64_ISA_COUNT}" EQUAL 1))
         set(UNIVERSAL_BUILD ON)
         set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
+
+    elseif("${X64_ISA_COUNT}" EQUAL 2)
+        set(CMAKE_OSX_ARCHITECTURES "x86_64;x86_64h")
 
     # Else is this an implicit single architecture build?
     elseif("${ARM64_ISA_COUNT}" EQUAL 1)
@@ -171,10 +194,18 @@ if("${MACOS_BUILD}")
 
     endif()
 
+    if (${IS_X64H} AND (NOT ${ISA_AVX2}))
+	message(FATAL_ERROR "x86_64h builds must use avx2")
+    endif()
+
 # Non-macOS builds
 else()
     if(("${ARM64_ISA_COUNT}" GREATER 0) AND ("${X64_ISA_COUNT}" GREATER 0))
         message(FATAL_ERROR "Builds can only support a single architecture per configure.")
+    endif()
+
+    if (${IS_X64H})
+        message(FATAL_ERROR "x86_64h builds are only supported on macOS")
     endif()
 endif()
 
