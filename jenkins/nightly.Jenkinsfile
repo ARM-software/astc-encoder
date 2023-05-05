@@ -164,7 +164,7 @@ pipeline {
         /* Build for Windows on x86-64 using MSVC + ClangCL */
         stage('Windows ClangCL') {
           agent {
-            label 'Windows'
+            label 'windows.vs2022'
           }
           stages {
             stage('Clean') {
