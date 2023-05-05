@@ -114,7 +114,7 @@ pipeline {
         /* Build for Windows on x86-64 using MSVC */
         stage('Windows MSVC') {
           agent {
-            label 'Windows'
+            label 'windows.vs2022'
           }
           stages {
             stage('Clean') {
@@ -125,7 +125,7 @@ pipeline {
             stage('Build R') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64-cl ..
@@ -136,7 +136,7 @@ pipeline {
             stage('Build D') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_dbg
                   cd build_dbg
                   cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON ..
@@ -154,7 +154,7 @@ pipeline {
             stage('Test') {
               steps {
                 bat '''
-                  set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
+                  set Path=c:\\Python3;c:\\Python3\\Scripts;%Path%
                   call python ./Test/astc_test_image.py --test-set Small --test-quality medium
                 '''
               }
@@ -175,10 +175,10 @@ pipeline {
             stage('Build R') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64-clangcl ..
+                  cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64-clangcl ..
                   msbuild astcencoder.sln -property:Configuration=Release
                   msbuild PACKAGE.vcxproj -property:Configuration=Release
                   msbuild INSTALL.vcxproj -property:Configuration=Release
@@ -188,10 +188,10 @@ pipeline {
             stage('Build D') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_dbg
                   cd build_dbg
-                  cmake -G "Visual Studio 16 2019" -T ClangCL -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+                  cmake -G "Visual Studio 17 2022" -T ClangCL -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
                   msbuild astcencoder.sln -property:Configuration=Debug
                 '''
               }
@@ -206,7 +206,7 @@ pipeline {
             stage('Test') {
               steps {
                 bat '''
-                  set Path=c:\\Python38;c:\\Python38\\Scripts;%Path%
+                  set Path=c:\\Python3;c:\\Python3\\Scripts;%Path%
                   call python ./Test/astc_test_image.py --test-set Small --test-quality medium
                 '''
               }
