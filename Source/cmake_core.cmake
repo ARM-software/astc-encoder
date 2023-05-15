@@ -56,7 +56,7 @@ target_include_directories(${ASTCENC_TARGET}-static
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
 
-if(${SHAREDLIB})
+if(${ASTCENC_SHAREDLIB})
     add_library(${ASTCENC_TARGET}-shared
         SHARED
             astcenc_averages_and_directions.cpp
@@ -324,7 +324,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
         # which significantly improve performance. Note that this DOES reduce
         # image quality by up to 0.2 dB (normally much less), but buys an
         # average of 10-15% performance improvement ...
-        if(${NO_INVARIANCE} AND NOT ${IS_VENEER})
+        if(${ASTCENC_NO_INVARIANCE} AND NOT ${IS_VENEER})
             target_compile_options(${NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>)
@@ -367,7 +367,7 @@ target_compile_options(${ASTCENC_TARGET}-static
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
-if(${SHAREDLIB})
+if(${ASTCENC_SHAREDLIB})
     astcenc_set_properties(${ASTCENC_TARGET}-shared OFF)
 
     target_compile_definitions(${ASTCENC_TARGET}-shared
@@ -380,7 +380,7 @@ if(${SHAREDLIB})
             $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 endif()
 
-if(${CLI})
+if(${ASTCENC_CLI})
     astcenc_set_properties(${ASTCENC_TARGET}-veneer ON)
     astcenc_set_properties(${ASTCENC_TARGET} OFF)
 
@@ -406,6 +406,6 @@ if(${CLI})
     install(TARGETS ${ASTCENC_TARGET} DESTINATION ${PACKAGE_ROOT})
 endif()
 
-if(${SHAREDLIB})
+if(${ASTCENC_SHAREDLIB})
     install(TARGETS ${ASTCENC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
 endif()
