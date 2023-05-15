@@ -15,18 +15,18 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-if(${UNIVERSAL_BUILD})
-    set(ASTC_TARGET astc${CODEC})
+if(${ASTCENC_UNIVERSAL_BUILD})
+    set(ASTCENC_TARGET astc${ASTCENC_CODEC})
 else()
-    set(ASTC_TARGET astc${CODEC}-${ISA_SIMD})
+    set(ASTCENC_TARGET astc${ASTCENC_CODEC}-${ASTCENC_ISA_SIMD})
 endif()
 
-project(${ASTC_TARGET})
+project(${ASTCENC_TARGET})
 
 set(GNU_LIKE "GNU,Clang,AppleClang")
 set(CLANG_LIKE "Clang,AppleClang")
 
-add_library(${ASTC_TARGET}-static
+add_library(${ASTCENC_TARGET}-static
     STATIC
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
@@ -51,13 +51,13 @@ add_library(${ASTC_TARGET}-static
         astcenc_weight_align.cpp
         astcenc_weight_quant_xfer_tables.cpp)
 
-target_include_directories(${ASTC_TARGET}-static
+target_include_directories(${ASTCENC_TARGET}-static
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         $<INSTALL_INTERFACE:.>)
 
 if(${SHAREDLIB})
-    add_library(${ASTC_TARGET}-shared
+    add_library(${ASTCENC_TARGET}-shared
         SHARED
             astcenc_averages_and_directions.cpp
             astcenc_block_sizes.cpp
@@ -82,19 +82,19 @@ if(${SHAREDLIB})
             astcenc_weight_align.cpp
             astcenc_weight_quant_xfer_tables.cpp)
 
-    target_include_directories(${ASTC_TARGET}-shared
+    target_include_directories(${ASTCENC_TARGET}-shared
         PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
             $<INSTALL_INTERFACE:.>)
 endif()
 
-if(${CLI})
+if(${ASTCENC_CLI})
     # Veneer is compiled without any extended ISA so we can safely do
     # ISA compatability checks without triggering a SIGILL
-    add_library(${ASTC_TARGET}-veneer
+    add_library(${ASTCENC_TARGET}-veneer
         astcenccli_entry.cpp)
 
-    add_executable(${ASTC_TARGET}
+    add_executable(${ASTCENC_TARGET}
         astcenccli_error_metrics.cpp
         astcenccli_image.cpp
         astcenccli_image_external.cpp
@@ -103,10 +103,10 @@ if(${CLI})
         astcenccli_toplevel.cpp
         astcenccli_toplevel_help.cpp)
 
-    target_link_libraries(${ASTC_TARGET}
+    target_link_libraries(${ASTCENC_TARGET}
         PRIVATE
-            ${ASTC_TARGET}-veneer
-            ${ASTC_TARGET}-static)
+            ${ASTCENC_TARGET}-veneer
+            ${ASTCENC_TARGET}-static)
 endif()
 
 macro(astcenc_set_properties NAME IS_VENEER)
@@ -120,19 +120,19 @@ macro(astcenc_set_properties NAME IS_VENEER)
             # MSVC defines
             $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
-    if(${DECOMPRESSOR})
+    if(${ASTCENC_DECOMPRESSOR})
         target_compile_definitions(${NAME}
             PRIVATE
                 ASTCENC_DECOMPRESS_ONLY)
     endif()
 
-    if(${BLOCK_MAX_TEXELS})
+    if(${ASTCENC_BLOCK_MAX_TEXELS})
         target_compile_definitions(${NAME}
             PRIVATE
-                ASTCENC_BLOCK_MAX_TEXELS=${BLOCK_MAX_TEXELS})
+                ASTCENC_BLOCK_MAX_TEXELS=${ASTCENC_BLOCK_MAX_TEXELS})
     endif()
 
-    if(${DIAGNOSTICS})
+    if(${ASTCENC_DIAGNOSTICS})
         target_compile_definitions(${NAME}
             PUBLIC
                 ASTCENC_DIAGNOSTICS)
@@ -186,7 +186,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
-    if(${ASAN})
+    if(${ASTCENC_ASAN})
         target_compile_options(${NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
@@ -196,7 +196,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
     endif()
 
-    if(${NO_INVARIANCE})
+    if(${ASTCENC_NO_INVARIANCE})
         target_compile_definitions(${NAME}
             PRIVATE
                 ASTCENC_NO_INVARIANCE=1)
@@ -206,7 +206,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
     endif()
 
-    if(${CLI})
+    if(${ASTCENC_CLI})
         # Enable LTO on release builds
         set_property(TARGET ${NAME}
             PROPERTY
@@ -219,8 +219,8 @@ macro(astcenc_set_properties NAME IS_VENEER)
     endif()
 
     # Set up configuration for SIMD ISA builds
-    if(${ISA_SIMD} MATCHES "none")
-        if(NOT ${UNIVERSAL_BUILD})
+    if(${ASTCENC_ISA_SIMD} MATCHES "none")
+        if(NOT ${ASTCENC_UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -230,8 +230,8 @@ macro(astcenc_set_properties NAME IS_VENEER)
                     ASTCENC_F16C=0)
         endif()
 
-    elseif(${ISA_SIMD} MATCHES "neon")
-        if(NOT ${UNIVERSAL_BUILD})
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
+        if(NOT ${ASTCENC_UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=1
@@ -249,8 +249,8 @@ macro(astcenc_set_properties NAME IS_VENEER)
                     $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
         endif()
 
-    elseif((${ISA_SIMD} MATCHES "sse2") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE2}))
-        if(NOT ${UNIVERSAL_BUILD})
+    elseif((${ASTCENC_ISA_SIMD} MATCHES "sse2") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_SSE2}))
+        if(NOT ${ASTCENC_UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -267,8 +267,8 @@ macro(astcenc_set_properties NAME IS_VENEER)
                 $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
                 $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
 
-    elseif((${ISA_SIMD} MATCHES "sse4.1") OR (${UNIVERSAL_BUILD} AND ${ISA_SSE41}))
-        if(NOT ${UNIVERSAL_BUILD})
+    elseif((${ASTCENC_ISA_SIMD} MATCHES "sse4.1") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_SSE41}))
+        if(NOT ${ASTCENC_UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -292,8 +292,8 @@ macro(astcenc_set_properties NAME IS_VENEER)
                     $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
         endif()
 
-    elseif((${ISA_SIMD} MATCHES "avx2") OR (${UNIVERSAL_BUILD} AND ${ISA_AVX2}))
-        if(NOT ${UNIVERSAL_BUILD})
+    elseif((${ASTCENC_ISA_SIMD} MATCHES "avx2") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_AVX2}))
+        if(NOT ${ASTCENC_UNIVERSAL_BUILD})
             target_compile_definitions(${NAME}
                 PRIVATE
                     ASTCENC_NEON=0
@@ -361,34 +361,34 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 endif()
 
-astcenc_set_properties(${ASTC_TARGET}-static OFF)
+astcenc_set_properties(${ASTCENC_TARGET}-static OFF)
 
-target_compile_options(${ASTC_TARGET}-static
+target_compile_options(${ASTCENC_TARGET}-static
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 
 if(${SHAREDLIB})
-    astcenc_set_properties(${ASTC_TARGET}-shared OFF)
+    astcenc_set_properties(${ASTCENC_TARGET}-shared OFF)
 
-    target_compile_definitions(${ASTC_TARGET}-shared
+    target_compile_definitions(${ASTCENC_TARGET}-shared
         PRIVATE
             ASTCENC_DYNAMIC_LIBRARY=1)
 
-    target_compile_options(${ASTC_TARGET}-shared
+    target_compile_options(${ASTCENC_TARGET}-shared
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-fvisibility=hidden>
             $<$<CXX_COMPILER_ID:MSVC>:/W4>)
 endif()
 
 if(${CLI})
-    astcenc_set_properties(${ASTC_TARGET}-veneer ON)
-    astcenc_set_properties(${ASTC_TARGET} OFF)
+    astcenc_set_properties(${ASTCENC_TARGET}-veneer ON)
+    astcenc_set_properties(${ASTCENC_TARGET} OFF)
 
-    target_compile_options(${ASTC_TARGET}
+    target_compile_options(${ASTCENC_TARGET}
         PRIVATE
             $<$<CXX_COMPILER_ID:MSVC>:/W3>)
 
-    target_compile_options(${ASTC_TARGET}-veneer
+    target_compile_options(${ASTCENC_TARGET}-veneer
         PRIVATE
             $<$<CXX_COMPILER_ID:MSVC>:/W3>)
 
@@ -399,13 +399,13 @@ if(${CLI})
         astcenccli_version.h
         ESCAPE_QUOTES @ONLY)
 
-    target_include_directories(${ASTC_TARGET}
+    target_include_directories(${ASTCENC_TARGET}
         PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR})
 
-    install(TARGETS ${ASTC_TARGET} DESTINATION ${PACKAGE_ROOT})
+    install(TARGETS ${ASTCENC_TARGET} DESTINATION ${PACKAGE_ROOT})
 endif()
 
 if(${SHAREDLIB})
-    install(TARGETS ${ASTC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
+    install(TARGETS ${ASTCENC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
 endif()
