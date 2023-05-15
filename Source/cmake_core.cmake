@@ -109,7 +109,7 @@ if(${ASTCENC_CLI})
             ${ASTCENC_TARGET}-static)
 endif()
 
-macro(astcenc_set_properties ASTCENC_TARGET_NAME IS_VENEER)
+macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
 
     target_compile_features(${ASTCENC_TARGET_NAME}
         PRIVATE
@@ -278,7 +278,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME IS_VENEER)
                     ASTCENC_F16C=0)
         endif()
 
-        if (${IS_VENEER})
+        if (${ASTCENC_IS_VENEER})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -303,7 +303,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME IS_VENEER)
                     ASTCENC_F16C=1)
         endif()
 
-        if (${IS_VENEER})
+        if (${ASTCENC_IS_VENEER})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -324,7 +324,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME IS_VENEER)
         # which significantly improve performance. Note that this DOES reduce
         # image quality by up to 0.2 dB (normally much less), but buys an
         # average of 10-15% performance improvement ...
-        if(${ASTCENC_NO_INVARIANCE} AND NOT ${IS_VENEER})
+        if(${ASTCENC_NO_INVARIANCE} AND NOT ${ASTCENC_IS_VENEER})
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>)
