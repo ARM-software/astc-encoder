@@ -109,36 +109,36 @@ if(${ASTCENC_CLI})
             ${ASTCENC_TARGET}-static)
 endif()
 
-macro(astcenc_set_properties NAME IS_VENEER)
+macro(astcenc_set_properties ASTCENC_TARGET_NAME IS_VENEER)
 
-    target_compile_features(${NAME}
+    target_compile_features(${ASTCENC_TARGET_NAME}
         PRIVATE
             cxx_std_14)
 
-    target_compile_definitions(${NAME}
+    target_compile_definitions(${ASTCENC_TARGET_NAME}
         PRIVATE
             # MSVC defines
             $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
     if(${ASTCENC_DECOMPRESSOR})
-        target_compile_definitions(${NAME}
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_DECOMPRESS_ONLY)
     endif()
 
     if(${ASTCENC_BLOCK_MAX_TEXELS})
-        target_compile_definitions(${NAME}
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_BLOCK_MAX_TEXELS=${ASTCENC_BLOCK_MAX_TEXELS})
     endif()
 
     if(${ASTCENC_DIAGNOSTICS})
-        target_compile_definitions(${NAME}
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
             PUBLIC
                 ASTCENC_DIAGNOSTICS)
     endif()
 
-    target_compile_options(${NAME}
+    target_compile_options(${ASTCENC_TARGET_NAME}
         PRIVATE
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
@@ -181,39 +181,39 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
             $<$<CXX_COMPILER_ID:Clang>:-Wdocumentation>)
 
-    target_link_options(${NAME}
+    target_link_options(${ASTCENC_TARGET_NAME}
         PRIVATE
             # Use pthreads on Linux/macOS
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
     if(${ASTCENC_ASAN})
-        target_compile_options(${NAME}
+        target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
 
-        target_link_options(${NAME}
+        target_link_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:${CLANG_LIKE}>:-fsanitize=address>)
     endif()
 
     if(${ASTCENC_NO_INVARIANCE})
-        target_compile_definitions(${NAME}
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NO_INVARIANCE=1)
 
-        target_compile_options(${NAME}
+        target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
     endif()
 
     if(${ASTCENC_CLI})
         # Enable LTO on release builds
-        set_property(TARGET ${NAME}
+        set_property(TARGET ${ASTCENC_TARGET_NAME}
             PROPERTY
                 INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
 
         # Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
-        set_property(TARGET ${NAME}
+        set_property(TARGET ${ASTCENC_TARGET_NAME}
             PROPERTY
                 MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
@@ -221,7 +221,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
     # Set up configuration for SIMD ISA builds
     if(${ASTCENC_ISA_SIMD} MATCHES "none")
         if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-            target_compile_definitions(${NAME}
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     ASTCENC_NEON=0
                     ASTCENC_SSE=0
@@ -232,7 +232,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
     elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
         if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-            target_compile_definitions(${NAME}
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     ASTCENC_NEON=1
                     ASTCENC_SSE=0
@@ -244,14 +244,14 @@ macro(astcenc_set_properties NAME IS_VENEER)
         # Workaround MSVC codegen bug for NEON builds on VS 2022 17.2 or older
         # https://developercommunity.visualstudio.com/t/inlining-turns-constant-into-register-operand-for/1394798
         if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC" AND MSVC_VERSION LESS 1933)
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
         endif()
 
     elseif((${ASTCENC_ISA_SIMD} MATCHES "sse2") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_SSE2}))
         if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-            target_compile_definitions(${NAME}
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     ASTCENC_NEON=0
                     ASTCENC_SSE=20
@@ -261,7 +261,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
         endif()
 
         # Force SSE2 on AppleClang (normally SSE4.1 is the default)
-        target_compile_options(${NAME}
+        target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
                 $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
@@ -269,7 +269,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
     elseif((${ASTCENC_ISA_SIMD} MATCHES "sse4.1") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_SSE41}))
         if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-            target_compile_definitions(${NAME}
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     ASTCENC_NEON=0
                     ASTCENC_SSE=41
@@ -280,13 +280,13 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
         if (${IS_VENEER})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
                     $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
                     $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
         else()
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>
                     $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
@@ -294,7 +294,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
     elseif((${ASTCENC_ISA_SIMD} MATCHES "avx2") OR (${ASTCENC_UNIVERSAL_BUILD} AND ${ASTCENC_ISA_AVX2}))
         if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-            target_compile_definitions(${NAME}
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     ASTCENC_NEON=0
                     ASTCENC_SSE=41
@@ -305,13 +305,13 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
         if (${IS_VENEER})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<CXX_COMPILER_ID:AppleClang>:-msse2>
                     $<$<CXX_COMPILER_ID:AppleClang>:-mno-sse4.1>
                     $<$<CXX_COMPILER_ID:AppleClang>:-Wno-unused-command-line-argument>)
         else()
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx2 -mpopcnt -mf16c>
                     $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX2>
@@ -325,7 +325,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
         # image quality by up to 0.2 dB (normally much less), but buys an
         # average of 10-15% performance improvement ...
         if(${ASTCENC_NO_INVARIANCE} AND NOT ${IS_VENEER})
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mfma>)
         endif()
