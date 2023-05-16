@@ -145,11 +145,9 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
             # MSVC compiler defines
             $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
-            $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
             $<$<CXX_COMPILER_ID:MSVC>:/wd4324>
 
             # G++ and Clang++ compiler defines
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=strict>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
@@ -204,7 +202,14 @@ macro(astcenc_set_properties NAME IS_VENEER)
 
         target_compile_options(${NAME}
             PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/fp:precise>
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=precise>
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
+    else()
+        target_compile_options(${NAME}
+            PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
+                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=strict>)
     endif()
 
     if(${CLI})
