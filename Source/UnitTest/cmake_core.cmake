@@ -133,7 +133,7 @@ target_link_libraries(${ASTCENC_TEST}
     PRIVATE
         gtest_main)
 
-add_test(ASTCENC_TARGET_NAME ${ASTCENC_TEST}
+add_test(NAME ${ASTCENC_TEST}
          COMMAND ${ASTCENC_TEST})
 
 install(TARGETS ${ASTCENC_TEST} DESTINATION ${PACKAGE_ROOT})
