@@ -149,6 +149,7 @@ macro(astcenc_set_properties NAME IS_VENEER)
             $<$<CXX_COMPILER_ID:MSVC>:/wd4324>
 
             # G++ and Clang++ compiler defines
+            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=strict>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
