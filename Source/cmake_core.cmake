@@ -202,7 +202,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
 
         # For Visual Studio prior to 2022 (compiler < 17.0) /fp:precise
         # For Visual Studio 2022 (compiler >= 17.0) /fp:precise and /fp:contract
-        target_compile_options(${NAME}
+        target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:MSVC>:/fp:precise>
                 $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,17>>:/fp:contract>
@@ -257,7 +257,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         # Workaround MSVC codegen bug for NEON builds on VS 2022 17.2 or older
         # https://developercommunity.visualstudio.com/t/inlining-turns-constant-into-register-operand-for/1394798
         if(${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC" AND ${MSVC_VERSION} LESS 1933)
-            target_compile_options(${NAME}
+            target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<$<CXX_COMPILER_ID:MSVC>:/d2ssa-cfg-sink->)
         endif()
