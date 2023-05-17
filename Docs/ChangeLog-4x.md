@@ -14,13 +14,17 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 4.5.0 release is a maintenance release with minor fixes and improvements.
 
 * **General:**
-  * **Bug-fix:** Invariant Clang and GCC builds now force `-ffp-model=strict`,
-    which is needed due to recent changes in compiler defaults. These builds
-    will be slower than the previous release, which was not guaranteed to be
-    invariant. Use a non-invariant build to recover lost performance if needed.
-  * **Bug-fix:** Non-invariant Clang and GCC builds now force
-    `-ffp-model=precise`, which is needed due to recent changes in compiler
-    defaults.
+  * **Bug-fix:** Invariant Clang and GCC builds now use `-ffp-model=precise`
+    with `-ffp-contract=off` which is needed to restore invariance due to
+    recent changes in compiler defaults.
+  * **Change:** Invariant MSVC builds for VS2022 now use `/fp:precise` instead
+    of `/fp:strict`, which is is now possible because precise no longer implies
+    contraction. This should improve performance for MSVC builds.
+  * **Change:** Non-invariant Clang and GCC builds now use
+    `-ffp-model=precise` with `-ffp-contract=on`. This should improve
+    performance on older Clang releases.
+  * **Change:** Non-invariant MSVC builds for VS2022 now use `/fp:precise`
+    with `/fp:contract`. This should improve performance for MSVC builds.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.4.0
