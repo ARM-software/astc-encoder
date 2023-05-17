@@ -194,6 +194,7 @@ endfunction()
 if("${ASTCENC_BLOCK_MAX_TEXELS}")
      message(STATUS "  Max block texels - ${ASTCENC_BLOCK_MAX_TEXELS}")
 endif()
+
 printopt("AVX2 backend   " ${ASTCENC_ISA_AVX2})
 printopt("SSE4.1 backend " ${ASTCENC_ISA_SSE41})
 printopt("SSE2 backend   " ${ASTCENC_ISA_SSE2})

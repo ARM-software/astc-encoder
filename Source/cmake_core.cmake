@@ -202,14 +202,14 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
 
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<$<CXX_COMPILER_ID:MSVC>:/fp:precise>
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=precise>
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
+                $<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/fp:precise>
+                $<$<CXX_COMPILER_FRONTEND_VARIANT:GNU>:-ffp-model=precise>
+                $<$<CXX_COMPILER_FRONTEND_VARIANT:GNU>:-ffp-contract=fast>)
     else()
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
-                $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=strict>)
+                $<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/fp:strict>
+                $<$<CXX_COMPILER_FRONTEND_VARIANT:GNU>:-ffp-model=strict>)
     endif()
 
     if(${ASTCENC_CLI})
