@@ -210,7 +210,6 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
             PRIVATE
                 $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
                 $<$<AND:$<PLATFORM_ID:Linux,Darwin>,$<CXX_COMPILER_ID:Clang>>:-ffp-model=strict>)
-
     endif()
 
     if(${ASTCENC_CLI})
