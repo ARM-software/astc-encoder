@@ -206,7 +206,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=precise>
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-contract=fast>)
     else()
-        target_compile_options(${NAME}
+        target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<$<CXX_COMPILER_ID:MSVC>:/fp:strict>
                 $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffp-model=strict>)
