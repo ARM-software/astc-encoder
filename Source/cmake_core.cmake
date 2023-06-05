@@ -34,7 +34,7 @@ set(is_msvc_fe "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>")
 set(is_gnu_fe1 "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},GNU>")
 # Compiler accepts AppleClang-style command line options, which is also GNU-style
 set(is_gnu_fe2 "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},AppleClang>")
-# Compiler accepts AppleClang-style command line options
+# Compiler accepts GNU-style command line options
 set(is_gnu_fe "$<OR:${is_gnu_fe1},${is_gnu_fe2}>")
 
 # Compiler is Visual Studio cl.exe
@@ -452,5 +452,3 @@ endif()
 if(${ASTCENC_SHAREDLIB})
     install(TARGETS ${ASTCENC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
 endif()
-
-add_custom_target(gendbg-${ASTCENC_ISA_SIMD} COMMAND ${CMAKE_COMMAND} -E echo "is_msvc_fe ${is_msvc_fe} is_gnu_fe ${is_gnu_fe} ${CMAKE_CXX_COMPILER_ID} fev ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}")
