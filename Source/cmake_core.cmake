@@ -31,7 +31,11 @@ endif()
 # Compiler accepts MSVC-style command line options
 set(is_msvc_fe "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>")
 # Compiler accepts GNU-style command line options
-set(is_gnu_fe "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},GNU>")
+set(is_gnu_fe1 "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},GNU>")
+# Compiler accepts AppleClang-style command line options, which is also GNU-style
+set(is_gnu_fe2 "$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},AppleClang>")
+# Compiler accepts AppleClang-style command line options
+set(is_gnu_fe "$<OR:${is_gnu_fe1},${is_gnu_fe2}>")
 
 # Compiler is Visual Studio cl.exe
 set(is_msvccl "$<AND:${is_msvc_fe},$<CXX_COMPILER_ID:MSVC>>")
