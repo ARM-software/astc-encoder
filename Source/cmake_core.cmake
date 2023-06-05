@@ -448,3 +448,5 @@ endif()
 if(${ASTCENC_SHAREDLIB})
     install(TARGETS ${ASTCENC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
 endif()
+
+add_custom_target(gendbg-${ASTCENC_ISA_SIMD} COMMAND ${CMAKE_COMMAND} -E echo "is_msvc_fe ${is_msvc_fe} is_gnu_fe ${is_gnu_fe} ${CMAKE_CXX_COMPILER_ID} fev ${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}")
