@@ -230,7 +230,7 @@ pipeline {
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
-                  make install package gendbg-avx2 -j4
+                  make gendbg-avx2 -j4
                 '''
               }
             }
