@@ -301,6 +301,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         # Force SSE2 on AppleClang (normally SSE4.1 is the default)
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
+                $<${is_clangcl}:-msse2>
                 $<${is_gnu_fe}:-msse2>
                 $<${is_gnu_fe}:-mno-sse4.1>
                 $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
@@ -326,6 +327,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         else()
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
+                    $<${is_clangcl}:-msse4.1 -mpopcnt>
                     $<${is_gnu_fe}:-msse4.1 -mpopcnt>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
@@ -351,8 +353,9 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         else()
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
-                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c>
                     $<${is_msvc_fe}:/arch:AVX2>
+                    $<${is_clangcl}:-mavx2 -mpopcnt -mf16c>
+                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
