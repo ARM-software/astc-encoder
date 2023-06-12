@@ -51,10 +51,23 @@ option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     set(ASTCENC_MACOS_BUILD ON)
     option(ASTCENC_UNIVERSAL_BUILD "Enable universal multi-arch build" ON)
+
     if(${ASTCENC_UNIVERSAL_BUILD})
         set(ASTCENC_ISA_SSE41 ON)
         set(ASTCENC_ISA_AVX2 ON)
         set(ASTCENC_ISA_NEON ON)
+
+        if(${ASTCENC_ISA_SSE2})
+            message(FATAL_ERROR "ISA_SSE2 cannot be used in a universal build")
+        endif()
+
+        if(${ASTCENC_ISA_NONE})
+            message(FATAL_ERROR "ISA_NONE cannot be used in a universal build")
+        endif()
+
+        if(${ASTCENC_ISA_NATIVE})
+            message(FATAL_ERROR "ISA_NATIVE cannot be used in a universal build")
+        endif()
     endif()
 else()
     set(ASTCENC_MACOS_BUILD OFF)
@@ -78,10 +91,8 @@ foreach(ASTCENC_CONFIG ${ASTCENC_CONFIGS})
     endif()
 endforeach()
 
-
 # Non-macOS builds
 if(NOT "${ASTCENC_MACOS_BUILD}")
-
     if(("${ASTCENC_ARM64_ISA_COUNT}" GREATER 0) AND ("${ASTCENC_X64_ISA_COUNT}" GREATER 0))
         message(FATAL_ERROR "Builds can only support a single architecture per configure.")
     endif()
