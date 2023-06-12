@@ -407,6 +407,10 @@ if(${ASTCENC_SHAREDLIB})
         PRIVATE
             $<${is_gnu_fe}:-fvisibility=hidden>
             $<${is_msvc_fe}:/W4>)
+
+    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
+        install(TARGETS ${ASTCENC_TARGET}-shared)
+    endif()
 endif()
 
 if(${ASTCENC_CLI})
@@ -432,9 +436,7 @@ if(${ASTCENC_CLI})
         PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR})
 
-    install(TARGETS ${ASTCENC_TARGET})
-endif()
-
-if(${ASTCENC_SHAREDLIB})
-    install(TARGETS ${ASTCENC_TARGET}-shared)
+    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
+        install(TARGETS ${ASTCENC_TARGET})
+    endif()
 endif()

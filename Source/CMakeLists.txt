@@ -42,7 +42,7 @@ foreach(INDEX RANGE ${ASTCENC_ARTIFACTS_LEN})
            set(CMAKE_OSX_ARCHITECTURES arm64)
         elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
            set(CMAKE_OSX_ARCHITECTURES x86_64h)
-        else()
+        elseif(NOT ${ASTCENC_ISA_SIMD} MATCHES "none")
            set(CMAKE_OSX_ARCHITECTURES x86_64)
         endif()
 
