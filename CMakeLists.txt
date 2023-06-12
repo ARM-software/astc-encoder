@@ -49,7 +49,6 @@ option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 
 # Preflight for some macOS-specific build options
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-    set(ASTCENC_MACOS_BUILD ON)
     option(ASTCENC_UNIVERSAL_BUILD "Enable universal multi-arch build" ON)
 
     if(${ASTCENC_UNIVERSAL_BUILD})
@@ -69,8 +68,6 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
             message(FATAL_ERROR "ISA_NATIVE cannot be used in a universal build")
         endif()
     endif()
-else()
-    set(ASTCENC_MACOS_BUILD OFF)
 endif()
 
 # Count options which MUST be x64
@@ -92,7 +89,7 @@ foreach(ASTCENC_CONFIG ${ASTCENC_CONFIGS})
 endforeach()
 
 # Non-macOS builds
-if(NOT "${ASTCENC_MACOS_BUILD}")
+if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     if(("${ASTCENC_ARM64_ISA_COUNT}" GREATER 0) AND ("${ASTCENC_X64_ISA_COUNT}" GREATER 0))
         message(FATAL_ERROR "Builds can only support a single architecture per configure.")
     endif()
@@ -121,7 +118,7 @@ printopt("SSE2 backend   " ${ASTCENC_ISA_SSE2})
 printopt("NEON backend   " ${ASTCENC_ISA_NEON})
 printopt("NONE backend   " ${ASTCENC_ISA_NONE})
 printopt("NATIVE backend " ${ASTCENC_ISA_NATIVE})
-if("${ASTCENC_MACOS_BUILD}")
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     printopt("Universal bin  " ${ASTCENC_UNIVERSAL_BUILD})
 endif()
 printopt("Invariance     " ${ASTCENC_INVARIANCE})
@@ -136,7 +133,7 @@ add_subdirectory(Source)
 
 # Configure package archive
 if(ASTCENC_PACKAGE)
-    if("${ASTCENC_MACOS_BUILD}")
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         string(TOLOWER "macOS" ASTCENC_PKG_OS)
     else()
         string(TOLOWER ${CMAKE_SYSTEM_NAME} ASTCENC_PKG_OS)
