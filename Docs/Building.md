@@ -85,8 +85,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ 
     -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # macOS universal binary build
-cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ \
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_NEON=ON ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ ..
 ```
 
 A single CMake configure can build multiple binaries for a single target CPU
@@ -94,14 +93,13 @@ architecture, for example building x64 for both SSE2 and AVX2. Each binary name
 will include the build variant as a postfix. It is possible to build any set of
 the supported SIMD variants by enabling only the ones you require.
 
-For macOS, we additionally support the ability to build a universal binary,
-combining one x86 and one arm64 variant into a single output binary. The OS
-will select the correct variant to run for the machine being used to run the
-built binary. To build a universal binary select a single x86 variant and a
-single arm64 variant, and both will be included in a single output binary. It
-is not required, but if `CMAKE_OSX_ARCHITECTURES` is set on the command line
-(e.g. by XCode-generated build commands) it will be validated against the other
-configuration variant settings.
+For macOS, we additionally support the ability to build a universal binary.
+This build includes SSE4.1 (`x86_64`), AVX2 (`x86_64h`), and NEON (`arm64`)
+build slices in a single output binary. The OS will select the correct variant
+to run for the machine being used. This is the default build target for a macOS
+build, but single-target binaries can still be built by setting
+`-DASTCENC_UNIVERSAL_BINARY=OFF` and then manually selecting the specific ISA
+variants that are required.
 
 ### Building
 
@@ -136,7 +134,9 @@ which can make profiling more challenging ...
 ### Shared Libraries
 
 We support building the core library as a shared object by setting the CMake
-option `-DASTCENC_SHAREDLIB=ON` at configure time.
+option `-DASTCENC_SHAREDLIB=ON` at configure time. For macOS build targets the
+shared library supports the same universal build configuration as the command
+line utility.
 
 Note that the command line tool is always statically linked; the shared objects
 are an extra build output that are not currently used by the command line tool.
