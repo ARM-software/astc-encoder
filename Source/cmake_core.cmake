@@ -432,9 +432,9 @@ if(${ASTCENC_CLI})
         PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR})
 
-    install(TARGETS ${ASTCENC_TARGET} DESTINATION ${PACKAGE_ROOT})
+    install(TARGETS ${ASTCENC_TARGET})
 endif()
 
 if(${ASTCENC_SHAREDLIB})
-    install(TARGETS ${ASTCENC_TARGET}-shared DESTINATION ${PACKAGE_ROOT})
+    install(TARGETS ${ASTCENC_TARGET}-shared)
 endif()

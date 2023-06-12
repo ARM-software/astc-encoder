@@ -37,14 +37,60 @@ foreach(INDEX RANGE ${ASTCENC_ARTIFACTS_LEN})
     list(GET ASTCENC_CONFIGS ${INDEX} ASTCENC_CONFIG)
     if(${ASTCENC_CONFIG})
         set(ASTCENC_ISA_SIMD ${ASTCENC_ARTIFACT})
+
+        if(${ASTCENC_ISA_SIMD} MATCHES "neon")
+           set(CMAKE_OSX_ARCHITECTURES arm64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
+           set(CMAKE_OSX_ARCHITECTURES x86_64h)
+        else()
+           set(CMAKE_OSX_ARCHITECTURES x86_64)
+        endif()
+
         include(cmake_core.cmake)
     endif()
 endforeach()
+
+if(${ASTCENC_CLI} AND ${ASTCENC_UNIVERSAL_BUILD})
+    add_custom_target(
+        astc${ASTCENC_CODEC}
+            ALL
+            COMMAND
+                lipo -create -output astc${ASTCENC_CODEC} -arch x86_64 astc${ASTCENC_CODEC}-sse4.1 -arch x86_64h astc${ASTCENC_CODEC}-avx2 -arch arm64 astc${ASTCENC_CODEC}-neon
+            VERBATIM)
+
+    add_dependencies(
+        astc${ASTCENC_CODEC}
+            astc${ASTCENC_CODEC}-sse4.1
+            astc${ASTCENC_CODEC}-avx2
+            astc${ASTCENC_CODEC}-neon)
+
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/astc${ASTCENC_CODEC}
+            DESTINATION bin)
+endif()
+
+if(${ASTCENC_SHAREDLIB} AND ${ASTCENC_UNIVERSAL_BUILD})
+    add_custom_target(
+        astc${ASTCENC_CODEC}-shared
+            ALL
+            COMMAND
+                lipo -create -output libastc${ASTCENC_CODEC}-shared.dylib -arch x86_64 libastc${ASTCENC_CODEC}-sse4.1-shared.dylib -arch x86_64h libastc${ASTCENC_CODEC}-avx2-shared.dylib -arch arm64 libastc${ASTCENC_CODEC}-neon-shared.dylib
+            VERBATIM)
+
+    add_dependencies(
+        astc${ASTCENC_CODEC}-shared
+            astc${ASTCENC_CODEC}-sse4.1-shared
+            astc${ASTCENC_CODEC}-avx2-shared
+            astc${ASTCENC_CODEC}-neon-shared)
+
+    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libastc${ASTCENC_CODEC}-shared.dylib
+            DESTINATION lib)
+endif()
 
 # - - - - - - - - - - - - - - - - - -
 # Unit testing
 if(${ASTCENC_UNITTEST})
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
     add_subdirectory(GoogleTest)
     enable_testing()
     add_subdirectory(UnitTest)

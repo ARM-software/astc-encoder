@@ -47,14 +47,17 @@ option(ASTCENC_UNITTEST "Enable astcenc builds with unit tests")
 option(ASTCENC_INVARIANCE "Enable astcenc floating point invariance" ON)
 option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 
-set(ASTCENC_UNIVERSAL_BUILD OFF)
-set(ASTCENC_MACOS_BUILD OFF)
-set(ASTCENC_MACOS_ARCH_LEN 0)
-
 # Preflight for some macOS-specific build options
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     set(ASTCENC_MACOS_BUILD ON)
-    list(LENGTH CMAKE_OSX_ARCHITECTURES ASTCENC_MACOS_ARCH_LEN)
+    option(ASTCENC_UNIVERSAL_BUILD "Enable universal multi-arch build" OFF)
+    if (${ASTCENC_UNIVERSAL_BUILD})
+        set(ASTCENC_ISA_SSE41 ON)
+        set(ASTCENC_ISA_AVX2 ON)
+        set(ASTCENC_ISA_NEON ON)
+    endif()
+else()
+    set(ASTCENC_MACOS_BUILD OFF)
 endif()
 
 # Count options which MUST be x64
