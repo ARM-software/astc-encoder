@@ -55,7 +55,7 @@ if(${ASTCENC_CLI} AND ${ASTCENC_UNIVERSAL_BUILD})
         astc${ASTCENC_CODEC}
             ALL
             COMMAND
-                lipo -create -output astc${ASTCENC_CODEC} -arch x86_64 astc${ASTCENC_CODEC}-sse4.1 -arch x86_64h astc${ASTCENC_CODEC}-avx2 -arch arm64 astc${ASTCENC_CODEC}-neon
+                lipo -create -output $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC} -arch x86_64 $<TARGET_FILE:astc${ASTCENC_CODEC}-sse4.1> -arch x86_64h $<TARGET_FILE:astc${ASTCENC_CODEC}-avx2> -arch arm64 $<TARGET_FILE:astc${ASTCENC_CODEC}-neon>
             VERBATIM)
 
     add_dependencies(
@@ -73,7 +73,7 @@ if(${ASTCENC_SHAREDLIB} AND ${ASTCENC_UNIVERSAL_BUILD})
         astc${ASTCENC_CODEC}-shared
             ALL
             COMMAND
-                lipo -create -output libastc${ASTCENC_CODEC}-shared.dylib -arch x86_64 libastc${ASTCENC_CODEC}-sse4.1-shared.dylib -arch x86_64h libastc${ASTCENC_CODEC}-avx2-shared.dylib -arch arm64 libastc${ASTCENC_CODEC}-neon-shared.dylib
+                lipo -create -output $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1-shared>/libastc${ASTCENC_CODEC}-shared.dylib -arch x86_64 $<TARGET_FILE:astc${ASTCENC_CODEC}-sse4.1-shared> -arch x86_64h $<TARGET_FILE:astc${ASTCENC_CODEC}-avx2-shared> -arch arm64 $<TARGET_FILE:astc${ASTCENC_CODEC}-neon-shared>
             VERBATIM)
 
     add_dependencies(
