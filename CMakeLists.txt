@@ -19,6 +19,7 @@
 cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0069 NEW)  # LTO support
 cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
+set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS "x86_64 x86_64h arm64")
 
 if(MSVC)
     add_compile_options("/wd4324") # Disable structure was padded due to alignment specifier
