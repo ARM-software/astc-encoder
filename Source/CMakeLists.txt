@@ -64,7 +64,7 @@ if(${ASTCENC_CLI} AND ${ASTCENC_UNIVERSAL_BUILD})
             astc${ASTCENC_CODEC}-avx2
             astc${ASTCENC_CODEC}-neon)
 
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/astc${ASTCENC_CODEC}
+    install(PROGRAMS $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1>/astc${ASTCENC_CODEC}
             DESTINATION bin)
 endif()
 
@@ -82,7 +82,7 @@ if(${ASTCENC_SHAREDLIB} AND ${ASTCENC_UNIVERSAL_BUILD})
             astc${ASTCENC_CODEC}-avx2-shared
             astc${ASTCENC_CODEC}-neon-shared)
 
-    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/libastc${ASTCENC_CODEC}-shared.dylib
+    install(PROGRAMS $<TARGET_FILE_DIR:astc${ASTCENC_CODEC}-sse4.1-shared>/libastc${ASTCENC_CODEC}-shared.dylib
             DESTINATION lib)
 endif()
 

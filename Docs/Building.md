@@ -10,7 +10,7 @@ backends.
 
 ## Windows
 
-Builds for Windows are tested with CMake 3.17 and Visual Studio 2019.
+Builds for Windows are tested with CMake 3.17, and Visual Studio 2019 or newer.
 
 ### Configuring the build
 
@@ -25,12 +25,12 @@ cd build
 
 # Configure your build of choice, for example:
 
-# x86-64 using NMake
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\ ^
+# x86-64 using a Visual Studio solution
+cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
     -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
-# x86-64 using Visual Studio solution
-cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
+# x86-64 using NMake
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\ ^
     -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 ```
 
@@ -54,9 +54,10 @@ cd build
 nmake install
 ```
 
-## macOS and Linux
+## macOS and Linux using Make
 
-Builds for macOS and Linux are tested with CMake 3.17 and clang++ 9.0.
+Builds for macOS and Linux are tested with CMake 3.17, and clang++ 9.0 or
+newer.
 
 > Compiling using g++ is supported, but clang++ builds are faster by ~15%.
 
@@ -111,6 +112,38 @@ your build dir, and install to your target install directory.
 # for executable binaries and `${CMAKE_INSTALL_PREFIX}/lib/` for libraries
 cd build
 make install -j16
+```
+
+## macOS using XCode
+
+Builds for macOS and Linux are tested with CMake 3.17, and XCode 14.0 or
+newer.
+
+### Configuring the build
+
+To use CMake you must first configure the build. Create a build directory
+in the root of the astcenc checkout, and then run `cmake` inside that directory
+to generate the build system.
+
+```shell
+# Create a build directory
+mkdir build
+cd build
+
+# Configure a universal build
+cmake -G Xcode -DCMAKE_INSTALL_PREFIX=../ ..
+```
+
+### Building
+
+Once you have configured the build you can use CMake to compile the project
+from your build dir, and install to your target install directory.
+
+```shell
+cmake --build . --config Release
+
+# Optionally install the binaries to the installation directory
+cmake --install . --config Release
 ```
 
 ## Advanced build options
