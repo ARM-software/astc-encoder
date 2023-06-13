@@ -69,6 +69,8 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
             message(FATAL_ERROR "ISA_NATIVE cannot be used in a universal build")
         endif()
     endif()
+else()
+    set(ASTCENC_UNIVERSAL_BUILD OFF)
 endif()
 
 # Count options which MUST be x64
