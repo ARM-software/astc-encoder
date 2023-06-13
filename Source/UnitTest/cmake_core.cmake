@@ -15,11 +15,8 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-if(${ASTCENC_UNIVERSAL_BUILD})
-    set(ASTCENC_TEST test-unit)
-else()
-    set(ASTCENC_TEST test-unit-${ASTCENC_ISA_SIMD})
-endif()
+
+set(ASTCENC_TEST test-unit-${ASTCENC_ISA_SIMD})
 
 add_executable(${ASTCENC_TEST})
 
@@ -60,67 +57,57 @@ target_compile_options(${ASTCENC_TEST}
 
 # Set up configuration for SIMD ISA builds
 if(${ASTCENC_ISA_SIMD} MATCHES "none")
-    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-        target_compile_definitions(${ASTCENC_TEST}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=0
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
-    endif()
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=0
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
-    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-        target_compile_definitions(${ASTCENC_TEST}
-            PRIVATE
-                ASTCENC_NEON=1
-                ASTCENC_SSE=0
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
-    endif()
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=1
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
-    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-        target_compile_definitions(${ASTCENC_TEST}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=20
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
-    endif()
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=0
+            ASTCENC_SSE=20
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
 
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
         $<$<CXX_COMPILER_ID:${GNU_LIKE}>:-msse2>)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
-    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-        target_compile_definitions(${ASTCENC_TEST}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=41
-                ASTCENC_AVX=0
-                ASTCENC_POPCNT=1
-                ASTCENC_F16C=0)
-    endif()
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=0
+            ASTCENC_SSE=41
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=1
+            ASTCENC_F16C=0)
 
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
-    if(NOT ${ASTCENC_UNIVERSAL_BUILD})
-        target_compile_definitions(${ASTCENC_TEST}
-            PRIVATE
-                ASTCENC_NEON=0
-                ASTCENC_SSE=41
-                ASTCENC_AVX=2
-                ASTCENC_POPCNT=1
-                ASTCENC_F16C=1)
-    endif()
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=0
+            ASTCENC_SSE=41
+            ASTCENC_AVX=2
+            ASTCENC_POPCNT=1
+            ASTCENC_F16C=1)
 
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
@@ -136,4 +123,4 @@ target_link_libraries(${ASTCENC_TEST}
 add_test(NAME ${ASTCENC_TEST}
          COMMAND ${ASTCENC_TEST})
 
-install(TARGETS ${ASTCENC_TEST} DESTINATION ${PACKAGE_ROOT})
+install(TARGETS ${ASTCENC_TEST})

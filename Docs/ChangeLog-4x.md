@@ -29,9 +29,13 @@ The 4.5.0 release is a maintenance release with minor fixes and improvements.
     with `/fp:contract`. This should improve performance for MSVC builds.
   * **Change:** CMake config variables now use an `ASTCENC_` prefix to add a
     namespace and group options when the library is used in a larger project.
+  * **Change:** CMake config `ASTCENC_UNIVERSAL_BUILD` for building macOS
+    universal binaries has been improved to include the `x86_64h` slice for
+    AVX2 builds. Universal builds are now on by default for macOS, and always
+    include NEON (arm64), SSE4.1 (x86_64), and AVX2 (x86_64h) variants.
   * **Change:** CMake config `ASTCENC_NO_INVARIANCE` has been inverted to
     remove the negated option, and is now `ASTCENC_INVARIANCE` with a default
-    of `ON`. Disablign this option can substantially improve performance, but
+    of `ON`. Disabling this option can substantially improve performance, but
     images can different across platforms and compilers.
 
 <!-- ---------------------------------------------------------------------- -->

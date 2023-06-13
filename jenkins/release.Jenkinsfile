@@ -225,7 +225,7 @@ spec:
                 sh '''
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_PACKAGE=universal ..
                   make install package -j4
                 '''
               }
@@ -249,8 +249,8 @@ spec:
             stage('Stash') {
               steps {
                 dir('build_rel') {
-                  stash name: 'astcenc-macos-x64', includes: '*.zip'
-                  stash name: 'astcenc-macos-x64-hash', includes: '*.zip.sha256'
+                  stash name: 'astcenc-macos-universal', includes: '*.zip'
+                  stash name: 'astcenc-macos-universal-hash', includes: '*.zip.sha256'
                 }
               }
             }
@@ -262,54 +262,6 @@ spec:
                 '''
               }
             }
-          }
-        }
-        /* Build for macOS on x86-64 using Clang */
-        stage('macOS arm64') {
-          agent {
-            label 'mac && x86_64 && notarizer'
-          }
-          stages {
-            stage('Clean') {
-              steps {
-                sh 'git clean -ffdx'
-              }
-            }
-            stage('Build R') {
-              steps {
-                sh '''
-                  mkdir build_rel
-                  cd build_rel
-                  cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NEON=ON -DASTCENC_PACKAGE=aarch64 ..
-                  make install package -j4
-                '''
-              }
-            }
-            stage('Sign and notarize') {
-              environment {
-                NOTARIZATION_CREDS = credentials('notarization-account')
-              }
-              steps {
-                dir('build_rel') {
-                  sh 'git clone ssh://eu-gerrit-1.euhpc.arm.com:29418/Hive/shared/signing'
-                  withCredentials([usernamePassword(credentialsId: 'win-signing',
-                                                    usernameVariable: 'USERNAME',
-                                                    passwordVariable: 'PASSWORD')]) {
-                    sh 'python3 ./signing/macos-client-wrapper.py ${USERNAME} *.zip'
-                    sh 'rm -rf ./signing'
-                  }
-                }
-              }
-            }
-            stage('Stash') {
-              steps {
-                dir('build_rel') {
-                  stash name: 'astcenc-macos-aarch64', includes: '*.zip'
-                  stash name: 'astcenc-macos-aarch64-hash', includes: '*.zip.sha256'
-                }
-              }
-            }
-            // TODO: Currently can't test automatically
           }
         }
       }
@@ -349,12 +301,10 @@ spec:
           steps {
             dir('upload') {
               unstash 'astcenc-linux-x64-hash'
-              unstash 'astcenc-macos-x64-hash'
-              unstash 'astcenc-macos-aarch64-hash'
+              unstash 'astcenc-macos-universal-hash'
 
               unstash 'astcenc-linux-x64'
-              unstash 'astcenc-macos-x64'
-              unstash 'astcenc-macos-aarch64'
+              unstash 'astcenc-universal-x64'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
@@ -395,13 +345,6 @@ spec:
         always {
           deleteDir()
         }
-      }
-    }
-  }
-  post {
-    failure {
-      script {
-        slackSend channel: '#dsg-eng-astcenc', color: 'danger', message: "Build ${JOB_NAME} ${BUILD_NUMBER} failed. (<${BUILD_URL}|Open>)", teamDomain: 'arm-dsg', tokenCredentialId: 'jenkins-slack', username: 'jenkins'
       }
     }
   }

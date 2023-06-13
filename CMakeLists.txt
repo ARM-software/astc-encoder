@@ -30,6 +30,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS "x86_64 x86_64h arm64")
 
 include(CTest)
 
@@ -47,14 +48,29 @@ option(ASTCENC_UNITTEST "Enable astcenc builds with unit tests")
 option(ASTCENC_INVARIANCE "Enable astcenc floating point invariance" ON)
 option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 
-set(ASTCENC_UNIVERSAL_BUILD OFF)
-set(ASTCENC_MACOS_BUILD OFF)
-set(ASTCENC_MACOS_ARCH_LEN 0)
-
 # Preflight for some macOS-specific build options
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-    set(ASTCENC_MACOS_BUILD ON)
-    list(LENGTH CMAKE_OSX_ARCHITECTURES ASTCENC_MACOS_ARCH_LEN)
+    option(ASTCENC_UNIVERSAL_BUILD "Enable universal multi-arch build" ON)
+
+    if(${ASTCENC_UNIVERSAL_BUILD})
+        set(ASTCENC_ISA_SSE41 ON)
+        set(ASTCENC_ISA_AVX2 ON)
+        set(ASTCENC_ISA_NEON ON)
+
+        if(${ASTCENC_ISA_SSE2})
+            message(FATAL_ERROR "ISA_SSE2 cannot be used in a universal build")
+        endif()
+
+        if(${ASTCENC_ISA_NONE})
+            message(FATAL_ERROR "ISA_NONE cannot be used in a universal build")
+        endif()
+
+        if(${ASTCENC_ISA_NATIVE})
+            message(FATAL_ERROR "ISA_NATIVE cannot be used in a universal build")
+        endif()
+    endif()
+else()
+    set(ASTCENC_UNIVERSAL_BUILD OFF)
 endif()
 
 # Count options which MUST be x64
@@ -75,104 +91,8 @@ foreach(ASTCENC_CONFIG ${ASTCENC_CONFIGS})
     endif()
 endforeach()
 
-# macOS builds
-if("${ASTCENC_MACOS_BUILD}")
-    list(FIND CMAKE_OSX_ARCHITECTURES "x86_64" ASTCENC_IS_X64)
-    list(FIND CMAKE_OSX_ARCHITECTURES "arm64" ASTCENC_IS_ARM64)
-    list(FIND CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD)" ASTCENC_IS_AUTO)
-
-    # Turn list index into boolean
-    if(${ASTCENC_IS_X64} EQUAL -1)
-        set(ASTCENC_IS_X64 OFF)
-    else()
-        set(ASTCENC_IS_X64 ON)
-    endif()
-
-    if(${ASTCENC_IS_ARM64} EQUAL -1)
-        set(ASTCENC_IS_ARM64 OFF)
-    else()
-        set(ASTCENC_IS_ARM64 ON)
-    endif()
-
-    if(${ASTCENC_IS_AUTO} EQUAL -1)
-        set(ASTCENC_IS_AUTO OFF)
-    else()
-        set(ASTCENC_IS_AUTO ON)
-    endif()
-
-    # Set up defaults if no more specific ISA set - use XCode's own defaults
-    if((ASTCENC_IS_ARM64 OR ASTCENC_IS_AUTO) AND ("${ASTCENC_ARM64_ISA_COUNT}" EQUAL 0) AND (NOT "${ASTCENC_ISA_NONE}"))
-        set(ASTCENC_ARM64_ISA_COUNT 1)
-        set(ASTCENC_ISA_NEON ON)
-    endif()
-
-    if((ASTCENC_IS_X64 OR ASTCENC_IS_AUTO) AND ("${ASTCENC_X64_ISA_COUNT}" EQUAL 0) AND (NOT "${ASTCENC_ISA_NONE}"))
-        set(ASTCENC_X64_ISA_COUNT 1)
-        set(ASTCENC_ISA_SSE41 ON)
-    endif()
-
-    # User might be doing multi-architecture - XCode sets this at runtime
-    if("${ASTCENC_IS_AUTO}")
-        if(("${ASTCENC_ARM64_ISA_COUNT}" GREATER 1) OR ("${ASTCENC_X64_ISA_COUNT}" GREATER 1))
-            message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
-        endif()
-
-        set(ASTCENC_UNIVERSAL_BUILD ON)
-
-    # User requested explicit multi-architecture universal build
-    elseif("${ASTCENC_MACOS_ARCH_LEN}" GREATER 2)
-        message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
-
-    elseif("${ASTCENC_MACOS_ARCH_LEN}" EQUAL 2)
-        if(NOT (${ASTCENC_IS_X64} AND ${ASTCENC_IS_ARM64}))
-            message(FATAL_ERROR "For macOS universal binaries only x86_64 and arm64 builds are allowed.")
-        endif()
-
-        if(("${ASTCENC_ARM64_ISA_COUNT}" GREATER 1) OR ("${ASTCENC_X64_ISA_COUNT}" GREATER 1))
-            message(FATAL_ERROR "For macOS universal binaries only one backend per architecture is allowed.")
-        endif()
-
-        set(ASTCENC_UNIVERSAL_BUILD ON)
-
-    # User requested explicit single architecture build
-    elseif("${ASTCENC_MACOS_ARCH_LEN}" EQUAL 1)
-        if("${ASTCENC_IS_X64}" AND "${ASTCENC_ARM64_ISA_COUNT}")
-            message(FATAL_ERROR "For macOS x86_64 builds an arm64 backend cannot be specified.")
-        endif()
-
-        if("${ASTCENC_IS_ARM64}" AND "${ASTCENC_X64_ISA_COUNT}")
-            message(FATAL_ERROR "For macOS arm64 builds an x86_64 backend cannot be specified.")
-        endif()
-
-    # Else is this a implicit multi-architecture universal build?
-    elseif(("${ASTCENC_ARM64_ISA_COUNT}" EQUAL 1) AND ("${ASTCENC_X64_ISA_COUNT}" GREATER 1))
-        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary. "
-                          "For universal binaries only one backend per architecture is allowed.")
-        message(FATAL_ERROR "${MSG}")
-
-    elseif(("${ASTCENC_X64_ISA_COUNT}" EQUAL 1) AND ("${ASTCENC_ARM64_ISA_COUNT}" GREATER 1))
-        string(CONCAT MSG "For macOS setting multiple architecture backends builds a universal binary. "
-                          "For universal binaries only one backend per architecture is allowed.")
-        message(FATAL_ERROR "${MSG}")
-
-    elseif(("${ASTCENC_ARM64_ISA_COUNT}" EQUAL 1) AND ("${ASTCENC_X64_ISA_COUNT}" EQUAL 1))
-        set(ASTCENC_UNIVERSAL_BUILD ON)
-        set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64")
-
-    # Else is this an implicit single architecture build?
-    elseif("${ASTCENC_ARM64_ISA_COUNT}" EQUAL 1)
-        set(CMAKE_OSX_ARCHITECTURES "arm64")
-
-    elseif("${ASTCENC_X64_ISA_COUNT}" EQUAL 1)
-        set(CMAKE_OSX_ARCHITECTURES "x86_64")
-
-    else()
-        # Do nothing here - assume it defaults to host?
-
-    endif()
-
 # Non-macOS builds
-else()
+if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     if(("${ASTCENC_ARM64_ISA_COUNT}" GREATER 0) AND ("${ASTCENC_X64_ISA_COUNT}" GREATER 0))
         message(FATAL_ERROR "Builds can only support a single architecture per configure.")
     endif()
@@ -201,7 +121,7 @@ printopt("SSE2 backend   " ${ASTCENC_ISA_SSE2})
 printopt("NEON backend   " ${ASTCENC_ISA_NEON})
 printopt("NONE backend   " ${ASTCENC_ISA_NONE})
 printopt("NATIVE backend " ${ASTCENC_ISA_NATIVE})
-if("${ASTCENC_MACOS_BUILD}")
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
     printopt("Universal bin  " ${ASTCENC_UNIVERSAL_BUILD})
 endif()
 printopt("Invariance     " ${ASTCENC_INVARIANCE})
@@ -216,7 +136,7 @@ add_subdirectory(Source)
 
 # Configure package archive
 if(ASTCENC_PACKAGE)
-    if("${ASTCENC_MACOS_BUILD}")
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         string(TOLOWER "macOS" ASTCENC_PKG_OS)
     else()
         string(TOLOWER ${CMAKE_SYSTEM_NAME} ASTCENC_PKG_OS)
