@@ -101,15 +101,13 @@ static void quantize_rgb(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float r0 = color0.lane<0>();
+	float g0 = color0.lane<1>();
+	float b0 = color0.lane<2>();
 
-	float r0 = astc::clamp255f(color0.lane<0>() * scale);
-	float g0 = astc::clamp255f(color0.lane<1>() * scale);
-	float b0 = astc::clamp255f(color0.lane<2>() * scale);
-
-	float r1 = astc::clamp255f(color1.lane<0>() * scale);
-	float g1 = astc::clamp255f(color1.lane<1>() * scale);
-	float b1 = astc::clamp255f(color1.lane<2>() * scale);
+	float r1 = color1.lane<0>();
+	float g1 = color1.lane<1>();
+	float b1 = color1.lane<2>();
 
 	int ri0, gi0, bi0, ri1, gi1, bi1;
 	float rgb0_addon = 0.0f;
@@ -154,10 +152,8 @@ static void quantize_rgba(
 	uint8_t output[8],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 
 	output[6] = quant_color(quant_level, astc::flt2int_rtn(a0), a0);
 	output[7] = quant_color(quant_level, astc::flt2int_rtn(a1), a1);
@@ -183,15 +179,13 @@ static bool try_quantize_rgb_blue_contract(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float r0 = color0.lane<0>();
+	float g0 = color0.lane<1>();
+	float b0 = color0.lane<2>();
 
-	float r0 = color0.lane<0>() * scale;
-	float g0 = color0.lane<1>() * scale;
-	float b0 = color0.lane<2>() * scale;
-
-	float r1 = color1.lane<0>() * scale;
-	float g1 = color1.lane<1>() * scale;
-	float b1 = color1.lane<2>() * scale;
+	float r1 = color1.lane<0>();
+	float g1 = color1.lane<1>();
+	float b1 = color1.lane<2>();
 
 	// Apply inverse blue-contraction. This can produce an overflow; which means BC cannot be used.
 	r0 += (r0 - b0);
@@ -249,11 +243,8 @@ static bool try_quantize_rgba_blue_contract(
 	uint8_t output[8],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
-
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 	output[6] = quant_color(quant_level, astc::flt2int_rtn(a1), a1);
 	output[7] = quant_color(quant_level, astc::flt2int_rtn(a0), a0);
 
@@ -280,15 +271,13 @@ static bool try_quantize_rgb_delta(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float r0 = color0.lane<0>();
+	float g0 = color0.lane<1>();
+	float b0 = color0.lane<2>();
 
-	float r0 = astc::clamp255f(color0.lane<0>() * scale);
-	float g0 = astc::clamp255f(color0.lane<1>() * scale);
-	float b0 = astc::clamp255f(color0.lane<2>() * scale);
-
-	float r1 = astc::clamp255f(color1.lane<0>() * scale);
-	float g1 = astc::clamp255f(color1.lane<1>() * scale);
-	float b1 = astc::clamp255f(color1.lane<2>() * scale);
+	float r1 = color1.lane<0>();
+	float g1 = color1.lane<1>();
+	float b1 = color1.lane<2>();
 
 	// Transform r0 to unorm9
 	int r0a = astc::flt2int_rtn(r0);
@@ -386,15 +375,13 @@ static bool try_quantize_rgb_delta_blue_contract(
 	quant_method quant_level
 ) {
 	// Note: Switch around endpoint colors already at start
-	float scale = 1.0f / 257.0f;
+	float r1 = color0.lane<0>();
+	float g1 = color0.lane<1>();
+	float b1 = color0.lane<2>();
 
-	float r1 = color0.lane<0>() * scale;
-	float g1 = color0.lane<1>() * scale;
-	float b1 = color0.lane<2>() * scale;
-
-	float r0 = color1.lane<0>() * scale;
-	float g0 = color1.lane<1>() * scale;
-	float b0 = color1.lane<2>() * scale;
+	float r0 = color1.lane<0>();
+	float g0 = color1.lane<1>();
+	float b0 = color1.lane<2>();
 
 	// Apply inverse blue-contraction. This can produce an overflow; which means BC cannot be used.
 	r0 += (r0 - b0);
@@ -519,10 +506,8 @@ static bool try_quantize_alpha_delta(
 	uint8_t output[8],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 
 	int a0a = astc::flt2int_rtn(a0);
 	a0a <<= 1;
@@ -589,13 +574,11 @@ static bool try_quantize_luminance_alpha_delta(
 	uint8_t output[4],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float l0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
+	float l1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
-	float l0 = astc::clamp255f(hadd_rgb_s(color0) * ((1.0f / 3.0f) * scale));
-	float l1 = astc::clamp255f(hadd_rgb_s(color1) * ((1.0f / 3.0f) * scale));
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 
 	int l0a = astc::flt2int_rtn(l0);
 	int a0a = astc::flt2int_rtn(a0);
@@ -774,6 +757,8 @@ static void quantize_rgbs(
 /**
  * @brief Quantize an LDR RGBA color using scale encoding.
  *
+ * @param      color0       The input unquantized color0 alpha endpoint.
+ * @param      color1       The input unquantized color1 alpha endpoint.
  * @param      color        The input unquantized color endpoint and scale factor.
  * @param[out] output       The output endpoints, returned as (r0, g0, b0, s, a0, a1).
  * @param      quant_level  The quantization level to use.
@@ -785,10 +770,8 @@ static void quantize_rgbs_alpha(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
-
-	float a0 = astc::clamp255f(color0.lane<3>() * scale);
-	float a1 = astc::clamp255f(color1.lane<3>() * scale);
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 
 	output[4] = quant_color(quant_level, astc::flt2int_rtn(a0), a0);
 	output[5] = quant_color(quant_level, astc::flt2int_rtn(a1), a1);
@@ -810,13 +793,8 @@ static void quantize_luminance(
 	uint8_t output[2],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
-
-	color0 = color0 * scale;
-	color1 = color1 * scale;
-
-	float lum0 = astc::clamp255f(hadd_rgb_s(color0) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f(hadd_rgb_s(color1) * (1.0f / 3.0f));
+	float lum0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
+	float lum1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
 	if (lum0 > lum1)
 	{
@@ -843,16 +821,11 @@ static void quantize_luminance_alpha(
 	uint8_t output[4],
 	quant_method quant_level
 ) {
-	float scale = 1.0f / 257.0f;
+	float lum0 = hadd_rgb_s(color0) * (1.0f / 3.0f);
+	float lum1 = hadd_rgb_s(color1) * (1.0f / 3.0f);
 
-	color0 = color0 * scale;
-	color1 = color1 * scale;
-
-	float lum0 = astc::clamp255f(hadd_rgb_s(color0) * (1.0f / 3.0f));
-	float lum1 = astc::clamp255f(hadd_rgb_s(color1) * (1.0f / 3.0f));
-
-	float a0 = astc::clamp255f(color0.lane<3>());
-	float a1 = astc::clamp255f(color1.lane<3>());
+	float a0 = color0.lane<3>();
+	float a1 = color1.lane<3>();
 
 	output[0] = quant_color(quant_level, astc::flt2int_rtn(lum0), lum0);
 	output[1] = quant_color(quant_level, astc::flt2int_rtn(lum1), lum1);
@@ -1939,9 +1912,14 @@ uint8_t pack_color_endpoints(
 ) {
 	assert(QUANT_6 <= quant_level && quant_level <= QUANT_256);
 
-	// We do not support negative colors
-	color0 = max(color0, 0.0f);
-	color1 = max(color1, 0.0f);
+	// Clamp colors to a valid LDR range
+	// Note that HDR has a lower max, handled in the conversion functions
+	color0 = clamp(0.0f, 65535.0f, color0);
+	color1 = clamp(0.0f, 65535.0f, color1);
+
+	// Pre-scale the LDR value we need to the 0-255 quantizable range
+	vfloat4 color0_ldr = color0 * (1.0f  / 257.0f);
+	vfloat4 color1_ldr = color1 * (1.0f  / 257.0f);
 
 	uint8_t retval = 0;
 
@@ -1950,13 +1928,13 @@ uint8_t pack_color_endpoints(
 	case FMT_RGB:
 		if (quant_level <= QUANT_160)
 		{
-			if (try_quantize_rgb_delta_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgb_delta_blue_contract(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGB_DELTA;
 				break;
 			}
 
-			if (try_quantize_rgb_delta(color0, color1, output, quant_level))
+			if (try_quantize_rgb_delta(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGB_DELTA;
 				break;
@@ -1965,27 +1943,27 @@ uint8_t pack_color_endpoints(
 
 		if (quant_level < QUANT_256)
 		{
-			if (try_quantize_rgb_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgb_blue_contract(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGB;
 				break;
 			}
 		}
 
-		quantize_rgb(color0, color1, output, quant_level);
+		quantize_rgb(color0_ldr, color1_ldr, output, quant_level);
 		retval = FMT_RGB;
 		break;
 
 	case FMT_RGBA:
 		if (quant_level <= QUANT_160)
 		{
-			if (try_quantize_rgba_delta_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgba_delta_blue_contract(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGBA_DELTA;
 				break;
 			}
 
-			if (try_quantize_rgba_delta(color0, color1, output, quant_level))
+			if (try_quantize_rgba_delta(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGBA_DELTA;
 				break;
@@ -1994,14 +1972,14 @@ uint8_t pack_color_endpoints(
 
 		if (quant_level < QUANT_256)
 		{
- 			if (try_quantize_rgba_blue_contract(color0, color1, output, quant_level))
+			if (try_quantize_rgba_blue_contract(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_RGBA;
 				break;
 			}
 		}
 
-		quantize_rgba(color0, color1, output, quant_level);
+		quantize_rgba(color0_ldr, color1_ldr, output, quant_level);
 		retval = FMT_RGBA;
 		break;
 
@@ -2021,7 +1999,7 @@ uint8_t pack_color_endpoints(
 		break;
 
 	case FMT_RGB_SCALE_ALPHA:
-		quantize_rgbs_alpha(color0, color1, rgbs_color, output, quant_level);
+		quantize_rgbs_alpha(color0_ldr, color1_ldr, rgbs_color, output, quant_level);
 		retval = FMT_RGB_SCALE_ALPHA;
 		break;
 
@@ -2037,20 +2015,20 @@ uint8_t pack_color_endpoints(
 		break;
 
 	case FMT_LUMINANCE:
-		quantize_luminance(color0, color1, output, quant_level);
+		quantize_luminance(color0_ldr, color1_ldr, output, quant_level);
 		retval = FMT_LUMINANCE;
 		break;
 
 	case FMT_LUMINANCE_ALPHA:
 		if (quant_level <= 18)
 		{
-			if (try_quantize_luminance_alpha_delta(color0, color1, output, quant_level))
+			if (try_quantize_luminance_alpha_delta(color0_ldr, color1_ldr, output, quant_level))
 			{
 				retval = FMT_LUMINANCE_ALPHA_DELTA;
 				break;
 			}
 		}
-		quantize_luminance_alpha(color0, color1, output, quant_level);
+		quantize_luminance_alpha(color0_ldr, color1_ldr, output, quant_level);
 		retval = FMT_LUMINANCE_ALPHA;
 		break;
 
