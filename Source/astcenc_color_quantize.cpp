@@ -56,6 +56,18 @@ static inline uint8_t quant_color(
 	return color_unquant_to_uquant_tables[quant_level - QUANT_6][index];
 }
 
+static inline vint4 quant_color3(
+	quant_method quant_level,
+	vint4 value
+) {
+	vint4 index = value * 2 + 1;
+	return vint4(
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<0>()],
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<1>()],
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<2>()],
+		0);
+}
+
 /**
  * @brief Determine the quantized value given a quantization level and residual.
  *
@@ -83,6 +95,26 @@ static inline uint8_t quant_color(
 	return color_unquant_to_uquant_tables[quant_level - QUANT_6][index];
 }
 
+static inline vint4 quant_color3(
+	quant_method quant_level,
+	vint4 value,
+	vfloat4 valuef
+) {
+	vint4 index = value * 2;
+
+	// Compute the residual to determine if we should round down or up ties.
+	// Test should be residual >= 0, but empirical testing shows small bias helps.
+	vfloat4 residual = valuef - int_to_float(value);
+	vmask4 mask = residual >= vfloat4(-0.1f);
+	index = select(index, index + 1, mask);
+
+	return vint4(
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<0>()],
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<1>()],
+		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<2>()],
+		0);
+}
+
 /**
  * @brief Quantize an LDR RGB color.
  *
@@ -101,36 +133,26 @@ static void quantize_rgb(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float r0 = color0.lane<0>();
-	float g0 = color0.lane<1>();
-	float b0 = color0.lane<2>();
+	vint4 color0i, color1i;
+	vfloat4 nudge(0.2f);
 
-	float r1 = color1.lane<0>();
-	float g1 = color1.lane<1>();
-	float b1 = color1.lane<2>();
-
-	int ri0, gi0, bi0, ri1, gi1, bi1;
-	float rgb0_addon = 0.0f;
-	float rgb1_addon = 0.0f;
 	do
 	{
-		ri0 = quant_color(quant_level, astc::max(astc::flt2int_rtn(r0 + rgb0_addon), 0), r0 + rgb0_addon);
-		gi0 = quant_color(quant_level, astc::max(astc::flt2int_rtn(g0 + rgb0_addon), 0), g0 + rgb0_addon);
-		bi0 = quant_color(quant_level, astc::max(astc::flt2int_rtn(b0 + rgb0_addon), 0), b0 + rgb0_addon);
-		ri1 = quant_color(quant_level, astc::min(astc::flt2int_rtn(r1 + rgb1_addon), 255), r1 + rgb1_addon);
-		gi1 = quant_color(quant_level, astc::min(astc::flt2int_rtn(g1 + rgb1_addon), 255), g1 + rgb1_addon);
-		bi1 = quant_color(quant_level, astc::min(astc::flt2int_rtn(b1 + rgb1_addon), 255), b1 + rgb1_addon);
+		vint4 color0q = max(float_to_int_rtn(color0), vint4(0));
+		color0i = quant_color3(quant_level, color0q, color0);
+		color0 = color0 - nudge;
 
-		rgb0_addon -= 0.2f;
-		rgb1_addon += 0.2f;
-	} while (ri0 + gi0 + bi0 > ri1 + gi1 + bi1);
+		vint4 color1q = min(float_to_int_rtn(color1), vint4(255));
+		color1i = quant_color3(quant_level, color1q, color1);
+		color1 = color1 + nudge;
+	} while (hadd_rgb_s(color0i) > hadd_rgb_s(color1i));
 
-	output[0] = static_cast<uint8_t>(ri0);
-	output[1] = static_cast<uint8_t>(ri1);
-	output[2] = static_cast<uint8_t>(gi0);
-	output[3] = static_cast<uint8_t>(gi1);
-	output[4] = static_cast<uint8_t>(bi0);
-	output[5] = static_cast<uint8_t>(bi1);
+	output[0] = static_cast<uint8_t>(color0i.lane<0>());
+	output[1] = static_cast<uint8_t>(color1i.lane<0>());
+	output[2] = static_cast<uint8_t>(color0i.lane<1>());
+	output[3] = static_cast<uint8_t>(color1i.lane<1>());
+	output[4] = static_cast<uint8_t>(color0i.lane<2>());
+	output[5] = static_cast<uint8_t>(color1i.lane<2>());
 }
 
 /**
@@ -179,49 +201,36 @@ static bool try_quantize_rgb_blue_contract(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float r0 = color0.lane<0>();
-	float g0 = color0.lane<1>();
-	float b0 = color0.lane<2>();
+	// Apply inverse blue-contraction
+	color0 += color0 - color0.swz<2, 2, 2, 3>();
+	color1 += color1 - color1.swz<2, 2, 2, 3>();
 
-	float r1 = color1.lane<0>();
-	float g1 = color1.lane<1>();
-	float b1 = color1.lane<2>();
-
-	// Apply inverse blue-contraction. This can produce an overflow; which means BC cannot be used.
-	r0 += (r0 - b0);
-	g0 += (g0 - b0);
-	r1 += (r1 - b1);
-	g1 += (g1 - b1);
-
-	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
-		r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
+	// If anything overflows BC cannot be used
+	vmask4 color0_error = (color0 < vfloat4(0.0f)) | (color0 > vfloat4(255.0f));
+	vmask4 color1_error = (color1 < vfloat4(0.0f)) | (color1 > vfloat4(255.0f));
+	if (any(color0_error | color1_error))
 	{
 		return false;
 	}
 
-	// Quantize the inverse-blue-contracted color
-	int ri0 = quant_color(quant_level, astc::flt2int_rtn(r0), r0);
-	int gi0 = quant_color(quant_level, astc::flt2int_rtn(g0), g0);
-	int bi0 = quant_color(quant_level, astc::flt2int_rtn(b0), b0);
+	// Quantize the inverse blue-contracted color
+	vint4 color0i = quant_color3(quant_level, float_to_int_rtn(color0), color0);
+	vint4 color1i = quant_color3(quant_level, float_to_int_rtn(color1), color1);
 
-	int ri1 = quant_color(quant_level, astc::flt2int_rtn(r1), r1);
-	int gi1 = quant_color(quant_level, astc::flt2int_rtn(g1), g1);
-	int bi1 = quant_color(quant_level, astc::flt2int_rtn(b1), b1);
-
-	// If color #1 is not larger than color #0 then blue-contraction cannot be used. Note that
-	// blue-contraction and quantization change this order, which is why we must test afterwards.
-	if (ri1 + gi1 + bi1 <= ri0 + gi0 + bi0)
+	// If color #1 is not larger than color #0 then blue-contraction cannot be used
+	// We must test afterwards because quantization can change the order
+	if (hadd_rgb_s(color1i) <= hadd_rgb_s(color0i))
 	{
 		return false;
 	}
 
-	output[0] = static_cast<uint8_t>(ri1);
-	output[1] = static_cast<uint8_t>(ri0);
-	output[2] = static_cast<uint8_t>(gi1);
-	output[3] = static_cast<uint8_t>(gi0);
-	output[4] = static_cast<uint8_t>(bi1);
-	output[5] = static_cast<uint8_t>(bi0);
-
+	// TODO: Can we vectorize this?
+	output[0] = static_cast<uint8_t>(color1i.lane<0>());
+	output[1] = static_cast<uint8_t>(color0i.lane<0>());
+	output[2] = static_cast<uint8_t>(color1i.lane<1>());
+	output[3] = static_cast<uint8_t>(color0i.lane<1>());
+	output[4] = static_cast<uint8_t>(color1i.lane<2>());
+	output[5] = static_cast<uint8_t>(color0i.lane<2>());
 	return true;
 }
 
@@ -271,80 +280,50 @@ static bool try_quantize_rgb_delta(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	float r0 = color0.lane<0>();
-	float g0 = color0.lane<1>();
-	float b0 = color0.lane<2>();
-
-	float r1 = color1.lane<0>();
-	float g1 = color1.lane<1>();
-	float b1 = color1.lane<2>();
-
-	// Transform r0 to unorm9
-	int r0a = astc::flt2int_rtn(r0);
-	int g0a = astc::flt2int_rtn(g0);
-	int b0a = astc::flt2int_rtn(b0);
-
-	r0a <<= 1;
-	g0a <<= 1;
-	b0a <<= 1;
+	// Transform color0 to unorm9
+	vint4 color0a = float_to_int_rtn(color0);
+	color0.set_lane<3>(0.0f);
+	color0a = lsl<1>(color0a);
 
 	// Mask off the top bit
-	int r0b = r0a & 0xFF;
-	int g0b = g0a & 0xFF;
-	int b0b = b0a & 0xFF;
+	vint4 color0b = color0a & 0xFF;
 
 	// Quantize then unquantize in order to get a value that we take differences against
-	int r0be = quant_color(quant_level, r0b);
-	int g0be = quant_color(quant_level, g0b);
-	int b0be = quant_color(quant_level, b0b);
-
-	r0b = r0be | (r0a & 0x100);
-	g0b = g0be | (g0a & 0x100);
-	b0b = b0be | (b0a & 0x100);
+	vint4 color0be = quant_color3(quant_level, color0b);
+	color0b = color0be | (color0a & 0x100);
 
 	// Get hold of the second value
-	int r1d = astc::flt2int_rtn(r1);
-	int g1d = astc::flt2int_rtn(g1);
-	int b1d = astc::flt2int_rtn(b1);
-
-	r1d <<= 1;
-	g1d <<= 1;
-	b1d <<= 1;
+	vint4 color1d = float_to_int_rtn(color1);
+	color1d = lsl<1>(color1d);
 
 	// ... and take differences
-	r1d -= r0b;
-	g1d -= g0b;
-	b1d -= b0b;
+	color1d = color1d - color0b;
+	color1d.set_lane<3>(0);
 
 	// Check if the difference is too large to be encodable
-	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
+	if (any((color1d > vint4(63)) | (color1d < vint4(-64))))
 	{
 		return false;
 	}
 
 	// Insert top bit of the base into the offset
-	r1d &= 0x7F;
-	g1d &= 0x7F;
-	b1d &= 0x7F;
-
-	r1d |= (r0b & 0x100) >> 1;
-	g1d |= (g0b & 0x100) >> 1;
-	b1d |= (b0b & 0x100) >> 1;
+	color1d = color1d & 0x7F;
+	color1d = color1d | lsr<1>(color0b & 0x100);
 
 	// Then quantize and unquantize; if this causes either top two bits to flip, then encoding fails
 	// since we have then corrupted either the top bit of the base or the sign bit of the offset
-	int r1de = quant_color(quant_level, r1d);
-	int g1de = quant_color(quant_level, g1d);
-	int b1de = quant_color(quant_level, b1d);
+	vint4 color1de = quant_color3(quant_level, color1d);
 
-	if (((r1d ^ r1de) | (g1d ^ g1de) | (b1d ^ b1de)) & 0xC0)
+	vint4 color_flips = (color1d ^ color1de) & 0xC0;
+	color_flips.set_lane<3>(0);
+	if (any(color_flips != vint4::zero()))
 	{
 		return false;
 	}
 
 	// If the sum of offsets triggers blue-contraction then encoding fails
-	vint4 ep0(r0be, g0be, b0be, 0);
-	vint4 ep1(r1de, g1de, b1de, 0);
+	vint4 ep0 = color0be;
+	vint4 ep1 = color1de;
 	bit_transfer_signed(ep1, ep0);
 	if (hadd_rgb_s(ep1) < 0)
 	{
@@ -358,13 +337,12 @@ static bool try_quantize_rgb_delta(
 		return false;
 	}
 
-	output[0] = static_cast<uint8_t>(r0be);
-	output[1] = static_cast<uint8_t>(r1de);
-	output[2] = static_cast<uint8_t>(g0be);
-	output[3] = static_cast<uint8_t>(g1de);
-	output[4] = static_cast<uint8_t>(b0be);
-	output[5] = static_cast<uint8_t>(b1de);
-
+	output[0] = static_cast<uint8_t>(color0be.lane<0>());
+	output[1] = static_cast<uint8_t>(color1de.lane<0>());
+	output[2] = static_cast<uint8_t>(color0be.lane<1>());
+	output[3] = static_cast<uint8_t>(color1de.lane<1>());
+	output[4] = static_cast<uint8_t>(color0be.lane<2>());
+	output[5] = static_cast<uint8_t>(color1de.lane<2>());
 	return true;
 }
 
@@ -375,92 +353,64 @@ static bool try_quantize_rgb_delta_blue_contract(
 	quant_method quant_level
 ) {
 	// Note: Switch around endpoint colors already at start
-	float r1 = color0.lane<0>();
-	float g1 = color0.lane<1>();
-	float b1 = color0.lane<2>();
+	std::swap(color0, color1);
 
-	float r0 = color1.lane<0>();
-	float g0 = color1.lane<1>();
-	float b0 = color1.lane<2>();
+	// Apply inverse blue-contraction
+	color0 += color0 - color0.swz<2, 2, 2, 3>();
+	color1 += color1 - color1.swz<2, 2, 2, 3>();
 
-	// Apply inverse blue-contraction. This can produce an overflow; which means BC cannot be used.
-	r0 += (r0 - b0);
-	g0 += (g0 - b0);
-	r1 += (r1 - b1);
-	g1 += (g1 - b1);
-
-	if (r0 < 0.0f || r0 > 255.0f || g0 < 0.0f || g0 > 255.0f || b0 < 0.0f || b0 > 255.0f ||
-	    r1 < 0.0f || r1 > 255.0f || g1 < 0.0f || g1 > 255.0f || b1 < 0.0f || b1 > 255.0f)
+	// If anything overflows BC cannot be used
+	vmask4 color0_error = (color0 < vfloat4(0.0f)) | (color0 > vfloat4(255.0f));
+	vmask4 color1_error = (color1 < vfloat4(0.0f)) | (color1 > vfloat4(255.0f));
+	if (any(color0_error | color1_error))
 	{
 		return false;
 	}
 
-	// Transform r0 to unorm9
-	int r0a = astc::flt2int_rtn(r0);
-	int g0a = astc::flt2int_rtn(g0);
-	int b0a = astc::flt2int_rtn(b0);
-	r0a <<= 1;
-	g0a <<= 1;
-	b0a <<= 1;
+	// Transform color0 to unorm9
+	vint4 color0a = float_to_int_rtn(color0);
+	color0.set_lane<3>(0.0f);
+	color0a = lsl<1>(color0a);
 
 	// Mask off the top bit
-	int r0b = r0a & 0xFF;
-	int g0b = g0a & 0xFF;
-	int b0b = b0a & 0xFF;
+	vint4 color0b = color0a & 0xFF;
 
-	// Quantize, then unquantize in order to get a value that we take differences against.
-	int r0be = quant_color(quant_level, r0b);
-	int g0be = quant_color(quant_level, g0b);
-	int b0be = quant_color(quant_level, b0b);
-
-	r0b = r0be | (r0a & 0x100);
-	g0b = g0be | (g0a & 0x100);
-	b0b = b0be | (b0a & 0x100);
+	// Quantize then unquantize in order to get a value that we take differences against
+	vint4 color0be = quant_color3(quant_level, color0b);
+	color0b = color0be | (color0a & 0x100);
 
 	// Get hold of the second value
-	int r1d = astc::flt2int_rtn(r1);
-	int g1d = astc::flt2int_rtn(g1);
-	int b1d = astc::flt2int_rtn(b1);
+	vint4 color1d = float_to_int_rtn(color1);
+	color1d = lsl<1>(color1d);
 
-	r1d <<= 1;
-	g1d <<= 1;
-	b1d <<= 1;
-
-	// .. and take differences!
-	r1d -= r0b;
-	g1d -= g0b;
-	b1d -= b0b;
+	// ... and take differences
+	color1d = color1d - color0b;
+	color1d.set_lane<3>(0);
 
 	// Check if the difference is too large to be encodable
-	if (r1d > 63 || g1d > 63 || b1d > 63 || r1d < -64 || g1d < -64 || b1d < -64)
+	if (any((color1d > vint4(63)) | (color1d < vint4(-64))))
 	{
 		return false;
 	}
 
 	// Insert top bit of the base into the offset
-	r1d &= 0x7F;
-	g1d &= 0x7F;
-	b1d &= 0x7F;
+	color1d = color1d & 0x7F;
+	color1d = color1d | lsr<1>(color0b & 0x100);
 
-	r1d |= (r0b & 0x100) >> 1;
-	g1d |= (g0b & 0x100) >> 1;
-	b1d |= (b0b & 0x100) >> 1;
+	// Then quantize and unquantize; if this causes either top two bits to flip, then encoding fails
+	// since we have then corrupted either the top bit of the base or the sign bit of the offset
+	vint4 color1de = quant_color3(quant_level, color1d);
 
-	// Then quantize and unquantize; if this causes any of the top two bits to flip,
-	// then encoding fails, since we have then corrupted either the top bit of the base
-	// or the sign bit of the offset.
-	int r1de = quant_color(quant_level, r1d);
-	int g1de = quant_color(quant_level, g1d);
-	int b1de = quant_color(quant_level, b1d);
-
-	if (((r1d ^ r1de) | (g1d ^ g1de) | (b1d ^ b1de)) & 0xC0)
+	vint4 color_flips = (color1d ^ color1de) & 0xC0;
+	color_flips.set_lane<3>(0);
+	if (any(color_flips != vint4::zero()))
 	{
 		return false;
 	}
 
 	// If the sum of offsets does not trigger blue-contraction then encoding fails
-	vint4 ep0(r0be, g0be, b0be, 0);
-	vint4 ep1(r1de, g1de, b1de, 0);
+	vint4 ep0 = color0be;
+	vint4 ep1 = color1de;
 	bit_transfer_signed(ep1, ep0);
 	if (hadd_rgb_s(ep1) >= 0)
 	{
@@ -474,13 +424,12 @@ static bool try_quantize_rgb_delta_blue_contract(
 		return false;
 	}
 
-	output[0] = static_cast<uint8_t>(r0be);
-	output[1] = static_cast<uint8_t>(r1de);
-	output[2] = static_cast<uint8_t>(g0be);
-	output[3] = static_cast<uint8_t>(g1de);
-	output[4] = static_cast<uint8_t>(b0be);
-	output[5] = static_cast<uint8_t>(b1de);
-
+	output[0] = static_cast<uint8_t>(color0be.lane<0>());
+	output[1] = static_cast<uint8_t>(color1de.lane<0>());
+	output[2] = static_cast<uint8_t>(color0be.lane<1>());
+	output[3] = static_cast<uint8_t>(color1de.lane<1>());
+	output[4] = static_cast<uint8_t>(color0be.lane<2>());
+	output[5] = static_cast<uint8_t>(color1de.lane<2>());
 	return true;
 }
 
