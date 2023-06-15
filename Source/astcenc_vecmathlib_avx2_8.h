@@ -1000,7 +1000,8 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
 {
-	return vint8(_mm256_cvttps_epi32(a.m + 0.5f));
+	a = a + vfloat8(0.5f);
+	return vint8(_mm256_cvttps_epi32(a.m));
 }
 
 

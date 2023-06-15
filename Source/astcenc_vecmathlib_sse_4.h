@@ -934,7 +934,8 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
-	return vint4(_mm_cvttps_epi32(a.m + 0.5f));
+	a = a + vfloat4(0.5f);
+	return vint4(_mm_cvttps_epi32(a.m));
 }
 
 /**
