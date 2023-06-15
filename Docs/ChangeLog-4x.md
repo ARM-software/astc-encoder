@@ -11,7 +11,8 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 **Status:** In development
 
-The 4.5.0 release is a maintenance release with minor fixes and improvements.
+The 4.5.0 release is a maintenance release with small image quality
+improvements, and a number of build system quality of life improvements.
 
 * **General:**
   * **Bug-fix:** Improved handling compiler arguments in CMake, including
@@ -37,6 +38,13 @@ The 4.5.0 release is a maintenance release with minor fixes and improvements.
     remove the negated option, and is now `ASTCENC_INVARIANCE` with a default
     of `ON`. Disabling this option can substantially improve performance, but
     images can different across platforms and compilers.
+  * **Optimization:** Color quantization and packing for LDR RGB and RGBA has
+    been vectorized to improve performance.
+  * **Change:** Color quantization for LDR RGB and RGBA will now try multiple
+    quantization packing methods, and pick the one with the lowest endpoint
+    encoding error. This gives a minor image quality improvement, for almost
+    no performance impact when combined with the vectorization optimizations
+    above.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.4.0

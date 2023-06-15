@@ -37,12 +37,11 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include <cstring>
 
 #include "astcenc_internal.h"
 
 /**
- * @brief Compute the error of an RGB encoding.
+ * @brief Compute the error of an LDR RGB or RGBA encoding.
  *
  * @param uquant0    The original endpoint 0 color.
  * @param uquant1    The original endpoint 1 color.
@@ -60,81 +59,6 @@ static float get_rgba_encoding_error(
 	vfloat4 error0 = uquant0 - int_to_float(quant0);
 	vfloat4 error1 = uquant1 - int_to_float(quant1);
 	return hadd_s(error0 * error0 + error1 * error1);
-}
-
-/**
- * @brief Un-blue-contract a color.
- *
- * This function reverses any applied blue contraction.
- *
- * @param input   The input color that has been blue-contracted.
- *
- * @return The uncontracted color.
- */
-static ASTCENC_SIMD_INLINE vint4 uncontract_color(
-	vint4 input
-) {
-	vmask4 mask(true, true, false, false);
-	vint4 bc0 = asr<1>(input + input.lane<2>());
-	return select(input, bc0, mask);
-}
-
-/**
- * @brief Unpack an LDR RGBA color that uses delta encoding.
- *
- * @param      input0    The packed endpoint 0 color.
- * @param      input1    The packed endpoint 1 color deltas.
- * @param[out] output0   The unpacked endpoint 0 color.
- * @param[out] output1   The unpacked endpoint 1 color.
- */
-static void rgba_delta_unpack(
-	vint4 input0,
-	vint4 input1,
-	vint4& output0,
-	vint4& output1
-) {
-	// Apply bit transfer
-	bit_transfer_signed(input1, input0);
-
-	// Apply blue-uncontraction if needed
-	int rgb_sum = hadd_rgb_s(input1);
-	input1 = input1 + input0;
-
-	if (rgb_sum < 0)
-	{
-		input0 = uncontract_color(input0);
-		input1 = uncontract_color(input1);
-		std::swap(input0, input1);
-	}
-
-	output0 = clamp(0, 255, input0);
-	output1 = clamp(0, 255, input1);
-}
-
-/**
- * @brief Unpack an LDR RGBA color that uses direct encoding.
- *
- * @param      input0    The packed endpoint 0 color.
- * @param      input1    The packed endpoint 1 color.
- * @param[out] output0   The unpacked endpoint 0 color.
- * @param[out] output1   The unpacked endpoint 1 color.
- */
-static void rgba_unpack(
-	vint4 input0,
-	vint4 input1,
-	vint4& output0,
-	vint4& output1
-) {
-	// Apply blue-uncontraction if needed
-	if (hadd_rgb_s(input0) > hadd_rgb_s(input1))
-	{
-		input0 = uncontract_color(input0);
-		input1 = uncontract_color(input1);
-		std::swap(input0, input1);
-	}
-
-	output0 = input0;
-	output1 = input1;
 }
 
 /**
