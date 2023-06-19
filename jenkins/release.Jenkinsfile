@@ -321,7 +321,7 @@ spec:
               }
               withCredentials([usernamePassword(credentialsId: 'cepe-artifactory-jenkins',
                                                 usernameVariable: 'AF_USER',
-                                                passwordVariable: 'APIKEY') {
+                                                passwordVariable: 'APIKEY')]) {
                 sh 'python3 ./signing/windows-client-wrapper.py -t ${APIKEY} -b ${BUILD_NUMBER} *.zip'
                 sh 'mv *.zip.sha256 ../'
                 sh 'mv *.zip ../'
