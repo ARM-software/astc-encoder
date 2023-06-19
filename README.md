@@ -64,9 +64,12 @@ Release build binaries for the `astcenc` stable releases are provided in the
 **Latest 3.x stable release:** 3.7
 * Change log: [3.x series](./Docs/ChangeLog-3x.md)
 
-Binaries are provided for 64-bit builds on Windows, macOS, and Linux. The
-builds of the astcenc are provided as multiple binaries, each tuned for a
-specific SIMD instruction set.
+Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
+
+## Windows and Linux
+
+For Windows and Linux the builds of the astcenc are provided as multiple
+binaries, each tuned for a specific SIMD instruction set.
 
 For x86-64 we provide, in order of increasing performance:
 
@@ -78,10 +81,19 @@ The x86-64 SSE2 builds will work on all x86-64 machines, but it is the slowest
 of the three. The other two require extended CPU instruction set support which
 is not universally available, but each step gains ~15% more performance.
 
-For Apple silicon macOS devices we provide:
+For Arm, if binaries are available, we provide:
 
 * `astcenc-neon` - uses NEON
 
+## macOS
+
+For macOS devices we provide a single universal binary `astcenc`, which allows
+the OS to automatically use the correct binary variant for the current host
+machine. Support is provided for three architecture slices:
+
+* `x86_64` - uses the `astcenc-sse4.1` build defined above.
+* `x86_64h` - uses the `astcenc-avx2` build defined above.
+* `arm64` - uses the `astcenc-neon` build defined above.
 
 ## Repository branches
 
