@@ -2,7 +2,7 @@
 ARTIFACTORY_URL=eu-west-1.artifactory.aws.arm.com
 DOCKER_REGISTRY=mobile-studio--docker.${ARTIFACTORY_URL}
 IMAGE_NAME=astcenc
-IMAGE_VERSION=3.1.0
+IMAGE_VERSION=3.2.0
 
 # Check Artifactory credentials are set
 if [[ -z "${ARTIFACTORY_CREDENTIALS}" ]]
