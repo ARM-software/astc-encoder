@@ -258,7 +258,7 @@ spec:
               steps {
                 sh '''
                   export PATH=/usr/local/bin:$PATH
-                  python3 ./Test/astc_test_image.py --test-set Small
+                  python3 ./Test/astc_test_image.py --test-set Small --encoder universal
                 '''
               }
             }

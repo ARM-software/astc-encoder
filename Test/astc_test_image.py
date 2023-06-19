@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2022 Arm Limited
+# Copyright 2019-2023 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -293,7 +293,7 @@ def parse_command_line():
                  "ref-main-neon", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
 
     # All test encoders
-    testcoders = ["none", "neon", "sse2", "sse4.1", "avx2", "native"]
+    testcoders = ["none", "neon", "sse2", "sse4.1", "avx2", "native", "universal"]
     testcodersAArch64 = ["neon"]
     testcodersX86 = ["sse2", "sse4.1", "avx2"]
 
