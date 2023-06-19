@@ -312,17 +312,17 @@ spec:
                 checkout changelog: false,
                          poll: false,
                          scm: [$class: 'GitSCM',
-                               branches: [[name: '*/master']],
+                               branches: [[name: '*/main']],
                                doGenerateSubmoduleConfigurations: false,
                                extensions: [],
                                submoduleCfg: [],
                                userRemoteConfigs: [[credentialsId: 'gerrit-jenkins-ssh',
                                                     url: 'ssh://mirror.eu-west-1.gerrit-eu01.aws.arm.com:29418/Hive/shared/signing']]]
               }
-              withCredentials([usernamePassword(credentialsId: 'win-signing',
-                                                usernameVariable: 'USERNAME',
-                                                passwordVariable: 'PASSWORD')]) {
-                sh 'python3 ./signing/windows-client-wrapper.py ${USERNAME} *.zip'
+              withCredentials([usernamePassword(credentialsId: 'cepe-artifactory-jenkins',
+                                                usernameVariable: 'AF_USER',
+                                                passwordVariable: 'APIKEY') {
+                sh 'python3 ./signing/windows-client-wrapper.py -t ${APIKEY} -b ${BUILD_NUMBER} *.zip'
                 sh 'mv *.zip.sha256 ../'
                 sh 'mv *.zip ../'
               }
