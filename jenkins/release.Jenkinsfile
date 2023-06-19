@@ -181,10 +181,10 @@ spec:
             stage('Build R') {
               steps {
                 bat '''
-                  call c:\\progra~2\\micros~1\\2019\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
-                  cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+                  cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
                   msbuild astcencoder.sln -property:Configuration=Release
                   msbuild PACKAGE.vcxproj -property:Configuration=Release
                   msbuild INSTALL.vcxproj -property:Configuration=Release
