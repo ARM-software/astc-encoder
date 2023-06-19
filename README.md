@@ -7,7 +7,7 @@ and decompressing images using the ASTC texture compression standard.
 ## The ASTC format
 
 The ASTC compressed data format, developed by Arm® and AMD, has been adopted as
-an official extension to the Open GL®, OpenGL ES, and Vulkan® graphics APIs. It
+an official extension to the OpenGL®, OpenGL ES, and Vulkan® graphics APIs. It
 provides a major step forward in terms of both the image quality at a given
 bitrate, and the format and bitrate flexibility available to content creators.
 This allows more assets to use compression, often at a reduced bitrate compared
