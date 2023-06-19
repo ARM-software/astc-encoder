@@ -304,7 +304,7 @@ spec:
               unstash 'astcenc-macos-universal-hash'
 
               unstash 'astcenc-linux-x64'
-              unstash 'astcenc-universal-x64'
+              unstash 'astcenc-macos-universal'
             }
             dir('upload/windows-x64') {
               unstash 'astcenc-windows-x64'
