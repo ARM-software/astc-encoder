@@ -58,10 +58,7 @@ from 0.89 bits/pixel up to 8 bits/pixel.
 Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
-**Latest 4.x stable release:** 4.4
 * Change log: [4.x series](./Docs/ChangeLog-4x.md)
-
-**Latest 3.x stable release:** 3.7
 * Change log: [3.x series](./Docs/ChangeLog-3x.md)
 
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.

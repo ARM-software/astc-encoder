@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.5.0
 
-**Status:** In development
+**Status:** June 2023
 
 The 4.5.0 release is a maintenance release with small image quality
 improvements, and a number of build system quality of life improvements.
@@ -20,6 +20,9 @@ improvements, and a number of build system quality of life improvements.
   * **Bug-fix:** Invariant Clang builds now use `-ffp-model=precise` with
     `-ffp-contract=off` which is needed to restore invariance due to recent
     changes in compiler defaults.
+  * **Change:** macOS binary releases are now distributed as a single universal
+    binary for all platforms.
+  * **Change:** Windows binary releases are now compiled with VS2022.
   * **Change:** Invariant MSVC builds for VS2022 now use `/fp:precise` instead
     of `/fp:strict`, which is is now possible because precise no longer implies
     contraction. This should improve performance for MSVC builds.
@@ -40,11 +43,11 @@ improvements, and a number of build system quality of life improvements.
     images can different across platforms and compilers.
   * **Optimization:** Color quantization and packing for LDR RGB and RGBA has
     been vectorized to improve performance.
-  * **Change:** Color quantization for LDR RGB and RGBA will now try multiple
-    quantization packing methods, and pick the one with the lowest endpoint
-    encoding error. This gives a minor image quality improvement, for almost
-    no performance impact when combined with the vectorization optimizations
-    above.
+  * **Change:** Color quantization for LDR RGB and RGBA endpoints will now try
+    multiple quantization packing methods, and pick the one with the lowest
+    endpoint encoding error. This gives a minor image quality improvement, for
+    no significant performance impact when combined with the vectorization
+    optimizations.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.4.0
