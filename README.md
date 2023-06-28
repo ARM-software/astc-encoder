@@ -1,8 +1,8 @@
 # About
 
-This is the official repository for the Arm® Adaptive Scalable Texture
-Compression (ASTC) Encoder, `astcenc`, a command-line tool for compressing
-and decompressing images using the ASTC texture compression standard.
+The Arm® Adaptive Scalable Texture Compression (ASTC) Encoder, `astcenc`, is
+a command-line tool for compressing and decompressing images using the ASTC 
+texture compression standard.
 
 ## The ASTC format
 
@@ -33,8 +33,8 @@ dynamic range (BMP, PNG, TGA), high dynamic range (EXR, HDR), or DDS and KTX
 wrapped output images.
 
 The encoder allows control over the compression time/quality tradeoff with
-`exhaustive`, `thorough`, `medium`, `fast`, and `fastest` encoding quality
-presets.
+`exhaustive`, `verythorough`, `thorough`, `medium`, `fast`, and `fastest` 
+encoding quality presets.
 
 The encoder allows compression time and quality analysis by reporting the
 compression time, and the Peak Signal-to-Noise Ratio (PSNR) between the input
