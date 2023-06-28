@@ -33,7 +33,7 @@ dynamic range (BMP, PNG, TGA), high dynamic range (EXR, HDR), or DDS and KTX
 wrapped output images.
 
 The encoder allows control over the compression time/quality tradeoff with
-`exhaustive`,  `verythorough`, `thorough`, `medium`, `fast`, and `fastest` 
+`exhaustive`, `verythorough`, `thorough`, `medium`, `fast`, and `fastest` 
 encoding quality presets.
 
 The encoder allows compression time and quality analysis by reporting the
