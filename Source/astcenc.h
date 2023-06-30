@@ -572,7 +572,7 @@ struct astcenc_config
 	 * This option is not part of the public API, and requires special builds
 	 * of the library.
 	 */
-	float db_target;
+	double db_target;
 
 	/**
 	 * @brief Search quality preset / effort level.

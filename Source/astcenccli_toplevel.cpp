@@ -1137,7 +1137,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 			config.block_size_test_mode = true;
-			config.db_target = static_cast<float>(atof(argv[argidx - 1]));
+			config.db_target = atof(argv[argidx - 1]);
 		}
 #endif
 		else // check others as well
@@ -2127,11 +2127,14 @@ int astcenc_main(
 
 		if (config.block_size_test_mode || iter != 0)
 		{
-			astcenc_error status = astcenc_config_init(profile, block_size_2D[curr_block_index][0], block_size_2D[curr_block_index][1], 1, original_config.quality, original_config.flags, &config);
+			astcenc_error status;
+			if (config.block_z > 1)
+				status = astcenc_config_init(profile, block_size_3D[curr_block_index][0], block_size_3D[curr_block_index][1], block_size_3D[curr_block_index][2], original_config.quality, original_config.flags, &config);
+			else
+				status = astcenc_config_init(profile, block_size_2D[curr_block_index][0], block_size_2D[curr_block_index][1], 1, original_config.quality, original_config.flags, &config);
+
 			if (status != ASTCENC_SUCCESS)
-			{
 				print_error("ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
-			}
 
 			config.block_size_test_mode = block_size_test_mode;
 			config.db_target = target_psnr;
