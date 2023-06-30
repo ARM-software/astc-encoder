@@ -466,6 +466,9 @@ astcenc_error astcenc_config_init(
 	{
 		return ASTCENC_ERR_BAD_QUALITY;
 	}
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	config.quality = quality;
+#endif
 
 	static const std::array<astcenc_preset_config, 6>* preset_configs;
 	int texels_int = block_x * block_y * block_z;
@@ -825,6 +828,14 @@ static void compress_image(
 	                     block_z == 1 && image.data_type == ASTCENC_TYPE_U8;
 
 	auto load_func = load_image_block;
+
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	// Seed setting for pick random samples
+	if (ctx.config.block_size_test_mode)
+		srand((unsigned int)time(NULL));
+#endif
+
 	if (use_fast_load)
 	{
 		load_func = load_image_block_fast_ldr;
@@ -847,6 +858,26 @@ static void compress_image(
 			unsigned int rem = i - (z * plane_blocks);
 			int y = rem / row_blocks;
 			int x = rem - (y * row_blocks);
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+			// Skip 90% blocks during the test to reduce overheads
+			if (ctx.config.block_size_test_mode && rand() % 10 != 0)
+			{
+				symbolic_compressed_block scb;
+
+				scb.block_type = SYM_BTYPE_CONST_U16;
+				vfloat4 color_f32 = clamp(0.0f, 1.0f, vfloat4::zero()) * 65535.0f;
+				vint4 color_u16 = float_to_int_rtn(color_f32);
+				store(color_u16, scb.constant_color);
+
+				// Compress to a physical block
+				int offset = ((z * yblocks + y) * xblocks + x) * 16;
+				uint8_t* bp = buffer + offset;
+				physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
+				symbolic_to_physical(bsd, scb, *pcb);
+				continue;
+			}
+#endif
 
 			// Test if we can apply some basic alpha-scale RDO
 			bool use_full_block = true;

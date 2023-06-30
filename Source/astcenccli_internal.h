@@ -356,6 +356,22 @@ void astcenc_print_longhelp();
  * @param fstop_lo                 The low exposure fstop (HDR only).
  * @param fstop_hi                 The high exposure fstop (HDR only).
  */
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+/**
+ * @param block_size_test_mode     True if the current mode is testing proper block sizes
+ * @return The calculated psnr value.
+ */
+double compute_error_metrics(
+	bool compute_hdr_metrics,
+	bool compute_normal_metrics,
+	int input_components,
+	const astcenc_image* img1,
+	const astcenc_image* img2,
+	int fstop_lo,
+	int fstop_hi,
+	bool block_size_test_mode = false
+);
+#else
 void compute_error_metrics(
 	bool compute_hdr_metrics,
 	bool compute_normal_metrics,
@@ -364,7 +380,7 @@ void compute_error_metrics(
 	const astcenc_image* img2,
 	int fstop_lo,
 	int fstop_hi);
-
+#endif
 /**
  * @brief Get the current time.
  *

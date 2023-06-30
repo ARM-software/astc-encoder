@@ -107,6 +107,21 @@ static float mpsnr_sumdiff(
 }
 
 /* See header for documentation */
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+/**
+ * @param  block_size_test_mode       A flag of block-size test mode
+ * @return The calculated PSNR value
+ */
+double compute_error_metrics(
+	bool compute_hdr_metrics,
+	bool compute_normal_metrics,
+	int input_components,
+	const astcenc_image* img1,
+	const astcenc_image* img2,
+	int fstop_lo,
+	int fstop_hi,
+	bool block_size_test_mode
+#else
 void compute_error_metrics(
 	bool compute_hdr_metrics,
 	bool compute_normal_metrics,
@@ -115,6 +130,7 @@ void compute_error_metrics(
 	const astcenc_image* img2,
 	int fstop_lo,
 	int fstop_hi
+#endif
 ) {
 	static const int componentmasks[5] { 0x00, 0x07, 0x0C, 0x07, 0x0F };
 	int componentmask = componentmasks[input_components];
@@ -231,7 +247,24 @@ void compute_error_metrics(
 
 					color2 = clamp(0, 65504.0f, color2);
 				}
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+				if (block_size_test_mode)
+				{
+					float pix_color1[4];
+					float pix_color2[4];
+					store(color1, pix_color1);
+					store(color2, pix_color2);
 
+					// Skip non-sample blocks in the current iteration
+					if (pix_color1[0] != 0.0f || pix_color1[1] != 0.0f || pix_color1[2] != 0.0f || pix_color1[3] != 0.0f)
+					{
+						if (pix_color2[0] == 0.0f && pix_color2[1] == 0.0f && pix_color2[2] == 0.0f && pix_color2[3] == 0.0f)
+						{
+							continue;
+						}
+					}
+				}
+#endif
 				rgb_peak = astc::max(static_cast<double>(color1.lane<0>()),
 				                     static_cast<double>(color1.lane<1>()),
 				                     static_cast<double>(color1.lane<2>()),
@@ -297,6 +330,12 @@ void compute_error_metrics(
 	double log_num = 0.0;
 	double mpsnr_num = 0.0;
 
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	// The number of pixels used in the test is 1/10 compared to that in the original
+	if (block_size_test_mode)
+		pixels /= 10;
+#endif
+
 	if (componentmask & 1)
 	{
 		num += errorsum.sum_r;
@@ -346,6 +385,12 @@ void compute_error_metrics(
 	}
 
 	double rgb_psnr = psnr;
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	// Skip the print quality metric logs during a test
+	if (block_size_test_mode)
+		return psnr;
+#endif
 
 	printf("Quality metrics\n");
 	printf("===============\n\n");
@@ -410,4 +455,9 @@ void compute_error_metrics(
 	}
 
 	printf("\n");
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	// Return the calculated psnr value for further block-size determination procesings
+	return psnr;
+#endif
 }

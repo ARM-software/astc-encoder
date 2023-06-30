@@ -180,6 +180,11 @@
 	#define ASTCENC_PUBLIC
 #endif
 
+/**
+ * @brief Temporal macro to enable the adaptive block-size determination feature
+ */
+#define ADAPTIVE_BLOCK_SIZE_DETERMINATION
+
 /* ============================================================================
     Data declarations
 ============================================================================ */
@@ -551,6 +556,30 @@ struct astcenc_config
 	 */
 	const char* trace_file_path;
 #endif
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	/**
+	 * @brief A flag of block-size test mode.
+	 *
+	 * This option is hidden in the argument.
+	 * If '-dbtarget' is set, it is also true during the block-size search
+	 */
+	bool block_size_test_mode;
+
+	/**
+	 * @brief The psnr target.
+	 *
+	 * This option is not part of the public API, and requires special builds
+	 * of the library.
+	 */
+	float db_target;
+
+	/**
+	 * @brief Search quality preset / effort level.
+	 */
+	float quality;
+#endif
+
 };
 
 /**

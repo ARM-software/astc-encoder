@@ -1127,6 +1127,19 @@ static int edit_astcenc_config(
 			argidx += 1;
 			cli_config.diagnostic_images = true;
 		}
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+		else if (!strcmp(argv[argidx], "-dbtarget")) //target psnr
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -dbtarget switch with no argument\n");
+				return 1;
+			}
+			config.block_size_test_mode = true;
+			config.db_target = static_cast<float>(atof(argv[argidx - 1]));
+		}
+#endif
 		else // check others as well
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -2065,136 +2078,272 @@ int astcenc_main(
 		             static_cast<double>(image_comp.dim_z);
 	}
 
-	// Compress an image
-	double best_compression_time = 100000.0;
-	double total_compression_time = 0.0;
-	if (operation & ASTCENC_STAGE_COMPRESS)
-	{
-		print_astcenc_config(cli_config, config);
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+	bool block_size_test_mode = config.block_size_test_mode;
+	// Store the original config and operation to recover them later
+	astcenc_config original_config = config;
+	astcenc_operation original_operation = operation;
 
-		unsigned int blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
-		unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
-		unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
-		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
-		uint8_t* buffer = new uint8_t[buffer_size];
-
-		compression_workload work;
-		work.context = codec_context;
-		work.image = image_uncomp_in;
-		work.swizzle = cli_config.swz_encode;
-		work.data_out = buffer;
-		work.data_len = buffer_size;
-		work.error = ASTCENC_SUCCESS;
-
-		// Only launch worker threads for multi-threaded use - it makes basic
-		// single-threaded profiling and debugging a little less convoluted
-		double start_compression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
-		{
-			double start_iter_time = get_time();
-			if (cli_config.thread_count > 1)
-			{
-				launch_threads(cli_config.thread_count, compression_workload_runner, &work);
-			}
-			else
-			{
-				work.error = astcenc_compress_image(
-					work.context, work.image, &work.swizzle,
-					work.data_out, work.data_len, 0);
-			}
-
-			astcenc_compress_reset(codec_context);
-
-			double iter_time = get_time() - start_iter_time;
-			best_compression_time = astc::min(iter_time, best_compression_time);
-		}
-		total_compression_time = get_time() - start_compression_time;
-
-		if (work.error != ASTCENC_SUCCESS)
-		{
-			print_error("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
-			return 1;
-		}
-
-		image_comp.block_x = config.block_x;
-		image_comp.block_y = config.block_y;
-		image_comp.block_z = config.block_z;
-		image_comp.dim_x = image_uncomp_in->dim_x;
-		image_comp.dim_y = image_uncomp_in->dim_y;
-		image_comp.dim_z = image_uncomp_in->dim_z;
-		image_comp.data = buffer;
-		image_comp.data_len = buffer_size;
-	}
-
-	// Decompress an image
-	double best_decompression_time = 100000.0;
-	double total_decompression_time = 0.0;
-	if (operation & ASTCENC_STAGE_DECOMPRESS)
-	{
-		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
-		if (out_bitness == 0)
-		{
-			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) || (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
-			out_bitness = is_hdr ? 16 : 8;
-		}
-
-		image_decomp_out = alloc_image(
-		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
-
-		decompression_workload work;
-		work.context = codec_context;
-		work.data = image_comp.data;
-		work.data_len = image_comp.data_len;
-		work.image_out = image_decomp_out;
-		work.swizzle = cli_config.swz_decode;
-		work.error = ASTCENC_SUCCESS;
-
-		// Only launch worker threads for multi-threaded use - it makes basic
-		// single-threaded profiling and debugging a little less convoluted
-		double start_decompression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
-		{
-			double start_iter_time = get_time();
-			if (cli_config.thread_count > 1)
-			{
-				launch_threads(cli_config.thread_count, decompression_workload_runner, &work);
-			}
-			else
-			{
-				work.error = astcenc_decompress_image(
-				    work.context, work.data, work.data_len,
-				    work.image_out, &work.swizzle, 0);
-			}
-
-			astcenc_decompress_reset(codec_context);
-
-			double iter_time = get_time() - start_iter_time;
-			best_decompression_time = astc::min(iter_time, best_decompression_time);
-		}
-		total_decompression_time = get_time() - start_decompression_time;
-
-		if (work.error != ASTCENC_SUCCESS)
-		{
-			print_error("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
-			return 1;
-		}
-	}
-
+	// Declartation of some variables have been reloacted to here
 #if defined(_WIN32)
 	bool is_null = output_filename == "NUL" || output_filename == "nul";
 #else
 	bool is_null = output_filename == "/dev/null";
 #endif
-
-   // Print metrics in comparison mode
-	if (operation & ASTCENC_STAGE_COMPARE)
+	double best_compression_time = (config.block_size_test_mode)? 0:100000.0;
+	double total_compression_time = 0.0;
+	double best_decompression_time = (config.block_size_test_mode) ? 0 : 100000.0;
+	double total_decompression_time = 0.0;
+	double target_psnr = (block_size_test_mode) ? config.db_target : 0;
+	int direction = 0; //-1:left 1:right
+	double psnr = 0;
+	int curr_block_index;
+	const int block_size_2D[14][2] = {
+		{4, 4}, {5, 4}, {5, 5}, {6, 5}, {6, 6},
+		{8, 5}, {8, 6}, {10, 5}, {10, 6}, {8, 8},
+		{10, 8}, {10, 10}, {12, 10}, {12, 12}
+	};
+	const int block_size_3D[10][3] = {
+			{ 3, 3, 3}, { 4, 3, 3 }, { 4, 4, 3 }, { 4, 4, 4 }, { 5, 4, 4 },
+			{ 5, 5, 4 }, { 5, 5, 5 }, { 6, 5, 5 }, { 6, 6, 5 }, { 6, 6, 6 }
+	};
+	if (config.block_z > 1)
+		curr_block_index = config.block_x + config.block_y + config.block_z - 9;
+	else
 	{
-		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
-
-		compute_error_metrics(
-		    image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
-		    image_uncomp_in, image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
+		if (config.block_y < 8)
+			curr_block_index = config.block_x + config.block_y - 8;
+		else if (config.block_x == 8 && config.block_y == 8)
+			curr_block_index = config.block_x + config.block_y - 7;
+		else
+			curr_block_index = config.block_x + ((config.block_x == config.block_y) ? 1 : 0);
 	}
+	int iter = 0;
+	while (true)
+	{
+		if (config.block_size_test_mode)
+			operation = ASTCENC_OP_TEST;
+		else operation = original_operation;
+
+		if (config.block_size_test_mode || iter != 0)
+		{
+			astcenc_error status = astcenc_config_init(profile, block_size_2D[curr_block_index][0], block_size_2D[curr_block_index][1], 1, original_config.quality, original_config.flags, &config);
+			if (status != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
+			}
+
+			config.block_size_test_mode = block_size_test_mode;
+			config.db_target = target_psnr;
+			if (codec_context != NULL)
+				astcenc_context_free(codec_context);
+
+			codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context);
+			if (codec_status != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
+				return 1;
+			}
+		}
+#endif
+
+#ifndef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+		// Compress an image
+		double best_compression_time = 100000.0;
+		double total_compression_time = 0.0;
+#endif
+		if (operation & ASTCENC_STAGE_COMPRESS)
+		{
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+			if (!block_size_test_mode)
+#endif
+				print_astcenc_config(cli_config, config);
+
+			unsigned int blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
+			unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
+			unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
+			size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
+			uint8_t* buffer = new uint8_t[buffer_size];
+
+			compression_workload work;
+			work.context = codec_context;
+			work.image = image_uncomp_in;
+			work.swizzle = cli_config.swz_encode;
+			work.data_out = buffer;
+			work.data_len = buffer_size;
+			work.error = ASTCENC_SUCCESS;
+
+			// Only launch worker threads for multi-threaded use - it makes basic
+			// single-threaded profiling and debugging a little less convoluted
+			double start_compression_time = get_time();
+			for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+			{
+				double start_iter_time = get_time();
+				if (cli_config.thread_count > 1)
+				{
+					launch_threads(cli_config.thread_count, compression_workload_runner, &work);
+				}
+				else
+				{
+					work.error = astcenc_compress_image(
+						work.context, work.image, &work.swizzle,
+						work.data_out, work.data_len, 0);
+				}
+
+				astcenc_compress_reset(codec_context);
+
+				double iter_time = get_time() - start_iter_time;
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+				if (config.block_size_test_mode || iter != 0)
+					best_compression_time += iter_time;
+				else
+#endif
+					best_compression_time = astc::min(iter_time, best_compression_time);
+
+			}
+			total_compression_time = get_time() - start_compression_time;
+
+			if (work.error != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
+				return 1;
+			}
+
+			image_comp.block_x = config.block_x;
+			image_comp.block_y = config.block_y;
+			image_comp.block_z = config.block_z;
+			image_comp.dim_x = image_uncomp_in->dim_x;
+			image_comp.dim_y = image_uncomp_in->dim_y;
+			image_comp.dim_z = image_uncomp_in->dim_z;
+			image_comp.data = buffer;
+			image_comp.data_len = buffer_size;
+		}
+
+		// Decompress an image
+#ifndef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+		double best_decompression_time = 100000.0;
+		double total_decompression_time = 0.0;
+#endif
+		if (operation & ASTCENC_STAGE_DECOMPRESS)
+		{
+			int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
+			if (out_bitness == 0)
+			{
+				bool is_hdr = (config.profile == ASTCENC_PRF_HDR) || (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
+				out_bitness = is_hdr ? 16 : 8;
+			}
+
+			image_decomp_out = alloc_image(
+				out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
+
+			decompression_workload work;
+			work.context = codec_context;
+			work.data = image_comp.data;
+			work.data_len = image_comp.data_len;
+			work.image_out = image_decomp_out;
+			work.swizzle = cli_config.swz_decode;
+			work.error = ASTCENC_SUCCESS;
+
+			// Only launch worker threads for multi-threaded use - it makes basic
+			// single-threaded profiling and debugging a little less convoluted
+			double start_decompression_time = get_time();
+			for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+			{
+				double start_iter_time = get_time();
+				if (cli_config.thread_count > 1)
+				{
+					launch_threads(cli_config.thread_count, decompression_workload_runner, &work);
+				}
+				else
+				{
+					work.error = astcenc_decompress_image(
+						work.context, work.data, work.data_len,
+						work.image_out, &work.swizzle, 0);
+				}
+
+				astcenc_decompress_reset(codec_context);
+
+				double iter_time = get_time() - start_iter_time;
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+				if (config.block_size_test_mode || iter != 0)
+					best_decompression_time += iter_time;
+				else
+#endif
+					best_decompression_time = astc::min(iter_time, best_decompression_time);
+			}
+			total_decompression_time = get_time() - start_decompression_time;
+
+			if (work.error != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Codec decompress failed: %s\n", astcenc_get_error_string(codec_status));
+				return 1;
+			}
+		}
+
+#ifndef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+#if defined(_WIN32)
+		bool is_null = output_filename == "NUL" || output_filename == "nul";
+#else
+		bool is_null = output_filename == "/dev/null";
+#endif
+#endif
+
+		// Print metrics in comparison mode
+		if (operation & ASTCENC_STAGE_COMPARE)
+		{
+			bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
+
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+			psnr = compute_error_metrics(
+				image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
+				image_uncomp_in, image_decomp_out, cli_config.low_fstop, cli_config.high_fstop,
+				block_size_test_mode);
+#else
+			compute_error_metrics(
+				image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
+				image_uncomp_in, image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
+#endif
+		}
+#ifdef ADAPTIVE_BLOCK_SIZE_DETERMINATION
+		// Determine the next block size and mode
+		if (block_size_test_mode)
+		{
+			bool terminate_block_size_test_mode = false;
+			if (direction == 0)
+				direction = (psnr >= target_psnr) ? 1 : -1;
+
+			if (direction == 1)
+			{
+				if (psnr < target_psnr)
+				{
+					curr_block_index--;
+					terminate_block_size_test_mode = true;
+				}
+				if ((curr_block_index == 13 && config.block_z == 1) ||
+					(curr_block_index == 9 && config.block_z != 1))
+					terminate_block_size_test_mode = true;
+			}
+
+			if (direction == -1)
+			{
+				if (psnr >= target_psnr || curr_block_index == 0)
+					terminate_block_size_test_mode = true;
+			}
+
+			if (terminate_block_size_test_mode)
+			{
+				block_size_test_mode = false;
+				config = original_config;
+				config.block_size_test_mode = false;
+			}
+			else
+				curr_block_index += direction;
+		}
+		else break;
+		iter++;
+	}
+#endif
 
 	// Store compressed image
 	if (operation & ASTCENC_STAGE_ST_COMP)
