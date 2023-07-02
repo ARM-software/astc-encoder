@@ -256,6 +256,9 @@ static inline uint8_t partition_mismatch2(
 ) {
 	int v1 = popcount(a[0] ^ b[0]) + popcount(a[1] ^ b[1]);
 	int v2 = popcount(a[0] ^ b[1]) + popcount(a[1] ^ b[0]);
+
+	// Divide by 2 because XOR always counts errors twice, once when missing
+	// in the expected position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v1, v2) / 2);
 }
 
@@ -295,6 +298,8 @@ static inline uint8_t partition_mismatch3(
 	int s5 = p11 + p20;
 	int v2 = astc::min(s4, s5) + p02;
 
+	// Divide by 2 because XOR always counts errors twice, once when missing
+	// in the expected position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2) / 2);
 }
 
@@ -342,6 +347,8 @@ static inline uint8_t partition_mismatch4(
 	int v2 = p02 + astc::min(p11 + mx03, p10 + mx13, p13 + mx01);
 	int v3 = p03 + astc::min(p11 + mx02, p12 + mx01, p10 + mx12);
 
+	// Divide by 2 because XOR always counts errors twice, once when missing
+	// in the expected position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2, v3) / 2);
 }
 
@@ -488,7 +495,7 @@ static unsigned int compute_kmeans_partition_ordering(
 
 	// Sort the partitions based on the number of mismatched bits
 	return get_partition_ordering_by_mismatch_bits(
-		bsd.texel_count,
+	    bsd.texel_count,
 	    bsd.partitioning_count_selected[partition_count - 1],
 	    mismatch_counts, partition_ordering);
 }
