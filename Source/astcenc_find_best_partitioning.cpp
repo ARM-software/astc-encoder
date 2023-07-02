@@ -495,7 +495,7 @@ static unsigned int compute_kmeans_partition_ordering(
 
 	// Sort the partitions based on the number of mismatched bits
 	return get_partition_ordering_by_mismatch_bits(
-	    bsd.texel_count,
+	    texels_to_process,
 	    bsd.partitioning_count_selected[partition_count - 1],
 	    mismatch_counts, partition_ordering);
 }
