@@ -504,10 +504,10 @@ astcenc_error astcenc_config_init(
 		config.tune_4partition_index_limit = (*preset_configs)[start].tune_4partition_index_limit;
 		config.tune_block_mode_limit = (*preset_configs)[start].tune_block_mode_limit;
 		config.tune_refinement_limit = (*preset_configs)[start].tune_refinement_limit;
-		config.tune_candidate_limit = astc::min((*preset_configs)[start].tune_candidate_limit, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
-		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
-		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
+		config.tune_candidate_limit = (*preset_configs)[start].tune_candidate_limit;
+		config.tune_2partitioning_candidate_limit = (*preset_configs)[start].tune_2partitioning_candidate_limit;
+		config.tune_3partitioning_candidate_limit = (*preset_configs)[start].tune_3partitioning_candidate_limit;
+		config.tune_4partitioning_candidate_limit = (*preset_configs)[start].tune_4partitioning_candidate_limit;
 		config.tune_db_limit = astc::max((*preset_configs)[start].tune_db_limit_a_base - 35 * ltexels,
 		                                 (*preset_configs)[start].tune_db_limit_b_base - 19 * ltexels);
 
@@ -542,14 +542,10 @@ astcenc_error astcenc_config_init(
 		config.tune_4partition_index_limit = LERPI(tune_4partition_index_limit);
 		config.tune_block_mode_limit = LERPI(tune_block_mode_limit);
 		config.tune_refinement_limit = LERPI(tune_refinement_limit);
-		config.tune_candidate_limit = astc::min(LERPUI(tune_candidate_limit),
-		                                        TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min(LERPUI(tune_2partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
-		config.tune_3partitioning_candidate_limit = astc::min(LERPUI(tune_3partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
-		config.tune_4partitioning_candidate_limit = astc::min(LERPUI(tune_4partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
+		config.tune_candidate_limit = LERPUI(tune_candidate_limit);
+		config.tune_2partitioning_candidate_limit = LERPUI(tune_2partitioning_candidate_limit);
+		config.tune_3partitioning_candidate_limit = LERPUI(tune_3partitioning_candidate_limit);
+		config.tune_4partitioning_candidate_limit = LERPUI(tune_4partitioning_candidate_limit);
 		config.tune_db_limit = astc::max(LERP(tune_db_limit_a_base) - 35 * ltexels,
 		                                 LERP(tune_db_limit_b_base) - 19 * ltexels);
 
