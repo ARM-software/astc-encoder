@@ -376,7 +376,7 @@ static void count_partition_mismatch_bits(
 		for (unsigned int i = 0; i < active_count; i++)
 		{
 			mismatch_counts[i] = partition_mismatch2(bitmaps, bsd.coverage_bitmaps_2[i]);
-			assert(mismatch_counts[i] < 64);
+			assert(mismatch_counts[i] < BLOCK_MAX_KMEANS_TEXELS);
 			assert(mismatch_counts[i] < bsd.texel_count);
 		}
 	}
@@ -385,7 +385,7 @@ static void count_partition_mismatch_bits(
 		for (unsigned int i = 0; i < active_count; i++)
 		{
 			mismatch_counts[i] = partition_mismatch3(bitmaps, bsd.coverage_bitmaps_3[i]);
-			assert(mismatch_counts[i] < 64);
+			assert(mismatch_counts[i] < BLOCK_MAX_KMEANS_TEXELS);
 			assert(mismatch_counts[i] < bsd.texel_count);
 		}
 	}
@@ -394,7 +394,7 @@ static void count_partition_mismatch_bits(
 		for (unsigned int i = 0; i < active_count; i++)
 		{
 			mismatch_counts[i] = partition_mismatch4(bitmaps, bsd.coverage_bitmaps_4[i]);
-			assert(mismatch_counts[i] < 64);
+			assert(mismatch_counts[i] < BLOCK_MAX_KMEANS_TEXELS);
 			assert(mismatch_counts[i] < bsd.texel_count);
 		}
 	}

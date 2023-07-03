@@ -79,7 +79,7 @@ static constexpr unsigned int BLOCK_MAX_PARTITIONS { 4 };
 /** @brief The number of partitionings, per partition count, suported by the ASTC format. */
 static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
 
-/** @brief The maximum number of weights used during partition selection for texel clustering. */
+/** @brief The maximum number of texels used during partition selection for texel clustering. */
 static constexpr uint8_t BLOCK_MAX_KMEANS_TEXELS { 64 };
 
 /** @brief The maximum number of weights a block can support. */
