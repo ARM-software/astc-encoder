@@ -119,11 +119,9 @@ static constexpr unsigned int WEIGHTS_MAX_DECIMATION_MODES { 87 };
 static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 
 /**
- * @brief The minimum texel count for a block to use the one partition fast path.
- *
- * This setting skips 4x4 and 5x4 block sizes.
+ * @brief The minimum tuning setting threshold for the one partition fast path.
  */
-static constexpr unsigned int TUNE_MIN_TEXELS_MODE0_FASTPATH { 24 };
+static constexpr float TUNE_MIN_SEARCH_MODE0 { 0.85f };
 
 /**
  * @brief The maximum number of candidate encodings tested for each encoding mode.
