@@ -7,6 +7,29 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.6.0
+
+**Status:** In development
+
+The 4.6.0 release retunes the compressor heuristics to give improvements to
+performance for trivial losses to image quality.
+
+Reminder - the codec library API is not designed to be binary compatible across
+versions. We always recommend rebuilding your client-side code using the updated
+`astcenc.h` header.
+
+* **General:**
+  * **Optimization:** `-medium` search quality no longer tests 4 partition
+     encodings for block sizes between 25 and 83 texels (inclusive). This
+     improves performance for a tiny drop in image quality.
+  * **Optimization:** `-thorough` and higher search qualities no longer test the
+     mode0 first search for block sizes between 25 and 83 texels (inclusive).
+     This improves performance for a tiny drop in image quality.
+  * **Optimization:** `TUNE_MAX_PARTITIONING_CANDIDATES` reduced from 32 to 8
+     to reduce the size of stack allocated data structures. This causes a tiny
+     drop in image quality for the `-verythorough` and `-exhaustive` presets.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.5.0
 
 **Status:** June 2023

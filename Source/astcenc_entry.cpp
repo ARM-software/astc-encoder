@@ -55,6 +55,7 @@ struct astcenc_preset_config
 	float tune_2partition_early_out_limit_factor;
 	float tune_3partition_early_out_limit_factor;
 	float tune_2plane_early_out_limit_correlation;
+	float tune_search_mode0_enable;
 };
 
 /**
@@ -63,22 +64,22 @@ struct astcenc_preset_config
 static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 10, 6, 4, 43, 2, 2, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.85f
+		2, 10, 6, 4, 43, 2, 2, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.85f, 0.0f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 18, 10, 8, 55, 3, 3, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.90f
+		3, 18, 10, 8, 55, 3, 3, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.90f, 0.0f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		4, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 2.5f, 1.1f, 1.05f, 0.95f
+		4, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 2.5f, 1.1f, 1.05f, 0.95f, 0.0f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.35f, 1.15f, 0.97f
+		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.35f, 1.15f, 0.97f, 0.0f
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 6, 20, 14, 8, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f
+		4, 256, 128, 64, 98, 4, 6, 8, 6, 4, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f, 0.0f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 512, 512, 512, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f
+		4, 512, 512, 512, 100, 4, 8, 8, 8, 8, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0.0f
 	}
 }};
 
@@ -88,22 +89,22 @@ static const std::array<astcenc_preset_config, 6> preset_configs_high {{
 static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 10, 6, 4, 43, 2, 2, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.80f
+		2, 10, 6, 4, 43, 2, 2, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.80f, 1.0f
 	}, {
 		ASTCENC_PRE_FAST,
-		3, 18, 12, 10, 55, 3, 3, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.85f
+		3, 18, 12, 10, 55, 3, 3, 2, 2, 2, 85.2f, 63.2f, 3.5f, 1.0f, 1.0f, 0.85f, 1.0f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		4, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.0f, 1.1f, 1.05f, 0.90f
+		3, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.0f, 1.1f, 1.05f, 0.90f, 1.0f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.4f, 1.2f, 0.95f
+		4, 82, 60, 30, 94, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.4f, 1.2f, 0.95f, 0.0f
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 6, 12, 8, 3, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f
+		4, 256, 128, 64, 98, 4, 6, 8, 6, 3, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f, 0.0f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 256, 256, 256, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f
+		4, 256, 256, 256, 100, 4, 8, 8, 8, 8, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f, 0.0f
 	}
 }};
 
@@ -113,22 +114,22 @@ static const std::array<astcenc_preset_config, 6> preset_configs_mid {{
 static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 	{
 		ASTCENC_PRE_FASTEST,
-		2, 10, 6, 4, 40, 2, 2, 2, 2, 2, 85.0f, 63.0f, 3.5f, 1.0f, 1.0f, 0.80f
+		2, 10, 6, 4, 40, 2, 2, 2, 2, 2, 85.0f, 63.0f, 3.5f, 1.0f, 1.0f, 0.80f, 1.0f
 	}, {
 		ASTCENC_PRE_FAST,
-		2, 18, 12, 10, 55, 3, 3, 2, 2, 2, 85.0f, 63.0f, 3.5f, 1.0f, 1.0f, 0.85f
+		2, 18, 12, 10, 55, 3, 3, 2, 2, 2, 85.0f, 63.0f, 3.5f, 1.0f, 1.0f, 0.85f, 1.0f
 	}, {
 		ASTCENC_PRE_MEDIUM,
-		3, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.5f, 1.1f, 1.05f, 0.90f
+		3, 34, 28, 16, 77, 3, 3, 2, 2, 2, 95.0f, 70.0f, 3.5f, 1.1f, 1.05f, 0.90f, 1.0f
 	}, {
 		ASTCENC_PRE_THOROUGH,
-		4, 82, 60, 30, 93, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.3f, 1.2f, 0.97f
+		4, 82, 60, 30, 93, 4, 4, 3, 2, 2, 105.0f, 77.0f, 10.0f, 1.3f, 1.2f, 0.97f, 1.0f
 	}, {
 		ASTCENC_PRE_VERYTHOROUGH,
-		4, 256, 128, 64, 98, 4, 6, 9, 5, 2, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f
+		4, 256, 128, 64, 98, 4, 6, 8, 5, 2, 200.0f, 200.0f, 10.0f, 1.6f, 1.4f, 0.98f, 1.0f
 	}, {
 		ASTCENC_PRE_EXHAUSTIVE,
-		4, 256, 256, 256, 100, 4, 8, 32, 32, 32, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f
+		4, 256, 256, 256, 100, 4, 8, 8, 8, 8, 200.0f, 200.0f, 10.0f, 2.0f, 2.0f, 0.99f, 1.0f
 	}
 }};
 
@@ -507,10 +508,10 @@ astcenc_error astcenc_config_init(
 		config.tune_4partition_index_limit = (*preset_configs)[start].tune_4partition_index_limit;
 		config.tune_block_mode_limit = (*preset_configs)[start].tune_block_mode_limit;
 		config.tune_refinement_limit = (*preset_configs)[start].tune_refinement_limit;
-		config.tune_candidate_limit = astc::min((*preset_configs)[start].tune_candidate_limit, TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_2partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
-		config.tune_3partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_3partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
-		config.tune_4partitioning_candidate_limit = astc::min((*preset_configs)[start].tune_4partitioning_candidate_limit, TUNE_MAX_PARTITIONING_CANDIDATES);
+		config.tune_candidate_limit = (*preset_configs)[start].tune_candidate_limit;
+		config.tune_2partitioning_candidate_limit = (*preset_configs)[start].tune_2partitioning_candidate_limit;
+		config.tune_3partitioning_candidate_limit = (*preset_configs)[start].tune_3partitioning_candidate_limit;
+		config.tune_4partitioning_candidate_limit = (*preset_configs)[start].tune_4partitioning_candidate_limit;
 		config.tune_db_limit = astc::max((*preset_configs)[start].tune_db_limit_a_base - 35 * ltexels,
 		                                 (*preset_configs)[start].tune_db_limit_b_base - 19 * ltexels);
 
@@ -519,6 +520,7 @@ astcenc_error astcenc_config_init(
 		config.tune_2partition_early_out_limit_factor = (*preset_configs)[start].tune_2partition_early_out_limit_factor;
 		config.tune_3partition_early_out_limit_factor = (*preset_configs)[start].tune_3partition_early_out_limit_factor;
 		config.tune_2plane_early_out_limit_correlation = (*preset_configs)[start].tune_2plane_early_out_limit_correlation;
+		config.tune_search_mode0_enable = (*preset_configs)[start].tune_search_mode0_enable;
 	}
 	// Start and end node are not the same - so interpolate between them
 	else
@@ -545,14 +547,10 @@ astcenc_error astcenc_config_init(
 		config.tune_4partition_index_limit = LERPI(tune_4partition_index_limit);
 		config.tune_block_mode_limit = LERPI(tune_block_mode_limit);
 		config.tune_refinement_limit = LERPI(tune_refinement_limit);
-		config.tune_candidate_limit = astc::min(LERPUI(tune_candidate_limit),
-		                                        TUNE_MAX_TRIAL_CANDIDATES);
-		config.tune_2partitioning_candidate_limit = astc::min(LERPUI(tune_2partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
-		config.tune_3partitioning_candidate_limit = astc::min(LERPUI(tune_3partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
-		config.tune_4partitioning_candidate_limit = astc::min(LERPUI(tune_4partitioning_candidate_limit),
-		                                                      BLOCK_MAX_PARTITIONINGS);
+		config.tune_candidate_limit = LERPUI(tune_candidate_limit);
+		config.tune_2partitioning_candidate_limit = LERPUI(tune_2partitioning_candidate_limit);
+		config.tune_3partitioning_candidate_limit = LERPUI(tune_3partitioning_candidate_limit);
+		config.tune_4partitioning_candidate_limit = LERPUI(tune_4partitioning_candidate_limit);
 		config.tune_db_limit = astc::max(LERP(tune_db_limit_a_base) - 35 * ltexels,
 		                                 LERP(tune_db_limit_b_base) - 19 * ltexels);
 
@@ -561,6 +559,7 @@ astcenc_error astcenc_config_init(
 		config.tune_2partition_early_out_limit_factor = LERP(tune_2partition_early_out_limit_factor);
 		config.tune_3partition_early_out_limit_factor = LERP(tune_3partition_early_out_limit_factor);
 		config.tune_2plane_early_out_limit_correlation = LERP(tune_2plane_early_out_limit_correlation);
+		config.tune_search_mode0_enable = LERP(tune_search_mode0_enable);
 		#undef LERP
 		#undef LERPI
 		#undef LERPUI
@@ -588,6 +587,7 @@ astcenc_error astcenc_config_init(
 	case ASTCENC_PRF_HDR_RGB_LDR_A:
 	case ASTCENC_PRF_HDR:
 		config.tune_db_limit = 999.0f;
+		config.tune_search_mode0_enable = 0.0f;
 		break;
 	default:
 		return ASTCENC_ERR_BAD_PROFILE;
