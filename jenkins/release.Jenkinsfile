@@ -191,6 +191,26 @@ spec:
                 '''
               }
             }
+            stage('Sign') {
+              steps {
+                dir('sign_tools') {
+                    checkout changelog: false,
+                             poll: false,
+                             scm: [$class: 'GitSCM',
+                                   branches: [[name: '*/main']],
+                                   doGenerateSubmoduleConfigurations: false,
+                                   extensions: [],
+                                   submoduleCfg: [],
+                                   userRemoteConfigs: [[credentialsId: 'gerrit-jenkins-ssh',
+                                                        url: 'ssh://mirror.eu-west-1.gerrit-eu01.aws.arm.com:29418/Hive/shared/signing']]]
+                }
+                withCredentials([usernamePassword(credentialsId: 'cepe-artifactory-jenkins',
+                                                  usernameVariable: 'AF_USER',
+                                                  passwordVariable: 'APIKEY')]) {
+                    powershell 'C:\\Python311\\python.exe .\\sign_tools\\windows-client-wrapper.py -b $Env:BUILD_NUMBER -t $Env:APIKEY (Get-ChildItem -Filter build_rel\\*.zip)[0].FullName'
+                }
+              }
+            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
@@ -300,35 +320,14 @@ spec:
         stage('Unstash') {
           steps {
             dir('upload') {
+              unstash 'astcenc-windows-x64-hash'
               unstash 'astcenc-linux-x64-hash'
               unstash 'astcenc-macos-universal-hash'
 
+              unstash 'astcenc-windows-x64'
               unstash 'astcenc-linux-x64'
               unstash 'astcenc-macos-universal'
-            }
-            dir('upload/windows-x64') {
-              unstash 'astcenc-windows-x64'
-              dir('signing') {
-                checkout changelog: false,
-                         poll: false,
-                         scm: [$class: 'GitSCM',
-                               branches: [[name: '*/main']],
-                               doGenerateSubmoduleConfigurations: false,
-                               extensions: [],
-                               submoduleCfg: [],
-                               userRemoteConfigs: [[credentialsId: 'gerrit-jenkins-ssh',
-                                                    url: 'ssh://mirror.eu-west-1.gerrit-eu01.aws.arm.com:29418/Hive/shared/signing']]]
-              }
-              withCredentials([usernamePassword(credentialsId: 'cepe-artifactory-jenkins',
-                                                usernameVariable: 'AF_USER',
-                                                passwordVariable: 'APIKEY')]) {
-                sh 'python3 ./signing/windows-client-wrapper.py -t ${APIKEY} -b ${BUILD_NUMBER} *.zip'
-                sh 'mv *.zip.sha256 ../'
-                sh 'mv *.zip ../'
-              }
-            }
-            dir('upload') {
-              sh 'rm -rf ./windows-x64'
+
               sh 'cat *.sha256 > release-sha256.txt'
               sh 'rm *.sha256'
             }
