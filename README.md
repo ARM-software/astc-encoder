@@ -3,7 +3,7 @@ The astcenc code provided here is a modified version based on the following arti
 Jae-Ho Nah, "Addition of an adaptive block-size determination feature to astcenc, the reference ASTC encoder," Software Impacts, 2023.
 https://doi.org/10.1016/j.simpa.2023.100569
 
-By including a target PSNR value as an argument for astcenc, ASTC compression is performed using a block size that yields a PSNR value similar to or higher than the specified target value.
+By passing a target PSNR value as an argument to astcenc, ASTC compression is performed using a block size that yields a PSNR value similar to or higher than the specified target value.
 In the following example, the block size is initial block size for block-size search and the actual block size is determined by the dbtarget value. 
 
 astcenc -cl example.png example.astc 6x6 -medium -dbtarget 40
