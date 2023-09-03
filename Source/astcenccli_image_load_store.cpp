@@ -2469,7 +2469,7 @@ int load_cimage(
 
 	astc_header hdr;
 	file.read(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
-	if (!file)
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
 		return 1;
@@ -2493,7 +2493,7 @@ int load_cimage(
 
 	if (dim_x == 0 || dim_y == 0 || dim_z == 0)
 	{
-		print_error("ERROR: File corrupt '%s'\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		return 1;
 	}
 
@@ -2505,9 +2505,10 @@ int load_cimage(
 	uint8_t *buffer = new uint8_t[data_size];
 
 	file.read(reinterpret_cast<char*>(buffer), data_size);
-	if (!file)
+	if (file.fail())
 	{
-		print_error("ERROR: File read failed '%s'\n", filename);
+		print_error("ERROR: Image data size exceeded file size '%s'\n", filename);
+		delete[] buffer;
 		return 1;
 	}
 
