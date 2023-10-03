@@ -659,8 +659,7 @@ ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
-	int* pi = reinterpret_cast<int*>(p);
-	*pi = a.m[0];
+	std::memcpy(p, a.m, sizeof(uint8_t) * 4);
 }
 
 /**
