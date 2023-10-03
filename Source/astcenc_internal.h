@@ -1023,13 +1023,13 @@ struct dt_init_working_buffers
 struct quant_and_transfer_table
 {
 	/** @brief The unscrambled unquantized value. */
-	int8_t quant_to_unquant[32];
+	uint8_t quant_to_unquant[32];
 
 	/** @brief The scrambling order: scrambled_quant = map[unscrambled_quant]. */
-	int8_t scramble_map[32];
+	uint8_t scramble_map[32];
 
 	/** @brief The unscrambling order: unscrambled_unquant = map[scrambled_quant]. */
-	int8_t unscramble_and_unquant_map[32];
+	uint8_t unscramble_and_unquant_map[32];
 
 	/**
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.

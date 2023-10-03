@@ -276,6 +276,16 @@ struct vint4
 	}
 
 	/**
+	 * @brief Factory that returns a vector loaded from unaligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load(const uint8_t* p)
+	{
+		vint4 data;
+		std::memcpy(&data.m, p, 4 * sizeof(int));
+		return data;
+	}
+
+	/**
 	 * @brief Factory that returns a vector loaded from 16B aligned memory.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)

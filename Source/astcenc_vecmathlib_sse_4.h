@@ -39,6 +39,7 @@
 #endif
 
 #include <cstdio>
+#include <cstring>
 
 // ============================================================================
 // vfloat4 data type
@@ -290,6 +291,16 @@ struct vint4
 	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
 	{
 		return vint4(*p);
+	}
+
+	/**
+	 * @brief Factory that returns a vector loaded from unaligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint4 load(const uint8_t* p)
+	{
+		vint4 data;
+		std::memcpy(&data.m, p, 4 * sizeof(int));
+		return data;
 	}
 
 	/**
