@@ -1106,8 +1106,9 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 	__m128i result = _mm_shuffle_epi8(t0.m, idxx);
 	return vint4(result);
 #else
-	alignas(ASTCENC_VECALIGN) uint8_t table[16];
-	storea(t0, reinterpret_cast<int*>(table +  0));
+	uint8_t table[16];
+
+	std::memcpy(table +  0, &t0.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
@@ -1133,9 +1134,10 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 
 	return vint4(result);
 #else
-	alignas(ASTCENC_VECALIGN) uint8_t table[32];
-	storea(t0, reinterpret_cast<int*>(table +  0));
-	storea(t1, reinterpret_cast<int*>(table + 16));
+	uint8_t table[32];
+
+	std::memcpy(table +  0, &t0.m, 4 * sizeof(int));
+	std::memcpy(table + 16, &t1.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
@@ -1169,11 +1171,12 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3
 
 	return vint4(result);
 #else
-	alignas(ASTCENC_VECALIGN) uint8_t table[64];
-	storea(t0, reinterpret_cast<int*>(table +  0));
-	storea(t1, reinterpret_cast<int*>(table + 16));
-	storea(t2, reinterpret_cast<int*>(table + 32));
-	storea(t3, reinterpret_cast<int*>(table + 48));
+	uint8_t table[64];
+
+	std::memcpy(table +  0, &t0.m, 4 * sizeof(int));
+	std::memcpy(table + 16, &t1.m, 4 * sizeof(int));
+	std::memcpy(table + 32, &t2.m, 4 * sizeof(int));
+	std::memcpy(table + 48, &t3.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
