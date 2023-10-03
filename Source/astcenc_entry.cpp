@@ -914,8 +914,7 @@ static void compress_image(
 
 			int offset = ((z * yblocks + y) * xblocks + x) * 16;
 			uint8_t *bp = buffer + offset;
-			physical_compressed_block* pcb = reinterpret_cast<physical_compressed_block*>(bp);
-			compress_block(ctx, blk, *pcb, temp_buffers);
+			compress_block(ctx, blk, bp, temp_buffers);
 		}
 
 		ctxo.manage_compress.complete_task_assignment(count);
@@ -1182,10 +1181,9 @@ astcenc_error astcenc_decompress_image(
 			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
 			const uint8_t* bp = data + offset;
 
-			const physical_compressed_block& pcb = *reinterpret_cast<const physical_compressed_block*>(bp);
 			symbolic_compressed_block scb;
 
-			physical_to_symbolic(*ctx->bsd, pcb, scb);
+			physical_to_symbolic(*ctx->bsd, bp, scb);
 
 			decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
 			                          x * block_x, y * block_y, z * block_z,
@@ -1224,9 +1222,8 @@ astcenc_error astcenc_get_block_info(
 	astcenc_contexti* ctx = &ctxo->context;
 
 	// Decode the compressed data into a symbolic form
-	const physical_compressed_block&pcb = *reinterpret_cast<const physical_compressed_block*>(data);
 	symbolic_compressed_block scb;
-	physical_to_symbolic(*ctx->bsd, pcb, scb);
+	physical_to_symbolic(*ctx->bsd, data, scb);
 
 	// Fetch the appropriate partition and decimation tables
 	block_size_descriptor& bsd = *ctx->bsd;

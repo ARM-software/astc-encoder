@@ -1163,7 +1163,7 @@ static float prepare_block_statistics(
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
-	physical_compressed_block& pcb,
+	uint8_t pcb[16],
 	compression_working_buffers& tmpbuf)
 {
 	astcenc_profile decode_mode = ctx.config.profile;
