@@ -645,6 +645,14 @@ ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
 }
 
 /**
+ * @brief Store a vector to an unaligned memory address.
+ */
+ASTCENC_SIMD_INLINE void store(vint4 a, uint8_t* p)
+{
+	std::memcpy(p, &a.m, sizeof(int) * 4);
+}
+
+/**
  * @brief Store lowest N (vector width) bytes into an unaligned address.
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
@@ -1202,14 +1210,22 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 }
 
 /**
+ * @brief Store a single vector lane to an unaligned address.
+ */
+ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
+{
+	std::memcpy(base, &data, sizeof(int));
+}
+
+/**
  * @brief Store a vector, skipping masked lanes.
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.
  */
-ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
+ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
 {
 #if ASTCENC_AVX >= 2
-	_mm_maskstore_epi32(base, _mm_castps_si128(mask.m), data.m);
+	_mm_maskstore_epi32(reinterpret_cast<int*>(base), _mm_castps_si128(mask.m), data.m);
 #else
 	// Note - we cannot use _mm_maskmoveu_si128 as the underlying hardware doesn't guarantee
 	// fault suppression on masked lanes so we can get page faults at the end of an image.
@@ -1217,20 +1233,20 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(int* base, vint4 data, vmask4 mask)
 	{
 		store(data, base);
 	}
-	else if (mask.lane<2>() != 0.0f)
+	else if (mask.m[2])
 	{
-		base[0] = data.lane<0>();
-		base[1] = data.lane<1>();
-		base[2] = data.lane<2>();
+		store_lane(base + 0, data.lane<0>());
+		store_lane(base + 4, data.lane<1>());
+		store_lane(base + 8, data.lane<2>());
 	}
-	else if (mask.lane<1>() != 0.0f)
+	else if (mask.m[1])
 	{
-		base[0] = data.lane<0>();
-		base[1] = data.lane<1>();
+		store_lane(base + 0, data.lane<0>());
+		store_lane(base + 4, data.lane<1>());
 	}
-	else if (mask.lane<0>() != 0.0f)
+	else if (mask.m[0])
 	{
-		base[0] = data.lane<0>();
+		store_lane(base + 0, data.lane<0>());
 	}
 #endif
 }
