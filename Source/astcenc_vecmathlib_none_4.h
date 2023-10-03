@@ -1031,7 +1031,7 @@ ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
 ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 {
 	vint4 r;
-	memcpy(r.m, a.m, 4 * 4);
+	std::memcpy(r.m, a.m, 4 * 4);
 	return r;
 }
 
@@ -1045,7 +1045,7 @@ ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 a)
 {
 	vfloat4 r;
-	memcpy(r.m, a.m, 4 * 4);
+	std::memcpy(r.m, a.m, 4 * 4);
 	return r;
 }
 
@@ -1085,7 +1085,8 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 {
 	uint8_t table[16];
-	storea(t0, reinterpret_cast<int*>(table +  0));
+
+	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
@@ -1100,8 +1101,9 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 {
 	uint8_t table[32];
-	storea(t0, reinterpret_cast<int*>(table +  0));
-	storea(t1, reinterpret_cast<int*>(table + 16));
+
+	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
+	std::memcpy(table + 16, t1.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
@@ -1115,10 +1117,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3, vint4 idx)
 {
 	uint8_t table[64];
-	storea(t0, reinterpret_cast<int*>(table +  0));
-	storea(t1, reinterpret_cast<int*>(table + 16));
-	storea(t2, reinterpret_cast<int*>(table + 32));
-	storea(t3, reinterpret_cast<int*>(table + 48));
+
+	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
+	std::memcpy(table + 16, t1.m, 4 * sizeof(int));
+	std::memcpy(table + 32, t2.m, 4 * sizeof(int));
+	std::memcpy(table + 48, t3.m, 4 * sizeof(int));
 
 	return vint4(table[idx.lane<0>()],
 	             table[idx.lane<1>()],
