@@ -1080,7 +1080,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 }
 
 /**
- * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
+ * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
  */
 ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 {
