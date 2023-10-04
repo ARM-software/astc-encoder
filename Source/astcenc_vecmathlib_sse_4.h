@@ -298,9 +298,11 @@ struct vint4
 	 */
 	static ASTCENC_SIMD_INLINE vint4 load(const uint8_t* p)
 	{
-		vint4 data;
-		std::memcpy(&data.m, p, 4 * sizeof(int));
-		return data;
+#if ASTCENC_SSE >= 41
+		return vint4(_mm_lddqu_si128(reinterpret_cast<const __m128i*>(p)));
+#else
+		return vint4(_mm_loadu_si128(reinterpret_cast<const __m128i*>(p)));
+#endif
 	}
 
 	/**
@@ -1236,18 +1238,18 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 ma
 	{
 		store(data, base);
 	}
-	else if (mask.m[2])
+	else if (mask.lane<2>() != 0.0f)
 	{
 		store_lane(base + 0, data.lane<0>());
 		store_lane(base + 4, data.lane<1>());
 		store_lane(base + 8, data.lane<2>());
 	}
-	else if (mask.m[1])
+	else if (mask.lane<1>() != 0.0f)
 	{
 		store_lane(base + 0, data.lane<0>());
 		store_lane(base + 4, data.lane<1>());
 	}
-	else if (mask.m[0])
+	else if (mask.lane<0>() != 0.0f)
 	{
 		store_lane(base + 0, data.lane<0>());
 	}

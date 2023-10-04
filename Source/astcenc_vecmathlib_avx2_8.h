@@ -242,6 +242,14 @@ struct vint8
 	}
 
 	/**
+	 * @brief Factory that returns a vector loaded from unaligned memory.
+	 */
+	static ASTCENC_SIMD_INLINE vint8 load(const uint8_t* p)
+	{
+		return vint8(_mm256_lddqu_si256(reinterpret_cast<const __m256i*>(p)));
+	}
+
+	/**
 	 * @brief Factory that returns a vector loaded from 32B aligned memory.
 	 */
 	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)

@@ -1755,17 +1755,17 @@ TEST(vint4, store_nbytes)
 	EXPECT_EQ(out, 42);
 }
 
-/** @brief Test vint8 store_lanes_masked. */
+/** @brief Test vint4 store_lanes_masked. */
 TEST(vint4, store_lanes_masked)
 {
-	int resulta[4] { 0 };
+	uint8_t resulta[16] { 0 };
 
 	// Store nothing
 	vmask4 mask1 = vint4(0) == vint4(1);
 	vint4 data1 = vint4(1);
 
 	store_lanes_masked(resulta, data1, mask1);
-	vint4 result1v(resulta);
+	vint4 result1v = vint4::load(resulta);
 	vint4 expect1v = vint4::zero();
 	EXPECT_TRUE(all(result1v == expect1v));
 
@@ -1774,7 +1774,7 @@ TEST(vint4, store_lanes_masked)
 	vint4 data2 = vint4(2);
 
 	store_lanes_masked(resulta, data2, mask2);
-	vint4 result2v(resulta);
+	vint4 result2v = vint4::load(resulta);
 	vint4 expect2v = vint4(2, 2, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
@@ -1783,22 +1783,22 @@ TEST(vint4, store_lanes_masked)
 	vint4 data3 = vint4(3);
 
 	store_lanes_masked(resulta, data3, mask3);
-	vint4 result3v(resulta);
+	vint4 result3v = vint4::load(resulta);
 	vint4 expect3v = vint4(3);
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint8 store_lanes_masked to unaligned address. */
+/** @brief Test vint4 store_lanes_masked to unaligned address. */
 TEST(vint4, store_lanes_masked_unaligned)
 {
-	int8_t resulta[17] { 0 };
+	uint8_t resulta[17] { 0 };
 
 	// Store nothing
 	vmask4 mask1 = vint4(0) == vint4(1);
 	vint4 data1 = vint4(1);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data1, mask1);
-	vint4 result1v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data1, mask1);
+	vint4 result1v = vint4::load(resulta + 1);
 	vint4 expect1v = vint4::zero();
 	EXPECT_TRUE(all(result1v == expect1v));
 
@@ -1806,8 +1806,8 @@ TEST(vint4, store_lanes_masked_unaligned)
 	vmask4 mask2 = vint4(1, 1, 0, 0) == vint4(1);
 	vint4 data2 = vint4(2);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data2, mask2);
-	vint4 result2v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data2, mask2);
+	vint4 result2v = vint4::load(resulta + 1);
 	vint4 expect2v = vint4(2, 2, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
@@ -1815,8 +1815,8 @@ TEST(vint4, store_lanes_masked_unaligned)
 	vmask4 mask3 = vint4(1) == vint4(1);
 	vint4 data3 = vint4(3);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data3, mask3);
-	vint4 result3v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data3, mask3);
+	vint4 result3v = vint4::load(resulta + 1);
 	vint4 expect3v = vint4(3);
 	EXPECT_TRUE(all(result3v == expect3v));
 }
@@ -3302,14 +3302,14 @@ TEST(vint8, store_nbytes)
 /** @brief Test vint8 store_lanes_masked. */
 TEST(vint8, store_lanes_masked)
 {
-	int resulta[8] { 0 };
+	uint8_t resulta[32] { 0 };
 
 	// Store nothing
 	vmask8 mask1 = vint8(0) == vint8(1);
 	vint8 data1 = vint8(1);
 
 	store_lanes_masked(resulta, data1, mask1);
-	vint8 result1v(resulta);
+	vint8 result1v = vint8::load(resulta);
 	vint8 expect1v = vint8::zero();
 	EXPECT_TRUE(all(result1v == expect1v));
 
@@ -3318,7 +3318,7 @@ TEST(vint8, store_lanes_masked)
 	vint8 data2 = vint8(2);
 
 	store_lanes_masked(resulta, data2, mask2);
-	vint8 result2v(resulta);
+	vint8 result2v = vint8::load(resulta);
 	vint8 expect2v = vint8(2, 2, 2, 2, 0, 0, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
@@ -3327,7 +3327,7 @@ TEST(vint8, store_lanes_masked)
 	vint8 data3 = vint8(3);
 
 	store_lanes_masked(resulta, data3, mask3);
-	vint8 result3v(resulta);
+	vint8 result3v = vint8::load(resulta);
 	vint8 expect3v = vint8(3);
 	EXPECT_TRUE(all(result3v == expect3v));
 }
@@ -3335,14 +3335,14 @@ TEST(vint8, store_lanes_masked)
 /** @brief Test vint8 store_lanes_masked to unaligned address. */
 TEST(vint8, store_lanes_masked_unaligned)
 {
-	int8_t resulta[33] { 0 };
+	uint8_t resulta[33] { 0 };
 
 	// Store nothing
 	vmask8 mask1 = vint8(0) == vint8(1);
 	vint8 data1 = vint8(1);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data1, mask1);
-	vint8 result1v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data1, mask1);
+	vint8 result1v = vint8::load(resulta + 1);
 	vint8 expect1v = vint8::zero();
 	EXPECT_TRUE(all(result1v == expect1v));
 
@@ -3350,8 +3350,8 @@ TEST(vint8, store_lanes_masked_unaligned)
 	vmask8 mask2 = vint8(1, 1, 1, 1, 0, 0, 0, 0) == vint8(1);
 	vint8 data2 = vint8(2);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data2, mask2);
-	vint8 result2v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data2, mask2);
+	vint8 result2v = vint8::load(resulta + 1);
 	vint8 expect2v = vint8(2, 2, 2, 2, 0, 0, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
@@ -3359,8 +3359,8 @@ TEST(vint8, store_lanes_masked_unaligned)
 	vmask8 mask3 = vint8(1) == vint8(1);
 	vint8 data3 = vint8(3);
 
-	store_lanes_masked(reinterpret_cast<int*>(resulta + 1), data3, mask3);
-	vint8 result3v(reinterpret_cast<int*>(resulta + 1));
+	store_lanes_masked(resulta + 1, data3, mask3);
+	vint8 result3v = vint8::load(resulta + 1);
 	vint8 expect3v = vint8(3);
 	EXPECT_TRUE(all(result3v == expect3v));
 }
