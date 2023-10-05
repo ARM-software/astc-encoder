@@ -19,6 +19,8 @@ versions. We always recommend rebuilding your client-side code using the updated
 `astcenc.h` header.
 
 * **General:**
+  * **Bug-fix:** Reduced use of `reinterpret_cast` in the core codec to
+    avoid strict aliasing violations.
   * **Optimization:** `-medium` search quality no longer tests 4 partition
      encodings for block sizes between 25 and 83 texels (inclusive). This
      improves performance for a tiny drop in image quality.

@@ -1023,13 +1023,13 @@ struct dt_init_working_buffers
 struct quant_and_transfer_table
 {
 	/** @brief The unscrambled unquantized value. */
-	int8_t quant_to_unquant[32];
+	uint8_t quant_to_unquant[32];
 
 	/** @brief The scrambling order: scrambled_quant = map[unscrambled_quant]. */
-	int8_t scramble_map[32];
+	uint8_t scramble_map[32];
 
 	/** @brief The unscrambling order: unscrambled_unquant = map[scrambled_quant]. */
-	int8_t unscramble_and_unquant_map[32];
+	uint8_t unscramble_and_unquant_map[32];
 
 	/**
 	 * @brief A table of previous-and-next weights, indexed by the current unquantized value.
@@ -1058,7 +1058,7 @@ static constexpr uint8_t SYM_BTYPE_NONCONST { 3 };
  * @brief A symbolic representation of a compressed block.
  *
  * The symbolic representation stores the unpacked content of a single
- * @c physical_compressed_block, in a form which is much easier to access for
+ * physical compressed block, in a form which is much easier to access for
  * the rest of the compressor code.
  */
 struct symbolic_compressed_block
@@ -1119,18 +1119,6 @@ struct symbolic_compressed_block
 		return this->quant_mode;
 	}
 };
-
-/**
- * @brief A physical representation of a compressed block.
- *
- * The physical representation stores the raw bytes of the format in memory.
- */
-struct physical_compressed_block
-{
-	/** @brief The ASTC encoded data for a single block. */
-	uint8_t data[16];
-};
-
 
 /**
  * @brief Parameter structure for @c compute_pixel_region_variance().
@@ -2033,7 +2021,7 @@ void compute_angular_endpoints_2planes(
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
-	physical_compressed_block& pcb,
+	uint8_t pcb[16],
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2126,12 +2114,12 @@ float compute_symbolic_block_difference_1plane_1partition(
  *
  * @param      bsd   The block size information.
  * @param      scb   The symbolic representation.
- * @param[out] pcb   The binary encoded data.
+ * @param[out] pcb   The physical compressed block output.
  */
 void symbolic_to_physical(
 	const block_size_descriptor& bsd,
 	const symbolic_compressed_block& scb,
-	physical_compressed_block& pcb);
+	uint8_t pcb[16]);
 
 /**
  * @brief Convert a binary physical encoding into a symbolic representation.
@@ -2140,12 +2128,12 @@ void symbolic_to_physical(
  * flagged as an error block if the encoding is invalid.
  *
  * @param      bsd   The block size information.
- * @param      pcb   The binary encoded data.
+ * @param      pcb   The physical compresesd block input.
  * @param[out] scb   The output symbolic representation.
  */
 void physical_to_symbolic(
 	const block_size_descriptor& bsd,
-	const physical_compressed_block& pcb,
+	const uint8_t pcb[16],
 	symbolic_compressed_block& scb);
 
 /* ============================================================================
@@ -2190,9 +2178,9 @@ template<typename T>
 void aligned_free(T* ptr)
 {
 #if defined(_WIN32)
-	_aligned_free(reinterpret_cast<void*>(ptr));
+	_aligned_free(ptr);
 #else
-	free(reinterpret_cast<void*>(ptr));
+	free(ptr);
 #endif
 }
 
