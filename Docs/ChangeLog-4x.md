@@ -19,6 +19,8 @@ versions. We always recommend rebuilding your client-side code using the updated
 `astcenc.h` header.
 
 * **General:**
+  * **Bug-fix:** Fixed context allocation for contexts allocated with the
+    `ASTCENC_FLG_DECOMPRESS_ONLY` flag.
   * **Bug-fix:** Reduced use of `reinterpret_cast` in the core codec to
     avoid strict aliasing violations.
   * **Optimization:** `-medium` search quality no longer tests 4 partition

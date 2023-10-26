@@ -698,7 +698,7 @@ astcenc_error astcenc_context_alloc(
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	// Do setup only needed by compression
-	if (!(status & ASTCENC_FLG_DECOMPRESS_ONLY))
+	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
 		// Turn a dB limit into a per-texel error for faster use later
 		if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
