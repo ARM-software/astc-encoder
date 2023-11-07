@@ -18,11 +18,12 @@ rm -fr tmp
 mkdir -p tmp
 
 echo "Get static analysis tools"
-curl --user ${ARTIFACTORY_CREDENTIALS} https://${ARTIFACTORY_URL}/artifactory/mobile-studio.tools/coverity/cov-analysis-linux64-2020.12.sh --output tmp/coverity_install.sh
-curl --user ${ARTIFACTORY_CREDENTIALS} https://${ARTIFACTORY_URL}/artifactory/mobile-studio.tools/coverity/license.dat --output tmp/coverity_license.dat
+curl -L --user ${ARTIFACTORY_CREDENTIALS} https://${ARTIFACTORY_URL}/artifactory/mobile-studio.tools/coverity/cov-analysis-linux64-2023.3.0.sh --output tmp/coverity_install.sh
+curl -L --user ${ARTIFACTORY_CREDENTIALS} https://${ARTIFACTORY_URL}/artifactory/mobile-studio.tools/coverity/license.dat --output tmp/coverity_license.dat
 
 echo "Building image"
-docker build -f jenkins/build.Dockerfile \
+docker build --progress=plain \
+    -f jenkins/build.Dockerfile \
     -t $IMAGE_NAME:latest \
     -t $IMAGE_NAME:$IMAGE_VERSION \
     -t $DOCKER_REGISTRY/$IMAGE_NAME:latest \
