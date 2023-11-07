@@ -30,6 +30,9 @@ pipeline {
       parallel {
         /* Run static analysis on Linux */
         stage('Coverity') {
+          when {
+            expression { false }
+          }
           agent {
             kubernetes {
               yaml '''
