@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -87,7 +87,7 @@ static void set_group_affinity(
 	// Determine which core group and core in the group to use for this thread
 	int group_cpu_count_sum { 0 };
 	for (int group = 0; group < group_count; group++)
-    {
+	{
 		int group_cpu_count = static_cast<int>(GetMaximumProcessorCount(group));
 		group_cpu_count_sum += group_cpu_count;
 
