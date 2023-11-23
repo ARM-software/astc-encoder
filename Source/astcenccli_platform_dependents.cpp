@@ -82,7 +82,7 @@ static void set_group_affinity(
 	// Ensure we have a valid assign if user creates more threads than cores
 	int assign_index = thread_index % get_cpu_count();
 	int assign_group { 0 };
-	int assign_cpu { 0 };
+	int assign_group_cpu_count { 0 };
 
 	// Determine which core group and core in the group to use for this thread
 	int group_cpu_count_sum { 0 };
@@ -94,20 +94,16 @@ static void set_group_affinity(
 		if (assign_index < group_cpu_count_sum)
 		{
 			assign_group = group;
-			assign_cpu = assign_index + group_cpu_count - group_cpu_count_sum;
+			assign_group_cpu_count = group_cpu_count;
 			break;
 		}
 	}
 
-	// Set the affinity to the assigned group and core
+	// Set the affinity to the assigned group, and all supported cores
 	GROUP_AFFINITY affinity {};
-	affinity.Mask = 1 << assign_cpu;
+	affinity.Mask = (1 << assign_group_cpu_count) - 1;
 	affinity.Group = assign_group;
-	bool success = SetThreadGroupAffinity(thread, &affinity, nullptr);
-	if (!success)
-	{
-		// std::cout << "Thread affinity assignment failed!\n";
-	}
+	SetThreadGroupAffinity(thread, &affinity, nullptr);
 }
 
 /**
