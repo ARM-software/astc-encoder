@@ -67,7 +67,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 sh '''
                   mkdir build_rel
@@ -77,7 +77,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 sh '''
                   mkdir build_dbg
@@ -122,7 +122,7 @@ pipeline {
                 bat 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -133,7 +133,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat

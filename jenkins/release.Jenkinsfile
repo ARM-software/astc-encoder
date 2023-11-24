@@ -127,7 +127,7 @@ spec:
                 sh 'git clean -ffdx'
               }
             }
-            stage('Build astcenc R') {
+            stage('Build astcenc R x64') {
               steps {
                 sh '''
                   export CXX=clang++-9
@@ -138,7 +138,7 @@ spec:
                 '''
               }
             }
-            stage('Build astcdec R') {
+            stage('Build astcdec R x64') {
               steps {
                 sh '''
                   export CXX=clang++-9
