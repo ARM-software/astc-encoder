@@ -7,6 +7,17 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.7.0
+
+**Status:** TBD
+
+The 4.7.0 release is a maintenance release with minor improvements and fixes.
+
+* **General:**
+  * **Optimization:** Windows builds of the `astcenc` command line tool can now
+    use more than 64 cores on large core count systems.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.6.0
 
 **Status:** November 2023

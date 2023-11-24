@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -62,6 +62,51 @@ static int pthread_create(
 }
 
 /**
+ * @brief Manually set CPU group and thread affinity.
+ *
+ * This is needed on Windows 10 or older to allow benefit from large core count
+ * systems with more than 64 logical CPUs. The assignment is skipped on systems
+ * with a single processor group, as it is not necessary.
+ */
+static void set_group_affinity(
+	pthread_t thread,
+	int thread_index
+) {
+	// Skip thread assignment for hardware with a single CPU group
+	int group_count = GetActiveProcessorGroupCount();
+	if (group_count == 1)
+	{
+		return;
+	}
+
+	// Ensure we have a valid assign if user creates more threads than cores
+	int assign_index = thread_index % get_cpu_count();
+	int assign_group { 0 };
+	int assign_group_cpu_count { 0 };
+
+	// Determine which core group and core in the group to use for this thread
+	int group_cpu_count_sum { 0 };
+	for (int group = 0; group < group_count; group++)
+	{
+		int group_cpu_count = static_cast<int>(GetMaximumProcessorCount(group));
+		group_cpu_count_sum += group_cpu_count;
+
+		if (assign_index < group_cpu_count_sum)
+		{
+			assign_group = group;
+			assign_group_cpu_count = group_cpu_count;
+			break;
+		}
+	}
+
+	// Set the affinity to the assigned group, and all supported cores
+	GROUP_AFFINITY affinity {};
+	affinity.Mask = (1 << assign_group_cpu_count) - 1;
+	affinity.Group = assign_group;
+	SetThreadGroupAffinity(thread, &affinity, nullptr);
+}
+
+/**
  * @brief Proxy Windows @c WaitForSingleObject underneath a pthreads-like wrapper.
  */
 static int pthread_join(
@@ -76,9 +121,8 @@ static int pthread_join(
 /* See header for documentation */
 int get_cpu_count()
 {
-	SYSTEM_INFO sysinfo;
-	GetSystemInfo(&sysinfo);
-	return sysinfo.dwNumberOfProcessors;
+	DWORD cpu_count = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+	return static_cast<int>(cpu_count);
 }
 
 /* See header for documentation */
@@ -173,6 +217,12 @@ void launch_threads(
 
 		pthread_create(&(thread_descs[i].thread_handle), nullptr,
 		               launch_threads_helper, reinterpret_cast<void*>(thread_descs + i));
+
+		// Windows 10 needs explicit thread assignment to handle large core count systems
+		// TODO: Add check to skip on Windows 11 or newer
+		#if defined(_WIN32) && !defined(__CYGWIN__)
+			set_group_affinity(thread_descs[i].thread_handle, i);
+		#endif
 	}
 
 	// ... and then wait for them to complete
