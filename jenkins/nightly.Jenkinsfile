@@ -223,6 +223,9 @@ pipeline {
                 dir('build_rel') {
                   stash name: 'astcenc-windows-x64-clangcl', includes: '*.zip'
                 }
+                dir('build_rel_arm64') {
+                  stash name: 'astcenc-windows-arm64-clangcl', includes: '*.zip'
+                }
               }
             }
             stage('Test') {
@@ -326,6 +329,9 @@ spec:
             }
             dir('upload/windows-x64-clangcl') {
               unstash 'astcenc-windows-x64-clangcl'
+            }
+            dir('upload/windows-arm64-clangcl') {
+              unstash 'astcenc-windows-arm64-clangcl'
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'
