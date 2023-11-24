@@ -213,7 +213,7 @@ pipeline {
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
                   mkdir build_dbg_arm64
                   cd build_dbg_arm64
-                  cmake -G "Visual Studio 17 2022"-A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON ..
+                  cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON ..
                   msbuild astcencoder.sln -property:Configuration=Debug
                 '''
               }
