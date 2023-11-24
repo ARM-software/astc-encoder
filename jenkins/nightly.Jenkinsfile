@@ -67,7 +67,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 sh '''
                   mkdir build_rel
@@ -77,7 +77,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 sh '''
                   mkdir build_dbg
@@ -122,7 +122,7 @@ pipeline {
                 bat 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -133,7 +133,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -172,7 +172,7 @@ pipeline {
                 bat 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -185,7 +185,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -196,10 +196,35 @@ pipeline {
                 '''
               }
             }
+            stage('Build R Arm64') {
+              steps {
+                bat '''
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
+                  mkdir build_rel_arm64
+                  cd build_rel_arm64
+                  cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON -DASTCENC_PACKAGE=arm64-clangcl ..
+                  msbuild astcencoder.sln -property:Configuration=Release
+                '''
+              }
+            }
+            stage('Build D Arm64') {
+              steps {
+                bat '''
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
+                  mkdir build_dbg_arm64
+                  cd build_dbg_arm64
+                  cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON ..
+                  msbuild astcencoder.sln -property:Configuration=Debug
+                '''
+              }
+            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
                   stash name: 'astcenc-windows-x64-clangcl', includes: '*.zip'
+                }
+                dir('build_rel_arm64') {
+                  stash name: 'astcenc-windows-arm64-clangcl', includes: '*.zip'
                 }
               }
             }
@@ -304,6 +329,9 @@ spec:
             }
             dir('upload/windows-x64-clangcl') {
               unstash 'astcenc-windows-x64-clangcl'
+            }
+            dir('upload/windows-arm64-clangcl') {
+              unstash 'astcenc-windows-arm64-clangcl'
             }
             dir('upload/macos-x64') {
               unstash 'astcenc-macos-x64'

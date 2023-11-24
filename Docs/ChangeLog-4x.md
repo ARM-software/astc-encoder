@@ -19,6 +19,8 @@ large core count Windows systems.
     use more than 64 cores on large core count systems. This change doubled
     command line performance for `-exhastive` compression when testing on an
     96 core/192 thread system.
+  * **Feature:** Windows Arm64 native builds of the `astcenc` command line tool
+    are now included in the prebuilt release binaries.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.6.0
