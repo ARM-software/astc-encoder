@@ -178,13 +178,26 @@ spec:
                 bat 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
                   mkdir build_rel
                   cd build_rel
                   cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+                  msbuild astcencoder.sln -property:Configuration=Release
+                  msbuild PACKAGE.vcxproj -property:Configuration=Release
+                  msbuild INSTALL.vcxproj -property:Configuration=Release
+                '''
+              }
+            }
+            stage('Build R Arm64') {
+              steps {
+                bat '''
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
+                  mkdir build_rel_arm64
+                  cd build_rel_arm64
+                  cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NEON=ON -DASTCENC_PACKAGE=arm64 ..
                   msbuild astcencoder.sln -property:Configuration=Release
                   msbuild PACKAGE.vcxproj -property:Configuration=Release
                   msbuild INSTALL.vcxproj -property:Configuration=Release
@@ -208,6 +221,7 @@ spec:
                                                   usernameVariable: 'AF_USER',
                                                   passwordVariable: 'APIKEY')]) {
                     powershell 'C:\\Python311\\python.exe .\\sign_tools\\windows-client-wrapper.py -b $Env:BUILD_NUMBER -t $Env:APIKEY (Get-ChildItem -Filter build_rel\\*.zip)[0].FullName'
+                    powershell 'C:\\Python311\\python.exe .\\sign_tools\\windows-client-wrapper.py -b $Env:BUILD_NUMBER -t $Env:APIKEY (Get-ChildItem -Filter build_rel_arm64\\*.zip)[0].FullName'
                 }
               }
             }
@@ -216,6 +230,10 @@ spec:
                 dir('build_rel') {
                   stash name: 'astcenc-windows-x64', includes: '*.zip'
                   stash name: 'astcenc-windows-x64-hash', includes: '*.zip.sha256'
+                }
+                dir('build_rel_arm64') {
+                  stash name: 'astcenc-windows-arm64', includes: '*.zip'
+                  stash name: 'astcenc-windows-arm64-hash', includes: '*.zip.sha256'
                 }
               }
             }
@@ -321,10 +339,12 @@ spec:
           steps {
             dir('upload') {
               unstash 'astcenc-windows-x64-hash'
+              unstash 'astcenc-windows-arm64-hash'
               unstash 'astcenc-linux-x64-hash'
               unstash 'astcenc-macos-universal-hash'
 
               unstash 'astcenc-windows-x64'
+              unstash 'astcenc-windows-arm64'
               unstash 'astcenc-linux-x64'
               unstash 'astcenc-macos-universal'
 

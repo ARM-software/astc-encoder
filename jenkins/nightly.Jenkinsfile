@@ -196,6 +196,28 @@ pipeline {
                 '''
               }
             }
+            stage('Build R') {
+              steps {
+                bat '''
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
+                  mkdir build_rel_arm64
+                  cd build_rel_arm64
+                  cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON -DASTCENC_PACKAGE=arm64-clangcl ..
+                  msbuild astcencoder.sln -property:Configuration=Release
+                '''
+              }
+            }
+            stage('Build D') {
+              steps {
+                bat '''
+                  call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
+                  mkdir build_dbg_arm64
+                  cd build_dbg_arm64
+                  cmake -G "Visual Studio 17 2022" -T ClangCL -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+                  msbuild astcencoder.sln -property:Configuration=Debug
+                '''
+              }
+            }
             stage('Stash') {
               steps {
                 dir('build_rel') {
