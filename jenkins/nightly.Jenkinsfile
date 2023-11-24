@@ -172,7 +172,7 @@ pipeline {
                 bat 'git clean -ffdx'
               }
             }
-            stage('Build R') {
+            stage('Build R x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -185,7 +185,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D x64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvars64.bat
@@ -196,7 +196,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build R') {
+            stage('Build R Arm64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
@@ -207,7 +207,7 @@ pipeline {
                 '''
               }
             }
-            stage('Build D') {
+            stage('Build D Arm64') {
               steps {
                 bat '''
                   call c:\\progra~2\\micros~1\\2022\\buildtools\\vc\\auxiliary\\build\\vcvarsall.bat x64_arm64
