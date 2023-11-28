@@ -1969,10 +1969,17 @@ TEST(vint4, vtable_8bt_32bi_32entry)
 
 	vint4 result = vtable_8bt_32bi(table0p, table1p, index);
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	EXPECT_EQ(result.lane<0>(),  3);
 	EXPECT_EQ(result.lane<1>(),  4);
 	EXPECT_EQ(result.lane<2>(),  7);
 	EXPECT_EQ(result.lane<3>(), 28);
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	EXPECT_EQ(result.lane<0>(),  0);
+	EXPECT_EQ(result.lane<1>(),  7);
+	EXPECT_EQ(result.lane<2>(),  4);
+	EXPECT_EQ(result.lane<3>(), 31);
+#endif
 }
 
 /** @brief Test vint4 table permute. */
@@ -1990,10 +1997,17 @@ TEST(vint4, vtable_8bt_32bi_64entry)
 
 	vint4 result = vtable_8bt_32bi(table0p, table1p, table2p, table3p, index);
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 	EXPECT_EQ(result.lane<0>(),  3);
 	EXPECT_EQ(result.lane<1>(),  4);
 	EXPECT_EQ(result.lane<2>(), 37);
 	EXPECT_EQ(result.lane<3>(), 60);
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	EXPECT_EQ(result.lane<0>(),  0);
+	EXPECT_EQ(result.lane<1>(),  7);
+	EXPECT_EQ(result.lane<2>(), 38);
+	EXPECT_EQ(result.lane<3>(), 63);
+#endif
 }
 
 /** @brief Test vint4 rgba byte interleave. */
