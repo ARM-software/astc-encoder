@@ -29,6 +29,7 @@
 	#include <cstdio>
 #endif
 #include <cstdlib>
+#include <limits>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
