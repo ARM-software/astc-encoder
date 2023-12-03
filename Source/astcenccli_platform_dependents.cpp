@@ -229,19 +229,20 @@ void launch_threads(
 		int error = pthread_create(
 			&(thread_descs[actual_thread_count].thread_handle),
 			nullptr,
-		    launch_threads_helper,
+			launch_threads_helper,
 			reinterpret_cast<void*>(thread_descs + actual_thread_count));		
 
 		// Track how many threads we actually created
 		if (!error)
 		{
-			actual_thread_count++;
-
-			// Windows 10 needs explicit thread assignment to handle large core count systems
-			// TODO: Add check to skip on Windows 11 or newer
+			// Windows needs explicit thread assignment to handle large core count systems
 			#if defined(_WIN32) && !defined(__CYGWIN__)
-				set_group_affinity(thread_descs[i].thread_handle, i);
+				set_group_affinity(
+					thread_descs[actual_thread_count].thread_handle,
+					actual_thread_count);
 			#endif
+
+			actual_thread_count++;
 		}
 	}
 
