@@ -58,6 +58,13 @@ static int pthread_create(
 	static_cast<void>(attribs);
 	LPTHREAD_START_ROUTINE func = reinterpret_cast<LPTHREAD_START_ROUTINE>(threadfunc);
 	*thread = CreateThread(nullptr, 0, func, thread_arg, 0, nullptr);
+	
+	// Ensure we return 0 on success, non-zero on error
+	if (*thread == NULL)
+	{
+		return 1;
+	}
+
 	return 0;
 }
 
@@ -195,6 +202,7 @@ static void* launch_threads_helper(
 
 /* See header for documentation */
 void launch_threads(
+	const char* operation,
 	int thread_count,
 	void (*func)(int, int, void*),
 	void *payload
@@ -207,28 +215,58 @@ void launch_threads(
 	}
 
 	// Otherwise spawn worker threads
-	launch_desc *thread_descs = new launch_desc[thread_count];
+	launch_desc *thread_descs = new launch_desc[thread_count];	
+	int actual_thread_count { 0 };
+	
 	for (int i = 0; i < thread_count; i++)
 	{
-		thread_descs[i].thread_count = thread_count;
-		thread_descs[i].thread_id = i;
-		thread_descs[i].payload = payload;
-		thread_descs[i].func = func;
+		thread_descs[actual_thread_count].thread_count = thread_count;
+		thread_descs[actual_thread_count].thread_id = actual_thread_count;
+		thread_descs[actual_thread_count].payload = payload;
+		thread_descs[actual_thread_count].func = func;
 
-		pthread_create(&(thread_descs[i].thread_handle), nullptr,
-		               launch_threads_helper, reinterpret_cast<void*>(thread_descs + i));
+		// Handle pthread_create failing by simply using fewer threads
+		int error = pthread_create(
+			&(thread_descs[actual_thread_count].thread_handle),
+			nullptr,
+			launch_threads_helper,
+			reinterpret_cast<void*>(thread_descs + actual_thread_count));		
 
-		// Windows 10 needs explicit thread assignment to handle large core count systems
-		// TODO: Add check to skip on Windows 11 or newer
-		#if defined(_WIN32) && !defined(__CYGWIN__)
-			set_group_affinity(thread_descs[i].thread_handle, i);
-		#endif
+		// Track how many threads we actually created
+		if (!error)
+		{
+			// Windows needs explicit thread assignment to handle large core count systems
+			#if defined(_WIN32) && !defined(__CYGWIN__)
+				set_group_affinity(
+					thread_descs[actual_thread_count].thread_handle,
+					actual_thread_count);
+			#endif
+
+			actual_thread_count++;
+		}
 	}
 
-	// ... and then wait for them to complete
-	for (int i = 0; i < thread_count; i++)
+	// If we did not create thread_count threads then emit a warning
+	if (actual_thread_count != thread_count)
+	{		
+		int log_count = actual_thread_count == 0 ? 1 : actual_thread_count;
+		const char* log_s = log_count == 1 ? "" : "s";
+		printf("WARNING: %s using %d thread%s due to thread creation error\n\n",
+		       operation, log_count, log_s);
+	}
+
+	// If we managed to spawn any threads wait for them to complete
+	if (actual_thread_count != 0)
 	{
-		pthread_join(thread_descs[i].thread_handle, nullptr);
+		for (int i = 0; i < actual_thread_count; i++)
+		{
+			pthread_join(thread_descs[i].thread_handle, nullptr);
+		}
+	}
+	// Else fall back to using this thread
+	else
+	{
+		func(1, 0, payload);
 	}
 
 	delete[] thread_descs;
