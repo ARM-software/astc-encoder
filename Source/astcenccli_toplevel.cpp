@@ -2094,7 +2094,7 @@ int astcenc_main(
 			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)
 			{
-				launch_threads(cli_config.thread_count, compression_workload_runner, &work);
+				launch_threads("Compression", cli_config.thread_count, compression_workload_runner, &work);
 			}
 			else
 			{
@@ -2157,7 +2157,7 @@ int astcenc_main(
 			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)
 			{
-				launch_threads(cli_config.thread_count, decompression_workload_runner, &work);
+				launch_threads("Decompression", cli_config.thread_count, decompression_workload_runner, &work);
 			}
 			else
 			{
