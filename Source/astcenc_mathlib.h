@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021 Arm Limited
+// Copyright 2011-2023 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -73,10 +73,14 @@
   #endif
 #endif
 
+// Force vector-sized SIMD alignment
 #if ASTCENC_AVX
   #define ASTCENC_VECALIGN 32
-#else
+#elif ASTCENC_SSE || ASTCENC_NEON
   #define ASTCENC_VECALIGN 16
+// Use default alignment for non-SIMD builds
+#else
+  #define ASTCENC_VECALIGN 0
 #endif
 
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0 || ASTCENC_POPCNT != 0
