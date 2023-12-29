@@ -772,6 +772,9 @@ struct image_block
 	/** @brief Is this grayscale block where R == G == B for all texels? */
 	bool grayscale;
 
+	/** @brief Is the eventual decode using decode_unorm8 rounding? */
+	bool decode_unorm8;
+
 	/** @brief Set to 1 if a texel is using HDR RGB endpoints (decompression only). */
 	uint8_t rgb_lns[BLOCK_MAX_TEXELS];
 
@@ -1817,7 +1820,7 @@ uint8_t pack_color_endpoints(
  *
  * Endpoints must be unscrambled and converted into the 0-255 range before calling this functions.
  *
- * @param      decode_mode   The decode mode (LDR, HDR).
+ * @param      decode_mode   The decode mode (LDR, HDR, etc).
  * @param      format        The color endpoint mode used.
  * @param      input         The raw array of encoded input integers. The length of this array
  *                           depends on @c format; it can be safely assumed to be large enough.

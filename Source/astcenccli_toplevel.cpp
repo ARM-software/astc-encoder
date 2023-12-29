@@ -603,6 +603,13 @@ static int init_astcenc_config(
 	}
 #endif
 
+	// Assume LDR profiles are using the decode mode extensions
+	// TODO: Make this optional
+	if (profile == ASTCENC_PRF_LDR || profile == ASTCENC_PRF_LDR_SRGB)
+	{
+		flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
+	}
+
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z,
 	                                           quality, flags, &config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
@@ -1949,7 +1956,6 @@ int astcenc_main(
 	// TODO: Handle RAII resources so they get freed when out of scope
 	astcenc_error    codec_status;
 	astcenc_context* codec_context;
-
 
 	// Preflight - check we have valid extensions for storing a file
 	if (operation & ASTCENC_STAGE_ST_NCOMP)

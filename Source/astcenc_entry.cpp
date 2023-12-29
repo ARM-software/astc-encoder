@@ -802,6 +802,8 @@ static void compress_image(
 	int row_blocks = xblocks;
 	int plane_blocks = xblocks * yblocks;
 
+	blk.decode_unorm8 = ctxo.context.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
+
 	// Populate the block channel weights
 	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
 	                             ctx.config.cw_g_weight,
@@ -1150,6 +1152,9 @@ astcenc_error astcenc_decompress_image(
 
 	image_block blk;
 	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
+
+	// Decode mode inferred from the output data type
+	blk.decode_unorm8 = image_out.data_type == ASTCENC_TYPE_U8;
 
 	// If context thread count is one then implicitly reset
 	if (ctx->thread_count == 1)
