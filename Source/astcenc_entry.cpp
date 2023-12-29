@@ -217,11 +217,13 @@ static astcenc_error validate_block_size(
 /**
  * @brief Validate flags.
  *
- * @param flags   The flags to check.
+ * @param profile   The profile to check.
+ * @param flags     The flags to check.
  *
  * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
  */
 static astcenc_error validate_flags(
+	astcenc_profile profile,
 	unsigned int flags
 ) {
 	// Flags field must not contain any unknown flag bits
@@ -237,6 +239,14 @@ static astcenc_error validate_flags(
 	if (popcount(flags & exMask) > 1)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
+	}
+
+	// Decode_unorm8 must only be used with an LDR profile
+	bool is_unorm8 = flags & ASTCENC_FLG_USE_DECODE_UNORM8;
+	bool is_hdr = (profile == ASTCENC_PRF_HDR) || (profile == ASTCENC_PRF_HDR_RGB_LDR_A);
+	if (is_unorm8 && is_hdr)
+	{
+		return ASTCENC_ERR_BAD_DECODE_MODE;
 	}
 
 	return ASTCENC_SUCCESS;
@@ -364,7 +374,7 @@ static astcenc_error validate_config(
 		return status;
 	}
 
-	status = validate_flags(config.flags);
+	status = validate_flags(config.profile, config.flags);
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
@@ -591,7 +601,7 @@ astcenc_error astcenc_config_init(
 	}
 
 	// Flags field must not contain any unknown flag bits
-	status = validate_flags(flags);
+	status = validate_flags(profile, flags);
 	if (status != ASTCENC_SUCCESS)
 	{
 		return status;
@@ -1361,6 +1371,8 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_BAD_CONTEXT";
 	case ASTCENC_ERR_NOT_IMPLEMENTED:
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
+	case ASTCENC_ERR_BAD_DECODE_MODE:
+		return "ASTCENC_ERR_BAD_DECODE_MODE";
 #if defined(ASTCENC_DIAGNOSTICS)
 	case ASTCENC_ERR_DTRACE_FAILURE:
 		return "ASTCENC_ERR_DTRACE_FAILURE";

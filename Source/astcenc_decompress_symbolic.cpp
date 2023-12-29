@@ -46,8 +46,9 @@ static vint4 lerp_color_int(
 	vint4 color = (color0 * weight0) + (color1 * weight1) + vint4(32);
 	color = asr<6>(color);
 
-	// For u8 values force the codec to bit replicate which allows the
-	// rest of the codec to assume full 0xFFFF range for everything
+	// For decode_unorm8 values force the codec to bit replicate. This allows the
+	// rest of the codec to assume the full 0xFFFF range for everything and ignore
+	// the decode_mode setting
 	vint4 color_u8 = asr<8>(color) * vint4(257);
 	color = select(color, color_u8, u8_mask);
 

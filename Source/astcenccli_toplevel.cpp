@@ -555,6 +555,10 @@ static int init_astcenc_config(
 		{
 			flags |= ASTCENC_FLG_MAP_NORMAL;
 		}
+		else if (!strcmp(argv[argidx], "-decode_unorm8"))
+		{
+			flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
+		}
 		else if (!strcmp(argv[argidx], "-rgbm"))
 		{
 			// Skip over the data value for now
@@ -603,18 +607,16 @@ static int init_astcenc_config(
 	}
 #endif
 
-	// Assume LDR profiles are using the decode mode extensions
-	// TODO: Make this optional
-	if (profile == ASTCENC_PRF_LDR || profile == ASTCENC_PRF_LDR_SRGB)
-	{
-		flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
-	}
-
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z,
 	                                           quality, flags, &config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
 		print_error("ERROR: Block size '%s' is invalid\n", argv[4]);
+		return 1;
+	}
+	else if (status == ASTCENC_ERR_BAD_DECODE_MODE)
+	{
+		print_error("ERROR: Decode_unorm8 is not supported by HDR profiles\n", argv[4]);
 		return 1;
 	}
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
@@ -865,6 +867,10 @@ static int edit_astcenc_config(
 
 			config.rgbm_m_scale = static_cast<float>(atof(argv[argidx - 1]));
 			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
+		}
+		else if (!strcmp(argv[argidx], "-decode_unorm8"))
+		{
+			argidx++;
 		}
 		else if (!strcmp(argv[argidx], "-perceptual"))
 		{
@@ -1953,6 +1959,25 @@ int astcenc_main(
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image* image_decomp_out = nullptr;
 
+	// Determine decompression output bitness, if limited by file type
+	int out_bitness = 0;
+	if (operation & ASTCENC_STAGE_DECOMPRESS)
+	{
+		out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
+		if (out_bitness == 0)
+		{
+			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) ||
+			              (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
+			out_bitness = is_hdr ? 16 : 8;
+		}
+
+		// If decompressed output is unorm8 then force the decode_unorm8 heuristics for compression
+		if (out_bitness == 8)
+		{
+			config.flags |= ASTCENC_FLG_USE_DECODE_UNORM8;
+		}
+	}
+
 	// TODO: Handle RAII resources so they get freed when out of scope
 	astcenc_error    codec_status;
 	astcenc_context* codec_context;
@@ -2137,13 +2162,6 @@ int astcenc_main(
 	double total_decompression_time = 0.0;
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
-		int out_bitness = get_output_filename_enforced_bitness(output_filename.c_str());
-		if (out_bitness == 0)
-		{
-			bool is_hdr = (config.profile == ASTCENC_PRF_HDR) || (config.profile == ASTCENC_PRF_HDR_RGB_LDR_A);
-			out_bitness = is_hdr ? 16 : 8;
-		}
-
 		image_decomp_out = alloc_image(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
 
