@@ -758,16 +758,6 @@ static void hdr_rgb_hdr_alpha_unpack(
 	output1.set_lane<3>(alpha1);
 }
 
-/**
- * @brief Is this an LDR color profile?
- */
-static bool is_ldr_decode_mode(
-	astcenc_profile decode_mode
-) {
-	return (decode_mode == ASTCENC_PRF_LDR) ||
-	       (decode_mode == ASTCENC_PRF_LDR_SRGB);
-}
-
 /* See header for documentation. */
 void unpack_color_endpoints(
 	astcenc_profile decode_mode,
