@@ -223,12 +223,13 @@ void decompress_symbolic_block(
 		{
 			vint4 colori(scb.constant_color);
 
-			// For sRGB decoding a real decoder would just use the top 8 bits for color conversion.
-			// We don't color convert, so rescale the top 8 bits into the full 16 bit dynamic range.
-			if (decode_mode == ASTCENC_PRF_LDR_SRGB)
-			{
-				colori = asr<8>(colori) * 257;
-			}
+			// Determine the UNORM8 rounding on the decode
+			vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
+
+			// The real decoder would just use the top 8 bits, but we rescale
+			// in to a 16-bit value that rounds correctly.
+			vint4 colori_u8 = asr<8>(colori) * 257;
+			colori = select(colori, colori_u8, u8_mask);
 
 			vint4 colorf16 = unorm16_to_sf16(colori);
 			color = float16_to_float(colorf16);
@@ -283,15 +284,7 @@ void decompress_symbolic_block(
 	int plane2_component = scb.plane2_component;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
-	vmask4 u8_mask(false);
-	if (blk.decode_unorm8)
-	{
-		u8_mask = vmask4(true);
-	}
-	else if (decode_mode == ASTCENC_PRF_LDR_SRGB)
-	{
-		u8_mask = vmask4(true, true, true, false);
-	}
+	vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
 
 	for (int i = 0; i < partition_count; i++)
 	{
@@ -369,15 +362,7 @@ float compute_symbolic_block_difference_2plane(
 	                       rgb_lns, a_lns,
 	                       ep0, ep1);
 
-	vmask4 u8_mask(false);
-	if (blk.decode_unorm8)
-	{
-		u8_mask = vmask4(true);
-	}
-	else if (config.profile == ASTCENC_PRF_LDR_SRGB)
-	{
-		u8_mask = vmask4(true, true, true, false);
-	}
+	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 
 	// Unpack and compute error for each texel in the partition
 	unsigned int texel_count = bsd.texel_count;
@@ -458,15 +443,7 @@ float compute_symbolic_block_difference_1plane(
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
-	vmask4 u8_mask(false);
-	if (blk.decode_unorm8)
-	{
-		u8_mask = vmask4(true);
-	}
-	else if (config.profile == ASTCENC_PRF_LDR_SRGB)
-	{
-		u8_mask = vmask4(true, true, true, false);
-	}
+	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 
 	vfloat4 summa = vfloat4::zero();
 	for (unsigned int i = 0; i < partition_count; i++)
@@ -571,16 +548,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	                       rgb_lns, a_lns,
 	                       ep0, ep1);
 
-
-	vmask4 u8_mask(false);
-	if (blk.decode_unorm8)
-	{
-		u8_mask = vmask4(true);
-	}
-	else if (config.profile == ASTCENC_PRF_LDR_SRGB)
-	{
-		u8_mask = vmask4(true, true, true, false);
-	}
+	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 
 	// Unpack and compute error for each texel in the partition
 	vfloatacc summav = vfloatacc::zero();

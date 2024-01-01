@@ -1568,6 +1568,33 @@ unsigned int find_best_partition_candidates(
 ============================================================================ */
 
 /**
+ * @brief Get a vector mask indicating lanes decompressing into a UNORM8 value.
+ *
+ * @param decode_mode   The color profile for LDR_SRGB settings.
+ * @param blk           The image block for output image bitness settings.
+ *
+ * @return The component mask vector.
+ */
+static inline vmask4 get_u8_component_mask(
+	astcenc_profile decode_mode,
+	const image_block& blk
+) {
+	vmask4 u8_mask(false);
+	// Decode mode writing to a unorm8 output value
+	if (blk.decode_unorm8)
+	{
+		u8_mask = vmask4(true);
+	}
+	// SRGB writing to a unorm8 RGB value
+	else if (decode_mode == ASTCENC_PRF_LDR_SRGB)
+	{
+		u8_mask = vmask4(true, true, true, false);
+	}
+
+	return u8_mask;
+}
+
+/**
  * @brief Setup computation of regional averages in an image.
  *
  * This must be done by only a single thread per image, before any thread calls
