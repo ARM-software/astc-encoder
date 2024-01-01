@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -771,6 +771,9 @@ struct image_block
 
 	/** @brief Is this grayscale block where R == G == B for all texels? */
 	bool grayscale;
+
+	/** @brief Is the eventual decode using decode_unorm8 rounding? */
+	bool decode_unorm8;
 
 	/** @brief Set to 1 if a texel is using HDR RGB endpoints (decompression only). */
 	uint8_t rgb_lns[BLOCK_MAX_TEXELS];
@@ -1565,6 +1568,33 @@ unsigned int find_best_partition_candidates(
 ============================================================================ */
 
 /**
+ * @brief Get a vector mask indicating lanes decompressing into a UNORM8 value.
+ *
+ * @param decode_mode   The color profile for LDR_SRGB settings.
+ * @param blk           The image block for output image bitness settings.
+ *
+ * @return The component mask vector.
+ */
+static inline vmask4 get_u8_component_mask(
+	astcenc_profile decode_mode,
+	const image_block& blk
+) {
+	vmask4 u8_mask(false);
+	// Decode mode writing to a unorm8 output value
+	if (blk.decode_unorm8)
+	{
+		u8_mask = vmask4(true);
+	}
+	// SRGB writing to a unorm8 RGB value
+	else if (decode_mode == ASTCENC_PRF_LDR_SRGB)
+	{
+		u8_mask = vmask4(true, true, true, false);
+	}
+
+	return u8_mask;
+}
+
+/**
  * @brief Setup computation of regional averages in an image.
  *
  * This must be done by only a single thread per image, before any thread calls
@@ -1817,7 +1847,7 @@ uint8_t pack_color_endpoints(
  *
  * Endpoints must be unscrambled and converted into the 0-255 range before calling this functions.
  *
- * @param      decode_mode   The decode mode (LDR, HDR).
+ * @param      decode_mode   The decode mode (LDR, HDR, etc).
  * @param      format        The color endpoint mode used.
  * @param      input         The raw array of encoded input integers. The length of this array
  *                           depends on @c format; it can be safely assumed to be large enough.

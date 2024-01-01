@@ -7,6 +7,31 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.7.0
+
+**Status:** TBD
+
+The 4.7.0 release is a maintenance release.
+
+* **General:**
+  * **Bug fix:** sRGB LDR decompression now uses correct `decode_fp16` decode
+    mode rounding rules for the alpha channel.
+  * **Bug fix:** Linear LDR decompression now uses correct `decode_unorm8`
+    decode mode rounding rules when writing to an 8-bit output image.
+  * **Feature:** Library configuration supports a new flag,
+    `ASTCENC_FLG_USE_DECODE_UNORM8`. This flag indicates that the image will be
+    used with the `decode_unorm8` decode mode. When set during compression
+    this allows the compressor to use the correct rounding when determining the
+    best encoding.
+  * **Feature:** Command line tool supports a new option, `-decode_unorm8`.
+    This option indicates that the image will be used with the `decode_unorm8`
+    decode mode. This option will automatically be set for decompression
+    (`-d*`) and trial (`-t*`) tool operation if the decompressed output image
+    is stored to an 8-bit per component file format. This option must be set
+    maually for compression (`-c*`) tool operation, as the desired decode mode
+    cannot be reliably determined.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.6.1
 
 **Status:** November 2023

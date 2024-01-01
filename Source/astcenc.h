@@ -215,6 +215,8 @@ enum astcenc_error {
 	ASTCENC_ERR_BAD_CONTEXT,
 	/** @brief The call failed due to unimplemented functionality. */
 	ASTCENC_ERR_NOT_IMPLEMENTED,
+	/** @brief The call failed due to an out-of-spec decode mode flag set. */
+	ASTCENC_ERR_BAD_DECODE_MODE,
 #if defined(ASTCENC_DIAGNOSTICS)
 	/** @brief The call failed due to an issue with diagnostic tracing. */
 	ASTCENC_ERR_DTRACE_FAILURE,
@@ -313,6 +315,19 @@ enum astcenc_type
 static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
 
 /**
+ * @brief Enable compression heuristics that assume use of decode_unorm8 decode mode.
+ *
+ * The decode_unorm8 decode mode rounds differently to the decode_fp16 decode mode, so enabling this
+ * flag during compression will allow the compressor to use the correct rounding when selecting
+ * encodings. This will improve the compressed image quality if your application is using the
+ * decode_unorm8 decode mode, but will reduce image quality if using decode_fp16.
+ *
+ * Note that LDR_SRGB images will always use decode_unorm8 for the RGB channels, irrespective of
+ * this setting.
+ */
+static const unsigned int ASTCENC_FLG_USE_DECODE_UNORM8        = 1 << 1;
+
+/**
  * @brief Enable alpha weighting.
  *
  * The input alpha value is used for transparency, so errors in the RGB components are weighted by
@@ -378,6 +393,7 @@ static const unsigned int ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_RGBM |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
                               ASTCENC_FLG_USE_PERCEPTUAL |
+                              ASTCENC_FLG_USE_DECODE_UNORM8 |
                               ASTCENC_FLG_DECOMPRESS_ONLY |
                               ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 

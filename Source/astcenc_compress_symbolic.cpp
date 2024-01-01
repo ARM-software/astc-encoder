@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1237,6 +1237,8 @@ void compress_block(
 			vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
 			vint4 color_u16 = float_to_int_rtn(color_f32);
 			store(color_u16, scb.constant_color);
+
+			// TODO: Check this encodes correctly for decode_unorm8
 		}
 
 		trace_add_data("exit", "quality hit");

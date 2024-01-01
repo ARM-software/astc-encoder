@@ -15,20 +15,32 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-
 set(ASTCENC_TEST test-unit-${ASTCENC_ISA_SIMD})
 
 add_executable(${ASTCENC_TEST})
+
+# Enable LTO under the conditions where the codec library will use LTO.
+# The library link will fail if the settings don't match
+if(${ASTCENC_CLI})
+    set_property(TARGET ${ASTCENC_TEST}
+        PROPERTY
+            INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
+endif()
 
 target_sources(${ASTCENC_TEST}
     PRIVATE
         test_simd.cpp
         test_softfloat.cpp
+        test_decode.cpp
         ../astcenc_mathlib_softfloat.cpp)
 
 target_include_directories(${ASTCENC_TEST}
     PRIVATE
         ${gtest_SOURCE_DIR}/include)
+
+target_link_libraries(${ASTCENC_TEST}
+    PRIVATE
+        astcenc-${ASTCENC_ISA_SIMD}-static)
 
 target_compile_options(${ASTCENC_TEST}
     PRIVATE
