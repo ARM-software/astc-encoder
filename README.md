@@ -1,7 +1,7 @@
 # About
 
 The Arm® Adaptive Scalable Texture Compression (ASTC) Encoder, `astcenc`, is
-a command-line tool for compressing and decompressing images using the ASTC 
+a command-line tool for compressing and decompressing images using the ASTC
 texture compression standard.
 
 ## The ASTC format
@@ -33,7 +33,7 @@ dynamic range (BMP, PNG, TGA), high dynamic range (EXR, HDR), or DDS and KTX
 wrapped output images.
 
 The encoder allows control over the compression time/quality tradeoff with
-`exhaustive`, `verythorough`, `thorough`, `medium`, `fast`, and `fastest` 
+`exhaustive`, `verythorough`, `thorough`, `medium`, `fast`, and `fastest`
 encoding quality presets.
 
 The encoder allows compression time and quality analysis by reporting the
@@ -145,6 +145,11 @@ The modes available are:
 * `-ch` : use the HDR color profile, tuned for HDR RGB and LDR A.
 * `-cH` : use the HDR color profile, tuned for HDR RGBA.
 
+If you intend to use the resulting image with the decode mode extensions to
+limit the decompressed precision to UNORM8, it is recommended that you also
+specify the `-decode_unorm8` flag. This will ensure that the compressor uses
+the correct rounding rules when choosing encodings.
+
 ## Decompressing an image
 
 Decompress an image using the `-dl` \ `-ds` \ `-dh` \ `-dH` modes. For example:
@@ -231,7 +236,7 @@ or general mobile graphics development or technology please submit them on the
 
 - - -
 
-_Copyright © 2013-2023, Arm Limited and contributors. All rights reserved._
+_Copyright © 2013-2024, Arm Limited and contributors. All rights reserved._
 
 [1]: ./Docs/FormatOverview.md
 [2]: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.html#ASTC
