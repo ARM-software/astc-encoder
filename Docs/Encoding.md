@@ -133,6 +133,29 @@ signed endpoint mode.
 This section outlines some of the other things to consider when encoding
 textures using ASTC.
 
+## Decode mode extensions
+
+ASTC is specified to decompress into a 16-bit per component RGBA output by
+default, with the exception of the sRGB format which uses an 8-bit value for the
+RGB components.
+
+Decompressing in to a 16-bit per component output format is often higher than
+many use cases require, especially for LDR textures which originally came from
+an 8-bit per component source image. Most implementations of ASTC support the
+decode mode extensions, which allow an application to opt-in to a lower
+precision decompressed format (RGBA8 for LDR, RGB9E5 for HDR). Using these
+extensions can improve GPU texture cache efficiency, and even improve texturing
+filtering throughput, for use cases that do not need the higher precision.
+
+The ASTC format uses different data rounding rules when the decode mode
+extensions are used. To ensure that the compressor chooses the best encodings
+for the RGBA8 rounding rules, you can specify `-decode_unorm8` when compressing
+textures that will be decompressed into the RGBA8 intermediate. This gives a
+small image quality boost.
+
+**Note:** This mode is automatically enabled if you use the `astcenc`
+decompressor to write an 8-bit per component output image.
+
 ## Encoding non-correlated components
 
 Most other texture compression formats have a static component assignment in
