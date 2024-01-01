@@ -232,4 +232,4 @@ which will treat all components as HDR data.
 
 - - -
 
-_Copyright © 2019-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2024, Arm Limited and contributors. All rights reserved._
