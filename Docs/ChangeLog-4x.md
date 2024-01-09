@@ -32,6 +32,11 @@ The 4.7.0 release is a maintenance release.
     is stored to an 8-bit per component file format. This option must be set
     maually for compression (`-c*`) tool operation, as the desired decode mode
     cannot be reliably determined.
+  * **Feature:** Library configuration supports a new optional progress
+    reporting callback to be specified. This is called during compression to
+    to allow interactive tooling use cases to display incremental progress. The
+    command line tool uses this feature to show compression progress unless
+    `-silent` is used.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.6.1
