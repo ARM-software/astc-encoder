@@ -385,7 +385,7 @@ struct decimation_info
 	 * @brief The bilinear contribution of the N weights that are interpolated for each texel.
 	 * Value is between 0 and 1, stored transposed to improve vectorization.
 	 */
-	alignas(ASTCENC_VECALIGN) float texel_weight_contribs_float_tr[4][BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float texel_weight_contribs_float_tr[4][BLOCK_MAX_TEXELS];
 
 	/** @brief The number of texels that each stored weight contributes to. */
 	uint8_t weight_texel_count[BLOCK_MAX_WEIGHTS];
@@ -400,7 +400,7 @@ struct decimation_info
 	 * @brief The bilinear contribution to the N texels that use each weight.
 	 * Value is between 0 and 1, stored transposed to improve vectorization.
 	 */
-	alignas(ASTCENC_VECALIGN) float weights_texel_contribs_tr[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+	ASTCENC_ALIGNAS float weights_texel_contribs_tr[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
 
 	/**
 	 * @brief The bilinear contribution to the Nth texel that uses each weight.
@@ -580,7 +580,7 @@ struct block_size_descriptor
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The active decimation tables, stored in low indices. */
-	alignas(ASTCENC_VECALIGN) decimation_info decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
+	ASTCENC_ALIGNAS decimation_info decimation_tables[WEIGHTS_MAX_DECIMATION_MODES];
 
 	/** @brief The packed block mode array index, or @c BLOCK_BAD_BLOCK_MODE if not active. */
 	uint16_t block_mode_packed_index[WEIGHTS_MAX_BLOCK_MODES];
@@ -740,16 +740,16 @@ struct block_size_descriptor
 struct image_block
 {
 	/** @brief The input (compress) or output (decompress) data for the red color component. */
-	alignas(ASTCENC_VECALIGN) float data_r[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_r[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the green color component. */
-	alignas(ASTCENC_VECALIGN) float data_g[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_g[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the blue color component. */
-	alignas(ASTCENC_VECALIGN) float data_b[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_b[BLOCK_MAX_TEXELS];
 
 	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
-	alignas(ASTCENC_VECALIGN) float data_a[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_a[BLOCK_MAX_TEXELS];
 
 	/** @brief The number of texels in the block. */
 	uint8_t texel_count;
@@ -901,10 +901,10 @@ struct endpoints_and_weights
 	endpoints ep;
 
 	/** @brief The ideal weight for each texel; may be undecimated or decimated. */
-	alignas(ASTCENC_VECALIGN) float weights[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float weights[BLOCK_MAX_TEXELS];
 
 	/** @brief The ideal weight error scaling for each texel; may be undecimated or decimated. */
-	alignas(ASTCENC_VECALIGN) float weight_error_scale[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float weight_error_scale[BLOCK_MAX_TEXELS];
 };
 
 /**
@@ -934,7 +934,7 @@ struct encoding_choice_errors
 /**
  * @brief Preallocated working buffers, allocated per thread during context creation.
  */
-struct alignas(ASTCENC_VECALIGN) compression_working_buffers
+struct ASTCENC_ALIGNAS compression_working_buffers
 {
 	/** @brief Ideal endpoints and weights for plane 1. */
 	endpoints_and_weights ei1;
@@ -950,7 +950,7 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	 *
 	 * For two planes, second plane starts at @c WEIGHTS_PLANE2_OFFSET offsets.
 	 */
-	alignas(ASTCENC_VECALIGN) float dec_weights_ideal[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
+	ASTCENC_ALIGNAS float dec_weights_ideal[WEIGHTS_MAX_DECIMATION_MODES * BLOCK_MAX_WEIGHTS];
 
 	/**
 	 * @brief Decimated quantized weight values in the unquantized 0-64 range.
@@ -960,7 +960,7 @@ struct alignas(ASTCENC_VECALIGN) compression_working_buffers
 	uint8_t dec_weights_uquant[WEIGHTS_MAX_BLOCK_MODES * BLOCK_MAX_WEIGHTS];
 
 	/** @brief Error of the best encoding combination for each block mode. */
-	alignas(ASTCENC_VECALIGN) float errors_of_best_combination[WEIGHTS_MAX_BLOCK_MODES];
+	ASTCENC_ALIGNAS float errors_of_best_combination[WEIGHTS_MAX_BLOCK_MODES];
 
 	/** @brief The best color quant for each block mode. */
 	uint8_t best_quant_levels[WEIGHTS_MAX_BLOCK_MODES];
