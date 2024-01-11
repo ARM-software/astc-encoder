@@ -699,6 +699,12 @@ astcenc_error astcenc_context_alloc(
 	}
 
 	ctx->bsd = aligned_malloc<block_size_descriptor>(sizeof(block_size_descriptor), ASTCENC_VECALIGN);
+	if (!ctx->bsd)
+	{
+		delete ctxo;
+		return ASTCENC_ERR_OUT_OF_MEM;
+	}
+
 	bool can_omit_modes = static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY);
 	init_block_size_descriptor(config.block_x, config.block_y, config.block_z,
 	                           can_omit_modes,

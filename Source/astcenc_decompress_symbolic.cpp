@@ -533,7 +533,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
 	// Unquantize and undecimate the weights
-	alignas(ASTCENC_VECALIGN) int plane1_weights[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS int plane1_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
 	// Decode the color endpoints for this partition

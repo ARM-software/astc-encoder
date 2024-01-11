@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2022 Arm Limited
+// Copyright 2020-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -930,7 +930,7 @@ TEST(vfloat4, gatherf)
 /** @brief Test vfloat4 storea. */
 TEST(vfloat4, storea)
 {
-	alignas(16) float out[4];
+	ASTCENC_ALIGNAS float out[4];
 	vfloat4 a(f32_data);
 	storea(a, out);
 	EXPECT_EQ(out[0], 0.0f);
@@ -942,7 +942,7 @@ TEST(vfloat4, storea)
 /** @brief Test vfloat4 store. */
 TEST(vfloat4, store)
 {
-	alignas(16) float out[5];
+	ASTCENC_ALIGNAS float out[5];
 	vfloat4 a(f32_data);
 	store(a, &(out[1]));
 	EXPECT_EQ(out[1], 0.0f);
@@ -1725,7 +1725,7 @@ TEST(vint4, two_to_the_n)
 /** @brief Test vint4 storea. */
 TEST(vint4, storea)
 {
-	alignas(16) int out[4];
+	ASTCENC_ALIGNAS int out[4];
 	vint4 a(s32_data);
 	storea(a, out);
 	EXPECT_EQ(out[0], 0);
@@ -1737,7 +1737,7 @@ TEST(vint4, storea)
 /** @brief Test vint4 store. */
 TEST(vint4, store)
 {
-	alignas(16) int out[5];
+	ASTCENC_ALIGNAS int out[5];
 	vint4 a(s32_data);
 	store(a, &(out[1]));
 	EXPECT_EQ(out[1], 0);
@@ -1749,7 +1749,7 @@ TEST(vint4, store)
 /** @brief Test vint4 store_nbytes. */
 TEST(vint4, store_nbytes)
 {
-	alignas(16) int out;
+	ASTCENC_ALIGNAS int out;
 	vint4 a(42, 314, 75, 90);
 	store_nbytes(a, reinterpret_cast<uint8_t*>(&out));
 	EXPECT_EQ(out, 42);

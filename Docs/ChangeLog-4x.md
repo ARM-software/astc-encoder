@@ -18,6 +18,8 @@ The 4.7.0 release is a maintenance release.
     mode rounding rules for the alpha channel.
   * **Bug fix:** Linear LDR decompression now uses correct `decode_unorm8`
     decode mode rounding rules when writing to an 8-bit output image.
+  * **Bug fix:** Avoid using `alignas()` the reference C implementation, as the
+    default `alignas(16)` is narrower than the native alignment on some CPUs.
   * **Feature:** Library configuration supports a new flag,
     `ASTCENC_FLG_USE_DECODE_UNORM8`. This flag indicates that the image will be
     used with the `decode_unorm8` decode mode. When set during compression
