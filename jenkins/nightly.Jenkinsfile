@@ -204,6 +204,8 @@ pipeline {
                   cd build_rel_arm64
                   cmake -G "Visual Studio 17 2022" -A ARM64 -T ClangCL -DASTCENC_ISA_NEON=ON -DASTCENC_PACKAGE=arm64-clangcl ..
                   msbuild astcencoder.sln -property:Configuration=Release
+                  msbuild PACKAGE.vcxproj -property:Configuration=Release
+                  msbuild INSTALL.vcxproj -property:Configuration=Release
                 '''
               }
             }

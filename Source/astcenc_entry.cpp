@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -830,7 +830,7 @@ static void compress_image(
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
 	// Only the first thread actually runs the initializer
-	ctxo.manage_compress.init(block_count);
+	ctxo.manage_compress.init(block_count, ctx.config.progress_callback);
 
 	// Determine if we can use an optimized load function
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
@@ -1155,6 +1155,7 @@ astcenc_error astcenc_decompress_image(
 	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
 	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
 	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
+	unsigned int block_count = zblocks * yblocks * xblocks;
 
 	int row_blocks = xblocks;
 	int plane_blocks = xblocks * yblocks;
@@ -1179,7 +1180,7 @@ astcenc_error astcenc_decompress_image(
 	}
 
 	// Only the first thread actually runs the initializer
-	ctxo->manage_decompress.init(zblocks * yblocks * xblocks);
+	ctxo->manage_decompress.init(block_count, nullptr);
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)

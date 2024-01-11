@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2023 Arm Limited
+// Copyright 2020-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -305,6 +305,11 @@ enum astcenc_type
 };
 
 /**
+ * @brief Function pointer type for compression progress reporting callback.
+ */
+extern "C" typedef void (*astcenc_progress_callback)(float);
+
+/**
  * @brief Enable normal map compression.
  *
  * Input data will be treated a two component normal map, storing X and Y, and the codec will
@@ -565,6 +570,16 @@ struct astcenc_config
 	 * search is enabled. This option is ineffective for 3D block sizes.
 	 */
 	float tune_search_mode0_enable;
+
+	/**
+	 * @brief The progress callback, can be @c nullptr.
+	 *
+	 * If this is specified the codec will peridocially report progress for
+	 * compression as a percentage between 0 and 100. The callback is called from one
+	 * of the compressor threads, so doing significant work in the callback will
+	 * reduce compression performance.
+	 */
+	astcenc_progress_callback progress_callback;
 
 #if defined(ASTCENC_DIAGNOSTICS)
 	/**

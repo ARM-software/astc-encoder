@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -22,6 +22,12 @@
 #include "astcenc.h"
 #include "astcenccli_internal.h"
 
+#if defined(_WIN32)
+	#include <io.h>
+	#define isatty _isatty
+#else
+	#include <unistd.h>
+#endif
 #include <cassert>
 #include <cstring>
 #include <functional>
@@ -155,6 +161,35 @@ struct decompression_workload
 	astcenc_swizzle swizzle;
 	astcenc_error error;
 };
+
+/**
+ * @brief Callback emitting a progress bar
+ */
+extern "C" void progress_emitter(
+	float value
+) {
+	const unsigned int bar_size = 25;
+	unsigned int parts = static_cast<int>(value / 4.0f);
+
+	char buffer[bar_size + 3];
+	buffer[0] = '[';
+
+	for (unsigned int i = 0; i < parts; i++)
+	{
+		buffer[i + 1] = '=';
+	}
+
+	for (unsigned int i = parts; i < bar_size; i++)
+	{
+		buffer[i + 1] = ' ';
+	}
+
+	buffer[bar_size + 1] = ']';
+	buffer[bar_size + 2] = '\0';
+
+	printf("    Progress: %s %03.1f%%\r", buffer, static_cast<double>(value));
+	fflush(stdout);
+}
 
 /**
  * @brief Test if a string argument is a well formed float.
@@ -1954,6 +1989,18 @@ int astcenc_main(
 		return 1;
 	}
 
+	// Enable progress callback if not in silent mode and using a terminal
+	#if defined(_WIN32)
+		int stdoutfno = _fileno(stdout);
+	#else
+		int stdoutfno = STDOUT_FILENO;
+	#endif
+
+	if ((!cli_config.silentmode) && isatty(stdoutfno))
+	{
+		config.progress_callback = progress_emitter;
+	}
+
 	astcenc_image* image_uncomp_in = nullptr ;
 	unsigned int image_uncomp_in_component_count = 0;
 	bool image_uncomp_in_is_hdr = false;
@@ -2122,6 +2169,13 @@ int astcenc_main(
 		double start_compression_time = get_time();
 		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
 		{
+			if (config.progress_callback)
+			{
+				printf("Compression\n");
+				printf("===========\n");
+				printf("\n");
+			}
+
 			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)
 			{
@@ -2135,6 +2189,11 @@ int astcenc_main(
 			}
 
 			astcenc_compress_reset(codec_context);
+
+			if (config.progress_callback)
+			{
+				printf("\n\n");
+			}
 
 			double iter_time = get_time() - start_iter_time;
 			best_compression_time = astc::min(iter_time, best_compression_time);
