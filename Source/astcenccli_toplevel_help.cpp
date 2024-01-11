@@ -162,7 +162,7 @@ COMPRESSION
        -decode_unorm8
            Indicate that an LDR compressed texture will be used with
            the decode_unorm8 extension behavior, instead of the default
-           decode_unorm16 decompression.
+           decode_float16 decompression.
 
            Matching the decode mode used during compression to the mode
            used at runtime will improve image quality as the compressor
