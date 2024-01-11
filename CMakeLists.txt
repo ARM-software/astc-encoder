@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2023 Arm Limited
+#  Copyright 2020-2024 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -24,7 +24,7 @@ if(MSVC)
     add_compile_options("/wd4324") # Disable structure was padded due to alignment specifier
 endif()
 
-project(astcencoder VERSION 4.6.1)
+project(astcencoder VERSION 4.7.0)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

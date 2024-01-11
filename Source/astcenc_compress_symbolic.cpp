@@ -1237,8 +1237,6 @@ void compress_block(
 			vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
 			vint4 color_u16 = float_to_int_rtn(color_f32);
 			store(color_u16, scb.constant_color);
-
-			// TODO: Check this encodes correctly for decode_unorm8
 		}
 
 		trace_add_data("exit", "quality hit");

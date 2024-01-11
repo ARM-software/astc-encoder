@@ -9,17 +9,27 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.7.0
 
-**Status:** TBD
+**Status:** January 2024
 
-The 4.7.0 release is a maintenance release.
+The 4.7.0 release is a major maintenance release, fixing rounding behavior in
+the decompressor to match the Khronos specification. This fix includes the
+addition of explicit support for optimizing for `decode_unorm8` rounding.
+
+Reminder - the codec library API is not designed to be binary compatible across
+versions. We always recommend rebuilding your client-side code using the updated
+`astcenc.h` header.
 
 * **General:**
-  * **Bug fix:** sRGB LDR decompression now uses correct `decode_fp16` decode
-    mode rounding rules for the alpha channel.
-  * **Bug fix:** Linear LDR decompression now uses correct `decode_unorm8`
-    decode mode rounding rules when writing to an 8-bit output image.
-  * **Bug fix:** Avoid using `alignas()` the reference C implementation, as the
-    default `alignas(16)` is narrower than the native alignment on some CPUs.
+  * **Bug fix:** sRGB LDR decompression now uses the correct endpoint expansion
+    method to create the 16-bit RGB endpoint colors, and removes the previous
+    correction code from the interpolation function. This bug could result in
+    LSB bit flips relative to the standard specification.
+  * **Bug fix:** Decompressing to an 8-bit per component output image now matches
+    the `decode_unorm8` extension rounding rules. This bug could result in
+    LSB bit flips relative to the standard specification.
+  * **Bug fix:** Code now avoids using `alignas()` in the reference C
+    implementation, as the  default `alignas(16)` is narrower than the
+    native minimum alignment requirement on some CPUs.
   * **Feature:** Library configuration supports a new flag,
     `ASTCENC_FLG_USE_DECODE_UNORM8`. This flag indicates that the image will be
     used with the `decode_unorm8` decode mode. When set during compression
@@ -30,7 +40,7 @@ The 4.7.0 release is a maintenance release.
     decode mode. This option will automatically be set for decompression
     (`-d*`) and trial (`-t*`) tool operation if the decompressed output image
     is stored to an 8-bit per component file format. This option must be set
-    maually for compression (`-c*`) tool operation, as the desired decode mode
+    manually for compression (`-c*`) tool operation, as the desired decode mode
     cannot be reliably determined.
   * **Feature:** Library configuration supports a new optional progress
     reporting callback to be specified. This is called during compression to
@@ -49,7 +59,7 @@ large core count Windows systems.
 * **General:**
   * **Optimization:** Windows builds of the `astcenc` command line tool can now
     use more than 64 cores on large core count systems. This change doubled
-    command line performance for `-exhastive` compression when testing on an
+    command line performance for `-exhaustive` compression when testing on an
     96 core/192 thread system.
   * **Feature:** Windows Arm64 native builds of the `astcenc` command line tool
     are now included in the prebuilt release binaries.
@@ -385,4 +395,4 @@ Key for charts:
 
 - - -
 
-_Copyright © 2022-2023, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2024, Arm Limited and contributors. All rights reserved._
