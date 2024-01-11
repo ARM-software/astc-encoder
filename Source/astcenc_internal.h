@@ -2173,10 +2173,11 @@ Platform-specific functions.
 /**
  * @brief Allocate an aligned memory buffer.
  *
- * Allocated memory must be freed by aligned_free;
+ * Allocated memory must be freed by aligned_free.
  *
  * @param size    The desired buffer size.
- * @param align   The desired buffer alignment; must be 2^N.
+ * @param align   The desired buffer alignment; must be 2^N, may be increased
+ *                by the implementation to a minimum allowable alignment.
  *
  * @return The memory buffer pointer or nullptr on allocation failure.
  */
@@ -2186,10 +2187,14 @@ T* aligned_malloc(size_t size, size_t align)
 	void* ptr;
 	int error = 0;
 
+	// Don't allow this to under-align a type
+	size_t min_align = astc::max(alignof(T), sizeof(void*));
+	size_t real_align = astc::max(min_align, align);
+
 #if defined(_WIN32)
-	ptr = _aligned_malloc(size, align);
+	ptr = _aligned_malloc(size, real_align);
 #else
-	error = posix_memalign(&ptr, align, size);
+	error = posix_memalign(&ptr, real_align, size);
 #endif
 
 	if (error || (!ptr))
