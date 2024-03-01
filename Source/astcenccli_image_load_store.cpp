@@ -30,9 +30,9 @@
 
 #include "astcenccli_internal.h"
 
-#include "stb_image.h"
-#include "stb_image_write.h"
-#include "tinyexr.h"
+#include "third_party/stb_image.h"
+#include "third_party/stb_image_write.h"
+#include "third_party/tinyexr.h"
 
 /**
  * @brief Determine the output file name to use for a sliced image write.

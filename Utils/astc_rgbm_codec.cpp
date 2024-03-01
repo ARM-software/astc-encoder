@@ -24,10 +24,10 @@
 #include "astcenc_mathlib.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "third_party/stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "third_party/stb_image_write.h"
 
 #define MODE_ENCODE 0
 #define MODE_DECODE 1
