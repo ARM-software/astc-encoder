@@ -24,10 +24,10 @@
 #include "astcenc_mathlib.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "third_party/stb_image.h"
+#include "ThirdParty/stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "third_party/stb_image_write.h"
+#include "ThirdParty/stb_image_write.h"
 
 /**
  * @brief Linearize an sRGB value.
