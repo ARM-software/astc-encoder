@@ -75,7 +75,7 @@ The coding swizzle should be applied when compressing an image. This can be
 handled by the compressor when reading an uncompressed input image by
 specifying the swizzle using the `-esw` command line option.
 
-The sampling swizzle is what your should use in your shader programs to read
+The sampling swizzle is what you should use in your shader programs to read
 the data from the compressed texture, assuming no additional API-level
 component swizzling is specified by the application.
 
