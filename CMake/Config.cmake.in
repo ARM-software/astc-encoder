@@ -1,0 +1,6 @@
+@PACKAGE_INIT@
+
+# If there are any PUBLIC upstream dependencies, they should be included here.
+# STB and tinyexr are private dependencies and don't need to be included here.
+
+include("${CMAKE_CURRENT_LIST_DIR}/astcencTargets.cmake")

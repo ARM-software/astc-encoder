@@ -177,7 +177,7 @@
 		#define ASTCENC_PUBLIC extern "C" __attribute__ ((visibility ("default")))
 	#endif
 #else
-	#define ASTCENC_PUBLIC
+	#define ASTCENC_PUBLIC extern "C"
 #endif
 
 /* ============================================================================
