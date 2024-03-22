@@ -412,6 +412,9 @@ static astcenc_error validate_config(
 	config.tune_3partition_early_out_limit_factor = astc::max(config.tune_3partition_early_out_limit_factor, 0.0f);
 	config.tune_2plane_early_out_limit_correlation = astc::max(config.tune_2plane_early_out_limit_correlation, 0.0f);
 
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	config.rdo_level = astc::clamp(config.rdo_level, 0.0f, 1.0f);
+
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
 	                             astc::max(config.cw_b_weight, config.cw_a_weight));
@@ -649,6 +652,9 @@ astcenc_error astcenc_config_init(
 		}
 	}
 	config.flags = flags;
+
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	config.rdo_lookback = 64;
 
 	return ASTCENC_SUCCESS;
 }
@@ -1099,6 +1105,9 @@ astcenc_error astcenc_compress_image(
 	// Only the first thread to arrive actually runs the term
 	ctxo->manage_compress.term(term_compress);
 
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	rate_distortion_optimize(*ctxo, image, *swizzle, data_out);
+
 	return ASTCENC_SUCCESS;
 #endif
 }
@@ -1119,6 +1128,7 @@ astcenc_error astcenc_compress_reset(
 
 	ctxo->manage_avg.reset();
 	ctxo->manage_compress.reset();
+	ctxo->manage_rdo.reset(); //SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
 	return ASTCENC_SUCCESS;
 #endif
 }
