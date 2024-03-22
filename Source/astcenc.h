@@ -571,6 +571,17 @@ struct astcenc_config
 	 */
 	float tune_search_mode0_enable;
 
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
+	/**
+	 * @brief The compression level for rate-distortion optimization.
+	 */
+	float rdo_level;
+	/**
+	 * @brief Number of blocks for each entropy reduction batch.
+	 */
+	unsigned int rdo_lookback;
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
+
 	/**
 	 * @brief The progress callback, can be @c nullptr.
 	 *

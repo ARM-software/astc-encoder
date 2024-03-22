@@ -1231,6 +1231,9 @@ struct astcenc_contexti
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 	/** @brief The pixel region and variance worker arguments. */
 	avg_args avg_preprocess_args;
+
+	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	struct astcenc_rdo_context* rdo_context;
 #endif
 
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -2170,6 +2173,19 @@ void physical_to_symbolic(
 	const block_size_descriptor& bsd,
 	const uint8_t pcb[16],
 	symbolic_compressed_block& scb);
+
+//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
+/**
+ * @brief Rate-distortion optimization main entry.
+ *
+ * @param[inout] buffer   The output compressed buffer.
+ */
+void rate_distortion_optimize(
+	astcenc_context& ctxo,
+	const astcenc_image& image,
+	const astcenc_swizzle& swizzle,
+	uint8_t* buffer);
+//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
 
 /* ============================================================================
 Platform-specific functions.
