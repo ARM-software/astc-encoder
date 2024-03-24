@@ -7,6 +7,17 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.8.0
+
+**Status:** In development ...
+
+The 4.8.0 release is a minor maintenance release.
+
+* **General:**
+  * **Bug fix:** Native builds on macOS will now correctly build for arm64 when
+    run outside of Rosetta on an Apple silicon device.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.7.0
 
 **Status:** January 2024
@@ -24,9 +35,9 @@ versions. We always recommend rebuilding your client-side code using the updated
     method to create the 16-bit RGB endpoint colors, and removes the previous
     correction code from the interpolation function. This bug could result in
     LSB bit flips relative to the standard specification.
-  * **Bug fix:** Decompressing to an 8-bit per component output image now matches
-    the `decode_unorm8` extension rounding rules. This bug could result in
-    LSB bit flips relative to the standard specification.
+  * **Bug fix:** Decompressing to an 8-bit per component output image now
+    matches the `decode_unorm8` extension rounding rules. This bug could result
+    in LSB bit flips relative to the standard specification.
   * **Bug fix:** Code now avoids using `alignas()` in the reference C
     implementation, as the  default `alignas(16)` is narrower than the
     native minimum alignment requirement on some CPUs.
