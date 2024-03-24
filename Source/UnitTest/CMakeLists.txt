@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2023 Arm Limited
+#  Copyright 2020-2024 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -28,10 +28,18 @@ foreach(INDEX RANGE ${ASTCENC_ARTIFACTS_LEN})
 
         if(${ASTCENC_ISA_SIMD} MATCHES "neon")
            set(CMAKE_OSX_ARCHITECTURES arm64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
+           set(CMAKE_OSX_ARCHITECTURES x86_64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
+           set(CMAKE_OSX_ARCHITECTURES x86_64)
         elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
            set(CMAKE_OSX_ARCHITECTURES x86_64h)
-        elseif(NOT ${ASTCENC_ISA_SIMD} MATCHES "none")
-           set(CMAKE_OSX_ARCHITECTURES x86_64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "none")
+           # Using "none" uses implicit architecture
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "native")
+           # Using "native" uses implicit architecture
+        else()
+            message(FATAL_ERROR "'${ASTCENC_ISA_SIMD}' is unknown ISA")
         endif()
 
         include(cmake_core.cmake)
