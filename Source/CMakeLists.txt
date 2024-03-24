@@ -40,10 +40,14 @@ foreach(INDEX RANGE ${ASTCENC_ARTIFACTS_LEN})
 
         if(${ASTCENC_ISA_SIMD} MATCHES "neon")
            set(CMAKE_OSX_ARCHITECTURES arm64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
+           set(CMAKE_OSX_ARCHITECTURES x86_64)
+        elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
+           set(CMAKE_OSX_ARCHITECTURES x86_64)
         elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
            set(CMAKE_OSX_ARCHITECTURES x86_64h)
-        elseif(NOT ${ASTCENC_ISA_SIMD} MATCHES "none")
-           set(CMAKE_OSX_ARCHITECTURES x86_64)
+        else()
+            # Using "none" or "native" uses implicit architecture
         endif()
 
         include(cmake_core.cmake)
