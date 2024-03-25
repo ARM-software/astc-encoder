@@ -1186,6 +1186,12 @@ static int edit_astcenc_config(
 			}
 
 			config.rdo_level = static_cast<float>(atof(argv[argidx - 1]));
+
+			// RDO trials blocks will require full initializations
+			if (static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
+			{
+				config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+			}
 		}
 		else if (!strcmp(argv[argidx], "-rdo-lookback"))
 		{
