@@ -412,9 +412,6 @@ static astcenc_error validate_config(
 	config.tune_3partition_early_out_limit_factor = astc::max(config.tune_3partition_early_out_limit_factor, 0.0f);
 	config.tune_2plane_early_out_limit_correlation = astc::max(config.tune_2plane_early_out_limit_correlation, 0.0f);
 
-	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
-	config.rdo_level = astc::clamp(config.rdo_level, 0.0f, 1.0f);
-
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
 	                             astc::max(config.cw_b_weight, config.cw_a_weight));
