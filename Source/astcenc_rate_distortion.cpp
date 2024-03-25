@@ -19,7 +19,7 @@ struct astcenc_rdo_context
 	uint32_t m_image_dimz = 0;
 	uint32_t m_bytes_per_texel = 0;
 	uint32_t m_component_count = 0;
-	astcenc_swizzle m_swizzle;
+	astcenc_swizzle m_swizzle{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
 
 	std::vector<uint8_t> m_block_pixels;
 };
@@ -34,7 +34,7 @@ extern "C" void rdo_progress_emitter(
 ) {
 	static float previous_value = 100.0f;
 	const uint32_t bar_size = 25;
-	uint32_t parts = static_cast<uint32_t>(value / 4.0f);
+	auto parts = static_cast<uint32_t>(value / 4.0f);
 
 	char buffer[bar_size + 3];
 	buffer[0] = '[';
@@ -64,15 +64,15 @@ extern "C" void rdo_progress_emitter(
 	fflush(stdout);
 }
 
+template<typename T>
 static uint32_t init_rdo_context(
 	astcenc_contexti& ctx,
 	const astcenc_image& image,
-	const astcenc_swizzle& swizzle
+	const astcenc_swizzle& swz
 ) {
 	ctx.rdo_context = new astcenc_rdo_context;
 	astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
 
-	// Perform memory allocations for intermediary buffers
 	uint32_t block_dim_x = ctx.bsd->xdim;
 	uint32_t block_dim_y = ctx.bsd->ydim;
 	uint32_t block_dim_z = ctx.bsd->zdim;
@@ -81,52 +81,6 @@ static uint32_t init_rdo_context(
 	uint32_t zblocks = (image.dim_z + block_dim_z - 1u) / block_dim_z;
 	uint32_t total_blocks = xblocks * yblocks * zblocks;
 
-	uint32_t bytes_per_texel = 4u;
-	if (image.data_type == ASTCENC_TYPE_F16) bytes_per_texel *= 2;
-	else if (image.data_type == ASTCENC_TYPE_F32) bytes_per_texel *= 4;
-	uint32_t texels_per_block = block_dim_x * block_dim_y * block_dim_z;
-
-	rdo_ctx.m_block_pixels.resize(total_blocks * ctx.bsd->texel_count * bytes_per_texel);
-	for (uint32_t block_z = 0; block_z < zblocks; ++block_z)
-	{
-		const uint32_t valid_z = astc::min(image.dim_z - block_z * block_dim_z, block_dim_z);
-		const uint32_t padding_z = block_dim_z - valid_z;
-	
-		for (uint32_t offset_z = 0; offset_z < valid_z; offset_z++)
-		{
-			const auto* src_data = static_cast<const uint8_t*>(image.data[block_z * block_dim_z + offset_z]);
-	
-			for (uint32_t block_y = 0, block_idx = 0; block_y < yblocks; ++block_y)
-			{
-				const uint8_t* src_block_row = src_data + block_y * block_dim_y * image.dim_x * bytes_per_texel;
-				const uint32_t valid_y = astc::min(image.dim_y - block_y * block_dim_y, block_dim_y);
-				const uint32_t padding_y = block_dim_y - valid_y;
-	
-				for (uint32_t block_x = 0; block_x < xblocks; ++block_x, ++block_idx)
-				{
-					const uint8_t* src_block = src_block_row + block_x * block_dim_x * bytes_per_texel;
-					const uint32_t valid_x = astc::min(image.dim_x - block_x * block_dim_x, block_dim_x);
-					const uint32_t padding_x = block_dim_x - valid_x;
-	
-					uint8_t* dst_block = rdo_ctx.m_block_pixels.data() + block_idx * texels_per_block * bytes_per_texel;
-					for (uint32_t offset_y = 0; offset_y < valid_y; ++offset_y)
-					{
-						memcpy(dst_block, src_block, valid_x * bytes_per_texel);
-						if (padding_x) memset(dst_block + valid_x * bytes_per_texel, ASTCENC_RDO_PADDING_PIXEL, padding_x * bytes_per_texel);
-						src_block += image.dim_x * bytes_per_texel;
-						dst_block += block_dim_x * bytes_per_texel;
-					}
-					if (padding_y)
-					{
-						memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_y * block_dim_x * bytes_per_texel);
-						dst_block += padding_y * block_dim_x * bytes_per_texel;
-					}
-					if (padding_z) memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_z * block_dim_y * block_dim_x * bytes_per_texel);
-				}
-			}
-		}
-	}
-
 	// Generate quality parameters
 	ert::reduce_entropy_params& ert_params = rdo_ctx.m_ert_params;
 	ert_params.m_lambda = astc::clamp(ctx.config.rdo_level, 0.0f, 1.0f);
@@ -134,11 +88,100 @@ static uint32_t init_rdo_context(
 	ert_params.m_color_weights[1] = static_cast<uint32_t>(ctx.config.cw_g_weight * 255.0f);
 	ert_params.m_color_weights[2] = static_cast<uint32_t>(ctx.config.cw_b_weight * 255.0f);
 	ert_params.m_color_weights[3] = static_cast<uint32_t>(ctx.config.cw_a_weight * 255.0f);
-	ert_params.m_lookback_window_size = astc::min(ctx.config.rdo_lookback, total_blocks) * ASTCENC_BYTES_PER_BLOCK;
+	ert_params.m_lookback_window_size = (ctx.config.rdo_lookback ? astc::min(ctx.config.rdo_lookback, total_blocks) : total_blocks) * ASTCENC_BYTES_PER_BLOCK;
 
 	ert_params.m_try_two_matches = true;
 	// ert_params.m_allow_relative_movement = true;
 	// ert_params.m_debug_output = true;
+
+	// Deduce conversion swizzles, ERT requires sample components to be contiguous
+	uint32_t num_components = 0;
+    astcenc_swz encoding_swzes[4];
+    astcenc_swz decoding_swzes[4];
+    uint32_t* w = ert_params.m_color_weights;
+
+	if (w[0]) w[num_components] = w[0], decoding_swzes[num_components] = ASTCENC_SWZ_R, encoding_swzes[num_components++] = swz.r;
+	if (w[1]) w[num_components] = w[1], decoding_swzes[num_components] = ASTCENC_SWZ_G, encoding_swzes[num_components++] = swz.g;
+    if (w[2]) w[num_components] = w[2], decoding_swzes[num_components] = ASTCENC_SWZ_B, encoding_swzes[num_components++] = swz.b;
+	if (w[3]) w[num_components] = w[3], decoding_swzes[num_components] = ASTCENC_SWZ_A, encoding_swzes[num_components++] = swz.a;
+
+    for (uint32_t idx = num_components; idx < 4; ++idx)
+    {
+        w[idx] = 0;
+        decoding_swzes[idx] = encoding_swzes[idx] = ASTCENC_SWZ_1;
+    }
+
+	bool needs_swz = // As long as weights are the same it actually doesn't matter
+		ert_params.m_color_weights[0] != ert_params.m_color_weights[1] ||
+		ert_params.m_color_weights[1] != ert_params.m_color_weights[2] ||
+		ert_params.m_color_weights[2] != ert_params.m_color_weights[3];
+
+	T scratch[6];
+	scratch[ASTCENC_SWZ_0] = 0u;
+	scratch[ASTCENC_SWZ_1] = ASTCENC_RDO_PADDING_PIXEL;
+
+	// Perform memory allocations for intermediary buffers
+	uint32_t bytes_per_texel = 4u;
+	if (image.data_type == ASTCENC_TYPE_F16) bytes_per_texel *= 2;
+	else if (image.data_type == ASTCENC_TYPE_F32) bytes_per_texel *= 4;
+
+	rdo_ctx.m_block_pixels.resize(total_blocks * ctx.bsd->texel_count * bytes_per_texel);
+    auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data());
+
+	for (uint32_t block_z = 0; block_z < zblocks; ++block_z)
+	{
+		const uint32_t valid_z = astc::min(image.dim_z - block_z * block_dim_z, block_dim_z);
+		const uint32_t padding_z = block_dim_z - valid_z;
+	
+		for (uint32_t offset_z = 0; offset_z < valid_z; offset_z++)
+		{
+			const auto* src_data = static_cast<const T*>(image.data[block_z * block_dim_z + offset_z]);
+	
+			for (uint32_t block_y = 0, block_idx = 0; block_y < yblocks; ++block_y)
+			{
+				const T* src_block_row = src_data + block_y * block_dim_y * image.dim_x * 4;
+				const uint32_t valid_y = astc::min(image.dim_y - block_y * block_dim_y, block_dim_y);
+				const uint32_t padding_y = block_dim_y - valid_y;
+	
+				for (uint32_t block_x = 0; block_x < xblocks; ++block_x, ++block_idx)
+				{
+					const T* src_block = src_block_row + block_x * block_dim_x * 4;
+					const uint32_t valid_x = astc::min(image.dim_x - block_x * block_dim_x, block_dim_x);
+					const uint32_t padding_x = block_dim_x - valid_x;
+	
+					T* dst_block = block_pixels + (block_idx * block_dim_z + offset_z) * block_dim_x * block_dim_y * 4;
+					for (uint32_t offset_y = 0; offset_y < valid_y; ++offset_y)
+					{
+						if (needs_swz)
+						{
+							for (uint32_t offset_x = 0; offset_x < valid_x; ++offset_x)
+							{
+								memcpy(scratch, src_block + offset_x * 4, bytes_per_texel);
+
+								for (uint32_t idx = 0; idx < 4; ++idx)
+								{
+									dst_block[offset_x * 4 + idx] = scratch[encoding_swzes[idx]];
+								}
+							}
+						}
+						else
+						{
+							memcpy(dst_block, src_block, valid_x * bytes_per_texel);
+						}
+						if (padding_x) memset(dst_block + valid_x * 4, ASTCENC_RDO_PADDING_PIXEL, padding_x * bytes_per_texel);
+						src_block += image.dim_x * 4;
+						dst_block += block_dim_x * 4;
+					}
+					if (padding_y)
+					{
+						memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_y * block_dim_x * bytes_per_texel);
+						dst_block += padding_y * block_dim_x * 4;
+					}
+					if (padding_z) memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_z * block_dim_y * block_dim_x * bytes_per_texel);
+				}
+			}
+		}
+	}
 
 	rdo_ctx.m_image_dimx = image.dim_x;
 	rdo_ctx.m_image_dimy = image.dim_y;
@@ -148,8 +191,15 @@ static uint32_t init_rdo_context(
 	rdo_ctx.m_zblocks = zblocks;
 	rdo_ctx.m_total_blocks = total_blocks;
 	rdo_ctx.m_bytes_per_texel = bytes_per_texel;
-	rdo_ctx.m_component_count = 4;
-	rdo_ctx.m_swizzle = swizzle;
+	rdo_ctx.m_component_count = num_components;
+
+    if (needs_swz)
+    {
+        rdo_ctx.m_swizzle.r = decoding_swzes[0];
+        rdo_ctx.m_swizzle.g = decoding_swzes[1];
+        rdo_ctx.m_swizzle.b = decoding_swzes[2];
+        rdo_ctx.m_swizzle.a = decoding_swzes[3];
+    }
 
 	return rdo_ctx.m_total_blocks;
 }
@@ -270,7 +320,7 @@ static bool store_image_block_u8(
 
 struct local_rdo_context
 {
-	const astcenc_contexti* ctx;
+	const astcenc_contexti* ctx = nullptr;
 	uint32_t base_block_idx = 0;
 };
 
@@ -329,7 +379,9 @@ void rate_distortion_optimize(
 	// Only the first thread actually runs the initializer
 	ctxo.manage_rdo.init([&ctxo, &image, &swizzle]
 		{
-			return init_rdo_context(ctxo.context, image, swizzle);
+			// if (image.data_type == ASTCENC_TYPE_F16) return init_rdo_context<uint16_t>(ctxo.context, image, swizzle);
+			// if (image.data_type == ASTCENC_TYPE_F32) return init_rdo_context<uint32_t>(ctxo.context, image, swizzle);
+			return init_rdo_context<uint8_t>(ctxo.context, image, swizzle);
 		},
 		ctxo.context.config.progress_callback ? rdo_progress_emitter : nullptr);
 
@@ -338,8 +390,7 @@ void rate_distortion_optimize(
 	uint32_t block_dim_z = ctxo.context.bsd->zdim;
 	uint32_t texels_per_block = block_dim_x * block_dim_y * block_dim_z;
 	astcenc_rdo_context& rdo_ctx = *ctxo.context.rdo_context;
-	uint32_t blocks_per_task = ctxo.context.config.rdo_lookback;
-	if (!blocks_per_task) blocks_per_task = rdo_ctx.m_total_blocks; // Effectively single-threaded
+	uint32_t blocks_per_task = rdo_ctx.m_ert_params.m_lookback_window_size / ASTCENC_BYTES_PER_BLOCK;
 
 	uint32_t total_modified = 0;
 	while (true)
