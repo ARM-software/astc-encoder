@@ -1,4 +1,19 @@
-//Copyright Tencent Timi-J1&F1 Studio, Inc. All Rights Reserved
+// SPDX-License-Identifier: Apache-2.0
+// ----------------------------------------------------------------------------
+// Copyright 2011-2024 Arm Limited
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy
+// of the License at:
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+// ----------------------------------------------------------------------------
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
 
@@ -96,20 +111,20 @@ static uint32_t init_rdo_context(
 
 	// Deduce conversion swizzles, ERT requires sample components to be contiguous
 	uint32_t num_components = 0;
-    astcenc_swz encoding_swzes[4];
-    astcenc_swz decoding_swzes[4];
-    uint32_t* w = ert_params.m_color_weights;
+	astcenc_swz encoding_swzes[4];
+	astcenc_swz decoding_swzes[4];
+	uint32_t* w = ert_params.m_color_weights;
 
 	if (w[0]) w[num_components] = w[0], decoding_swzes[num_components] = ASTCENC_SWZ_R, encoding_swzes[num_components++] = swz.r;
 	if (w[1]) w[num_components] = w[1], decoding_swzes[num_components] = ASTCENC_SWZ_G, encoding_swzes[num_components++] = swz.g;
-    if (w[2]) w[num_components] = w[2], decoding_swzes[num_components] = ASTCENC_SWZ_B, encoding_swzes[num_components++] = swz.b;
+	if (w[2]) w[num_components] = w[2], decoding_swzes[num_components] = ASTCENC_SWZ_B, encoding_swzes[num_components++] = swz.b;
 	if (w[3]) w[num_components] = w[3], decoding_swzes[num_components] = ASTCENC_SWZ_A, encoding_swzes[num_components++] = swz.a;
 
-    for (uint32_t idx = num_components; idx < 4; ++idx)
-    {
-        w[idx] = 0;
-        decoding_swzes[idx] = encoding_swzes[idx] = ASTCENC_SWZ_1;
-    }
+	for (uint32_t idx = num_components; idx < 4; ++idx)
+	{
+		w[idx] = 0;
+		decoding_swzes[idx] = encoding_swzes[idx] = ASTCENC_SWZ_1;
+	}
 
 	bool needs_swz = // As long as weights are the same it actually doesn't matter
 		ert_params.m_color_weights[0] != ert_params.m_color_weights[1] ||
@@ -131,7 +146,7 @@ static uint32_t init_rdo_context(
 	{
 		const uint32_t valid_z = astc::min(image.dim_z - block_z * block_dim_z, block_dim_z);
 		const uint32_t padding_z = block_dim_z - valid_z;
-        auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data()) + block_z * yblocks * xblocks * ctx.bsd->texel_count * 4;
+		auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data()) + block_z * yblocks * xblocks * ctx.bsd->texel_count * 4;
 
 		for (uint32_t offset_z = 0; offset_z < valid_z; offset_z++)
 		{
@@ -193,13 +208,13 @@ static uint32_t init_rdo_context(
 	rdo_ctx.m_bytes_per_texel = bytes_per_texel;
 	rdo_ctx.m_component_count = num_components;
 
-    if (needs_swz)
-    {
-        rdo_ctx.m_swizzle.r = decoding_swzes[0];
-        rdo_ctx.m_swizzle.g = decoding_swzes[1];
-        rdo_ctx.m_swizzle.b = decoding_swzes[2];
-        rdo_ctx.m_swizzle.a = decoding_swzes[3];
-    }
+	if (needs_swz)
+	{
+		rdo_ctx.m_swizzle.r = decoding_swzes[0];
+		rdo_ctx.m_swizzle.g = decoding_swzes[1];
+		rdo_ctx.m_swizzle.b = decoding_swzes[2];
+		rdo_ctx.m_swizzle.a = decoding_swzes[3];
+	}
 
 	return rdo_ctx.m_total_blocks;
 }
@@ -338,13 +353,13 @@ static bool unpack_block(
 	uint32_t block_idx = local_ctx.base_block_idx + local_block_idx;
 
 	uint32_t block_dim_x = ctx.bsd->xdim;
-    uint32_t block_dim_y = ctx.bsd->ydim;
-    uint32_t block_dim_z = ctx.bsd->zdim;
+	uint32_t block_dim_y = ctx.bsd->ydim;
+	uint32_t block_dim_z = ctx.bsd->zdim;
 	assert(block_idx < rdo_ctx.m_xblocks * rdo_ctx.m_yblocks * rdo_ctx.m_zblocks);
 
-    uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
-    uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
-    uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
+	uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
+	uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
+	uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
 	uint32_t block_x = slice_idx - block_y * rdo_ctx.m_xblocks;
 	assert(block_y * rdo_ctx.m_xblocks + block_x == slice_idx);
 

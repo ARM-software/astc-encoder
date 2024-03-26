@@ -42,10 +42,8 @@ set(is_clang "$<AND:${is_gnu_fe},$<CXX_COMPILER_ID:Clang,AppleClang>>")
 
 add_library(${ASTCENC_TARGET}-static
     STATIC
-        #SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
         ert.cpp
         astcenc_rate_distortion.cpp
-        #SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
         astcenc_color_quantize.cpp

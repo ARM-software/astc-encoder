@@ -650,7 +650,7 @@ astcenc_error astcenc_config_init(
 	}
 	config.flags = flags;
 
-	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	// This is a reasonable default that leverages performance & compression rate
 	config.rdo_lookback = 64;
 
 	return ASTCENC_SUCCESS;
@@ -1102,7 +1102,6 @@ astcenc_error astcenc_compress_image(
 	// Only the first thread to arrive actually runs the term
 	ctxo->manage_compress.term(term_compress);
 
-	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
 	rate_distortion_optimize(*ctxo, image, *swizzle, data_out);
 
 	return ASTCENC_SUCCESS;
@@ -1125,7 +1124,7 @@ astcenc_error astcenc_compress_reset(
 
 	ctxo->manage_avg.reset();
 	ctxo->manage_compress.reset();
-	ctxo->manage_rdo.reset(); //SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
+	ctxo->manage_rdo.reset();
 	return ASTCENC_SUCCESS;
 #endif
 }
