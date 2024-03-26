@@ -126,29 +126,29 @@ static uint32_t init_rdo_context(
 	else if (image.data_type == ASTCENC_TYPE_F32) bytes_per_texel *= 4;
 
 	rdo_ctx.m_block_pixels.resize(total_blocks * ctx.bsd->texel_count * bytes_per_texel);
-    auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data());
 
 	for (uint32_t block_z = 0; block_z < zblocks; ++block_z)
 	{
 		const uint32_t valid_z = astc::min(image.dim_z - block_z * block_dim_z, block_dim_z);
 		const uint32_t padding_z = block_dim_z - valid_z;
-	
+        auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data()) + block_z * yblocks * xblocks * ctx.bsd->texel_count * 4;
+
 		for (uint32_t offset_z = 0; offset_z < valid_z; offset_z++)
 		{
 			const auto* src_data = static_cast<const T*>(image.data[block_z * block_dim_z + offset_z]);
-	
+
 			for (uint32_t block_y = 0, block_idx = 0; block_y < yblocks; ++block_y)
 			{
 				const T* src_block_row = src_data + block_y * block_dim_y * image.dim_x * 4;
 				const uint32_t valid_y = astc::min(image.dim_y - block_y * block_dim_y, block_dim_y);
 				const uint32_t padding_y = block_dim_y - valid_y;
-	
+
 				for (uint32_t block_x = 0; block_x < xblocks; ++block_x, ++block_idx)
 				{
 					const T* src_block = src_block_row + block_x * block_dim_x * 4;
 					const uint32_t valid_x = astc::min(image.dim_x - block_x * block_dim_x, block_dim_x);
 					const uint32_t padding_x = block_dim_x - valid_x;
-	
+
 					T* dst_block = block_pixels + (block_idx * block_dim_z + offset_z) * block_dim_x * block_dim_y * 4;
 					for (uint32_t offset_y = 0; offset_y < valid_y; ++offset_y)
 					{
@@ -338,12 +338,15 @@ static bool unpack_block(
 	uint32_t block_idx = local_ctx.base_block_idx + local_block_idx;
 
 	uint32_t block_dim_x = ctx.bsd->xdim;
-	uint32_t block_dim_y = ctx.bsd->ydim;
-	assert(block_idx < rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
+    uint32_t block_dim_y = ctx.bsd->ydim;
+    uint32_t block_dim_z = ctx.bsd->zdim;
+	assert(block_idx < rdo_ctx.m_xblocks * rdo_ctx.m_yblocks * rdo_ctx.m_zblocks);
 
-	uint32_t block_y = block_idx / rdo_ctx.m_xblocks;
-	uint32_t block_x = block_idx - block_y * rdo_ctx.m_xblocks;
-	assert(block_y * rdo_ctx.m_xblocks + block_x == block_idx);
+    uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
+    uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
+    uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
+	uint32_t block_x = slice_idx - block_y * rdo_ctx.m_xblocks;
+	assert(block_y * rdo_ctx.m_xblocks + block_x == slice_idx);
 
 	uint8_t pcb[ASTCENC_BYTES_PER_BLOCK];
 	memcpy(pcb, block, sizeof(pcb));
@@ -357,12 +360,12 @@ static bool unpack_block(
 
 	image_block blk;
 	decompress_symbolic_block(ctx.config.profile, *ctx.bsd,
-		block_x * block_dim_x, block_y * block_dim_y, 0,
+		block_x * block_dim_x, block_y * block_dim_y, block_z * block_dim_z,
 		scb, blk);
 
 	return store_image_block_u8(reinterpret_cast<uint8_t*>(pixels), blk, *ctx.bsd,
-		block_x * block_dim_x, block_y * block_dim_y, 0,
-		rdo_ctx.m_image_dimx, rdo_ctx.m_image_dimy, 1, rdo_ctx.m_swizzle, active_x, active_y);
+		block_x * block_dim_x, block_y * block_dim_y, block_z * block_dim_z,
+		rdo_ctx.m_image_dimx, rdo_ctx.m_image_dimy, rdo_ctx.m_image_dimz, rdo_ctx.m_swizzle, active_x, active_y);
 }
 
 void rate_distortion_optimize(
@@ -371,7 +374,7 @@ void rate_distortion_optimize(
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
 ) {
-	if (ctxo.context.config.rdo_level == 0.0f || image.data_type != ASTCENC_TYPE_U8 || image.dim_z != 1)
+	if (ctxo.context.config.rdo_level == 0.0f || image.data_type != ASTCENC_TYPE_U8 || ctxo.context.bsd->zdim > 1)
 	{
 		return;
 	}
