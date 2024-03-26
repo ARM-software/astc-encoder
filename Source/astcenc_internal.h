@@ -1228,7 +1228,6 @@ struct astcenc_contexti
 	/** @brief The pixel region and variance worker arguments. */
 	avg_args avg_preprocess_args;
 
-	//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]
 	struct astcenc_rdo_context* rdo_context;
 #endif
 
@@ -2170,7 +2169,6 @@ void physical_to_symbolic(
 	const uint8_t pcb[16],
 	symbolic_compressed_block& scb);
 
-//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
 /**
  * @brief Rate-distortion optimization main entry.
  *
@@ -2181,7 +2179,6 @@ void rate_distortion_optimize(
 	const astcenc_image& image,
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer);
-//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
 
 /* ============================================================================
 Platform-specific functions.

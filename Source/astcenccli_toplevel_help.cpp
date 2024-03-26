@@ -386,7 +386,6 @@ ADVANCED COMPRESSION
                -verythorough : 0.98
                -exhaustive   : 0.99
 )"
-//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
 R"(
        -rdo-level <factor>
            Rate-distortion optimization level.
@@ -398,7 +397,6 @@ R"(
            The larger this value, the slower the encoder but the higher the quality per LZ compressed bit.
            Default to 64 blocks.
 )"
-//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(

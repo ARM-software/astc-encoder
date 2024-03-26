@@ -1175,7 +1175,6 @@ static int edit_astcenc_config(
 			argidx += 1;
 			cli_config.diagnostic_images = true;
 		}
-		//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
 		else if (!strcmp(argv[argidx], "-rdo-level"))
 		{
 			argidx += 2;
@@ -1204,7 +1203,6 @@ static int edit_astcenc_config(
 
 			config.rdo_lookback = atoi(argv[argidx - 1]);
 		}
-		//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
 		else // check others as well
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1295,10 +1293,8 @@ static void print_astcenc_config(
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
-		//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[BEGIN]
 		printf("    Rate-distortion level:      %g\n", static_cast<double>(config.rdo_level));
 		printf("    Rate-distortion lookback:   %u blocks\n", config.rdo_lookback);
-		//SpeedEngine: AstcEnc:RateDistortion:[yunhsiaowu]:[END]
 		printf("\n");
 	}
 }
