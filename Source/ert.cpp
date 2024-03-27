@@ -1,14 +1,33 @@
+// SPDX-License-Identifier: Unlicense
+// ----------------------------------------------------------------------------
+// This is free and unencumbered software released into the public domain.
+// Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
+// software, either in source code form or as a compiled binary, for any purpose,
+// commercial or non - commercial, and by any means.
+// In jurisdictions that recognize copyright laws, the author or authors of this
+// software dedicate any and all copyright interest in the software to the public
+// domain. We make this dedication for the benefit of the public at large and to
+// the detriment of our heirs and successors.We intend this dedication to be an
+// overt act of relinquishment in perpetuity of all present and future rights to
+// this software under copyright law.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// ----------------------------------------------------------------------------
+
 #include "ert.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
+
+#include <cassert>
 
 #define ERT_FAVOR_CONT_AND_REP0_MATCHES (1)
 #define ERT_FAVOR_REP0_MATCHES (0)
+#define ERT_ENABLE_DEBUG (0)
 
 namespace ert
 {
-	const uint32_t MAX_BLOCK_PIXELS = 12 * 12;
 	const uint32_t MAX_BLOCK_SIZE_IN_BYTES = 256;
 	const uint32_t MIN_MATCH_LEN = 3;
 	const float LITERAL_BITS = 13.0f;
@@ -63,162 +82,6 @@ namespace ert
 		}
 		return len_cost + dist_cost;
 	}
-
-	class tracked_stat
-	{
-	public:
-		tracked_stat() { clear(); }
-
-		void clear() { m_num = 0; m_total = 0; m_total2 = 0; }
-
-		void update(uint32_t val) { m_num++; m_total += val; m_total2 += val * val; }
-
-		tracked_stat& operator += (uint32_t val) { update(val); return *this; }
-
-		uint32_t get_number_of_values() { return m_num; }
-		uint64_t get_total() const { return m_total; }
-		uint64_t get_total2() const { return m_total2; }
-
-		float get_average() const { return m_num ? (float)m_total / m_num : 0.0f; };
-		float get_std_dev() const { return m_num ? sqrtf((float)(m_num * m_total2 - m_total * m_total)) / m_num : 0.0f; }
-		float get_variance() const { float s = get_std_dev(); return s * s; }
-
-	private:
-		uint32_t m_num;
-		uint64_t m_total;
-		uint64_t m_total2;
-	};
-
-	static inline float compute_block_max_std_dev(const color_rgba* pPixels, uint32_t block_width, uint32_t active_x, uint32_t active_y, uint32_t num_comps)
-	{
-		tracked_stat comp_stats[4];
-
-		for (uint32_t y = 0; y < active_y; y++)
-		{
-			for (uint32_t x = 0; x < active_x; x++)
-			{
-				const color_rgba* pPixel = pPixels + x + y * block_width;
-
-				for (uint32_t c = 0; c < num_comps; c++)
-					comp_stats[c].update(pPixel->m_c[c]);
-			}
-		}
-
-		float max_std_dev = 0.0f;
-		for (uint32_t i = 0; i < num_comps; i++)
-			max_std_dev = std::max(max_std_dev, comp_stats[i].get_std_dev());
-		return max_std_dev;
-	}
-
-	static inline float compute_block_mse(const color_rgba* pPixelsA, const color_rgba* pPixelsB, uint32_t block_width, uint32_t block_height, uint32_t total_block_pixels, uint32_t num_comps, const uint32_t weights[4], float one_over_total_color_weight)
-	{
-		uint64_t total_err = 0;
-
-		if ((block_width == 4) && (block_height == 4) && (num_comps == 4))
-		{
-			if ((weights[0] == 1) && (weights[1] == 1) && (weights[2] == 1) && (weights[3] == 1))
-			{
-				for (uint32_t i = 0; i < 16; i++)
-				{
-					const color_rgba* pA = pPixelsA + i;
-					const color_rgba* pB = pPixelsB + i;
-
-					const int dr = pA->m_c[0] - pB->m_c[0];
-					const int dg = pA->m_c[1] - pB->m_c[1];
-					const int db = pA->m_c[2] - pB->m_c[2];
-					const int da = pA->m_c[3] - pB->m_c[3];
-
-					total_err += dr * dr + dg * dg + db * db + da * da;
-				}
-			}
-			else
-			{
-				for (uint32_t i = 0; i < 16; i++)
-				{
-					const color_rgba* pA = pPixelsA + i;
-					const color_rgba* pB = pPixelsB + i;
-
-					const int dr = pA->m_c[0] - pB->m_c[0];
-					const int dg = pA->m_c[1] - pB->m_c[1];
-					const int db = pA->m_c[2] - pB->m_c[2];
-					const int da = pA->m_c[3] - pB->m_c[3];
-
-					total_err += weights[0] * dr * dr + weights[1] * dg * dg + weights[2] * db * db + weights[3] * da * da;
-				}
-			}
-		}
-		else if ((block_width == 4) && (block_height == 4) && (num_comps == 3))
-		{
-			for (uint32_t y = 0; y < 4; y++)
-			{
-				const uint32_t y_ofs = y * 4;
-				for (uint32_t x = 0; x < 4; x++)
-				{
-					const color_rgba* pA = pPixelsA + x + y_ofs;
-					const color_rgba* pB = pPixelsB + x + y_ofs;
-
-					const int dr = pA->m_c[0] - pB->m_c[0];
-					const int dg = pA->m_c[1] - pB->m_c[1];
-					const int db = pA->m_c[2] - pB->m_c[2];
-
-					total_err += weights[0] * dr * dr + weights[1] * dg * dg + weights[2] * db * db;
-				}
-			}
-		}
-		else if ((block_width == 4) && (block_height == 4) && (num_comps == 2))
-		{
-			for (uint32_t y = 0; y < 4; y++)
-			{
-				const uint32_t y_ofs = y * 4;
-				for (uint32_t x = 0; x < 4; x++)
-				{
-					const color_rgba* pA = pPixelsA + x + y_ofs;
-					const color_rgba* pB = pPixelsB + x + y_ofs;
-
-					const int dr = pA->m_c[0] - pB->m_c[0];
-					const int dg = pA->m_c[1] - pB->m_c[1];
-
-					total_err += weights[0] * dr * dr + weights[1] * dg * dg;
-				}
-			}
-		}
-		else if ((block_width == 4) && (block_height == 4) && (num_comps == 1))
-		{
-			for (uint32_t y = 0; y < 4; y++)
-			{
-				const uint32_t y_ofs = y * 4;
-				for (uint32_t x = 0; x < 4; x++)
-				{
-					const color_rgba* pA = pPixelsA + x + y_ofs;
-					const color_rgba* pB = pPixelsB + x + y_ofs;
-
-					const int dr = pA->m_c[0] - pB->m_c[0];
-
-					total_err += weights[0] * dr * dr;
-				}
-			}
-		}
-		else
-		{
-			for (uint32_t y = 0; y < block_height; y++)
-			{
-				const uint32_t y_ofs = y * block_width;
-				for (uint32_t x = 0; x < block_width; x++)
-				{
-					const color_rgba* pA = pPixelsA + x + y_ofs;
-					const color_rgba* pB = pPixelsB + x + y_ofs;
-
-					for (uint32_t c = 0; c < num_comps; c++)
-					{
-						const int d = pA->m_c[c] - pB->m_c[c];
-						total_err += weights[c] * d * d;
-					}
-				}
-			}
-		}
-
-		return total_err * (one_over_total_color_weight / total_block_pixels);
-	}	
 
 	uint32_t hash_hsieh(const uint8_t* pBuf, size_t len, uint32_t salt)
 	{
@@ -277,46 +140,29 @@ namespace ert
 	}
 
 	// BC7 entropy reduction transform with Deflate/LZMA/LZHAM optimizations
-	bool reduce_entropy(void* pBlocks, uint32_t num_blocks,
-		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes, uint32_t block_width, uint32_t block_height, uint32_t num_comps,
-		const color_rgba* pBlock_pixels, const reduce_entropy_params& params, uint32_t& total_modified,
-		pUnpack_block_func pUnpack_block_func, void* pUnpack_block_func_user_data,
-		std::vector<float>* pBlock_mse_scales)
+	bool reduce_entropy(uint8_t* pBlock_bytes, uint32_t num_blocks,
+		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes,
+		const reduce_entropy_params& params, uint32_t& total_modified,
+		pDiff_block_func pDiff_block_func, void* pDiff_block_func_user_data,
+		const float* pBlock_mse_scales)
 	{
 		assert(total_block_stride_in_bytes && block_size_to_optimize_in_bytes);
 		assert(total_block_stride_in_bytes >= block_size_to_optimize_in_bytes);
-		
-		assert(num_comps >= 1 && num_comps <= 4);
-		for (uint32_t i = num_comps; i < 4; i++)
-		{
-			assert(!params.m_color_weights[i]);
-			if (params.m_color_weights[i])
-				return false;
-		}
-
-		const uint32_t total_color_weight = params.m_color_weights[0] + params.m_color_weights[1] + params.m_color_weights[2] + params.m_color_weights[3];
-		assert(total_color_weight);
-		const float one_over_total_color_weight = 1.0f / total_color_weight;
 
 		assert((block_size_to_optimize_in_bytes >= MIN_MATCH_LEN) && (block_size_to_optimize_in_bytes <= MAX_BLOCK_SIZE_IN_BYTES));
 		if ((block_size_to_optimize_in_bytes < MIN_MATCH_LEN) || (block_size_to_optimize_in_bytes > MAX_BLOCK_SIZE_IN_BYTES))
 			return false;
 
-		uint8_t* pBlock_bytes = (uint8_t*)pBlocks;
-
-		const uint32_t total_block_pixels = block_width * block_height;
-		if (total_block_pixels > MAX_BLOCK_PIXELS)
-			return false;
-
 		const int total_blocks_to_check = std::max<uint32_t>(1U, params.m_lookback_window_size / total_block_stride_in_bytes);
 
-		std::vector<uint32_t> len_hist(MAX_BLOCK_SIZE_IN_BYTES + 1);
-		std::vector<uint32_t> second_len_hist(MAX_BLOCK_SIZE_IN_BYTES + 1);
+#if ERT_ENABLE_DEBUG
+		uint32_t len_hist[MAX_BLOCK_SIZE_IN_BYTES + 1];
+		uint32_t second_len_hist[MAX_BLOCK_SIZE_IN_BYTES + 1];
 		uint32_t total_second_matches = 0;
+		uint32_t total_smooth_blocks = 0;
+#endif
 
 		int prev_match_window_ofs_to_favor_cont = -1, prev_match_dist_to_favor = -1;
-				
-		uint32_t total_smooth_blocks = 0;
 
 		const uint32_t HASH_SIZE = 8192;
 		uint32_t hash[HASH_SIZE];
@@ -327,36 +173,32 @@ namespace ert
 				memset(hash, 0, sizeof(hash));
 
 			uint8_t* pOrig_block = &pBlock_bytes[block_index * total_block_stride_in_bytes];
-			const color_rgba* pPixels = &pBlock_pixels[block_index * total_block_pixels];
-			uint32_t active_x = 0, active_y = 0;
 
-			color_rgba decoded_block[MAX_BLOCK_PIXELS];
-			if (!(*pUnpack_block_func)(pOrig_block, decoded_block, block_index, active_x, active_y, pUnpack_block_func_user_data))
+			float max_std_dev = 0.0f;
+			float cur_mse = (*pDiff_block_func)(pDiff_block_func_user_data, pOrig_block, block_index, &max_std_dev);
+			if (cur_mse < 0.0f)
 				return false;
-
-			uint32_t current_block_pixels = active_x * active_y;
-			float cur_mse = compute_block_mse(pPixels, decoded_block, block_width, block_height, current_block_pixels, num_comps, params.m_color_weights, one_over_total_color_weight);
 
 			if ((params.m_skip_zero_mse_blocks) && (cur_mse == 0.0f))
 				continue;
 
-			const float max_std_dev = compute_block_max_std_dev(pPixels, block_width, active_x, active_y, num_comps);
-			
 			float yl = clampf(max_std_dev / params.m_max_smooth_block_std_dev, 0.0f, 1.0f);
 			yl = yl * yl;
 			float smooth_block_mse_scale = lerp(params.m_smooth_block_max_mse_scale, 1.0f, yl);
 
 			if (pBlock_mse_scales)
 			{
-				if ((*pBlock_mse_scales)[block_index] > 0.0f)
+				if (pBlock_mse_scales[block_index] > 0.0f)
 				{
-					smooth_block_mse_scale = (*pBlock_mse_scales)[block_index];
+					smooth_block_mse_scale = pBlock_mse_scales[block_index];
 				}
 			}
 			
+#if ERT_ENABLE_DEBUG
 			if (smooth_block_mse_scale > 1.0f)
 				total_smooth_blocks++;
-						
+#endif
+
 			float cur_bits = (LITERAL_BITS * block_size_to_optimize_in_bytes);
 			float cur_t = cur_mse * smooth_block_mse_scale + cur_bits * params.m_lambda;
 
@@ -367,7 +209,7 @@ namespace ert
 			memcpy(best_block, pOrig_block, block_size_to_optimize_in_bytes);
 
 			float best_t = cur_t;
-			uint32_t best_match_len = 0, best_match_src_window_ofs = 0, best_match_dst_window_ofs = 0, best_match_src_block_ofs = 0, best_match_dst_block_ofs = 0;
+			uint32_t best_match_len = 0, best_match_src_window_ofs = 0, best_match_dst_window_ofs = 0, best_match_dst_block_ofs = 0;
 			float best_match_bits = 0;
 
 			// Don't let thresh_ms_err be 0 to let zero error blocks have slightly increased distortion
@@ -441,11 +283,9 @@ namespace ert
 								memcpy(trial_block, pOrig_block, block_size_to_optimize_in_bytes);
 								memcpy(trial_block + dst_ofs, pPrev_blk + src_ofs, len);
 
-								color_rgba decoded_trial_block[MAX_BLOCK_PIXELS];
-								if (!(*pUnpack_block_func)(trial_block, decoded_trial_block, block_index, active_x, active_y, pUnpack_block_func_user_data))
+								float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+								if (trial_mse < 0.0f)
 									continue;
-
-								float trial_mse = compute_block_mse(pPixels, decoded_trial_block, block_width, block_height, current_block_pixels, num_comps, params.m_color_weights, one_over_total_color_weight);
 
 								if (trial_mse < thresh_ms_err)
 								{
@@ -458,7 +298,6 @@ namespace ert
 										best_match_len = len;
 										best_match_src_window_ofs = src_match_window_ofs;
 										best_match_dst_window_ofs = dst_match_window_ofs;
-										best_match_src_block_ofs = src_ofs;
 										best_match_dst_block_ofs = dst_ofs;
 										best_match_bits = trial_match_bits;
 									}
@@ -527,11 +366,9 @@ namespace ert
 							memcpy(trial_block, pOrig_block, block_size_to_optimize_in_bytes);
 							memcpy(trial_block + ofs, pPrev_blk + ofs, len);
 
-							color_rgba decoded_trial_block[MAX_BLOCK_PIXELS];
-							if (!(*pUnpack_block_func)(trial_block, decoded_trial_block, block_index, active_x, active_y, pUnpack_block_func_user_data))
+							float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+							if (trial_mse < 0.0f)
 								continue;
-
-							float trial_mse = compute_block_mse(pPixels, decoded_trial_block, block_width, block_height, current_block_pixels, num_comps, params.m_color_weights, one_over_total_color_weight);
 
 							if (trial_mse < thresh_ms_err)
 							{
@@ -544,7 +381,6 @@ namespace ert
 									best_match_len = len;
 									best_match_src_window_ofs = src_match_window_ofs;
 									best_match_dst_window_ofs = dst_match_window_ofs;
-									best_match_src_block_ofs = ofs;
 									best_match_dst_block_ofs = ofs;
 									best_match_bits = trial_match_bits_to_use;
 								}
@@ -558,7 +394,7 @@ namespace ert
 
 			if (best_t < cur_t)
 			{
-				uint32_t best_second_match_len = 0, best_second_match_src_window_ofs = 0, best_second_match_dst_window_ofs = 0, best_second_match_src_block_ofs = 0, best_second_match_dst_block_ofs = 0;
+				uint32_t best_second_match_len = 0, best_second_match_src_window_ofs = 0, best_second_match_dst_window_ofs = 0, best_second_match_dst_block_ofs = 0;
 								
 				// Try injecting a second match, being sure it does't overlap with the first.
 				if ((params.m_try_two_matches) && (best_match_len <= (block_size_to_optimize_in_bytes - 3)))
@@ -600,11 +436,9 @@ namespace ert
 								memcpy(trial_block, orig_best_block, block_size_to_optimize_in_bytes);
 								memcpy(trial_block + ofs, pPrev_blk + ofs, len);
 
-								color_rgba decoded_trial_block[MAX_BLOCK_PIXELS];
-								if (!(*pUnpack_block_func)(trial_block, decoded_trial_block, block_index, active_x, active_y, pUnpack_block_func_user_data))
+								float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+								if (trial_mse < 0.0f)
 									continue;
-
-								float trial_mse = compute_block_mse(pPixels, decoded_trial_block, block_width, block_height, current_block_pixels, num_comps, params.m_color_weights, one_over_total_color_weight);
 
 								if (trial_mse < thresh_ms_err)
 								{
@@ -617,7 +451,6 @@ namespace ert
 										best_second_match_len = len;
 										best_second_match_src_window_ofs = src_match_window_ofs;
 										best_second_match_dst_window_ofs = dst_match_window_ofs;
-										best_second_match_src_block_ofs = ofs;
 										best_second_match_dst_block_ofs = ofs;
 									}
 								}
@@ -670,6 +503,7 @@ namespace ert
 #endif
 				}
 
+#if ERT_ENABLE_DEBUG
 				len_hist[best_match_len]++;
 
 				if (best_second_match_len)
@@ -677,6 +511,7 @@ namespace ert
 					second_len_hist[best_second_match_len]++;
 					total_second_matches++;
 				}
+#endif
 			}
 			else
 			{
@@ -684,7 +519,7 @@ namespace ert
 			}
 						
 		} // block_index
-				
+#if ERT_ENABLE_DEBUG
 		if (params.m_debug_output)
 		{
 			printf("Total smooth blocks: %3.2f%%\n", total_smooth_blocks * 100.0f / num_blocks);
@@ -698,7 +533,7 @@ namespace ert
 			for (uint32_t i = MIN_MATCH_LEN; i <= block_size_to_optimize_in_bytes; i++)
 				printf("%u%c", second_len_hist[i], (i < block_size_to_optimize_in_bytes) ? ',' : '\n');
 		}
-		
+#endif
 		return true;
 	}
 

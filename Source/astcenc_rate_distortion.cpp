@@ -20,29 +20,25 @@
 #include "astcenc_internal_entry.h"
 #include "ert.h"
 
+#include <vector>
+
 struct astcenc_rdo_context
 {
 	ert::reduce_entropy_params m_ert_params;
 	std::atomic<uint32_t> m_total_modified;
+	std::vector<image_block> m_blocks;
 
+	uint32_t m_total_blocks = 0;
 	uint32_t m_xblocks = 0;
 	uint32_t m_yblocks = 0;
 	uint32_t m_zblocks = 0;
-	uint32_t m_total_blocks = 0;
-	uint32_t m_image_dimx = 0;
-	uint32_t m_image_dimy = 0;
-	uint32_t m_image_dimz = 0;
-	uint32_t m_bytes_per_texel = 0;
-	uint32_t m_component_count = 0;
-	astcenc_swizzle m_swizzle{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
-
-	std::vector<uint8_t> m_block_pixels;
 };
 
-static constexpr uint8_t ASTCENC_RDO_PADDING_PIXEL = 0xff;
+#define ASTCENC_RDO_SPECIALIZE_DIFF 1
+
 static constexpr uint32_t ASTCENC_BYTES_PER_BLOCK = 16;
 
-template<typename T, typename U> T lerp(T a, T b, U s) { return (T)(a + (b - a) * s); }
+template<typename T> T sqr(T v) { return v * v; }
 
 extern "C" void rdo_progress_emitter(
 	float value
@@ -79,11 +75,10 @@ extern "C" void rdo_progress_emitter(
 	fflush(stdout);
 }
 
-template<typename T>
 static uint32_t init_rdo_context(
-	astcenc_contexti& ctx,
-	const astcenc_image& image,
-	const astcenc_swizzle& swz
+		astcenc_contexti& ctx,
+		const astcenc_image& image,
+		const astcenc_swizzle& swz
 ) {
 	ctx.rdo_context = new astcenc_rdo_context;
 	astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
@@ -97,290 +92,307 @@ static uint32_t init_rdo_context(
 	uint32_t total_blocks = xblocks * yblocks * zblocks;
 
 	// Generate quality parameters
-	ert::reduce_entropy_params& ert_params = rdo_ctx.m_ert_params;
-	ert_params.m_lambda = astc::clamp(ctx.config.rdo_level, 0.0f, 1.0f);
-	ert_params.m_color_weights[0] = static_cast<uint32_t>(ctx.config.cw_r_weight * 255.0f);
-	ert_params.m_color_weights[1] = static_cast<uint32_t>(ctx.config.cw_g_weight * 255.0f);
-	ert_params.m_color_weights[2] = static_cast<uint32_t>(ctx.config.cw_b_weight * 255.0f);
-	ert_params.m_color_weights[3] = static_cast<uint32_t>(ctx.config.cw_a_weight * 255.0f);
-	ert_params.m_lookback_window_size = (ctx.config.rdo_lookback ? astc::min(ctx.config.rdo_lookback, total_blocks) : total_blocks) * ASTCENC_BYTES_PER_BLOCK;
+	auto& ert_params = rdo_ctx.m_ert_params;
+	ert_params.m_lambda = ctx.config.rdo_quality;
+	ert_params.m_lookback_window_size = ctx.config.rdo_dict_size;
+	ert_params.m_smooth_block_max_mse_scale = ctx.config.rdo_max_smooth_block_error_scale;
+	ert_params.m_max_smooth_block_std_dev = ctx.config.rdo_max_smooth_block_std_dev;
 
 	ert_params.m_try_two_matches = true;
-	// ert_params.m_allow_relative_movement = true;
-	// ert_params.m_debug_output = true;
 
-	// Deduce conversion swizzles, ERT requires sample components to be contiguous
-	uint32_t num_components = 0;
-	astcenc_swz encoding_swzes[4];
-	astcenc_swz decoding_swzes[4];
-	uint32_t* w = ert_params.m_color_weights;
-
-	if (w[0]) w[num_components] = w[0], decoding_swzes[num_components] = ASTCENC_SWZ_R, encoding_swzes[num_components++] = swz.r;
-	if (w[1]) w[num_components] = w[1], decoding_swzes[num_components] = ASTCENC_SWZ_G, encoding_swzes[num_components++] = swz.g;
-	if (w[2]) w[num_components] = w[2], decoding_swzes[num_components] = ASTCENC_SWZ_B, encoding_swzes[num_components++] = swz.b;
-	if (w[3]) w[num_components] = w[3], decoding_swzes[num_components] = ASTCENC_SWZ_A, encoding_swzes[num_components++] = swz.a;
-
-	for (uint32_t idx = num_components; idx < 4; ++idx)
-	{
-		w[idx] = 0;
-		decoding_swzes[idx] = encoding_swzes[idx] = ASTCENC_SWZ_1;
-	}
-
-	bool needs_swz = // As long as weights are the same it actually doesn't matter
-		ert_params.m_color_weights[0] != ert_params.m_color_weights[1] ||
-		ert_params.m_color_weights[1] != ert_params.m_color_weights[2] ||
-		ert_params.m_color_weights[2] != ert_params.m_color_weights[3];
-
-	T scratch[6];
-	scratch[ASTCENC_SWZ_0] = 0u;
-	scratch[ASTCENC_SWZ_1] = ASTCENC_RDO_PADDING_PIXEL;
-
-	// Perform memory allocations for intermediary buffers
-	uint32_t bytes_per_texel = 4u;
-	if (image.data_type == ASTCENC_TYPE_F16) bytes_per_texel *= 2;
-	else if (image.data_type == ASTCENC_TYPE_F32) bytes_per_texel *= 4;
-
-	rdo_ctx.m_block_pixels.resize(total_blocks * ctx.bsd->texel_count * bytes_per_texel);
-
-	for (uint32_t block_z = 0; block_z < zblocks; ++block_z)
-	{
-		const uint32_t valid_z = astc::min(image.dim_z - block_z * block_dim_z, block_dim_z);
-		const uint32_t padding_z = block_dim_z - valid_z;
-		auto* block_pixels = static_cast<T*>(rdo_ctx.m_block_pixels.data()) + block_z * yblocks * xblocks * ctx.bsd->texel_count * 4;
-
-		for (uint32_t offset_z = 0; offset_z < valid_z; offset_z++)
-		{
-			const auto* src_data = static_cast<const T*>(image.data[block_z * block_dim_z + offset_z]);
-
-			for (uint32_t block_y = 0, block_idx = 0; block_y < yblocks; ++block_y)
-			{
-				const T* src_block_row = src_data + block_y * block_dim_y * image.dim_x * 4;
-				const uint32_t valid_y = astc::min(image.dim_y - block_y * block_dim_y, block_dim_y);
-				const uint32_t padding_y = block_dim_y - valid_y;
-
-				for (uint32_t block_x = 0; block_x < xblocks; ++block_x, ++block_idx)
-				{
-					const T* src_block = src_block_row + block_x * block_dim_x * 4;
-					const uint32_t valid_x = astc::min(image.dim_x - block_x * block_dim_x, block_dim_x);
-					const uint32_t padding_x = block_dim_x - valid_x;
-
-					T* dst_block = block_pixels + (block_idx * block_dim_z + offset_z) * block_dim_x * block_dim_y * 4;
-					for (uint32_t offset_y = 0; offset_y < valid_y; ++offset_y)
-					{
-						if (needs_swz)
-						{
-							for (uint32_t offset_x = 0; offset_x < valid_x; ++offset_x)
-							{
-								memcpy(scratch, src_block + offset_x * 4, bytes_per_texel);
-
-								for (uint32_t idx = 0; idx < 4; ++idx)
-								{
-									dst_block[offset_x * 4 + idx] = scratch[encoding_swzes[idx]];
-								}
-							}
-						}
-						else
-						{
-							memcpy(dst_block, src_block, valid_x * bytes_per_texel);
-						}
-						if (padding_x) memset(dst_block + valid_x * 4, ASTCENC_RDO_PADDING_PIXEL, padding_x * bytes_per_texel);
-						src_block += image.dim_x * 4;
-						dst_block += block_dim_x * 4;
-					}
-					if (padding_y)
-					{
-						memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_y * block_dim_x * bytes_per_texel);
-						dst_block += padding_y * block_dim_x * 4;
-					}
-					if (padding_z) memset(dst_block, ASTCENC_RDO_PADDING_PIXEL, padding_z * block_dim_y * block_dim_x * bytes_per_texel);
-				}
-			}
-		}
-	}
-
-	rdo_ctx.m_image_dimx = image.dim_x;
-	rdo_ctx.m_image_dimy = image.dim_y;
-	rdo_ctx.m_image_dimz = image.dim_z;
+	rdo_ctx.m_blocks.resize(total_blocks);
+	rdo_ctx.m_total_blocks = total_blocks;
 	rdo_ctx.m_xblocks = xblocks;
 	rdo_ctx.m_yblocks = yblocks;
 	rdo_ctx.m_zblocks = zblocks;
-	rdo_ctx.m_total_blocks = total_blocks;
-	rdo_ctx.m_bytes_per_texel = bytes_per_texel;
-	rdo_ctx.m_component_count = num_components;
 
-	if (needs_swz)
+	vfloat4 channel_weight = vfloat4(ctx.config.cw_r_weight,
+									 ctx.config.cw_g_weight,
+									 ctx.config.cw_b_weight,
+									 ctx.config.cw_a_weight);
+	channel_weight = channel_weight / hadd_s(channel_weight);
+
+	for (uint32_t block_z = 0, block_idx = 0; block_z < zblocks; ++block_z)
 	{
-		rdo_ctx.m_swizzle.r = decoding_swzes[0];
-		rdo_ctx.m_swizzle.g = decoding_swzes[1];
-		rdo_ctx.m_swizzle.b = decoding_swzes[2];
-		rdo_ctx.m_swizzle.a = decoding_swzes[3];
+		for (uint32_t block_y = 0; block_y < yblocks; ++block_y)
+		{
+			for (uint32_t block_x = 0; block_x < xblocks; ++block_x, ++block_idx)
+			{
+				image_block& blk = rdo_ctx.m_blocks[block_idx];
+				blk.decode_unorm8 = ctx.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
+				blk.texel_count = ctx.bsd->texel_count;
+
+				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
+				{
+					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
+					blk.channel_weight = vfloat4(ctx.config.cw_r_weight * alpha_scale,
+												 ctx.config.cw_g_weight * alpha_scale,
+												 ctx.config.cw_b_weight * alpha_scale,
+												 ctx.config.cw_a_weight);
+					blk.channel_weight = blk.channel_weight / hadd_s(blk.channel_weight);
+				}
+				else
+				{
+					blk.channel_weight = channel_weight;
+				}
+
+				load_image_block(ctx.config.profile, image, blk, *ctx.bsd,
+								 block_dim_x * block_x, block_dim_y * block_y, block_dim_z * block_z, swz);
+			}
+		}
 	}
 
-	return rdo_ctx.m_total_blocks;
+	return total_blocks;
 }
 
-static bool store_image_block_u8(
-	uint8_t* output,
+static float compute_block_std_dev(
 	const image_block& blk,
-	const block_size_descriptor& bsd,
-	uint32_t x_start,
-	uint32_t y_start,
-	uint32_t z_start,
-	uint32_t x_size,
-	uint32_t y_size,
-	uint32_t z_size,
-	const astcenc_swizzle& swz,
-	uint32_t& x_count,
-	uint32_t& y_count
+	float scale
 ) {
-	uint32_t x_end = astc::min(x_size, x_start + bsd.xdim);
-	x_count = x_end - x_start;
-	uint32_t x_nudge = bsd.xdim - x_count;
+	if (all(blk.data_min == blk.data_max)) return 0.0f;
 
-	uint32_t y_end = astc::min(y_size, y_start + bsd.ydim);
-	y_count = y_end - y_start;
-	uint32_t y_nudge = (bsd.ydim - y_count) * bsd.xdim;
+	vfloatacc summav = vfloatacc::zero();
+	vint lane_id = vint::lane_id();
+	uint32_t texel_count = blk.texel_count;
+	vfloat color_mean_r(blk.data_mean.lane<0>() * scale);
+	vfloat color_mean_g(blk.data_mean.lane<1>() * scale);
+	vfloat color_mean_b(blk.data_mean.lane<2>() * scale);
+	vfloat color_mean_a(blk.data_mean.lane<3>() * scale);
 
-	uint32_t z_end = astc::min(z_size, z_start + bsd.zdim);
-
-	// True if any non-identity swizzle
-	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
-					 (swz.b != ASTCENC_SWZ_B) || (swz.a != ASTCENC_SWZ_A);
-
-	// True if any swizzle uses Z reconstruct
-	bool needs_z = (swz.r == ASTCENC_SWZ_Z) || (swz.g == ASTCENC_SWZ_Z) ||
-				   (swz.b == ASTCENC_SWZ_Z) || (swz.a == ASTCENC_SWZ_Z);
-
-	int idx = 0;
-	for (uint32_t z = z_start; z < z_end; z++)
+	for (uint32_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		uint8_t* data_slice = output + z * bsd.xdim * bsd.ydim * 4;
+		vfloat color_orig_r = loada(blk.data_r + i) * scale;
+		vfloat color_orig_g = loada(blk.data_g + i) * scale;
+		vfloat color_orig_b = loada(blk.data_b + i) * scale;
+		vfloat color_orig_a = loada(blk.data_a + i) * scale;
 
-		for (uint32_t y = y_start; y < y_end; ++y)
+		vfloat color_error_r = min(abs(color_orig_r - color_mean_r), vfloat(1e15f));
+		vfloat color_error_g = min(abs(color_orig_g - color_mean_g), vfloat(1e15f));
+		vfloat color_error_b = min(abs(color_orig_b - color_mean_b), vfloat(1e15f));
+		vfloat color_error_a = min(abs(color_orig_a - color_mean_a), vfloat(1e15f));
+
+		// Compute squared error metric
+		color_error_r = color_error_r * color_error_r;
+		color_error_g = color_error_g * color_error_g;
+		color_error_b = color_error_b * color_error_b;
+		color_error_a = color_error_a * color_error_a;
+
+		vfloat metric = astc::max(color_error_r * blk.channel_weight.lane<0>(),
+								  color_error_g * blk.channel_weight.lane<1>(),
+								  color_error_b * blk.channel_weight.lane<2>(),
+								  color_error_a * blk.channel_weight.lane<3>());
+
+		// Mask off bad lanes
+		vmask mask = lane_id < vint(texel_count);
+		lane_id += vint(ASTCENC_SIMD_WIDTH);
+		haccumulate(summav, metric, mask);
+	}
+
+	return sqrtf(hadd_s(summav) / texel_count);
+}
+
+#if ASTCENC_RDO_SPECIALIZE_DIFF
+static float compute_symbolic_block_difference_constant(
+		const astcenc_config& config,
+		const block_size_descriptor& bsd,
+		symbolic_compressed_block scb,
+		const image_block& blk
+) {
+	vfloat4 color(0.0f);
+
+	// UNORM16 constant color block
+	if (scb.block_type == SYM_BTYPE_CONST_U16)
+	{
+		vint4 colori(scb.constant_color);
+
+		// Determine the UNORM8 rounding on the decode
+		vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+
+		// The real decoder would just use the top 8 bits, but we rescale
+		// in to a 16-bit value that rounds correctly.
+		vint4 colori_u8 = asr<8>(colori) * 257;
+		colori = select(colori, colori_u8, u8_mask);
+
+		vint4 colorf16 = unorm16_to_sf16(colori);
+		color = float16_to_float(colorf16);
+	}
+	// FLOAT16 constant color block
+	else
+	{
+		switch (config.profile)
 		{
-			for (uint32_t x = 0; x < x_count; x += ASTCENC_SIMD_WIDTH)
-			{
-				uint32_t max_texels = ASTCENC_SIMD_WIDTH;
-				uint32_t used_texels = astc::min(x_count - x, max_texels);
-
-				// Unaligned load as rows are not always SIMD_WIDTH long
-				vfloat data_r(blk.data_r + idx);
-				vfloat data_g(blk.data_g + idx);
-				vfloat data_b(blk.data_b + idx);
-				vfloat data_a(blk.data_a + idx);
-
-				// Errors are NaN encoded - abort this sample immediately
-				// Branch is OK here - it is almost never true so predicts well
-				vmask nan_mask = data_r != data_r;
-				if (any(nan_mask))
-				{
-					return false;
-				}
-
-				vint data_ri = float_to_int_rtn(min(data_r, 1.0f) * 255.0f);
-				vint data_gi = float_to_int_rtn(min(data_g, 1.0f) * 255.0f);
-				vint data_bi = float_to_int_rtn(min(data_b, 1.0f) * 255.0f);
-				vint data_ai = float_to_int_rtn(min(data_a, 1.0f) * 255.0f);
-
-				if (needs_swz)
-				{
-					vint swizzle_table[7];
-					swizzle_table[ASTCENC_SWZ_0] = vint(0);
-					swizzle_table[ASTCENC_SWZ_1] = vint(255);
-					swizzle_table[ASTCENC_SWZ_R] = data_ri;
-					swizzle_table[ASTCENC_SWZ_G] = data_gi;
-					swizzle_table[ASTCENC_SWZ_B] = data_bi;
-					swizzle_table[ASTCENC_SWZ_A] = data_ai;
-
-					if (needs_z)
-					{
-						vfloat data_x = (data_r * vfloat(2.0f)) - vfloat(1.0f);
-						vfloat data_y = (data_a * vfloat(2.0f)) - vfloat(1.0f);
-						vfloat data_z = vfloat(1.0f) - (data_x * data_x) - (data_y * data_y);
-						data_z = max(data_z, 0.0f);
-						data_z = (sqrt(data_z) * vfloat(0.5f)) + vfloat(0.5f);
-
-						swizzle_table[ASTCENC_SWZ_Z] = float_to_int_rtn(min(data_z, 1.0f) * 255.0f);
-					}
-
-					data_ri = swizzle_table[swz.r];
-					data_gi = swizzle_table[swz.g];
-					data_bi = swizzle_table[swz.b];
-					data_ai = swizzle_table[swz.a];
-				}
-
-				vint data_rgbai = interleave_rgba8(data_ri, data_gi, data_bi, data_ai);
-				vmask store_mask = vint::lane_id() < vint(used_texels);
-				store_lanes_masked(data_slice + idx * 4, data_rgbai, store_mask);
-
-				idx += used_texels;
-			}
-
-			if (x_nudge)
-			{
-				memset(data_slice + idx * 4, ASTCENC_RDO_PADDING_PIXEL, x_nudge * 4);
-				idx += x_nudge;
-			}
-		}
-
-		if (y_nudge)
-		{
-			memset(data_slice + idx * 4, ASTCENC_RDO_PADDING_PIXEL, y_nudge * 4);
-			idx += y_nudge;
+			case ASTCENC_PRF_LDR_SRGB:
+			case ASTCENC_PRF_LDR:
+				return -ERROR_CALC_DEFAULT;
+			case ASTCENC_PRF_HDR_RGB_LDR_A:
+			case ASTCENC_PRF_HDR:
+				// Constant-color block; unpack from FP16 to FP32.
+				color = float16_to_float(vint4(scb.constant_color));
+				break;
 		}
 	}
 
-	return true;
+	if (all(blk.data_min == blk.data_max)) // Original block is also constant
+	{
+		vfloat4 color_error = min(abs(blk.origin_texel - color) * 65535.0f, vfloat4(1e15f));
+		return dot_s(color_error * color_error, blk.channel_weight) * bsd.texel_count;
+	}
+
+	vfloatacc summav = vfloatacc::zero();
+	vint lane_id = vint::lane_id();
+	uint32_t texel_count = bsd.texel_count;
+
+	vfloat color_r(color.lane<0>() * 65535.0f);
+	vfloat color_g(color.lane<1>() * 65535.0f);
+	vfloat color_b(color.lane<2>() * 65535.0f);
+	vfloat color_a(color.lane<3>() * 65535.0f);
+
+	for (uint32_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vfloat color_orig_r = loada(blk.data_r + i);
+		vfloat color_orig_g = loada(blk.data_g + i);
+		vfloat color_orig_b = loada(blk.data_b + i);
+		vfloat color_orig_a = loada(blk.data_a + i);
+
+		vfloat color_error_r = min(abs(color_orig_r - color_r), vfloat(1e15f));
+		vfloat color_error_g = min(abs(color_orig_g - color_g), vfloat(1e15f));
+		vfloat color_error_b = min(abs(color_orig_b - color_b), vfloat(1e15f));
+		vfloat color_error_a = min(abs(color_orig_a - color_a), vfloat(1e15f));
+
+		// Compute squared error metric
+		color_error_r = color_error_r * color_error_r;
+		color_error_g = color_error_g * color_error_g;
+		color_error_b = color_error_b * color_error_b;
+		color_error_a = color_error_a * color_error_a;
+
+		vfloat metric = color_error_r * blk.channel_weight.lane<0>()
+					  + color_error_g * blk.channel_weight.lane<1>()
+					  + color_error_b * blk.channel_weight.lane<2>()
+					  + color_error_a * blk.channel_weight.lane<3>();
+
+		// Mask off bad lanes
+		vmask mask = lane_id < vint(texel_count);
+		lane_id += vint(ASTCENC_SIMD_WIDTH);
+		haccumulate(summav, metric, mask);
+	}
+
+	return hadd_s(summav);
 }
+#else
+static float compute_block_mse(
+	const image_block& orig,
+	const image_block& cmp,
+	float orig_scale,
+	float cmp_scale
+) {
+	vfloatacc summav = vfloatacc::zero();
+	vint lane_id = vint::lane_id();
+	uint32_t texel_count = orig.texel_count;
+
+	for (uint32_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vfloat color_orig_r = loada(orig.data_r + i) * orig_scale;
+		vfloat color_orig_g = loada(orig.data_g + i) * orig_scale;
+		vfloat color_orig_b = loada(orig.data_b + i) * orig_scale;
+		vfloat color_orig_a = loada(orig.data_a + i) * orig_scale;
+
+		vfloat color_cmp_r = loada(cmp.data_r + i) * cmp_scale;
+		vfloat color_cmp_g = loada(cmp.data_g + i) * cmp_scale;
+		vfloat color_cmp_b = loada(cmp.data_b + i) * cmp_scale;
+		vfloat color_cmp_a = loada(cmp.data_a + i) * cmp_scale;
+
+		vfloat color_error_r = min(abs(color_orig_r - color_cmp_r), vfloat(1e15f));
+		vfloat color_error_g = min(abs(color_orig_g - color_cmp_g), vfloat(1e15f));
+		vfloat color_error_b = min(abs(color_orig_b - color_cmp_b), vfloat(1e15f));
+		vfloat color_error_a = min(abs(color_orig_a - color_cmp_a), vfloat(1e15f));
+
+		// Compute squared error metric
+		color_error_r = color_error_r * color_error_r;
+		color_error_g = color_error_g * color_error_g;
+		color_error_b = color_error_b * color_error_b;
+		color_error_a = color_error_a * color_error_a;
+
+		vfloat metric = color_error_r * orig.channel_weight.lane<0>()
+					  + color_error_g * orig.channel_weight.lane<1>()
+					  + color_error_b * orig.channel_weight.lane<2>()
+					  + color_error_a * orig.channel_weight.lane<3>();
+
+		// Mask off bad lanes
+		vmask mask = lane_id < vint(texel_count);
+		lane_id += vint(ASTCENC_SIMD_WIDTH);
+		haccumulate(summav, metric, mask);
+	}
+
+	return hadd_s(summav) / texel_count;
+}
+#endif
 
 struct local_rdo_context
 {
-	const astcenc_contexti* ctx = nullptr;
-	uint32_t base_block_idx = 0;
+	const astcenc_contexti* ctx;
+	uint32_t base_offset;
 };
 
-static bool unpack_block(
-	const void* block,
-	ert::color_rgba* pixels,
+static float compute_block_difference(
+	void* user_data,
+	const uint8_t* pcb,
 	uint32_t local_block_idx,
-	uint32_t& active_x,
-	uint32_t& active_y,
-	void* user_data
+	float* out_max_std_dev
 ) {
 	const local_rdo_context& local_ctx = *(local_rdo_context*)user_data;
 	const astcenc_contexti& ctx = *local_ctx.ctx;
-	const astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
-	uint32_t block_idx = local_ctx.base_block_idx + local_block_idx;
 
-	uint32_t block_dim_x = ctx.bsd->xdim;
-	uint32_t block_dim_y = ctx.bsd->ydim;
-	uint32_t block_dim_z = ctx.bsd->zdim;
-	assert(block_idx < rdo_ctx.m_xblocks * rdo_ctx.m_yblocks * rdo_ctx.m_zblocks);
-
-	uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
-	uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
-	uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
-	uint32_t block_x = slice_idx - block_y * rdo_ctx.m_xblocks;
-	assert(block_y * rdo_ctx.m_xblocks + block_x == slice_idx);
-
-	uint8_t pcb[ASTCENC_BYTES_PER_BLOCK];
-	memcpy(pcb, block, sizeof(pcb));
 	symbolic_compressed_block scb;
 	physical_to_symbolic(*ctx.bsd, pcb, scb);
 
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
-		return false;
+		// Trial blocks may not be valid at all
+		return -ERROR_CALC_DEFAULT;
 	}
 
-	image_block blk;
-	decompress_symbolic_block(ctx.config.profile, *ctx.bsd,
-		block_x * block_dim_x, block_y * block_dim_y, block_z * block_dim_z,
-		scb, blk);
+	const astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
+	uint32_t block_idx = local_block_idx + local_ctx.base_offset;
+	const image_block& blk = rdo_ctx.m_blocks[block_idx];
 
-	return store_image_block_u8(reinterpret_cast<uint8_t*>(pixels), blk, *ctx.bsd,
-		block_x * block_dim_x, block_y * block_dim_y, block_z * block_dim_z,
-		rdo_ctx.m_image_dimx, rdo_ctx.m_image_dimy, rdo_ctx.m_image_dimz, rdo_ctx.m_swizzle, active_x, active_y);
+	if (out_max_std_dev)
+	{
+		// ERT expects texel values to be in [0, 255]
+		*out_max_std_dev = compute_block_std_dev(blk, 255.0f / 65535.0f);
+	}
+
+#if ASTCENC_RDO_SPECIALIZE_DIFF
+	float squared_error = 0.0f;
+
+	if (scb.block_type != SYM_BTYPE_NONCONST)
+		squared_error = compute_symbolic_block_difference_constant(ctx.config, *ctx.bsd, scb, blk);
+	else if (ctx.bsd->get_block_mode(scb.block_mode).is_dual_plane)
+		squared_error = compute_symbolic_block_difference_2plane(ctx.config, *ctx.bsd, scb, blk);
+	else if (ctx.bsd->get_partition_info(scb.partition_count, scb.partition_index).partition_count == 1)
+		squared_error = compute_symbolic_block_difference_1plane_1partition(ctx.config, *ctx.bsd, scb, blk);
+	else
+		squared_error = compute_symbolic_block_difference_1plane(ctx.config, *ctx.bsd, scb, blk);
+
+	// ERT expects texel values to be in [0, 255]
+	return squared_error / blk.texel_count * sqr(255.0f / 65535.0f);
+#else
+	uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
+	uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
+	uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
+	uint32_t block_x = slice_idx - block_y * rdo_ctx.m_xblocks;
+
+	image_block decoded_blk;
+	decoded_blk.decode_unorm8 = blk.decode_unorm8;
+	decoded_blk.texel_count = blk.texel_count;
+	decoded_blk.channel_weight = blk.channel_weight;
+
+	decompress_symbolic_block(ctx.config.profile, *ctx.bsd,
+							  block_x * ctx.bsd->xdim, block_y * ctx.bsd->ydim, block_z * ctx.bsd->zdim,
+							  scb, decoded_blk);
+
+	// ERT expects texel values to be in [0, 255]
+	return compute_block_mse(blk, decoded_blk, 255.0f / 65535.0f, 255.0f);
+#endif
 }
 
 void rate_distortion_optimize(
@@ -389,7 +401,7 @@ void rate_distortion_optimize(
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
 ) {
-	if (ctxo.context.config.rdo_level == 0.0f || image.data_type != ASTCENC_TYPE_U8 || ctxo.context.bsd->zdim > 1)
+	if (!ctxo.context.config.rdo_enabled)
 	{
 		return;
 	}
@@ -397,18 +409,19 @@ void rate_distortion_optimize(
 	// Only the first thread actually runs the initializer
 	ctxo.manage_rdo.init([&ctxo, &image, &swizzle]
 		{
-			// if (image.data_type == ASTCENC_TYPE_F16) return init_rdo_context<uint16_t>(ctxo.context, image, swizzle);
-			// if (image.data_type == ASTCENC_TYPE_F32) return init_rdo_context<uint32_t>(ctxo.context, image, swizzle);
-			return init_rdo_context<uint8_t>(ctxo.context, image, swizzle);
+			return init_rdo_context(ctxo.context, image, swizzle);
 		},
 		ctxo.context.config.progress_callback ? rdo_progress_emitter : nullptr);
 
-	uint32_t block_dim_x = ctxo.context.bsd->xdim;
-	uint32_t block_dim_y = ctxo.context.bsd->ydim;
-	uint32_t block_dim_z = ctxo.context.bsd->zdim;
-	uint32_t texels_per_block = block_dim_x * block_dim_y * block_dim_z;
 	astcenc_rdo_context& rdo_ctx = *ctxo.context.rdo_context;
-	uint32_t blocks_per_task = rdo_ctx.m_ert_params.m_lookback_window_size / ASTCENC_BYTES_PER_BLOCK;
+	uint32_t blocks_per_task = rdo_ctx.m_total_blocks;
+	if (!ctxo.context.config.rdo_no_multithreading)
+	{
+		blocks_per_task = astc::min(rdo_ctx.m_ert_params.m_lookback_window_size / ASTCENC_BYTES_PER_BLOCK, rdo_ctx.m_total_blocks);
+		// There is no way to losslessly partition the job (sequential dependency on previous output)
+		// So we reserve only one task for each thread to minimize the quality impact.
+		blocks_per_task = astc::max(blocks_per_task, (rdo_ctx.m_total_blocks - 1) / ctxo.context.thread_count + 1);
+	}
 
 	uint32_t total_modified = 0;
 	while (true)
@@ -420,13 +433,11 @@ void rate_distortion_optimize(
 			break;
 		}
 
-		local_rdo_context local_context{ &ctxo.context, base };
+		local_rdo_context local_ctx{ &ctxo.context, base };
 
-		ert::reduce_entropy(buffer + base * ASTCENC_BYTES_PER_BLOCK, count, ASTCENC_BYTES_PER_BLOCK, ASTCENC_BYTES_PER_BLOCK,
-			block_dim_x, block_dim_y, rdo_ctx.m_component_count, 
-			reinterpret_cast<const ert::color_rgba*>(rdo_ctx.m_block_pixels.data() + base * texels_per_block * rdo_ctx.m_bytes_per_texel),
-			rdo_ctx.m_ert_params, total_modified, unpack_block, &local_context
-		);
+		ert::reduce_entropy(buffer + base * ASTCENC_BYTES_PER_BLOCK, count,
+							ASTCENC_BYTES_PER_BLOCK, ASTCENC_BYTES_PER_BLOCK,
+							rdo_ctx.m_ert_params, total_modified, compute_block_difference, &local_ctx);
 
 		ctxo.manage_rdo.complete_task_assignment(count);
 	}

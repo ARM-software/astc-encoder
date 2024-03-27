@@ -385,17 +385,32 @@ ADVANCED COMPRESSION
                -thorough     : 0.95
                -verythorough : 0.98
                -exhaustive   : 0.99
-)"
-R"(
-       -rdo-level <factor>
-           Rate-distortion optimization level.
-           Larger values push the postprocessor towards optimizing more for lower rate,
-           and smaller values more for distortion. Default to 0, which skips RDO entirely.
 
-       -rdo-lookback <number>
-           Rate-distortion optimization lookback window size in blocks.
-           The larger this value, the slower the encoder but the higher the quality per LZ compressed bit.
-           Default to 64 blocks.
+       -rdo
+           Enable Rate Distortion Optimization (RDO) post-processing.
+
+       -rdo-no-multithreading
+           Disable RDO multithreading (slightly higher compression, deterministic).
+
+       -rdo-quality <factor>
+           RDO quality scalar (lambda). Lower values yield higher
+           quality/larger LZ compressed files, higher values yield lower
+           quality/smaller LZ compressed files. A good range to try is [.2,4].
+           Full range is [.001,50.0]. Default is 1.0.
+
+       -rdo-dict-size <number>
+           RDO dictionary size in bytes. Default is 4096. Lower
+           values=faster, but give less compression. Range is [64,65536].
+
+       -rdo-max-smooth-block-error-scale <factor>
+           RDO max smooth block error scale. Range is [1,300].
+           Default is 10.0, 1.0 is disabled. Larger values suppress more
+           artifacts (and allocate more bits) on smooth blocks.
+
+       -rdo-max-smooth-block-std-dev <factor>
+           RDO max smooth block standard deviation. Range is
+           [.01,65536.0]. Default is 18.0. Larger values expand the range of
+           blocks considered smooth.
 )"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...

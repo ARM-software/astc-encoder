@@ -572,13 +572,34 @@ struct astcenc_config
 	float tune_search_mode0_enable;
 
 	/**
-	 * @brief The compression level for rate-distortion optimization.
+	 * @brief Enable Rate Distortion Optimization (RDO) post-processing.
 	 */
-	float rdo_level;
+	bool rdo_enabled;
+
 	/**
-	 * @brief Number of blocks for each entropy reduction batch.
+	 * @brief Disable RDO multithreading (slightly higher compression, deterministic).
 	 */
-	unsigned int rdo_lookback;
+	bool rdo_no_multithreading;
+
+	/**
+	 * @brief RDO quality scalar (lambda).
+	 */
+	float rdo_quality;
+
+	/**
+	 * @brief RDO dictionary size in bytes.
+	 */
+	unsigned int rdo_dict_size;
+
+	/**
+	 * @brief RDO max smooth block error scale.
+	 */
+	float rdo_max_smooth_block_error_scale;
+
+	/**
+	 * @brief RDO max smooth block standard deviation.
+	 */
+	float rdo_max_smooth_block_std_dev;
 
 	/**
 	 * @brief The progress callback, can be @c nullptr.
