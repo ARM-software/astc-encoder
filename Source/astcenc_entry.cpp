@@ -412,6 +412,11 @@ static astcenc_error validate_config(
 	config.tune_3partition_early_out_limit_factor = astc::max(config.tune_3partition_early_out_limit_factor, 0.0f);
 	config.tune_2plane_early_out_limit_correlation = astc::max(config.tune_2plane_early_out_limit_correlation, 0.0f);
 
+	config.rdo_quality = astc::clamp(config.rdo_quality, 0.001f, 50.0f);
+	config.rdo_dict_size = astc::clamp(config.rdo_dict_size, 64u, 65536u);
+	config.rdo_max_smooth_block_error_scale = astc::clamp(config.rdo_max_smooth_block_error_scale, 1.0f, 300.0f);
+	config.rdo_max_smooth_block_std_dev = astc::clamp(config.rdo_max_smooth_block_std_dev, 0.01f, 65536.0f);
+
 	// Specifying a zero weight color component is not allowed; force to small value
 	float max_weight = astc::max(astc::max(config.cw_r_weight, config.cw_g_weight),
 	                             astc::max(config.cw_b_weight, config.cw_a_weight));
@@ -650,8 +655,11 @@ astcenc_error astcenc_config_init(
 	}
 	config.flags = flags;
 
-	// This is a reasonable default that leverages performance & compression rate
-	config.rdo_lookback = 64;
+	// These are the reasonable defaults that leverages performance & compression rate
+	config.rdo_quality = 1.0f;
+	config.rdo_dict_size = 4096;
+	config.rdo_max_smooth_block_error_scale = 10.0f;
+	config.rdo_max_smooth_block_std_dev = 18.0f;
 
 	return ASTCENC_SUCCESS;
 }

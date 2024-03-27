@@ -1175,33 +1175,65 @@ static int edit_astcenc_config(
 			argidx += 1;
 			cli_config.diagnostic_images = true;
 		}
-		else if (!strcmp(argv[argidx], "-rdo-level"))
+		else if (!strcmp(argv[argidx], "-rdo"))
 		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				print_error("ERROR: -rdo-level switch with no argument\n");
-				return 1;
-			}
-
-			config.rdo_level = static_cast<float>(atof(argv[argidx - 1]));
+			argidx += 1;
+			config.rdo_enabled = true;
 
 			// Unpacking RDO trials blocks requires full initialization
-			if (config.rdo_level > 0.0f && static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
+			if (config.rdo_quality > 0.0f && static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
 			{
 				config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 			}
 		}
-		else if (!strcmp(argv[argidx], "-rdo-lookback"))
+		else if (!strcmp(argv[argidx], "-rdo-no-multithreading"))
+		{
+			argidx += 1;
+			config.rdo_no_multithreading = true;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-quality"))
 		{
 			argidx += 2;
 			if (argidx > argc)
 			{
-				print_error("ERROR: -rdo-lookback switch with no argument\n");
+				print_error("ERROR: -rdo-quality switch with no argument\n");
 				return 1;
 			}
 
-			config.rdo_lookback = atoi(argv[argidx - 1]);
+			config.rdo_quality = static_cast<float>(atof(argv[argidx - 1]));
+		}
+		else if (!strcmp(argv[argidx], "-rdo-dict-size"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-dict-size switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_dict_size = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-error-scale"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-max-smooth-block-error-scale switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_max_smooth_block_error_scale = static_cast<float>(atof(argv[argidx - 1]));
+		}
+		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-std-dev"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-max-smooth-block-std-dev switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_max_smooth_block_std_dev = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else // check others as well
 		{
@@ -1293,8 +1325,12 @@ static void print_astcenc_config(
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
-		printf("    Rate-distortion level:      %g\n", static_cast<double>(config.rdo_level));
-		printf("    Rate-distortion lookback:   %u blocks\n", config.rdo_lookback);
+		printf("    RDO:                        %s\n", config.rdo_enabled ? "Enabled" : "Disabled");
+		printf("    RDO multithreading:         %s\n", config.rdo_no_multithreading ? "Disabled" : "Enabled");
+		printf("    RDO quality:                %g\n", static_cast<double>(config.rdo_quality));
+		printf("    RDO dictionary size:        %u bytes\n", config.rdo_dict_size);
+		printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
+		printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
 		printf("\n");
 	}
 }

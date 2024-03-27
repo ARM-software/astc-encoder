@@ -1,19 +1,32 @@
+// SPDX-License-Identifier: Unlicense
+// ----------------------------------------------------------------------------
+// This is free and unencumbered software released into the public domain.
+// Anyone is free to copy, modify, publish, use, compile, sell, or distribute this
+// software, either in source code form or as a compiled binary, for any purpose,
+// commercial or non - commercial, and by any means.
+// In jurisdictions that recognize copyright laws, the author or authors of this
+// software dedicate any and all copyright interest in the software to the public
+// domain. We make this dedication for the benefit of the public at large and to
+// the detriment of our heirs and successors.We intend this dedication to be an
+// overt act of relinquishment in perpetuity of all present and future rights to
+// this software under copyright law.
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// ----------------------------------------------------------------------------
+
 #pragma once
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
 #include <algorithm>
-#include <assert.h>
-#include <time.h>
-#include <vector>
-#include <string>
+
+// Based on https://github.com/richgel999/bc7enc_rdo/blob/master/ert.h
+// With interface tweaks that can make format integration more general & performant.
 
 namespace ert
 {
-	struct color_rgba { uint8_t m_c[4]; };
-
 	struct reduce_entropy_params
 	{
 		// m_lambda: The post-processor tries to reduce distortion*smooth_block_scale + rate*lambda (rate is approximate LZ bits and distortion is scaled MS error multiplied against the smooth block MSE weighting factor).
@@ -29,8 +42,6 @@ namespace ert
 		float m_max_smooth_block_std_dev;
 		float m_smooth_block_max_mse_scale;
 
-		uint32_t m_color_weights[4];
-				
 		bool m_try_two_matches;
 		bool m_allow_relative_movement;
 		bool m_skip_zero_mse_blocks;
@@ -45,37 +56,42 @@ namespace ert
 			m_max_allowed_rms_increase_ratio = 10.0f;
 			m_max_smooth_block_std_dev = 18.0f;
 			m_smooth_block_max_mse_scale = 10.0f;
-			m_color_weights[0] = 1;
-			m_color_weights[1] = 1;
-			m_color_weights[2] = 1;
-			m_color_weights[3] = 1;
 			m_try_two_matches = false;
 			m_allow_relative_movement = false;
 			m_skip_zero_mse_blocks = false;
 			m_debug_output = false;
 		}
 
-		void print()
+		void print() const
 		{
-			printf("lambda: %f\n", m_lambda);
+			printf("lambda: %f\n", (double)m_lambda);
 			printf("Lookback window size: %u\n", m_lookback_window_size);
-			printf("Max allowed RMS increase ratio: %f\n", m_max_allowed_rms_increase_ratio);
-			printf("Max smooth block std dev: %f\n", m_max_smooth_block_std_dev);
-			printf("Smooth block max MSE scale: %f\n", m_smooth_block_max_mse_scale);
-			printf("Color weights: %u %u %u %u\n", m_color_weights[0], m_color_weights[1], m_color_weights[2], m_color_weights[3]);
+			printf("Max allowed RMS increase ratio: %f\n", (double)m_max_allowed_rms_increase_ratio);
+			printf("Max smooth block std dev: %f\n", (double)m_max_smooth_block_std_dev);
+			printf("Smooth block max MSE scale: %f\n", (double)m_smooth_block_max_mse_scale);
 			printf("Try two matches: %u\n", m_try_two_matches);
 			printf("Allow relative movement: %u\n", m_allow_relative_movement);
 			printf("Skip zero MSE blocks: %u\n", m_skip_zero_mse_blocks);
 		}
 	};
 
-	typedef bool (*pUnpack_block_func)(const void* pBlock, color_rgba* pPixels, uint32_t block_index, uint32_t& active_x, uint32_t& active_y, void* pUser_data);
+	/**
+	 * @brief Callback to compute trial block differences.
+	 *
+	 * All comparing texel values should be in range [0, 255].
+	 *
+	 * @param[out] out_max_std_dev The channel-wise maximum standard deviation for the original block,
+	 * 	can be @c nullptr if not requested.
+	 *
+	 * @return Should return the mean squared error for current trial block, or any negative value to indicate errors.
+	 */
+	typedef float (*pDiff_block_func)(void* pUser_data, const uint8_t* pBlock, uint32_t block_index, float* out_max_std_dev);
 
 	// BC7 entropy reduction transform with Deflate/LZMA/LZHAM optimizations
-	bool reduce_entropy(void* pBlocks, uint32_t num_blocks,
-		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes, uint32_t block_width, uint32_t block_height, uint32_t num_comps,
-		const color_rgba* pBlock_pixels, const reduce_entropy_params& params, uint32_t& total_modified,
-		pUnpack_block_func pUnpack_block_func, void* pUnpack_block_func_user_data,
-		std::vector<float>* pBlock_mse_scales = nullptr);
+	bool reduce_entropy(uint8_t* pBlock_bytes, uint32_t num_blocks,
+		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes,
+		const reduce_entropy_params& params, uint32_t& total_modified,
+		pDiff_block_func pDiff_block_func, void* pDiff_block_func_user_data,
+		const float* pBlock_mse_scales = nullptr);
 
 } // namespace ert

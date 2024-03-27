@@ -1968,7 +1968,7 @@ unsigned int compute_ideal_endpoint_formats(
  * @param         pi                   The partition info for the current trial.
  * @param         di                   The weight grid decimation table.
  * @param         dec_weights_uquant   The quantized weight set.
- * @param[in,out] ep                   The color endpoints (modifed in place).
+ * @param[in,out] ep                   The color endpoints (modified in place).
  * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
  * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
  */
@@ -1992,7 +1992,7 @@ void recompute_ideal_colors_1plane(
  * @param         di                          The weight grid decimation table.
  * @param         dec_weights_uquant_plane1   The quantized weight set for plane 1.
  * @param         dec_weights_uquant_plane2   The quantized weight set for plane 2.
- * @param[in,out] ep                          The color endpoints (modifed in place).
+ * @param[in,out] ep                          The color endpoints (modified in place).
  * @param[out]    rgbs_vector                 The RGB+scale color for LDR blocks.
  * @param[out]    rgbo_vector                 The RGB+offset color for HDR blocks.
  * @param         plane2_component            The component assigned to plane 2.
@@ -2165,7 +2165,7 @@ void symbolic_to_physical(
  * flagged as an error block if the encoding is invalid.
  *
  * @param      bsd   The block size information.
- * @param      pcb   The physical compresesd block input.
+ * @param      pcb   The physical compressed block input.
  * @param[out] scb   The output symbolic representation.
  */
 void physical_to_symbolic(
@@ -2176,7 +2176,10 @@ void physical_to_symbolic(
 /**
  * @brief Rate-distortion optimization main entry.
  *
- * @param[inout] buffer   The output compressed buffer.
+ * @param         ctxo     The compressor context and configuration.
+ * @param         image    The input image data.
+ * @param         swizzle  The swizzle applied on store.
+ * @param[in,out] buffer   The compressed buffer to be optimized (modified in place)
  */
 void rate_distortion_optimize(
 	astcenc_context& ctxo,
