@@ -29,9 +29,9 @@ struct astcenc_rdo_context
 	std::vector<image_block> m_blocks;
 
 	uint32_t m_total_blocks = 0;
-	uint32_t m_xblocks = 0;
-	uint32_t m_yblocks = 0;
-	uint32_t m_zblocks = 0;
+	uint32_t m_image_x = 0;
+	uint32_t m_image_y = 0;
+	uint32_t m_image_z = 0;
 };
 
 #define ASTCENC_RDO_SPECIALIZE_DIFF 1
@@ -102,9 +102,9 @@ static uint32_t init_rdo_context(
 
 	rdo_ctx.m_blocks.resize(total_blocks);
 	rdo_ctx.m_total_blocks = total_blocks;
-	rdo_ctx.m_xblocks = xblocks;
-	rdo_ctx.m_yblocks = yblocks;
-	rdo_ctx.m_zblocks = zblocks;
+	rdo_ctx.m_image_x = image.dim_x;
+	rdo_ctx.m_image_y = image.dim_y;
+	rdo_ctx.m_image_z = image.dim_z;
 
 	vfloat4 channel_weight = vfloat4(ctx.config.cw_r_weight,
 									 ctx.config.cw_g_weight,
@@ -282,6 +282,10 @@ static float compute_symbolic_block_difference_constant(
 static float compute_block_mse(
 	const image_block& orig,
 	const image_block& cmp,
+	const block_size_descriptor& bsd,
+	uint32_t image_x,
+	uint32_t image_y,
+	uint32_t image_z,
 	float orig_scale,
 	float cmp_scale
 ) {
@@ -289,7 +293,11 @@ static float compute_block_mse(
 	vint lane_id = vint::lane_id();
 	uint32_t texel_count = orig.texel_count;
 
-	for (uint32_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	uint32_t block_x = astc::min(image_x - orig.xpos, (uint32_t)bsd.xdim);
+	uint32_t block_y = astc::min(image_y - orig.ypos, (uint32_t)bsd.ydim);
+	uint32_t block_z = astc::min(image_z - orig.zpos, (uint32_t)bsd.zdim);
+
+	for (uint32_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH, lane_id += vint(ASTCENC_SIMD_WIDTH))
 	{
 		vfloat color_orig_r = loada(orig.data_r + i) * orig_scale;
 		vfloat color_orig_g = loada(orig.data_g + i) * orig_scale;
@@ -318,12 +326,15 @@ static float compute_block_mse(
 					  + color_error_a * orig.channel_weight.lane<3>();
 
 		// Mask off bad lanes
-		vmask mask = lane_id < vint(texel_count);
-		lane_id += vint(ASTCENC_SIMD_WIDTH);
+		vint lane_id_z(float_to_int(int_to_float(lane_id) / float(bsd.xdim * bsd.ydim)));
+		vint rem_idx = lane_id - lane_id_z * vint(bsd.xdim * bsd.ydim);
+		vint lane_id_y = float_to_int(int_to_float(rem_idx) / bsd.xdim);
+		vint lane_id_x = rem_idx - lane_id_y * vint(bsd.xdim);
+		vmask mask = (lane_id_x < vint(block_x)) & (lane_id_y < vint(block_y)) & (lane_id_z < vint(block_z));
 		haccumulate(summav, metric, mask);
 	}
 
-	return hadd_s(summav) / texel_count;
+	return hadd_s(summav) / (block_x * block_y * block_z);
 }
 #endif
 
@@ -376,22 +387,15 @@ static float compute_block_difference(
 	// ERT expects texel values to be in [0, 255]
 	return squared_error / blk.texel_count * sqr(255.0f / 65535.0f);
 #else
-	uint32_t block_z = block_idx / (rdo_ctx.m_xblocks * rdo_ctx.m_yblocks);
-	uint32_t slice_idx = block_idx - block_z * rdo_ctx.m_xblocks * rdo_ctx.m_yblocks;
-	uint32_t block_y = slice_idx / rdo_ctx.m_xblocks;
-	uint32_t block_x = slice_idx - block_y * rdo_ctx.m_xblocks;
-
 	image_block decoded_blk;
 	decoded_blk.decode_unorm8 = blk.decode_unorm8;
 	decoded_blk.texel_count = blk.texel_count;
 	decoded_blk.channel_weight = blk.channel_weight;
 
-	decompress_symbolic_block(ctx.config.profile, *ctx.bsd,
-							  block_x * ctx.bsd->xdim, block_y * ctx.bsd->ydim, block_z * ctx.bsd->zdim,
-							  scb, decoded_blk);
+	decompress_symbolic_block(ctx.config.profile, *ctx.bsd, blk.xpos, blk.ypos, blk.zpos, scb, decoded_blk);
 
 	// ERT expects texel values to be in [0, 255]
-	return compute_block_mse(blk, decoded_blk, 255.0f / 65535.0f, 255.0f);
+	return compute_block_mse(blk, decoded_blk, *ctx.bsd, rdo_ctx.m_image_x, rdo_ctx.m_image_y, rdo_ctx.m_image_z, 255.0f / 65535.0f, 255.0f);
 #endif
 }
 
