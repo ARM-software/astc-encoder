@@ -21,6 +21,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
+#include <cstdio>
 
 // Based on https://github.com/richgel999/bc7enc_rdo/blob/master/ert.h
 // With interface tweaks that can make format integration more general & performant.
@@ -85,13 +87,13 @@ namespace ert
 	 *
 	 * @return Should return the mean squared error for current trial block, or any negative value to indicate errors.
 	 */
-	typedef float (*pDiff_block_func)(void* pUser_data, const uint8_t* pBlock, uint32_t block_index, float* out_max_std_dev);
+	typedef float diff_block_func_type(void* pUser_data, const uint8_t* pBlock, uint32_t block_index, float* out_max_std_dev);
 
 	// BC7 entropy reduction transform with Deflate/LZMA/LZHAM optimizations
 	bool reduce_entropy(uint8_t* pBlock_bytes, uint32_t num_blocks,
 		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes,
 		const reduce_entropy_params& params, uint32_t& total_modified,
-		pDiff_block_func pDiff_block_func, void* pDiff_block_func_user_data,
+		diff_block_func_type pDiff_block_func, void* pDiff_block_func_user_data,
 		const float* pBlock_mse_scales = nullptr);
 
 } // namespace ert
