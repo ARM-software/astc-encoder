@@ -1326,11 +1326,14 @@ static void print_astcenc_config(
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
 		printf("    RDO:                        %s\n", config.rdo_enabled ? "Enabled" : "Disabled");
-		printf("    RDO multithreading:         %s\n", config.rdo_no_multithreading ? "Disabled" : "Enabled");
-		printf("    RDO quality:                %g\n", static_cast<double>(config.rdo_quality));
-		printf("    RDO dictionary size:        %u bytes\n", config.rdo_dict_size);
-		printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
-		printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
+		if (config.rdo_enabled)
+		{
+			printf("    RDO multithreading:         %s\n", config.rdo_no_multithreading ? "Disabled" : "Enabled");
+			printf("    RDO quality:                %g\n", static_cast<double>(config.rdo_quality));
+			printf("    RDO dictionary size:        %u bytes\n", config.rdo_dict_size);
+			printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
+			printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
+		}
 		printf("\n");
 	}
 }

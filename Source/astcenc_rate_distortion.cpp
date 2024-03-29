@@ -422,7 +422,7 @@ void rate_distortion_optimize(
 	if (!ctxo.context.config.rdo_no_multithreading)
 	{
 		blocks_per_task = astc::min(rdo_ctx.m_ert_params.m_lookback_window_size / ASTCENC_BYTES_PER_BLOCK, rdo_ctx.m_total_blocks);
-		// There is no way to losslessly partition the job (sequential dependency on previous output)
+		// There is no way to losslessly partition the job (sequentially dependent on previous output)
 		// So we reserve only one task for each thread to minimize the quality impact.
 		blocks_per_task = astc::max(blocks_per_task, (rdo_ctx.m_total_blocks - 1) / ctxo.context.thread_count + 1);
 	}
