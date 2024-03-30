@@ -396,11 +396,25 @@ ADVANCED COMPRESSION
            RDO quality scalar (lambda). Lower values yield higher
            quality/larger LZ compressed files, higher values yield lower
            quality/smaller LZ compressed files. A good range to try is [.2,4].
-           Full range is [.001,50.0]. Default is 1.0.
+           Full range is [.001,50.0]. Preset defaults are:
+
+               -fastest      : 4.0
+               -fast         : 2.0
+               -medium       : 1.0
+               -thorough     : 0.5
+               -verythorough : 0.4
+               -exhaustive   : 0.2
 
        -rdo-dict-size <number>
-           RDO dictionary size in bytes. Default is 4096. Lower
-           values=faster, but give less compression. Range is [64,65536].
+           RDO dictionary size in bytes. Lower values=faster,
+           but give less compression. Range is [64,65536]. Preset defaults are:
+
+               -fastest      : 256
+               -fast         : 1024
+               -medium       : 4096
+               -thorough     : 4096
+               -verythorough : 4096
+               -exhaustive   : 4096
 
        -rdo-max-smooth-block-error-scale <factor>
            RDO max smooth block error scale. Range is [1,300].

@@ -1181,7 +1181,7 @@ static int edit_astcenc_config(
 			config.rdo_enabled = true;
 
 			// Unpacking RDO trials blocks requires full initialization
-			if (config.rdo_quality > 0.0f && static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
+			if (static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
 			{
 				config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 			}
@@ -1325,7 +1325,7 @@ static void print_astcenc_config(
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
-		printf("    RDO:                        %s\n", config.rdo_enabled ? "Enabled" : "Disabled");
+		printf("    Rate-distortion opt:        %s\n", config.rdo_enabled ? "Enabled" : "Disabled");
 		if (config.rdo_enabled)
 		{
 			printf("    RDO multithreading:         %s\n", config.rdo_no_multithreading ? "Disabled" : "Enabled");
