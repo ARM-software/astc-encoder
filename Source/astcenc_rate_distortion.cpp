@@ -25,10 +25,8 @@
 struct astcenc_rdo_context
 {
 	ert::reduce_entropy_params m_ert_params;
-	std::atomic<uint32_t> m_total_modified;
 	std::vector<image_block> m_blocks;
 
-	uint32_t m_total_blocks = 0;
 	uint32_t m_image_x = 0;
 	uint32_t m_image_y = 0;
 	uint32_t m_image_z = 0;
@@ -101,7 +99,6 @@ static uint32_t init_rdo_context(
 	ert_params.m_try_two_matches = true;
 
 	rdo_ctx.m_blocks.resize(total_blocks);
-	rdo_ctx.m_total_blocks = total_blocks;
 	rdo_ctx.m_image_x = image.dim_x;
 	rdo_ctx.m_image_y = image.dim_y;
 	rdo_ctx.m_image_z = image.dim_z;
@@ -356,11 +353,10 @@ static float compute_block_difference(
 	symbolic_compressed_block scb;
 	physical_to_symbolic(*ctx.bsd, pcb, scb);
 
-	if (scb.block_type == SYM_BTYPE_ERROR)
-	{
-		// Trial blocks may not be valid at all
-		return -ERROR_CALC_DEFAULT;
-	}
+	// Trial blocks may not be valid at all
+	if (scb.block_type == SYM_BTYPE_ERROR) return -ERROR_CALC_DEFAULT;
+	bool is_dual_plane = scb.block_type == SYM_BTYPE_NONCONST && ctx.bsd->get_block_mode(scb.block_mode).is_dual_plane;
+	if (is_dual_plane && scb.partition_count != 1) return -ERROR_CALC_DEFAULT;
 
 	const astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
 	uint32_t block_idx = local_block_idx + local_ctx.base_offset;
@@ -377,9 +373,9 @@ static float compute_block_difference(
 
 	if (scb.block_type != SYM_BTYPE_NONCONST)
 		squared_error = compute_symbolic_block_difference_constant(ctx.config, *ctx.bsd, scb, blk);
-	else if (ctx.bsd->get_block_mode(scb.block_mode).is_dual_plane)
+	else if (is_dual_plane)
 		squared_error = compute_symbolic_block_difference_2plane(ctx.config, *ctx.bsd, scb, blk);
-	else if (ctx.bsd->get_partition_info(scb.partition_count, scb.partition_index).partition_count == 1)
+	else if (scb.partition_count == 1)
 		squared_error = compute_symbolic_block_difference_1plane_1partition(ctx.config, *ctx.bsd, scb, blk);
 	else
 		squared_error = compute_symbolic_block_difference_1plane(ctx.config, *ctx.bsd, scb, blk);
@@ -417,14 +413,19 @@ void rate_distortion_optimize(
 		},
 		ctxo.context.config.progress_callback ? rdo_progress_emitter : nullptr);
 
-	astcenc_rdo_context& rdo_ctx = *ctxo.context.rdo_context;
-	uint32_t blocks_per_task = rdo_ctx.m_total_blocks;
-	if (!ctxo.context.config.rdo_no_multithreading)
+	const astcenc_contexti& ctx = ctxo.context;
+	uint32_t xblocks = (image.dim_x + ctx.bsd->xdim - 1u) / ctx.bsd->xdim;
+	uint32_t yblocks = (image.dim_y + ctx.bsd->ydim - 1u) / ctx.bsd->ydim;
+	uint32_t zblocks = (image.dim_z + ctx.bsd->zdim - 1u) / ctx.bsd->zdim;
+	uint32_t total_blocks = xblocks * yblocks * zblocks;
+
+	uint32_t blocks_per_task = total_blocks;
+	if (!ctx.config.rdo_no_multithreading)
 	{
-		blocks_per_task = astc::min(rdo_ctx.m_ert_params.m_lookback_window_size / ASTCENC_BYTES_PER_BLOCK, rdo_ctx.m_total_blocks);
+		blocks_per_task = astc::min(ctx.config.rdo_dict_size / ASTCENC_BYTES_PER_BLOCK, total_blocks);
 		// There is no way to losslessly partition the job (sequentially dependent on previous output)
 		// So we reserve only one task for each thread to minimize the quality impact.
-		blocks_per_task = astc::max(blocks_per_task, (rdo_ctx.m_total_blocks - 1) / ctxo.context.thread_count + 1);
+		blocks_per_task = astc::max(blocks_per_task, (total_blocks - 1) / ctx.thread_count + 1);
 	}
 
 	uint32_t total_modified = 0;
@@ -437,16 +438,15 @@ void rate_distortion_optimize(
 			break;
 		}
 
-		local_rdo_context local_ctx{ &ctxo.context, base };
+		local_rdo_context local_ctx{ &ctx, base };
 
 		ert::reduce_entropy(buffer + base * ASTCENC_BYTES_PER_BLOCK, count,
 							ASTCENC_BYTES_PER_BLOCK, ASTCENC_BYTES_PER_BLOCK,
-							rdo_ctx.m_ert_params, total_modified, compute_block_difference, &local_ctx);
+							ctx.rdo_context->m_ert_params, total_modified,
+							compute_block_difference, &local_ctx);
 
 		ctxo.manage_rdo.complete_task_assignment(count);
 	}
-
-	rdo_ctx.m_total_modified.fetch_add(total_modified, std::memory_order_relaxed);
 
 	// Wait for rdo to complete before freeing memory
 	ctxo.manage_rdo.wait();

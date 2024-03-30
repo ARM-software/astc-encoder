@@ -400,8 +400,7 @@ namespace ert
 				// Try injecting a second match, being sure it does't overlap with the first.
 				if ((params.m_try_two_matches) && (best_match_len <= (block_size_to_optimize_in_bytes - 3)))
 				{
-					uint8_t matched_flags[MAX_BLOCK_SIZE_IN_BYTES];
-					memset(matched_flags, 0, sizeof(matched_flags));
+					uint8_t matched_flags[MAX_BLOCK_SIZE_IN_BYTES]{};
 					memset(matched_flags + best_match_dst_block_ofs, 1, best_match_len);
 
 					uint8_t orig_best_block[MAX_BLOCK_SIZE_IN_BYTES];
