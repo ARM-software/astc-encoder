@@ -425,7 +425,8 @@ void rate_distortion_optimize(
 		blocks_per_task = astc::min(ctx.config.rdo_dict_size / ASTCENC_BYTES_PER_BLOCK, total_blocks);
 		// There is no way to losslessly partition the job (sequentially dependent on previous output)
 		// So we reserve only one task for each thread to minimize the quality impact.
-		blocks_per_task = astc::max(blocks_per_task, (total_blocks - 1) / ctx.thread_count + 1);
+		uint32_t partitions = ctx.config.rdo_partitions ? ctx.config.rdo_partitions : ctx.thread_count;
+		blocks_per_task = astc::max(blocks_per_task, (total_blocks - 1) / partitions + 1);
 	}
 
 	uint32_t total_modified = 0;

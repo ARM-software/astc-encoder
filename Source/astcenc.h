@@ -592,6 +592,11 @@ struct astcenc_config
 	unsigned int rdo_dict_size;
 
 	/**
+	 * @brief RDO task partitions.
+	 */
+	unsigned int rdo_partitions;
+
+	/**
 	 * @brief RDO max smooth block error scale.
 	 */
 	float rdo_max_smooth_block_error_scale;

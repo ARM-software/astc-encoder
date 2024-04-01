@@ -1213,6 +1213,17 @@ static int edit_astcenc_config(
 
 			config.rdo_dict_size = atoi(argv[argidx - 1]);
 		}
+		else if (!strcmp(argv[argidx], "-rdo-partitions"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-partitions switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_partitions = atoi(argv[argidx - 1]);
+		}
 		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-error-scale"))
 		{
 			argidx += 2;
@@ -1333,6 +1344,7 @@ static void print_astcenc_config(
 			printf("    RDO dictionary size:        %u bytes\n", config.rdo_dict_size);
 			printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
 			printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
+			if (config.rdo_partitions) printf("    RDO partitions:             %u\n", cli_config.thread_count);
 		}
 		printf("\n");
 	}

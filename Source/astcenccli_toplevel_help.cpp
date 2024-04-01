@@ -416,6 +416,10 @@ ADVANCED COMPRESSION
                -verythorough : 4096
                -exhaustive   : 4096
 
+       -rdo-partitions <number>
+           RDO task partitions. Default to current number of threads.
+           Customize this for a deterministic output regardless of the running hardware.
+
        -rdo-max-smooth-block-error-scale <factor>
            RDO max smooth block error scale. Range is [1,300].
            Default is 10.0, 1.0 is disabled. Larger values suppress more
