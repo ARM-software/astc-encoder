@@ -92,7 +92,7 @@ static uint32_t init_rdo_context(
 	// Generate quality parameters
 	auto& ert_params = rdo_ctx.m_ert_params;
 	ert_params.m_lambda = ctx.config.rdo_quality;
-	ert_params.m_lookback_window_size = ctx.config.rdo_dict_size;
+	ert_params.m_lookback_window_size = ctx.config.rdo_lookback * ASTCENC_BYTES_PER_BLOCK;
 	ert_params.m_smooth_block_max_mse_scale = ctx.config.rdo_max_smooth_block_error_scale;
 	ert_params.m_max_smooth_block_std_dev = ctx.config.rdo_max_smooth_block_std_dev;
 
@@ -422,7 +422,7 @@ void rate_distortion_optimize(
 	uint32_t blocks_per_task = total_blocks;
 	if (!ctx.config.rdo_no_multithreading)
 	{
-		blocks_per_task = astc::min(ctx.config.rdo_dict_size / ASTCENC_BYTES_PER_BLOCK, total_blocks);
+		blocks_per_task = astc::min(ctx.config.rdo_lookback, total_blocks);
 		// There is no way to losslessly partition the job (sequentially dependent on previous output)
 		// So we reserve only one task for each thread to minimize the quality impact.
 		uint32_t partitions = ctx.config.rdo_partitions ? ctx.config.rdo_partitions : ctx.thread_count;

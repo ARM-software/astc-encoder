@@ -1179,12 +1179,6 @@ static int edit_astcenc_config(
 		{
 			argidx += 1;
 			config.rdo_enabled = true;
-
-			// Unpacking RDO trials blocks requires full initialization
-			if (static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
-			{
-				config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
-			}
 		}
 		else if (!strcmp(argv[argidx], "-rdo-no-multithreading"))
 		{
@@ -1200,6 +1194,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
+			config.rdo_enabled = true;
 			config.rdo_quality = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-rdo-dict-size"))
@@ -1211,7 +1206,20 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.rdo_dict_size = atoi(argv[argidx - 1]);
+			config.rdo_enabled = true;
+			config.rdo_lookback = atoi(argv[argidx - 1]) / 16;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-lookback"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-dict-size switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_lookback = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-rdo-partitions"))
 		{
@@ -1222,6 +1230,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
+			config.rdo_enabled = true;
 			config.rdo_partitions = atoi(argv[argidx - 1]);
 		}
 		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-error-scale"))
@@ -1233,6 +1242,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
+			config.rdo_enabled = true;
 			config.rdo_max_smooth_block_error_scale = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-std-dev"))
@@ -1244,6 +1254,7 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
+			config.rdo_enabled = true;
 			config.rdo_max_smooth_block_std_dev = static_cast<float>(atof(argv[argidx - 1]));
 		}
 		else // check others as well
@@ -1341,10 +1352,10 @@ static void print_astcenc_config(
 		{
 			printf("    RDO multithreading:         %s\n", config.rdo_no_multithreading ? "Disabled" : "Enabled");
 			printf("    RDO quality:                %g\n", static_cast<double>(config.rdo_quality));
-			printf("    RDO dictionary size:        %u bytes\n", config.rdo_dict_size);
+			printf("    RDO lookback:               %u blocks\n", config.rdo_lookback);
 			printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
 			printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
-			if (config.rdo_partitions) printf("    RDO partitions:             %u\n", cli_config.thread_count);
+			if (config.rdo_partitions) printf("    RDO partitions:             %u\n", config.rdo_partitions);
 		}
 		printf("\n");
 	}
@@ -2068,6 +2079,12 @@ int astcenc_main(
 	if (error)
 	{
 		return 1;
+	}
+
+	// Unpacking RDO trials blocks requires full initialization
+	if (config.rdo_enabled && static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
+	{
+		config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 	}
 
 	// Enable progress callback if not in silent mode and using a terminal

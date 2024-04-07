@@ -396,25 +396,21 @@ ADVANCED COMPRESSION
            RDO quality scalar (lambda). Lower values yield higher
            quality/larger LZ compressed files, higher values yield lower
            quality/smaller LZ compressed files. A good range to try is [.2,4].
-           Full range is [.001,50.0]. Preset defaults are:
+           Full range is [.001,50.0]. Default to 0.5.
 
-               -fastest      : 4.0
-               -fast         : 2.0
-               -medium       : 1.0
-               -thorough     : 0.5
-               -verythorough : 0.4
-               -exhaustive   : 0.2
+       -rdo-lookback <number>
+           RDO look back size in blocks. Lower values=faster,
+           but give less compression. Range is [4,4096]. Preset defaults are:
+
+               -fastest      : 64
+               -fast         : 128
+               -medium       : 256
+               -thorough     : 256
+               -verythorough : 256
+               -exhaustive   : 256
 
        -rdo-dict-size <number>
-           RDO dictionary size in bytes. Lower values=faster,
-           but give less compression. Range is [64,65536]. Preset defaults are:
-
-               -fastest      : 256
-               -fast         : 1024
-               -medium       : 4096
-               -thorough     : 4096
-               -verythorough : 4096
-               -exhaustive   : 4096
+           Same as rdo-lookback, but in bytes.
 
        -rdo-partitions <number>
            RDO task partitions. Default to current number of threads.

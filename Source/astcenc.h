@@ -587,9 +587,9 @@ struct astcenc_config
 	float rdo_quality;
 
 	/**
-	 * @brief RDO dictionary size in bytes.
+	 * @brief RDO lookback size in blocks.
 	 */
-	unsigned int rdo_dict_size;
+	unsigned int rdo_lookback;
 
 	/**
 	 * @brief RDO task partitions.
