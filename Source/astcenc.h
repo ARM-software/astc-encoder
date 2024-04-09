@@ -577,11 +577,6 @@ struct astcenc_config
 	bool rdo_enabled;
 
 	/**
-	 * @brief Disable RDO multithreading (slightly higher compression, deterministic).
-	 */
-	bool rdo_no_multithreading;
-
-	/**
 	 * @brief RDO quality scalar (lambda).
 	 */
 	float rdo_quality;

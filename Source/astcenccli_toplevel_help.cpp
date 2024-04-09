@@ -389,9 +389,6 @@ ADVANCED COMPRESSION
        -rdo
            Enable Rate Distortion Optimization (RDO) post-processing.
 
-       -rdo-no-multithreading
-           Disable RDO multithreading (slightly higher compression, deterministic).
-
        -rdo-quality <factor>
            RDO quality scalar (lambda). Lower values yield higher
            quality/larger LZ compressed files, higher values yield lower

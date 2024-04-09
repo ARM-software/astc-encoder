@@ -38,29 +38,12 @@ static constexpr uint32_t ASTCENC_BYTES_PER_BLOCK = 16;
 
 template<typename T> T sqr(T v) { return v * v; }
 
+extern "C" void progress_emitter(float value);
+
 extern "C" void rdo_progress_emitter(
 	float value
 ) {
 	static float previous_value = 100.0f;
-	const uint32_t bar_size = 25;
-	auto parts = static_cast<uint32_t>(value / 4.0f);
-
-	char buffer[bar_size + 3];
-	buffer[0] = '[';
-
-	for (uint32_t i = 0; i < parts; i++)
-	{
-		buffer[i + 1] = '=';
-	}
-
-	for (uint32_t i = parts; i < bar_size; i++)
-	{
-		buffer[i + 1] = ' ';
-	}
-
-	buffer[bar_size + 1] = ']';
-	buffer[bar_size + 2] = '\0';
-
 	if (previous_value == 100.0f)
 	{
 		printf("\n\n");
@@ -69,8 +52,7 @@ extern "C" void rdo_progress_emitter(
 	}
 	previous_value = value;
 
-	printf("    Progress: %s %03.1f%%\r", buffer, static_cast<double>(value));
-	fflush(stdout);
+	progress_emitter(value);
 }
 
 static uint32_t init_rdo_context(
@@ -419,15 +401,11 @@ void rate_distortion_optimize(
 	uint32_t zblocks = (image.dim_z + ctx.bsd->zdim - 1u) / ctx.bsd->zdim;
 	uint32_t total_blocks = xblocks * yblocks * zblocks;
 
-	uint32_t blocks_per_task = total_blocks;
-	if (!ctx.config.rdo_no_multithreading)
-	{
-		blocks_per_task = astc::min(ctx.config.rdo_lookback, total_blocks);
-		// There is no way to losslessly partition the job (sequentially dependent on previous output)
-		// So we reserve only one task for each thread to minimize the quality impact.
-		uint32_t partitions = ctx.config.rdo_partitions ? ctx.config.rdo_partitions : ctx.thread_count;
-		blocks_per_task = astc::max(blocks_per_task, (total_blocks - 1) / partitions + 1);
-	}
+	uint32_t blocks_per_task = astc::min(ctx.config.rdo_lookback, total_blocks);
+	// There is no way to losslessly partition the job (sequentially dependent on previous output)
+	// So we reserve up to one task for each thread to minimize the quality impact.
+	uint32_t partitions = ctx.config.rdo_partitions ? ctx.config.rdo_partitions : ctx.thread_count;
+	blocks_per_task = astc::max(blocks_per_task, (total_blocks - 1) / partitions + 1);
 
 	uint32_t total_modified = 0;
 	while (true)
