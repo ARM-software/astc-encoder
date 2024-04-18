@@ -207,6 +207,16 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 $<${is_clang}:-fsanitize=address>)
     endif()
 
+    if(${ASTCENC_UBSAN})
+        target_compile_options(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                $<${is_clang}:-fsanitize=undefined>)
+
+        target_link_options(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                $<${is_clang}:-fsanitize=undefined>)
+    endif()
+
     if(NOT ${ASTCENC_INVARIANCE})
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE

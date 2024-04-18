@@ -16,6 +16,8 @@ The 4.8.0 release is a minor maintenance release.
 * **General:**
   * **Bug fix:** Native builds on macOS will now correctly build for arm64 when
     run outside of Rosetta on an Apple silicon device.
+  * **Feature:** Builds using Clang can now build with undefined behavior
+    sanitizer by setting `-DASTCENC_UBSAN=ON` on the CMake configure line.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.7.0

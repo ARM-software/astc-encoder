@@ -225,11 +225,15 @@ cd build
 ctest --verbose
 ```
 
-### Address sanitizer builds
+### Sanitizer builds
 
-We support building with ASAN on Linux and macOS when using a compiler that
-supports it. To build binaries with ASAN checking enabled add `-DASTCENC_ASAN=ON`
-to the CMake command line when configuring.
+We support building with sanitizers on Linux and macOS when using Clang.
+
+To build binaries with ASAN checking enabled add `-DASTCENC_ASAN=ON` to the
+CMake command line when configuring.
+
+To build binaries with UBSAN checking enabled add `-DASTCENC_UBSAN=ON` to the
+CMake command line when configuring.
 
 ### Android builds
 
@@ -297,4 +301,4 @@ details.
 
 - - -
 
-_Copyright © 2019-2023, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2024, Arm Limited and contributors. All rights reserved._
