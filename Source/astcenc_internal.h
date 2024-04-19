@@ -732,7 +732,11 @@ struct block_size_descriptor
  *
  * The @c data_[rgba] fields store the image data in an encoded SoA float form designed for easy
  * vectorization. Input data is converted to float and stored as values between 0 and 65535. LDR
- * data is stored as direct UNORM data, HDR data is stored as LNS data.
+ * data is stored as direct UNORM data, HDR data is stored as LNS data. They are allocated SIMD
+ * elements over-size to allow vectorized stores of unaligned and partial SIMD lanes (e.g. in a
+ * 6x6x6 block the final row write will read elements 210-217 (vec8) or 214-217 (vec4), which is
+ * two elements above the last real data element). The overspill values are never written to memory,
+ * and would be benign, but the padding avoids hitting undefined behavior.
  *
  * The @c rgb_lns and @c alpha_lns fields that assigned a per-texel use of HDR are only used during
  * decompression. The current compressor will always use HDR endpoint formats when in HDR mode.
@@ -740,16 +744,16 @@ struct block_size_descriptor
 struct image_block
 {
 	/** @brief The input (compress) or output (decompress) data for the red color component. */
-	ASTCENC_ALIGNAS float data_r[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_r[BLOCK_MAX_TEXELS + ASTCENC_SIMD_WIDTH - 1];
 
 	/** @brief The input (compress) or output (decompress) data for the green color component. */
-	ASTCENC_ALIGNAS float data_g[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_g[BLOCK_MAX_TEXELS + ASTCENC_SIMD_WIDTH - 1];
 
 	/** @brief The input (compress) or output (decompress) data for the blue color component. */
-	ASTCENC_ALIGNAS float data_b[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_b[BLOCK_MAX_TEXELS + ASTCENC_SIMD_WIDTH - 1];
 
 	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
-	ASTCENC_ALIGNAS float data_a[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float data_a[BLOCK_MAX_TEXELS + ASTCENC_SIMD_WIDTH - 1];
 
 	/** @brief The number of texels in the block. */
 	uint8_t texel_count;
