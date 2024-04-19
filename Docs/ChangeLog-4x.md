@@ -18,6 +18,8 @@ The 4.8.0 release is a minor maintenance release.
     run outside of Rosetta on an Apple silicon device.
   * **Feature:** Builds using Clang can now build with undefined behavior
     sanitizer by setting `-DASTCENC_UBSAN=ON` on the CMake configure line.
+  * **Feature:** Updated to Wuffs library 0.3.4, which ignores tRNS alpha chunks
+    for type 4 (LA) and 6 (RGBA) PNGs, to improve compatability with libpng.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.7.0
