@@ -461,8 +461,7 @@ static ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 	p = p & vint4(0xFFFF);
 
 	p = lsr<6>(p);
-
-	p = p | lsl<10>(vint4(14) - lz);
+	p = p | lsl<10>((vint4(14) - lz));
 
 	vint4 r = select(p, fp16_one, is_one);
 	r = select(r, fp16_small, is_small);
