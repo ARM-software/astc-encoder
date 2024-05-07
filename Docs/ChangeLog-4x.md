@@ -9,17 +9,19 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 4.8.0
 
-**Status:** In development ...
+**Status:** May 2024
 
 The 4.8.0 release is a minor maintenance release.
 
 * **General:**
   * **Bug fix:** Native builds on macOS will now correctly build for arm64 when
     run outside of Rosetta on an Apple silicon device.
+  * **Bug fix:** Multiple small improvements to remove use of undefined
+    language behavior, to improve support for deployment using Emscripten.
   * **Feature:** Builds using Clang can now build with undefined behavior
     sanitizer by setting `-DASTCENC_UBSAN=ON` on the CMake configure line.
   * **Feature:** Updated to Wuffs library 0.3.4, which ignores tRNS alpha chunks
-    for type 4 (LA) and 6 (RGBA) PNGs, to improve compatability with libpng.
+    for type 4 (LA) and 6 (RGBA) PNGs, to improve compatibility with libpng.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.7.0
