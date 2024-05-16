@@ -54,7 +54,7 @@ struct vfloat8
 	ASTCENC_SIMD_INLINE vfloat8() = default;
 
 	/**
-	 * @brief Construct from 4 values loaded from an unaligned address.
+	 * @brief Construct from 8 values loaded from an unaligned address.
 	 *
 	 * Consider using loada() which is better with vectors if data is aligned
 	 * to vector length.
@@ -183,7 +183,7 @@ struct vint8
 	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
-	 * Consider using vfloat4::zero() for constexpr zeros.
+	 * Consider using vfloat8::zero() for constexpr zeros.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
@@ -606,7 +606,7 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 }
 
 // ============================================================================
-// vfloat4 operators and functions
+// vfloat8 operators and functions
 // ============================================================================
 
 /**
