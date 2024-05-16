@@ -1146,7 +1146,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
  * @brief Return a vector of interleaved RGBA data.
  *
  * Input vectors have the value stored in the bottom 8 bits of each lane,
- * with high  bits set to zero.
+ * with high bits set to zero.
  *
  * Output vector stores a single RGBA texel packed in each lane.
  */
