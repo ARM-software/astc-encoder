@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2023 Arm Limited
+#  Copyright 2020-2024 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -72,6 +72,7 @@ if(${ASTCENC_ISA_SIMD} MATCHES "none")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=0
+            ASTCENC_SVE=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -81,15 +82,32 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=1
+            ASTCENC_SVE=0
             ASTCENC_SSE=0
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
             ASTCENC_F16C=0)
 
+elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_256")
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NEON=1
+            ASTCENC_SVE=8
+            ASTCENC_SSE=0
+            ASTCENC_AVX=0
+            ASTCENC_POPCNT=0
+            ASTCENC_F16C=0)
+
+    # Enable SVE
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            -march=armv8-a+sve -msve-vector-bits=256)
+
 elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=0
+            ASTCENC_SVE=0
             ASTCENC_SSE=20
             ASTCENC_AVX=0
             ASTCENC_POPCNT=0
@@ -103,6 +121,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=0
+            ASTCENC_SVE=0
             ASTCENC_SSE=41
             ASTCENC_AVX=0
             ASTCENC_POPCNT=1
@@ -116,6 +135,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=0
+            ASTCENC_SVE=0
             ASTCENC_SSE=41
             ASTCENC_AVX=2
             ASTCENC_POPCNT=1
