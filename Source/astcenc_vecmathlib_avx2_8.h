@@ -95,17 +95,11 @@ struct vfloat8
 	}
 
 	/**
-	 * @brief Get the scalar value of a single lane.
+	 * @brief Get the scalar from the bottom lane.
 	 */
-	template <int l> ASTCENC_SIMD_INLINE float lane() const
+	ASTCENC_SIMD_INLINE float lane0() const
 	{
-	#if !defined(__clang__) && defined(_MSC_VER)
-		return m.m256_f32[l];
-	#else
-		union { __m256 m; float f[8]; } cvt;
-		cvt.m = m;
-		return cvt.f[l];
-	#endif
+		return _mm256_cvtss_f32(m);
 	}
 
 	/**
@@ -211,17 +205,11 @@ struct vint8
 	}
 
 	/**
-	 * @brief Get the scalar from a single lane.
+	 * @brief Get the scalar from the bottom lane.
 	 */
-	template <int l> ASTCENC_SIMD_INLINE int lane() const
+	ASTCENC_SIMD_INLINE int lane0() const
 	{
-	#if !defined(__clang__) && defined(_MSC_VER)
-		return m.m256i_i32[l];
-	#else
-		union { __m256i m; int f[8]; } cvt;
-		cvt.m = m;
-		return cvt.f[l];
-	#endif
+		return _mm256_cvtsi256_si32(m);
 	}
 
 	/**
@@ -544,6 +532,14 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 }
 
 /**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
+{
+	return hmax(a).lane0();
+}
+
+/**
  * @brief Store a vector to a 16B aligned memory address.
  */
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
@@ -857,7 +853,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 {
-	return hmin(a).lane<0>();
+	return hmin(a).lane0();
 }
 
 /**
@@ -887,7 +883,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 {
-	return hmax(a).lane<0>();
+	return hmax(a).lane0();
 }
 
 /**

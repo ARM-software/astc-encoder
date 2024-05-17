@@ -1307,7 +1307,7 @@ unsigned int compute_ideal_endpoint_formats(
 		vmask lanes_min_error = vbest_ep_error == hmin(vbest_ep_error);
 		vbest_error_index = select(vint(0x7FFFFFFF), vbest_error_index, lanes_min_error);
 		vbest_error_index = hmin(vbest_error_index);
-		int best_error_index = vbest_error_index.lane<0>();
+		int best_error_index = vbest_error_index.lane0();
 
 		best_error_weights[i] = best_error_index;
 

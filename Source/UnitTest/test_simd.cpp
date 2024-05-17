@@ -199,14 +199,18 @@ TEST(vfloat, ChangeSign)
 	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f, -1.0f,  1.0f, -3.12f, 3.12f);
 	vfloat b(-1.0f, -1.0f,  3.12f, 3.12f, -1.0f, -1.0f,  3.12f, 3.12f);
 	vfloat r = change_sign(a, b);
-	EXPECT_EQ(r.lane<0>(),  1.0f);
-	EXPECT_EQ(r.lane<1>(), -1.0f);
-	EXPECT_EQ(r.lane<2>(), -3.12f);
-	EXPECT_EQ(r.lane<3>(),  3.12f);
-	EXPECT_EQ(r.lane<4>(),  1.0f);
-	EXPECT_EQ(r.lane<5>(), -1.0f);
-	EXPECT_EQ(r.lane<6>(), -3.12f);
-	EXPECT_EQ(r.lane<7>(),  3.12f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0],  1.0f);
+	EXPECT_EQ(ra[1], -1.0f);
+	EXPECT_EQ(ra[2], -3.12f);
+	EXPECT_EQ(ra[3],  3.12f);
+	EXPECT_EQ(ra[4],  1.0f);
+	EXPECT_EQ(ra[5], -1.0f);
+	EXPECT_EQ(ra[6], -3.12f);
+	EXPECT_EQ(ra[7],  3.12f);
 }
 
 /** @brief Test VLA atan. */
@@ -214,14 +218,18 @@ TEST(vfloat, Atan)
 {
 	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
 	vfloat r = atan(a);
-	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
-	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
-	EXPECT_NEAR(r.lane<2>(),  0.733616f, 0.005f);
-	EXPECT_NEAR(r.lane<3>(),  1.123040f, 0.005f);
-	EXPECT_NEAR(r.lane<4>(), -0.149061f, 0.005f);
-	EXPECT_NEAR(r.lane<5>(),  0.000000f, 0.005f);
-	EXPECT_NEAR(r.lane<6>(),  0.733616f, 0.005f);
-	EXPECT_NEAR(r.lane<7>(),  1.123040f, 0.005f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_NEAR(ra[0], -0.149061f, 0.005f);
+	EXPECT_NEAR(ra[1],  0.000000f, 0.005f);
+	EXPECT_NEAR(ra[2],  0.733616f, 0.005f);
+	EXPECT_NEAR(ra[3],  1.123040f, 0.005f);
+	EXPECT_NEAR(ra[4], -0.149061f, 0.005f);
+	EXPECT_NEAR(ra[5],  0.000000f, 0.005f);
+	EXPECT_NEAR(ra[6],  0.733616f, 0.005f);
+	EXPECT_NEAR(ra[7],  1.123040f, 0.005f);
 }
 
 /** @brief Test VLA atan2. */
@@ -230,14 +238,18 @@ TEST(vfloat, Atan2)
 	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
 	vfloat b(1.15f, -3.0f, -0.9f, 1.1f, 1.15f, -3.0f, -0.9f, 1.1f);
 	vfloat r = atan2(a, b);
-	EXPECT_NEAR(r.lane<0>(), -0.129816f, 0.005f);
-	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
-	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
-	EXPECT_NEAR(r.lane<3>(),  1.084357f, 0.005f);
-	EXPECT_NEAR(r.lane<4>(), -0.129816f, 0.005f);
-	EXPECT_NEAR(r.lane<5>(),  3.141592f, 0.005f);
-	EXPECT_NEAR(r.lane<6>(),  2.360342f, 0.005f);
-	EXPECT_NEAR(r.lane<7>(),  1.084357f, 0.005f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_NEAR(ra[0], -0.129816f, 0.005f);
+	EXPECT_NEAR(ra[1],  3.141592f, 0.005f);
+	EXPECT_NEAR(ra[2],  2.360342f, 0.005f);
+	EXPECT_NEAR(ra[3],  1.084357f, 0.005f);
+	EXPECT_NEAR(ra[4], -0.129816f, 0.005f);
+	EXPECT_NEAR(ra[5],  3.141592f, 0.005f);
+	EXPECT_NEAR(ra[6],  2.360342f, 0.005f);
+	EXPECT_NEAR(ra[7],  1.084357f, 0.005f);
 }
 
 #endif
@@ -2020,42 +2032,54 @@ TEST(vint4, interleave_rgba8)
 TEST(vfloat8, UnalignedLoad)
 {
 	vfloat8 a(&(f32_data[1]));
-	EXPECT_EQ(a.lane<0>(), 1.0f);
-	EXPECT_EQ(a.lane<1>(), 2.0f);
-	EXPECT_EQ(a.lane<2>(), 3.0f);
-	EXPECT_EQ(a.lane<3>(), 4.0f);
-	EXPECT_EQ(a.lane<4>(), 5.0f);
-	EXPECT_EQ(a.lane<5>(), 6.0f);
-	EXPECT_EQ(a.lane<6>(), 7.0f);
-	EXPECT_EQ(a.lane<7>(), 8.0f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 2.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 5.0f);
+	EXPECT_EQ(ra[5], 6.0f);
+	EXPECT_EQ(ra[6], 7.0f);
+	EXPECT_EQ(ra[7], 8.0f);
 }
 
 /** @brief Test scalar duplicated vfloat8 load. */
 TEST(vfloat8, ScalarDupLoad)
 {
 	vfloat8 a(1.1f);
-	EXPECT_EQ(a.lane<0>(), 1.1f);
-	EXPECT_EQ(a.lane<1>(), 1.1f);
-	EXPECT_EQ(a.lane<2>(), 1.1f);
-	EXPECT_EQ(a.lane<3>(), 1.1f);
-	EXPECT_EQ(a.lane<4>(), 1.1f);
-	EXPECT_EQ(a.lane<5>(), 1.1f);
-	EXPECT_EQ(a.lane<6>(), 1.1f);
-	EXPECT_EQ(a.lane<7>(), 1.1f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.1f);
+	EXPECT_EQ(ra[1], 1.1f);
+	EXPECT_EQ(ra[2], 1.1f);
+	EXPECT_EQ(ra[3], 1.1f);
+	EXPECT_EQ(ra[4], 1.1f);
+	EXPECT_EQ(ra[5], 1.1f);
+	EXPECT_EQ(ra[6], 1.1f);
+	EXPECT_EQ(ra[7], 1.1f);
 }
 
 /** @brief Test scalar vfloat8 load. */
 TEST(vfloat8, ScalarLoad)
 {
 	vfloat8 a(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
-	EXPECT_EQ(a.lane<0>(), 1.1f);
-	EXPECT_EQ(a.lane<1>(), 2.2f);
-	EXPECT_EQ(a.lane<2>(), 3.3f);
-	EXPECT_EQ(a.lane<3>(), 4.4f);
-	EXPECT_EQ(a.lane<4>(), 5.5f);
-	EXPECT_EQ(a.lane<5>(), 6.6f);
-	EXPECT_EQ(a.lane<6>(), 7.7f);
-	EXPECT_EQ(a.lane<7>(), 8.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.1f);
+	EXPECT_EQ(ra[1], 2.2f);
+	EXPECT_EQ(ra[2], 3.3f);
+	EXPECT_EQ(ra[3], 4.4f);
+	EXPECT_EQ(ra[4], 5.5f);
+	EXPECT_EQ(ra[5], 6.6f);
+	EXPECT_EQ(ra[6], 7.7f);
+	EXPECT_EQ(ra[7], 8.8f);
 }
 
 /** @brief Test copy vfloat8 load. */
@@ -2063,28 +2087,36 @@ TEST(vfloat8, CopyLoad)
 {
 	vfloat8 s(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
 	vfloat8 a(s.m);
-	EXPECT_EQ(a.lane<0>(), 1.1f);
-	EXPECT_EQ(a.lane<1>(), 2.2f);
-	EXPECT_EQ(a.lane<2>(), 3.3f);
-	EXPECT_EQ(a.lane<3>(), 4.4f);
-	EXPECT_EQ(a.lane<4>(), 5.5f);
-	EXPECT_EQ(a.lane<5>(), 6.6f);
-	EXPECT_EQ(a.lane<6>(), 7.7f);
-	EXPECT_EQ(a.lane<7>(), 8.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.1f);
+	EXPECT_EQ(ra[1], 2.2f);
+	EXPECT_EQ(ra[2], 3.3f);
+	EXPECT_EQ(ra[3], 4.4f);
+	EXPECT_EQ(ra[4], 5.5f);
+	EXPECT_EQ(ra[5], 6.6f);
+	EXPECT_EQ(ra[6], 7.7f);
+	EXPECT_EQ(ra[7], 8.8f);
 }
 
 /** @brief Test vfloat8 zero. */
 TEST(vfloat8, Zero)
 {
 	vfloat8 a = vfloat8::zero();
-	EXPECT_EQ(a.lane<0>(), 0.0f);
-	EXPECT_EQ(a.lane<1>(), 0.0f);
-	EXPECT_EQ(a.lane<2>(), 0.0f);
-	EXPECT_EQ(a.lane<3>(), 0.0f);
-	EXPECT_EQ(a.lane<4>(), 0.0f);
-	EXPECT_EQ(a.lane<5>(), 0.0f);
-	EXPECT_EQ(a.lane<6>(), 0.0f);
-	EXPECT_EQ(a.lane<7>(), 0.0f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.0f);
+	EXPECT_EQ(ra[3], 0.0f);
+	EXPECT_EQ(ra[4], 0.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.0f);
+	EXPECT_EQ(ra[7], 0.0f);
 }
 
 /** @brief Test vfloat8 load1. */
@@ -2092,42 +2124,54 @@ TEST(vfloat8, Load1)
 {
 	float s = 3.14f;
 	vfloat8 a = vfloat8::load1(&s);
-	EXPECT_EQ(a.lane<0>(), 3.14f);
-	EXPECT_EQ(a.lane<1>(), 3.14f);
-	EXPECT_EQ(a.lane<2>(), 3.14f);
-	EXPECT_EQ(a.lane<3>(), 3.14f);
-	EXPECT_EQ(a.lane<4>(), 3.14f);
-	EXPECT_EQ(a.lane<5>(), 3.14f);
-	EXPECT_EQ(a.lane<6>(), 3.14f);
-	EXPECT_EQ(a.lane<7>(), 3.14f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 3.14f);
+	EXPECT_EQ(ra[1], 3.14f);
+	EXPECT_EQ(ra[2], 3.14f);
+	EXPECT_EQ(ra[3], 3.14f);
+	EXPECT_EQ(ra[4], 3.14f);
+	EXPECT_EQ(ra[5], 3.14f);
+	EXPECT_EQ(ra[6], 3.14f);
+	EXPECT_EQ(ra[7], 3.14f);
 }
 
 /** @brief Test vfloat8 loada. */
 TEST(vfloat8, Loada)
 {
 	vfloat8 a = vfloat8::loada(&(f32_data[0]));
-	EXPECT_EQ(a.lane<0>(), 0.0f);
-	EXPECT_EQ(a.lane<1>(), 1.0f);
-	EXPECT_EQ(a.lane<2>(), 2.0f);
-	EXPECT_EQ(a.lane<3>(), 3.0f);
-	EXPECT_EQ(a.lane<4>(), 4.0f);
-	EXPECT_EQ(a.lane<5>(), 5.0f);
-	EXPECT_EQ(a.lane<6>(), 6.0f);
-	EXPECT_EQ(a.lane<7>(), 7.0f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 1.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 5.0f);
+	EXPECT_EQ(ra[6], 6.0f);
+	EXPECT_EQ(ra[7], 7.0f);
 }
 
 /** @brief Test vfloat8 lane_id. */
 TEST(vfloat8, LaneID)
 {
 	vfloat8 a = vfloat8::lane_id();
-	EXPECT_EQ(a.lane<0>(), 0.0f);
-	EXPECT_EQ(a.lane<1>(), 1.0f);
-	EXPECT_EQ(a.lane<2>(), 2.0f);
-	EXPECT_EQ(a.lane<3>(), 3.0f);
-	EXPECT_EQ(a.lane<4>(), 4.0f);
-	EXPECT_EQ(a.lane<5>(), 5.0f);
-	EXPECT_EQ(a.lane<6>(), 6.0f);
-	EXPECT_EQ(a.lane<7>(), 7.0f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 1.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 5.0f);
+	EXPECT_EQ(ra[6], 6.0f);
+	EXPECT_EQ(ra[7], 7.0f);
 }
 
 /** @brief Test vfloat8 add. */
@@ -2136,14 +2180,18 @@ TEST(vfloat8, vadd)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a + b;
-	EXPECT_EQ(a.lane<0>(), 1.0f + 0.1f);
-	EXPECT_EQ(a.lane<1>(), 2.0f + 0.2f);
-	EXPECT_EQ(a.lane<2>(), 3.0f + 0.3f);
-	EXPECT_EQ(a.lane<3>(), 4.0f + 0.4f);
-	EXPECT_EQ(a.lane<4>(), 5.0f + 0.5f);
-	EXPECT_EQ(a.lane<5>(), 6.0f + 0.6f);
-	EXPECT_EQ(a.lane<6>(), 7.0f + 0.7f);
-	EXPECT_EQ(a.lane<7>(), 8.0f + 0.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f + 0.1f);
+	EXPECT_EQ(ra[1], 2.0f + 0.2f);
+	EXPECT_EQ(ra[2], 3.0f + 0.3f);
+	EXPECT_EQ(ra[3], 4.0f + 0.4f);
+	EXPECT_EQ(ra[4], 5.0f + 0.5f);
+	EXPECT_EQ(ra[5], 6.0f + 0.6f);
+	EXPECT_EQ(ra[6], 7.0f + 0.7f);
+	EXPECT_EQ(ra[7], 8.0f + 0.8f);
 }
 
 /** @brief Test vfloat8 sub. */
@@ -2152,14 +2200,18 @@ TEST(vfloat8, vsub)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a - b;
-	EXPECT_EQ(a.lane<0>(), 1.0f - 0.1f);
-	EXPECT_EQ(a.lane<1>(), 2.0f - 0.2f);
-	EXPECT_EQ(a.lane<2>(), 3.0f - 0.3f);
-	EXPECT_EQ(a.lane<3>(), 4.0f - 0.4f);
-	EXPECT_EQ(a.lane<4>(), 5.0f - 0.5f);
-	EXPECT_EQ(a.lane<5>(), 6.0f - 0.6f);
-	EXPECT_EQ(a.lane<6>(), 7.0f - 0.7f);
-	EXPECT_EQ(a.lane<7>(), 8.0f - 0.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f - 0.1f);
+	EXPECT_EQ(ra[1], 2.0f - 0.2f);
+	EXPECT_EQ(ra[2], 3.0f - 0.3f);
+	EXPECT_EQ(ra[3], 4.0f - 0.4f);
+	EXPECT_EQ(ra[4], 5.0f - 0.5f);
+	EXPECT_EQ(ra[5], 6.0f - 0.6f);
+	EXPECT_EQ(ra[6], 7.0f - 0.7f);
+	EXPECT_EQ(ra[7], 8.0f - 0.8f);
 }
 
 /** @brief Test vfloat8 mul. */
@@ -2168,14 +2220,18 @@ TEST(vfloat8, vmul)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a * b;
-	EXPECT_EQ(a.lane<0>(), 1.0f * 0.1f);
-	EXPECT_EQ(a.lane<1>(), 2.0f * 0.2f);
-	EXPECT_EQ(a.lane<2>(), 3.0f * 0.3f);
-	EXPECT_EQ(a.lane<3>(), 4.0f * 0.4f);
-	EXPECT_EQ(a.lane<4>(), 5.0f * 0.5f);
-	EXPECT_EQ(a.lane<5>(), 6.0f * 0.6f);
-	EXPECT_EQ(a.lane<6>(), 7.0f * 0.7f);
-	EXPECT_EQ(a.lane<7>(), 8.0f * 0.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f * 0.1f);
+	EXPECT_EQ(ra[1], 2.0f * 0.2f);
+	EXPECT_EQ(ra[2], 3.0f * 0.3f);
+	EXPECT_EQ(ra[3], 4.0f * 0.4f);
+	EXPECT_EQ(ra[4], 5.0f * 0.5f);
+	EXPECT_EQ(ra[5], 6.0f * 0.6f);
+	EXPECT_EQ(ra[6], 7.0f * 0.7f);
+	EXPECT_EQ(ra[7], 8.0f * 0.8f);
 }
 
 /** @brief Test vfloat8 mul. */
@@ -2184,14 +2240,18 @@ TEST(vfloat8, vsmul)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	float b = 3.14f;
 	a = a * b;
-	EXPECT_EQ(a.lane<0>(), 1.0f * 3.14f);
-	EXPECT_EQ(a.lane<1>(), 2.0f * 3.14f);
-	EXPECT_EQ(a.lane<2>(), 3.0f * 3.14f);
-	EXPECT_EQ(a.lane<3>(), 4.0f * 3.14f);
-	EXPECT_EQ(a.lane<4>(), 5.0f * 3.14f);
-	EXPECT_EQ(a.lane<5>(), 6.0f * 3.14f);
-	EXPECT_EQ(a.lane<6>(), 7.0f * 3.14f);
-	EXPECT_EQ(a.lane<7>(), 8.0f * 3.14f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f * 3.14f);
+	EXPECT_EQ(ra[1], 2.0f * 3.14f);
+	EXPECT_EQ(ra[2], 3.0f * 3.14f);
+	EXPECT_EQ(ra[3], 4.0f * 3.14f);
+	EXPECT_EQ(ra[4], 5.0f * 3.14f);
+	EXPECT_EQ(ra[5], 6.0f * 3.14f);
+	EXPECT_EQ(ra[6], 7.0f * 3.14f);
+	EXPECT_EQ(ra[7], 8.0f * 3.14f);
 }
 
 /** @brief Test vfloat8 mul. */
@@ -2200,14 +2260,18 @@ TEST(vfloat8, svmul)
 	float a = 3.14f;
 	vfloat8 b(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	b = a * b;
-	EXPECT_EQ(b.lane<0>(), 3.14f * 1.0f);
-	EXPECT_EQ(b.lane<1>(), 3.14f * 2.0f);
-	EXPECT_EQ(b.lane<2>(), 3.14f * 3.0f);
-	EXPECT_EQ(b.lane<3>(), 3.14f * 4.0f);
-	EXPECT_EQ(b.lane<4>(), 3.14f * 5.0f);
-	EXPECT_EQ(b.lane<5>(), 3.14f * 6.0f);
-	EXPECT_EQ(b.lane<6>(), 3.14f * 7.0f);
-	EXPECT_EQ(b.lane<7>(), 3.14f * 8.0f);
+
+	alignas(32) float ra[8];
+	storea(b, ra);
+
+	EXPECT_EQ(ra[0], 3.14f * 1.0f);
+	EXPECT_EQ(ra[1], 3.14f * 2.0f);
+	EXPECT_EQ(ra[2], 3.14f * 3.0f);
+	EXPECT_EQ(ra[3], 3.14f * 4.0f);
+	EXPECT_EQ(ra[4], 3.14f * 5.0f);
+	EXPECT_EQ(ra[5], 3.14f * 6.0f);
+	EXPECT_EQ(ra[6], 3.14f * 7.0f);
+	EXPECT_EQ(ra[7], 3.14f * 8.0f);
 }
 
 /** @brief Test vfloat8 div. */
@@ -2216,14 +2280,18 @@ TEST(vfloat8, vdiv)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a / b;
-	EXPECT_EQ(a.lane<0>(), 1.0f / 0.1f);
-	EXPECT_EQ(a.lane<1>(), 2.0f / 0.2f);
-	EXPECT_EQ(a.lane<2>(), 3.0f / 0.3f);
-	EXPECT_EQ(a.lane<3>(), 4.0f / 0.4f);
-	EXPECT_EQ(a.lane<4>(), 5.0f / 0.5f);
-	EXPECT_EQ(a.lane<5>(), 6.0f / 0.6f);
-	EXPECT_EQ(a.lane<6>(), 7.0f / 0.7f);
-	EXPECT_EQ(a.lane<7>(), 8.0f / 0.8f);
+
+	alignas(32) float ra[8];
+	storea(a, ra);
+
+	EXPECT_EQ(ra[0], 1.0f / 0.1f);
+	EXPECT_EQ(ra[1], 2.0f / 0.2f);
+	EXPECT_EQ(ra[2], 3.0f / 0.3f);
+	EXPECT_EQ(ra[3], 4.0f / 0.4f);
+	EXPECT_EQ(ra[4], 5.0f / 0.5f);
+	EXPECT_EQ(ra[5], 6.0f / 0.6f);
+	EXPECT_EQ(ra[6], 7.0f / 0.7f);
+	EXPECT_EQ(ra[7], 8.0f / 0.8f);
 }
 
 /** @brief Test vfloat8 div. */
@@ -2233,14 +2301,17 @@ TEST(vfloat8, vsdiv)
 	float b = 3.14f;
 	vfloat8 r = a / b;
 
-	EXPECT_EQ(r.lane<0>(), 0.1f / 3.14f);
-	EXPECT_EQ(r.lane<1>(), 0.2f / 3.14f);
-	EXPECT_EQ(r.lane<2>(), 0.3f / 3.14f);
-	EXPECT_EQ(r.lane<3>(), 0.4f / 3.14f);
-	EXPECT_EQ(r.lane<4>(), 0.5f / 3.14f);
-	EXPECT_EQ(r.lane<5>(), 0.6f / 3.14f);
-	EXPECT_EQ(r.lane<6>(), 0.7f / 3.14f);
-	EXPECT_EQ(r.lane<7>(), 0.8f / 3.14f);
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.1f / 3.14f);
+	EXPECT_EQ(ra[1], 0.2f / 3.14f);
+	EXPECT_EQ(ra[2], 0.3f / 3.14f);
+	EXPECT_EQ(ra[3], 0.4f / 3.14f);
+	EXPECT_EQ(ra[4], 0.5f / 3.14f);
+	EXPECT_EQ(ra[5], 0.6f / 3.14f);
+	EXPECT_EQ(ra[6], 0.7f / 3.14f);
+	EXPECT_EQ(ra[7], 0.8f / 3.14f);
 }
 
 /** @brief Test vfloat8 div. */
@@ -2250,14 +2321,17 @@ TEST(vfloat8, svdiv)
 	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vfloat8 r = a / b;
 
-	EXPECT_EQ(r.lane<0>(), 3.14f / 0.1f);
-	EXPECT_EQ(r.lane<1>(), 3.14f / 0.2f);
-	EXPECT_EQ(r.lane<2>(), 3.14f / 0.3f);
-	EXPECT_EQ(r.lane<3>(), 3.14f / 0.4f);
-	EXPECT_EQ(r.lane<4>(), 3.14f / 0.5f);
-	EXPECT_EQ(r.lane<5>(), 3.14f / 0.6f);
-	EXPECT_EQ(r.lane<6>(), 3.14f / 0.7f);
-	EXPECT_EQ(r.lane<7>(), 3.14f / 0.8f);
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 3.14f / 0.1f);
+	EXPECT_EQ(ra[1], 3.14f / 0.2f);
+	EXPECT_EQ(ra[2], 3.14f / 0.3f);
+	EXPECT_EQ(ra[3], 3.14f / 0.4f);
+	EXPECT_EQ(ra[4], 3.14f / 0.5f);
+	EXPECT_EQ(ra[5], 3.14f / 0.6f);
+	EXPECT_EQ(ra[6], 3.14f / 0.7f);
+	EXPECT_EQ(ra[7], 3.14f / 0.8f);
 }
 
 /** @brief Test vfloat8 ceq. */
@@ -2364,14 +2438,18 @@ TEST(vfloat8, min)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vfloat8 r = min(a, b);
-	EXPECT_EQ(r.lane<0>(), 0.9f);
-	EXPECT_EQ(r.lane<1>(), 2.0f);
-	EXPECT_EQ(r.lane<2>(), 3.0f);
-	EXPECT_EQ(r.lane<3>(), 4.0f);
-	EXPECT_EQ(r.lane<4>(), 0.9f);
-	EXPECT_EQ(r.lane<5>(), 2.0f);
-	EXPECT_EQ(r.lane<6>(), 3.0f);
-	EXPECT_EQ(r.lane<7>(), 4.0f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.9f);
+	EXPECT_EQ(ra[1], 2.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 0.9f);
+	EXPECT_EQ(ra[5], 2.0f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 4.0f);
 }
 
 /** @brief Test vfloat8 max. */
@@ -2380,14 +2458,18 @@ TEST(vfloat8, max)
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vfloat8 r = max(a, b);
-	EXPECT_EQ(r.lane<0>(), 1.0f);
-	EXPECT_EQ(r.lane<1>(), 2.1f);
-	EXPECT_EQ(r.lane<2>(), 3.0f);
-	EXPECT_EQ(r.lane<3>(), 4.1f);
-	EXPECT_EQ(r.lane<4>(), 1.0f);
-	EXPECT_EQ(r.lane<5>(), 2.1f);
-	EXPECT_EQ(r.lane<6>(), 3.0f);
-	EXPECT_EQ(r.lane<7>(), 4.1f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 2.1f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 4.1f);
+	EXPECT_EQ(ra[4], 1.0f);
+	EXPECT_EQ(ra[5], 2.1f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 4.1f);
 }
 
 /** @brief Test vfloat8 clamp. */
@@ -2395,25 +2477,32 @@ TEST(vfloat8, clamp)
 {
 	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 r1 = clamp(2.1f, 3.0f, a1);
-	EXPECT_EQ(r1.lane<0>(), 2.1f);
-	EXPECT_EQ(r1.lane<1>(), 2.1f);
-	EXPECT_EQ(r1.lane<2>(), 3.0f);
-	EXPECT_EQ(r1.lane<3>(), 3.0f);
-	EXPECT_EQ(r1.lane<4>(), 2.1f);
-	EXPECT_EQ(r1.lane<5>(), 2.1f);
-	EXPECT_EQ(r1.lane<6>(), 3.0f);
-	EXPECT_EQ(r1.lane<7>(), 3.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 2.1f);
+	EXPECT_EQ(ra[1], 2.1f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 2.1f);
+	EXPECT_EQ(ra[5], 2.1f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 3.0f);
 
 	vfloat8 a2(1.0f, 2.0f, qnan, 4.0f, 1.0f, 2.0f, qnan, 4.0f);
 	vfloat8 r2 = clamp(2.1f, 3.0f, a2);
-	EXPECT_EQ(r2.lane<0>(), 2.1f);
-	EXPECT_EQ(r2.lane<1>(), 2.1f);
-	EXPECT_EQ(r2.lane<2>(), 2.1f);
-	EXPECT_EQ(r2.lane<3>(), 3.0f);
-	EXPECT_EQ(r2.lane<4>(), 2.1f);
-	EXPECT_EQ(r2.lane<5>(), 2.1f);
-	EXPECT_EQ(r2.lane<6>(), 2.1f);
-	EXPECT_EQ(r2.lane<7>(), 3.0f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 2.1f);
+	EXPECT_EQ(ra[1], 2.1f);
+	EXPECT_EQ(ra[2], 2.1f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 2.1f);
+	EXPECT_EQ(ra[5], 2.1f);
+	EXPECT_EQ(ra[6], 2.1f);
+	EXPECT_EQ(ra[7], 3.0f);
 }
 
 /** @brief Test vfloat8 clampz. */
@@ -2421,25 +2510,32 @@ TEST(vfloat8, clampz)
 {
 	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
 	vfloat8 r1 = clampz(3.0f, a1);
-	EXPECT_EQ(r1.lane<0>(), 0.0f);
-	EXPECT_EQ(r1.lane<1>(), 0.0f);
-	EXPECT_EQ(r1.lane<2>(), 0.1f);
-	EXPECT_EQ(r1.lane<3>(), 3.0f);
-	EXPECT_EQ(r1.lane<4>(), 0.0f);
-	EXPECT_EQ(r1.lane<5>(), 0.0f);
-	EXPECT_EQ(r1.lane<6>(), 0.1f);
-	EXPECT_EQ(r1.lane<7>(), 3.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.1f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 0.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.1f);
+	EXPECT_EQ(ra[7], 3.0f);
 
 	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
 	vfloat8 r2 = clampz(3.0f, a2);
-	EXPECT_EQ(r2.lane<0>(), 0.0f);
-	EXPECT_EQ(r2.lane<1>(), 0.0f);
-	EXPECT_EQ(r2.lane<2>(), 0.0f);
-	EXPECT_EQ(r2.lane<3>(), 3.0f);
-	EXPECT_EQ(r2.lane<4>(), 0.0f);
-	EXPECT_EQ(r2.lane<5>(), 0.0f);
-	EXPECT_EQ(r2.lane<6>(), 0.0f);
-	EXPECT_EQ(r2.lane<7>(), 3.0f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.0f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 0.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.0f);
+	EXPECT_EQ(ra[7], 3.0f);
 }
 
 /** @brief Test vfloat8 clampz. */
@@ -2447,25 +2543,32 @@ TEST(vfloat8, clampzo)
 {
 	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
 	vfloat8 r1 = clampzo(a1);
-	EXPECT_EQ(r1.lane<0>(), 0.0f);
-	EXPECT_EQ(r1.lane<1>(), 0.0f);
-	EXPECT_EQ(r1.lane<2>(), 0.1f);
-	EXPECT_EQ(r1.lane<3>(), 1.0f);
-	EXPECT_EQ(r1.lane<4>(), 0.0f);
-	EXPECT_EQ(r1.lane<5>(), 0.0f);
-	EXPECT_EQ(r1.lane<6>(), 0.1f);
-	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.1f);
+	EXPECT_EQ(ra[3], 1.0f);
+	EXPECT_EQ(ra[4], 0.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.1f);
+	EXPECT_EQ(ra[7], 1.0f);
 
 	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
 	vfloat8 r2 = clampzo(a2);
-	EXPECT_EQ(r2.lane<0>(), 0.0f);
-	EXPECT_EQ(r2.lane<1>(), 0.0f);
-	EXPECT_EQ(r2.lane<2>(), 0.0f);
-	EXPECT_EQ(r2.lane<3>(), 1.0f);
-	EXPECT_EQ(r2.lane<4>(), 0.0f);
-	EXPECT_EQ(r2.lane<5>(), 0.0f);
-	EXPECT_EQ(r2.lane<6>(), 0.0f);
-	EXPECT_EQ(r2.lane<7>(), 1.0f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.0f);
+	EXPECT_EQ(ra[3], 1.0f);
+	EXPECT_EQ(ra[4], 0.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.0f);
+	EXPECT_EQ(ra[7], 1.0f);
 }
 
 /** @brief Test vfloat8 abs. */
@@ -2473,14 +2576,18 @@ TEST(vfloat8, abs)
 {
 	vfloat8 a(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
 	vfloat8 r = abs(a);
-	EXPECT_EQ(r.lane<0>(), 1.0f);
-	EXPECT_EQ(r.lane<1>(), 0.0f);
-	EXPECT_EQ(r.lane<2>(), 0.1f);
-	EXPECT_EQ(r.lane<3>(), 4.0f);
-	EXPECT_EQ(r.lane<4>(), 1.0f);
-	EXPECT_EQ(r.lane<5>(), 0.0f);
-	EXPECT_EQ(r.lane<6>(), 0.1f);
-	EXPECT_EQ(r.lane<7>(), 4.0f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 0.1f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 1.0f);
+	EXPECT_EQ(ra[5], 0.0f);
+	EXPECT_EQ(ra[6], 0.1f);
+	EXPECT_EQ(ra[7], 4.0f);
 }
 
 /** @brief Test vfloat8 round. */
@@ -2488,14 +2595,18 @@ TEST(vfloat8, round)
 {
 	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r = round(a);
-	EXPECT_EQ(r.lane<0>(), 1.0f);
-	EXPECT_EQ(r.lane<1>(), 2.0f);
-	EXPECT_EQ(r.lane<2>(), 2.0f);
-	EXPECT_EQ(r.lane<3>(), 4.0f);
-	EXPECT_EQ(r.lane<4>(), 1.0f);
-	EXPECT_EQ(r.lane<5>(), 2.0f);
-	EXPECT_EQ(r.lane<6>(), 2.0f);
-	EXPECT_EQ(r.lane<7>(), 4.0f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 2.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 1.0f);
+	EXPECT_EQ(ra[5], 2.0f);
+	EXPECT_EQ(ra[6], 2.0f);
+	EXPECT_EQ(ra[7], 4.0f);
 }
 
 /** @brief Test vfloat8 hmin. */
@@ -2503,25 +2614,32 @@ TEST(vfloat8, hmin)
 {
 	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r1 = hmin(a1);
-	EXPECT_EQ(r1.lane<0>(), 1.1f);
-	EXPECT_EQ(r1.lane<1>(), 1.1f);
-	EXPECT_EQ(r1.lane<2>(), 1.1f);
-	EXPECT_EQ(r1.lane<3>(), 1.1f);
-	EXPECT_EQ(r1.lane<4>(), 1.1f);
-	EXPECT_EQ(r1.lane<5>(), 1.1f);
-	EXPECT_EQ(r1.lane<6>(), 1.1f);
-	EXPECT_EQ(r1.lane<7>(), 1.1f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 1.1f);
+	EXPECT_EQ(ra[1], 1.1f);
+	EXPECT_EQ(ra[2], 1.1f);
+	EXPECT_EQ(ra[3], 1.1f);
+	EXPECT_EQ(ra[4], 1.1f);
+	EXPECT_EQ(ra[5], 1.1f);
+	EXPECT_EQ(ra[6], 1.1f);
+	EXPECT_EQ(ra[7], 1.1f);
 
 	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	vfloat8 r2 = hmin(a2);
-	EXPECT_EQ(r2.lane<0>(), 0.2f);
-	EXPECT_EQ(r2.lane<1>(), 0.2f);
-	EXPECT_EQ(r2.lane<2>(), 0.2f);
-	EXPECT_EQ(r2.lane<3>(), 0.2f);
-	EXPECT_EQ(r2.lane<4>(), 0.2f);
-	EXPECT_EQ(r2.lane<5>(), 0.2f);
-	EXPECT_EQ(r2.lane<6>(), 0.2f);
-	EXPECT_EQ(r2.lane<7>(), 0.2f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 0.2f);
+	EXPECT_EQ(ra[1], 0.2f);
+	EXPECT_EQ(ra[2], 0.2f);
+	EXPECT_EQ(ra[3], 0.2f);
+	EXPECT_EQ(ra[4], 0.2f);
+	EXPECT_EQ(ra[5], 0.2f);
+	EXPECT_EQ(ra[6], 0.2f);
+	EXPECT_EQ(ra[7], 0.2f);
 }
 
 /** @brief Test vfloat8 hmin_s. */
@@ -2541,25 +2659,32 @@ TEST(vfloat8, hmax)
 {
 	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r1 = hmax(a1);
-	EXPECT_EQ(r1.lane<0>(), 4.0f);
-	EXPECT_EQ(r1.lane<1>(), 4.0f);
-	EXPECT_EQ(r1.lane<2>(), 4.0f);
-	EXPECT_EQ(r1.lane<3>(), 4.0f);
-	EXPECT_EQ(r1.lane<4>(), 4.0f);
-	EXPECT_EQ(r1.lane<5>(), 4.0f);
-	EXPECT_EQ(r1.lane<6>(), 4.0f);
-	EXPECT_EQ(r1.lane<7>(), 4.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 4.0f);
+	EXPECT_EQ(ra[1], 4.0f);
+	EXPECT_EQ(ra[2], 4.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 4.0f);
+	EXPECT_EQ(ra[6], 4.0f);
+	EXPECT_EQ(ra[7], 4.0f);
 
 	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	vfloat8 r2 = hmax(a2);
-	EXPECT_EQ(r2.lane<0>(), 1.6f);
-	EXPECT_EQ(r2.lane<1>(), 1.6f);
-	EXPECT_EQ(r2.lane<2>(), 1.6f);
-	EXPECT_EQ(r2.lane<3>(), 1.6f);
-	EXPECT_EQ(r2.lane<4>(), 1.6f);
-	EXPECT_EQ(r2.lane<5>(), 1.6f);
-	EXPECT_EQ(r2.lane<6>(), 1.6f);
-	EXPECT_EQ(r2.lane<7>(), 1.6f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 1.6f);
+	EXPECT_EQ(ra[1], 1.6f);
+	EXPECT_EQ(ra[2], 1.6f);
+	EXPECT_EQ(ra[3], 1.6f);
+	EXPECT_EQ(ra[4], 1.6f);
+	EXPECT_EQ(ra[5], 1.6f);
+	EXPECT_EQ(ra[6], 1.6f);
+	EXPECT_EQ(ra[7], 1.6f);
 }
 
 /** @brief Test vfloat8 hmax_s. */
@@ -2588,14 +2713,18 @@ TEST(vfloat8, sqrt)
 {
 	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 r = sqrt(a);
-	EXPECT_EQ(r.lane<0>(), std::sqrt(1.0f));
-	EXPECT_EQ(r.lane<1>(), std::sqrt(2.0f));
-	EXPECT_EQ(r.lane<2>(), std::sqrt(3.0f));
-	EXPECT_EQ(r.lane<3>(), std::sqrt(4.0f));
-	EXPECT_EQ(r.lane<4>(), std::sqrt(1.0f));
-	EXPECT_EQ(r.lane<5>(), std::sqrt(2.0f));
-	EXPECT_EQ(r.lane<6>(), std::sqrt(3.0f));
-	EXPECT_EQ(r.lane<7>(), std::sqrt(4.0f));
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], std::sqrt(1.0f));
+	EXPECT_EQ(ra[1], std::sqrt(2.0f));
+	EXPECT_EQ(ra[2], std::sqrt(3.0f));
+	EXPECT_EQ(ra[3], std::sqrt(4.0f));
+	EXPECT_EQ(ra[4], std::sqrt(1.0f));
+	EXPECT_EQ(ra[5], std::sqrt(2.0f));
+	EXPECT_EQ(ra[6], std::sqrt(3.0f));
+	EXPECT_EQ(ra[7], std::sqrt(4.0f));
 }
 
 /** @brief Test vfloat8 select. */
@@ -2610,25 +2739,32 @@ TEST(vfloat8, select)
 
 	// Select in one direction
 	vfloat8 r1 = select(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4.0f);
-	EXPECT_EQ(r1.lane<1>(), 3.0f);
-	EXPECT_EQ(r1.lane<2>(), 2.0f);
-	EXPECT_EQ(r1.lane<3>(), 1.0f);
-	EXPECT_EQ(r1.lane<4>(), 4.0f);
-	EXPECT_EQ(r1.lane<5>(), 3.0f);
-	EXPECT_EQ(r1.lane<6>(), 2.0f);
-	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 4.0f);
+	EXPECT_EQ(ra[1], 3.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 1.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 3.0f);
+	EXPECT_EQ(ra[6], 2.0f);
+	EXPECT_EQ(ra[7], 1.0f);
 
 	// Select in the other
 	vfloat8 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1.0f);
-	EXPECT_EQ(r2.lane<1>(), 2.0f);
-	EXPECT_EQ(r2.lane<2>(), 3.0f);
-	EXPECT_EQ(r2.lane<3>(), 4.0f);
-	EXPECT_EQ(r2.lane<4>(), 1.0f);
-	EXPECT_EQ(r2.lane<5>(), 2.0f);
-	EXPECT_EQ(r2.lane<6>(), 3.0f);
-	EXPECT_EQ(r2.lane<7>(), 4.0f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 2.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 1.0f);
+	EXPECT_EQ(ra[5], 2.0f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 4.0f);
 }
 
 /** @brief Test vfloat8 select MSB only. */
@@ -2643,25 +2779,32 @@ TEST(vfloat8, select_msb)
 
 	// Select in one direction
 	vfloat8 r1 = select(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4.0f);
-	EXPECT_EQ(r1.lane<1>(), 3.0f);
-	EXPECT_EQ(r1.lane<2>(), 2.0f);
-	EXPECT_EQ(r1.lane<3>(), 1.0f);
-	EXPECT_EQ(r1.lane<4>(), 4.0f);
-	EXPECT_EQ(r1.lane<5>(), 3.0f);
-	EXPECT_EQ(r1.lane<6>(), 2.0f);
-	EXPECT_EQ(r1.lane<7>(), 1.0f);
+
+	alignas(32) float ra[8];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 4.0f);
+	EXPECT_EQ(ra[1], 3.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 1.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 3.0f);
+	EXPECT_EQ(ra[6], 2.0f);
+	EXPECT_EQ(ra[7], 1.0f);
 
 	// Select in the other
 	vfloat8 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1.0f);
-	EXPECT_EQ(r2.lane<1>(), 2.0f);
-	EXPECT_EQ(r2.lane<2>(), 3.0f);
-	EXPECT_EQ(r2.lane<3>(), 4.0f);
-	EXPECT_EQ(r2.lane<4>(), 1.0f);
-	EXPECT_EQ(r2.lane<5>(), 2.0f);
-	EXPECT_EQ(r2.lane<6>(), 3.0f);
-	EXPECT_EQ(r2.lane<7>(), 4.0f);
+
+	storea(r2, ra);
+
+	EXPECT_EQ(ra[0], 1.0f);
+	EXPECT_EQ(ra[1], 2.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 4.0f);
+	EXPECT_EQ(ra[4], 1.0f);
+	EXPECT_EQ(ra[5], 2.0f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 4.0f);
 }
 
 /** @brief Test vfloat8 gatherf. */
@@ -2669,46 +2812,54 @@ TEST(vfloat8, gatherf)
 {
 	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
 	vfloat8 r = gatherf(f32_data, indices);
-	EXPECT_EQ(r.lane<0>(), 0.0f);
-	EXPECT_EQ(r.lane<1>(), 4.0f);
-	EXPECT_EQ(r.lane<2>(), 3.0f);
-	EXPECT_EQ(r.lane<3>(), 2.0f);
-	EXPECT_EQ(r.lane<4>(), 7.0f);
-	EXPECT_EQ(r.lane<5>(), 4.0f);
-	EXPECT_EQ(r.lane<6>(), 3.0f);
-	EXPECT_EQ(r.lane<7>(), 2.0f);
+
+	alignas(32) float ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 4.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 2.0f);
+	EXPECT_EQ(ra[4], 7.0f);
+	EXPECT_EQ(ra[5], 4.0f);
+	EXPECT_EQ(ra[6], 3.0f);
+	EXPECT_EQ(ra[7], 2.0f);
 }
 
 /** @brief Test vfloat8 store. */
 TEST(vfloat8, store)
 {
-	alignas(32) float out[9];
 	vfloat8 a(f32_data);
-	store(a, &(out[1]));
-	EXPECT_EQ(out[1], 0.0f);
-	EXPECT_EQ(out[2], 1.0f);
-	EXPECT_EQ(out[3], 2.0f);
-	EXPECT_EQ(out[4], 3.0f);
-	EXPECT_EQ(out[5], 4.0f);
-	EXPECT_EQ(out[6], 5.0f);
-	EXPECT_EQ(out[7], 6.0f);
-	EXPECT_EQ(out[8], 7.0f);
+
+	alignas(32) float ra[9];
+	storea(a, ra + 1);
+
+	EXPECT_EQ(ra[1], 0.0f);
+	EXPECT_EQ(ra[2], 1.0f);
+	EXPECT_EQ(ra[3], 2.0f);
+	EXPECT_EQ(ra[4], 3.0f);
+	EXPECT_EQ(ra[5], 4.0f);
+	EXPECT_EQ(ra[6], 5.0f);
+	EXPECT_EQ(ra[7], 6.0f);
+	EXPECT_EQ(ra[8], 7.0f);
 }
 
 /** @brief Test vfloat8 storea. */
 TEST(vfloat8, storea)
 {
-	alignas(32) float out[9];
 	vfloat8 a(f32_data);
-	store(a, out);
-	EXPECT_EQ(out[0], 0.0f);
-	EXPECT_EQ(out[1], 1.0f);
-	EXPECT_EQ(out[2], 2.0f);
-	EXPECT_EQ(out[3], 3.0f);
-	EXPECT_EQ(out[4], 4.0f);
-	EXPECT_EQ(out[5], 5.0f);
-	EXPECT_EQ(out[6], 6.0f);
-	EXPECT_EQ(out[7], 7.0f);
+
+	alignas(32) float ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 1.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 3.0f);
+	EXPECT_EQ(ra[4], 4.0f);
+	EXPECT_EQ(ra[5], 5.0f);
+	EXPECT_EQ(ra[6], 6.0f);
+	EXPECT_EQ(ra[7], 7.0f);
 }
 
 /** @brief Test vfloat8 float_to_int. */
@@ -2716,14 +2867,18 @@ TEST(vfloat8, float_to_int)
 {
 	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vint8 r = float_to_int(a);
-	EXPECT_EQ(r.lane<0>(), 1);
-	EXPECT_EQ(r.lane<1>(), 1);
-	EXPECT_EQ(r.lane<2>(), 1);
-	EXPECT_EQ(r.lane<3>(), 4);
-	EXPECT_EQ(r.lane<4>(), 1);
-	EXPECT_EQ(r.lane<5>(), 1);
-	EXPECT_EQ(r.lane<6>(), 1);
-	EXPECT_EQ(r.lane<7>(), 4);
+
+	alignas(32) int ra[8];
+	store(r, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 1);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 1);
+	EXPECT_EQ(ra[6], 1);
+	EXPECT_EQ(ra[7], 4);
 }
 
 // vint8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2732,56 +2887,72 @@ TEST(vfloat8, float_to_int)
 TEST(vint8, UnalignedLoad)
 {
 	vint8 a(&(s32_data[1]));
-	EXPECT_EQ(a.lane<0>(), 1);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 3);
-	EXPECT_EQ(a.lane<3>(), 4);
-	EXPECT_EQ(a.lane<4>(), 5);
-	EXPECT_EQ(a.lane<5>(), 6);
-	EXPECT_EQ(a.lane<6>(), 7);
-	EXPECT_EQ(a.lane<7>(), 8);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 5);
+	EXPECT_EQ(ra[5], 6);
+	EXPECT_EQ(ra[6], 7);
+	EXPECT_EQ(ra[7], 8);
 }
 
 /** @brief Test unaligned vint8 data load. */
 TEST(vint8, UnalignedLoad8)
 {
 	vint8 a(&(u8_data[1]));
-	EXPECT_EQ(a.lane<0>(), 1);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 3);
-	EXPECT_EQ(a.lane<3>(), 4);
-	EXPECT_EQ(a.lane<4>(), 5);
-	EXPECT_EQ(a.lane<5>(), 6);
-	EXPECT_EQ(a.lane<6>(), 7);
-	EXPECT_EQ(a.lane<7>(), 8);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 5);
+	EXPECT_EQ(ra[5], 6);
+	EXPECT_EQ(ra[6], 7);
+	EXPECT_EQ(ra[7], 8);
 }
 
 /** @brief Test scalar duplicated vint8 load. */
 TEST(vint8, ScalarDupLoad)
 {
 	vint8 a(42);
-	EXPECT_EQ(a.lane<0>(), 42);
-	EXPECT_EQ(a.lane<1>(), 42);
-	EXPECT_EQ(a.lane<2>(), 42);
-	EXPECT_EQ(a.lane<3>(), 42);
-	EXPECT_EQ(a.lane<4>(), 42);
-	EXPECT_EQ(a.lane<5>(), 42);
-	EXPECT_EQ(a.lane<6>(), 42);
-	EXPECT_EQ(a.lane<7>(), 42);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 42);
+	EXPECT_EQ(ra[1], 42);
+	EXPECT_EQ(ra[2], 42);
+	EXPECT_EQ(ra[3], 42);
+	EXPECT_EQ(ra[4], 42);
+	EXPECT_EQ(ra[5], 42);
+	EXPECT_EQ(ra[6], 42);
+	EXPECT_EQ(ra[7], 42);
 }
 
 /** @brief Test scalar vint8 load. */
 TEST(vint8, ScalarLoad)
 {
 	vint8 a(11, 22, 33, 44, 55, 66, 77, 88);
-	EXPECT_EQ(a.lane<0>(), 11);
-	EXPECT_EQ(a.lane<1>(), 22);
-	EXPECT_EQ(a.lane<2>(), 33);
-	EXPECT_EQ(a.lane<3>(), 44);
-	EXPECT_EQ(a.lane<4>(), 55);
-	EXPECT_EQ(a.lane<5>(), 66);
-	EXPECT_EQ(a.lane<6>(), 77);
-	EXPECT_EQ(a.lane<7>(), 88);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 11);
+	EXPECT_EQ(ra[1], 22);
+	EXPECT_EQ(ra[2], 33);
+	EXPECT_EQ(ra[3], 44);
+	EXPECT_EQ(ra[4], 55);
+	EXPECT_EQ(ra[5], 66);
+	EXPECT_EQ(ra[6], 77);
+	EXPECT_EQ(ra[7], 88);
 }
 
 /** @brief Test copy vint8 load. */
@@ -2789,28 +2960,36 @@ TEST(vint8, CopyLoad)
 {
 	vint8 s(11, 22, 33, 44, 55, 66, 77, 88);
 	vint8 a(s.m);
-	EXPECT_EQ(a.lane<0>(), 11);
-	EXPECT_EQ(a.lane<1>(), 22);
-	EXPECT_EQ(a.lane<2>(), 33);
-	EXPECT_EQ(a.lane<3>(), 44);
-	EXPECT_EQ(a.lane<4>(), 55);
-	EXPECT_EQ(a.lane<5>(), 66);
-	EXPECT_EQ(a.lane<6>(), 77);
-	EXPECT_EQ(a.lane<7>(), 88);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 11);
+	EXPECT_EQ(ra[1], 22);
+	EXPECT_EQ(ra[2], 33);
+	EXPECT_EQ(ra[3], 44);
+	EXPECT_EQ(ra[4], 55);
+	EXPECT_EQ(ra[5], 66);
+	EXPECT_EQ(ra[6], 77);
+	EXPECT_EQ(ra[7], 88);
 }
 
 /** @brief Test vint8 zero. */
 TEST(vint8, Zero)
 {
 	vint8 a = vint8::zero();
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 0);
-	EXPECT_EQ(a.lane<2>(), 0);
-	EXPECT_EQ(a.lane<3>(), 0);
-	EXPECT_EQ(a.lane<4>(), 0);
-	EXPECT_EQ(a.lane<5>(), 0);
-	EXPECT_EQ(a.lane<6>(), 0);
-	EXPECT_EQ(a.lane<7>(), 0);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 0);
+	EXPECT_EQ(ra[2], 0);
+	EXPECT_EQ(ra[3], 0);
+	EXPECT_EQ(ra[4], 0);
+	EXPECT_EQ(ra[5], 0);
+	EXPECT_EQ(ra[6], 0);
+	EXPECT_EQ(ra[7], 0);
 }
 
 /** @brief Test vint8 load1. */
@@ -2818,42 +2997,54 @@ TEST(vint8, Load1)
 {
 	int s = 42;
 	vint8 a = vint8::load1(&s);
-	EXPECT_EQ(a.lane<0>(), 42);
-	EXPECT_EQ(a.lane<1>(), 42);
-	EXPECT_EQ(a.lane<2>(), 42);
-	EXPECT_EQ(a.lane<3>(), 42);
-	EXPECT_EQ(a.lane<4>(), 42);
-	EXPECT_EQ(a.lane<5>(), 42);
-	EXPECT_EQ(a.lane<6>(), 42);
-	EXPECT_EQ(a.lane<7>(), 42);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 42);
+	EXPECT_EQ(ra[1], 42);
+	EXPECT_EQ(ra[2], 42);
+	EXPECT_EQ(ra[3], 42);
+	EXPECT_EQ(ra[4], 42);
+	EXPECT_EQ(ra[5], 42);
+	EXPECT_EQ(ra[6], 42);
+	EXPECT_EQ(ra[7], 42);
 }
 
 /** @brief Test vint8 loada. */
 TEST(vint8, Loada)
 {
 	vint8 a = vint8::loada(&(s32_data[0]));
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 2);
-	EXPECT_EQ(a.lane<3>(), 3);
-	EXPECT_EQ(a.lane<4>(), 4);
-	EXPECT_EQ(a.lane<5>(), 5);
-	EXPECT_EQ(a.lane<6>(), 6);
-	EXPECT_EQ(a.lane<7>(), 7);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 2);
+	EXPECT_EQ(ra[3], 3);
+	EXPECT_EQ(ra[4], 4);
+	EXPECT_EQ(ra[5], 5);
+	EXPECT_EQ(ra[6], 6);
+	EXPECT_EQ(ra[7], 7);
 }
 
 /** @brief Test vint8 lane_id. */
 TEST(vint8, LaneID)
 {
 	vint8 a = vint8::lane_id();
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 2);
-	EXPECT_EQ(a.lane<3>(), 3);
-	EXPECT_EQ(a.lane<4>(), 4);
-	EXPECT_EQ(a.lane<5>(), 5);
-	EXPECT_EQ(a.lane<6>(), 6);
-	EXPECT_EQ(a.lane<7>(), 7);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 2);
+	EXPECT_EQ(ra[3], 3);
+	EXPECT_EQ(ra[4], 4);
+	EXPECT_EQ(ra[5], 5);
+	EXPECT_EQ(ra[6], 6);
+	EXPECT_EQ(ra[7], 7);
 }
 
 /** @brief Test vint8 add. */
@@ -2862,14 +3053,18 @@ TEST(vint8, vadd)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a + b;
-	EXPECT_EQ(a.lane<0>(), 1 + 2);
-	EXPECT_EQ(a.lane<1>(), 2 + 3);
-	EXPECT_EQ(a.lane<2>(), 3 + 4);
-	EXPECT_EQ(a.lane<3>(), 4 + 5);
-	EXPECT_EQ(a.lane<4>(), 1 + 2);
-	EXPECT_EQ(a.lane<5>(), 2 + 3);
-	EXPECT_EQ(a.lane<6>(), 3 + 4);
-	EXPECT_EQ(a.lane<7>(), 4 + 5);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1 + 2);
+	EXPECT_EQ(ra[1], 2 + 3);
+	EXPECT_EQ(ra[2], 3 + 4);
+	EXPECT_EQ(ra[3], 4 + 5);
+	EXPECT_EQ(ra[4], 1 + 2);
+	EXPECT_EQ(ra[5], 2 + 3);
+	EXPECT_EQ(ra[6], 3 + 4);
+	EXPECT_EQ(ra[7], 4 + 5);
 }
 
 
@@ -2880,14 +3075,17 @@ TEST(vint8, vselfadd1)
 	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
 	a += b;
 
-	EXPECT_EQ(a.lane<0>(), 1 + 2);
-	EXPECT_EQ(a.lane<1>(), 2 + 3);
-	EXPECT_EQ(a.lane<2>(), 3 + 4);
-	EXPECT_EQ(a.lane<3>(), 4 + 5);
-	EXPECT_EQ(a.lane<4>(), 1 + 2);
-	EXPECT_EQ(a.lane<5>(), 2 + 3);
-	EXPECT_EQ(a.lane<6>(), 3 + 4);
-	EXPECT_EQ(a.lane<7>(), 4 + 5);
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1 + 2);
+	EXPECT_EQ(ra[1], 2 + 3);
+	EXPECT_EQ(ra[2], 3 + 4);
+	EXPECT_EQ(ra[3], 4 + 5);
+	EXPECT_EQ(ra[4], 1 + 2);
+	EXPECT_EQ(ra[5], 2 + 3);
+	EXPECT_EQ(ra[6], 3 + 4);
+	EXPECT_EQ(ra[7], 4 + 5);
 }
 
 /** @brief Test vint8 sub. */
@@ -2896,14 +3094,18 @@ TEST(vint8, vsub)
 	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
 	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
 	a = a - b;
-	EXPECT_EQ(a.lane<0>(), 1 - 2);
-	EXPECT_EQ(a.lane<1>(), 2 - 3);
-	EXPECT_EQ(a.lane<2>(), 4 - 3);
-	EXPECT_EQ(a.lane<3>(), 4 - 5);
-	EXPECT_EQ(a.lane<4>(), 1 - 2);
-	EXPECT_EQ(a.lane<5>(), 2 - 3);
-	EXPECT_EQ(a.lane<6>(), 4 - 3);
-	EXPECT_EQ(a.lane<7>(), 4 - 5);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1 - 2);
+	EXPECT_EQ(ra[1], 2 - 3);
+	EXPECT_EQ(ra[2], 4 - 3);
+	EXPECT_EQ(ra[3], 4 - 5);
+	EXPECT_EQ(ra[4], 1 - 2);
+	EXPECT_EQ(ra[5], 2 - 3);
+	EXPECT_EQ(ra[6], 4 - 3);
+	EXPECT_EQ(ra[7], 4 - 5);
 }
 
 /** @brief Test vint8 mul. */
@@ -2912,14 +3114,18 @@ TEST(vint8, vmul)
 	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
 	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
 	a = a * b;
-	EXPECT_EQ(a.lane<0>(), 1 * 2);
-	EXPECT_EQ(a.lane<1>(), 2 * 3);
-	EXPECT_EQ(a.lane<2>(), 4 * 3);
-	EXPECT_EQ(a.lane<3>(), 4 * 5);
-	EXPECT_EQ(a.lane<4>(), 1 * 2);
-	EXPECT_EQ(a.lane<5>(), 2 * 3);
-	EXPECT_EQ(a.lane<6>(), 4 * 3);
-	EXPECT_EQ(a.lane<7>(), 4 * 5);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1 * 2);
+	EXPECT_EQ(ra[1], 2 * 3);
+	EXPECT_EQ(ra[2], 4 * 3);
+	EXPECT_EQ(ra[3], 4 * 5);
+	EXPECT_EQ(ra[4], 1 * 2);
+	EXPECT_EQ(ra[5], 2 * 3);
+	EXPECT_EQ(ra[6], 4 * 3);
+	EXPECT_EQ(ra[7], 4 * 5);
 }
 
 /** @brief Test vint8 bitwise invert. */
@@ -2927,14 +3133,18 @@ TEST(vint8, bit_invert)
 {
 	vint8 a(-1, 0, 1, 2, -1, 0, 1, 2);
 	a = ~a;
-	EXPECT_EQ(a.lane<0>(), ~-1);
-	EXPECT_EQ(a.lane<1>(), ~0);
-	EXPECT_EQ(a.lane<2>(), ~1);
-	EXPECT_EQ(a.lane<3>(), ~2);
-	EXPECT_EQ(a.lane<4>(), ~-1);
-	EXPECT_EQ(a.lane<5>(), ~0);
-	EXPECT_EQ(a.lane<6>(), ~1);
-	EXPECT_EQ(a.lane<7>(), ~2);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], ~-1);
+	EXPECT_EQ(ra[1], ~0);
+	EXPECT_EQ(ra[2], ~1);
+	EXPECT_EQ(ra[3], ~2);
+	EXPECT_EQ(ra[4], ~-1);
+	EXPECT_EQ(ra[5], ~0);
+	EXPECT_EQ(ra[6], ~1);
+	EXPECT_EQ(ra[7], ~2);
 }
 
 /** @brief Test vint8 bitwise or. */
@@ -2943,14 +3153,18 @@ TEST(vint8, bit_vor)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a | b;
-	EXPECT_EQ(a.lane<0>(), 3);
-	EXPECT_EQ(a.lane<1>(), 3);
-	EXPECT_EQ(a.lane<2>(), 7);
-	EXPECT_EQ(a.lane<3>(), 5);
-	EXPECT_EQ(a.lane<4>(), 3);
-	EXPECT_EQ(a.lane<5>(), 3);
-	EXPECT_EQ(a.lane<6>(), 7);
-	EXPECT_EQ(a.lane<7>(), 5);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 3);
+	EXPECT_EQ(ra[1], 3);
+	EXPECT_EQ(ra[2], 7);
+	EXPECT_EQ(ra[3], 5);
+	EXPECT_EQ(ra[4], 3);
+	EXPECT_EQ(ra[5], 3);
+	EXPECT_EQ(ra[6], 7);
+	EXPECT_EQ(ra[7], 5);
 }
 
 /** @brief Test vint8 bitwise and. */
@@ -2959,14 +3173,18 @@ TEST(vint8, bit_vand)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a & b;
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 0);
-	EXPECT_EQ(a.lane<3>(), 4);
-	EXPECT_EQ(a.lane<4>(), 0);
-	EXPECT_EQ(a.lane<5>(), 2);
-	EXPECT_EQ(a.lane<6>(), 0);
-	EXPECT_EQ(a.lane<7>(), 4);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 0);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 0);
+	EXPECT_EQ(ra[5], 2);
+	EXPECT_EQ(ra[6], 0);
+	EXPECT_EQ(ra[7], 4);
 }
 
 /** @brief Test vint8 bitwise xor. */
@@ -2975,14 +3193,18 @@ TEST(vint8, bit_vxor)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a ^ b;
-	EXPECT_EQ(a.lane<0>(), 3);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 7);
-	EXPECT_EQ(a.lane<3>(), 1);
-	EXPECT_EQ(a.lane<4>(), 3);
-	EXPECT_EQ(a.lane<5>(), 1);
-	EXPECT_EQ(a.lane<6>(), 7);
-	EXPECT_EQ(a.lane<7>(), 1);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 3);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 7);
+	EXPECT_EQ(ra[3], 1);
+	EXPECT_EQ(ra[4], 3);
+	EXPECT_EQ(ra[5], 1);
+	EXPECT_EQ(ra[6], 7);
+	EXPECT_EQ(ra[7], 1);
 }
 
 /** @brief Test vint8 ceq. */
@@ -3071,14 +3293,18 @@ TEST(vint8, min)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
 	vint8 r = min(a, b);
-	EXPECT_EQ(r.lane<0>(), 0);
-	EXPECT_EQ(r.lane<1>(), 2);
-	EXPECT_EQ(r.lane<2>(), 3);
-	EXPECT_EQ(r.lane<3>(), 4);
-	EXPECT_EQ(r.lane<4>(), 0);
-	EXPECT_EQ(r.lane<5>(), 2);
-	EXPECT_EQ(r.lane<6>(), 3);
-	EXPECT_EQ(r.lane<7>(), 4);
+
+	alignas(32) int ra[8];
+	store(r, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 0);
+	EXPECT_EQ(ra[5], 2);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 4);
 }
 
 /** @brief Test vint8 max. */
@@ -3087,14 +3313,18 @@ TEST(vint8, max)
 	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
 	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
 	vint8 r = max(a, b);
-	EXPECT_EQ(r.lane<0>(), 1);
-	EXPECT_EQ(r.lane<1>(), 3);
-	EXPECT_EQ(r.lane<2>(), 3);
-	EXPECT_EQ(r.lane<3>(), 5);
-	EXPECT_EQ(r.lane<4>(), 1);
-	EXPECT_EQ(r.lane<5>(), 3);
-	EXPECT_EQ(r.lane<6>(), 3);
-	EXPECT_EQ(r.lane<7>(), 5);
+
+	alignas(32) int ra[8];
+	store(r, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 3);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 5);
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 3);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 5);
 }
 
 /** @brief Test vint8 lsl. */
@@ -3102,35 +3332,44 @@ TEST(vint8, lsl)
 {
 	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
 	a = lsl<0>(a);
-	EXPECT_EQ(a.lane<0>(), 1);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 4);
-	EXPECT_EQ(a.lane<3>(), static_cast<int>(0xFFFFFFFC));
-	EXPECT_EQ(a.lane<4>(), 1);
-	EXPECT_EQ(a.lane<5>(), 2);
-	EXPECT_EQ(a.lane<6>(), 4);
-	EXPECT_EQ(a.lane<7>(), static_cast<int>(0xFFFFFFFC));
 
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 4);
+	EXPECT_EQ(ra[3], static_cast<int>(0xFFFFFFFC));
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 2);
+	EXPECT_EQ(ra[6], 4);
+	EXPECT_EQ(ra[7], static_cast<int>(0xFFFFFFFC));
 
 	a = lsl<1>(a);
-	EXPECT_EQ(a.lane<0>(), 2);
-	EXPECT_EQ(a.lane<1>(), 4);
-	EXPECT_EQ(a.lane<2>(), 8);
-	EXPECT_EQ(a.lane<3>(), static_cast<int>(0xFFFFFFF8));
-	EXPECT_EQ(a.lane<4>(), 2);
-	EXPECT_EQ(a.lane<5>(), 4);
-	EXPECT_EQ(a.lane<6>(), 8);
-	EXPECT_EQ(a.lane<7>(), static_cast<int>(0xFFFFFFF8));
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 2);
+	EXPECT_EQ(ra[1], 4);
+	EXPECT_EQ(ra[2], 8);
+	EXPECT_EQ(ra[3], static_cast<int>(0xFFFFFFF8));
+	EXPECT_EQ(ra[4], 2);
+	EXPECT_EQ(ra[5], 4);
+	EXPECT_EQ(ra[6], 8);
+	EXPECT_EQ(ra[7], static_cast<int>(0xFFFFFFF8));
 
 	a = lsl<2>(a);
-	EXPECT_EQ(a.lane<0>(), 8);
-	EXPECT_EQ(a.lane<1>(), 16);
-	EXPECT_EQ(a.lane<2>(), 32);
-	EXPECT_EQ(a.lane<3>(), static_cast<int>(0xFFFFFFE0));
-	EXPECT_EQ(a.lane<4>(), 8);
-	EXPECT_EQ(a.lane<5>(), 16);
-	EXPECT_EQ(a.lane<6>(), 32);
-	EXPECT_EQ(a.lane<7>(), static_cast<int>(0xFFFFFFE0));
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 8);
+	EXPECT_EQ(ra[1], 16);
+	EXPECT_EQ(ra[2], 32);
+	EXPECT_EQ(ra[3], static_cast<int>(0xFFFFFFE0));
+	EXPECT_EQ(ra[4], 8);
+	EXPECT_EQ(ra[5], 16);
+	EXPECT_EQ(ra[6], 32);
+	EXPECT_EQ(ra[7], static_cast<int>(0xFFFFFFE0));
 }
 
 /** @brief Test vint8 lsr. */
@@ -3138,35 +3377,44 @@ TEST(vint8, lsr)
 {
 	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
 	a = lsr<0>(a);
-	EXPECT_EQ(a.lane<0>(), 1);
-	EXPECT_EQ(a.lane<1>(), 2);
-	EXPECT_EQ(a.lane<2>(), 4);
-	EXPECT_EQ(a.lane<3>(), static_cast<int>(0xFFFFFFFC));
-	EXPECT_EQ(a.lane<4>(), 1);
-	EXPECT_EQ(a.lane<5>(), 2);
-	EXPECT_EQ(a.lane<6>(), 4);
-	EXPECT_EQ(a.lane<7>(), static_cast<int>(0xFFFFFFFC));
 
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 4);
+	EXPECT_EQ(ra[3], static_cast<int>(0xFFFFFFFC));
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 2);
+	EXPECT_EQ(ra[6], 4);
+	EXPECT_EQ(ra[7], static_cast<int>(0xFFFFFFFC));
 
 	a = lsr<1>(a);
-	EXPECT_EQ(a.lane<0>(), 0);
-	EXPECT_EQ(a.lane<1>(), 1);
-	EXPECT_EQ(a.lane<2>(), 2);
-	EXPECT_EQ(a.lane<3>(), 0x7FFFFFFE);
-	EXPECT_EQ(a.lane<4>(), 0);
-	EXPECT_EQ(a.lane<5>(), 1);
-	EXPECT_EQ(a.lane<6>(), 2);
-	EXPECT_EQ(a.lane<7>(), 0x7FFFFFFE);
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 2);
+	EXPECT_EQ(ra[3], 0x7FFFFFFE);
+	EXPECT_EQ(ra[4], 0);
+	EXPECT_EQ(ra[5], 1);
+	EXPECT_EQ(ra[6], 2);
+	EXPECT_EQ(ra[7], 0x7FFFFFFE);
 
 	a = lsr<2>(a);
-	EXPECT_EQ(a.lane<0>(),  0);
-	EXPECT_EQ(a.lane<1>(),  0);
-	EXPECT_EQ(a.lane<2>(),  0);
-	EXPECT_EQ(a.lane<3>(),  0x1FFFFFFF);
-	EXPECT_EQ(a.lane<4>(),  0);
-	EXPECT_EQ(a.lane<5>(),  0);
-	EXPECT_EQ(a.lane<6>(),  0);
-	EXPECT_EQ(a.lane<7>(),  0x1FFFFFFF);
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 0);
+	EXPECT_EQ(ra[2], 0);
+	EXPECT_EQ(ra[3], 0x1FFFFFFF);
+	EXPECT_EQ(ra[4], 0);
+	EXPECT_EQ(ra[5], 0);
+	EXPECT_EQ(ra[6], 0);
+	EXPECT_EQ(ra[7], 0x1FFFFFFF);
 }
 
 /** @brief Test vint8 asr. */
@@ -3174,35 +3422,45 @@ TEST(vint8, asr)
 {
 	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
 	a = asr<0>(a);
-	EXPECT_EQ(a.lane<0>(),  1);
-	EXPECT_EQ(a.lane<1>(),  2);
-	EXPECT_EQ(a.lane<2>(),  4);
-	EXPECT_EQ(a.lane<3>(), -4);
-	EXPECT_EQ(a.lane<4>(),  1);
-	EXPECT_EQ(a.lane<5>(),  2);
-	EXPECT_EQ(a.lane<6>(),  4);
-	EXPECT_EQ(a.lane<7>(), -4);
+
+	alignas(32) int ra[8];
+	store(a, ra);
+
+	EXPECT_EQ(ra[0],  1);
+	EXPECT_EQ(ra[1],  2);
+	EXPECT_EQ(ra[2],  4);
+	EXPECT_EQ(ra[3], -4);
+	EXPECT_EQ(ra[4],  1);
+	EXPECT_EQ(ra[5],  2);
+	EXPECT_EQ(ra[6],  4);
+	EXPECT_EQ(ra[7], -4);
 
 	a = asr<1>(a);
-	EXPECT_EQ(a.lane<0>(),  0);
-	EXPECT_EQ(a.lane<1>(),  1);
-	EXPECT_EQ(a.lane<2>(),  2);
-	EXPECT_EQ(a.lane<3>(), -2);
-	EXPECT_EQ(a.lane<4>(),  0);
-	EXPECT_EQ(a.lane<5>(),  1);
-	EXPECT_EQ(a.lane<6>(),  2);
-	EXPECT_EQ(a.lane<7>(), -2);
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0],  0);
+	EXPECT_EQ(ra[1],  1);
+	EXPECT_EQ(ra[2],  2);
+	EXPECT_EQ(ra[3], -2);
+	EXPECT_EQ(ra[4],  0);
+	EXPECT_EQ(ra[5],  1);
+	EXPECT_EQ(ra[6],  2);
+	EXPECT_EQ(ra[7], -2);
 
 	// Note - quirk of asr is that you will get "stuck" at -1
 	a = asr<2>(a);
-	EXPECT_EQ(a.lane<0>(),  0);
-	EXPECT_EQ(a.lane<1>(),  0);
-	EXPECT_EQ(a.lane<2>(),  0);
-	EXPECT_EQ(a.lane<3>(), -1);
-	EXPECT_EQ(a.lane<4>(),  0);
-	EXPECT_EQ(a.lane<5>(),  0);
-	EXPECT_EQ(a.lane<6>(),  0);
-	EXPECT_EQ(a.lane<7>(), -1);
+
+	store(a, ra);
+
+	EXPECT_EQ(ra[0],  0);
+	EXPECT_EQ(ra[1],  0);
+	EXPECT_EQ(ra[2],  0);
+	EXPECT_EQ(ra[3], -1);
+	EXPECT_EQ(ra[4],  0);
+	EXPECT_EQ(ra[5],  0);
+	EXPECT_EQ(ra[6],  0);
+	EXPECT_EQ(ra[7], -1);
 }
 
 /** @brief Test vint8 hmin. */
@@ -3210,25 +3468,32 @@ TEST(vint8, hmin)
 {
 	vint8 a1(1, 2, 1, 2, 1, 2, 1, 2);
 	vint8 r1 = hmin(a1);
-	EXPECT_EQ(r1.lane<0>(), 1);
-	EXPECT_EQ(r1.lane<1>(), 1);
-	EXPECT_EQ(r1.lane<2>(), 1);
-	EXPECT_EQ(r1.lane<3>(), 1);
-	EXPECT_EQ(r1.lane<4>(), 1);
-	EXPECT_EQ(r1.lane<5>(), 1);
-	EXPECT_EQ(r1.lane<6>(), 1);
-	EXPECT_EQ(r1.lane<7>(), 1);
+
+	alignas(32) int ra[8];
+	store(r1, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 1);
+	EXPECT_EQ(ra[2], 1);
+	EXPECT_EQ(ra[3], 1);
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 1);
+	EXPECT_EQ(ra[6], 1);
+	EXPECT_EQ(ra[7], 1);
 
 	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
 	vint8 r2 = hmin(a2);
-	EXPECT_EQ(r2.lane<0>(), -1);
-	EXPECT_EQ(r2.lane<1>(), -1);
-	EXPECT_EQ(r2.lane<2>(), -1);
-	EXPECT_EQ(r2.lane<3>(), -1);
-	EXPECT_EQ(r2.lane<4>(), -1);
-	EXPECT_EQ(r2.lane<5>(), -1);
-	EXPECT_EQ(r2.lane<6>(), -1);
-	EXPECT_EQ(r2.lane<7>(), -1);
+
+	store(r2, ra);
+
+	EXPECT_EQ(ra[0], -1);
+	EXPECT_EQ(ra[1], -1);
+	EXPECT_EQ(ra[2], -1);
+	EXPECT_EQ(ra[3], -1);
+	EXPECT_EQ(ra[4], -1);
+	EXPECT_EQ(ra[5], -1);
+	EXPECT_EQ(ra[6], -1);
+	EXPECT_EQ(ra[7], -1);
 }
 
 /** @brief Test vint8 hmax. */
@@ -3236,25 +3501,32 @@ TEST(vint8, hmax)
 {
 	vint8 a1(1, 2, 1, 2, 1, 3, 1, 2);
 	vint8 r1 = hmax(a1);
-	EXPECT_EQ(r1.lane<0>(), 3);
-	EXPECT_EQ(r1.lane<1>(), 3);
-	EXPECT_EQ(r1.lane<2>(), 3);
-	EXPECT_EQ(r1.lane<3>(), 3);
-	EXPECT_EQ(r1.lane<4>(), 3);
-	EXPECT_EQ(r1.lane<5>(), 3);
-	EXPECT_EQ(r1.lane<6>(), 3);
-	EXPECT_EQ(r1.lane<7>(), 3);
+
+	alignas(32) int ra[8];
+	store(r1, ra);
+
+	EXPECT_EQ(ra[0], 3);
+	EXPECT_EQ(ra[1], 3);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 3);
+	EXPECT_EQ(ra[4], 3);
+	EXPECT_EQ(ra[5], 3);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 3);
 
 	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
 	vint8 r2 = hmax(a2);
-	EXPECT_EQ(r2.lane<0>(), 5);
-	EXPECT_EQ(r2.lane<1>(), 5);
-	EXPECT_EQ(r2.lane<2>(), 5);
-	EXPECT_EQ(r2.lane<3>(), 5);
-	EXPECT_EQ(r2.lane<4>(), 5);
-	EXPECT_EQ(r2.lane<5>(), 5);
-	EXPECT_EQ(r2.lane<6>(), 5);
-	EXPECT_EQ(r2.lane<7>(), 5);
+
+	store(r2, ra);
+
+	EXPECT_EQ(ra[0], 5);
+	EXPECT_EQ(ra[1], 5);
+	EXPECT_EQ(ra[2], 5);
+	EXPECT_EQ(ra[3], 5);
+	EXPECT_EQ(ra[4], 5);
+	EXPECT_EQ(ra[5], 5);
+	EXPECT_EQ(ra[6], 5);
+	EXPECT_EQ(ra[7], 5);
 }
 
 /** @brief Test vint8 storea. */
@@ -3276,17 +3548,19 @@ TEST(vint8, storea)
 /** @brief Test vint8 store. */
 TEST(vint8, store)
 {
-	alignas(32) int out[9];
 	vint8 a(s32_data);
-	store(a, out + 1);
-	EXPECT_EQ(out[1], 0);
-	EXPECT_EQ(out[2], 1);
-	EXPECT_EQ(out[3], 2);
-	EXPECT_EQ(out[4], 3);
-	EXPECT_EQ(out[5], 4);
-	EXPECT_EQ(out[6], 5);
-	EXPECT_EQ(out[7], 6);
-	EXPECT_EQ(out[8], 7);
+
+	alignas(32) int ra[9];
+	store(a, ra + 1);
+
+	EXPECT_EQ(ra[1], 0);
+	EXPECT_EQ(ra[2], 1);
+	EXPECT_EQ(ra[3], 2);
+	EXPECT_EQ(ra[4], 3);
+	EXPECT_EQ(ra[5], 4);
+	EXPECT_EQ(ra[6], 5);
+	EXPECT_EQ(ra[7], 6);
+	EXPECT_EQ(ra[8], 7);
 }
 
 /** @brief Test vint8 store_nbytes. */
@@ -3370,14 +3644,18 @@ TEST(vint8, gatheri)
 {
 	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
 	vint8 r = gatheri(s32_data, indices);
-	EXPECT_EQ(r.lane<0>(), 0);
-	EXPECT_EQ(r.lane<1>(), 4);
-	EXPECT_EQ(r.lane<2>(), 3);
-	EXPECT_EQ(r.lane<3>(), 2);
-	EXPECT_EQ(r.lane<4>(), 7);
-	EXPECT_EQ(r.lane<5>(), 4);
-	EXPECT_EQ(r.lane<6>(), 3);
-	EXPECT_EQ(r.lane<7>(), 2);
+
+	alignas(32) int ra[8];
+	store(r, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 4);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 2);
+	EXPECT_EQ(ra[4], 7);
+	EXPECT_EQ(ra[5], 4);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 2);
 }
 
 /** @brief Test vint8 pack_low_bytes. */
@@ -3385,8 +3663,12 @@ TEST(vint8, pack_low_bytes)
 {
 	vint8 a(1, 2, 3, 4, 2, 3, 4, 5);
 	vint8 r = pack_low_bytes(a);
-	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
-	EXPECT_EQ(r.lane<1>(), (5 << 24) | (4 << 16) | (3  << 8) | (2 << 0));
+
+	alignas(32) int ra[8];
+	store(r, ra);
+
+	EXPECT_EQ(ra[0], (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
+	EXPECT_EQ(ra[1], (5 << 24) | (4 << 16) | (3  << 8) | (2 << 0));
 }
 
 /** @brief Test vint8 select. */
@@ -3400,24 +3682,31 @@ TEST(vint8, select)
 	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);
 
 	vint8 r1 = select(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4);
-	EXPECT_EQ(r1.lane<1>(), 3);
-	EXPECT_EQ(r1.lane<2>(), 2);
-	EXPECT_EQ(r1.lane<3>(), 1);
-	EXPECT_EQ(r1.lane<4>(), 4);
-	EXPECT_EQ(r1.lane<5>(), 3);
-	EXPECT_EQ(r1.lane<6>(), 2);
-	EXPECT_EQ(r1.lane<7>(), 1);
+
+	alignas(32) int ra[8];
+	store(r1, ra);
+
+	EXPECT_EQ(ra[0], 4);
+	EXPECT_EQ(ra[1], 3);
+	EXPECT_EQ(ra[2], 2);
+	EXPECT_EQ(ra[3], 1);
+	EXPECT_EQ(ra[4], 4);
+	EXPECT_EQ(ra[5], 3);
+	EXPECT_EQ(ra[6], 2);
+	EXPECT_EQ(ra[7], 1);
 
 	vint8 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1);
-	EXPECT_EQ(r2.lane<1>(), 2);
-	EXPECT_EQ(r2.lane<2>(), 3);
-	EXPECT_EQ(r2.lane<3>(), 4);
-	EXPECT_EQ(r2.lane<4>(), 1);
-	EXPECT_EQ(r2.lane<5>(), 2);
-	EXPECT_EQ(r2.lane<6>(), 3);
-	EXPECT_EQ(r2.lane<7>(), 4);
+
+	store(r2, ra);
+
+	EXPECT_EQ(ra[0], 1);
+	EXPECT_EQ(ra[1], 2);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 4);
+	EXPECT_EQ(ra[4], 1);
+	EXPECT_EQ(ra[5], 2);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 4);
 }
 
 // vmask8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3507,14 +3796,17 @@ TEST(vint8, vtable_8bt_32bi_32entry)
 
 	vint8 result = vtable_8bt_32bi(table0p, table1p, index);
 
-	EXPECT_EQ(result.lane<0>(),  3);
-	EXPECT_EQ(result.lane<1>(),  4);
-	EXPECT_EQ(result.lane<2>(),  7);
-	EXPECT_EQ(result.lane<3>(), 12);
-	EXPECT_EQ(result.lane<4>(), 19);
-	EXPECT_EQ(result.lane<5>(), 23);
-	EXPECT_EQ(result.lane<6>(), 20);
-	EXPECT_EQ(result.lane<7>(), 28);
+	alignas(32) int ra[8];
+	store(result, ra);
+
+	EXPECT_EQ(ra[0],  3);
+	EXPECT_EQ(ra[1],  4);
+	EXPECT_EQ(ra[2],  7);
+	EXPECT_EQ(ra[3], 12);
+	EXPECT_EQ(ra[4], 19);
+	EXPECT_EQ(ra[5], 23);
+	EXPECT_EQ(ra[6], 20);
+	EXPECT_EQ(ra[7], 28);
 }
 
 /** @brief Test vint4 table permute. */
@@ -3532,14 +3824,17 @@ TEST(vint8, vtable_8bt_32bi_64entry)
 
 	vint8 result = vtable_8bt_32bi(table0p, table1p, table2p, table3p, index);
 
-	EXPECT_EQ(result.lane<0>(),  3);
-	EXPECT_EQ(result.lane<1>(),  4);
-	EXPECT_EQ(result.lane<2>(),  7);
-	EXPECT_EQ(result.lane<3>(), 12);
-	EXPECT_EQ(result.lane<4>(), 19);
-	EXPECT_EQ(result.lane<5>(), 23);
-	EXPECT_EQ(result.lane<6>(), 37);
-	EXPECT_EQ(result.lane<7>(), 60);
+	alignas(32) int ra[8];
+	store(result, ra);
+
+	EXPECT_EQ(ra[0],  3);
+	EXPECT_EQ(ra[1],  4);
+	EXPECT_EQ(ra[2],  7);
+	EXPECT_EQ(ra[3], 12);
+	EXPECT_EQ(ra[4], 19);
+	EXPECT_EQ(ra[5], 23);
+	EXPECT_EQ(ra[6], 37);
+	EXPECT_EQ(ra[7], 60);
 }
 
 #endif
