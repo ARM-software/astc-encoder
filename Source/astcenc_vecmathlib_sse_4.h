@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2023 Arm Limited
+// Copyright 2019-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1307,7 +1307,11 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
  */
 ASTCENC_SIMD_INLINE int popcount(uint64_t v)
 {
+#if !defined(__x86_64__) && !defined(_M_AMD64)
+	return static_cast<int>(__builtin_popcountll(v));
+#else
 	return static_cast<int>(_mm_popcnt_u64(v));
+#endif
 }
 
 #endif // ASTCENC_POPCNT >= 1
