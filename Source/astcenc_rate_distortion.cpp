@@ -101,6 +101,9 @@ static uint32_t init_rdo_context(
 				blk.decode_unorm8 = ctx.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
 				blk.texel_count = ctx.bsd->texel_count;
 
+				load_image_block(ctx.config.profile, image, blk, *ctx.bsd,
+								 block_dim_x * block_x, block_dim_y * block_y, block_dim_z * block_z, swz);
+
 				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 				{
 					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
@@ -114,9 +117,6 @@ static uint32_t init_rdo_context(
 				{
 					blk.channel_weight = channel_weight;
 				}
-
-				load_image_block(ctx.config.profile, image, blk, *ctx.bsd,
-								 block_dim_x * block_x, block_dim_y * block_y, block_dim_z * block_z, swz);
 			}
 		}
 	}
