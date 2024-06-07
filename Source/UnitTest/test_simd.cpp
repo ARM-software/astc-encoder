@@ -715,24 +715,6 @@ TEST(vfloat4, clamp)
 }
 
 /** @brief Test vfloat4 clampz. */
-TEST(vfloat4, clampz)
-{
-	vfloat4 a1(-1.0f, 0.0f, 0.1f, 4.0f);
-	vfloat4 r1 = clampz(3.0f, a1);
-	EXPECT_EQ(r1.lane<0>(), 0.0f);
-	EXPECT_EQ(r1.lane<1>(), 0.0f);
-	EXPECT_EQ(r1.lane<2>(), 0.1f);
-	EXPECT_EQ(r1.lane<3>(), 3.0f);
-
-	vfloat4 a2(-1.0f, 0.0f, qnan, 4.0f);
-	vfloat4 r2 = clampz(3.0f, a2);
-	EXPECT_EQ(r2.lane<0>(), 0.0f);
-	EXPECT_EQ(r2.lane<1>(), 0.0f);
-	EXPECT_EQ(r2.lane<2>(), 0.0f);
-	EXPECT_EQ(r2.lane<3>(), 3.0f);
-}
-
-/** @brief Test vfloat4 clampz. */
 TEST(vfloat4, clampzo)
 {
 	vfloat4 a1(-1.0f, 0.0f, 0.1f, 4.0f);
@@ -2502,39 +2484,6 @@ TEST(vfloat8, clamp)
 	EXPECT_EQ(ra[4], 2.1f);
 	EXPECT_EQ(ra[5], 2.1f);
 	EXPECT_EQ(ra[6], 2.1f);
-	EXPECT_EQ(ra[7], 3.0f);
-}
-
-/** @brief Test vfloat8 clampz. */
-TEST(vfloat8, clampz)
-{
-	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
-	vfloat8 r1 = clampz(3.0f, a1);
-
-	alignas(32) float ra[8];
-	storea(r1, ra);
-
-	EXPECT_EQ(ra[0], 0.0f);
-	EXPECT_EQ(ra[1], 0.0f);
-	EXPECT_EQ(ra[2], 0.1f);
-	EXPECT_EQ(ra[3], 3.0f);
-	EXPECT_EQ(ra[4], 0.0f);
-	EXPECT_EQ(ra[5], 0.0f);
-	EXPECT_EQ(ra[6], 0.1f);
-	EXPECT_EQ(ra[7], 3.0f);
-
-	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
-	vfloat8 r2 = clampz(3.0f, a2);
-
-	storea(r2, ra);
-
-	EXPECT_EQ(ra[0], 0.0f);
-	EXPECT_EQ(ra[1], 0.0f);
-	EXPECT_EQ(ra[2], 0.0f);
-	EXPECT_EQ(ra[3], 3.0f);
-	EXPECT_EQ(ra[4], 0.0f);
-	EXPECT_EQ(ra[5], 0.0f);
-	EXPECT_EQ(ra[6], 0.0f);
 	EXPECT_EQ(ra[7], 3.0f);
 }
 

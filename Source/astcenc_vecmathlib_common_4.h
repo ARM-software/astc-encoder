@@ -223,18 +223,6 @@ ASTCENC_SIMD_INLINE vfloat4 clamp(float minv, float maxv, vfloat4 a)
 }
 
 /**
- * @brief Return the clamped value between 0.0f and max.
- *
- * It is assumed that  @c max is not a NaN value. If @c a is NaN then zero will
- * be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat4 clampz(float maxv, vfloat4 a)
-{
-	// Do not reorder - second operand will return if either is NaN
-	return min(max(a, vfloat4::zero()), maxv);
-}
-
-/**
  * @brief Return the clamped value between 0.0f and 1.0f.
  *
  * If @c a is NaN then zero will be returned for that lane.
