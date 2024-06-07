@@ -425,8 +425,8 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 	}
 
 	// Create a running sum from the histogram array
-	// Cells store previous values only; i.e. exclude self after sum
-	unsigned int sum = 0;
+	// Indices store previous values only; i.e. exclude self after sum
+	uint16_t sum = 0;
 	for (unsigned int i = 0; i < texel_count; i++)
 	{
 		uint16_t cnt = mscount[i];
