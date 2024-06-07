@@ -129,6 +129,22 @@ ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 	return a.lane<0>() + a.lane<1>() + a.lane<2>();
 }
 
+/**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmin_s(vint4 a)
+{
+	return hmin(a).lane<0>();
+}
+
+/**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmax_s(vint4 a)
+{
+	return hmax(a).lane<0>();
+}
+
 // ============================================================================
 // vfloat4 operators and functions
 // ============================================================================

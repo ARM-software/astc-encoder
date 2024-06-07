@@ -1306,8 +1306,8 @@ unsigned int compute_ideal_endpoint_formats(
 		// Pick best mode from the SIMD result, using lowest matching index to ensure invariance
 		vmask lanes_min_error = vbest_ep_error == hmin(vbest_ep_error);
 		vbest_error_index = select(vint(0x7FFFFFFF), vbest_error_index, lanes_min_error);
-		vbest_error_index = hmin(vbest_error_index);
-		int best_error_index = vbest_error_index.lane0();
+
+		int best_error_index = hmin_s(vbest_error_index);
 
 		best_error_weights[i] = best_error_index;
 

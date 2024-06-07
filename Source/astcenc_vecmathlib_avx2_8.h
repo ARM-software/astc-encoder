@@ -95,14 +95,6 @@ struct vfloat8
 	}
 
 	/**
-	 * @brief Get the scalar from the bottom lane.
-	 */
-	ASTCENC_SIMD_INLINE float lane0() const
-	{
-		return _mm256_cvtss_f32(m);
-	}
-
-	/**
 	 * @brief Factory that returns a vector of zeros.
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 zero()
@@ -202,14 +194,6 @@ struct vint8
 	ASTCENC_SIMD_INLINE explicit vint8(__m256i a)
 	{
 		m = a;
-	}
-
-	/**
-	 * @brief Get the scalar from the bottom lane.
-	 */
-	ASTCENC_SIMD_INLINE int lane0() const
-	{
-		return _mm256_cvtsi256_si32(m);
 	}
 
 	/**
@@ -517,6 +501,14 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
+{
+	return _mm256_cvtsi256_si32(hmin(a).m);
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
@@ -536,7 +528,7 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
  */
 ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
 {
-	return hmax(a).lane0();
+	return _mm256_cvtsi256_si32(hmax(a).m);
 }
 
 /**
@@ -840,7 +832,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 {
-	return hmin(a).lane0();
+	return _mm256_cvtss_f32(hmin(a).m);
 }
 
 /**
@@ -870,7 +862,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 {
-	return hmax(a).lane0();
+	return _mm256_cvtss_f32(hmax(a).m);
 }
 
 /**
