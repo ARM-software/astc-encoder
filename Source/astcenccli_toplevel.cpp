@@ -1209,7 +1209,7 @@ static int edit_astcenc_config(
 			argidx += 2;
 			if (argidx > argc)
 			{
-				print_error("ERROR: -rdo-dict-size switch with no argument\n");
+				print_error("ERROR: -rdo-lookback switch with no argument\n");
 				return 1;
 			}
 
@@ -1655,7 +1655,8 @@ static void print_diagnostic_image(
 static void print_diagnostic_images(
 	astcenc_context* context,
 	const astc_compressed_image& image,
-	const std::string& output_file
+	const std::string& output_file,
+	astcenc_operation operation
 ) {
 	if (image.dim_z != 1)
 	{
@@ -1671,6 +1672,13 @@ static void print_diagnostic_images(
 	}
 
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+
+	// ---- ---- ---- ---- Compressed Output ---- ---- ---- ----
+	if ((operation & ASTCENC_STAGE_ST_COMP) == 0)
+	{
+		std::string fname = stem + "_diag.astc";
+		store_cimage(image, fname.c_str());
+	}
 
 	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
 	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -2421,7 +2429,7 @@ int astcenc_main(
 	// Store diagnostic images
 	if (cli_config.diagnostic_images && !is_null)
 	{
-		print_diagnostic_images(codec_context, image_comp, output_filename);
+		print_diagnostic_images(codec_context, image_comp, output_filename, operation);
 	}
 
 	free_image(image_uncomp_in);

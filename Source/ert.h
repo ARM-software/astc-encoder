@@ -93,7 +93,7 @@ namespace ert
 	bool reduce_entropy(uint8_t* pBlock_bytes, uint32_t num_blocks,
 		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes,
 		const reduce_entropy_params& params, uint32_t& total_modified,
-		diff_block_func_type pDiff_block_func, void* pDiff_block_func_user_data,
+		diff_block_func_type* pDiff_block_func, void* pDiff_block_func_user_data,
 		const float* pBlock_mse_scales = nullptr);
 
 } // namespace ert

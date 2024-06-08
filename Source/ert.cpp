@@ -144,7 +144,7 @@ namespace ert
 	bool reduce_entropy(uint8_t* pBlock_bytes, uint32_t num_blocks,
 		uint32_t total_block_stride_in_bytes, uint32_t block_size_to_optimize_in_bytes,
 		const reduce_entropy_params& params, uint32_t& total_modified,
-		diff_block_func_type pDiff_block_func, void* pDiff_block_func_user_data,
+		diff_block_func_type* pDiff_block_func, void* pDiff_block_func_user_data,
 		const float* pBlock_mse_scales)
 	{
 		assert(total_block_stride_in_bytes && block_size_to_optimize_in_bytes);
@@ -176,7 +176,7 @@ namespace ert
 			uint8_t* pOrig_block = &pBlock_bytes[block_index * total_block_stride_in_bytes];
 
 			float max_std_dev = 0.0f;
-			float cur_mse = pDiff_block_func(pDiff_block_func_user_data, pOrig_block, block_index, &max_std_dev);
+			float cur_mse = (*pDiff_block_func)(pDiff_block_func_user_data, pOrig_block, block_index, &max_std_dev);
 			if (cur_mse < 0.0f)
 				return false;
 
@@ -284,7 +284,7 @@ namespace ert
 								memcpy(trial_block, pOrig_block, block_size_to_optimize_in_bytes);
 								memcpy(trial_block + dst_ofs, pPrev_blk + src_ofs, len);
 
-								float trial_mse = pDiff_block_func(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+								float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
 								if (trial_mse < 0.0f)
 									continue;
 
@@ -367,7 +367,7 @@ namespace ert
 							memcpy(trial_block, pOrig_block, block_size_to_optimize_in_bytes);
 							memcpy(trial_block + ofs, pPrev_blk + ofs, len);
 
-							float trial_mse = pDiff_block_func(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+							float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
 							if (trial_mse < 0.0f)
 								continue;
 
@@ -436,7 +436,7 @@ namespace ert
 								memcpy(trial_block, orig_best_block, block_size_to_optimize_in_bytes);
 								memcpy(trial_block + ofs, pPrev_blk + ofs, len);
 
-								float trial_mse = pDiff_block_func(pDiff_block_func_user_data, trial_block, block_index, nullptr);
+								float trial_mse = (*pDiff_block_func)(pDiff_block_func_user_data, trial_block, block_index, nullptr);
 								if (trial_mse < 0.0f)
 									continue;
 

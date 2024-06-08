@@ -38,8 +38,6 @@ static constexpr uint32_t ASTCENC_BYTES_PER_BLOCK = 16;
 
 template<typename T> T sqr(T v) { return v * v; }
 
-extern "C" void progress_emitter(float value);
-
 extern "C" void rdo_progress_emitter(
 	float value
 ) {
@@ -52,7 +50,27 @@ extern "C" void rdo_progress_emitter(
 	}
 	previous_value = value;
 
-	progress_emitter(value);
+	const unsigned int bar_size = 25;
+	unsigned int parts = static_cast<int>(value / 4.0f);
+
+	char buffer[bar_size + 3];
+	buffer[0] = '[';
+
+	for (unsigned int i = 0; i < parts; i++)
+	{
+		buffer[i + 1] = '=';
+	}
+
+	for (unsigned int i = parts; i < bar_size; i++)
+	{
+		buffer[i + 1] = ' ';
+	}
+
+	buffer[bar_size + 1] = ']';
+	buffer[bar_size + 2] = '\0';
+
+	printf("    Progress: %s %03.1f%%\r", buffer, static_cast<double>(value));
+	fflush(stdout);
 }
 
 static uint32_t init_rdo_context(
@@ -323,6 +341,27 @@ struct local_rdo_context
 	uint32_t base_offset;
 };
 
+static bool is_transparent(int v) { return (v & 0xFF) != 0xFF; }
+
+static bool has_any_transparency(
+	astcenc_profile decode_mode,
+	const symbolic_compressed_block& scb
+) {
+	if (scb.block_type != SYM_BTYPE_NONCONST) return is_transparent(scb.constant_color[3]);
+
+	vint4 ep0;
+	vint4 ep1;
+	bool rgb_lns;
+	bool a_lns;
+
+	for (int i = 0; i < scb.partition_count; i++)
+	{
+		unpack_color_endpoints(decode_mode, scb.color_formats[i], scb.color_values[i], rgb_lns, a_lns, ep0, ep1);
+		if (is_transparent(ep0.lane<3>()) || is_transparent(ep1.lane<3>())) return true;
+	}
+	return false;
+}
+
 static float compute_block_difference(
 	void* user_data,
 	const uint8_t* pcb,
@@ -339,6 +378,7 @@ static float compute_block_difference(
 	if (scb.block_type == SYM_BTYPE_ERROR) return -ERROR_CALC_DEFAULT;
 	bool is_dual_plane = scb.block_type == SYM_BTYPE_NONCONST && ctx.bsd->get_block_mode(scb.block_mode).is_dual_plane;
 	if (is_dual_plane && scb.partition_count != 1) return -ERROR_CALC_DEFAULT;
+	if (ctx.config.cw_a_weight < 0.01f && has_any_transparency(ctx.config.profile, scb)) return -ERROR_CALC_DEFAULT;
 
 	const astcenc_rdo_context& rdo_ctx = *ctx.rdo_context;
 	uint32_t block_idx = local_block_idx + local_ctx.base_offset;
@@ -422,7 +462,7 @@ void rate_distortion_optimize(
 		ert::reduce_entropy(buffer + base * ASTCENC_BYTES_PER_BLOCK, count,
 							ASTCENC_BYTES_PER_BLOCK, ASTCENC_BYTES_PER_BLOCK,
 							ctx.rdo_context->m_ert_params, total_modified,
-							compute_block_difference, &local_ctx);
+							&compute_block_difference, &local_ctx);
 
 		ctxo.manage_rdo.complete_task_assignment(count);
 	}
