@@ -14,9 +14,7 @@ on:
 jobs:
 
   coverity:
-    if: |
-      ${{ !startsWith(github.event.ref, 'refs/tags/') }} &&
-      github.repository_owner == 'Arm-software'
+    if: ${{ (!startsWith(github.event.ref, 'refs/tags/')) && (github.repository_owner == 'Arm-software') }}
     name: Run Coverity Static Analysis
     runs-on: [self-hosted-ubuntu-latest-x64]
     steps:
@@ -279,9 +277,7 @@ jobs:
             astcenc-macos-universal
 
   prepare-release:
-    if: |
-      ${{ startsWith(github.event.ref, 'refs/tags/') }} &&
-      github.repository_owner == "Arm-software"
+    if: ${{ (startsWith(github.event.ref, 'refs/tags/')) && (github.repository_owner == 'Arm-software') }}
     name: Prepare release
     runs-on: ubuntu-22.04
     needs: [sign-binaries, build-ubuntu]
