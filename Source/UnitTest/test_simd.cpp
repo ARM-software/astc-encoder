@@ -30,6 +30,40 @@ namespace astcenc
 {
 
 // Misc utility tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#if ASTCENC_SIMD_WIDTH == 8
+/**
+ * @brief Construct from 8 scalar values.
+ *
+ * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ */
+vfloat8 vfloat8_lit(
+	float a, float b, float c, float d,
+	float e, float f, float g, float h
+) {
+	alignas(32) float data[8] {
+		a, b, c, d, e, f, g, h
+	};
+
+	return vfloat8(data);
+}
+
+/**
+ * @brief Construct from 8 scalar values.
+ *
+ * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ */
+vint8 vint8_lit(
+	int a, int b, int c, int d,
+	int e, int f, int g, int h
+) {
+	alignas(32) int data[8] {
+		a, b, c, d, e, f, g, h
+	};
+
+	return vint8(data);
+}
+
+#endif
 
 static unsigned int round_down(unsigned int x)
 {
@@ -157,9 +191,9 @@ TEST(vfloat, Atan2)
 /** @brief Test VLA change_sign. */
 TEST(vfloat, ChangeSign)
 {
-	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f);
-	vfloat b(-1.0f, -1.0f,  3.12f, 3.12f);
-	vfloat r = change_sign(a, b);
+	vfloat4 a(-1.0f,  1.0f, -3.12f, 3.12f);
+	vfloat4 b(-1.0f, -1.0f,  3.12f, 3.12f);
+	vfloat4 r = change_sign(a, b);
 	EXPECT_EQ(r.lane<0>(),  1.0f);
 	EXPECT_EQ(r.lane<1>(), -1.0f);
 	EXPECT_EQ(r.lane<2>(), -3.12f);
@@ -169,8 +203,8 @@ TEST(vfloat, ChangeSign)
 /** @brief Test VLA atan. */
 TEST(vfloat, Atan)
 {
-	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
-	vfloat r = atan(a);
+	vfloa4 a(-0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat4 r = atan(a);
 	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
 	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
 	EXPECT_NEAR(r.lane<2>(),  0.733616f, 0.005f);
@@ -180,9 +214,9 @@ TEST(vfloat, Atan)
 /** @brief Test VLA atan2. */
 TEST(vfloat, Atan2)
 {
-	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f);
-	vfloat b(1.15f, -3.0f, -0.9f, 1.1f);
-	vfloat r = atan2(a, b);
+	vfloat4 a(-0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat4 b(1.15f, -3.0f, -0.9f, 1.1f);
+	vfloat4 r = atan2(a, b);
 	EXPECT_NEAR(r.lane<0>(), -0.129816f, 0.005f);
 	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
 	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
@@ -196,9 +230,9 @@ TEST(vfloat, Atan2)
 /** @brief Test VLA change_sign. */
 TEST(vfloat, ChangeSign)
 {
-	vfloat a(-1.0f,  1.0f, -3.12f, 3.12f, -1.0f,  1.0f, -3.12f, 3.12f);
-	vfloat b(-1.0f, -1.0f,  3.12f, 3.12f, -1.0f, -1.0f,  3.12f, 3.12f);
-	vfloat r = change_sign(a, b);
+	vfloat8 a = vfloat8_lit(-1.0f,  1.0f, -3.12f, 3.12f, -1.0f,  1.0f, -3.12f, 3.12f);
+	vfloat8 b = vfloat8_lit(-1.0f, -1.0f,  3.12f, 3.12f, -1.0f, -1.0f,  3.12f, 3.12f);
+	vfloat8 r = change_sign(a, b);
 
 	alignas(32) float ra[8];
 	storea(r, ra);
@@ -216,8 +250,8 @@ TEST(vfloat, ChangeSign)
 /** @brief Test VLA atan. */
 TEST(vfloat, Atan)
 {
-	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
-	vfloat r = atan(a);
+	vfloat8 a = vfloat8_lit(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat8 r = atan(a);
 
 	alignas(32) float ra[8];
 	storea(r, ra);
@@ -235,9 +269,9 @@ TEST(vfloat, Atan)
 /** @brief Test VLA atan2. */
 TEST(vfloat, Atan2)
 {
-	vfloat a(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
-	vfloat b(1.15f, -3.0f, -0.9f, 1.1f, 1.15f, -3.0f, -0.9f, 1.1f);
-	vfloat r = atan2(a, b);
+	vfloat8 a = vfloat8_lit(-0.15f, 0.0f, 0.9f, 2.1f, -0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat8 b = vfloat8_lit(1.15f, -3.0f, -0.9f, 1.1f, 1.15f, -3.0f, -0.9f, 1.1f);
+	vfloat8 r = atan2(a, b);
 
 	alignas(32) float ra[8];
 	storea(r, ra);
@@ -2039,7 +2073,7 @@ TEST(vfloat8, ScalarDupLoad)
 /** @brief Test scalar vfloat8 load. */
 TEST(vfloat8, ScalarLoad)
 {
-	vfloat8 a(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
+	vfloat8 a = vfloat8_lit(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
 
 	alignas(32) float ra[8];
 	storea(a, ra);
@@ -2057,7 +2091,7 @@ TEST(vfloat8, ScalarLoad)
 /** @brief Test copy vfloat8 load. */
 TEST(vfloat8, CopyLoad)
 {
-	vfloat8 s(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
+	vfloat8 s = vfloat8_lit(1.1f, 2.2f, 3.3f, 4.4f, 5.5f, 6.6f, 7.7f, 8.8f);
 	vfloat8 a(s.m);
 
 	alignas(32) float ra[8];
@@ -2131,8 +2165,8 @@ TEST(vfloat8, Loada)
 /** @brief Test vfloat8 add. */
 TEST(vfloat8, vadd)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a + b;
 
 	alignas(32) float ra[8];
@@ -2151,8 +2185,8 @@ TEST(vfloat8, vadd)
 /** @brief Test vfloat8 sub. */
 TEST(vfloat8, vsub)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a - b;
 
 	alignas(32) float ra[8];
@@ -2171,8 +2205,8 @@ TEST(vfloat8, vsub)
 /** @brief Test vfloat8 mul. */
 TEST(vfloat8, vmul)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a * b;
 
 	alignas(32) float ra[8];
@@ -2191,7 +2225,7 @@ TEST(vfloat8, vmul)
 /** @brief Test vfloat8 mul. */
 TEST(vfloat8, vsmul)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	float b = 3.14f;
 	a = a * b;
 
@@ -2212,7 +2246,7 @@ TEST(vfloat8, vsmul)
 TEST(vfloat8, svmul)
 {
 	float a = 3.14f;
-	vfloat8 b(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	b = a * b;
 
 	alignas(32) float ra[8];
@@ -2231,8 +2265,8 @@ TEST(vfloat8, svmul)
 /** @brief Test vfloat8 div. */
 TEST(vfloat8, vdiv)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	a = a / b;
 
 	alignas(32) float ra[8];
@@ -2251,7 +2285,7 @@ TEST(vfloat8, vdiv)
 /** @brief Test vfloat8 div. */
 TEST(vfloat8, vsdiv)
 {
-	vfloat8 a(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	float b = 3.14f;
 	vfloat8 r = a / b;
 
@@ -2272,7 +2306,7 @@ TEST(vfloat8, vsdiv)
 TEST(vfloat8, svdiv)
 {
 	float a = 3.14f;
-	vfloat8 b(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 b = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vfloat8 r = a / b;
 
 	alignas(32) float ra[8];
@@ -2291,28 +2325,28 @@ TEST(vfloat8, svdiv)
 /** @brief Test vfloat8 ceq. */
 TEST(vfloat8, ceq)
 {
-	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b1(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a1 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b1 = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r1 = a1 == b1;
 	EXPECT_EQ(0u, mask(r1));
 	EXPECT_EQ(false, any(r1));
 	EXPECT_EQ(false, all(r1));
 
-	vfloat8 a2(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b2(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a2 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b2 = vfloat8_lit(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r2 = a2 == b2;
 	EXPECT_EQ(0x1u, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
-	vfloat8 a3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b3(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a3 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b3 = vfloat8_lit(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r3 = a3 == b3;
 	EXPECT_EQ(0x5u, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
-	vfloat8 a4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 a4 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vmask8 r4 = a4 == a4;
 	EXPECT_EQ(0xFFu, mask(r4));
 	EXPECT_EQ(true, any(r4));
@@ -2322,28 +2356,28 @@ TEST(vfloat8, ceq)
 /** @brief Test vfloat8 cne. */
 TEST(vfloat8, cne)
 {
-	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b1(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a1 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b1 = vfloat8_lit(0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r1 = a1 != b1;
 	EXPECT_EQ(0xFFu, mask(r1));
 	EXPECT_EQ(true, any(r1));
 	EXPECT_EQ(true, all(r1));
 
-	vfloat8 a2(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b2(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a2 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b2 = vfloat8_lit(1.0f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r2 = a2 != b2;
 	EXPECT_EQ(0xFEu, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
-	vfloat8 a3(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
-	vfloat8 b3(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
+	vfloat8 a3 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 b3 = vfloat8_lit(1.0f, 0.2f, 3.0f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f);
 	vmask8 r3 = a3 != b3;
 	EXPECT_EQ(0xFAu, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
-	vfloat8 a4(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
+	vfloat8 a4 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f);
 	vmask8 r4 = a4 != a4;
 	EXPECT_EQ(0u, mask(r4));
 	EXPECT_EQ(false, any(r4));
@@ -2353,8 +2387,8 @@ TEST(vfloat8, cne)
 /** @brief Test vfloat8 clt. */
 TEST(vfloat8, clt)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vmask8 r = a < b;
 	EXPECT_EQ(0xAAu, mask(r));
 }
@@ -2362,8 +2396,8 @@ TEST(vfloat8, clt)
 /** @brief Test vfloat8 cle. */
 TEST(vfloat8, cle)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vmask8 r = a <= b;
 	EXPECT_EQ(0xEEu, mask(r));
 }
@@ -2371,8 +2405,8 @@ TEST(vfloat8, cle)
 /** @brief Test vfloat8 cgt. */
 TEST(vfloat8, cgt)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vmask8 r = a > b;
 	EXPECT_EQ(0x11u, mask(r));
 }
@@ -2380,8 +2414,8 @@ TEST(vfloat8, cgt)
 /** @brief Test vfloat8 cge. */
 TEST(vfloat8, cge)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vmask8 r = a >= b;
 	EXPECT_EQ(0x55u, mask(r));
 }
@@ -2389,8 +2423,8 @@ TEST(vfloat8, cge)
 /** @brief Test vfloat8 min. */
 TEST(vfloat8, min)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vfloat8 r = min(a, b);
 
 	alignas(32) float ra[8];
@@ -2409,8 +2443,8 @@ TEST(vfloat8, min)
 /** @brief Test vfloat8 max. */
 TEST(vfloat8, max)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
-	vfloat8 b(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 b = vfloat8_lit(0.9f, 2.1f, 3.0f, 4.1f, 0.9f, 2.1f, 3.0f, 4.1f);
 	vfloat8 r = max(a, b);
 
 	alignas(32) float ra[8];
@@ -2429,7 +2463,7 @@ TEST(vfloat8, max)
 /** @brief Test vfloat8 clamp. */
 TEST(vfloat8, clamp)
 {
-	vfloat8 a1(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 r1 = clamp(2.1f, 3.0f, a1);
 
 	alignas(32) float ra[8];
@@ -2444,7 +2478,7 @@ TEST(vfloat8, clamp)
 	EXPECT_EQ(ra[6], 3.0f);
 	EXPECT_EQ(ra[7], 3.0f);
 
-	vfloat8 a2(1.0f, 2.0f, qnan, 4.0f, 1.0f, 2.0f, qnan, 4.0f);
+	vfloat8 a2 = vfloat8_lit(1.0f, 2.0f, qnan, 4.0f, 1.0f, 2.0f, qnan, 4.0f);
 	vfloat8 r2 = clamp(2.1f, 3.0f, a2);
 
 	storea(r2, ra);
@@ -2462,7 +2496,7 @@ TEST(vfloat8, clamp)
 /** @brief Test vfloat8 clampz. */
 TEST(vfloat8, clampzo)
 {
-	vfloat8 a1(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
 	vfloat8 r1 = clampzo(a1);
 
 	alignas(32) float ra[8];
@@ -2477,7 +2511,7 @@ TEST(vfloat8, clampzo)
 	EXPECT_EQ(ra[6], 0.1f);
 	EXPECT_EQ(ra[7], 1.0f);
 
-	vfloat8 a2(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
+	vfloat8 a2 = vfloat8_lit(-1.0f, 0.0f, qnan, 4.0f, -1.0f, 0.0f, qnan, 4.0f);
 	vfloat8 r2 = clampzo(a2);
 
 	storea(r2, ra);
@@ -2495,7 +2529,7 @@ TEST(vfloat8, clampzo)
 /** @brief Test vfloat8 abs. */
 TEST(vfloat8, abs)
 {
-	vfloat8 a(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
+	vfloat8 a = vfloat8_lit(-1.0f, 0.0f, 0.1f, 4.0f, -1.0f, 0.0f, 0.1f, 4.0f);
 	vfloat8 r = abs(a);
 
 	alignas(32) float ra[8];
@@ -2514,7 +2548,7 @@ TEST(vfloat8, abs)
 /** @brief Test vfloat8 round. */
 TEST(vfloat8, round)
 {
-	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r = round(a);
 
 	alignas(32) float ra[8];
@@ -2533,7 +2567,7 @@ TEST(vfloat8, round)
 /** @brief Test vfloat8 hmin. */
 TEST(vfloat8, hmin)
 {
-	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r1 = hmin(a1);
 
 	alignas(32) float ra[8];
@@ -2548,7 +2582,7 @@ TEST(vfloat8, hmin)
 	EXPECT_EQ(ra[6], 1.1f);
 	EXPECT_EQ(ra[7], 1.1f);
 
-	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 a2 = vfloat8_lit(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	vfloat8 r2 = hmin(a2);
 
 	storea(r2, ra);
@@ -2566,11 +2600,11 @@ TEST(vfloat8, hmin)
 /** @brief Test vfloat8 hmin_s. */
 TEST(vfloat8, hmin_s)
 {
-	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	float r1 = hmin_s(a1);
 	EXPECT_EQ(r1, 1.1f);
 
-	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 a2 = vfloat8_lit(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	float r2 = hmin_s(a2);
 	EXPECT_EQ(r2, 0.2f);
 }
@@ -2578,7 +2612,7 @@ TEST(vfloat8, hmin_s)
 /** @brief Test vfloat8 hmax. */
 TEST(vfloat8, hmax)
 {
-	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vfloat8 r1 = hmax(a1);
 
 	alignas(32) float ra[8];
@@ -2593,7 +2627,7 @@ TEST(vfloat8, hmax)
 	EXPECT_EQ(ra[6], 4.0f);
 	EXPECT_EQ(ra[7], 4.0f);
 
-	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 a2 = vfloat8_lit(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	vfloat8 r2 = hmax(a2);
 
 	storea(r2, ra);
@@ -2611,11 +2645,11 @@ TEST(vfloat8, hmax)
 /** @brief Test vfloat8 hmax_s. */
 TEST(vfloat8, hmax_s)
 {
-	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	float r1 = hmax_s(a1);
 	EXPECT_EQ(r1, 4.0f);
 
-	vfloat8 a2(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
+	vfloat8 a2 = vfloat8_lit(1.1f, 1.5f, 1.6f, 0.2f, 1.1f, 1.5f, 1.6f, 0.2f);
 	float r2 = hmax_s(a2);
 	EXPECT_EQ(r2, 1.6f);
 }
@@ -2623,7 +2657,7 @@ TEST(vfloat8, hmax_s)
 /** @brief Test vfloat8 hadd_s. */
 TEST(vfloat8, hadd_s)
 {
-	vfloat8 a1(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a1 = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	float sum = 1.1f + 1.5f + 1.6f + 4.0f + 1.1f + 1.5f + 1.6f + 4.0f;
 	float r = hadd_s(a1);
 	EXPECT_NEAR(r, sum, 0.005f);
@@ -2632,7 +2666,7 @@ TEST(vfloat8, hadd_s)
 /** @brief Test vfloat8 sqrt. */
 TEST(vfloat8, sqrt)
 {
-	vfloat8 a(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
+	vfloat8 a = vfloat8_lit(1.0f, 2.0f, 3.0f, 4.0f, 1.0f, 2.0f, 3.0f, 4.0f);
 	vfloat8 r = sqrt(a);
 
 	alignas(32) float ra[8];
@@ -2651,12 +2685,12 @@ TEST(vfloat8, sqrt)
 /** @brief Test vfloat8 select. */
 TEST(vfloat8, select)
 {
-	vfloat8 m1(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-	vfloat8 m2(1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f);
+	vfloat8 m1 = vfloat8_lit(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+	vfloat8 m2 = vfloat8_lit(1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f);
 	vmask8 cond = m1 == m2;
 
-	vfloat8 a(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0);
-	vfloat8 b(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0);
+	vfloat8 a = vfloat8_lit(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0);
+	vfloat8 b = vfloat8_lit(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0);
 
 	// Select in one direction
 	vfloat8 r1 = select(a, b, cond);
@@ -2692,11 +2726,11 @@ TEST(vfloat8, select)
 TEST(vfloat8, select_msb)
 {
 	int msb_set = static_cast<int>(0x80000000);
-	vint8 msb(msb_set, 0, msb_set, 0, msb_set, 0, msb_set, 0);
+	vint8 msb = vint8_lit(msb_set, 0, msb_set, 0, msb_set, 0, msb_set, 0);
 	vmask8 cond(msb.m);
 
-	vfloat8 a(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
-	vfloat8 b(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
+	vfloat8 a = vfloat8_lit(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
+	vfloat8 b = vfloat8_lit(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
 
 	// Select in one direction
 	vfloat8 r1 = select(a, b, cond);
@@ -2731,7 +2765,7 @@ TEST(vfloat8, select_msb)
 /** @brief Test vfloat8 gatherf. */
 TEST(vfloat8, gatherf)
 {
-	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
+	vint8 indices = vint8_lit(0, 4, 3, 2, 7, 4, 3, 2);
 	vfloat8 r = gatherf(f32_data, indices);
 
 	alignas(32) float ra[8];
@@ -2786,7 +2820,7 @@ TEST(vfloat8, storea)
 /** @brief Test vfloat8 float_to_int. */
 TEST(vfloat8, float_to_int)
 {
-	vfloat8 a(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
+	vfloat8 a = vfloat8_lit(1.1f, 1.5f, 1.6f, 4.0f, 1.1f, 1.5f, 1.6f, 4.0f);
 	vint8 r = float_to_int(a);
 
 	alignas(32) int ra[8];
@@ -2861,7 +2895,7 @@ TEST(vint8, ScalarDupLoad)
 /** @brief Test scalar vint8 load. */
 TEST(vint8, ScalarLoad)
 {
-	vint8 a(11, 22, 33, 44, 55, 66, 77, 88);
+	vint8 a = vint8_lit(11, 22, 33, 44, 55, 66, 77, 88);
 
 	alignas(32) int ra[8];
 	store(a, ra);
@@ -2879,7 +2913,7 @@ TEST(vint8, ScalarLoad)
 /** @brief Test copy vint8 load. */
 TEST(vint8, CopyLoad)
 {
-	vint8 s(11, 22, 33, 44, 55, 66, 77, 88);
+	vint8 s = vint8_lit(11, 22, 33, 44, 55, 66, 77, 88);
 	vint8 a(s.m);
 
 	alignas(32) int ra[8];
@@ -2971,8 +3005,8 @@ TEST(vint8, LaneID)
 /** @brief Test vint8 add. */
 TEST(vint8, vadd)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a + b;
 
 	alignas(32) int ra[8];
@@ -2992,8 +3026,8 @@ TEST(vint8, vadd)
 /** @brief Test vint8 self-add. */
 TEST(vint8, vselfadd1)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(2, 3, 4, 5, 2, 3, 4, 5);
 	a += b;
 
 	alignas(32) int ra[8];
@@ -3012,8 +3046,8 @@ TEST(vint8, vselfadd1)
 /** @brief Test vint8 sub. */
 TEST(vint8, vsub)
 {
-	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
-	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 4, 4, 1, 2, 4, 4);
+	vint8 b = vint8_lit(2, 3, 3, 5, 2, 3, 3, 5);
 	a = a - b;
 
 	alignas(32) int ra[8];
@@ -3032,8 +3066,8 @@ TEST(vint8, vsub)
 /** @brief Test vint8 mul. */
 TEST(vint8, vmul)
 {
-	vint8 a(1, 2, 4, 4, 1, 2, 4, 4);
-	vint8 b(2, 3, 3, 5, 2, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 4, 4, 1, 2, 4, 4);
+	vint8 b = vint8_lit(2, 3, 3, 5, 2, 3, 3, 5);
 	a = a * b;
 
 	alignas(32) int ra[8];
@@ -3052,7 +3086,7 @@ TEST(vint8, vmul)
 /** @brief Test vint8 bitwise invert. */
 TEST(vint8, bit_invert)
 {
-	vint8 a(-1, 0, 1, 2, -1, 0, 1, 2);
+	vint8 a = vint8_lit(-1, 0, 1, 2, -1, 0, 1, 2);
 	a = ~a;
 
 	alignas(32) int ra[8];
@@ -3071,8 +3105,8 @@ TEST(vint8, bit_invert)
 /** @brief Test vint8 bitwise or. */
 TEST(vint8, bit_vor)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a | b;
 
 	alignas(32) int ra[8];
@@ -3091,8 +3125,8 @@ TEST(vint8, bit_vor)
 /** @brief Test vint8 bitwise and. */
 TEST(vint8, bit_vand)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a & b;
 
 	alignas(32) int ra[8];
@@ -3111,8 +3145,8 @@ TEST(vint8, bit_vand)
 /** @brief Test vint8 bitwise xor. */
 TEST(vint8, bit_vxor)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(2, 3, 4, 5, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(2, 3, 4, 5, 2, 3, 4, 5);
 	a = a ^ b;
 
 	alignas(32) int ra[8];
@@ -3131,28 +3165,28 @@ TEST(vint8, bit_vxor)
 /** @brief Test vint8 ceq. */
 TEST(vint8, ceq)
 {
-	vint8 a1(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b1(0, 1, 2, 3, 0, 1, 2, 3);
+	vint8 a1 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b1 = vint8_lit(0, 1, 2, 3, 0, 1, 2, 3);
 	vmask8 r1 = a1 == b1;
 	EXPECT_EQ(0u, mask(r1));
 	EXPECT_EQ(false, any(r1));
 	EXPECT_EQ(false, all(r1));
 
-	vint8 a2(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b2(1, 0, 0, 0, 1, 0, 0, 0);
+	vint8 a2 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b2 = vint8_lit(1, 0, 0, 0, 1, 0, 0, 0);
 	vmask8 r2 = a2 == b2;
 	EXPECT_EQ(0x11u, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
-	vint8 a3(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b3(1, 0, 3, 0, 1, 0, 3, 0);
+	vint8 a3 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b3 = vint8_lit(1, 0, 3, 0, 1, 0, 3, 0);
 	vmask8 r3 = a3 == b3;
 	EXPECT_EQ(0x55u, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
-	vint8 a4(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 a4 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
 	vmask8 r4 = a4 == a4;
 	EXPECT_EQ(0xFFu, mask(r4));
 	EXPECT_EQ(true, any(r4));
@@ -3162,28 +3196,28 @@ TEST(vint8, ceq)
 /** @brief Test vint8 cne. */
 TEST(vint8, cne)
 {
-	vint8 a1(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b1(0, 1, 2, 3, 0, 1, 2, 3);
+	vint8 a1 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b1 = vint8_lit(0, 1, 2, 3, 0, 1, 2, 3);
 	vmask8 r1 = a1 != b1;
 	EXPECT_EQ(0xFFu, mask(r1));
 	EXPECT_EQ(true, any(r1));
 	EXPECT_EQ(true, all(r1));
 
-	vint8 a2(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b2(1, 0, 0, 0, 1, 0, 0, 0);
+	vint8 a2 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b2 = vint8_lit(1, 0, 0, 0, 1, 0, 0, 0);
 	vmask8 r2 = a2 != b2;
 	EXPECT_EQ(0xEEu, mask(r2));
 	EXPECT_EQ(true, any(r2));
 	EXPECT_EQ(false, all(r2));
 
-	vint8 a3(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b3(1, 0, 3, 0, 1, 0, 3, 0);
+	vint8 a3 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b3 = vint8_lit(1, 0, 3, 0, 1, 0, 3, 0);
 	vmask8 r3 = a3 != b3;
 	EXPECT_EQ(0xAAu, mask(r3));
 	EXPECT_EQ(true, any(r3));
 	EXPECT_EQ(false, all(r3));
 
-	vint8 a4(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 a4 = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
 	vmask8 r4 = a4 != a4;
 	EXPECT_EQ(0u, mask(r4));
 	EXPECT_EQ(false, any(r4));
@@ -3193,8 +3227,8 @@ TEST(vint8, cne)
 /** @brief Test vint8 clt. */
 TEST(vint8, clt)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(0, 3, 3, 5, 0, 3, 3, 5);
 	vmask8 r = a < b;
 	EXPECT_EQ(0xAAu, mask(r));
 }
@@ -3202,8 +3236,8 @@ TEST(vint8, clt)
 /** @brief Test vint8 cgt. */
 TEST(vint8, cgt)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(0, 3, 3, 5, 0, 3, 3, 5);
 	vmask8 r = a > b;
 	EXPECT_EQ(0x11u, mask(r));
 }
@@ -3211,8 +3245,8 @@ TEST(vint8, cgt)
 /** @brief Test vint8 min. */
 TEST(vint8, min)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(0, 3, 3, 5, 0, 3, 3, 5);
 	vint8 r = min(a, b);
 
 	alignas(32) int ra[8];
@@ -3231,8 +3265,8 @@ TEST(vint8, min)
 /** @brief Test vint8 max. */
 TEST(vint8, max)
 {
-	vint8 a(1, 2, 3, 4, 1, 2, 3, 4);
-	vint8 b(0, 3, 3, 5, 0, 3, 3, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 1, 2, 3, 4);
+	vint8 b = vint8_lit(0, 3, 3, 5, 0, 3, 3, 5);
 	vint8 r = max(a, b);
 
 	alignas(32) int ra[8];
@@ -3251,7 +3285,7 @@ TEST(vint8, max)
 /** @brief Test vint8 lsl. */
 TEST(vint8, lsl)
 {
-	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	vint8 a = vint8_lit(1, 2, 4, -4, 1, 2, 4, -4);
 	a = lsl<0>(a);
 
 	alignas(32) int ra[8];
@@ -3296,7 +3330,7 @@ TEST(vint8, lsl)
 /** @brief Test vint8 lsr. */
 TEST(vint8, lsr)
 {
-	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	vint8 a = vint8_lit(1, 2, 4, -4, 1, 2, 4, -4);
 	a = lsr<0>(a);
 
 	alignas(32) int ra[8];
@@ -3341,7 +3375,7 @@ TEST(vint8, lsr)
 /** @brief Test vint8 asr. */
 TEST(vint8, asr)
 {
-	vint8 a(1, 2, 4, -4, 1, 2, 4, -4);
+	vint8 a = vint8_lit(1, 2, 4, -4, 1, 2, 4, -4);
 	a = asr<0>(a);
 
 	alignas(32) int ra[8];
@@ -3387,7 +3421,7 @@ TEST(vint8, asr)
 /** @brief Test vint8 hmin. */
 TEST(vint8, hmin)
 {
-	vint8 a1(1, 2, 1, 2, 1, 2, 1, 2);
+	vint8 a1 = vint8_lit(1, 2, 1, 2, 1, 2, 1, 2);
 	vint8 r1 = hmin(a1);
 
 	alignas(32) int ra[8];
@@ -3402,7 +3436,7 @@ TEST(vint8, hmin)
 	EXPECT_EQ(ra[6], 1);
 	EXPECT_EQ(ra[7], 1);
 
-	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
+	vint8 a2 = vint8_lit(1, 2, -1, 5, 1, 2, -1, 5);
 	vint8 r2 = hmin(a2);
 
 	store(r2, ra);
@@ -3420,7 +3454,7 @@ TEST(vint8, hmin)
 /** @brief Test vint8 hmax. */
 TEST(vint8, hmax)
 {
-	vint8 a1(1, 2, 1, 2, 1, 3, 1, 2);
+	vint8 a1 = vint8_lit(1, 2, 1, 2, 1, 3, 1, 2);
 	vint8 r1 = hmax(a1);
 
 	alignas(32) int ra[8];
@@ -3435,7 +3469,7 @@ TEST(vint8, hmax)
 	EXPECT_EQ(ra[6], 3);
 	EXPECT_EQ(ra[7], 3);
 
-	vint8 a2(1, 2, -1, 5, 1, 2, -1, 5);
+	vint8 a2 = vint8_lit(1, 2, -1, 5, 1, 2, -1, 5);
 	vint8 r2 = hmax(a2);
 
 	store(r2, ra);
@@ -3488,7 +3522,7 @@ TEST(vint8, store)
 TEST(vint8, store_nbytes)
 {
 	alignas(32) int out[2];
-	vint8 a(42, 314, 75, 90, 42, 314, 75, 90);
+	vint8 a = vint8_lit(42, 314, 75, 90, 42, 314, 75, 90);
 	store_nbytes(a, reinterpret_cast<uint8_t*>(&out));
 	EXPECT_EQ(out[0], 42);
 	EXPECT_EQ(out[1], 314);
@@ -3509,12 +3543,12 @@ TEST(vint8, store_lanes_masked)
 	EXPECT_TRUE(all(result1v == expect1v));
 
 	// Store half
-	vmask8 mask2 = vint8(1, 1, 1, 1, 0, 0, 0, 0) == vint8(1);
+	vmask8 mask2 = vint8_lit(1, 1, 1, 1, 0, 0, 0, 0) == vint8(1);
 	vint8 data2 = vint8(2);
 
 	store_lanes_masked(resulta, data2, mask2);
 	vint8 result2v = vint8::load(resulta);
-	vint8 expect2v = vint8(2, 2, 2, 2, 0, 0, 0, 0);
+	vint8 expect2v = vint8_lit(2, 2, 2, 2, 0, 0, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
 	// Store all
@@ -3542,12 +3576,12 @@ TEST(vint8, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result1v == expect1v));
 
 	// Store half
-	vmask8 mask2 = vint8(1, 1, 1, 1, 0, 0, 0, 0) == vint8(1);
+	vmask8 mask2 = vint8_lit(1, 1, 1, 1, 0, 0, 0, 0) == vint8(1);
 	vint8 data2 = vint8(2);
 
 	store_lanes_masked(resulta + 1, data2, mask2);
 	vint8 result2v = vint8::load(resulta + 1);
-	vint8 expect2v = vint8(2, 2, 2, 2, 0, 0, 0, 0);
+	vint8 expect2v = vint8_lit(2, 2, 2, 2, 0, 0, 0, 0);
 	EXPECT_TRUE(all(result2v == expect2v));
 
 	// Store all
@@ -3563,7 +3597,7 @@ TEST(vint8, store_lanes_masked_unaligned)
 /** @brief Test vint8 gatheri. */
 TEST(vint8, gatheri)
 {
-	vint8 indices(0, 4, 3, 2, 7, 4, 3, 2);
+	vint8 indices = vint8_lit(0, 4, 3, 2, 7, 4, 3, 2);
 	vint8 r = gatheri(s32_data, indices);
 
 	alignas(32) int ra[8];
@@ -3582,7 +3616,7 @@ TEST(vint8, gatheri)
 /** @brief Test vint8 pack_low_bytes. */
 TEST(vint8, pack_low_bytes)
 {
-	vint8 a(1, 2, 3, 4, 2, 3, 4, 5);
+	vint8 a = vint8_lit(1, 2, 3, 4, 2, 3, 4, 5);
 	vint8 r = pack_low_bytes(a);
 
 	alignas(32) int ra[8];
@@ -3595,12 +3629,12 @@ TEST(vint8, pack_low_bytes)
 /** @brief Test vint8 select. */
 TEST(vint8, select)
 {
-	vint8 m1(1, 1, 1, 1, 1, 1, 1, 1);
-	vint8 m2(1, 2, 1, 2, 1, 2, 1, 2);
+	vint8 m1 = vint8_lit(1, 1, 1, 1, 1, 1, 1, 1);
+	vint8 m2 = vint8_lit(1, 2, 1, 2, 1, 2, 1, 2);
 	vmask8 cond = m1 == m2;
 
-	vint8 a(1, 3, 3, 1, 1, 3, 3, 1);
-	vint8 b(4, 2, 2, 4, 4, 2, 2, 4);
+	vint8 a = vint8_lit(1, 3, 3, 1, 1, 3, 3, 1);
+	vint8 b = vint8_lit(4, 2, 2, 4, 4, 2, 2, 4);
 
 	vint8 r1 = select(a, b, cond);
 
@@ -3652,12 +3686,12 @@ TEST(vmask8, scalar_literal_construct)
 /** @brief Test vmask8 or. */
 TEST(vmask8, or)
 {
-	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
-	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m1a = vfloat8_lit(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m1 = m1a == m1b;
 
-	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
-	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m2a = vfloat8_lit(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m2 = m2a == m2b;
 
 	vmask8 r = m1 | m2;
@@ -3667,12 +3701,12 @@ TEST(vmask8, or)
 /** @brief Test vmask8 and. */
 TEST(vmask8, and)
 {
-	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
-	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m1a = vfloat8_lit(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m1 = m1a == m1b;
 
-	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
-	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m2a = vfloat8_lit(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m2 = m2a == m2b;
 
 	vmask8 r = m1 & m2;
@@ -3682,12 +3716,12 @@ TEST(vmask8, and)
 /** @brief Test vmask8 xor. */
 TEST(vmask8, xor)
 {
-	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
-	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m1a = vfloat8_lit(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m1 = m1a == m1b;
 
-	vfloat8 m2a(1, 1, 0, 0, 1, 1, 0, 0);
-	vfloat8 m2b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m2a = vfloat8_lit(1, 1, 0, 0, 1, 1, 0, 0);
+	vfloat8 m2b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m2 = m2a == m2b;
 
 	vmask8 r = m1 ^ m2;
@@ -3697,8 +3731,8 @@ TEST(vmask8, xor)
 /** @brief Test vmask8 not. */
 TEST(vmask8, not)
 {
-	vfloat8 m1a(0, 1, 0, 1, 0, 1, 0, 1);
-	vfloat8 m1b(1, 1, 1, 1, 1, 1, 1, 1);
+	vfloat8 m1a = vfloat8_lit(0, 1, 0, 1, 0, 1, 0, 1);
+	vfloat8 m1b = vfloat8_lit(1, 1, 1, 1, 1, 1, 1, 1);
 	vmask8 m1 = m1a == m1b;
 	vmask8 r = ~m1;
 	EXPECT_EQ(mask(r), 0x55u);
@@ -3713,7 +3747,7 @@ TEST(vint8, vtable_8bt_32bi_32entry)
 	vint8 table0p, table1p;
 	vtable_prepare(table0, table1, table0p, table1p);
 
-	vint8 index(0, 7, 4, 15, 16, 20, 23, 31);
+	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 23, 31);
 
 	vint8 result = vtable_8bt_32bi(table0p, table1p, index);
 
@@ -3741,7 +3775,7 @@ TEST(vint8, vtable_8bt_32bi_64entry)
 	vint8 table0p, table1p, table2p, table3p;
 	vtable_prepare(table0, table1, table2, table3, table0p, table1p, table2p, table3p);
 
-	vint8 index(0, 7, 4, 15, 16, 20, 38, 63);
+	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 38, 63);
 
 	vint8 result = vtable_8bt_32bi(table0p, table1p, table2p, table3p, index);
 
