@@ -372,16 +372,6 @@ TEST(vfloat4, Loada)
 	EXPECT_EQ(a.lane<3>(), 3.0f);
 }
 
-/** @brief Test vfloat4 lane_id. */
-TEST(vfloat4, LaneID)
-{
-	vfloat4 a = vfloat4::lane_id();
-	EXPECT_EQ(a.lane<0>(), 0.0f);
-	EXPECT_EQ(a.lane<1>(), 1.0f);
-	EXPECT_EQ(a.lane<2>(), 2.0f);
-	EXPECT_EQ(a.lane<3>(), 3.0f);
-}
-
 /** @brief Test vfloat4 swz to float4. */
 TEST(vfloat4, swz4)
 {
@@ -2124,24 +2114,6 @@ TEST(vfloat8, Load1)
 TEST(vfloat8, Loada)
 {
 	vfloat8 a = vfloat8::loada(&(f32_data[0]));
-
-	alignas(32) float ra[8];
-	storea(a, ra);
-
-	EXPECT_EQ(ra[0], 0.0f);
-	EXPECT_EQ(ra[1], 1.0f);
-	EXPECT_EQ(ra[2], 2.0f);
-	EXPECT_EQ(ra[3], 3.0f);
-	EXPECT_EQ(ra[4], 4.0f);
-	EXPECT_EQ(ra[5], 5.0f);
-	EXPECT_EQ(ra[6], 6.0f);
-	EXPECT_EQ(ra[7], 7.0f);
-}
-
-/** @brief Test vfloat8 lane_id. */
-TEST(vfloat8, LaneID)
-{
-	vfloat8 a = vfloat8::lane_id();
 
 	alignas(32) float ra[8];
 	storea(a, ra);

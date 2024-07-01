@@ -119,14 +119,6 @@ struct vfloat8
 	}
 
 	/**
-	 * @brief Factory that returns a vector containing the lane IDs.
-	 */
-	static ASTCENC_SIMD_INLINE vfloat8 lane_id()
-	{
-		return vfloat8(_mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0));
-	}
-
-	/**
 	 * @brief The vector ...
 	 */
 	__m256 m;
