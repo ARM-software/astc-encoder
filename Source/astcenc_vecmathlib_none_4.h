@@ -916,17 +916,6 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
- */
-ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
-{
-	return vfloat4((cond.m[0] & static_cast<int>(0x80000000)) ? b.m[0] : a.m[0],
-	               (cond.m[1] & static_cast<int>(0x80000000)) ? b.m[1] : a.m[1],
-	               (cond.m[2] & static_cast<int>(0x80000000)) ? b.m[2] : a.m[2],
-	               (cond.m[3] & static_cast<int>(0x80000000)) ? b.m[3] : a.m[3]);
-}
-
-/**
  * @brief Load a vector of gathered results from an array;
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)

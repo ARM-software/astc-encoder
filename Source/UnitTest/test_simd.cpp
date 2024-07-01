@@ -909,31 +909,6 @@ TEST(vfloat4, select)
 	EXPECT_EQ(r2.lane<3>(), 4.0f);
 }
 
-/** @brief Test vfloat4 select MSB only. */
-TEST(vfloat4, select_msb)
-{
-	int msb_set = static_cast<int>(0x80000000);
-	vint4 msb(msb_set, 0, msb_set, 0);
-	vmask4 cond(msb.m);
-
-	vfloat4 a(1.0f, 3.0f, 3.0f, 1.0f);
-	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
-
-	// Select in one direction
-	vfloat4 r1 = select_msb(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4.0f);
-	EXPECT_EQ(r1.lane<1>(), 3.0f);
-	EXPECT_EQ(r1.lane<2>(), 2.0f);
-	EXPECT_EQ(r1.lane<3>(), 1.0f);
-
-	// Select in the other
-	vfloat4 r2 = select_msb(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1.0f);
-	EXPECT_EQ(r2.lane<1>(), 2.0f);
-	EXPECT_EQ(r2.lane<2>(), 3.0f);
-	EXPECT_EQ(r2.lane<3>(), 4.0f);
-}
-
 /** @brief Test vfloat4 gatherf. */
 TEST(vfloat4, gatherf)
 {
@@ -2680,46 +2655,6 @@ TEST(vfloat8, select)
 
 	vfloat8 a = vfloat8_lit(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0);
 	vfloat8 b = vfloat8_lit(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0);
-
-	// Select in one direction
-	vfloat8 r1 = select(a, b, cond);
-
-	alignas(32) float ra[8];
-	storea(r1, ra);
-
-	EXPECT_EQ(ra[0], 4.0f);
-	EXPECT_EQ(ra[1], 3.0f);
-	EXPECT_EQ(ra[2], 2.0f);
-	EXPECT_EQ(ra[3], 1.0f);
-	EXPECT_EQ(ra[4], 4.0f);
-	EXPECT_EQ(ra[5], 3.0f);
-	EXPECT_EQ(ra[6], 2.0f);
-	EXPECT_EQ(ra[7], 1.0f);
-
-	// Select in the other
-	vfloat8 r2 = select(b, a, cond);
-
-	storea(r2, ra);
-
-	EXPECT_EQ(ra[0], 1.0f);
-	EXPECT_EQ(ra[1], 2.0f);
-	EXPECT_EQ(ra[2], 3.0f);
-	EXPECT_EQ(ra[3], 4.0f);
-	EXPECT_EQ(ra[4], 1.0f);
-	EXPECT_EQ(ra[5], 2.0f);
-	EXPECT_EQ(ra[6], 3.0f);
-	EXPECT_EQ(ra[7], 4.0f);
-}
-
-/** @brief Test vfloat8 select MSB only. */
-TEST(vfloat8, select_msb)
-{
-	int msb_set = static_cast<int>(0x80000000);
-	vint8 msb = vint8_lit(msb_set, 0, msb_set, 0, msb_set, 0, msb_set, 0);
-	vmask8 cond(msb.m);
-
-	vfloat8 a = vfloat8_lit(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
-	vfloat8 b = vfloat8_lit(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
 
 	// Select in one direction
 	vfloat8 r1 = select(a, b, cond);
