@@ -164,7 +164,7 @@ static void compute_lowest_and_highest_weight(
 	promise(weight_count > 0);
 	promise(max_angular_steps > 0);
 
-	vfloat rcp_stepsize = vfloat::lane_id() + vfloat(1.0f);
+	vfloat rcp_stepsize = int_to_float(vint::lane_id()) + vfloat(1.0f);
 
 	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
 	for (unsigned int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)

@@ -143,14 +143,6 @@ struct vfloat4
 	}
 
 	/**
-	 * @brief Factory that returns a vector containing the lane IDs.
-	 */
-	static ASTCENC_SIMD_INLINE vfloat4 lane_id()
-	{
-		return vfloat4(_mm_set_ps(3, 2, 1, 0));
-	}
-
-	/**
 	 * @brief Return a swizzled float 2.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
@@ -661,20 +653,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
 	// Cast due to missing intrinsics
 	_mm_store_ss(reinterpret_cast<float*>(p), _mm_castsi128_ps(a.m));
-}
-
-/**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
-{
-#if ASTCENC_AVX >= 2
-	return vint4(_mm_i32gather_epi32(base, indices.m, 4));
-#else
-	alignas(16) int idx[4];
-	storea(indices, idx);
-	return vint4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
-#endif
 }
 
 /**

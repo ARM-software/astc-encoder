@@ -75,37 +75,11 @@ struct vfloat8
 	}
 
 	/**
-	 * @brief Construct from 8 scalar values.
-	 *
-	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
-	 */
-	ASTCENC_SIMD_INLINE explicit vfloat8(
-		float a, float b, float c, float d,
-		float e, float f, float g, float h)
-	{
-		m = _mm256_set_ps(h, g, f, e, d, c, b, a);
-	}
-
-	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(__m256 a)
 	{
 		m = a;
-	}
-
-	/**
-	 * @brief Get the scalar value of a single lane.
-	 */
-	template <int l> ASTCENC_SIMD_INLINE float lane() const
-	{
-	#if !defined(__clang__) && defined(_MSC_VER)
-		return m.m256_f32[l];
-	#else
-		union { __m256 m; float f[8]; } cvt;
-		cvt.m = m;
-		return cvt.f[l];
-	#endif
 	}
 
 	/**
@@ -130,14 +104,6 @@ struct vfloat8
 	static ASTCENC_SIMD_INLINE vfloat8 loada(const float* p)
 	{
 		return vfloat8(_mm256_load_ps(p));
-	}
-
-	/**
-	 * @brief Factory that returns a vector containing the lane IDs.
-	 */
-	static ASTCENC_SIMD_INLINE vfloat8 lane_id()
-	{
-		return vfloat8(_mm256_set_ps(7, 6, 5, 4, 3, 2, 1, 0));
 	}
 
 	/**
@@ -191,37 +157,11 @@ struct vint8
 	}
 
 	/**
-	 * @brief Construct from 8 scalar values.
-	 *
-	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
-	 */
-	ASTCENC_SIMD_INLINE explicit vint8(
-		int a, int b, int c, int d,
-		int e, int f, int g, int h)
-	{
-		m = _mm256_set_epi32(h, g, f, e, d, c, b, a);
-	}
-
-	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(__m256i a)
 	{
 		m = a;
-	}
-
-	/**
-	 * @brief Get the scalar from a single lane.
-	 */
-	template <int l> ASTCENC_SIMD_INLINE int lane() const
-	{
-	#if !defined(__clang__) && defined(_MSC_VER)
-		return m.m256i_i32[l];
-	#else
-		union { __m256i m; int f[8]; } cvt;
-		cvt.m = m;
-		return cvt.f[l];
-	#endif
 	}
 
 	/**
@@ -529,6 +469,14 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 }
 
 /**
+ * @brief Return the horizontal minimum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
+{
+	return _mm256_cvtsi256_si32(hmin(a).m);
+}
+
+/**
  * @brief Return the horizontal maximum of a vector.
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
@@ -541,6 +489,14 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 	__m256i r = astcenc_mm256_set_m128i(m, m);
 	vint8 vmax(r);
 	return vmax;
+}
+
+/**
+ * @brief Return the horizontal maximum of a vector.
+ */
+ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
+{
+	return _mm256_cvtsi256_si32(hmax(a).m);
 }
 
 /**
@@ -568,14 +524,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 	// is missing on older compilers (supported in g++ 9 and clang++ 9).
 	// _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0))
 	_mm_storel_epi64(reinterpret_cast<__m128i*>(p), _mm256_extracti128_si256(a.m, 0));
-}
-
-/**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint8 gatheri(const int* base, vint8 indices)
-{
-	return vint8(_mm256_i32gather_epi32(base, indices.m, 4));
 }
 
 /**
@@ -787,19 +735,6 @@ ASTCENC_SIMD_INLINE vfloat8 clamp(float min, float max, vfloat8 a)
 }
 
 /**
- * @brief Return a clamped value between 0.0f and max.
- *
- * It is assumed that @c max is not a NaN value. If @c a is NaN then zero will
- * be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat8 clampz(float max, vfloat8 a)
-{
-	a.m = _mm256_max_ps(a.m, _mm256_setzero_ps());
-	a.m = _mm256_min_ps(a.m, _mm256_set1_ps(max));
-	return a;
-}
-
-/**
  * @brief Return a clamped value between 0.0f and 1.0f.
  *
  * If @c a is NaN then zero will be returned for that lane.
@@ -857,7 +792,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 {
-	return hmin(a).lane<0>();
+	return _mm256_cvtss_f32(hmin(a).m);
 }
 
 /**
@@ -887,7 +822,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 {
-	return hmax(a).lane<0>();
+	return _mm256_cvtss_f32(hmax(a).m);
 }
 
 /**
@@ -1146,7 +1081,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
  * @brief Return a vector of interleaved RGBA data.
  *
  * Input vectors have the value stored in the bottom 8 bits of each lane,
- * with high  bits set to zero.
+ * with high bits set to zero.
  *
  * Output vector stores a single RGBA texel packed in each lane.
  */
