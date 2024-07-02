@@ -16,10 +16,10 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief 8x32-bit vectors, implemented using AVX2.
+ * @brief 8x32-bit vectors, implemented using SVE.
  *
- * This module implements 8-wide 32-bit float, int, and mask vectors for x86
- * AVX2.
+ * This module implements 8-wide 32-bit float, int, and mask vectors for Arm
+ * SVE.
  *
  * There is a baseline level of functionality provided by all vector widths and
  * implementations. This is implemented using identical function signatures,
@@ -27,8 +27,8 @@
  * code.
  */
 
-#ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
-#define ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
+#ifndef ASTC_VECMATHLIB_sve_8_H_INCLUDED
+#define ASTC_VECMATHLIB_sve_8_H_INCLUDED
 
 #ifndef ASTCENC_SIMD_INLINE
 	#error "Include astcenc_vecmathlib.h, do not include directly"
@@ -36,8 +36,12 @@
 
 #include <cstdio>
 
-// Define convenience intrinsics that are missing on older compilers
-#define astcenc_mm256_set_m128i(m, n) _mm256_insertf128_si256(_mm256_castsi128_si256((n)), (m), 1)
+typedef svbool_t svbool_8_t __attribute__((arm_sve_vector_bits(256)));
+typedef svuint8_t svuint8_8_t __attribute__((arm_sve_vector_bits(256)));
+typedef svuint16_t svuint16_8_t __attribute__((arm_sve_vector_bits(256)));
+typedef svuint32_t svuint32_8_t __attribute__((arm_sve_vector_bits(256)));
+typedef svint32_t svint32_8_t __attribute__((arm_sve_vector_bits(256)));
+typedef svfloat32_t svfloat32_8_t __attribute__((arm_sve_vector_bits(256)));
 
 // ============================================================================
 // vfloat8 data type
@@ -61,7 +65,7 @@ struct vfloat8
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(const float *p)
 	{
-		m = _mm256_loadu_ps(p);
+		m = svld1_f32(svptrue_b32(), p);
 	}
 
 	/**
@@ -71,13 +75,13 @@ struct vfloat8
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(float a)
 	{
-		m = _mm256_set1_ps(a);
+		m = svdup_f32(a);
 	}
 
 	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
-	ASTCENC_SIMD_INLINE explicit vfloat8(__m256 a)
+	ASTCENC_SIMD_INLINE explicit vfloat8(svfloat32_8_t a)
 	{
 		m = a;
 	}
@@ -87,7 +91,7 @@ struct vfloat8
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 zero()
 	{
-		return vfloat8(_mm256_setzero_ps());
+		return vfloat8(0.0f);
 	}
 
 	/**
@@ -95,7 +99,7 @@ struct vfloat8
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 load1(const float* p)
 	{
-		return vfloat8(_mm256_broadcast_ss(p));
+		return vfloat8(*p);
 	}
 
 	/**
@@ -103,13 +107,13 @@ struct vfloat8
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 loada(const float* p)
 	{
-		return vfloat8(_mm256_load_ps(p));
+		return vfloat8(p);
 	}
 
 	/**
 	 * @brief The vector ...
 	 */
-	__m256 m;
+	svfloat32_8_t m;
 };
 
 // ============================================================================
@@ -134,7 +138,7 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const int *p)
 	{
-		m = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(p));
+		m = svld1_s32(svptrue_b32(), p);
 	}
 
 	/**
@@ -142,8 +146,14 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
-		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC
-		m = _mm256_cvtepu8_epi32(_mm_cvtsi64_si128(*reinterpret_cast<const long long*>(p)));
+		// Load 8 byte values
+		svbool_8_t pred = svptrue_pat_b8(SV_VL8);
+		svuint8_8_t m8 = svld1_u8(pred, p);
+
+		// Expand to 32-bits
+		svuint16_8_t m16 = svunpklo_u16(m8);
+		svuint32_8_t m32 = svunpklo_u32(m16);
+		m = svreinterpret_s32_u32(m32);
 	}
 
 	/**
@@ -153,13 +163,13 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
-		m = _mm256_set1_epi32(a);
+		m = svdup_s32(a);
 	}
 
 	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
-	ASTCENC_SIMD_INLINE explicit vint8(__m256i a)
+	ASTCENC_SIMD_INLINE explicit vint8(svint32_8_t a)
 	{
 		m = a;
 	}
@@ -169,7 +179,7 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 zero()
 	{
-		return vint8(_mm256_setzero_si256());
+		return vint8(0.0f);
 	}
 
 	/**
@@ -177,8 +187,7 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 load1(const int* p)
 	{
-		__m128i a = _mm_set1_epi32(*p);
-		return vint8(_mm256_broadcastd_epi32(a));
+		return vint8(*p);
 	}
 
 	/**
@@ -186,7 +195,8 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 load(const uint8_t* p)
 	{
-		return vint8(_mm256_lddqu_si256(reinterpret_cast<const __m256i*>(p)));
+		svuint8_8_t data = svld1_u8(svptrue_b8(), p);
+		return vint8(svreinterpret_s32_u8(data));
 	}
 
 	/**
@@ -194,7 +204,7 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)
 	{
-		return vint8(_mm256_load_si256(reinterpret_cast<const __m256i*>(p)));
+		return vint8(p);
 	}
 
 	/**
@@ -202,13 +212,13 @@ struct vint8
 	 */
 	static ASTCENC_SIMD_INLINE vint8 lane_id()
 	{
-		return vint8(_mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0));
+		return vint8(svindex_s32(0, 1));
 	}
 
 	/**
 	 * @brief The vector ...
 	 */
-	__m256i m;
+	 svint32_8_t m;
 };
 
 // ============================================================================
@@ -223,17 +233,9 @@ struct vmask8
 	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
-	ASTCENC_SIMD_INLINE explicit vmask8(__m256 a)
+	ASTCENC_SIMD_INLINE explicit vmask8(svbool_8_t a)
 	{
 		m = a;
-	}
-
-	/**
-	 * @brief Construct from an existing SIMD register.
-	 */
-	ASTCENC_SIMD_INLINE explicit vmask8(__m256i a)
-	{
-		m = _mm256_castsi256_ps(a);
 	}
 
 	/**
@@ -241,14 +243,13 @@ struct vmask8
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask8(bool a)
 	{
-		vint8 mask(a == false ? 0 : -1);
-		m = _mm256_castsi256_ps(mask.m);
+		m = svdup_b32(a);
 	}
 
 	/**
 	 * @brief The vector ...
 	 */
-	__m256 m;
+	svbool_8_t m;
 };
 
 // ============================================================================
@@ -260,7 +261,7 @@ struct vmask8
  */
 ASTCENC_SIMD_INLINE vmask8 operator|(vmask8 a, vmask8 b)
 {
-	return vmask8(_mm256_or_ps(a.m, b.m));
+	return vmask8(svorr_z(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -268,7 +269,7 @@ ASTCENC_SIMD_INLINE vmask8 operator|(vmask8 a, vmask8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator&(vmask8 a, vmask8 b)
 {
-	return vmask8(_mm256_and_ps(a.m, b.m));
+	return vmask8(svand_z(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -276,7 +277,7 @@ ASTCENC_SIMD_INLINE vmask8 operator&(vmask8 a, vmask8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator^(vmask8 a, vmask8 b)
 {
-	return vmask8(_mm256_xor_ps(a.m, b.m));
+	return vmask8(sveor_z(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -284,7 +285,7 @@ ASTCENC_SIMD_INLINE vmask8 operator^(vmask8 a, vmask8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
 {
-	return vmask8(_mm256_xor_si256(_mm256_castps_si256(a.m), _mm256_set1_epi32(-1)));
+	return vmask8(svnot_z(svptrue_b32(), a.m));
 }
 
 /**
@@ -294,7 +295,10 @@ ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
 {
-	return static_cast<unsigned int>(_mm256_movemask_ps(a.m));
+	alignas(32) const int shifta[8] { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80 };
+	svint32_8_t template_vals = svld1_s32(svptrue_b32(), shifta);
+	svint32_8_t active_vals = svsel_s32(a.m, template_vals, svdup_s32(0));
+	return static_cast<unsigned int>(svaddv_s32(svptrue_b32(), active_vals));
 }
 
 /**
@@ -302,7 +306,7 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
  */
 ASTCENC_SIMD_INLINE bool any(vmask8 a)
 {
-	return mask(a) != 0;
+	return svptest_any(svptrue_b32(), a.m);
 }
 
 /**
@@ -310,7 +314,7 @@ ASTCENC_SIMD_INLINE bool any(vmask8 a)
  */
 ASTCENC_SIMD_INLINE bool all(vmask8 a)
 {
-	return mask(a) == 0xFF;
+	return !svptest_any(svptrue_b32(), (~a).m);
 }
 
 // ============================================================================
@@ -321,7 +325,7 @@ ASTCENC_SIMD_INLINE bool all(vmask8 a)
  */
 ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 {
-	return vint8(_mm256_add_epi32(a.m, b.m));
+	return vint8(svadd_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -338,7 +342,7 @@ ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
  */
 ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 {
-	return vint8(_mm256_sub_epi32(a.m, b.m));
+	return vint8(svsub_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -346,7 +350,7 @@ ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
 {
-	return vint8(_mm256_mullo_epi32(a.m, b.m));
+	return vint8(svmul_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -354,7 +358,7 @@ ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 operator~(vint8 a)
 {
-	return vint8(_mm256_xor_si256(a.m, _mm256_set1_epi32(-1)));
+	return vint8(svnot_s32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -362,7 +366,7 @@ ASTCENC_SIMD_INLINE vint8 operator~(vint8 a)
  */
 ASTCENC_SIMD_INLINE vint8 operator|(vint8 a, vint8 b)
 {
-	return vint8(_mm256_or_si256(a.m, b.m));
+	return vint8(svorr_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -370,7 +374,7 @@ ASTCENC_SIMD_INLINE vint8 operator|(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 operator&(vint8 a, vint8 b)
 {
-	return vint8(_mm256_and_si256(a.m, b.m));
+	return vint8(svand_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -378,7 +382,7 @@ ASTCENC_SIMD_INLINE vint8 operator&(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 operator^(vint8 a, vint8 b)
 {
-	return vint8(_mm256_xor_si256(a.m, b.m));
+	return vint8(sveor_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -386,7 +390,7 @@ ASTCENC_SIMD_INLINE vint8 operator^(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator==(vint8 a, vint8 b)
 {
-	return vmask8(_mm256_cmpeq_epi32(a.m, b.m));
+	return vmask8(svcmpeq_s32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -394,7 +398,7 @@ ASTCENC_SIMD_INLINE vmask8 operator==(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator!=(vint8 a, vint8 b)
 {
-	return ~vmask8(_mm256_cmpeq_epi32(a.m, b.m));
+	return vmask8(svcmpne_s32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -402,7 +406,7 @@ ASTCENC_SIMD_INLINE vmask8 operator!=(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator<(vint8 a, vint8 b)
 {
-	return vmask8(_mm256_cmpgt_epi32(b.m, a.m));
+	return vmask8(svcmplt_s32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -410,7 +414,7 @@ ASTCENC_SIMD_INLINE vmask8 operator<(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 {
-	return vmask8(_mm256_cmpgt_epi32(a.m, b.m));
+	return vmask8(svcmpgt_s32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -418,7 +422,7 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
 {
-	return vint8(_mm256_slli_epi32(a.m, s));
+	return vint8(svlsl_n_s32_x(svptrue_b32(), a.m, s));
 }
 
 /**
@@ -426,7 +430,7 @@ template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
 {
-	return vint8(_mm256_srai_epi32(a.m, s));
+	return vint8(svasr_n_s32_x(svptrue_b32(), a.m, s));
 }
 
 /**
@@ -434,7 +438,9 @@ template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
 {
-	return vint8(_mm256_srli_epi32(a.m, s));
+	svuint32_8_t r = svreinterpret_u32_s32(a.m);
+	r = svlsr_n_u32_x(svptrue_b32(), r, s);
+	return vint8(svreinterpret_s32_u32(r));
 }
 
 /**
@@ -442,7 +448,7 @@ template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
  */
 ASTCENC_SIMD_INLINE vint8 min(vint8 a, vint8 b)
 {
-	return vint8(_mm256_min_epi32(a.m, b.m));
+	return vint8(svmin_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -450,7 +456,7 @@ ASTCENC_SIMD_INLINE vint8 min(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 max(vint8 a, vint8 b)
 {
-	return vint8(_mm256_max_epi32(a.m, b.m));
+	return vint8(svmax_s32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -458,14 +464,7 @@ ASTCENC_SIMD_INLINE vint8 max(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 {
-	__m128i m = _mm_min_epi32(_mm256_extracti128_si256(a.m, 0), _mm256_extracti128_si256(a.m, 1));
-	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
-	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
-	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
-
-	__m256i r = astcenc_mm256_set_m128i(m, m);
-	vint8 vmin(r);
-	return vmin;
+	return vint8(svminv_s32(svptrue_b32(), a.m));
 }
 
 /**
@@ -473,7 +472,7 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
  */
 ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
 {
-	return _mm256_cvtsi256_si32(hmin(a).m);
+	return svminv_s32(svptrue_b32(), a.m);
 }
 
 /**
@@ -481,14 +480,7 @@ ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 {
-	__m128i m = _mm_max_epi32(_mm256_extracti128_si256(a.m, 0), _mm256_extracti128_si256(a.m, 1));
-	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
-	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
-	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
-
-	__m256i r = astcenc_mm256_set_m128i(m, m);
-	vint8 vmax(r);
-	return vmax;
+	return vint8(svmaxv_s32(svptrue_b32(), a.m));
 }
 
 /**
@@ -496,7 +488,7 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
  */
 ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
 {
-	return _mm256_cvtsi256_si32(hmax(a).m);
+	return svmaxv_s32(svptrue_b32(), a.m);
 }
 
 /**
@@ -504,7 +496,7 @@ ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
  */
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
 {
-	_mm256_store_si256(reinterpret_cast<__m256i*>(p), a.m);
+	svst1_s32(svptrue_b32(), p, a.m);
 }
 
 /**
@@ -512,7 +504,7 @@ ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
  */
 ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
 {
-	_mm256_storeu_si256(reinterpret_cast<__m256i*>(p), a.m);
+	svst1_s32(svptrue_b32(), p, a.m);
 }
 
 /**
@@ -520,10 +512,8 @@ ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 {
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	// _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0))
-	_mm_storel_epi64(reinterpret_cast<__m128i*>(p), _mm256_extracti128_si256(a.m, 0));
+	svuint8_8_t r = svreinterpret_u8_s32(a.m);
+	svst1_u8(svptrue_pat_b8(SV_VL8), p, r);
 }
 
 /**
@@ -531,18 +521,8 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
  */
 ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 {
-	__m256i shuf = _mm256_set_epi8(0, 0, 0, 0,  0,  0,  0,  0,
-	                               0, 0, 0, 0, 28, 24, 20, 16,
-	                               0, 0, 0, 0,  0,  0,  0,  0,
-	                               0, 0, 0, 0, 12,  8,  4,  0);
-	__m256i a = _mm256_shuffle_epi8(v.m, shuf);
-	__m128i a0 = _mm256_extracti128_si256(a, 0);
-	__m128i a1 = _mm256_extracti128_si256(a, 1);
-	__m128i b = _mm_unpacklo_epi32(a0, a1);
-
-	__m256i r = astcenc_mm256_set_m128i(b, b);
-
-	store_nbytes(vint8(r), p);
+	svuint32_8_t data = svreinterpret_u32_s32(v.m);
+	svst1b_u32(svptrue_b32(), p, data);
 }
 
 /**
@@ -550,8 +530,7 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
  */
 ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 {
-	__m256i condi = _mm256_castps_si256(cond.m);
-	return vint8(_mm256_blendv_epi8(a.m, b.m, condi));
+	return vint8(svsel_s32(cond.m, b.m, a.m));
 }
 
 // ============================================================================
@@ -563,7 +542,7 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator+(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_add_ps(a.m, b.m));
+	return vfloat8(svadd_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -580,7 +559,7 @@ ASTCENC_SIMD_INLINE vfloat8& operator+=(vfloat8& a, const vfloat8& b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_sub_ps(a.m, b.m));
+	return vfloat8(svsub_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -588,7 +567,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_mul_ps(a.m, b.m));
+	return vfloat8(svmul_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -596,7 +575,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, float b)
 {
-	return vfloat8(_mm256_mul_ps(a.m, _mm256_set1_ps(b)));
+	return vfloat8(svmul_f32_x(svptrue_b32(), a.m, svdup_f32(b)));
 }
 
 /**
@@ -604,7 +583,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, float b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(float a, vfloat8 b)
 {
-	return vfloat8(_mm256_mul_ps(_mm256_set1_ps(a), b.m));
+	return vfloat8(svmul_f32_x(svptrue_b32(), svdup_f32(a), b.m));
 }
 
 /**
@@ -612,7 +591,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(float a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_div_ps(a.m, b.m));
+	return vfloat8(svdiv_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -620,7 +599,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
 {
-	return vfloat8(_mm256_div_ps(a.m, _mm256_set1_ps(b)));
+	return vfloat8(svdiv_f32_x(svptrue_b32(), a.m, svdup_f32(b)));
 }
 
 
@@ -629,7 +608,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
 {
-	return vfloat8(_mm256_div_ps(_mm256_set1_ps(a), b.m));
+	return vfloat8(svdiv_f32_x(svptrue_b32(), svdup_f32(a), b.m));
 }
 
 
@@ -638,7 +617,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator==(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_EQ_OQ));
+	return vmask8(svcmpeq_f32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -646,7 +625,7 @@ ASTCENC_SIMD_INLINE vmask8 operator==(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator!=(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_NEQ_OQ));
+	return vmask8(svcmpne_f32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -654,7 +633,7 @@ ASTCENC_SIMD_INLINE vmask8 operator!=(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator<(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_LT_OQ));
+	return vmask8(svcmplt_f32(svptrue_b32(), a.m, b.m));;
 }
 
 /**
@@ -662,7 +641,7 @@ ASTCENC_SIMD_INLINE vmask8 operator<(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator>(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_GT_OQ));
+	return vmask8(svcmpgt_f32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -670,7 +649,7 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator<=(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_LE_OQ));
+	return vmask8(svcmple_f32(svptrue_b32(), a.m, b.m));
 }
 
 /**
@@ -678,23 +657,23 @@ ASTCENC_SIMD_INLINE vmask8 operator<=(vfloat8 a, vfloat8 b)
  */
 ASTCENC_SIMD_INLINE vmask8 operator>=(vfloat8 a, vfloat8 b)
 {
-	return vmask8(_mm256_cmp_ps(a.m, b.m, _CMP_GE_OQ));
+	return vmask8(svcmpge_f32(svptrue_b32(), a.m, b.m));
 }
 
 /**
  * @brief Return the min vector of two vectors.
  *
- * If either lane value is NaN, @c b will be returned for that lane.
+ * If either lane value is NaN, the other lane will be returned.
  */
 ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_min_ps(a.m, b.m));
+	return vfloat8(svminnm_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
  * @brief Return the min vector of a vector and a scalar.
  *
- * If either lane value is NaN, @c b will be returned for that lane.
+ * If either lane value is NaN, the other lane will be returned.
  */
 ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
 {
@@ -704,17 +683,17 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
 /**
  * @brief Return the max vector of two vectors.
  *
- * If either lane value is NaN, @c b will be returned for that lane.
+ * If either lane value is NaN, the other lane will be returned.
  */
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 {
-	return vfloat8(_mm256_max_ps(a.m, b.m));
+	return vfloat8(svmaxnm_f32_x(svptrue_b32(), a.m, b.m));
 }
 
 /**
  * @brief Return the max vector of a vector and a scalar.
  *
- * If either lane value is NaN, @c b will be returned for that lane.
+ * If either lane value is NaN, the other lane will be returned.
  */
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
 {
@@ -727,12 +706,9 @@ ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
  * It is assumed that neither @c min nor @c max are NaN values. If @c a is NaN
  * then @c min will be returned for that lane.
  */
-ASTCENC_SIMD_INLINE vfloat8 clamp(float min, float max, vfloat8 a)
+ASTCENC_SIMD_INLINE vfloat8 clamp(float minv, float maxv, vfloat8 a)
 {
-	// Do not reorder - second operand will return if either is NaN
-	a.m = _mm256_max_ps(a.m, _mm256_set1_ps(min));
-	a.m = _mm256_min_ps(a.m, _mm256_set1_ps(max));
-	return a;
+	return min(max(a, minv), maxv);
 }
 
 /**
@@ -742,9 +718,7 @@ ASTCENC_SIMD_INLINE vfloat8 clamp(float min, float max, vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 clampzo(vfloat8 a)
 {
-	a.m = _mm256_max_ps(a.m, _mm256_setzero_ps());
-	a.m = _mm256_min_ps(a.m, _mm256_set1_ps(1.0f));
-	return a;
+	return clamp(0.0f, 1.0f, a);
 }
 
 /**
@@ -752,8 +726,7 @@ ASTCENC_SIMD_INLINE vfloat8 clampzo(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 abs(vfloat8 a)
 {
-	__m256 msk = _mm256_castsi256_ps(_mm256_set1_epi32(0x7fffffff));
-	return vfloat8(_mm256_and_ps(a.m, msk));
+	return vfloat8(svabs_f32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -761,8 +734,7 @@ ASTCENC_SIMD_INLINE vfloat8 abs(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 round(vfloat8 a)
 {
-	constexpr int flags = _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC;
-	return vfloat8(_mm256_round_ps(a.m, flags));
+	return vfloat8(svrintn_f32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -770,22 +742,7 @@ ASTCENC_SIMD_INLINE vfloat8 round(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 {
-	__m128 vlow = _mm256_castps256_ps128(a.m);
-	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
-	vlow = _mm_min_ps(vlow, vhigh);
-
-	// First do an horizontal reduction.
-	__m128 shuf = _mm_shuffle_ps(vlow, vlow, _MM_SHUFFLE(2, 3, 0, 1));
-	__m128 mins = _mm_min_ps(vlow, shuf);
-	shuf = _mm_movehl_ps(shuf, mins);
-	mins = _mm_min_ss(mins, shuf);
-
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128(m, m)
-	__m256 r = _mm256_insertf128_ps(_mm256_castps128_ps256(mins), mins, 1);
-
-	return vfloat8(_mm256_permute_ps(r, 0));
+	return vfloat8(svminnmv_f32(svptrue_b32(), a.m));
 }
 
 /**
@@ -793,7 +750,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 {
-	return _mm256_cvtss_f32(hmin(a).m);
+	return svminnmv_f32(svptrue_b32(), a.m);
 }
 
 /**
@@ -801,21 +758,7 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 {
-	__m128 vlow = _mm256_castps256_ps128(a.m);
-	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
-	vhigh = _mm_max_ps(vlow, vhigh);
-
-	// First do an horizontal reduction.
-	__m128 shuf = _mm_shuffle_ps(vhigh, vhigh, _MM_SHUFFLE(2, 3, 0, 1));
-	__m128 maxs = _mm_max_ps(vhigh, shuf);
-	shuf = _mm_movehl_ps(shuf,maxs);
-	maxs = _mm_max_ss(maxs, shuf);
-
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128(m, m)
-	__m256 r = _mm256_insertf128_ps(_mm256_castps128_ps256(maxs), maxs, 1);
-	return vfloat8(_mm256_permute_ps(r, 0));
+	return vfloat8(svmaxnmv_f32(svptrue_b32(), a.m));
 }
 
 /**
@@ -823,7 +766,7 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 {
-	return _mm256_cvtss_f32(hmax(a).m);
+	return svmaxnmv_f32(svptrue_b32(), a.m);
 }
 
 /**
@@ -831,9 +774,9 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 {
-	// Two sequential 4-wide adds gives invariance with 4-wide code
-	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
-	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	// Can't use svaddv - it's not invariant
+	vfloat4 lo(svget_neonq_f32(a.m));
+	vfloat4 hi(svget_neonq_f32(svext_f32(a.m, a.m, 4)));
 	return hadd_s(lo) + hadd_s(hi);
 }
 
@@ -842,7 +785,7 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
 {
-	return vfloat8(_mm256_blendv_ps(a.m, b.m, cond.m));
+	return vfloat8(svsel_f32(cond.m, b.m, a.m));
 }
 
 /**
@@ -852,10 +795,10 @@ ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 {
-	vfloat4 lo(_mm256_extractf128_ps(a.m, 0));
+	vfloat4 lo(svget_neonq_f32(a.m));
 	haccumulate(accum, lo);
 
-	vfloat4 hi(_mm256_extractf128_ps(a.m, 1));
+	vfloat4 hi(svget_neonq_f32(svext_f32(a.m, a.m, 4)));
 	haccumulate(accum, hi);
 }
 
@@ -887,8 +830,7 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
 {
-	a = select(vfloat8::zero(), a, m);
-	haccumulate(accum, a);
+	accum.m = svadd_f32_m(m.m, accum.m, a.m);
 }
 
 /**
@@ -896,7 +838,7 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
  */
 ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 {
-	return vfloat8(_mm256_sqrt_ps(a.m));
+	return vfloat8(svsqrt_f32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -904,7 +846,7 @@ ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 {
-	return vfloat8(_mm256_i32gather_ps(base, indices.m, 4));
+	return vfloat8(svld1_gather_s32index_f32(svptrue_b32(), base, indices.m));
 }
 
 /**
@@ -912,7 +854,7 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
  */
 ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
 {
-	_mm256_storeu_ps(p, a.m);
+	svst1_f32(svptrue_b32(), p, a.m);
 }
 
 /**
@@ -920,7 +862,7 @@ ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
  */
 ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
 {
-	_mm256_store_ps(p, a.m);
+	svst1_f32(svptrue_b32(), p, a.m);
 }
 
 /**
@@ -928,7 +870,7 @@ ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
  */
 ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 {
-	return vint8(_mm256_cvttps_epi32(a.m));
+	return vint8(svcvt_s32_f32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -937,16 +879,15 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
 {
 	a = a + vfloat8(0.5f);
-	return vint8(_mm256_cvttps_epi32(a.m));
+	return vint8(svcvt_s32_f32_x(svptrue_b32(), a.m));
 }
-
 
 /**
  * @brief Return a float value for an integer vector.
  */
 ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
 {
-	return vfloat8(_mm256_cvtepi32_ps(a.m));
+	return vfloat8(svcvt_f32_s32_x(svptrue_b32(), a.m));
 }
 
 /**
@@ -958,7 +899,7 @@ ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
  */
 ASTCENC_SIMD_INLINE vint8 float_as_int(vfloat8 a)
 {
-	return vint8(_mm256_castps_si256(a.m));
+	return vint8(svreinterpret_s32_f32(a.m));
 }
 
 /**
@@ -970,7 +911,7 @@ ASTCENC_SIMD_INLINE vint8 float_as_int(vfloat8 a)
  */
 ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 {
-	return vfloat8(_mm256_castsi256_ps(a.m));
+	return vfloat8(svreinterpret_f32_s32(a.m));
 }
 
 /**
@@ -978,9 +919,7 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
 {
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
+	t0p = vint8(svdup_neonq_f32(t0.m));
 }
 
 /**
@@ -988,12 +927,13 @@ ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t1p)
 {
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
+	// 8-wide SVE uses a single table register, so t1 is unused
+	(void)t1p;
 
-	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
+	svfloat32_8_t t0v = svdup_neonq_f32(t0.m);
+	svfloat32_8_t t1v = svdup_neonq_f32(t1.m);
+
+	t0p = vint8(svext_f32(t0v, t1v, 4));
 }
 
 /**
@@ -1003,18 +943,17 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
 	vint8& t0p, vint8& t1p, vint8& t2p, vint8& t3p)
 {
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
+	// 8-wide SVE uses a two table registers, so t2 and t3 are unused
+	(void)t2p;
+	(void)t3p;
 
-	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
+	svfloat32_8_t t0v = svdup_neonq_f32(t0.m);
+	svfloat32_8_t t1v = svdup_neonq_f32(t1.m);
+	svfloat32_8_t t2v = svdup_neonq_f32(t2.m);
+	svfloat32_8_t t3v = svdup_neonq_f32(t3.m);
 
-	__m128i t2n = _mm_xor_si128(t1.m, t2.m);
-	t2p = vint8(astcenc_mm256_set_m128i(t2n, t2n));
-
-	__m128i t3n = _mm_xor_si128(t2.m, t3.m);
-	t3p = vint8(astcenc_mm256_set_m128i(t3n, t3n));
+	t0p = vint8(svext_f32(t0v, t1v, 4));
+	t1p = vint8(svext_f32(t2v, t3v, 4));
 }
 
 /**
@@ -1022,11 +961,14 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
  */
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
 {
-	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
+	// Set index byte above max index for unused bytes so table lookup returns zero
+	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
-	return vint8(result);
+	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
+	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(t0.m);
+	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
+
+	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
@@ -1034,15 +976,17 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
  */
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
 {
-	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
+	// 8-wide SVE uses a single table register, so t1 is unused
+	(void)t1;
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
-	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
+	// Set index byte above max index for unused bytes so table lookup returns zero
+	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
-	__m256i result2 = _mm256_shuffle_epi8(t1.m, idxx);
-	result = _mm256_xor_si256(result, result2);
-	return vint8(result);
+	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
+	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(t0.m);
+	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
+
+	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
@@ -1050,23 +994,28 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
  */
 ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3, vint8 idx)
 {
-	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
-	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
+	// 8-wide SVE uses a two table registers, so t2 and t3 are unused
+	(void)t2;
+	(void)t3;
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
-	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
+	// Set index byte above max index for unused bytes so table lookup returns zero
+	svint32_8_t literal32 = svdup_s32(32);
+	svbool_8_t idx_lo_select = svcmplt(svptrue_b32(), idx.m, literal32);
+	svint32_8_t idx_lo_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
+	svint32_8_t idx_hi_masked = svorr_s32_x(svptrue_b32(), idx.m - literal32, svdup_s32(0xFFFFFF00));
 
-	__m256i result2 = _mm256_shuffle_epi8(t1.m, idxx);
-	result = _mm256_xor_si256(result, result2);
-	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
+	svuint8_8_t idx_lo_bytes = svreinterpret_u8_s32(idx_lo_masked);
+	svuint8_8_t idx_hi_bytes = svreinterpret_u8_s32(idx_hi_masked);
 
-	result2 = _mm256_shuffle_epi8(t2.m, idxx);
-	result = _mm256_xor_si256(result, result2);
-	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
+	svuint8_8_t tbl0_bytes = svreinterpret_u8_s32(t0.m);
+	svuint8_8_t tbl1_bytes = svreinterpret_u8_s32(t1.m);
 
-	result2 = _mm256_shuffle_epi8(t3.m, idxx);
-	result = _mm256_xor_si256(result, result2);
+	svint32_8_t t0_lookup = svreinterpret_s32_u8(svtbl_u8(tbl0_bytes, idx_lo_bytes));
+	svint32_8_t t1_lookup = svreinterpret_s32_u8(svtbl_u8(tbl1_bytes, idx_hi_bytes));
 
+	svint32_8_t result = svsel_s32(idx_lo_select, t0_lookup, t1_lookup);
+
+	// Future: SVE2 can directly do svtbl2_u8() for a two register table
 	return vint8(result);
 }
 
@@ -1090,7 +1039,7 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 mask)
 {
-	_mm256_maskstore_epi32(reinterpret_cast<int*>(base), _mm256_castps_si256(mask.m), data.m);
+	svst1_u32(mask.m, reinterpret_cast<uint32_t*>(base), data.m);
 }
 
 /**
@@ -1137,4 +1086,4 @@ ASTCENC_SIMD_INLINE void print(vmask8 a)
 	print(select(vint8(0), vint8(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
+#endif // #ifndef ASTC_VECMATHLIB_sve_8_H_INCLUDED

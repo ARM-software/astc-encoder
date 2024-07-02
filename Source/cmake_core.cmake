@@ -271,6 +271,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
+                ASTCENC_SVE=0
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -280,6 +281,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=1
+                ASTCENC_SVE=0
                 ASTCENC_SSE=0
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -293,10 +295,28 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                     $<${is_msvccl}:/d2ssa-cfg-sink->)
         endif()
 
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_256")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                ASTCENC_NEON=1
+                ASTCENC_SVE=8
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0
+                ASTCENC_F16C=0)
+
+        # Enable SVE
+        if (NOT ${ASTCENC_IS_VENEER})
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve -msve-vector-bits=256)
+        endif()
+
     elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
+                ASTCENC_SVE=0
                 ASTCENC_SSE=20
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
@@ -314,6 +334,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
+                ASTCENC_SVE=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=1
@@ -338,6 +359,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
+                ASTCENC_SVE=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=2
                 ASTCENC_POPCNT=1

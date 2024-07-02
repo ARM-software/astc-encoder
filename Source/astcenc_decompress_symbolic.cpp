@@ -110,7 +110,7 @@ void unpack_weights(
 		{
 			vint summed_value(8);
 			vint weight_count(di.texel_weight_count + i);
-			int max_weight_count = hmax(weight_count).lane<0>();
+			int max_weight_count = hmax_s(weight_count);
 
 			promise(max_weight_count > 0);
 			for (int j = 0; j < max_weight_count; j++)
@@ -145,7 +145,7 @@ void unpack_weights(
 			vint sum_plane2(8);
 
 			vint weight_count(di.texel_weight_count + i);
-			int max_weight_count = hmax(weight_count).lane<0>();
+			int max_weight_count = hmax_s(weight_count);
 
 			promise(max_weight_count > 0);
 			for (int j = 0; j < max_weight_count; j++)

@@ -889,7 +889,7 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax(weight_texel_count).lane<0>();
+		unsigned int max_texel_count = hmax_s(weight_texel_count);
 		promise(max_texel_count > 0);
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
@@ -947,7 +947,7 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax(weight_texel_count).lane<0>();
+		unsigned int max_texel_count = hmax_s(weight_texel_count);
 		promise(max_texel_count > 0);
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
@@ -1050,8 +1050,7 @@ void compute_quantized_weights_for_decimation(
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
-			vint scn = pack_low_bytes(weight);
-			store_nbytes(scn, quantized_weight_set + i);
+			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
 	else
@@ -1084,8 +1083,7 @@ void compute_quantized_weights_for_decimation(
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
-			vint scn = pack_low_bytes(weight);
-			store_nbytes(scn, quantized_weight_set + i);
+			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
 }

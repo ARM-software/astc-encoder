@@ -140,14 +140,6 @@ struct vfloat4
 	}
 
 	/**
-	 * @brief Factory that returns a vector containing the lane IDs.
-	 */
-	static ASTCENC_SIMD_INLINE vfloat4 lane_id()
-	{
-		return vfloat4(0.0f, 1.0f, 2.0f, 3.0f);
-	}
-
-	/**
 	 * @brief Return a swizzled float 2.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
@@ -685,20 +677,9 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
-{
-	return vint4(base[indices.m[0]],
-	             base[indices.m[1]],
-	             base[indices.m[2]],
-	             base[indices.m[3]]);
-}
-
-/**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
-ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* p)
 {
 	int b0 = a.m[0] & 0xFF;
 	int b1 = a.m[1] & 0xFF;
@@ -706,7 +687,8 @@ ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
 	int b3 = a.m[3] & 0xFF;
 
 	int b = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
-	return vint4(b, 0, 0, 0);
+	a = vint4(b, 0, 0, 0);
+	store_nbytes(a, p);
 }
 
 /**
@@ -927,17 +909,6 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
  * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
-{
-	return vfloat4((cond.m[0] & static_cast<int>(0x80000000)) ? b.m[0] : a.m[0],
-	               (cond.m[1] & static_cast<int>(0x80000000)) ? b.m[1] : a.m[1],
-	               (cond.m[2] & static_cast<int>(0x80000000)) ? b.m[2] : a.m[2],
-	               (cond.m[3] & static_cast<int>(0x80000000)) ? b.m[3] : a.m[3]);
-}
-
-/**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
- */
-ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
 {
 	return vfloat4((cond.m[0] & static_cast<int>(0x80000000)) ? b.m[0] : a.m[0],
 	               (cond.m[1] & static_cast<int>(0x80000000)) ? b.m[1] : a.m[1],
