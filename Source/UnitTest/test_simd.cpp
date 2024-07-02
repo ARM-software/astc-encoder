@@ -203,7 +203,7 @@ TEST(vfloat, ChangeSign)
 /** @brief Test VLA atan. */
 TEST(vfloat, Atan)
 {
-	vfloa4 a(-0.15f, 0.0f, 0.9f, 2.1f);
+	vfloat4 a(-0.15f, 0.0f, 0.9f, 2.1f);
 	vfloat4 r = atan(a);
 	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
 	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
