@@ -1839,17 +1839,6 @@ TEST(vint4, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint4 gatheri. */
-TEST(vint4, gatheri)
-{
-	vint4 indices(0, 4, 3, 2);
-	vint4 r = gatheri(s32_data, indices);
-	EXPECT_EQ(r.lane<0>(), 0);
-	EXPECT_EQ(r.lane<1>(), 4);
-	EXPECT_EQ(r.lane<2>(), 3);
-	EXPECT_EQ(r.lane<3>(), 2);
-}
-
 /** @brief Test vint4 pack_low_bytes. */
 TEST(vint4, pack_low_bytes)
 {
@@ -3592,25 +3581,6 @@ TEST(vint8, store_lanes_masked_unaligned)
 	vint8 result3v = vint8::load(resulta + 1);
 	vint8 expect3v = vint8(3);
 	EXPECT_TRUE(all(result3v == expect3v));
-}
-
-/** @brief Test vint8 gatheri. */
-TEST(vint8, gatheri)
-{
-	vint8 indices = vint8_lit(0, 4, 3, 2, 7, 4, 3, 2);
-	vint8 r = gatheri(s32_data, indices);
-
-	alignas(32) int ra[8];
-	store(r, ra);
-
-	EXPECT_EQ(ra[0], 0);
-	EXPECT_EQ(ra[1], 4);
-	EXPECT_EQ(ra[2], 3);
-	EXPECT_EQ(ra[3], 2);
-	EXPECT_EQ(ra[4], 7);
-	EXPECT_EQ(ra[5], 4);
-	EXPECT_EQ(ra[6], 3);
-	EXPECT_EQ(ra[7], 2);
 }
 
 /** @brief Test vint8 pack_low_bytes. */

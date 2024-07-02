@@ -677,17 +677,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
-{
-	return vint4(base[indices.m[0]],
-	             base[indices.m[1]],
-	             base[indices.m[2]],
-	             base[indices.m[3]]);
-}
-
-/**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
 ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)

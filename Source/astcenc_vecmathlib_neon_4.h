@@ -603,21 +603,6 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
-{
-	alignas(16) int idx[4];
-	storea(indices, idx);
-	alignas(16) int vals[4];
-	vals[0] = base[idx[0]];
-	vals[1] = base[idx[1]];
-	vals[2] = base[idx[2]];
-	vals[3] = base[idx[3]];
-	return vint4(vals);
-}
-
-/**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
 ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
