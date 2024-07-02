@@ -603,16 +603,17 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
+ * @brief Pack and store low 8 bits of each vector lane.
  */
-ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* data)
 {
 	alignas(16) uint8_t shuf[16] {
 		0, 4, 8, 12,   0, 0, 0, 0,   0, 0, 0, 0,   0, 0, 0, 0
 	};
 	uint8x16_t idx = vld1q_u8(shuf);
 	int8x16_t av = vreinterpretq_s8_s32(a.m);
-	return vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
+	a = vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
+	store_nbytes(a, data);
 }
 
 /**

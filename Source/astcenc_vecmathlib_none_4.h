@@ -679,7 +679,7 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 /**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
-ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* p)
 {
 	int b0 = a.m[0] & 0xFF;
 	int b1 = a.m[1] & 0xFF;
@@ -687,7 +687,8 @@ ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
 	int b3 = a.m[3] & 0xFF;
 
 	int b = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
-	return vint4(b, 0, 0, 0);
+	a = vint4(b, 0, 0, 0);
+	store_nbytes(a, p);
 }
 
 /**

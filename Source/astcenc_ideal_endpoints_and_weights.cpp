@@ -1050,8 +1050,7 @@ void compute_quantized_weights_for_decimation(
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
-			vint scn = pack_low_bytes(weight);
-			store_nbytes(scn, quantized_weight_set + i);
+			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
 	else
@@ -1084,8 +1083,7 @@ void compute_quantized_weights_for_decimation(
 
 			// Invert the weight-scaling that was done initially
 			storea(ixl * rscalev + low_boundv, weight_set_out + i);
-			vint scn = pack_low_bytes(weight);
-			store_nbytes(scn, quantized_weight_set + i);
+			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
 }

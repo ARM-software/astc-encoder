@@ -529,7 +529,7 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 /**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
-ASTCENC_SIMD_INLINE vint8 pack_low_bytes(vint8 v)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 {
 	__m256i shuf = _mm256_set_epi8(0, 0, 0, 0,  0,  0,  0,  0,
 	                               0, 0, 0, 0, 28, 24, 20, 16,
@@ -541,7 +541,8 @@ ASTCENC_SIMD_INLINE vint8 pack_low_bytes(vint8 v)
 	__m128i b = _mm_unpacklo_epi32(a0, a1);
 
 	__m256i r = astcenc_mm256_set_m128i(b, b);
-	return vint8(r);
+
+	store_nbytes(vint8(r), p);
 }
 
 /**

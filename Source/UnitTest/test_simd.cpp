@@ -1814,12 +1814,17 @@ TEST(vint4, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint4 pack_low_bytes. */
-TEST(vint4, pack_low_bytes)
+/** @brief Test vint4 pack_and_store_low_bytes. */
+TEST(vint4, pack_and_store_low_bytes)
 {
 	vint4 a(1, 2, 3, 4);
-	vint4 r = pack_low_bytes(a);
-	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
+	uint8_t bytes[4] { 0 };
+	pack_and_store_low_bytes(a, bytes);
+
+	EXPECT_EQ(bytes[0], 1);
+	EXPECT_EQ(bytes[1], 2);
+	EXPECT_EQ(bytes[2], 3);
+	EXPECT_EQ(bytes[3], 4);
 }
 
 /** @brief Test vint4 select. */
@@ -3518,17 +3523,22 @@ TEST(vint8, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint8 pack_low_bytes. */
-TEST(vint8, pack_low_bytes)
+/** @brief Test vint8 pack_and_store_low_bytes. */
+TEST(vint8, pack_and_store_low_bytes)
 {
 	vint8 a = vint8_lit(1, 2, 3, 4, 2, 3, 4, 5);
-	vint8 r = pack_low_bytes(a);
+	uint8_t bytes[8] { 0 };
 
-	alignas(32) int ra[8];
-	store(r, ra);
+	pack_and_store_low_bytes(a, bytes);
 
-	EXPECT_EQ(ra[0], (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
-	EXPECT_EQ(ra[1], (5 << 24) | (4 << 16) | (3  << 8) | (2 << 0));
+	EXPECT_EQ(bytes[0], 1);
+	EXPECT_EQ(bytes[1], 2);
+	EXPECT_EQ(bytes[2], 3);
+	EXPECT_EQ(bytes[3], 4);
+	EXPECT_EQ(bytes[4], 2);
+	EXPECT_EQ(bytes[5], 3);
+	EXPECT_EQ(bytes[6], 4);
+	EXPECT_EQ(bytes[7], 5);
 }
 
 /** @brief Test vint8 select. */
