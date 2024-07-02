@@ -306,9 +306,11 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 ASTCENC_F16C=0)
 
         # Enable SVE
-        target_compile_options(${ASTCENC_TARGET_NAME}
-            PRIVATE
-                -march=armv8-a+sve -msve-vector-bits=256)
+        if (NOT ${ASTCENC_IS_VENEER})
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve -msve-vector-bits=256)
+        endif()
 
     elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
         target_compile_definitions(${ASTCENC_TARGET_NAME}

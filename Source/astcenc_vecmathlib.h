@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2022 Arm Limited
+// Copyright 2019-2024 Arm Limited
 // Copyright 2008 Jose Fonseca
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -119,6 +119,11 @@
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_sve_8.h"
+
+	/* Check the compiler is treating SVE as 256 bits ... */
+	#if __ARM_FEATURE_SVE_BITS != 256
+		#error "__ARM_FEATURE_SVE_BITS is not 256 bits"
+	#endif
 
 	#define ASTCENC_SIMD_WIDTH 8
 

@@ -37,6 +37,7 @@ int astcenc_main(
 	int argc,
 	char **argv);
 
+// x86-64 builds
 #if (ASTCENC_SSE > 20)    || (ASTCENC_AVX > 0) || \
     (ASTCENC_POPCNT > 0) || (ASTCENC_F16C > 0)
 
@@ -250,6 +251,36 @@ static bool validate_cpu_isa()
 			return false;
 		}
 	#endif
+
+	return true;
+}
+
+// Validate Arm SVE availability
+#elif ASTCENC_SVE != 0
+
+#include <sys/auxv.h>
+static bool cpu_supports_sve_256()
+{
+    long hwcaps = getauxval(AT_HWCAP);
+	return (hwcaps & HWCAP_SVE) != 0;
+}
+
+/**
+ * @brief Print a string to stderr.
+ */
+static inline void print_error(
+	const char* format
+) {
+	fprintf(stderr, "%s", format);
+}
+
+static bool validate_cpu_isa()
+{
+	if (!cpu_supports_sve_256())
+	{
+		print_error("ERROR: Host does not support SVE ISA extension\n");
+		return false;
+	}
 
 	return true;
 }
