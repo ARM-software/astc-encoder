@@ -346,7 +346,7 @@ struct vmask4
 	/**
 	 * @brief Get the scalar value of a single lane.
 	 */
-	template <int l> ASTCENC_SIMD_INLINE float lane() const
+	template <int l> ASTCENC_SIMD_INLINE bool lane() const
 	{
 		return m[l] != 0;
 	}
