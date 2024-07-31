@@ -140,14 +140,6 @@ struct vfloat4
 	}
 
 	/**
-	 * @brief Factory that returns a vector containing the lane IDs.
-	 */
-	static ASTCENC_SIMD_INLINE vfloat4 lane_id()
-	{
-		return vfloat4(0.0f, 1.0f, 2.0f, 3.0f);
-	}
-
-	/**
 	 * @brief Return a swizzled float 2.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
@@ -354,7 +346,7 @@ struct vmask4
 	/**
 	 * @brief Get the scalar value of a single lane.
 	 */
-	template <int l> ASTCENC_SIMD_INLINE float lane() const
+	template <int l> ASTCENC_SIMD_INLINE bool lane() const
 	{
 		return m[l] != 0;
 	}
@@ -682,17 +674,6 @@ ASTCENC_SIMD_INLINE void store(vint4 a, uint8_t* p)
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
 	std::memcpy(p, a.m, sizeof(uint8_t) * 4);
-}
-
-/**
- * @brief Gather N (vector width) indices from the array.
- */
-ASTCENC_SIMD_INLINE vint4 gatheri(const int* base, vint4 indices)
-{
-	return vint4(base[indices.m[0]],
-	             base[indices.m[1]],
-	             base[indices.m[2]],
-	             base[indices.m[3]]);
 }
 
 /**
