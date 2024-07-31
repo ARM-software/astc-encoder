@@ -411,6 +411,22 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	return vaddvq_u32(vshlq_u32(tmp, shift));
 }
 
+/**
+ * @brief True if any lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool any(vmask4 a)
+{
+	return vmaxvq_u32(a.m) != 0;
+}
+
+/**
+ * @brief True if all lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool all(vmask4 a)
+{
+	return vminvq_u32(a.m) != 0;
+}
+
 // ============================================================================
 // vint4 operators and functions
 // ============================================================================
