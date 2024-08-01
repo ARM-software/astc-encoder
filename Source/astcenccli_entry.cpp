@@ -261,7 +261,7 @@ static bool validate_cpu_isa()
 #include <sys/auxv.h>
 static bool cpu_supports_sve_256()
 {
-    long hwcaps = getauxval(AT_HWCAP);
+	long hwcaps = getauxval(AT_HWCAP);
 	return (hwcaps & HWCAP_SVE) != 0;
 }
 
