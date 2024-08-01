@@ -823,7 +823,7 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 	return vfloat4(vals);
 #else
 	svint32_t offsets = svset_neonq_s32(svundef_s32(), indices.m);
-	svfloat32_t	data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
+	svfloat32_t data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
 	return vfloat4(svget_neonq_f32(data));
 #endif
 }

@@ -1308,6 +1308,7 @@ unsigned int compute_ideal_endpoint_formats(
 		vbest_error_index = select(vint(0x7FFFFFFF), vbest_error_index, lanes_min_error);
 
 		int best_error_index = hmin_s(vbest_error_index);
+
 		best_error_weights[i] = best_error_index;
 
 		// Max the error for this candidate so we don't pick it again
