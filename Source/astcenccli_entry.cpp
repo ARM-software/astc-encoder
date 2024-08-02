@@ -259,7 +259,7 @@ static bool validate_cpu_isa()
 #elif ASTCENC_SVE != 0
 
 #include <sys/auxv.h>
-static bool cpu_supports_sve_256()
+static bool cpu_supports_sve()
 {
 	long hwcaps = getauxval(AT_HWCAP);
 	return (hwcaps & HWCAP_SVE) != 0;
@@ -274,9 +274,16 @@ static inline void print_error(
 	fprintf(stderr, "%s", format);
 }
 
+/**
+ * @brief Validate that SVE is supported.
+ *
+ * Note that this function checks that SVE is supported, but because it
+ * runs in the veneer which is compiled without SVE support, we cannot
+ * check the SVE width is correct. This is checked later.
+ */
 static bool validate_cpu_isa()
 {
-	if (!cpu_supports_sve_256())
+	if (!cpu_supports_sve())
 	{
 		print_error("ERROR: Host does not support SVE ISA extension\n");
 		return false;

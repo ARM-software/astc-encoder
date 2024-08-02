@@ -78,7 +78,7 @@
 #endif
 
 #if ASTCENC_AVX >= 2
-	/* If we have AVX2 expose 8-wide VLA. */
+	// If we have AVX2 expose 8-wide VLA.
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx2_8.h"
@@ -100,7 +100,7 @@
 	constexpr auto load1 = vfloat8::load1;
 
 #elif ASTCENC_SSE >= 20
-	/* If we have SSE expose 4-wide VLA, and 4-wide fixed width. */
+	// If we have SSE expose 4-wide VLA, and 4-wide fixed width.
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
@@ -115,15 +115,15 @@
 	constexpr auto load1 = vfloat4::load1;
 
 #elif ASTCENC_SVE == 8
-	/* If we have SVE configured as 8-wide, expose 8-wide VLA. */
+	// Check the compiler is configured with fixed-length 256-bit SVE.
+	#if !defined(__ARM_FEATURE_SVE_BITS) || (__ARM_FEATURE_SVE_BITS != 256)
+		#error "__ARM_FEATURE_SVE_BITS is not set to 256 bits"
+	#endif
+
+	// If we have SVE configured as 8-wide, expose 8-wide VLA.
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_sve_8.h"
-
-	/* Check the compiler is treating SVE as 256 bits ... */
-	#if __ARM_FEATURE_SVE_BITS != 256
-		#error "__ARM_FEATURE_SVE_BITS is not 256 bits"
-	#endif
 
 	#define ASTCENC_SIMD_WIDTH 8
 
@@ -142,7 +142,7 @@
 	constexpr auto load1 = vfloat8::load1;
 
 #elif ASTCENC_NEON > 0
-	/* If we have NEON expose 4-wide VLA. */
+	// If we have NEON expose 4-wide VLA.
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
