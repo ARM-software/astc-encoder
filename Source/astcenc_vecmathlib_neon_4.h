@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2023 Arm Limited
+// Copyright 2019-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -409,6 +409,22 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 
 	uint32x4_t tmp = vshrq_n_u32(a.m, 31);
 	return vaddvq_u32(vshlq_u32(tmp, shift));
+}
+
+/**
+ * @brief True if any lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool any(vmask4 a)
+{
+	return vmaxvq_u32(a.m) != 0;
+}
+
+/**
+ * @brief True if all lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool all(vmask4 a)
+{
+	return vminvq_u32(a.m) != 0;
 }
 
 // ============================================================================
