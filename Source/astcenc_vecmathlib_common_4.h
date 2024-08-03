@@ -33,26 +33,6 @@
 #include <cstdio>
 
 // ============================================================================
-// vmask4 operators and functions
-// ============================================================================
-
-/**
- * @brief True if any lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool any(vmask4 a)
-{
-	return mask(a) != 0;
-}
-
-/**
- * @brief True if all lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool all(vmask4 a)
-{
-	return mask(a) == 0xF;
-}
-
-// ============================================================================
 // vint4 operators and functions
 // ============================================================================
 

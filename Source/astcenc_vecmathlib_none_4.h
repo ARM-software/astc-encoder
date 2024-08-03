@@ -418,6 +418,22 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	       ((a.m[3] >> 28) & 0x8);
 }
 
+/**
+ * @brief True if any lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool any(vmask4 a)
+{
+	return mask(a) != 0;
+}
+
+/**
+ * @brief True if all lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool all(vmask4 a)
+{
+	return mask(a) == 0xF;
+}
+
 // ============================================================================
 // vint4 operators and functions
 // ============================================================================
