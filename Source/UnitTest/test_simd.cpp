@@ -194,6 +194,7 @@ TEST(vfloat, ChangeSign)
 	vfloat4 a(-1.0f,  1.0f, -3.12f, 3.12f);
 	vfloat4 b(-1.0f, -1.0f,  3.12f, 3.12f);
 	vfloat4 r = change_sign(a, b);
+
 	EXPECT_EQ(r.lane<0>(),  1.0f);
 	EXPECT_EQ(r.lane<1>(), -1.0f);
 	EXPECT_EQ(r.lane<2>(), -3.12f);
@@ -205,6 +206,7 @@ TEST(vfloat, Atan)
 {
 	vfloat4 a(-0.15f, 0.0f, 0.9f, 2.1f);
 	vfloat4 r = atan(a);
+
 	EXPECT_NEAR(r.lane<0>(), -0.149061f, 0.005f);
 	EXPECT_NEAR(r.lane<1>(),  0.000000f, 0.005f);
 	EXPECT_NEAR(r.lane<2>(),  0.733616f, 0.005f);
@@ -217,6 +219,7 @@ TEST(vfloat, Atan2)
 	vfloat4 a(-0.15f, 0.0f, 0.9f, 2.1f);
 	vfloat4 b(1.15f, -3.0f, -0.9f, 1.1f);
 	vfloat4 r = atan2(a, b);
+
 	EXPECT_NEAR(r.lane<0>(), -0.129816f, 0.005f);
 	EXPECT_NEAR(r.lane<1>(),  3.141592f, 0.005f);
 	EXPECT_NEAR(r.lane<2>(),  2.360342f, 0.005f);
@@ -903,31 +906,6 @@ TEST(vfloat4, select)
 
 	// Select in the other
 	vfloat4 r2 = select(b, a, cond);
-	EXPECT_EQ(r2.lane<0>(), 1.0f);
-	EXPECT_EQ(r2.lane<1>(), 2.0f);
-	EXPECT_EQ(r2.lane<2>(), 3.0f);
-	EXPECT_EQ(r2.lane<3>(), 4.0f);
-}
-
-/** @brief Test vfloat4 select MSB only. */
-TEST(vfloat4, select_msb)
-{
-	int msb_set = static_cast<int>(0x80000000);
-	vint4 msb(msb_set, 0, msb_set, 0);
-	vmask4 cond(msb.m);
-
-	vfloat4 a(1.0f, 3.0f, 3.0f, 1.0f);
-	vfloat4 b(4.0f, 2.0f, 2.0f, 4.0f);
-
-	// Select in one direction
-	vfloat4 r1 = select_msb(a, b, cond);
-	EXPECT_EQ(r1.lane<0>(), 4.0f);
-	EXPECT_EQ(r1.lane<1>(), 3.0f);
-	EXPECT_EQ(r1.lane<2>(), 2.0f);
-	EXPECT_EQ(r1.lane<3>(), 1.0f);
-
-	// Select in the other
-	vfloat4 r2 = select_msb(b, a, cond);
 	EXPECT_EQ(r2.lane<0>(), 1.0f);
 	EXPECT_EQ(r2.lane<1>(), 2.0f);
 	EXPECT_EQ(r2.lane<2>(), 3.0f);
@@ -1839,12 +1817,17 @@ TEST(vint4, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint4 pack_low_bytes. */
-TEST(vint4, pack_low_bytes)
+/** @brief Test vint4 pack_and_store_low_bytes. */
+TEST(vint4, pack_and_store_low_bytes)
 {
 	vint4 a(1, 2, 3, 4);
-	vint4 r = pack_low_bytes(a);
-	EXPECT_EQ(r.lane<0>(), (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
+	uint8_t bytes[4] { 0 };
+	pack_and_store_low_bytes(a, bytes);
+
+	EXPECT_EQ(bytes[0], 1);
+	EXPECT_EQ(bytes[1], 2);
+	EXPECT_EQ(bytes[2], 3);
+	EXPECT_EQ(bytes[3], 4);
 }
 
 /** @brief Test vint4 select. */
@@ -2711,46 +2694,6 @@ TEST(vfloat8, select)
 	EXPECT_EQ(ra[7], 4.0f);
 }
 
-/** @brief Test vfloat8 select MSB only. */
-TEST(vfloat8, select_msb)
-{
-	int msb_set = static_cast<int>(0x80000000);
-	vint8 msb = vint8_lit(msb_set, 0, msb_set, 0, msb_set, 0, msb_set, 0);
-	vmask8 cond(msb.m);
-
-	vfloat8 a = vfloat8_lit(1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
-	vfloat8 b = vfloat8_lit(4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
-
-	// Select in one direction
-	vfloat8 r1 = select(a, b, cond);
-
-	alignas(32) float ra[8];
-	storea(r1, ra);
-
-	EXPECT_EQ(ra[0], 4.0f);
-	EXPECT_EQ(ra[1], 3.0f);
-	EXPECT_EQ(ra[2], 2.0f);
-	EXPECT_EQ(ra[3], 1.0f);
-	EXPECT_EQ(ra[4], 4.0f);
-	EXPECT_EQ(ra[5], 3.0f);
-	EXPECT_EQ(ra[6], 2.0f);
-	EXPECT_EQ(ra[7], 1.0f);
-
-	// Select in the other
-	vfloat8 r2 = select(b, a, cond);
-
-	storea(r2, ra);
-
-	EXPECT_EQ(ra[0], 1.0f);
-	EXPECT_EQ(ra[1], 2.0f);
-	EXPECT_EQ(ra[2], 3.0f);
-	EXPECT_EQ(ra[3], 4.0f);
-	EXPECT_EQ(ra[4], 1.0f);
-	EXPECT_EQ(ra[5], 2.0f);
-	EXPECT_EQ(ra[6], 3.0f);
-	EXPECT_EQ(ra[7], 4.0f);
-}
-
 /** @brief Test vfloat8 gatherf. */
 TEST(vfloat8, gatherf)
 {
@@ -3583,17 +3526,22 @@ TEST(vint8, store_lanes_masked_unaligned)
 	EXPECT_TRUE(all(result3v == expect3v));
 }
 
-/** @brief Test vint8 pack_low_bytes. */
-TEST(vint8, pack_low_bytes)
+/** @brief Test vint8 pack_and_store_low_bytes. */
+TEST(vint8, pack_and_store_low_bytes)
 {
 	vint8 a = vint8_lit(1, 2, 3, 4, 2, 3, 4, 5);
-	vint8 r = pack_low_bytes(a);
+	uint8_t bytes[8] { 0 };
 
-	alignas(32) int ra[8];
-	store(r, ra);
+	pack_and_store_low_bytes(a, bytes);
 
-	EXPECT_EQ(ra[0], (4 << 24) | (3 << 16) | (2  << 8) | (1 << 0));
-	EXPECT_EQ(ra[1], (5 << 24) | (4 << 16) | (3  << 8) | (2 << 0));
+	EXPECT_EQ(bytes[0], 1);
+	EXPECT_EQ(bytes[1], 2);
+	EXPECT_EQ(bytes[2], 3);
+	EXPECT_EQ(bytes[3], 4);
+	EXPECT_EQ(bytes[4], 2);
+	EXPECT_EQ(bytes[5], 3);
+	EXPECT_EQ(bytes[6], 4);
+	EXPECT_EQ(bytes[7], 5);
 }
 
 /** @brief Test vint8 select. */

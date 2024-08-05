@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2024 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -560,6 +560,8 @@ void astcenc_print_header()
 	const char* simdtype = "sse4.1";
 #elif (ASTCENC_SSE == 20)
 	const char* simdtype = "sse2";
+#elif (ASTCENC_SVE == 8)
+	const char* simdtype = "sve.256b";
 #elif (ASTCENC_NEON == 1)
 	const char* simdtype = "neon";
 #else

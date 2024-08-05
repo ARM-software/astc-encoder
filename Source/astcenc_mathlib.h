@@ -73,10 +73,14 @@
   #endif
 #endif
 
+#ifndef ASTCENC_SVE
+  #define ASTCENC_SVE 0
+#endif
+
 // Force vector-sized SIMD alignment
-#if ASTCENC_AVX
+#if ASTCENC_AVX || ASTCENC_SVE == 8
   #define ASTCENC_VECALIGN 32
-#elif ASTCENC_SSE || ASTCENC_NEON
+#elif ASTCENC_SSE || ASTCENC_NEON || ASTCENC_SVE == 4
   #define ASTCENC_VECALIGN 16
 // Use default alignment for non-SIMD builds
 #else

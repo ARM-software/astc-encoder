@@ -674,15 +674,17 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 /**
  * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
  */
-ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* p)
 {
 #if ASTCENC_SSE >= 41
 	__m128i shuf = _mm_set_epi8(0,0,0,0, 0,0,0,0, 0,0,0,0, 12,8,4,0);
-	return vint4(_mm_shuffle_epi8(a.m, shuf));
+	a = vint4(_mm_shuffle_epi8(a.m, shuf));
+	store_nbytes(a, p);
 #else
 	__m128i va = _mm_unpacklo_epi8(a.m, _mm_shuffle_epi32(a.m, _MM_SHUFFLE(1,1,1,1)));
 	__m128i vb = _mm_unpackhi_epi8(a.m, _mm_shuffle_epi32(a.m, _MM_SHUFFLE(3,3,3,3)));
-	return vint4(_mm_unpacklo_epi16(va, vb));
+	a = vint4(_mm_unpacklo_epi16(va, vb));
+	store_nbytes(a, p);
 #endif
 }
 
@@ -890,19 +892,6 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 	return vfloat4(_mm_blendv_ps(a.m, b.m, cond.m));
 #else
 	return vfloat4(_mm_or_ps(_mm_and_ps(cond.m, b.m), _mm_andnot_ps(cond.m, a.m)));
-#endif
-}
-
-/**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
- */
-ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
-{
-#if ASTCENC_SSE >= 41
-	return vfloat4(_mm_blendv_ps(a.m, b.m, cond.m));
-#else
-	__m128 d = _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(cond.m), 31));
-	return vfloat4(_mm_or_ps(_mm_and_ps(d, b.m), _mm_andnot_ps(d, a.m)));
 #endif
 }
 

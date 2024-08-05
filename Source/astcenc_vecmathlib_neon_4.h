@@ -115,7 +115,7 @@ struct vfloat4
 	 */
 	static ASTCENC_SIMD_INLINE vfloat4 zero()
 	{
-		return vfloat4(vdupq_n_f32(0.0f));
+		return vfloat4(0.0f);
 	}
 
 	/**
@@ -619,16 +619,17 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
+ * @brief Pack and store low 8 bits of each vector lane.
  */
-ASTCENC_SIMD_INLINE vint4 pack_low_bytes(vint4 a)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* data)
 {
 	alignas(16) uint8_t shuf[16] {
 		0, 4, 8, 12,   0, 0, 0, 0,   0, 0, 0, 0,   0, 0, 0, 0
 	};
 	uint8x16_t idx = vld1q_u8(shuf);
 	int8x16_t av = vreinterpretq_s8_s32(a.m);
-	return vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
+	a = vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
+	store_nbytes(a, data);
 }
 
 /**
@@ -807,20 +808,11 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
- * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
- */
-ASTCENC_SIMD_INLINE vfloat4 select_msb(vfloat4 a, vfloat4 b, vmask4 cond)
-{
-	static const uint32x4_t msb = vdupq_n_u32(0x80000000u);
-	uint32x4_t mask = vcgeq_u32(cond.m, msb);
-	return vfloat4(vbslq_f32(mask, b.m, a.m));
-}
-
-/**
  * @brief Load a vector of gathered results from an array;
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
+#if ASTCENC_SVE == 0
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	alignas(16) float vals[4];
@@ -829,6 +821,11 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 	vals[2] = base[idx[2]];
 	vals[3] = base[idx[3]];
 	return vfloat4(vals);
+#else
+	svint32_t offsets = svset_neonq_s32(svundef_s32(), indices.m);
+	svfloat32_t data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
+	return vfloat4(svget_neonq_f32(data));
+#endif
 }
 
 /**
