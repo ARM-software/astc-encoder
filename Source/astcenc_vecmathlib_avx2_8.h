@@ -149,7 +149,7 @@ struct vint8
 	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
-	 * Consider using vfloat8::zero() for constexpr zeros.
+	 * Consider using zero() for constexpr zeros.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
@@ -623,7 +623,6 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
 	return vfloat8(_mm256_div_ps(a.m, _mm256_set1_ps(b)));
 }
 
-
 /**
  * @brief Overload: scalar by vector division.
  */
@@ -631,7 +630,6 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
 {
 	return vfloat8(_mm256_div_ps(_mm256_set1_ps(a), b.m));
 }
-
 
 /**
  * @brief Overload: vector by vector equality.

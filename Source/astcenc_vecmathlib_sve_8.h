@@ -27,8 +27,8 @@
  * code.
  */
 
-#ifndef ASTC_VECMATHLIB_sve_8_H_INCLUDED
-#define ASTC_VECMATHLIB_sve_8_H_INCLUDED
+#ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED
+#define ASTC_VECMATHLIB_SVE_8_H_INCLUDED
 
 #ifndef ASTCENC_SIMD_INLINE
 	#error "Include astcenc_vecmathlib.h, do not include directly"
@@ -159,7 +159,7 @@ struct vint8
 	/**
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
-	 * Consider using vfloat8::zero() for constexpr zeros.
+	 * Consider using zero() for constexpr zeros.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
@@ -602,7 +602,6 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
 	return vfloat8(svdiv_f32_x(svptrue_b32(), a.m, svdup_f32(b)));
 }
 
-
 /**
  * @brief Overload: scalar by vector division.
  */
@@ -610,7 +609,6 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
 {
 	return vfloat8(svdiv_f32_x(svptrue_b32(), svdup_f32(a), b.m));
 }
-
 
 /**
  * @brief Overload: vector by vector equality.
@@ -1086,4 +1084,4 @@ ASTCENC_SIMD_INLINE void print(vmask8 a)
 	print(select(vint8(0), vint8(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_sve_8_H_INCLUDED
+#endif // #ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED
