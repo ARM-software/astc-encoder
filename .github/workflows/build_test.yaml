@@ -65,7 +65,7 @@ jobs:
         working-directory: build_rel
 
   build-macos-x64:
-    name: Build and test on MacOS
+    name: Build and test on MacOS x64
     runs-on: macos-12
     steps:
       - name: Git checkout
@@ -102,7 +102,7 @@ jobs:
           python ./Test/astc_test_image.py --test-set Small --test-quality medium
 
   build-macos-arm64:
-    name: Build and test on MacOS
+    name: Build and test on MacOS arm64
     runs-on: macos-14-arm64
     steps:
       - name: Git checkout
