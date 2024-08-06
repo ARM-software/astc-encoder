@@ -63,7 +63,7 @@ jobs:
             --strip-path ${GITHUB_WORKSPACE}
 
   build-ubuntu-x64:
-    name: Build and test on Ubuntu x64
+    name: Ubuntu x64
     runs-on: ubuntu-22.04
     steps:
       - name: Git checkout
@@ -71,7 +71,7 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           export CXX=clang++
           mkdir build_rel
@@ -97,13 +97,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py
           python ./Test/astc_test_image.py --encoder=all-x86 --test-set Small
 
   build-macos-universal:
-    name: Build and test on macOS universal
+    name: macOS universal
     runs-on: macos-14
     steps:
       - name: Git checkout
@@ -111,7 +111,7 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
@@ -136,12 +136,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small --encoder universal
 
   build-windows-multi:
-    name: Build and test on Windows multi
+    name: Windows multi
     runs-on: windows-2022
     steps:
       - name: Git checkout
@@ -152,7 +152,7 @@ jobs:
       - name: Setup Visual Studio x64
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build R x64
+      - name: Build release x64
         run: |
           mkdir build_rel
           cd build_rel
@@ -167,7 +167,7 @@ jobs:
         with:
           arch: x86_arm64
 
-      - name: Build R arm64
+      - name: Build release arm64
         run: |
           mkdir build_rel_arm64
           cd build_rel_arm64
@@ -198,7 +198,7 @@ jobs:
           pip install numpy Pillow
         shell: cmd
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small
         shell: cmd

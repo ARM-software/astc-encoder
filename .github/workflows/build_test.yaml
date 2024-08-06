@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-ubuntu-x64-clang:
-    name: Build and test on Ubuntu x64 Clang
+    name: Ubuntu x64 Clang
     runs-on: ubuntu-22.04
     steps:
       - name: Git checkout
@@ -17,7 +17,7 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           export CXX=clang++
           mkdir build_rel
@@ -25,7 +25,7 @@ jobs:
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
-      - name: Build D
+      - name: Build debug
         run: |
           export CXX=clang++
           mkdir build_dbg
@@ -51,7 +51,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py --encoder=none
           python ./Test/astc_test_functional.py --encoder=sse2
@@ -60,12 +60,12 @@ jobs:
           python ./Test/astc_test_image.py --encoder=none --test-set Small --test-quality medium
           python ./Test/astc_test_image.py --encoder=all-x86 --test-set Small --test-quality medium
 
-      - name: Unit tests
+      - name: Run unit tests
         run: ctest
         working-directory: build_rel
 
   build-ubuntu-x64-gcc:
-    name: Build and test on Ubuntu x64 GCC
+    name: Ubuntu x64 GCC
     runs-on: ubuntu-22.04
     steps:
       - name: Git checkout
@@ -73,7 +73,7 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           export CXX=g++
           mkdir build_rel
@@ -81,7 +81,7 @@ jobs:
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
-      - name: Build D
+      - name: Build debug
         run: |
           export CXX=g++
           mkdir build_dbg
@@ -108,12 +108,12 @@ jobs:
           python ./Test/astc_test_image.py --encoder=none --test-set Small --test-quality medium
           python ./Test/astc_test_image.py --encoder=all-x86 --test-set Small --test-quality medium
 
-      - name: Unit tests
+      - name: Run unit tests
         run: ctest
         working-directory: build_rel
 
   build-macos-x64-clang:
-    name: Build and test on MacOS x64 Clang
+    name: macOS x64 Clang
     runs-on: macos-12
     steps:
       - name: Git checkout
@@ -121,14 +121,14 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNIVERSAL_BUILD=OFF -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
-      - name: Build D
+      - name: Build debug
         run: |
           mkdir build_dbg
           cd build_dbg
@@ -145,12 +145,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small --test-quality medium
 
   build-macos-universal-clang:
-    name: Build and test on MacOS universal Clang
+    name: macOS universal Clang
     runs-on: macos-14
     steps:
       - name: Git checkout
@@ -158,14 +158,14 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNIVERSAL_BUILD=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
-      - name: Build D
+      - name: Build debug
         run: |
           mkdir build_dbg
           cd build_dbg
@@ -190,12 +190,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --encoder=universal --test-set Small --test-quality medium
 
   build-windows-x64-msvc:
-    name: Build and test on Windows x64 MSVC
+    name: Windows x64 MSVC
     runs-on: windows-2022
     steps:
       - name: Git checkout
@@ -206,7 +206,7 @@ jobs:
       - name: Setup Visual Studio x86_6
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
@@ -214,7 +214,7 @@ jobs:
           nmake install package
         shell: cmd
 
-      - name: Build D
+      - name: Build debug
         run: |
           mkdir build_dbg
           cd build_dbg
@@ -233,13 +233,13 @@ jobs:
           pip install numpy Pillow
         shell: cmd
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small --test-quality medium
         shell: cmd
 
   build-windows-x64-clangcl:
-    name: Build and test on Windows x64 ClangCL
+    name: Windows x64 ClangCL
     runs-on: windows-2022
     steps:
       - name: Git checkout
@@ -250,7 +250,7 @@ jobs:
       - name: Setup Visual Studio x86_6
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
@@ -260,7 +260,7 @@ jobs:
           msbuild INSTALL.vcxproj -property:Configuration=Release
         shell: cmd
 
-      - name: Build D
+      - name: Build debug
         run: |
           mkdir build_dbg
           cd build_dbg
@@ -287,13 +287,13 @@ jobs:
           pip install numpy Pillow
         shell: cmd
 
-      - name: Python tests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small --test-quality medium
         shell: cmd
 
   build-windows-arm64-clangcl:
-    name: Build and test on Windows arm64 ClangCL
+    name: Windows arm64 ClangCL
     runs-on: windows-2022
     steps:
       - name: Git checkout
@@ -306,7 +306,7 @@ jobs:
         with:
           arch: x86_arm64
 
-      - name: Build R
+      - name: Build release
         run: |
           mkdir build_rel
           cd build_rel
@@ -316,7 +316,7 @@ jobs:
           msbuild INSTALL.vcxproj -property:Configuration=Release
         shell: cmd
 
-      - name: Build D
+      - name: Build debug
         run: |
           mkdir build_dbg
           cd build_dbg
