@@ -7,6 +7,20 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 4.9.0
+
+**Status:** In development
+
+The 4.9.0 release is a minor maintenance release.
+
+* **General:**
+  * **Bug fix:** Fixed incorrect return type in "None" vector library
+    reference implementation.
+  * **Feature:** Added backend for Arm SVE fixed-width 256-bit builds.
+  * **Feature:** Optimized NEON mask `any()` and `all()` functions.
+  * **Feature:** Migrated build and test to GitHub Actions pipelines.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.8.0
 
 **Status:** May 2024
