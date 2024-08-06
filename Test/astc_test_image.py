@@ -211,8 +211,16 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
                 refResult = testRef.get_matching_record(res)
                 res.set_status(determine_result(image, refResult, res))
 
-                res.tTimeRel = refResult.tTime / res.tTime
-                res.cTimeRel = refResult.cTime / res.cTime
+                try:
+                    res.tTimeRel = refResult.tTime / res.tTime
+                except ZeroDivisionError:
+                    res.tTimeRel = float('NaN')
+
+                try:
+                    res.cTimeRel = refResult.cTime / res.cTime
+                except ZeroDivisionError:
+                    res.cTimeRel = float('NaN')
+
                 res.psnrRel = res.psnr - refResult.psnr
 
                 res = format_result(image, refResult, res)
