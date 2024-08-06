@@ -1,5 +1,5 @@
 name: Build and test
-run-name: Build and test \#${{ github.event.number }}
+run-name: Build and test PR${{ github.event.number }}
 
 on:
   workflow_dispatch:
