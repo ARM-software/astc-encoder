@@ -151,7 +151,7 @@ jobs:
 
   build-macos-arm64-clang:
     name: Build and test on MacOS arm64 Clang
-    runs-on: macos-14-arm64
+    runs-on: macos-14
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
