@@ -148,8 +148,16 @@ def format_result(image, reference, result):
         str: The metrics string.
     """
     dPSNR = result.psnr - reference.psnr
-    sTTime = reference.tTime / result.tTime
-    sCTime = reference.cTime / result.cTime
+
+    try:
+        sTTime = reference.tTime / result.tTime
+    except ZeroDivisionError:
+        sTTime = float('NaN')
+
+    try:
+        sCTime = reference.cTime / result.cTime
+    except ZeroDivisionError:
+        sCTime = float('NaN')
 
     name  = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
