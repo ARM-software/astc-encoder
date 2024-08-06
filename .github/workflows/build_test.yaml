@@ -149,8 +149,8 @@ jobs:
         run: |
           python ./Test/astc_test_image.py --test-set Small --test-quality medium
 
-  build-macos-arm64-clang:
-    name: Build and test on MacOS arm64 Clang
+  build-macos-universal-clang:
+    name: Build and test on MacOS universal Clang
     runs-on: macos-14
     steps:
       - name: Git checkout
