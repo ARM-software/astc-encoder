@@ -225,7 +225,7 @@ struct vint4
 	/**
 	 * @brief Construct from 4 scalar values replicated across all lanes.
 	 *
-	 * Consider using vint4::zero() for constexpr zeros.
+	 * Consider using zero() for constexpr zeros.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(int a)
 	{
