@@ -146,14 +146,8 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
-		// Load 8 byte values
-		svbool_8_t pred = svptrue_pat_b8(SV_VL8);
-		svuint8_8_t m8 = svld1_u8(pred, p);
-
-		// Expand to 32-bits
-		svuint16_8_t m16 = svunpklo_u16(m8);
-		svuint32_8_t m32 = svunpklo_u32(m16);
-		m = svreinterpret_s32_u32(m32);
+		// Load 8-bit values and expand to 32-bits
+		m = svld1ub_s32(svptrue_b32(), p);
 	}
 
 	/**
@@ -1037,7 +1031,7 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 mask)
 {
-	svst1_u32(mask.m, reinterpret_cast<uint32_t*>(base), data.m);
+	svst1_s32(mask.m, reinterpret_cast<int32_t*>(base), data.m);
 }
 
 /**
