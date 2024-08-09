@@ -1023,9 +1023,8 @@ void compute_quantized_weights_for_decimation(
 	// safe data in compute_ideal_weights_for_decimation and arrays are always 64 elements
 	if (get_quant_level(quant_level) <= 16)
 	{
-		vint4 tab0 = vint4::load(qat.quant_to_unquant);
-		vint tab0p;
-		vtable_prepare(tab0, tab0p);
+		vtable_16x8 table;
+		vtable_prepare(table, qat.quant_to_unquant);
 
 		for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1038,8 +1037,8 @@ void compute_quantized_weights_for_decimation(
 			vint weightl = float_to_int(ix1);
 			vint weighth = min(weightl + vint(1), steps_m1);
 
-			vint ixli = vtable_8bt_32bi(tab0p, weightl);
-			vint ixhi = vtable_8bt_32bi(tab0p, weighth);
+			vint ixli = vtable_lookup(table, weightl);
+			vint ixhi = vtable_lookup(table, weighth);
 
 			vfloat ixl = int_to_float(ixli);
 			vfloat ixh = int_to_float(ixhi);
@@ -1055,10 +1054,8 @@ void compute_quantized_weights_for_decimation(
 	}
 	else
 	{
-		vint4 tab0 = vint4::load(qat.quant_to_unquant +  0);
-		vint4 tab1 = vint4::load(qat.quant_to_unquant + 16);
-		vint tab0p, tab1p;
-		vtable_prepare(tab0, tab1, tab0p, tab1p);
+		vtable_32x8 table;
+		vtable_prepare(table, qat.quant_to_unquant);
 
 		for (int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1071,8 +1068,8 @@ void compute_quantized_weights_for_decimation(
 			vint weightl = float_to_int(ix1);
 			vint weighth = min(weightl + vint(1), steps_m1);
 
-			vint ixli = vtable_8bt_32bi(tab0p, tab1p, weightl);
-			vint ixhi = vtable_8bt_32bi(tab0p, tab1p, weighth);
+			vint ixli = vtable_lookup(table, weightl);
+			vint ixhi = vtable_lookup(table, weighth);
 
 			vfloat ixl = int_to_float(ixli);
 			vfloat ixh = int_to_float(ixhi);

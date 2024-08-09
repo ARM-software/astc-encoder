@@ -1067,84 +1067,94 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 a)
 	return r;
 }
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 16x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4& t0p)
-{
-	t0p = t0;
-}
+struct vtable4_16x8 {
+	const uint8_t* data;
+};
+
+/*
+ * Table structure for a 32x 8-bit entry table.
+ */
+struct vtable4_32x8 {
+	const uint8_t* data;
+};
+
+/*
+ * Table structure for a 64x 8-bit entry table.
+ */
+struct vtable4_64x8 {
+	const uint8_t* data;
+};
 
 /**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
- */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint4& t0p, vint4& t1p)
-{
-	t0p = t0;
-	t1p = t1;
-}
-
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
-	vint4& t0p, vint4& t1p, vint4& t2p, vint4& t3p)
-{
-	t0p = t0;
-	t1p = t1;
-	t2p = t2;
-	t3p = t3;
+	vtable4_16x8& table,
+	const uint8_t* data
+) {
+	table.data = data;
 }
 
 /**
- * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
-{
-	uint8_t table[16];
-
-	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
-
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
-}
-
-
-/**
- * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
- */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
-{
-	uint8_t table[32];
-
-	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
-	std::memcpy(table + 16, t1.m, 4 * sizeof(int));
-
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable4_32x8& table,
+	const uint8_t* data
+) {
+	table.data = data;
 }
 
 /**
- * @brief Perform an 8-bit 64-entry table lookup, with 32-bit indexes.
+ * @brief Prepare a vtable lookup table 64x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3, vint4 idx)
-{
-	uint8_t table[64];
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable4_64x8& table,
+	const uint8_t* data
+) {
+	table.data = data;
+}
 
-	std::memcpy(table +  0, t0.m, 4 * sizeof(int));
-	std::memcpy(table + 16, t1.m, 4 * sizeof(int));
-	std::memcpy(table + 32, t2.m, 4 * sizeof(int));
-	std::memcpy(table + 48, t3.m, 4 * sizeof(int));
+/**
+ * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_16x8& table,
+	vint4 idx
+) {
+	return vint4(table.data[idx.lane<0>()],
+	             table.data[idx.lane<1>()],
+	             table.data[idx.lane<2>()],
+	             table.data[idx.lane<3>()]);
+}
 
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
+/**
+ * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_32x8& table,
+	vint4 idx
+) {
+	return vint4(table.data[idx.lane<0>()],
+	             table.data[idx.lane<1>()],
+	             table.data[idx.lane<2>()],
+	             table.data[idx.lane<3>()]);
+}
+
+/**
+ * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_64x8& table,
+	vint4 idx
+) {
+	return vint4(table.data[idx.lane<0>()],
+	             table.data[idx.lane<1>()],
+	             table.data[idx.lane<2>()],
+	             table.data[idx.lane<3>()]);
 }
 
 /**
