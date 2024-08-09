@@ -906,90 +906,101 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 	return vfloat8(svreinterpret_f32_s32(a.m));
 }
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 16x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
-{
-	t0p = vint8(svdup_neonq_f32(t0.m));
-}
+struct vtable8_16x8 {
+	vint8 t0;
+};
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t1p)
-{
-	// 8-wide SVE uses a single table register, so t1 is unused
-	(void)t1p;
+struct vtable8_32x8 {
+	vint8 t0;
+};
 
-	svfloat32_8_t t0v = svdup_neonq_f32(t0.m);
-	svfloat32_8_t t1v = svdup_neonq_f32(t1.m);
-
-	t0p = vint8(svext_f32(t0v, t1v, 4));
-}
+/*
+ * Table structure for a 64x 8-bit entry table.
+ */
+struct vtable8_64x8 {
+	vint8 t0;
+	vint8 t1;
+};
 
 /**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
-	vint8& t0p, vint8& t1p, vint8& t2p, vint8& t3p)
-{
-	// 8-wide SVE uses a two table registers, so t2 and t3 are unused
-	(void)t2p;
-	(void)t3p;
-
-	svfloat32_8_t t0v = svdup_neonq_f32(t0.m);
-	svfloat32_8_t t1v = svdup_neonq_f32(t1.m);
-	svfloat32_8_t t2v = svdup_neonq_f32(t2.m);
-	svfloat32_8_t t3v = svdup_neonq_f32(t3.m);
-
-	t0p = vint8(svext_f32(t0v, t1v, 4));
-	t1p = vint8(svext_f32(t2v, t3v, 4));
+	vtable8_16x8& table,
+	const uint8_t* data
+) {
+	// Top half of register will be zeros
+	table.t0 = vint8(svld1_u8(svptrue_pat_b8(SV_VL16), data));
 }
 
 /**
- * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
-{
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable8_32x8& table,
+	const uint8_t* data
+) {
+	table.t0 = vint8(svld1_u8(svptrue_b8(), data));
+}
+
+/**
+ * @brief Prepare a vtable lookup table 64x 8-bit entry table.
+ */
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable8_64x8& table,
+	const uint8_t* data
+) {
+	table.t0 = vint8(svld1_u8(svptrue_b8(), data));
+	table.t1 = vint8(svld1_u8(svptrue_b8(), data + 32));
+}
+
+/**
+ * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+	const vtable8_16x8& tbl,
+	vint8 idx
+) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
 	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
-	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(t0.m);
+	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(tbl.t0.m);
 	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
 
 	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
- * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
-{
-	// 8-wide SVE uses a single table register, so t1 is unused
-	(void)t1;
-
+ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+	const vtable8_32x8& tbl,
+	vint8 idx
+) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
 	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
-	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(t0.m);
+	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(table.t0.m);
 	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
 
 	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
- * @brief Perform an 8-bit 64-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3, vint8 idx)
-{
-	// 8-wide SVE uses a two table registers, so t2 and t3 are unused
-	(void)t2;
-	(void)t3;
-
+ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+	const vtable8_64x8& tbl,
+	vint8 idx
+) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	svint32_8_t literal32 = svdup_s32(32);
 	svbool_8_t idx_lo_select = svcmplt(svptrue_b32(), idx.m, literal32);
@@ -999,8 +1010,8 @@ ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3
 	svuint8_8_t idx_lo_bytes = svreinterpret_u8_s32(idx_lo_masked);
 	svuint8_8_t idx_hi_bytes = svreinterpret_u8_s32(idx_hi_masked);
 
-	svuint8_8_t tbl0_bytes = svreinterpret_u8_s32(t0.m);
-	svuint8_8_t tbl1_bytes = svreinterpret_u8_s32(t1.m);
+	svuint8_8_t tbl0_bytes = svreinterpret_u8_s32(tbl.t0.m);
+	svuint8_8_t tbl1_bytes = svreinterpret_u8_s32(tbl.t1.m);
 
 	svint32_8_t t0_lookup = svreinterpret_s32_u8(svtbl_u8(tbl0_bytes, idx_lo_bytes));
 	svint32_8_t t1_lookup = svreinterpret_s32_u8(svtbl_u8(tbl1_bytes, idx_hi_bytes));

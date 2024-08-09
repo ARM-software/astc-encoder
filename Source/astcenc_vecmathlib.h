@@ -146,6 +146,10 @@
 	using vint = vint8;
 	using vmask = vmask8;
 
+	using vtable_16x8 = vtable8_16x8;
+	using vtable_32x8 = vtable8_32x8;
+	using vtable_64x8 = vtable8_64x8;
+
 	constexpr auto loada = vfloat8::loada;
 	constexpr auto load1 = vfloat8::load1;
 
@@ -160,6 +164,10 @@
 	using vfloatacc = vfloat4;
 	using vint = vint4;
 	using vmask = vmask4;
+
+	using vtable_16x8 = vtable4_16x8;
+	using vtable_32x8 = vtable4_32x8;
+	using vtable_64x8 = vtable4_64x8;
 
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;

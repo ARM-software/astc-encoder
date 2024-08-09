@@ -939,44 +939,74 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
 	return vfloat4(vreinterpretq_f32_s32(v.m));
 }
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 16x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4& t0p)
-{
-	t0p = t0;
-}
+struct vtable4_16x8 {
+	vint4 t0;
+};
 
-
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint4& t0p, vint4& t1p)
-{
-	t0p = t0;
-	t1p = t1;
-}
+struct vtable4_32x8 {
+	vint4 t0;
+	vint4 t1;
+};
+
+/*
+ * Table structure for a 64x 8-bit entry table.
+ */
+struct vtable4_64x8 {
+	vint4 t0;
+	vint4 t1;
+	vint4 t2;
+	vint4 t3;
+};
 
 /**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
-	vint4& t0p, vint4& t1p, vint4& t2p, vint4& t3p)
-{
-	t0p = t0;
-	t1p = t1;
-	t2p = t2;
-	t3p = t3;
+	vtable4_16x8& table,
+	const uint8_t* data
+) {
+	table.t0 = vint4::load(data);
 }
 
 /**
- * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
-{
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable4_32x8& table,
+	const uint8_t* data
+) {
+	table.t0 = vint4::load(data);
+	table.t1 = vint4::load(data + 16);
+}
+
+/**
+ * @brief Prepare a vtable lookup table 64x 8-bit entry table.
+ */
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable4_64x8& table,
+	const uint8_t* data
+) {
+	table.t0 = vint4::load(data);
+	table.t1 = vint4::load(data + 16);
+	table.t2 = vint4::load(data + 32);
+	table.t3 = vint4::load(data + 48);
+}
+
+/**
+ * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_16x8& tbl,
+	vint4 idx
+) {
 	int8x16_t table {
-		vreinterpretq_s8_s32(t0.m)
+		vreinterpretq_s8_s32(tbl.t0.m)
 	};
 
 	// Set index byte above max index for unused bytes so table lookup returns zero
@@ -987,13 +1017,15 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 idx)
 }
 
 /**
- * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
-{
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_32x8& tbl,
+	vint4 idx
+) {
 	int8x16x2_t table {
-		vreinterpretq_s8_s32(t0.m),
-		vreinterpretq_s8_s32(t1.m)
+		vreinterpretq_s8_s32(tbl.t0.m),
+		vreinterpretq_s8_s32(tbl.t1.m)
 	};
 
 	// Set index byte above max index for unused bytes so table lookup returns zero
@@ -1004,15 +1036,17 @@ ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 idx)
 }
 
 /**
- * @brief Perform an 8-bit 64-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint4 vtable_8bt_32bi(vint4 t0, vint4 t1, vint4 t2, vint4 t3, vint4 idx)
-{
+ASTCENC_SIMD_INLINE vint4 vtable_lookup(
+	const vtable4_64x8& tbl,
+	vint4 idx
+) {
 	int8x16x4_t table {
-		vreinterpretq_s8_s32(t0.m),
-		vreinterpretq_s8_s32(t1.m),
-		vreinterpretq_s8_s32(t2.m),
-		vreinterpretq_s8_s32(t3.m)
+		vreinterpretq_s8_s32(tbl.t0.m),
+		vreinterpretq_s8_s32(tbl.t1.m),
+		vreinterpretq_s8_s32(tbl.t2.m),
+		vreinterpretq_s8_s32(tbl.t3.m)
 	};
 
 	// Set index byte above max index for unused bytes so table lookup returns zero
