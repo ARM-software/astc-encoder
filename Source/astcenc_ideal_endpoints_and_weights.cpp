@@ -1037,8 +1037,8 @@ void compute_quantized_weights_for_decimation(
 			vint weightl = float_to_int(ix1);
 			vint weighth = min(weightl + vint(1), steps_m1);
 
-			vint ixli = vtable_lookup(table, weightl);
-			vint ixhi = vtable_lookup(table, weighth);
+			vint ixli = vtable_lookup_32bit(table, weightl);
+			vint ixhi = vtable_lookup_32bit(table, weighth);
 
 			vfloat ixl = int_to_float(ixli);
 			vfloat ixh = int_to_float(ixhi);
@@ -1068,8 +1068,8 @@ void compute_quantized_weights_for_decimation(
 			vint weightl = float_to_int(ix1);
 			vint weighth = min(weightl + vint(1), steps_m1);
 
-			vint ixli = vtable_lookup(table, weightl);
-			vint ixhi = vtable_lookup(table, weighth);
+			vint ixli = vtable_lookup_32bit(table, weightl);
+			vint ixhi = vtable_lookup_32bit(table, weighth);
 
 			vfloat ixl = int_to_float(ixli);
 			vfloat ixh = int_to_float(ixhi);

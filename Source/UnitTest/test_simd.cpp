@@ -1959,7 +1959,7 @@ TEST(vint4, vtable4_16x8)
 
 	vint4 index(0, 7, 4, 15);
 
-	vint4 result = vtable_lookup(table, index);
+	vint4 result = vtable_lookup_32bit(table, index);
 
 	EXPECT_EQ(result.lane<0>(),  0);
 	EXPECT_EQ(result.lane<1>(),  7);
@@ -1982,7 +1982,7 @@ TEST(vint4, vtable4_32x8)
 
 	vint4 index(0, 7, 4, 31);
 
-	vint4 result = vtable_lookup(table, index);
+	vint4 result = vtable_lookup_32bit(table, index);
 
 	EXPECT_EQ(result.lane<0>(),  0);
 	EXPECT_EQ(result.lane<1>(),  7);
@@ -2009,7 +2009,7 @@ TEST(vint4, vtable4_64x8)
 
 	vint4 index(0, 7, 38, 63);
 
-	vint4 result = vtable_lookup(table, index);
+	vint4 result = vtable_lookup_32bit(table, index);
 
 	uint8_t* hack = reinterpret_cast<uint8_t*>(&table);
 	std::cout << "38: " << hack[38] << "\n";
@@ -3704,7 +3704,7 @@ TEST(vint8, vtable8_16x8)
 
 	vint8 index = vint8_lit(0, 7, 4, 15, 1, 2, 14, 4);
 
-	vint8 result = vtable_lookup(table, index);
+	vint8 result = vtable_lookup_32bit(table, index);
 
 	alignas(32) int ra[8];
 	store(result, ra);
@@ -3734,7 +3734,7 @@ TEST(vint8, vtable8_32x8)
 
 	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 23, 31);
 
-	vint8 result = vtable_lookup(table, index);
+	vint8 result = vtable_lookup_32bit(table, index);
 
 	alignas(32) int ra[8];
 	store(result, ra);
@@ -3768,7 +3768,7 @@ TEST(vint8, vtable8_64x8)
 
 	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 38, 63);
 
-	vint8 result = vtable_lookup(table, index);
+	vint8 result = vtable_lookup_32bit(table, index);
 
 	alignas(32) int ra[8];
 	store(result, ra);

@@ -113,7 +113,7 @@ void unpack_weights(
 				vint texel_weights(di.texel_weights_tr[j] + i);
 				vint texel_weights_int(di.texel_weight_contribs_int_tr[j] + i);
 
-				summed_value += vtable_lookup(table, texel_weights) * texel_weights_int;
+				summed_value += vtable_lookup_32bit(table, texel_weights) * texel_weights_int;
 			}
 
 			store(lsr<4>(summed_value), weights_plane1 + i);
@@ -144,8 +144,8 @@ void unpack_weights(
 				vint texel_weights(di.texel_weights_tr[j] + i);
 				vint texel_weights_int(di.texel_weight_contribs_int_tr[j] + i);
 
-				sum_plane1 += vtable_lookup(tab_plane1, texel_weights) * texel_weights_int;
-				sum_plane2 += vtable_lookup(tab_plane2, texel_weights) * texel_weights_int;
+				sum_plane1 += vtable_lookup_32bit(tab_plane1, texel_weights) * texel_weights_int;
+				sum_plane2 += vtable_lookup_32bit(tab_plane2, texel_weights) * texel_weights_int;
 			}
 
 			store(lsr<4>(sum_plane1), weights_plane1 + i);

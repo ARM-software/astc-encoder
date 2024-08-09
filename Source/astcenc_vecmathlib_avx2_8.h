@@ -1054,7 +1054,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 /**
  * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_16x8& tbl,
 	vint8 idx
 ) {
@@ -1068,7 +1068,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup(
 /**
  * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_32x8& tbl,
 	vint8 idx
 ) {
@@ -1086,7 +1086,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup(
 /**
  * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_lookup(
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_64x8& tbl,
 	vint8 idx
 ) {
