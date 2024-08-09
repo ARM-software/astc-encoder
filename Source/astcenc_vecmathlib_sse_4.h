@@ -1041,25 +1041,37 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
  * Table structure for a 16x 8-bit entry table.
  */
 struct vtable4_16x8 {
+#if ASTCENC_SSE >= 41
 	vint4 t0;
+#else
+	const uint8_t* data;
+#endif
 };
 
 /*
  * Table structure for a 32x 8-bit entry table.
  */
 struct vtable4_32x8 {
+#if ASTCENC_SSE >= 41
 	vint4 t0;
 	vint4 t1;
+#else
+	const uint8_t* data;
+#endif
 };
 
 /*
  * Table structure for a 64x 8-bit entry table.
  */
 struct vtable4_64x8 {
+#if ASTCENC_SSE >= 41
 	vint4 t0;
 	vint4 t1;
 	vint4 t2;
 	vint4 t3;
+#else
+	const uint8_t* data;
+#endif
 };
 
 /**
@@ -1069,7 +1081,11 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_16x8& table,
 	const uint8_t* data
 ) {
+#if ASTCENC_SSE >= 41
 	table.t0 = vint4::load(data);
+#else
+	table.data = data;
+#endif
 }
 
 /**
@@ -1079,11 +1095,13 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_32x8& table,
 	const uint8_t* data
 ) {
+#if ASTCENC_SSE >= 41
 	table.t0 = vint4::load(data);
 	table.t1 = vint4::load(data + 16);
 
-#if ASTCENC_SSE >= 41
 	table.t1 = table.t1 ^ table.t0;
+#else
+	table.data = data;
 #endif
 }
 
@@ -1094,15 +1112,17 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_64x8& table,
 	const uint8_t* data
 ) {
+#if ASTCENC_SSE >= 41
 	table.t0 = vint4::load(data);
 	table.t1 = vint4::load(data + 16);
 	table.t2 = vint4::load(data + 32);
 	table.t3 = vint4::load(data + 48);
 
-#if ASTCENC_SSE >= 41
 	table.t3 = table.t3 ^ table.t2;
 	table.t2 = table.t2 ^ table.t1;
 	table.t1 = table.t1 ^ table.t0;
+#else
+	table.data = data;
 #endif
 }
 
@@ -1120,14 +1140,10 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 	__m128i result = _mm_shuffle_epi8(tbl.t0.m, idxx);
 	return vint4(result);
 #else
-	uint8_t table[16];
-
-	std::memcpy(table +  0, &tbl.t0.m, 4 * sizeof(int));
-
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 #endif
 }
 
@@ -1150,15 +1166,10 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 
 	return vint4(result);
 #else
-	uint8_t table[32];
-
-	std::memcpy(table +  0, &tbl.t0.m, 4 * sizeof(int));
-	std::memcpy(table + 16, &tbl.t1.m, 4 * sizeof(int));
-
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 #endif
 }
 
@@ -1189,17 +1200,10 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 
 	return vint4(result);
 #else
-	uint8_t table[64];
-
-	std::memcpy(table +  0, &tbl.t0.m, 4 * sizeof(int));
-	std::memcpy(table + 16, &tbl.t1.m, 4 * sizeof(int));
-	std::memcpy(table + 32, &tbl.t2.m, 4 * sizeof(int));
-	std::memcpy(table + 48, &tbl.t3.m, 4 * sizeof(int));
-
-	return vint4(table[idx.lane<0>()],
-	             table[idx.lane<1>()],
-	             table[idx.lane<2>()],
-	             table[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 #endif
 }
 

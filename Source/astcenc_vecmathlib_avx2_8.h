@@ -1005,6 +1005,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 ) {
 	// AVX2 tables duplicate table entries in each 128-bit half-register
 	vint4 d0 = vint4::load(data);
+
 	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
 }
 
@@ -1016,14 +1017,14 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	const uint8_t* data
 ) {
 	// AVX2 tables duplicate table entries in each 128-bit half-register
-	// Direct lookup for first row
 	vint4 d0 = vint4::load(data);
-	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
-
-	// XOR with previous rows for subsequent rows
 	vint4 d1 = vint4::load(data + 16);
-	d1 = d1 ^ d0;
+
+	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
 	table.t1 = vint8(astcenc_mm256_set_m128i(d1.m, d1.m));
+
+	// XOR chain the high rows to allow table emulation
+	table.t1 = table.t1 ^ table.t0;
 }
 
 /**
@@ -1044,6 +1045,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	table.t2 = vint8(astcenc_mm256_set_m128i(d2.m, d2.m));
 	table.t3 = vint8(astcenc_mm256_set_m128i(d3.m, d3.m));
 
+	// XOR chain the high rows to allow table emulation
 	table.t3 = table.t3 ^ table.t2;
 	table.t2 = table.t2 ^ table.t1;
 	table.t1 = table.t1 ^ table.t0;

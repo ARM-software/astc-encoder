@@ -943,25 +943,21 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
  * Table structure for a 16x 8-bit entry table.
  */
 struct vtable4_16x8 {
-	vint4 t0;
+	int8x16_t t0;
 };
 
 /*
  * Table structure for a 32x 8-bit entry table.
  */
 struct vtable4_32x8 {
-	vint4 t0;
-	vint4 t1;
+	int8x16x2_t t01;
 };
 
 /*
  * Table structure for a 64x 8-bit entry table.
  */
 struct vtable4_64x8 {
-	vint4 t0;
-	vint4 t1;
-	vint4 t2;
-	vint4 t3;
+	int8x16x4_t t0123;
 };
 
 /**
@@ -971,7 +967,8 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_16x8& table,
 	const uint8_t* data
 ) {
-	table.t0 = vint4::load(data);
+	vint4 t0 = vint4::load(data);
+	table.t0 = vreinterpretq_s8_s32(t0.m);
 }
 
 /**
@@ -981,8 +978,11 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_32x8& table,
 	const uint8_t* data
 ) {
-	table.t0 = vint4::load(data);
-	table.t1 = vint4::load(data + 16);
+	vint4 t0 = vint4::load(data);
+	vint4 t1 = vint4::load(data + 16);
+
+	table.t01[0] = vreinterpretq_s8_s32(t0.m);
+	table.t01[1] = vreinterpretq_s8_s32(t1.m);
 }
 
 /**
@@ -992,10 +992,15 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_64x8& table,
 	const uint8_t* data
 ) {
-	table.t0 = vint4::load(data);
-	table.t1 = vint4::load(data + 16);
-	table.t2 = vint4::load(data + 32);
-	table.t3 = vint4::load(data + 48);
+	vint4 t0 = vint4::load(data);
+	vint4 t1 = vint4::load(data + 16);
+	vint4 t2 = vint4::load(data + 32);
+	vint4 t3 = vint4::load(data + 48);
+
+	table.t0123[0] = vreinterpretq_s8_s32(t0.m);
+	table.t0123[1] = vreinterpretq_s8_s32(t1.m);
+	table.t0123[2] = vreinterpretq_s8_s32(t2.m);
+	table.t0123[3] = vreinterpretq_s8_s32(t3.m);
 }
 
 /**
@@ -1005,15 +1010,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 	const vtable4_16x8& tbl,
 	vint4 idx
 ) {
-	int8x16_t table {
-		vreinterpretq_s8_s32(tbl.t0.m)
-	};
-
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl1q_s8(table, idx_bytes)));
+	return vint4(vreinterpretq_s32_s8(vqtbl1q_s8(tbl.t0, idx_bytes)));
 }
 
 /**
@@ -1023,16 +1024,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 	const vtable4_32x8& tbl,
 	vint4 idx
 ) {
-	int8x16x2_t table {
-		vreinterpretq_s8_s32(tbl.t0.m),
-		vreinterpretq_s8_s32(tbl.t1.m)
-	};
-
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl2q_s8(table, idx_bytes)));
+	return vint4(vreinterpretq_s32_s8(vqtbl2q_s8(table.t01, idx_bytes)));
 }
 
 /**
@@ -1042,18 +1038,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup(
 	const vtable4_64x8& tbl,
 	vint4 idx
 ) {
-	int8x16x4_t table {
-		vreinterpretq_s8_s32(tbl.t0.m),
-		vreinterpretq_s8_s32(tbl.t1.m),
-		vreinterpretq_s8_s32(tbl.t2.m),
-		vreinterpretq_s8_s32(tbl.t3.m)
-	};
-
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl4q_s8(table, idx_bytes)));
+	return vint4(vreinterpretq_s32_s8(vqtbl4q_s8(table.t0123, idx_bytes)));
 }
 
 /**
