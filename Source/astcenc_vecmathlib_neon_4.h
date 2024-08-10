@@ -943,21 +943,21 @@ ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 v)
  * Table structure for a 16x 8-bit entry table.
  */
 struct vtable4_16x8 {
-	int8x16_t t0;
+	uint8x16_t t0;
 };
 
 /*
  * Table structure for a 32x 8-bit entry table.
  */
 struct vtable4_32x8 {
-	int8x16x2_t t01;
+	uint8x16x2_t t01;
 };
 
 /*
  * Table structure for a 64x 8-bit entry table.
  */
 struct vtable4_64x8 {
-	int8x16x4_t t0123;
+	uint8x16x4_t t0123;
 };
 
 /**
@@ -967,7 +967,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_16x8& table,
 	const uint8_t* data
 ) {
-	table.t01 = vldq_u8(data);
+	table.t0 = vld1q_u8(data);
 }
 
 /**
@@ -1001,7 +1001,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl1q_s8(tbl.t0, idx_bytes)));
+	return vint4(vreinterpretq_s32_u8(vqtbl1q_u8(tbl.t0, idx_bytes)));
 }
 
 /**
@@ -1015,7 +1015,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl2q_s8(tbl.t01, idx_bytes)));
+	return vint4(vreinterpretq_s32_u8(vqtbl2q_u8(tbl.t01, idx_bytes)));
 }
 
 /**
@@ -1029,7 +1029,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl4q_s8(tbl.t0123, idx_bytes)));
+	return vint4(vreinterpretq_s32_u8(vqtbl4q_u8(tbl.t0123, idx_bytes)));
 }
 
 /**
