@@ -988,7 +988,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
 	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
-	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(table.t0.m);
+	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(tbl.t0.m);
 	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
 
 	return vint8(svreinterpret_s32_u8(result));
