@@ -977,7 +977,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_32x8& table,
 	const uint8_t* data
 ) {
-	table.t01 = vld2q_u8(data);
+	table.t01 = uint8x16x2_t {
+		vld1q_u8(data),
+		vld1q_u8(data + 16)
+	};
 }
 
 /**
@@ -987,7 +990,12 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_64x8& table,
 	const uint8_t* data
 ) {
-	table.t0123 = vld4q_u8(data);
+	table.t0123 = uint8x16x4_t {
+		vld1q_u8(data),
+		vld1q_u8(data + 16),
+		vld1q_u8(data + 32),
+		vld1q_u8(data + 48)
+	};
 }
 
 /**
