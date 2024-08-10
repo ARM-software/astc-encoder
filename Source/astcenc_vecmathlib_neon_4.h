@@ -967,8 +967,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_16x8& table,
 	const uint8_t* data
 ) {
-	vint4 t0 = vint4::load(data);
-	table.t0 = vreinterpretq_s8_s32(t0.m);
+	table.t01 = vldq_u8(data);
 }
 
 /**
@@ -978,11 +977,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_32x8& table,
 	const uint8_t* data
 ) {
-	vint4 t0 = vint4::load(data);
-	vint4 t1 = vint4::load(data + 16);
-
-	table.t01[0] = vreinterpretq_s8_s32(t0.m);
-	table.t01[1] = vreinterpretq_s8_s32(t1.m);
+	table.t01 = vld2q_u8(data);
 }
 
 /**
@@ -992,15 +987,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_64x8& table,
 	const uint8_t* data
 ) {
-	vint4 t0 = vint4::load(data);
-	vint4 t1 = vint4::load(data + 16);
-	vint4 t2 = vint4::load(data + 32);
-	vint4 t3 = vint4::load(data + 48);
-
-	table.t0123[0] = vreinterpretq_s8_s32(t0.m);
-	table.t0123[1] = vreinterpretq_s8_s32(t1.m);
-	table.t0123[2] = vreinterpretq_s8_s32(t2.m);
-	table.t0123[3] = vreinterpretq_s8_s32(t3.m);
+	table.t0123 = vld4q_u8(data);
 }
 
 /**
@@ -1028,7 +1015,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl2q_s8(table.t01, idx_bytes)));
+	return vint4(vreinterpretq_s32_s8(vqtbl2q_s8(tbl.t01, idx_bytes)));
 }
 
 /**
@@ -1042,7 +1029,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
 	int32x4_t idx_masked = vorrq_s32(idx.m, vdupq_n_s32(0xFFFFFF00));
 	uint8x16_t idx_bytes = vreinterpretq_u8_s32(idx_masked);
 
-	return vint4(vreinterpretq_s32_s8(vqtbl4q_s8(table.t0123, idx_bytes)));
+	return vint4(vreinterpretq_s32_s8(vqtbl4q_s8(tbl.t0123, idx_bytes)));
 }
 
 /**
