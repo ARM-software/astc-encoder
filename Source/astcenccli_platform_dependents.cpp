@@ -190,7 +190,12 @@ double get_time()
 void set_thread_name(
 	const char* name
 ) {
+	// No standard mechanism, so be defensive here
+#if defined(__linux__)
     pthread_setname_np(pthread_self(), name);
+#elif defined(__APPLE__)
+    pthread_setname_np(name);
+#endif
 }
 
 #endif
