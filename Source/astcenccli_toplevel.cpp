@@ -232,6 +232,10 @@ static void compression_workload_runner(
 ) {
 	(void)thread_count;
 
+	char name[17] { 0 };
+	std::snprintf(name, 16, "astc workc %d", thread_id);
+	set_thread_name(name);
+
 	compression_workload* work = static_cast<compression_workload*>(payload);
 	astcenc_error error = astcenc_compress_image(
 	                       work->context, work->image, &work->swizzle,
@@ -258,6 +262,10 @@ static void decompression_workload_runner(
 	void* payload
 ) {
 	(void)thread_count;
+
+	char name[17] { 0 };
+	std::snprintf(name, 16, "astc workd %d", thread_id);
+	set_thread_name(name);
 
 	decompression_workload* work = static_cast<decompression_workload*>(payload);
 	astcenc_error error = astcenc_decompress_image(
@@ -1881,10 +1889,13 @@ static void print_diagnostic_images(
  *
  * @return 0 on success, non-zero otherwise.
  */
-int astcenc_main(
+int
+astcenc_main(
 	int argc,
 	char **argv
 ) {
+	set_thread_name("astc main");
+
 #if ASTCENC_SVE != 0
 	// Do this check here because is needs SVE instructions so cannot be in
 	// the veneer check which is compiled as stock Armv8. We know we have SVE
