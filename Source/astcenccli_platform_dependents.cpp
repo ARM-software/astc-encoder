@@ -157,7 +157,7 @@ void set_thread_name(
 	// We know we only have basic 7-bit ASCII so just widen
 	for (size_t i = 0; i < clamp_len; i++)
 	{
-		wname = static_cast<wchar_t>(name[i]);
+		wname[i] = static_cast<wchar_t>(name[i]);
 	}
 
  	SetThreadDescription(GetCurrentThread(), wname);
