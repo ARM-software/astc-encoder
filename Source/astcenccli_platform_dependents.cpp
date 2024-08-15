@@ -151,9 +151,9 @@ void set_thread_name(
 	const char* name
 ) {
 	// Names are limited to 16 characters
-	wchar_t wname [17] { 0 };
+	wchar_t wname [16] { 0 };
 	size_t name_len = std::strlen(name);
-	size_t clamp_len = std::min(name_len, static_cast<size_t>(16));
+	size_t clamp_len = std::min<size_t>(name_len, 15);
 
 	// We know we only have basic 7-bit ASCII so just widen
 	for (size_t i = 0; i < clamp_len; i++)

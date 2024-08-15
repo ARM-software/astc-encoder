@@ -232,7 +232,7 @@ static void compression_workload_runner(
 ) {
 	(void)thread_count;
 
-	char name[17] { 0 };
+	char name[16] { 0 };
 	std::snprintf(name, 16, "astc workc %d", thread_id);
 	set_thread_name(name);
 
@@ -263,7 +263,7 @@ static void decompression_workload_runner(
 ) {
 	(void)thread_count;
 
-	char name[17] { 0 };
+	char name[16] { 0 };
 	std::snprintf(name, 16, "astc workd %d", thread_id);
 	set_thread_name(name);
 
