@@ -910,22 +910,22 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
  * Table structure for a 16x 8-bit entry table.
  */
 struct vtable8_16x8 {
-	vint8 t0;
+	svuint8_8_t t0;
 };
 
 /*
  * Table structure for a 32x 8-bit entry table.
  */
 struct vtable8_32x8 {
-	vint8 t0;
+	svuint8_8_t t0;
 };
 
 /*
  * Table structure for a 64x 8-bit entry table.
  */
 struct vtable8_64x8 {
-	vint8 t0;
-	vint8 t1;
+	svuint8_8_t t0;
+	svuint8_8_t t1;
 };
 
 /**
@@ -936,7 +936,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	const uint8_t* data
 ) {
 	// Top half of register will be zeros
-	table.t0 = vint8(svld1_u8(svptrue_pat_b8(SV_VL16), data));
+	table.t0 = svld1_u8(svptrue_pat_b8(SV_VL16), data);
 }
 
 /**
@@ -946,7 +946,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_32x8& table,
 	const uint8_t* data
 ) {
-	table.t0 = vint8(svld1_u8(svptrue_b8(), data));
+	table.t0 = svld1_u8(svptrue_b8(), data);
 }
 
 /**
@@ -956,8 +956,8 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_64x8& table,
 	const uint8_t* data
 ) {
-	table.t0 = vint8(svld1_u8(svptrue_b8(), data));
-	table.t1 = vint8(svld1_u8(svptrue_b8(), data + 32));
+	table.t0 = svld1_u8(svptrue_b8(), data);
+	table.t1 = svld1_u8(svptrue_b8(), data + 32);
 }
 
 /**
@@ -969,11 +969,9 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 ) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
-
 	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
-	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(tbl.t0.m);
-	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
 
+	svuint8_8_t result = svtbl_u8(tbl.t0, idx_bytes);
 	return vint8(svreinterpret_s32_u8(result));
 }
 
@@ -986,40 +984,32 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 ) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
 	svint32_8_t idx_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
-
 	svuint8_8_t idx_bytes = svreinterpret_u8_s32(idx_masked);
-	svuint8_8_t tbl_bytes = svreinterpret_u8_s32(tbl.t0.m);
-	svuint8_8_t result = svtbl_u8(tbl_bytes, idx_bytes);
 
+	svuint8_8_t result = svtbl_u8(tbl.t0, idx_bytes);
 	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
  * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
+ *
+ * Future: SVE2 can directly do svtbl2_u8() for a two register table.
  */
 ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_64x8& tbl,
 	vint8 idx
 ) {
 	// Set index byte above max index for unused bytes so table lookup returns zero
-	svint32_8_t literal32 = svdup_s32(32);
-	svbool_8_t idx_lo_select = svcmplt(svptrue_b32(), idx.m, literal32);
-	svint32_8_t idx_lo_masked = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
-	svint32_8_t idx_hi_masked = svorr_s32_x(svptrue_b32(), idx.m - literal32, svdup_s32(0xFFFFFF00));
+	svint32_8_t idxm = svorr_s32_x(svptrue_b32(), idx.m, svdup_s32(0xFFFFFF00));
 
-	svuint8_8_t idx_lo_bytes = svreinterpret_u8_s32(idx_lo_masked);
-	svuint8_8_t idx_hi_bytes = svreinterpret_u8_s32(idx_hi_masked);
+	svuint8_8_t idxm8 = svreinterpret_u8_s32(idxm);
+	svuint8_8_t t0_lookup = svtbl_u8(tbl.t0, idxm8);
 
-	svuint8_8_t tbl0_bytes = svreinterpret_u8_s32(tbl.t0.m);
-	svuint8_8_t tbl1_bytes = svreinterpret_u8_s32(tbl.t1.m);
+	idxm8 = svsub_u8_x(svptrue_b8(), idxm8, svdup_u8(32));
+	svuint8_8_t t1_lookup = svtbl_u8(tbl.t1, idxm8);
 
-	svint32_8_t t0_lookup = svreinterpret_s32_u8(svtbl_u8(tbl0_bytes, idx_lo_bytes));
-	svint32_8_t t1_lookup = svreinterpret_s32_u8(svtbl_u8(tbl1_bytes, idx_hi_bytes));
-
-	svint32_8_t result = svsel_s32(idx_lo_select, t0_lookup, t1_lookup);
-
-	// Future: SVE2 can directly do svtbl2_u8() for a two register table
-	return vint8(result);
+	svuint8_8_t result = svorr_u8_x(svptrue_b32(), t0_lookup, t1_lookup);
+	return vint8(svreinterpret_s32_u8(result));
 }
 
 /**
