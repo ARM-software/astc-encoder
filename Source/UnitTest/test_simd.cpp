@@ -1947,43 +1947,78 @@ TEST(vmask4, not)
 }
 
 /** @brief Test vint4 table permute. */
-TEST(vint4, vtable_8bt_32bi_32entry)
+TEST(vint4, vtable4_16x8)
 {
-	vint4 table0(0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f);
-	vint4 table1(0x10111213, 0x14151617, 0x18191a1b, 0x1c1d1e1f);
+	uint8_t data[16] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+	};
 
-	vint4 table0p, table1p;
-	vtable_prepare(table0, table1, table0p, table1p);
+	vtable4_16x8 table;
+	vtable_prepare(table, data);
 
-	vint4 index(0, 7, 4, 31);
+	vint4 index(0, 7, 4, 15);
 
-	vint4 result = vtable_8bt_32bi(table0p, table1p, index);
+	vint4 result = vtable_lookup_32bit(table, index);
 
-	EXPECT_EQ(result.lane<0>(),  3);
-	EXPECT_EQ(result.lane<1>(),  4);
-	EXPECT_EQ(result.lane<2>(),  7);
-	EXPECT_EQ(result.lane<3>(), 28);
+	EXPECT_EQ(result.lane<0>(),  0);
+	EXPECT_EQ(result.lane<1>(),  7);
+	EXPECT_EQ(result.lane<2>(),  4);
+	EXPECT_EQ(result.lane<3>(), 15);
 }
 
 /** @brief Test vint4 table permute. */
-TEST(vint4, vtable_8bt_32bi_64entry)
+TEST(vint4, vtable4_32x8)
 {
-	vint4 table0(0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f);
-	vint4 table1(0x10111213, 0x14151617, 0x18191a1b, 0x1c1d1e1f);
-	vint4 table2(0x20212223, 0x24252627, 0x28292a2b, 0x2c2d2e2f);
-	vint4 table3(0x30313233, 0x34353637, 0x38393a3b, 0x3c3d3e3f);
+	uint8_t data[32] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+	};
 
-	vint4 table0p, table1p, table2p, table3p;
-	vtable_prepare(table0, table1, table2, table3, table0p, table1p, table2p, table3p);
+	vtable4_32x8 table;
+	vtable_prepare(table, data);
+
+	vint4 index(0, 7, 4, 31);
+
+	vint4 result = vtable_lookup_32bit(table, index);
+
+	EXPECT_EQ(result.lane<0>(),  0);
+	EXPECT_EQ(result.lane<1>(),  7);
+	EXPECT_EQ(result.lane<2>(),  4);
+	EXPECT_EQ(result.lane<3>(), 31);
+}
+
+/** @brief Test vint4 table permute. */
+TEST(vint4, vtable4_64x8)
+{
+	uint8_t data[64] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+		0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+		0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
+	};
+
+	vtable4_64x8 table;
+	vtable_prepare(table, data);
 
 	vint4 index(0, 7, 38, 63);
 
-	vint4 result = vtable_8bt_32bi(table0p, table1p, table2p, table3p, index);
+	vint4 result = vtable_lookup_32bit(table, index);
 
-	EXPECT_EQ(result.lane<0>(),  3);
-	EXPECT_EQ(result.lane<1>(),  4);
-	EXPECT_EQ(result.lane<2>(), 37);
-	EXPECT_EQ(result.lane<3>(), 60);
+	uint8_t* hack = reinterpret_cast<uint8_t*>(&table);
+	std::cout << "38: " << hack[38] << "\n";
+	std::cout << "63: " << hack[63] << "\n";
+
+	EXPECT_EQ(result.lane<0>(),  0);
+	EXPECT_EQ(result.lane<1>(),  7);
+	EXPECT_EQ(result.lane<2>(), 38);
+	EXPECT_EQ(result.lane<3>(), 63);
 }
 
 /** @brief Test vint4 rgba byte interleave. */
@@ -3657,57 +3692,95 @@ TEST(vmask8, not)
 }
 
 /** @brief Test vint8 table permute. */
-TEST(vint8, vtable_8bt_32bi_32entry)
+TEST(vint8, vtable8_16x8)
 {
-	vint4 table0(0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f);
-	vint4 table1(0x10111213, 0x14151617, 0x18191a1b, 0x1c1d1e1f);
+	uint8_t data[16] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+	};
 
-	vint8 table0p, table1p;
-	vtable_prepare(table0, table1, table0p, table1p);
+	vtable8_16x8 table;
+	vtable_prepare(table, data);
+
+	vint8 index = vint8_lit(0, 7, 4, 15, 1, 2, 14, 4);
+
+	vint8 result = vtable_lookup_32bit(table, index);
+
+	alignas(32) int ra[8];
+	store(result, ra);
+
+	EXPECT_EQ(ra[0],  0);
+	EXPECT_EQ(ra[1],  7);
+	EXPECT_EQ(ra[2],  4);
+	EXPECT_EQ(ra[3], 15);
+	EXPECT_EQ(ra[4],  1);
+	EXPECT_EQ(ra[5],  2);
+	EXPECT_EQ(ra[6], 14);
+	EXPECT_EQ(ra[7],  4);
+}
+
+/** @brief Test vint8 table permute. */
+TEST(vint8, vtable8_32x8)
+{
+	uint8_t data[32] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+	};
+
+	vtable8_32x8 table;
+	vtable_prepare(table, data);
 
 	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 23, 31);
 
-	vint8 result = vtable_8bt_32bi(table0p, table1p, index);
+	vint8 result = vtable_lookup_32bit(table, index);
 
 	alignas(32) int ra[8];
 	store(result, ra);
 
-	EXPECT_EQ(ra[0],  3);
-	EXPECT_EQ(ra[1],  4);
-	EXPECT_EQ(ra[2],  7);
-	EXPECT_EQ(ra[3], 12);
-	EXPECT_EQ(ra[4], 19);
-	EXPECT_EQ(ra[5], 23);
-	EXPECT_EQ(ra[6], 20);
-	EXPECT_EQ(ra[7], 28);
+	EXPECT_EQ(ra[0],  0);
+	EXPECT_EQ(ra[1],  7);
+	EXPECT_EQ(ra[2],  4);
+	EXPECT_EQ(ra[3], 15);
+	EXPECT_EQ(ra[4], 16);
+	EXPECT_EQ(ra[5], 20);
+	EXPECT_EQ(ra[6], 23);
+	EXPECT_EQ(ra[7], 31);
 }
 
-/** @brief Test vint4 table permute. */
-TEST(vint8, vtable_8bt_32bi_64entry)
+/** @brief Test vint8 table permute. */
+TEST(vint8, vtable8_64x8)
 {
-	vint4 table0(0x00010203, 0x04050607, 0x08090a0b, 0x0c0d0e0f);
-	vint4 table1(0x10111213, 0x14151617, 0x18191a1b, 0x1c1d1e1f);
-	vint4 table2(0x20212223, 0x24252627, 0x28292a2b, 0x2c2d2e2f);
-	vint4 table3(0x30313233, 0x34353637, 0x38393a3b, 0x3c3d3e3f);
+	uint8_t data[64] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+		0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+		0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+		0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+		0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
+	};
 
-	vint8 table0p, table1p, table2p, table3p;
-	vtable_prepare(table0, table1, table2, table3, table0p, table1p, table2p, table3p);
+	vtable8_64x8 table;
+	vtable_prepare(table, data);
 
 	vint8 index = vint8_lit(0, 7, 4, 15, 16, 20, 38, 63);
 
-	vint8 result = vtable_8bt_32bi(table0p, table1p, table2p, table3p, index);
+	vint8 result = vtable_lookup_32bit(table, index);
 
 	alignas(32) int ra[8];
 	store(result, ra);
 
-	EXPECT_EQ(ra[0],  3);
-	EXPECT_EQ(ra[1],  4);
-	EXPECT_EQ(ra[2],  7);
-	EXPECT_EQ(ra[3], 12);
-	EXPECT_EQ(ra[4], 19);
-	EXPECT_EQ(ra[5], 23);
-	EXPECT_EQ(ra[6], 37);
-	EXPECT_EQ(ra[7], 60);
+	EXPECT_EQ(ra[0],  0);
+	EXPECT_EQ(ra[1],  7);
+	EXPECT_EQ(ra[2],  4);
+	EXPECT_EQ(ra[3], 15);
+	EXPECT_EQ(ra[4], 16);
+	EXPECT_EQ(ra[5], 20);
+	EXPECT_EQ(ra[6], 38);
+	EXPECT_EQ(ra[7], 63);
 }
 
 #endif
