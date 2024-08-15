@@ -971,98 +971,140 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 	return vfloat8(_mm256_castsi256_ps(a.m));
 }
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 16x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint8& t0p)
-{
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
-}
+struct vtable8_16x8 {
+	vint8 t0;
+};
 
-/**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+/*
+ * Table structure for a 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE void vtable_prepare(vint4 t0, vint4 t1, vint8& t0p, vint8& t1p)
-{
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
+struct vtable8_32x8 {
+	vint8 t0;
+	vint8 t1;
+};
 
-	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
-}
+/*
+ * Table structure for a 64x 8-bit entry table.
+ */
+struct vtable8_64x8 {
+	vint8 t0;
+	vint8 t1;
+	vint8 t2;
+	vint8 t3;
+};
 
 /**
- * @brief Prepare a vtable lookup table for use with the native SIMD size.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vint4 t0, vint4 t1, vint4 t2, vint4 t3,
-	vint8& t0p, vint8& t1p, vint8& t2p, vint8& t3p)
-{
-	// AVX2 duplicates the table within each 128-bit lane
-	__m128i t0n = t0.m;
-	t0p = vint8(astcenc_mm256_set_m128i(t0n, t0n));
+	vtable8_16x8& table,
+	const uint8_t* data
+) {
+	// AVX2 tables duplicate table entries in each 128-bit half-register
+	vint4 d0 = vint4::load(data);
 
-	__m128i t1n = _mm_xor_si128(t0.m, t1.m);
-	t1p = vint8(astcenc_mm256_set_m128i(t1n, t1n));
-
-	__m128i t2n = _mm_xor_si128(t1.m, t2.m);
-	t2p = vint8(astcenc_mm256_set_m128i(t2n, t2n));
-
-	__m128i t3n = _mm_xor_si128(t2.m, t3.m);
-	t3p = vint8(astcenc_mm256_set_m128i(t3n, t3n));
+	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
 }
 
 /**
- * @brief Perform an 8-bit 16-entry table lookup, with 32-bit indexes.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 idx)
-{
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable8_32x8& table,
+	const uint8_t* data
+) {
+	// AVX2 tables duplicate table entries in each 128-bit half-register
+	vint4 d0 = vint4::load(data);
+	vint4 d1 = vint4::load(data + 16);
+
+	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
+	table.t1 = vint8(astcenc_mm256_set_m128i(d1.m, d1.m));
+
+	// XOR chain the high rows to allow table emulation
+	table.t1 = table.t1 ^ table.t0;
+}
+
+/**
+ * @brief Prepare a vtable lookup table 64x 8-bit entry table.
+ */
+ASTCENC_SIMD_INLINE void vtable_prepare(
+	vtable8_64x8& table,
+	const uint8_t* data
+) {
+	// AVX2 tables duplicate table entries in each 128-bit half-register
+	vint4 d0 = vint4::load(data);
+	vint4 d1 = vint4::load(data + 16);
+	vint4 d2 = vint4::load(data + 32);
+	vint4 d3 = vint4::load(data + 48);
+
+	table.t0 = vint8(astcenc_mm256_set_m128i(d0.m, d0.m));
+	table.t1 = vint8(astcenc_mm256_set_m128i(d1.m, d1.m));
+	table.t2 = vint8(astcenc_mm256_set_m128i(d2.m, d2.m));
+	table.t3 = vint8(astcenc_mm256_set_m128i(d3.m, d3.m));
+
+	// XOR chain the high rows to allow table emulation
+	table.t3 = table.t3 ^ table.t2;
+	table.t2 = table.t2 ^ table.t1;
+	table.t1 = table.t1 ^ table.t0;
+}
+
+/**
+ * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ */
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
+	const vtable8_16x8& tbl,
+	vint8 idx
+) {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
+	__m256i result = _mm256_shuffle_epi8(tbl.t0.m, idxx);
 	return vint8(result);
 }
 
 /**
- * @brief Perform an 8-bit 32-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 idx)
-{
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
+	const vtable8_32x8& tbl,
+	vint8 idx
+) {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
+	__m256i result = _mm256_shuffle_epi8(tbl.t0.m, idxx);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
 
-	__m256i result2 = _mm256_shuffle_epi8(t1.m, idxx);
+	__m256i result2 = _mm256_shuffle_epi8(tbl.t1.m, idxx);
 	result = _mm256_xor_si256(result, result2);
 	return vint8(result);
 }
 
 /**
- * @brief Perform an 8-bit 64-entry table lookup, with 32-bit indexes.
+ * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
  */
-ASTCENC_SIMD_INLINE vint8 vtable_8bt_32bi(vint8 t0, vint8 t1, vint8 t2, vint8 t3, vint8 idx)
-{
+ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
+	const vtable8_64x8& tbl,
+	vint8 idx
+) {
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
-	__m256i result = _mm256_shuffle_epi8(t0.m, idxx);
+	__m256i result = _mm256_shuffle_epi8(tbl.t0.m, idxx);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
 
-	__m256i result2 = _mm256_shuffle_epi8(t1.m, idxx);
+	__m256i result2 = _mm256_shuffle_epi8(tbl.t1.m, idxx);
 	result = _mm256_xor_si256(result, result2);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
 
-	result2 = _mm256_shuffle_epi8(t2.m, idxx);
+	result2 = _mm256_shuffle_epi8(tbl.t2.m, idxx);
 	result = _mm256_xor_si256(result, result2);
 	idxx = _mm256_sub_epi8(idxx, _mm256_set1_epi8(16));
 
-	result2 = _mm256_shuffle_epi8(t3.m, idxx);
+	result2 = _mm256_shuffle_epi8(tbl.t3.m, idxx);
 	result = _mm256_xor_si256(result, result2);
 
 	return vint8(result);
