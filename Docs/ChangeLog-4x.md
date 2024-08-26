@@ -16,7 +16,7 @@ The 4.9.0 release is a minor maintenance release.
 * **General:**
   * **Bug fix:** Fixed incorrect return type in "None" vector library
     reference implementation.
-  * **Bug fix:** Fixed sincos table index wrapping.
+  * **Bug fix:** Fixed sincos table index under/overflow.
   * **Feature:** Added backend for Arm SVE fixed-width 256-bit builds.
   * **Feature:** Optimized NEON mask `any()` and `all()` functions.
   * **Feature:** Migrated build and test to GitHub Actions pipelines.
