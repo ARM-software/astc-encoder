@@ -18,22 +18,23 @@
 /**
  * @brief Application entry point.
  *
- * This module contains the command line entry point which also performs the
- * role of validating the host extended ISA support meets the needs of the
- * tools.
+ * This module contains the first command line entry point veneer, used to
+ * validate that the host extended ISA availability matches the tool build.
+ * It is compiled without any extended ISA support so it's guaranteed to be
+ * executable without any invalid instruction errors.
  */
 
 #include <cstdio>
 
 /**
- * @brief The main entry point.
+ * @brief The main veneer entry point.
  *
  * @param argc   The number of arguments.
  * @param argv   The vector of arguments.
  *
  * @return 0 on success, non-zero otherwise.
  */
-int astcenc_main(
+int astcenc_main_veneer(
 	int argc,
 	char **argv);
 
@@ -311,5 +312,5 @@ int main(
 		return 1;
 	}
 
-	return astcenc_main(argc, argv);
+	return astcenc_main_veneer(argc, argv);
 }

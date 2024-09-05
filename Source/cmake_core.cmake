@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2023 Arm Limited
+#  Copyright 2020-2024 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -105,8 +105,13 @@ endif()
 if(${ASTCENC_CLI})
     # Veneer is compiled without any extended ISA so we can safely do
     # ISA compatability checks without triggering a SIGILL
-    add_library(${ASTCENC_TARGET}-veneer
+    add_library(${ASTCENC_TARGET}-veneer1
         astcenccli_entry.cpp)
+
+    # Veneer is compiled with extended ISA but without vector length overrides
+    # so we can safely do SVE vector length compatability checks
+    add_library(${ASTCENC_TARGET}-veneer2
+        astcenccli_entry2.cpp)
 
     add_executable(${ASTCENC_TARGET}
         astcenccli_error_metrics.cpp
@@ -119,11 +124,12 @@ if(${ASTCENC_CLI})
 
     target_link_libraries(${ASTCENC_TARGET}
         PRIVATE
-            ${ASTCENC_TARGET}-veneer
+            ${ASTCENC_TARGET}-veneer1
+            ${ASTCENC_TARGET}-veneer2
             ${ASTCENC_TARGET}-static)
 endif()
 
-macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
+macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
 
     target_compile_features(${ASTCENC_TARGET_NAME}
         PRIVATE
@@ -305,11 +311,17 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 ASTCENC_POPCNT=0
                 ASTCENC_F16C=0)
 
-        # Enable SVE
-        if (NOT ${ASTCENC_IS_VENEER})
+        # Enable SVE in the core library
+        if (NOT ${ASTCENC_VENEER_TYPE})
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     -march=armv8-a+sve -msve-vector-bits=256)
+
+        # Enable SVE without fixed vector length in the veneer
+        elseif (${ASTCENC_VENEER_TYPE} EQUAL 2)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve)
         endif()
 
     elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
@@ -340,7 +352,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=0)
 
-        if (${ASTCENC_IS_VENEER})
+        if (NOT ${ASTCENC_VENEER_TYPE})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -365,7 +377,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=1)
 
-        if (${ASTCENC_IS_VENEER})
+        if (NOT ${ASTCENC_VENEER_TYPE})
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -387,7 +399,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_IS_VENEER)
         # which significantly improve performance. Note that this DOES reduce
         # image quality by up to 0.2 dB (normally much less), but buys an
         # average of 10-15% performance improvement ...
-        if((NOT ${ASTCENC_INVARIANCE}) AND (NOT ${ASTCENC_IS_VENEER}))
+        if((NOT ${ASTCENC_INVARIANCE}) AND (NOT ${ASTCENC_VENEER_TYPE}))
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<${is_gnu_fe}:-mfma>)
@@ -446,14 +458,19 @@ if(${ASTCENC_SHAREDLIB})
 endif()
 
 if(${ASTCENC_CLI})
-    astcenc_set_properties(${ASTCENC_TARGET}-veneer ON)
-    astcenc_set_properties(${ASTCENC_TARGET} OFF)
+    astcenc_set_properties(${ASTCENC_TARGET}-veneer1 1)
+    astcenc_set_properties(${ASTCENC_TARGET}-veneer2 2)
+    astcenc_set_properties(${ASTCENC_TARGET} 0)
 
-    target_compile_options(${ASTCENC_TARGET}
+    target_compile_options(${ASTCENC_TARGET}-veneer1
         PRIVATE
             $<${is_msvc_fe}:/W3>)
 
-    target_compile_options(${ASTCENC_TARGET}-veneer
+    target_compile_options(${ASTCENC_TARGET}-veneer2
+        PRIVATE
+            $<${is_msvc_fe}:/W3>)
+
+    target_compile_options(${ASTCENC_TARGET}
         PRIVATE
             $<${is_msvc_fe}:/W3>)
 
