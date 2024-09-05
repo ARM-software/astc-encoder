@@ -62,7 +62,7 @@ int astcenc_main_veneer(
 	if (svcntw() != ASTCENC_SVE)
 	{
 		int bits = ASTCENC_SVE * 32;
-		print_error("ERROR: Host SVE support is not a %u bit implementation\n", bits);
+		print_error("ERROR: Host SVE support is not a %u-bit implementation\n", bits);
 		return 1;
 	}
 #endif
