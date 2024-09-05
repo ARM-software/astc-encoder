@@ -325,6 +325,29 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     -march=armv8-a+sve)
         endif()
 
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_128")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                ASTCENC_NEON=1
+                ASTCENC_SVE=4
+                ASTCENC_SSE=0
+                ASTCENC_AVX=0
+                ASTCENC_POPCNT=0
+                ASTCENC_F16C=0)
+
+        # Enable SVE in the core library
+        if (NOT ${ASTCENC_VENEER_TYPE})
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve -msve-vector-bits=128)
+
+        # Enable SVE without fixed vector length in the veneer
+        elseif (${ASTCENC_VENEER_TYPE} EQUAL 2)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    -march=armv8-a+sve)
+        endif()
+
     elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
