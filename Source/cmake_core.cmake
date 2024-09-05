@@ -352,7 +352,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=0)
 
-        if (NOT ${ASTCENC_VENEER_TYPE})
+        if (${ASTCENC_VENEER_TYPE} GREATER 0)
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
@@ -377,7 +377,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=1)
 
-        if (NOT ${ASTCENC_VENEER_TYPE})
+        if (${ASTCENC_VENEER_TYPE} GREATER 0)
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
