@@ -562,6 +562,8 @@ void astcenc_print_header()
 	const char* simdtype = "sse2";
 #elif (ASTCENC_SVE == 8)
 	const char* simdtype = "sve.256b";
+#elif (ASTCENC_SVE == 4)
+	const char* simdtype = "sve.128b";
 #elif (ASTCENC_NEON == 1)
 	const char* simdtype = "neon";
 #else
