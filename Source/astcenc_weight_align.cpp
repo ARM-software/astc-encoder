@@ -104,14 +104,17 @@ static void compute_angular_offsets(
 	// Precompute isample; arrays are always allocated 64 elements long
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		// Add 2^23 and interpreting bits extracts round-to-nearest int
-		vfloat sample = loada(dec_weight_ideal_value + i) * (SINCOS_STEPS - 1.0f) + vfloat(12582912.0f);
-		vint isample = float_as_int(sample) & vint((SINCOS_STEPS - 1));
+		// Ideal weight can be outside [0, 1] range, so clamp to fit table
+		vfloat ideal_weight = clampzo(loada(dec_weight_ideal_value + i));
+
+		// Convert a weight to a sincos table index
+		vfloat sample = ideal_weight * (SINCOS_STEPS - 1.0f);
+		vint isample = float_to_int_rtn(sample);
 		storea(isample, isamplev + i);
 	}
 
 	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
-	vfloat mult = vfloat(1.0f / (2.0f * astc::PI));
+	vfloat mult(1.0f / (2.0f * astc::PI));
 
 	for (unsigned int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
 	{
