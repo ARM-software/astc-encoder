@@ -1889,24 +1889,11 @@ static void print_diagnostic_images(
  *
  * @return 0 on success, non-zero otherwise.
  */
-int
-astcenc_main(
+int astcenc_main(
 	int argc,
 	char **argv
 ) {
 	set_thread_name("astc main");
-
-#if ASTCENC_SVE != 0
-	// Do this check here because is needs SVE instructions so cannot be in
-	// the veneer check which is compiled as stock Armv8. We know we have SVE
-	// by the time we get this far, but not the vector width.
-	if (svcntw() != ASTCENC_SVE)
-	{
-		uint32_t bits = ASTCENC_SVE * 32;
-		print_error("ERROR: Host does not implement %u bit SVE ISA extension\n", bits);
-		return false;
-	}
-#endif
 
 	double start_time = get_time();
 
