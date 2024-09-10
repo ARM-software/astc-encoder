@@ -182,6 +182,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             $<${is_gnu_fe}:-Wno-float-equal>
             $<${is_gnu_fe}:-Wno-deprecated-declarations>
             $<${is_gnu_fe}:-Wno-atomic-implicit-seq-cst>
+            $<${is_clang}:-Wno-overriding-option>
 
             # Clang 10 also throws up warnings we need to investigate (ours)
             $<${is_gnu_fe}:-Wno-cast-align>
