@@ -431,6 +431,22 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 PRIVATE
                     $<${is_gnu_fe}:-mfma>)
         endif()
+
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "native")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE)
+
+        if (${ASTCENC_VENEER_TYPE} GREATER 0)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        else()
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_clangcl}:-mcpu=native -march=native>
+                    $<${is_gnu_fe}:-mcpu=native -march=native>
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        endif()
     endif()
 
 endmacro()
