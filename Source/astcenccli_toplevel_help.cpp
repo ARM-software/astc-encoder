@@ -585,6 +585,14 @@ void astcenc_print_header()
 	unsigned int bits = static_cast<unsigned int>(sizeof(void*) * 8);
 	printf(astcenc_copyright_string,
 	       VERSION_STRING, bits, simdtype, pcnttype, f16ctype, YEAR_STRING);
+
+    // If possible, print hint that 8-wide SVE could be used
+#if ASTCENC_SVE == 4
+    if (svcntw() == 8)
+    {
+        printf("Note: This CPU can support 256-bit SVE builds.\n");
+    }
+#endif
 }
 
 /* See header for documentation. */
