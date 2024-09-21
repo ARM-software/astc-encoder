@@ -11,14 +11,21 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 **Status:** In development
 
-The 4.9.0 release is a minor maintenance release.
+The 4.9.0 release is a small release adding support for Arm Scalable Vector
+Extensions SIMD, as well as some minor bug fixes.
 
 * **General:**
   * **Bug fix:** Fixed incorrect return type in "None" vector library
     reference implementation.
   * **Bug fix:** Fixed sincos table index under/overflow.
-  * **Feature:** Added backend for Arm SVE fixed-width 256-bit builds.
-  * **Feature:** Added backend for Arm SVE fixed-width 128-bit builds.
+  * **Feature:** Changed `ASTCENC_ISA_NATIVE` builds to use `-march=native` and
+    `-mcpu=native`.
+  * **Feature:** Added backend for Arm SVE fixed-width 256-bit builds. These
+    can only run on hardware implementing 256-bit SVE.
+  * **Feature:** Added backend for Arm SVE 128-bit builds. These are portable
+    builds and can run on hardware implemnting any SVE vector length, but the
+    explicit SVE use is augmented NEON and will only use the bottom 128-bits of
+    each SVE vector.
   * **Feature:** Optimized NEON mask `any()` and `all()` functions.
   * **Feature:** Migrated build and test to GitHub Actions pipelines.
 
@@ -36,8 +43,9 @@ The 4.8.0 release is a minor maintenance release.
     language behavior, to improve support for deployment using Emscripten.
   * **Feature:** Builds using Clang can now build with undefined behavior
     sanitizer by setting `-DASTCENC_UBSAN=ON` on the CMake configure line.
-  * **Feature:** Updated to Wuffs library 0.3.4, which ignores tRNS alpha chunks
-    for type 4 (LA) and 6 (RGBA) PNGs, to improve compatibility with libpng.
+  * **Feature:** Updated to Wuffs library 0.3.4, which ignores tRNS alpha
+    chunks for type 4 (LA) and 6 (RGBA) PNGs, to improve compatibility with
+    libpng.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 4.7.0
@@ -49,8 +57,8 @@ the decompressor to match the Khronos specification. This fix includes the
 addition of explicit support for optimizing for `decode_unorm8` rounding.
 
 Reminder - the codec library API is not designed to be binary compatible across
-versions. We always recommend rebuilding your client-side code using the updated
-`astcenc.h` header.
+versions. We always recommend rebuilding your client-side code using the
+updated `astcenc.h` header.
 
 * **General:**
   * **Bug fix:** sRGB LDR decompression now uses the correct endpoint expansion
