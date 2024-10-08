@@ -336,10 +336,13 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_F16C=0)
 
         # Enable SVE in the core library
+        # Note that for 128-bit SVE the generated code is actually
+        # vector-length agnostic, but any manual intrinsics used in the
+        # enhanced-NEON library use 128-bit data width predicates
         if (NOT ${ASTCENC_VENEER_TYPE})
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
-                    -march=armv8-a+sve -msve-vector-bits=128)
+                    -march=armv8-a+sve)
 
         # Enable SVE without fixed vector length in the veneer
         elseif (${ASTCENC_VENEER_TYPE} EQUAL 2)
@@ -429,6 +432,21 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     $<${is_gnu_fe}:-mfma>)
         endif()
 
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "native")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE)
+
+        if (${ASTCENC_VENEER_TYPE} GREATER 0)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        else()
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_clangcl}:-mcpu=native -march=native>
+                    $<${is_gnu_fe}:-mcpu=native -march=native>
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        endif()
     endif()
 
 endmacro()

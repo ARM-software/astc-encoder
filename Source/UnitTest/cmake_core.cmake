@@ -117,7 +117,7 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sve_128")
     # Enable SVE
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
-            -march=armv8-a+sve -msve-vector-bits=128)
+            -march=armv8-a+sve)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "sse2")
     target_compile_definitions(${ASTCENC_TEST}

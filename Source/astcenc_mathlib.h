@@ -74,7 +74,18 @@
 #endif
 
 #ifndef ASTCENC_SVE
-  #define ASTCENC_SVE 0
+  #if defined(__ARM_FEATURE_SVE)
+    #if defined(__ARM_FEATURE_SVE_BITS) && __ARM_FEATURE_SVE_BITS == 256
+      #define ASTCENC_SVE 8
+    // Auto-detected SVE can only assume vector width of 4 is available, but
+    // must also allow for hardware being longer and so all use of intrinsics
+    // must explicitly use predicate masks to limit to 4-wide.
+    #else
+      #define ASTCENC_SVE 4
+    #endif
+    #else
+    #define ASTCENC_SVE 0
+  #endif
 #endif
 
 // Force vector-sized SIMD alignment
