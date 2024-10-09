@@ -453,6 +453,7 @@ endmacro()
 
 string(CONCAT EXTERNAL_CXX_FLAGS
        " $<${is_gnu_fe}: -fno-strict-aliasing>"
+       " $<${is_gnu_fe}: -Wno-pedantic>"
        " $<${is_gnu_fe}: -Wno-unused-parameter>"
        " $<${is_gnu_fe}: -Wno-old-style-cast>"
        " $<${is_gnu_fe}: -Wno-double-promotion>"
