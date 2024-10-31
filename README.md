@@ -97,8 +97,8 @@ to be a stable branch for the latest major release series, but as it is used
 for ongoing development expect it to have some volatility. We recommend using
 the latest stable release tag for production development.
 
-The `4.x` branch is a stable branch for the 4.x release series. It is no longer
-under active development, but is a supported branch that continues to get
+The `4.x` branch is a stable branch for the older 4.x release series. It is no
+longer under active development, but is a supported branch that continues to get
 backported bug fixes.
 
 The `1.x`, `2.x`, and `3.x` branches are stable branches for older releases.
