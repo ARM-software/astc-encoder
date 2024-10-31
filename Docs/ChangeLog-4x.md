@@ -7,29 +7,6 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 4.9.0
-
-**Status:** In development
-
-The 4.9.0 release is a small release adding support for Arm Scalable Vector
-Extensions SIMD, as well as some minor bug fixes.
-
-* **General:**
-  * **Bug fix:** Fixed incorrect return type in "None" vector library
-    reference implementation.
-  * **Bug fix:** Fixed sincos table index under/overflow.
-  * **Feature:** Changed `ASTCENC_ISA_NATIVE` builds to use `-march=native` and
-    `-mcpu=native`.
-  * **Feature:** Added backend for Arm SVE fixed-width 256-bit builds. These
-    can only run on hardware implementing 256-bit SVE.
-  * **Feature:** Added backend for Arm SVE 128-bit builds. These are portable
-    builds and can run on hardware implemnting any SVE vector length, but the
-    explicit SVE use is augmented NEON and will only use the bottom 128-bits of
-    each SVE vector.
-  * **Feature:** Optimized NEON mask `any()` and `all()` functions.
-  * **Feature:** Migrated build and test to GitHub Actions pipelines.
-
-<!-- ---------------------------------------------------------------------- -->
 ## 4.8.0
 
 **Status:** May 2024
