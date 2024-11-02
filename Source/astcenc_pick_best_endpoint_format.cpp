@@ -123,21 +123,21 @@ static void compute_error_squared_rgb_single_partition(
 	vint lane_ids = vint::lane_id();
 	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		vint tix(texel_indexes + i);
+		const uint8_t* tix = texel_indexes + i;
 
 		vmask mask = lane_ids < vint(texel_count);
 		lane_ids += vint(ASTCENC_SIMD_WIDTH);
 
 		// Compute the error that arises from just ditching alpha
-		vfloat data_a = gatherf(blk.data_a, tix);
+		vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, tix);
 		vfloat alpha_diff = data_a - default_a;
 		alpha_diff = alpha_diff * alpha_diff;
 
 		haccumulate(a_drop_errv, alpha_diff, mask);
 
-		vfloat data_r = gatherf(blk.data_r, tix);
-		vfloat data_g = gatherf(blk.data_g, tix);
-		vfloat data_b = gatherf(blk.data_b, tix);
+		vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, tix);
+		vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, tix);
+		vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, tix);
 
 		// Compute uncorrelated error
 		vfloat param = data_r * uncor_bs0

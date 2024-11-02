@@ -77,6 +77,8 @@
 	#define ASTCENC_NO_INLINE __attribute__ ((noinline))
 #endif
 
+template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indices);
+
 #if ASTCENC_AVX >= 2
 	// If we have AVX2 expose 8-wide VLA.
 	#include "astcenc_vecmathlib_sse_4.h"

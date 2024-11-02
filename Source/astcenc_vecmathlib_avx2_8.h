@@ -906,6 +906,33 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 }
 
 /**
+ * @brief Load a vector of gathered results from an array using byte indices from memory
+ */
+template<>
+ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
+{
+#if ASTCENC_AVOID_X86_GATHERS >= 1
+	// Perform manual gather using scalar loads in two separate dependency chains,
+	// then merge late. MSVC translates this 1:1, which is OK. Clang turns it
+	// into a bunch of memory-operand inserts on 128-bit halves then merges late,
+	// which performs significantly worse in my tests.
+	__m256 m0 = _mm256_broadcast_ss(base + indices[0]);
+	__m256 m1 = _mm256_broadcast_ss(base + indices[1]);
+	m0 = _mm256_blend_ps(m0, _mm256_broadcast_ss(base + indices[2]), 1 << 2);
+	m1 = _mm256_blend_ps(m1, _mm256_broadcast_ss(base + indices[3]), 1 << 3);
+	m0 = _mm256_blend_ps(m0, _mm256_broadcast_ss(base + indices[4]), 1 << 4);
+	m1 = _mm256_blend_ps(m1, _mm256_broadcast_ss(base + indices[5]), 1 << 5);
+	m0 = _mm256_blend_ps(m0, _mm256_broadcast_ss(base + indices[6]), 1 << 6);
+	m1 = _mm256_blend_ps(m1, _mm256_broadcast_ss(base + indices[7]), 1 << 7);
+
+	return vfloat8(_mm256_blend_ps(m0, m1, 0xaa));
+#else
+	vint8 inds(indices);
+	return gatherf(base, inds);
+#endif
+}
+
+/**
  * @brief Store a vector to an unaligned memory address.
  */
 ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)

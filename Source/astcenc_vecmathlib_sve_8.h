@@ -842,6 +842,16 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 }
 
 /**
+ * @brief Load a vector of gathered results from an array using byte indices from memory
+ */
+template<>
+ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
+{
+	svint32_t offsets = svld1ub_s32(svptrue_b32(), indices);
+	return vfloat8(svld1_gather_s32index_f32(svptrue_b32(), base, offsets));
+}
+
+/**
  * @brief Store a vector to an unaligned memory address.
  */
 ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
