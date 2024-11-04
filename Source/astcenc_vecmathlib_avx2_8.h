@@ -909,11 +909,11 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 template<>
 ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
 {
-#if ASTCENC_AVOID_X86_GATHERS >= 1
+#if ASTCENC_X86_GATHERS == 0
 	// Perform manual gather using scalar loads in two separate dependency chains,
 	// then merge late. MSVC translates this 1:1, which is OK. Clang turns it
 	// into a bunch of memory-operand inserts on 128-bit halves then merges late,
-	// which performs significantly worse in my tests.
+	// which performs significantly worse in tests.
 	__m256 m0 = _mm256_broadcast_ss(base + indices[0]);
 	__m256 m1 = _mm256_broadcast_ss(base + indices[1]);
 	m0 = _mm256_blend_ps(m0, _mm256_broadcast_ss(base + indices[2]), 1 << 2);
