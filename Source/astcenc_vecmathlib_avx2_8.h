@@ -458,13 +458,12 @@ ASTCENC_SIMD_INLINE vint8 max(vint8 a, vint8 b)
  */
 ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 {
-	__m128i m = _mm_min_epi32(_mm256_extracti128_si256(a.m, 0), _mm256_extracti128_si256(a.m, 1));
-	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
-	m = _mm_min_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
-	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
+	// Build min within groups of 2, then 4, then 8
+	__m256i m = _mm256_min_epi32(a.m, _mm256_shuffle_epi32(a.m, _MM_SHUFFLE(2, 3, 0, 1)));
+	m = _mm256_min_epi32(m, _mm256_shuffle_epi32(m, _MM_SHUFFLE(1, 0, 3, 2)));
+	m = _mm256_min_epi32(m, _mm256_permute2x128_si256(m, m, 0x01));
 
-	__m256i r = astcenc_mm256_set_m128i(m, m);
-	vint8 vmin(r);
+	vint8 vmin(m);
 	return vmin;
 }
 
@@ -481,13 +480,12 @@ ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 {
-	__m128i m = _mm_max_epi32(_mm256_extracti128_si256(a.m, 0), _mm256_extracti128_si256(a.m, 1));
-	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,3,2)));
-	m = _mm_max_epi32(m, _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,1)));
-	m = _mm_shuffle_epi32(m, _MM_SHUFFLE(0,0,0,0));
+	// Build max within groups of 2, then 4, then 8
+	__m256i m = _mm256_max_epi32(a.m, _mm256_shuffle_epi32(a.m, _MM_SHUFFLE(2, 3, 0, 1)));
+	m = _mm256_max_epi32(m, _mm256_shuffle_epi32(m, _MM_SHUFFLE(1, 0, 3, 2)));
+	m = _mm256_max_epi32(m, _mm256_permute2x128_si256(m, m, 0x01));
 
-	__m256i r = astcenc_mm256_set_m128i(m, m);
-	vint8 vmax(r);
+	vint8 vmax(m);
 	return vmax;
 }
 
