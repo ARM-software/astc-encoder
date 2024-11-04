@@ -58,8 +58,10 @@
 #ifndef ASTCENC_AVX
   #if defined(__AVX2__)
     #define ASTCENC_AVX 2
+    #define ASTCENC_X86_GATHERS 1
   #elif defined(__AVX__)
     #define ASTCENC_AVX 1
+    #define ASTCENC_X86_GATHERS 1
   #else
     #define ASTCENC_AVX 0
   #endif

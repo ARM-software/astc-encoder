@@ -900,13 +900,30 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
-#if ASTCENC_AVX >= 2
+#if ASTCENC_AVX >= 2 && ASTCENC_X86_GATHERS != 0
 	return vfloat4(_mm_i32gather_ps(base, indices.m, 4));
 #else
 	alignas(16) int idx[4];
 	storea(indices, idx);
 	return vfloat4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
 #endif
+}
+
+/**
+ * @brief Load a vector of gathered results from an array using byte indices from memory
+ */
+template<>
+ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
+{
+	// Experimentally, in this particular use case (byte indices in memory),
+	// using 4 separate scalar loads is appreciably faster than using gathers
+	// even if they're available, on every x86 uArch tried, so always do the
+	// separate loads even when ASTCENC_X86_GATHERS is enabled.
+	//
+	// Tested on:
+	//   - Intel Skylake-X, Coffee Lake, Crestmont, Redwood Cove
+	//   - AMD Zen 2, Zen 4
+	return vfloat4(base[indices[0]], base[indices[1]], base[indices[2]], base[indices[3]]);
 }
 
 /**

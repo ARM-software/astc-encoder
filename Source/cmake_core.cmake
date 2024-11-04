@@ -359,7 +359,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_SSE=20
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=0
-                ASTCENC_F16C=0)
+                ASTCENC_F16C=0
+                ASTCENC_X86_GATHERS=0)
 
         # Force SSE2 on AppleClang (normally SSE4.1 is the default)
         target_compile_options(${ASTCENC_TARGET_NAME}
@@ -377,7 +378,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_SSE=41
                 ASTCENC_AVX=0
                 ASTCENC_POPCNT=1
-                ASTCENC_F16C=0)
+                ASTCENC_F16C=0
+                ASTCENC_X86_GATHERS=0)
 
         if (${ASTCENC_VENEER_TYPE} GREATER 0)
             # Force SSE2 on AppleClang (normally SSE4.1 is the default)
@@ -395,12 +397,16 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         endif()
 
     elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
+        # Gathers are quite slow on many x86 microarchitectures, to the point where
+        # it can be significantly faster to just avoid them use scalar loads.
+
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
                 ASTCENC_SSE=41
                 ASTCENC_AVX=2
+                ASTCENC_X86_GATHERS=$<BOOL:${ASTCENC_X86_GATHERS}>
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=1)
 

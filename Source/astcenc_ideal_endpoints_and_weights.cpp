@@ -41,16 +41,16 @@ static vfloat bilinear_infill_vla(
 	unsigned int index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
-	vint weight_idx0 = vint(di.texel_weights_tr[0] + index);
-	vint weight_idx1 = vint(di.texel_weights_tr[1] + index);
-	vint weight_idx2 = vint(di.texel_weights_tr[2] + index);
-	vint weight_idx3 = vint(di.texel_weights_tr[3] + index);
+	const uint8_t* weight_idx0 = di.texel_weights_tr[0] + index;
+	const uint8_t* weight_idx1 = di.texel_weights_tr[1] + index;
+	const uint8_t* weight_idx2 = di.texel_weights_tr[2] + index;
+	const uint8_t* weight_idx3 = di.texel_weights_tr[3] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf(weights, weight_idx0);
-	vfloat weight_val1 = gatherf(weights, weight_idx1);
-	vfloat weight_val2 = gatherf(weights, weight_idx2);
-	vfloat weight_val3 = gatherf(weights, weight_idx3);
+	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
+	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
+	vfloat weight_val2 = gatherf_byte_inds<vfloat>(weights, weight_idx2);
+	vfloat weight_val3 = gatherf_byte_inds<vfloat>(weights, weight_idx3);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -81,12 +81,12 @@ static vfloat bilinear_infill_vla_2(
 	unsigned int index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
-	vint weight_idx0 = vint(di.texel_weights_tr[0] + index);
-	vint weight_idx1 = vint(di.texel_weights_tr[1] + index);
+	const uint8_t* weight_idx0 = di.texel_weights_tr[0] + index;
+	const uint8_t* weight_idx1 = di.texel_weights_tr[1] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf(weights, weight_idx0);
-	vfloat weight_val1 = gatherf(weights, weight_idx1);
+	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
+	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -894,18 +894,18 @@ void compute_ideal_weights_for_decimation(
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
-			vint texel(di.weight_texels_tr[j] + i);
+			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
 			}
 
 			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight += contrib_weight;
-			initial_weight += gatherf(ei.weights, texel) * contrib_weight;
+			initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * contrib_weight;
 		}
 
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
@@ -952,17 +952,17 @@ void compute_ideal_weights_for_decimation(
 
 		for (unsigned int j = 0; j < max_texel_count; j++)
 		{
-			vint texel(di.weight_texels_tr[j] + i);
+			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
 
 			if (!constant_wes)
 			{
- 				weight_error_scale = gatherf(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
 			}
 
 			vfloat scale = weight_error_scale * contrib_weight;
-			vfloat old_weight = gatherf(infilled_weights, texel);
-			vfloat ideal_weight = gatherf(ei.weights, texel);
+			vfloat old_weight = gatherf_byte_inds<vfloat>(infilled_weights, texel);
+			vfloat ideal_weight = gatherf_byte_inds<vfloat>(ei.weights, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += (old_weight - ideal_weight) * scale;
