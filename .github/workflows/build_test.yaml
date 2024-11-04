@@ -114,7 +114,7 @@ jobs:
 
   build-macos-x64-clang:
     name: macOS x64 Clang
-    runs-on: macos-12
+    runs-on: macos-14
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -147,7 +147,7 @@ jobs:
 
       - name: Run system tests
         run: |
-          python ./Test/astc_test_image.py --test-set Small
+          python ./Test/astc_test_image.py  --encoder ref-main-sse4.1 --test-set Small
 
   build-macos-universal-clang:
     name: macOS universal Clang
@@ -192,7 +192,7 @@ jobs:
 
       - name: Run system tests
         run: |
-          python ./Test/astc_test_image.py --encoder=universal --test-set Small
+          python ./Test/astc_test_image.py --encoder universal --test-set Small
 
   build-windows-x64-msvc:
     name: Windows x64 MSVC
