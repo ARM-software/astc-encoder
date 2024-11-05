@@ -24,6 +24,8 @@ The 5.1.0 release is a maintenance release.
     byte-to-int index conversion.
   * **Optimization:** Added improved intrinsics sequence for SSE and AVX2
     `hmin()` and `hmax()`.
+  * **Optimization:** Added improved intrinsics sequence for `vint4(uint8_t*)`
+    on systems implementing Arm SVE.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.0.0
