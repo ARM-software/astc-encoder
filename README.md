@@ -59,6 +59,7 @@ Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
 * Change log: [5.x series](./Docs/ChangeLog-5x.md)
+  
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
 ## Windows and Linux
