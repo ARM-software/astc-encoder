@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <cassert>
 #include <cstring>
+#include <cfloat>
 
 static constexpr unsigned int ANGULAR_STEPS { 32 };
 
@@ -169,15 +170,46 @@ static void compute_lowest_and_highest_weight(
 
 	vfloat rcp_stepsize = int_to_float(vint::lane_id()) + vfloat(1.0f);
 
+	// Compute minimum/maximum weights in the weight array. Our remapping
+	// is monotonic, so the min/max rounded weights relate to the min/max
+	// unrounded weights in a straightforward way.
+	vfloat min_weight(FLT_MAX);
+	vfloat max_weight(-FLT_MAX);
+	unsigned int partial_weight_start = round_down_to_simd_multiple_vla(weight_count);
+	for (unsigned int i = 0; i < partial_weight_start; i += ASTCENC_SIMD_WIDTH)
+	{
+		vfloat weights = loada(dec_weight_ideal_value + i);
+		min_weight = min(min_weight, weights);
+		max_weight = max(max_weight, weights);
+	}
+
+	if (partial_weight_start != weight_count)
+	{
+		vfloat partial_weights = loada(dec_weight_ideal_value + partial_weight_start);
+		vmask active = vint::lane_id() < vint(weight_count - partial_weight_start);
+
+		vmask smaller = active & (partial_weights < min_weight);
+		min_weight = select(min_weight, partial_weights, smaller);
+
+		vmask larger = active & (partial_weights > max_weight);
+		max_weight = select(max_weight, partial_weights, larger);
+	}
+
+	min_weight = hmin(min_weight);
+	max_weight = hmax(max_weight);
+
 	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
 	for (unsigned int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
-		vfloat minidx(128.0f);
-		vfloat maxidx(-128.0f);
 		vfloat errval = vfloat::zero();
 		vfloat cut_low_weight_err = vfloat::zero();
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(offsets + sp);
+
+		// We know the min and max weight values, so we can figure out
+		// the corresponding indices before we enter the loop.
+		vfloat minidx = round(min_weight * rcp_stepsize - offset);
+		vfloat maxidx = round(max_weight * rcp_stepsize - offset);
 
 		for (unsigned int j = 0; j < weight_count; j++)
 		{
@@ -186,22 +218,12 @@ static void compute_lowest_and_highest_weight(
 			vfloat diff = sval - svalrte;
 			errval += diff * diff;
 
-			// Reset tracker on min hit
-			vmask mask = svalrte < minidx;
-			minidx = select(minidx, svalrte, mask);
-			cut_low_weight_err = select(cut_low_weight_err, vfloat::zero(), mask);
-
-			// Accumulate on min hit
-			mask = svalrte == minidx;
+			// Accumulate errors for minimum index
+			vmask mask = svalrte == minidx;
 			vfloat accum = cut_low_weight_err + vfloat(1.0f) - vfloat(2.0f) * diff;
 			cut_low_weight_err = select(cut_low_weight_err, accum, mask);
 
-			// Reset tracker on max hit
-			mask = svalrte > maxidx;
-			maxidx = select(maxidx, svalrte, mask);
-			cut_high_weight_err = select(cut_high_weight_err, vfloat::zero(), mask);
-
-			// Accumulate on max hit
+			// Accumulate errors for maximum index
 			mask = svalrte == maxidx;
 			accum = cut_high_weight_err + vfloat(1.0f) + vfloat(2.0f) * diff;
 			cut_high_weight_err = select(cut_high_weight_err, accum, mask);
