@@ -853,12 +853,6 @@ void compute_ideal_weights_for_decimation(
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// Ensure that the end of the output arrays that are used for SIMD paths later are filled so we
-	// can safely run SIMD elsewhere without a loop tail. Note that this is always safe as weight
-	// arrays always contain space for 64 elements
-	unsigned int prev_weight_count_simd = round_down_to_simd_multiple_vla(weight_count - 1);
-	storea(vfloat::zero(), dec_weight_ideal_value + prev_weight_count_simd);
-
 	// If we have a 1:1 mapping just shortcut the computation. Transfer enough to also copy the
 	// zero-initialized SIMD over-fetch region
 	if (is_direct)
