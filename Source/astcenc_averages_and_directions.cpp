@@ -586,44 +586,44 @@ void compute_avgs_and_dirs_3_comp_rgb(
 		vfloat4 average = partition_averages[partition];
 		pm[partition].avg = average;
 
-		vfloat4 sum_xp = vfloat4::zero();
-		vfloat4 sum_yp = vfloat4::zero();
-		vfloat4 sum_zp = vfloat4::zero();
+		// Compute covariance matrix and bounding box
+		vfloat4 cov[3] = { vfloat4::zero(), vfloat4::zero(), vfloat4::zero() };
+		vfloat4 maxc(-1e38f);
+		vfloat4 minc(1e38f);
 
 		for (unsigned int i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
 
-			vfloat4 texel_datum = blk.texel3(iwt);
-			texel_datum = texel_datum - average;
+			vfloat4 c = blk.texel3(iwt);
+			vfloat4 d = (c - average);
 
-			vfloat4 zero = vfloat4::zero();
+			cov[0] += d.swz<0, 0, 0>() * d;	                // xx, xy, xz
+			cov[1] += d.swz<0, 1, 1>() * d.swz<1, 1, 2>();  // xy, yy, yz
+			cov[2] += d                * d.swz<2, 2, 2>();  // xz, yz, zz
 
-			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
-			sum_xp += select(zero, texel_datum, tdm0);
-
-			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
-			sum_yp += select(zero, texel_datum, tdm1);
-
-			vmask4 tdm2 = texel_datum.swz<2,2,2,2>() > zero;
-			sum_zp += select(zero, texel_datum, tdm2);
+			minc = min(minc, c);
+			maxc = max(maxc, c);
 		}
 
-		vfloat4 prod_xp = dot(sum_xp, sum_xp);
-		vfloat4 prod_yp = dot(sum_yp, sum_yp);
-		vfloat4 prod_zp = dot(sum_zp, sum_zp);
+		// Use best axis of the bounding box based on the signs of the covariance matrix
+		vfloat4 dir = maxc - minc;
+		dir = change_sign(dir, cov[2]);
 
-		vfloat4 best_vector = sum_xp;
-		vfloat4 best_sum = prod_xp;
+		// Perform single power iteration
+		vfloat4 d;
+		d  = dir.swz<0, 0, 0, 0>() * cov[0]
+		   + dir.swz<1, 1, 1, 1>() * cov[1]
+		   + dir.swz<2, 2, 2, 2>() * cov[2];
 
-		vmask4 mask = prod_yp > best_sum;
-		best_vector = select(best_vector, sum_yp, mask);
-		best_sum = select(best_sum, prod_yp, mask);
-
-		mask = prod_zp > best_sum;
-		best_vector = select(best_vector, sum_zp, mask);
-
-		pm[partition].dir = best_vector;
+		if (all(abs(d) < vfloat4(0.00001f)))
+		{
+			pm[partition].dir = dir;
+		}
+		else
+		{
+			pm[partition].dir = d;
+		}
 	}
 }
 

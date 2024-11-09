@@ -276,6 +276,20 @@ ASTCENC_SIMD_INLINE vfloat change_sign(vfloat a, vfloat b)
 	return int_as_float(r);
 }
 
+#if ASTCENC_SIMD_WIDTH != 4
+/**
+ * @brief Return @c a with lanes negated if the @c b lane is negative.
+ */
+ASTCENC_SIMD_INLINE vfloat4 change_sign(vfloat4 a, vfloat4 b)
+{
+	vint4 ia = float_as_int(a);
+	vint4 ib = float_as_int(b);
+	vint4 sign_mask(static_cast<int>(0x80000000));
+	vint4 r = ia ^ (ib & sign_mask);
+	return int_as_float(r);
+}
+#endif
+
 /**
  * @brief Return fast, but approximate, vector atan(x).
  *
