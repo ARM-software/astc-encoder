@@ -22,6 +22,8 @@ The 5.1.0 release is a maintenance release.
   * **Optimization:** Added new `gather()` abstraction for gathers using byte
     indices, allowing implementations without gather hardware to skip the
     byte-to-int index conversion.
+  * **Optimization:** Optimized `compute_lowest_and_highest_weight()` to
+    pre-compute min/max outside of the main loop.
   * **Optimization:** Added improved intrinsics sequence for SSE and AVX2
     `hmin()` and `hmax()`.
   * **Optimization:** Added improved intrinsics sequence for `vint4(uint8_t*)`
