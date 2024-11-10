@@ -598,9 +598,9 @@ void compute_avgs_and_dirs_3_comp_rgb(
 			vfloat4 c = blk.texel3(iwt);
 			vfloat4 d = (c - average);
 
-			cov[0] += d.swz<0, 0, 0>() * d;	                // xx, xy, xz
-			cov[1] += d.swz<0, 1, 1>() * d.swz<1, 1, 2>();  // xy, yy, yz
-			cov[2] += d                * d.swz<2, 2, 2>();  // xz, yz, zz
+			cov[0] += d.swz<0, 0, 0, 3>() * d;	                  // xx, xy, xz
+			cov[1] += d.swz<0, 1, 1, 3>() * d.swz<1, 1, 2, 3>();  // xy, yy, yz
+			cov[2] += d                   * d.swz<2, 2, 2, 3>();  // xz, yz, zz
 
 			minc = min(minc, c);
 			maxc = max(maxc, c);
