@@ -10,9 +10,10 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.1.0
 
-**Status:** In development.
+**Status:** November 2024
 
-The 5.1.0 release is a maintenance release.
+The 5.1.0 release is an optimization release, giving moderate performance
+improvements on all platforms. There are no image quality differences.
 
 * **General:**
   * **Feature:** Added a new CMake build option to control use of native
@@ -25,7 +26,7 @@ The 5.1.0 release is a maintenance release.
   * **Optimization:** Optimized `compute_lowest_and_highest_weight()` to
     pre-compute min/max outside of the main loop.
   * **Optimization:** Added improved intrinsics sequence for SSE and AVX2
-    `hmin()` and `hmax()`.
+    integer `hmin()` and `hmax()`.
   * **Optimization:** Added improved intrinsics sequence for `vint4(uint8_t*)`
     on systems implementing Arm SVE.
 

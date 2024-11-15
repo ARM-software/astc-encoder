@@ -59,7 +59,7 @@ Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
 * Change log: [5.x series](./Docs/ChangeLog-5x.md)
-  
+
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
 ## Windows and Linux
@@ -99,8 +99,8 @@ for ongoing development expect it to have some volatility. We recommend using
 the latest stable release tag for production development.
 
 The `4.x` branch is a stable branch for the older 4.x release series. It is no
-longer under active development, but is a supported branch that continues to get
-backported bug fixes.
+longer under active development, but is a supported branch that continues to
+get back-ported bug fixes.
 
 The `1.x`, `2.x`, and `3.x` branches are stable branches for older releases.
 They are no longer under active development or getting bug fixes.
