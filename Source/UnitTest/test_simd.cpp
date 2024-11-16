@@ -1651,18 +1651,6 @@ TEST(vint4, hmax)
 	EXPECT_EQ(r2.lane<3>(), 5);
 }
 
-/** @brief Test vint4 hadd_s. */
-TEST(vint4, hadd_s)
-{
-	vint4 a1(1, 3, 5, 7);
-	int r1 = hadd_s(a1);
-	EXPECT_EQ(r1, 16);
-
-	vint4 a2(1, 2, -1, 5);
-	int r2 = hadd_s(a2);
-	EXPECT_EQ(r2, 7);
-}
-
 /** @brief Test vint4 hadd_rgb_s. */
 TEST(vint4, hadd_rgb_s)
 {
