@@ -196,6 +196,8 @@ void set_thread_name(
 	pthread_setname_np(pthread_self(), name);
 #elif defined(__APPLE__)
 	pthread_setname_np(name);
+#else
+	(void)name;
 #endif
 }
 
