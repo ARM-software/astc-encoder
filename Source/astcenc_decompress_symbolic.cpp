@@ -363,15 +363,8 @@ float compute_symbolic_block_difference_2plane(
 		vint4 weight = select(vint4(plane1_weights[i]), vint4(plane2_weights[i]), plane2_mask);
 		vint4 colori = lerp_color_int(u8_mask, ep0, ep1, weight);
 
-		#if 0
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk.texel(i);
-		#else
-		// TODO: Hack to force linear HDR RGB image error analysis
-		vfloat4 color = decode_texel(colori, lns_mask);
-		vfloat4 oldColor = float16_to_float(lns_to_sf16(float_to_int(blk.texel(i))));
-		oldColor.set_lane<3>(1.0f);
-		#endif
 
 		// Compare error using a perceptual decode metric for RGBM textures
 		if (config.flags & ASTCENC_FLG_MAP_RGBM)
@@ -403,11 +396,19 @@ float compute_symbolic_block_difference_2plane(
 			);
 		}
 
-		vfloat4 error = oldColor - color;
-		error = min(abs(error), 1e15f);
-		error = error * error;
+		// Compute sum of squared errors, weighted by channel weight
+		vfloat4 error = (oldColor - color);
+		error = dot(error, error * blk.channel_weight);
 
-		summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
+		// Convert this relative sum of squared error for HDR to avoid light
+		// channels dominating the error calculations.
+		// See https://fgiesen.wordpress.com/2024/11/14/mrsse/
+		if (any(lns_mask))
+		{
+			error = error / (dot(oldColor, oldColor) + 1e-10f);
+		}
+
+		summa += min(error, ERROR_CALC_DEFAULT);
 	}
 
 	return summa.lane<0>();
@@ -469,15 +470,8 @@ float compute_symbolic_block_difference_1plane(
 			vint4 colori = lerp_color_int(u8_mask, ep0, ep1,
 			                              vint4(plane1_weights[tix]));
 
-			#if 0
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
-			#else
-			// TODO: Hack to force linear HDR RGB image error analysis
-			vfloat4 color = decode_texel(colori, lns_mask);
-			vfloat4 oldColor = float16_to_float(lns_to_sf16(float_to_int(blk.texel(tix))));
-			oldColor.set_lane<3>(1.0f);
-			#endif
 
 			// Compare error using a perceptual decode metric for RGBM textures
 			if (config.flags & ASTCENC_FLG_MAP_RGBM)
@@ -509,11 +503,19 @@ float compute_symbolic_block_difference_1plane(
 				);
 			}
 
-			vfloat4 error = oldColor - color;
-			error = min(abs(error), 1e15f);
-			error = error * error;
+			// Compute sum of squared errors, weighted by channel weight
+			vfloat4 error = (oldColor - color);
+			error = dot(error, error * blk.channel_weight);
 
-			summa += min(dot(error, blk.channel_weight), ERROR_CALC_DEFAULT);
+			// Convert this relative sum of squared error for HDR to avoid light
+			// channels dominating the error calculations
+			// See https://fgiesen.wordpress.com/2024/11/14/mrsse/
+			if (any(lns_mask))
+			{
+				error = error / (dot(oldColor, oldColor) + 1e-10f);
+			}
+
+			summa += min(error, ERROR_CALC_DEFAULT);
 		}
 	}
 
