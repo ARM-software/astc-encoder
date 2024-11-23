@@ -354,6 +354,7 @@ float compute_symbolic_block_difference_2plane(
 	                       ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
+	vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
 
 	// Unpack and compute error for each texel in the partition
 	unsigned int texel_count = bsd.texel_count;
@@ -362,8 +363,15 @@ float compute_symbolic_block_difference_2plane(
 		vint4 weight = select(vint4(plane1_weights[i]), vint4(plane2_weights[i]), plane2_mask);
 		vint4 colori = lerp_color_int(u8_mask, ep0, ep1, weight);
 
+		#if 0
 		vfloat4 color = int_to_float(colori);
 		vfloat4 oldColor = blk.texel(i);
+		#else
+		// TODO: Hack to force linear HDR RGB image error analysis
+		vfloat4 color = decode_texel(colori, lns_mask);
+		vfloat4 oldColor = float16_to_float(lns_to_sf16(float_to_int(blk.texel(i))));
+		oldColor.set_lane<3>(1.0f);
+		#endif
 
 		// Compare error using a perceptual decode metric for RGBM textures
 		if (config.flags & ASTCENC_FLG_MAP_RGBM)
@@ -451,6 +459,8 @@ float compute_symbolic_block_difference_1plane(
 		                       rgb_lns, a_lns,
 		                       ep0, ep1);
 
+		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
+
 		// Unpack and compute error for each texel in the partition
 		unsigned int texel_count = pi.partition_texel_count[i];
 		for (unsigned int j = 0; j < texel_count; j++)
@@ -459,8 +469,15 @@ float compute_symbolic_block_difference_1plane(
 			vint4 colori = lerp_color_int(u8_mask, ep0, ep1,
 			                              vint4(plane1_weights[tix]));
 
+			#if 0
 			vfloat4 color = int_to_float(colori);
 			vfloat4 oldColor = blk.texel(tix);
+			#else
+			// TODO: Hack to force linear HDR RGB image error analysis
+			vfloat4 color = decode_texel(colori, lns_mask);
+			vfloat4 oldColor = float16_to_float(lns_to_sf16(float_to_int(blk.texel(tix))));
+			oldColor.set_lane<3>(1.0f);
+			#endif
 
 			// Compare error using a perceptual decode metric for RGBM textures
 			if (config.flags & ASTCENC_FLG_MAP_RGBM)
