@@ -53,12 +53,12 @@ jobs:
 
       - name: Run system tests
         run: |
-          python ./Test/astc_test_functional.py --encoder=none
-          python ./Test/astc_test_functional.py --encoder=sse2
-          python ./Test/astc_test_functional.py --encoder=sse4.1
-          python ./Test/astc_test_functional.py --encoder=avx2
-          python ./Test/astc_test_image.py --encoder=none --test-set Small
-          python ./Test/astc_test_image.py --encoder=all-x86 --test-set Small
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
 
       - name: Run unit tests
         run: ctest
@@ -101,12 +101,12 @@ jobs:
 
       - name: Python rests
         run: |
-          python ./Test/astc_test_functional.py --encoder=none
-          python ./Test/astc_test_functional.py --encoder=sse2
-          python ./Test/astc_test_functional.py --encoder=sse4.1
-          python ./Test/astc_test_functional.py --encoder=avx2
-          python ./Test/astc_test_image.py --encoder=none --test-set Small
-          python ./Test/astc_test_image.py --encoder=all-x86 --test-set Small
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
 
       - name: Run unit tests
         run: ctest
@@ -147,7 +147,7 @@ jobs:
 
       - name: Run system tests
         run: |
-          python ./Test/astc_test_image.py  --encoder ref-main-sse4.1 --test-set Small
+          python ./Test/astc_test_image.py  --encoder sse4.1 --test-set Small
 
   build-macos-universal-clang:
     name: macOS universal Clang
