@@ -354,7 +354,7 @@ float compute_symbolic_block_difference_2plane(
 	                       ep0, ep1);
 
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
-	vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
+	bool any_lns = rgb_lns || a_lns;
 
 	// Unpack and compute error for each texel in the partition
 	unsigned int texel_count = bsd.texel_count;
@@ -403,8 +403,9 @@ float compute_symbolic_block_difference_2plane(
 		// Convert this relative sum of squared error for HDR to avoid light
 		// channels dominating the error calculations.
 		// See https://fgiesen.wordpress.com/2024/11/14/mrsse/
-		if (any(lns_mask))
+		if (any_lns)
 		{
+			// TODO: Divisor could be precomputed at load time
 			error = error / (dot(oldColor, oldColor) + 1e-10f);
 		}
 
@@ -460,7 +461,7 @@ float compute_symbolic_block_difference_1plane(
 		                       rgb_lns, a_lns,
 		                       ep0, ep1);
 
-		vmask4 lns_mask(rgb_lns, rgb_lns, rgb_lns, a_lns);
+		bool any_lns = rgb_lns || a_lns;
 
 		// Unpack and compute error for each texel in the partition
 		unsigned int texel_count = pi.partition_texel_count[i];
@@ -510,8 +511,9 @@ float compute_symbolic_block_difference_1plane(
 			// Convert this relative sum of squared error for HDR to avoid light
 			// channels dominating the error calculations
 			// See https://fgiesen.wordpress.com/2024/11/14/mrsse/
-			if (any(lns_mask))
+			if (any_lns)
 			{
+				// TODO: Divisor could be precomputed at load time
 				error = error / (dot(oldColor, oldColor) + 1e-10f);
 			}
 
