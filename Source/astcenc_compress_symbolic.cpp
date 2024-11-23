@@ -633,7 +633,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 				if (errorval < best_errorval_in_scb)
 				{
-					trace_add_data("select", "1");
 					best_errorval_in_scb = errorval;
 					workscb.errorval = errorval;
 					scb = workscb;
@@ -682,7 +681,6 @@ static float compress_symbolic_block_for_partition_1plane(
 
 			if (errorval < best_errorval_in_scb)
 			{
-				trace_add_data("select", "1");
 				best_errorval_in_scb = errorval;
 				workscb.errorval = errorval;
 				scb = workscb;
@@ -969,7 +967,6 @@ static float compress_symbolic_block_for_partition_2planes(
 
 				if (errorval < best_errorval_in_scb)
 				{
-					trace_add_data("select", "1");
 					best_errorval_in_scb = errorval;
 					workscb.errorval = errorval;
 					scb = workscb;
@@ -1019,7 +1016,6 @@ static float compress_symbolic_block_for_partition_2planes(
 
 			if (errorval < best_errorval_in_scb)
 			{
-				trace_add_data("select", "1");
 				best_errorval_in_scb = errorval;
 				workscb.errorval = errorval;
 				scb = workscb;
