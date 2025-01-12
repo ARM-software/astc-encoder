@@ -6,6 +6,22 @@ release of the 5.x series.
 All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
+<!-- ---------------------------------------------------------------------- -->
+## 5.2.0
+
+**Status:** In development.
+
+The 5.2.0 release is a minor maintenance release.
+
+This release includes changes to the public interface in the `astcenc.h`
+header.  We always recommend rebuilding your client-side code using the
+header from the same release to avoid compatibility issues.
+
+* **General:**
+  * **Feature:** Added a new codec API, `astcenc_compress_cancel()`, which can
+    be used to cancel an in-flight compression. This is designed to help make
+    it easier to integrate the codec into an interactive user interface that
+    can respond to user events with low latency.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.1.0
@@ -56,4 +72,4 @@ set.
 
 - - -
 
-_Copyright © 2022-2024, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2025, Arm Limited and contributors. All rights reserved._
