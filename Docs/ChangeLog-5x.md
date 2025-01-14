@@ -22,6 +22,9 @@ header from the same release to avoid compatibility issues.
     be used to cancel an in-flight compression. This is designed to help make
     it easier to integrate the codec into an interactive user interface that
     can respond to user events with low latency.
+  * **Bug fix:** Removed incorrect `static` variable qualifier, which could
+    result in an incorrect `tune_mse_overshoot` heuristic threshold being used
+    if a user ran multiple concurrent compressions with different settings.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.1.0
