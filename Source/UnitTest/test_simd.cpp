@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2024 Arm Limited
+// Copyright 2020-2025 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -36,7 +36,7 @@ namespace astcenc
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
  */
-vfloat8 vfloat8_lit(
+static vfloat8 vfloat8_lit(
 	float a, float b, float c, float d,
 	float e, float f, float g, float h
 ) {
@@ -52,7 +52,7 @@ vfloat8 vfloat8_lit(
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
  */
-vint8 vint8_lit(
+static vint8 vint8_lit(
 	int a, int b, int c, int d,
 	int e, int f, int g, int h
 ) {
@@ -2742,7 +2742,7 @@ TEST(vfloat8, store)
 	vfloat8 a(f32_data);
 
 	alignas(32) float ra[9];
-	storea(a, ra + 1);
+	store(a, ra + 1);
 
 	EXPECT_EQ(ra[1], 0.0f);
 	EXPECT_EQ(ra[2], 1.0f);
@@ -2760,7 +2760,7 @@ TEST(vfloat8, storea)
 	vfloat8 a(f32_data);
 
 	alignas(32) float ra[8];
-	store(a, ra);
+	storea(a, ra);
 
 	EXPECT_EQ(ra[0], 0.0f);
 	EXPECT_EQ(ra[1], 1.0f);
