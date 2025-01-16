@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2024 Arm Limited
+#  Copyright 2020-2025 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -27,12 +27,16 @@ if(${ASTCENC_CLI})
             INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
 endif()
 
+# Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
+set_property(TARGET ${ASTCENC_TEST}
+    PROPERTY
+        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
 target_sources(${ASTCENC_TEST}
     PRIVATE
         test_simd.cpp
         test_softfloat.cpp
-        test_decode.cpp
-        ../astcenc_mathlib_softfloat.cpp)
+        test_decode.cpp)
 
 target_include_directories(${ASTCENC_TEST}
     PRIVATE
@@ -60,6 +64,8 @@ target_compile_options(${ASTCENC_TEST}
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-overriding-option>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unsafe-buffer-usage>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-switch-default>
 
         # Ignore things that the googletest build triggers
         $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
@@ -170,5 +176,3 @@ target_link_libraries(${ASTCENC_TEST}
 
 add_test(NAME ${ASTCENC_TEST}
          COMMAND ${ASTCENC_TEST})
-
-install(TARGETS ${ASTCENC_TEST})

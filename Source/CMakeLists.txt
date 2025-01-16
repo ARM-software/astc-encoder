@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2024 Arm Limited
+#  Copyright 2020-2025 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -104,6 +104,19 @@ if(${ASTCENC_UNITTEST})
     set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
     add_subdirectory(GoogleTest)
+
+    # Workaround GoogleTest CRT selection issue issue
+    # See https://github.com/google/googletest/issues/4067
+    set_property(
+        TARGET gtest
+            PROPERTY
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
+    set_property(
+        TARGET gtest_main
+            PROPERTY
+                MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+
     enable_testing()
     add_subdirectory(UnitTest)
 endif()
