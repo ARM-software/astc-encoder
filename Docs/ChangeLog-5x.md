@@ -18,6 +18,9 @@ header.  We always recommend rebuilding your client-side code using the
 header from the same release to avoid compatibility issues.
 
 * **General:**
+  * **Feature:** Arm64 builds for Linux added to the GitHub Actions builds, and
+    Arm64 binaries for NEON, 128-bit SVE 128 and 256-bit SVE added to release
+    builds.
   * **Feature:** Added a new codec API, `astcenc_compress_cancel()`, which can
     be used to cancel an in-flight compression. This is designed to help make
     it easier to integrate the codec into an interactive user interface that
