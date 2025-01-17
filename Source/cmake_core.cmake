@@ -192,6 +192,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             $<${is_gnu_fe}:-Wno-format-nonliteral>
             $<${is_gnu_fe}:-Wno-reserved-identifier>
             $<${is_gnu_fe}:-Wno-cast-function-type>
+            $<${is_gnu_fe}:-freport-bug>
 
             # Force DWARF4 for Valgrind profiling
             $<$<AND:$<PLATFORM_ID:Linux,Darwin>,${is_clang}>:-gdwarf-4>
@@ -202,6 +203,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
     target_link_options(${ASTCENC_TARGET_NAME}
         PRIVATE
             # Use pthreads on Linux/macOS
+            $<${is_gnu_fe}:-freport-bug>
             $<$<PLATFORM_ID:Linux,Darwin>:-pthread>)
 
     if(${ASTCENC_ASAN})

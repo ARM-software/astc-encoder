@@ -17,9 +17,6 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Install ImageMagick
-        run: sudo apt install imagemagick
-
       - name: Install GCC 14
         run: |
           sudo apt-get update
