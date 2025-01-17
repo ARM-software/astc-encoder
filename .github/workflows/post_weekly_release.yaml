@@ -71,6 +71,9 @@ jobs:
         with:
           submodules: 'true'
 
+      - name: Install ImageMagick
+        run: sudo apt install imagemagick
+
       - name: Build release
         run: |
           export CXX=clang++
