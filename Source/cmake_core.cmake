@@ -264,11 +264,6 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
     endif()
 
     if(${ASTCENC_CLI})
-        # Enable LTO on release builds
-        set_property(TARGET ${ASTCENC_TARGET_NAME}
-            PROPERTY
-                INTERPROCEDURAL_OPTIMIZATION_RELEASE True)
-
         # Use a static runtime on MSVC builds (ignored on non-MSVC compilers)
         set_property(TARGET ${ASTCENC_TARGET_NAME}
             PROPERTY
