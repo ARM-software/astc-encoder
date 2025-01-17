@@ -15,12 +15,6 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
-# Overwrite the LTO flags to force fat LTO; worth 3-4% performance
-# See https://gitlab.kitware.com/cmake/cmake/-/issues/16808
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND ${ASTCENC_CLI})
-    set(CMAKE_CXX_COMPILE_OPTIONS_IPO "-flto")
-endif()
-
 if(${ASTCENC_DECOMPRESSOR})
     set(ASTCENC_CODEC dec)
 else()
