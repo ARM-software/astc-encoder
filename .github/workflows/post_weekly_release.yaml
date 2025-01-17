@@ -62,7 +62,7 @@ jobs:
             --auth-key-file ../coverity.key \
             --strip-path ${GITHUB_WORKSPACE}
 
- build-ubuntu-arm64:
+  build-ubuntu-arm64:
     name: Ubuntu arm64
     runs-on: ubuntu-24.04
     steps:
