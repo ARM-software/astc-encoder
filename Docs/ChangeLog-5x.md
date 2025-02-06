@@ -18,6 +18,10 @@ header.  We always recommend rebuilding your client-side code using the
 header from the same release to avoid compatibility issues.
 
 * **General:**
+  * **Change:** Changed sRGB alpha channel endpoint expansion to match the
+    revised Khronos Data Format Specification (v1.4.0), which reverts an
+    unintended specification change. Compared to previous releases, this change
+    can cause LSB bit differences in the alpha channel of compressed images.
   * **Feature:** Arm64 builds for Linux added to the GitHub Actions builds, and
     Arm64 binaries for NEON, 128-bit SVE 128 and 256-bit SVE added to release
     builds.
