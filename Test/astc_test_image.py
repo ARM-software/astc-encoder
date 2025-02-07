@@ -319,7 +319,7 @@ def parse_command_line():
     parser.add_argument("--encoder", dest="encoders", default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-5.0-avx2",
+    parser.add_argument("--reference", dest="reference", default="ref-main-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
