@@ -412,10 +412,10 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 {
-	return ((a.m[0] >> 31) & 0x1) |
-	       ((a.m[1] >> 30) & 0x2) |
-	       ((a.m[2] >> 29) & 0x4) |
-	       ((a.m[3] >> 28) & 0x8);
+	return (a.m[0] & 0x1) |
+	       (a.m[1] & 0x2) |
+	       (a.m[2] & 0x4) |
+	       (a.m[3] & 0x8);
 }
 
 /**
