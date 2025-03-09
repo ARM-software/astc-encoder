@@ -1999,10 +1999,6 @@ TEST(vint4, vtable4_64x8)
 
 	vint4 result = vtable_lookup_32bit(table, index);
 
-	uint8_t* hack = reinterpret_cast<uint8_t*>(&table);
-	std::cout << "38: " << hack[38] << "\n";
-	std::cout << "63: " << hack[63] << "\n";
-
 	EXPECT_EQ(result.lane<0>(),  0);
 	EXPECT_EQ(result.lane<1>(),  7);
 	EXPECT_EQ(result.lane<2>(), 38);
