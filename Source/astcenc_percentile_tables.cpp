@@ -1163,14 +1163,14 @@ static const packed_percentile_table *get_packed_table(
 
 /* See header for documentation. */
 const float *get_2d_percentile_table(
-	unsigned int xdim,
-	unsigned int ydim
+	size_t xdim,
+	size_t ydim
 ) {
 	float* unpacked_table = new float[WEIGHTS_MAX_BLOCK_MODES];
 	const packed_percentile_table *apt = get_packed_table(xdim, ydim);
 
 	// Set the default percentile
-	for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
+	for (size_t i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 	{
 		unpacked_table[i] = 1.0f;
 	}
@@ -1178,16 +1178,16 @@ const float *get_2d_percentile_table(
 	// Populate the unpacked percentile values
 	for (int i = 0; i < 2; i++)
 	{
-		unsigned int itemcount = apt->item_count[i];
-		unsigned int difscale = apt->difscales[i];
-		unsigned int accum = apt->initial_percs[i];
+		size_t itemcount = apt->item_count[i];
+		size_t difscale = apt->difscales[i];
+		size_t accum = apt->initial_percs[i];
 		const uint16_t *item_ptr = apt->items[i];
 
-		for (unsigned int j = 0; j < itemcount; j++)
+		for (size_t j = 0; j < itemcount; j++)
 		{
 			uint16_t item = item_ptr[j];
-			unsigned int idx = item & 0x7FF;
-			unsigned int weight = (item >> 11) & 0x1F;
+			size_t idx = item & 0x7FF;
+			size_t weight = (item >> 11) & 0x1F;
 			accum += weight;
 			unpacked_table[idx] = static_cast<float>(accum) / static_cast<float>(difscale);
 		}
@@ -1199,10 +1199,10 @@ const float *get_2d_percentile_table(
 
 /* See header for documentation. */
 bool is_legal_2d_block_size(
-	unsigned int xdim,
-	unsigned int ydim
+	size_t xdim,
+	size_t ydim
 ) {
-	unsigned int idx = (xdim << 8) | ydim;
+	size_t idx = (xdim << 8) | ydim;
 	switch (idx)
 	{
 		case 0x0404:
@@ -1227,11 +1227,11 @@ bool is_legal_2d_block_size(
 
 /* See header for documentation. */
 bool is_legal_3d_block_size(
-	unsigned int xdim,
-	unsigned int ydim,
-	unsigned int zdim
+	size_t xdim,
+	size_t ydim,
+	size_t zdim
 ) {
-	unsigned int idx = (xdim << 16) | (ydim << 8) | zdim;
+	size_t idx = (xdim << 16) | (ydim << 8) | zdim;
 	switch (idx)
 	{
 		case 0x030303:

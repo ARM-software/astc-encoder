@@ -582,7 +582,7 @@ void astcenc_print_header()
 	const char* f16ctype = "";
 #endif
 
-	unsigned int bits = static_cast<unsigned int>(sizeof(void*) * 8);
+	size_t bits = static_cast<size_t>(sizeof(void*) * 8);
 	printf(astcenc_copyright_string,
 	       VERSION_STRING, bits, simdtype, pcnttype, f16ctype, YEAR_STRING);
 

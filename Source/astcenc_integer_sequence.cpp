@@ -416,8 +416,8 @@ static const std::array<ise_size, 21> ise_sizes {{
 }};
 
 /* See header for documentation. */
-unsigned int get_ise_sequence_bitcount(
-	unsigned int character_count,
+size_t get_ise_sequence_bitcount(
+	size_t character_count,
 	quant_method quant_level
 ) {
 	// Cope with out-of bounds values - input might be invalid
@@ -428,7 +428,7 @@ unsigned int get_ise_sequence_bitcount(
 	}
 
 	auto& entry = ise_sizes[quant_level];
-	unsigned int divisor = (entry.divisor << 1) + 1;
+	size_t divisor = (entry.divisor << 1) + 1;
 	return (entry.scale * character_count + divisor - 1) / divisor;
 }
 
@@ -444,12 +444,12 @@ unsigned int get_ise_sequence_bitcount(
  * @param[in,out] ptr         The data pointer to write to.
  */
 static inline void write_bits(
-	unsigned int value,
-	unsigned int bitcount,
-	unsigned int bitoffset,
+	size_t value,
+	size_t bitcount,
+	size_t bitoffset,
 	uint8_t ptr[2]
 ) {
-	unsigned int mask = (1 << bitcount) - 1;
+	size_t mask = (1 << bitcount) - 1;
 	value &= mask;
 	ptr += bitoffset >> 3;
 	bitoffset &= 7;
@@ -475,15 +475,15 @@ static inline void write_bits(
  *
  * @return The read value.
  */
-static inline unsigned int read_bits(
-	unsigned int bitcount,
-	unsigned int bitoffset,
+static inline size_t read_bits(
+	size_t bitcount,
+	size_t bitoffset,
 	const uint8_t* ptr
 ) {
-	unsigned int mask = (1 << bitcount) - 1;
+	size_t mask = (1 << bitcount) - 1;
 	ptr += bitoffset >> 3;
 	bitoffset &= 7;
-	unsigned int value = ptr[0] | (ptr[1] << 8);
+	size_t value = ptr[0] | (ptr[1] << 8);
 	value >>= bitoffset;
 	value &= mask;
 	return value;
@@ -492,31 +492,31 @@ static inline unsigned int read_bits(
 /* See header for documentation. */
 void encode_ise(
 	quant_method quant_level,
-	unsigned int character_count,
+	size_t character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	unsigned int bit_offset
+	size_t bit_offset
 ) {
 	promise(character_count > 0);
 
-	unsigned int bits = btq_counts[quant_level].bits;
-	unsigned int trits = btq_counts[quant_level].trits;
-	unsigned int quints = btq_counts[quant_level].quints;
-	unsigned int mask = (1 << bits) - 1;
+	size_t bits = btq_counts[quant_level].bits;
+	size_t trits = btq_counts[quant_level].trits;
+	size_t quints = btq_counts[quant_level].quints;
+	size_t mask = (1 << bits) - 1;
 
 	// Write out trits and bits
 	if (trits)
 	{
-		unsigned int i = 0;
-		unsigned int full_trit_blocks = character_count / 5;
+		size_t i = 0;
+		size_t full_trit_blocks = character_count / 5;
 
-		for (unsigned int j = 0; j < full_trit_blocks; j++)
+		for (size_t j = 0; j < full_trit_blocks; j++)
 		{
-			unsigned int i4 = input_data[i + 4] >> bits;
-			unsigned int i3 = input_data[i + 3] >> bits;
-			unsigned int i2 = input_data[i + 2] >> bits;
-			unsigned int i1 = input_data[i + 1] >> bits;
-			unsigned int i0 = input_data[i + 0] >> bits;
+			size_t i4 = input_data[i + 4] >> bits;
+			size_t i3 = input_data[i + 3] >> bits;
+			size_t i2 = input_data[i + 2] >> bits;
+			size_t i1 = input_data[i + 1] >> bits;
+			size_t i0 = input_data[i + 0] >> bits;
 
 			uint8_t T = integer_of_trits[i4][i3][i2][i1][i0];
 
@@ -555,15 +555,15 @@ void encode_ise(
 		{
 			// i4 cannot be present - we know the block is partial
 			// i0 must be present - we know the block isn't empty
-			unsigned int i4 =                            0;
-			unsigned int i3 = i + 3 >= character_count ? 0 : input_data[i + 3] >> bits;
-			unsigned int i2 = i + 2 >= character_count ? 0 : input_data[i + 2] >> bits;
-			unsigned int i1 = i + 1 >= character_count ? 0 : input_data[i + 1] >> bits;
-			unsigned int i0 =                                input_data[i + 0] >> bits;
+			size_t i4 =                            0;
+			size_t i3 = i + 3 >= character_count ? 0 : input_data[i + 3] >> bits;
+			size_t i2 = i + 2 >= character_count ? 0 : input_data[i + 2] >> bits;
+			size_t i1 = i + 1 >= character_count ? 0 : input_data[i + 1] >> bits;
+			size_t i0 =                                input_data[i + 0] >> bits;
 
 			uint8_t T = integer_of_trits[i4][i3][i2][i1][i0];
 
-			for (unsigned int j = 0; i < character_count; i++, j++)
+			for (size_t j = 0; i < character_count; i++, j++)
 			{
 				// Truncated table as this iteration is always partital
 				static const uint8_t tbits[4]  { 2, 2, 1, 2 };
@@ -580,14 +580,14 @@ void encode_ise(
 	// Write out quints and bits
 	else if (quints)
 	{
-		unsigned int i = 0;
-		unsigned int full_quint_blocks = character_count / 3;
+		size_t i = 0;
+		size_t full_quint_blocks = character_count / 3;
 
-		for (unsigned int j = 0; j < full_quint_blocks; j++)
+		for (size_t j = 0; j < full_quint_blocks; j++)
 		{
-			unsigned int i2 = input_data[i + 2] >> bits;
-			unsigned int i1 = input_data[i + 1] >> bits;
-			unsigned int i0 = input_data[i + 0] >> bits;
+			size_t i2 = input_data[i + 2] >> bits;
+			size_t i1 = input_data[i + 1] >> bits;
+			size_t i0 = input_data[i + 0] >> bits;
 
 			uint8_t T = integer_of_quints[i2][i1][i0];
 
@@ -616,13 +616,13 @@ void encode_ise(
 		{
 			// i2 cannot be present - we know the block is partial
 			// i0 must be present - we know the block isn't empty
-			unsigned int i2 =                            0;
-			unsigned int i1 = i + 1 >= character_count ? 0 : input_data[i + 1] >> bits;
-			unsigned int i0 =                                input_data[i + 0] >> bits;
+			size_t i2 =                            0;
+			size_t i1 = i + 1 >= character_count ? 0 : input_data[i + 1] >> bits;
+			size_t i0 =                                input_data[i + 0] >> bits;
 
 			uint8_t T = integer_of_quints[i2][i1][i0];
 
-			for (unsigned int j = 0; i < character_count; i++, j++)
+			for (size_t j = 0; i < character_count; i++, j++)
 			{
 				// Truncated table as this iteration is always partital
 				static const uint8_t tbits[2]  { 3, 2 };
@@ -639,7 +639,7 @@ void encode_ise(
 	// Write out just bits
 	else
 	{
-		for (unsigned int i = 0; i < character_count; i++)
+		for (size_t i = 0; i < character_count; i++)
 		{
 			write_bits(input_data[i], bits, bit_offset, output_data);
 			bit_offset += bits;
@@ -650,10 +650,10 @@ void encode_ise(
 /* See header for documentation. */
 void decode_ise(
 	quant_method quant_level,
-	unsigned int character_count,
+	size_t character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	unsigned int bit_offset
+	size_t bit_offset
 ) {
 	promise(character_count > 0);
 
@@ -663,15 +663,15 @@ void decode_ise(
 	uint8_t results[68];
 	uint8_t tq_blocks[22] { 0 }; // Trit-blocks or quint-blocks, must be zeroed
 
-	unsigned int bits = btq_counts[quant_level].bits;
-	unsigned int trits = btq_counts[quant_level].trits;
-	unsigned int quints = btq_counts[quant_level].quints;
+	size_t bits = btq_counts[quant_level].bits;
+	size_t trits = btq_counts[quant_level].trits;
+	size_t quints = btq_counts[quant_level].quints;
 
-	unsigned int lcounter = 0;
-	unsigned int hcounter = 0;
+	size_t lcounter = 0;
+	size_t hcounter = 0;
 
 	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
-	for (unsigned int i = 0; i < character_count; i++)
+	for (size_t i = 0; i < character_count; i++)
 	{
 		results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));
 		bit_offset += bits;
@@ -682,7 +682,7 @@ void decode_ise(
 			static const uint8_t block_shift[5]   { 0, 2, 4, 5, 7 };
 			static const uint8_t next_lcounter[5] { 1, 2, 3, 4, 0 };
 			static const uint8_t hcounter_incr[5] { 0, 0, 0, 0, 1 };
-			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
+			size_t tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
 			hcounter += hcounter_incr[lcounter];
@@ -695,7 +695,7 @@ void decode_ise(
 			static const uint8_t block_shift[3]   { 0, 3, 5 };
 			static const uint8_t next_lcounter[3] { 1, 2, 0 };
 			static const uint8_t hcounter_incr[3] { 0, 0, 1 };
-			unsigned int tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
+			size_t tdata = read_bits(bits_to_read[lcounter], bit_offset, input_data);
 			bit_offset += bits_to_read[lcounter];
 			tq_blocks[hcounter] |= tdata << block_shift[lcounter];
 			hcounter += hcounter_incr[lcounter];
@@ -706,9 +706,9 @@ void decode_ise(
 	// Unpack trit-blocks or quint-blocks as needed
 	if (trits)
 	{
-		unsigned int trit_blocks = (character_count + 4) / 5;
+		size_t trit_blocks = (character_count + 4) / 5;
 		promise(trit_blocks > 0);
-		for (unsigned int i = 0; i < trit_blocks; i++)
+		for (size_t i = 0; i < trit_blocks; i++)
 		{
 			const uint8_t *tritptr = trits_of_integer[tq_blocks[i]];
 			results[5 * i    ] |= tritptr[0] << bits;
@@ -721,9 +721,9 @@ void decode_ise(
 
 	if (quints)
 	{
-		unsigned int quint_blocks = (character_count + 2) / 3;
+		size_t quint_blocks = (character_count + 2) / 3;
 		promise(quint_blocks > 0);
-		for (unsigned int i = 0; i < quint_blocks; i++)
+		for (size_t i = 0; i < quint_blocks; i++)
 		{
 			const uint8_t *quintptr = quints_of_integer[tq_blocks[i]];
 			results[3 * i    ] |= quintptr[0] << bits;
@@ -732,7 +732,7 @@ void decode_ise(
 		}
 	}
 
-	for (unsigned int i = 0; i < character_count; i++)
+	for (size_t i = 0; i < character_count; i++)
 	{
 		output_data[i] = results[i];
 	}

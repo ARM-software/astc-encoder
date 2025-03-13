@@ -407,7 +407,7 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  *
  * bit0 = lane 0
  */
-ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
+ASTCENC_SIMD_INLINE size_t mask(vmask4 a)
 {
 	static const int shifta[4] { 0, 1, 2, 3 };
 	static const int32x4_t shift = vld1q_s32(shifta);

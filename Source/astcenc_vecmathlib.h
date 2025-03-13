@@ -218,9 +218,9 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_8(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_down_to_simd_multiple_8(size_t count)
 {
-	return count & static_cast<unsigned int>(~(8 - 1));
+	return count & static_cast<size_t>(~(8 - 1));
 }
 
 /**
@@ -230,9 +230,9 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_8(unsigned int coun
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_down_to_simd_multiple_4(size_t count)
 {
-	return count & static_cast<unsigned int>(~(4 - 1));
+	return count & static_cast<size_t>(~(4 - 1));
 }
 
 /**
@@ -244,9 +244,9 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int coun
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_down_to_simd_multiple_vla(size_t count)
 {
-	return count & static_cast<unsigned int>(~(ASTCENC_SIMD_WIDTH - 1));
+	return count & static_cast<size_t>(~(ASTCENC_SIMD_WIDTH - 1));
 }
 
 /**
@@ -258,9 +258,9 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int co
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_up_to_simd_multiple_vla(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_up_to_simd_multiple_vla(size_t count)
 {
-	unsigned int multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
+	size_t multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
 	return multiples * ASTCENC_SIMD_WIDTH;
 }
 

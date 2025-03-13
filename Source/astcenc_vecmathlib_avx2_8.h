@@ -292,9 +292,9 @@ ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
  *
  * bit0 = lane 0
  */
-ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
+ASTCENC_SIMD_INLINE size_t mask(vmask8 a)
 {
-	return static_cast<unsigned int>(_mm256_movemask_ps(a.m));
+	return static_cast<size_t>(_mm256_movemask_ps(a.m));
 }
 
 /**

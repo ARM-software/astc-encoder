@@ -85,7 +85,7 @@ static void compute_error_squared_rgb_single_partition(
 ) {
 	vfloat4 ews = blk.channel_weight;
 
-	unsigned int texel_count = pi.partition_texel_count[partition_index];
+	size_t texel_count = pi.partition_texel_count[partition_index];
 	const uint8_t* texel_indexes = pi.texels_of_partition[partition_index];
 	promise(texel_count > 0);
 
@@ -121,7 +121,7 @@ static void compute_error_squared_rgb_single_partition(
 	vfloat l_bs2(l_pline.bs.lane<2>());
 
 	vint lane_ids = vint::lane_id();
-	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		const uint8_t* tix = texel_indexes + i;
 
@@ -1087,16 +1087,16 @@ static float four_partitions_find_best_combination_for_bitcount(
 }
 
 /* See header for documentation. */
-unsigned int compute_ideal_endpoint_formats(
+size_t compute_ideal_endpoint_formats(
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
 	 // bitcounts and errors computed for the various quantization methods
 	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
-	unsigned int tune_candidate_limit,
-	unsigned int start_block_mode,
-	unsigned int end_block_mode,
+	size_t tune_candidate_limit,
+	size_t start_block_mode,
+	size_t end_block_mode,
 	// output data
 	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
@@ -1135,13 +1135,13 @@ unsigned int compute_ideal_endpoint_formats(
 	vfloat clear_error(ERROR_CALC_DEFAULT);
 	vint clear_quant(0);
 
-	unsigned int packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
+	size_t packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
 	storea(clear_error, errors_of_best_combination + packed_start_block_mode);
 	store_nbytes(clear_quant, best_quant_levels + packed_start_block_mode);
 	store_nbytes(clear_quant, best_quant_levels_mod + packed_start_block_mode);
 
 	// Ensure that last iteration overstep contains data that will never be picked
-	unsigned int packed_end_block_mode = round_down_to_simd_multiple_vla(end_block_mode - 1);
+	size_t packed_end_block_mode = round_down_to_simd_multiple_vla(end_block_mode - 1);
 	storea(clear_error, errors_of_best_combination + packed_end_block_mode);
 	store_nbytes(clear_quant, best_quant_levels + packed_end_block_mode);
 	store_nbytes(clear_quant, best_quant_levels_mod + packed_end_block_mode);
@@ -1153,7 +1153,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// The block contains 1 partition
 	if (partition_count == 1)
 	{
-		for (unsigned int i = start_block_mode; i < end_block_mode; i++)
+		for (size_t i = start_block_mode; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1186,7 +1186,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; i++)
+		for (size_t i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1219,7 +1219,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; i++)
+		for (size_t i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1253,7 +1253,7 @@ unsigned int compute_ideal_endpoint_formats(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
 
 		assert(start_block_mode == 0);
-		for (unsigned int i = 0; i < end_block_mode; i++)
+		for (size_t i = 0; i < end_block_mode; i++)
 		{
 			if (qwt_errors[i] >= ERROR_CALC_DEFAULT)
 			{
@@ -1287,14 +1287,14 @@ unsigned int compute_ideal_endpoint_formats(
 	}
 
 	// Search the remaining results and pick the best candidate modes for trial 1+
-	for (unsigned int i = 1; i < tune_candidate_limit; i++)
+	for (size_t i = 1; i < tune_candidate_limit; i++)
 	{
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(ERROR_CALC_DEFAULT);
 
 		start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
 		vint lane_ids = vint::lane_id() + vint(start_block_mode);
-		for (unsigned int j = start_block_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)
+		for (size_t j = start_block_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat err = vfloat(errors_of_best_combination + j);
 			vmask mask = err < vbest_ep_error;
@@ -1323,7 +1323,7 @@ unsigned int compute_ideal_endpoint_formats(
 		}
 	}
 
-	for (unsigned int i = 0; i < tune_candidate_limit; i++)
+	for (size_t i = 0; i < tune_candidate_limit; i++)
 	{
 		if (best_error_weights[i] < 0)
 		{

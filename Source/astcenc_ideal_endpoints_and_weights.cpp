@@ -38,7 +38,7 @@
 static vfloat bilinear_infill_vla(
 	const decimation_info& di,
 	const float* weights,
-	unsigned int index
+	size_t index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
 	const uint8_t* weight_idx0 = di.texel_weights_tr[0] + index;
@@ -78,7 +78,7 @@ static vfloat bilinear_infill_vla(
 static vfloat bilinear_infill_vla_2(
 	const decimation_info& di,
 	const float* weights,
-	unsigned int index
+	size_t index
 ) {
 	// Load the bilinear filter texel weight indexes in the decimated grid
 	const uint8_t* weight_idx0 = di.texel_weights_tr[0] + index;
@@ -108,13 +108,13 @@ static void compute_ideal_colors_and_weights_1_comp(
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
-	unsigned int component
+	size_t component
 ) {
-	unsigned int partition_count = pi.partition_count;
+	size_t partition_count = pi.partition_count;
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = blk.texel_count;
+	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	float error_weight;
@@ -146,15 +146,15 @@ static void compute_ideal_colors_and_weights_1_comp(
 	bool is_constant_wes { true };
 	float partition0_len_sq { 0.0f };
 
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		float lowvalue { 1e10f };
 		float highvalue { -1e10f };
 
-		unsigned int partition_texel_count = pi.partition_texel_count[i];
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		size_t partition_texel_count = pi.partition_texel_count[i];
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			float value = data_vr[tix];
 			lowvalue = astc::min(value, lowvalue);
 			highvalue = astc::max(value, highvalue);
@@ -179,9 +179,9 @@ static void compute_ideal_colors_and_weights_1_comp(
 			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
 		}
 
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			float value = (data_vr[tix] - lowvalue) * scale;
 			value = astc::clamp1f(value);
 
@@ -195,8 +195,8 @@ static void compute_ideal_colors_and_weights_1_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -221,11 +221,11 @@ static void compute_ideal_colors_and_weights_2_comp(
 	int component1,
 	int component2
 ) {
-	unsigned int partition_count = pi.partition_count;
+	size_t partition_count = pi.partition_count;
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = blk.texel_count;
+	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
@@ -266,7 +266,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 	vmask4 comp1_mask = vint4::lane_id() == vint4(component1);
 	vmask4 comp2_mask = vint4::lane_id() == vint4(component2);
 
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		vfloat4 dir = pms[i].dir;
 		if (hadd_s(dir) < 0.0f)
@@ -278,10 +278,10 @@ static void compute_ideal_colors_and_weights_2_comp(
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
-		unsigned int partition_texel_count = pi.partition_texel_count[i];
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		size_t partition_texel_count = pi.partition_texel_count[i];
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			vfloat4 point = vfloat2(data_vr[tix], data_vg[tix]);
 			float param = dot_s(point - line.a, line.b);
 			ei.weights[tix] = param;
@@ -311,9 +311,9 @@ static void compute_ideal_colors_and_weights_2_comp(
 			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
 		}
 
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			float idx = (ei.weights[tix] - lowparam) * scale;
 			idx = astc::clamp1f(idx);
 
@@ -333,8 +333,8 @@ static void compute_ideal_colors_and_weights_2_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -355,13 +355,13 @@ static void compute_ideal_colors_and_weights_3_comp(
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
-	unsigned int omitted_component
+	size_t omitted_component
 ) {
-	unsigned int partition_count = pi.partition_count;
+	size_t partition_count = pi.partition_count;
 	ei.ep.partition_count = partition_count;
 	promise(partition_count > 0);
 
-	unsigned int texel_count = blk.texel_count;
+	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
@@ -415,7 +415,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 	bool is_constant_wes { true };
 	float partition0_len_sq { 0.0f };
 
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
@@ -427,10 +427,10 @@ static void compute_ideal_colors_and_weights_3_comp(
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
-		unsigned int partition_texel_count = pi.partition_texel_count[i];
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		size_t partition_texel_count = pi.partition_texel_count[i];
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			vfloat4 point = vfloat3(data_vr[tix], data_vg[tix], data_vb[tix]);
 			float param = dot3_s(point - line.a, line.b);
 			ei.weights[tix] = param;
@@ -460,9 +460,9 @@ static void compute_ideal_colors_and_weights_3_comp(
 			is_constant_wes = is_constant_wes && length_squared == partition0_len_sq;
 		}
 
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			float idx = (ei.weights[tix] - lowparam) * scale;
 			idx = astc::clamp1f(idx);
 
@@ -500,8 +500,8 @@ static void compute_ideal_colors_and_weights_3_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -524,9 +524,9 @@ static void compute_ideal_colors_and_weights_4_comp(
 ) {
 	const float error_weight = hadd_s(blk.channel_weight) / 4.0f;
 
-	unsigned int partition_count = pi.partition_count;
+	size_t partition_count = pi.partition_count;
 
-	unsigned int texel_count = blk.texel_count;
+	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
@@ -537,7 +537,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 	bool is_constant_wes { true };
 	float partition0_len_sq { 0.0f };
 
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		vfloat4 dir = pms[i].dir;
 		if (hadd_rgb_s(dir) < 0.0f)
@@ -549,10 +549,10 @@ static void compute_ideal_colors_and_weights_4_comp(
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
-		unsigned int partition_texel_count = pi.partition_texel_count[i];
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		size_t partition_texel_count = pi.partition_texel_count[i];
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			vfloat4 point = blk.texel(tix);
 			float param = dot_s(point - line.a, line.b);
 			ei.weights[tix] = param;
@@ -585,9 +585,9 @@ static void compute_ideal_colors_and_weights_4_comp(
 		ei.ep.endpt0[i] = line.a + line.b * lowparam;
 		ei.ep.endpt1[i] = line.a + line.b * highparam;
 
-		for (unsigned int j = 0; j < partition_texel_count; j++)
+		for (size_t j = 0; j < partition_texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			float idx = (ei.weights[tix] - lowparam) * scale;
 			idx = astc::clamp1f(idx);
 
@@ -598,8 +598,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -630,7 +630,7 @@ void compute_ideal_colors_and_weights_1plane(
 void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	unsigned int plane2_component,
+	size_t plane2_component,
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2
 ) {
@@ -691,13 +691,13 @@ float compute_error_of_weight_set_1plane(
 	const float* dec_weight_quant_uvalue
 ) {
 	vfloatacc error_summav = vfloatacc::zero();
-	unsigned int texel_count = di.texel_count;
+	size_t texel_count = di.texel_count;
 	promise(texel_count > 0);
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
 	if (di.max_texel_weight_count > 2)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Compute the bilinear interpolation of the decimated weight grid
 			vfloat current_values = bilinear_infill_vla(di, dec_weight_quant_uvalue, i);
@@ -713,7 +713,7 @@ float compute_error_of_weight_set_1plane(
 	}
 	else if (di.max_texel_weight_count > 1)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Compute the bilinear interpolation of the decimated weight grid
 			vfloat current_values = bilinear_infill_vla_2(di, dec_weight_quant_uvalue, i);
@@ -729,7 +729,7 @@ float compute_error_of_weight_set_1plane(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Load the weight set directly, without interpolation
 			vfloat current_values = loada(dec_weight_quant_uvalue + i);
@@ -757,13 +757,13 @@ float compute_error_of_weight_set_2planes(
 	const float* dec_weight_quant_uvalue_plane2
 ) {
 	vfloatacc error_summav = vfloatacc::zero();
-	unsigned int texel_count = di.texel_count;
+	size_t texel_count = di.texel_count;
 	promise(texel_count > 0);
 
 	// Process SIMD-width chunks, safe to over-fetch - the extra space is zero initialized
 	if (di.max_texel_weight_count > 2)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Plane 1
 			// Compute the bilinear interpolation of the decimated weight grid
@@ -788,7 +788,7 @@ float compute_error_of_weight_set_2planes(
 	}
 	else if (di.max_texel_weight_count > 1)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Plane 1
 			// Compute the bilinear interpolation of the decimated weight grid
@@ -813,7 +813,7 @@ float compute_error_of_weight_set_2planes(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			// Plane 1
 			// Load the weight set directly, without interpolation
@@ -847,8 +847,8 @@ void compute_ideal_weights_for_decimation(
 	const decimation_info& di,
 	float* dec_weight_ideal_value
 ) {
-	unsigned int texel_count = di.texel_count;
-	unsigned int weight_count = di.weight_count;
+	size_t texel_count = di.texel_count;
+	size_t weight_count = di.weight_count;
 	bool is_direct = texel_count == weight_count;
 	promise(texel_count > 0);
 	promise(weight_count > 0);
@@ -857,7 +857,7 @@ void compute_ideal_weights_for_decimation(
 	// zero-initialized SIMD over-fetch region
 	if (is_direct)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight(ei.weights + i);
 			storea(weight, dec_weight_ideal_value + i);
@@ -875,7 +875,7 @@ void compute_ideal_weights_for_decimation(
 
 	// This overshoots - this is OK as we initialize the array tails in the
 	// decimation table structures to safe values ...
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
 		vfloat weight_weight(1e-10f);
@@ -883,10 +883,10 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax_s(weight_texel_count);
+		size_t max_texel_count = hmax_s(weight_texel_count);
 		promise(max_texel_count > 0);
 
-		for (unsigned int j = 0; j < max_texel_count; j++)
+		for (size_t j = 0; j < max_texel_count; j++)
 		{
 			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
@@ -910,7 +910,7 @@ void compute_ideal_weights_for_decimation(
 	// over-process full SIMD vectors - the tail is zeroed.
 	if (di.max_texel_weight_count <= 2)
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla_2(di, dec_weight_ideal_value, i);
 			storea(weight, infilled_weights + i);
@@ -918,7 +918,7 @@ void compute_ideal_weights_for_decimation(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, i);
 			storea(weight, infilled_weights + i);
@@ -930,7 +930,7 @@ void compute_ideal_weights_for_decimation(
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -WEIGHTS_TEXEL_SUM;
 
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight_val = loada(dec_weight_ideal_value + i);
 
@@ -941,10 +941,10 @@ void compute_ideal_weights_for_decimation(
 
 		// Accumulate error weighting of all the texels using this weight
 		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax_s(weight_texel_count);
+		size_t max_texel_count = hmax_s(weight_texel_count);
 		promise(max_texel_count > 0);
 
-		for (unsigned int j = 0; j < max_texel_count; j++)
+		for (size_t j = 0; j < max_texel_count; j++)
 		{
 			const uint8_t* texel = di.weight_texels_tr[j] + i;
 			vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
@@ -1152,16 +1152,16 @@ void recompute_ideal_colors_1plane(
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
 ) {
-	unsigned int weight_count = di.weight_count;
-	unsigned int total_texel_count = blk.texel_count;
-	unsigned int partition_count = pi.partition_count;
+	size_t weight_count = di.weight_count;
+	size_t total_texel_count = blk.texel_count;
+	size_t partition_count = pi.partition_count;
 
 	promise(weight_count > 0);
 	promise(total_texel_count > 0);
 	promise(partition_count > 0);
 
 	ASTCENC_ALIGNAS float dec_weight[BLOCK_MAX_WEIGHTS];
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vint unquant_value(dec_weights_uquant + i);
 		vfloat unquant_valuef = int_to_float(unquant_value) * vfloat(1.0f / 64.0f);
@@ -1176,7 +1176,7 @@ void recompute_ideal_colors_1plane(
 	}
 	else if (di.max_texel_weight_count <= 2)
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla_2(di, dec_weight, i);
 			storea(weight, undec_weight + i);
@@ -1186,7 +1186,7 @@ void recompute_ideal_colors_1plane(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla(di, dec_weight, i);
 			storea(weight, undec_weight + i);
@@ -1197,9 +1197,9 @@ void recompute_ideal_colors_1plane(
 
 	vfloat4 rgba_sum(blk.data_mean * static_cast<float>(blk.texel_count));
 
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
-		unsigned int texel_count = pi.partition_texel_count[i];
+		size_t texel_count = pi.partition_texel_count[i];
 		const uint8_t *texel_indexes = pi.texels_of_partition[i];
 
 		// Only compute a partition mean if more than one partition
@@ -1207,9 +1207,9 @@ void recompute_ideal_colors_1plane(
 		{
 			rgba_sum = vfloat4::zero();
 			promise(texel_count > 0);
-			for (unsigned int j = 0; j < texel_count; j++)
+			for (size_t j = 0; j < texel_count; j++)
 			{
-				unsigned int tix = texel_indexes[j];
+				size_t tix = texel_indexes[j];
 				rgba_sum += blk.texel(tix);
 			}
 		}
@@ -1238,9 +1238,9 @@ void recompute_ideal_colors_1plane(
 		vfloat4 color_weight = blk.channel_weight;
 		float ls_weight = hadd_rgb_s(color_weight);
 
-		for (unsigned int j = 0; j < texel_count; j++)
+		for (size_t j = 0; j < texel_count; j++)
 		{
-			unsigned int tix = texel_indexes[j];
+			size_t tix = texel_indexes[j];
 			vfloat4 rgba = blk.texel(tix);
 
 			float idx0 = undec_weight_ref[tix];
@@ -1377,8 +1377,8 @@ void recompute_ideal_colors_2planes(
 	vfloat4& rgbo_vector,
 	int plane2_component
 ) {
-	unsigned int weight_count = di.weight_count;
-	unsigned int total_texel_count = blk.texel_count;
+	size_t weight_count = di.weight_count;
+	size_t total_texel_count = blk.texel_count;
 
 	promise(total_texel_count > 0);
 	promise(weight_count > 0);
@@ -1388,7 +1388,7 @@ void recompute_ideal_colors_2planes(
 
 	assert(weight_count <= BLOCK_MAX_WEIGHTS_2PLANE);
 
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vint unquant_value1(dec_weights_uquant_plane1 + i);
 		vfloat unquant_value1f = int_to_float(unquant_value1) * vfloat(1.0f / 64.0f);
@@ -1412,7 +1412,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else if (di.max_texel_weight_count <= 2)
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla_2(di, dec_weight_plane1, i);
 			storea(weight, undec_weight_plane1 + i);
@@ -1426,7 +1426,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		for (unsigned int i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < total_texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla(di, dec_weight_plane1, i);
 			storea(weight, undec_weight_plane1 + i);
@@ -1439,7 +1439,7 @@ void recompute_ideal_colors_2planes(
 		undec_weight_plane2_ref = undec_weight_plane2;
 	}
 
-	unsigned int texel_count = bsd.texel_count;
+	size_t texel_count = bsd.texel_count;
 	vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
 	vfloat4 scale_dir = normalize(blk.data_mean.swz<0, 1, 2>());
 
@@ -1471,7 +1471,7 @@ void recompute_ideal_colors_2planes(
 	vfloat4 color_weight = blk.channel_weight;
 	float ls_weight = hadd_rgb_s(color_weight);
 
-	for (unsigned int j = 0; j < texel_count; j++)
+	for (size_t j = 0; j < texel_count; j++)
 	{
 		vfloat4 rgba = blk.texel(j);
 

@@ -287,12 +287,12 @@ ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
  *
  * bit0 = lane 0
  */
-ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
+ASTCENC_SIMD_INLINE size_t mask(vmask8 a)
 {
 	alignas(32) const int shifta[8] { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80 };
 	svint32_8_t template_vals = svld1_s32(svptrue_b32(), shifta);
 	svint32_8_t active_vals = svsel_s32(a.m, template_vals, svdup_s32(0));
-	return static_cast<unsigned int>(svaddv_s32(svptrue_b32(), active_vals));
+	return static_cast<size_t>(svaddv_s32(svptrue_b32(), active_vals));
 }
 
 /**

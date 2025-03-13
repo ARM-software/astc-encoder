@@ -40,7 +40,7 @@
 	Data structure definitions
 ============================================================================ */
 
-typedef unsigned int astcenc_operation;
+typedef size_t astcenc_operation;
 
 struct mode_entry
 {
@@ -54,25 +54,25 @@ struct mode_entry
 ============================================================================ */
 
 /** @brief Stage bit indicating we need to load a compressed image. */
-static const unsigned int ASTCENC_STAGE_LD_COMP    = 1 << 0;
+static const size_t ASTCENC_STAGE_LD_COMP    = 1 << 0;
 
 /** @brief Stage bit indicating we need to store a compressed image. */
-static const unsigned int ASTCENC_STAGE_ST_COMP    = 1 << 1;
+static const size_t ASTCENC_STAGE_ST_COMP    = 1 << 1;
 
 /** @brief Stage bit indicating we need to load an uncompressed image. */
-static const unsigned int ASTCENC_STAGE_LD_NCOMP   = 1 << 2;
+static const size_t ASTCENC_STAGE_LD_NCOMP   = 1 << 2;
 
 /** @brief Stage bit indicating we need to store an uncompressed image. */
-static const unsigned int ASTCENC_STAGE_ST_NCOMP   = 1 << 3;
+static const size_t ASTCENC_STAGE_ST_NCOMP   = 1 << 3;
 
 /** @brief Stage bit indicating we need compress an image. */
-static const unsigned int ASTCENC_STAGE_COMPRESS   = 1 << 4;
+static const size_t ASTCENC_STAGE_COMPRESS   = 1 << 4;
 
 /** @brief Stage bit indicating we need to decompress an image. */
-static const unsigned int ASTCENC_STAGE_DECOMPRESS = 1 << 5;
+static const size_t ASTCENC_STAGE_DECOMPRESS = 1 << 5;
 
 /** @brief Stage bit indicating we need to compare an image with the original input. */
-static const unsigned int ASTCENC_STAGE_COMPARE    = 1 << 6;
+static const size_t ASTCENC_STAGE_COMPARE    = 1 << 6;
 
 /** @brief Operation indicating an unknown request (should never happen). */
 static const astcenc_operation ASTCENC_OP_UNKNOWN  = 0;
@@ -168,18 +168,18 @@ struct decompression_workload
 extern "C" void progress_emitter(
 	float value
 ) {
-	const unsigned int bar_size = 25;
-	unsigned int parts = static_cast<int>(value / 4.0f);
+	const size_t bar_size = 25;
+	size_t parts = static_cast<int>(value / 4.0f);
 
 	char buffer[bar_size + 3];
 	buffer[0] = '[';
 
-	for (unsigned int i = 0; i < parts; i++)
+	for (size_t i = 0; i < parts; i++)
 	{
 		buffer[i + 1] = '=';
 	}
 
-	for (unsigned int i = parts; i < bar_size; i++)
+	for (size_t i = parts; i < bar_size; i++)
 	{
 		buffer[i + 1] = ' ';
 	}
@@ -293,7 +293,7 @@ static void decompression_workload_runner(
  */
 static std::string get_slice_filename(
 	const std::string& basename,
-	unsigned int index,
+	size_t index,
 	bool& error
 ) {
 	size_t sep = basename.find_last_of('.');
@@ -323,10 +323,10 @@ static std::string get_slice_filename(
  */
 static astcenc_image* load_uncomp_file(
 	const char* filename,
-	unsigned int dim_z,
+	size_t dim_z,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& component_count
+	size_t& component_count
 ) {
 	astcenc_image *image = nullptr;
 
@@ -338,12 +338,12 @@ static astcenc_image* load_uncomp_file(
 	else
 	{
 		bool slice_is_hdr;
-		unsigned int slice_component_count;
+		size_t slice_component_count;
 		astcenc_image* slice = nullptr;
 		std::vector<astcenc_image*> slices;
 
 		// For a 3D image load an array of slices
-		for (unsigned int image_index = 0; image_index < dim_z; image_index++)
+		for (size_t image_index = 0; image_index < dim_z; image_index++)
 		{
 			bool error;
 			std::string slice_name = get_slice_filename(filename, image_index, error);
@@ -396,15 +396,15 @@ static astcenc_image* load_uncomp_file(
 		// If all slices loaded correctly then repack them into a single image
 		if (slices.size() == dim_z)
 		{
-			unsigned int dim_x = slices[0]->dim_x;
-			unsigned int dim_y = slices[0]->dim_y;
+			size_t dim_x = slices[0]->dim_x;
+			size_t dim_y = slices[0]->dim_y;
 			int bitness = is_hdr ? 16 : 8;
 			int slice_size = dim_x * dim_y;
 
 			image = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 			// Combine 2D source images into one 3D image
-			for (unsigned int z = 0; z < dim_z; z++)
+			for (size_t z = 0; z < dim_z; z++)
 			{
 				if (image->data_type == ASTCENC_TYPE_U8)
 				{
@@ -503,9 +503,9 @@ static int init_astcenc_config(
 	astcenc_preprocess& preprocess,
 	astcenc_config& config
 ) {
-	unsigned int block_x = 0;
-	unsigned int block_y = 0;
-	unsigned int block_z = 1;
+	size_t block_x = 0;
+	size_t block_y = 0;
+	size_t block_z = 1;
 
 	// For decode the block size is set by the incoming image.
 	if (operation == ASTCENC_OP_DECOMPRESS)
@@ -530,7 +530,7 @@ static int init_astcenc_config(
 		}
 
 		int cnt2D, cnt3D;
-		int dimensions = sscanf(argv[4], "%ux%u%nx%u%n",
+		int dimensions = sscanf(argv[4], "%zux%zu%nx%zu%n",
 		                        &block_x, &block_y, &cnt2D, &block_z, &cnt3D);
 		// Character after the last match should be a NUL
 		if (!(((dimensions == 2) && !argv[4][cnt2D]) || ((dimensions == 3) && !argv[4][cnt3D])))
@@ -583,7 +583,7 @@ static int init_astcenc_config(
 		argidx = 6;
 	}
 
-	unsigned int flags = 0;
+	size_t flags = 0;
 
 	// Gather the flags that we need
 	while (argidx < argc)
@@ -1152,7 +1152,7 @@ static int edit_astcenc_config(
 			argidx++;
 
 			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
+			if (!sscanf(argv[argidx], "%zu", &cli_config.array_size) || cli_config.array_size == 0)
 			{
 				print_error("ERROR: -zdim size '%s' is invalid\n", argv[argidx]);
 				return 1;
@@ -1243,36 +1243,36 @@ static void print_astcenc_config(
 
 		if (config.block_z == 1)
 		{
-			printf("    Block size:                 %ux%u\n", config.block_x, config.block_y);
+			printf("    Block size:                 %zux%zu\n", config.block_x, config.block_y);
 		}
 		else
 		{
-			printf("    Block size:                 %ux%ux%u\n", config.block_x, config.block_y, config.block_z);
+			printf("    Block size:                 %zux%zux%zu\n", config.block_x, config.block_y, config.block_z);
 		}
 
 		printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (config.block_x * config.block_y * config.block_z));
-		printf("    RGB alpha scale weight:     %d\n", (config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT));
+		printf("    RGB alpha scale weight:     %zu\n", (config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT));
 		if ((config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT))
 		{
-			printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
+			printf("    Radius RGB alpha scale:     %zu texels\n", config.a_scale_radius);
 		}
 
 		printf("    R component weight:         %g\n", static_cast<double>(config.cw_r_weight));
 		printf("    G component weight:         %g\n", static_cast<double>(config.cw_g_weight));
 		printf("    B component weight:         %g\n", static_cast<double>(config.cw_b_weight));
 		printf("    A component weight:         %g\n", static_cast<double>(config.cw_a_weight));
-		printf("    Partition cutoff:           %u partitions\n", config.tune_partition_count_limit);
-		printf("    2 partition index cutoff:   %u partition ids\n", config.tune_2partition_index_limit);
-		printf("    3 partition index cutoff:   %u partition ids\n", config.tune_3partition_index_limit);
-		printf("    4 partition index cutoff:   %u partition ids\n", config.tune_4partition_index_limit);
+		printf("    Partition cutoff:           %zu partitions\n", config.tune_partition_count_limit);
+		printf("    2 partition index cutoff:   %zu partition ids\n", config.tune_2partition_index_limit);
+		printf("    3 partition index cutoff:   %zu partition ids\n", config.tune_3partition_index_limit);
+		printf("    4 partition index cutoff:   %zu partition ids\n", config.tune_4partition_index_limit);
 		printf("    PSNR cutoff:                %g dB\n", static_cast<double>(config.tune_db_limit));
 		printf("    3 partition cutoff:         %g\n", static_cast<double>(config.tune_2partition_early_out_limit_factor));
 		printf("    4 partition cutoff:         %g\n", static_cast<double>(config.tune_3partition_early_out_limit_factor));
 		printf("    2 plane correlation cutoff: %g\n", static_cast<double>(config.tune_2plane_early_out_limit_correlation));
 		printf("    Block mode centile cutoff:  %g%%\n", static_cast<double>(config.tune_block_mode_limit));
-		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
-		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
-		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
+		printf("    Candidate cutoff:           %zu candidates\n", config.tune_candidate_limit);
+		printf("    Refinement cutoff:          %zu iterations\n", config.tune_refinement_limit);
+		printf("    Compressor thread count:    %zu\n", cli_config.thread_count);
 		printf("\n");
 	}
 }
@@ -1293,9 +1293,9 @@ static void print_astcenc_config(
  */
 static vfloat4 image_get_pixel(
 	const astcenc_image& img,
-	unsigned int x,
-	unsigned int y,
-	unsigned int z
+	size_t x,
+	size_t y,
+	size_t z
 ) {
 	// We should never escape bounds
 	assert(x < img.dim_x);
@@ -1351,9 +1351,9 @@ static vfloat4 image_get_pixel(
  */
 static void image_set_pixel(
 	astcenc_image& img,
-	unsigned int x,
-	unsigned int y,
-	unsigned int z,
+	size_t x,
+	size_t y,
+	size_t z,
 	vfloat4 pixel
 ) {
 	// We should never escape bounds
@@ -1408,11 +1408,11 @@ static void image_preprocess_normalize(
 	const astcenc_image& input,
 	astcenc_image& output
 ) {
-	for (unsigned int z = 0; z < input.dim_z; z++)
+	for (size_t z = 0; z < input.dim_z; z++)
 	{
-		for (unsigned int y = 0; y < input.dim_y; y++)
+		for (size_t y = 0; y < input.dim_y; y++)
 		{
-			for (unsigned int x = 0; x < input.dim_x; x++)
+			for (size_t x = 0; x < input.dim_x; x++)
 			{
 				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
@@ -1487,11 +1487,11 @@ static void image_preprocess_premultiply(
 	astcenc_image& output,
 	astcenc_profile profile
 ) {
-	for (unsigned int z = 0; z < input.dim_z; z++)
+	for (size_t z = 0; z < input.dim_z; z++)
 	{
-		for (unsigned int y = 0; y < input.dim_y; y++)
+		for (size_t y = 0; y < input.dim_y; y++)
 		{
-			for (unsigned int x = 0; x < input.dim_x; x++)
+			for (size_t x = 0; x < input.dim_x; x++)
 			{
 				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
@@ -2011,7 +2011,7 @@ int astcenc_main(
 	}
 
 	astcenc_image* image_uncomp_in = nullptr ;
-	unsigned int image_uncomp_in_component_count = 0;
+	size_t image_uncomp_in_component_count = 0;
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image* image_decomp_out = nullptr;
 
@@ -2126,15 +2126,15 @@ int astcenc_main(
 			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
 			if (image_uncomp_in->dim_z > 1)
 			{
-				printf("    Dimensions:                 3D, %ux%ux%u\n",
+				printf("    Dimensions:                 3D, %zux%zux%zu\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y, image_uncomp_in->dim_z);
 			}
 			else
 			{
-				printf("    Dimensions:                 2D, %ux%u\n",
+				printf("    Dimensions:                 2D, %zux%zu\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
-			printf("    Components:                 %d\n\n", image_uncomp_in_component_count);
+			printf("    Components:                 %zu\n\n", image_uncomp_in_component_count);
 		}
 	}
 
@@ -2159,9 +2159,9 @@ int astcenc_main(
 	{
 		print_astcenc_config(cli_config, config);
 
-		unsigned int blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
-		unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
-		unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
+		size_t blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
+		size_t blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
+		size_t blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
 		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
 		uint8_t* buffer = new uint8_t[buffer_size];
 
@@ -2176,7 +2176,7 @@ int astcenc_main(
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
 		double start_compression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+		for (size_t i = 0; i < cli_config.repeat_count; i++)
 		{
 			if (config.progress_callback)
 			{
@@ -2244,7 +2244,7 @@ int astcenc_main(
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
 		double start_decompression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+		for (size_t i = 0; i < cli_config.repeat_count; i++)
 		{
 			double start_iter_time = get_time();
 			if (cli_config.thread_count > 1)

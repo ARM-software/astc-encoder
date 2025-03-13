@@ -45,7 +45,7 @@
 #include <cstring>
 #include <cfloat>
 
-static constexpr unsigned int ANGULAR_STEPS { 32 };
+static constexpr size_t ANGULAR_STEPS { 32 };
 
 static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
               "ANGULAR_STEPS must be multiple of ASTCENC_SIMD_WIDTH");
@@ -55,7 +55,7 @@ static_assert(ANGULAR_STEPS >= 32,
 
 // Store a reduced sin/cos table for 64 possible weight values; this causes
 // slight quality loss compared to using sin() and cos() directly. Must be 2^N.
-static constexpr unsigned int SINCOS_STEPS { 64 };
+static constexpr size_t SINCOS_STEPS { 64 };
 
 static const uint8_t steps_for_quant_level[12] {
 	2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24, 32
@@ -71,11 +71,11 @@ ASTCENC_ALIGNAS static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 /* See header for documentation. */
 void prepare_angular_tables()
 {
-	for (unsigned int i = 0; i < ANGULAR_STEPS; i++)
+	for (size_t i = 0; i < ANGULAR_STEPS; i++)
 	{
 		float angle_step = static_cast<float>(i + 1);
 
-		for (unsigned int j = 0; j < SINCOS_STEPS; j++)
+		for (size_t j = 0; j < SINCOS_STEPS; j++)
 		{
 			sin_table[j][i] = static_cast<float>(sinf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
 			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
@@ -92,9 +92,9 @@ void prepare_angular_tables()
  * @param[out] offsets                   The output angular offsets array.
  */
 static void compute_angular_offsets(
-	unsigned int weight_count,
+	size_t weight_count,
 	const float* dec_weight_ideal_value,
-	unsigned int max_angular_steps,
+	size_t max_angular_steps,
 	float* offsets
 ) {
 	promise(weight_count > 0);
@@ -103,7 +103,7 @@ static void compute_angular_offsets(
 	ASTCENC_ALIGNAS int isamplev[BLOCK_MAX_WEIGHTS];
 
 	// Precompute isample; arrays are always allocated 64 elements long
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Ideal weight can be outside [0, 1] range, so clamp to fit table
 		vfloat ideal_weight = clampzo(loada(dec_weight_ideal_value + i));
@@ -117,12 +117,12 @@ static void compute_angular_offsets(
 	// Arrays are multiple of SIMD width (ANGULAR_STEPS), safe to overshoot max
 	vfloat mult(1.0f / (2.0f * astc::PI));
 
-	for (unsigned int i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < max_angular_steps; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat anglesum_x = vfloat::zero();
 		vfloat anglesum_y = vfloat::zero();
 
-		for (unsigned int j = 0; j < weight_count; j++)
+		for (size_t j = 0; j < weight_count; j++)
 		{
 			int isample = isamplev[j];
 			anglesum_x += loada(cos_table[isample] + i);
@@ -154,10 +154,10 @@ static void compute_angular_offsets(
  * @param[out] cut_high_weight_error     Per angular step, the high weight cut error.
  */
 static void compute_lowest_and_highest_weight(
-	unsigned int weight_count,
+	size_t weight_count,
 	const float* dec_weight_ideal_value,
-	unsigned int max_angular_steps,
-	unsigned int max_quant_steps,
+	size_t max_angular_steps,
+	size_t max_quant_steps,
 	const float* offsets,
 	float* lowest_weight,
 	int* weight_span,
@@ -177,7 +177,7 @@ static void compute_lowest_and_highest_weight(
 	vfloat max_weight(-FLT_MAX);
 
 	vint lane_id = vint::lane_id();
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	for (size_t i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vmask active = lane_id < vint(weight_count);
 		lane_id += vint(ASTCENC_SIMD_WIDTH);
@@ -191,7 +191,7 @@ static void compute_lowest_and_highest_weight(
 	max_weight = hmax(max_weight);
 
 	// Arrays are ANGULAR_STEPS long, so always safe to run full vectors
-	for (unsigned int sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
+	for (size_t sp = 0; sp < max_angular_steps; sp += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat errval = vfloat::zero();
 		vfloat cut_low_weight_err = vfloat::zero();
@@ -203,7 +203,7 @@ static void compute_lowest_and_highest_weight(
 		vfloat minidx = round(min_weight * rcp_stepsize - offset);
 		vfloat maxidx = round(max_weight * rcp_stepsize - offset);
 
-		for (unsigned int j = 0; j < weight_count; j++)
+		for (size_t j = 0; j < weight_count; j++)
 		{
 			vfloat sval = load1(dec_weight_ideal_value + j) * rcp_stepsize - offset;
 			vfloat svalrte = round(sval);
@@ -250,14 +250,14 @@ static void compute_lowest_and_highest_weight(
  * @param[out] high_value                Per angular step, the highest weight value.
  */
 static void compute_angular_endpoints_for_quant_levels(
-	unsigned int weight_count,
+	size_t weight_count,
 	const float* dec_weight_ideal_value,
-	unsigned int max_quant_level,
+	size_t max_quant_level,
 	float low_value[TUNE_MAX_ANGULAR_QUANT + 1],
 	float high_value[TUNE_MAX_ANGULAR_QUANT + 1]
 ) {
-	unsigned int max_quant_steps = steps_for_quant_level[max_quant_level];
-	unsigned int max_angular_steps = steps_for_quant_level[max_quant_level];
+	size_t max_quant_steps = steps_for_quant_level[max_quant_level];
+	size_t max_angular_steps = steps_for_quant_level[max_quant_level];
 
 	ASTCENC_ALIGNAS float angular_offsets[ANGULAR_STEPS];
 
@@ -282,7 +282,7 @@ static void compute_angular_endpoints_for_quant_levels(
 
 	// Initialize the array to some safe defaults
 	promise(max_quant_steps > 0);
-	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
+	for (size_t i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error
 		// Lane<1> = Best scale; -1 indicates no solution found
@@ -291,7 +291,7 @@ static void compute_angular_endpoints_for_quant_levels(
 	}
 
 	promise(max_angular_steps > 0);
-	for (unsigned int i = 0; i < max_angular_steps; i++)
+	for (size_t i = 0; i < max_angular_steps; i++)
 	{
 		float i_flt = static_cast<float>(i);
 
@@ -325,9 +325,9 @@ static void compute_angular_endpoints_for_quant_levels(
 		best_results[idx_span - 2] = select(best_result, new_result, mask);
 	}
 
-	for (unsigned int i = 0; i <= max_quant_level; i++)
+	for (size_t i = 0; i <= max_quant_level; i++)
 	{
-		unsigned int q = steps_for_quant_level[i];
+		size_t q = steps_for_quant_level[i];
 		int bsi = static_cast<int>(best_results[q].lane<1>());
 
 		// Did we find anything?
@@ -355,7 +355,7 @@ void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
-	unsigned int max_weight_quant,
+	size_t max_weight_quant,
 	compression_working_buffers& tmpbuf
 ) {
 	float (&low_value)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value1;
@@ -364,10 +364,10 @@ void compute_angular_endpoints_1plane(
 	float (&low_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_low_values1;
 	float (&high_values)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values1;
 
-	unsigned int max_decimation_modes = only_always ? bsd.decimation_mode_count_always
+	size_t max_decimation_modes = only_always ? bsd.decimation_mode_count_always
 	                                                : bsd.decimation_mode_count_selected;
 	promise(max_decimation_modes > 0);
-	for (unsigned int i = 0; i < max_decimation_modes; i++)
+	for (size_t i = 0; i < max_decimation_modes; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (!dm.is_ref_1plane(static_cast<quant_method>(max_weight_quant)))
@@ -375,9 +375,9 @@ void compute_angular_endpoints_1plane(
 			continue;
 		}
 
-		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
+		size_t weight_count = bsd.get_decimation_info(i).weight_count;
 
-		unsigned int max_precision = dm.maxprec_1plane;
+		size_t max_precision = dm.maxprec_1plane;
 		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
 		{
 			max_precision = TUNE_MAX_ANGULAR_QUANT;
@@ -394,16 +394,16 @@ void compute_angular_endpoints_1plane(
 		    max_precision, low_values[i], high_values[i]);
 	}
 
-	unsigned int max_block_modes = only_always ? bsd.block_mode_count_1plane_always
+	size_t max_block_modes = only_always ? bsd.block_mode_count_1plane_always
 	                                           : bsd.block_mode_count_1plane_selected;
 	promise(max_block_modes > 0);
-	for (unsigned int i = 0; i < max_block_modes; i++)
+	for (size_t i = 0; i < max_block_modes; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
 		assert(!bm.is_dual_plane);
 
-		unsigned int quant_mode = bm.quant_mode;
-		unsigned int decim_mode = bm.decimation_mode;
+		size_t quant_mode = bm.quant_mode;
+		size_t decim_mode = bm.decimation_mode;
 
 		if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
 		{
@@ -422,7 +422,7 @@ void compute_angular_endpoints_1plane(
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
-	unsigned int max_weight_quant,
+	size_t max_weight_quant,
 	compression_working_buffers& tmpbuf
 ) {
 	float (&low_value1)[WEIGHTS_MAX_BLOCK_MODES] = tmpbuf.weight_low_value1;
@@ -436,7 +436,7 @@ void compute_angular_endpoints_2planes(
 	float (&high_values2)[WEIGHTS_MAX_DECIMATION_MODES][TUNE_MAX_ANGULAR_QUANT + 1] = tmpbuf.weight_high_values2;
 
 	promise(bsd.decimation_mode_count_selected > 0);
-	for (unsigned int i = 0; i < bsd.decimation_mode_count_selected; i++)
+	for (size_t i = 0; i < bsd.decimation_mode_count_selected; i++)
 	{
 		const decimation_mode& dm = bsd.decimation_modes[i];
 		if (!dm.is_ref_2plane(static_cast<quant_method>(max_weight_quant)))
@@ -444,9 +444,9 @@ void compute_angular_endpoints_2planes(
 			continue;
 		}
 
-		unsigned int weight_count = bsd.get_decimation_info(i).weight_count;
+		size_t weight_count = bsd.get_decimation_info(i).weight_count;
 
-		unsigned int max_precision = dm.maxprec_2planes;
+		size_t max_precision = dm.maxprec_2planes;
 		if (max_precision > TUNE_MAX_ANGULAR_QUANT)
 		{
 			max_precision = TUNE_MAX_ANGULAR_QUANT;
@@ -468,13 +468,13 @@ void compute_angular_endpoints_2planes(
 		    max_precision, low_values2[i], high_values2[i]);
 	}
 
-	unsigned int start = bsd.block_mode_count_1plane_selected;
-	unsigned int end = bsd.block_mode_count_1plane_2plane_selected;
-	for (unsigned int i = start; i < end; i++)
+	size_t start = bsd.block_mode_count_1plane_selected;
+	size_t end = bsd.block_mode_count_1plane_2plane_selected;
+	for (size_t i = start; i < end; i++)
 	{
 		const block_mode& bm = bsd.block_modes[i];
-		unsigned int quant_mode = bm.quant_mode;
-		unsigned int decim_mode = bm.decimation_mode;
+		size_t quant_mode = bm.quant_mode;
+		size_t decim_mode = bm.decimation_mode;
 
 		if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
 		{

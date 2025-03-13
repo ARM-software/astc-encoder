@@ -410,7 +410,7 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  *
  * bit0 = lane 0
  */
-ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
+ASTCENC_SIMD_INLINE size_t mask(vmask4 a)
 {
 	return (a.m[0] & 0x1) |
 	       (a.m[1] & 0x2) |

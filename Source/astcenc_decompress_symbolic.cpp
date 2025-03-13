@@ -101,7 +101,7 @@ void unpack_weights(
 		vtable_64x8 table;
 		vtable_prepare(table, scb.weights);
 
-		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint summed_value(8);
 			vint weight_count(di.texel_weight_count + i);
@@ -130,7 +130,7 @@ void unpack_weights(
 		vtable_32x8 tab_plane2;
 		vtable_prepare(tab_plane2, scb.weights + 32);
 
-		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+		for (size_t i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint sum_plane1(8);
 			vint sum_plane2(8);
@@ -190,7 +190,7 @@ void decompress_symbolic_block(
 	// If we detected an error-block, blow up immediately.
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
-		for (unsigned int i = 0; i < bsd.texel_count; i++)
+		for (size_t i = 0; i < bsd.texel_count; i++)
 		{
 			blk.data_r[i] = error_color_nan();
 			blk.data_g[i] = error_color_nan();
@@ -243,7 +243,7 @@ void decompress_symbolic_block(
 			}
 		}
 
-		for (unsigned int i = 0; i < bsd.texel_count; i++)
+		for (size_t i = 0; i < bsd.texel_count; i++)
 		{
 			blk.data_r[i] = color.lane<0>();
 			blk.data_g[i] = color.lane<1>();
@@ -356,8 +356,8 @@ float compute_symbolic_block_difference_2plane(
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 
 	// Unpack and compute error for each texel in the partition
-	unsigned int texel_count = bsd.texel_count;
-	for (unsigned int i = 0; i < texel_count; i++)
+	size_t texel_count = bsd.texel_count;
+	for (size_t i = 0; i < texel_count; i++)
 	{
 		vint4 weight = select(vint4(plane1_weights[i]), vint4(plane2_weights[i]), plane2_mask);
 		vint4 colori = lerp_color_int(u8_mask, ep0, ep1, weight);
@@ -423,7 +423,7 @@ float compute_symbolic_block_difference_1plane(
 	assert(scb.block_mode >= 0);
 
 	// Get the appropriate partition-table entry
-	unsigned int partition_count = scb.partition_count;
+	size_t partition_count = scb.partition_count;
 	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	// Get the appropriate block descriptor
@@ -437,7 +437,7 @@ float compute_symbolic_block_difference_1plane(
 	vmask4 u8_mask = get_u8_component_mask(config.profile, blk);
 
 	vfloat4 summa = vfloat4::zero();
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		// Decode the color endpoints for this partition
 		vint4 ep0;
@@ -452,10 +452,10 @@ float compute_symbolic_block_difference_1plane(
 		                       ep0, ep1);
 
 		// Unpack and compute error for each texel in the partition
-		unsigned int texel_count = pi.partition_texel_count[i];
-		for (unsigned int j = 0; j < texel_count; j++)
+		size_t texel_count = pi.partition_texel_count[i];
+		for (size_t j = 0; j < texel_count; j++)
 		{
-			unsigned int tix = pi.texels_of_partition[i][j];
+			size_t tix = pi.texels_of_partition[i][j];
 			vint4 colori = lerp_color_int(u8_mask, ep0, ep1,
 			                              vint4(plane1_weights[tix]));
 
@@ -546,8 +546,8 @@ float compute_symbolic_block_difference_1plane_1partition(
 
 	vint lane_id = vint::lane_id();
 
-	unsigned int texel_count = bsd.texel_count;
-	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	size_t texel_count = bsd.texel_count;
+	for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Compute EP1 contribution
 		vint weight1 = vint::loada(plane1_weights + i);

@@ -69,31 +69,31 @@
 #endif
 
 /** @brief The maximum number of texels a block can support (6x6x6 block). */
-static constexpr unsigned int BLOCK_MAX_TEXELS { ASTCENC_BLOCK_MAX_TEXELS };
+static constexpr size_t BLOCK_MAX_TEXELS { ASTCENC_BLOCK_MAX_TEXELS };
 
 /** @brief The maximum number of components a block can support. */
-static constexpr unsigned int BLOCK_MAX_COMPONENTS { 4 };
+static constexpr size_t BLOCK_MAX_COMPONENTS { 4 };
 
 /** @brief The maximum number of partitions a block can support. */
-static constexpr unsigned int BLOCK_MAX_PARTITIONS { 4 };
+static constexpr size_t BLOCK_MAX_PARTITIONS { 4 };
 
 /** @brief The number of partitionings, per partition count, suported by the ASTC format. */
-static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
+static constexpr size_t BLOCK_MAX_PARTITIONINGS { 1024 };
 
 /** @brief The maximum number of texels used during partition selection for texel clustering. */
 static constexpr uint8_t BLOCK_MAX_KMEANS_TEXELS { 64 };
 
 /** @brief The maximum number of weights a block can support. */
-static constexpr unsigned int BLOCK_MAX_WEIGHTS { 64 };
+static constexpr size_t BLOCK_MAX_WEIGHTS { 64 };
 
 /** @brief The maximum number of weights a block can support per plane in 2 plane mode. */
-static constexpr unsigned int BLOCK_MAX_WEIGHTS_2PLANE { BLOCK_MAX_WEIGHTS / 2 };
+static constexpr size_t BLOCK_MAX_WEIGHTS_2PLANE { BLOCK_MAX_WEIGHTS / 2 };
 
 /** @brief The minimum number of weight bits a candidate encoding must encode. */
-static constexpr unsigned int BLOCK_MIN_WEIGHT_BITS { 24 };
+static constexpr size_t BLOCK_MIN_WEIGHT_BITS { 24 };
 
 /** @brief The maximum number of weight bits a candidate encoding can encode. */
-static constexpr unsigned int BLOCK_MAX_WEIGHT_BITS { 96 };
+static constexpr size_t BLOCK_MAX_WEIGHT_BITS { 96 };
 
 /** @brief The index indicating a bad (unused) block mode in the remap array. */
 static constexpr uint16_t BLOCK_BAD_BLOCK_MODE { 0xFFFFu };
@@ -102,19 +102,19 @@ static constexpr uint16_t BLOCK_BAD_BLOCK_MODE { 0xFFFFu };
 static constexpr uint16_t BLOCK_BAD_PARTITIONING { 0xFFFFu };
 
 /** @brief The number of partition index bits supported by the ASTC format . */
-static constexpr unsigned int PARTITION_INDEX_BITS { 10 };
+static constexpr size_t PARTITION_INDEX_BITS { 10 };
 
 /** @brief The offset of the plane 2 weights in shared weight arrays. */
-static constexpr unsigned int WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS_2PLANE };
+static constexpr size_t WEIGHTS_PLANE2_OFFSET { BLOCK_MAX_WEIGHTS_2PLANE };
 
 /** @brief The sum of quantized weights for one texel. */
 static constexpr float WEIGHTS_TEXEL_SUM { 16.0f };
 
 /** @brief The number of block modes supported by the ASTC format. */
-static constexpr unsigned int WEIGHTS_MAX_BLOCK_MODES { 2048 };
+static constexpr size_t WEIGHTS_MAX_BLOCK_MODES { 2048 };
 
 /** @brief The number of weight grid decimation modes supported by the ASTC format. */
-static constexpr unsigned int WEIGHTS_MAX_DECIMATION_MODES { 87 };
+static constexpr size_t WEIGHTS_MAX_DECIMATION_MODES { 87 };
 
 /** @brief The high default error used to initialize error trackers. */
 static constexpr float ERROR_CALC_DEFAULT { 1e30f };
@@ -129,14 +129,14 @@ static constexpr float TUNE_MIN_SEARCH_MODE0 { 0.85f };
  *
  * This can be dynamically reduced by the compression quality preset.
  */
-static constexpr unsigned int TUNE_MAX_TRIAL_CANDIDATES { 8 };
+static constexpr size_t TUNE_MAX_TRIAL_CANDIDATES { 8 };
 
 /**
  * @brief The maximum number of candidate partitionings tested for each encoding mode.
  *
  * This can be dynamically reduced by the compression quality preset.
  */
-static constexpr unsigned int TUNE_MAX_PARTITIONING_CANDIDATES { 8 };
+static constexpr size_t TUNE_MAX_PARTITIONING_CANDIDATES { 8 };
 
 /**
  * @brief The maximum quant level using full angular endpoint search method.
@@ -151,7 +151,7 @@ static constexpr unsigned int TUNE_MAX_PARTITIONING_CANDIDATES { 8 };
  * one 8-wide vector. Decreasing by one doesn't buy much performance, and
  * increasing by one is disproportionately expensive.
  */
-static constexpr unsigned int TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
+static constexpr size_t TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
 
 static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_TEXELS must be multiple of ASTCENC_SIMD_WIDTH");
@@ -232,7 +232,7 @@ enum quant_method
  *
  * @return   The number of levels used by @c method.
  */
-static inline unsigned int get_quant_level(quant_method method)
+static inline size_t get_quant_level(quant_method method)
 {
 	switch (method)
 	{
@@ -546,35 +546,35 @@ struct block_size_descriptor
 	 *
 	 * Always modes are stored at the start of the decimation_modes list.
 	 */
-	unsigned int decimation_mode_count_always;
+	size_t decimation_mode_count_always;
 
 	/** @brief The number of stored decimation modes for selected encodings. */
-	unsigned int decimation_mode_count_selected;
+	size_t decimation_mode_count_selected;
 
 	/** @brief The number of stored decimation modes for any encoding. */
-	unsigned int decimation_mode_count_all;
+	size_t decimation_mode_count_all;
 
 	/**
 	 * @brief The number of stored block modes which are "always" modes.
 	 *
 	 * Always modes are stored at the start of the block_modes list.
 	 */
-	unsigned int block_mode_count_1plane_always;
+	size_t block_mode_count_1plane_always;
 
 	/** @brief The number of stored block modes for active 1 plane encodings. */
-	unsigned int block_mode_count_1plane_selected;
+	size_t block_mode_count_1plane_selected;
 
 	/** @brief The number of stored block modes for active 1 and 2 plane encodings. */
-	unsigned int block_mode_count_1plane_2plane_selected;
+	size_t block_mode_count_1plane_2plane_selected;
 
 	/** @brief The number of stored block modes for any encoding. */
-	unsigned int block_mode_count_all;
+	size_t block_mode_count_all;
 
 	/** @brief The number of selected partitionings for 1/2/3/4 partitionings. */
-	unsigned int partitioning_count_selected[BLOCK_MAX_PARTITIONS];
+	size_t partitioning_count_selected[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The number of partitionings for 1/2/3/4 partitionings. */
-	unsigned int partitioning_count_all[BLOCK_MAX_PARTITIONS];
+	size_t partitioning_count_all[BLOCK_MAX_PARTITIONS];
 
 	/** @brief The active decimation modes, stored in low indices. */
 	decimation_mode decimation_modes[WEIGHTS_MAX_DECIMATION_MODES];
@@ -633,9 +633,9 @@ struct block_size_descriptor
 	 *
 	 * @return The block mode structure.
 	 */
-	const block_mode& get_block_mode(unsigned int block_mode) const
+	const block_mode& get_block_mode(size_t block_mode) const
 	{
-		unsigned int packed_index = this->block_mode_packed_index[block_mode];
+		size_t packed_index = this->block_mode_packed_index[block_mode];
 		assert(packed_index != BLOCK_BAD_BLOCK_MODE && packed_index < this->block_mode_count_all);
 		return this->block_modes[packed_index];
 	}
@@ -651,7 +651,7 @@ struct block_size_descriptor
 	 *
 	 * @return The decimation mode structure.
 	 */
-	const decimation_mode& get_decimation_mode(unsigned int decimation_mode) const
+	const decimation_mode& get_decimation_mode(size_t decimation_mode) const
 	{
 		return this->decimation_modes[decimation_mode];
 	}
@@ -667,7 +667,7 @@ struct block_size_descriptor
 	 *
 	 * @return The decimation info structure.
 	 */
-	const decimation_info& get_decimation_info(unsigned int decimation_mode) const
+	const decimation_info& get_decimation_info(size_t decimation_mode) const
 	{
 		return this->decimation_tables[decimation_mode];
 	}
@@ -679,13 +679,13 @@ struct block_size_descriptor
 	 *
 	 * @return The pointer to the table of 1024 entries (for 2/3/4 parts) or 1 entry (for 1 part).
 	 */
-	const partition_info* get_partition_table(unsigned int partition_count) const
+	const partition_info* get_partition_table(size_t partition_count) const
 	{
 		if (partition_count == 1)
 		{
 			partition_count = 5;
 		}
-		unsigned int index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
+		size_t index = (partition_count - 2) * BLOCK_MAX_PARTITIONINGS;
 		return this->partitionings + index;
 	}
 
@@ -697,9 +697,9 @@ struct block_size_descriptor
 	 *
 	 * @return The partition info structure.
 	 */
-	const partition_info& get_partition_info(unsigned int partition_count, unsigned int index) const
+	const partition_info& get_partition_info(size_t partition_count, size_t index) const
 	{
-		unsigned int packed_index = 0;
+		size_t packed_index = 0;
 		if (partition_count >= 2)
 		{
 			packed_index = this->partitioning_packed_index[partition_count - 2][index];
@@ -719,7 +719,7 @@ struct block_size_descriptor
 	 *
 	 * @return The partition info structure.
 	 */
-	const partition_info& get_raw_partition_info(unsigned int partition_count, unsigned int packed_index) const
+	const partition_info& get_raw_partition_info(size_t partition_count, size_t packed_index) const
 	{
 		assert(packed_index != BLOCK_BAD_PARTITIONING && packed_index < this->partitioning_count_all[partition_count - 1]);
 		auto& result = get_partition_table(partition_count)[packed_index];
@@ -786,13 +786,13 @@ struct image_block
 	uint8_t alpha_lns[BLOCK_MAX_TEXELS];
 
 	/** @brief The X position of this block in the input or output image. */
-	unsigned int xpos;
+	size_t xpos;
 
 	/** @brief The Y position of this block in the input or output image. */
-	unsigned int ypos;
+	size_t ypos;
 
 	/** @brief The Z position of this block in the input or output image. */
-	unsigned int zpos;
+	size_t zpos;
 
 	/**
 	 * @brief Get an RGBA texel value from the data.
@@ -801,7 +801,7 @@ struct image_block
 	 *
 	 * @return The texel in RGBA component ordering.
 	 */
-	inline vfloat4 texel(unsigned int index) const
+	inline vfloat4 texel(size_t index) const
 	{
 		return vfloat4(data_r[index],
 		               data_g[index],
@@ -816,7 +816,7 @@ struct image_block
 	 *
 	 * @return The texel in RGB0 component ordering.
 	 */
-	inline vfloat4 texel3(unsigned int index) const
+	inline vfloat4 texel3(size_t index) const
 	{
 		return vfloat3(data_r[index],
 		               data_g[index],
@@ -884,7 +884,7 @@ struct image_block
 struct endpoints
 {
 	/** @brief The number of partition endpoints stored. */
-	unsigned int partition_count;
+	size_t partition_count;
 
 	/** @brief The colors for endpoint 0. */
 	vfloat4 endpt0[BLOCK_MAX_PARTITIONS];
@@ -1146,25 +1146,25 @@ struct pixel_region_args
 	bool have_z;
 
 	/** @brief The kernel radius for alpha processing. */
-	unsigned int alpha_kernel_radius;
+	size_t alpha_kernel_radius;
 
 	/** @brief The X dimension of the working data to process. */
-	unsigned int size_x;
+	size_t size_x;
 
 	/** @brief The Y dimension of the working data to process. */
-	unsigned int size_y;
+	size_t size_y;
 
 	/** @brief The Z dimension of the working data to process. */
-	unsigned int size_z;
+	size_t size_z;
 
 	/** @brief The X position of first src and dst data in the data set. */
-	unsigned int offset_x;
+	size_t offset_x;
 
 	/** @brief The Y position of first src and dst data in the data set. */
-	unsigned int offset_y;
+	size_t offset_y;
 
 	/** @brief The Z position of first src and dst data in the data set. */
-	unsigned int offset_z;
+	size_t offset_z;
 
 	/** @brief The working memory buffer. */
 	vfloat4 *work_memory;
@@ -1179,22 +1179,22 @@ struct avg_args
 	pixel_region_args arg;
 
 	/** @brief The image X dimensions. */
-	unsigned int img_size_x;
+	size_t img_size_x;
 
 	/** @brief The image Y dimensions. */
-	unsigned int img_size_y;
+	size_t img_size_y;
 
 	/** @brief The image Z dimensions. */
-	unsigned int img_size_z;
+	size_t img_size_z;
 
 	/** @brief The maximum working block dimensions in X and Y dimensions. */
-	unsigned int blk_size_xy;
+	size_t blk_size_xy;
 
 	/** @brief The maximum working block dimensions in Z dimensions. */
-	unsigned int blk_size_z;
+	size_t blk_size_z;
 
 	/** @brief The working block memory size. */
-	unsigned int work_memory_size;
+	size_t work_memory_size;
 };
 
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -1211,7 +1211,7 @@ struct astcenc_contexti
 	astcenc_config config;
 
 	/** @brief The thread count supported by this context. */
-	unsigned int thread_count;
+	size_t thread_count;
 
 	/** @brief The block size descriptor this context was created with. */
 	block_size_descriptor* bsd;
@@ -1263,11 +1263,11 @@ struct astcenc_contexti
  * @param[out] bsd                      The descriptor to initialize.
  */
 void init_block_size_descriptor(
-	unsigned int x_texels,
-	unsigned int y_texels,
-	unsigned int z_texels,
+	size_t x_texels,
+	size_t y_texels,
+	size_t z_texels,
 	bool can_omit_modes,
-	unsigned int partition_count_cutoff,
+	size_t partition_count_cutoff,
 	float mode_cutoff,
 	block_size_descriptor& bsd);
 
@@ -1284,7 +1284,7 @@ void init_block_size_descriptor(
 void init_partition_tables(
 	block_size_descriptor& bsd,
 	bool can_omit_partitionings,
-	unsigned int partition_count_cutoff);
+	size_t partition_count_cutoff);
 
 /**
  * @brief Get the percentile table for 2D block modes.
@@ -1300,8 +1300,8 @@ void init_partition_tables(
  * @return The unpacked table.
  */
 const float* get_2d_percentile_table(
-	unsigned int xdim,
-	unsigned int ydim);
+	size_t xdim,
+	size_t ydim);
 
 /**
  * @brief Query if a 2D block size is legal.
@@ -1309,8 +1309,8 @@ const float* get_2d_percentile_table(
  * @return True if legal, false otherwise.
  */
 bool is_legal_2d_block_size(
-	unsigned int xdim,
-	unsigned int ydim);
+	size_t xdim,
+	size_t ydim);
 
 /**
  * @brief Query if a 3D block size is legal.
@@ -1318,9 +1318,9 @@ bool is_legal_2d_block_size(
  * @return True if legal, false otherwise.
  */
 bool is_legal_3d_block_size(
-	unsigned int xdim,
-	unsigned int ydim,
-	unsigned int zdim);
+	size_t xdim,
+	size_t ydim,
+	size_t zdim);
 
 /* ============================================================================
   Functionality for managing BISE quantization and unquantization.
@@ -1384,10 +1384,10 @@ extern const int8_t quant_mode_table[10][128];
  */
 void encode_ise(
 	quant_method quant_level,
-	unsigned int character_count,
+	size_t character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	unsigned int bit_offset);
+	size_t bit_offset);
 
 /**
  * @brief Decode a packed string using BISE.
@@ -1403,10 +1403,10 @@ void encode_ise(
  */
 void decode_ise(
 	quant_method quant_level,
-	unsigned int character_count,
+	size_t character_count,
 	const uint8_t* input_data,
 	uint8_t* output_data,
-	unsigned int bit_offset);
+	size_t bit_offset);
 
 /**
  * @brief Return the number of bits needed to encode an ISE sequence.
@@ -1419,8 +1419,8 @@ void decode_ise(
  *
  * @return The number of bits needed to encode the BISE string.
  */
-unsigned int get_ise_sequence_bitcount(
-	unsigned int character_count,
+size_t get_ise_sequence_bitcount(
+	size_t character_count,
 	quant_method quant_level);
 
 /* ============================================================================
@@ -1441,8 +1441,8 @@ unsigned int get_ise_sequence_bitcount(
 void compute_avgs_and_dirs_2_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	unsigned int component1,
-	unsigned int component2,
+	size_t component1,
+	size_t component2,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
@@ -1458,7 +1458,7 @@ void compute_avgs_and_dirs_2_comp(
 void compute_avgs_and_dirs_3_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	unsigned int omitted_component,
+	size_t omitted_component,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
 
 /**
@@ -1559,13 +1559,13 @@ void compute_error_squared_rgba(
  *
  * @return The actual number of candidates returned.
  */
-unsigned int find_best_partition_candidates(
+size_t find_best_partition_candidates(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	unsigned int partition_count,
-	unsigned int partition_search_limit,
-	unsigned int best_partitions[TUNE_MAX_PARTITIONING_CANDIDATES],
-	unsigned int requested_candidates);
+	size_t partition_count,
+	size_t partition_search_limit,
+	size_t best_partitions[TUNE_MAX_PARTITIONING_CANDIDATES],
+	size_t requested_candidates);
 
 /* ============================================================================
   Functionality for managing images and image related data.
@@ -1607,9 +1607,9 @@ static inline vmask4 get_u8_component_mask(
  *
  * @return The number of tasks in the processing stage.
  */
-unsigned int init_compute_averages(
+size_t init_compute_averages(
 	const astcenc_image& img,
-	unsigned int alpha_kernel_radius,
+	size_t alpha_kernel_radius,
 	const astcenc_swizzle& swz,
 	avg_args& ag);
 
@@ -1642,9 +1642,9 @@ void load_image_block(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz);
 
 /**
@@ -1667,9 +1667,9 @@ void load_image_block_fast_ldr(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz);
 
 /**
@@ -1687,9 +1687,9 @@ void store_image_block(
 	astcenc_image& img,
 	const image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz);
 
 /* ============================================================================
@@ -1728,7 +1728,7 @@ void compute_ideal_colors_and_weights_1plane(
 void compute_ideal_colors_and_weights_2planes(
 	const block_size_descriptor& bsd,
 	const image_block& blk,
-	unsigned int plane2_component,
+	size_t plane2_component,
 	endpoints_and_weights& ei1,
 	endpoints_and_weights& ei2);
 
@@ -1935,15 +1935,15 @@ void unpack_weights(
  *
  * @return The actual number of candidate matches returned.
  */
-unsigned int compute_ideal_endpoint_formats(
+size_t compute_ideal_endpoint_formats(
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
 	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
-	unsigned int tune_candidate_limit,
-	unsigned int start_block_mode,
-	unsigned int end_block_mode,
+	size_t tune_candidate_limit,
+	size_t start_block_mode,
+	size_t end_block_mode,
 	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
@@ -2018,7 +2018,7 @@ void compute_angular_endpoints_1plane(
 	bool only_always,
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
-	unsigned int max_weight_quant,
+	size_t max_weight_quant,
 	compression_working_buffers& tmpbuf);
 
 /**
@@ -2032,7 +2032,7 @@ void compute_angular_endpoints_1plane(
 void compute_angular_endpoints_2planes(
 	const block_size_descriptor& bsd,
 	const float* dec_weight_ideal_value,
-	unsigned int max_weight_quant,
+	size_t max_weight_quant,
 	compression_working_buffers& tmpbuf);
 
 /* ============================================================================

@@ -126,30 +126,30 @@ void compute_error_metrics(
 	double mean_angular_errorsum = 0.0;
 	double worst_angular_errorsum = 0.0;
 
-	unsigned int dim_x = astc::min(img1->dim_x, img2->dim_x);
-	unsigned int dim_y = astc::min(img1->dim_y, img2->dim_y);
-	unsigned int dim_z = astc::min(img1->dim_z, img2->dim_z);
+	size_t dim_x = astc::min(img1->dim_x, img2->dim_x);
+	size_t dim_y = astc::min(img1->dim_y, img2->dim_y);
+	size_t dim_z = astc::min(img1->dim_z, img2->dim_z);
 
 	if (img1->dim_x != img2->dim_x ||
 	    img1->dim_y != img2->dim_y ||
 	    img1->dim_z != img2->dim_z)
 	{
 		printf("WARNING: Only intersection of images will be compared:\n"
-		       "  Image 1: %dx%dx%d\n"
-		       "  Image 2: %dx%dx%d\n",
+		       "  Image 1: %zux%zux%zu\n"
+		       "  Image 2: %zux%zux%zu\n",
 		       img1->dim_x, img1->dim_y, img1->dim_z,
 		       img2->dim_x, img2->dim_y, img2->dim_z);
 	}
 
 	double rgb_peak = 0.0;
-	unsigned int xsize1 = img1->dim_x;
-	unsigned int xsize2 = img2->dim_x;
+	size_t xsize1 = img1->dim_x;
+	size_t xsize2 = img2->dim_x;
 
-	for (unsigned int z = 0; z < dim_z; z++)
+	for (size_t z = 0; z < dim_z; z++)
 	{
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			for (unsigned int x = 0; x < dim_x; x++)
+			for (size_t x = 0; x < dim_x; x++)
 			{
 				vfloat4 color1;
 				vfloat4 color2;

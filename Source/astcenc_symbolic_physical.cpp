@@ -111,12 +111,12 @@ void symbolic_to_physical(
 	{
 		// There is currently no attempt to coalesce larger void-extents
 		static const uint8_t cbytes[8] { 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-		for (unsigned int i = 0; i < 8; i++)
+		for (size_t i = 0; i < 8; i++)
 		{
 			pcb[i] = cbytes[i];
 		}
 
-		for (unsigned int i = 0; i < BLOCK_MAX_COMPONENTS; i++)
+		for (size_t i = 0; i < BLOCK_MAX_COMPONENTS; i++)
 		{
 			pcb[2 * i + 8] = scb.constant_color[i] & 0xFF;
 			pcb[2 * i + 9] = (scb.constant_color[i] >> 8) & 0xFF;
@@ -130,12 +130,12 @@ void symbolic_to_physical(
 	{
 		// There is currently no attempt to coalesce larger void-extents
 		static const uint8_t cbytes[8]  { 0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-		for (unsigned int i = 0; i < 8; i++)
+		for (size_t i = 0; i < 8; i++)
 		{
 			pcb[i] = cbytes[i];
 		}
 
-		for (unsigned int i = 0; i < BLOCK_MAX_COMPONENTS; i++)
+		for (size_t i = 0; i < BLOCK_MAX_COMPONENTS; i++)
 		{
 			pcb[2 * i + 8] = scb.constant_color[i] & 0xFF;
 			pcb[2 * i + 9] = (scb.constant_color[i] >> 8) & 0xFF;
@@ -144,7 +144,7 @@ void symbolic_to_physical(
 		return;
 	}
 
-	unsigned int partition_count = scb.partition_count;
+	size_t partition_count = scb.partition_count;
 
 	// Compress the weights.
 	// They are encoded as an ordinary integer-sequence, then bit-reversed
@@ -217,7 +217,7 @@ void symbolic_to_physical(
 			// Check endpoint types for each partition to determine the lowest class present
 			int low_class = 4;
 
-			for (unsigned int i = 0; i < partition_count; i++)
+			for (size_t i = 0; i < partition_count; i++)
 			{
 				int class_of_format = scb.color_formats[i] >> 2;
 				low_class = astc::min(class_of_format, low_class);
@@ -231,14 +231,14 @@ void symbolic_to_physical(
 			int encoded_type = low_class + 1;
 			int bitpos = 2;
 
-			for (unsigned int i = 0; i < partition_count; i++)
+			for (size_t i = 0; i < partition_count; i++)
 			{
 				int classbit_of_format = (scb.color_formats[i] >> 2) - low_class;
 				encoded_type |= classbit_of_format << bitpos;
 				bitpos++;
 			}
 
-			for (unsigned int i = 0; i < partition_count; i++)
+			for (size_t i = 0; i < partition_count; i++)
 			{
 				int lowbits_of_format = scb.color_formats[i] & 3;
 				encoded_type |= lowbits_of_format << bitpos;
@@ -270,7 +270,7 @@ void symbolic_to_physical(
 	int valuecount_to_encode = 0;
 
 	const uint8_t* pack_table = color_uquant_to_scrambled_pquant_tables[scb.quant_mode - QUANT_6];
-	for (unsigned int i = 0; i < scb.partition_count; i++)
+	for (size_t i = 0; i < scb.partition_count; i++)
 	{
 		int vals = 2 * (scb.color_formats[i] >> 2) + 2;
 		assert(vals <= 8);
@@ -369,7 +369,7 @@ void physical_to_symbolic(
 		return;
 	}
 
-	unsigned int packed_index = bsd.block_mode_packed_index[block_mode];
+	size_t packed_index = bsd.block_mode_packed_index[block_mode];
 	if (packed_index == BLOCK_BAD_BLOCK_MODE)
 	{
 		scb.block_type = SYM_BTYPE_ERROR;

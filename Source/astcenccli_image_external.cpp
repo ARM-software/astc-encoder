@@ -84,7 +84,7 @@ astcenc_image* load_png_with_wuffs(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& component_count
+	size_t& component_count
 ) {
 	is_hdr = false;
 	component_count = 4;

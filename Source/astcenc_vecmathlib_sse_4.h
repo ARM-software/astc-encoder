@@ -423,9 +423,9 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
  *
  * bit0 = lane 0
  */
-ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
+ASTCENC_SIMD_INLINE size_t mask(vmask4 a)
 {
-	return static_cast<unsigned int>(_mm_movemask_ps(a.m));
+	return static_cast<size_t>(_mm_movemask_ps(a.m));
 }
 
 /**
