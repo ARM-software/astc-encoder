@@ -1135,13 +1135,13 @@ unsigned int compute_ideal_endpoint_formats(
 	vfloat clear_error(ERROR_CALC_DEFAULT);
 	vint clear_quant(0);
 
-	unsigned int packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
+	size_t packed_start_block_mode = round_down_to_simd_multiple_vla(start_block_mode);
 	storea(clear_error, errors_of_best_combination + packed_start_block_mode);
 	store_nbytes(clear_quant, best_quant_levels + packed_start_block_mode);
 	store_nbytes(clear_quant, best_quant_levels_mod + packed_start_block_mode);
 
 	// Ensure that last iteration overstep contains data that will never be picked
-	unsigned int packed_end_block_mode = round_down_to_simd_multiple_vla(end_block_mode - 1);
+	size_t packed_end_block_mode = round_down_to_simd_multiple_vla(end_block_mode - 1);
 	storea(clear_error, errors_of_best_combination + packed_end_block_mode);
 	store_nbytes(clear_quant, best_quant_levels + packed_end_block_mode);
 	store_nbytes(clear_quant, best_quant_levels_mod + packed_end_block_mode);

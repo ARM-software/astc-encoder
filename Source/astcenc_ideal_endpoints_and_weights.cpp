@@ -195,8 +195,8 @@ static void compute_ideal_colors_and_weights_1_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -333,8 +333,8 @@ static void compute_ideal_colors_and_weights_2_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -500,8 +500,8 @@ static void compute_ideal_colors_and_weights_3_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -598,8 +598,8 @@ static void compute_ideal_colors_and_weights_4_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	unsigned int texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (unsigned int i = texel_count; i < texel_count_simd; i++)
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
+	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;

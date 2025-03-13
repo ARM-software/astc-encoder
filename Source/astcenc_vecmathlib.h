@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2024 Arm Limited
+// Copyright 2019-2025 Arm Limited
 // Copyright 2008 Jose Fonseca
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -212,30 +212,6 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 #endif
 
 /**
- * @brief Round a count down to the largest multiple of 8.
- *
- * @param count   The unrounded value.
- *
- * @return The rounded value.
- */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_8(unsigned int count)
-{
-	return count & static_cast<unsigned int>(~(8 - 1));
-}
-
-/**
- * @brief Round a count down to the largest multiple of 4.
- *
- * @param count   The unrounded value.
- *
- * @return The rounded value.
- */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int count)
-{
-	return count & static_cast<unsigned int>(~(4 - 1));
-}
-
-/**
  * @brief Round a count down to the largest multiple of the SIMD width.
  *
  * Assumption that the vector width is a power of two ...
@@ -244,9 +220,9 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_4(unsigned int coun
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_down_to_simd_multiple_vla(size_t count)
 {
-	return count & static_cast<unsigned int>(~(ASTCENC_SIMD_WIDTH - 1));
+	return count & static_cast<size_t>(~(ASTCENC_SIMD_WIDTH - 1));
 }
 
 /**
@@ -258,9 +234,9 @@ ASTCENC_SIMD_INLINE unsigned int round_down_to_simd_multiple_vla(unsigned int co
  *
  * @return The rounded value.
  */
-ASTCENC_SIMD_INLINE unsigned int round_up_to_simd_multiple_vla(unsigned int count)
+ASTCENC_SIMD_INLINE size_t round_up_to_simd_multiple_vla(size_t count)
 {
-	unsigned int multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
+	size_t multiples = (count + ASTCENC_SIMD_WIDTH - 1) / ASTCENC_SIMD_WIDTH;
 	return multiples * ASTCENC_SIMD_WIDTH;
 }
 
