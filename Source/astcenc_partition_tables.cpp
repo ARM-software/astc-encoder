@@ -36,12 +36,12 @@
  * @param[out] bit_pattern          The output bit pattern representation.
  */
 static void generate_canonical_partitioning(
-	unsigned int texel_count,
+	size_t texel_count,
 	const uint8_t* partition_of_texel,
 	uint64_t bit_pattern[BIT_PATTERN_WORDS]
 ) {
 	// Clear the pattern
-	for (unsigned int i = 0; i < BIT_PATTERN_WORDS; i++)
+	for (size_t i = 0; i < BIT_PATTERN_WORDS; i++)
 	{
 		bit_pattern[i] = 0;
 	}
@@ -52,12 +52,12 @@ static void generate_canonical_partitioning(
 	int mapped_index[BLOCK_MAX_PARTITIONS];
 	int map_weight_count = 0;
 
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
+	for (size_t i = 0; i < BLOCK_MAX_PARTITIONS; i++)
 	{
 		mapped_index[i] = -1;
 	}
 
-	for (unsigned int i = 0; i < texel_count; i++)
+	for (size_t i = 0; i < texel_count; i++)
 	{
 		int index = partition_of_texel[i];
 		if (mapped_index[index] < 0)
@@ -275,9 +275,9 @@ static uint8_t select_partition(
  */
 static bool generate_one_partition_info_entry(
 	block_size_descriptor& bsd,
-	unsigned int partition_count,
-	unsigned int partition_index,
-	unsigned int partition_remap_index,
+	size_t partition_count,
+	size_t partition_index,
+	size_t partition_remap_index,
 	partition_info& pi
 ) {
 	int texels_per_block = bsd.texel_count;
@@ -288,11 +288,11 @@ static bool generate_one_partition_info_entry(
 	// Assign texels to partitions
 	int texel_idx = 0;
 	int counts[BLOCK_MAX_PARTITIONS] { 0 };
-	for (unsigned int z = 0; z < bsd.zdim; z++)
+	for (size_t z = 0; z < bsd.zdim; z++)
 	{
-		for (unsigned int y = 0; y <  bsd.ydim; y++)
+		for (size_t y = 0; y <  bsd.ydim; y++)
 		{
-			for (unsigned int x = 0; x <  bsd.xdim; x++)
+			for (size_t x = 0; x <  bsd.xdim; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				pi.texels_of_partition[part][counts[part]++] = static_cast<uint8_t>(texel_idx++);
@@ -302,7 +302,7 @@ static bool generate_one_partition_info_entry(
 	}
 
 	// Fill loop tail so we can overfetch later
-	for (unsigned int i = 0; i < partition_count; i++)
+	for (size_t i = 0; i < partition_count; i++)
 	{
 		int ptex_count = counts[i];
 		int ptex_count_simd = round_up_to_simd_multiple_vla(ptex_count);
@@ -352,7 +352,7 @@ static bool generate_one_partition_info_entry(
 		bitmaps = bsd.coverage_bitmaps_4[partition_remap_index];
 	}
 
-	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONS; i++)
+	for (size_t i = 0; i < BLOCK_MAX_PARTITIONS; i++)
 	{
 		pi.partition_texel_count[i] = static_cast<uint8_t>(counts[i]);
 	}
@@ -363,15 +363,15 @@ static bool generate_one_partition_info_entry(
 	if (bitmaps)
 	{
 		// Populate the partition coverage bitmap
-		for (unsigned int i = 0; i < partition_count; i++)
+		for (size_t i = 0; i < partition_count; i++)
 		{
 			bitmaps[i] = 0ULL;
 		}
 
-		unsigned int texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
-		for (unsigned int i = 0; i < texels_to_process; i++)
+		size_t texels_to_process = astc::min(bsd.texel_count, BLOCK_MAX_KMEANS_TEXELS);
+		for (size_t i = 0; i < texels_to_process; i++)
 		{
-			unsigned int idx = bsd.kmeans_texels[i];
+			size_t idx = bsd.kmeans_texels[i];
 			bitmaps[pi.partition_of_texel[idx]] |= 1ULL << i;
 		}
 	}
@@ -382,12 +382,12 @@ static bool generate_one_partition_info_entry(
 static void build_partition_table_for_one_partition_count(
 	block_size_descriptor& bsd,
 	bool can_omit_partitionings,
-	unsigned int partition_count_cutoff,
-	unsigned int partition_count,
+	size_t partition_count_cutoff,
+	size_t partition_count,
 	partition_info* ptab,
 	uint64_t* canonical_patterns
 ) {
-	unsigned int next_index = 0;
+	size_t next_index = 0;
 	bsd.partitioning_count_selected[partition_count - 1] = 0;
 	bsd.partitioning_count_all[partition_count - 1] = 0;
 
@@ -400,13 +400,13 @@ static void build_partition_table_for_one_partition_count(
 	// Iterate through twice
 	//   - Pass 0: Keep selected partitionings
 	//   - Pass 1: Keep non-selected partitionings (skip if in omit mode)
-	unsigned int max_iter = can_omit_partitionings ? 1 : 2;
+	size_t max_iter = can_omit_partitionings ? 1 : 2;
 
 	// Tracker for things we built in the first iteration
 	uint8_t build[BLOCK_MAX_PARTITIONINGS] { 0 };
-	for (unsigned int x = 0; x < max_iter; x++)
+	for (size_t x = 0; x < max_iter; x++)
 	{
-		for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+		for (size_t i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 		{
 			// Don't include things we built in the first pass
 			if ((x == 1) && build[i])
@@ -422,7 +422,7 @@ static void build_partition_table_for_one_partition_count(
 
 			generate_canonical_partitioning(bsd.texel_count, ptab[next_index].partition_of_texel, canonical_patterns + next_index * BIT_PATTERN_WORDS);
 			bool keep_canonical = true;
-			for (unsigned int j = 0; j < next_index; j++)
+			for (size_t j = 0; j < next_index; j++)
 			{
 				bool match = compare_canonical_partitionings(canonical_patterns + next_index * BIT_PATTERN_WORDS, canonical_patterns +  j * BIT_PATTERN_WORDS);
 				if (match)
@@ -460,7 +460,7 @@ static void build_partition_table_for_one_partition_count(
 void init_partition_tables(
 	block_size_descriptor& bsd,
 	bool can_omit_partitionings,
-	unsigned int partition_count_cutoff
+	size_t partition_count_cutoff
 ) {
 	partition_info* par_tab2 = bsd.partitionings;
 	partition_info* par_tab3 = par_tab2 + BLOCK_MAX_PARTITIONINGS;

@@ -36,22 +36,22 @@
 struct astc_compressed_image
 {
 	/** @brief The block width in texels. */
-	unsigned int block_x;
+	size_t block_x;
 
 	/** @brief The block height in texels. */
-	unsigned int block_y;
+	size_t block_y;
 
 	/** @brief The block depth in texels. */
-	unsigned int block_z;
+	size_t block_z;
 
 	/** @brief The image width in texels. */
-	unsigned int dim_x;
+	size_t dim_x;
 
 	/** @brief The image height in texels. */
-	unsigned int dim_y;
+	size_t dim_y;
 
 	/** @brief The image depth in texels. */
-	unsigned int dim_z;
+	size_t dim_z;
 
 	/** @brief The binary data payload. */
 	uint8_t* data;
@@ -66,13 +66,13 @@ struct astc_compressed_image
 struct cli_config_options
 {
 	/** @brief The number of threads to use for processing. */
-	unsigned int thread_count;
+	size_t thread_count;
 
 	/** @brief The number of repeats to execute for benchmarking. */
-	unsigned int repeat_count;
+	size_t repeat_count;
 
 	/** @brief The number of image slices to load for a 3D image. */
-	unsigned int array_size;
+	size_t array_size;
 
 	/** @brief @c true if running in silent mode with minimal output. */
 	bool silentmode;
@@ -130,7 +130,7 @@ astcenc_image* load_ncimage(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& component_count);
+	size_t& component_count);
 
 /**
  * @brief Load uncompressed PNG image.
@@ -146,7 +146,7 @@ astcenc_image* load_png_with_wuffs(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
-	unsigned int& component_count);
+	size_t& component_count);
 
 /**
  * @brief Save an uncompressed image.
@@ -189,10 +189,10 @@ int get_output_filename_enforced_bitness(
  * @return The allocated image, or @c nullptr on error.
  */
 astcenc_image* alloc_image(
-	unsigned int bitness,
-	unsigned int dim_x,
-	unsigned int dim_y,
-	unsigned int dim_z);
+	size_t bitness,
+	size_t dim_x,
+	size_t dim_y,
+	size_t dim_z);
 
 /**
  * @brief Free an image.
@@ -276,8 +276,8 @@ bool store_ktx_compressed_image(
  */
 astcenc_image* astc_img_from_floatx4_array(
 	const float* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip);
 
 /**
@@ -292,8 +292,8 @@ astcenc_image* astc_img_from_floatx4_array(
  */
 astcenc_image* astc_img_from_unorm8x4_array(
 	const uint8_t* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip);
 
 /**
@@ -310,7 +310,7 @@ astcenc_image* astc_img_from_unorm8x4_array(
 float* floatx4_array_from_astc_img(
 	const astcenc_image* img,
 	bool y_flip,
-	unsigned int z_index);
+	size_t z_index);
 
 /**
  * @brief Create a flattened RGBA UNORM8 data array from an image structure.

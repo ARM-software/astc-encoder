@@ -111,7 +111,7 @@ public:
 	/**
 	 * @brief The number of attributes and child nodes in this node.
 	 */
-	unsigned int m_attrib_count { 0 };
+	size_t m_attrib_count { 0 };
 };
 
 /**
@@ -201,12 +201,12 @@ void trace_add_data(const char* key, float value);
 void trace_add_data(const char* key, int value);
 
 /**
- * @brief Add an unsigned integer annotation to the current node.
+ * @brief Add an size_teger annotation to the current node.
  *
  * @param key     The name of the attribute.
  * @param value   The value of the attribute.
  */
-void trace_add_data(const char* key, unsigned int value);
+void trace_add_data(const char* key, size_t value);
 
 #else
 

@@ -420,26 +420,26 @@ void compute_pixel_region_variance(
 }
 
 /* See header for documentation. */
-unsigned int init_compute_averages(
+size_t init_compute_averages(
 	const astcenc_image& img,
-	unsigned int alpha_kernel_radius,
+	size_t alpha_kernel_radius,
 	const astcenc_swizzle& swz,
 	avg_args& ag
 ) {
-	unsigned int size_x = img.dim_x;
-	unsigned int size_y = img.dim_y;
-	unsigned int size_z = img.dim_z;
+	size_t size_x = img.dim_x;
+	size_t size_y = img.dim_y;
+	size_t size_z = img.dim_z;
 
 	// Compute maximum block size and from that the working memory buffer size
-	unsigned int kernel_radius = alpha_kernel_radius;
-	unsigned int kerneldim = 2 * kernel_radius + 1;
+	size_t kernel_radius = alpha_kernel_radius;
+	size_t kerneldim = 2 * kernel_radius + 1;
 
 	bool have_z = (size_z > 1);
-	unsigned int max_blk_size_xy = have_z ? 16 : 32;
-	unsigned int max_blk_size_z = astc::min(size_z, have_z ? 16u : 1u);
+	size_t max_blk_size_xy = have_z ? 16 : 32;
+	size_t max_blk_size_z = astc::min(size_z, have_z ? 16_z : 1_z);
 
-	unsigned int max_padsize_xy = max_blk_size_xy + kerneldim;
-	unsigned int max_padsize_z = max_blk_size_z + (have_z ? kerneldim : 0);
+	size_t max_padsize_xy = max_blk_size_xy + kerneldim;
+	size_t max_padsize_z = max_blk_size_z + (have_z ? kerneldim : 0);
 
 	// Perform block-wise averages calculations across the image
 	// Initialize fields which are not populated until later
@@ -464,8 +464,8 @@ unsigned int init_compute_averages(
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
 
 	// The parallel task count
-	unsigned int z_tasks = (size_z + max_blk_size_z - 1) / max_blk_size_z;
-	unsigned int y_tasks = (size_y + max_blk_size_xy - 1) / max_blk_size_xy;
+	size_t z_tasks = (size_z + max_blk_size_z - 1) / max_blk_size_z;
+	size_t y_tasks = (size_y + max_blk_size_xy - 1) / max_blk_size_xy;
 	return z_tasks * y_tasks;
 }
 

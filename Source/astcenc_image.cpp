@@ -153,14 +153,14 @@ void load_image_block(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz
 ) {
-	unsigned int xsize = img.dim_x;
-	unsigned int ysize = img.dim_y;
-	unsigned int zsize = img.dim_z;
+	size_t xsize = img.dim_x;
+	size_t ysize = img.dim_y;
+	size_t zsize = img.dim_z;
 
 	blk.xpos = xpos;
 	blk.ypos = ypos;
@@ -208,18 +208,18 @@ void load_image_block(
 		converter = encode_texel_lns;
 	}
 
-	for (unsigned int z = 0; z < bsd.zdim; z++)
+	for (size_t z = 0; z < bsd.zdim; z++)
 	{
-		unsigned int zi = astc::min(zpos + z, zsize - 1);
+		size_t zi = astc::min(zpos + z, zsize - 1);
 		void* plane = img.data[zi];
 
-		for (unsigned int y = 0; y < bsd.ydim; y++)
+		for (size_t y = 0; y < bsd.ydim; y++)
 		{
-			unsigned int yi = astc::min(ypos + y, ysize - 1);
+			size_t yi = astc::min(ypos + y, ysize - 1);
 
-			for (unsigned int x = 0; x < bsd.xdim; x++)
+			for (size_t x = 0; x < bsd.xdim; x++)
 			{
-				unsigned int xi = astc::min(xpos + x, xsize - 1);
+				size_t xi = astc::min(xpos + x, xsize - 1);
 
 				vfloat4 datav = loader(plane, (4 * xsize * yi) + (4 * xi));
 				datav = swizzler(datav, swz);
@@ -270,16 +270,16 @@ void load_image_block_fast_ldr(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz
 ) {
 	(void)swz;
 	(void)decode_mode;
 
-	unsigned int xsize = img.dim_x;
-	unsigned int ysize = img.dim_y;
+	size_t xsize = img.dim_x;
+	size_t ysize = img.dim_y;
 
 	blk.xpos = xpos;
 	blk.ypos = ypos;
@@ -292,13 +292,13 @@ void load_image_block_fast_ldr(
 	int idx = 0;
 
 	const uint8_t* plane = static_cast<const uint8_t*>(img.data[0]);
-	for (unsigned int y = ypos; y < ypos + bsd.ydim; y++)
+	for (size_t y = ypos; y < ypos + bsd.ydim; y++)
 	{
-		unsigned int yi = astc::min(y, ysize - 1);
+		size_t yi = astc::min(y, ysize - 1);
 
-		for (unsigned int x = xpos; x < xpos + bsd.xdim; x++)
+		for (size_t x = xpos; x < xpos + bsd.xdim; x++)
 		{
-			unsigned int xi = astc::min(x, xsize - 1);
+			size_t xi = astc::min(x, xsize - 1);
 
 			vint4 datavi = vint4(plane + (4 * xsize * yi) + (4 * xi));
 			vfloat4 datav = int_to_float(datavi) * (65535.0f / 255.0f);
@@ -336,26 +336,26 @@ void store_image_block(
 	astcenc_image& img,
 	const image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t xpos,
+	size_t ypos,
+	size_t zpos,
 	const astcenc_swizzle& swz
 ) {
-	unsigned int x_size = img.dim_x;
-	unsigned int x_start = xpos;
-	unsigned int x_end = astc::min(x_size, xpos + bsd.xdim);
-	unsigned int x_count = x_end - x_start;
-	unsigned int x_nudge = bsd.xdim - x_count;
+	size_t x_size = img.dim_x;
+	size_t x_start = xpos;
+	size_t x_end = astc::min(x_size, xpos + bsd.xdim);
+	size_t x_count = x_end - x_start;
+	size_t x_nudge = bsd.xdim - x_count;
 
-	unsigned int y_size = img.dim_y;
-	unsigned int y_start = ypos;
-	unsigned int y_end = astc::min(y_size, ypos + bsd.ydim);
-	unsigned int y_count = y_end - y_start;
-	unsigned int y_nudge = (bsd.ydim - y_count) * bsd.xdim;
+	size_t y_size = img.dim_y;
+	size_t y_start = ypos;
+	size_t y_end = astc::min(y_size, ypos + bsd.ydim);
+	size_t y_count = y_end - y_start;
+	size_t y_nudge = (bsd.ydim - y_count) * bsd.xdim;
 
-	unsigned int z_size = img.dim_z;
-	unsigned int z_start = zpos;
-	unsigned int z_end = astc::min(z_size, zpos + bsd.zdim);
+	size_t z_size = img.dim_z;
+	size_t z_start = zpos;
+	size_t z_end = astc::min(z_size, zpos + bsd.zdim);
 
 	// True if any non-identity swizzle
 	bool needs_swz = (swz.r != ASTCENC_SWZ_R) || (swz.g != ASTCENC_SWZ_G) ||
@@ -368,19 +368,19 @@ void store_image_block(
 	int idx = 0;
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
-		for (unsigned int z = z_start; z < z_end; z++)
+		for (size_t z = z_start; z < z_end; z++)
 		{
 			// Fetch the image plane
 			uint8_t* data8 = static_cast<uint8_t*>(img.data[z]);
 
-			for (unsigned int y = y_start; y < y_end; y++)
+			for (size_t y = y_start; y < y_end; y++)
 			{
 				uint8_t* data8_row = data8 + (4 * x_size * y) + (4 * x_start);
 
-				for (unsigned int x = 0; x < x_count; x += ASTCENC_SIMD_WIDTH)
+				for (size_t x = 0; x < x_count; x += ASTCENC_SIMD_WIDTH)
 				{
-					unsigned int max_texels = ASTCENC_SIMD_WIDTH;
-					unsigned int used_texels = astc::min(x_count - x, max_texels);
+					size_t max_texels = ASTCENC_SIMD_WIDTH;
+					size_t used_texels = astc::min(x_count - x, max_texels);
 
 					// Unaligned load as rows are not always SIMD_WIDTH long
 					vfloat data_r(blk.data_r + idx);
@@ -445,16 +445,16 @@ void store_image_block(
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
-		for (unsigned int z = z_start; z < z_end; z++)
+		for (size_t z = z_start; z < z_end; z++)
 		{
 			// Fetch the image plane
 			uint16_t* data16 = static_cast<uint16_t*>(img.data[z]);
 
-			for (unsigned int y = y_start; y < y_end; y++)
+			for (size_t y = y_start; y < y_end; y++)
 			{
 				uint16_t* data16_row = data16 + (4 * x_size * y) + (4 * x_start);
 
-				for (unsigned int x = 0; x < x_count; x++)
+				for (size_t x = 0; x < x_count; x++)
 				{
 					vint4 color;
 
@@ -507,16 +507,16 @@ void store_image_block(
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 
-		for (unsigned int z = z_start; z < z_end; z++)
+		for (size_t z = z_start; z < z_end; z++)
 		{
 			// Fetch the image plane
 			float* data32 = static_cast<float*>(img.data[z]);
 
-			for (unsigned int y = y_start; y < y_end; y++)
+			for (size_t y = y_start; y < y_end; y++)
 			{
 				float* data32_row = data32 + (4 * x_size * y) + (4 * x_start);
 
-				for (unsigned int x = 0; x < x_count; x++)
+				for (size_t x = 0; x < x_count; x++)
 				{
 					vfloat4 color = blk.texel(idx);
 

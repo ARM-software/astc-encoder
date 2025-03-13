@@ -317,7 +317,7 @@ extern "C" typedef void (*astcenc_progress_callback)(float);
  * be e.g. rrrg (the default ordering for ASTC normals on the command line) or gggr (the ordering
  * used by BC5n).
  */
-static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
+static const size_t ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
 
 /**
  * @brief Enable compression heuristics that assume use of decode_unorm8 decode mode.
@@ -330,7 +330,7 @@ static const unsigned int ASTCENC_FLG_MAP_NORMAL          = 1 << 0;
  * Note that LDR_SRGB images will always use decode_unorm8 for the RGB channels, irrespective of
  * this setting.
  */
-static const unsigned int ASTCENC_FLG_USE_DECODE_UNORM8        = 1 << 1;
+static const size_t ASTCENC_FLG_USE_DECODE_UNORM8        = 1 << 1;
 
 /**
  * @brief Enable alpha weighting.
@@ -339,7 +339,7 @@ static const unsigned int ASTCENC_FLG_USE_DECODE_UNORM8        = 1 << 1;
  * the transparency level. This allows the codec to more accurately encode the alpha value in areas
  * where the color value is less significant.
  */
-static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
+static const size_t ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
 
 /**
  * @brief Enable perceptual error metrics.
@@ -347,7 +347,7 @@ static const unsigned int ASTCENC_FLG_USE_ALPHA_WEIGHT     = 1 << 2;
  * This mode enables perceptual compression mode, which will optimize for perceptual error rather
  * than best PSNR. Only some input modes support perceptual error metrics.
  */
-static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
+static const size_t ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
 
 /**
  * @brief Create a decompression-only context.
@@ -355,7 +355,7 @@ static const unsigned int ASTCENC_FLG_USE_PERCEPTUAL       = 1 << 3;
  * This mode disables support for compression. This enables context allocation to skip some
  * transient buffer allocation, resulting in lower memory usage.
  */
-static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
+static const size_t ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
 
 /**
  * @brief Create a self-decompression context.
@@ -365,7 +365,7 @@ static const unsigned int ASTCENC_FLG_DECOMPRESS_ONLY      = 1 << 4;
  * cases, and setting this flag enables additional optimizations, but does mean that the context
  * cannot reliably decompress arbitrary ASTC images.
  */
-static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
+static const size_t ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
 
 /**
  * @brief Enable RGBM map compression.
@@ -388,12 +388,12 @@ static const unsigned int ASTCENC_FLG_SELF_DECOMPRESS_ONLY = 1 << 5;
  * scale, ensuring that the M value is accurately encoded. This defaults to 10 when in RGBM mode,
  * matching the default scale factor.
  */
-static const unsigned int ASTCENC_FLG_MAP_RGBM             = 1 << 6;
+static const size_t ASTCENC_FLG_MAP_RGBM             = 1 << 6;
 
 /**
  * @brief The bit mask of all valid flags.
  */
-static const unsigned int ASTCENC_ALL_FLAGS =
+static const size_t ASTCENC_ALL_FLAGS =
                               ASTCENC_FLG_MAP_NORMAL |
                               ASTCENC_FLG_MAP_RGBM |
                               ASTCENC_FLG_USE_ALPHA_WEIGHT |
@@ -418,16 +418,16 @@ struct astcenc_config
 	astcenc_profile profile;
 
 	/** @brief The set of set flags. */
-	unsigned int flags;
+	size_t flags;
 
 	/** @brief The ASTC block size X dimension. */
-	unsigned int block_x;
+	size_t block_x;
 
 	/** @brief The ASTC block size Y dimension. */
-	unsigned int block_y;
+	size_t block_y;
 
 	/** @brief The ASTC block size Z dimension. */
-	unsigned int block_z;
+	size_t block_z;
 
 	/** @brief The red component weight scale for error weighting (-cw). */
 	float cw_r_weight;
@@ -448,7 +448,7 @@ struct astcenc_config
 	 * will be sampled using linear texture filtering to minimize color bleed out of transparent
 	 * texels that are adjacent to non-transparent texels.
 	 */
-	unsigned int a_scale_radius;
+	size_t a_scale_radius;
 
 	/** @brief The RGBM scale factor for the shared multiplier (-rgbm). */
 	float rgbm_m_scale;
@@ -458,35 +458,35 @@ struct astcenc_config
 	 *
 	 * Valid values are between 1 and 4.
 	 */
-	unsigned int tune_partition_count_limit;
+	size_t tune_partition_count_limit;
 
 	/**
 	 * @brief The maximum number of partitions searched (-2partitionindexlimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_2partition_index_limit;
+	size_t tune_2partition_index_limit;
 
 	/**
 	 * @brief The maximum number of partitions searched (-3partitionindexlimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_3partition_index_limit;
+	size_t tune_3partition_index_limit;
 
 	/**
 	 * @brief The maximum number of partitions searched (-4partitionindexlimit).
 	 *
 	 * Valid values are between 1 and 1024.
 	 */
-	unsigned int tune_4partition_index_limit;
+	size_t tune_4partition_index_limit;
 
 	/**
 	 * @brief The maximum centile for block modes searched (-blockmodelimit).
 	 *
 	 * Valid values are between 1 and 100.
 	 */
-	unsigned int tune_block_mode_limit;
+	size_t tune_block_mode_limit;
 
 	/**
 	 * @brief The maximum iterative refinements applied (-refinementlimit).
@@ -494,35 +494,35 @@ struct astcenc_config
 	 * Valid values are between 1 and N; there is no technical upper limit
 	 * but little benefit is expected after N=4.
 	 */
-	unsigned int tune_refinement_limit;
+	size_t tune_refinement_limit;
 
 	/**
 	 * @brief The number of trial candidates per mode search (-candidatelimit).
 	 *
 	 * Valid values are between 1 and TUNE_MAX_TRIAL_CANDIDATES.
 	 */
-	unsigned int tune_candidate_limit;
+	size_t tune_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-2partitioncandidatelimit).
 	 *
 	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
-	unsigned int tune_2partitioning_candidate_limit;
+	size_t tune_2partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-3partitioncandidatelimit).
 	 *
 	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
-	unsigned int tune_3partitioning_candidate_limit;
+	size_t tune_3partitioning_candidate_limit;
 
 	/**
 	 * @brief The number of trial partitionings per search (-4partitioncandidatelimit).
 	 *
 	 * Valid values are between 1 and TUNE_MAX_PARTITIONING_CANDIDATES.
 	 */
-	unsigned int tune_4partitioning_candidate_limit;
+	size_t tune_4partitioning_candidate_limit;
 
 	/**
 	 * @brief The dB threshold for stopping block search (-dblimit).
@@ -601,13 +601,13 @@ struct astcenc_config
 struct astcenc_image
 {
 	/** @brief The X dimension of the image, in texels. */
-	unsigned int dim_x;
+	size_t dim_x;
 
 	/** @brief The Y dimension of the image, in texels. */
-	unsigned int dim_y;
+	size_t dim_y;
 
 	/** @brief The Z dimension of the image, in texels. */
-	unsigned int dim_z;
+	size_t dim_z;
 
 	/** @brief The data type per component. */
 	astcenc_type data_type;
@@ -628,16 +628,16 @@ struct astcenc_block_info
 	astcenc_profile profile;
 
 	/** @brief The number of texels in the X dimension. */
-	unsigned int block_x;
+	size_t block_x;
 
 	/** @brief The number of texels in the Y dimension. */
-	unsigned int block_y;
+	size_t block_y;
 
 	/** @brief The number of texel in the Z dimension. */
-	unsigned int block_z;
+	size_t block_z;
 
 	/** @brief The number of texels in the block. */
-	unsigned int texel_count;
+	size_t texel_count;
 
 	/** @brief True if this block is an error block. */
 	bool is_error_block;
@@ -652,31 +652,31 @@ struct astcenc_block_info
 	bool is_dual_plane_block;
 
 	/** @brief The number of partitions if not constant color. */
-	unsigned int partition_count;
+	size_t partition_count;
 
 	/** @brief The partition index if 2 - 4 partitions used. */
-	unsigned int partition_index;
+	size_t partition_index;
 
 	/** @brief The component index of the second plane if dual plane. */
-	unsigned int dual_plane_component;
+	size_t dual_plane_component;
 
 	/** @brief The color endpoint encoding mode for each partition. */
-	unsigned int color_endpoint_modes[4];
+	size_t color_endpoint_modes[4];
 
 	/** @brief The number of color endpoint quantization levels. */
-	unsigned int color_level_count;
+	size_t color_level_count;
 
 	/** @brief The number of weight quantization levels. */
-	unsigned int weight_level_count;
+	size_t weight_level_count;
 
 	/** @brief The number of weights in the X dimension. */
-	unsigned int weight_x;
+	size_t weight_x;
 
 	/** @brief The number of weights in the Y dimension. */
-	unsigned int weight_y;
+	size_t weight_y;
 
 	/** @brief The number of weights in the Z dimension. */
-	unsigned int weight_z;
+	size_t weight_z;
 
 	/** @brief The unpacked color endpoints for each partition. */
 	float color_endpoints[4][2][4];
@@ -712,11 +712,11 @@ struct astcenc_block_info
  */
 ASTCENC_PUBLIC astcenc_error astcenc_config_init(
 	astcenc_profile profile,
-	unsigned int block_x,
-	unsigned int block_y,
-	unsigned int block_z,
+	size_t block_x,
+	size_t block_y,
+	size_t block_z,
 	float quality,
-	unsigned int flags,
+	size_t flags,
 	astcenc_config* config);
 
 /**
@@ -739,7 +739,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  */
 ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
 	const astcenc_config* config,
-	unsigned int thread_count,
+	size_t thread_count,
 	astcenc_context** context);
 
 /**
@@ -766,7 +766,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
 	const astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	unsigned int thread_index);
+	size_t thread_index);
 
 /**
  * @brief Reset the codec state for a new compression.
@@ -816,7 +816,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	astcenc_image* image_out,
 	const astcenc_swizzle* swizzle,
-	unsigned int thread_index);
+	size_t thread_index);
 
 /**
  * @brief Reset the codec state for a new decompression.

@@ -131,6 +131,9 @@ typedef union
 	float f;
 } if32;
 
+// size_t integer literal
+constexpr size_t operator "" _z ( unsigned long long n ) { return n; }
+
 // These are namespaced to avoid colliding with C standard library functions.
 namespace astc
 {

@@ -39,16 +39,16 @@
 struct astcenc_preset_config
 {
 	float quality;
-	unsigned int tune_partition_count_limit;
-	unsigned int tune_2partition_index_limit;
-	unsigned int tune_3partition_index_limit;
-	unsigned int tune_4partition_index_limit;
-	unsigned int tune_block_mode_limit;
-	unsigned int tune_refinement_limit;
-	unsigned int tune_candidate_limit;
-	unsigned int tune_2partitioning_candidate_limit;
-	unsigned int tune_3partitioning_candidate_limit;
-	unsigned int tune_4partitioning_candidate_limit;
+	size_t tune_partition_count_limit;
+	size_t tune_2partition_index_limit;
+	size_t tune_3partition_index_limit;
+	size_t tune_4partition_index_limit;
+	size_t tune_block_mode_limit;
+	size_t tune_refinement_limit;
+	size_t tune_candidate_limit;
+	size_t tune_2partitioning_candidate_limit;
+	size_t tune_3partitioning_candidate_limit;
+	size_t tune_4partitioning_candidate_limit;
 	float tune_db_limit_a_base;
 	float tune_db_limit_b_base;
 	float tune_mse_overshoot;
@@ -192,9 +192,9 @@ static astcenc_error validate_profile(
  * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
  */
 static astcenc_error validate_block_size(
-	unsigned int block_x,
-	unsigned int block_y,
-	unsigned int block_z
+	size_t block_x,
+	size_t block_y,
+	size_t block_z
 ) {
 	// Test if this is a legal block size at all
 	bool is_legal = (((block_z <= 1) && is_legal_2d_block_size(block_x, block_y)) ||
@@ -224,10 +224,10 @@ static astcenc_error validate_block_size(
  */
 static astcenc_error validate_flags(
 	astcenc_profile profile,
-	unsigned int flags
+	size_t flags
 ) {
 	// Flags field must not contain any unknown flag bits
-	unsigned int exMask = ~ASTCENC_ALL_FLAGS;
+	size_t exMask = ~ASTCENC_ALL_FLAGS;
 	if (popcount(flags & exMask) != 0)
 	{
 		return ASTCENC_ERR_BAD_FLAGS;
@@ -396,16 +396,16 @@ static astcenc_error validate_config(
 
 	config.rgbm_m_scale = astc::max(config.rgbm_m_scale, 1.0f);
 
-	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
-	config.tune_2partition_index_limit = astc::clamp(config.tune_2partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);
-	config.tune_3partition_index_limit = astc::clamp(config.tune_3partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);
-	config.tune_4partition_index_limit = astc::clamp(config.tune_4partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);
-	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1u, 100u);
-	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1u);
-	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1u, TUNE_MAX_TRIAL_CANDIDATES);
-	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
-	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
-	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1u, TUNE_MAX_PARTITIONING_CANDIDATES);
+	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1_z, 4_z);
+	config.tune_2partition_index_limit = astc::clamp(config.tune_2partition_index_limit, 1_z, BLOCK_MAX_PARTITIONINGS);
+	config.tune_3partition_index_limit = astc::clamp(config.tune_3partition_index_limit, 1_z, BLOCK_MAX_PARTITIONINGS);
+	config.tune_4partition_index_limit = astc::clamp(config.tune_4partition_index_limit, 1_z, BLOCK_MAX_PARTITIONINGS);
+	config.tune_block_mode_limit = astc::clamp(config.tune_block_mode_limit, 1_z, 100_z);
+	config.tune_refinement_limit = astc::max(config.tune_refinement_limit, 1_z);
+	config.tune_candidate_limit = astc::clamp(config.tune_candidate_limit, 1_z, TUNE_MAX_TRIAL_CANDIDATES);
+	config.tune_2partitioning_candidate_limit = astc::clamp(config.tune_2partitioning_candidate_limit, 1_z, TUNE_MAX_PARTITIONING_CANDIDATES);
+	config.tune_3partitioning_candidate_limit = astc::clamp(config.tune_3partitioning_candidate_limit, 1_z, TUNE_MAX_PARTITIONING_CANDIDATES);
+	config.tune_4partitioning_candidate_limit = astc::clamp(config.tune_4partitioning_candidate_limit, 1_z, TUNE_MAX_PARTITIONING_CANDIDATES);
 	config.tune_db_limit = astc::max(config.tune_db_limit, 0.0f);
 	config.tune_mse_overshoot = astc::max(config.tune_mse_overshoot, 1.0f);
 	config.tune_2partition_early_out_limit_factor = astc::max(config.tune_2partition_early_out_limit_factor, 0.0f);
@@ -435,11 +435,11 @@ static astcenc_error validate_config(
 /* See header for documentation. */
 astcenc_error astcenc_config_init(
 	astcenc_profile profile,
-	unsigned int block_x,
-	unsigned int block_y,
-	unsigned int block_z,
+	size_t block_x,
+	size_t block_y,
+	size_t block_z,
 	float quality,
-	unsigned int flags,
+	size_t flags,
 	astcenc_config* configp
 ) {
 	astcenc_error status;
@@ -455,7 +455,7 @@ astcenc_error astcenc_config_init(
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
-	block_z = astc::max(block_z, 1u); // For 2D blocks Z==0 is accepted, but convert to 1
+	block_z = astc::max(block_z, 1_z); // For 2D blocks Z==0 is accepted, but convert to 1
 	status = validate_block_size(block_x, block_y, block_z);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -546,7 +546,7 @@ astcenc_error astcenc_config_init(
 		#define LERPI(param) astc::flt2int_rtn(\
 		                         (static_cast<float>(node_a.param) * wt_node_a) + \
 		                         (static_cast<float>(node_b.param) * wt_node_b))
-		#define LERPUI(param) static_cast<unsigned int>(LERPI(param))
+		#define LERPUI(param) static_cast<size_t>(LERPI(param))
 
 		config.tune_partition_count_limit = LERPI(tune_partition_count_limit);
 		config.tune_2partition_index_limit = LERPI(tune_2partition_index_limit);
@@ -612,7 +612,7 @@ astcenc_error astcenc_config_init(
 		// Normal map encoding uses L+A blocks, so allow one more partitioning
 		// than normal. We need need fewer bits for endpoints, so more likely
 		// to be able to use more partitions than an RGB/RGBA block
-		config.tune_partition_count_limit = astc::min(config.tune_partition_count_limit + 1u, 4u);
+		config.tune_partition_count_limit = astc::min(config.tune_partition_count_limit + 1_z, 4_z);
 
 		config.cw_g_weight = 0.0f;
 		config.cw_b_weight = 0.0f;
@@ -656,7 +656,7 @@ astcenc_error astcenc_config_init(
 /* See header for documentation. */
 astcenc_error astcenc_context_alloc(
 	const astcenc_config* configp,
-	unsigned int thread_count,
+	size_t thread_count,
 	astcenc_context** context
 ) {
 	astcenc_error status;
@@ -790,7 +790,7 @@ void astcenc_context_free(
  */
 static void compress_image(
 	astcenc_context& ctxo,
-	unsigned int thread_index,
+	size_t thread_index,
 	const astcenc_image& image,
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
@@ -851,18 +851,18 @@ static void compress_image(
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctxo.manage_compress.get_task_assignment(16, count);
+		size_t count;
+		size_t base = ctxo.manage_compress.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
 			// Decode i into x, y, z block indices
 			int z = i / plane_blocks;
-			unsigned int rem = i - (z * plane_blocks);
+			size_t rem = i - (z * plane_blocks);
 			int y = rem / row_blocks;
 			int x = rem - (y * row_blocks);
 
@@ -969,14 +969,14 @@ static void compute_averages(
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctx.manage_avg.get_task_assignment(16, count);
+		size_t count;
+		size_t base = ctx.manage_avg.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
 			int z = (i / (y_tasks)) * step_z;
 			int y = (i - (z * y_tasks)) * step_xy;
@@ -1010,7 +1010,7 @@ astcenc_error astcenc_compress_image(
 	const astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	unsigned int thread_index
+	size_t thread_index
 ) {
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	(void)ctxo;
@@ -1041,13 +1041,13 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	unsigned int block_x = ctx->config.block_x;
-	unsigned int block_y = ctx->config.block_y;
-	unsigned int block_z = ctx->config.block_z;
+	size_t block_x = ctx->config.block_x;
+	size_t block_y = ctx->config.block_y;
+	size_t block_z = ctx->config.block_z;
 
-	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
-	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
-	unsigned int zblocks = (image.dim_z + block_z - 1) / block_z;
+	size_t xblocks = (image.dim_x + block_x - 1) / block_x;
+	size_t yblocks = (image.dim_y + block_y - 1) / block_y;
+	size_t zblocks = (image.dim_z + block_z - 1) / block_z;
 
 	// Check we have enough output space (16 bytes per block)
 	size_t size_needed = xblocks * yblocks * zblocks * 16;
@@ -1153,7 +1153,7 @@ astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	astcenc_image* image_outp,
 	const astcenc_swizzle* swizzle,
-	unsigned int thread_index
+	size_t thread_index
 ) {
 	astcenc_error status;
 	astcenc_image& image_out = *image_outp;
@@ -1171,14 +1171,14 @@ astcenc_error astcenc_decompress_image(
 		return status;
 	}
 
-	unsigned int block_x = ctx->config.block_x;
-	unsigned int block_y = ctx->config.block_y;
-	unsigned int block_z = ctx->config.block_z;
+	size_t block_x = ctx->config.block_x;
+	size_t block_y = ctx->config.block_y;
+	size_t block_z = ctx->config.block_z;
 
-	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
-	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
-	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
-	unsigned int block_count = zblocks * yblocks * xblocks;
+	size_t xblocks = (image_out.dim_x + block_x - 1) / block_x;
+	size_t yblocks = (image_out.dim_y + block_y - 1) / block_y;
+	size_t zblocks = (image_out.dim_z + block_z - 1) / block_z;
+	size_t block_count = zblocks * yblocks * xblocks;
 
 	int row_blocks = xblocks;
 	int plane_blocks = xblocks * yblocks;
@@ -1208,22 +1208,22 @@ astcenc_error astcenc_decompress_image(
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctxo->manage_decompress.get_task_assignment(128, count);
+		size_t count;
+		size_t base = ctxo->manage_decompress.get_task_assignment(128, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
 			// Decode i into x, y, z block indices
 			int z = i / plane_blocks;
-			unsigned int rem = i - (z * plane_blocks);
+			size_t rem = i - (z * plane_blocks);
 			int y = rem / row_blocks;
 			int x = rem - (y * row_blocks);
 
-			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
+			size_t offset = (((z * yblocks + y) * xblocks) + x) * 16;
 			const uint8_t* bp = data + offset;
 
 			symbolic_compressed_block scb;
@@ -1320,7 +1320,7 @@ astcenc_error astcenc_get_block_info(
 	info->weight_level_count = get_quant_level(bm.get_weight_quant_mode());
 
 	// Unpack color endpoints for each active partition
-	for (unsigned int i = 0; i < scb.partition_count; i++)
+	for (size_t i = 0; i < scb.partition_count; i++)
 	{
 		bool rgb_hdr;
 		bool a_hdr;
@@ -1352,7 +1352,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane2[BLOCK_MAX_TEXELS];
 
 	unpack_weights(bsd, scb, di, bm.is_dual_plane, weight_plane1, weight_plane2);
-	for (unsigned int i = 0; i < bsd.texel_count; i++)
+	for (size_t i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = static_cast<float>(weight_plane1[i]) * (1.0f / WEIGHTS_TEXEL_SUM);
 		if (info->is_dual_plane_block)
@@ -1362,7 +1362,7 @@ astcenc_error astcenc_get_block_info(
 	}
 
 	// Unpack partition assignments for each texel
-	for (unsigned int i = 0; i < bsd.texel_count; i++)
+	for (size_t i = 0; i < bsd.texel_count; i++)
 	{
 		info->partition_assignment[i] = pi.partition_of_texel[i];
 	}
