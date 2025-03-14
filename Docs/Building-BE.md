@@ -8,9 +8,9 @@ distributions still support BE platforms.
 
 Even though Arm64 can run in a BE mode, it's now very rare in practice. It's no
 longer supported out of the box in the latest Arm upstream compiler releases,
-and getting hold of a sysroot is increasingly painful. To test BE builds I
+and getting hold of a sysroot is increasingly difficult. To test BE builds, I
 therefore cross-compile Linux builds for MIPS64 and use `qemu-user` to run
-them. This doesn't use a real sysroot, so everything must be compiled with
+them. This doesn't use a real sysroot, and so everything must be compiled with
 `-static` linkage.
 
 ## Host software
@@ -32,9 +32,9 @@ sudo ln -s /usr/mips64-linux-gnuabi64 /etc/qemu-binfmt/mips64
 
 ## CMake toolchain file
 
-Cross-compiling needs an correctly configured CMake, and the easiest way to
+Cross-compiling needs a correctly configured CMake, and the easiest way to
 do this consistently is to use a toolchain file. Create a `CMake-BE.toolchain`
-file with the following content in the root of the project:
+file in the root of the project, with the following content:
 
 ```
 # Operating system
@@ -65,7 +65,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 ## Build astcenc
 
 Building uses CMake as normal, with the additional specification of the
-toolchain file to configure the build for cross-compilation.
+toolchain file to configure the build for cross-compilation. We don't have any
+SIMD implementations for big-endian architectures so these builds must compile for the reference C SIMD implementation, `ASTCENC_ISA_NONE`.
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NONE=ON -DCMAKE_TOOLCHAIN_FILE=../CMake-BE.toolchain ..
@@ -73,7 +74,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NONE=O
 
 ## Run astcenc
 
-The cross-compiled `astcenc` binary runs as normal, and can access host files, but must run through QEMU to do the instruction-set translation.
+The cross-compiled `astcenc` binary runs as normal, and can access host files, but must run through QEMU to do the instruction set translation.
 
 ```
 qemu-mips64 ./bin/astcenc-none ...
