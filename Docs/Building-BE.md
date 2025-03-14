@@ -1,7 +1,7 @@
 # Building Big Endian ASTC Encoder
 
 We don't officially support the big-endian compressor build, and it is only 
-lightly tsted, but ensuring that the code is BE-compatible is good practice 
+lightly tested, but ensuring that the code is BE-compatible is good practice 
 and some of the open source distributions still support BE platforms. 
 
 Even though Arm64 can run in a BE mode, it's now very rare in practice. It's no
