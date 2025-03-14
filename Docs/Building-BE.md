@@ -66,7 +66,8 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 Building uses CMake as normal, with the additional specification of the
 toolchain file to configure the build for cross-compilation. We don't have any
-SIMD implementations for big-endian architectures so these builds must compile for the reference C SIMD implementation, `ASTCENC_ISA_NONE`.
+SIMD implementations for big-endian architectures so these builds must compile
+for the reference C SIMD implementation, `ASTCENC_ISA_NONE`.
 
 ```
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NONE=ON -DCMAKE_TOOLCHAIN_FILE=../CMake-BE.toolchain ..
@@ -74,7 +75,8 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NONE=O
 
 ## Run astcenc
 
-The cross-compiled `astcenc` binary runs as normal, and can access host files, but must run through QEMU to do the instruction set translation.
+The cross-compiled `astcenc` binary runs as normal, and can access host files,
+but must run through QEMU to do the instruction set translation.
 
 ```
 qemu-mips64 ./bin/astcenc-none ...
