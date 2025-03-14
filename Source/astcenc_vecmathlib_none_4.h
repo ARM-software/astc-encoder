@@ -694,7 +694,11 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* p)
 	int b2 = a.m[2] & 0xFF;
 	int b3 = a.m[3] & 0xFF;
 
+#if !defined(ASTCENC_BIG_ENDIAN)
 	int b = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+#else
+	int b = b3 | (b2 << 8) | (b1 << 16) | (b0 << 24);
+#endif
 	a = vint4(b, 0, 0, 0);
 	store_nbytes(a, p);
 }
@@ -1171,7 +1175,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
+#if !defined(ASTCENC_BIG_ENDIAN)
 	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
+#else
+	return a + lsl<8>(b) + lsl<16>(g) + lsl<24>(r);
+#endif
 }
 
 /**

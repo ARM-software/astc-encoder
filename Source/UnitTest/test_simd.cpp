@@ -2015,10 +2015,17 @@ TEST(vint4, interleave_rgba8)
 
 	vint4 result = interleave_rgba8(r, g, b, a);
 
+#if !defined(ASTCENC_BIG_ENDIAN)
 	EXPECT_EQ(result.lane<0>(), 0x04030201);
 	EXPECT_EQ(result.lane<1>(), 0x14131211);
 	EXPECT_EQ(result.lane<2>(), 0x24232221);
 	EXPECT_EQ(result.lane<3>(), 0x34333231);
+#else
+	EXPECT_EQ(result.lane<0>(), 0x01020304);
+	EXPECT_EQ(result.lane<1>(), 0x11121314);
+	EXPECT_EQ(result.lane<2>(), 0x21222324);
+	EXPECT_EQ(result.lane<3>(), 0x31323334);
+#endif
 }
 
 # if ASTCENC_SIMD_WIDTH == 8
