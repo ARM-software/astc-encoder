@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2025 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1746,6 +1746,21 @@ struct dds_header_dx10
 #define DDS_MAGIC 0x20534444
 #define DX10_MAGIC 0x30315844
 
+
+#if defined(ASTCENC_BIG_ENDIAN)
+/**
+ * @brief Reverse the bytes in a uint32_t value.
+ */
+static uint32_t reverse_bytes_u32(
+	uint32_t val
+) {
+	return ((val >> 24) & 0x000000FF) |
+	       ((val >>  8) & 0x0000FF00) |
+		   ((val <<  8) & 0x00FF0000) |
+		   ((val << 24) & 0xFF000000);
+}
+#endif
+
 /**
  * @brief Load an uncompressed DDS image using the local custom loader.
  *
@@ -1769,23 +1784,52 @@ static astcenc_image* load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	uint8_t magic[4];
-
-	dds_header hdr;
-	size_t magic_bytes_read = fread(magic, 1, 4, f);
-	size_t header_bytes_read = fread(&hdr, 1, sizeof(hdr), f);
-	if (magic_bytes_read != 4 || header_bytes_read != sizeof(hdr))
+	// Read and check the DDS magic number
+	uint32_t magic;
+	size_t magic_bytes_read = fread(&magic, 1, sizeof(uint32_t), f);
+	if (magic_bytes_read != 4)
 	{
-		printf("Failed to read header of DDS file %s\n", filename);
+		printf("Failed to read magic number from file %s\n", filename);
 		fclose(f);
 		return nullptr;
 	}
 
-	uint32_t magicx = magic[0] | (magic[1] << 8) | (magic[2] << 16) | (magic[3] << 24);
+#if defined(ASTCENC_BIG_ENDIAN)
+	magic = reverse_bytes_u32(magic);
+#endif
 
-	if (magicx != DDS_MAGIC || hdr.size != 124)
+	if (magic != DDS_MAGIC)
 	{
-		printf("File %s does not have a valid DDS header\n", filename);
+		printf("File %s has incorrect magic number\n", filename);
+		fclose(f);
+		return nullptr;
+	}
+
+	// Validate that we can read the DDS header
+	dds_header hdr;
+	size_t header_bytes_read = fread(&hdr, 1, sizeof(hdr), f);
+	if (header_bytes_read != sizeof(hdr))
+	{
+		printf("Failed to read header from file %s\n", filename);
+		fclose(f);
+		return nullptr;
+	}
+
+#if defined(ASTCENC_BIG_ENDIAN)
+	// DDS header fields all 32-bit words
+	uint32_t* words = reinterpret_cast<uint32_t*>(&hdr);
+	size_t word_count = sizeof(hdr) / sizeof(uint32_t);
+
+	// Reverse all of them
+	for (size_t i = 0; i < word_count; i++)
+	{
+		words[i] = reverse_bytes_u32(words[i]);
+	}
+#endif
+
+	if (hdr.size != 124)
+	{
+		printf("File %s has incorrect header\n", filename);
 		fclose(f);
 		return nullptr;
 	}
