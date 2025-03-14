@@ -284,6 +284,12 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 ASTCENC_POPCNT=0
                 ASTCENC_F16C=0)
 
+        if(${ASTCENC_BIG_ENDIAN})
+            target_compile_definitions(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    ASTCENC_BIG_ENDIAN=1)
+        endif()
+
     elseif(${ASTCENC_ISA_SIMD} MATCHES "neon")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
