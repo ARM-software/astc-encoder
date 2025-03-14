@@ -9,7 +9,7 @@ distributions still support BE platforms.
 Even though Arm64 can run in a BE mode, it's now very rare in practice. It's no
 longer supported out of the box in the latest Arm upstream compiler releases,
 and getting hold of a sysroot is increasingly difficult. To test BE builds, I
-therefore cross-compile Linux builds for MIPS64 and use `qemu-user` to run
+therefore cross-compile Linux builds for PPC64 and use `qemu-user` to run
 them. This doesn't use a real sysroot, and so everything must be compiled with
 `-static` linkage.
 
@@ -19,15 +19,16 @@ Install the following host software:
 
 ```bash
 # Compiler
-sudo apt-get install g++-mips64-linux-gnuabi64
+sudo apt-get install g++-powerpc64-linux-gnu
 
 # Multi-arch libraries
-sudo apt-get install g++-multilib-mips64-linux-gnuabi64
+sudo apt-get install g++-multilib-powerpc64-linux-gnu
 
 # QEMU
-sudo apt-get install qemu-user-static
+sudo apt-get install qemu-user-static qemu-user-binfmt binfmt-support
 sudo mkdir /etc/qemu-binfmt
-sudo ln -s /usr/mips64-linux-gnuabi64 /etc/qemu-binfmt/mips64
+sudo ln -s /usr/powerpc64-linux-gnu /etc/qemu-binfmt/ppc64
+sudo update-binfmts --import qemu-ppc64
 ```
 
 ## CMake toolchain file
@@ -41,18 +42,20 @@ file in the root of the project, with the following content:
 set(CMAKE_SYSTEM_NAME Linux)
 
 # Cross-compilers for C and C++
-set(CMAKE_C_COMPILER mips64-linux-gnuabi64-gcc)
-set(CMAKE_CXX_COMPILER mips64-linux-gnuabi64-g++)
+set(CMAKE_C_COMPILER   powerpc64-linux-gnu-gcc)
+set(CMAKE_CXX_COMPILER powerpc64-linux-gnu-g++)
 
 # Compiler environment
-set(CMAKE_FIND_ROOT_PATH /usr/mips64-linux-gnuabi64)
+set(CMAKE_FIND_ROOT_PATH /usr/powerpc64-linux-gnu)
 
-# Default compiler and linker flags to use
 set(CMAKE_C_FLAGS_INIT -static)
 set(CMAKE_CXX_FLAGS_INIT -static)
 set(CMAKE_EXE_LINKER_FLAGS_INIT -static)
 set(CMAKE_SHARED_LINKER_FLAGS_INIT -static)
 set(CMAKE_MODULE_LINKER_FLAGS_INIT -static)
+
+# Build options
+set(ASTCENC_BIG_ENDIAN ON)
 
 # Never match host tools
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
@@ -78,8 +81,17 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_NONE=O
 The cross-compiled `astcenc` binary runs as normal, and can access host files,
 but must run through QEMU to do the instruction set translation.
 
+If the binfmt setup performed earlier was successful you can just run the
+binary as if it were a native binary:
+
 ```
-qemu-mips64 ./bin/astcenc-none ...
+./bin/astcenc-none ...
+```
+
+... but otherwise you can run it manually using QEMU as a wrapper:
+
+```
+qemu-ppc64 ./bin/astcenc-none ...
 ```
 
 - - -
