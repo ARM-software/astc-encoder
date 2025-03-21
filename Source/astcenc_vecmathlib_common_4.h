@@ -31,6 +31,7 @@
 #endif
 
 #include <cstdio>
+#include <limits>
 
 // ============================================================================
 // vint4 operators and functions
@@ -116,6 +117,15 @@ ASTCENC_SIMD_INLINE int hmin_s(vint4 a)
 {
 	return hmin(a).lane<0>();
 }
+
+/**
+ * @brief Generate a vint4 from a size_t.
+ */
+ ASTCENC_SIMD_INLINE vint4 vint4_from_size(size_t a)
+ {
+	assert(a <= std::numeric_limits<int>::max());
+	return vint4(static_cast<int>(a));
+ }
 
 /**
  * @brief Return the horizontal maximum of a vector.

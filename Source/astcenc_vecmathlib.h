@@ -104,6 +104,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 
 	constexpr auto loada = vfloat8::loada;
 	constexpr auto load1 = vfloat8::load1;
+	constexpr auto vint_from_size = vint8_from_size;
 
 #elif ASTCENC_SSE >= 20
 	// If we have SSE expose 4-wide VLA, and 4-wide fixed width.
@@ -123,6 +124,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
+	constexpr auto vint_from_size = vint4_from_size;
 
 #elif ASTCENC_SVE == 8
 	// Check the compiler is configured with fixed-length 256-bit SVE.
@@ -154,6 +156,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 
 	constexpr auto loada = vfloat8::loada;
 	constexpr auto load1 = vfloat8::load1;
+	constexpr auto vint_from_size = vint8_from_size;
 
 #elif ASTCENC_NEON > 0
 	// If we have NEON expose 4-wide VLA.
@@ -173,6 +176,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
+	constexpr auto vint_from_size = vint4_from_size;
 
 #else
 	// If we have nothing expose 4-wide VLA, and 4-wide fixed width.
@@ -209,6 +213,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
+	constexpr auto vint_from_size = vint4_from_size;
 #endif
 
 /**

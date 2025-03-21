@@ -68,7 +68,7 @@ static void compute_partition_averages_rgb(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -104,7 +104,7 @@ static void compute_partition_averages_rgb(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -149,7 +149,7 @@ static void compute_partition_averages_rgb(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -239,7 +239,7 @@ static void compute_partition_averages_rgba(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -279,7 +279,7 @@ static void compute_partition_averages_rgba(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -330,7 +330,7 @@ static void compute_partition_averages_rgba(
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint(texel_count);
+			vmask lane_mask = lane_id < vint_from_size(texel_count);
 			lane_id += vint(ASTCENC_SIMD_WIDTH);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
@@ -777,7 +777,7 @@ void compute_error_squared_rgba(
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			vmask mask = lane_ids < vint(texel_count);
+			vmask mask = lane_ids < vint_from_size(texel_count);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
 			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
@@ -891,7 +891,7 @@ void compute_error_squared_rgb(
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			vmask mask = lane_ids < vint(texel_count);
+			vmask mask = lane_ids < vint_from_size(texel_count);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
 			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
