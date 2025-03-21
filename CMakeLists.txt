@@ -25,7 +25,7 @@ if(MSVC)
     add_compile_options("/wd4324")
 endif()
 
-project(astcencoder VERSION 5.2.0)
+project(astcencoder VERSION 5.3.0)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
