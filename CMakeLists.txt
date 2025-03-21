@@ -53,6 +53,7 @@ option(ASTCENC_UNITTEST "Enable astcenc builds with unit tests")
 option(ASTCENC_INVARIANCE "Enable astcenc floating point invariance" ON)
 option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 option(ASTCENC_X86_GATHERS "Enable use of native x86 gathers" ON)
+option(ASTCENC_WERROR "Force builds to treat warnings as errors" ON)
 
 # Preflight for some macOS-specific build options
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
