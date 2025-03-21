@@ -15,6 +15,8 @@
 #  under the License.
 #  ----------------------------------------------------------------------------
 
+include(../cmake_compiler.cmake)
+
 set(ASTCENC_TEST test-unit-${ASTCENC_ISA_SIMD})
 
 add_executable(${ASTCENC_TEST})
@@ -57,27 +59,34 @@ target_compile_options(${ASTCENC_TEST}
         $<$<PLATFORM_ID:Linux,Darwin>:-pthread>
 
         # MSVC compiler defines
-        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+        $<${is_msvc_fe}:/EHsc>
+        $<$<AND:$<BOOL:${ASTCENC_WERROR}>,${is_msvc_fe}>:/WX>
+        $<${is_msvccl}:/wd4324>
 
         # G++ and Clang++ compiler defines
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wextra>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wpedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Werror>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wshadow>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-compat-pedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-c++98-c++11-compat-pedantic>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-float-equal>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-overriding-option>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unsafe-buffer-usage>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-switch-default>
+        $<${is_gnu_fe}:-Wall>
+        $<${is_gnu_fe}:-Wextra>
+        $<${is_gnu_fe}:-Wpedantic>
+        $<$<AND:$<BOOL:${ASTCENC_WERROR}>,${is_gnu_fe}>:-Werror>
+        $<${is_gnu_fe}:-Wshadow>
+        $<${is_gnu_fe}:-Wdouble-promotion>
+        $<${is_clang}:-Wdocumentation>
+
+        # Hide noise thrown up by Clang 10 and clang-cl
+        $<${is_gnu_fe}:-Wno-unknown-warning-option>
+        $<${is_gnu_fe}:-Wno-c++98-compat-pedantic>
+        $<${is_gnu_fe}:-Wno-c++98-c++11-compat-pedantic>
+        $<${is_gnu_fe}:-Wno-float-equal>
+        $<${is_gnu_fe}:-Wno-overriding-option>
+        $<${is_gnu_fe}:-Wno-unsafe-buffer-usage>
+        $<${is_clang}:-Wno-switch-default>
 
         # Ignore things that the googletest build triggers
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unknown-warning-option>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-double-promotion>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-undef>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-reserved-identifier>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-global-constructors>)
+        $<${is_gnu_fe}:-Wno-unknown-warning-option>
+        $<${is_gnu_fe}:-Wno-double-promotion>
+        $<${is_gnu_fe}:-Wno-undef>
+        $<${is_gnu_fe}:-Wno-reserved-identifier>
+        $<${is_gnu_fe}:-Wno-global-constructors>)
 
 # Set up configuration for SIMD ISA builds
 if(${ASTCENC_ISA_SIMD} MATCHES "none")
