@@ -164,6 +164,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
 
             # MSVC compiler defines
             $<${is_msvc_fe}:/EHsc>
+            $<${is_msvc_fe}:/WX>
             $<${is_msvccl}:/wd4324>
 
             # G++ and Clang++ compiler defines
