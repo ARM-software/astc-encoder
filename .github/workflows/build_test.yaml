@@ -17,8 +17,11 @@ jobs:
         with:
           submodules: 'true'
 
+      - name: Update apt packages
+        run: sudo apt-get update
+
       - name: Install ImageMagick
-        run: sudo apt install imagemagick
+        run: sudo apt-get install imagemagick
 
       - name: Build release
         run: |
@@ -76,13 +79,14 @@ jobs:
         with:
           submodules: 'true'
 
+      - name: Update apt packages
+        run: sudo apt-get update
+
       - name: Install ImageMagick
-        run: sudo apt install imagemagick
+        run: sudo apt-get install imagemagick
 
       - name: Install GCC 14
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-14
+        run: sudo apt-get install -y gcc-14
 
       - name: Build release
         run: |

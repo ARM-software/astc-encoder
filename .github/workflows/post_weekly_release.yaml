@@ -71,8 +71,11 @@ jobs:
         with:
           submodules: 'true'
 
+      - name: Update apt packages
+        run: sudo apt-get update
+
       - name: Install ImageMagick
-        run: sudo apt install imagemagick
+        run: sudo apt-get install imagemagick
 
       - name: Build release
         run: |
