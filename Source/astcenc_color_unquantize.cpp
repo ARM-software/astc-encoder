@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2025 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -38,6 +38,27 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
 	vmask4 mask(true, true, false, false);
 	vint4 bc0 = asr<1>(input + input.lane<2>());
 	return select(input, bc0, mask);
+}
+
+/**
+ * @brief Signed left shift that allows all bits to be shifted out.
+ *
+ * Doing this directly on a 32-bit signed type results in undefined behavior
+ * for many possible shifts although works in practice for most compilers.
+ *
+ * @param val     The original value.
+ * @param shift   The left shift amount.
+ *
+ * @return The shifted value.
+ */
+static ASTCENC_SIMD_INLINE int32_t safe_signed_lsh(int32_t val, int shift)
+{
+	// Future: When we support C++20 can swap memcpy for std::bitcast
+	uint32_t uval;
+	std::memcpy(&uval, &val, sizeof(uint32_t));
+	uval <<= shift;
+	std::memcpy(&val, &uval, sizeof(uint32_t));
+	return val;
 }
 
 void rgba_delta_unpack(
@@ -597,21 +618,23 @@ static void hdr_rgb_unpack(
 	int32_t d0x = d0;
 	int32_t d1x = d1;
 	int sx_shamt = 32 - dbits;
-	d0x <<= sx_shamt;
+
+	d0x = safe_signed_lsh(d0x, sx_shamt);
 	d0x >>= sx_shamt;
-	d1x <<= sx_shamt;
+	d1x = safe_signed_lsh(d1x, sx_shamt);
 	d1x >>= sx_shamt;
+
 	d0 = d0x;
 	d1 = d1x;
 
 	// expand all values to 12 bits, with left-shift as needed.
 	int val_shamt = (modeval >> 1) ^ 3;
-	a <<= val_shamt;
-	b0 <<= val_shamt;
-	b1 <<= val_shamt;
-	c <<= val_shamt;
-	d0 <<= val_shamt;
-	d1 <<= val_shamt;
+	a = safe_signed_lsh(a, val_shamt);
+	b0 = safe_signed_lsh(b0, val_shamt);
+	b1 = safe_signed_lsh(b1, val_shamt);
+	c = safe_signed_lsh(c, val_shamt);
+	d0 = safe_signed_lsh(d0, val_shamt);
+	d1 = safe_signed_lsh(d1, val_shamt);
 
 	// then compute the actual color values.
 	int red1 = a;
