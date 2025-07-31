@@ -189,21 +189,21 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
     if(${ASTCENC_ASAN})
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_clang}:-fsanitize=address>)
+                $<${is_gnu_fe}:-fsanitize=address>)
 
         target_link_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_clang}:-fsanitize=address>)
+                $<${is_gnu_fe}:-fsanitize=address>)
     endif()
 
     if(${ASTCENC_UBSAN})
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_clang}:-fsanitize=undefined>)
+                $<${is_gnu_fe}:-fsanitize=undefined>)
 
         target_link_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_clang}:-fsanitize=undefined>)
+                $<${is_gnu_fe}:-fsanitize=undefined>)
     endif()
 
     if(NOT ${ASTCENC_INVARIANCE})
