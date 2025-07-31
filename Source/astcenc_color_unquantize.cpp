@@ -335,45 +335,89 @@ static void hdr_rgbo_unpack(
 	int ohcomp = 1 << mode;
 
 	if (ohcomp & 0x30)
+	{
 		green |= bit0 << 6;
+	}
+
 	if (ohcomp & 0x3A)
+	{
 		green |= bit1 << 5;
+	}
+
 	if (ohcomp & 0x30)
+	{
 		blue |= bit2 << 6;
+	}
+
 	if (ohcomp & 0x3A)
+	{
 		blue |= bit3 << 5;
+	}
 
 	if (ohcomp & 0x3D)
+	{
 		scale |= bit6 << 5;
+	}
+
 	if (ohcomp & 0x2D)
+	{
 		scale |= bit5 << 6;
+	}
+
 	if (ohcomp & 0x04)
+	{
 		scale |= bit4 << 7;
+	}
 
 	if (ohcomp & 0x3B)
+	{
 		red |= bit4 << 6;
+	}
+
 	if (ohcomp & 0x04)
+	{
 		red |= bit3 << 6;
+	}
 
 	if (ohcomp & 0x10)
+	{
 		red |= bit5 << 7;
+	}
+
 	if (ohcomp & 0x0F)
+	{
 		red |= bit2 << 7;
+	}
 
 	if (ohcomp & 0x05)
+	{
 		red |= bit1 << 8;
+	}
+
 	if (ohcomp & 0x0A)
+	{
 		red |= bit0 << 8;
+	}
 
 	if (ohcomp & 0x05)
+	{
 		red |= bit0 << 9;
+	}
+
 	if (ohcomp & 0x02)
+	{
 		red |= bit6 << 9;
+	}
 
 	if (ohcomp & 0x01)
+	{
 		red |= bit3 << 10;
+	}
+
 	if (ohcomp & 0x02)
+	{
 		red |= bit5 << 10;
+	}
 
 	// expand to 12 bits.
 	static const int shamts[6] { 1, 1, 2, 3, 4, 5 };
@@ -414,19 +458,13 @@ static void hdr_rgbo_unpack(
 	int blue0 = blue - scale;
 
 	// clamp to [0,0xFFF].
-	if (red < 0)
-		red = 0;
-	if (green < 0)
-		green = 0;
-	if (blue < 0)
-		blue = 0;
+	red = astc::max(red, 0);
+	green = astc::max(green, 0);
+	blue = astc::max(blue, 0);
 
-	if (red0 < 0)
-		red0 = 0;
-	if (green0 < 0)
-		green0 = 0;
-	if (blue0 < 0)
-		blue0 = 0;
+	red0 = astc::max(red0, 0);
+	green0 = astc::max(green0, 0);
+	blue0 = astc::max(blue0, 0);
 
 	output0 = vint4(red0 << 4, green0 << 4, blue0 << 4, 0x7800);
 	output1 = vint4(red << 4, green << 4, blue << 4, 0x7800);
@@ -486,27 +524,49 @@ static void hdr_rgb_unpack(
 	// and prepend the variable-placement bits depending on mode.
 	int ohmod = 1 << modeval;	// one-hot-mode
 	if (ohmod & 0xA4)
+	{
 		a |= bit0 << 9;
+	}
+
 	if (ohmod & 0x8)
+	{
 		a |= bit2 << 9;
-	if (ohmod & 0x50)
-		a |= bit4 << 9;
+	}
 
 	if (ohmod & 0x50)
+	{
+		a |= bit4 << 9;
+	}
+
+	if (ohmod & 0x50)
+	{
 		a |= bit5 << 10;
+	}
+
 	if (ohmod & 0xA0)
+	{
 		a |= bit1 << 10;
+	}
 
 	if (ohmod & 0xC0)
+	{
 		a |= bit2 << 11;
+	}
 
 	if (ohmod & 0x4)
+	{
 		c |= bit1 << 6;
+	}
+
 	if (ohmod & 0xE8)
+	{
 		c |= bit3 << 6;
+	}
 
 	if (ohmod & 0x20)
+	{
 		c |= bit2 << 7;
+	}
 
 	if (ohmod & 0x5B)
 	{
