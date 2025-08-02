@@ -283,6 +283,29 @@ cmake \
 make -j16
 ```
 
+## Configuring a new build machine
+
+Install native packages:
+
+```shell
+sudo apt update
+# Build essentials
+sudo apt install clang cmake git 
+# Test essentials
+sudo apt install imagemagick python3-pip
+# Profile essentials
+sudo apt install graphviz valgrind 
+```
+
+Install Python modules from within venv:
+
+```shell
+# Test essentials
+pip install numpy pillow pycodestyle pylint
+# Profile essentials
+pip install gprof2dot
+```
+
 ## Packaging a release bundle
 
 We support building a release bundle of all enabled binary configurations in
@@ -312,4 +335,4 @@ details.
 
 - - -
 
-_Copyright © 2019-2024, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2025, Arm Limited and contributors. All rights reserved._
