@@ -53,7 +53,7 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
  */
 static ASTCENC_SIMD_INLINE int32_t safe_signed_lsh(int32_t val, int shift)
 {
-	// Future: When we support C++20 can swap memcpy for std::bitcast
+	// Future: Can use std:bit_cast with C++20
 	uint32_t uval;
 	std::memcpy(&uval, &val, sizeof(uint32_t));
 	uval <<= shift;
