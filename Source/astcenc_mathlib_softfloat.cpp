@@ -395,17 +395,14 @@ static sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 /* convert from soft-float to native-float */
 float sf16_to_float(uint16_t p)
 {
-	if32 i;
-	i.u = sf16_to_sf32(p);
-	return i.f;
+	return astc::uint_as_float(sf16_to_sf32(p));
 }
 
 /* convert from native-float to soft-float */
 uint16_t float_to_sf16(float p)
 {
-	if32 i;
-	i.f = p;
-	return sf32_to_sf16(i.u, SF_NEARESTEVEN);
+	unsigned int ip = astc::float_as_uint(p);
+	return sf32_to_sf16(ip, SF_NEARESTEVEN);
 }
 
 #endif
