@@ -199,11 +199,13 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
     if(${ASTCENC_UBSAN})
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_gnu_fe}:-fsanitize=undefined>)
+                $<${is_gnu_fe}:-fsanitize=undefined>
+                $<${is_gnu_fe}:-fno-sanitize-recover=all>)
 
         target_link_options(${ASTCENC_TARGET_NAME}
             PRIVATE
-                $<${is_gnu_fe}:-fsanitize=undefined>)
+                $<${is_gnu_fe}:-fsanitize=undefined>
+                $<${is_gnu_fe}:-fno-sanitize-recover=all>)
     endif()
 
     if(NOT ${ASTCENC_INVARIANCE})
