@@ -68,16 +68,10 @@ static float mpsnr_operator(
 	float val,
 	int fstop
 ) {
-	// Future: Can use std:bit_cast with C++20
-
 	// Fast implementation of pow(2.0, fstop), assuming IEEE float layout
 	// Memcpy to uint avoids ubsan complaints shift of negative int
-	unsigned int fstopu;
-	std::memcpy(&fstopu, &fstop, sizeof(int));
-	uint32_t uscale = 0x3f800000 + (fstopu << 23);
-
-	float scale;
-	std::memcpy(&scale, &uscale, sizeof(float));
+	unsigned int uscale = 0x3f800000u + (astc::int_as_uint(fstop) << 23);
+	float scale = astc::uint_as_float(uscale);
 
 	val = powf(val * scale, (1.0f / 2.2f));
 	return astc::clamp(val * 255.0f, 0.0f, 255.0f);

@@ -51,14 +51,11 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
  *
  * @return The shifted value.
  */
-static ASTCENC_SIMD_INLINE int32_t safe_signed_lsh(int32_t val, int shift)
+static ASTCENC_SIMD_INLINE int safe_signed_lsh(int val, int shift)
 {
-	// Future: Can use std:bit_cast with C++20
-	uint32_t uval;
-	std::memcpy(&uval, &val, sizeof(uint32_t));
+	unsigned int uval = astc::int_as_uint(val);
 	uval <<= shift;
-	std::memcpy(&val, &uval, sizeof(uint32_t));
-	return val;
+	return astc::uint_as_int(uval);
 }
 
 void rgba_delta_unpack(
