@@ -572,6 +572,36 @@ struct astcenc_config
 	float tune_search_mode0_enable;
 
 	/**
+	 * @brief Enable Rate Distortion Optimization (RDO) post-processing.
+	 */
+	bool rdo_enabled;
+
+	/**
+	 * @brief RDO quality scalar (lambda).
+	 */
+	float rdo_quality;
+
+	/**
+	 * @brief RDO lookback size in blocks.
+	 */
+	unsigned int rdo_lookback;
+
+	/**
+	 * @brief RDO task partitions.
+	 */
+	unsigned int rdo_partitions;
+
+	/**
+	 * @brief RDO max smooth block error scale.
+	 */
+	float rdo_max_smooth_block_error_scale;
+
+	/**
+	 * @brief RDO max smooth block standard deviation.
+	 */
+	float rdo_max_smooth_block_std_dev;
+
+	/**
 	 * @brief The progress callback, can be @c nullptr.
 	 *
 	 * If this is specified the codec will peridocially report progress for
