@@ -136,19 +136,19 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 /**
  * @brief Validate CPU floating point meets assumptions made in the codec.
  *
- * The codec is written with the assumption that a float threaded through the @c if32 union will be
- * stored and reloaded as a 32-bit IEEE-754 float with round-to-nearest rounding. This is always the
- * case in an IEEE-754 compliant system, however not every system or compilation mode is actually
- * IEEE-754 compliant. This normally fails if the code is compiled with fast math enabled.
+ * The codec is written with the assumption that float bit patterns are valid
+ * IEEE754 values that are stored and reloaded with round-to-nearest rounding.
+ * This is always the case in an IEEE-754 compliant system, however not every
+ * system or compilation mode is actually IEEE-754 compliant. This normally
+ * fails if the code is compiled with fast math enabled, for example.
  *
- * @return Return @c ASTCENC_SUCCESS if validated, otherwise an error on failure.
+ * @return Return @c ASTCENC_SUCCESS if validated, an error on failure.
  */
 static astcenc_error validate_cpu_float()
 {
-	if32 p;
 	volatile float xprec_testval = 2.51f;
-	p.f = xprec_testval + 12582912.0f;
-	float q = p.f - 12582912.0f;
+	float store = xprec_testval + 12582912.0f;
+	float q = store - 12582912.0f;
 
 	if (q != 3.0f)
 	{

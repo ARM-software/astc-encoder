@@ -124,14 +124,6 @@
   to future vectorization.
 ============================================================================ */
 
-// Union for manipulation of float bit patterns
-typedef union
-{
-	uint32_t u;
-	int32_t s;
-	float f;
-} if32;
-
 // These are namespaced to avoid colliding with C standard library functions.
 namespace astc
 {
@@ -475,11 +467,10 @@ static inline float sqrt(float v)
  */
 static inline float frexp(float v, int* expo)
 {
-	if32 p;
-	p.f = v;
-	*expo = ((p.u >> 23) & 0xFF) - 126;
-	p.u = (p.u & 0x807fffff) | 0x3f000000;
-	return p.f;
+	unsigned int iv = astc::float_as_uint(v);
+	*expo = ((iv >> 23) & 0xFF) - 126;
+	iv = (iv & 0x807fffff) | 0x3f000000;
+	return astc::uint_as_float(iv);
 }
 
 /**
