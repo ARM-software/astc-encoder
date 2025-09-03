@@ -41,7 +41,7 @@ def postprocess_cga(lines, outfile):
         lines ([str]): The output of callgrind_annotate.
         outfile (str): The output file path to write.
     """
-    pattern = re.compile("^\s*([0-9,]+)\s+\([ 0-9.]+%\)\s+Source/(\S+):(\S+)\(.*\).*$")
+    pattern = re.compile(r"^\s*([0-9,]+)\s+\([ 0-9.]+%\)\s+Source/(\S+):(\S+)\(.*\).*$")
 
     totalCost = 0.0
     functionTable = []

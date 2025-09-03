@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2020 Arm Limited
+# Copyright 2020-2025 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -20,12 +20,15 @@ The python test runner is designed to run some basic tests against the Python
 test code base.
 """
 
+import io
 import re
 import sys
 import unittest
 
 import pycodestyle
-import pylint.epylint as lint
+import pylint
+from pylint.lint import Run
+from pylint.reporters.text import TextReporter
 
 
 class PythonTests(unittest.TestCase):
@@ -37,22 +40,36 @@ class PythonTests(unittest.TestCase):
         """
         Run pylint over the codebase.
         """
-        pylintOut, _ = lint.py_run("./Test", True)
+        # Run Pylint
+        stream = io.StringIO()
+        reporter = TextReporter(stream)
+        pylint.lint.Run(["./Test"], reporter, False)
+        pylintOut = stream.getvalue()
+
+        # Write the Pylint log 
+        with open("pylint.log", "w") as fileHandle:
+            fileHandle.write(pylintOut)
+
+        # Analyze the results
         pattern = re.compile(r"Your code has been rated at (.*?)/10")
-        match = pattern.search(pylintOut.getvalue())
+        match = pattern.search(pylintOut)
         self.assertIsNotNone(match)
         score = float(match.group(1))
         self.assertGreaterEqual(score, 9.8)
-
-        with open("pylint.log", "w") as fileHandle:
-            fileHandle.write(pylintOut.getvalue())
 
     def test_pycodestyle(self):
         """
         Test that we conform to PEP-8.
         """
         style = pycodestyle.StyleGuide()
-        result = style.check_files(["./Test"])
+
+        # Write the Pycodestyle log 
+        with open("pycodestyle.log", "w") as fileHandle:
+            oldStdout = sys.stdout
+            sys.stdout = fileHandle
+            result = style.check_files(["./Test"])
+            sys.stdout = oldStdout
+
         self.assertEqual(result.total_errors, 0,
                          "Found code style errors (and warnings).")
 
