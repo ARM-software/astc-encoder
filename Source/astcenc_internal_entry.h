@@ -178,13 +178,14 @@ public:
 	 * @param init_func   Callable which executes the stage initialization. It must return the
 	 *                    total number of tasks in the stage.
 	 */
-	void init(std::function<unsigned int(void)> init_func)
+	void init(std::function<unsigned int(void)> init_func, astcenc_progress_callback callback = nullptr)
 	{
 		std::lock_guard<std::mutex> lck(m_lock);
 		if (!m_init_done)
 		{
 			m_task_count = init_func();
 			m_init_done = true;
+			if (callback) m_callback = callback;
 		}
 	}
 
@@ -337,6 +338,9 @@ struct astcenc_context
 
 	/** @brief The parallel manager for compression. */
 	ParallelManager manage_compress;
+
+	/** @brief The parallel manager for rate-distortion optimization. */
+	ParallelManager manage_rdo;
 #endif
 
 	/** @brief The parallel manager for decompression. */

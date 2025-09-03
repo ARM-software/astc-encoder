@@ -1183,6 +1183,83 @@ static int edit_astcenc_config(
 			argidx += 1;
 			cli_config.diagnostic_images = true;
 		}
+		else if (!strcmp(argv[argidx], "-rdo"))
+		{
+			argidx += 1;
+			config.rdo_enabled = true;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-quality"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-quality switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_quality = static_cast<float>(atof(argv[argidx - 1]));
+		}
+		else if (!strcmp(argv[argidx], "-rdo-dict-size"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-dict-size switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_lookback = atoi(argv[argidx - 1]) / 16;
+		}
+		else if (!strcmp(argv[argidx], "-rdo-lookback"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-lookback switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_lookback = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-rdo-partitions"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-partitions switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_partitions = atoi(argv[argidx - 1]);
+		}
+		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-error-scale"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-max-smooth-block-error-scale switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_max_smooth_block_error_scale = static_cast<float>(atof(argv[argidx - 1]));
+		}
+		else if (!strcmp(argv[argidx], "-rdo-max-smooth-block-std-dev"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -rdo-max-smooth-block-std-dev switch with no argument\n");
+				return 1;
+			}
+
+			config.rdo_enabled = true;
+			config.rdo_max_smooth_block_std_dev = static_cast<float>(atof(argv[argidx - 1]));
+		}
 		else // check others as well
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1273,6 +1350,15 @@ static void print_astcenc_config(
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
 		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
+		printf("    Rate-distortion opt:        %s\n", config.rdo_enabled ? "Enabled" : "Disabled");
+		if (config.rdo_enabled)
+		{
+			printf("    RDO quality:                %g\n", static_cast<double>(config.rdo_quality));
+			printf("    RDO lookback:               %u blocks\n", config.rdo_lookback);
+			printf("    RDO max error scale:        %g\n", static_cast<double>(config.rdo_max_smooth_block_error_scale));
+			printf("    RDO max standard deviation: %g\n", static_cast<double>(config.rdo_max_smooth_block_std_dev));
+			if (config.rdo_partitions) printf("    RDO partitions:             %u\n", config.rdo_partitions);
+		}
 		printf("\n");
 	}
 }
@@ -1576,7 +1662,8 @@ static void print_diagnostic_image(
 static void print_diagnostic_images(
 	astcenc_context* context,
 	const astc_compressed_image& image,
-	const std::string& output_file
+	const std::string& output_file,
+	astcenc_operation operation
 ) {
 	if (image.dim_z != 1)
 	{
@@ -1592,6 +1679,13 @@ static void print_diagnostic_images(
 	}
 
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+
+	// ---- ---- ---- ---- Compressed Output ---- ---- ---- ----
+	if ((operation & ASTCENC_STAGE_ST_COMP) == 0)
+	{
+		std::string fname = stem + "_diag.astc";
+		store_cimage(image, fname.c_str());
+	}
 
 	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
 	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1998,6 +2092,12 @@ int astcenc_main(
 		return 1;
 	}
 
+	// Unpacking RDO trials blocks requires full initialization
+	if (config.rdo_enabled && static_cast<bool>(config.flags & ASTCENC_FLG_SELF_DECOMPRESS_ONLY))
+	{
+		config.flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+	}
+
 	// Enable progress callback if not in silent mode and using a terminal
 	#if defined(_WIN32)
 		int stdoutfno = _fileno(stdout);
@@ -2339,7 +2439,7 @@ int astcenc_main(
 	// Store diagnostic images
 	if (cli_config.diagnostic_images && !is_null)
 	{
-		print_diagnostic_images(codec_context, image_comp, output_filename);
+		print_diagnostic_images(codec_context, image_comp, output_filename, operation);
 	}
 
 	free_image(image_uncomp_in);
