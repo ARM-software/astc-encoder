@@ -2304,7 +2304,7 @@ int astcenc_main(
 		else if (ends_with(output_filename, ".ktx"))
 		{
 			bool srgb = profile == ASTCENC_PRF_LDR_SRGB;
-			error = store_ktx_compressed_image(image_comp, output_filename.c_str(), srgb);
+			error = store_ktx_compressed_image(image_comp, output_filename.c_str(), srgb, cli_config.y_flip);
 			if (error)
 			{
 				print_error("ERROR: Failed to store compressed image\n");

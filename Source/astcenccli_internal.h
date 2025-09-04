@@ -262,7 +262,8 @@ bool load_ktx_compressed_image(
 bool store_ktx_compressed_image(
 	const astc_compressed_image& img,
 	const char* filename,
-	bool is_srgb);
+	bool is_srgb,
+	bool y_flip);
 
 /**
  * @brief Create an image from a 2D float data array.

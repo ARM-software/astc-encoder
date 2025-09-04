@@ -902,6 +902,63 @@ static uint8_t ktx_magic[12] {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 };
 
+/**
+ * @brief Calculate size needed for KTX key-value metadata.
+ *
+ * @param key    The metadata key name.
+ * @param value  The metadata value string.
+ *
+ * @return Size in bytes needed for this key-value pair in KTX format.
+ */
+static uint32_t ktx_keyvalue_size(const char* key, const char* value)
+{
+	// KTX format: 4-byte size + null-terminated key + null-terminated value + padding to 4-byte boundary
+	uint32_t key_len = static_cast<uint32_t>(strlen(key)) + 1;  // +1 for null terminator
+	uint32_t value_len = static_cast<uint32_t>(strlen(value)) + 1;  // +1 for null terminator
+	uint32_t total_len = 4 + key_len + value_len;  // 4 bytes for size field
+
+	// Round up to 4-byte boundary
+	uint32_t padding = (4 - (total_len % 4)) % 4;
+	return total_len + padding;
+}
+
+/**
+ * @brief Write a KTX key-value pair to file.
+ *
+ * @param file   The file to write to.
+ * @param key    The metadata key name.
+ * @param value  The metadata value string.
+ *
+ * @return Number of bytes written.
+ */
+static size_t write_ktx_keyvalue(FILE* file, const char* key, const char* value)
+{
+	uint32_t key_len = static_cast<uint32_t>(strlen(key)) + 1;
+	uint32_t value_len = static_cast<uint32_t>(strlen(value)) + 1;
+	uint32_t total_data_len = key_len + value_len;
+
+#if defined(ASTCENC_BIG_ENDIAN)
+	uint32_t size_be = reverse_bytes_u32(total_data_len);
+	size_t written = fwrite(&size_be, 1, 4, file);
+#else
+	size_t written = fwrite(&total_data_len, 1, 4, file);
+#endif
+
+	written += fwrite(key, 1, key_len, file);
+	written += fwrite(value, 1, value_len, file);
+
+	// Add padding to 4-byte boundary
+	uint32_t total_len = 4 + total_data_len;
+	uint32_t padding = (4 - (total_len % 4)) % 4;
+	if (padding > 0)
+	{
+		uint8_t pad_bytes[4] = {0};
+		written += fwrite(pad_bytes, 1, padding, file);
+	}
+
+	return written;
+}
+
 static void ktx_header_switch_endianness(ktx_header * kt)
 {
 	#define REV(x) kt->x = reverse_bytes_u32(kt->x)
@@ -1389,7 +1446,8 @@ bool load_ktx_compressed_image(
 bool store_ktx_compressed_image(
 	const astc_compressed_image& img,
 	const char* filename,
-	bool is_srgb
+	bool is_srgb,
+	bool y_flip
 ) {
 	unsigned int fmt = get_format(img.block_x, img.block_y, img.block_z, is_srgb);
 
@@ -1407,13 +1465,16 @@ bool store_ktx_compressed_image(
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
-	hdr.bytes_of_key_value_data = 0;
+
+	// Calculate size of KTX orientation metadata
+	const char* orientation_value = y_flip ? "S=r,T=u" : "S=r,T=d";
+	hdr.bytes_of_key_value_data = ktx_keyvalue_size("KTXorientation", orientation_value);
 
 #if defined(ASTCENC_BIG_ENDIAN)
 	ktx_header_switch_endianness(&hdr);
 #endif
 
-	size_t expected = sizeof(ktx_header) + 4 + img.data_len;
+	size_t expected = sizeof(ktx_header) + hdr.bytes_of_key_value_data + 4 + img.data_len;
 	size_t actual = 0;
 
 	FILE *wf = fopen(filename, "wb");
@@ -1428,6 +1489,10 @@ bool store_ktx_compressed_image(
 #endif
 
 	actual += fwrite(&hdr, 1, sizeof(ktx_header), wf);
+
+	// Write KTX orientation metadata
+	actual += write_ktx_keyvalue(wf, "KTXorientation", orientation_value);
+
 	actual += fwrite(&data_len, 1, sizeof(uint32_t), wf);
 	actual += fwrite(img.data, 1, img.data_len, wf);
 	fclose(wf);
@@ -1495,7 +1560,10 @@ static bool store_ktx_uncompressed_image(
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
-	hdr.bytes_of_key_value_data = 0;
+
+	// Calculate size of KTX orientation metadata
+	const char* orientation_value = y_flip ? "S=r,T=u" : "S=r,T=d";
+	hdr.bytes_of_key_value_data = ktx_keyvalue_size("KTXorientation", orientation_value);
 
 	// Collect image data to write
 	uint8_t ***row_pointers8 = nullptr;
@@ -1636,12 +1704,16 @@ static bool store_ktx_uncompressed_image(
 			reinterpret_cast<void*>(row_pointers16[0][0]) :
 			reinterpret_cast<void*>(row_pointers8[0][0]);
 
-		size_t expected_bytes_written = sizeof(ktx_header) + image_write_bytes + 4;
+		size_t expected_bytes_written = sizeof(ktx_header) + hdr.bytes_of_key_value_data + image_write_bytes + 4;
 		size_t hdr_bytes_written = fwrite(&hdr, 1, sizeof(ktx_header), wf);
+
+		// Write KTX orientation metadata
+		size_t metadata_bytes_written = write_ktx_keyvalue(wf, "KTXorientation", orientation_value);
+
 		size_t bytecount_bytes_written = fwrite(&image_bytes, 1, 4, wf);
 		size_t data_bytes_written = fwrite(dataptr, 1, image_write_bytes, wf);
 		fclose(wf);
-		if (hdr_bytes_written + bytecount_bytes_written + data_bytes_written != expected_bytes_written)
+		if (hdr_bytes_written + metadata_bytes_written + bytecount_bytes_written + data_bytes_written != expected_bytes_written)
 		{
 			retval = false;
 		}
