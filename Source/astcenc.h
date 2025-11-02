@@ -169,8 +169,16 @@
 #ifndef ASTCENC_INCLUDED
 #define ASTCENC_INCLUDED
 
+#if defined(__cplusplus)
 #include <cstddef>
 #include <cstdint>
+#define ASTCENC_EXTERN_C extern "C"
+#else
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#define ASTCENC_EXTERN_C
+#endif
 
 #if defined(ASTCENC_DYNAMIC_LIBRARY)
 	#if defined(_MSC_VER)
@@ -179,7 +187,7 @@
 		#define ASTCENC_PUBLIC extern "C" __attribute__ ((visibility ("default")))
 	#endif
 #else
-	#define ASTCENC_PUBLIC
+	#define ASTCENC_PUBLIC ASTCENC_EXTERN_C
 #endif
 
 /* ============================================================================
@@ -284,13 +292,13 @@ enum astcenc_swz
 struct astcenc_swizzle
 {
 	/** @brief The red component selector. */
-	astcenc_swz r;
+	enum astcenc_swz r;
 	/** @brief The green component selector. */
-	astcenc_swz g;
+	enum astcenc_swz g;
 	/** @brief The blue component selector. */
-	astcenc_swz b;
+	enum astcenc_swz b;
 	/** @brief The alpha component selector. */
-	astcenc_swz a;
+	enum astcenc_swz a;
 };
 
 /**
@@ -309,7 +317,7 @@ enum astcenc_type
 /**
  * @brief Function pointer type for compression progress reporting callback.
  */
-extern "C" typedef void (*astcenc_progress_callback)(float);
+ASTCENC_EXTERN_C typedef void (*astcenc_progress_callback)(float);
 
 /**
  * @brief Enable normal map compression.
@@ -417,7 +425,7 @@ static const unsigned int ASTCENC_ALL_FLAGS =
 struct astcenc_config
 {
 	/** @brief The color profile. */
-	astcenc_profile profile;
+	enum astcenc_profile profile;
 
 	/** @brief The set of set flags. */
 	unsigned int flags;
@@ -612,7 +620,7 @@ struct astcenc_image
 	unsigned int dim_z;
 
 	/** @brief The data type per component. */
-	astcenc_type data_type;
+	enum astcenc_type data_type;
 
 	/** @brief The array of 2D slices, of length @c dim_z. */
 	void** data;
@@ -627,7 +635,7 @@ struct astcenc_image
 struct astcenc_block_info
 {
 	/** @brief The block encoding color profile. */
-	astcenc_profile profile;
+	enum astcenc_profile profile;
 
 	/** @brief The number of texels in the X dimension. */
 	unsigned int block_x;
@@ -712,14 +720,14 @@ struct astcenc_block_info
  * @return @c ASTCENC_SUCCESS on success, or an error if the inputs are invalid
  * either individually, or in combination.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_config_init(
-	astcenc_profile profile,
+ASTCENC_PUBLIC enum astcenc_error astcenc_config_init(
+	enum astcenc_profile profile,
 	unsigned int block_x,
 	unsigned int block_y,
 	unsigned int block_z,
 	float quality,
 	unsigned int flags,
-	astcenc_config* config);
+	struct astcenc_config* config);
 
 /**
  * @brief Allocate a new codec context based on a config.
@@ -748,11 +756,11 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if context creation failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
-	const astcenc_config* config,
+ASTCENC_PUBLIC enum astcenc_error astcenc_context_alloc(
+	const struct astcenc_config* config,
 	unsigned int thread_count,
-	astcenc_context** context,
-	const astcenc_context* parent_context);
+	struct astcenc_context** context,
+	const struct astcenc_context* parent_context);
 
 /**
  * @brief Compress an image.
@@ -772,10 +780,10 @@ ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if compression failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
-	astcenc_context* context,
-	astcenc_image* image,
-	const astcenc_swizzle* swizzle,
+ASTCENC_PUBLIC enum astcenc_error astcenc_compress_image(
+	struct astcenc_context* context,
+	struct astcenc_image* image,
+	const struct astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
 	unsigned int thread_index);
@@ -793,8 +801,8 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_image(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if reset failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_compress_reset(
-	astcenc_context* context);
+ASTCENC_PUBLIC enum astcenc_error astcenc_compress_reset(
+	struct astcenc_context* context);
 
 /**
  * @brief Cancel any pending compression operation.
@@ -807,8 +815,8 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_reset(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if cancellation failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_compress_cancel(
-	astcenc_context* context);
+ASTCENC_PUBLIC enum astcenc_error astcenc_compress_cancel(
+	struct astcenc_context* context);
 
 /**
  * @brief Decompress an image.
@@ -822,12 +830,12 @@ ASTCENC_PUBLIC astcenc_error astcenc_compress_cancel(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if decompression failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
-	astcenc_context* context,
+ASTCENC_PUBLIC enum astcenc_error astcenc_decompress_image(
+	struct astcenc_context* context,
 	const uint8_t* data,
 	size_t data_len,
-	astcenc_image* image_out,
-	const astcenc_swizzle* swizzle,
+	struct astcenc_image* image_out,
+	const struct astcenc_swizzle* swizzle,
 	unsigned int thread_index);
 
 /**
@@ -843,8 +851,8 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_image(
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if reset failed.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_decompress_reset(
-	astcenc_context* context);
+ASTCENC_PUBLIC enum astcenc_error astcenc_decompress_reset(
+	struct astcenc_context* context);
 
 /**
  * Free the compressor context.
@@ -852,7 +860,7 @@ ASTCENC_PUBLIC astcenc_error astcenc_decompress_reset(
  * @param context   The codec context.
  */
 ASTCENC_PUBLIC void astcenc_context_free(
-	astcenc_context* context);
+	struct astcenc_context* context);
 
 /**
  * @brief Provide a high level summary of a block's encoding.
@@ -868,10 +876,10 @@ ASTCENC_PUBLIC void astcenc_context_free(
  *         function will return success even if the block itself was an error block encoding, as the
  *         decode was correctly handled.
  */
-ASTCENC_PUBLIC astcenc_error astcenc_get_block_info(
-	astcenc_context* context,
+ASTCENC_PUBLIC enum astcenc_error astcenc_get_block_info(
+	struct astcenc_context* context,
 	const uint8_t data[16],
-	astcenc_block_info* info);
+	struct astcenc_block_info* info);
 
 /**
  * @brief Get a printable string for specific status code.
@@ -881,6 +889,6 @@ ASTCENC_PUBLIC astcenc_error astcenc_get_block_info(
  * @return A human readable nul-terminated string.
  */
 ASTCENC_PUBLIC const char* astcenc_get_error_string(
-	astcenc_error status);
+	enum astcenc_error status);
 
 #endif
