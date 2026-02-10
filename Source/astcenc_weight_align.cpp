@@ -249,7 +249,8 @@ static void compute_lowest_and_highest_weight(
  * @param[out] low_value                 Per angular step, the lowest weight value.
  * @param[out] high_value                Per angular step, the highest weight value.
  */
-static void compute_angular_endpoints_for_quant_levels(
+/* See header for documentation. */
+void compute_angular_endpoints_for_quant_levels(
 	unsigned int weight_count,
 	const float* dec_weight_ideal_value,
 	unsigned int max_quant_level,

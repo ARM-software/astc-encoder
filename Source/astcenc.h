@@ -217,6 +217,8 @@ enum astcenc_error {
 	ASTCENC_ERR_NOT_IMPLEMENTED,
 	/** @brief The call failed due to an out-of-spec decode mode flag set. */
 	ASTCENC_ERR_BAD_DECODE_MODE,
+	/** @brief The call failed due to an invalid or mismatched guide file. */
+	ASTCENC_ERR_BAD_GUIDE,
 #if defined(ASTCENC_DIAGNOSTICS)
 	/** @brief The call failed due to an issue with diagnostic tracing. */
 	ASTCENC_ERR_DTRACE_FAILURE,
@@ -870,5 +872,60 @@ ASTCENC_PUBLIC astcenc_error astcenc_get_block_info(
  */
 ASTCENC_PUBLIC const char* astcenc_get_error_string(
 	astcenc_error status);
+
+/**
+ * @brief Generate a compression guide from compressed ASTC data.
+ *
+ * The guide captures per-block structural decisions (block mode, partition count, partition index)
+ * that are expensive to search for, enabling fast guided recompression from the original image.
+ * The guide does NOT contain any pixel-derived values.
+ *
+ * @param      context        Codec context.
+ * @param      image          The original uncompressed image (used for checksum).
+ * @param[in]  astc_data      The compressed ASTC block data.
+ * @param      astc_data_len  Length of the ASTC data in bytes.
+ * @param[out] guide_out      Output buffer for the guide data.
+ * @param[in,out] guide_len   On input, the size of guide_out. On output, the required/written size.
+ *
+ * @return @c ASTCENC_SUCCESS on success, or an error otherwise.
+ */
+ASTCENC_PUBLIC astcenc_error astcenc_generate_guide(
+	const astcenc_context* context,
+	const astcenc_image* image,
+	const uint8_t* astc_data,
+	size_t astc_data_len,
+	uint8_t* guide_out,
+	size_t* guide_len);
+
+/**
+ * @brief Compress an image using a pre-computed compression guide.
+ *
+ * This performs guided compression where per-block structural decisions (block mode, partition)
+ * are read from the guide file rather than searched for. This is dramatically faster than full
+ * compression (50-200x) because it skips the expensive mode/partition search.
+ *
+ * The context must NOT use @c ASTCENC_FLG_SELF_DECOMPRESS_ONLY since the guide may reference
+ * block modes pruned by the quality preset.
+ *
+ * @param         context        Codec context.
+ * @param[in,out] image          An input image, in 2D slices.
+ * @param         swizzle        Compression data swizzle, applied before compression.
+ * @param[in]     guide_data     The guide file data.
+ * @param         guide_len      Length of the guide data in bytes.
+ * @param[out]    data_out       Pointer to output data array.
+ * @param         data_len       Length of the output data array.
+ * @param         thread_index   Thread index [0..N-1] of calling thread.
+ *
+ * @return @c ASTCENC_SUCCESS on success, or an error if compression failed.
+ */
+ASTCENC_PUBLIC astcenc_error astcenc_compress_image_guided(
+	astcenc_context* context,
+	astcenc_image* image,
+	const astcenc_swizzle* swizzle,
+	const uint8_t* guide_data,
+	size_t guide_len,
+	uint8_t* data_out,
+	size_t data_len,
+	unsigned int thread_index);
 
 #endif

@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -94,6 +95,12 @@ struct cli_config_options
 
 	/** @brief The  post-decode swizzle. */
 	astcenc_swizzle swz_decode;
+
+	/** @brief The file path for guide output (empty if not used). */
+	std::string guide_out_filename;
+
+	/** @brief The file path for guide input (empty if not used). */
+	std::string guide_in_filename;
 };
 
 /**

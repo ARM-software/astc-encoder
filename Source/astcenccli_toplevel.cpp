@@ -644,9 +644,24 @@ static int init_astcenc_config(
 	// Compression and test passes can skip some decimation initialization
 	// as we know we are decompressing images that were compressed using the
 	// same settings and heuristics ...
+	// Exception: guided compression may reference block modes pruned by
+	// the quality preset, so we need full tables.
 	else
 	{
-		flags |= ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+		bool has_guide_in = false;
+		for (int i = 0; i < argc; i++)
+		{
+			if (!strcmp(argv[i], "-guide-in"))
+			{
+				has_guide_in = true;
+				break;
+			}
+		}
+
+		if (!has_guide_in)
+		{
+			flags |= ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
+		}
 	}
 #endif
 
@@ -1182,6 +1197,28 @@ static int edit_astcenc_config(
 		{
 			argidx += 1;
 			cli_config.diagnostic_images = true;
+		}
+		else if (!strcmp(argv[argidx], "-guide-out"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -guide-out switch with no argument\n");
+				return 1;
+			}
+
+			cli_config.guide_out_filename = argv[argidx - 1];
+		}
+		else if (!strcmp(argv[argidx], "-guide-in"))
+		{
+			argidx += 2;
+			if (argidx > argc)
+			{
+				print_error("ERROR: -guide-in switch with no argument\n");
+				return 1;
+			}
+
+			cli_config.guide_in_filename = argv[argidx - 1];
 		}
 		else // check others as well
 		{
@@ -1990,7 +2027,8 @@ int astcenc_main(
 	// Initialize cli_config_options with default values
 	cli_config_options cli_config { 0, 1, 1, false, false, false, -10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
-		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A } };
+		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
+		{}, {} };
 
 	error = edit_astcenc_config(argc, argv, operation, cli_config, config);
 	if (error)
@@ -2165,54 +2203,120 @@ int astcenc_main(
 		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
 		uint8_t* buffer = new uint8_t[buffer_size];
 
-		compression_workload work;
-		work.context = codec_context;
-		work.image = image_uncomp_in;
-		work.swizzle = cli_config.swz_encode;
-		work.data_out = buffer;
-		work.data_len = buffer_size;
-		work.error = ASTCENC_SUCCESS;
-
-		// Only launch worker threads for multi-threaded use - it makes basic
-		// single-threaded profiling and debugging a little less convoluted
-		double start_compression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+		// Guided compression path
+		if (!cli_config.guide_in_filename.empty())
 		{
-			if (config.progress_callback)
+			// Load guide file
+			FILE* guide_file = fopen(cli_config.guide_in_filename.c_str(), "rb");
+			if (!guide_file)
 			{
-				printf("Compression\n");
-				printf("===========\n");
-				printf("\n");
+				print_error("ERROR: Failed to open guide file '%s'\n", cli_config.guide_in_filename.c_str());
+				delete[] buffer;
+				return 1;
 			}
 
-			double start_iter_time = get_time();
-			if (cli_config.thread_count > 1)
-			{
-				launch_threads("Compression", cli_config.thread_count, compression_workload_runner, &work);
-			}
-			else
-			{
-				work.error = astcenc_compress_image(
-					work.context, work.image, &work.swizzle,
-					work.data_out, work.data_len, 0);
-			}
+			fseek(guide_file, 0, SEEK_END);
+			size_t guide_len = static_cast<size_t>(ftell(guide_file));
+			fseek(guide_file, 0, SEEK_SET);
 
-			astcenc_compress_reset(codec_context);
+			uint8_t* guide_data = new uint8_t[guide_len];
+			size_t read_count = fread(guide_data, 1, guide_len, guide_file);
+			fclose(guide_file);
 
-			if (config.progress_callback)
+			if (read_count != guide_len)
 			{
-				printf("\n\n");
+				print_error("ERROR: Failed to read guide file '%s'\n", cli_config.guide_in_filename.c_str());
+				delete[] guide_data;
+				delete[] buffer;
+				return 1;
 			}
 
-			double iter_time = get_time() - start_iter_time;
-			best_compression_time = astc::min(iter_time, best_compression_time);
+			if (!cli_config.silentmode)
+			{
+				printf("Guided compression using '%s'\n\n", cli_config.guide_in_filename.c_str());
+			}
+
+			double start_compression_time = get_time();
+			astcenc_swizzle swz = cli_config.swz_encode;
+			astcenc_error guide_error = astcenc_compress_image_guided(
+				codec_context, image_uncomp_in, &swz,
+				guide_data, guide_len,
+				buffer, buffer_size, 0);
+
+			total_compression_time = get_time() - start_compression_time;
+			best_compression_time = total_compression_time;
+
+			delete[] guide_data;
+
+			if (guide_error != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Guided compress failed: %s\n", astcenc_get_error_string(guide_error));
+				if (guide_error == ASTCENC_ERR_BAD_GUIDE)
+				{
+					print_error("       The guide file does not match the input image\n");
+				}
+				delete[] buffer;
+				// Unlink the output file if it was partially created
+				if (operation & ASTCENC_STAGE_ST_COMP)
+				{
+					remove(output_filename.c_str());
+				}
+				return 1;
+			}
 		}
-		total_compression_time = get_time() - start_compression_time;
-
-		if (work.error != ASTCENC_SUCCESS)
+		// Normal compression path
+		else
 		{
-			print_error("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
-			return 1;
+			compression_workload work;
+			work.context = codec_context;
+			work.image = image_uncomp_in;
+			work.swizzle = cli_config.swz_encode;
+			work.data_out = buffer;
+			work.data_len = buffer_size;
+			work.error = ASTCENC_SUCCESS;
+
+			// Only launch worker threads for multi-threaded use - it makes basic
+			// single-threaded profiling and debugging a little less convoluted
+			double start_compression_time = get_time();
+			for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+			{
+				if (config.progress_callback)
+				{
+					printf("Compression\n");
+					printf("===========\n");
+					printf("\n");
+				}
+
+				double start_iter_time = get_time();
+				if (cli_config.thread_count > 1)
+				{
+					launch_threads("Compression", cli_config.thread_count, compression_workload_runner, &work);
+				}
+				else
+				{
+					work.error = astcenc_compress_image(
+						work.context, work.image, &work.swizzle,
+						work.data_out, work.data_len, 0);
+				}
+
+				astcenc_compress_reset(codec_context);
+
+				if (config.progress_callback)
+				{
+					printf("\n\n");
+				}
+
+				double iter_time = get_time() - start_iter_time;
+				best_compression_time = astc::min(iter_time, best_compression_time);
+			}
+			total_compression_time = get_time() - start_compression_time;
+
+			if (work.error != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
+				delete[] buffer;
+				return 1;
+			}
 		}
 
 		image_comp.block_x = config.block_x;
@@ -2223,6 +2327,56 @@ int astcenc_main(
 		image_comp.dim_z = image_uncomp_in->dim_z;
 		image_comp.data = buffer;
 		image_comp.data_len = buffer_size;
+
+		// Generate guide file if requested
+		if (!cli_config.guide_out_filename.empty())
+		{
+			// Compute required guide size
+			size_t guide_len = 0;
+			astcenc_error err = astcenc_generate_guide(
+				codec_context, image_uncomp_in, buffer, buffer_size, nullptr, &guide_len);
+			if (err != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Guide generation failed: %s\n", astcenc_get_error_string(err));
+				return 1;
+			}
+
+			uint8_t* guide_data = new uint8_t[guide_len];
+			err = astcenc_generate_guide(
+				codec_context, image_uncomp_in, buffer, buffer_size, guide_data, &guide_len);
+			if (err != ASTCENC_SUCCESS)
+			{
+				print_error("ERROR: Guide generation failed: %s\n", astcenc_get_error_string(err));
+				delete[] guide_data;
+				return 1;
+			}
+
+			FILE* guide_file = fopen(cli_config.guide_out_filename.c_str(), "wb");
+			if (!guide_file)
+			{
+				print_error("ERROR: Failed to open guide output file '%s'\n",
+				            cli_config.guide_out_filename.c_str());
+				delete[] guide_data;
+				return 1;
+			}
+
+			size_t written = fwrite(guide_data, 1, guide_len, guide_file);
+			fclose(guide_file);
+			delete[] guide_data;
+
+			if (written != guide_len)
+			{
+				print_error("ERROR: Failed to write guide file '%s'\n",
+				            cli_config.guide_out_filename.c_str());
+				return 1;
+			}
+
+			if (!cli_config.silentmode)
+			{
+				printf("Guide file: %zu bytes written to '%s'\n\n",
+				       guide_len, cli_config.guide_out_filename.c_str());
+			}
+		}
 	}
 
 	// Decompress an image
