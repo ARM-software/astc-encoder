@@ -43,7 +43,8 @@ target_sources(${ASTCENC_TEST}
     PRIVATE
         test_simd.cpp
         test_softfloat.cpp
-        test_decode.cpp)
+        test_decode.cpp
+        test_guided.cpp)
 
 target_include_directories(${ASTCENC_TEST}
     PRIVATE
