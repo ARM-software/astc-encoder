@@ -2248,15 +2248,16 @@ int astcenc_main(
 
 			delete[] guide_data;
 
-			if (guide_error != ASTCENC_SUCCESS)
+			if (guide_error == ASTCENC_ERR_BAD_GUIDE)
+			{
+				printf("WARNING: Guide file does not match input image, falling back to normal compression\n");
+				astcenc_compress_reset(codec_context);
+				goto normal_compress;
+			}
+			else if (guide_error != ASTCENC_SUCCESS)
 			{
 				print_error("ERROR: Guided compress failed: %s\n", astcenc_get_error_string(guide_error));
-				if (guide_error == ASTCENC_ERR_BAD_GUIDE)
-				{
-					print_error("       The guide file does not match the input image\n");
-				}
 				delete[] buffer;
-				// Unlink the output file if it was partially created
 				if (operation & ASTCENC_STAGE_ST_COMP)
 				{
 					remove(output_filename.c_str());
@@ -2267,6 +2268,7 @@ int astcenc_main(
 		// Normal compression path
 		else
 		{
+		normal_compress:
 			compression_workload work;
 			work.context = codec_context;
 			work.image = image_uncomp_in;
