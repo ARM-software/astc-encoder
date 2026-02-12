@@ -2246,15 +2246,67 @@ int astcenc_main(
 			total_compression_time = get_time() - start_compression_time;
 			best_compression_time = total_compression_time;
 
-			delete[] guide_data;
-
 			if (guide_error == ASTCENC_ERR_BAD_GUIDE)
 			{
-				printf("WARNING: Guide file does not match input image, falling back to normal compression\n");
+				// Diagnose the specific mismatch reason before freeing guide_data
+				auto rle32 = [](const uint8_t* p) -> uint32_t {
+					return uint32_t(p[0]) | (uint32_t(p[1]) << 8)
+					     | (uint32_t(p[2]) << 16) | (uint32_t(p[3]) << 24);
+				};
+
+				char reason[256];
+				if (guide_len < 24)
+				{
+					snprintf(reason, sizeof(reason),
+					         "file too small (corrupt or truncated)");
+				}
+				else if (rle32(guide_data) != 0x44475341u)
+				{
+					snprintf(reason, sizeof(reason),
+					         "not a guide file (bad magic number)");
+				}
+				else if (guide_data[4] != 1)
+				{
+					snprintf(reason, sizeof(reason),
+					         "incompatible guide version (guide has v%u, expected v1)",
+					         unsigned(guide_data[4]));
+				}
+				else if (guide_data[5] != config.block_x ||
+				         guide_data[6] != config.block_y ||
+				         guide_data[7] != config.block_z)
+				{
+					snprintf(reason, sizeof(reason),
+					         "block size mismatch (guide has %ux%u, encoding uses %ux%u)",
+					         unsigned(guide_data[5]), unsigned(guide_data[6]),
+					         config.block_x, config.block_y);
+				}
+				else if (rle32(guide_data + 8) != image_uncomp_in->dim_x ||
+				         rle32(guide_data + 12) != image_uncomp_in->dim_y ||
+				         rle32(guide_data + 16) != image_uncomp_in->dim_z)
+				{
+					snprintf(reason, sizeof(reason),
+					         "image dimensions mismatch (guide has %ux%u, image is %ux%u)",
+					         rle32(guide_data + 8), rle32(guide_data + 12),
+					         image_uncomp_in->dim_x, image_uncomp_in->dim_y);
+				}
+				else
+				{
+					snprintf(reason, sizeof(reason),
+					         "image content changed (checksum mismatch)");
+				}
+
+				printf("WARNING: Guide '%s' does not match input '%s': %s\n",
+				       cli_config.guide_in_filename.c_str(),
+				       input_filename.c_str(), reason);
+				printf("         Falling back to normal compression\n");
+				delete[] guide_data;
 				astcenc_compress_reset(codec_context);
 				goto normal_compress;
 			}
-			else if (guide_error != ASTCENC_SUCCESS)
+
+			delete[] guide_data;
+
+			if (guide_error != ASTCENC_SUCCESS)
 			{
 				print_error("ERROR: Guided compress failed: %s\n", astcenc_get_error_string(guide_error));
 				delete[] buffer;
