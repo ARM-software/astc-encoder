@@ -7,6 +7,19 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.5.0
+
+**Status:** In development.
+
+The 5.4.0 release is a minor maintenance release.
+
+* **General:**
+  * **Improvement:** Decompressor (`astcdec`) builds, which lack compression
+    support, now use a smaller `block_size_descriptor` by omitting fields that
+    are only needed for compression. This reduces the size of a decompressor
+    context by more than 10MB!
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.3.0
 
 **Status:** March 2025
