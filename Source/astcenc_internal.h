@@ -600,6 +600,7 @@ struct block_size_descriptor
 	 */
 	uint16_t partitioning_packed_index[3][BLOCK_MAX_PARTITIONINGS];
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	/** @brief The active texels for k-means partition selection. */
 	uint8_t kmeans_texels[BLOCK_MAX_KMEANS_TEXELS];
 
@@ -623,6 +624,7 @@ struct block_size_descriptor
 	 * Indexed by remapped index, not physical index.
 	 */
 	uint64_t coverage_bitmaps_4[BLOCK_MAX_PARTITIONINGS][4];
+#endif
 
 	/**
 	 * @brief Get the block mode structure for index @c block_mode.
