@@ -447,7 +447,21 @@ R"(
            Error messages will always be printed, as will mandatory outputs
            for the selected operation mode. For example, the test mode will
            always output image quality metrics and compression time but
-           will suppress all other output.)"
+           will suppress all other output.
+
+       -guide-out <path>
+           After compression, write a guide sidecar file to <path>. The
+           guide captures per-block structural decisions (block mode,
+           partition count, partition index) that enable fast guided
+           recompression from the original image. The guide does not
+           contain any pixel-derived data.
+
+       -guide-in <path>
+           Use a guide file for guided compression. Instead of searching
+           for block modes and partitions, the encoder reads these from
+           the guide and only re-derives endpoints and weights. This is
+           50-200x faster than full compression. The guide must have been
+           generated from the same image (verified by checksum).)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(

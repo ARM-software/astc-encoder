@@ -1403,6 +1403,8 @@ const char* astcenc_get_error_string(
 		return "ASTCENC_ERR_NOT_IMPLEMENTED";
 	case ASTCENC_ERR_BAD_DECODE_MODE:
 		return "ASTCENC_ERR_BAD_DECODE_MODE";
+	case ASTCENC_ERR_BAD_GUIDE:
+		return "ASTCENC_ERR_BAD_GUIDE";
 #if defined(ASTCENC_DIAGNOSTICS)
 	case ASTCENC_ERR_DTRACE_FAILURE:
 		return "ASTCENC_ERR_DTRACE_FAILURE";
@@ -1411,3 +1413,481 @@ const char* astcenc_get_error_string(
 		return nullptr;
 	}
 }
+
+/* ============================================================================
+  Guide file format constants
+============================================================================ */
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+
+/** @brief Guide file magic number "ASGD" in little-endian. */
+static constexpr uint32_t GUIDE_MAGIC = 0x44475341u;
+
+/** @brief Guide file format version. */
+static constexpr uint8_t GUIDE_VERSION = 1;
+
+/** @brief Guide file header size in bytes. */
+static constexpr size_t GUIDE_HEADER_SIZE = 24;
+
+/** @brief Guide per-block record size in bytes. */
+static constexpr size_t GUIDE_RECORD_SIZE = 4;
+
+/**
+ * @brief Compute FNV-1a hash over raw pixel data of an image.
+ *
+ * Hashes all slices, rows, pixels in scanline order as RGBA bytes.
+ * For non-U8 images, converts float values to 0-255 range.
+ */
+static uint32_t compute_image_checksum(
+	const astcenc_image& image
+) {
+	uint32_t hash = 2166136261u; // FNV offset basis
+
+	for (unsigned int z = 0; z < image.dim_z; z++)
+	{
+		if (image.data_type == ASTCENC_TYPE_U8)
+		{
+			const uint8_t* data = static_cast<const uint8_t*>(image.data[z]);
+			size_t byte_count = static_cast<size_t>(image.dim_x) * image.dim_y * 4;
+			for (size_t i = 0; i < byte_count; i++)
+			{
+				hash ^= data[i];
+				hash *= 16777619u;
+			}
+		}
+		else if (image.data_type == ASTCENC_TYPE_F16)
+		{
+			const uint16_t* data = static_cast<const uint16_t*>(image.data[z]);
+			size_t count = static_cast<size_t>(image.dim_x) * image.dim_y * 4;
+			for (size_t i = 0; i < count; i++)
+			{
+				uint16_t val = data[i];
+				hash ^= val & 0xFF;
+				hash *= 16777619u;
+				hash ^= (val >> 8) & 0xFF;
+				hash *= 16777619u;
+			}
+		}
+		else // ASTCENC_TYPE_F32
+		{
+			const float* data = static_cast<const float*>(image.data[z]);
+			size_t count = static_cast<size_t>(image.dim_x) * image.dim_y * 4;
+			for (size_t i = 0; i < count; i++)
+			{
+				uint32_t val;
+				memcpy(&val, &data[i], sizeof(val));
+				hash ^= val & 0xFF;
+				hash *= 16777619u;
+				hash ^= (val >> 8) & 0xFF;
+				hash *= 16777619u;
+				hash ^= (val >> 16) & 0xFF;
+				hash *= 16777619u;
+				hash ^= (val >> 24) & 0xFF;
+				hash *= 16777619u;
+			}
+		}
+	}
+
+	return hash;
+}
+
+/**
+ * @brief Write a little-endian uint32 to a byte buffer.
+ */
+static inline void write_le32(uint8_t* ptr, uint32_t val)
+{
+	ptr[0] = val & 0xFF;
+	ptr[1] = (val >> 8) & 0xFF;
+	ptr[2] = (val >> 16) & 0xFF;
+	ptr[3] = (val >> 24) & 0xFF;
+}
+
+/**
+ * @brief Read a little-endian uint32 from a byte buffer.
+ */
+static inline uint32_t read_le32(const uint8_t* ptr)
+{
+	return static_cast<uint32_t>(ptr[0])
+	     | (static_cast<uint32_t>(ptr[1]) << 8)
+	     | (static_cast<uint32_t>(ptr[2]) << 16)
+	     | (static_cast<uint32_t>(ptr[3]) << 24);
+}
+
+/* See header for documentation. */
+astcenc_error astcenc_generate_guide(
+	const astcenc_context* ctxo,
+	const astcenc_image* imagep,
+	const uint8_t* astc_data,
+	size_t astc_data_len,
+	uint8_t* guide_out,
+	size_t* guide_len
+) {
+	const astcenc_contexti& ctx = ctxo->context;
+
+	unsigned int block_x = ctx.config.block_x;
+	unsigned int block_y = ctx.config.block_y;
+	unsigned int block_z = ctx.config.block_z;
+
+	unsigned int dim_x = imagep->dim_x;
+	unsigned int dim_y = imagep->dim_y;
+	unsigned int dim_z = imagep->dim_z;
+
+	unsigned int xblocks = (dim_x + block_x - 1) / block_x;
+	unsigned int yblocks = (dim_y + block_y - 1) / block_y;
+	unsigned int zblocks = (dim_z + block_z - 1) / block_z;
+	size_t block_count = static_cast<size_t>(xblocks) * yblocks * zblocks;
+
+	size_t required_size = GUIDE_HEADER_SIZE + block_count * GUIDE_RECORD_SIZE;
+
+	// If guide_out is null, just return required size
+	if (!guide_out)
+	{
+		*guide_len = required_size;
+		return ASTCENC_SUCCESS;
+	}
+
+	if (*guide_len < required_size)
+	{
+		*guide_len = required_size;
+		return ASTCENC_ERR_OUT_OF_MEM;
+	}
+
+	// Verify ASTC data size
+	if (astc_data_len < block_count * 16)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	// Compute image checksum
+	uint32_t checksum = compute_image_checksum(*imagep);
+
+	// Write header
+	write_le32(guide_out + 0, GUIDE_MAGIC);
+	guide_out[4] = GUIDE_VERSION;
+	guide_out[5] = static_cast<uint8_t>(block_x);
+	guide_out[6] = static_cast<uint8_t>(block_y);
+	guide_out[7] = static_cast<uint8_t>(block_z);
+	write_le32(guide_out + 8, dim_x);
+	write_le32(guide_out + 12, dim_y);
+	write_le32(guide_out + 16, dim_z);
+	write_le32(guide_out + 20, checksum);
+
+	// Extract per-block records from physical ASTC data using full symbolic decode
+	const block_size_descriptor& bsd = *ctx.bsd;
+	uint8_t* record = guide_out + GUIDE_HEADER_SIZE;
+	for (size_t i = 0; i < block_count; i++)
+	{
+		const uint8_t* block = astc_data + i * 16;
+
+		symbolic_compressed_block scb;
+		physical_to_symbolic(bsd, block, scb);
+
+		uint32_t packed = 0;
+
+		bool is_constant = (scb.block_type == SYM_BTYPE_CONST_F16) ||
+		                   (scb.block_type == SYM_BTYPE_CONST_U16);
+
+		if (is_constant || scb.block_type == SYM_BTYPE_ERROR)
+		{
+			// is_constant = 1, rest zero
+			packed = 1u << 31;
+		}
+		else
+		{
+			unsigned int partition_count = scb.partition_count;
+			unsigned int partition_index = (partition_count > 1) ? scb.partition_index : 0;
+
+			// Extract format class (color_format >> 2) per partition
+			uint32_t format_classes = 0;
+			for (unsigned int j = 0; j < partition_count; j++)
+			{
+				uint8_t fc = scb.color_formats[j] >> 2;
+				format_classes |= static_cast<uint32_t>(fc & 0x3) << (j * 2);
+			}
+
+			// Pack into 32-bit record:
+			// Bit  31:     is_constant (0)
+			// Bits 20-30:  block_mode (11 bits)
+			// Bits 18-19:  partition_count - 1 (2 bits)
+			// Bits 8-17:   partition_index (10 bits)
+			// Bits 0-7:    format_classes (2 bits per partition, 8 bits total)
+			packed = (static_cast<uint32_t>(scb.block_mode) << 20)
+			       | (static_cast<uint32_t>(partition_count - 1) << 18)
+			       | (static_cast<uint32_t>(partition_index) << 8)
+			       | format_classes;
+		}
+
+		// Write 4-byte LE record
+		record[0] = packed & 0xFF;
+		record[1] = (packed >> 8) & 0xFF;
+		record[2] = (packed >> 16) & 0xFF;
+		record[3] = (packed >> 24) & 0xFF;
+		record += GUIDE_RECORD_SIZE;
+	}
+
+	*guide_len = required_size;
+	return ASTCENC_SUCCESS;
+}
+
+/**
+ * @brief Internal guided image compression function.
+ *
+ * Similar to compress_image() but reads guide records to determine block mode and partition.
+ */
+static void compress_image_guided(
+	astcenc_context& ctxo,
+	unsigned int thread_index,
+	const astcenc_image& image,
+	const astcenc_swizzle& swizzle,
+	const uint8_t* guide_data,
+	uint8_t* buffer
+) {
+	astcenc_contexti& ctx = ctxo.context;
+	const block_size_descriptor& bsd = *ctx.bsd;
+	astcenc_profile decode_mode = ctx.config.profile;
+
+	image_block blk;
+
+	int block_x = bsd.xdim;
+	int block_y = bsd.ydim;
+	int block_z = bsd.zdim;
+	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
+
+	int dim_x = image.dim_x;
+	int dim_y = image.dim_y;
+	int dim_z = image.dim_z;
+
+	int xblocks = (dim_x + block_x - 1) / block_x;
+	int yblocks = (dim_y + block_y - 1) / block_y;
+	int zblocks = (dim_z + block_z - 1) / block_z;
+	int block_count = zblocks * yblocks * xblocks;
+
+	int row_blocks = xblocks;
+	int plane_blocks = xblocks * yblocks;
+
+	blk.decode_unorm8 = ctx.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
+
+	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,
+	                             ctx.config.cw_g_weight,
+	                             ctx.config.cw_b_weight,
+	                             ctx.config.cw_a_weight);
+
+	auto& temp_buffers = ctx.working_buffers[thread_index];
+
+	ctxo.manage_compress.init(block_count, ctx.config.progress_callback);
+
+	// Determine load function
+	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
+	                 (swizzle.b != ASTCENC_SWZ_B) || (swizzle.a != ASTCENC_SWZ_A);
+
+	bool needs_hdr = (decode_mode == ASTCENC_PRF_HDR) ||
+	                 (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+
+	bool use_fast_load = !needs_swz && !needs_hdr &&
+	                     block_z == 1 && image.data_type == ASTCENC_TYPE_U8;
+
+	auto load_func = load_image_block;
+	if (use_fast_load)
+	{
+		load_func = load_image_block_fast_ldr;
+	}
+
+	const uint8_t* guide_records = guide_data + GUIDE_HEADER_SIZE;
+
+	while (true)
+	{
+		unsigned int count;
+		unsigned int base = ctxo.manage_compress.get_task_assignment(16, count);
+		if (!count)
+		{
+			break;
+		}
+
+		for (unsigned int i = base; i < base + count; i++)
+		{
+			int z = i / plane_blocks;
+			unsigned int rem = i - (z * plane_blocks);
+			int y = rem / row_blocks;
+			int x = rem - (y * row_blocks);
+
+			// Read guide record for this block (4-byte LE)
+			const uint8_t* rec = guide_records + i * GUIDE_RECORD_SIZE;
+			uint32_t packed = static_cast<uint32_t>(rec[0])
+			                | (static_cast<uint32_t>(rec[1]) << 8)
+			                | (static_cast<uint32_t>(rec[2]) << 16)
+			                | (static_cast<uint32_t>(rec[3]) << 24);
+
+			bool is_constant = (packed >> 31) & 1;
+
+			int offset = ((z * yblocks + y) * xblocks + x) * 16;
+			uint8_t* bp = buffer + offset;
+
+			if (is_constant)
+			{
+				// Load block and encode as constant color
+				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+
+				symbolic_compressed_block scb;
+				scb.partition_count = 0;
+
+				if ((decode_mode == ASTCENC_PRF_HDR) ||
+				    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
+				{
+					scb.block_type = SYM_BTYPE_CONST_F16;
+					vint4 color_f16 = float_to_float16(blk.origin_texel);
+					store(color_f16, scb.constant_color);
+				}
+				else
+				{
+					scb.block_type = SYM_BTYPE_CONST_U16;
+					vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
+					vint4 color_u16 = float_to_int_rtn(color_f32);
+					store(color_u16, scb.constant_color);
+				}
+
+				symbolic_to_physical(bsd, scb, bp);
+			}
+			else
+			{
+				unsigned int guide_block_mode = (packed >> 20) & 0x7FF;
+				unsigned int guide_partition_count = ((packed >> 18) & 0x3) + 1;
+				unsigned int guide_partition_index = (packed >> 8) & 0x3FF;
+				uint8_t guide_format_classes[BLOCK_MAX_PARTITIONS];
+				guide_format_classes[0] = packed & 0x3;
+				guide_format_classes[1] = (packed >> 2) & 0x3;
+				guide_format_classes[2] = (packed >> 4) & 0x3;
+				guide_format_classes[3] = (packed >> 6) & 0x3;
+
+				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+
+				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
+				{
+					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
+					blk.channel_weight = vfloat4(ctx.config.cw_r_weight * alpha_scale,
+					                             ctx.config.cw_g_weight * alpha_scale,
+					                             ctx.config.cw_b_weight * alpha_scale,
+					                             ctx.config.cw_a_weight);
+				}
+
+				compress_block_guided(ctx, blk, guide_block_mode, guide_partition_count, guide_partition_index, guide_format_classes, bp, temp_buffers);
+			}
+		}
+
+		ctxo.manage_compress.complete_task_assignment(count);
+	}
+}
+
+/* See header for documentation. */
+astcenc_error astcenc_compress_image_guided(
+	astcenc_context* ctxo,
+	astcenc_image* imagep,
+	const astcenc_swizzle* swizzle,
+	const uint8_t* guide_data,
+	size_t guide_len,
+	uint8_t* data_out,
+	size_t data_len,
+	unsigned int thread_index
+) {
+	astcenc_contexti* ctx = &ctxo->context;
+	astcenc_error status;
+	astcenc_image& image = *imagep;
+
+	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
+	{
+		return ASTCENC_ERR_BAD_CONTEXT;
+	}
+
+	status = validate_compression_swizzle(*swizzle);
+	if (status != ASTCENC_SUCCESS)
+	{
+		return status;
+	}
+
+	if (thread_index >= ctx->thread_count)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	// Validate guide header
+	if (guide_len < GUIDE_HEADER_SIZE)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check magic
+	if (read_le32(guide_data) != GUIDE_MAGIC)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check version
+	if (guide_data[4] != GUIDE_VERSION)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check block size match
+	if (guide_data[5] != ctx->config.block_x ||
+	    guide_data[6] != ctx->config.block_y ||
+	    guide_data[7] != ctx->config.block_z)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check image dimensions match
+	uint32_t guide_dim_x = read_le32(guide_data + 8);
+	uint32_t guide_dim_y = read_le32(guide_data + 12);
+	uint32_t guide_dim_z = read_le32(guide_data + 16);
+
+	if (guide_dim_x != image.dim_x ||
+	    guide_dim_y != image.dim_y ||
+	    guide_dim_z != image.dim_z)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check guide file has enough data for all blocks
+	unsigned int block_x = ctx->config.block_x;
+	unsigned int block_y = ctx->config.block_y;
+	unsigned int block_z = ctx->config.block_z;
+
+	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
+	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
+	unsigned int zblocks = (image.dim_z + block_z - 1) / block_z;
+	size_t block_count = static_cast<size_t>(xblocks) * yblocks * zblocks;
+
+	size_t expected_guide_size = GUIDE_HEADER_SIZE + block_count * GUIDE_RECORD_SIZE;
+	if (guide_len < expected_guide_size)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Verify image checksum
+	uint32_t stored_checksum = read_le32(guide_data + 20);
+	uint32_t computed_checksum = compute_image_checksum(image);
+	if (stored_checksum != computed_checksum)
+	{
+		return ASTCENC_ERR_BAD_GUIDE;
+	}
+
+	// Check output buffer size
+	size_t size_needed = block_count * 16;
+	if (data_len < size_needed)
+	{
+		return ASTCENC_ERR_OUT_OF_MEM;
+	}
+
+	// If context thread count is one then implicitly reset
+	if (ctx->thread_count == 1)
+	{
+		astcenc_compress_reset(ctxo);
+	}
+
+	// No alpha-scale RDO prepass for guided compression
+	compress_image_guided(*ctxo, thread_index, image, *swizzle, guide_data, data_out);
+
+	ctxo->manage_compress.wait();
+
+	return ASTCENC_SUCCESS;
+}
+
+#endif // !ASTCENC_DECOMPRESS_ONLY

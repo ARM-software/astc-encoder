@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -94,6 +95,12 @@ struct cli_config_options
 
 	/** @brief The  post-decode swizzle. */
 	astcenc_swizzle swz_decode;
+
+	/** @brief The file path for guide output (empty if not used). */
+	std::string guide_out_filename;
+
+	/** @brief The file path for guide input (empty if not used). */
+	std::string guide_in_filename;
 };
 
 /**
@@ -262,7 +269,8 @@ bool load_ktx_compressed_image(
 bool store_ktx_compressed_image(
 	const astc_compressed_image& img,
 	const char* filename,
-	bool is_srgb);
+	bool is_srgb,
+	bool y_flip);
 
 /**
  * @brief Create an image from a 2D float data array.

@@ -2010,6 +2010,22 @@ void recompute_ideal_colors_2planes(
 void prepare_angular_tables();
 
 /**
+ * @brief Compute angular endpoints for a single decimation mode and quant level.
+ *
+ * @param      weight_count              The number of (decimated) weights.
+ * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
+ * @param      max_quant_level           The maximum quantization level to be tested.
+ * @param[out] low_value                 Per quant level, the lowest weight value.
+ * @param[out] high_value                Per quant level, the highest weight value.
+ */
+void compute_angular_endpoints_for_quant_levels(
+	unsigned int weight_count,
+	const float* dec_weight_ideal_value,
+	unsigned int max_quant_level,
+	float low_value[TUNE_MAX_ANGULAR_QUANT + 1],
+	float high_value[TUNE_MAX_ANGULAR_QUANT + 1]);
+
+/**
  * @brief Compute the angular endpoints for one plane for each block mode.
  *
  * @param      only_always              Only consider block modes that are always enabled.
@@ -2054,6 +2070,31 @@ void compute_angular_endpoints_2planes(
 void compress_block(
 	const astcenc_contexti& ctx,
 	const image_block& blk,
+	uint8_t pcb[16],
+	compression_working_buffers& tmpbuf);
+
+/**
+ * @brief Compress an image block using a guide record.
+ *
+ * Uses a pre-determined block mode, partition count, and partition index from a guide file,
+ * skipping the expensive mode/partition search. Only endpoints and weights are re-derived.
+ *
+ * @param      ctx            The compressor context and configuration.
+ * @param      blk            The image block color data to compress.
+ * @param      guide_block_mode      The physical block mode from the guide.
+ * @param      guide_partition_count  The partition count from the guide.
+ * @param      guide_partition_index  The partition index from the guide.
+ * @param      guide_format_classes  The format class (color_format >> 2) per partition from the guide.
+ * @param[out] pcb            The physical compressed block output.
+ * @param[out] tmpbuf         Preallocated scratch buffers for the compressor.
+ */
+void compress_block_guided(
+	const astcenc_contexti& ctx,
+	const image_block& blk,
+	unsigned int guide_block_mode,
+	unsigned int guide_partition_count,
+	unsigned int guide_partition_index,
+	const uint8_t guide_format_classes[BLOCK_MAX_PARTITIONS],
 	uint8_t pcb[16],
 	compression_working_buffers& tmpbuf);
 

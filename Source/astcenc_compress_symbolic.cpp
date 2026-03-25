@@ -1159,6 +1159,657 @@ static float prepare_block_statistics(
 	return lowest_correlation;
 }
 
+/**
+ * @brief Compress a block using a single guided configuration (1 plane).
+ *
+ * Given a fixed block_mode and partition, compute ideal endpoints and weights, quantize, refine,
+ * and return the best symbolic block. This is the inner encoding loop extracted for guided use.
+ */
+static float compress_guided_1plane(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const image_block& blk,
+	const block_mode& bm,
+	unsigned int partition_count,
+	unsigned int partition_index,
+	const uint8_t guide_format_classes[BLOCK_MAX_PARTITIONS],
+	symbolic_compressed_block& scb,
+	compression_working_buffers& tmpbuf
+) {
+	const auto& pi = bsd.get_partition_info(partition_count, partition_index);
+	const auto& di = bsd.get_decimation_info(bm.decimation_mode);
+
+	// Compute ideal endpoints and weights with no quantization
+	endpoints_and_weights& ei = tmpbuf.ei1;
+	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
+
+	// Compute ideal weights for this decimation mode
+	float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
+	uint8_t* dec_weights_uquant = tmpbuf.dec_weights_uquant;
+
+	compute_ideal_weights_for_decimation(
+		ei, di,
+		dec_weights_ideal);
+
+	// Compute angular weight bounds for this specific mode
+	float low_bound = 0.0f;
+	float high_bound = 1.0f;
+
+	unsigned int quant_mode = bm.quant_mode;
+	if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
+	{
+		float angular_low[TUNE_MAX_ANGULAR_QUANT + 1];
+		float angular_high[TUNE_MAX_ANGULAR_QUANT + 1];
+		compute_angular_endpoints_for_quant_levels(
+			di.weight_count, dec_weights_ideal,
+			quant_mode, angular_low, angular_high);
+		low_bound = angular_low[quant_mode];
+		high_bound = angular_high[quant_mode];
+	}
+
+	ASTCENC_ALIGNAS float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
+
+	compute_quantized_weights_for_decimation(
+		di,
+		low_bound, high_bound,
+		dec_weights_ideal,
+		dec_weights_uquantf,
+		dec_weights_uquant,
+		bm.get_weight_quant_mode());
+
+	// Compute bit budget for color endpoints
+	static const int8_t free_bits_for_partition_count[4] {
+		115 - 4, 111 - 4 - PARTITION_INDEX_BITS, 108 - 4 - PARTITION_INDEX_BITS, 105 - 4 - PARTITION_INDEX_BITS
+	};
+
+	int bitcount = free_bits_for_partition_count[partition_count - 1] - bm.weight_bits;
+	if (bitcount <= 0)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	// Use format class from guide to determine integer count per partition.
+	// Format class = color_format >> 2: 0=L(2 ints), 1=LA/RGBScale(4), 2=RGB(6), 3=RGBA(8)
+	// Sum integer counts across partitions since different partitions can have different classes.
+	int color_integer_count = 0;
+	for (unsigned int j = 0; j < partition_count; j++)
+	{
+		color_integer_count += (static_cast<int>(guide_format_classes[j]) + 1) * 2;
+	}
+	int table_index = color_integer_count >> 1;
+
+	// Bounds check: table has entries for indices 1-9
+	if (table_index < 1 || table_index > 9)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	int best_quant_level_int = quant_mode_table[table_index][bitcount];
+	if (best_quant_level_int < QUANT_6)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	// Build candidate format lists per partition. Within each format class, there
+	// can be multiple semantically different LDR formats with the same integer count.
+	// The normal encoder evaluates all of them via compute_ideal_endpoint_formats;
+	// we must do the same to avoid picking a bad format within the class.
+	//   Class 0 (2 ints): FMT_LUMINANCE only
+	//   Class 1 (4 ints): FMT_LUMINANCE_ALPHA, FMT_RGB_SCALE
+	//   Class 2 (6 ints): FMT_RGB, FMT_RGB_SCALE_ALPHA
+	//   Class 3 (8 ints): FMT_RGBA only
+	uint8_t format_candidates[BLOCK_MAX_PARTITIONS][2];
+	unsigned int format_candidate_count[BLOCK_MAX_PARTITIONS];
+
+	for (unsigned int j = 0; j < partition_count; j++)
+	{
+		uint8_t fc = guide_format_classes[j];
+		switch (fc)
+		{
+		case 0:
+			format_candidates[j][0] = FMT_LUMINANCE;
+			format_candidate_count[j] = 1;
+			break;
+		case 1:
+			format_candidates[j][0] = FMT_RGB_SCALE;
+			format_candidates[j][1] = FMT_LUMINANCE_ALPHA;
+			format_candidate_count[j] = 2;
+			break;
+		case 2:
+			format_candidates[j][0] = FMT_RGB;
+			format_candidates[j][1] = FMT_RGB_SCALE_ALPHA;
+			format_candidate_count[j] = 2;
+			break;
+		case 3:
+		default:
+			format_candidates[j][0] = FMT_RGBA;
+			format_candidate_count[j] = 1;
+			break;
+		}
+	}
+
+	quant_method color_quant_level = static_cast<quant_method>(best_quant_level_int);
+
+	auto compute_difference = &compute_symbolic_block_difference_1plane;
+	if ((partition_count == 1) && !(config.flags & ASTCENC_FLG_MAP_RGBM))
+	{
+		compute_difference = &compute_symbolic_block_difference_1plane_1partition;
+	}
+
+	float best_errorval = ERROR_CALC_DEFAULT;
+
+	// Enumerate all format candidate combinations across partitions.
+	// For 1 partition: up to 2 combos. For 2 partitions: up to 4. Bounded by 2^4 = 16.
+	unsigned int total_combos = 1;
+	for (unsigned int j = 0; j < partition_count; j++)
+	{
+		total_combos *= format_candidate_count[j];
+	}
+
+	for (unsigned int combo = 0; combo < total_combos; combo++)
+	{
+		// Decode combo index into per-partition format selection
+		uint8_t format_specifiers[BLOCK_MAX_PARTITIONS];
+		unsigned int ci = combo;
+		for (unsigned int j = 0; j < partition_count; j++)
+		{
+			unsigned int fc_count = format_candidate_count[j];
+			format_specifiers[j] = format_candidates[j][ci % fc_count];
+			ci /= fc_count;
+		}
+
+		quant_method trial_quant = color_quant_level;
+
+		// Set up initial weights in symbolic block
+		symbolic_compressed_block workscb;
+		endpoints workep = ei.ep;
+
+		for (unsigned int j = 0; j < di.weight_count; j++)
+		{
+			workscb.weights[j] = dec_weights_uquant[j];
+		}
+
+		// Refinement loop (2 iterations for guided mode)
+		unsigned int refinement_limit = astc::min(config.tune_refinement_limit, 2u);
+		for (unsigned int l = 0; l < refinement_limit; l++)
+		{
+			vfloat4 rgbs_colors[BLOCK_MAX_PARTITIONS];
+			vfloat4 rgbo_colors[BLOCK_MAX_PARTITIONS];
+
+			recompute_ideal_colors_1plane(
+				blk, pi, di, workscb.weights,
+				workep, rgbs_colors, rgbo_colors);
+
+			// Quantize the chosen color using per-partition format specifiers
+			for (unsigned int j = 0; j < partition_count; j++)
+			{
+				workscb.color_formats[j] = pack_color_endpoints(
+					workep.endpt0[j],
+					workep.endpt1[j],
+					rgbs_colors[j],
+					rgbo_colors[j],
+					format_specifiers[j],
+					workscb.color_values[j],
+					trial_quant);
+			}
+
+			// Check if all formats match for multi-partition blocks
+			workscb.color_formats_matched = 0;
+			if (partition_count >= 2)
+			{
+				bool all_same = true;
+				for (unsigned int j = 1; j < partition_count; j++)
+				{
+					if (workscb.color_formats[j] != workscb.color_formats[0])
+					{
+						all_same = false;
+						break;
+					}
+				}
+
+				if (all_same)
+				{
+					// Try the mod quant level: matched formats save (3*pc - 4) bits
+					// 2-partition: +2, 3-partition: +5, 4-partition: +8
+					int mod_bits = bitcount + 3 * static_cast<int>(partition_count) - 4;
+					int mod_quant_int = quant_mode_table[color_integer_count >> 1][mod_bits];
+					if (mod_quant_int >= QUANT_6)
+					{
+						quant_method mod_quant = static_cast<quant_method>(mod_quant_int);
+						uint8_t mod_values[BLOCK_MAX_PARTITIONS][8];
+						uint8_t mod_formats[BLOCK_MAX_PARTITIONS];
+						bool all_same_mod = true;
+
+						for (unsigned int j = 0; j < partition_count; j++)
+						{
+							mod_formats[j] = pack_color_endpoints(
+								workep.endpt0[j],
+								workep.endpt1[j],
+								rgbs_colors[j],
+								rgbo_colors[j],
+								format_specifiers[j],
+								mod_values[j],
+								mod_quant);
+
+							if (mod_formats[j] != mod_formats[0])
+							{
+								all_same_mod = false;
+								break;
+							}
+						}
+
+						if (all_same_mod)
+						{
+							workscb.color_formats_matched = 1;
+							for (unsigned int j = 0; j < partition_count; j++)
+							{
+								for (unsigned int k = 0; k < 8; k++)
+								{
+									workscb.color_values[j][k] = mod_values[j][k];
+								}
+								workscb.color_formats[j] = mod_formats[j];
+							}
+							trial_quant = mod_quant;
+						}
+					}
+				}
+			}
+
+			// Store header fields
+			workscb.partition_count = static_cast<uint8_t>(partition_count);
+			workscb.partition_index = static_cast<uint16_t>(partition_index);
+			workscb.plane2_component = -1;
+			workscb.quant_mode = trial_quant;
+			workscb.block_mode = bm.mode_index;
+			workscb.block_type = SYM_BTYPE_NONCONST;
+
+			float errorval = compute_difference(config, bsd, workscb, blk);
+			if (errorval == -ERROR_CALC_DEFAULT)
+			{
+				errorval = -errorval;
+				workscb.block_type = SYM_BTYPE_ERROR;
+			}
+
+			if (errorval < best_errorval)
+			{
+				best_errorval = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
+			// Realign weights
+			bool adjustments;
+			if (di.weight_count != bsd.texel_count)
+			{
+				adjustments = realign_weights_decimated(
+					config.profile, bsd, blk, workscb);
+			}
+			else
+			{
+				adjustments = realign_weights_undecimated(
+					config.profile, bsd, blk, workscb);
+			}
+
+			// Post-realign test
+			errorval = compute_difference(config, bsd, workscb, blk);
+			if (errorval == -ERROR_CALC_DEFAULT)
+			{
+				errorval = -errorval;
+				workscb.block_type = SYM_BTYPE_ERROR;
+			}
+
+			if (errorval < best_errorval)
+			{
+				best_errorval = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
+			if (!adjustments)
+			{
+				break;
+			}
+		}
+	}
+
+	return best_errorval;
+}
+
+/**
+ * @brief Compress a block using a single guided configuration (2 planes).
+ *
+ * Given a fixed block_mode and a specific plane2_component, compute ideal endpoints and weights
+ * for both planes, quantize, refine, and return the symbolic block.
+ */
+static float compress_guided_2planes(
+	const astcenc_config& config,
+	const block_size_descriptor& bsd,
+	const image_block& blk,
+	const block_mode& bm,
+	unsigned int plane2_component,
+	uint8_t guide_format_class,
+	symbolic_compressed_block& scb,
+	compression_working_buffers& tmpbuf
+) {
+	const auto& di = bsd.get_decimation_info(bm.decimation_mode);
+
+	endpoints_and_weights& ei1 = tmpbuf.ei1;
+	endpoints_and_weights& ei2 = tmpbuf.ei2;
+
+	compute_ideal_colors_and_weights_2planes(bsd, blk, plane2_component, ei1, ei2);
+
+	float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
+	uint8_t* dec_weights_uquant = tmpbuf.dec_weights_uquant;
+
+	compute_ideal_weights_for_decimation(
+		ei1, di,
+		dec_weights_ideal);
+
+	compute_ideal_weights_for_decimation(
+		ei2, di,
+		dec_weights_ideal + WEIGHTS_PLANE2_OFFSET);
+
+	// Compute angular weight bounds for each plane
+	float low_bound1 = 0.0f, high_bound1 = 1.0f;
+	float low_bound2 = 0.0f, high_bound2 = 1.0f;
+
+	unsigned int quant_mode = bm.quant_mode;
+	if (quant_mode <= TUNE_MAX_ANGULAR_QUANT)
+	{
+		float angular_low[TUNE_MAX_ANGULAR_QUANT + 1];
+		float angular_high[TUNE_MAX_ANGULAR_QUANT + 1];
+
+		compute_angular_endpoints_for_quant_levels(
+			di.weight_count, dec_weights_ideal,
+			quant_mode, angular_low, angular_high);
+		low_bound1 = angular_low[quant_mode];
+		high_bound1 = angular_high[quant_mode];
+
+		compute_angular_endpoints_for_quant_levels(
+			di.weight_count, dec_weights_ideal + WEIGHTS_PLANE2_OFFSET,
+			quant_mode, angular_low, angular_high);
+		low_bound2 = angular_low[quant_mode];
+		high_bound2 = angular_high[quant_mode];
+	}
+
+	ASTCENC_ALIGNAS float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
+
+	compute_quantized_weights_for_decimation(
+		di,
+		low_bound1, high_bound1,
+		dec_weights_ideal,
+		dec_weights_uquantf,
+		dec_weights_uquant,
+		bm.get_weight_quant_mode());
+
+	ASTCENC_ALIGNAS float dec_weights_uquantf2[BLOCK_MAX_WEIGHTS];
+
+	compute_quantized_weights_for_decimation(
+		di,
+		low_bound2, high_bound2,
+		dec_weights_ideal + WEIGHTS_PLANE2_OFFSET,
+		dec_weights_uquantf2,
+		dec_weights_uquant + WEIGHTS_PLANE2_OFFSET,
+		bm.get_weight_quant_mode());
+
+	// Compute bit budget: dual plane uses 109 - weight_bits for colors
+	int bitcount = 109 - bm.weight_bits;
+	if (bitcount <= 0)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	// Merge endpoints
+	endpoints epm;
+	merge_endpoints(ei1.ep, ei2.ep, plane2_component, epm);
+
+	// Use format class from guide to determine integer count and base format.
+	// Dual-plane is always 1 partition.
+	int integers_per_part = (static_cast<int>(guide_format_class) + 1) * 2;
+	int color_integer_count = integers_per_part; // 1 partition
+	int table_index = color_integer_count >> 1;
+	if (table_index < 1 || table_index > 9)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	int best_quant_level_int = quant_mode_table[table_index][bitcount];
+	if (best_quant_level_int < QUANT_6)
+	{
+		return ERROR_CALC_DEFAULT;
+	}
+
+	// Build candidate format list for this class (dual-plane is always 1 partition)
+	uint8_t format_candidates[2];
+	unsigned int format_candidate_count;
+	switch (guide_format_class)
+	{
+	case 0:
+		format_candidates[0] = FMT_LUMINANCE;
+		format_candidate_count = 1;
+		break;
+	case 1:
+		format_candidates[0] = FMT_RGB_SCALE;
+		format_candidates[1] = FMT_LUMINANCE_ALPHA;
+		format_candidate_count = 2;
+		break;
+	case 2:
+		format_candidates[0] = FMT_RGB;
+		format_candidates[1] = FMT_RGB_SCALE_ALPHA;
+		format_candidate_count = 2;
+		break;
+	case 3:
+	default:
+		format_candidates[0] = FMT_RGBA;
+		format_candidate_count = 1;
+		break;
+	}
+
+	quant_method color_quant_level = static_cast<quant_method>(best_quant_level_int);
+
+	float best_errorval = ERROR_CALC_DEFAULT;
+
+	for (unsigned int fc_idx = 0; fc_idx < format_candidate_count; fc_idx++)
+	{
+		uint8_t format_specifier = format_candidates[fc_idx];
+
+		// Set up initial weights
+		symbolic_compressed_block workscb;
+		endpoints workep = epm;
+
+		for (unsigned int j = 0; j < di.weight_count; j++)
+		{
+			workscb.weights[j] = dec_weights_uquant[j];
+			workscb.weights[j + WEIGHTS_PLANE2_OFFSET] = dec_weights_uquant[j + WEIGHTS_PLANE2_OFFSET];
+		}
+
+		unsigned int refinement_limit = astc::min(config.tune_refinement_limit, 2u);
+		for (unsigned int l = 0; l < refinement_limit; l++)
+		{
+			vfloat4 rgbs_color;
+			vfloat4 rgbo_color;
+
+			recompute_ideal_colors_2planes(
+				blk, bsd, di,
+				workscb.weights, workscb.weights + WEIGHTS_PLANE2_OFFSET,
+				workep, rgbs_color, rgbo_color, plane2_component);
+
+			workscb.color_formats[0] = pack_color_endpoints(
+				workep.endpt0[0],
+				workep.endpt1[0],
+				rgbs_color, rgbo_color,
+				format_specifier,
+				workscb.color_values[0],
+				color_quant_level);
+
+			// Store header fields
+			workscb.partition_count = 1;
+			workscb.partition_index = 0;
+			workscb.quant_mode = color_quant_level;
+			workscb.color_formats_matched = 0;
+			workscb.block_mode = bm.mode_index;
+			workscb.plane2_component = static_cast<int8_t>(plane2_component);
+			workscb.block_type = SYM_BTYPE_NONCONST;
+
+			float errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
+			if (errorval == -ERROR_CALC_DEFAULT)
+			{
+				errorval = -errorval;
+				workscb.block_type = SYM_BTYPE_ERROR;
+			}
+
+			if (errorval < best_errorval)
+			{
+				best_errorval = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
+			bool adjustments;
+			if (di.weight_count != bsd.texel_count)
+			{
+				adjustments = realign_weights_decimated(
+					config.profile, bsd, blk, workscb);
+			}
+			else
+			{
+				adjustments = realign_weights_undecimated(
+					config.profile, bsd, blk, workscb);
+			}
+
+			errorval = compute_symbolic_block_difference_2plane(config, bsd, workscb, blk);
+			if (errorval == -ERROR_CALC_DEFAULT)
+			{
+				errorval = -errorval;
+				workscb.block_type = SYM_BTYPE_ERROR;
+			}
+
+			if (errorval < best_errorval)
+			{
+				best_errorval = errorval;
+				workscb.errorval = errorval;
+				scb = workscb;
+			}
+
+			if (!adjustments)
+			{
+				break;
+			}
+		}
+	}
+
+	return best_errorval;
+}
+
+/* See header for documentation. */
+void compress_block_guided(
+	const astcenc_contexti& ctx,
+	const image_block& blk,
+	unsigned int guide_block_mode,
+	unsigned int guide_partition_count,
+	unsigned int guide_partition_index,
+	const uint8_t guide_format_classes[BLOCK_MAX_PARTITIONS],
+	uint8_t pcb[16],
+	compression_working_buffers& tmpbuf)
+{
+	astcenc_profile decode_mode = ctx.config.profile;
+	symbolic_compressed_block scb;
+	const block_size_descriptor& bsd = *ctx.bsd;
+
+	// Detected a constant-color block
+	if (all(blk.data_min == blk.data_max))
+	{
+		scb.partition_count = 0;
+
+		if ((decode_mode == ASTCENC_PRF_HDR) ||
+		    (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A))
+		{
+			scb.block_type = SYM_BTYPE_CONST_F16;
+			vint4 color_f16 = float_to_float16(blk.origin_texel);
+			store(color_f16, scb.constant_color);
+		}
+		else
+		{
+			scb.block_type = SYM_BTYPE_CONST_U16;
+			vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
+			vint4 color_u16 = float_to_int_rtn(color_f32);
+			store(color_u16, scb.constant_color);
+		}
+
+		symbolic_to_physical(bsd, scb, pcb);
+		return;
+	}
+
+	// Validate that the guide's block_mode is available in this context
+	unsigned int packed_index = bsd.block_mode_packed_index[guide_block_mode];
+	if (packed_index == BLOCK_BAD_BLOCK_MODE)
+	{
+		// Fall back to constant-color encoding if the block mode is invalid
+		scb.block_type = SYM_BTYPE_CONST_U16;
+		scb.partition_count = 0;
+		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
+		vint4 color_u16 = float_to_int_rtn(color_f32);
+		store(color_u16, scb.constant_color);
+		symbolic_to_physical(bsd, scb, pcb);
+		return;
+	}
+
+	const block_mode& bm = bsd.get_block_mode(guide_block_mode);
+
+	scb.errorval = ERROR_CALC_DEFAULT;
+	scb.block_type = SYM_BTYPE_ERROR;
+
+	if (bm.is_dual_plane)
+	{
+		// For dual-plane blocks, try all 4 components and keep the best
+		for (int comp = BLOCK_MAX_COMPONENTS - 1; comp >= 0; comp--)
+		{
+			if (blk.grayscale && comp != 3)
+			{
+				continue;
+			}
+
+			if (blk.is_constant_channel(comp))
+			{
+				continue;
+			}
+
+			symbolic_compressed_block trial_scb;
+			trial_scb.errorval = ERROR_CALC_DEFAULT;
+			trial_scb.block_type = SYM_BTYPE_ERROR;
+
+			float errorval = compress_guided_2planes(
+				ctx.config, bsd, blk, bm, comp, guide_format_classes[0], trial_scb, tmpbuf);
+
+			if (errorval < scb.errorval)
+			{
+				scb = trial_scb;
+			}
+		}
+	}
+	else
+	{
+		// Single-plane: use the guided partition directly
+		compress_guided_1plane(
+			ctx.config, bsd, blk, bm,
+			guide_partition_count, guide_partition_index,
+			guide_format_classes,
+			scb, tmpbuf);
+	}
+
+	// If we still have an error block, fall back to constant color
+	if (scb.block_type == SYM_BTYPE_ERROR)
+	{
+		scb.block_type = SYM_BTYPE_CONST_U16;
+		scb.partition_count = 0;
+		vfloat4 color_f32 = clamp(0.0f, 1.0f, blk.origin_texel) * 65535.0f;
+		vint4 color_u16 = float_to_int_rtn(color_f32);
+		store(color_u16, scb.constant_color);
+	}
+
+	symbolic_to_physical(bsd, scb, pcb);
+}
+
 /* See header for documentation. */
 void compress_block(
 	const astcenc_contexti& ctx,
