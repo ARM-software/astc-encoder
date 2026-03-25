@@ -705,6 +705,7 @@ static void init_decimation_info_3d(
 	di.weight_z = static_cast<uint8_t>(z_weights);
 }
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 /**
  * @brief Assign the texels to use for kmeans clustering.
  *
@@ -751,6 +752,7 @@ static void assign_kmeans_texels(
 		}
 	}
 }
+#endif
 
 /**
  * @brief Allocate a single 2D decimation table entry.
@@ -1001,8 +1003,10 @@ static void construct_block_size_descriptor_2d(
 		bsd.decimation_modes[i].refprec_2planes = 0;
 	}
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	// Determine the texels to use for kmeans clustering.
 	assign_kmeans_texels(bsd);
+#endif
 
 	delete wb;
 }
@@ -1183,8 +1187,10 @@ static void construct_block_size_descriptor_3d(
 	bsd.block_mode_count_1plane_2plane_selected = bm_counts[0] + bm_counts[1];
 	bsd.block_mode_count_all = bm_counts[0] + bm_counts[1];
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	// Determine the texels to use for kmeans clustering.
 	assign_kmeans_texels(bsd);
+#endif
 
 	delete wb;
 }
