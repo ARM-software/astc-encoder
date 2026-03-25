@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -381,6 +381,7 @@ struct decimation_info
 	 */
 	ASTCENC_ALIGNAS uint8_t texel_weight_contribs_int_tr[4][BLOCK_MAX_TEXELS];
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	/**
 	 * @brief The bilinear contribution of the N weights that are interpolated for each texel.
 	 * Value is between 0 and 1, stored transposed to improve vectorization.
@@ -407,6 +408,7 @@ struct decimation_info
 	 * Value is between 0 and 1, stored transposed to improve vectorization.
 	 */
 	float texel_contrib_for_weight[BLOCK_MAX_TEXELS][BLOCK_MAX_WEIGHTS];
+#endif
 };
 
 /**
