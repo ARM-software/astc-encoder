@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Functions for building the implementation of stb_image and tinyexr.
+ * @brief Functions for implementation of stb_image, TinyEXR, and Wuffs.
  */
 
 #include <cstdlib>
@@ -34,9 +34,11 @@
 #define STBI_NO_PNM
 #define STBI_NO_PNG
 #define STBI_NO_PSD
+#define STBI_ASSERT(x) astcenc_runtime_assert(x)
 
 // Configure the TinyEXR library build.
 #define TINYEXR_IMPLEMENTATION
+#define TEXR_ASSERT(x) astcenc_runtime_assert(x)
 
 // Configure the Wuffs library build.
 #define WUFFS_IMPLEMENTATION
@@ -47,13 +49,6 @@
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__ZLIB
-#include "wuffs-v0.3.c"
-
-// For both libraries force asserts (which can be triggered by corrupt input
-// images) to be handled at runtime in release builds to avoid security issues.
-#define STBI_ASSERT(x) astcenc_runtime_assert(x)
-#define TEXR_ASSERT(x) astcenc_runtime_assert(x)
-
 /**
  * @brief Trap image load failures and convert into a runtime error.
  */
@@ -69,6 +64,7 @@ static void astcenc_runtime_assert(bool condition)
 #include "ThirdParty/stb_image.h"
 #include "ThirdParty/stb_image_write.h"
 #include "ThirdParty/tinyexr.h"
+#include "ThirdParty/wuffs-v0.3.c"
 
 /**
  * @brief Load an image using Wuffs to provide the loader.
