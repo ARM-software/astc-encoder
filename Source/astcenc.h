@@ -64,7 +64,7 @@
  *
  *     // Allocate working state given config and thread_count
  *     astcenc_context* my_context;
- *     astcenc_context_alloc(&my_config, thread_count, &my_context);
+ *     astcenc_context_alloc(&my_config, thread_count, &my_context, nullptr);
  *
  *     // Compress each image using these config settings
  *     foreach image:
@@ -726,21 +726,29 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  * slow, so it is recommended that contexts are reused to serially compress or decompress multiple
  * images to amortize setup cost.
  *
+ * A full standalone context can be created by passing @c nullptr for @c parent_context. A child
+ * context is created by passing another context created with the same @c config into
+ * @c parent_context. A child will share read-only data tables with the root ancestor full context,
+ * rather than creating its own, which saves a considerable amount of memory per context. You must
+ * only free the root @c parent_context once all descendent contexts have been freed.
+ *
  * Contexts can be allocated to support only decompression using the @c ASTCENC_FLG_DECOMPRESS_ONLY
  * flag when creating the configuration. The compression functions will fail if invoked. For a
  * decompress-only library build the @c ASTCENC_FLG_DECOMPRESS_ONLY flag must be set when creating
  * any context.
  *
- * @param[in]  config         Codec config.
- * @param      thread_count   Thread count to configure for.
- * @param[out] context        Location to store an opaque context pointer.
+ * @param[in]  config           Codec config.
+ * @param      thread_count     Thread count to configure for.
+ * @param[out] context          Location to store an opaque context pointer.
+ * @param[in]  parent_context   Optional parent context from which to inherit read-only data tables.
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if context creation failed.
  */
 ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
 	const astcenc_config* config,
 	unsigned int thread_count,
-	astcenc_context** context);
+	astcenc_context** context,
+	const astcenc_context* parent_context);
 
 /**
  * @brief Compress an image.

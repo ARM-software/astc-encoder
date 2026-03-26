@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 	// ------------------------------------------------------------------------
 	// Create a context based on the configuration
 	astcenc_context* context;
-	status = astcenc_context_alloc(&config, thread_count, &context);
+	status = astcenc_context_alloc(&config, thread_count, &context, nullptr);
 	if (status != ASTCENC_SUCCESS)
 	{
 		printf("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(status));

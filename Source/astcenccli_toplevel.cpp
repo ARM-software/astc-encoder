@@ -2068,7 +2068,7 @@ int astcenc_main(
 		}
 	}
 
-	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context);
+	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context, nullptr);
 	if (codec_status != ASTCENC_SUCCESS)
 	{
 		print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));

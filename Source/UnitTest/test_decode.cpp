@@ -52,7 +52,7 @@ TEST(decode, decode12x12)
 	uint8_t output[12*12*4];
 	astcenc_config_init(ASTCENC_PRF_LDR, 12, 12, 1, ASTCENC_PRE_MEDIUM, 0, &config);
 
-	status = astcenc_context_alloc(&config, 1, &context);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
 
 	astcenc_image image;
