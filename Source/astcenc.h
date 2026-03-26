@@ -728,18 +728,20 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  * slow, so it is recommended that contexts are reused to serially compress or decompress multiple
  * images to amortize setup cost.
  *
- * A full standalone context can be created by passing @c nullptr for @c parent_context. A child
- * context is created by passing another context created with the same @c config into
- * @c parent_context. A child will share read-only data tables with the root ancestor full context,
- * rather than creating its own, which saves a considerable amount of memory per context. You must
- * only free the root @c parent_context once all descendent contexts have been freed.
+ * A standalone "root" context can be created by passing @c nullptr for @c parent_context.
+ * Alternatively, a child context, that shares resources with a root context, is created by passing
+ * another context using the same target configuration into @c parent_context. A child will use the
+ * read-only data tables it needs from the ancestor "root" context, rather than creating its own,
+ * which saves a considerable amount of memory per child. You must only free the root context once
+ * all descendent contexts have been freed. When you pass a @c parent_context the config is taken
+ * from the parent, and @c context must be @c nullptr.
  *
  * Contexts can be allocated to support only decompression using the @c ASTCENC_FLG_DECOMPRESS_ONLY
  * flag when creating the configuration. The compression functions will fail if invoked. For a
  * decompress-only library build the @c ASTCENC_FLG_DECOMPRESS_ONLY flag must be set when creating
  * any context.
  *
- * @param[in]  config           Codec config.
+ * @param[in]  config           Codec config, must be @c nullptr if a @c parent_context is passed.
  * @param      thread_count     Thread count to configure for.
  * @param[out] context          Location to store an opaque context pointer.
  * @param[in]  parent_context   Optional parent context from which to inherit read-only data tables.

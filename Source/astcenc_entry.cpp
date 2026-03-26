@@ -661,7 +661,6 @@ astcenc_error astcenc_context_alloc(
 	const astcenc_context* parent_context
 ) {
 	astcenc_error status;
-	const astcenc_config& config = *configp;
 
 	status = validate_cpu_float();
 	if (status != ASTCENC_SUCCESS)
@@ -675,17 +674,31 @@ astcenc_error astcenc_context_alloc(
 	}
 
 #if defined(ASTCENC_DIAGNOSTICS)
-	// Force single threaded compressor use in diagnostic mode.
+	// Force single threaded compressor use in diagnostic mode
 	if (thread_count != 1)
 	{
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 #endif
 
+	// Exactly one of config or parent_context must be set
+	bool has_config = configp != nullptr;
+	bool has_parent = parent_context != nullptr;
+	if (!(has_config ^ has_parent))
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	if (has_parent)
+	{
+		configp = &parent_context->context.config;
+	}
+
+	const astcenc_config& config = *configp;
 	astcenc_context* ctxo = new astcenc_context;
 	astcenc_contexti* ctx = &ctxo->context;
 	ctx->thread_count = thread_count;
-	ctx->config = config;
+	ctx->config = *configp;
 	ctx->working_buffers = nullptr;
 
 	// These are allocated per-compress, as they depend on image size

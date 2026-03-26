@@ -30,6 +30,7 @@
 #endif
 #include <cstdlib>
 #include <limits>
+#include <type_traits>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
