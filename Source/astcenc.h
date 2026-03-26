@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2025 Arm Limited
+// Copyright 2020-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -37,7 +37,9 @@
  * Multi-threading can be used two ways.
  *
  *     * An application wishing to process multiple images in parallel can allocate multiple
- *       contexts and assign each context to a thread.
+ *       contexts and assign each context to a thread. Parallel contexts that use the same
+ *       compressor configuration can share read-only data tables by inheriting them from a
+ *       parent context.
  *     * An application wishing to process a single image in using multiple threads can configure
  *       contexts for multi-threaded use, and invoke astcenc_compress/decompress() once per thread
  *       for faster processing. The caller is responsible for creating the worker threads, and
