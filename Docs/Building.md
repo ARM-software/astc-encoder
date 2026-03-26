@@ -183,6 +183,10 @@ by adding `-DASTCENC_BLOCK_MAX_TEXELS=<texel_count>` to to CMake command line
 when configuring. Legal block sizes that are unavailable in a restricted build
 will return the error `ASTCENC_ERR_NOT_IMPLEMENTED` during context creation.
 
+If your use case only needs to support the 2D texture format, we recommend
+that you use `-DASTCENC_BLOCK_MAX_TEXELS=144` which will support all 2D block
+sizes.
+
 ### Non-invariant builds
 
 All normal builds are designed to be invariant, so any build from the same git
@@ -248,12 +252,13 @@ CMake command line when configuring.
 
 ### Android builds
 
-Builds of the command line utility for Android are not officially supported, but can be a useful
-development build for testing on e.g. different Arm CPU microarchitectures.
+Builds of the command line utility for Android are not officially supported,
+but can be a useful development build for testing on e.g. different Arm CPU
+microarchitectures.
 
-The build script below shows one possible route to building the command line tool for Android. Once
-built the application can be pushed to e.g. `/data/local/tmp` and executed from an Android shell
-terminal over `adb`.
+The build script below shows one possible route to building the command line
+tool for Android. Once built the application can be pushed to, e.g.,
+`/data/local/tmp` and executed from an Android shell terminal over `adb`.
 
 ```shell
 ANDROID_ABI=arm64-v8a
@@ -312,4 +317,4 @@ details.
 
 - - -
 
-_Copyright © 2019-2024, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2026, Arm Limited and contributors. All rights reserved._
