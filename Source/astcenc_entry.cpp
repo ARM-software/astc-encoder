@@ -717,7 +717,6 @@ astcenc_error astcenc_context_alloc(
 
 		ctx->owns_bsd = true;
 		ctx->bsd = bsd;
-
 	}
 	else
 	{
