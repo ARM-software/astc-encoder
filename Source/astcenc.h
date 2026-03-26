@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2025 Arm Limited
+// Copyright 2020-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -37,7 +37,9 @@
  * Multi-threading can be used two ways.
  *
  *     * An application wishing to process multiple images in parallel can allocate multiple
- *       contexts and assign each context to a thread.
+ *       contexts and assign each context to a thread. Parallel contexts that use the same
+ *       compressor configuration can share read-only data tables by inheriting them from a
+ *       parent context.
  *     * An application wishing to process a single image in using multiple threads can configure
  *       contexts for multi-threaded use, and invoke astcenc_compress/decompress() once per thread
  *       for faster processing. The caller is responsible for creating the worker threads, and
@@ -64,7 +66,7 @@
  *
  *     // Allocate working state given config and thread_count
  *     astcenc_context* my_context;
- *     astcenc_context_alloc(&my_config, thread_count, &my_context);
+ *     astcenc_context_alloc(&my_config, thread_count, &my_context, nullptr);
  *
  *     // Compress each image using these config settings
  *     foreach image:
@@ -726,21 +728,31 @@ ASTCENC_PUBLIC astcenc_error astcenc_config_init(
  * slow, so it is recommended that contexts are reused to serially compress or decompress multiple
  * images to amortize setup cost.
  *
+ * A standalone "root" context can be created by passing @c nullptr for @c parent_context.
+ * Alternatively, a child context, that shares resources with a root context, is created by passing
+ * another context using the same target configuration into @c parent_context. A child will use the
+ * read-only data tables it needs from the ancestor "root" context, rather than creating its own,
+ * which saves a considerable amount of memory per child. You must only free the root context once
+ * all descendent contexts have been freed. When you pass a @c parent_context the config is taken
+ * from the parent, and so @c context must be @c nullptr.
+ *
  * Contexts can be allocated to support only decompression using the @c ASTCENC_FLG_DECOMPRESS_ONLY
  * flag when creating the configuration. The compression functions will fail if invoked. For a
  * decompress-only library build the @c ASTCENC_FLG_DECOMPRESS_ONLY flag must be set when creating
  * any context.
  *
- * @param[in]  config         Codec config.
- * @param      thread_count   Thread count to configure for.
- * @param[out] context        Location to store an opaque context pointer.
+ * @param[in]  config           Codec config, must be @c nullptr if a @c parent_context is passed.
+ * @param      thread_count     Thread count to configure for.
+ * @param[out] context          Location to store an opaque context pointer.
+ * @param[in]  parent_context   Optional parent context from which to inherit read-only data tables.
  *
  * @return @c ASTCENC_SUCCESS on success, or an error if context creation failed.
  */
 ASTCENC_PUBLIC astcenc_error astcenc_context_alloc(
 	const astcenc_config* config,
 	unsigned int thread_count,
-	astcenc_context** context);
+	astcenc_context** context,
+	const astcenc_context* parent_context);
 
 /**
  * @brief Compress an image.

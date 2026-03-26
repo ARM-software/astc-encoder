@@ -7,13 +7,21 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
-## 5.5.0
+## 5.4.0
 
 **Status:** In development.
 
-The 5.4.0 release is a minor maintenance release.
+The 5.4.0 release is a minor feature release.
+
+This release includes changes to the public interface in the `astcenc.h`
+header.  We always recommend rebuilding your client-side code using the
+header from the same release to avoid compatibility issues.
 
 * **General:**
+  * **Improvement:** Contexts using the same configuration can now share
+    read-only data tables. This can significantly reduce the amount of memory
+    needed for applications that parallelize by processing multiple images
+    in parallel instead of slicing a single image in parallel.
   * **Improvement:** Decompressor (`astcdec`) builds, which lack compression
     support, now use a smaller `block_size_descriptor` by omitting fields that
     are only needed for compression. This reduces the size of a decompressor
@@ -115,4 +123,4 @@ set.
 
 - - -
 
-_Copyright © 2022-2025, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2026, Arm Limited and contributors. All rights reserved._

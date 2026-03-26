@@ -30,6 +30,7 @@
 #endif
 #include <cstdlib>
 #include <limits>
+#include <type_traits>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -1217,8 +1218,11 @@ struct astcenc_contexti
 	/** @brief The thread count supported by this context. */
 	unsigned int thread_count;
 
+	/** @brief Is this context the owner of @c bsd, or is it a child inheriting it. */
+	bool owns_bsd;
+
 	/** @brief The block size descriptor this context was created with. */
-	block_size_descriptor* bsd;
+	const block_size_descriptor* bsd;
 
 	/*
 	 * Fields below here are not needed in a decompress-only build, but some remain as they are
@@ -2216,9 +2220,9 @@ template<typename T>
 void aligned_free(T* ptr)
 {
 #if defined(_WIN32)
-	_aligned_free(ptr);
+	_aligned_free(const_cast<typename std::remove_const<T>::type *>(ptr));
 #else
-	free(ptr);
+	free(const_cast<typename std::remove_const<T>::type *>(ptr));
 #endif
 }
 

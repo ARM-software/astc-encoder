@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -2068,7 +2068,7 @@ int astcenc_main(
 		}
 	}
 
-	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context);
+	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context, nullptr);
 	if (codec_status != ASTCENC_SUCCESS)
 	{
 		print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
