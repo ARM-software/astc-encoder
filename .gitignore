@@ -12,6 +12,7 @@ __pycache__
 pve
 Scratch
 Proto
+.idea
 
 # Precompiled reference binaries for comparison tests
 bin
@@ -21,6 +22,7 @@ Binaries
 # Build artifacts
 astcenc
 build*
+cmake-build*
 
 # General build artifacts
 Test/DocOut
