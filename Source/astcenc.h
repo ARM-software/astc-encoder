@@ -170,14 +170,16 @@
 #define ASTCENC_INCLUDED
 
 #if defined(__cplusplus)
-#include <cstddef>
-#include <cstdint>
-#define ASTCENC_EXTERN_C extern "C"
+	#include <cstddef>
+	#include <cstdint>
+
+	#define ASTCENC_EXTERN_C extern "C"
 #else
-#include <stddef.h>
-#include <stdint.h>
-#include <stdbool.h>
-#define ASTCENC_EXTERN_C
+	#include <stddef.h>
+	#include <stdint.h>
+	#include <stdbool.h>
+
+	#define ASTCENC_EXTERN_C
 #endif
 
 #if defined(ASTCENC_DYNAMIC_LIBRARY)
