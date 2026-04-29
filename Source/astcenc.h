@@ -586,7 +586,7 @@ struct astcenc_config
 	/**
 	 * @brief The progress callback, can be @c nullptr.
 	 *
-	 * If this is specified the codec will peridocially report progress for
+	 * If this is specified the codec will periodically report progress for
 	 * compression as a percentage between 0 and 100. The callback is called from one
 	 * of the compressor threads, so doing significant work in the callback will
 	 * reduce compression performance.
