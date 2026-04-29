@@ -288,6 +288,24 @@ cmake \
 make -j16
 ```
 
+### Enabling the VLEN=256 RISC-V Vector backend
+
+The current RISC-V Vector backend only supports VLEN=256 hardware, due to toolchain limitations that make a vector-length-agnostic port challenging. Hopefully there will be one in the future.
+
+Since the backend only works when the VLEN is exactly 256, and you can only enable this as a global compiler flag, there is no separate build target for the backend yet.
+To enable it, simple build the none or native build target, with the `-mrvv-vector-bits=zvl` CXXFLAG and a `zvl256b` in the ISA string.
+
+E.g. you can cross-compile to RISC-V with the backend enabled using the following commands:
+
+```bash
+export CXX=riscv64-linux-gnu-g++
+export CXXFLAGS="-march=rv64gcv_zvl256b -mrvv-vector-bits=zvl"
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DASTCENC_ISA_NONE=ON ..
+cmake --build build -j$(nproc)
+```
+
+See also [.github/workflows](.github/workflows) for how the CI builds and runs the unit tests.
+
 ## Packaging a release bundle
 
 We support building a release bundle of all enabled binary configurations in
