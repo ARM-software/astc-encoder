@@ -18,6 +18,8 @@ header.  We always recommend rebuilding your client-side code using the
 header from the same release to avoid compatibility issues.
 
 * **General:**
+  * **Improvement:** The interface header `astcenc.h` is now C compliant to
+    make it usable from C programs.
   * **Improvement:** Contexts using the same configuration can now share
     read-only data tables. This can significantly reduce the amount of memory
     needed for applications that parallelize by processing multiple images
@@ -26,6 +28,8 @@ header from the same release to avoid compatibility issues.
     support, now use a smaller `block_size_descriptor` by omitting fields that
     are only needed for compression. This reduces the size of a decompressor
     context by more than 10MB!
+  * **Bug fix:** Avoid double definition of `NOMINMAX` when compiling with
+    MinGW.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.3.0
