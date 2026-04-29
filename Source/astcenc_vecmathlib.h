@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2025 Arm Limited
+// Copyright 2019-2026 Arm Limited
 // Copyright 2008 Jose Fonseca
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -177,7 +177,8 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
 	constexpr auto vint_from_size = vint4_from_size;
-#elif defined(__riscv_v_fixed_vlen) && __riscv_v_fixed_vlen == 256
+
+#elif defined(__riscv_v_fixed_vlen) && (__riscv_v_fixed_vlen == 256)
 	#include <riscv_vector.h>
 	#include "astcenc_vecmathlib_none_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
@@ -192,13 +193,14 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto loada = vfloat::loada;
 	constexpr auto load1 = vfloat::load1;
 
-	// for unit-tests
+	// For unit-tests
 	using vfloat8 = vfloat;
 	using vint8 = vint;
 	using vmask8 = vmask;
 	using vtable8_16x8 = vtable_16x8;
 	using vtable8_32x8 = vtable_32x8;
 	using vtable8_64x8 = vtable_64x8;
+
 #else
 	// If we have nothing expose 4-wide VLA, and 4-wide fixed width.
 

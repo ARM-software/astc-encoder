@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2019-2024 Arm Limited
+// Copyright 2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -39,11 +39,11 @@
 #define ASTCENC_SIMD_WIDTH  (__riscv_v_fixed_vlen/32)
 
 typedef vbool32_t    vbool_t   __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH)));
-typedef vuint8m1_t   vuint8_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH*32)));
-typedef vuint16m1_t  vuint16_t __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH*32)));
-typedef vuint32m1_t  vuint32_t __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH*32)));
-typedef vint32m1_t   vint32_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH*32)));
-typedef vfloat32m1_t vfloat_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH*32)));
+typedef vuint8m1_t   vuint8_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH * 32)));
+typedef vuint16m1_t  vuint16_t __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH * 32)));
+typedef vuint32m1_t  vuint32_t __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH * 32)));
+typedef vint32m1_t   vint32_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH * 32)));
+typedef vfloat32m1_t vfloat_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD_WIDTH * 32)));
 
 // ============================================================================
 // vfloat data type
@@ -54,11 +54,6 @@ typedef vfloat32m1_t vfloat_t  __attribute__((riscv_rvv_vector_bits(ASTCENC_SIMD
  */
 struct vfloat
 {
-	/**
-	 * @brief return vector length of type
-	 */
-	static ASTCENC_SIMD_INLINE size_t vl() { return __riscv_vsetvlmax_e32m1(); }
-
 	/**
 	 * @brief Construct from zero-initialized value.
 	 */
@@ -91,6 +86,14 @@ struct vfloat
 	ASTCENC_SIMD_INLINE explicit vfloat(vfloat_t a)
 	{
 		m = a;
+	}
+
+	/**
+	 * @brief Return vector length of type.
+	 */
+	static ASTCENC_SIMD_INLINE size_t vl()
+	{
+		return __riscv_vsetvlmax_e32m1();
 	}
 
 	/**
@@ -133,11 +136,6 @@ struct vfloat
 struct vint
 {
 	/**
-	 * @brief return vector length of type
-	 */
-	static ASTCENC_SIMD_INLINE size_t vl() { return __riscv_vsetvlmax_e32m1(); }
-
-	/**
 	 * @brief Construct from zero-initialized value.
 	 */
 	ASTCENC_SIMD_INLINE vint() = default;
@@ -159,8 +157,11 @@ struct vint
 	ASTCENC_SIMD_INLINE explicit vint(const uint8_t *p)
 	{
 		// Load 8-bit values and expand to 32-bits
-		m = __riscv_vreinterpret_i32m1(__riscv_vzext_vf4(
-					__riscv_vle8_v_u8mf4(p, vl()), vl()));
+		m = __riscv_vreinterpret_i32m1(
+				__riscv_vzext_vf4(
+					__riscv_vle8_v_u8mf4(p, vl()), vl()
+				)
+			);
 	}
 
 	/**
@@ -179,6 +180,14 @@ struct vint
 	ASTCENC_SIMD_INLINE explicit vint(vint32_t a)
 	{
 		m = a;
+	}
+
+	/**
+	 * @brief Return vector length of type.
+	 */
+	static ASTCENC_SIMD_INLINE size_t vl()
+	{
+		return __riscv_vsetvlmax_e32m1();
 	}
 
 	/**
@@ -238,11 +247,6 @@ struct vint
 struct vmask
 {
 	/**
-	 * @brief return vector length of type
-	 */
-	static ASTCENC_SIMD_INLINE size_t vl() { return __riscv_vsetvlmax_e32m1(); }
-
-	/**
 	 * @brief Construct from an existing SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask(vbool_t a)
@@ -256,6 +260,14 @@ struct vmask
 	ASTCENC_SIMD_INLINE explicit vmask(bool a)
 	{
 		m = a ? __riscv_vmset_m_b32(vl()) : __riscv_vmclr_m_b32(vl());
+	}
+
+	/**
+	 * @brief Return vector length of type.
+	 */
+	static ASTCENC_SIMD_INLINE size_t vl()
+	{
+		return __riscv_vsetvlmax_e32m1();
 	}
 
 	/**
@@ -839,7 +851,9 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat a)
 	vfloat_t vacc = __riscv_vle32_v_f32m1(accum.m, 4);
 	vacc = __riscv_vfadd(vacc, a.m, 4);
 	for (size_t i = 4; i < vfloat::vl(); i += 4)
+	{
 		vacc = __riscv_vfadd(vacc, __riscv_vslidedown(a.m, i, 4), 4);
+	}
 	__riscv_vse32(accum.m, vacc, 4);
 #endif
 }
@@ -902,8 +916,9 @@ template<>
 ASTCENC_SIMD_INLINE vfloat gatherf_byte_inds<vfloat>(const float* base, const uint8_t* indices)
 {
 	vuint16mf2_t vidx = __riscv_vwmulu(
-			__riscv_vle8_v_u8mf4(indices, vfloat::vl()),
-			4, vfloat::vl());
+		__riscv_vle8_v_u8mf4(indices, vfloat::vl()),
+		4, vfloat::vl());
+
 	return vfloat(__riscv_vluxei16_v_f32m1(base, vidx, vfloat::vl()));
 }
 
@@ -984,7 +999,7 @@ struct vtable_16x8 {
  * Table structure for a 32x 8-bit entry table.
  */
 struct vtable_32x8 {
-#if __riscv_v_fixed_vlen >= 32*8
+#if __riscv_v_fixed_vlen >= (32 * 8)
 	vuint8_t t0;
 #else /* minimum VLEN is 128 */
 	vuint8_t t0, t1;
@@ -995,9 +1010,9 @@ struct vtable_32x8 {
  * Table structure for a 64x 8-bit entry table.
  */
 struct vtable_64x8 {
-#if __riscv_v_fixed_vlen >= 64*8
+#if __riscv_v_fixed_vlen >= (64 * 8)
 	vuint8_t t0;
-#elif __riscv_v_fixed_vlen*2 >= 64*8
+#elif (__riscv_v_fixed_vlen * 2) >= (64 * 8)
 	vuint8_t t0, t1;
 #else /* minimum VLEN is 128 */
 	vuint8_t t0, t1, t2, t3;
@@ -1022,12 +1037,12 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable_32x8& table,
 	const uint8_t* data
 ) {
-#if __riscv_v_fixed_vlen >= 32*8
+#if __riscv_v_fixed_vlen >= (32 * 8)
 	vuint8m1_t z = __riscv_vmv_v_x_u8m1(0, __riscv_vsetvlmax_e8m1());
 	table.t0 = __riscv_vle8_tu(z, data, 32);
 #else /* minimum VLEN is 128 */
-	table.t0 = __riscv_vle8_v_u8m1(data+0*16, 16);
-	table.t1 = __riscv_vle8_v_u8m1(data+1*16, 16);
+	table.t0 = __riscv_vle8_v_u8m1(data + 0 * 16, 16);
+	table.t1 = __riscv_vle8_v_u8m1(data + 1 * 16, 16);
 #endif
 }
 
@@ -1038,10 +1053,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable_64x8& table,
 	const uint8_t* data
 ) {
-#if __riscv_v_fixed_vlen >= 64*8
+#if __riscv_v_fixed_vlen >= (64 * 8)
 	vuint8m1_t z = __riscv_vmv_v_x_u8m1(0, __riscv_vsetvlmax_e8m1());
 	table.t0 = __riscv_vle8_tu(z, data, 64);
-#elif __riscv_v_fixed_vlen*2 >= 64*8
+#elif (__riscv_v_fixed_vlen * 2) >= (64 * 8)
 	table.t0 = __riscv_vle8_v_u8m1(data+0*32, 32);
 	table.t1 = __riscv_vle8_v_u8m1(data+1*32, 32);
 #else /* minimum VLEN is 128 */
@@ -1074,7 +1089,7 @@ ASTCENC_SIMD_INLINE vint vtable_lookup_32bit(
 	const vtable_32x8& tbl,
 	vint idx
 ) {
-#if __riscv_v_fixed_vlen >= 32*8
+#if __riscv_v_fixed_vlen >= (32 * 8)
 	vtable_16x8 tbl16;
 	tbl16.t0 = tbl.t0;
 	return vtable_lookup_32bit(tbl16, idx);
@@ -1097,11 +1112,11 @@ ASTCENC_SIMD_INLINE vint vtable_lookup_32bit(
 	const vtable_64x8& tbl,
 	vint idx
 ) {
-#if __riscv_v_fixed_vlen >= 64*8
+#if __riscv_v_fixed_vlen >= (64 * 8)
 	vtable_16x8 tbl16;
 	tbl16.t0 = tbl.t0;
 	return vtable_lookup_32bit(tbl16, idx);
-#elif __riscv_v_fixed_vlen*2 >= 64*8
+#elif (__riscv_v_fixed_vlen * 2) >= (64 * 8)
 	vint32_t idx_masked = __riscv_vor(idx.m, 0xFFFFFF00, vint::vl());
 	size_t vl = __riscv_vsetvlmax_e8m1();
 	vuint8_t idx_bytes0 = __riscv_vreinterpret_u8m1(__riscv_vreinterpret_u32m1(idx_masked));
@@ -1159,8 +1174,10 @@ ASTCENC_SIMD_INLINE void print(vint a)
 	int v[ASTCENC_SIMD_WIDTH];
 	__riscv_vse32(v, a.m, vint::vl());
 	printf("v%zu_i32:\n ", (size_t)ASTCENC_SIMD_WIDTH);
-	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; ++i)
+	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
 		printf(" %8d", v[i]);
+	}
 	puts("");
 }
 
@@ -1172,8 +1189,10 @@ ASTCENC_SIMD_INLINE void printx(vint a)
 	int v[ASTCENC_SIMD_WIDTH];
 	__riscv_vse32(v, a.m, vint::vl());
 	printf("v%zu_i32:\n ", (size_t)ASTCENC_SIMD_WIDTH);
-	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; ++i)
+	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
 		printf(" %08x", v[i]);
+	}
 	puts("");
 }
 
@@ -1185,8 +1204,10 @@ ASTCENC_SIMD_INLINE void print(vfloat a)
 	float v[ASTCENC_SIMD_WIDTH];
 	__riscv_vse32(v, a.m, vfloat::vl());
 	printf("v%zu_f32:\n ", (size_t)ASTCENC_SIMD_WIDTH);
-	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; ++i)
+	for (size_t i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
 		printf(" %0.4f", static_cast<double>(v[i]));
+	}
 	puts("");
 }
 
