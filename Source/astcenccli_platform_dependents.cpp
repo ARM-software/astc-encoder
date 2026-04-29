@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -38,7 +38,11 @@
 #if defined(_WIN32) && !defined(__CYGWIN__)
 
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
+
+#if !defined(NOMINMAX)
+	#define NOMINMAX
+#endif
+
 #include <windows.h>
 #include <Processthreadsapi.h>
 #include <algorithm>
