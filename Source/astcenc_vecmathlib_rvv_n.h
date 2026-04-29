@@ -1012,6 +1012,7 @@ struct vtable_32x8 {
  */
 struct vtable_64x8 {
 #if __riscv_v_fixed_vlen >= (64 * 8)
+	/* currently unreachable and not tested */
 	vuint8_t t0;
 #elif (__riscv_v_fixed_vlen * 2) >= (64 * 8)
 	vuint8_t t0, t1;
@@ -1055,6 +1056,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	const uint8_t* data
 ) {
 #if __riscv_v_fixed_vlen >= (64 * 8)
+	/* currently unreachable and not tested */
 	vuint8m1_t z = __riscv_vmv_v_x_u8m1(0, __riscv_vsetvlmax_e8m1());
 	table.t0 = __riscv_vle8_tu(z, data, 64);
 #elif (__riscv_v_fixed_vlen * 2) >= (64 * 8)
@@ -1114,6 +1116,7 @@ ASTCENC_SIMD_INLINE vint vtable_lookup_32bit(
 	vint idx
 ) {
 #if __riscv_v_fixed_vlen >= (64 * 8)
+	/* currently unreachable and not tested */
 	vtable_16x8 tbl16;
 	tbl16.t0 = tbl.t0;
 	return vtable_lookup_32bit(tbl16, idx);
