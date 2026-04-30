@@ -6,6 +6,8 @@ on:
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
 
 jobs:
   build-ubuntu-arm64-clang:
