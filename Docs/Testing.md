@@ -107,14 +107,46 @@ test suite gets exclusive use of the machine to avoid other processing slowing
 down the compression and disturbing the performance data. It is recommended to
 shutdown or disable any background applications that are running.
 
+## ASAN and UBSAN
+
+Running builds compiled with ASAN (address sanitizer) and UBSAN (undefined
+behavior sanitizer) is one way to check that we have not introduced memory
+or undefined behavior errors. Support for both is integrated into the build
+system for both GCC and Clang on Linux targets.
+
+Build a release build with debug information using
+`-DCMAKE_BUILD_TYPE=RelWithDebInfo` and specify either
+`-DASTCENC_ASAN=ON` or `-DASTCENC_UBSAN=ON`.
+
+Run test commands as normal with the generated binaries.
+
 ## Valgrind memcheck
 
-It is always worth running the Valgrind memcheck tool to validate that we have
-not introduced any obvious memory errors. Build a release build with symbols
-information with `-DCMAKE_BUILD_TYPE=RelWithDebInfo` and then run:
+Running builds using the Valgrind memcheck tool is another way to validate that
+we have not introduced memory errors.
+
+Build a release build with debug information using
+`-DCMAKE_BUILD_TYPE=RelWithDebInfo`.
+
+Run test commands through Valgrind:
 
     valgrind --tool=memcheck --track-origins=yes <command>
 
+# OSS Fuzz
+
+ASTC-Encoder has been integrated into the Google OSS-Fuzz program, which
+performs API fuzz testing on a Google-hosted CI infrastructure.
+
+Our OSS-Fuzz test harnesses can be found in the
+[/Source/Fuzzers](../Source/Fuzzers/) directory.
+
+The OSS-Fuzz Project is hosted on GitHub at [google/oss-fuzz][1].
+
+The OSS-Fuzz CI is visible to maintainers at [oss-fuzz.com][2].
+
+[1]: https://github.com/google/oss-fuzz
+[2]: https://oss-fuzz.com
+
 - - -
 
-_Copyright © 2019-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2026, Arm Limited and contributors. All rights reserved._
