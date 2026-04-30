@@ -12,6 +12,7 @@ on:
       - main
     paths:
       - 'Source/astcenc_vecmathlib_rvv_n.h'
+      - 'Source/UnitTest/test_simd.cpp'
 
 jobs:
   build-ubuntu-rvv256-clang:
