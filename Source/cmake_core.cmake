@@ -226,11 +226,15 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
                 $<${is_msvccl}:/fp:precise>
-                $<${is_clangcl}:/fp:precise>
                 $<$<AND:${is_msvccl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.30>>:/fp:contract>
+
+                $<${is_clangcl}:/fp:precise>
                 $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=fast>
+
                 $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
-                $<${is_gnu_fe}:-ffp-contract=fast>)
+
+                $<${is_gnu_fe}:-ffp-contract=fast>
+                $<${is_gnu_fe}:-fno-math-errno>)
     else()
         # For Visual Studio prior to 2022 (compiler < 19.30) /fp:strict
         # For Visual Studio 2022 (compiler >= 19.30) /fp:precise
@@ -242,10 +246,14 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 $<$<AND:${is_msvccl},$<VERSION_LESS:$<CXX_COMPILER_VERSION>,19.30>>:/fp:strict>
                 $<$<AND:${is_msvccl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.30>>:/fp:precise>
+
                 $<${is_clangcl}:/fp:precise>
                 $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=off>
+
                 $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
-                $<${is_gnu_fe}:-ffp-contract=off>)
+
+                $<${is_gnu_fe}:-ffp-contract=off>
+                $<${is_gnu_fe}:-fno-math-errno>)
     endif()
 
     if(${ASTCENC_CLI})
