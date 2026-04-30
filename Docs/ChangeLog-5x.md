@@ -26,6 +26,8 @@ header from the same release to avoid compatibility issues.
     support, now use a smaller `block_size_descriptor` by omitting fields that
     are only needed for compression. This reduces the size of a decompressor
     context by more than 10MB!
+  * **Optimization:** A SIMD backend for the RISC-V Vector extensions has been
+    added, and is auto-selected when compiling an `ASTCENC_ISA_NONE` for a core with a 256-bit vector width. See [.github/workflows](.github/workflows)
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.3.0

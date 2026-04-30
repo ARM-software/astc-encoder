@@ -309,7 +309,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release -DASTCENC_ISA_NONE=ON ..
 cmake --build build -j$(nproc)
 ```
 
-See also [.github/workflows](.github/workflows) for how the CI builds and runs
+See also [.github/workflows](../.github/workflows) for how the CI builds and runs
 the unit tests.
 
 ## Packaging a release bundle
