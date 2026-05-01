@@ -7,7 +7,7 @@ bitrate of the standard.
 
 # Required software
 
-Running the tests requires Python 3.7 to be installed on the host machine, and
+Running the tests requires Python 3.12 to be installed on the host machine, and
 an `astcenc-avx2` release build to have been previously compiled and installed
 into an directory called `astcenc` in the root of the git checkout. This
 can be achieved by configuring the CMake build using the install prefix
