@@ -131,12 +131,18 @@ jobs:
 
   build-ubuntu-x64-clang:
     name: Ubuntu x64 Clang
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
         with:
           submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install imagemagick
 
       - name: Build release
         run: |
@@ -187,12 +193,18 @@ jobs:
 
   build-ubuntu-x64-gcc:
     name: Ubuntu x64 GCC
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
         with:
           submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install imagemagick
 
       - name: Build release
         run: |
@@ -220,7 +232,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
-      - name: Python rests
+      - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py --encoder none
           python ./Test/astc_test_functional.py --encoder sse2
