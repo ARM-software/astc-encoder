@@ -15,10 +15,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 # -----------------------------------------------------------------------------
-"""
+'''
 The python test runner is designed to run some basic tests against the Python
 test code base.
-"""
+'''
 
 import io
 import re
@@ -34,57 +34,63 @@ from pylint.reporters.text import TextReporter
 
 
 class PythonTests(unittest.TestCase):
-    """
+    '''
     Some basic Python static analysis and style checks.
-    """
+    '''
 
     def test_pylint(self):
-        """
+        '''
         Run pylint over the codebase.
-        """
+        '''
         # Run Pylint
         stream = io.StringIO()
         reporter = TextReporter(stream)
-        pylint.lint.Run(["./Test"], reporter, False)
-        pylintOut = stream.getvalue()
+        pylint.lint.Run(['./Test'], reporter, False)
+        output = stream.getvalue()
 
         # Write the Pylint log
-        with open("pylint.log", "w", encoding="utf-8") as fileHandle:
-            fileHandle.write(pylintOut)
+        with open('pylint.log', 'w', encoding='utf-8') as handle:
+            handle.write(output)
 
         # Analyze the results
-        pattern = re.compile(r"Your code has been rated at (.*?)/10")
-        match = pattern.search(pylintOut)
+        pattern = re.compile(r'Your code has been rated at (.*?)/10')
+        match = pattern.search(output)
         self.assertIsNotNone(match)
         score = float(match.group(1))
+
         # This target is currently low but we will increase over time
-        self.assertGreaterEqual(score, 7.25, "Found Pylint score regression")
+        self.assertGreaterEqual(score, 7.30, 'Found Pylint score regression')
 
     def test_pycodestyle(self):
-        """
+        '''
         Run pycodestyle over the codebase.
-        """
+        '''
         style = pycodestyle.StyleGuide()
 
         # Write the Pycodestyle log
-        with open("pycodestyle.log", "w", encoding="utf-8") as handle:
-            oldStdout = sys.stdout
+        with open('pycodestyle.log', 'w', encoding='utf-8') as handle:
+            # Redirect stdout to file so we can capture output
+            old_stdout = sys.stdout
             sys.stdout = handle
-            result = style.check_files(["./Test"])
-            sys.stdout = oldStdout
+
+            result = style.check_files(['./Test'])
+
+            # Restore stdout
+            sys.stdout = old_stdout
 
         self.assertEqual(result.total_errors, 0,
-                         "Found pycodestyle warnings or errors.")
+                         'Found pycodestyle warnings or errors.')
 
     def test_mypy(self):
-        """
+        '''
         Run mypy over the codebase.
-        """
-        result = mypy.api.run(["./Test"])
+        '''
+        # pylint: disable=c-extension-no-member
+        result = mypy.api.run(['./Test'])
 
         # Write the mypy log
         if result[0]:
-            with open("mypy.log", "w", encoding="utf-8") as handle:
+            with open('mypy.log', 'w', encoding='utf-8') as handle:
                 handle.write(result[0])
 
             # Extract actual result lines from the log
@@ -92,30 +98,30 @@ class PythonTests(unittest.TestCase):
             error_lines = []
             for line in lines:
                 # Skip lines that are just status
-                if line.startswith("Success"):
+                if line.startswith('Success'):
                     continue
-                if line.startswith("Found"):
+                if line.startswith('Found'):
                     continue
 
                 error_lines.append(line)
 
             self.assertEqual(len(error_lines), 0,
-                             "Found mypy warnings or errors.")
+                             'Found mypy warnings or errors.')
 
         self.assertFalse(bool(result[1]),
-                         "mypy failed to run.")
+                         'mypy failed to run.')
 
 
 def main():
-    """
+    '''
     The main function.
 
-    Returns:
+    Return:
         int: The process return code.
-    """
+    '''
     results = unittest.main(exit=False)
     return 0 if results.result.wasSuccessful() else 1
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
