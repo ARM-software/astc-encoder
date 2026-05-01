@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2020 Arm Limited
+# Copyright 2019-2026 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -32,12 +32,12 @@ from PIL import Image
 TEST_IMAGE_DIR = os.path.join("Test", "Images")
 
 
-def download(testSet, index, srcUrl, dstPath):
+def download(test_set, index, srcUrl, dstPath):
     """
     Download a single image.
 
     Args:
-        testSet (str): The test set name.
+        test_set (str): The test set name.
         index (int): The download index.
         srcUrl (str): The download URL.
         dstPath (str): The destination path.
@@ -48,10 +48,10 @@ def download(testSet, index, srcUrl, dstPath):
 
     # Skip downloads if the file already exists
     if not os.path.exists(dstPath):
-        print("%s image %u: Downloading" % (testSet, index))
+        print("%s image %u: Downloading" % (test_set, index))
         urllib.request.urlretrieve(srcUrl, dstPath)
     else:
-        print("%s image %u: Skipping" % (testSet, index))
+        print("%s image %u: Skipping" % (test_set, index))
 
 
 def make_landscape(imgPath):
@@ -127,14 +127,14 @@ def retrieve_kodak_set():
     To make test set mosaics easier to build we rotate images to make
     everything landscape.
     """
-    testSet = "Kodak"
+    test_set = "Kodak"
 
     # Download the original RGB images
     for i in range(1, 25):
         fle = "ldr-rgb-kodak%02u.png" % i
         dst = os.path.join(TEST_IMAGE_DIR, "Kodak", "LDR-RGB", fle)
         src = "http://r0k.us/graphics/kodak/kodak/kodim%02u.png" % i
-        download(testSet, i, src, dst)
+        download(test_set, i, src, dst)
 
         # Canonicalize image aspect
         make_landscape(dst)

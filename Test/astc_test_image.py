@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2019-2024 Arm Limited
+# Copyright 2019-2026 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -70,22 +70,22 @@ def is_3d(blockSize):
     return blockSize.count("x") == 2
 
 
-def count_test_set(testSet, blockSizes):
+def count_test_set(test_set, blockSizes):
     """
     Count the number of test executions needed for a test set.
 
     Args:
-        testSet (TestSet): The test set to run.
+        test_set (TestSet): The test set to run.
         blockSizes (list(str)): The block sizes to run.
 
     Returns:
         int: The number of test executions needed.
     """
     count = 0
-    for blkSz in blockSizes:
-        for image in testSet.tests:
+    for block_size in blockSizes:
+        for image in test_set.tests:
             # 3D block sizes require 3D images
-            if is_3d(blkSz) != image.is_3d:
+            if is_3d(block_size) != image.is_3d:
                 continue
 
             count += 1
@@ -103,20 +103,20 @@ def determine_result(image, reference, result):
         result (Record): The test result.
 
     Returns:
-        Result: The result code.
+        ResultStatus: The result code.
     """
     dPSNR = result.psnr - reference.psnr
 
     if (dPSNR < RESULT_THRESHOLD_FAIL) and (not image.is_3d):
-        return trs.Result.FAIL
+        return trs.ResultStatus.FAIL
 
     if (dPSNR < RESULT_THRESHOLD_3D_FAIL) and image.is_3d:
-        return trs.Result.FAIL
+        return trs.ResultStatus.FAIL
 
     if dPSNR < RESULT_THRESHOLD_WARN:
-        return trs.Result.WARN
+        return trs.ResultStatus.WARN
 
-    return trs.Result.PASS
+    return trs.ResultStatus.PASS
 
 
 def format_solo_result(image, result):
@@ -130,11 +130,11 @@ def format_solo_result(image, result):
     Returns:
         str: The metrics string.
     """
-    name = "%5s %s" % (result.blkSz, result.name)
+    name = "%5s %s" % (result.block_size, result.name)
     tPSNR = "%2.3f dB" % result.psnr
-    tTTime = "%.3f s" % result.tTime
-    tCTime = "%.3f s" % result.cTime
-    tCMTS = "%.3f MT/s" % result.cRate
+    tTTime = "%.3f s" % result.total_time
+    tCTime = "%.3f s" % result.coding_time
+    tCMTS = "%.3f MT/s" % result.coding_rate
 
     return "%-32s | %8s | %9s | %9s | %11s" % \
         (name, tPSNR, tTTime, tCTime, tCMTS)
@@ -155,27 +155,27 @@ def format_result(image, reference, result):
     dPSNR = result.psnr - reference.psnr
 
     try:
-        sTTime = reference.tTime / result.tTime
+        sTTime = reference.total_time / result.total_time
     except ZeroDivisionError:
         sTTime = float('NaN')
 
     try:
-        sCTime = reference.cTime / result.cTime
+        sCTime = reference.coding_time / result.coding_time
     except ZeroDivisionError:
         sCTime = float('NaN')
 
-    name = "%5s %s" % (result.blkSz, result.name)
+    name = "%5s %s" % (result.block_size, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
-    tTTime = "%.3f s (%1.2fx)" % (result.tTime, sTTime)
-    tCTime = "%.3f s (%1.2fx)" % (result.cTime, sCTime)
-    tCMTS = "%.3f MT/s" % (result.cRate)
+    tTTime = "%.3f s (%1.2fx)" % (result.total_time, sTTime)
+    tCTime = "%.3f s (%1.2fx)" % (result.coding_time, sCTime)
+    tCMTS = "%.3f MT/s" % (result.coding_rate)
     result = determine_result(image, reference, result)
 
     return "%-32s | %22s | %15s | %15s | %11s | %s" % \
            (name, tPSNR, tTTime, tCTime, tCMTS, result.name)
 
 
-def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
+def run_test_set(encoder, testRef, test_set, quality, blockSizes, testRuns,
                  keepOutput, threads):
     """
     Execute all tests in the test set.
@@ -183,7 +183,7 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
     Args:
         encoder (EncoderBase): The encoder to use.
         testRef (ResultSet): The test reference results.
-        testSet (TestSet): The test set.
+        test_set (TestSet): The test set.
         quality (str): The quality level to execute the test against.
         blockSizes (list(str)): The block sizes to execute each test against.
         testRuns (int): The number of test repeats to run for each image test.
@@ -195,29 +195,31 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
     Returns:
         ResultSet: The test results.
     """
-    resultSet = trs.ResultSet(testSet.name)
+    resultSet = trs.ResultSet(test_set.name)
 
     curCount = 0
-    maxCount = count_test_set(testSet, blockSizes)
+    maxCount = count_test_set(test_set, blockSizes)
 
-    dat = (testSet.name, encoder.name, quality)
+    dat = (test_set.name, encoder.name, quality)
     title = "Test Set: %s / Encoder: %s -%s" % dat
     print(title)
     print("=" * len(title))
 
-    for blkSz in blockSizes:
-        for image in testSet.tests:
+    for block_size in blockSizes:
+        for image in test_set.tests:
             # 3D block sizes require 3D images
-            if is_3d(blkSz) != image.is_3d:
+            if is_3d(block_size) != image.is_3d:
                 continue
 
             curCount += 1
 
-            dat = (curCount, maxCount, blkSz, image.file_name)
+            dat = (curCount, maxCount, block_size, image.file_name)
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
-            res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns,
-                                   keepOutput, threads)
-            res = trs.Record(blkSz, image.file_name, *res)
+            res = encoder.run_test(
+                image, block_size, "-%s" % quality, testRuns,
+                keepOutput, threads)
+
+            res = trs.Record(block_size, image.file_name, *res)
             resultSet.add_record(res)
 
             if testRef:
@@ -225,16 +227,17 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
                 res.set_status(determine_result(image, refResult, res))
 
                 try:
-                    res.tTimeRel = refResult.tTime / res.tTime
+                    res.total_time_rel = refResult.total_time / res.total_time
                 except ZeroDivisionError:
-                    res.tTimeRel = float('NaN')
+                    res.total_time_rel = float('NaN')
 
                 try:
-                    res.cTimeRel = refResult.cTime / res.cTime
+                    res.coding_time_rel = \
+                        refResult.coding_time / res.coding_time
                 except ZeroDivisionError:
-                    res.cTimeRel = float('NaN')
+                    res.coding_time_rel = float('NaN')
 
-                res.psnrRel = res.psnr - refResult.psnr
+                res.psnr_rel = res.psnr - refResult.psnr
 
                 res = format_result(image, refResult, res)
             else:
@@ -436,7 +439,7 @@ def main():
     args = parse_command_line()
 
     testSetCount = 0
-    worstResult = trs.Result.NOTRUN
+    worstResult = trs.ResultStatus.NOT_RUN
 
     for quality in args.testQual:
         for imageSet in args.testSets:
@@ -452,29 +455,29 @@ def main():
                     dat = (testDir, refName, quality)
                     testRefPath = "%s/astc_%s_%s_results.csv" % dat
                     testRef = trs.ResultSet(imageSet)
-                    testRef.load_from_file(testRefPath)
+                    testRef.load_from_file(Path(testRefPath))
 
                 testSetCount += 1
-                testSet = tts.TestSet(
+                test_set = tts.TestSet(
                     imageSet, Path(testDir),
                     args.profiles, args.formats, args.testImage)
 
                 resultSet = run_test_set(
-                    encoder, testRef, testSet, quality,
+                    encoder, testRef, test_set, quality,
                     args.blockSizes, args.testRepeats,
                     args.keepOutput, args.threads)
 
-                resultSet.save_to_file(testRes)
+                resultSet.save_to_file(Path(testRes))
 
                 if refName:
                     summary = resultSet.get_results_summary()
                     worstResult = max(summary.get_worst_result(), worstResult)
                     print(summary)
 
-        if (testSetCount > 1) and (worstResult != trs.Result.NOTRUN):
+        if (testSetCount > 1) and (worstResult != trs.ResultStatus.NOT_RUN):
             print("OVERALL STATUS: %s" % worstResult.name)
 
-    if worstResult == trs.Result.FAIL:
+    if worstResult == trs.ResultStatus.FAIL:
         return 1
 
     return 0
