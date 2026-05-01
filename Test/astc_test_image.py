@@ -34,6 +34,7 @@ Attributes:
 
 import argparse
 import os
+from pathlib import Path
 import platform
 import sys
 
@@ -84,7 +85,7 @@ def count_test_set(testSet, blockSizes):
     for blkSz in blockSizes:
         for image in testSet.tests:
             # 3D block sizes require 3D images
-            if is_3d(blkSz) != image.is3D:
+            if is_3d(blkSz) != image.is_3d:
                 continue
 
             count += 1
@@ -106,10 +107,10 @@ def determine_result(image, reference, result):
     """
     dPSNR = result.psnr - reference.psnr
 
-    if (dPSNR < RESULT_THRESHOLD_FAIL) and (not image.is3D):
+    if (dPSNR < RESULT_THRESHOLD_FAIL) and (not image.is_3d):
         return trs.Result.FAIL
 
-    if (dPSNR < RESULT_THRESHOLD_3D_FAIL) and image.is3D:
+    if (dPSNR < RESULT_THRESHOLD_3D_FAIL) and image.is_3d:
         return trs.Result.FAIL
 
     if dPSNR < RESULT_THRESHOLD_WARN:
@@ -207,16 +208,16 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
     for blkSz in blockSizes:
         for image in testSet.tests:
             # 3D block sizes require 3D images
-            if is_3d(blkSz) != image.is3D:
+            if is_3d(blkSz) != image.is_3d:
                 continue
 
             curCount += 1
 
-            dat = (curCount, maxCount, blkSz, image.testFile)
+            dat = (curCount, maxCount, blkSz, image.file_name)
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
             res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns,
                                    keepOutput, threads)
-            res = trs.Record(blkSz, image.testFile, *res)
+            res = trs.Record(blkSz, image.file_name, *res)
             resultSet.add_record(res)
 
             if testRef:
@@ -455,7 +456,7 @@ def main():
 
                 testSetCount += 1
                 testSet = tts.TestSet(
-                    imageSet, testDir,
+                    imageSet, Path(testDir),
                     args.profiles, args.formats, args.testImage)
 
                 resultSet = run_test_set(

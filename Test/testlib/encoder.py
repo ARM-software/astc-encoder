@@ -265,11 +265,11 @@ class Encoder2x(EncoderBase):
 
     def build_cli(self, image, blockSize="6x6", preset="-thorough",
                   keepOutput=True, threads=None):
-        opmode = self.SWITCHES[image.colorProfile]
-        srcPath = image.filePath
+        opmode = self.SWITCHES[image.color_profile]
+        srcPath = image.file_path
 
         if keepOutput:
-            dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
+            dstPath = image.file_path_out + self.OUTPUTS[image.color_profile]
             dstDir = os.path.dirname(dstPath)
             dstFile = os.path.basename(dstPath)
             dstPath = os.path.join(
@@ -287,10 +287,10 @@ class Encoder2x(EncoderBase):
             blockSize, preset, "-silent"
         ]
 
-        if image.colorFormat == "xy":
+        if image.color_format == "xy":
             command.append("-normal")
 
-        if image.isAlphaScaled:
+        if image.is_alpha_scaled:
             command.append("-a")
             command.append("1")
 
@@ -301,8 +301,8 @@ class Encoder2x(EncoderBase):
         return command
 
     def get_psnr_pattern(self, image):
-        if image.colorProfile != "hdr":
-            if image.colorFormat != "rgba":
+        if image.color_profile != "hdr":
+            if image.color_format != "rgba":
                 patternPSNR = r"\s*PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             else:
                 patternPSNR = r"\s*PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"
@@ -372,10 +372,10 @@ class Encoder1_7(EncoderBase):
         if preset == "-fastest":
             preset = "-fast"
 
-        opmode = self.SWITCHES[image.colorProfile]
-        srcPath = image.filePath
+        opmode = self.SWITCHES[image.color_profile]
+        srcPath = image.file_path
 
-        dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
+        dstPath = image.file_path_out + self.OUTPUTS[image.color_profile]
         dstDir = os.path.dirname(dstPath)
         dstFile = os.path.basename(dstPath)
         dstPath = os.path.join(
@@ -389,13 +389,13 @@ class Encoder1_7(EncoderBase):
             blockSize, preset, "-silentmode", "-time", "-showpsnr"
         ]
 
-        if image.colorFormat == "xy":
+        if image.color_format == "xy":
             command.append("-normal_psnr")
 
-        if image.colorProfile == "hdr":
+        if image.color_profile == "hdr":
             command.append("-hdr")
 
-        if image.isAlphaScaled:
+        if image.is_alpha_scaled:
             command.append("-alphablend")
 
         if threads is not None:
@@ -405,8 +405,8 @@ class Encoder1_7(EncoderBase):
         return command
 
     def get_psnr_pattern(self, image):
-        if image.colorProfile != "hdr":
-            if image.colorFormat != "rgba":
+        if image.color_profile != "hdr":
+            if image.color_format != "rgba":
                 patternPSNR = r"PSNR \(LDR-RGB\):\s*([0-9.]*) dB"
             else:
                 patternPSNR = r"PSNR \(LDR-RGBA\):\s*([0-9.]*) dB"

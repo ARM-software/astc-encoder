@@ -294,18 +294,18 @@ class ResultSet():
 
         return summary
 
-    def save_to_file(self, filePath):
+    def save_to_file(self, file_path):
         """
         Save this result set to a CSV file.
 
         Args:
-            filePath (str): The output file path.
+            file_path (str): The output file path.
         """
-        dirName = os.path.dirname(filePath)
+        dirName = os.path.dirname(file_path)
         if not os.path.exists(dirName):
             os.makedirs(dirName)
 
-        with open(filePath, "w", newline="") as csvfile:
+        with open(file_path, "w", newline="") as csvfile:
             writer = csv.writer(csvfile)
             self._save_header(writer)
             for record in self.records:
@@ -340,14 +340,14 @@ class ResultSet():
                "%0.4f" % record.cRate]
         writer.writerow(row)
 
-    def load_from_file(self, filePath):
+    def load_from_file(self, file_path):
         """
         Load a reference result set from a CSV file on disk.
 
         Args:
-            filePath (str): The input file path.
+            file_path (str): The input file path.
         """
-        with open(filePath, "r") as csvfile:
+        with open(file_path, "r") as csvfile:
             reader = csv.reader(csvfile)
             # Skip the header
             next(reader)

@@ -58,7 +58,7 @@ class PythonTests(unittest.TestCase):
         self.assertIsNotNone(match)
         score = float(match.group(1))
         # This target is currently low but we will increase over time
-        self.assertGreaterEqual(score, 7.0, "Found Pylint score regression")
+        self.assertGreaterEqual(score, 7.25, "Found Pylint score regression")
 
     def test_pycodestyle(self):
         """
