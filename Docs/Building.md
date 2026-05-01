@@ -114,9 +114,9 @@ cd build
 make install -j16
 ```
 
-## macOS using XCode
+## macOS using Xcode
 
-Builds for macOS and Linux are tested with CMake 3.17, and XCode 14.0 or
+Builds for macOS and Linux are tested with CMake 3.17, and Xcode 14.0 or
 newer.
 
 ### Configuring the build
@@ -339,6 +339,37 @@ and the codec API usage can be found in the `./Utils/Example` directory in the
 repository. See the [Example Readme](../Utils/Example/README.md) for more
 details.
 
+## Configuring a new build machine
+
+Install native packages:
+
+```shell
+sudo apt update
+
+# Build tools
+sudo apt install clang cmake git
+
+# Test tools
+sudo apt install imagemagick python3-pip
+
+# Profile tools
+sudo apt install graphviz valgrind
+```
+
+Install Python modules from within a virtual environment:
+
+```shell
+# Setup virtual environment
+python3 -m venv pve
+. ./pve/bin/activate
+
+# Test tools
+python3 -m pip install numpy pillow pycodestyle pylint
+
+# Profile tools
+python3 -m pip install gprof2dot
+```
+
 - - -
 
-_Copyright © 2019-2026, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2026, Arm Limited and contributors._

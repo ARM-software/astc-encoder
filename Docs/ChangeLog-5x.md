@@ -130,4 +130,4 @@ set.
 
 - - -
 
-_Copyright © 2022-2026, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2026, Arm Limited and contributors._

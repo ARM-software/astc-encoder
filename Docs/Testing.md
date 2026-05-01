@@ -149,4 +149,4 @@ The OSS-Fuzz CI is visible to maintainers at [oss-fuzz.com][2].
 
 - - -
 
-_Copyright © 2019-2026, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2026, Arm Limited and contributors._

@@ -485,4 +485,4 @@ which allow applications to reduce the intermediate precision to either UNORM8
 
 - - -
 
-_Copyright © 2019-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2019-2022, Arm Limited and contributors._

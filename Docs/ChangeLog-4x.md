@@ -413,4 +413,4 @@ Key for charts:
 
 - - -
 
-_Copyright © 2022-2024, Arm Limited and contributors. All rights reserved._
+_Copyright © 2022-2024, Arm Limited and contributors._
