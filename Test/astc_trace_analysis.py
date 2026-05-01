@@ -29,27 +29,29 @@ import json
 import numpy as np
 import sys
 
+
 QUANT_TABLE = {
-	 0:   2,
-	 1:   3,
-	 2:   4,
-	 3:   5,
-	 4:   6,
-	 5:   8,
-	 6:  10,
-	 7:  12,
-	 8:  16,
-	 9:  20,
-	10:  24,
-	11:  32
+    0:   2,
+    1:   3,
+    2:   4,
+    3:   5,
+    4:   6,
+    5:   8,
+    6:  10,
+    7:  12,
+    8:  16,
+    9:  20,
+    10: 24,
+    11: 32
 }
 
 CHANNEL_TABLE = {
-	 0: "R",
-	 1: "G",
-	 2: "B",
-	 3: "A"
+    0: "R",
+    1: "G",
+    2: "B",
+    3: "A"
 }
+
 
 class Trace:
 
@@ -63,13 +65,14 @@ class Trace:
         self.blocks.append(block)
 
     def __getitem__(self, i):
-       return self.blocks[i]
+        return self.blocks[i]
 
     def __delitem__(self, i):
-       del self.blocks[i]
+        del self.blocks[i]
 
     def __len__(self):
-       return len(self.blocks)
+        return len(self.blocks)
+
 
 class Block:
 
@@ -110,18 +113,19 @@ class Block:
         self.passes.append(pas)
 
     def __getitem__(self, i):
-       return self.passes[i]
+        return self.passes[i]
 
     def __delitem__(self, i):
-       del self.passes[i]
+        del self.passes[i]
 
     def __len__(self):
-       return len(self.passes)
+        return len(self.passes)
 
 
 class Pass:
 
-    def __init__(self, partitions, partition, planes, target_hit, mode, component):
+    def __init__(self, partitions, partition, planes,
+                 target_hit, mode, component):
         self.partitions = partitions
         self.partition_index = 0 if partition is None else partition
         self.planes = planes
@@ -134,13 +138,13 @@ class Pass:
         self.candidates.append(candidate)
 
     def __getitem__(self, i):
-       return self.candidates[i]
+        return self.candidates[i]
 
     def __delitem__(self, i):
-       del self.candidates[i]
+        del self.candidates[i]
 
     def __len__(self):
-       return len(self.candidates)
+        return len(self.candidates)
 
 
 class Candidate:
@@ -182,16 +186,19 @@ def get_attrib(data, name, multiple=False, hard_fail=True):
 def rev_enumerate(seq):
     return zip(reversed(range(len(seq))), reversed(seq))
 
+
 def foreach_block(data):
 
     for block in data:
         yield block
+
 
 def foreach_pass(data):
 
     for block in data:
         for pas in block:
             yield (block, pas)
+
 
 def foreach_candidate(data):
 
@@ -203,6 +210,7 @@ def foreach_candidate(data):
 
             for candidate in pas:
                 yield (block, pas, candidate)
+
 
 def get_node(data, name, multiple=False, hard_fail=True):
     results = []
@@ -251,8 +259,8 @@ def find_best_pass_and_candidate(block):
 
 def generate_database(data):
     # Skip header
-    assert(data[0] == "node")
-    assert(data[1] == "root")
+    assert data[0] == "node"
+    assert data[1] == "root"
     data = data[2]
 
     bx = get_attrib(data, "block_x")
@@ -437,7 +445,6 @@ def generate_feature_statistics(data):
     decim_count = ddict(lambda: ddict(int))
     quant_count = ddict(lambda: ddict(lambda: ddict(int)))
 
-
     MERGE_ROTATIONS = True
 
     for _, pas, can in foreach_candidate(data):
@@ -482,7 +489,7 @@ def generate_feature_statistics(data):
 
     total_count = 0
     better_count = 0
-    could_have_count = 0
+    could_count = 0
     success_count = 0
 
     refinement_step = []
@@ -496,7 +503,7 @@ def generate_feature_statistics(data):
         start_error = candidate.refinement_errors[0]
         end_error = candidate.refinement_errors[-1]
 
-        rpf = float(start_error - end_error) / float(len(candidate.refinement_errors))
+        rpf = (start_error - end_error) / len(candidate.refinement_errors)
         rpf = abs(rpf)
         refinement_step.append(rpf / start_error)
 
@@ -509,16 +516,15 @@ def generate_feature_statistics(data):
         else:
             for refinement in candidate.refinement_errors:
                 if refinement <= target_error:
-                    could_have_count += 1
+                    could_count += 1
                     break
-
 
     print("Refinement Usage")
     print("================")
     print("  - %u refinements(s)" % total_count)
     print("  - %u refinements(s) improved" % better_count)
     print("  - %u refinements(s) worsened" % (total_count - better_count))
-    print("  - %u refinements(s) could hit target, but didn't" % could_have_count)
+    print("  - %u refinements(s) could hit target, but didn't" % could_count)
     print("  - %u refinements(s) hit target" % success_count)
     print("  - %f mean step improvement" % np.mean(refinement_step))
 

@@ -47,9 +47,13 @@ RESULT_THRESHOLD_FAIL = -0.00
 RESULT_THRESHOLD_3D_FAIL = -0.00
 
 
-TEST_BLOCK_SIZES = ["4x4", "5x5", "6x6", "8x8", "12x12", "3x3x3", "6x6x6"]
+TEST_BLOCK_SIZES = [
+    "4x4", "5x5", "6x6", "8x8", "12x12", "3x3x3", "6x6x6"
+]
 
-TEST_QUALITIES = ["fastest", "fast", "medium", "thorough", "verythorough", "exhaustive"]
+TEST_QUALITIES = [
+    "fastest", "fast", "medium", "thorough", "verythorough", "exhaustive"
+]
 
 
 def is_3d(blockSize):
@@ -159,7 +163,7 @@ def format_result(image, reference, result):
     except ZeroDivisionError:
         sCTime = float('NaN')
 
-    name  = "%5s %s" % (result.blkSz, result.name)
+    name = "%5s %s" % (result.blkSz, result.name)
     tPSNR = "%2.3f dB (% 1.3f dB)" % (result.psnr, dPSNR)
     tTTime = "%.3f s (%1.2fx)" % (result.tTime, sTTime)
     tCTime = "%.3f s (%1.2fx)" % (result.cTime, sCTime)
@@ -212,7 +216,7 @@ def run_test_set(encoder, testRef, testSet, quality, blockSizes, testRuns,
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
             res = encoder.run_test(image, blkSz, "-%s" % quality, testRuns,
                                    keepOutput, threads)
-            res = trs.Record(blkSz, image.testFile, res[0], res[1], res[2], res[3])
+            res = trs.Record(blkSz, image.testFile, *res)
             resultSet.add_record(res)
 
             if testRef:
@@ -302,24 +306,47 @@ def parse_command_line():
     parser = argparse.ArgumentParser()
 
     # All reference encoders
-    refcoders = ["ref-1.7",
-                 "ref-2.5-neon", "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
-                 "ref-3.7-neon", "ref-3.7-sse2", "ref-3.7-sse4.1", "ref-3.7-avx2",
-                 "ref-4.8-neon", "ref-4.8-sse2", "ref-4.8-sse4.1", "ref-4.8-avx2",
-                 "ref-5.0-neon", "ref-5.0-sse2", "ref-5.0-sse4.1", "ref-5.0-avx2",
-                 "ref-main-neon", "ref-main-sve_256", "ref-main-sve_128", "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"]
+    refcoders = [
+        "ref-1.7",
+
+        "ref-2.5-neon",
+        "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
+
+        "ref-3.7-neon",
+        "ref-3.7-sse2", "ref-3.7-sse4.1", "ref-3.7-avx2",
+
+        "ref-4.8-neon",
+        "ref-4.8-sse2", "ref-4.8-sse4.1", "ref-4.8-avx2",
+
+        "ref-5.0-neon",
+        "ref-5.0-sse2", "ref-5.0-sse4.1", "ref-5.0-avx2",
+
+        "ref-main-neon", "ref-main-sve_256", "ref-main-sve_128",
+        "ref-main-sse2", "ref-main-sse4.1", "ref-main-avx2"
+    ]
 
     # All test encoders
-    testcoders = ["none", "neon", "sve_256", "sve_128", "sse2", "sse4.1", "avx2", "native", "universal"]
-    testcodersAArch64 = ["neon", "sve_256", "sve_128"]
-    testcodersX86 = ["sse2", "sse4.1", "avx2"]
+    testcoders = [
+        "none", "native", "universal",
+        "neon", "sve_256", "sve_128",
+        "sse2", "sse4.1", "avx2"
+    ]
+
+    testcodersAArch64 = [
+        "neon", "sve_256", "sve_128"
+    ]
+
+    testcodersX86 = [
+        "sse2", "sse4.1", "avx2"
+    ]
 
     coders = refcoders + testcoders + ["all-aarch64", "all-x86"]
 
-    parser.add_argument("--encoder", dest="encoders", default="avx2",
+    parser.add_argument("--encoder", dest="encoders",
+                        default="avx2",
                         choices=coders, help="test encoder variant")
 
-    parser.add_argument("--reference", dest="reference", default="ref-main-avx2",
+    parser.add_argument("--reference", default="ref-main-avx2",
                         choices=refcoders, help="reference encoder variant")
 
     astcProfile = ["ldr", "ldrs", "hdr", "all"]
@@ -362,7 +389,6 @@ def parse_command_line():
 
     parser.add_argument("-j", dest="threads", default=None,
                         type=int, help="thread count")
-
 
     args = parser.parse_args()
 
@@ -428,12 +454,14 @@ def main():
                     testRef.load_from_file(testRefPath)
 
                 testSetCount += 1
-                testSet = tts.TestSet(imageSet, testDir,
-                                      args.profiles, args.formats, args.testImage)
+                testSet = tts.TestSet(
+                    imageSet, testDir,
+                    args.profiles, args.formats, args.testImage)
 
-                resultSet = run_test_set(encoder, testRef, testSet, quality,
-                                         args.blockSizes, args.testRepeats,
-                                         args.keepOutput, args.threads)
+                resultSet = run_test_set(
+                    encoder, testRef, testSet, quality,
+                    args.blockSizes, args.testRepeats,
+                    args.keepOutput, args.threads)
 
                 resultSet.save_to_file(testRes)
 

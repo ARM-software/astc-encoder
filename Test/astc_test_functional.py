@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # -----------------------------------------------------------------------------
-# Copyright 2020-2025 Arm Limited
+# Copyright 2020-2026 Arm Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy
@@ -109,6 +109,7 @@ ASTCENC_TEST_PATTERN_HDR = {
 LDR_RGB_PSNR_PATTERN = re.compile(r"\s*PSNR \(LDR-RGB\): (.*) dB")
 
 g_TestEncoder = "avx2"
+
 
 class CLITestBase(unittest.TestCase):
     """
@@ -1913,7 +1914,6 @@ class CLINTest(CLITestBase):
 
         # Run the command, incrementally omitting arguments
         self.exec_with_omit(command, 7)
-
 
     def test_cl_4partitioncandidatelimit_missing_args(self):
         """
