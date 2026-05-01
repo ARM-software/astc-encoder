@@ -68,4 +68,4 @@ determined from the header information.
 
 - - -
 
-_Copyright © 2020-2022, Arm Limited and contributors. All rights reserved._
+_Copyright © 2020-2022, Arm Limited and contributors._

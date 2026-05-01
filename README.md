@@ -241,7 +241,7 @@ or general mobile graphics development or technology please submit them on the
 
 - - -
 
-_Copyright © 2013-2025, Arm Limited and contributors. All rights reserved._
+_Copyright © 2013-2026, Arm Limited and contributors._
 
 [1]: ./Docs/FormatOverview.md
 [2]: https://www.khronos.org/registry/DataFormat/specs/1.4/dataformat.1.4.html#ASTC
