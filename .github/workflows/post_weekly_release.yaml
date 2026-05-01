@@ -111,7 +111,7 @@ jobs:
 
   build-ubuntu-x64:
     name: Ubuntu x64
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
@@ -322,7 +322,7 @@ jobs:
   prepare-release:
     if: ${{ (startsWith(github.event.ref, 'refs/tags/')) && (github.repository_owner == 'Arm-software') }}
     name: Prepare release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [sign-binaries, build-ubuntu-x64]
     steps:
       - name: Git checkout
