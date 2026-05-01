@@ -35,7 +35,6 @@ Attributes:
 import argparse
 import os
 from pathlib import Path
-import platform
 import sys
 
 import testlib.encoder as te
@@ -57,32 +56,32 @@ TEST_QUALITIES = [
 ]
 
 
-def is_3d(blockSize):
+def is_3d(block_size):
     """
     Is the given block size a 3D block type?
 
     Args:
-        blockSize (str): The block size.
+        block_size (str): The block size.
 
-    Returns:
+    Return:
         bool: ``True`` if the block string is a 3D block size, ``False`` if 2D.
     """
-    return blockSize.count("x") == 2
+    return block_size.count("x") == 2
 
 
-def count_test_set(test_set, blockSizes):
+def count_test_set(test_set, block_sizes):
     """
     Count the number of test executions needed for a test set.
 
     Args:
         test_set (TestSet): The test set to run.
-        blockSizes (list(str)): The block sizes to run.
+        block_sizes (list(str)): The block sizes to run.
 
-    Returns:
+    Return:
         int: The number of test executions needed.
     """
     count = 0
-    for block_size in blockSizes:
+    for block_size in block_sizes:
         for image in test_set.tests:
             # 3D block sizes require 3D images
             if is_3d(block_size) != image.is_3d:
@@ -102,7 +101,7 @@ def determine_result(image, reference, result):
         reference (Record): The reference result to compare against.
         result (Record): The test result.
 
-    Returns:
+    Return:
         ResultStatus: The result code.
     """
     dPSNR = result.psnr - reference.psnr
@@ -127,7 +126,7 @@ def format_solo_result(image, result):
         image (TestImage): The image being tested.
         result (Record): The test result.
 
-    Returns:
+    Return:
         str: The metrics string.
     """
     name = "%5s %s" % (result.block_size, result.name)
@@ -149,7 +148,7 @@ def format_result(image, reference, result):
         reference (Record): The reference result to compare against.
         result (Record): The test result.
 
-    Returns:
+    Return:
         str: The metrics string.
     """
     dPSNR = result.psnr - reference.psnr
@@ -175,8 +174,8 @@ def format_result(image, reference, result):
            (name, tPSNR, tTTime, tCTime, tCMTS, result.name)
 
 
-def run_test_set(encoder, testRef, test_set, quality, blockSizes, testRuns,
-                 keepOutput, threads):
+def run_test_set(encoder, testRef, test_set, quality, block_sizes, testRuns,
+                 keep_output, threads):
     """
     Execute all tests in the test set.
 
@@ -185,27 +184,27 @@ def run_test_set(encoder, testRef, test_set, quality, blockSizes, testRuns,
         testRef (ResultSet): The test reference results.
         test_set (TestSet): The test set.
         quality (str): The quality level to execute the test against.
-        blockSizes (list(str)): The block sizes to execute each test against.
+        block_sizes (list(str)): The block sizes to execute each test against.
         testRuns (int): The number of test repeats to run for each image test.
-        keepOutput (bool): Should the test preserve output images? This is
+        keep_output (bool): Should the test preserve output images? This is
             only a hint and discarding output may be ignored if the encoder
             version used can't do it natively.
         threads (int or None): The thread count to use.
 
-    Returns:
+    Return:
         ResultSet: The test results.
     """
     resultSet = trs.ResultSet(test_set.name)
 
     curCount = 0
-    maxCount = count_test_set(test_set, blockSizes)
+    maxCount = count_test_set(test_set, block_sizes)
 
     dat = (test_set.name, encoder.name, quality)
     title = "Test Set: %s / Encoder: %s -%s" % dat
     print(title)
     print("=" * len(title))
 
-    for block_size in blockSizes:
+    for block_size in block_sizes:
         for image in test_set.tests:
             # 3D block sizes require 3D images
             if is_3d(block_size) != image.is_3d:
@@ -217,7 +216,7 @@ def run_test_set(encoder, testRef, test_set, quality, blockSizes, testRuns,
             print("Running %u/%u %s %s ... " % dat, end='', flush=True)
             res = encoder.run_test(
                 image, block_size, "-%s" % quality, testRuns,
-                keepOutput, threads)
+                keep_output, threads)
 
             res = trs.Record(block_size, image.file_name, *res)
             resultSet.add_record(res)
@@ -257,20 +256,12 @@ def get_encoder_params(encoderName, referenceName, imageSet):
         referenceName (str): The reference encoder name.
         imageSet (str): The test image set.
 
-    Returns:
+    Return:
         tuple(EncoderBase, str, str, str): The test parameters for the
         requested encoder and test set. An instance of the encoder wrapper
         class, the output data name, the output result directory, and the
         reference to use.
     """
-    # 1.7 variants
-    if encoderName == "ref-1.7":
-        encoder = te.Encoder1_7()
-        name = "reference-1.7"
-        outDir = "Test/Images/%s" % imageSet
-        refName = None
-        return (encoder, name, outDir, refName)
-
     if encoderName.startswith("ref"):
         _, version, simd = encoderName.split("-")
 
@@ -304,24 +295,13 @@ def parse_command_line():
     """
     Parse the command line.
 
-    Returns:
+    Return:
         Namespace: The parsed command line container.
     """
     parser = argparse.ArgumentParser()
 
     # All reference encoders
     refcoders = [
-        "ref-1.7",
-
-        "ref-2.5-neon",
-        "ref-2.5-sse2", "ref-2.5-sse4.1", "ref-2.5-avx2",
-
-        "ref-3.7-neon",
-        "ref-3.7-sse2", "ref-3.7-sse4.1", "ref-3.7-avx2",
-
-        "ref-4.8-neon",
-        "ref-4.8-sse2", "ref-4.8-sse4.1", "ref-4.8-avx2",
-
         "ref-5.0-neon",
         "ref-5.0-sse2", "ref-5.0-sse4.1", "ref-5.0-avx2",
 
@@ -362,7 +342,7 @@ def parse_command_line():
                         choices=imgFormat, help="test color format")
 
     choices = list(TEST_BLOCK_SIZES) + ["all"]
-    parser.add_argument("--block-size", dest="blockSizes",
+    parser.add_argument("--block-size", dest="block_sizes",
                         action="append", choices=choices,
                         help="test block size")
 
@@ -388,7 +368,7 @@ def parse_command_line():
     parser.add_argument("--repeats", dest="testRepeats", default=1,
                         type=int, help="test iteration count")
 
-    parser.add_argument("--keep-output", dest="keepOutput", default=False,
+    parser.add_argument("--keep-output", dest="keep_output", default=False,
                         action="store_true", help="keep image output")
 
     parser.add_argument("-j", dest="threads", default=None,
@@ -413,8 +393,8 @@ def parse_command_line():
     else:
         args.testQual = [args.testQual]
 
-    if not args.blockSizes or ("all" in args.blockSizes):
-        args.blockSizes = TEST_BLOCK_SIZES
+    if not args.block_sizes or ("all" in args.block_sizes):
+        args.block_sizes = TEST_BLOCK_SIZES
 
     args.testSets = testSets[:-1] if args.testSets == "all" \
         else [args.testSets]
@@ -428,11 +408,11 @@ def parse_command_line():
     return args
 
 
-def main():
+def main() -> int:
     """
     The main function.
 
-    Returns:
+    Return:
         int: The process return code.
     """
     # Parse command lines
@@ -464,8 +444,8 @@ def main():
 
                 resultSet = run_test_set(
                     encoder, testRef, test_set, quality,
-                    args.blockSizes, args.testRepeats,
-                    args.keepOutput, args.threads)
+                    args.block_sizes, args.testRepeats,
+                    args.keep_output, args.threads)
 
                 resultSet.save_to_file(Path(testRes))
 
@@ -481,10 +461,6 @@ def main():
         return 1
 
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
 
 
 if __name__ == "__main__":

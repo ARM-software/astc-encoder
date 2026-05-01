@@ -125,7 +125,7 @@ class CLITestBase(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
         encoder = te.Encoder2x(g_TestEncoder)
-        self.binary = encoder.binary
+        self.binary = encoder.binary_path
 
     def setUp(self):
         """
@@ -609,7 +609,7 @@ class CLIPTest(CLITestBase):
         """
         Test all valid block sizes are accepted (2D images).
         """
-        blockSizes = [
+        block_sizes = [
             "4x4", "5x4", "5x5", "6x5", "6x6", "8x5", "8x6",
             "10x5", "10x6", "8x8", "10x8", "10x10", "12x10", "12x12"
         ]
@@ -617,8 +617,8 @@ class CLIPTest(CLITestBase):
         imIn = self.get_ref_image_path("LDR", "input", "A")
         imOut = self.get_tmp_image_path("LDR", "decomp")
 
-        for blk in blockSizes:
-            with self.subTest(blockSize=blk):
+        for blk in block_sizes:
+            with self.subTest(block_size=blk):
                 command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
                 self.exec(command)
                 colIn = tli.Image(Path(imIn)).get_colors((0, 0))
@@ -629,7 +629,7 @@ class CLIPTest(CLITestBase):
         """
         Test all valid block sizes are accepted (3D images).
         """
-        blockSizes = [
+        block_sizes = [
             "3x3x3",
             "4x3x3", "4x4x3", "4x4x4",
             "5x4x4", "5x5x4", "5x5x5",
@@ -639,8 +639,8 @@ class CLIPTest(CLITestBase):
         imIn = self.get_ref_image_path("LDR", "input", "A")
         imOut = self.get_tmp_image_path("LDR", "decomp")
 
-        for blk in blockSizes:
-            with self.subTest(blockSize=blk):
+        for blk in block_sizes:
+            with self.subTest(block_size=blk):
                 command = [self.binary, "-tl", imIn, imOut, blk, "-exhaustive"]
                 self.exec(command)
                 colIn = tli.Image(Path(imIn)).get_colors((0, 0))
@@ -1615,7 +1615,7 @@ class CLINTest(CLITestBase):
 
         blockIndex = command.index("4x4")
         for badSize in badSizes:
-            with self.subTest(blockSize=badSize):
+            with self.subTest(block_size=badSize):
                 command[blockIndex] = badSize
                 self.exec(command)
 
@@ -1756,7 +1756,7 @@ class CLINTest(CLITestBase):
 
         blockIndex = command.index("4x4")
         for badSize in badSizes:
-            with self.subTest(blockSize=badSize):
+            with self.subTest(block_size=badSize):
                 command[blockIndex] = badSize
                 self.exec(command)
 
