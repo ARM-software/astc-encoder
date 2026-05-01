@@ -43,9 +43,9 @@ class EncoderBase():
         OUTPUTS: Dict of output file extensions for different color formats.
     """
 
-    VERSION = None
-    SWITCHES = None
-    OUTPUTS = None
+    VERSION = ''
+    SWITCHES: dict[str, str] = {}
+    OUTPUTS: dict[str, str] = {}
 
     def __init__(self, name, variant, binary):
         """
@@ -272,7 +272,8 @@ class Encoder2x(EncoderBase):
             dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
             dstDir = os.path.dirname(dstPath)
             dstFile = os.path.basename(dstPath)
-            dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
+            dstPath = os.path.join(
+                dstDir, self.name, preset[1:], blockSize, dstFile)
 
             dstDir = os.path.dirname(dstPath)
             os.makedirs(dstDir, exist_ok=True)
@@ -377,7 +378,8 @@ class Encoder1_7(EncoderBase):
         dstPath = image.outFilePath + self.OUTPUTS[image.colorProfile]
         dstDir = os.path.dirname(dstPath)
         dstFile = os.path.basename(dstPath)
-        dstPath = os.path.join(dstDir, self.name, preset[1:], blockSize, dstFile)
+        dstPath = os.path.join(
+            dstDir, self.name, preset[1:], blockSize, dstFile)
 
         dstDir = os.path.dirname(dstPath)
         os.makedirs(dstDir, exist_ok=True)
