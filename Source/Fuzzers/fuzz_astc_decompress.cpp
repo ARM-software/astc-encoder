@@ -44,14 +44,14 @@ extern "C" int LLVMFuzzerTestOneInput(
 	// Randomize quality
 	float quality = fdp.ConsumeFloatingPointInRange<float>(ASTCENC_PRE_FASTEST, ASTCENC_PRE_EXHAUSTIVE);
 
-	// Randomize flags
+	// Randomize flags, but constrain to be safe with arbitrary input data
 	unsigned int flags = fdp.ConsumeIntegralInRange<unsigned int>(0, ASTCENC_ALL_FLAGS);
+	flags &= ~ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
 
-	// Ensure we don't use flags incompatible with decompress-only if we were to use that,
-	// but here we are using a general context.
 	astcenc_config config;
 	astcenc_error status = astcenc_config_init(profile, block_x, block_y, block_z, quality, flags, &config);
-	if (status != ASTCENC_SUCCESS) {
+	if (status != ASTCENC_SUCCESS)
+	{
 		return 0;
 	}
 
