@@ -121,7 +121,7 @@
  * When using the normal map compression mode ASTC will store normals as a two component X+Y map.
  * Input images must contain unit-length normalized and should be passed in using a two component
  * swizzle. The astcenc command line tool defaults to an RRRG swizzle, but some developers prefer
- * to use GGGR for compatability with BC5n which will work just as well. The Z component can be
+ * to use GGGR for compatibility with BC5n which will work just as well. The Z component can be
  * recovered programmatically in shader code, using knowledge that the vector is unit length and
  * that Z must be positive for a tangent-space normal map.
  *
