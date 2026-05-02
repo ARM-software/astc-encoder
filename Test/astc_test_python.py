@@ -59,7 +59,7 @@ class PythonTests(unittest.TestCase):
         score = float(match.group(1))
 
         # This target is currently low but we will increase over time
-        self.assertGreaterEqual(score, 9.5, 'Found Pylint score regression')
+        self.assertGreaterEqual(score, 9.95, 'Found Pylint score regression')
 
     def test_pycodestyle(self):
         '''
