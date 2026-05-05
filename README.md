@@ -108,13 +108,15 @@ The `4.x` branch is a stable branch for the older 4.x release series. It is no
 longer under active development, but is a supported branch that continues to
 get back-ported bug fixes.
 
-The `1.x`, `2.x`, and `3.x` branches are stable branches for older releases.
-They are no longer under active development or getting bug fixes.
+The `1.x`, `2.x`, and `3.x` branches are legacy branches for older releases.
+They are no longer under active development or getting security or bug fixes,
+and are scheduled for deletion at the end of August 2026. We recommend that
+developers using an old branch migrate to using the latest 5.x series stable
+release tag.
 
 Any other branches you might find are development branches for new features or
 optimizations, so might be interesting to play with but should be considered
 transient and unstable.
-
 
 # Getting started
 
