@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.4.0
 
-**Status:** In development.
+**Status:** May 2026
 
 The 5.4.0 release is a minor feature release.
 
@@ -33,6 +33,8 @@ header from the same release to avoid compatibility issues.
     with a 256-bit vector width. See [Building.md](Building.md) for details.
   * **Bug fix:** Avoid double definition of `NOMINMAX` when compiling with
     MinGW.
+  * **Bug fix:** Improve compiler option compatibility with Clang 20, which
+    gives warnings if later options override floating point model options.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.3.0
