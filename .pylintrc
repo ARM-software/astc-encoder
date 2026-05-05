@@ -297,7 +297,7 @@ exclude-too-few-public-methods=
 ignored-parents=
 
 # Maximum number of arguments for function / method.
-max-args=7
+max-args=8
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=16
@@ -315,7 +315,7 @@ max-locals=16
 max-parents=7
 
 # Maximum number of positional arguments for function / method.
-max-positional-arguments=7
+max-positional-arguments=8
 
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20
