@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -388,10 +388,13 @@ void store_image_block(
 					vfloat data_b(blk.data_b + idx);
 					vfloat data_a(blk.data_a + idx);
 
-					vint data_ri = float_to_int_rtn(min(data_r, 1.0f) * 255.0f);
-					vint data_gi = float_to_int_rtn(min(data_g, 1.0f) * 255.0f);
-					vint data_bi = float_to_int_rtn(min(data_b, 1.0f) * 255.0f);
-					vint data_ai = float_to_int_rtn(min(data_a, 1.0f) * 255.0f);
+					// Clamp values to [0.0, 1.0] range before unorm conversion
+					//   - Values > 1.0 are possible for all HDR blocks
+					//   - Values < 0.0 are possible for HDR void-extent blocks
+					vint data_ri = float_to_int_rtn(clampzo(data_r) * 255.0f);
+					vint data_gi = float_to_int_rtn(clampzo(data_g) * 255.0f);
+					vint data_bi = float_to_int_rtn(clampzo(data_b) * 255.0f);
+					vint data_ai = float_to_int_rtn(clampzo(data_a) * 255.0f);
 
 					if (needs_swz)
 					{
