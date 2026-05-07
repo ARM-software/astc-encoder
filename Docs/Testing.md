@@ -134,13 +134,14 @@ Run test commands through Valgrind:
 
     valgrind --tool=memcheck --track-origins=yes <command>
 
-# OSS Fuzz
+# OSS-Fuzz
 
 ASTC-Encoder has been integrated into the Google OSS-Fuzz program, which
 performs API fuzz testing on a Google-hosted CI infrastructure.
 
 Our OSS-Fuzz test harnesses can be found in the
-[/Source/Fuzzers](../Source/Fuzzers/) directory.
+[/Source/Fuzzers](../Source/Fuzzers/) directory, and we have some short
+[documentation](TestingOSSFuzz.md) about how to run the fuzzers locally.
 
 The OSS-Fuzz Project is hosted on GitHub at [google/oss-fuzz][1].
 
