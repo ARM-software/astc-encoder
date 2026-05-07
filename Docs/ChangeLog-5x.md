@@ -7,6 +7,18 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.5.0
+
+**Status:** In development.
+
+The 5.5.0 release is a minor maintenance release.
+
+* **General:**
+  * **Bug fix:** Add missing low-clamp when storing decompressed HDR data into
+    a UNORM8 image. Prior to this fix, output colors would be incorrect if a
+    HDR void-extent block contained a negative FP16 color value.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.4.0
 
 **Status:** May 2026
