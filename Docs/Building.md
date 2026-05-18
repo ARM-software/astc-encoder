@@ -334,10 +334,37 @@ Windows packages will use the `.zip` format, other packages will use the
 ## Integrating as a library into another project
 
 The core codec of `astcenc` is built as a library, and so can be easily
-integrated into other projects using CMake. An example of the CMake integration
-and the codec API usage can be found in the `./Utils/Example` directory in the
-repository. See the [Example Readme](../Utils/Example/README.md) for more
-details.
+integrated into other projects. We recommend integrating the project in a way
+that lets you control which version of `astcenc` you are using, as this allows you to manage API version changes.
+
+An basic example of CMake integration and codec API usage can be found in the `./Utils/Example` directory. See the [Example Readme](../Utils/Example/README.md) for more details.
+
+> [!CAUTION]
+> This example is designed to always use the latest main branch so that it
+> stays in sync with any changes we make to the repository. This is not
+> recommended for external production integration because you cannot control
+> which API version your application is using.
+
+### Library API stability across versions
+
+Since version 5.4.0, the library API exposed in `astcenc.h` will follow
+semantic versioning guidelines and remain backwards compatible within each
+major version (`X.*.*`). Any breaking change will result in a major version
+increment.
+
+When updating to a newer major version, callers of the API should expect that
+they will need to update to synchronize with any changes. When a major API
+version makes changes to the API, they will be done in way that deliberately
+causes a compilation failure. This avoids applications hitting failures that
+only occur at runtime.
+
+> [!IMPORTANT]
+> Prior to version 5.4.0, we did not follow this policy and minor versions
+> (`*.X.*`) could introduce API breaks.
+
+When we make changes that modify API entrypoints, we do not usually try to
+maintain backwards compatibility by adding parallel entrypoints to support both
+the new and original behaviors, and prefer to just increment the major version.
 
 ## Configuring a new build machine
 
