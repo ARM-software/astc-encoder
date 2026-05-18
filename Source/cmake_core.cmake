@@ -450,8 +450,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         else()
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
-                    $<${is_clangcl}:-mcpu=native -march=native>
-                    $<${is_gnu_fe}:-mcpu=native -march=native>
+                    $<${is_clangcl}:-march=native>
+                    $<${is_gnu_fe}:-march=native>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
     endif()
