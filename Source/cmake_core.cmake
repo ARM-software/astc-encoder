@@ -23,6 +23,8 @@ include(cmake_compiler.cmake)
 
 add_library(${ASTCENC_TARGET}-static
     STATIC
+        ert.cpp
+        astcenc_rate_distortion.cpp
         astcenc_averages_and_directions.cpp
         astcenc_block_sizes.cpp
         astcenc_color_quantize.cpp
