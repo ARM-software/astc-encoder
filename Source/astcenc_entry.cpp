@@ -1215,7 +1215,7 @@ astcenc_error astcenc_decompress_image(
 	int plane_blocks = xblocks * yblocks;
 
 	// Check we have enough output space (16 bytes per block)
-	size_t size_needed = xblocks * yblocks * zblocks * 16;
+	size_t size_needed = static_cast<size_t>(xblocks) * yblocks * zblocks * 16;
 	if (data_len < size_needed)
 	{
 		return ASTCENC_ERR_OUT_OF_MEM;
