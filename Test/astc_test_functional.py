@@ -382,7 +382,7 @@ class CLIPTest(CLITestBase):
             max_delta = ref_channel * threshold
             self.assertAlmostEqual(ref_channel, new_channel, delta=max_delta)
 
-    def exec(self, cmd: list[str],
+    def exec(self, cmd: list[str | Path],
              pattern: Optional[re.Pattern] = None) -> str:
         '''
         Execute a positive test.
@@ -402,7 +402,8 @@ class CLIPTest(CLITestBase):
             child process.
         '''
         try:
-            result = sp.run(cmd, stdout=sp.PIPE, stderr=sp.PIPE,
+            cmd_str = [str(x) for x in cmd]
+            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE,
                             text=True, check=True)
             rcode = result.returncode
             rstdout = result.stdout
@@ -417,7 +418,7 @@ class CLIPTest(CLITestBase):
 
         # Emit debug logging if needed
         if ASTCENC_CLI_ALWAYS or (not passed and ASTCENC_CLI_ON_ERROR):
-            print('\n' + ' '.join(cmd))
+            print('\n' + ' '.join(cmd_str))
 
         if ASTCENC_LOG_ALWAYS or (not passed and ASTCENC_LOG_ON_ERROR):
             print(rstdout)
