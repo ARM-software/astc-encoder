@@ -320,7 +320,7 @@ void physical_to_symbolic(
 		}
 
 		// Additionally, check that the void-extent
-		if (bsd.zdim == 1)
+		if (bsd.dim_z == 1)
 		{
 			// 2D void-extent
 			int rsvbits = read_bits(2, 10, pcb);
