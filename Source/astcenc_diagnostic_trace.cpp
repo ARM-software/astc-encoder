@@ -242,4 +242,13 @@ void trace_add_data(
 	node->add_attrib("int", key, std::to_string(value));
 }
 
+/* See header for documentation. */
+void trace_add_data(
+	const char* key,
+	size_t value
+) {
+	TraceNode* node = g_TraceLog->get_current_leaf();
+	node->add_attrib("int", key, std::to_string(value));
+}
+
 #endif

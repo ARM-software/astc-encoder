@@ -28,8 +28,214 @@
 namespace astcenc
 {
 
+/** @brief Input overflow tests for xy * z. */
+TEST(compress, overflow_in_z)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t input[1];
+
+	astcenc_image image;
+	// x * y always fits in 64-bit size_t, but xy * z will overflow
+	image.dim_x = 0xFFFFFFFFu;
+	image.dim_y = 0xFFFFFFFFu;
+	image.dim_z = 0xFFFFFFFFu;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = input;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Input overflow tests for xyz * 16. */
+TEST(compress, overflow_in_16)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t input[1];
+
+	astcenc_image image;
+	// xyz (in blocks) always fits in 64-bit size_t, but xyz * 16 will overflow
+	image.dim_x = 0x80000000u;
+	image.dim_y = 0x80000000u;
+	image.dim_z = 0x00000010u;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = input;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+
+/** @brief Input data buffer overrun tests. */
+TEST(compress, data_buffer_exceeded)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t input[1];
+
+	astcenc_image image;
+	image.dim_x = 0x4u;
+	image.dim_y = 0x4u;
+	image.dim_z = 0x1u;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = input;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	// Data size is 1 byte too short so this should error
+	status = astcenc_compress_image(context, &image, &swizzle, data, 15, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_OUT_OF_MEM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Input overflow tests for xy * z. */
+TEST(decompress, overflow_in_z)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t output[1];
+
+	astcenc_image image;
+	// x * y always fits in 64-bit size_t, but xy * z will overflow
+	image.dim_x = 0xFFFFFFFFu;
+	image.dim_y = 0xFFFFFFFFu;
+	image.dim_z = 0xFFFFFFFFu;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = output;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+
+/** @brief Input overflow tests for xyz * 16. */
+TEST(decompress, overflow_in_16)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t output[1];
+
+	astcenc_image image;
+	// xyz (in blocks) always fits in 64-bit size_t, but xyz * 16 will overflow
+	image.dim_x = 0x80000000u;
+	image.dim_y = 0x80000000u;
+	image.dim_z = 0x00000010u;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = output;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Input data buffer overrun tests. */
+TEST(decompress, data_buffer_exceeded)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// Arrays are too short, but should never be touched
+	uint8_t data[1];
+	uint8_t output[1];
+
+	astcenc_image image;
+	image.dim_x = 0x4u;
+	image.dim_y = 0x4u;
+	image.dim_z = 0x1u;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = output;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	// Data size is 1 byte too short so this should error
+	status = astcenc_decompress_image(context, data, 15, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_OUT_OF_MEM);
+
+	astcenc_context_free(context);
+}
+
 /** @brief Test harness for exploring issue #447. */
-TEST(decode, decode12x12)
+TEST(decompress, decompress12x12)
 {
 	astcenc_error status;
 	astcenc_config config;
@@ -80,7 +286,7 @@ TEST(decode, decode12x12)
 }
 
 /** @brief Test harness for context inheritance. */
-TEST(decode, context_inherit)
+TEST(decompress, context_inherit)
 {
 	astcenc_error status;
 	astcenc_config config;

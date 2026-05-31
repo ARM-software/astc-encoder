@@ -14,6 +14,11 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.5.0 release is a minor maintenance release.
 
 * **General:**
+  * **Bug fix:** Throw errors in the library API for cases where input image
+    sizes would result in integer overflow in calculations of total texel
+    count, total block count, or compressed image byte size.
+  * **Bug fix:** Fix incorrect offset calculation in `compute_averages()` when
+    using 3D block sizes.
   * **Bug fix:** Add missing low-clamp when storing decompressed HDR data into
     a UNORM8 image. Prior to this fix, output colors would be incorrect if a
     HDR void-extent block contained a negative FP16 color value.

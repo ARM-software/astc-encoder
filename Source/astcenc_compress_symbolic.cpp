@@ -1171,9 +1171,9 @@ void compress_block(
 	float lowest_correl;
 
 	TRACE_NODE(node0, "block");
-	trace_add_data("pos_x", blk.xpos);
-	trace_add_data("pos_y", blk.ypos);
-	trace_add_data("pos_z", blk.zpos);
+	trace_add_data("pos_x", blk.pos_x);
+	trace_add_data("pos_y", blk.pos_y);
+	trace_add_data("pos_z", blk.pos_z);
 
 	// Set stricter block targets for luminance data as we have more bits to play with
 	bool block_is_l = blk.is_luminance();
