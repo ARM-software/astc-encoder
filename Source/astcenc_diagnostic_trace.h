@@ -208,6 +208,14 @@ void trace_add_data(const char* key, int value);
  */
 void trace_add_data(const char* key, unsigned int value);
 
+/**
+ * @brief Add a size_t annotation to the current node.
+ *
+ * @param key     The name of the attribute.
+ * @param value   The value of the attribute.
+ */
+void trace_add_data(const char* key, size_t value);
+
 #else
 
 #define TRACE_NODE(name, ...)

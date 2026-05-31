@@ -134,6 +134,111 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 }};
 
 /**
+ * @brief Get the number of blocks in an single image dimension.
+ *
+ * @param dim_img   The image dimension, in pixels.
+ * @param dim_blk   The block dimension, in pixels.
+ *
+ * @return The number of blocks needed in this dimension.
+ */
+static size_t get_block_count(size_t dim_img, size_t dim_blk)
+{
+	// Computation done this way to avoid overflowing size_t max
+	size_t blocks = dim_img / dim_blk;
+
+	// Is there a residual partial block?
+	if (dim_img != (blocks * dim_blk))
+	{
+		blocks++;
+	}
+
+	return blocks;
+}
+
+/**
+ * @brief Get the total number of texels in an image.
+ *
+ * This function validates that the total size would fit in a size_t and returns
+ * 0 if it does not.
+ *
+ * @param texels_x   Number of texels in the X axis.
+ * @param texels_y   Number of texels in the Y axis.
+ * @param texels_z   Number of texels in the Z axis.
+ *
+ * @return The number of texels in the image, or zero if total size would not
+ *         fit into a size_t.
+ */
+static size_t get_texels_count(size_t texels_x, size_t texels_y, size_t texels_z)
+{
+	// If any dimensions are zero return early to avoid later divide by zero
+	if ((!texels_x) || (!texels_y) || (!texels_z))
+	{
+		return 0;
+	}
+
+	// Overflow in x*y
+	size_t texels_xy = texels_x * texels_y;
+	if ((texels_xy / texels_y) != texels_x)
+	{
+		return 0;
+	}
+
+	// Overflow in xy*z
+	size_t texels_xyz = texels_xy * texels_z;
+	if ((texels_xyz / texels_z) != texels_xy)
+	{
+		return 0;
+	}
+
+	return texels_xyz;
+}
+
+/**
+ * @brief Get the total number of blocks in an image.
+ *
+ * This function also validates that the total size of the compressed image,
+ * in bytes, would fit in a size_t.
+ *
+ * @param blocks_x   Number of blocks in the X axis.
+ * @param blocks_y   Number of blocks in the Y axis.
+ * @param blocks_z   Number of blocks in the Z axis.
+ *
+ * @return The number of blocks in the image, or zero if total size would not
+ *         fit into a size_t.
+ */
+static size_t get_blocks_count(size_t blocks_x, size_t blocks_y, size_t blocks_z)
+{
+	// If any dimensions are zero return early to avoid later divide by zero
+	if ((!blocks_x) || (!blocks_y) || (!blocks_z))
+	{
+		return 0;
+	}
+
+	// Overflow in x*y
+	size_t blocks_xy = blocks_x * blocks_y;
+	if ((blocks_xy / blocks_y) != blocks_x)
+	{
+		return 0;
+	}
+
+	// Overflow in xy*z
+	size_t blocks_xyz = blocks_xy * blocks_z;
+	if ((blocks_xyz / blocks_z) != blocks_xy)
+	{
+		return 0;
+	}
+
+	// Overflow in bytes
+	size_t block_bytes = blocks_xyz * 16;
+	if ((block_bytes / 16) != blocks_xyz)
+	{
+		return 0;
+	}
+
+	return blocks_xyz;
+}
+
+/**
  * @brief Validate CPU floating point meets assumptions made in the codec.
  *
  * The codec is written with the assumption that float bit patterns are valid
@@ -455,7 +560,8 @@ astcenc_error astcenc_config_init(
 	std::memset(&config, 0, sizeof(config));
 
 	// Process the block size
-	block_z = astc::max(block_z, 1u); // For 2D blocks Z==0 is accepted, but convert to 1
+	// For 2D blocks Z==0 is accepted, but convert to 1
+	block_z = astc::max(block_z, 1u);
 	status = validate_block_size(block_x, block_y, block_z);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -479,7 +585,7 @@ astcenc_error astcenc_config_init(
 	}
 
 	static const std::array<astcenc_preset_config, 6>* preset_configs;
-	int texels_int = block_x * block_y * block_z;
+	size_t texels_int = block_x * block_y * block_z;
 	if (texels_int < 25)
 	{
 		preset_configs = &preset_configs_high;
@@ -832,22 +938,26 @@ static void compress_image(
 
 	image_block blk;
 
-	int block_x = bsd.xdim;
-	int block_y = bsd.ydim;
-	int block_z = bsd.zdim;
+	size_t block_x = bsd.xdim;
+	size_t block_y = bsd.ydim;
+	size_t block_z = bsd.zdim;
 	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
 
-	int dim_x = image.dim_x;
-	int dim_y = image.dim_y;
-	int dim_z = image.dim_z;
+	size_t dim_x = image.dim_x;
+	size_t dim_y = image.dim_y;
+	size_t dim_z = image.dim_z;
 
-	int xblocks = (dim_x + block_x - 1) / block_x;
-	int yblocks = (dim_y + block_y - 1) / block_y;
-	int zblocks = (dim_z + block_z - 1) / block_z;
-	int block_count = zblocks * yblocks * xblocks;
+	size_t blocks_x = get_block_count(dim_x, block_x);
+	size_t blocks_y = get_block_count(dim_y, block_y);
+	size_t blocks_z = get_block_count(dim_z, block_z);
 
-	int row_blocks = xblocks;
-	int plane_blocks = xblocks * yblocks;
+	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
+	// Should never fail here - tested in caller before calling here
+	assert(block_count > 0);
+
+
+	size_t row_blocks = blocks_x;
+	size_t plane_blocks = blocks_x * blocks_y;
 
 	blk.decode_unorm8 = ctxo.context.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
 
@@ -882,46 +992,45 @@ static void compress_image(
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctxo.manage_compress.get_task_assignment(16, count);
+		size_t count;
+		size_t base = ctxo.manage_compress.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
 			// Decode i into x, y, z block indices
-			int z = i / plane_blocks;
-			unsigned int rem = i - (z * plane_blocks);
-			int y = rem / row_blocks;
-			int x = rem - (y * row_blocks);
+			size_t z = i / plane_blocks;
+			size_t rem = i - (z * plane_blocks);
+			size_t y = rem / row_blocks;
+			size_t x = rem - (y * row_blocks);
 
 			// Test if we can apply some basic alpha-scale RDO
 			bool use_full_block = true;
 			if (ctx.config.a_scale_radius != 0 && block_z == 1)
 			{
-				int start_x = x * block_x;
-				int end_x = astc::min(dim_x, start_x + block_x);
+				size_t start_x = x * block_x;
+				size_t end_x = astc::min(dim_x, start_x + block_x);
 
-				int start_y = y * block_y;
-				int end_y = astc::min(dim_y, start_y + block_y);
+				size_t start_y = y * block_y;
+				size_t end_y = astc::min(dim_y, start_y + block_y);
 
 				// SATs accumulate error, so don't test exactly zero. Test for
 				// less than 1 alpha in the expanded block footprint that
 				// includes the alpha radius.
-				int x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
-
-				int y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
+				size_t x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
+				size_t y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
 
 				float footprint = static_cast<float>(x_footprint * y_footprint);
 				float threshold = 0.9f / (255.0f * footprint);
 
 				// Do we have any alpha values?
 				use_full_block = false;
-				for (int ay = start_y; ay < end_y; ay++)
+				for (size_t ay = start_y; ay < end_y; ay++)
 				{
-					for (int ax = start_x; ax < end_x; ax++)
+					for (size_t ax = start_x; ax < end_x; ax++)
 					{
 						float a_avg = ctx.input_alpha_averages[ay * dim_x + ax];
 						if (a_avg > threshold)
@@ -961,7 +1070,7 @@ static void compress_image(
 				blk.grayscale = true;
 			}
 
-			int offset = ((z * yblocks + y) * xblocks + x) * 16;
+			size_t offset = ((z * blocks_y + y) * blocks_x + x) * 16;
 			uint8_t *bp = buffer + offset;
 			compress_block(ctx, blk, bp, temp_buffers);
 		}
@@ -988,29 +1097,32 @@ static void compute_averages(
 	pixel_region_args arg = ag.arg;
 	arg.work_memory = new vfloat4[ag.work_memory_size];
 
-	int size_x = ag.img_size_x;
-	int size_y = ag.img_size_y;
-	int size_z = ag.img_size_z;
+	size_t size_x = ag.img_size_x;
+	size_t size_y = ag.img_size_y;
+	size_t size_z = ag.img_size_z;
 
-	int step_xy = ag.blk_size_xy;
-	int step_z = ag.blk_size_z;
+	size_t step_xy = ag.blk_size_xy;
+	size_t step_z = ag.blk_size_z;
 
-	int y_tasks = (size_y + step_xy - 1) / step_xy;
+	size_t tasks_y = (size_y + step_xy - 1) / step_xy;
 
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctx.manage_avg.get_task_assignment(16, count);
+		size_t count;
+		size_t base = ctx.manage_avg.get_task_assignment(16, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
-			int z = (i / (y_tasks)) * step_z;
-			int y = (i - (z * y_tasks)) * step_xy;
+			size_t z_task = i / tasks_y;
+			size_t y_task = i - (z_task * tasks_y);
+
+			size_t z = z_task * step_z;
+			size_t y = y_task * step_xy;
 
 			arg.size_z = astc::min(step_z, size_z - z);
 			arg.offset_z = z;
@@ -1018,7 +1130,7 @@ static void compute_averages(
 			arg.size_y = astc::min(step_xy, size_y - y);
 			arg.offset_y = y;
 
-			for (int x = 0; x < size_x; x += step_xy)
+			for (size_t x = 0; x < size_x; x += step_xy)
 			{
 				arg.size_x = astc::min(step_xy, size_x - x);
 				arg.offset_x = x;
@@ -1072,16 +1184,35 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	unsigned int block_x = ctx->config.block_x;
-	unsigned int block_y = ctx->config.block_y;
-	unsigned int block_z = ctx->config.block_z;
+	size_t dim_x = image.dim_x;
+	size_t dim_y = image.dim_y;
+	size_t dim_z = image.dim_z;
 
-	unsigned int xblocks = (image.dim_x + block_x - 1) / block_x;
-	unsigned int yblocks = (image.dim_y + block_y - 1) / block_y;
-	unsigned int zblocks = (image.dim_z + block_z - 1) / block_z;
+	size_t texel_count = get_texels_count(dim_x, dim_y, dim_z);
+	// Cumulative texel sizes would overflow a size_t
+	if (texel_count == 0)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
 
-	// Check we have enough output space (16 bytes per block)
-	size_t size_needed = xblocks * yblocks * zblocks * 16;
+	size_t block_x = ctx->config.block_x;
+	size_t block_y = ctx->config.block_y;
+	size_t block_z = ctx->config.block_z;
+
+	size_t blocks_x = get_block_count(dim_x, block_x);
+	size_t blocks_y = get_block_count(dim_y, block_y);
+	size_t blocks_z = get_block_count(dim_z, block_z);
+
+	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
+	// Cumulative block sizes would overflow a size_t
+	if (block_count == 0)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	// Check we have enough output space, size_needed calc cannot overflow as
+	// get_blocks_count() already validated that a byte count would fit
+	size_t size_needed = block_count * 16;
 	if (data_len < size_needed)
 	{
 		return ASTCENC_ERR_OUT_OF_MEM;
@@ -1097,9 +1228,8 @@ astcenc_error astcenc_compress_image(
 	{
 		// First thread to enter will do setup, other threads will subsequently
 		// enter the critical section but simply skip over the initialization
-		auto init_avg = [ctx, &image, swizzle]() {
+		auto init_avg = [ctx, &image, swizzle, texel_count]() {
 			// Perform memory allocations for the destination buffers
-			size_t texel_count = image.dim_x * image.dim_y * image.dim_z;
 			ctx->input_alpha_averages = new float[texel_count];
 
 			return init_compute_averages(
@@ -1202,24 +1332,42 @@ astcenc_error astcenc_decompress_image(
 		return status;
 	}
 
-	unsigned int block_x = ctx->config.block_x;
-	unsigned int block_y = ctx->config.block_y;
-	unsigned int block_z = ctx->config.block_z;
+	size_t dim_x = image_out.dim_x;
+	size_t dim_y = image_out.dim_y;
+	size_t dim_z = image_out.dim_z;
 
-	unsigned int xblocks = (image_out.dim_x + block_x - 1) / block_x;
-	unsigned int yblocks = (image_out.dim_y + block_y - 1) / block_y;
-	unsigned int zblocks = (image_out.dim_z + block_z - 1) / block_z;
-	unsigned int block_count = zblocks * yblocks * xblocks;
+	size_t texel_count = get_texels_count(dim_x, dim_y, dim_z);
+	// Cumulative texel sizes would overflow a size_t
+	if (texel_count == 0)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
 
-	int row_blocks = xblocks;
-	int plane_blocks = xblocks * yblocks;
+	size_t block_x = ctx->config.block_x;
+	size_t block_y = ctx->config.block_y;
+	size_t block_z = ctx->config.block_z;
 
-	// Check we have enough output space (16 bytes per block)
-	size_t size_needed = xblocks * yblocks * zblocks * 16;
+	size_t blocks_x = get_block_count(dim_x, block_x);
+	size_t blocks_y = get_block_count(dim_y, block_y);
+	size_t blocks_z = get_block_count(dim_z, block_z);
+
+	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
+	// Cumulative block sizes would overflow a size_t
+	if (block_count == 0)
+	{
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+
+	// Check we have enough output space, size_needed calc cannot overflow as
+	// get_blocks_count() already validated that a byte count would fit
+	size_t size_needed = block_count * 16;
 	if (data_len < size_needed)
 	{
 		return ASTCENC_ERR_OUT_OF_MEM;
 	}
+
+	size_t row_blocks = blocks_x;
+	size_t plane_blocks = blocks_x * blocks_y;
 
 	image_block blk {};
 	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
@@ -1239,22 +1387,22 @@ astcenc_error astcenc_decompress_image(
 	// All threads run this processing loop until there is no work remaining
 	while (true)
 	{
-		unsigned int count;
-		unsigned int base = ctxo->manage_decompress.get_task_assignment(128, count);
+		size_t count;
+		size_t base = ctxo->manage_decompress.get_task_assignment(128, count);
 		if (!count)
 		{
 			break;
 		}
 
-		for (unsigned int i = base; i < base + count; i++)
+		for (size_t i = base; i < base + count; i++)
 		{
 			// Decode i into x, y, z block indices
-			int z = i / plane_blocks;
-			unsigned int rem = i - (z * plane_blocks);
-			int y = rem / row_blocks;
-			int x = rem - (y * row_blocks);
+			size_t z = i / plane_blocks;
+			size_t rem = i - (z * plane_blocks);
+			size_t y = rem / row_blocks;
+			size_t x = rem - (y * row_blocks);
 
-			unsigned int offset = (((z * yblocks + y) * xblocks) + x) * 16;
+			size_t offset = (((z * blocks_y + y) * blocks_x) + x) * 16;
 			const uint8_t* bp = data + offset;
 
 			symbolic_compressed_block scb;
@@ -1262,11 +1410,14 @@ astcenc_error astcenc_decompress_image(
 			physical_to_symbolic(*ctx->bsd, bp, scb);
 
 			decompress_symbolic_block(ctx->config.profile, *ctx->bsd,
-			                          x * block_x, y * block_y, z * block_z,
+			                          x * block_x,
+			                          y * block_y,
+			                          z * block_z,
 			                          scb, blk);
 
 			store_image_block(image_out, blk, *ctx->bsd,
-			                  x * block_x, y * block_y, z * block_z, *swizzle);
+			                  x * block_x, y * block_y, z * block_z,
+			                  *swizzle);
 		}
 
 		ctxo->manage_decompress.complete_task_assignment(count);
@@ -1331,7 +1482,7 @@ astcenc_error astcenc_get_block_info(
 	}
 
 	// Otherwise handle a full block ; known to be valid after conditions above have been checked
-	int partition_count = scb.partition_count;
+	unsigned int partition_count = scb.partition_count;
 	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
 
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
@@ -1351,7 +1502,7 @@ astcenc_error astcenc_get_block_info(
 	info->weight_level_count = get_quant_level(bm.get_weight_quant_mode());
 
 	// Unpack color endpoints for each active partition
-	for (unsigned int i = 0; i < scb.partition_count; i++)
+	for (size_t i = 0; i < scb.partition_count; i++)
 	{
 		bool rgb_hdr;
 		bool a_hdr;
@@ -1369,7 +1520,7 @@ astcenc_error astcenc_get_block_info(
 
 		// Store the unpacked and decoded color endpoint
 		vmask4 hdr_mask(rgb_hdr, rgb_hdr, rgb_hdr, a_hdr);
-		for (int j = 0; j < 2; j++)
+		for (size_t j = 0; j < 2; j++)
 		{
 			vint4 color_lns = lns_to_sf16(endpnt[j]);
 			vint4 color_unorm = unorm16_to_sf16(endpnt[j]);
@@ -1383,7 +1534,7 @@ astcenc_error astcenc_get_block_info(
 	int weight_plane2[BLOCK_MAX_TEXELS];
 
 	unpack_weights(bsd, scb, di, bm.is_dual_plane, weight_plane1, weight_plane2);
-	for (unsigned int i = 0; i < bsd.texel_count; i++)
+	for (size_t i = 0; i < bsd.texel_count; i++)
 	{
 		info->weight_values_plane1[i] = static_cast<float>(weight_plane1[i]) * (1.0f / WEIGHTS_TEXEL_SUM);
 		if (info->is_dual_plane_block)
@@ -1393,7 +1544,7 @@ astcenc_error astcenc_get_block_info(
 	}
 
 	// Unpack partition assignments for each texel
-	for (unsigned int i = 0; i < bsd.texel_count; i++)
+	for (size_t i = 0; i < bsd.texel_count; i++)
 	{
 		info->partition_assignment[i] = pi.partition_of_texel[i];
 	}

@@ -170,15 +170,15 @@ static float error_color_nan()
 void decompress_symbolic_block(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
-	int xpos,
-	int ypos,
-	int zpos,
+	size_t pos_x,
+	size_t pos_y,
+	size_t pos_z,
 	const symbolic_compressed_block& scb,
 	image_block& blk
 ) {
-	blk.xpos = xpos;
-	blk.ypos = ypos;
-	blk.zpos = zpos;
+	blk.pos_x = pos_x;
+	blk.pos_y = pos_y;
+	blk.pos_z = pos_z;
 
 	blk.data_min = vfloat4::zero();
 	blk.data_mean = vfloat4::zero();

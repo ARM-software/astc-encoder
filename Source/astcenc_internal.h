@@ -791,13 +791,13 @@ struct image_block
 	uint8_t alpha_lns[BLOCK_MAX_TEXELS];
 
 	/** @brief The X position of this block in the input or output image. */
-	unsigned int xpos;
+	size_t pos_x;
 
 	/** @brief The Y position of this block in the input or output image. */
-	unsigned int ypos;
+	size_t pos_y;
 
 	/** @brief The Z position of this block in the input or output image. */
-	unsigned int zpos;
+	size_t pos_z;
 
 	/**
 	 * @brief Get an RGBA texel value from the data.
@@ -806,7 +806,7 @@ struct image_block
 	 *
 	 * @return The texel in RGBA component ordering.
 	 */
-	inline vfloat4 texel(unsigned int index) const
+	inline vfloat4 texel(size_t index) const
 	{
 		return vfloat4(data_r[index],
 		               data_g[index],
@@ -821,7 +821,7 @@ struct image_block
 	 *
 	 * @return The texel in RGB0 component ordering.
 	 */
-	inline vfloat4 texel3(unsigned int index) const
+	inline vfloat4 texel3(size_t index) const
 	{
 		return vfloat3(data_r[index],
 		               data_g[index],
@@ -1136,8 +1136,8 @@ struct symbolic_compressed_block
 /**
  * @brief Parameter structure for @c compute_pixel_region_variance().
  *
- * This function takes a structure to avoid spilling arguments to the stack on every function
- * invocation, as there are a lot of parameters.
+ * This function takes a structure to avoid spilling arguments to the stack on
+ * every function invocation, as there are a lot of parameters.
  */
 struct pixel_region_args
 {
@@ -1151,25 +1151,25 @@ struct pixel_region_args
 	bool have_z;
 
 	/** @brief The kernel radius for alpha processing. */
-	unsigned int alpha_kernel_radius;
+	size_t alpha_kernel_radius;
 
 	/** @brief The X dimension of the working data to process. */
-	unsigned int size_x;
+	size_t size_x;
 
 	/** @brief The Y dimension of the working data to process. */
-	unsigned int size_y;
+	size_t size_y;
 
 	/** @brief The Z dimension of the working data to process. */
-	unsigned int size_z;
+	size_t size_z;
 
 	/** @brief The X position of first src and dst data in the data set. */
-	unsigned int offset_x;
+	size_t offset_x;
 
 	/** @brief The Y position of first src and dst data in the data set. */
-	unsigned int offset_y;
+	size_t offset_y;
 
 	/** @brief The Z position of first src and dst data in the data set. */
-	unsigned int offset_z;
+	size_t offset_z;
 
 	/** @brief The working memory buffer. */
 	vfloat4 *work_memory;
@@ -1184,22 +1184,22 @@ struct avg_args
 	pixel_region_args arg;
 
 	/** @brief The image X dimensions. */
-	unsigned int img_size_x;
+	size_t img_size_x;
 
 	/** @brief The image Y dimensions. */
-	unsigned int img_size_y;
+	size_t img_size_y;
 
 	/** @brief The image Z dimensions. */
-	unsigned int img_size_z;
+	size_t img_size_z;
 
 	/** @brief The maximum working block dimensions in X and Y dimensions. */
-	unsigned int blk_size_xy;
+	size_t blk_size_xy;
 
 	/** @brief The maximum working block dimensions in Z dimensions. */
-	unsigned int blk_size_z;
+	size_t blk_size_z;
 
 	/** @brief The working block memory size. */
-	unsigned int work_memory_size;
+	size_t work_memory_size;
 };
 
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -1615,9 +1615,9 @@ static inline vmask4 get_u8_component_mask(
  *
  * @return The number of tasks in the processing stage.
  */
-unsigned int init_compute_averages(
+size_t init_compute_averages(
 	const astcenc_image& img,
-	unsigned int alpha_kernel_radius,
+	size_t alpha_kernel_radius,
 	const astcenc_swizzle& swz,
 	avg_args& ag);
 
@@ -1633,6 +1633,7 @@ unsigned int init_compute_averages(
 void compute_pixel_region_variance(
 	astcenc_contexti& ctx,
 	const pixel_region_args& arg);
+
 /**
  * @brief Load a single image block from the input image.
  *
@@ -1640,9 +1641,9 @@ void compute_pixel_region_variance(
  * @param      img           The input image data.
  * @param[out] blk           The image block to populate.
  * @param      bsd           The block size information.
- * @param      xpos          The block X coordinate in the input image.
- * @param      ypos          The block Y coordinate in the input image.
- * @param      zpos          The block Z coordinate in the input image.
+ * @param      pos_x         The block X coordinate in the input image.
+ * @param      pos_y         The block Y coordinate in the input image.
+ * @param      pos_z         The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on load.
  */
 void load_image_block(
@@ -1650,9 +1651,9 @@ void load_image_block(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t pos_x,
+	size_t pos_y,
+	size_t pos_z,
 	const astcenc_swizzle& swz);
 
 /**
@@ -1665,9 +1666,9 @@ void load_image_block(
  * @param      img           The input image data.
  * @param[out] blk           The image block to populate.
  * @param      bsd           The block size information.
- * @param      xpos          The block X coordinate in the input image.
- * @param      ypos          The block Y coordinate in the input image.
- * @param      zpos          The block Z coordinate in the input image.
+ * @param      pos_x         The block X coordinate in the input image.
+ * @param      pos_y         The block Y coordinate in the input image.
+ * @param      pos_z         The block Z coordinate in the input image.
  * @param      swz           The swizzle to apply on load.
  */
 void load_image_block_fast_ldr(
@@ -1675,9 +1676,9 @@ void load_image_block_fast_ldr(
 	const astcenc_image& img,
 	image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t pos_x,
+	size_t pos_y,
+	size_t pos_z,
 	const astcenc_swizzle& swz);
 
 /**
@@ -1686,18 +1687,18 @@ void load_image_block_fast_ldr(
  * @param[out] img    The output image data.
  * @param      blk    The image block to export.
  * @param      bsd    The block size information.
- * @param      xpos   The block X coordinate in the input image.
- * @param      ypos   The block Y coordinate in the input image.
- * @param      zpos   The block Z coordinate in the input image.
+ * @param      pos_x  The block X coordinate in the input image.
+ * @param      pos_y  The block Y coordinate in the input image.
+ * @param      pos_z  The block Z coordinate in the input image.
  * @param      swz    The swizzle to apply on store.
  */
 void store_image_block(
 	astcenc_image& img,
 	const image_block& blk,
 	const block_size_descriptor& bsd,
-	unsigned int xpos,
-	unsigned int ypos,
-	unsigned int zpos,
+	size_t pos_x,
+	size_t pos_y,
+	size_t pos_z,
 	const astcenc_swizzle& swz);
 
 /* ============================================================================
@@ -2066,17 +2067,17 @@ void compress_block(
  *
  * @param      decode_mode   The decode mode (LDR, HDR, etc).
  * @param      bsd           The block size information.
- * @param      xpos          The X coordinate of the block in the overall image.
- * @param      ypos          The Y coordinate of the block in the overall image.
- * @param      zpos          The Z coordinate of the block in the overall image.
+ * @param      pos_x         The X coordinate of the block in the overall image.
+ * @param      pos_y         The Y coordinate of the block in the overall image.
+ * @param      pos_z         The Z coordinate of the block in the overall image.
  * @param[out] blk           The decompressed image block color data.
  */
 void decompress_symbolic_block(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
-	int xpos,
-	int ypos,
-	int zpos,
+	size_t pos_x,
+	size_t pos_y,
+	size_t pos_z,
 	const symbolic_compressed_block& scb,
 	image_block& blk);
 
