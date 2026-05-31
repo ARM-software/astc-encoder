@@ -293,11 +293,11 @@ static bool generate_one_partition_info_entry(
 	// Assign texels to partitions
 	int texel_idx = 0;
 	int counts[BLOCK_MAX_PARTITIONS] { 0 };
-	for (unsigned int z = 0; z < bsd.zdim; z++)
+	for (unsigned int z = 0; z < bsd.dim_z; z++)
 	{
-		for (unsigned int y = 0; y <  bsd.ydim; y++)
+		for (unsigned int y = 0; y <  bsd.dim_y; y++)
 		{
-			for (unsigned int x = 0; x <  bsd.xdim; x++)
+			for (unsigned int x = 0; x <  bsd.dim_x; x++)
 			{
 				uint8_t part = select_partition(partition_index, x, y, z, partition_count, small_block);
 				pi.texels_of_partition[part][counts[part]++] = static_cast<uint8_t>(texel_idx++);

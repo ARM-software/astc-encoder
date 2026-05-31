@@ -938,9 +938,9 @@ static void compress_image(
 
 	image_block blk;
 
-	size_t block_x = bsd.xdim;
-	size_t block_y = bsd.ydim;
-	size_t block_z = bsd.zdim;
+	size_t block_x = bsd.dim_x;
+	size_t block_y = bsd.dim_y;
+	size_t block_z = bsd.dim_z;
 	blk.texel_count = static_cast<uint8_t>(block_x * block_y * block_z);
 
 	size_t dim_x = image.dim_x;

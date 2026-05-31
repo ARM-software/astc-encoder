@@ -533,13 +533,13 @@ struct decimation_mode
 struct block_size_descriptor
 {
 	/** @brief The block X dimension, in texels. */
-	uint8_t xdim;
+	uint8_t dim_x;
 
 	/** @brief The block Y dimension, in texels. */
-	uint8_t ydim;
+	uint8_t dim_y;
 
 	/** @brief The block Z dimension, in texels. */
-	uint8_t zdim;
+	uint8_t dim_z;
 
 	/** @brief The block total texel count. */
 	uint8_t texel_count;
@@ -1262,18 +1262,18 @@ struct astcenc_contexti
  * This will also initialize the partition table metadata, which is stored as part of the BSD
  * structure.
  *
- * @param      x_texels                 The number of texels in the block X dimension.
- * @param      y_texels                 The number of texels in the block Y dimension.
- * @param      z_texels                 The number of texels in the block Z dimension.
+ * @param      texels_x                 The number of texels in the block X dimension.
+ * @param      texels_y                 The number of texels in the block Y dimension.
+ * @param      texels_z                 The number of texels in the block Z dimension.
  * @param      can_omit_modes           Can we discard modes and partitionings that astcenc won't use?
  * @param      partition_count_cutoff   The partition count cutoff to use, if we can omit partitionings.
  * @param      mode_cutoff              The block mode percentile cutoff [0-1].
  * @param[out] bsd                      The descriptor to initialize.
  */
 void init_block_size_descriptor(
-	unsigned int x_texels,
-	unsigned int y_texels,
-	unsigned int z_texels,
+	unsigned int texels_x,
+	unsigned int texels_y,
+	unsigned int texels_z,
 	bool can_omit_modes,
 	unsigned int partition_count_cutoff,
 	float mode_cutoff,
@@ -1302,14 +1302,14 @@ void init_partition_tables(
  *
  * Returns a dynamically allocated array; caller must free with delete[].
  *
- * @param xdim The block x size.
- * @param ydim The block y size.
+ * @param dim_x The block x size.
+ * @param dim_y The block y size.
  *
  * @return The unpacked table.
  */
 const float* get_2d_percentile_table(
-	unsigned int xdim,
-	unsigned int ydim);
+	unsigned int dim_x,
+	unsigned int dim_y);
 
 /**
  * @brief Query if a 2D block size is legal.
@@ -1317,8 +1317,8 @@ const float* get_2d_percentile_table(
  * @return True if legal, false otherwise.
  */
 bool is_legal_2d_block_size(
-	unsigned int xdim,
-	unsigned int ydim);
+	unsigned int dim_x,
+	unsigned int dim_y);
 
 /**
  * @brief Query if a 3D block size is legal.
@@ -1326,9 +1326,9 @@ bool is_legal_2d_block_size(
  * @return True if legal, false otherwise.
  */
 bool is_legal_3d_block_size(
-	unsigned int xdim,
-	unsigned int ydim,
-	unsigned int zdim);
+	unsigned int dim_x,
+	unsigned int dim_y,
+	unsigned int dim_z);
 
 /* ============================================================================
   Functionality for managing BISE quantization and unquantization.

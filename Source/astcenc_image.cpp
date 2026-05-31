@@ -207,16 +207,16 @@ void load_image_block(
 		converter = encode_texel_lns;
 	}
 
-	for (size_t z = 0; z < bsd.zdim; z++)
+	for (size_t z = 0; z < bsd.dim_z; z++)
 	{
 		size_t zi = astc::min(pos_z + z, size_z - 1);
 		void* plane = img.data[zi];
 
-		for (size_t y = 0; y < bsd.ydim; y++)
+		for (size_t y = 0; y < bsd.dim_y; y++)
 		{
 			size_t yi = astc::min(pos_y + y, size_y - 1);
 
-			for (size_t x = 0; x < bsd.xdim; x++)
+			for (size_t x = 0; x < bsd.dim_x; x++)
 			{
 				size_t xi = astc::min(pos_x + x, size_x - 1);
 
@@ -291,11 +291,11 @@ void load_image_block_fast_ldr(
 	size_t idx = 0;
 
 	const uint8_t* plane = static_cast<const uint8_t*>(img.data[0]);
-	for (size_t y = pos_y; y < pos_y + bsd.ydim; y++)
+	for (size_t y = pos_y; y < pos_y + bsd.dim_y; y++)
 	{
 		size_t yi = astc::min(y, size_y - 1);
 
-		for (size_t x = pos_x; x < pos_x + bsd.xdim; x++)
+		for (size_t x = pos_x; x < pos_x + bsd.dim_x; x++)
 		{
 			size_t xi = astc::min(x, size_x - 1);
 
@@ -342,19 +342,19 @@ void store_image_block(
 ) {
 	size_t size_x = img.dim_x;
 	size_t start_x = pos_x;
-	size_t end_x = astc::min(size_x, pos_x + bsd.xdim);
+	size_t end_x = astc::min(size_x, pos_x + bsd.dim_x);
 	size_t count_x = end_x - start_x;
-	size_t nudge_x = bsd.xdim - count_x;
+	size_t nudge_x = bsd.dim_x - count_x;
 
 	size_t size_y = img.dim_y;
 	size_t start_y = pos_y;
-	size_t end_y = astc::min(size_y, pos_y + bsd.ydim);
+	size_t end_y = astc::min(size_y, pos_y + bsd.dim_y);
 	size_t count_y = end_y - start_y;
-	size_t nudge_y = (bsd.ydim - count_y) * bsd.xdim;
+	size_t nudge_y = (bsd.dim_y - count_y) * bsd.dim_x;
 
 	size_t size_z = img.dim_z;
 	size_t start_z = pos_z;
-	size_t end_z = astc::min(size_z, pos_z + bsd.zdim);
+	size_t end_z = astc::min(size_z, pos_z + bsd.dim_z);
 
 	size_t idx = 0;
 
