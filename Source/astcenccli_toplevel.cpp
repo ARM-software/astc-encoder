@@ -654,12 +654,12 @@ static int init_astcenc_config(
 	                                           quality, flags, &config);
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
-		print_error("ERROR: Block size '%s' is invalid\n", argv[4]);
+		print_error("ERROR: Block size '%ux%ux%u' is invalid\n", block_x, block_y, block_z);
 		return 1;
 	}
 	else if (status == ASTCENC_ERR_BAD_DECODE_MODE)
 	{
-		print_error("ERROR: Decode_unorm8 is not supported by HDR profiles\n", argv[4]);
+		print_error("ERROR: Decode_unorm8 is not supported by HDR profiles\n");
 		return 1;
 	}
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
