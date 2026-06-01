@@ -34,10 +34,13 @@
 #define STBI_NO_PNM
 #define STBI_NO_PNG
 #define STBI_NO_PSD
+#define STBI_SUPPORT_ZLIB
 #define STBI_ASSERT(x) astcenc_runtime_assert(x)
 
 // Configure the TinyEXR library build.
 #define TINYEXR_IMPLEMENTATION
+#define TINYEXR_USE_MINIZ 0
+#define TINYEXR_USE_STB_ZLIB 1
 #define TEXR_ASSERT(x) astcenc_runtime_assert(x)
 
 // Configure the Wuffs library build.
