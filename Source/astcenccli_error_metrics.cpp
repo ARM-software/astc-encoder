@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -135,8 +135,8 @@ void compute_error_metrics(
 	    img1->dim_z != img2->dim_z)
 	{
 		printf("WARNING: Only intersection of images will be compared:\n"
-		       "  Image 1: %dx%dx%d\n"
-		       "  Image 2: %dx%dx%d\n",
+		       "  Image 1: %ux%ux%u\n"
+		       "  Image 2: %ux%ux%u\n",
 		       img1->dim_x, img1->dim_y, img1->dim_z,
 		       img2->dim_x, img2->dim_y, img2->dim_z);
 	}

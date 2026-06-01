@@ -1159,12 +1159,12 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	if (hdr.number_of_mipmap_levels > 1)
 	{
-		printf("WARNING: KTX file %s has %d mipmap levels; only the first one will be encoded.\n", filename, hdr.number_of_mipmap_levels);
+		printf("WARNING: KTX file %s has %u mipmap levels; only the first one will be encoded.\n", filename, hdr.number_of_mipmap_levels);
 	}
 
 	if (hdr.number_of_array_elements > 1)
 	{
-		printf("WARNING: KTX file %s contains a texture array with %d layers; only the first one will be encoded.\n", filename, hdr.number_of_array_elements);
+		printf("WARNING: KTX file %s contains a texture array with %u layers; only the first one will be encoded.\n", filename, hdr.number_of_array_elements);
 	}
 
 	if (hdr.number_of_faces > 1)
@@ -1201,7 +1201,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	if (computed_bytes_of_surface != specified_bytes_of_surface)
 	{
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %d bytes, but specified size is %d bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
+		printf("%s: KTX file inconsistency: computed surface size is %u bytes, but specified size is %u bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
 		return nullptr;
 	}
 

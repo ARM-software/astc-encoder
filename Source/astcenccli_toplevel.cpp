@@ -374,7 +374,7 @@ static astcenc_image* load_uncomp_file(
 			{
 				if ((is_hdr != slice_is_hdr) || (component_count != slice_component_count))
 				{
-					print_error("ERROR: Image array[0] and [%d] are different formats\n", image_index);
+					print_error("ERROR: Image array[0] and [%u] are different formats\n", image_index);
 					break;
 				}
 
@@ -382,7 +382,7 @@ static astcenc_image* load_uncomp_file(
 				    (slices[0]->dim_y != slice->dim_y) ||
 				    (slices[0]->dim_z != slice->dim_z))
 				{
-					print_error("ERROR: Image array[0] and [%d] are different dimensions\n", image_index);
+					print_error("ERROR: Image array[0] and [%u] are different dimensions\n", image_index);
 					break;
 				}
 			}
@@ -1251,7 +1251,7 @@ static void print_astcenc_config(
 		}
 
 		printf("    Bitrate:                    %3.2f bpp\n", 128.0 / (config.block_x * config.block_y * config.block_z));
-		printf("    RGB alpha scale weight:     %d\n", (config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT));
+		printf("    RGB alpha scale weight:     %u\n", (config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT));
 		if ((config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT))
 		{
 			printf("    Radius RGB alpha scale:     %u texels\n", config.a_scale_radius);
@@ -1272,7 +1272,7 @@ static void print_astcenc_config(
 		printf("    Block mode centile cutoff:  %g%%\n", static_cast<double>(config.tune_block_mode_limit));
 		printf("    Candidate cutoff:           %u candidates\n", config.tune_candidate_limit);
 		printf("    Refinement cutoff:          %u iterations\n", config.tune_refinement_limit);
-		printf("    Compressor thread count:    %d\n", cli_config.thread_count);
+		printf("    Compressor thread count:    %u\n", cli_config.thread_count);
 		printf("\n");
 	}
 }
