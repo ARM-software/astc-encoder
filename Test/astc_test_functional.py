@@ -135,6 +135,20 @@ class CLITestBase(unittest.TestCase):
         self.tmp_dir = None
 
     @staticmethod
+    def get_image_path(image: str) -> Path:
+        '''
+        Get the path of a specific reference image on disk.
+
+        Args:
+            image: The image to load.
+
+        Return:
+            The path to the test image file on disk.
+        '''
+        script_dir = Path(__file__).parent
+        return script_dir / 'Data' / image
+
+    @staticmethod
     def get_ref_image_path(profile: str, mode: str, image: str) -> Path:
         '''
         Get the path of a reference image on disk.
@@ -1435,7 +1449,7 @@ class CLINTest(CLITestBase):
     '''
     # pylint: disable=too-many-public-methods
 
-    def exec(self, cmd: list[str], expect_pass: bool = False) -> None:
+    def exec(self, cmd: list[str | Path], expect_pass: bool = False) -> None:
         '''
         Execute a negative test.
 
@@ -1452,7 +1466,8 @@ class CLINTest(CLITestBase):
                 pass, which is used to validate commands before mutating them.
         '''
         try:
-            result = sp.run(cmd, stdout=sp.PIPE, stderr=sp.PIPE,
+            cmd_str = [str(x) for x in cmd]
+            result = sp.run(cmd_str, stdout=sp.PIPE, stderr=sp.PIPE,
                             text=True, check=True)
             rcode = result.returncode
             rstdout = result.stdout
@@ -1469,11 +1484,11 @@ class CLINTest(CLITestBase):
         bad_result = (passed != expect_pass) or (rcode < 0)
 
         if ASTCENC_CLI_ALWAYS or (bad_result and ASTCENC_CLI_ON_ERROR_NEG):
-            print('\n' + ' '.join(cmd))
+            print('\n' + ' '.join(cmd_str))
 
         if ASTCENC_LOG_ALWAYS or (bad_result and ASTCENC_LOG_ON_ERROR_NEG):
-            print(result.stdout)
-            print(result.stderr)
+            print(rstdout)
+            print(rstderr)
 
         # If we expected a pass, then rcode == 0
         if expect_pass:
@@ -1492,7 +1507,7 @@ class CLINTest(CLITestBase):
         self.assertIn('ERROR', rstderr)
         self.assertGreater(rcode, 0, 'Exec did not fail as expected')
 
-    def exec_with_omit(self, cmd: list[str], omit_from: int) -> None:
+    def exec_with_omit(self, cmd: list[str | Path], omit_from: int) -> None:
         '''
         Execute a negative test with cmd line argument omission.
 
@@ -2177,6 +2192,72 @@ class CLINTest(CLITestBase):
 
         # Run the cmd, incrementally omitting arguments
         self.exec_with_omit(cmd, 7)
+
+    def test_dl_corrupt_astc_magic(self) -> None:
+        '''
+        Test -dl with an astc file with the wrong magic number.
+        '''
+        # Build a valid cmd with a bad image file
+        cmd = [
+            self.binary, '-dl',
+            self.get_image_path('negative_magic.astc'),
+            self.get_tmp_image_path('LDR', 'decomp')]
+
+        self.exec(cmd)
+
+    def test_dl_corrupt_astc_huge_size(self) -> None:
+        '''
+        Test -dl with an astc file with a data size that will fail alloc.
+
+        Note this test will cause ASAN to error because ASAN itself cannot cope
+        with OOM issues. ASAN documentation says you can run with environment
+        ASAN_OPTIONS=allocator_may_return_null=1, but this doesn't seem to work
+        for allocations made with C++ new[]. This test will need to be disabled
+        when ASAN is used.
+        '''
+        # Build a valid cmd with a bad image file
+        cmd = [
+            self.binary, '-dl',
+            self.get_image_path('negative_huge.astc'),
+            self.get_tmp_image_path('LDR', 'decomp')]
+
+        self.exec(cmd)
+
+    def test_dl_corrupt_astc_overflow_size(self) -> None:
+        '''
+        Test -dl with an astc file with a total data size that overflows.
+        '''
+        # Build a valid cmd with a bad image file
+        cmd = [
+            self.binary, '-dl',
+            self.get_image_path('negative_overflow.astc'),
+            self.get_tmp_image_path('LDR', 'decomp')]
+
+        self.exec(cmd)
+
+    def test_dl_corrupt_astc_short_data(self) -> None:
+        '''
+        Test -dl with an astc file missing data.
+        '''
+        # Build a valid cmd with a bad image file
+        cmd = [
+            self.binary, '-dl',
+            self.get_image_path('negative_short.astc'),
+            self.get_tmp_image_path('LDR', 'decomp')]
+
+        self.exec(cmd)
+
+    def test_dl_corrupt_astc_bad_block_size(self) -> None:
+        '''
+        Test -dl with an astc file with invalid block size.
+        '''
+        # Build a valid cmd with a bad image file
+        cmd = [
+            self.binary, '-dl',
+            self.get_image_path('negative_block_size.astc'),
+            self.get_tmp_image_path('LDR', 'decomp')]
+
+        self.exec(cmd)
 
 
 def main() -> int:

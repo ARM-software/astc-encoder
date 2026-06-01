@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2025 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -2516,18 +2516,18 @@ int load_cimage(
 	unsigned int magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
 	if (magicval != ASTC_MAGIC_ID)
 	{
-		print_error("ERROR: File not recognized '%s'\n", filename);
+		print_error("ERROR: Image header not recognized '%s'\n", filename);
 		return 1;
 	}
 
 	// Ensure these are not zero to avoid div by zero
-	unsigned int block_x = astc::max(static_cast<unsigned int>(hdr.block_x), 1u);
-	unsigned int block_y = astc::max(static_cast<unsigned int>(hdr.block_y), 1u);
-	unsigned int block_z = astc::max(static_cast<unsigned int>(hdr.block_z), 1u);
+	size_t block_x = astc::max(static_cast<unsigned int>(hdr.block_x), 1u);
+	size_t block_y = astc::max(static_cast<unsigned int>(hdr.block_y), 1u);
+	size_t block_z = astc::max(static_cast<unsigned int>(hdr.block_z), 1u);
 
-	unsigned int dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
-	unsigned int dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
-	unsigned int dim_z = unpack_bytes(hdr.dim_z[0], hdr.dim_z[1], hdr.dim_z[2], 0);
+	size_t dim_x = unpack_bytes(hdr.dim_x[0], hdr.dim_x[1], hdr.dim_x[2], 0);
+	size_t dim_y = unpack_bytes(hdr.dim_y[0], hdr.dim_y[1], hdr.dim_y[2], 0);
+	size_t dim_z = unpack_bytes(hdr.dim_z[0], hdr.dim_z[1], hdr.dim_z[2], 0);
 
 	if (dim_x == 0 || dim_y == 0 || dim_z == 0)
 	{
@@ -2535,12 +2535,40 @@ int load_cimage(
 		return 1;
 	}
 
-	unsigned int xblocks = (dim_x + block_x - 1) / block_x;
-	unsigned int yblocks = (dim_y + block_y - 1) / block_y;
-	unsigned int zblocks = (dim_z + block_z - 1) / block_z;
+	// These cannot overflow as dim_* values are limited to 2^24 - 1
+	size_t blocks_x = (dim_x + block_x - 1) / block_x;
+	size_t blocks_y = (dim_y + block_y - 1) / block_y;
+	size_t blocks_z = (dim_z + block_z - 1) / block_z;
 
-	size_t data_size = xblocks * yblocks * zblocks * 16;
-	uint8_t *buffer = new uint8_t[data_size];
+	// This can overflow if dim_* sizes are large
+	bool overflow = false;
+
+	size_t data_size_xy = blocks_x * blocks_y;
+	overflow = overflow || ((data_size_xy / blocks_y) != blocks_x);
+
+	size_t data_size_xyz = data_size_xy * blocks_z;
+	overflow = overflow || ((data_size_xyz / blocks_z) != data_size_xy);
+
+	size_t data_size = data_size_xyz * 16;
+	overflow = overflow || ((data_size / 16) != data_size_xyz);
+
+	if (overflow)
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return 1;
+	}
+
+	// Allocation may fail if image is suspiciously large
+	uint8_t* buffer { nullptr };
+	try
+	{
+		buffer = new uint8_t[data_size];
+	}
+	catch(...)
+	{
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
+		return 1;
+	}
 
 	file.read(reinterpret_cast<char*>(buffer), data_size);
 	if (file.fail())
@@ -2552,12 +2580,14 @@ int load_cimage(
 
 	img.data = buffer;
 	img.data_len = data_size;
-	img.block_x = block_x;
-	img.block_y = block_y;
-	img.block_z = block_z;
-	img.dim_x = dim_x;
-	img.dim_y = dim_y;
-	img.dim_z = dim_z;
+
+	// Casts are safe - we know individual values are small enough
+	img.block_x = static_cast<unsigned int>(block_x);
+	img.block_y = static_cast<unsigned int>(block_y);
+	img.block_z = static_cast<unsigned int>(block_z);
+	img.dim_x = static_cast<unsigned int>(dim_x);
+	img.dim_y = static_cast<unsigned int>(dim_y);
+	img.dim_z = static_cast<unsigned int>(dim_z);
 	return 0;
 }
 
