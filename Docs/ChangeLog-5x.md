@@ -14,6 +14,12 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.5.0 release is a minor maintenance release.
 
 * **General:**
+  * **Update:** Update stb_image to v1.30.
+  * **Update:** Update Wuffs to v0.3.4.
+  * **Update:** Update TinyEXR to v1.0.13.
+  * **Bug fix:** Throw errors in the command line wrapper for cases where
+    ".astc" input image sizes would result in integer overflow in calculations
+    of total block count or data size.
   * **Bug fix:** Throw errors in the library API for cases where input image
     sizes would result in integer overflow in calculations of total texel
     count, total block count, or compressed image byte size.
