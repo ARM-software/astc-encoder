@@ -1,6 +1,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  ----------------------------------------------------------------------------
-#  Copyright 2020-2025 Arm Limited
+#  Copyright 2020-2026 Arm Limited
 #
 #  Licensed under the Apache License, Version 2.0 (the "License"); you may not
 #  use this file except in compliance with the License. You may obtain a copy
@@ -90,7 +90,7 @@ if(${ASTCENC_CLI})
         astcenccli_entry.cpp)
 
     # Veneer is compiled with extended ISA but without vector length overrides
-    # so we can safely do SVE vector length compatability checks
+    # so we can safely do SVE vector length compatibility checks
     add_library(${ASTCENC_TARGET}-veneer2
         astcenccli_entry2.cpp)
 
@@ -461,6 +461,8 @@ endmacro()
 string(CONCAT EXTERNAL_CXX_FLAGS
        " $<${is_gnu_fe}: -fno-strict-aliasing>"
        " $<${is_gnu_fe}: -Wno-pedantic>"
+       " $<${is_gnu_fe}: -Wno-unused-function>"
+       " $<${is_clangcl}: -Xclang -Wno-unused-function>"
        " $<${is_gnu_fe}: -Wno-unused-parameter>"
        " $<${is_gnu_fe}: -Wno-old-style-cast>"
        " $<${is_gnu_fe}: -Wno-double-promotion>"
