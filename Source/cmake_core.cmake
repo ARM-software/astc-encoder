@@ -464,6 +464,7 @@ string(CONCAT EXTERNAL_CXX_FLAGS
        " $<${is_gnu_fe}: -Wno-unused-parameter>"
        " $<${is_gnu_fe}: -Wno-old-style-cast>"
        " $<${is_gnu_fe}: -Wno-double-promotion>"
+       " $<${is_gnu_fe}: -Wno-calloc-transposed-args>"
        " $<${is_gnu_fe}: -Wno-zero-as-null-pointer-constant>"
        " $<${is_gnu_fe}: -Wno-disabled-macro-expansion>"
        " $<${is_gnu_fe}: -Wno-reserved-id-macro>"
