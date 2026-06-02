@@ -1430,11 +1430,8 @@ bool store_ktx_compressed_image(
 	ktx_header_switch_endianness(&hdr);
 #endif
 
-	size_t expected = sizeof(ktx_header) + 4 + img.data.size();
-	size_t actual = 0;
-
-	FILE *wf = fopen(filename, "wb");
-	if (!wf)
+	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (!file)
 	{
 		return true;
 	}
@@ -1444,17 +1441,10 @@ bool store_ktx_compressed_image(
 	data_len = reverse_bytes_u32(data_len);
 #endif
 
-	actual += fwrite(&hdr, 1, sizeof(ktx_header), wf);
-	actual += fwrite(&data_len, 1, sizeof(uint32_t), wf);
-	actual += fwrite(img.data.data(), 1, img.data.size(), wf);
-	fclose(wf);
-
-	if (actual != expected)
-	{
-		return true;
-	}
-
-	return false;
+	file.write(reinterpret_cast<const char*>(&hdr), sizeof(ktx_header));
+	file.write(reinterpret_cast<const char*>(&data_len), sizeof(uint32_t));
+	file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
+	return file.fail();
 }
 
 /**
@@ -1646,19 +1636,17 @@ static bool store_ktx_uncompressed_image(
 	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 	uint32_t image_write_bytes = (image_bytes + 3) & ~3;
 
-	FILE *wf = fopen(filename, "wb");
-	if (wf)
+	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (file)
 	{
 		void* dataptr = (bitness == 16) ?
 			reinterpret_cast<void*>(row_pointers16[0][0]) :
 			reinterpret_cast<void*>(row_pointers8[0][0]);
 
-		size_t expected_bytes_written = sizeof(ktx_header) + image_write_bytes + 4;
-		size_t hdr_bytes_written = fwrite(&hdr, 1, sizeof(ktx_header), wf);
-		size_t bytecount_bytes_written = fwrite(&image_bytes, 1, 4, wf);
-		size_t data_bytes_written = fwrite(dataptr, 1, image_write_bytes, wf);
-		fclose(wf);
-		if (hdr_bytes_written + bytecount_bytes_written + data_bytes_written != expected_bytes_written)
+		file.write(reinterpret_cast<const char*>(&hdr), sizeof(ktx_header));
+		file.write(reinterpret_cast<const char*>(&image_bytes), sizeof(image_bytes));
+		file.write(reinterpret_cast<const char*>(dataptr), image_write_bytes);
+		if (file.fail())
 		{
 			retval = false;
 		}
@@ -2333,32 +2321,22 @@ static bool store_dds_uncompressed_image(
 
 	uint32_t dds_magic = DDS_MAGIC;
 
-	FILE *wf = fopen(filename, "wb");
-	if (wf)
+	std::ofstream file(filename, std::ios::out | std::ios::binary);
+	if (file)
 	{
 		void *dataptr = (bitness == 16) ?
 			reinterpret_cast<void*>(row_pointers16[0][0]) :
 			reinterpret_cast<void*>(row_pointers8[0][0]);
 
-		size_t expected_bytes_written = 4 + sizeof(dds_header) + (bitness > 8 ? sizeof(dds_header_dx10) : 0) + image_bytes;
-
-		size_t magic_bytes_written = fwrite(&dds_magic, 1, 4, wf);
-		size_t hdr_bytes_written = fwrite(&hdr, 1, sizeof(dds_header), wf);
-
-		size_t dx10_bytes_written;
+		file.write(reinterpret_cast<const char*>(&dds_magic), sizeof(dds_magic));
+		file.write(reinterpret_cast<const char*>(&hdr), sizeof(dds_header));
 		if (bitness > 8)
 		{
-			dx10_bytes_written = fwrite(&dx10, 1, sizeof(dx10), wf);
-		}
-		else
-		{
-			dx10_bytes_written = 0;
+			file.write(reinterpret_cast<const char*>(&dx10), sizeof(dx10));
 		}
 
-		size_t data_bytes_written = fwrite(dataptr, 1, image_bytes, wf);
-
-		fclose(wf);
-		if (magic_bytes_written + hdr_bytes_written + dx10_bytes_written + data_bytes_written != expected_bytes_written)
+		file.write(reinterpret_cast<const char*>(dataptr), image_bytes);
+		if (file.fail())
 		{
 			retval = false;
 		}
