@@ -35,6 +35,7 @@
 #include <sstream>
 #include <vector>
 #include <memory>
+#include <utility>
 
 /* ============================================================================
 	Data structure definitions
@@ -285,9 +286,9 @@ static void decompression_workload_runner(
  *
  * Convert "foo/bar.png" in to "foo/bar_<slice>.png"
  *
- * @param basename The base pattern; must contain a file extension.
- * @param index    The slice index.
- * @param error    Set to true on success, false on error (no extension found).
+ * @param basename   The base pattern; must contain a file extension.
+ * @param index      The slice index.
+ * @param error      Set to true on success, false on error (no extension found).
  *
  * @return The slice file name.
  */
@@ -313,34 +314,33 @@ static std::string get_slice_filename(
 /**
  * @brief Load a non-astc image file from memory.
  *
- * @param filename            The file to load, or a pattern for array loads.
- * @param dim_z               The number of slices to load.
- * @param y_flip              Should this image be Y flipped?
- * @param[out] is_hdr         Is the loaded image HDR?
- * @param[out] component_count The number of components in the loaded image.
+ * @param      filename          The file to load, or a pattern for array loads.
+ * @param      dim_z             The number of slices to load.
+ * @param      y_flip            Should this image be Y flipped?
+ * @param[out] is_hdr            Is the loaded image HDR?
+ * @param[out] component_count   The number of components in the loaded image.
  *
  * @return The astc image file, or nullptr on error.
  */
-static astcenc_image* load_uncomp_file(
+static astcenc_image_ptr load_uncomp_file(
 	const char* filename,
 	unsigned int dim_z,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& component_count
 ) {
-	astcenc_image *image = nullptr;
+	astcenc_image_ptr image;
 
 	// For a 2D image just load the image directly
 	if (dim_z == 1)
 	{
-		image = load_ncimage(filename, y_flip, is_hdr, component_count);
+		return load_ncimage(filename, y_flip, is_hdr, component_count);
 	}
 	else
 	{
 		bool slice_is_hdr;
 		unsigned int slice_component_count;
-		astcenc_image* slice = nullptr;
-		std::vector<astcenc_image*> slices;
+		std::vector<astcenc_image_ptr> slices;
 
 		// For a 3D image load an array of slices
 		for (unsigned int image_index = 0; image_index < dim_z; image_index++)
@@ -353,14 +353,12 @@ static astcenc_image* load_uncomp_file(
 				break;
 			}
 
-			slice = load_ncimage(slice_name.c_str(), y_flip,
-			                     slice_is_hdr, slice_component_count);
+			auto slice = load_ncimage(slice_name.c_str(), y_flip,
+			                          slice_is_hdr, slice_component_count);
 			if (!slice)
 			{
 				break;
 			}
-
-			slices.push_back(slice);
 
 			// Check it is not a 3D image
 			if (slice->dim_z != 1)
@@ -391,6 +389,8 @@ static astcenc_image* load_uncomp_file(
 				is_hdr = slice_is_hdr;
 				component_count = slice_component_count;
 			}
+
+			slices.push_back(std::move(slice));
 		}
 
 		// If all slices loaded correctly then repack them into a single image
@@ -429,11 +429,6 @@ static astcenc_image* load_uncomp_file(
 					memcpy(data32, data32src, copy_size);
 				}
 			}
-		}
-
-		for (auto &i : slices)
-		{
-			free_image(i);
 		}
 	}
 
@@ -1616,7 +1611,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, partition_func);
 	std::string fname = stem + "_diag_partitioning.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight planes  ---- ---- ---- ----
 	auto texel_func1 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1642,7 +1637,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func1);
 	fname = stem + "_diag_weight_plane2.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight density  ---- ---- ---- ----
 	auto texel_func2 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1663,7 +1658,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func2);
 	fname = stem + "_diag_weight_density.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Weight quant  ---- ---- ---- ----
 	auto texel_func3 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1681,7 +1676,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func3);
 	fname = stem + "_diag_weight_quant.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color quant  ---- ---- ---- ----
 	auto texel_func4 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1699,7 +1694,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func4);
 	fname = stem + "_diag_color_quant.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Index ---- ---- ---- ----
 	auto texel_func5 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1720,7 +1715,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func5);
 	fname = stem + "_diag_cem_index.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Components ---- ---- ---- ----
 	auto texel_func6 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1773,7 +1768,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func6);
 	fname = stem + "_diag_cem_components.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
 	auto texel_func7 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1834,7 +1829,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func7);
 	fname = stem + "_diag_cem_style.png";
-	store_ncimage(diag_image, fname.c_str(), false);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 
 	// ---- ---- ---- ---- Color endpoint mode: Style ---- ---- ---- ----
 	auto texel_func8 = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -1876,9 +1871,7 @@ static void print_diagnostic_images(
 
 	print_diagnostic_image(context, image, *diag_image, texel_func8);
 	fname = stem + "_diag_cem_hdr.png";
-	store_ncimage(diag_image, fname.c_str(), false);
-
-	free_image(diag_image);
+	store_ncimage(diag_image.get(), fname.c_str(), false);
 }
 
 /**
@@ -2010,10 +2003,10 @@ int astcenc_main(
 		config.progress_callback = progress_emitter;
 	}
 
-	astcenc_image* image_uncomp_in = nullptr ;
+	astcenc_image_ptr image_uncomp_in;
 	unsigned int image_uncomp_in_component_count = 0;
 	bool image_uncomp_in_is_hdr = false;
-	astcenc_image* image_decomp_out = nullptr;
+	astcenc_image_ptr image_decomp_out;
 
 	// Determine decompression output bitness, if limited by file type
 	int out_bitness = 0;
@@ -2034,7 +2027,6 @@ int astcenc_main(
 		}
 	}
 
-	// TODO: Handle RAII resources so they get freed when out of scope
 	astcenc_error    codec_status;
 	astcenc_context* codec_context;
 
@@ -2092,10 +2084,10 @@ int astcenc_main(
 		{
 			// Allocate a float image so we can avoid additional quantization,
 			// as e.g. premultiplication can result in fractional color values
-			astcenc_image* image_pp = alloc_image(32,
-			                                      image_uncomp_in->dim_x,
-			                                      image_uncomp_in->dim_y,
-			                                      image_uncomp_in->dim_z);
+			auto image_pp = alloc_image(32,
+			                            image_uncomp_in->dim_x,
+			                            image_uncomp_in->dim_y,
+			                            image_uncomp_in->dim_z);
 			if (!image_pp)
 			{
 				print_error("ERROR: Failed to allocate preprocessed image\n");
@@ -2113,9 +2105,7 @@ int astcenc_main(
 				                             config.profile);
 			}
 
-			// Delete the original as we no longer need it
-			free_image(image_uncomp_in);
-			image_uncomp_in = image_pp;
+			image_uncomp_in = std::move(image_pp);
 		}
 
 		if (!cli_config.silentmode)
@@ -2167,7 +2157,7 @@ int astcenc_main(
 
 		compression_workload work;
 		work.context = codec_context;
-		work.image = image_uncomp_in;
+		work.image = image_uncomp_in.get();
 		work.swizzle = cli_config.swz_encode;
 		work.data_out = buffer;
 		work.data_len = buffer_size;
@@ -2237,7 +2227,7 @@ int astcenc_main(
 		work.context = codec_context;
 		work.data = image_comp.data;
 		work.data_len = image_comp.data_len;
-		work.image_out = image_decomp_out;
+		work.image_out = image_decomp_out.get();
 		work.swizzle = cli_config.swz_decode;
 		work.error = ASTCENC_SUCCESS;
 
@@ -2286,7 +2276,8 @@ int astcenc_main(
 
 		compute_error_metrics(
 		    image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
-		    image_uncomp_in, image_decomp_out, cli_config.low_fstop, cli_config.high_fstop);
+		    image_uncomp_in.get(), image_decomp_out.get(),
+		    cli_config.low_fstop, cli_config.high_fstop);
 	}
 
 	// Store compressed image
@@ -2326,7 +2317,7 @@ int astcenc_main(
 	{
 		if (!is_null)
 		{
-			bool store_result = store_ncimage(image_decomp_out, output_filename.c_str(),
+			bool store_result = store_ncimage(image_decomp_out.get(), output_filename.c_str(),
 			                                  cli_config.y_flip);
 			if (!store_result)
 			{
@@ -2342,8 +2333,6 @@ int astcenc_main(
 		print_diagnostic_images(codec_context, image_comp, output_filename);
 	}
 
-	free_image(image_uncomp_in);
-	free_image(image_decomp_out);
 	astcenc_context_free(codec_context);
 
 	delete[] image_comp.data;

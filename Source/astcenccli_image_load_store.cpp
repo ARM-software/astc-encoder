@@ -92,7 +92,7 @@ static std::string get_output_filename(
  *
  * @return The loaded image data in a canonical 4 channel format.
  */
-static astcenc_image* load_image_with_tinyexr(
+static astcenc_image_ptr load_image_with_tinyexr(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -110,7 +110,7 @@ static astcenc_image* load_image_with_tinyexr(
 		return nullptr;
 	}
 
-	astcenc_image* res_img = astc_img_from_floatx4_array(image, dim_x, dim_y, y_flip);
+	auto res_img = astc_img_from_floatx4_array(image, dim_x, dim_y, y_flip);
 	free(image);
 
 	is_hdr = true;
@@ -128,7 +128,7 @@ static astcenc_image* load_image_with_tinyexr(
  *
  * @return The loaded image data in a canonical 4 channel format, or @c nullptr on error.
  */
-static astcenc_image* load_image_with_stb(
+static astcenc_image_ptr load_image_with_stb(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -141,7 +141,7 @@ static astcenc_image* load_image_with_stb(
 		float* data = stbi_loadf(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
 		if (data)
 		{
-			astcenc_image* img = astc_img_from_floatx4_array(data, dim_x, dim_y, y_flip);
+			auto img = astc_img_from_floatx4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = true;
 			component_count = 4;
@@ -153,7 +153,7 @@ static astcenc_image* load_image_with_stb(
 		uint8_t* data = stbi_load(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
 		if (data)
 		{
-			astcenc_image* img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, y_flip);
+			auto img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, y_flip);
 			stbi_image_free(data);
 			is_hdr = false;
 			component_count = 4;
@@ -932,7 +932,7 @@ static void ktx_header_switch_endianness(ktx_header * kt)
  *
  * @return The loaded image data in a canonical 4 channel format, or @c nullptr on error.
  */
-static astcenc_image* load_ktx_uncompressed_image(
+static astcenc_image_ptr load_ktx_uncompressed_image(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -1248,7 +1248,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	// Transfer data from the surface to our own image data structure
-	astcenc_image* astc_img { nullptr };
+	astcenc_image_ptr astc_img;
 	try
 	{
 		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
@@ -1785,7 +1785,7 @@ struct dds_header_dx10
  *
  * @return The loaded image data in a canonical 4 channel format, or @c nullptr on error.
  */
-static astcenc_image* load_dds_uncompressed_image(
+static astcenc_image_ptr load_dds_uncompressed_image(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -2081,7 +2081,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	}
 
 	// Transfer data from the surface to our own image data structure
-	astcenc_image *astc_img { nullptr };
+	astcenc_image_ptr astc_img;
 	try
 	{
 		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
@@ -2394,7 +2394,7 @@ static bool store_dds_uncompressed_image(
 /**
  * @brief Image loader function pointer.
  */
-using image_loader = astcenc_image*(*)(const char*, bool, bool&, unsigned int&);
+using image_loader = astcenc_image_ptr(*)(const char*, bool, bool&, unsigned int&);
 
 /**
  * @brief Specs for an image loader function.
@@ -2481,7 +2481,7 @@ int get_output_filename_enforced_bitness(
 }
 
 /* See header for documentation. */
-astcenc_image* load_ncimage(
+astcenc_image_ptr load_ncimage(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,

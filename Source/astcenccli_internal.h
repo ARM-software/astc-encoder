@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -122,6 +123,19 @@ static inline void print_error(
 }
 
 /**
+ * @brief A custom deleter so we can use RAII to manage astcenc_image structs.
+ */
+struct astcenc_image_deleter
+{
+	void operator()(astcenc_image* img) const;
+};
+
+/**
+ * @brief A smart pointer wrapper around an astcenc_image.
+ */
+using astcenc_image_ptr = std::unique_ptr<astcenc_image, astcenc_image_deleter>;
+
+/**
  * @brief Load uncompressed image.
  *
  * @param filename               The file path on disk.
@@ -131,7 +145,7 @@ static inline void print_error(
  *
  * @return The astc image file, or nullptr on error.
  */
-astcenc_image* load_ncimage(
+astcenc_image_ptr load_ncimage(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -147,7 +161,7 @@ astcenc_image* load_ncimage(
  *
  * @return The astc image file, or nullptr on error.
  */
-astcenc_image* load_png_with_wuffs(
+astcenc_image_ptr load_png_with_wuffs(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -184,28 +198,20 @@ int get_output_filename_enforced_bitness(
 /**
  * @brief Allocate a new image in a canonical format.
  *
- * Allocated images must be freed with a @c free_image() call.
+ * Allocated images are returned in a RAII-managed smart pointer.
  *
  * @param bitness   The number of bits per component (8, 16, or 32).
  * @param dim_x     The width of the image, in texels.
  * @param dim_y     The height of the image, in texels.
  * @param dim_z     The depth of the image, in texels.
  *
- * @return The allocated image, or @c nullptr on error.
+ * @return The allocated image.
  */
-astcenc_image* alloc_image(
+astcenc_image_ptr alloc_image(
 	unsigned int bitness,
 	unsigned int dim_x,
 	unsigned int dim_y,
 	unsigned int dim_z);
-
-/**
- * @brief Free an image.
- *
- * @param img   The image to free.
- */
-void free_image(
-	astcenc_image* img);
 
 /**
  * @brief Determine the number of active components in an image.
@@ -279,7 +285,7 @@ bool store_ktx_compressed_image(
  *
  * @return The populated image.
  */
-astcenc_image* astc_img_from_floatx4_array(
+astcenc_image_ptr astc_img_from_floatx4_array(
 	const float* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
@@ -295,7 +301,7 @@ astcenc_image* astc_img_from_floatx4_array(
  *
  * @return The populated image.
  */
-astcenc_image* astc_img_from_unorm8x4_array(
+astcenc_image_ptr astc_img_from_unorm8x4_array(
 	const uint8_t* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
