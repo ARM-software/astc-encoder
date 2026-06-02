@@ -1505,13 +1505,22 @@ static bool store_ktx_uncompressed_image(
 	hdr.bytes_of_key_value_data = 0;
 
 	// Collect image data to write
-	uint8_t ***row_pointers8 = nullptr;
-	uint16_t ***row_pointers16 = nullptr;
+	std::vector<uint8_t> pixel_data8;
+	std::vector<uint8_t*> row_data8;
+	std::vector<uint8_t**> row_pointers8;
+
+	std::vector<uint16_t> pixel_data16;
+	std::vector<uint16_t*> row_data16;
+	std::vector<uint16_t**> row_pointers16;
+
 	if (bitness == 8)
 	{
-		row_pointers8 = new uint8_t **[dim_z];
-		row_pointers8[0] = new uint8_t *[dim_y * dim_z];
-		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_components + 3];
+		row_pointers8.resize(dim_z);
+		row_data8.resize(dim_y * dim_z);
+		pixel_data8.resize(dim_x * dim_y * dim_z * image_components + 3);
+
+		row_pointers8[0] = row_data8.data();
+		row_pointers8[0][0] = pixel_data8.data();
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
@@ -1571,9 +1580,12 @@ static bool store_ktx_uncompressed_image(
 	}
 	else						// if bitness == 16
 	{
-		row_pointers16 = new uint16_t **[dim_z];
-		row_pointers16[0] = new uint16_t *[dim_y * dim_z];
-		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_components + 1];
+		row_pointers16.resize(dim_z);
+		row_data16.resize(dim_y * dim_z);
+		pixel_data16.resize(dim_x * dim_y * dim_z * image_components + 1);
+
+		row_pointers16[0] = row_data16.data();
+		row_pointers16[0][0] = pixel_data16.data();
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
@@ -1654,20 +1666,6 @@ static bool store_ktx_uncompressed_image(
 	else
 	{
 		retval = false;
-	}
-
-	if (row_pointers8)
-	{
-		delete[] row_pointers8[0][0];
-		delete[] row_pointers8[0];
-		delete[] row_pointers8;
-	}
-
-	if (row_pointers16)
-	{
-		delete[] row_pointers16[0][0];
-		delete[] row_pointers16[0];
-		delete[] row_pointers16;
 	}
 
 	return retval;
@@ -2186,14 +2184,22 @@ static bool store_dds_uncompressed_image(
 	dx10.reserved = 0;
 
 	// Collect image data to write
-	uint8_t ***row_pointers8 = nullptr;
-	uint16_t ***row_pointers16 = nullptr;
+	std::vector<uint8_t> pixel_data8;
+	std::vector<uint8_t*> row_data8;
+	std::vector<uint8_t**> row_pointers8;
+
+	std::vector<uint16_t> pixel_data16;
+	std::vector<uint16_t*> row_data16;
+	std::vector<uint16_t**> row_pointers16;
 
 	if (bitness == 8)
 	{
-		row_pointers8 = new uint8_t **[dim_z];
-		row_pointers8[0] = new uint8_t *[dim_y * dim_z];
-		row_pointers8[0][0] = new uint8_t[dim_x * dim_y * dim_z * image_components];
+		row_pointers8.resize(dim_z);
+		row_data8.resize(dim_y * dim_z);
+		pixel_data8.resize(dim_x * dim_y * dim_z * image_components);
+
+		row_pointers8[0] = row_data8.data();
+		row_pointers8[0][0] = pixel_data8.data();
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
@@ -2254,9 +2260,12 @@ static bool store_dds_uncompressed_image(
 	}
 	else						// if bitness == 16
 	{
-		row_pointers16 = new uint16_t **[dim_z];
-		row_pointers16[0] = new uint16_t *[dim_y * dim_z];
-		row_pointers16[0][0] = new uint16_t[dim_x * dim_y * dim_z * image_components];
+		row_pointers16.resize(dim_z);
+		row_data16.resize(dim_y * dim_z);
+		pixel_data16.resize(dim_x * dim_y * dim_z * image_components);
+
+		row_pointers16[0] = row_data16.data();
+		row_pointers16[0][0] = pixel_data16.data();
 
 		for (unsigned int z = 1; z < dim_z; z++)
 		{
@@ -2344,20 +2353,6 @@ static bool store_dds_uncompressed_image(
 	else
 	{
 		retval = false;
-	}
-
-	if (row_pointers8)
-	{
-		delete[] row_pointers8[0][0];
-		delete[] row_pointers8[0];
-		delete[] row_pointers8;
-	}
-
-	if (row_pointers16)
-	{
-		delete[] row_pointers16[0][0];
-		delete[] row_pointers16[0];
-		delete[] row_pointers16;
 	}
 
 	return retval;
