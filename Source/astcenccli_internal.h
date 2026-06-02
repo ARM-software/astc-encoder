@@ -27,6 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <vector>
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
@@ -42,28 +43,25 @@
 struct astc_compressed_image
 {
 	/** @brief The block width in texels. */
-	unsigned int block_x;
+	unsigned int block_x { 0 };
 
 	/** @brief The block height in texels. */
-	unsigned int block_y;
+	unsigned int block_y { 0 };
 
 	/** @brief The block depth in texels. */
-	unsigned int block_z;
+	unsigned int block_z { 0 };
 
 	/** @brief The image width in texels. */
-	unsigned int dim_x;
+	unsigned int dim_x { 0 };
 
 	/** @brief The image height in texels. */
-	unsigned int dim_y;
+	unsigned int dim_y { 0 };
 
 	/** @brief The image depth in texels. */
-	unsigned int dim_z;
+	unsigned int dim_z { 0 };
 
 	/** @brief The binary data payload. */
-	uint8_t* data;
-
-	/** @brief The binary data length in bytes. */
-	size_t data_len;
+	std::vector<uint8_t> data;
 };
 
 /**
