@@ -164,6 +164,22 @@ struct decompression_workload
 };
 
 /**
+ * @brief A customer deleter so we can use RAII to manage codec contexts.
+ */
+struct astcenc_context_deleter
+{
+	void operator()(astcenc_context* context) const
+	{
+		astcenc_context_free(context);
+	}
+};
+
+/**
+ * @brief A smart pointer wrapper around an astcenc_context.
+ */
+using astcenc_context_ptr = std::unique_ptr<astcenc_context, astcenc_context_deleter>;
+
+/**
  * @brief Callback emitting a progress bar
  */
 extern "C" void progress_emitter(
@@ -2027,8 +2043,8 @@ int astcenc_main(
 		}
 	}
 
-	astcenc_error    codec_status;
-	astcenc_context* codec_context;
+	astcenc_error codec_status;
+	astcenc_context_ptr codec_context;
 
 	// Preflight - check we have valid extensions for storing a file
 	if (operation & ASTCENC_STAGE_ST_NCOMP)
@@ -2060,12 +2076,14 @@ int astcenc_main(
 		}
 	}
 
-	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context, nullptr);
+	astcenc_context* codec_context_raw { nullptr };
+	codec_status = astcenc_context_alloc(&config, cli_config.thread_count, &codec_context_raw, nullptr);
 	if (codec_status != ASTCENC_SUCCESS)
 	{
 		print_error("ERROR: Codec context alloc failed: %s\n", astcenc_get_error_string(codec_status));
 		return 1;
 	}
+	codec_context.reset(codec_context_raw);
 
 	// Load the uncompressed input file if needed
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
@@ -2156,7 +2174,7 @@ int astcenc_main(
 		uint8_t* buffer = new uint8_t[buffer_size];
 
 		compression_workload work;
-		work.context = codec_context;
+		work.context = codec_context.get();
 		work.image = image_uncomp_in.get();
 		work.swizzle = cli_config.swz_encode;
 		work.data_out = buffer;
@@ -2187,7 +2205,7 @@ int astcenc_main(
 					work.data_out, work.data_len, 0);
 			}
 
-			astcenc_compress_reset(codec_context);
+			astcenc_compress_reset(codec_context.get());
 
 			if (config.progress_callback)
 			{
@@ -2224,7 +2242,7 @@ int astcenc_main(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
 
 		decompression_workload work;
-		work.context = codec_context;
+		work.context = codec_context.get();
 		work.data = image_comp.data;
 		work.data_len = image_comp.data_len;
 		work.image_out = image_decomp_out.get();
@@ -2248,7 +2266,7 @@ int astcenc_main(
 				    work.image_out, &work.swizzle, 0);
 			}
 
-			astcenc_decompress_reset(codec_context);
+			astcenc_decompress_reset(codec_context.get());
 
 			double iter_time = get_time() - start_iter_time;
 			best_decompression_time = astc::min(iter_time, best_decompression_time);
@@ -2330,10 +2348,8 @@ int astcenc_main(
 	// Store diagnostic images
 	if (cli_config.diagnostic_images && !is_null)
 	{
-		print_diagnostic_images(codec_context, image_comp, output_filename);
+		print_diagnostic_images(codec_context.get(), image_comp, output_filename);
 	}
-
-	astcenc_context_free(codec_context);
 
 	delete[] image_comp.data;
 
