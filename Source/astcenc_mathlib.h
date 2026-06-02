@@ -478,14 +478,14 @@ static inline float frexp(float v, int* expo)
  *
  * This function is implemented to indicate if overflow has occurred, which may
  * occur when input values are not trusted. Implementation is obviously slower
- * than one that does not do this, so don't do use for values we know will
- * not overflow.
+ * than one that does not do this, so don't use for values we know cannot
+ * overflow.
  *
  * Overflow signaling is sticky, so calling code can check at the end of a
  * sequence of multiplies.
  *
- * @param         val_a      The input value.
- * @param         val_b      The output exponent.
+ * @param         val_a      The first value to multiply.
+ * @param         val_b      The second value to multiply.
  * @param[in,out] overflow   Did previous or this calculation overflow?
  *
  * @return The multiplication result, which may have overflowed.
@@ -505,8 +505,8 @@ static inline size_t mul_safe(
  *
  * This function is implemented so that intermediate values will not overflow,
  * which may occur when input values are not trusted. Implementation is
- * obviously slower than one that does not do this, so don't do use for
- * values we know will not overflow.
+ * obviously slower than one that does not do this, so don't use for values
+ * we know cannot overflow.
  *
  * @param dim_axis    The axis dimension, in pixels.
  * @param dim_block   The block dimension, in pixels.
