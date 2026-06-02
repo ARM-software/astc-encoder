@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -29,6 +29,11 @@
 
 #include "astcenc.h"
 #include "astcenc_mathlib.h"
+
+/**
+ * @brief Mark a variable as unused.
+ */
+#define ASTCENC_UNUSED(x) ((void)x)
 
 /**
  * @brief The payload stored in a compressed ASTC image.

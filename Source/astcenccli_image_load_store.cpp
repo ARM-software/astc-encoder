@@ -26,6 +26,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <new>
 #include <sstream>
 
 #include "astcenccli_internal.h"
@@ -1215,7 +1216,19 @@ static astcenc_image* load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	uint8_t *buf = new uint8_t[specified_bytes_of_surface];
+	uint8_t* buf { nullptr };
+	try
+	{
+		buf = new uint8_t[bytes_per_image];
+	}
+	catch (const std::bad_alloc &e)
+	{
+		ASTCENC_UNUSED(e);
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
+		fclose(f);
+		return nullptr;
+	}
+
 	size_t bytes_read = fread(buf, 1, specified_bytes_of_surface, f);
 	fclose(f);
 	if (bytes_read != specified_bytes_of_surface)
@@ -1240,7 +1253,18 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	// Transfer data from the surface to our own image data structure
-	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+	astcenc_image* astc_img { nullptr };
+	try
+	{
+		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+	}
+	catch (const std::bad_alloc &e)
+	{
+		ASTCENC_UNUSED(e);
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
+		delete[] buf;
+		return nullptr;
+	}
 
 	for (unsigned int z = 0; z < dim_z; z++)
 	{
@@ -2063,8 +2087,9 @@ static astcenc_image* load_dds_uncompressed_image(
 	{
 		buf = new uint8_t[bytes_per_image];
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
@@ -2080,7 +2105,18 @@ static astcenc_image* load_dds_uncompressed_image(
 	}
 
 	// Transfer data from the surface to our own image data structure
-	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+	astcenc_image *astc_img { nullptr };
+	try
+	{
+		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+	}
+	catch (const std::bad_alloc &e)
+	{
+		ASTCENC_UNUSED(e);
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
+		delete[] buf;
+		return nullptr;
+	}
 
 	for (unsigned int z = 0; z < dim_z; z++)
 	{
@@ -2380,47 +2416,68 @@ static bool store_dds_uncompressed_image(
 }
 
 /**
- * @brief Supported uncompressed image load functions, and their associated file extensions.
+ * @brief Image loader function pointer.
  */
-static const struct
+using image_loader = astcenc_image*(*)(const char*, bool, bool&, unsigned int&);
+
+/**
+ * @brief Specs for an image loader function.
+ */
+struct loader_specs
 {
 	const char* ending1;
 	const char* ending2;
-	astcenc_image* (*loader_func)(const char*, bool, bool&, unsigned int&);
-} loader_descs[] {
+	const image_loader loader_func;
+};
+
+/**
+ * @brief Supported uncompressed image load functions, and their associated file extensions.
+ */
+const loader_specs loader_descs[] {
 	// LDR formats
-	{".png",   ".PNG",  load_png_with_wuffs},
+	{  ".png",  ".PNG", load_png_with_wuffs},
 	// HDR formats
-	{".exr",   ".EXR",  load_image_with_tinyexr },
+	{  ".exr",  ".EXR", load_image_with_tinyexr },
 	// Container formats
-	{".ktx",   ".KTX",  load_ktx_uncompressed_image },
-	{".dds",   ".DDS",  load_dds_uncompressed_image },
+	{  ".ktx",  ".KTX", load_ktx_uncompressed_image },
+	{  ".dds",  ".DDS", load_dds_uncompressed_image },
 	// Generic catch all; this one must be last in the list
 	{ nullptr, nullptr, load_image_with_stb }
 };
 
 static const int loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
 
+
 /**
- * @brief Supported uncompressed image store functions, and their associated file extensions.
+ * @brief Image storer function pointer.
  */
-static const struct
+using image_storer = bool(*)(const astcenc_image*, const char*, int y_flip);
+
+/**
+ * @brief Specs for an image storer function.
+ */
+struct storer_specs
 {
 	const char *ending1;
 	const char *ending2;
 	int enforced_bitness;
-	bool (*storer_func)(const astcenc_image *output_image, const char *filename, int y_flip);
-} storer_descs[] {
+	image_storer storer_func;
+};
+
+/**
+ * @brief Supported uncompressed image store functions, and their associated file extensions.
+ */
+const storer_specs storer_descs[] {
 	// LDR formats
-	{".bmp", ".BMP",  8, store_bmp_image_with_stb},
-	{".png", ".PNG",  8, store_png_image_with_stb},
-	{".tga", ".TGA",  8, store_tga_image_with_stb},
+	{ ".bmp", ".BMP",  8, store_bmp_image_with_stb },
+	{ ".png", ".PNG",  8, store_png_image_with_stb },
+	{ ".tga", ".TGA",  8, store_tga_image_with_stb },
 	// HDR formats
-	{".exr", ".EXR", 16, store_exr_image_with_tinyexr},
-	{".hdr", ".HDR", 16, store_hdr_image_with_stb},
+	{ ".exr", ".EXR", 16, store_exr_image_with_tinyexr },
+	{ ".hdr", ".HDR", 16, store_hdr_image_with_stb },
 	// Container formats
-	{".dds", ".DDS",  0, store_dds_uncompressed_image},
-	{".ktx", ".KTX",  0, store_ktx_uncompressed_image}
+	{ ".dds", ".DDS",  0, store_dds_uncompressed_image },
+	{ ".ktx", ".KTX",  0, store_ktx_uncompressed_image }
 };
 
 static const int storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
@@ -2462,18 +2519,31 @@ astcenc_image* load_ncimage(
 	}
 
 	// Scan through descriptors until a matching loader is found
+	image_loader loader { nullptr };
 	for (unsigned int i = 0; i < loader_descr_count; i++)
 	{
 		if (loader_descs[i].ending1 == nullptr
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
 			|| strcmp(eptr, loader_descs[i].ending2) == 0)
 		{
-			return loader_descs[i].loader_func(filename, y_flip, is_hdr, component_count);
+			loader = loader_descs[i].loader_func;
+			break;
 		}
 	}
 
-	// Should never reach here - stb_image provides a generic handler
-	return nullptr;
+	// We must always match a loader - stb_image provides a generic handler
+	assert(loader);
+
+	try
+	{
+		return loader(filename, y_flip, is_hdr, component_count);
+	}
+	catch (const std::bad_alloc &e)
+	{
+		ASTCENC_UNUSED(e);
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
+		return nullptr;
+	}
 }
 
 /* See header for documentation. */
@@ -2488,18 +2558,26 @@ bool store_ncimage(
 		eptr = ".ktx"; // use KTX file format if we don't have an ending.
 	}
 
+	// Scan through descriptors until a matching storer is found
+	image_storer storer { nullptr };
 	for (int i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
 		 || strcmp(eptr, storer_descs[i].ending2) == 0)
 		{
-			return storer_descs[i].storer_func(output_image, filename, y_flip);
+			storer = storer_descs[i].storer_func;
+			break;
 		}
 	}
 
-	// Should never reach here - get_output_filename_enforced_bitness should
-	// have acted as a preflight check
-	return false;
+	// Should never fail this, get_output_filename_enforced_bitness should have
+	// acted as a preflight check
+	if (!storer)
+	{
+		return false;
+	}
+
+	return storer(output_image, filename, y_flip);
 }
 
 /* ============================================================================
@@ -2511,9 +2589,9 @@ struct astc_header
 	uint8_t block_x;
 	uint8_t block_y;
 	uint8_t block_z;
-	uint8_t dim_x[3];			// dims = dim[0] + (dim[1] << 8) + (dim[2] << 16)
-	uint8_t dim_y[3];			// Sizes are given in texels;
-	uint8_t dim_z[3];			// block count is inferred
+	uint8_t dim_x[3];  // Dims = dim[0] + (dim[1] << 8) + (dim[2] << 16)
+	uint8_t dim_y[3];  // Sizes are in texels
+	uint8_t dim_z[3];  // Block count is inferred
 };
 
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
@@ -2596,8 +2674,9 @@ int load_cimage(
 	{
 		buffer = new uint8_t[data_size];
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		return 1;
 	}
@@ -2617,9 +2696,11 @@ int load_cimage(
 	img.block_x = static_cast<unsigned int>(block_x);
 	img.block_y = static_cast<unsigned int>(block_y);
 	img.block_z = static_cast<unsigned int>(block_z);
+
 	img.dim_x = static_cast<unsigned int>(dim_x);
 	img.dim_y = static_cast<unsigned int>(dim_y);
 	img.dim_z = static_cast<unsigned int>(dim_z);
+
 	return 0;
 }
 
