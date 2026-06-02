@@ -2572,16 +2572,11 @@ int load_cimage(
 	size_t blocks_z = (dim_z + block_z - 1) / block_z;
 
 	// This can overflow if dim_* sizes are large
-	bool overflow = false;
+	bool overflow { false };
 
-	size_t data_size_xy = blocks_x * blocks_y;
-	overflow = overflow || ((data_size_xy / blocks_y) != blocks_x);
-
-	size_t data_size_xyz = data_size_xy * blocks_z;
-	overflow = overflow || ((data_size_xyz / blocks_z) != data_size_xy);
-
-	size_t data_size = data_size_xyz * 16;
-	overflow = overflow || ((data_size / 16) != data_size_xyz);
+	size_t data_size = astc::mul_safe(blocks_x, blocks_y, overflow);
+	data_size = astc::mul_safe(data_size, blocks_z, overflow);
+	data_size = astc::mul_safe(data_size, 16, overflow);
 
 	if (overflow)
 	{

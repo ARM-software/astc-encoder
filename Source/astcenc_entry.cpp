@@ -24,8 +24,9 @@
 #include <new>
 
 #include "astcenc.h"
-#include "astcenc_internal_entry.h"
 #include "astcenc_diagnostic_trace.h"
+#include "astcenc_internal_entry.h"
+#include "astcenc_mathlib.h"
 
 /**
  * @brief Record of the quality tuning parameter values.
@@ -134,28 +135,6 @@ static const std::array<astcenc_preset_config, 6> preset_configs_low {{
 }};
 
 /**
- * @brief Get the number of blocks in an single image dimension.
- *
- * @param dim_img   The image dimension, in pixels.
- * @param dim_blk   The block dimension, in pixels.
- *
- * @return The number of blocks needed in this dimension.
- */
-static size_t get_block_count(size_t dim_img, size_t dim_blk)
-{
-	// Computation done this way to avoid overflowing size_t max
-	size_t blocks = dim_img / dim_blk;
-
-	// Is there a residual partial block?
-	if (dim_img != (blocks * dim_blk))
-	{
-		blocks++;
-	}
-
-	return blocks;
-}
-
-/**
  * @brief Get the total number of texels in an image.
  *
  * This function validates that the total size would fit in a size_t and returns
@@ -168,29 +147,23 @@ static size_t get_block_count(size_t dim_img, size_t dim_blk)
  * @return The number of texels in the image, or zero if total size would not
  *         fit into a size_t.
  */
-static size_t get_texels_count(size_t texels_x, size_t texels_y, size_t texels_z)
-{
-	// If any dimensions are zero return early to avoid later divide by zero
-	if ((!texels_x) || (!texels_y) || (!texels_z))
+static size_t get_texels_count(
+	size_t texels_x,
+	size_t texels_y,
+	size_t texels_z
+) {
+	bool overflow { false };
+
+	// Compute texel count
+	size_t texels_count = astc::mul_safe(texels_x, texels_y, overflow);
+	texels_count = astc::mul_safe(texels_count, texels_z, overflow);
+
+	if (overflow)
 	{
 		return 0;
 	}
 
-	// Overflow in x*y
-	size_t texels_xy = texels_x * texels_y;
-	if ((texels_xy / texels_y) != texels_x)
-	{
-		return 0;
-	}
-
-	// Overflow in xy*z
-	size_t texels_xyz = texels_xy * texels_z;
-	if ((texels_xyz / texels_z) != texels_xy)
-	{
-		return 0;
-	}
-
-	return texels_xyz;
+	return texels_count;
 }
 
 /**
@@ -206,36 +179,26 @@ static size_t get_texels_count(size_t texels_x, size_t texels_y, size_t texels_z
  * @return The number of blocks in the image, or zero if total size would not
  *         fit into a size_t.
  */
-static size_t get_blocks_count(size_t blocks_x, size_t blocks_y, size_t blocks_z)
-{
-	// If any dimensions are zero return early to avoid later divide by zero
-	if ((!blocks_x) || (!blocks_y) || (!blocks_z))
+static size_t get_blocks_count(
+	size_t blocks_x,
+	size_t blocks_y,
+	size_t blocks_z
+) {
+	bool overflow { false };
+
+	// Compute block count
+	size_t blocks_count = astc::mul_safe(blocks_x, blocks_y, overflow);
+	blocks_count = astc::mul_safe(blocks_count, blocks_z, overflow);
+
+	// Also compute byte count, but we only use overflow and not the result
+	astc::mul_safe(blocks_count, 16, overflow);
+
+	if (overflow)
 	{
 		return 0;
 	}
 
-	// Overflow in x*y
-	size_t blocks_xy = blocks_x * blocks_y;
-	if ((blocks_xy / blocks_y) != blocks_x)
-	{
-		return 0;
-	}
-
-	// Overflow in xy*z
-	size_t blocks_xyz = blocks_xy * blocks_z;
-	if ((blocks_xyz / blocks_z) != blocks_xy)
-	{
-		return 0;
-	}
-
-	// Overflow in bytes
-	size_t block_bytes = blocks_xyz * 16;
-	if ((block_bytes / 16) != blocks_xyz)
-	{
-		return 0;
-	}
-
-	return blocks_xyz;
+	return blocks_count;
 }
 
 /**
@@ -947,9 +910,9 @@ static void compress_image(
 	size_t dim_y = image.dim_y;
 	size_t dim_z = image.dim_z;
 
-	size_t blocks_x = get_block_count(dim_x, block_x);
-	size_t blocks_y = get_block_count(dim_y, block_y);
-	size_t blocks_z = get_block_count(dim_z, block_z);
+	size_t blocks_x = astc::get_block_count_safe(dim_x, block_x);
+	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
+	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
 
 	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
 	// Should never fail here - tested in caller before calling here
@@ -1199,9 +1162,9 @@ astcenc_error astcenc_compress_image(
 	size_t block_y = ctx->config.block_y;
 	size_t block_z = ctx->config.block_z;
 
-	size_t blocks_x = get_block_count(dim_x, block_x);
-	size_t blocks_y = get_block_count(dim_y, block_y);
-	size_t blocks_z = get_block_count(dim_z, block_z);
+	size_t blocks_x = astc::get_block_count_safe(dim_x, block_x);
+	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
+	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
 
 	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
 	// Cumulative block sizes would overflow a size_t
@@ -1347,9 +1310,9 @@ astcenc_error astcenc_decompress_image(
 	size_t block_y = ctx->config.block_y;
 	size_t block_z = ctx->config.block_z;
 
-	size_t blocks_x = get_block_count(dim_x, block_x);
-	size_t blocks_y = get_block_count(dim_y, block_y);
-	size_t blocks_z = get_block_count(dim_z, block_z);
+	size_t blocks_x = astc::get_block_count_safe(dim_x, block_x);
+	size_t blocks_y = astc::get_block_count_safe(dim_y, block_y);
+	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
 
 	size_t block_count = get_blocks_count(blocks_x, blocks_y, blocks_z);
 	// Cumulative block sizes would overflow a size_t

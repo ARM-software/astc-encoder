@@ -474,6 +474,62 @@ static inline float frexp(float v, int* expo)
 }
 
 /**
+ * @brief Compute the product of two sizes.
+ *
+ * This function is implemented to indicate if overflow has occurred, which may
+ * occur when input values are not trusted. Implementation is obviously slower
+ * than one that does not do this, so don't use for values we know cannot
+ * overflow.
+ *
+ * Overflow signaling is sticky, so calling code can check at the end of a
+ * sequence of multiplies.
+ *
+ * @param         val_a      The first value to multiply.
+ * @param         val_b      The second value to multiply.
+ * @param[in,out] overflow   Did previous or this calculation overflow?
+ *
+ * @return The multiplication result, which may have overflowed.
+ */
+static inline size_t mul_safe(
+	size_t val_a,
+	size_t val_b,
+	bool& overflow
+) {
+	size_t result = val_a * val_b;
+	overflow = overflow || ((val_b != 0) && ((result / val_b) != val_a));
+	return result;
+}
+
+/**
+ * @brief Get the number of blocks along a single axis.
+ *
+ * This function is implemented so that intermediate values will not overflow,
+ * which may occur when input values are not trusted. Implementation is
+ * obviously slower than one that does not do this, so don't use for values
+ * we know cannot overflow.
+ *
+ * @param dim_axis    The axis dimension, in pixels.
+ * @param dim_block   The block dimension, in pixels.
+ *
+ * @return The number of blocks needed in this dimension.
+ */
+static inline size_t get_block_count_safe(
+	size_t dim_axis,
+	size_t dim_block
+) {
+	// Compute number of whole blocks
+	size_t blocks = dim_axis / dim_block;
+
+	// Add in any residual partial block
+	if (dim_axis != (dim_block * blocks))
+	{
+		blocks++;
+	}
+
+	return blocks;
+}
+
+/**
  * @brief Initialize the seed structure for a random number generator.
  *
  * Important note: For the purposes of ASTC we want sets of random numbers to
