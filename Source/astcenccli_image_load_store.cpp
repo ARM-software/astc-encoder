@@ -979,7 +979,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	// Cartesian product of gl_type=(UNSIGNED_BYTE, UNSIGNED_SHORT, HALF_FLOAT, FLOAT) x gl_format=(RED, RG, RGB, RGBA, BGR, BGRA)
 
-	int components;
+	unsigned int components;
 	switch (hdr.gl_format)
 	{
 	case GL_RED:
