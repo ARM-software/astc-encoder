@@ -2411,12 +2411,12 @@ static bool store_dds_uncompressed_image(
 }
 
 /**
- * @brief Image loader fuction pointer.
+ * @brief Image loader function pointer.
  */
 using image_loader = astcenc_image*(*)(const char*, bool, bool&, unsigned int&);
 
 /**
- * @brief Specs for a image loader function.
+ * @brief Specs for an image loader function.
  */
 struct loader_specs
 {
@@ -2444,12 +2444,12 @@ static const int loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs
 
 
 /**
- * @brief Image storer fuction pointer.
+ * @brief Image storer function pointer.
  */
 using image_storer = bool(*)(const astcenc_image*, const char*, int y_flip);
 
 /**
- * @brief Specs for a image storer function.
+ * @brief Specs for an image storer function.
  */
 struct storer_specs
 {
