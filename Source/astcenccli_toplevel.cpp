@@ -1550,7 +1550,7 @@ static void print_diagnostic_image(
 	size_t block_cols = (image.dim_x + image.block_x - 1) / image.block_x;
 	size_t block_rows = (image.dim_y + image.block_y - 1) / image.block_y;
 
-	uint8_t* data = image.data;
+	const uint8_t* data = image.data.data();
 	for (size_t block_y = 0; block_y < block_rows; block_y++)
 	{
 		for (size_t block_x = 0; block_x < block_cols; block_x++)
@@ -1947,7 +1947,6 @@ int astcenc_main(
 		return 1;
 	}
 
-	// TODO: Handle RAII resources so they get freed when out of scope
 	// Load the compressed input file if needed
 
 	// This has to come first, as the block size is in the file header
@@ -2171,13 +2170,13 @@ int astcenc_main(
 		unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
 		unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
 		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
-		uint8_t* buffer = new uint8_t[buffer_size];
+		image_comp.data.resize(buffer_size);
 
 		compression_workload work;
 		work.context = codec_context.get();
 		work.image = image_uncomp_in.get();
 		work.swizzle = cli_config.swz_encode;
-		work.data_out = buffer;
+		work.data_out = image_comp.data.data();
 		work.data_len = buffer_size;
 		work.error = ASTCENC_SUCCESS;
 
@@ -2229,8 +2228,6 @@ int astcenc_main(
 		image_comp.dim_x = image_uncomp_in->dim_x;
 		image_comp.dim_y = image_uncomp_in->dim_y;
 		image_comp.dim_z = image_uncomp_in->dim_z;
-		image_comp.data = buffer;
-		image_comp.data_len = buffer_size;
 	}
 
 	// Decompress an image
@@ -2243,8 +2240,8 @@ int astcenc_main(
 
 		decompression_workload work;
 		work.context = codec_context.get();
-		work.data = image_comp.data;
-		work.data_len = image_comp.data_len;
+		work.data = image_comp.data.data();
+		work.data_len = image_comp.data.size();
 		work.image_out = image_decomp_out.get();
 		work.swizzle = cli_config.swz_decode;
 		work.error = ASTCENC_SUCCESS;
@@ -2350,8 +2347,6 @@ int astcenc_main(
 	{
 		print_diagnostic_images(codec_context.get(), image_comp, output_filename);
 	}
-
-	delete[] image_comp.data;
 
 	if ((operation & ASTCENC_STAGE_COMPARE) || (!cli_config.silentmode))
 	{

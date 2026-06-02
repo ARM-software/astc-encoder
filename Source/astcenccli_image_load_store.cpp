@@ -29,6 +29,8 @@
 #include <memory>
 #include <new>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 #include "astcenccli_internal.h"
 
@@ -1370,12 +1372,12 @@ bool load_ktx_compressed_image(
 	}
 
 	// Read the data
-	unsigned char* data = new unsigned char[data_len];
-	file.read(reinterpret_cast<char*>(data), data_len);
+	img.data.resize(data_len);
+	file.read(reinterpret_cast<char*>(img.data.data()), data_len);
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		delete[] data;
+		img.data.clear();
 		return true;
 	}
 
@@ -1386,9 +1388,6 @@ bool load_ktx_compressed_image(
 	img.dim_x = hdr.pixel_width;
 	img.dim_y = hdr.pixel_height;
 	img.dim_z = hdr.pixel_depth == 0 ? 1 : hdr.pixel_depth;
-
-	img.data_len = data_len;
-	img.data = data;
 
 	is_srgb = fmt->is_srgb;
 
@@ -1431,7 +1430,7 @@ bool store_ktx_compressed_image(
 	ktx_header_switch_endianness(&hdr);
 #endif
 
-	size_t expected = sizeof(ktx_header) + 4 + img.data_len;
+	size_t expected = sizeof(ktx_header) + 4 + img.data.size();
 	size_t actual = 0;
 
 	FILE *wf = fopen(filename, "wb");
@@ -1440,14 +1439,14 @@ bool store_ktx_compressed_image(
 		return true;
 	}
 
-	uint32_t data_len = static_cast<uint32_t>(img.data_len);
+	uint32_t data_len = static_cast<uint32_t>(img.data.size());
 #if defined(ASTCENC_BIG_ENDIAN)
 	data_len = reverse_bytes_u32(data_len);
 #endif
 
 	actual += fwrite(&hdr, 1, sizeof(ktx_header), wf);
 	actual += fwrite(&data_len, 1, sizeof(uint32_t), wf);
-	actual += fwrite(img.data, 1, img.data_len, wf);
+	actual += fwrite(img.data.data(), 1, img.data.size(), wf);
 	fclose(wf);
 
 	if (actual != expected)
@@ -2640,10 +2639,9 @@ int load_cimage(
 	}
 
 	// Allocation may fail if image is suspiciously large
-	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
-		buf = std::make_unique<uint8_t[]>(data_size);
+		img.data.resize(data_size);
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -2652,15 +2650,13 @@ int load_cimage(
 		return 1;
 	}
 
-	file.read(reinterpret_cast<char*>(buf.get()), data_size);
+	file.read(reinterpret_cast<char*>(img.data.data()), data_size);
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
+		img.data.clear();
 		return 1;
 	}
-
-	img.data = buf.release();
-	img.data_len = data_size;
 
 	// Casts are safe - we know individual values are small enough
 	img.block_x = static_cast<unsigned int>(block_x);
@@ -2709,6 +2705,6 @@ int store_cimage(
 	}
 
 	file.write(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
-	file.write(reinterpret_cast<char*>(img.data), img.data_len);
+	file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
 	return 0;
 }
