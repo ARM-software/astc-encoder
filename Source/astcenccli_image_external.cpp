@@ -52,6 +52,7 @@
 #define WUFFS_CONFIG__MODULE__DEFLATE
 #define WUFFS_CONFIG__MODULE__PNG
 #define WUFFS_CONFIG__MODULE__ZLIB
+
 /**
  * @brief Trap image load failures and convert into a runtime error.
  */
@@ -59,7 +60,7 @@ static void astcenc_runtime_assert(bool condition)
 {
     if (!condition)
     {
-        print_error("ERROR: Corrupt input image\n");
+        print_error("ERROR: Image header corrupt\n");
         exit(1);
     }
 }
@@ -91,7 +92,7 @@ astcenc_image* load_png_with_wuffs(
 	std::ifstream file(filename, std::ios::binary | std::ios::ate);
 	if (!file)
 	{
-		print_error("ERROR: Failed to load image %s (can't fopen)\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return nullptr;
 	}
 

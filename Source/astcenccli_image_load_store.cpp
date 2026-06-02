@@ -104,7 +104,7 @@ static astcenc_image* load_image_with_tinyexr(
 	int load_res = LoadEXR(&image, &dim_x, &dim_y, filename, &err);
 	if (load_res != TINYEXR_SUCCESS)
 	{
-		print_error("ERROR: Failed to load image %s (%s)\n", filename, err);
+		print_error("ERROR: Image load failed '%s' (%s)\n", filename, err);
 		free(reinterpret_cast<void*>(const_cast<char*>(err)));
 		return nullptr;
 	}
@@ -160,7 +160,7 @@ static astcenc_image* load_image_with_stb(
 		}
 	}
 
-	print_error("ERROR: Failed to load image %s (%s)\n", filename, stbi_failure_reason());
+	print_error("ERROR: Image load failed '%s' (%s)\n", filename, stbi_failure_reason());
 	return nullptr;
 }
 
@@ -940,7 +940,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	FILE *f = fopen(filename, "rb");
 	if (!f)
 	{
-		printf("Failed to open file %s\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return nullptr;
 	}
 
@@ -949,14 +949,14 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	if (header_bytes_read != sizeof(hdr))
 	{
-		printf("Failed to read header of KTX file %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
 
 	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
-		printf("File %s does not have a valid KTX header\n", filename);
+		print_error("ERROR: Image header invalid '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -970,7 +970,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	if (hdr.gl_type == 0 || hdr.gl_format == 0)
 	{
-		printf("File %s appears to be compressed, not supported as input\n", filename);
+		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1007,7 +1007,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 		components = 2;
 		break;
 	default:
-		printf("KTX file %s has unsupported GL type\n", filename);
+		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1152,26 +1152,25 @@ static astcenc_image* load_ktx_uncompressed_image(
 			break;
 		}
 	default:
-		printf("KTX file %s has unsupported GL format\n", filename);
+		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
 
 	if (hdr.number_of_mipmap_levels > 1)
 	{
-		printf("WARNING: KTX file %s has %u mipmap levels; only the first one will be encoded.\n", filename, hdr.number_of_mipmap_levels);
+		printf("WARNING: Only first of %u mipmap levels will be compressed '%s'.\n", hdr.number_of_mipmap_levels, filename);
 	}
 
 	if (hdr.number_of_array_elements > 1)
 	{
-		printf("WARNING: KTX file %s contains a texture array with %u layers; only the first one will be encoded.\n", filename, hdr.number_of_array_elements);
+		printf("WARNING: Only first of %u array layers will be compressed '%s'.\n", hdr.number_of_array_elements, filename);
 	}
 
 	if (hdr.number_of_faces > 1)
 	{
-		printf("WARNING: KTX file %s contains a cubemap with 6 faces; only the first one will be encoded.\n", filename);
+		printf("WARNING: Only first of %u cube faces will be compressed '%s'.\n", hdr.number_of_faces, filename);
 	}
-
 
 	unsigned int dim_x = hdr.pixel_width;
 	unsigned int dim_y = astc::max(hdr.pixel_height, 1u);
@@ -1184,7 +1183,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 	size_t sb_read = fread(&specified_bytes_of_surface, 1, 4, f);
 	if (sb_read != 4)
 	{
-		printf("Failed to read header of KTX file %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1211,8 +1210,8 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	if (overflow || bytes_per_image != specified_bytes_of_surface)
 	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, bytes_per_image, specified_bytes_of_surface);
 		return nullptr;
 	}
 
@@ -1221,12 +1220,12 @@ static astcenc_image* load_ktx_uncompressed_image(
 	fclose(f);
 	if (bytes_read != specified_bytes_of_surface)
 	{
+		print_error("ERROR: File read failed '%s'\n", filename);
 		delete[] buf;
-		printf("Failed to read file %s\n", filename);
 		return nullptr;
 	}
 
-	// perform an endianness swap on the surface if needed.
+	// Perform an endianness swap on the surface if needed.
 	if (switch_endianness)
 	{
 		if (hdr.gl_type_size == 2)
@@ -1291,7 +1290,7 @@ bool load_ktx_compressed_image(
 	FILE *f = fopen(filename, "rb");
 	if (!f)
 	{
-		printf("Failed to open file %s\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return true;
 	}
 
@@ -1299,7 +1298,7 @@ bool load_ktx_compressed_image(
 	size_t actual = fread(&hdr, 1, sizeof(hdr), f);
 	if (actual != sizeof(hdr))
 	{
-		printf("Failed to read header from %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1307,7 +1306,7 @@ bool load_ktx_compressed_image(
 	if (memcmp(hdr.magic, ktx_magic, 12) != 0 ||
 	    (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
-		printf("File %s does not have a valid KTX header\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1322,7 +1321,7 @@ bool load_ktx_compressed_image(
 	if (hdr.gl_type != 0 || hdr.gl_format != 0 || hdr.gl_type_size != 1 ||
 	    hdr.gl_base_internal_format != GL_RGBA)
 	{
-		printf("File %s is not a compressed ASTC file\n", filename);
+		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1330,17 +1329,16 @@ bool load_ktx_compressed_image(
 	const format_entry* fmt = get_format(hdr.gl_internal_format);
 	if (!fmt)
 	{
-		printf("File %s is not a compressed ASTC file\n", filename);
+		print_error("ERROR: Iamge uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
 
 	// Skip over any key-value pairs
-	int seekerr;
-	seekerr = fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
+	int seekerr = fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
 	if (seekerr)
 	{
-		printf("Failed to skip key-value pairs in %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1350,7 +1348,7 @@ bool load_ktx_compressed_image(
 	actual = fread(&data_len, 1, sizeof(data_len), f);
 	if (actual != sizeof(data_len))
 	{
-		printf("Failed to read mip 0 size from %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
@@ -1365,7 +1363,7 @@ bool load_ktx_compressed_image(
 	actual = fread(data, 1, data_len, f);
 	if (actual != data_len)
 	{
-		printf("Failed to read mip 0 data from %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		delete[] data;
 		return true;
@@ -1757,10 +1755,10 @@ struct dds_header
 struct dds_header_dx10
 {
 	uint32_t dxgi_format;
-	uint32_t resource_dimension;	// 2=1d-texture, 3=2d-texture or cubemap, 4=3d-texture
-	uint32_t misc_flag;			// 4 if cubemap, else 0
-	uint32_t array_size;		// size of array in case of a texture array; set to 1 for a non-array
-	uint32_t reserved;			// set to 0.
+	uint32_t resource_dimension;  // Set to 2 (1D tex), 3 (2D tex or cube), or 4 (3D tex)
+	uint32_t misc_flag;           // Set to 4 if cubemap, else 0
+	uint32_t array_size;          // Set to size of array if texture array; else 1
+	uint32_t reserved;            // Set to 0.
 };
 
 #define DDS_MAGIC 0x20534444
@@ -1785,7 +1783,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	FILE *f = fopen(filename, "rb");
 	if (!f)
 	{
-		printf("Failed to open file %s\n", filename);
+		print_error("ERROR: File open failed '%s'\n", filename);
 		return nullptr;
 	}
 
@@ -1794,7 +1792,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	size_t magic_bytes_read = fread(&magic, 1, sizeof(uint32_t), f);
 	if (magic_bytes_read != 4)
 	{
-		printf("Failed to read magic number from file %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1805,7 +1803,7 @@ static astcenc_image* load_dds_uncompressed_image(
 
 	if (magic != DDS_MAGIC)
 	{
-		printf("File %s has incorrect magic number\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1815,13 +1813,13 @@ static astcenc_image* load_dds_uncompressed_image(
 	size_t header_bytes_read = fread(&hdr, 1, sizeof(hdr), f);
 	if (header_bytes_read != sizeof(hdr))
 	{
-		printf("Failed to read header from file %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
 
 #if defined(ASTCENC_BIG_ENDIAN)
-	// DDS header fields all 32-bit words
+	// DDS header fields are all 32-bit words
 	uint32_t* words = reinterpret_cast<uint32_t*>(&hdr);
 	size_t word_count = sizeof(hdr) / sizeof(uint32_t);
 
@@ -1834,7 +1832,7 @@ static astcenc_image* load_dds_uncompressed_image(
 
 	if (hdr.size != 124)
 	{
-		printf("File %s has incorrect header\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1848,7 +1846,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		}
 		else
 		{
-			printf("DDS file %s is compressed, not supported\n", filename);
+			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
 			fclose(f);
 			return nullptr;
 		}
@@ -1860,7 +1858,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		size_t dx10_header_bytes_read = fread(&dx10_header, 1, sizeof(dx10_header), f);
 		if (dx10_header_bytes_read != sizeof(dx10_header))
 		{
-			printf("Failed to read header of DDS file %s\n", filename);
+			print_error("ERROR: File read failed '%s'\n", filename);
 			fclose(f);
 			return nullptr;
 		}
@@ -1942,7 +1940,7 @@ static astcenc_image* load_dds_uncompressed_image(
 
 		if (!did_select_format)
 		{
-			printf("DDS file %s: DXGI format not supported by codec\n", filename);
+			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
 			fclose(f);
 			return nullptr;
 		}
@@ -2030,7 +2028,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		}
 		else
 		{
-			printf("DDS file %s: Non-DXGI format not supported by codec\n", filename);
+			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
 			fclose(f);
 			return nullptr;
 		}
@@ -2055,7 +2053,7 @@ static astcenc_image* load_dds_uncompressed_image(
 
 	if (overflow)
 	{
-		printf("DDS file %s has invalid dimensions\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -2067,7 +2065,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	}
 	catch (...)
 	{
-		printf("Failed to allocate memory for file %s\n", filename);
+		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -2076,7 +2074,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	fclose(f);
 	if (bytes_read != bytes_per_image)
 	{
-		printf("Failed to read file %s\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		delete[] buf;
 		return nullptr;
 	}
@@ -2555,7 +2553,7 @@ int load_cimage(
 	unsigned int magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
 	if (magicval != ASTC_MAGIC_ID)
 	{
-		print_error("ERROR: Image header not recognized '%s'\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		return 1;
 	}
 
@@ -2607,7 +2605,7 @@ int load_cimage(
 	file.read(reinterpret_cast<char*>(buffer), data_size);
 	if (file.fail())
 	{
-		print_error("ERROR: Image data size exceeded file size '%s'\n", filename);
+		print_error("ERROR: File read failed '%s'\n", filename);
 		delete[] buffer;
 		return 1;
 	}
