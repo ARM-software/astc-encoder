@@ -250,14 +250,15 @@ astcenc_image_ptr astc_img_from_unorm8x4_array(
 }
 
 /* See header for documentation. */
-float* floatx4_array_from_astc_img(
+std::vector<float> floatx4_array_from_astc_img(
 	const astcenc_image* img,
 	bool y_flip,
 	unsigned int z_index
 ) {
 	unsigned int dim_x = img->dim_x;
 	unsigned int dim_y = img->dim_y;
-	float *buf = new float[4 * dim_x * dim_y];
+	std::vector<float> buf(4 * dim_x * dim_y);
+	float* buf_data = buf.data();
 
 	assert(z_index < img->dim_z);
 
@@ -267,7 +268,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			float* dst = buf + y * dim_x * 4;
+			float* dst = buf_data + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
@@ -284,7 +285,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			float *dst = buf + y * dim_x * 4;
+			float *dst = buf_data + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
@@ -307,7 +308,7 @@ float* floatx4_array_from_astc_img(
 		for (unsigned int y = 0; y < dim_y; y++)
 		{
 			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			float *dst = buf + y * dim_x * 4;
+			float *dst = buf_data + y * dim_x * 4;
 
 			for (unsigned int x = 0; x < dim_x; x++)
 			{
@@ -315,79 +316,6 @@ float* floatx4_array_from_astc_img(
 				dst[4 * x + 1] = data32[(4 * dim_x * ymod) + (4 * x + 1)];
 				dst[4 * x + 2] = data32[(4 * dim_x * ymod) + (4 * x + 2)];
 				dst[4 * x + 3] = data32[(4 * dim_x * ymod) + (4 * x + 3)];
-			}
-		}
-	}
-
-	return buf;
-}
-
-/* See header for documentation. */
-uint8_t* unorm8x4_array_from_astc_img(
-	const astcenc_image* img,
-	bool y_flip
-) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	uint8_t* buf = new uint8_t[4 * dim_x * dim_y];
-
-	if (img->data_type == ASTCENC_TYPE_U8)
-	{
-		uint8_t* data8 = static_cast<uint8_t*>(img->data[0]);
-		for (unsigned int y = 0; y < dim_y; y++)
-		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			uint8_t* dst = buf + y * dim_x * 4;
-
-			for (unsigned int x = 0; x < dim_x; x++)
-			{
-				dst[4 * x    ] = data8[(4 * dim_x * ymod) + (4 * x    )];
-				dst[4 * x + 1] = data8[(4 * dim_x * ymod) + (4 * x + 1)];
-				dst[4 * x + 2] = data8[(4 * dim_x * ymod) + (4 * x + 2)];
-				dst[4 * x + 3] = data8[(4 * dim_x * ymod) + (4 * x + 3)];
-			}
-		}
-	}
-	else if (img->data_type == ASTCENC_TYPE_F16)
-	{
-		uint16_t* data16 = static_cast<uint16_t*>(img->data[0]);
-		for (unsigned int y = 0; y < dim_y; y++)
-		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			uint8_t* dst = buf + y * dim_x * 4;
-
-			for (unsigned int x = 0; x < dim_x; x++)
-			{
-				vint4 colori(
-					data16[(4 * dim_x * ymod) + (4 * x    )],
-					data16[(4 * dim_x * ymod) + (4 * x + 1)],
-					data16[(4 * dim_x * ymod) + (4 * x + 2)],
-					data16[(4 * dim_x * ymod) + (4 * x + 3)]
-				);
-
-				vfloat4 color = float16_to_float(colori);
-				color = clamp(0.0f, 1.0f, color) * 255.0f;
-
-				colori = float_to_int_rtn(color);
-				pack_and_store_low_bytes(colori, dst + 4 * x);
-			}
-		}
-	}
-	else // if (img->data_type == ASTCENC_TYPE_F32)
-	{
-		assert(img->data_type == ASTCENC_TYPE_F32);
-		float* data32 = static_cast<float*>(img->data[0]);
-		for (unsigned int y = 0; y < dim_y; y++)
-		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			uint8_t* dst = buf + y * dim_x * 4;
-
-			for (unsigned int x = 0; x < dim_x; x++)
-			{
-				dst[4 * x    ] = static_cast<uint8_t>(astc::flt2int_rtn(astc::clamp1f(data32[(4 * dim_x * ymod) + (4 * x    )]) * 255.0f));
-				dst[4 * x + 1] = static_cast<uint8_t>(astc::flt2int_rtn(astc::clamp1f(data32[(4 * dim_x * ymod) + (4 * x + 1)]) * 255.0f));
-				dst[4 * x + 2] = static_cast<uint8_t>(astc::flt2int_rtn(astc::clamp1f(data32[(4 * dim_x * ymod) + (4 * x + 2)]) * 255.0f));
-				dst[4 * x + 3] = static_cast<uint8_t>(astc::flt2int_rtn(astc::clamp1f(data32[(4 * dim_x * ymod) + (4 * x + 3)]) * 255.0f));
 			}
 		}
 	}

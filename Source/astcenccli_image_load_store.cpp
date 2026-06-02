@@ -187,10 +187,9 @@ static bool store_exr_image_with_tinyexr(
 	for (unsigned int i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
-		float* buf = floatx4_array_from_astc_img(img, y_flip, i);
+		std::vector<float> buf = floatx4_array_from_astc_img(img, y_flip, i);
 
-		res = SaveEXR(buf, img->dim_x, img->dim_y, 4, 1, fnmod.c_str(), nullptr);
-		delete[] buf;
+		res = SaveEXR(buf.data(), img->dim_x, img->dim_y, 4, 1, fnmod.c_str(), nullptr);
 		if (res < 0)
 		{
 			break;
@@ -321,10 +320,9 @@ static bool store_hdr_image_with_stb(
 	for (unsigned int i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
-		float* buf = floatx4_array_from_astc_img(img, y_flip, i);
+		std::vector<float> buf = floatx4_array_from_astc_img(img, y_flip, i);
 
-		res = stbi_write_hdr(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf);
-		delete[] buf;
+		res = stbi_write_hdr(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf.data());
 		if (res == 0)
 		{
 			break;
