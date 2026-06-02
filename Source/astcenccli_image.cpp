@@ -25,18 +25,23 @@
 #include "astcenccli_internal.h"
 
 /* See header for documentation. */
-astcenc_image *alloc_image(
+astcenc_image_ptr alloc_image(
 	unsigned int bitness,
 	unsigned int dim_x,
 	unsigned int dim_y,
 	unsigned int dim_z
 ) {
-	astcenc_image *img = new astcenc_image;
+	astcenc_image_ptr img { new astcenc_image };
+
+	// Initialize everything so that we can handle deletion of a partially
+	// constructed object if new[] throws a bad_alloc exception
 	img->dim_x = dim_x;
 	img->dim_y = dim_y;
 	img->dim_z = dim_z;
+	img->data_type = ASTCENC_TYPE_U8;
+	img->data = nullptr;
 
-	void** data = new void*[dim_z];
+	void** data = new void*[dim_z] {};
 	img->data = data;
 
 	if (bitness == 8)
@@ -69,19 +74,35 @@ astcenc_image *alloc_image(
 }
 
 /* See header for documentation. */
-void free_image(astcenc_image * img)
+void astcenc_image_deleter::operator()(astcenc_image* img) const
 {
 	if (img == nullptr)
 	{
 		return;
 	}
 
-	for (unsigned int z = 0; z < img->dim_z; z++)
+	if (img->data)
 	{
-		delete[] reinterpret_cast<char*>(img->data[z]);
+		for (unsigned int z = 0; z < img->dim_z; z++)
+		{
+			if (img->data_type == ASTCENC_TYPE_U8)
+			{
+				delete[] static_cast<uint8_t*>(img->data[z]);
+			}
+			else if (img->data_type == ASTCENC_TYPE_F16)
+			{
+				delete[] static_cast<uint16_t*>(img->data[z]);
+			}
+			else
+			{
+				assert(img->data_type == ASTCENC_TYPE_F32);
+				delete[] static_cast<float*>(img->data[z]);
+			}
+		}
+
+		delete[] img->data;
 	}
 
-	delete[] img->data;
 	delete img;
 }
 
@@ -168,13 +189,13 @@ int determine_image_components(const astcenc_image * img)
 }
 
 /* See header for documentation. */
-astcenc_image* astc_img_from_floatx4_array(
+astcenc_image_ptr astc_img_from_floatx4_array(
 	const float* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
 	bool y_flip
 ) {
-	astcenc_image* img = alloc_image(16, dim_x, dim_y, 1);
+	auto img = alloc_image(16, dim_x, dim_y, 1);
 
 	for (unsigned int y = 0; y < dim_y; y++)
 	{
@@ -202,13 +223,13 @@ astcenc_image* astc_img_from_floatx4_array(
 }
 
 /* See header for documentation. */
-astcenc_image* astc_img_from_unorm8x4_array(
+astcenc_image_ptr astc_img_from_unorm8x4_array(
 	const uint8_t* data,
 	unsigned int dim_x,
 	unsigned int dim_y,
 	bool y_flip
 ) {
-	astcenc_image* img = alloc_image(8, dim_x, dim_y, 1);
+	auto img = alloc_image(8, dim_x, dim_y, 1);
 
 	for (unsigned int y = 0; y < dim_y; y++)
 	{

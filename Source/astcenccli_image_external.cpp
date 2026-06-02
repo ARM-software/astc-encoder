@@ -80,7 +80,7 @@ static void astcenc_runtime_assert(bool condition)
  *
  * @return The loaded image data in a canonical 4 channel format, or @c nullptr on error.
  */
-astcenc_image* load_png_with_wuffs(
+astcenc_image_ptr load_png_with_wuffs(
 	const char* filename,
 	bool y_flip,
 	bool& is_hdr,
@@ -164,7 +164,7 @@ astcenc_image* load_png_with_wuffs(
 		return nullptr;
 	}
 
-	astcenc_image* img = astc_img_from_unorm8x4_array(pixbuf_slice.ptr, dim_x, dim_y, y_flip);
+	auto img = astc_img_from_unorm8x4_array(pixbuf_slice.ptr, dim_x, dim_y, y_flip);
 
 	free(pixbuf_slice.ptr);
 	free(workbuf_slice.ptr);
