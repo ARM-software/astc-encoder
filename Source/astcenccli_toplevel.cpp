@@ -164,7 +164,7 @@ struct decompression_workload
 };
 
 /**
- * @brief A customer deleter so we can use RAII to manage codec contexts.
+ * @brief A custom deleter so we can use RAII to manage codec contexts.
  */
 struct astcenc_context_deleter
 {
@@ -304,7 +304,7 @@ static void decompression_workload_runner(
  *
  * @param basename   The base pattern; must contain a file extension.
  * @param index      The slice index.
- * @param error      Set to true on success, false on error (no extension found).
+ * @param error      Set to false on success, true on error (no extension found).
  *
  * @return The slice file name.
  */

@@ -85,6 +85,30 @@ static std::string get_output_filename(
   Image load and store through the stb_image and tinyexr libraries
 ============================================================================ */
 
+struct tinyexr_image_deleter
+{
+	void operator()(void* ptr) const
+	{
+		free(ptr);
+	}
+};
+
+struct tinyexr_error_deleter
+{
+	void operator()(const void* ptr) const
+	{
+		free(const_cast<void*>(ptr));
+	}
+};
+
+struct stbi_image_deleter
+{
+	void operator()(void* ptr) const
+	{
+		stbi_image_free(ptr);
+	}
+};
+
 /**
  * @brief Load a .exr image using TinyExr to provide the loader.
  *
@@ -102,19 +126,20 @@ static astcenc_image_ptr load_image_with_tinyexr(
 	unsigned int& component_count
 ) {
 	int dim_x, dim_y;
-	float* image;
-	const char* err;
+	float* image_raw;
+	const char* err { nullptr };
 
-	int load_res = LoadEXR(&image, &dim_x, &dim_y, filename, &err);
+	int load_res = LoadEXR(&image_raw, &dim_x, &dim_y, filename, &err);
 	if (load_res != TINYEXR_SUCCESS)
 	{
-		print_error("ERROR: Image load failed '%s' (%s)\n", filename, err);
-		free(reinterpret_cast<void*>(const_cast<char*>(err)));
+		std::unique_ptr<const char, tinyexr_error_deleter> err_ptr { err };
+		print_error("ERROR: Image load failed '%s' (%s)\n",
+		            filename, err_ptr.get() ? err_ptr.get() : "unknown error");
 		return nullptr;
 	}
 
-	auto res_img = astc_img_from_floatx4_array(image, dim_x, dim_y, y_flip);
-	free(image);
+	std::unique_ptr<float, tinyexr_image_deleter> image { image_raw };
+	auto res_img = astc_img_from_floatx4_array(image.get(), dim_x, dim_y, y_flip);
 
 	is_hdr = true;
 	component_count = 4;
@@ -141,11 +166,12 @@ static astcenc_image_ptr load_image_with_stb(
 
 	if (stbi_is_hdr(filename))
 	{
-		float* data = stbi_loadf(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
+		std::unique_ptr<float, stbi_image_deleter> data {
+			stbi_loadf(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha)
+		};
 		if (data)
 		{
-			auto img = astc_img_from_floatx4_array(data, dim_x, dim_y, y_flip);
-			stbi_image_free(data);
+			auto img = astc_img_from_floatx4_array(data.get(), dim_x, dim_y, y_flip);
 			is_hdr = true;
 			component_count = 4;
 			return img;
@@ -153,11 +179,12 @@ static astcenc_image_ptr load_image_with_stb(
 	}
 	else
 	{
-		uint8_t* data = stbi_load(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha);
+		std::unique_ptr<uint8_t, stbi_image_deleter> data {
+			stbi_load(filename, &dim_x, &dim_y, nullptr, STBI_rgb_alpha)
+		};
 		if (data)
 		{
-			auto img = astc_img_from_unorm8x4_array(data, dim_x, dim_y, y_flip);
-			stbi_image_free(data);
+			auto img = astc_img_from_unorm8x4_array(data.get(), dim_x, dim_y, y_flip);
 			is_hdr = false;
 			component_count = 4;
 			return img;
