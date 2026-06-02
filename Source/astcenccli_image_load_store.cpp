@@ -2025,7 +2025,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		}
 		else
 		{
-			print_error("ERROR: Image non-DXGI format not supported '%s'\n", filename);
+			printf("DDS file %s: Non-DXGI format not supported by codec\n", filename);
 			fclose(f);
 			return nullptr;
 		}
