@@ -26,6 +26,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <memory>
 #include <new>
 #include <sstream>
 
@@ -1213,10 +1214,10 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	uint8_t* buf { nullptr };
+	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
-		buf = new uint8_t[bytes_per_image];
+		buf = std::make_unique<uint8_t[]>(bytes_per_image);
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -1225,11 +1226,10 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	file.read(reinterpret_cast<char*>(buf), bytes_per_image);
+	file.read(reinterpret_cast<char*>(buf.get()), bytes_per_image);
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		delete[] buf;
 		return nullptr;
 	}
 
@@ -1238,12 +1238,12 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	{
 		if (hdr.gl_type_size == 2)
 		{
-			switch_endianness2(buf, bytes_per_image);
+			switch_endianness2(buf.get(), bytes_per_image);
 		}
 
 		if (hdr.gl_type_size == 4)
 		{
-			switch_endianness4(buf, bytes_per_image);
+			switch_endianness4(buf.get(), bytes_per_image);
 		}
 	}
 
@@ -1257,7 +1257,6 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	{
 		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
-		delete[] buf;
 		return nullptr;
 	}
 
@@ -1281,12 +1280,11 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * bytes_per_plane) + (y * bytes_per_row);
+			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
 
-	delete[] buf;
 	is_hdr = bitness >= 16;
 	component_count = components;
 	return astc_img;
@@ -2060,10 +2058,10 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	uint8_t* buf { nullptr };
+	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
-		buf = new uint8_t[bytes_per_image];
+		buf = std::make_unique<uint8_t[]>(bytes_per_image);
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -2072,11 +2070,10 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	file.read(reinterpret_cast<char*>(buf), bytes_per_image);
+	file.read(reinterpret_cast<char*>(buf.get()), bytes_per_image);
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		delete[] buf;
 		return nullptr;
 	}
 
@@ -2090,7 +2087,6 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	{
 		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
-		delete[] buf;
 		return nullptr;
 	}
 
@@ -2114,12 +2110,11 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * bytes_per_plane) + (y * bytes_per_row);
+			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
 
-	delete[] buf;
 	is_hdr = bitness >= 16;
 	component_count = components;
 	return astc_img;
@@ -2645,10 +2640,10 @@ int load_cimage(
 	}
 
 	// Allocation may fail if image is suspiciously large
-	uint8_t* buffer { nullptr };
+	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
-		buffer = new uint8_t[data_size];
+		buf = std::make_unique<uint8_t[]>(data_size);
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -2657,15 +2652,14 @@ int load_cimage(
 		return 1;
 	}
 
-	file.read(reinterpret_cast<char*>(buffer), data_size);
+	file.read(reinterpret_cast<char*>(buf.get()), data_size);
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		delete[] buffer;
 		return 1;
 	}
 
-	img.data = buffer;
+	img.data = buf.release();
 	img.data_len = data_size;
 
 	// Casts are safe - we know individual values are small enough
