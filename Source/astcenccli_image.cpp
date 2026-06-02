@@ -228,8 +228,6 @@ astcenc_image* astc_img_from_unorm8x4_array(
 	return img;
 }
 
-// initialize a flattened array of float values from an ASTC codec image
-// The returned array is allocated with new[] and must be deleted with delete[].
 /* See header for documentation. */
 float* floatx4_array_from_astc_img(
 	const astcenc_image* img,
