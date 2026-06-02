@@ -2081,7 +2081,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	// Transfer data from the surface to our own image data structure.
+	// Transfer data from the surface to our own image data structure
 	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
