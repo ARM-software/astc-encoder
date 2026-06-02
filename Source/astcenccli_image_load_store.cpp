@@ -956,7 +956,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 
 	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
-		print_error("ERROR: Image header invalid '%s'\n", filename);
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		fclose(f);
 		return nullptr;
 	}
@@ -1329,7 +1329,7 @@ bool load_ktx_compressed_image(
 	const format_entry* fmt = get_format(hdr.gl_internal_format);
 	if (!fmt)
 	{
-		print_error("ERROR: Iamge uses unsupported KTX format '%s'\n", filename);
+		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
 		fclose(f);
 		return true;
 	}
