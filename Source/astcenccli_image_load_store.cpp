@@ -1194,14 +1194,21 @@ static astcenc_image* load_ktx_uncompressed_image(
 		specified_bytes_of_surface = reverse_bytes_u32(specified_bytes_of_surface);
 	}
 
-	// read the surface
-	uint32_t xstride = bytes_per_component * components * dim_x;
-	uint32_t ystride = xstride * dim_y;
-	uint32_t computed_bytes_of_surface = dim_z * ystride;
-	if (computed_bytes_of_surface != specified_bytes_of_surface)
+	// read the surface, computing the size in size_t so the dimensions from
+	// the file header cannot truncate the byte count to a smaller value
+	size_t bytes_per_pixel = static_cast<size_t>(bytes_per_component) * components;
+	size_t xstride = bytes_per_pixel * dim_x;
+	size_t ystride = xstride * dim_y;
+	size_t computed_bytes_of_surface = ystride * dim_z;
+
+	bool overflow = false;
+	overflow = overflow || (dim_x && (xstride / dim_x) != bytes_per_pixel);
+	overflow = overflow || (dim_y && (ystride / dim_y) != xstride);
+	overflow = overflow || (dim_z && (computed_bytes_of_surface / dim_z) != ystride);
+	if (overflow || computed_bytes_of_surface != specified_bytes_of_surface)
 	{
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %u bytes, but specified size is %u bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
+		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
 		return nullptr;
 	}
 
@@ -2027,12 +2034,36 @@ static astcenc_image* load_dds_uncompressed_image(
 		bitness = bytes_per_component * 8;
 	}
 
-	// then, load the actual file.
-	uint32_t xstride = bytes_per_component * components * dim_x;
-	uint32_t ystride = xstride * dim_y;
-	uint32_t bytes_of_surface = ystride * dim_z;
+	// then, load the actual file. Compute the size in size_t so the dimensions
+	// from the file header cannot truncate the byte count to a smaller value
+	size_t bytes_per_pixel = static_cast<size_t>(bytes_per_component) * components;
+	size_t xstride = bytes_per_pixel * dim_x;
+	size_t ystride = xstride * dim_y;
+	size_t bytes_of_surface = ystride * dim_z;
 
-	uint8_t *buf = new uint8_t[bytes_of_surface];
+	bool overflow = false;
+	overflow = overflow || (dim_x && (xstride / dim_x) != bytes_per_pixel);
+	overflow = overflow || (dim_y && (ystride / dim_y) != xstride);
+	overflow = overflow || (dim_z && (bytes_of_surface / dim_z) != ystride);
+	if (overflow)
+	{
+		fclose(f);
+		printf("DDS file %s has invalid dimensions\n", filename);
+		return nullptr;
+	}
+
+	uint8_t* buf { nullptr };
+	try
+	{
+		buf = new uint8_t[bytes_of_surface];
+	}
+	catch (...)
+	{
+		fclose(f);
+		printf("Failed to allocate memory for file %s\n", filename);
+		return nullptr;
+	}
+
 	size_t bytes_read = fread(buf, 1, bytes_of_surface, f);
 	fclose(f);
 	if (bytes_read != bytes_of_surface)
