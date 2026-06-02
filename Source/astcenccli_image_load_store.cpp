@@ -1198,16 +1198,21 @@ static astcenc_image* load_ktx_uncompressed_image(
 	// These values are trusted and cannot overflow
 	size_t bytes_per_pixel = bytes_per_component * components;
 
-	// These values are not and can overflow
 	bool overflow { false };
-	size_t stride_x = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
-	size_t stride_y = astc::mul_safe(stride_x, dim_y, overflow);
-	size_t bytes_per_surface = astc::mul_safe(stride_y, dim_z, overflow);
 
-	if (overflow || bytes_per_surface != specified_bytes_of_surface)
+	size_t bytes_per_row = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
+	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
+	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
+
+	// Also verify that our output plane allocation does not overflow because
+	// this always uses 4 components which can be more than the input file used
+	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
+	astc::mul_safe(plane_texels, 4, overflow);
+
+	if (overflow || bytes_per_image != specified_bytes_of_surface)
 	{
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, bytes_per_surface, specified_bytes_of_surface);
+		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, bytes_per_image, specified_bytes_of_surface);
 		return nullptr;
 	}
 
@@ -1258,7 +1263,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * stride_y) + (y * stride_x);
+			uint8_t *src = buf + (z * bytes_per_plane) + (y * bytes_per_row);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
@@ -2039,9 +2044,14 @@ static astcenc_image* load_dds_uncompressed_image(
 
 	// These values are not and can overflow
 	bool overflow { false };
-	size_t stride_x = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
-	size_t stride_y = astc::mul_safe(stride_x, dim_y, overflow);
-	size_t bytes_per_surface = astc::mul_safe(stride_y, dim_z, overflow);
+	size_t bytes_per_row = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
+	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
+	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
+
+	// Also verify that our output plane allocation does not overflow because
+	// this always uses 4 components which can be more than the input file used
+	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
+	astc::mul_safe(plane_texels, 4, overflow);
 
 	if (overflow)
 	{
@@ -2053,7 +2063,7 @@ static astcenc_image* load_dds_uncompressed_image(
 	uint8_t* buf { nullptr };
 	try
 	{
-		buf = new uint8_t[bytes_per_surface];
+		buf = new uint8_t[bytes_per_image];
 	}
 	catch (...)
 	{
@@ -2062,9 +2072,9 @@ static astcenc_image* load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	size_t bytes_read = fread(buf, 1, bytes_per_surface, f);
+	size_t bytes_read = fread(buf, 1, bytes_per_image, f);
 	fclose(f);
-	if (bytes_read != bytes_per_surface)
+	if (bytes_read != bytes_per_image)
 	{
 		printf("Failed to read file %s\n", filename);
 		delete[] buf;
@@ -2094,7 +2104,7 @@ static astcenc_image* load_dds_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * stride_y) + (y * stride_x);
+			uint8_t *src = buf + (z * bytes_per_plane) + (y * bytes_per_row);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
