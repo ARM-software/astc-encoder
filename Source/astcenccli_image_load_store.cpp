@@ -1013,8 +1013,8 @@ static astcenc_image* load_ktx_uncompressed_image(
 	}
 
 	// Although these are set up later, use default initializer to remove warnings
-	int bitness = 8;              // Internal precision after conversion
-	int bytes_per_component = 1;  // Bytes per component in the KTX file
+	unsigned int bitness = 8;              // Internal precision after conversion
+	unsigned int bytes_per_component = 1;  // Bytes per component in the KTX file
 	scanline_transfer copy_method = R8_TO_RGBA8;
 
 	switch (hdr.gl_type)
@@ -1194,21 +1194,20 @@ static astcenc_image* load_ktx_uncompressed_image(
 		specified_bytes_of_surface = reverse_bytes_u32(specified_bytes_of_surface);
 	}
 
-	// read the surface, computing the size in size_t so the dimensions from
-	// the file header cannot truncate the byte count to a smaller value
-	size_t bytes_per_pixel = static_cast<size_t>(bytes_per_component) * components;
-	size_t xstride = bytes_per_pixel * dim_x;
-	size_t ystride = xstride * dim_y;
-	size_t computed_bytes_of_surface = ystride * dim_z;
+	// Compute surface size, checking for overflow caused by bad user-defined sizes
+	// These values are trusted and cannot overflow
+	size_t bytes_per_pixel = bytes_per_component * components;
 
-	bool overflow = false;
-	overflow = overflow || (dim_x && (xstride / dim_x) != bytes_per_pixel);
-	overflow = overflow || (dim_y && (ystride / dim_y) != xstride);
-	overflow = overflow || (dim_z && (computed_bytes_of_surface / dim_z) != ystride);
-	if (overflow || computed_bytes_of_surface != specified_bytes_of_surface)
+	// These values are not and can overflow
+	bool overflow { false };
+	size_t stride_x = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
+	size_t stride_y = astc::mul_safe(stride_x, dim_y, overflow);
+	size_t bytes_per_surface = astc::mul_safe(stride_y, dim_z, overflow);
+
+	if (overflow || bytes_per_surface != specified_bytes_of_surface)
 	{
 		fclose(f);
-		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, computed_bytes_of_surface, specified_bytes_of_surface);
+		printf("%s: KTX file inconsistency: computed surface size is %zu bytes, but specified size is %u bytes\n", filename, bytes_per_surface, specified_bytes_of_surface);
 		return nullptr;
 	}
 
@@ -1259,7 +1258,7 @@ static astcenc_image* load_ktx_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * ystride) + (y * xstride);
+			uint8_t *src = buf + (z * stride_y) + (y * stride_x);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
@@ -1867,11 +1866,11 @@ static astcenc_image* load_dds_uncompressed_image(
 	unsigned int dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
 
 	// The bitcount that we will use internally in the codec
-	int bitness = 0;
+	unsigned int bitness = 0;
 
 	// The bytes per component in the DDS file itself
-	int bytes_per_component = 0;
-	int components = 0;
+	unsigned int bytes_per_component = 0;
+	unsigned int components = 0;
 	scanline_transfer copy_method = R8_TO_RGBA8;
 
 	// figure out the format actually used in the DDS file.
@@ -1884,41 +1883,41 @@ static astcenc_image* load_dds_uncompressed_image(
 		#define DXGI_FORMAT_R16G16B16A16_UNORM  11
 		#define DXGI_FORMAT_R32G32_FLOAT        16
 		#define DXGI_FORMAT_R8G8B8A8_UNORM      28
-		#define DXGI_FORMAT_R16G16_FLOAT    34
-		#define DXGI_FORMAT_R16G16_UNORM    35
-		#define DXGI_FORMAT_R32_FLOAT       41
-		#define DXGI_FORMAT_R8G8_UNORM      49
-		#define DXGI_FORMAT_R16_FLOAT       54
-		#define DXGI_FORMAT_R16_UNORM       56
-		#define DXGI_FORMAT_R8_UNORM        61
-		#define DXGI_FORMAT_B8G8R8A8_UNORM  86
-		#define DXGI_FORMAT_B8G8R8X8_UNORM  87
+		#define DXGI_FORMAT_R16G16_FLOAT        34
+		#define DXGI_FORMAT_R16G16_UNORM        35
+		#define DXGI_FORMAT_R32_FLOAT           41
+		#define DXGI_FORMAT_R8G8_UNORM          49
+		#define DXGI_FORMAT_R16_FLOAT           54
+		#define DXGI_FORMAT_R16_UNORM           56
+		#define DXGI_FORMAT_R8_UNORM            61
+		#define DXGI_FORMAT_B8G8R8A8_UNORM      86
+		#define DXGI_FORMAT_B8G8R8X8_UNORM      87
 
 		struct dxgi_params
 		{
-			int bitness;
-			int bytes_per_component;
-			int components;
+			unsigned int bitness;
+			unsigned int bytes_per_component;
+			unsigned int components;
 			scanline_transfer copy_method;
 			uint32_t dxgi_format_number;
 		};
 
 		static const dxgi_params format_params[] {
-			{16, 4, 4, RGBA32F_TO_RGBA16F, DXGI_FORMAT_R32G32B32A32_FLOAT},
-			{16, 4, 3, RGB32F_TO_RGBA16F, DXGI_FORMAT_R32G32B32_FLOAT},
-			{16, 2, 4, RGBA16F_TO_RGBA16F, DXGI_FORMAT_R16G16B16A16_FLOAT},
-			{16, 2, 4, RGBA16_TO_RGBA16F, DXGI_FORMAT_R16G16B16A16_UNORM},
-			{16, 4, 2, RG32F_TO_RGBA16F, DXGI_FORMAT_R32G32_FLOAT},
-			{8, 1, 4, RGBA8_TO_RGBA8, DXGI_FORMAT_R8G8B8A8_UNORM},
-			{16, 2, 2, RG16F_TO_RGBA16F, DXGI_FORMAT_R16G16_FLOAT},
-			{16, 2, 2, RG16_TO_RGBA16F, DXGI_FORMAT_R16G16_UNORM},
-			{16, 4, 1, R32F_TO_RGBA16F, DXGI_FORMAT_R32_FLOAT},
-			{8, 1, 2, RG8_TO_RGBA8, DXGI_FORMAT_R8G8_UNORM},
-			{16, 2, 1, R16F_TO_RGBA16F, DXGI_FORMAT_R16_FLOAT},
-			{16, 2, 1, R16_TO_RGBA16F, DXGI_FORMAT_R16_UNORM},
-			{8, 1, 1, R8_TO_RGBA8, DXGI_FORMAT_R8_UNORM},
-			{8, 1, 4, BGRA8_TO_RGBA8, DXGI_FORMAT_B8G8R8A8_UNORM},
-			{8, 1, 4, BGRX8_TO_RGBA8, DXGI_FORMAT_B8G8R8X8_UNORM},
+			{ 16, 4, 4, RGBA32F_TO_RGBA16F, DXGI_FORMAT_R32G32B32A32_FLOAT },
+			{ 16, 4, 3,  RGB32F_TO_RGBA16F,    DXGI_FORMAT_R32G32B32_FLOAT },
+			{ 16, 2, 4, RGBA16F_TO_RGBA16F, DXGI_FORMAT_R16G16B16A16_FLOAT },
+			{ 16, 2, 4,  RGBA16_TO_RGBA16F, DXGI_FORMAT_R16G16B16A16_UNORM },
+			{ 16, 4, 2,   RG32F_TO_RGBA16F,       DXGI_FORMAT_R32G32_FLOAT },
+			{  8, 1, 4,     RGBA8_TO_RGBA8,     DXGI_FORMAT_R8G8B8A8_UNORM },
+			{ 16, 2, 2,   RG16F_TO_RGBA16F,       DXGI_FORMAT_R16G16_FLOAT },
+			{ 16, 2, 2,    RG16_TO_RGBA16F,       DXGI_FORMAT_R16G16_UNORM },
+			{ 16, 4, 1,    R32F_TO_RGBA16F,          DXGI_FORMAT_R32_FLOAT },
+			{  8, 1, 2,       RG8_TO_RGBA8,         DXGI_FORMAT_R8G8_UNORM },
+			{ 16, 2, 1,    R16F_TO_RGBA16F,          DXGI_FORMAT_R16_FLOAT },
+			{ 16, 2, 1,     R16_TO_RGBA16F,          DXGI_FORMAT_R16_UNORM },
+			{  8, 1, 1,        R8_TO_RGBA8,           DXGI_FORMAT_R8_UNORM },
+			{  8, 1, 4,     BGRA8_TO_RGBA8,     DXGI_FORMAT_B8G8R8A8_UNORM },
+			{  8, 1, 4,      BGRX8_TO_RGBA8,    DXGI_FORMAT_B8G8R8X8_UNORM },
 		};
 
 		int dxgi_modes_supported = sizeof(format_params) / sizeof(format_params[0]);
@@ -2026,7 +2025,7 @@ static astcenc_image* load_dds_uncompressed_image(
 		}
 		else
 		{
-			printf("DDS file %s: Non-DXGI format not supported by codec\n", filename);
+			print_error("ERROR: Image non-DXGI format not supported '%s'\n", filename);
 			fclose(f);
 			return nullptr;
 		}
@@ -2034,46 +2033,45 @@ static astcenc_image* load_dds_uncompressed_image(
 		bitness = bytes_per_component * 8;
 	}
 
-	// then, load the actual file. Compute the size in size_t so the dimensions
-	// from the file header cannot truncate the byte count to a smaller value
-	size_t bytes_per_pixel = static_cast<size_t>(bytes_per_component) * components;
-	size_t xstride = bytes_per_pixel * dim_x;
-	size_t ystride = xstride * dim_y;
-	size_t bytes_of_surface = ystride * dim_z;
+	// Compute surface size, checking for overflow caused by bad user-defined sizes
+	// These values are trusted and cannot overflow
+	size_t bytes_per_pixel = bytes_per_component * components;
 
-	bool overflow = false;
-	overflow = overflow || (dim_x && (xstride / dim_x) != bytes_per_pixel);
-	overflow = overflow || (dim_y && (ystride / dim_y) != xstride);
-	overflow = overflow || (dim_z && (bytes_of_surface / dim_z) != ystride);
+	// These values are not and can overflow
+	bool overflow { false };
+	size_t stride_x = astc::mul_safe(bytes_per_pixel, dim_x, overflow);
+	size_t stride_y = astc::mul_safe(stride_x, dim_y, overflow);
+	size_t bytes_per_surface = astc::mul_safe(stride_y, dim_z, overflow);
+
 	if (overflow)
 	{
-		fclose(f);
 		printf("DDS file %s has invalid dimensions\n", filename);
+		fclose(f);
 		return nullptr;
 	}
 
 	uint8_t* buf { nullptr };
 	try
 	{
-		buf = new uint8_t[bytes_of_surface];
+		buf = new uint8_t[bytes_per_surface];
 	}
 	catch (...)
 	{
-		fclose(f);
 		printf("Failed to allocate memory for file %s\n", filename);
+		fclose(f);
 		return nullptr;
 	}
 
-	size_t bytes_read = fread(buf, 1, bytes_of_surface, f);
+	size_t bytes_read = fread(buf, 1, bytes_per_surface, f);
 	fclose(f);
-	if (bytes_read != bytes_of_surface)
+	if (bytes_read != bytes_per_surface)
 	{
-		delete[] buf;
 		printf("Failed to read file %s\n", filename);
+		delete[] buf;
 		return nullptr;
 	}
 
-	// then transfer data from the surface to our own image-data-structure.
+	// Transfer data from the surface to our own image data structure.
 	astcenc_image *astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 
 	for (unsigned int z = 0; z < dim_z; z++)
@@ -2096,7 +2094,7 @@ static astcenc_image* load_dds_uncompressed_image(
 				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
 			}
 
-			uint8_t *src = buf + (z * ystride) + (y * xstride);
+			uint8_t *src = buf + (z * stride_y) + (y * stride_x);
 			copy_scanline(dst, src, dim_x, copy_method);
 		}
 	}
@@ -2590,7 +2588,7 @@ int load_cimage(
 	{
 		buffer = new uint8_t[data_size];
 	}
-	catch(...)
+	catch (...)
 	{
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		return 1;
