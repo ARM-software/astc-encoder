@@ -631,10 +631,10 @@ static void copy_scanline(
  */
 static void switch_endianness2(
 	void* dataptr,
-	int byte_count
+	size_t byte_count
 ) {
 	uint8_t* data = reinterpret_cast<uint8_t*>(dataptr);
-	for (int i = 0; i < byte_count / 2; i++)
+	for (size_t i = 0; i < byte_count / 2; i++)
 	{
 		uint8_t d0 = data[0];
 		uint8_t d1 = data[1];
@@ -652,10 +652,10 @@ static void switch_endianness2(
  */
 static void switch_endianness4(
 	void* dataptr,
-	int byte_count
+	size_t byte_count
 ) {
 	uint8_t* data = reinterpret_cast<uint8_t*>(dataptr);
-	for (int i = 0; i < byte_count / 4; i++)
+	for (size_t i = 0; i < byte_count / 4; i++)
 	{
 		uint8_t d0 = data[0];
 		uint8_t d1 = data[1];
@@ -938,27 +938,24 @@ static astcenc_image* load_ktx_uncompressed_image(
 	bool& is_hdr,
 	unsigned int& component_count
 ) {
-	FILE *f = fopen(filename, "rb");
-	if (!f)
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
+	if (!file)
 	{
 		print_error("ERROR: File open failed '%s'\n", filename);
 		return nullptr;
 	}
 
 	ktx_header hdr;
-	size_t header_bytes_read = fread(&hdr, 1, sizeof(hdr), f);
-
-	if (header_bytes_read != sizeof(hdr))
+	file.read(reinterpret_cast<char*>(&hdr), sizeof(hdr));
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
 	if (memcmp(hdr.magic, ktx_magic, 12) != 0 || (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -972,13 +969,12 @@ static astcenc_image* load_ktx_uncompressed_image(
 	if (hdr.gl_type == 0 || hdr.gl_format == 0)
 	{
 		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
-	// the formats we support are:
-
-	// Cartesian product of gl_type=(UNSIGNED_BYTE, UNSIGNED_SHORT, HALF_FLOAT, FLOAT) x gl_format=(RED, RG, RGB, RGBA, BGR, BGRA)
+	// Supported formats are all pairings of:
+	//   type=(UNSIGNED_BYTE, UNSIGNED_SHORT, HALF_FLOAT, FLOAT)
+	//   gl_format=(RED, RG, RGB, RGBA, BGR, BGRA)
 
 	unsigned int components;
 	switch (hdr.gl_format)
@@ -1009,7 +1005,6 @@ static astcenc_image* load_ktx_uncompressed_image(
 		break;
 	default:
 		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1154,7 +1149,6 @@ static astcenc_image* load_ktx_uncompressed_image(
 		}
 	default:
 		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1178,20 +1172,24 @@ static astcenc_image* load_ktx_uncompressed_image(
 	unsigned int dim_z = astc::max(hdr.pixel_depth, 1u);
 
 	// ignore the key/value data
-	fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
-
-	uint32_t specified_bytes_of_surface = 0;
-	size_t sb_read = fread(&specified_bytes_of_surface, 1, 4, f);
-	if (sb_read != 4)
+	file.seekg(hdr.bytes_of_key_value_data, std::ios::cur);
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
+		return nullptr;
+	}
+
+	uint32_t specified_bytes_per_image = 0;
+	file.read(reinterpret_cast<char*>(&specified_bytes_per_image), sizeof(specified_bytes_per_image));
+	if (file.fail())
+	{
+		print_error("ERROR: File read failed '%s'\n", filename);
 		return nullptr;
 	}
 
 	if (switch_endianness)
 	{
-		specified_bytes_of_surface = reverse_bytes_u32(specified_bytes_of_surface);
+		specified_bytes_per_image = reverse_bytes_u32(specified_bytes_per_image);
 	}
 
 	// Compute surface size, checking for overflow caused by bad user-defined sizes
@@ -1209,10 +1207,9 @@ static astcenc_image* load_ktx_uncompressed_image(
 	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
 	astc::mul_safe(plane_texels, 4, overflow);
 
-	if (overflow || bytes_per_image != specified_bytes_of_surface)
+	if (overflow || bytes_per_image != specified_bytes_per_image)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1225,13 +1222,11 @@ static astcenc_image* load_ktx_uncompressed_image(
 	{
 		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
-	size_t bytes_read = fread(buf, 1, specified_bytes_of_surface, f);
-	fclose(f);
-	if (bytes_read != specified_bytes_of_surface)
+	file.read(reinterpret_cast<char*>(buf), bytes_per_image);
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
 		delete[] buf;
@@ -1243,12 +1238,12 @@ static astcenc_image* load_ktx_uncompressed_image(
 	{
 		if (hdr.gl_type_size == 2)
 		{
-			switch_endianness2(buf, specified_bytes_of_surface);
+			switch_endianness2(buf, bytes_per_image);
 		}
 
 		if (hdr.gl_type_size == 4)
 		{
-			switch_endianness4(buf, specified_bytes_of_surface);
+			switch_endianness4(buf, bytes_per_image);
 		}
 	}
 
@@ -1311,19 +1306,18 @@ bool load_ktx_compressed_image(
 	bool& is_srgb,
 	astc_compressed_image& img
 ) {
-	FILE *f = fopen(filename, "rb");
-	if (!f)
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
+	if (!file)
 	{
 		print_error("ERROR: File open failed '%s'\n", filename);
 		return true;
 	}
 
 	ktx_header hdr;
-	size_t actual = fread(&hdr, 1, sizeof(hdr), f);
-	if (actual != sizeof(hdr))
+	file.read(reinterpret_cast<char*>(&hdr), sizeof(hdr));
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
@@ -1331,7 +1325,6 @@ bool load_ktx_compressed_image(
 	    (hdr.endianness != 0x04030201 && hdr.endianness != 0x01020304))
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
@@ -1346,7 +1339,6 @@ bool load_ktx_compressed_image(
 	    hdr.gl_base_internal_format != GL_RGBA)
 	{
 		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
@@ -1354,26 +1346,23 @@ bool load_ktx_compressed_image(
 	if (!fmt)
 	{
 		print_error("ERROR: Image uses unsupported KTX format '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
 	// Skip over any key-value pairs
-	int seekerr = fseek(f, hdr.bytes_of_key_value_data, SEEK_CUR);
-	if (seekerr)
+	file.seekg(hdr.bytes_of_key_value_data, std::ios::cur);
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
 	// Read the length of the data and endianess convert
-	unsigned int data_len;
-	actual = fread(&data_len, 1, sizeof(data_len), f);
-	if (actual != sizeof(data_len))
+	uint32_t data_len;
+	file.read(reinterpret_cast<char*>(&data_len), sizeof(data_len));
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return true;
 	}
 
@@ -1384,11 +1373,10 @@ bool load_ktx_compressed_image(
 
 	// Read the data
 	unsigned char* data = new unsigned char[data_len];
-	actual = fread(data, 1, data_len, f);
-	if (actual != data_len)
+	file.read(reinterpret_cast<char*>(data), data_len);
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		delete[] data;
 		return true;
 	}
@@ -1406,7 +1394,6 @@ bool load_ktx_compressed_image(
 
 	is_srgb = fmt->is_srgb;
 
-	fclose(f);
 	return false;
 }
 
@@ -1804,8 +1791,8 @@ static astcenc_image* load_dds_uncompressed_image(
 	bool& is_hdr,
 	unsigned int& component_count
 ) {
-	FILE *f = fopen(filename, "rb");
-	if (!f)
+	std::ifstream file(filename, std::ios::in | std::ios::binary);
+	if (!file)
 	{
 		print_error("ERROR: File open failed '%s'\n", filename);
 		return nullptr;
@@ -1813,11 +1800,10 @@ static astcenc_image* load_dds_uncompressed_image(
 
 	// Read and check the DDS magic number
 	uint32_t magic;
-	size_t magic_bytes_read = fread(&magic, 1, sizeof(uint32_t), f);
-	if (magic_bytes_read != 4)
+	file.read(reinterpret_cast<char*>(&magic), sizeof(uint32_t));
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1828,17 +1814,15 @@ static astcenc_image* load_dds_uncompressed_image(
 	if (magic != DDS_MAGIC)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
 	// Validate that we can read the DDS header
 	dds_header hdr;
-	size_t header_bytes_read = fread(&hdr, 1, sizeof(hdr), f);
-	if (header_bytes_read != sizeof(hdr))
+	file.read(reinterpret_cast<char*>(&hdr), sizeof(hdr));
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1857,7 +1841,6 @@ static astcenc_image* load_dds_uncompressed_image(
 	if (hdr.size != 124)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -1871,7 +1854,6 @@ static astcenc_image* load_dds_uncompressed_image(
 		else
 		{
 			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
-			fclose(f);
 			return nullptr;
 		}
 	}
@@ -1879,11 +1861,10 @@ static astcenc_image* load_dds_uncompressed_image(
 	dds_header_dx10 dx10_header;
 	if (use_dx10_header)
 	{
-		size_t dx10_header_bytes_read = fread(&dx10_header, 1, sizeof(dx10_header), f);
-		if (dx10_header_bytes_read != sizeof(dx10_header))
+		file.read(reinterpret_cast<char*>(&dx10_header), sizeof(dx10_header));
+		if (file.fail())
 		{
 			print_error("ERROR: File read failed '%s'\n", filename);
-			fclose(f);
 			return nullptr;
 		}
 	}
@@ -1965,7 +1946,6 @@ static astcenc_image* load_dds_uncompressed_image(
 		if (!did_select_format)
 		{
 			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
-			fclose(f);
 			return nullptr;
 		}
 	}
@@ -2053,7 +2033,6 @@ static astcenc_image* load_dds_uncompressed_image(
 		else
 		{
 			print_error("ERROR: Image uses unsupported DDS format '%s'\n", filename);
-			fclose(f);
 			return nullptr;
 		}
 
@@ -2078,7 +2057,6 @@ static astcenc_image* load_dds_uncompressed_image(
 	if (overflow)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
@@ -2091,13 +2069,11 @@ static astcenc_image* load_dds_uncompressed_image(
 	{
 		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
-		fclose(f);
 		return nullptr;
 	}
 
-	size_t bytes_read = fread(buf, 1, bytes_per_image, f);
-	fclose(f);
-	if (bytes_read != bytes_per_image)
+	file.read(reinterpret_cast<char*>(buf), bytes_per_image);
+	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
 		delete[] buf;
