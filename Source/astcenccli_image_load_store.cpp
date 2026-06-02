@@ -26,6 +26,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <new>
 #include <sstream>
 
 #include "astcenccli_internal.h"
@@ -1220,8 +1221,9 @@ static astcenc_image* load_ktx_uncompressed_image(
 	{
 		buf = new uint8_t[bytes_per_image];
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
@@ -1256,8 +1258,9 @@ static astcenc_image* load_ktx_uncompressed_image(
 	{
 		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		delete[] buf;
 		return nullptr;
@@ -2084,8 +2087,9 @@ static astcenc_image* load_dds_uncompressed_image(
 	{
 		buf = new uint8_t[bytes_per_image];
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		fclose(f);
 		return nullptr;
@@ -2106,8 +2110,9 @@ static astcenc_image* load_dds_uncompressed_image(
 	{
 		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		delete[] buf;
 		return nullptr;
@@ -2533,8 +2538,9 @@ astcenc_image* load_ncimage(
 	{
 		return loader(filename, y_flip, is_hdr, component_count);
 	}
-	catch(...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		return nullptr;
 	}
@@ -2668,8 +2674,9 @@ int load_cimage(
 	{
 		buffer = new uint8_t[data_size];
 	}
-	catch (...)
+	catch (const std::bad_alloc &e)
 	{
+		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
 		return 1;
 	}
