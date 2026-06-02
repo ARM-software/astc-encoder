@@ -34,28 +34,6 @@
 #include <cassert>
 
 /**
- * @brief Get the number of blocks in an single image dimension.
- *
- * @param dim_img   The image dimension, in pixels.
- * @param dim_blk   The block dimension, in pixels.
- *
- * @return The number of blocks needed in this dimension.
- */
-static size_t get_block_count(size_t dim_img, size_t dim_blk)
-{
-	// Computation done this way to avoid overflowing size_t max
-	size_t blocks = dim_img / dim_blk;
-
-	// Is there a residual partial block?
-	if (dim_img != (blocks * dim_blk))
-	{
-		blocks++;
-	}
-
-	return blocks;
-}
-
-/**
  * @brief Generate a prefix-sum array using the Brent-Kung algorithm.
  *
  * This will take an input array of the form:
@@ -572,8 +550,8 @@ size_t init_compute_averages(
 	ag.work_memory_size = 2 * max_padsize_xy * max_padsize_xy * max_padsize_z;
 
 	// The parallel task count
-	size_t tasks_z = get_block_count(size_z, max_blk_size_z);
-	size_t tasks_y = get_block_count(size_y, max_blk_size_xy);
+	size_t tasks_z = astc::get_block_count_safe(size_z, max_blk_size_z);
+	size_t tasks_y = astc::get_block_count_safe(size_y, max_blk_size_xy);
 	return tasks_z * tasks_y;
 }
 
