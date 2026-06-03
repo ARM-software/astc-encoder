@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2022 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -41,6 +41,10 @@ astcenc_image_ptr alloc_image(
 	img->data_type = ASTCENC_TYPE_U8;
 	img->data = nullptr;
 
+	// Ensure this is done as a size_t to avoid overflow - calling code has
+	// checked that the product will fit in a size_t without overflowing.
+	size_t plane_components = static_cast<size_t>(dim_x) * dim_y * 4;
+
 	void** data = new void*[dim_z] {};
 	img->data = data;
 
@@ -49,7 +53,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_U8;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new uint8_t[dim_x * dim_y * 4];
+			data[z] = new uint8_t[plane_components];
 		}
 	}
 	else if (bitness == 16)
@@ -57,7 +61,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_F16;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new uint16_t[dim_x * dim_y * 4];
+			data[z] = new uint16_t[plane_components];
 		}
 	}
 	else // if (bitness == 32)
@@ -66,7 +70,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_F32;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new float[dim_x * dim_y * 4];
+			data[z] = new float[plane_components];
 		}
 	}
 
