@@ -49,7 +49,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_U8;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new uint8_t[dim_x * dim_y * 4];
+			data[z] = new uint8_t[static_cast<size_t>(dim_x) * dim_y * 4];
 		}
 	}
 	else if (bitness == 16)
@@ -57,7 +57,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_F16;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new uint16_t[dim_x * dim_y * 4];
+			data[z] = new uint16_t[static_cast<size_t>(dim_x) * dim_y * 4];
 		}
 	}
 	else // if (bitness == 32)
@@ -66,7 +66,7 @@ astcenc_image_ptr alloc_image(
 		img->data_type = ASTCENC_TYPE_F32;
 		for (unsigned int z = 0; z < dim_z; z++)
 		{
-			data[z] = new float[dim_x * dim_y * 4];
+			data[z] = new float[static_cast<size_t>(dim_x) * dim_y * 4];
 		}
 	}
 
