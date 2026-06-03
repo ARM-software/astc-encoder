@@ -17,6 +17,9 @@ The 5.5.0 release is a minor maintenance release.
   * **Update:** Update stb_image to v1.30.
   * **Update:** Update Wuffs to v0.3.4.
   * **Update:** Update TinyEXR to v1.0.13.
+  * **Bug fix:** Front-end wrapper now uses C++ RAII to manage lifetime of
+    memory and file handles, fixing a number of resource leaks when on an error
+    handling path.
   * **Bug fix:** Throw errors in the command line wrapper for cases where
     `.astc`, `.dds`, and `.ktx` input image sizes would result in integer
     overflow in calculations of total block count or data size.
