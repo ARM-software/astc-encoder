@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2025 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -51,13 +51,13 @@
  * @brief Compute the errors of the endpoint line options for one partition.
  *
  * Uncorrelated data assumes storing completely independent RGBA channels for each endpoint. Same
- * chroma data assumes storing RGBA endpoints which pass though the origin (LDR only). RGBL data
+ * chroma data assumes storing RGBA endpoints which pass through the origin (LDR only). RGBL data
  * assumes storing RGB + lumashift (HDR only). Luminance error assumes storing RGB channels as a
  * single value.
  *
  *
  * @param      pi                The partition info data.
- * @param      partition_index   The partition index to compule the error for.
+ * @param      partition_index   The partition index to compute the error for.
  * @param      blk               The image block.
  * @param      uncor_pline       The endpoint line assuming uncorrelated endpoints.
  * @param[out] uncor_err         The computed error for the uncorrelated endpoint line.
@@ -154,7 +154,7 @@ static void compute_error_squared_rgb_single_partition(
 
 		haccumulate(uncor_errv, error, mask);
 
-		// Compute same chroma error - no "amod", its always zero
+		// Compute same chroma error - no "amod", it's always zero
 		param = data_r * samec_bs0
 		      + data_g * samec_bs1
 		      + data_b * samec_bs2;
@@ -184,7 +184,7 @@ static void compute_error_squared_rgb_single_partition(
 
 		haccumulate(rgbl_errv, error, mask);
 
-		// Compute luma error - no "amod", its always zero
+		// Compute luma error - no "amod", it's always zero
 		param = data_r * l_bs0
 		      + data_g * l_bs1
 		      + data_b * l_bs2;

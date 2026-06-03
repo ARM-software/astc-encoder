@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -370,7 +370,7 @@ ADVANCED COMPRESSION
                -fast          : 1.00 | 1.00
                -medium        : 1.10 | 1.05
                -thorough      : 1.35 | 1.15
-               -verythrorough : 1.60 | 1.40
+               -verythorough  : 1.60 | 1.40
                -exhaustive    : 2.00 | 2.00
 
        -2planelimitcorrelation <factor>

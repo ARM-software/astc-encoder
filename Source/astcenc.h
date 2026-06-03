@@ -324,7 +324,7 @@ ASTCENC_EXTERN_C typedef void (*astcenc_progress_callback)(float);
 /**
  * @brief Enable normal map compression.
  *
- * Input data will be treated a two component normal map, storing X and Y, and the codec will
+ * Input data will be treated as a two component normal map, storing X and Y, and the codec will
  * optimize for angular error rather than simple linear PSNR. In this mode the input swizzle should
  * be e.g. rrrg (the default ordering for ASTC normals on the command line) or gggr (the ordering
  * used by BC5n).
@@ -743,7 +743,7 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_config_init(
  * another context using the same target configuration into @c parent_context. A child will use the
  * read-only data tables it needs from the ancestor "root" context, rather than creating its own,
  * which saves a considerable amount of memory per child. You must only free the root context once
- * all descendent contexts have been freed. When you pass a @c parent_context the config is taken
+ * all descendant contexts have been freed. When you pass a @c parent_context the config is taken
  * from the parent, and so @c context must be @c nullptr.
  *
  * Contexts can be allocated to support only decompression using the @c ASTCENC_FLG_DECOMPRESS_ONLY

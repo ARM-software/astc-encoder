@@ -171,7 +171,7 @@ void set_thread_name(
 }
 
 /* ============================================================================
-   Platform code for an platform using POSIX APIs.
+   Platform code for a platform using POSIX APIs.
 ============================================================================ */
 #else
 
