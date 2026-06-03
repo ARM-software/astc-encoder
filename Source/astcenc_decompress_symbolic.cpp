@@ -216,7 +216,7 @@ void decompress_symbolic_block(
 			vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
 
 			// The real decoder would just use the top 8 bits, but we rescale
-			// in to a 16-bit value that rounds correctly.
+			// into a 16-bit value that rounds correctly.
 			vint4 colori_u8 = asr<8>(colori) * 257;
 			colori = select(colori, colori_u8, u8_mask);
 

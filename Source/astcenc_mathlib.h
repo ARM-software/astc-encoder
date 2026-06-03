@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2025 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -545,7 +545,7 @@ void rand_init(uint64_t state[2]);
 /**
  * @brief Return the next random number from the generator.
  *
- * This RNG is an implementation of the "xoroshoro-128+ 1.0" PRNG, based on the
+ * This RNG is an implementation of the "xoroshiro-128+ 1.0" PRNG, based on the
  * public-domain implementation given by David Blackman & Sebastiano Vigna at
  * http://vigna.di.unimi.it/xorshift/xoroshiro128plus.c
  *

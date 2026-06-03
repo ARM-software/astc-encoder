@@ -1218,7 +1218,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
-// Workaround an XCode compiler internal fault; note is slower than slli_epi32
+// Workaround an Xcode compiler internal fault; note it is slower than slli_epi32
 // so we should revert this when we get the opportunity
 #if defined(__APPLE__)
 	__m128i value = r.m;

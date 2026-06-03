@@ -182,7 +182,7 @@ bool store_ncimage(
 /**
  * @brief Check if the output file type requires a specific bitness.
  *
- * @param filename The file name, containing hte extension to check.
+ * @param filename   The file name, containing the extension to check.
  *
  * @return Valid values are:
  *     * -1 - error - unknown file type.

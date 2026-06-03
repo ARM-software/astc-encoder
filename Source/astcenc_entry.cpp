@@ -858,7 +858,7 @@ astcenc_error astcenc_context_alloc(
 	return ASTCENC_SUCCESS;
 }
 
-/* See header dor documentation. */
+/* See header for documentation. */
 void astcenc_context_free(
 	astcenc_context* ctxo
 ) {
@@ -884,7 +884,7 @@ void astcenc_context_free(
  *
  * @param[out] ctxo           The compressor context.
  * @param      thread_index   The thread index.
- * @param      image          The intput image.
+ * @param      image          The input image.
  * @param      swizzle        The input swizzle.
  * @param[out] buffer         The output array for the compressed data.
  */

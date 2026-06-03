@@ -78,7 +78,7 @@ static constexpr unsigned int BLOCK_MAX_COMPONENTS { 4 };
 /** @brief The maximum number of partitions a block can support. */
 static constexpr unsigned int BLOCK_MAX_PARTITIONS { 4 };
 
-/** @brief The number of partitionings, per partition count, suported by the ASTC format. */
+/** @brief The number of partitionings, per partition count, supported by the ASTC format. */
 static constexpr unsigned int BLOCK_MAX_PARTITIONINGS { 1024 };
 
 /** @brief The maximum number of texels used during partition selection for texel clustering. */
@@ -1603,7 +1603,7 @@ static inline vmask4 get_u8_component_mask(
 /**
  * @brief Setup computation of regional averages in an image.
  *
- * This must be done by only a single thread per image, before any thread calls
+ * This must be done by a single thread per image, before any thread calls
  * @c compute_averages().
  *
  * Results are written back into @c img->input_alpha_averages.
@@ -1969,7 +1969,7 @@ unsigned int compute_ideal_endpoint_formats(
  * @param         pi                   The partition info for the current trial.
  * @param         di                   The weight grid decimation table.
  * @param         dec_weights_uquant   The quantized weight set.
- * @param[in,out] ep                   The color endpoints (modifed in place).
+ * @param[in,out] ep                   The color endpoints (modified in place).
  * @param[out]    rgbs_vectors         The RGB+scale vectors for LDR blocks.
  * @param[out]    rgbo_vectors         The RGB+offset vectors for HDR blocks.
  */
@@ -1993,7 +1993,7 @@ void recompute_ideal_colors_1plane(
  * @param         di                          The weight grid decimation table.
  * @param         dec_weights_uquant_plane1   The quantized weight set for plane 1.
  * @param         dec_weights_uquant_plane2   The quantized weight set for plane 2.
- * @param[in,out] ep                          The color endpoints (modifed in place).
+ * @param[in,out] ep                          The color endpoints (modified in place).
  * @param[out]    rgbs_vector                 The RGB+scale color for LDR blocks.
  * @param[out]    rgbo_vector                 The RGB+offset color for HDR blocks.
  * @param         plane2_component            The component assigned to plane 2.
@@ -2063,7 +2063,7 @@ void compress_block(
 	compression_working_buffers& tmpbuf);
 
 /**
- * @brief Decompress a symbolic block in to an image block.
+ * @brief Decompress a symbolic block into an image block.
  *
  * @param      decode_mode   The decode mode (LDR, HDR, etc).
  * @param      bsd           The block size information.
@@ -2166,7 +2166,7 @@ void symbolic_to_physical(
  * flagged as an error block if the encoding is invalid.
  *
  * @param      bsd   The block size information.
- * @param      pcb   The physical compresesd block input.
+ * @param      pcb   The physical compressed block input.
  * @param[out] scb   The output symbolic representation.
  */
 void physical_to_symbolic(

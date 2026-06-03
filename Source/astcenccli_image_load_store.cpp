@@ -1382,7 +1382,7 @@ bool load_ktx_compressed_image(
 		return true;
 	}
 
-	// Read the length of the data and endianess convert
+	// Read the length of the data and convert endianness
 	uint32_t data_len;
 	file.read(reinterpret_cast<char*>(&data_len), sizeof(data_len));
 	if (file.fail())

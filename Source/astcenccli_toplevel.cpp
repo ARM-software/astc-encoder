@@ -105,7 +105,7 @@ static const astcenc_operation ASTCENC_OP_TEST =
                                ASTCENC_STAGE_ST_NCOMP;
 
 /**
- * @brief Image preprocesing tasks prior to encoding.
+ * @brief Image preprocessing tasks prior to encoding.
  */
 enum astcenc_preprocess
 {
@@ -300,7 +300,7 @@ static void decompression_workload_runner(
 /**
  * @brief Utility to generate a slice file name from a pattern.
  *
- * Convert "foo/bar.png" in to "foo/bar_<slice>.png"
+ * Convert "foo/bar.png" into "foo/bar_<slice>.png"
  *
  * @param basename   The base pattern; must contain a file extension.
  * @param index      The slice index.
