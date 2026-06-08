@@ -398,6 +398,15 @@ static void build_partition_table_for_one_partition_count(
 	bsd.partitioning_count_selected[partition_count - 1] = 0;
 	bsd.partitioning_count_all[partition_count - 1] = 0;
 
+	// Mark all partitionings as unused; the loops below overwrite the entries
+	// that are actually kept. Partitionings dropped in self-decompress mode
+	// must retain this known-bad value so that decoding an unknown raw
+	// partition index does not result in a bad packed index.
+	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
+	{
+		bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
+	}
+
 	// Skip tables larger than config max partition count if we can omit modes
 	if (can_omit_partitionings && (partition_count > partition_count_cutoff))
 	{
