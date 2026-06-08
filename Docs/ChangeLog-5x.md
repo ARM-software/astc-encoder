@@ -17,6 +17,8 @@ The 5.5.0 release is a minor maintenance release.
   * **Update:** Update stb_image to v1.30.
   * **Update:** Update Wuffs to v0.3.4.
   * **Update:** Update TinyEXR to v1.0.13.
+  * **Bug fix:** Core library now correctly detects LDR error blocks when
+    compiled for AVX2 and returns max magenta rather than black.
   * **Bug fix:** Front-end wrapper now uses C++ RAII to manage lifetime of
     memory and file handles, fixing a number of resource leaks when on an error
     handling path.

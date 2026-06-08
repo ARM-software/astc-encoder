@@ -462,6 +462,30 @@ TEST(SuiteVfloat4, swz2)
 	EXPECT_EQ(r.lane<1>(), 2.0f);
 }
 
+/** @brief Test vfloat4 eq. */
+TEST(SuiteVfloat4, veq)
+{
+	// NaN should not be equal for anything
+	vfloat4 a(qnan, qnan, qnan, qnan);
+	EXPECT_FALSE(any(a == a));
+
+	// Non-NaN should be equal for everything
+	vfloat4 b(0.0f, 0.2f, -0.0f, -0.4f);
+	EXPECT_TRUE(all(b == b));
+}
+
+/** @brief Test vfloat4 neq. */
+TEST(SuiteVfloat4, vneq)
+{
+	// NaN should be unequal for everything
+	vfloat4 a(qnan, qnan, qnan, qnan);
+	EXPECT_TRUE(all(a != a));
+
+	// Non-NaN should be not unequal for anything
+	vfloat4 b(0.0f, 0.2f, -0.0f, -0.4f);
+	EXPECT_FALSE(any(b != b));
+}
+
 /** @brief Test vfloat4 add. */
 TEST(SuiteVfloat4, vadd)
 {
@@ -2164,6 +2188,30 @@ TEST(SuiteVfloat8, Loada)
 	EXPECT_EQ(ra[5], 5.0f);
 	EXPECT_EQ(ra[6], 6.0f);
 	EXPECT_EQ(ra[7], 7.0f);
+}
+
+/** @brief Test vfloat8 eq. */
+TEST(SuiteVfloat8, veq)
+{
+	// NaN should not be equal for anything
+	vfloat8 a = vfloat8_lit(qnan, qnan, qnan, qnan, qnan, qnan, qnan, qnan);
+	EXPECT_FALSE(any(a == a));
+
+	// Non-NaN should be equal for everything
+	vfloat8 b = vfloat8_lit(0.0f, 0.2f, -0.0f, -0.4f, 0.0f, 0.2f, -0.0f, -0.4f);
+	EXPECT_TRUE(all(b == b));
+}
+
+/** @brief Test vfloat8 neq. */
+TEST(SuiteVfloat8, vneq)
+{
+	// NaN should be unequal for everything
+	vfloat8 a = vfloat8_lit(qnan, qnan, qnan, qnan, qnan, qnan, qnan, qnan);
+	EXPECT_TRUE(all(a != a));
+
+	// Non-NaN should be not unequal for anything
+	vfloat8 b = vfloat8_lit(0.0f, 0.2f, -0.0f, -0.4f, 0.0f, 0.2f, -0.0f, -0.4f);
+	EXPECT_FALSE(any(b != b));
 }
 
 /** @brief Test vfloat8 add. */
