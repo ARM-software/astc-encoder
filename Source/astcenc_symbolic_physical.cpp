@@ -475,6 +475,17 @@ void physical_to_symbolic(
 			}
 		}
 		scb.partition_index = static_cast<uint16_t>(read_bits(10, 13, pcb));
+
+		// Reject blocks selecting a partitioning that is not present in this
+		// block size descriptor. A SELF_DECOMPRESS_ONLY context drops the
+		// partitionings its compressor never emits, so a foreign or malformed
+		// block can reference an inactive entry; decoding it would index past
+		// the partitioning table.
+		if (bsd.partitioning_packed_index[partition_count - 2][scb.partition_index] == BLOCK_BAD_PARTITIONING)
+		{
+			scb.block_type = SYM_BTYPE_ERROR;
+			return;
+		}
 	}
 
 	for (int i = 0; i < partition_count; i++)

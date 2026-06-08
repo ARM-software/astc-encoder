@@ -335,4 +335,53 @@ TEST(decompress, context_inherit)
 	astcenc_context_free(parent_context);
 }
 
+/** @brief Decode a foreign partitioning with a self-decompress-only context. */
+TEST(decompress, self_decompress_foreign_partition)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	// A 3-partition block. An 8x8 fastest self-decompress-only context keeps no
+	// 3-partition tables, so this selects a partitioning that is not present.
+	uint8_t data[16] {
+		0xCF, 0x50, 0x80, 0x64, 0x84, 0xCD, 0xD8, 0xB7,
+		0xB0, 0xF1, 0x1E, 0x6A, 0x4F, 0x96, 0xC6, 0xBC
+	};
+
+	uint8_t output[8*8*4];
+	astcenc_config_init(ASTCENC_PRF_LDR, 8, 8, 1, ASTCENC_PRE_FASTEST,
+	                    ASTCENC_FLG_DECOMPRESS_ONLY | ASTCENC_FLG_SELF_DECOMPRESS_ONLY, &config);
+
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	astcenc_image image;
+	image.dim_x = 8;
+	image.dim_y = 8;
+	image.dim_z = 1;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = output;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	// An absent partitioning must decode as an error color block (magenta),
+	// not index past the partitioning table.
+	for (int i = 0; i < 8 * 8; i++)
+	{
+		EXPECT_EQ(output[4 * i + 0], 0xFF);
+		EXPECT_EQ(output[4 * i + 1], 0x00);
+		EXPECT_EQ(output[4 * i + 2], 0xFF);
+		EXPECT_EQ(output[4 * i + 3], 0xFF);
+	}
+
+	astcenc_context_free(context);
+}
+
 }
