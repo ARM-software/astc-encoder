@@ -481,7 +481,7 @@ TEST(SuiteVfloat4, vneq)
 	vfloat4 a(qnan, qnan, qnan, qnan);
 	EXPECT_TRUE(all(a != a));
 
-	// Non-NaN should be not unequal for anything
+	// Non-NaN should not be unequal for anything
 	vfloat4 b(0.0f, 0.2f, -0.0f, -0.4f);
 	EXPECT_FALSE(any(b != b));
 }
@@ -2209,7 +2209,7 @@ TEST(SuiteVfloat8, vneq)
 	vfloat8 a = vfloat8_lit(qnan, qnan, qnan, qnan, qnan, qnan, qnan, qnan);
 	EXPECT_TRUE(all(a != a));
 
-	// Non-NaN should be not unequal for anything
+	// Non-NaN should not be unequal for anything
 	vfloat8 b = vfloat8_lit(0.0f, 0.2f, -0.0f, -0.4f, 0.0f, 0.2f, -0.0f, -0.4f);
 	EXPECT_FALSE(any(b != b));
 }
