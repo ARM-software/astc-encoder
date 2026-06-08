@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2023 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -478,9 +478,10 @@ void physical_to_symbolic(
 
 		// Reject blocks selecting a partitioning that is not present in this
 		// block size descriptor. A SELF_DECOMPRESS_ONLY context drops the
-		// partitionings its compressor never emits, so a foreign or malformed
-		// block can reference an inactive entry; decoding it would index past
-		// the partitioning table.
+		// partitionings its compressor never emits, so a texture compressed
+		// with a different context can reference an inactive entry. This is an
+		// API contract break from the application, and should not happen in
+		// valid usage.
 		if (bsd.partitioning_packed_index[partition_count - 2][scb.partition_index] == BLOCK_BAD_PARTITIONING)
 		{
 			scb.block_type = SYM_BTYPE_ERROR;

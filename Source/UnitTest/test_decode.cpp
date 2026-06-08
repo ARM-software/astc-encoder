@@ -373,8 +373,7 @@ TEST(decompress, self_decompress_unsupported_partition)
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
 
-	// An absent partitioning must decode as an error color block (magenta),
-	// not index past the partitioning table.
+	// An absent partitioning must decode as error color block (magenta for LDR)
 	for (int i = 0; i < 8 * 8; i++)
 	{
 		EXPECT_EQ(output[4 * i + 0], 0xFF);

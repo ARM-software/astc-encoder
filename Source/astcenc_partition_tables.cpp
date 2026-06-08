@@ -399,9 +399,9 @@ static void build_partition_table_for_one_partition_count(
 	bsd.partitioning_count_all[partition_count - 1] = 0;
 
 	// Mark all partitionings as unused; the loops below overwrite the entries
-	// that are actually kept. Partitionings dropped in self-decompress mode, or
-	// whole tables skipped by the cutoff below, must retain this known-bad value
-	// so that decoding a foreign block does not index a stale offset.
+	// that are actually kept. Partitionings dropped in self-decompress mode
+	// must retain this known-bad value so that decoding an unknown raw
+	// partition index does not result in a bad packed index.
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
