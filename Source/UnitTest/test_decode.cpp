@@ -335,8 +335,8 @@ TEST(decompress, context_inherit)
 	astcenc_context_free(parent_context);
 }
 
-/** @brief Decode a foreign partitioning with a self-decompress-only context. */
-TEST(decompress, self_decompress_foreign_partition)
+/** @brief Decode an unsupported partitioning with a self-decompress-only context. */
+TEST(decompress, self_decompress_unsupported_partition)
 {
 	astcenc_error status;
 	astcenc_config config;
@@ -353,9 +353,9 @@ TEST(decompress, self_decompress_foreign_partition)
 		0xB0, 0xF1, 0x1E, 0x6A, 0x4F, 0x96, 0xC6, 0xBC
 	};
 
-	uint8_t output[8*8*4];
 	astcenc_config_init(ASTCENC_PRF_LDR, 8, 8, 1, ASTCENC_PRE_FASTEST,
-	                    ASTCENC_FLG_DECOMPRESS_ONLY | ASTCENC_FLG_SELF_DECOMPRESS_ONLY, &config);
+	                    ASTCENC_FLG_DECOMPRESS_ONLY | ASTCENC_FLG_SELF_DECOMPRESS_ONLY,
+	                    &config);
 
 	status = astcenc_context_alloc(&config, 1, &context, nullptr);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
@@ -365,6 +365,8 @@ TEST(decompress, self_decompress_foreign_partition)
 	image.dim_y = 8;
 	image.dim_z = 1;
 	image.data_type = ASTCENC_TYPE_U8;
+
+	uint8_t output[8 * 8 * 4];
 	uint8_t* slices = output;
 	image.data = reinterpret_cast<void**>(&slices);
 
