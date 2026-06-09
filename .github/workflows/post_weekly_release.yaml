@@ -23,7 +23,8 @@ jobs:
     steps:
       - name: Cleanup workspace
         run: |
-          ls -al ./
+          echo ${GITHUB_WORKSPACE}
+          ls -al ${GITHUB_WORKSPACE}
 
       - name: Git checkout
         uses: actions/checkout@v6
@@ -268,7 +269,8 @@ jobs:
     steps:
       - name: Cleanup workspace
         run: |
-          ls -al ./
+          echo ${GITHUB_WORKSPACE}
+          ls -al ${GITHUB_WORKSPACE}
 
       - name: Checkout signing code
         env:
