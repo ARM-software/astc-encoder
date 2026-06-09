@@ -18,9 +18,6 @@ jobs:
     name: Run Coverity static analysis
     runs-on: [self-hosted-ubuntu-latest-x64]
     steps:
-      - name: Clean workspace
-        uses: AutoModality/action-clean@v1
-
       - name: Git checkout
         uses: actions/checkout@v6
         with:
@@ -262,9 +259,6 @@ jobs:
     runs-on: [self-hosted-ubuntu-latest-x64]
     needs: [build-macos-universal, build-windows-multi]
     steps:
-      - name: Clean workspace
-        uses: AutoModality/action-clean@v1
-
       - name: Checkout signing code
         env:
           SIGNING_REPO_URL: ${{ secrets.SIGNING_REPO_URL }}
