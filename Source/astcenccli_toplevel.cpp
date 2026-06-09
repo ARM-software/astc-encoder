@@ -415,7 +415,7 @@ static astcenc_image_ptr load_uncomp_file(
 			unsigned int dim_x = slices[0]->dim_x;
 			unsigned int dim_y = slices[0]->dim_y;
 			int bitness = is_hdr ? 16 : 8;
-			int slice_size = dim_x * dim_y;
+			size_t slice_size = static_cast<size_t>(dim_x) * dim_y;
 
 			image = alloc_image(bitness, dim_x, dim_y, dim_z);
 
