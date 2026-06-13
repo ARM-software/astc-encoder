@@ -7,6 +7,17 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.6.0
+
+**Status:** In development
+
+The 5.6.0 release is a minor maintenance release.
+
+* **Command line tool updates:**
+  * **Bug fix:** Fixed incorrect plane stride when writing an uncompressed 3D
+    LDR image to a DDS container.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.5.0
 
 **Status:** June 2026
