@@ -427,7 +427,7 @@ enum scanline_transfer
 static void copy_scanline(
 	void* dst,
 	const void* src,
-	int pixel_count,
+	size_t pixel_count,
 	scanline_transfer method
 ) {
 
@@ -439,7 +439,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
 			d[4 * i + 1] = 0;              \
@@ -453,7 +453,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
 			d[4 * i + 1] = convfunc(s[2 * i + 1]); \
@@ -467,7 +467,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i    ]); \
 			d[4 * i + 1] = convfunc(s[3 * i + 1]); \
@@ -481,7 +481,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[3 * i + 1]); \
@@ -495,7 +495,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -509,7 +509,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -523,7 +523,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -537,7 +537,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -551,7 +551,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
 			d[4 * i + 1] = convfunc(s[i]); \
@@ -565,7 +565,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
 			d[4 * i + 1] = convfunc(s[2 * i    ]); \
@@ -2098,7 +2098,12 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	astcenc_image_ptr astc_img;
 	try
 	{
-		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+		astc_img = alloc_image(
+			bitness,
+			// TODO: Casts are ugly, should fix astcenc_image to accept size_t
+			static_cast<unsigned int>(dim_x),
+			static_cast<unsigned int>(dim_y),
+			static_cast<unsigned int>(dim_z));
 	}
 	catch (const std::bad_alloc &e)
 	{
