@@ -16,6 +16,8 @@ The 5.6.0 release is a minor maintenance release.
 * **Command line tool updates:**
   * **Bug fix:** Fixed incorrect plane stride when writing an uncompressed 3D
     LDR image to a DDS container.
+  * **Bug fix:** Fixed potential integer overflow when storing very large
+    uncompressed images to a `dds` or `.ktx` output image format.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.5.0
