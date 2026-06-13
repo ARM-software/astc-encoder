@@ -1287,24 +1287,29 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	for (unsigned int z = 0; z < dim_z; z++)
+	// TODO: Change astenc_image struct to store size_t rather than unsigned
+	// int then make dim_x/y/z size_t at the start of the function. This is an
+	// API break, so needs to wait until we make a major version.
+	size_t dim_y_sz = dim_y;
+	size_t dim_z_sz = dim_z;
+
+	for (size_t z = 0; z < dim_z_sz; z++)
 	{
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y_sz; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod;
+			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
 			void *dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data8[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data16[4 * dim_x * mod_y]);
 			}
 
 			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
@@ -2100,24 +2105,29 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	for (unsigned int z = 0; z < dim_z; z++)
+	// TODO: Change astenc_image struct to store size_t rather than unsigned
+	// int then make dim_x/y/z size_t at the start of the function. This is an
+	// API break, so needs to wait until we make a major version.
+	size_t dim_y_sz = dim_y;
+	size_t dim_z_sz = dim_z;
+
+	for (size_t z = 0; z < dim_z_sz; z++)
 	{
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y_sz; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod;
+			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
 			void* dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data8[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data16[4 * dim_x * mod_y]);
 			}
 
 			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
