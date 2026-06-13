@@ -259,8 +259,8 @@ std::vector<float> floatx4_array_from_astc_img(
 	bool y_flip,
 	unsigned int z_index
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
 	std::vector<float> buf(4 * dim_x * dim_y);
 	float* buf_data = buf.data();
 
@@ -269,35 +269,35 @@ std::vector<float> floatx4_array_from_astc_img(
 	if (img->data_type == ASTCENC_TYPE_U8)
 	{
 		uint8_t* data8 = static_cast<uint8_t*>(img->data[z_index]);
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
+			size_t mod_y = y_flip ? dim_y - y - 1 : y;
 			float* dst = buf_data + y * dim_x * 4;
 
-			for (unsigned int x = 0; x < dim_x; x++)
+			for (size_t x = 0; x < dim_x; x++)
 			{
-				dst[4 * x    ] = data8[(4 * dim_x * ymod) + (4 * x    )] * (1.0f / 255.0f);
-				dst[4 * x + 1] = data8[(4 * dim_x * ymod) + (4 * x + 1)] * (1.0f / 255.0f);
-				dst[4 * x + 2] = data8[(4 * dim_x * ymod) + (4 * x + 2)] * (1.0f / 255.0f);
-				dst[4 * x + 3] = data8[(4 * dim_x * ymod) + (4 * x + 3)] * (1.0f / 255.0f);
+				dst[4 * x    ] = data8[(4 * dim_x * mod_y) + (4 * x    )] * (1.0f / 255.0f);
+				dst[4 * x + 1] = data8[(4 * dim_x * mod_y) + (4 * x + 1)] * (1.0f / 255.0f);
+				dst[4 * x + 2] = data8[(4 * dim_x * mod_y) + (4 * x + 2)] * (1.0f / 255.0f);
+				dst[4 * x + 3] = data8[(4 * dim_x * mod_y) + (4 * x + 3)] * (1.0f / 255.0f);
 			}
 		}
 	}
 	else if (img->data_type == ASTCENC_TYPE_F16)
 	{
 		uint16_t* data16 = static_cast<uint16_t*>(img->data[z_index]);
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
+			size_t mod_y = y_flip ? dim_y - y - 1 : y;
 			float *dst = buf_data + y * dim_x * 4;
 
-			for (unsigned int x = 0; x < dim_x; x++)
+			for (size_t x = 0; x < dim_x; x++)
 			{
 				vint4 colori(
-					data16[(4 * dim_x * ymod) + (4 * x    )],
-					data16[(4 * dim_x * ymod) + (4 * x + 1)],
-					data16[(4 * dim_x * ymod) + (4 * x + 2)],
-					data16[(4 * dim_x * ymod) + (4 * x + 3)]
+					data16[(4 * dim_x * mod_y) + (4 * x    )],
+					data16[(4 * dim_x * mod_y) + (4 * x + 1)],
+					data16[(4 * dim_x * mod_y) + (4 * x + 2)],
+					data16[(4 * dim_x * mod_y) + (4 * x + 3)]
 				);
 
 				vfloat4 color = float16_to_float(colori);
@@ -309,17 +309,17 @@ std::vector<float> floatx4_array_from_astc_img(
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
 		float* data32 = static_cast<float*>(img->data[z_index]);
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
+			size_t mod_y = y_flip ? dim_y - y - 1 : y;
 			float *dst = buf_data + y * dim_x * 4;
 
-			for (unsigned int x = 0; x < dim_x; x++)
+			for (size_t x = 0; x < dim_x; x++)
 			{
-				dst[4 * x    ] = data32[(4 * dim_x * ymod) + (4 * x    )];
-				dst[4 * x + 1] = data32[(4 * dim_x * ymod) + (4 * x + 1)];
-				dst[4 * x + 2] = data32[(4 * dim_x * ymod) + (4 * x + 2)];
-				dst[4 * x + 3] = data32[(4 * dim_x * ymod) + (4 * x + 3)];
+				dst[4 * x    ] = data32[(4 * dim_x * mod_y) + (4 * x    )];
+				dst[4 * x + 1] = data32[(4 * dim_x * mod_y) + (4 * x + 1)];
+				dst[4 * x + 2] = data32[(4 * dim_x * mod_y) + (4 * x + 2)];
+				dst[4 * x + 3] = data32[(4 * dim_x * mod_y) + (4 * x + 3)];
 			}
 		}
 	}

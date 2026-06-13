@@ -427,7 +427,7 @@ enum scanline_transfer
 static void copy_scanline(
 	void* dst,
 	const void* src,
-	int pixel_count,
+	size_t pixel_count,
 	scanline_transfer method
 ) {
 
@@ -439,7 +439,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
 			d[4 * i + 1] = 0;              \
@@ -453,7 +453,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
 			d[4 * i + 1] = convfunc(s[2 * i + 1]); \
@@ -467,7 +467,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i    ]); \
 			d[4 * i + 1] = convfunc(s[3 * i + 1]); \
@@ -481,7 +481,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[3 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[3 * i + 1]); \
@@ -495,7 +495,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -509,7 +509,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++)\
+		for (size_t i = 0; i < pixel_count; i++)\
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -523,7 +523,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i    ]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -537,7 +537,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[4 * i + 2]); \
 			d[4 * i + 1] = convfunc(s[4 * i + 1]); \
@@ -551,7 +551,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[i]); \
 			d[4 * i + 1] = convfunc(s[i]); \
@@ -565,7 +565,7 @@ static void copy_scanline(
 	do { \
 		const srctype* s = reinterpret_cast<const srctype*>(src); \
 		dsttype* d = reinterpret_cast<dsttype*>(dst); \
-		for (int i = 0; i < pixel_count; i++) \
+		for (size_t i = 0; i < pixel_count; i++) \
 		{ \
 			d[4 * i    ] = convfunc(s[2 * i    ]); \
 			d[4 * i + 1] = convfunc(s[2 * i    ]); \
@@ -1287,24 +1287,29 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	for (unsigned int z = 0; z < dim_z; z++)
+	// TODO: Change astenc_image struct to store size_t rather than unsigned
+	// int then make dim_x/y/z size_t at the start of the function. This is an
+	// API break, so needs to wait until we make a major version.
+	size_t dim_y_sz = dim_y;
+	size_t dim_z_sz = dim_z;
+
+	for (size_t z = 0; z < dim_z_sz; z++)
 	{
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y_sz; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod;
+			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
 			void *dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data8[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data16[4 * dim_x * mod_y]);
 			}
 
 			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
@@ -1486,9 +1491,9 @@ static bool store_ktx_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	unsigned int dim_z = img->dim_z;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
+	size_t dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = determine_image_components(img);
@@ -1512,6 +1517,7 @@ static bool store_ktx_uncompressed_image(
 	hdr.gl_type = (bitness == 16) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
 	hdr.gl_type_size = bitness / 8;
 	hdr.gl_format = gl_format_of_components[image_components - 1];
+
 	if (bitness == 16)
 	{
 		hdr.gl_internal_format = gl_sized_format_of_components_hdr[image_components - 1];
@@ -1520,10 +1526,11 @@ static bool store_ktx_uncompressed_image(
 	{
 		hdr.gl_internal_format = gl_sized_format_of_components_ldr[image_components - 1];
 	}
+
 	hdr.gl_base_internal_format = hdr.gl_format;
-	hdr.pixel_width = dim_x;
-	hdr.pixel_height = dim_y;
-	hdr.pixel_depth = (dim_z == 1) ? 0 : dim_z;
+	hdr.pixel_width = static_cast<uint32_t>(dim_x);
+	hdr.pixel_height = static_cast<uint32_t>(dim_y);
+	hdr.pixel_depth = static_cast<uint32_t>((dim_z == 1) ? 0 : dim_z);
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
@@ -1547,63 +1554,63 @@ static bool store_ktx_uncompressed_image(
 		row_pointers8[0] = row_data8.data();
 		row_pointers8[0][0] = pixel_data8.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
 			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z]);
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = data8[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers8[z][y][x] = data8[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated a
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
 			}
 		}
 	}
-	else						// if bitness == 16
+	else  // if bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -1612,56 +1619,56 @@ static bool store_ktx_uncompressed_image(
 		row_pointers16[0] = row_data16.data();
 		row_pointers16[0][0] = pixel_data16.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
 			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z]);
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = data16[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers16[z][y][x] = data16[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
@@ -1670,8 +1677,8 @@ static bool store_ktx_uncompressed_image(
 	}
 
 	bool retval { true };
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
-	uint32_t image_write_bytes = (image_bytes + 3) & ~3;
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	size_t image_write_bytes = (image_bytes + 3) & ~3;
 
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (file)
@@ -1877,9 +1884,9 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		}
 	}
 
-	unsigned int dim_x = hdr.width;
-	unsigned int dim_y = hdr.height;
-	unsigned int dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
+	size_t dim_x = hdr.width;
+	size_t dim_y = hdr.height;
+	size_t dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
 
 	// The bitcount that we will use internally in the codec
 	unsigned int bitness = 0;
@@ -2091,7 +2098,12 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	astcenc_image_ptr astc_img;
 	try
 	{
-		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
+		astc_img = alloc_image(
+			bitness,
+			// TODO: Casts are ugly, should fix astcenc_image to accept size_t
+			static_cast<unsigned int>(dim_x),
+			static_cast<unsigned int>(dim_y),
+			static_cast<unsigned int>(dim_z));
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -2100,24 +2112,29 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	for (unsigned int z = 0; z < dim_z; z++)
+	// TODO: Change astenc_image struct to store size_t rather than unsigned
+	// int then make dim_x/y/z size_t at the start of the function. This is an
+	// API break, so needs to wait until we make a major version.
+	size_t dim_y_sz = dim_y;
+	size_t dim_z_sz = dim_z;
+
+	for (size_t z = 0; z < dim_z_sz; z++)
 	{
-		for (unsigned int y = 0; y < dim_y; y++)
+		for (size_t y = 0; y < dim_y_sz; y++)
 		{
-			unsigned int ymod = y_flip ? dim_y - y - 1 : y;
-			unsigned int ydst = ymod;
+			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
 			void* dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
 			{
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data8[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
 			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
-				dst = static_cast<void*>(&data16[4 * dim_x * ydst]);
+				dst = static_cast<void*>(&data16[4 * dim_x * mod_y]);
 			}
 
 			uint8_t *src = buf.get() + (z * bytes_per_plane) + (y * bytes_per_row);
@@ -2144,9 +2161,9 @@ static bool store_dds_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	unsigned int dim_z = img->dim_z;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
+	size_t dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = (bitness == 16) ? 4 : determine_image_components(img);
@@ -2176,10 +2193,10 @@ static bool store_dds_uncompressed_image(
 	dds_header hdr;
 	hdr.size = 124;
 	hdr.flags = 0x100F | (dim_z > 1 ? 0x800000 : 0);
-	hdr.height = dim_y;
-	hdr.width = dim_x;
-	hdr.pitch_or_linear_size = image_components * (bitness / 8) * dim_x;
-	hdr.depth = dim_z;
+	hdr.height = static_cast<uint32_t>(dim_y);
+	hdr.width = static_cast<uint32_t>(dim_x);
+	hdr.pitch_or_linear_size = static_cast<uint32_t>(image_components * (bitness / 8) * dim_x);
+	hdr.depth = static_cast<uint32_t>(dim_z);
 	hdr.mipmapcount = 1;
 	for (unsigned int i = 0; i < 11; i++)
 	{
@@ -2226,64 +2243,64 @@ static bool store_dds_uncompressed_image(
 		row_pointers8[0] = row_data8.data();
 		row_pointers8[0][0] = pixel_data8.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
 			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = data8[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers8[z][y][x] = data8[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
 			}
 		}
 	}
-	else						// if bitness == 16
+	else  // if bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -2292,57 +2309,57 @@ static bool store_dds_uncompressed_image(
 		row_pointers16[0] = row_data16.data();
 		row_pointers16[0][0] = pixel_data16.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
 			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1: y;
+				size_t mod_y = y_flip ? dim_y - y - 1: y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = data16[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers16[z][y][x] = data16[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four-component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
@@ -2351,7 +2368,7 @@ static bool store_dds_uncompressed_image(
 	}
 
 	bool retval { true };
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 
 	uint32_t dds_magic = DDS_MAGIC;
 
@@ -2413,8 +2430,7 @@ const loader_specs loader_descs[] {
 	{ nullptr, nullptr, load_image_with_stb }
 };
 
-static const int loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
-
+static const size_t loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
 
 /**
  * @brief Image storer function pointer.
@@ -2448,7 +2464,7 @@ const storer_specs storer_descs[] {
 	{ ".ktx", ".KTX",  0, store_ktx_uncompressed_image }
 };
 
-static const int storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
+static const size_t storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
 
 /* See header for documentation. */
 int get_output_filename_enforced_bitness(
@@ -2460,7 +2476,7 @@ int get_output_filename_enforced_bitness(
 		return 0;
 	}
 
-	for (int i = 0; i < storer_descr_count; i++)
+	for (size_t i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
 		 || strcmp(eptr, storer_descs[i].ending2) == 0)
@@ -2488,7 +2504,7 @@ astcenc_image_ptr load_ncimage(
 
 	// Scan through descriptors until a matching loader is found
 	image_loader loader { nullptr };
-	for (unsigned int i = 0; i < loader_descr_count; i++)
+	for (size_t i = 0; i < loader_descr_count; i++)
 	{
 		if (loader_descs[i].ending1 == nullptr
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
@@ -2528,7 +2544,7 @@ bool store_ncimage(
 
 	// Scan through descriptors until a matching storer is found
 	image_storer storer { nullptr };
-	for (int i = 0; i < storer_descr_count; i++)
+	for (size_t i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
 		 || strcmp(eptr, storer_descs[i].ending2) == 0)
