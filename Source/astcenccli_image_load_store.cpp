@@ -1557,7 +1557,7 @@ static bool store_ktx_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_x * image_components * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
@@ -1622,7 +1622,7 @@ static bool store_ktx_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
@@ -2246,7 +2246,7 @@ static bool store_dds_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
-			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_z * image_components * z;
+			row_pointers8[z][0] = row_pointers8[0][0] + dim_x * dim_y * image_components * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
@@ -2312,7 +2312,7 @@ static bool store_dds_uncompressed_image(
 		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
-			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
+			row_pointers16[z][0] = row_pointers16[0][0] + dim_x * dim_y * image_components * z;
 		}
 
 		for (size_t z = 0; z < dim_z; z++)
