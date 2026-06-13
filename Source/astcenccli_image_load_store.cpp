@@ -1677,8 +1677,8 @@ static bool store_ktx_uncompressed_image(
 	}
 
 	bool retval { true };
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
-	uint32_t image_write_bytes = (image_bytes + 3) & ~3;
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	size_t image_write_bytes = (image_bytes + 3) & ~3;
 
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (file)
@@ -1884,9 +1884,9 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		}
 	}
 
-	unsigned int dim_x = hdr.width;
-	unsigned int dim_y = hdr.height;
-	unsigned int dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
+	size_t dim_x = hdr.width;
+	size_t dim_y = hdr.height;
+	size_t dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
 
 	// The bitcount that we will use internally in the codec
 	unsigned int bitness = 0;
@@ -2188,10 +2188,10 @@ static bool store_dds_uncompressed_image(
 	dds_header hdr;
 	hdr.size = 124;
 	hdr.flags = 0x100F | (dim_z > 1 ? 0x800000 : 0);
-	hdr.height = dim_y;
-	hdr.width = dim_x;
-	hdr.pitch_or_linear_size = image_components * (bitness / 8) * dim_x;
-	hdr.depth = dim_z;
+	hdr.height = static_cast<uint32_t>(dim_y);
+	hdr.width = static_cast<uint32_t>(dim_x);
+	hdr.pitch_or_linear_size = static_cast<uint32_t>(image_components * (bitness / 8) * dim_x);
+	hdr.depth = static_cast<uint32_t>(dim_z);
 	hdr.mipmapcount = 1;
 	for (unsigned int i = 0; i < 11; i++)
 	{
@@ -2363,7 +2363,7 @@ static bool store_dds_uncompressed_image(
 	}
 
 	bool retval { true };
-	uint32_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 
 	uint32_t dds_magic = DDS_MAGIC;
 
