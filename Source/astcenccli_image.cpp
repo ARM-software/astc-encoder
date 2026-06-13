@@ -259,8 +259,8 @@ std::vector<float> floatx4_array_from_astc_img(
 	bool y_flip,
 	unsigned int z_index
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
 	std::vector<float> buf(4 * dim_x * dim_y);
 	float* buf_data = buf.data();
 

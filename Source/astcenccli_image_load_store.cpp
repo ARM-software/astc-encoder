@@ -1486,9 +1486,9 @@ static bool store_ktx_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	unsigned int dim_z = img->dim_z;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
+	size_t dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = determine_image_components(img);
@@ -2144,9 +2144,9 @@ static bool store_dds_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	unsigned int dim_z = img->dim_z;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
+	size_t dim_z = img->dim_z;
 
 	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	int image_components = (bitness == 16) ? 4 : determine_image_components(img);
