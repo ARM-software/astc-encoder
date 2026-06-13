@@ -1517,6 +1517,7 @@ static bool store_ktx_uncompressed_image(
 	hdr.gl_type = (bitness == 16) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
 	hdr.gl_type_size = bitness / 8;
 	hdr.gl_format = gl_format_of_components[image_components - 1];
+
 	if (bitness == 16)
 	{
 		hdr.gl_internal_format = gl_sized_format_of_components_hdr[image_components - 1];
@@ -1525,10 +1526,11 @@ static bool store_ktx_uncompressed_image(
 	{
 		hdr.gl_internal_format = gl_sized_format_of_components_ldr[image_components - 1];
 	}
+
 	hdr.gl_base_internal_format = hdr.gl_format;
-	hdr.pixel_width = dim_x;
-	hdr.pixel_height = dim_y;
-	hdr.pixel_depth = (dim_z == 1) ? 0 : dim_z;
+	hdr.pixel_width = static_cast<uint32_t>(dim_x);
+	hdr.pixel_height = static_cast<uint32_t>(dim_y);
+	hdr.pixel_depth = static_cast<uint32_t>((dim_z == 1) ? 0 : dim_z);
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
@@ -1552,63 +1554,63 @@ static bool store_ktx_uncompressed_image(
 		row_pointers8[0] = row_data8.data();
 		row_pointers8[0][0] = pixel_data8.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
 			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_x * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z]);
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = data8[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers8[z][y][x] = data8[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated a
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
 			}
 		}
 	}
-	else						// if bitness == 16
+	else  // if bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -1617,56 +1619,56 @@ static bool store_ktx_uncompressed_image(
 		row_pointers16[0] = row_data16.data();
 		row_pointers16[0][0] = pixel_data16.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
 			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z]);
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = data16[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers16[z][y][x] = data16[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
@@ -2236,64 +2238,64 @@ static bool store_dds_uncompressed_image(
 		row_pointers8[0] = row_data8.data();
 		row_pointers8[0][0] = pixel_data8.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers8[z] = row_pointers8[0] + dim_y * z;
 			row_pointers8[z][0] = row_pointers8[0][0] + dim_y * dim_z * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers8[z][y] = row_pointers8[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1 : y;
+				size_t mod_y = y_flip ? dim_y - y - 1 : y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][x] = data8[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers8[z][y][x] = data8[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][2 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][2 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers8[z][y][3 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][3 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][3 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers8[z][y][4 * x    ] = data8[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers8[z][y][4 * x + 1] = data8[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers8[z][y][4 * x + 2] = data8[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers8[z][y][4 * x + 3] = data8[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
 			}
 		}
 	}
-	else						// if bitness == 16
+	else  // if bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -2302,57 +2304,57 @@ static bool store_dds_uncompressed_image(
 		row_pointers16[0] = row_data16.data();
 		row_pointers16[0][0] = pixel_data16.data();
 
-		for (unsigned int z = 1; z < dim_z; z++)
+		for (size_t z = 1; z < dim_z; z++)
 		{
 			row_pointers16[z] = row_pointers16[0] + dim_y * z;
 			row_pointers16[z][0] = row_pointers16[0][0] + dim_y * dim_x * image_components * z;
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
-			for (unsigned int y = 1; y < dim_y; y++)
+			for (size_t y = 1; y < dim_y; y++)
 			{
 				row_pointers16[z][y] = row_pointers16[z][0] + dim_x * image_components * y;
 			}
 		}
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				int ym = y_flip ? dim_y - y - 1: y;
+				size_t mod_y = y_flip ? dim_y - y - 1: y;
 				switch (image_components)
 				{
-				case 1:		// single-component, treated as Luminance
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 1:  // One component, treated as Luminance
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][x] = data16[(4 * dim_x * ym) + (4 * x    )];
+						row_pointers16[z][y][x] = data16[(4 * dim_x* mod_y) + (4 * x    )];
 					}
 					break;
-				case 2:		// two-component, treated as Luminance-Alpha
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 2:  // Two component, treated as Luminance-Alpha
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][2 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][2 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
-				case 3:		// three-component, treated as RGB
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 3:  // Three component, treated as RGB
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
+						row_pointers16[z][y][3 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][3 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][3 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
 					}
 					break;
-				case 4:		// four-component, treated as RGBA
-					for (unsigned int x = 0; x < dim_x; x++)
+				case 4:  // Four-component, treated as RGBA
+					for (size_t x = 0; x < dim_x; x++)
 					{
-						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x * ym) + (4 * x    )];
-						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x * ym) + (4 * x + 1)];
-						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x * ym) + (4 * x + 2)];
-						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x * ym) + (4 * x + 3)];
+						row_pointers16[z][y][4 * x    ] = data16[(4 * dim_x* mod_y) + (4 * x    )];
+						row_pointers16[z][y][4 * x + 1] = data16[(4 * dim_x* mod_y) + (4 * x + 1)];
+						row_pointers16[z][y][4 * x + 2] = data16[(4 * dim_x* mod_y) + (4 * x + 2)];
+						row_pointers16[z][y][4 * x + 3] = data16[(4 * dim_x* mod_y) + (4 * x + 3)];
 					}
 					break;
 				}
@@ -2423,8 +2425,7 @@ const loader_specs loader_descs[] {
 	{ nullptr, nullptr, load_image_with_stb }
 };
 
-static const int loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
-
+static const size_t loader_descr_count = sizeof(loader_descs) / sizeof(loader_descs[0]);
 
 /**
  * @brief Image storer function pointer.
@@ -2458,7 +2459,7 @@ const storer_specs storer_descs[] {
 	{ ".ktx", ".KTX",  0, store_ktx_uncompressed_image }
 };
 
-static const int storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
+static const size_t storer_descr_count = sizeof(storer_descs) / sizeof(storer_descs[0]);
 
 /* See header for documentation. */
 int get_output_filename_enforced_bitness(
@@ -2470,7 +2471,7 @@ int get_output_filename_enforced_bitness(
 		return 0;
 	}
 
-	for (int i = 0; i < storer_descr_count; i++)
+	for (size_t i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
 		 || strcmp(eptr, storer_descs[i].ending2) == 0)
@@ -2498,7 +2499,7 @@ astcenc_image_ptr load_ncimage(
 
 	// Scan through descriptors until a matching loader is found
 	image_loader loader { nullptr };
-	for (unsigned int i = 0; i < loader_descr_count; i++)
+	for (size_t i = 0; i < loader_descr_count; i++)
 	{
 		if (loader_descs[i].ending1 == nullptr
 			|| strcmp(eptr, loader_descs[i].ending1) == 0
@@ -2538,7 +2539,7 @@ bool store_ncimage(
 
 	// Scan through descriptors until a matching storer is found
 	image_storer storer { nullptr };
-	for (int i = 0; i < storer_descr_count; i++)
+	for (size_t i = 0; i < storer_descr_count; i++)
 	{
 		if (strcmp(eptr, storer_descs[i].ending1) == 0
 		 || strcmp(eptr, storer_descs[i].ending2) == 0)
