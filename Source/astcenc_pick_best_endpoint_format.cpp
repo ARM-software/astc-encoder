@@ -404,9 +404,15 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		// Estimate of color-component spread in low endpoint color
 		float df = hmax_s(abs(pdif));
 
-		int b = static_cast<int>(bf);
-		int c = static_cast<int>(cf);
-		int d = static_cast<int>(df);
+		// Endpoint colors can fall well outside the input range, and an HDR
+		// input may contain very large or non-finite values, so these spreads
+		// are not bounded by the int range. Clamp before the narrowing cast to
+		// avoid undefined behavior; the values are only used in the threshold
+		// comparisons below and the largest threshold is 32768, so saturating
+		// at 65536 leaves every comparison result unchanged.
+		int b = static_cast<int>(astc::clamp(bf, 0.0f, 65536.0f));
+		int c = static_cast<int>(astc::clamp(cf, 0.0f, 65536.0f));
+		int d = static_cast<int>(astc::clamp(df, 0.0f, 65536.0f));
 
 		// Determine which one of the 6 submodes is likely to be used in case of an RGBO-mode
 		int rgbo_mode = 5;		// 7 bits per component
