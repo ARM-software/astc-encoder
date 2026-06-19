@@ -78,8 +78,9 @@ astcenc_image_ptr alloc_image(
 }
 
 /* See header for documentation. */
-void astcenc_image_deleter::operator()(astcenc_image* img) const
-{
+void astcenc_image_deleter::operator()(
+	astcenc_image* img
+) const {
 	if (img == nullptr)
 	{
 		return;
@@ -111,8 +112,9 @@ void astcenc_image_deleter::operator()(astcenc_image* img) const
 }
 
 /* See header for documentation. */
-int determine_image_components(const astcenc_image * img)
-{
+unsigned int determine_image_components(
+	const astcenc_image * img
+) {
 	unsigned int dim_x = img->dim_x;
 	unsigned int dim_y = img->dim_y;
 	unsigned int dim_z = img->dim_z;
@@ -188,8 +190,7 @@ int determine_image_components(const astcenc_image * img)
 		}
 	}
 
-	int image_components = 1 + (is_luma == 0 ? 2 : 0) + (has_alpha ? 1 : 0);
-	return image_components;
+	return 1 + (is_luma == 0 ? 2 : 0) + (has_alpha ? 1 : 0);
 }
 
 /* See header for documentation. */
