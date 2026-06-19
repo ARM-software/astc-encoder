@@ -1499,7 +1499,15 @@ static bool store_ktx_uncompressed_image(
 	unsigned int image_components = determine_image_components(img);
 
 	// Size of the image data in bytes
-	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	bool overflow { false };
+	size_t image_bytes = astc::mul_safe(dim_x, dim_y, overflow);
+	image_bytes = astc::mul_safe(image_bytes, dim_z, overflow);
+	image_bytes = astc::mul_safe(image_bytes, image_components, overflow);
+	image_bytes = astc::mul_safe(image_bytes, bitness / 8, overflow);
+	if (overflow)
+	{
+		return false;
+	}
 
 	// Size of image data padded to a multiple of 4 bytes
 	size_t image_write_bytes = (image_bytes + 3) & ~3;
@@ -2181,14 +2189,24 @@ static bool store_dds_uncompressed_image(
 	unsigned int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
 	unsigned int image_components = (bitness == 16) ? 4 : determine_image_components(img);
 
-	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+	// Size of the image data in bytes
+	bool overflow { false };
+	size_t image_bytes = astc::mul_safe(dim_x, dim_y, overflow);
+	image_bytes = astc::mul_safe(image_bytes, dim_z, overflow);
+	image_bytes = astc::mul_safe(image_bytes, image_components, overflow);
+	image_bytes = astc::mul_safe(image_bytes, bitness / 8, overflow);
+	if (overflow)
+	{
+		return false;
+	}
+
+	// Must be smaller than image_bytes, so no need to check overflow here
+	size_t pitch_bytes = dim_x * image_components * (bitness / 8);
 
 	// The pitch_or_linear_size field is a fixed 32-bit value, so the size_t used
 	// for buffer sizing must be narrowed before it is serialized into the file.
-	// The check here is conservative and checks whole image rather than just row
-	// pitch, to ensure consistency with KTX output files.
-	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
-	if (image_bytes_field != image_bytes)
+	uint32_t pitch_bytes_field = static_cast<uint32_t>(pitch_bytes);
+	if (pitch_bytes_field != pitch_bytes)
 	{
 		return false;
 	}
@@ -2220,7 +2238,7 @@ static bool store_dds_uncompressed_image(
 	hdr.flags = 0x100F | (dim_z > 1 ? 0x800000 : 0);
 	hdr.height = static_cast<uint32_t>(dim_y);
 	hdr.width = static_cast<uint32_t>(dim_x);
-	hdr.pitch_or_linear_size = static_cast<uint32_t>(image_components * (bitness / 8) * dim_x);
+	hdr.pitch_or_linear_size = pitch_bytes_field;
 	hdr.depth = static_cast<uint32_t>(dim_z);
 	hdr.mipmapcount = 1;
 	for (unsigned int i = 0; i < 11; i++)
