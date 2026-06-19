@@ -1680,6 +1680,10 @@ static bool store_ktx_uncompressed_image(
 	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 	size_t image_write_bytes = (image_bytes + 3) & ~3;
 
+	// The KTX imageSize field is a fixed 32-bit value, so the size_t used for
+	// buffer sizing must be narrowed before it is serialized into the file.
+	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
+
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (file)
 	{
@@ -1688,7 +1692,7 @@ static bool store_ktx_uncompressed_image(
 			reinterpret_cast<void*>(row_pointers8[0][0]);
 
 		file.write(reinterpret_cast<const char*>(&hdr), sizeof(ktx_header));
-		file.write(reinterpret_cast<const char*>(&image_bytes), sizeof(image_bytes));
+		file.write(reinterpret_cast<const char*>(&image_bytes_field), sizeof(image_bytes_field));
 		file.write(reinterpret_cast<const char*>(dataptr), image_write_bytes);
 		if (file.fail())
 		{
