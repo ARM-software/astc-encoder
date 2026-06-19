@@ -1495,8 +1495,22 @@ static bool store_ktx_uncompressed_image(
 	size_t dim_y = img->dim_y;
 	size_t dim_z = img->dim_z;
 
-	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
-	int image_components = determine_image_components(img);
+	unsigned int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
+	unsigned int image_components = determine_image_components(img);
+
+	// Size of the image data in bytes
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+
+	// Size of image data padded to a multiple of 4 bytes
+	size_t image_write_bytes = (image_bytes + 3) & ~3;
+
+	// The KTX imageSize field is a fixed 32-bit value, so check that the size_t
+	/// value can be safely narrowed, and does not wrap when padded
+	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
+	if ((image_bytes_field != image_bytes) || (image_write_bytes < image_bytes))
+	{
+		return false;
+	}
 
 	ktx_header hdr;
 
@@ -1549,6 +1563,7 @@ static bool store_ktx_uncompressed_image(
 	{
 		row_pointers8.resize(dim_z);
 		row_data8.resize(dim_y * dim_z);
+		// + 3 to ensure this can be padded to be word aligned when written
 		pixel_data8.resize(dim_x * dim_y * dim_z * image_components + 3);
 
 		row_pointers8[0] = row_data8.data();
@@ -1614,6 +1629,7 @@ static bool store_ktx_uncompressed_image(
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
+		// + 1 to ensure this can be padded to be word aligned when written
 		pixel_data16.resize(dim_x * dim_y * dim_z * image_components + 1);
 
 		row_pointers16[0] = row_data16.data();
@@ -1677,13 +1693,6 @@ static bool store_ktx_uncompressed_image(
 	}
 
 	bool retval { true };
-	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
-	size_t image_write_bytes = (image_bytes + 3) & ~3;
-
-	// The KTX imageSize field is a fixed 32-bit value, so the size_t used for
-	// buffer sizing must be narrowed before it is serialized into the file.
-	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
-
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (file)
 	{
@@ -2169,8 +2178,20 @@ static bool store_dds_uncompressed_image(
 	size_t dim_y = img->dim_y;
 	size_t dim_z = img->dim_z;
 
-	int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
-	int image_components = (bitness == 16) ? 4 : determine_image_components(img);
+	unsigned int bitness = img->data_type == ASTCENC_TYPE_U8 ? 8 : 16;
+	unsigned int image_components = (bitness == 16) ? 4 : determine_image_components(img);
+
+	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
+
+	// The pitch_or_linear_size field is a fixed 32-bit value, so the size_t used
+	// for buffer sizing must be narrowed before it is serialized into the file.
+	// The check here is conservative and checks whole image rather than just row
+	// pitch, to ensure consistency with KTX output files.
+	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
+	if (image_bytes_field != image_bytes)
+	{
+		return false;
+	}
 
 	// DDS-pixel-format structures to use when storing LDR image with 1,2,3 or 4 components.
 	static const dds_pixelformat format_of_image_components[4] =
@@ -2372,7 +2393,6 @@ static bool store_dds_uncompressed_image(
 	}
 
 	bool retval { true };
-	size_t image_bytes = dim_x * dim_y * dim_z * image_components * (bitness / 8);
 
 	uint32_t dds_magic = DDS_MAGIC;
 

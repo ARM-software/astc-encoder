@@ -218,7 +218,7 @@ astcenc_image_ptr alloc_image(
  *
  * @return The number of active components in the image.
  */
-int determine_image_components(
+unsigned int determine_image_components(
 	const astcenc_image* img);
 
 /**
