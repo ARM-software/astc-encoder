@@ -225,8 +225,13 @@ static void compute_lowest_and_highest_weight(
 			cut_high_weight_err = select(cut_high_weight_err, accum, mask);
 		}
 
-		// Write out min weight and weight span; clamp span to a usable range
-		vint span = float_to_int(maxidx - minidx + vfloat(1));
+		// Write out min weight and weight span; clamp span to a usable range.
+		// The span is derived from the ideal weights, which are non-finite when
+		// the input texels are non-finite, so clamp into the representable result
+		// range before narrowing to avoid an out-of-range float to int conversion
+		vfloat spanf = clamp(0.0f, static_cast<float>(max_quant_steps + 3),
+		                     maxidx - minidx + vfloat(1));
+		vint span = float_to_int(spanf);
 		span = min(span, vint(max_quant_steps + 3));
 		span = max(span, vint(2));
 		storea(minidx, lowest_weight + sp);
