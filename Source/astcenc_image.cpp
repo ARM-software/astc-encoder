@@ -251,7 +251,7 @@ void load_image_block(
 
 	if (rgb_lns || a_lns)
 	{
-		data_enc_lns = float16_to_float(lns_to_sf16(float_to_int(data_enc)));
+		data_enc_lns = float16_to_float(lns_to_sf16(float_to_int(clamp(0.0f, 65535.0f, data_enc))));
 	}
 
 	blk.origin_texel = select(data_enc_unorm, data_enc_lns, lns_mask);
