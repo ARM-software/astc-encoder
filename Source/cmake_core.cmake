@@ -196,7 +196,6 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             PRIVATE
                 $<${is_gnu_fe}:-fsanitize=address>
                 $<${is_clang}:-fuse-ld=lld>)
-
     endif()
 
     if(${ASTCENC_UBSAN})
