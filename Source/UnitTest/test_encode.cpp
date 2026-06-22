@@ -298,6 +298,4 @@ TEST(compress, data_nan_hdr_ldra)
 	}
 }
 
-
-
 }
