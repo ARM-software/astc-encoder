@@ -18,6 +18,8 @@ The 5.6.0 release is a minor maintenance release.
     LDR image to a DDS container.
   * **Bug fix:** Fixed potential integer overflow when storing very large
     uncompressed images to a `dds` or `.ktx` output image format.
+  * **Bug fix:** Avoid undefined behavior caused by passing floating point
+    values outside of the [0.0, 1.0] range as data for a UNORM color channel.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.5.0
