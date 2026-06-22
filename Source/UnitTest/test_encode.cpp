@@ -202,7 +202,7 @@ TEST(compress, data_neg_inf_hdr)
 /** @brief Input data contains negative infinities. */
 TEST(compress, data_neg_inf_hdr_ldra)
 {
-	// Cycle though a single vad value in each color channel
+	// Cycle though a single bad value in each color channel
 	for(int offset = 0; offset < 4; offset++)
 	{
 		// 4x4 block input data
@@ -244,7 +244,7 @@ TEST(compress, data_pos_inf_hdr)
 /** @brief Input data contains positive infinities. */
 TEST(compress, data_pos_inf_hdr_ldra)
 {
-	// Cycle though a single vad value in each color channel
+	// Cycle though a single bad value in each color channel
 	for(int offset = 0; offset < 4; offset++)
 	{
 		// 4x4 block input data
@@ -287,7 +287,7 @@ TEST(compress, data_nan_hdr)
 /** @brief Input data contains NaN. */
 TEST(compress, data_nan_hdr_ldra)
 {
-	// Cycle though a single vad value in each color channel
+	// Cycle though a single bad value in each color channel
 	for(int offset = 0; offset < 4; offset++)
 	{
 		// 4x4 block input data
