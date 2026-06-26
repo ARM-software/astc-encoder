@@ -142,12 +142,13 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
-		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC and
-		// generates broken code on GCC 11.x before 11.3, so use this to
-		// generate alignment-safe and aliasing-safe alternative
+		// Copy through a uint32_t to avoid load through a reinterpreted
+		// pointer, which is both unaligned and an aliasing violation.
 		uint64_t tmp;
 		std::memcpy(&tmp, p, sizeof(tmp));
 
+		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC and
+		// generates broken code on GCC 11.x before 11.3.
 		m = _mm256_cvtepu8_epi32(_mm_cvtsi64_si128(tmp));
 	}
 
