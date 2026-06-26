@@ -81,6 +81,98 @@ jobs:
         run: ctest -E "test-unit-sve_128|test-unit-sve_256" --rerun-failed --output-on-failure
         working-directory: build_rel
 
+  build-ubuntu-arm64-clang-asan:
+    name: Ubuntu arm64 Clang (ASAN)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install imagemagick
+
+      - name: Build release
+        run: |
+          export CXX=clang++
+          mkdir build_rel
+          cd build_rel
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON -DASTCENC_ISA_NONE=ON -DASTCENC_PACKAGE=arm64 -DASTCENC_ASAN=ON ..
+          make install package -j4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Get Python modules
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy Pillow
+
+      - name: Run system tests
+        # Disable SVE for now
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+
+      - name: Run unit tests
+        # Disable SVE for now
+        run: ctest -E "test-unit-sve_128|test-unit-sve_256" --rerun-failed --output-on-failure
+        working-directory: build_rel
+
+  build-ubuntu-arm64-clang-ubasn:
+    name: Ubuntu arm64 Clang (UBSAN)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install imagemagick
+
+      - name: Build release
+        run: |
+          export CXX=clang++
+          mkdir build_rel
+          cd build_rel
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON -DASTCENC_ISA_NONE=ON -DASTCENC_PACKAGE=arm64 -DASTCENC_UBSAN=ON ..
+          make install package -j4
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Get Python modules
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy Pillow
+
+      - name: Run system tests
+        # Disable SVE for now
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+
+      - name: Run unit tests
+        # Disable SVE for now
+        run: ctest -E "test-unit-sve_128|test-unit-sve_256" --rerun-failed --output-on-failure
+        working-directory: build_rel
+
   build-ubuntu-arm64-gcc:
     name: Ubuntu arm64 GCC
     runs-on: ubuntu-24.04-arm
