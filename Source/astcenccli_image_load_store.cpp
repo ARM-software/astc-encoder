@@ -697,46 +697,6 @@ static void switch_endianness4(
 	}
 }
 
-/*
- Notes about KTX:
-
- After the header and the key/value data area, the actual image data follows.
- Each image starts with a 4-byte "imageSize" value indicating the number of bytes of image data follow.
- (For cube-maps, this value appears only after first image; the remaining 5 images are all of equal size.)
- If the size of an image is not a multiple of 4, then it is padded to the next multiple of 4.
- Note that this padding is NOT included in the "imageSize" field.
- In a cubemap, the padding appears after each face note that in a 2D/3D texture, padding does
- NOT appear between the lines/planes of the texture!
-
- In a KTX file, there may be multiple images; they are organized as follows:
-
- For each mipmap_level in numberOfMipmapLevels
- 	UInt32 imageSize;
- 	For each array_element in numberOfArrayElements
- 	* for each face in numberOfFaces
- 		* for each z_slice in pixelDepth
- 			* for each row or row_of_blocks in pixelHeight
- 				* for each pixel or block_of_pixels in pixelWidth
- 					Byte data[format-specific-number-of-bytes]
- 				* end
- 			* end
- 		*end
- 		Byte cubePadding[0-3]
- 	*end
- 	Byte mipPadding[3 - ((imageSize+ 3) % 4)]
- *end
-
- In the ASTC codec, we will, for the time being only harvest the first image,
- and we will support only a limited set of formats:
-
- gl_type: UNSIGNED_BYTE UNSIGNED_SHORT HALF_FLOAT FLOAT UNSIGNED_INT_8_8_8_8 UNSIGNED_INT_8_8_8_8_REV
- gl_format: RED, RG. RGB, RGBA BGR, BGRA
- gl_internal_format: used for upload to OpenGL; we can ignore it on uncompressed-load, but
- 	need to provide a reasonable value on store: RGB8 RGBA8 RGB16F RGBA16F
- gl_base_internal_format: same as gl_format unless texture is compressed (well, BGR is turned into RGB)
- 	RED, RG, RGB, RGBA
-*/
-
 // Khronos enums
 #define GL_RED                                      0x1903
 #define GL_RG                                       0x8227

@@ -263,14 +263,14 @@ static void compute_encoding_choice_errors(
 		uncor_rgb_plines.amod = uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b);
 		uncor_rgb_plines.bs   = uncor_rgb_lines.b;
 
-		// Same chroma always goes though zero, so this is simpler than the others
+		// Same chroma always goes through zero, so this is simpler than the others
 		samec_rgb_plines.amod = vfloat4::zero();
 		samec_rgb_plines.bs   = samec_rgb_lines.b;
 
 		rgb_luma_plines.amod = rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b);
 		rgb_luma_plines.bs   = rgb_luma_lines.b;
 
-		// Luminance always goes though zero, so this is simpler than the others
+		// Luminance always goes through zero, so this is simpler than the others
 		luminance_plines.amod = vfloat4::zero();
 		luminance_plines.bs   = unit3();
 

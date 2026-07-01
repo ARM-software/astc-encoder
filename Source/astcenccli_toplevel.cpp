@@ -220,7 +220,7 @@ static bool is_float(
 	// Leading whitespace is an error
 	stream >> std::noskipws >> test;
 
-	// Ensure entire no remaining string in addition to parse failure
+	// Ensure no remaining string, in addition to checking for parse failure
 	return stream.eof() && !stream.fail();
 }
 
