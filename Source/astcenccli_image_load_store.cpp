@@ -1182,17 +1182,17 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 
 	if (hdr.number_of_mipmap_levels > 1)
 	{
-		printf("WARNING: Only first of %u mipmap levels will be compressed '%s'.\n", hdr.number_of_mipmap_levels, filename);
+		printf("WARNING: Only the first of %u mipmap levels will be compressed '%s'.\n", hdr.number_of_mipmap_levels, filename);
 	}
 
 	if (hdr.number_of_array_elements > 1)
 	{
-		printf("WARNING: Only first of %u array layers will be compressed '%s'.\n", hdr.number_of_array_elements, filename);
+		printf("WARNING: Only the first of %u array layers will be compressed '%s'.\n", hdr.number_of_array_elements, filename);
 	}
 
 	if (hdr.number_of_faces > 1)
 	{
-		printf("WARNING: Only first of %u cube faces will be compressed '%s'.\n", hdr.number_of_faces, filename);
+		printf("WARNING: Only the first of %u cube faces will be compressed '%s'.\n", hdr.number_of_faces, filename);
 	}
 
 	unsigned int dim_x = hdr.pixel_width;

@@ -670,7 +670,7 @@ static int init_astcenc_config(
 	}
 	else if (status == ASTCENC_ERR_BAD_DECODE_MODE)
 	{
-		print_error("ERROR: Decode_unorm8 is not supported by HDR profiles\n");
+		print_error("ERROR: decode_unorm8 is not supported by HDR profiles\n");
 		return 1;
 	}
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
@@ -885,7 +885,7 @@ static int edit_astcenc_config(
 					swizzle_components[i] =  ASTCENC_SWZ_Z;
 					break;
 				default:
-					print_error("ERROR: ERROR: -dsw component '%c' is not valid\n", argv[argidx - 1][i]);
+					print_error("ERROR: -dsw component '%c' is not valid\n", argv[argidx - 1][i]);
 					return 1;
 				}
 			}
