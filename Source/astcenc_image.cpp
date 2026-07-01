@@ -40,7 +40,7 @@ using pixel_swizzler = vfloat4(*)(vfloat4, const astcenc_swizzle&);
 using pixel_converter = vfloat4(*)(vfloat4, vmask4);
 
 /**
- * @brief Load a 8-bit UNORM texel from a data array.
+ * @brief Load an 8-bit UNORM texel from a data array.
  *
  * @param data          The data pointer.
  * @param base_offset   The index offset to the start of the pixel.
@@ -124,7 +124,7 @@ static vfloat4 swz_texel(
  * Out-of-range inputs will be clamped to the valid UNORM range.
  *
  * @param data       The RGBA data to encode.
- * @param lns_mask   The mask for the HDR channels than need LNS encoding.
+ * @param lns_mask   The mask for the HDR channels that need LNS encoding.
  */
 static vfloat4 encode_texel_unorm(
 	vfloat4 data,
@@ -145,7 +145,7 @@ static vfloat4 encode_texel_unorm(
  * depending on @c lns_mask.
  *
  * @param data       The RGBA data to encode.
- * @param lns_mask   The mask for the HDR channels than need LNS encoding.
+ * @param lns_mask   The mask for the HDR channels that need LNS encoding.
  */
 static vfloat4 encode_texel_lns(
 	vfloat4 data,
