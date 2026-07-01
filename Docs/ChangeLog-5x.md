@@ -26,6 +26,8 @@ The 5.6.0 release is a minor maintenance release.
     uncompressed images to a `dds` or `.ktx` output image format.
   * **Bug fix:** Fixed missing initialization of the `reserved2` field in the
     DDS file header when writing uncompressed `.dds` output images.
+  * **Bug fix:** Fixed typos and grammar issues in the command line `-help`
+    text.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.5.0
