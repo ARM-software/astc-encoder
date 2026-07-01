@@ -2249,6 +2249,7 @@ static bool store_dds_uncompressed_image(
 	hdr.caps2 = (dim_z > 1) ? 0x200000 : 0;
 	hdr.caps3 = 0;
 	hdr.caps4 = 0;
+	hdr.reserved2 = 0;
 
 	// Pixel-format data
 	if (bitness == 8)
