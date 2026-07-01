@@ -21,7 +21,7 @@ Running the tests requires Python 3.12 to be installed on the host machine.
 
 Compile the build of `astcenc` you wish to test, and install it into the project `./bin` directory. This can be achieved by configuring the CMake build using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build target.
 
-Run the functional tests against to appropriate encoder variant using:
+Run the functional tests against the appropriate encoder variant using:
 
 ```sh
 python3 ./Test/astc_test_functional.py -v --encoder <encoder_variant>
@@ -38,7 +38,7 @@ of the repository:
 python3 ./Test/astc_test_image.py
 ```
 
-This will run though a series of image compression tests, comparing the image
+This will run through a series of image compression tests, comparing the image
 PSNR against a set of reference results from the last stable baseline. The test
 will fail if any reduction in PSNR above a set threshold is detected.
 
@@ -50,7 +50,7 @@ how many threads the compressor is allowed to use.
 By default output images are discarded during testing. To store images for
 debug purposes, the decompressed output images can be kept by passing
 `--keep-output`. The resulting images are stored in the `TestOutput`
-subdirectory, using the same test set directoy structure as the `Test/Images`
+subdirectory, using the same test set directory structure as the `Test/Images`
 folder.
 
 ## Benchmarking
@@ -91,7 +91,7 @@ high quality levels, or uses many repeats to improve result stability.
 **WARNING:** This may take some hours to complete, and it is best done when the
 test suite gets exclusive use of the machine to avoid other processing slowing
 down the compression and disturbing the performance data. It is recommended to
-shutdown or disable any background applications that are running.
+shut down or disable any background applications that are running.
 
 # Running C++ unit tests
 

@@ -13,23 +13,24 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 The 5.6.0 release is a minor maintenance release.
 
+* **Codec library updates:**
+  * **Bug fix:** Avoid undefined behavior caused by passing floating point
+    values outside of the [0.0, 1.0] range as input data for a UNORM color
+    channel.
+  * **Bug fix:** Avoid undefined behavior caused by unaligned access in SSE,
+    AVX2, and NEON SIMD library implementations.
 * **Command line tool updates:**
-  * **Bug fix:** Zero the trailing reserved field of the DDS header before
-    writing it, so uncompressed `.dds` output no longer contains uninitialized
-    stack bytes.
   * **Bug fix:** Fixed incorrect plane stride when writing an uncompressed 3D
     LDR image to a DDS container.
   * **Bug fix:** Fixed potential integer overflow when storing very large
     uncompressed images to a `dds` or `.ktx` output image format.
-  * **Bug fix:** Avoid undefined behavior caused by passing floating point
-    values outside of the [0.0, 1.0] range as data for a UNORM color channel.
-  * **Bug fix:** Avoid undefined behavior caused by unaligned access in SSE
-    and AVX2 SIMD library implementations.
+  * **Bug fix:** Fixed missing initialization of the `reserved2` field in the
+    DDS file header when writing uncompressed `.dds` output images.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.5.0
 
-**Status:** June 2026
+**Status:** Released June 2026
 
 The 5.5.0 release is a minor maintenance release, fixing minor functional
 issues and improving robustness when processing invalid images.
@@ -70,7 +71,7 @@ issues and improving robustness when processing invalid images.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.4.0
 
-**Status:** May 2026
+**Status:** Released May 2026
 
 The 5.4.0 release is a minor feature release.
 
@@ -104,7 +105,7 @@ header from the same release to avoid compatibility issues.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.3.0
 
-**Status:** March 2025
+**Status:** Released March 2025
 
 The 5.3.0 release is a minor maintenance release.
 
@@ -124,7 +125,7 @@ The 5.3.0 release is a minor maintenance release.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.2.0
 
-**Status:** February 2025
+**Status:** Released February 2025
 
 The 5.2.0 release is a minor maintenance release.
 
@@ -138,7 +139,7 @@ header from the same release to avoid compatibility issues.
     unintended specification change. Compared to previous releases, this change
     can cause LSB bit differences in the alpha channel of compressed images.
   * **Feature:** Arm64 builds for Linux added to the GitHub Actions builds, and
-    Arm64 binaries for NEON, 128-bit SVE 128 and 256-bit SVE added to release
+    Arm64 binaries for NEON, 128-bit SVE and 256-bit SVE added to release
     builds.
   * **Feature:** Added a new codec API, `astcenc_compress_cancel()`, which can
     be used to cancel an in-flight compression. This is designed to help make
@@ -151,7 +152,7 @@ header from the same release to avoid compatibility issues.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.1.0
 
-**Status:** November 2024
+**Status:** Released November 2024
 
 The 5.1.0 release is an optimization release, giving moderate performance
 improvements on all platforms. There are no image quality differences.
@@ -174,7 +175,7 @@ improvements on all platforms. There are no image quality differences.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.0.0
 
-**Status:** November 2024
+**Status:** Released November 2024
 
 The 5.0.0 release is the first stable release in the 5.x series. The main new
 feature is support for the Arm Scalable Vector Extensions (SVE) SIMD instruction
@@ -190,7 +191,7 @@ set.
     can only run on hardware implementing 256-bit SVE.
   * **Feature:** Added backend for Arm SVE 128-bit builds. These are portable
     builds and can run on hardware implementing any SVE vector length, but the
-    explicit SVE use is augmented NEON and will only use the bottom 128-bits of
+    explicit SVE use is augmented NEON and will only use the bottom 128 bits of
     each SVE vector.
   * **Feature:** Optimized NEON mask `any()` and `all()` functions.
   * **Feature:** Migrated build and test to GitHub Actions pipelines.

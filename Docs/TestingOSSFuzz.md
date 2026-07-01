@@ -22,7 +22,7 @@ You will need to log out and log in again for the group changes to take effect.
 
 # Running Python-based CLI functional tests
 
-Checkout the OSS-Fuzz project:
+Check out the OSS-Fuzz project:
 
 ```sh
 git clone --depth=1 https://github.com/google/oss-fuzz.git
@@ -51,14 +51,14 @@ python3 infra/helper.py build_fuzzers astc-encoder
 python3 infra/helper.py build_fuzzers astc-encoder /mnt/c/work/projects/astcenc/Source --sanitizer <address,undefined, etc>
 ```
 
-Run a reproducer testcase downloaded from OSS Fuzz:
+Run a reproducer test case downloaded from OSS Fuzz:
 
 ```sh
 python3 infra/helper.py reproduce astc-encoder <fuzz_target> <testcase>
 ```
 
 Sometimes reproducers are intermittent and do not always reproduce. Running the
-the test scenario in a loop can be a useful way to try and make it reproduce.
+test scenario in a loop can be a useful way to try and make it reproduce.
 
 ```sh
 while python3 infra/helper.py reproduce astc-encoder <fuzz_target> <testcase>; do :; done
