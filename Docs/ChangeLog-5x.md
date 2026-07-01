@@ -14,6 +14,9 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.6.0 release is a minor maintenance release.
 
 * **Command line tool updates:**
+  * **Bug fix:** Zero the trailing reserved field of the DDS header before
+    writing it, so uncompressed `.dds` output no longer contains uninitialized
+    stack bytes.
   * **Bug fix:** Fixed incorrect plane stride when writing an uncompressed 3D
     LDR image to a DDS container.
   * **Bug fix:** Fixed potential integer overflow when storing very large
