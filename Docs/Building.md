@@ -179,7 +179,7 @@ are an extra build output that are not currently used by the command line tool.
 All normal builds will support all ASTC block sizes, including the worst case
 6x6x6 3D block size (216 texels per block). Compressor memory footprint and
 performance can be improved by limiting the block sizes supported in the build
-by adding `-DASTCENC_BLOCK_MAX_TEXELS=<texel_count>` to to CMake command line
+by adding `-DASTCENC_BLOCK_MAX_TEXELS=<texel_count>` to the CMake command line
 when configuring. Legal block sizes that are unavailable in a restricted build
 will return the error `ASTCENC_ERR_NOT_IMPLEMENTED` during context creation.
 
@@ -221,7 +221,7 @@ microarchitecture pairing that you are targeting.
 ### Test builds
 
 We support building unit tests. These use the `googletest` framework, which is
-pulled in though a git submodule. On first use, you must fetch the submodule
+pulled in through a git submodule. On first use, you must fetch the submodule
 dependency:
 
 ```shell
@@ -294,10 +294,11 @@ The current RISC-V Vector backend only supports VLEN=256 hardware, due to
 toolchain limitations that make a vector-length-agnostic port challenging.
 Hopefully there will be one in the future.
 
-Since the backend only works when the VLEN is exactly 256, and you can only
-enable this as a global compiler flag, there is no separate build target for
-the backend yet. To enable it, simple build the none or native build target,
-with the `-mrvv-vector-bits=zvl` CXXFLAG and a `zvl256b` in the ISA string.
+Since the backend only works when the vector length is exactly 256 bits, and
+you can only enable this as a global compiler flag, there is no separate build
+target for the backend yet. To enable it, simply build the NONE or NATIVE build
+target, with the `-mrvv-vector-bits=zvl` CXXFLAG and a `zvl256b` in the
+`-march` ISA configuration string.
 
 You can cross-compile to RISC-V with the backend enabled using the following
 commands:
@@ -319,7 +320,7 @@ the current CMake configuration using the `package` build target
 
 Configure CMake with:
 
-* `-DASTCENC_PACAKGE=<arch>` to set the package architecture/variant name used
+* `-DASTCENC_PACKAGE=<arch>` to set the package architecture/variant name used
 to name the package archive (not set by default).
 
 ```shell
@@ -335,9 +336,10 @@ Windows packages will use the `.zip` format, other packages will use the
 
 The core codec of `astcenc` is built as a library, and so can be easily
 integrated into other projects. We recommend integrating the project in a way
-that lets you control which version of `astcenc` you are using, as this allows you to manage API version changes.
+that lets you control which version of `astcenc` you are using, as this allows
+you to manage API version changes.
 
-An basic example of CMake integration and codec API usage can be found in the `./Utils/Example` directory. See the [Example Readme](../Utils/Example/README.md) for more details.
+A basic example of CMake integration and codec API usage can be found in the `./Utils/Example` directory. See the [Example Readme](../Utils/Example/README.md) for more details.
 
 > [!CAUTION]
 > This example is designed to always use the latest main branch so that it
@@ -354,7 +356,7 @@ increment.
 
 When updating to a newer major version, callers of the API should expect that
 they will need to update to synchronize with any changes. When a major API
-version makes changes to the API, they will be done in way that deliberately
+version makes changes to the API, they will be done in a way that deliberately
 causes a compilation failure. This avoids applications hitting failures that
 only occur at runtime.
 
