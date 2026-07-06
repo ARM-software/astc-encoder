@@ -127,7 +127,7 @@ astcenc_image_ptr load_png_with_wuffs(
 
 	uint32_t dim_x = wuffs_base__pixel_config__width(&ic.pixcfg);
 	uint32_t dim_y = wuffs_base__pixel_config__height(&ic.pixcfg);
-	size_t num_pixels = dim_x * dim_y;
+	size_t num_pixels = static_cast<size_t>(dim_x) * dim_y;
 	if (num_pixels > (SIZE_MAX / 4))
 	{
 		return nullptr;
