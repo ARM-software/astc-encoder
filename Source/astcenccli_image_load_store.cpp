@@ -1361,6 +1361,29 @@ bool load_ktx_compressed_image(
 		data_len = reverse_bytes_u32(data_len);
 	}
 
+	// The imageSize and pixel dimensions are independent header fields, so
+	// reject a payload that is too small for the block grid the dimensions
+	// describe (load_cimage derives the size from the dimensions instead).
+	size_t block_x = fmt->x;
+	size_t block_y = fmt->y;
+	size_t block_z = fmt->z == 0 ? 1 : fmt->z;
+
+	size_t dim_z = hdr.pixel_depth == 0 ? 1 : hdr.pixel_depth;
+	size_t blocks_x = (static_cast<size_t>(hdr.pixel_width) + block_x - 1) / block_x;
+	size_t blocks_y = (static_cast<size_t>(hdr.pixel_height) + block_y - 1) / block_y;
+	size_t blocks_z = (dim_z + block_z - 1) / block_z;
+
+	bool overflow { false };
+	size_t size_needed = astc::mul_safe(blocks_x, blocks_y, overflow);
+	size_needed = astc::mul_safe(size_needed, blocks_z, overflow);
+	size_needed = astc::mul_safe(size_needed, 16, overflow);
+
+	if (overflow || data_len < size_needed)
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return true;
+	}
+
 	// Read the data
 	img.data.resize(data_len);
 	file.read(reinterpret_cast<char*>(img.data.data()), data_len);
