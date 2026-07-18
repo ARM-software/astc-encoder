@@ -1361,6 +1361,28 @@ bool load_ktx_compressed_image(
 		data_len = reverse_bytes_u32(data_len);
 	}
 
+	// The data size and pixel dimensions are independent header fields, so
+	// reject a data size that is too small for the given image dimensions
+	size_t block_x = fmt->x;
+	size_t block_y = fmt->y;
+	size_t block_z = fmt->z == 0 ? 1 : fmt->z;
+
+	size_t dim_z = hdr.pixel_depth == 0 ? 1 : hdr.pixel_depth;
+	size_t blocks_x =  astc::get_block_count_safe(hdr.pixel_width, block_x);
+	size_t blocks_y = astc::get_block_count_safe(hdr.pixel_height, block_y);
+	size_t blocks_z = astc::get_block_count_safe(dim_z, block_z);
+
+	bool overflow { false };
+	size_t size_needed = astc::mul_safe(blocks_x, blocks_y, overflow);
+	size_needed = astc::mul_safe(size_needed, blocks_z, overflow);
+	size_needed = astc::mul_safe(size_needed, 16, overflow);
+
+	if (overflow || data_len < size_needed)
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return true;
+	}
+
 	// Read the data
 	img.data.resize(data_len);
 	file.read(reinterpret_cast<char*>(img.data.data()), data_len);
@@ -1472,8 +1494,8 @@ static bool store_ktx_uncompressed_image(
 	// Size of image data padded to a multiple of 4 bytes
 	size_t image_write_bytes = (image_bytes + 3) & ~3;
 
-	// The KTX imageSize field is a fixed 32-bit value, so check that the size_t
-	/// value can be safely narrowed, and does not wrap when padded
+	// The KTX data size field is a fixed 32-bit value, so check that the
+	// size_t value can be safely narrowed and does not wrap when padded
 	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
 	if ((image_bytes_field != image_bytes) || (image_write_bytes < image_bytes))
 	{
