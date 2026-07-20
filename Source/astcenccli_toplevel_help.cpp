@@ -69,487 +69,494 @@ For full help documentation run 'astcenc -help'.
 )";
 
 /** @brief The long-form help text. */
-static const char *astcenc_long_help = R"(
+static const char* astcenc_long_help = R"(
 NAME
-       astcenc - compress or decompress images using the ASTC format
+
+    astcenc - compress or decompress images using the ASTC format.
 
 SYNOPSIS
-       astcenc {-h|-help}
-       astcenc {-v|-version}
-       astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <quality> [options]
-       astcenc {-dl|-ds|-dh|-dH} <in> <out>
-       astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <quality> [options]
+
+    astcenc {-h|-help}
+    astcenc {-v|-version}
+    astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <quality> [options]
+    astcenc {-dl|-ds|-dh|-dH} <in> <out>
+    astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <quality> [options]
 
 DESCRIPTION
-       astcenc compresses image files into the Adaptive Scalable Texture
-       Compression (ASTC) image format, a lossy compression format
-       designed for use in real-time graphics applications. astcenc
-       supports all of the compression profiles and block sizes allowed by
-       the ASTC format:
 
-           All color profiles (LDR linear, LDR sRGB, and HDR)
-           All 2D block sizes (4x4 through to 12x12)
-           All 3D block sizes (3x3x3 through to 6x6x6)
+    astcenc compresses image files into the Adaptive Scalable Texture
+    Compression (ASTC) data format, a lossy compression format designed for
+    use in real-time graphics applications. astcenc supports all of the
+    compression profiles and block sizes allowed by the ASTC format:
 
-       The compressor provides a flexible quality level, allowing users to
-       trade off compressed image quality against compression performance.
-       For ease of use, a number of quality presets are also provided. For
-       advanced users the compressor provides many additional control
-       options for fine tuning quality.
+    * All color profiles (LDR linear, LDR sRGB, and HDR)
+    * All 2D block sizes (4x4 through to 12x12)
+    * All 3D block sizes (3x3x3 through to 6x6x6)
 
-       astcenc can also be used to decompress ASTC compressed images, and
-       perform compression image quality analysis.
+    astcenc compression converts an input image into an ASTC image. It
+    provides a flexible tradeoff between compression time and image quality
+    using a general quality setting as well as many advanced control
+    options for fine tuning.
+
+    astcenc decompression converts an ASTC image into an output image.
+
+    astcenc test mode can perform image quality analysis for a given
+    set of compression options.
 
 COMPRESSION
-       To compress an image using the ASTC format you must specify the
-       color profile, the input file name, the output file name, the target
-       block size, and the quality preset.
 
-       The color profile is specified using the -cl (LDR linear), -cs (LDR
-       sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder options. Note
-       that not all GPUs implementing ASTC support the HDR profile.
+    To compress an image using astcenc you must specify the color profile,
+    the input file name, the output file name, the target block size, and
+    the quality preset.
 
-       The input file path must match a valid file format for compression,
-       and the output file format must be a valid output for compression.
-       See the FILE FORMATS section for the list of supported formats.
+    The color profile is specified using the -cl (LDR linear), -cs (LDR
+    sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder options. GPUs
+    that support ASTC must support both LDR profiles, but support for the
+    HDR profile is optional.
 
-       The block size must be a valid ASTC block size. Every block
-       compresses into 128 bits of compressed output, so the block size
-       determines the compressed data bitrate.
+    The input and output file paths and extensions must specify a valid
+    file for the compression operation. See the COMPRESSION FILE FORMATS
+    section for the list of supported formats.
 
-       Supported 2D block sizes are:
+    The block size must be a valid ASTC block size. Every block compresses
+    into 128 bits of compressed output, so the block size determines the
+    compressed data bitrate.
 
-             4x4: 8.00 bpp        10x5: 2.56 bpp
-             5x4: 6.40 bpp        10x6: 2.13 bpp
-             5x5: 5.12 bpp         8x8: 2.00 bpp
-             6x5: 4.27 bpp        10x8: 1.60 bpp
-             6x6: 3.56 bpp       10x10: 1.28 bpp
-             8x5: 3.20 bpp       12x10: 1.07 bpp
-             8x6: 2.67 bpp       12x12: 0.89 bpp
+    Supported 2D block sizes are:
 
-       Supported 3D block sizes are:
+    * 4x4: 8.00 bpp
+    * 5x4: 6.40 bpp
+    * 5x5: 5.12 bpp
+    * 6x5: 4.27 bpp
+    * 6x6: 3.56 bpp
+    * 8x5: 3.20 bpp
+    * 8x6: 2.67 bpp
+    * 10x5: 2.56 bpp
+    * 10x6: 2.13 bpp
+    * 8x8: 2.00 bpp
+    * 10x8: 1.60 bpp
+    * 10x10: 1.28 bpp
+    * 12x10: 1.07 bpp
+    * 12x12: 0.89 bpp
 
-           3x3x3: 4.74 bpp       5x5x4: 1.28 bpp
-           4x3x3: 3.56 bpp       5x5x5: 1.02 bpp
-           4x4x3: 2.67 bpp       6x5x5: 0.85 bpp
-           4x4x4: 2.00 bpp       6x6x5: 0.71 bpp
-           5x4x4: 1.60 bpp       6x6x6: 0.59 bpp
+    Supported 3D block sizes are:
 
-       The quality level configures the quality-performance tradeoff for
-       the compressor; more complete searches of the search space improve
-       image quality at the expense of compression time. The quality level
-       can be set to any value between 0 (fastest) and 100 (exhaustive),
-       or to a fixed quality preset:
+    * 3x3x3: 4.74 bpp
+    * 4x3x3: 3.56 bpp
+    * 4x4x3: 2.67 bpp
+    * 4x4x4: 2.00 bpp
+    * 5x4x4: 1.60 bpp
+    * 5x5x4: 1.28 bpp
+    * 5x5x5: 1.02 bpp
+    * 6x5x5: 0.85 bpp
+    * 6x6x5: 0.71 bpp
+    * 6x6x6: 0.59 bpp
 
-           -fastest      (equivalent to quality =   0)
-           -fast         (equivalent to quality =  10)
-           -medium       (equivalent to quality =  60)
-           -thorough     (equivalent to quality =  98)
-           -verythorough (equivalent to quality =  99)
-           -exhaustive   (equivalent to quality = 100)
+    The quality level sets the quality-performance tradeoff for the
+    compressor. Higher quality levels make more complete searches of the
+    search space to improve image quality, at the expense of compression
+    time. The quality level can be set to any value between 0 (fastest) and
+    100 (exhaustive), or to a pre-defined quality preset:
 
-       For compression of production content we recommend using a quality
-       level equivalent to -medium or higher.
+        -fastest        (quality 0)
+        -fast           (quality 10)
+        -medium         (quality 60)
+        -thorough       (quality 98)
+        -verythorough   (quality 99)
+        -exhaustive     (quality 100)
 
-       Using quality levels higher than -thorough will significantly
-       increase compression time, but typically only gives minor quality
-       improvements.
+    For compression of production content we recommend using the
+    -thorough quality level. Higher quality levels are substantially
+    slower with only minor improvements to image quality.
 
-       There are a number of additional compressor options which are useful
-       to consider for common usage, based on the type of image data being
-       compressed.
+    There are a number of additional compressor options which are useful
+    to consider, based on the type of image data being compressed.
 
-       -decode_unorm8
-           Indicate that an LDR compressed texture will be used with
-           the decode_unorm8 extension behavior, instead of the default
-           decode_float16 decompression.
+    -decode_unorm8
+        Set this for textures that use the decode_unorm8 extension
+        decompression behavior at run-time. This improves image quality
+        because the compression search will correctly round values to match
+        the run-time behavior.
 
-           Matching the decode mode used during compression to the mode
-           used at runtime will improve image quality as the compressor
-           can ensure that rounding goes the right way.
+    -a <radius>
+        Set this for color textures with an alpha translucency to scale
+        per-texel weights by the alpha value. The alpha value used to scale
+        the color weights is the average of all texels within the <radius>.
+        Set <radius> to 0 to use only a texel's own alpha value, but note
+        that this can cause issues when sampling with filtering.
 
-           This mode is used automatically if you decompress to an 8-bit
-           per component output image format.
+        This improves image quality for color textures with alpha
+        translucency because the compressor does not try to preserve color
+        accuracy that would not be visible after quantization.
 
-       -normal
-           The input texture is a three component linear LDR normal map
-           storing unit length normals as (R=X, G=Y, B=Z). The output will
-           be a two component X+Y normal map stored as (RGB=X, A=Y). The Z
-           component can be recovered programmatically in shader code by
-           using the equation:
+        Do not use this option when your textures store color values that
+        have been premultiplied by the alpha value, as the equivalent
+        scaling has already been applied.
 
-               nml.xy = texture(...).ga;              // Load in [0,1]
-               nml.xy = nml.xy * 2.0 - 1.0;           // Unpack to [-1,1]
-               nml.z = sqrt(1 - dot(nml.xy, nml.xy)); // Compute Z
+    -normal
+        Set this for normal map textures when the input is a three
+        component normal map storing unit length normals stored as (R=X,
+        G=Y, B=Z). The output texture will be a two component XY normal map
+        stored as (RGB=X, A=Y). The Z component can be computed in shader
+        code using the equation:
 
-           Alternative component swizzles can be set with -esw and -dsw
-           parameters.
+            nml.xy = texture(...).ga;                // Load in [0,1]
+            nml.xy = nml.xy * 2.0 - 1.0;             // Unpack to [-1,1]
+            nml.z = sqrt(1 - dot(nml.xy, nml.xy));   // Compute Z
 
-       -rgbm <max>
-           The input texture is an RGBM encoded texture, storing HDR
-           values between 0 and <max> in an LDR container format with a
-           shared multiplier. Shaders reconstruct the HDR value as:
+        This improves image quality because the compressor only has to
+        store two color endpoints per block.
 
-               vec3 hdr_value = tex.rgb * tex.a * max;
+        Alternative compressed component orders can be set by using the
+        -esw and -dsw options after the -normal option on the command line.
 
-           The compression behavior of the ASTC format for RGBM data
-           requires that the user's RGBM encoding preprocess keeps values
-           of M above a lower threshold to avoid them quantizing to zero
-           during compression. We recommend trying 16/255 or 32/255.
+    -rgbm <max>
+        Set this for RGBM encoded textures, which store HDR values between
+        0 and <max> in an LDR container format with a shared multiplier.
+        The HDR value can be computed in shader code using the equation:
 
-       -perceptual
-           The codec should optimize perceptual error, instead of direct
-           RMS error. This aims to improve perceived image quality, but
-           typically lowers the measured PSNR score. Perceptual methods are
-           currently only available for RGB color data.
+            vec3 hdr_value = tex.rgb * tex.a * max;
 
-       -zdim <zdim>
-           Load a sequence of <zdim> 2D image slices to use as a 3D image.
-           The input filename given is decorated with the postfix
-           "_<slice>" to find the file to load. For example, an input named
-           "input.png" would load as input_0.png, input_1.png, etc.
+        This improves image quality because astcenc can compute error in
+        the reconstructed HDR values when choosing the best encoding.
 
-       -pp-normalize
-            Run a preprocess over the image that forces normal vectors to
-            be unit length. Preprocessing applies before any codec encoding
-            swizzle, so normal data must be in the RGB components in the
-            source image.
+        To avoid severe block artifacts in the compressed image, we
+        recommend that your HDR to RGBM conversion preprocess limits the
+        value of M to keep it above a minimum threshold. We recommend
+        using at least 16/255 as your lower limit.
 
-       -pp-premultiply
-            Run a preprocess over the image that scales RGB components in
-            the image by the alpha value. Preprocessing applies before any
-            codec encoding swizzle, so color data must be in the RGB
-            components in the source image.)"
+    -perceptual
+        Set this for LDR color textures to optimize for perceptual error
+        instead of simple root-mean-square error.
+
+        This improves perceived image quality in color data, but typically
+        lowers standard metrics such as PSNR. Perceptual methods should not
+        be used for non-color data.
+
+    -zdim <zdim>
+        Set this for a 3D volumetric textures that are loaded as s set
+        <zdim> 2D input image files. The input filename given is decorated
+        with the postfix "_<slice>" to find the file to load. For example,
+        specifying the input file as input.png would load input_0.png,
+        input_1.png, etc.
+
+    -pp-normalize
+         Set this for a normal map texture to run a preprocess over the
+         image that forces normal vectors to be unit length. The
+         preprocessing is applied before any codec encoding swizzle, so
+         data must be in the RGB components of the input image.
+
+    -pp-premultiply
+         Set this for a color texture to run a preprocess over the image
+         that scales RGB components by the alpha component value. The
+         preprocessing is applied before any codec encoding swizzle, so
+         color data must be in the RGB components of the input image and
+         alpha data must be in the A component.
+
+     -yflip
+        Flip the image in the vertical axis prior to compression and after
+        decompression. Note that using this option in test mode (-t*) will
+        have no effect because the image will be flipped twice.
+
+    -j <threads>
+        Explicitly specify the number of threads to use in the codec. If
+        not specified, the codec will use one thread per CPU detected in
+        the system.)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(
 
-COMPRESSION TIPS & TRICKS
-       ASTC is a block-based format that can be prone to block artifacts.
-       If block artifacts are a problem when compressing a given texture,
-       increasing the compressor quality preset can help to alleviate the
-       problem.
-
-       If a texture exhibits severe block artifacts in only some of the
-       color components, which is a common problem for mask textures, then
-       using the -cw option to raise the weighting of the affected color
-       component(s) may help. For example, if the green color component is
-       particularly badly encoded then try '-cw 1 6 1 1'.
-
 ADVANCED COMPRESSION
-       Error weighting options
-       -----------------------
 
-       These options provide low-level control of the codec error metric
-       computation, used to determine what good compression looks like.
+    Options in this section provide extensive control over compressor
+    settings and heuristics.
 
-       -a <radius>
-           For textures with an alpha component, scale per-texel weights by
-           the alpha value. The alpha value chosen for scaling of any
-           particular texel is taken as an average across a neighborhood of
-           the texel defined by the <radius> argument. Setting <radius> to
-           0 causes only the texel's own alpha to be used.
+    Error weighting options
+    -----------------------
 
-           ASTC blocks that are entirely zero weighted, after the radius is
-           taken into account, are replaced by constant color blocks. This
-           is an RDO-like technique to improve compression ratio in any
-           application packaging compression that is applied.
+    These options provide low-level control of the codec error metric
+    computation, which is used to determine which compression trials
+    produces the best result.
 
-       -cw <red> <green> <blue> <alpha>
-           Assign an additional weight scaling to each color component,
-           allowing the components to be treated differently in terms of
-           error significance. Set values above 1 to increase a component's
-           significance, and values below 1 to decrease it. Set to 0 to
-           exclude a component from error computation.
+    -cw <red> <green> <blue> <alpha>
+        Set this option to bias the error significance of each color
+        component. Set a component error weight to zero to exclude it
+        completely, which is useful if the component is unused.
 
-       -mpsnr <low> <high>
-           Set the low and high f-stop values for the mPSNR error metric.
-           The mPSNR error metric only applies to HDR textures.
+        This improves the quality of the color components with a higher
+        relative error weight, but can reduce the quality of the other
+        components.
 
-       Performance-quality tradeoff options
-       ------------------------------------
+    -mpsnr <low> <high>
+        Set this option for an HDR texture to set the low and high f-stop
+        values for the mPSNR error metric.
 
-       These options provide low-level control of the codec heuristics that
-       drive the performance-quality trade off. The presets vary by block
-       bitrate; the recommended starting point for a 4x4 block is very
-       different to the one for an 8x8 block. The presets documented here
-       are for the high bitrate mode (fewer than 25 texels).
+        This option does not impact the compressed image quality, but
+        changes how the mPSNR error metric is computed in test mode.
 
-       -partitioncountlimit <number>
-           Test up to and including <number> partitions for each block.
-           Higher numbers give better quality, as more complex blocks can
-           be encoded, but will increase search time. Preset defaults are:
+    Performance-quality tradeoff options
+    ------------------------------------
 
-               -fastest      : 2
-               -fast         : 3
-               -medium       : 4
-               -thorough     : 4
-               -verythorough : 4
-               -exhaustive   : 4
+    These options provide low-level control of the individual heuristics
+    that determine the performance-quality trade off. These settings are
+    initialized based on the quality level set on the command line. The
+    initial values for a quality level also vary by bitrate. Those
+    documented here to give an indication of recommended settings are taken
+    from the high bitrate set used for block sizes that contain fewer than
+    25 texels.
 
-       -[2|3|4]partitionindexlimit <number>
-           Estimate errors for <number> block partition indices for this
-           partition count. Higher numbers give better quality, however
-           large values give diminishing returns especially for smaller
-           block sizes. Preset defaults are:
+    -dblimit <number>
+        Stop compression work on a block when the PSNR of the block,
+        measured in dB, exceeds <number>. This option is ineffective for
+        HDR textures. Preset defaults, where N is the number of texels in a
+        block, are:
 
-               -fastest      :   10 |   6 |   4
-               -fast         :   18 |  10 |   8
-               -medium       :   34 |  28 |  16
-               -thorough     :   82 |  60 |  30
-               -verythorough :  256 | 128 |  64
-               -exhaustive   :  512 | 512 | 512
+            -fastest      : MAX(63-19*log10(N),  85-35*log10(N))
+            -fast         : MAX(63-19*log10(N),  85-35*log10(N))
+            -medium       : MAX(70-19*log10(N),  95-35*log10(N))
+            -thorough     : MAX(77-19*log10(N), 105-35*log10(N))
+            -verythorough : 999
+            -exhaustive   : 999
 
-       -[2|3|4]partitioncandidatelimit <number>
-           Calculate errors for <number> block partition indices for this
-           partition count. Higher numbers give better quality, however
-           large values give diminishing returns especially for smaller
-           block sizes. Preset defaults are:
+    -partitioncountlimit <number>
+        Test up to and including <number> partitions for each block. Preset
+        defaults are:
 
-               -fastest      :   2 |  2 |  2
-               -fast         :   2 |  2 |  2
-               -medium       :   2 |  2 |  2
-               -thorough     :   3 |  2 |  2
-               -verythorough :  20 | 14 |  8
-               -exhaustive   :  32 | 32 | 32
+            -fastest      : 2
+            -fast         : 3
+            -medium       : 4
+            -thorough     : 4
+            -verythorough : 4
+            -exhaustive   : 4
 
-       -blockmodelimit <number>
-           Test block modes below <number> usage centile in an empirically
-           determined distribution of block mode frequency. This option is
-           ineffective for 3D textures. Preset defaults are:
+    -[2|3|4]partitionindexlimit <number>
+        Estimate up to and including <number> partition indices for this
+        partition count. Preset defaults are:
 
-               -fastest      :  43
-               -fast         :  55
-               -medium       :  77
-               -thorough     :  94
-               -verythorough :  98
-               -exhaustive   : 100
+            -fastest      :   10 |   6 |   4
+            -fast         :   18 |  10 |   8
+            -medium       :   34 |  28 |  16
+            -thorough     :   82 |  60 |  30
+            -verythorough :  256 | 128 |  64
+            -exhaustive   :  512 | 512 | 512
 
-       -refinementlimit <number>
-           Iterate <number> refinement iterations on colors and
-           weights. Minimum value is 1. Preset defaults are:
+    -[2|3|4]partitioncandidatelimit <number>
+        Test up to and including <number> partition indices for this
+        partition count. Preset defaults are:
 
-               -fastest      : 2
-               -fast         : 3
-               -medium       : 3
-               -thorough     : 4
-               -verythorough : 4
-               -exhaustive   : 4
+            -fastest      :   2 |  2 |  2
+            -fast         :   2 |  2 |  2
+            -medium       :   2 |  2 |  2
+            -thorough     :   3 |  2 |  2
+            -verythorough :  20 | 14 |  8
+            -exhaustive   :  32 | 32 | 32
 
-       -candidatelimit <number>
-           Trial <number> candidate encodings for each block mode:
+    -blockmodelimit <centile>
+        Test up to and including <centile> block modes selected from a
+        precomputed frequency distribution. Higher numbers give better
+        quality, but increase compression time. This option is ineffective
+        for 3D textures. Preset defaults are:
 
-               -fastest      : 2
-               -fast         : 3
-               -medium       : 3
-               -thorough     : 4
-               -verythorough : 6
-               -exhaustive   : 8
+            -fastest      :  43
+            -fast         :  55
+            -medium       :  77
+            -thorough     :  94
+            -verythorough :  98
+            -exhaustive   : 100
 
-       -dblimit <number>
-           Stop compression work on a block as soon as the PSNR of the
-           block, measured in dB, exceeds <number>. This option is
-           ineffective for HDR textures. Preset defaults, where N is the
-           number of texels in a block, are:
+    -candidatelimit <number>
+        Trial <number> candidate encodings for each block mode:
 
-               -fastest      : MAX(63-19*log10(N),  85-35*log10(N))
-               -fast         : MAX(63-19*log10(N),  85-35*log10(N))
-               -medium       : MAX(70-19*log10(N),  95-35*log10(N))
-               -thorough     : MAX(77-19*log10(N), 105-35*log10(N))
-               -verythorough : 999
-               -exhaustive   : 999
+            -fastest      : 2
+            -fast         : 3
+            -medium       : 3
+            -thorough     : 4
+            -verythorough : 6
+            -exhaustive   : 8
 
-       -[2|3]partitionlimitfactor <factor>
-           Stop compression work on a block after only testing blocks with
-           up to 2/3 partitions and one plane of weights, unless the 2/3
-           partition error term is lower than the error term from encoding
-           with 1/2 partitions by more than the specified factor. Preset
-           defaults are:
+    -refinementlimit <number>
+        Perform up to <number> refinement iterations on colors and
+        weights. Preset defaults are:
 
-               -fastest       : 1.00 | 1.00
-               -fast          : 1.00 | 1.00
-               -medium        : 1.10 | 1.05
-               -thorough      : 1.35 | 1.15
-               -verythorough  : 1.60 | 1.40
-               -exhaustive    : 2.00 | 2.00
+            -fastest      : 2
+            -fast         : 3
+            -medium       : 3
+            -thorough     : 4
+            -verythorough : 4
+            -exhaustive   : 4
 
-       -2planelimitcorrelation <factor>
-           Stop compression after testing only one plane of weights, unless
-           the minimum color correlation factor between any pair of color
-           components is below this factor. This option is ineffective for
-           normal maps. Preset defaults are:
+    -[2|3]partitionlimitfactor <factor>
+        Stop compression before testing N+1 partitions unless the N
+        partition error is lower than the error from encoding with N-1
+        partitions by more than the specified factor. Preset defaults are:
 
-               -fastest      : 0.50
-               -fast         : 0.65
-               -medium       : 0.85
-               -thorough     : 0.95
-               -verythorough : 0.98
-               -exhaustive   : 0.99
+            -fastest       : 1.00 | 1.00
+            -fast          : 1.00 | 1.00
+            -medium        : 1.10 | 1.05
+            -thorough      : 1.35 | 1.15
+            -verythorough  : 1.60 | 1.40
+            -exhaustive    : 2.00 | 2.00
+
+    -2planelimitcorrelation <factor>
+        Stop compression after testing only one plane of weights, unless
+        the minimum color correlation factor between any pair of color
+        components is below this factor. This option is ineffective for
+        normal maps. Preset defaults are:
+
+            -fastest      : 0.50
+            -fast         : 0.65
+            -medium       : 0.85
+            -thorough     : 0.95
+            -verythorough : 0.98
+            -exhaustive   : 0.99
 )"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(
-       Other options
-       -------------
+    Other options
+    -------------
 
-       -esw <swizzle>
-           Specify an encoding swizzle to reorder the color components
-           before compression. The swizzle is specified using a four
-           character string, which defines the format ordering used by
-           the compressor.
+    -esw <swizzle>
+        Specify an encoding swizzle to reorder the color components before
+        compression. The swizzle is specified using a four character
+        string, which defines the compression component load order.
 
-           The characters may be taken from the set [rgba01], selecting
-           either input color components or a literal zero or one. For
-           example to swap the RG components, and replace alpha with 1,
-           the swizzle 'grb1' should be used.
+        The characters may be taken from the set [rgba01], selecting
+        from the input color components or a constant 0 or 1. For example,
+        to swap the RG components and replace alpha with a constant one
+        the swizzle 'grb1' should be used.
 
-           By default all 4 post-swizzle components are included in the
-           compression error metrics. When using -esw to map two
-           component data to the L+A endpoint (e.g. -esw rrrg) the
-           luminance data stored in the RGB components will be weighted 3
-           times more strongly than the alpha component. This can be
-           corrected using the -ssw option to specify which components
-           will be sampled at runtime e.g. -ssw ra.
+        By default all 4 post-swizzle components are included in trial
+        error metrics. When using -esw to map two component data to the L+A
+        endpoint (e.g., -esw rrrg) the luminance data stored in the RGB
+        components will be weighted 3 times more strongly than the alpha
+        component. This can be corrected using -ssw to specify which
+        components are sampled at runtime.
 
-       -ssw <swizzle>
-           Specify a sampling swizzle to identify which color components
-           are actually read by the application shader program. For example,
-           using -ssw ra tells the compressor that the green and blue error
-           does not matter because the data is not actually read.
+    -ssw <swizzle>
+        Specify a sampling swizzle to adjust component error weights based
+        on which components a actually read by your shader program. For
+        example, using -ssw ra tells the compressor that the green and blue
+        error can be ignored because the data is never read.
 
-           The sampling swizzle is based on the channel ordering after the
-           -esw transform has been applied. Note -ssw exposes the same
-           functionality as -cw, but in a more user-friendly form.
+        The sampling swizzle is based on the channel ordering after the
+        -esw transform has been applied. Using -ssw is equivalent to using
+        -cw to set unused channel error weights to zero.
 
-       -dsw <swizzle>
-           Specify a decompression swizzle used to reorder the color
-           components after decompression. The swizzle is specified using
-           the same method as the -esw option, with support for an extra
-           "z" character. This is used to specify that the compressed data
-           stores an X+Y normal map, and that the Z output component
-           should be reconstructed from the two components stored in the
-           data. For the typical ASTC normal encoding, which uses an
-           'rrrg' compression swizzle, you should specify an 'raz1'
-           swizzle for decompression.
+    -dsw <swizzle>
+        Specify a decompression swizzle to reorder the color components
+        after decompression. The swizzle is specified using a four
+        character string, which defines the component store order used by
+        the decompressor.
 
-       -yflip
-           Flip the image in the vertical axis prior to compression and
-           after decompression. Note that using this option in a test mode
-           (-t*) will have no effect as the image will be flipped twice.
+        The characters may be taken from the set [rgbaz01], selecting
+        from the input color components, a reconstructed Z value, or a
+        constant 0 or 1.
 
-       -j <threads>
-           Explicitly specify the number of threads to use in the codec. If
-           not specified, the codec will use one thread per CPU detected in
-           the system.
+        The z character is used to specify that the compressed data
+        stores an XY normal map, and that the Z component must be
+        reconstructed from the two components stored in the data.
 
-       -silent
-           Suppresses all non-essential diagnostic output from the codec.
-           Error messages will always be printed, as will mandatory outputs
-           for the selected operation mode. For example, the test mode will
-           always output image quality metrics and compression time but
-           will suppress all other output.)"
+    -silent
+        Suppress all non-essential diagnostic output from the codec.
+)"
 // This split in the literals is needed for Visual Studio; the compiler
 // will concatenate these two strings together ...
 R"(
 
 DECOMPRESSION
-       To decompress an image stored in the ASTC format you must specify
-       the color profile, the input file name, and the output file name.
 
-       The color profile is specified using the -dl (LDR linear), -ds (LDR
-       sRGB), -dh (HDR RGB, LDR A), or -dH (HDR RGBA) decoder options.
+    To decompress an image stored in the ASTC format you must specify the
+    color profile, the input file name, and the output file name.
 
-       The input file path must match a valid file format for
-       decompression, and the output file format must be a valid output for
-       a decompressed image. Note that not all output formats that the
-       compression path can produce are supported for decompression. See
-       the FILE FORMATS section for the list of supported formats.
+    The color profile is specified using the -dl (LDR linear), -ds (LDR
+    sRGB), -dh (HDR RGB, LDR A), or -dH (HDR RGBA) decoder options.
 
-       The -dsw option documented in ADVANCED COMPRESSION option
-       documentation is also relevant to decompression.
+    The input and output file paths and extensions must specify a valid
+    file for the decompression operation. See the DECOMPRESSION FILE
+    FORMATS section for the list of supported formats.
+
+    The -dsw option documented in ADVANCED COMPRESSION option documentation
+    is also relevant to decompression.
 
 TEST
-       To perform a compression test which round-trips a single image
-       through compression and decompression and stores the decompressed
-       result back to file, you must specify the same settings as
-       COMPRESSION other than swapping the color profile option to select
-       a test mode. Note that the compressed intermediate data is discarded
-       in this mode.
 
-       The color profile is specified using the -tl (LDR linear), -ts (LDR
-       sRGB), -th (HDR RGB, LDR A), or -tH (HDR RGBA) encoder options.
+    To perform a compression test which round-trips a single image
+    through compression and decompression and stores the decompressed
+    image back to file, you must specify the same settings as
+    COMPRESSION other than swapping the color profile option to select
+    a test mode. Note that the compressed intermediate data is discarded
+    in this mode.
 
-       This operation mode will print error metrics suitable for either LDR
-       or HDR images, allowing some assessment of the compression image
-       quality.
+    The color profile is specified using the -tl (LDR linear), -ts (LDR
+    sRGB), -th (HDR RGB, LDR A), or -tH (HDR RGBA) encoder options.
+
+    This operation mode will print error metrics suitable for either LDR
+    or HDR images, allowing some assessment of the compression image
+    quality.
 
 COMPRESSION FILE FORMATS
-       The following formats are supported as compression inputs:
 
-           LDR Formats:
-               BMP (*.bmp)
-               PNG (*.png)
-               Targa (*.tga)
-               JPEG (*.jpg)
+    The following formats are supported as compression inputs:
 
-           HDR Formats:
-               OpenEXR (*.exr)
-               Radiance HDR (*.hdr)
+    * LDR Formats:
+        * BMP (*.bmp)
+        * PNG (*.png)
+        * Targa (*.tga)
+        * JPEG (*.jpg)
+    * HDR Formats:
+        * OpenEXR (*.exr)
+        * Radiance HDR (*.hdr)
+    * Container Formats:
+        * Khronos Texture KTX (*.ktx)
+        * DirectDraw Surface DDS (*.dds)
 
-           Container Formats:
-               Khronos Texture KTX (*.ktx)
-               DirectDraw Surface DDS (*.dds)
+    For the KTX and DDS formats only a subset of the features are
+    supported:
 
-       For the KTX and DDS formats only a subset of the features of the
-       formats are supported:
+    * Texel format must be R, RG, RGB, BGR, RGBA, BGRA, L, or LA.
+    * Texture topology must be 2D, 2D-array, 3D, or cube-map. Note that
+      2D-array textures are treated as 3D block input.
+    * Only the first mipmap or cube face in the file will be read.
 
-           Texture topology must be 2D, 2D-array, 3D, or cube-map. Note
-           that 2D-array textures are treated as 3D block input.
+    The following formats are supported as compression outputs:
 
-           Texel format must be R, RG, RGB, BGR, RGBA, BGRA, L, or LA.
-
-           Only the first mipmap in the file will be read.
-
-       The following formats are supported as compression outputs:
-
-           ASTC (*.astc)
-           Khronos Texture KTX (*.ktx)
-
+    * ASTC (*.astc)
+    * Khronos Texture KTX (*.ktx)
 
 DECOMPRESSION FILE FORMATS
-       The following formats are supported as decompression inputs:
 
-           ASTC (*.astc)
-           Khronos Texture KTX (*.ktx)
+    The following formats are supported as decompression inputs:
 
-       The following formats are supported as decompression outputs:
+    * ASTC (*.astc)
+    * Khronos Texture KTX (*.ktx)
 
-           LDR Formats:
-               BMP (*.bmp)
-               PNG (*.png)
-               Targa (*.tga)
+    The following formats are supported as decompression outputs:
 
-           HDR Formats:
-               OpenEXR (*.exr)
-               Radiance HDR (*.hdr)
-
-           Container Formats:
-               Khronos Texture KTX (*.ktx)
-               DirectDraw Surface DDS (*.dds)
+    * LDR Formats:
+        * BMP (*.bmp)
+        * PNG (*.png)
+        * Targa (*.tga)
+    * HDR Formats:
+        * OpenEXR (*.exr)
+        * Radiance HDR (*.hdr)
+    * Container Formats:
+        * Khronos Texture KTX (*.ktx)
+        * DirectDraw Surface DDS (*.dds)
 
 QUICK REFERENCE
 
-       To compress an image use:
-           astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <quality> [options]
+    To compress an image use:
+        astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <quality> [options]
 
-       To decompress an image use:
-           astcenc {-dl|-ds|-dh|-dH} <in> <out>
+    To decompress an image use:
+        astcenc {-dl|-ds|-dh|-dH} <in> <out>
 
-       To perform a quality test use:
-           astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
+    To perform a quality test use:
+        astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
 
-       Mode -*l = linear LDR, -*s = sRGB LDR, -*h = HDR RGB/LDR A, -*H = HDR.
-       Quality = -fastest/-fast/-medium/-thorough/-verythorough/-exhaustive/a float [0-100].
+    Mode -*l = linear LDR, -*s = sRGB LDR, -*h = HDR RGB/LDR A, -*H = HDR.
+    Quality = -fastest/-fast/-medium/-thorough/-verythorough/-exhaustive.
 )";
 
 /* See header for documentation. */
