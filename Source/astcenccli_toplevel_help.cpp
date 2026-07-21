@@ -107,7 +107,7 @@ COMPRESSION
 
     To compress an image using astcenc you must specify the color profile,
     the input file name, the output file name, the target block size, and
-    the quality preset.
+    the quality level.
 
     The color profile is specified using the -cl (LDR linear), -cs (LDR
     sRGB), -ch (HDR RGB, LDR A), or -cH (HDR RGBA) encoder options. GPUs
@@ -194,11 +194,11 @@ COMPRESSION
         scaling has already been applied.
 
     -normal
-        Set this for normal map textures when the input is a three
-        component normal map storing unit length normals stored as (R=X,
-        G=Y, B=Z). The output texture will be a two component XY normal map
-        stored as (RGB=X, A=Y). The Z component can be computed in shader
-        code using the equation:
+        Set this for normal map textures when the input contains
+        three-component unit-length normals stored as (R=X, G=Y, B=Z). The
+        output texture will be a two-component XY normal map stored as
+        (RGB=X, A=Y). The Z component can be computed in shader code using
+        the equation:
 
             nml.xy = texture(...).ga;                // Load in [0,1]
             nml.xy = nml.xy * 2.0 - 1.0;             // Unpack to [-1,1]
@@ -234,26 +234,26 @@ COMPRESSION
         be used for non-color data.
 
     -zdim <zdim>
-        Set this for a 3D volumetric textures that are loaded as s set
+        Set this for 3D volumetric textures that are loaded from a set of
         <zdim> 2D input image files. The input filename given is decorated
         with the postfix "_<slice>" to find the file to load. For example,
         specifying the input file as input.png would load input_0.png,
         input_1.png, etc.
 
     -pp-normalize
-         Set this for a normal map texture to run a preprocess over the
-         image that forces normal vectors to be unit length. The
-         preprocessing is applied before any codec encoding swizzle, so
-         data must be in the RGB components of the input image.
+        Set this for a normal map texture to run a preprocess over the
+        image that forces normal vectors to be unit length. The
+        preprocessing is applied before any codec encoding swizzle, so data
+        must be in the RGB components of the input image.
 
     -pp-premultiply
-         Set this for a color texture to run a preprocess over the image
-         that scales RGB components by the alpha component value. The
-         preprocessing is applied before any codec encoding swizzle, so
-         color data must be in the RGB components of the input image and
-         alpha data must be in the A component.
+        Set this for a color texture to run a preprocess over the image
+        that scales RGB components by the alpha component value. The
+        preprocessing is applied before any codec encoding swizzle, so
+        color data must be in the RGB components of the input image and
+        alpha data must be in the A component.
 
-     -yflip
+    -yflip
         Flip the image in the vertical axis prior to compression and after
         decompression. Note that using this option in test mode (-t*) will
         have no effect because the image will be flipped twice.
@@ -276,7 +276,7 @@ ADVANCED COMPRESSION
 
     These options provide low-level control of the codec error metric
     computation, which is used to determine which compression trials
-    produces the best result.
+    produce the best result.
 
     -cw <red> <green> <blue> <alpha>
         Set this option to bias the error significance of each color
@@ -298,12 +298,10 @@ ADVANCED COMPRESSION
     ------------------------------------
 
     These options provide low-level control of the individual heuristics
-    that determine the performance-quality trade off. These settings are
-    initialized based on the quality level set on the command line. The
-    initial values for a quality level also vary by bitrate. Those
-    documented here to give an indication of recommended settings are taken
-    from the high bitrate set used for block sizes that contain fewer than
-    25 texels.
+    that determine the performance-quality tradeoff. Heuristic settings
+    default to values that vary based on the quality level and the targeted
+    bitrate. The values documented here are provided as an indication of
+    recommended settings and are taken from the high bitrate set.
 
     -dblimit <number>
         Stop compression work on a block when the PSNR of the block,
@@ -319,8 +317,7 @@ ADVANCED COMPRESSION
             -exhaustive   : 999
 
     -partitioncountlimit <number>
-        Test up to and including <number> partitions for each block. Preset
-        defaults are:
+        Test up to <number> partitions for each block. Preset defaults are:
 
             -fastest      : 2
             -fast         : 3
@@ -330,8 +327,8 @@ ADVANCED COMPRESSION
             -exhaustive   : 4
 
     -[2|3|4]partitionindexlimit <number>
-        Estimate up to and including <number> partition indices for this
-        partition count. Preset defaults are:
+        Estimate up to <number> partition indices for this partition count.
+        Preset defaults are:
 
             -fastest      :   10 |   6 |   4
             -fast         :   18 |  10 |   8
@@ -341,8 +338,8 @@ ADVANCED COMPRESSION
             -exhaustive   :  512 | 512 | 512
 
     -[2|3|4]partitioncandidatelimit <number>
-        Test up to and including <number> partition indices for this
-        partition count. Preset defaults are:
+        Test up to <number> partition indices for this partition count.
+        Preset defaults are:
 
             -fastest      :   2 |  2 |  2
             -fast         :   2 |  2 |  2
@@ -352,10 +349,10 @@ ADVANCED COMPRESSION
             -exhaustive   :  32 | 32 | 32
 
     -blockmodelimit <centile>
-        Test up to and including <centile> block modes selected from a
-        precomputed frequency distribution. Higher numbers give better
-        quality, but increase compression time. This option is ineffective
-        for 3D textures. Preset defaults are:
+        Test up to <centile> block modes selected from a precomputed
+        frequency distribution. Higher numbers give better quality, but
+        increase compression time. This option is ineffective for 3D
+        textures. Preset defaults are:
 
             -fastest      :  43
             -fast         :  55
@@ -365,7 +362,7 @@ ADVANCED COMPRESSION
             -exhaustive   : 100
 
     -candidatelimit <number>
-        Trial <number> candidate encodings for each block mode:
+        Test up to <number> candidate encodings for each block mode:
 
             -fastest      : 2
             -fast         : 3
@@ -431,11 +428,11 @@ R"(
         endpoint (e.g., -esw rrrg) the luminance data stored in the RGB
         components will be weighted 3 times more strongly than the alpha
         component. This can be corrected using -ssw to specify which
-        components are sampled at runtime.
+        components are sampled at run-time.
 
     -ssw <swizzle>
         Specify a sampling swizzle to adjust component error weights based
-        on which components a actually read by your shader program. For
+        on which components are actually read by your shader program. For
         example, using -ssw ra tells the compressor that the green and blue
         error can be ignored because the data is never read.
 
@@ -476,8 +473,8 @@ DECOMPRESSION
     file for the decompression operation. See the DECOMPRESSION FILE
     FORMATS section for the list of supported formats.
 
-    The -dsw option documented in ADVANCED COMPRESSION option documentation
-    is also relevant to decompression.
+    The -dsw option documented in ADVANCED COMPRESSION is also relevant to
+    decompression.
 
 TEST
 
@@ -515,9 +512,9 @@ COMPRESSION FILE FORMATS
     supported:
 
     * Texel format must be R, RG, RGB, BGR, RGBA, BGRA, L, or LA.
-    * Texture topology must be 2D, 2D-array, 3D, or cube-map. Note that
-      2D-array textures are treated as 3D block input.
-    * Only the first mipmap or cube face in the file will be read.
+    * Texture topology must be 2D, 2D-array, 3D, or cube-map.
+    * Only the first mipmap level, cube face, or 2D array layer will be
+      read.
 
     The following formats are supported as compression outputs:
 
@@ -547,16 +544,17 @@ DECOMPRESSION FILE FORMATS
 QUICK REFERENCE
 
     To compress an image use:
-        astcenc {-cl|-cs|-ch|-cH} <in> <out> <blockdim> <quality> [options]
+        astcenc {-cl|-cs|-ch|-cH} <in> <out> <blocksize> <quality> [options]
 
     To decompress an image use:
         astcenc {-dl|-ds|-dh|-dH} <in> <out>
 
     To perform a quality test use:
-        astcenc {-tl|-ts|-th|-tH} <in> <out> <blockdim> <quality> [options]
+        astcenc {-tl|-ts|-th|-tH} <in> <out> <blocksize> <quality> [options]
 
     Mode -*l = linear LDR, -*s = sRGB LDR, -*h = HDR RGB/LDR A, -*H = HDR.
-    Quality = -fastest/-fast/-medium/-thorough/-verythorough/-exhaustive.
+    Quality = -fastest/-fast/-medium/-thorough/-verythorough/-exhaustive
+              or a floating-point value between 0 and 100.
 )";
 
 /* See header for documentation. */
