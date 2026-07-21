@@ -478,19 +478,20 @@ DECOMPRESSION
 
 TEST
 
-    To perform a compression test which round-trips a single image
-    through compression and decompression and stores the decompressed
-    image back to file, you must specify the same settings as
-    COMPRESSION other than swapping the color profile option to select
-    a test mode. Note that the compressed intermediate data is discarded
-    in this mode.
+    To perform a compression test of an image using astcenc you must
+    specify the color profile, the input file name, the output file name,
+    the target block size, and the quality level. This mode will round-trip
+    the image through compression and decompression, store the decompressed
+    result, and emit image quality and performance metrics.
 
     The color profile is specified using the -tl (LDR linear), -ts (LDR
     sRGB), -th (HDR RGB, LDR A), or -tH (HDR RGBA) encoder options.
 
-    This operation mode will print error metrics suitable for either LDR
-    or HDR images, allowing some assessment of the compression image
-    quality.
+    The input file path and extension must specify a valid file for the
+    compression operation. See the COMPRESSION FILE FORMATS section for the
+    list of supported formats. The output file path and extension must
+    specify a valid file for the decompression operation. See the
+    DECOMPRESSION FILE FORMATS section for the list of supported formats.
 
 COMPRESSION FILE FORMATS
 
