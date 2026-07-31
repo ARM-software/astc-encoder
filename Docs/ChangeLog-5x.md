@@ -17,7 +17,6 @@ The 5.7.0 release is a minor maintenance release.
   * **Bug fix:** Avoid pixel count overflow when loading input PNG file.
   * **Bug fix:** Error if payload is undersized for stated image dimensions
     when loading compressed input KTX file.
-    uncompressed images to a `dds` or `.ktx` output image format.
   * **Improvement:** Top-level `--help` text as been rewritten to improve
     clarity and consistency.
   * **Change:** Removed `--repeats` benchmarking option, because we prefer to
