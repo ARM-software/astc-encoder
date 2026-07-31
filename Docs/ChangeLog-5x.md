@@ -9,7 +9,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.0
 
-**Status:** In development.
+**Status:** Released August 2026.
 
 The 5.7.0 release is a minor maintenance release.
 
