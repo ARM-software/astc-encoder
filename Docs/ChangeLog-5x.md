@@ -22,6 +22,9 @@ The 5.7.0 release is a minor maintenance release.
   * **Change:** Removed `-repeats` benchmarking option, because we prefer to
     repeat by invoking the command line multiple times. This gives performance
     results closer to what a real user sees.
+  * **Change:** Removed `-dimage` diagnostic images generation option from
+    normal builds. Now only available for builds configured with
+    `ASTCENC_DIAGNOSTICS=ON`.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.6.0

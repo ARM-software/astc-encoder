@@ -1172,12 +1172,12 @@ static int edit_astcenc_config(
 
 			config.trace_file_path = argv[argidx - 1];
 		}
-#endif
 		else if (!strcmp(argv[argidx], "-dimage"))
 		{
 			argidx += 1;
 			cli_config.diagnostic_images = true;
 		}
+#endif
 		else // check others as well
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
@@ -1365,6 +1365,7 @@ static void image_set_pixel(
 	data[(4 * img.dim_x * y) + (4 * x + 3)] = pixel.lane<3>();
 }
 
+#if defined(ASTCENC_DIAGNOSTICS)
 /**
  * @brief Set the value of a single pixel in an image.
  *
@@ -1387,6 +1388,7 @@ static void image_set_pixel_u8(
 	uint8_t* data = static_cast<uint8_t*>(img.data[0]);
 	pack_and_store_low_bytes(pixel, data + (4 * img.dim_x * y) + (4 * x));
 }
+#endif
 
 /**
  * @brief Create a copy of @c input with forced unit-length normal vectors.
@@ -1517,6 +1519,7 @@ static void image_preprocess_premultiply(
 	}
 }
 
+#if defined(ASTCENC_DIAGNOSTICS)
 /**
  * @brief Populate a single diagnostic image showing aspects of the encoding.
  *
@@ -1873,6 +1876,7 @@ static void print_diagnostic_images(
 	fname = stem + "_diag_cem_hdr.png";
 	store_ncimage(diag_image.get(), fname.c_str(), false);
 }
+#endif
 
 /**
  * @brief The main entry point.
@@ -1981,7 +1985,11 @@ int astcenc_main(
 
 	// Initialize cli_config_options with default values
 	cli_config_options cli_config {
-		0, 1, false, false, false, -10, 10,
+		0, 1, false, false,
+#if defined(ASTCENC_DIAGNOSTICS)
+		false,
+#endif
+		-10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A }
 	};
@@ -2319,11 +2327,13 @@ int astcenc_main(
 		}
 	}
 
+#if defined(ASTCENC_DIAGNOSTICS)
 	// Store diagnostic images
 	if (cli_config.diagnostic_images && !is_null)
 	{
 		print_diagnostic_images(codec_context.get(), image_comp, output_filename);
 	}
+#endif
 
 	if ((operation & ASTCENC_STAGE_COMPARE) || (!cli_config.silentmode))
 	{

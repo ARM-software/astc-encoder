@@ -81,8 +81,10 @@ struct cli_config_options
 	/** @brief @c true if the images should be y-flipped. */
 	bool y_flip;
 
+#if defined(ASTCENC_DIAGNOSTICS)
 	/** @brief @c true if diagnostic images should be stored. */
 	bool diagnostic_images;
+#endif
 
 	/** @brief The low exposure fstop for error computation. */
 	int low_fstop;
