@@ -7,6 +7,24 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.7.0
+
+**Status:** In development.
+
+The 5.7.0 release is a minor maintenance release.
+
+* **Command line tool updates:**
+  * **Bug fix:** Avoid pixel count overflow when loading input PNG file.
+  * **Bug fix:** Error if payload is undersized for stated image dimensions
+    when loading compressed input KTX file.
+    uncompressed images to a `dds` or `.ktx` output image format.
+  * **Improvement:** Top-level `--help` text as been rewritten to improve
+    clarity and consistency.
+  * **Change:** Removed `--repeats` benchmarking option, because we prefer to
+    repeat by invoking the command line multiple times. This gives performance
+    results closer to what a real user sees.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.6.0
 
 **Status:** Released July 2026

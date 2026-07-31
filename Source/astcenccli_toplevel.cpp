@@ -1106,22 +1106,6 @@ static int edit_astcenc_config(
 
 			cli_config.thread_count = atoi(argv[argidx - 1]);
 		}
-		else if (!strcmp(argv[argidx], "-repeats"))
-		{
-			argidx += 2;
-			if (argidx > argc)
-			{
-				print_error("ERROR: -repeats switch with no argument\n");
-				return 1;
-			}
-
-			cli_config.repeat_count = atoi(argv[argidx - 1]);
-			if (cli_config.repeat_count <= 0)
-			{
-				print_error("ERROR: -repeats value must be at least one\n");
-				return 1;
-			}
-		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
 			argidx++;
@@ -1996,9 +1980,11 @@ int astcenc_main(
 	}
 
 	// Initialize cli_config_options with default values
-	cli_config_options cli_config { 0, 1, 1, false, false, false, -10, 10,
+	cli_config_options cli_config {
+		0, 1, false, false, false, -10, 10,
 		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
-		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A } };
+		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A }
+	};
 
 	error = edit_astcenc_config(argc, argv, operation, cli_config, config);
 	if (error)
@@ -2160,8 +2146,7 @@ int astcenc_main(
 	}
 
 	// Compress an image
-	double best_compression_time = 100000.0;
-	double total_compression_time = 0.0;
+	double compression_time = 0.0;
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
 		print_astcenc_config(cli_config, config);
@@ -2183,42 +2168,39 @@ int astcenc_main(
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
 		double start_compression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+
+		if (config.progress_callback)
 		{
-			if (config.progress_callback)
-			{
-				printf("Compression\n");
-				printf("===========\n");
-				printf("\n");
-			}
-
-			double start_iter_time = get_time();
-			if (cli_config.thread_count > 1)
-			{
-				launch_threads("Compression", cli_config.thread_count, compression_workload_runner, &work);
-			}
-			else
-			{
-				work.error = astcenc_compress_image(
-					work.context, work.image, &work.swizzle,
-					work.data_out, work.data_len, 0);
-			}
-
-			astcenc_compress_reset(codec_context.get());
-
-			if (config.progress_callback)
-			{
-				printf("\n\n");
-			}
-
-			double iter_time = get_time() - start_iter_time;
-			best_compression_time = astc::min(iter_time, best_compression_time);
+			printf("Compression\n");
+			printf("===========\n");
+			printf("\n");
 		}
-		total_compression_time = get_time() - start_compression_time;
+
+		if (cli_config.thread_count > 1)
+		{
+			launch_threads("Compression", cli_config.thread_count,
+			               compression_workload_runner, &work);
+		}
+		else
+		{
+			work.error = astcenc_compress_image(
+			    work.context, work.image, &work.swizzle,
+			    work.data_out, work.data_len, 0);
+		}
+
+		astcenc_compress_reset(codec_context.get());
+
+		if (config.progress_callback)
+		{
+			printf("\n\n");
+		}
+
+		compression_time = get_time() - start_compression_time;
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
-			print_error("ERROR: Codec compress failed: %s\n", astcenc_get_error_string(work.error));
+			print_error("ERROR: Codec compress failed: %s\n",
+			            astcenc_get_error_string(work.error));
 			return 1;
 		}
 
@@ -2231,8 +2213,7 @@ int astcenc_main(
 	}
 
 	// Decompress an image
-	double best_decompression_time = 100000.0;
-	double total_decompression_time = 0.0;
+	double decompression_time = 0.0;
 	if (operation & ASTCENC_STAGE_DECOMPRESS)
 	{
 		image_decomp_out = alloc_image(
@@ -2249,26 +2230,22 @@ int astcenc_main(
 		// Only launch worker threads for multi-threaded use - it makes basic
 		// single-threaded profiling and debugging a little less convoluted
 		double start_decompression_time = get_time();
-		for (unsigned int i = 0; i < cli_config.repeat_count; i++)
+
+		if (cli_config.thread_count > 1)
 		{
-			double start_iter_time = get_time();
-			if (cli_config.thread_count > 1)
-			{
-				launch_threads("Decompression", cli_config.thread_count, decompression_workload_runner, &work);
-			}
-			else
-			{
-				work.error = astcenc_decompress_image(
-				    work.context, work.data, work.data_len,
-				    work.image_out, &work.swizzle, 0);
-			}
-
-			astcenc_decompress_reset(codec_context.get());
-
-			double iter_time = get_time() - start_iter_time;
-			best_decompression_time = astc::min(iter_time, best_decompression_time);
+			launch_threads("Decompression", cli_config.thread_count,
+			               decompression_workload_runner, &work);
 		}
-		total_decompression_time = get_time() - start_decompression_time;
+		else
+		{
+			work.error = astcenc_decompress_image(
+			    work.context, work.data, work.data_len,
+			    work.image_out, &work.swizzle, 0);
+		}
+
+		astcenc_decompress_reset(codec_context.get());
+
+		decompression_time = get_time() - start_decompression_time;
 
 		if (work.error != ASTCENC_SUCCESS)
 		{
@@ -2351,11 +2328,7 @@ int astcenc_main(
 	if ((operation & ASTCENC_STAGE_COMPARE) || (!cli_config.silentmode))
 	{
 		double end_time = get_time();
-
-		double repeats = static_cast<double>(cli_config.repeat_count);
-		double avg_compression_time = total_compression_time / repeats;
-		double avg_decompression_time = total_decompression_time / repeats;
-		double total_time = (end_time - start_time) - ((repeats - 1.0) * avg_compression_time)  - ((repeats - 1.0) * avg_decompression_time);
+		double total_time = end_time - start_time;
 
 		printf("Performance metrics\n");
 		printf("===================\n\n");
@@ -2363,16 +2336,16 @@ int astcenc_main(
 
 		if (operation & ASTCENC_STAGE_COMPRESS)
 		{
-			double compression_rate = image_size / (best_compression_time * 1000000.0);
+			double compression_rate = image_size / (compression_time * 1000000.0);
 
-			printf("    Coding time:               %8.4f s\n", best_compression_time);
+			printf("    Coding time:               %8.4f s\n", compression_time);
 			printf("    Coding rate:               %8.4f MT/s\n", compression_rate);
 		}
 
 		if (operation & ASTCENC_STAGE_DECOMPRESS)
 		{
-			double decompression_rate = image_size / (best_decompression_time * 1000000.0);
-			printf("    Decoding time:             %8.4f s\n", best_decompression_time);
+			double decompression_rate = image_size / (decompression_time * 1000000.0);
+			printf("    Decoding time:             %8.4f s\n", decompression_time);
 			printf("    Decoding rate:             %8.4f MT/s\n", decompression_rate);
 		}
 	}
