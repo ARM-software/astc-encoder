@@ -17,9 +17,9 @@ The 5.7.0 release is a minor maintenance release.
   * **Bug fix:** Avoid pixel count overflow when loading input PNG file.
   * **Bug fix:** Error if payload is undersized for stated image dimensions
     when loading compressed input KTX file.
-  * **Improvement:** Top-level `--help` text as been rewritten to improve
+  * **Improvement:** Top-level `-help` text as been rewritten to improve
     clarity and consistency.
-  * **Change:** Removed `--repeats` benchmarking option, because we prefer to
+  * **Change:** Removed `-repeats` benchmarking option, because we prefer to
     repeat by invoking the command line multiple times. This gives performance
     results closer to what a real user sees.
 
