@@ -13,52 +13,6 @@ on:
 
 jobs:
 
-  coverity:
-    if: ${{ (!startsWith(github.event.ref, 'refs/tags/')) && (github.repository_owner == 'Arm-software') }}
-    name: Run Coverity static analysis
-    runs-on: [self-hosted-ubuntu-latest-x64]
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Coverity preparation
-        run: |
-          export PATH=$PATH:/usr/local/cov-analysis/bin
-          mkdir build_cov
-          cd build_cov
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON ..
-          cov-configure --config ${GITHUB_WORKSPACE}/coverity.conf --template --compiler cc --comptype gcc
-          cov-configure --config ${GITHUB_WORKSPACE}/coverity.conf --template --compiler c++ --comptype g++
-
-      - name: Coverity build
-        run: |
-          export PATH=$PATH:/usr/local/cov-analysis/bin
-          cd build_cov
-          cov-build --config ${GITHUB_WORKSPACE}/coverity.conf --dir ${GITHUB_WORKSPACE}/intermediate make install
-
-      - name: Coverity analyze
-        run: |
-          export PATH=$PATH:/usr/local/cov-analysis/bin
-          cd build_cov
-          cov-analyze --dir ${GITHUB_WORKSPACE}/intermediate
-
-      - name: Coverity upload
-        env:
-          COVERITY_KEY: ${{ secrets.COVERITY_KEY }}
-        run: |
-          export PATH=$PATH:/usr/local/cov-analysis/bin
-          echo "${COVERITY_KEY}" > coverity.key
-          chmod 400 coverity.key
-          cd build_cov
-          cov-commit-defects \
-            --dir ${GITHUB_WORKSPACE}/intermediate \
-            --stream astcenc-master \
-            --url https://coverity.cambridge.arm.com \
-            --auth-key-file ../coverity.key \
-            --strip-path ${GITHUB_WORKSPACE}
-
   build-ubuntu-arm64:
     name: Ubuntu arm64
     runs-on: ubuntu-24.04-arm
