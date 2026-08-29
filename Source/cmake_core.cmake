@@ -421,8 +421,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<${is_msvc_fe}:/arch:AVX2>
-                    $<${is_clangcl}:-mavx2 -mpopcnt -mf16c>
-                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c>
+                    $<${is_clangcl}:-mavx2 -mpopcnt -mf16c -mbmi -mbmi2 -mlzcnt>
+                    $<${is_gnu_fe}:-mavx2 -mpopcnt -mf16c -mbmi -mbmi2 -mlzcnt>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
