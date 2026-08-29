@@ -344,6 +344,8 @@ def parse_command_line():
 
     # All reference encoders
     reference_encoders = [
+        'rebuild',
+
         'ref-5.0-neon',
         'ref-5.0-sse2', 'ref-5.0-sse4.1', 'ref-5.0-avx2',
 
@@ -403,7 +405,7 @@ def parse_command_line():
     quality_choices = list(TEST_QUALITIES)
     quality_choices.append('all')
     quality_choices.append('all+')
-    parser.add_argument('--test-quality', dest='test_qual', default='thorough',
+    parser.add_argument('--test-quality', dest='test_qual', action='append',
                         choices=quality_choices, help='test quality')
 
     parser.add_argument('--repeats', dest='repeats', default=1,
@@ -425,14 +427,13 @@ def parse_command_line():
     else:
         args.encoders = [args.encoders]
 
-    if args.test_qual == 'all+':
+    if (args.test_qual is not None) and ('all+' in args.test_qual):
         args.test_qual = TEST_QUALITIES
-    elif args.test_qual == 'all':
+
+    elif (args.test_qual is None) or ('all' in args.test_qual):
         args.test_qual = TEST_QUALITIES
         args.test_qual.remove('verythorough')
         args.test_qual.remove('exhaustive')
-    else:
-        args.test_qual = [args.test_qual]
 
     if not args.block_sizes or ('all' in args.block_sizes):
         args.block_sizes = TEST_BLOCK_SIZES
@@ -451,6 +452,9 @@ def parse_command_line():
         args.formats = format_choices[:-1]
     else:
         args.formats = [args.formats]
+
+    if args.reference == 'rebuild':
+        args.reference = None
 
     return args
 
