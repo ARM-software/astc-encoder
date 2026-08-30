@@ -191,28 +191,41 @@ def parse_command_line() -> argparse.Namespace:
         The parsed command-line arguments.
     '''
     parser = argparse.ArgumentParser(description=__doc__)
+
     parser.add_argument('binary_a', help='the first astcenc binary')
+
     parser.add_argument('binary_b', help='the second astcenc binary')
+
     parser.add_argument('input', help='the input image')
+
     parser.add_argument('output', help='the output image')
+
     parser.add_argument('--block-size', default='6x6',
                         help='the ASTC block size (default: %(default)s)')
+
     parser.add_argument('--quality', choices=QUALITY_LEVELS, default='medium',
                         help='the compression quality (default: %(default)s)')
+
     parser.add_argument('--runs', type=int, default=10,
                         help='number of measured pairs (default: %(default)s)')
+
     parser.add_argument('--warmups', type=int, default=1,
                         help='number of warm-up pairs (default: %(default)s)')
+
     parser.add_argument('--confidence', type=confidence_value, default=0.95,
                         help='confidence level (default: %(default)s)')
 
     args = parser.parse_args()
+
     if args.runs < 2:
         parser.error('--runs must be at least 2')
+
     if args.warmups < 0:
         parser.error('--warmups cannot be negative')
+
     if not Path(args.input).is_file():
         parser.error(f'input image does not exist: {args.input}')
+
     return args
 
 
@@ -228,9 +241,11 @@ def main() -> int:
     try:
         binary_a = resolve_binary(args.binary_a)
         binary_b = resolve_binary(args.binary_b)
+
         samples_a, samples_b = collect_samples(
             binary_a, binary_b, args.input, args.output,
             args.block_size, args.quality, args.warmups, args.runs)
+
         statistic, p_value = paired_t_test(samples_a, samples_b)
 
     except FileNotFoundError as ex:
@@ -246,6 +261,7 @@ def main() -> int:
         output = ex.stderr.strip() or ex.stdout.strip()
         if output:
             print(output, file=sys.stderr)
+
         return 1
 
     except ValueError as ex:
@@ -275,6 +291,7 @@ def main() -> int:
             slower_time = mean_a
 
         reduction = (slower_time - faster_time) / slower_time * 100.0
+
         print(f'Result: {winner} is faster at '
               f'{args.confidence:.1%} confidence '
               f'({reduction:.2f}% lower mean coding time)')
