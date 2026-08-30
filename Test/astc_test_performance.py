@@ -105,8 +105,10 @@ def run_encoder(binary: str, image_in: str, image_out: str,
         ValueError: The encoder did not report a coding time.
     '''
     command = [
-        binary, '-tl', image_in, image_out, block_size, f'-{quality}'
+        binary, '-tl', image_in, image_out, block_size, f'-{quality}',
+        '-silent', '-j', '4'
     ]
+
     result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                     check=True, text=True)
 
