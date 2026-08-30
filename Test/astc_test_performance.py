@@ -184,7 +184,8 @@ def confidence_value(value: str) -> float:
 
 
 def parse_command_line() -> argparse.Namespace:
-    '''Parse the command line.
+    '''
+    Parse the command line.
 
     Return:
         The parsed command-line arguments.
@@ -216,7 +217,8 @@ def parse_command_line() -> argparse.Namespace:
 
 
 def main() -> int:
-    '''Run the comparison and print the statistical result.
+    '''
+    Run the comparison and print the statistical result.
 
     Return:
         The process return code.
