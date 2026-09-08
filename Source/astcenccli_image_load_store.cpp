@@ -911,6 +911,39 @@ static void ktx_header_switch_endianness(ktx_header * kt)
 }
 
 /**
+ * @brief Determine whether a stream still holds a given number of bytes.
+ *
+ * Loaders size allocations from header fields, so a header declaring more
+ * payload than the file holds must be rejected before the allocation.
+ *
+ * @param[in,out] file    The stream, positioned at the start of the payload.
+ * @param         bytes   The payload size the header declared.
+ *
+ * @return @c true if the stream holds at least @c bytes more data.
+ */
+static bool stream_holds_bytes(
+	std::ifstream& file,
+	size_t bytes
+) {
+	std::streampos start = file.tellg();
+	if (start < 0)
+	{
+		return false;
+	}
+
+	file.seekg(0, std::ios::end);
+	std::streampos end = file.tellg();
+	file.seekg(start);
+
+	if (file.fail() || (end < start))
+	{
+		return false;
+	}
+
+	return static_cast<uint64_t>(end - start) >= static_cast<uint64_t>(bytes);
+}
+
+/**
  * @brief Load an uncompressed KTX image using the local custom loader.
  *
  * @param      filename          The name of the file to load.
@@ -1201,6 +1234,12 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
+	if (!stream_holds_bytes(file, bytes_per_image))
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return nullptr;
+	}
+
 	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
@@ -1378,6 +1417,12 @@ bool load_ktx_compressed_image(
 	size_needed = astc::mul_safe(size_needed, 16, overflow);
 
 	if (overflow || data_len < size_needed)
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return true;
+	}
+
+	if (!stream_holds_bytes(file, data_len))
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		return true;
@@ -2078,6 +2123,12 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
+	if (!stream_holds_bytes(file, bytes_per_image))
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return nullptr;
+	}
+
 	std::unique_ptr<uint8_t[]> buf;
 	try
 	{
@@ -2672,6 +2723,12 @@ int load_cimage(
 	data_size = astc::mul_safe(data_size, 16, overflow);
 
 	if (overflow)
+	{
+		print_error("ERROR: Image header corrupt '%s'\n", filename);
+		return 1;
+	}
+
+	if (!stream_holds_bytes(file, data_size))
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
 		return 1;

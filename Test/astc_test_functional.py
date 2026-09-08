@@ -2207,13 +2207,11 @@ class CLINTest(CLITestBase):
 
     def test_dl_corrupt_astc_huge_size(self) -> None:
         '''
-        Test -dl with an astc file with a data size that will fail alloc.
+        Test -dl with an astc file declaring more data than the file holds.
 
-        Note this test will cause ASAN to error because ASAN itself cannot cope
-        with OOM issues. ASAN documentation says you can run with environment
-        ASAN_OPTIONS=allocator_may_return_null=1, but this doesn't seem to work
-        for allocations made with C++ new[]. This test will need to be disabled
-        when ASAN is used.
+        The loader compares the declared payload size against the bytes left in
+        the file before it allocates, so this is rejected as a corrupt header
+        and never reaches an allocation large enough to trouble ASAN.
         '''
         # Build a valid cmd with a bad image file
         cmd = [
