@@ -400,6 +400,41 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512")
+        target_compile_definitions(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                ASTCENC_NEON=0
+                ASTCENC_SVE=0
+                ASTCENC_SSE=41
+                ASTCENC_AVX=3
+                ASTCENC_X86_GATHERS=$<BOOL:${ASTCENC_X86_GATHERS}>
+                ASTCENC_POPCNT=1
+                ASTCENC_F16C=1)
+
+        if (${ASTCENC_VENEER_TYPE} GREATER 0)
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_gnu_fe}:-msse2>
+                    $<${is_gnu_fe}:-mno-sse4.1>
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        else()
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_msvc_fe}:/arch:AVX512>
+                    $<${is_clangcl}:-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c>
+                    $<${is_gnu_fe}:-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c>
+                    $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
+        endif()
+
+        # Non-invariant builds enable FMA (included in AVX-512F). This reduces
+        # image quality by up to 0.2 dB (normally much less) in exchange for
+        # higher encode throughput.
+        if((NOT ${ASTCENC_INVARIANCE}) AND (NOT ${ASTCENC_VENEER_TYPE}))
+            target_compile_options(${ASTCENC_TARGET_NAME}
+                PRIVATE
+                    $<${is_gnu_fe}:-mfma>)
+        endif()
+
     elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
         # Gathers are quite slow on many x86 microarchitectures, to the point where
         # it can be significantly faster to just avoid them use scalar loads.
@@ -451,10 +486,13 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 PRIVATE
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         else()
+            # Clang can report conflicting AVX10 and AVX-512 features for
+            # -march=native on Granite Rapids; keep this diagnostic nonfatal
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
                     $<${is_clangcl}:-march=native>
                     $<${is_gnu_fe}:-march=native>
+                    $<$<AND:$<CXX_COMPILER_ID:Clang,AppleClang>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,18.0.0>>:-Wno-error=invalid-feature-combination>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
     endif()
