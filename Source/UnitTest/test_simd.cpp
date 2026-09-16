@@ -71,6 +71,45 @@ static vint8 vint8_lit(
 
 #endif
 
+#if ASTCENC_SIMD_WIDTH == 16
+/**
+ * @brief Construct from 16 scalar values.
+ *
+ * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ */
+static vfloat16 vfloat16_lit(
+	float a, float b, float c, float d,
+	float e, float f, float g, float h,
+	float i, float j, float k, float l,
+	float m, float n, float o, float p
+) {
+	alignas(64) float data[16] {
+		a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p
+	};
+
+	return vfloat16(data);
+}
+
+/**
+ * @brief Construct from 16 scalar values.
+ *
+ * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ */
+static vint16 vint16_lit(
+	int a, int b, int c, int d,
+	int e, int f, int g, int h,
+	int i, int j, int k, int l,
+	int m, int n, int o, int p
+) {
+	alignas(64) int data[16] {
+		a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p
+	};
+
+	return vint16(data);
+}
+
+#endif
+
 static unsigned int round_down(unsigned int x)
 {
 	unsigned int remainder = x % ASTCENC_SIMD_WIDTH;
@@ -91,10 +130,12 @@ static unsigned int round_up(unsigned int x)
 /** @brief Test VLA loop limit round down. */
 TEST(SuiteMisc, RoundDownVLA)
 {
-	// Static ones which are valid for all VLA widths
+	// Multiples of the compile-time VLA width
 	EXPECT_EQ(round_down_to_simd_multiple_vla(0),  0u);
-	EXPECT_EQ(round_down_to_simd_multiple_vla(8),  8u);
-	EXPECT_EQ(round_down_to_simd_multiple_vla(16), 16u);
+	EXPECT_EQ(round_down_to_simd_multiple_vla(ASTCENC_SIMD_WIDTH),
+	          static_cast<unsigned int>(ASTCENC_SIMD_WIDTH));
+	EXPECT_EQ(round_down_to_simd_multiple_vla(ASTCENC_SIMD_WIDTH * 2),
+	          static_cast<unsigned int>(ASTCENC_SIMD_WIDTH * 2));
 
 	// Variable ones which depend on VLA width
 	EXPECT_EQ(round_down_to_simd_multiple_vla(3),   round_down(3));
@@ -106,10 +147,12 @@ TEST(SuiteMisc, RoundDownVLA)
 /** @brief Test VLA loop limit round up. */
 TEST(SuiteMisc, RoundUpVLA)
 {
-	// Static ones which are valid for all VLA widths
+	// Multiples of the compile-time VLA width
 	EXPECT_EQ(round_up_to_simd_multiple_vla(0),  0u);
-	EXPECT_EQ(round_up_to_simd_multiple_vla(8),  8u);
-	EXPECT_EQ(round_up_to_simd_multiple_vla(16), 16u);
+	EXPECT_EQ(round_up_to_simd_multiple_vla(ASTCENC_SIMD_WIDTH),
+	          static_cast<unsigned int>(ASTCENC_SIMD_WIDTH));
+	EXPECT_EQ(round_up_to_simd_multiple_vla(ASTCENC_SIMD_WIDTH * 2),
+	          static_cast<unsigned int>(ASTCENC_SIMD_WIDTH * 2));
 
 	// Variable ones which depend on VLA width
 	EXPECT_EQ(round_up_to_simd_multiple_vla(3),   round_up(3));
@@ -2068,7 +2111,7 @@ TEST(SuiteVint4, interleave_rgba8)
 #endif
 }
 
-# if ASTCENC_SIMD_WIDTH == 8
+#if ASTCENC_SIMD_WIDTH == 8
 
 // VFLOAT8 tests - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3837,6 +3880,247 @@ TEST(SuiteVint8, vtable8_64x8)
 	EXPECT_EQ(ra[5], 20);
 	EXPECT_EQ(ra[6], 38);
 	EXPECT_EQ(ra[7], 63);
+}
+
+#endif
+
+#if ASTCENC_SIMD_WIDTH == 16
+
+alignas(64) static const float f32_data16[17] {
+	0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f,
+	8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f
+};
+
+/** @brief Test unaligned vfloat16 data load. */
+TEST(SuiteVfloat16, UnalignedLoad)
+{
+	vfloat16 a(&(f32_data16[1]));
+
+	alignas(64) float ra[16];
+	storea(a, ra);
+
+	for (int i = 0; i < 16; i++)
+	{
+		EXPECT_EQ(ra[i], static_cast<float>(i + 1));
+	}
+}
+
+/** @brief Test aligned vfloat16 data load. */
+TEST(SuiteVfloat16, AlignedLoad)
+{
+	vfloat16 a = vfloat16::loada(f32_data16);
+
+	alignas(64) float ra[16];
+	storea(a, ra);
+
+	for (int i = 0; i < 16; i++)
+	{
+		EXPECT_EQ(ra[i], static_cast<float>(i));
+	}
+}
+
+/** @brief Test vfloat16 add. */
+TEST(SuiteVfloat16, Add)
+{
+	vfloat16 a = vfloat16_lit(
+		1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f,
+		9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f);
+	vfloat16 b = vfloat16_lit(
+		0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f,
+		0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f);
+	vfloat16 r = a + b;
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 1.0f + 0.1f);
+	EXPECT_EQ(ra[7], 8.0f + 0.8f);
+	EXPECT_EQ(ra[15], 16.0f + 1.6f);
+}
+
+/** @brief Test vfloat16 gatherf. */
+TEST(SuiteVfloat16, gatherf)
+{
+	vint16 indices = vint16_lit(0, 4, 3, 2, 7, 15, 8, 1, 9, 10, 11, 12, 13, 14, 6, 5);
+	vfloat16 r = gatherf(f32_data16, indices);
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 4.0f);
+	EXPECT_EQ(ra[2], 3.0f);
+	EXPECT_EQ(ra[3], 2.0f);
+	EXPECT_EQ(ra[4], 7.0f);
+	EXPECT_EQ(ra[5], 15.0f);
+	EXPECT_EQ(ra[6], 8.0f);
+	EXPECT_EQ(ra[7], 1.0f);
+	EXPECT_EQ(ra[15], 5.0f);
+}
+
+/** @brief Test vfloat16 vgatherf_table for a 16-entry table. */
+TEST(SuiteVfloat16, gatherf_table16)
+{
+	vgatherf_table table = vgatherf_load(f32_data16, 16);
+	vint16 indices = vint16_lit(0, 4, 3, 2, 7, 15, 8, 1, 9, 10, 11, 12, 13, 14, 6, 5);
+	vfloat16 r = gatherf(table, indices);
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[5], 15.0f);
+	EXPECT_EQ(ra[15], 5.0f);
+}
+
+/** @brief Test vfloat16 vgatherf_table for a 32-entry table. */
+TEST(SuiteVfloat16, gatherf_table32)
+{
+	alignas(64) float data[32];
+	for (int i = 0; i < 32; i++)
+	{
+		data[i] = static_cast<float>(i);
+	}
+
+	vgatherf_table table = vgatherf_load(data, 32);
+	vint16 indices = vint16_lit(0, 16, 31, 17, 8, 24, 7, 15, 1, 30, 18, 19, 20, 21, 22, 23);
+	vfloat16 r = gatherf(table, indices);
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 16.0f);
+	EXPECT_EQ(ra[2], 31.0f);
+	EXPECT_EQ(ra[3], 17.0f);
+	EXPECT_EQ(ra[5], 24.0f);
+}
+
+/** @brief Test vfloat16 vgatherf_table for a 64-entry table. */
+TEST(SuiteVfloat16, gatherf_table64)
+{
+	alignas(64) float data[64];
+	for (int i = 0; i < 64; i++)
+	{
+		data[i] = static_cast<float>(i);
+	}
+
+	vgatherf_table table = vgatherf_load(data, 64);
+	vint16 indices = vint16_lit(0, 32, 63, 48, 16, 31, 33, 47, 1, 62, 17, 18, 19, 20, 21, 22);
+	vfloat16 r = gatherf(table, indices);
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 32.0f);
+	EXPECT_EQ(ra[2], 63.0f);
+	EXPECT_EQ(ra[3], 48.0f);
+	EXPECT_EQ(ra[6], 33.0f);
+}
+
+/** @brief Test vfloat16 vgatherf_table scalar fallback for tables larger than 64. */
+TEST(SuiteVfloat16, gatherf_table144)
+{
+	alignas(64) float data[144];
+	for (int i = 0; i < 144; i++)
+	{
+		data[i] = static_cast<float>(i);
+	}
+
+	vgatherf_table table = vgatherf_load(data, 144);
+	vint16 indices = vint16_lit(0, 64, 143, 80, 16, 96, 32, 127, 1, 65, 142, 81, 48, 112, 63, 128);
+	vfloat16 r = gatherf(table, indices);
+
+	alignas(64) float ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0.0f);
+	EXPECT_EQ(ra[1], 64.0f);
+	EXPECT_EQ(ra[2], 143.0f);
+	EXPECT_EQ(ra[3], 80.0f);
+	EXPECT_EQ(ra[5], 96.0f);
+	EXPECT_EQ(ra[7], 127.0f);
+	EXPECT_EQ(ra[10], 142.0f);
+	EXPECT_EQ(ra[15], 128.0f);
+}
+
+/** @brief Test vfloat16 select. */
+TEST(SuiteVfloat16, select)
+{
+	vfloat16 m1 = vfloat16(1.0f);
+	vfloat16 m2 = vfloat16_lit(
+		1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f,
+		1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f, 1.0f, 2.0f);
+	vmask16 cond = m1 == m2;
+
+	vfloat16 a = vfloat16_lit(
+		1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f,
+		1.0f, 3.0f, 3.0f, 1.0f, 1.0f, 3.0f, 3.0f, 1.0f);
+	vfloat16 b = vfloat16_lit(
+		4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f,
+		4.0f, 2.0f, 2.0f, 4.0f, 4.0f, 2.0f, 2.0f, 4.0f);
+
+	vfloat16 r1 = select(a, b, cond);
+
+	alignas(64) float ra[16];
+	storea(r1, ra);
+
+	EXPECT_EQ(ra[0], 4.0f);
+	EXPECT_EQ(ra[1], 3.0f);
+	EXPECT_EQ(ra[2], 2.0f);
+	EXPECT_EQ(ra[3], 1.0f);
+}
+
+/** @brief Test vint16 table permute. */
+TEST(SuiteVint16, vtable16_16x8)
+{
+	uint8_t data[16] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+	};
+
+	vtable16_16x8 table;
+	vtable_prepare(table, data);
+
+	vint16 index = vint16_lit(0, 7, 4, 15, 1, 2, 14, 4, 3, 5, 6, 8, 9, 10, 11, 12);
+
+	vint16 result = vtable_lookup_32bit(table, index);
+
+	alignas(64) int ra[16];
+	store(result, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 7);
+	EXPECT_EQ(ra[2], 4);
+	EXPECT_EQ(ra[3], 15);
+	EXPECT_EQ(ra[6], 14);
+}
+
+/** @brief Test vint16 64-entry table permute. */
+TEST(SuiteVint16, vtable16_64x8)
+{
+	uint8_t data[64];
+	for (int i = 0; i < 64; i++)
+	{
+		data[i] = static_cast<uint8_t>(i);
+	}
+
+	vtable16_64x8 table;
+	vtable_prepare(table, data);
+
+	vint16 index = vint16_lit(0, 7, 4, 15, 16, 20, 38, 63, 32, 48, 1, 62, 17, 18, 19, 31);
+
+	vint16 result = vtable_lookup_32bit(table, index);
+
+	alignas(64) int ra[16];
+	store(result, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[4], 16);
+	EXPECT_EQ(ra[6], 38);
+	EXPECT_EQ(ra[7], 63);
+	EXPECT_EQ(ra[8], 32);
 }
 
 #endif

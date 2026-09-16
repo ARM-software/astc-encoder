@@ -14,6 +14,8 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.8.0 release is a minor release, focusing on performance optimization.
 
 * **Codec library updates:**
+  * **Optimization:** Added a compile-time AVX-512 SIMD backend
+    (`ASTCENC_SIMD_WIDTH` 16).
   * **Optimization:** Hoist loop invariant weight diff calculation out of the
     `compute_ideal_weights_for_decimation()` refinement loop.
   * **Optimization:** Precompute an infilled weight set for the realign loop
@@ -38,6 +40,10 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     deeper nested `..._find_best_combination...()` selector loops.
   * **Optimization:** Directly copy non-decimated weight grids when unpacking
     symbolic blocks, avoiding redundant interpolation.
+
+* **Command line tool updates:**
+  * **Feature:** New `astcenc-avx512` binary, enabled with
+    `-DASTCENC_ISA_AVX512=ON`. Requires AVX-512F, BW, DQ, VL, and VBMI.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1

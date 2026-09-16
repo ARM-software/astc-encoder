@@ -2269,7 +2269,7 @@ def main() -> int:
     '''
     parser = argparse.ArgumentParser()
 
-    coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2']
+    coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2', 'avx512']
     parser.add_argument('--encoder', dest='encoder', default='avx2',
                         choices=coders, help='test encoder variant')
     args = parser.parse_known_args()

@@ -18,8 +18,8 @@
 /**
  * @brief 16x32-bit vectors, implemented using AVX-512F.
  *
- * Experimental compile-time AVX-512 ISA: ASTCENC_SIMD_WIDTH is 16. This is a
- * VLA backend sibling of astcenc_vecmathlib_avx2_8.h, not a runtime overlay.
+ * Compile-time AVX-512 ISA: ASTCENC_SIMD_WIDTH is 16. This is a VLA backend
+ * sibling of astcenc_vecmathlib_avx2_8.h, not a runtime overlay.
  * gatherf is implemented with AVX-512 VBMI (vpermb / vpermt2b) for tables that
  * fit in 1–4 zmm, and a scalar-load fallback for larger index ranges. It does
  * not use AVX-512F vgatherdps. vgatherf_load hoists those masked zmm loads so
