@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2024 Arm Limited
+// Copyright 2020-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -50,6 +50,21 @@ static bool g_cpu_has_sse41 { false };
 /** Does this CPU support AVX2? Set to -1 if not yet initialized. */
 static bool g_cpu_has_avx2 { false };
 
+/** Does this CPU support AVX-512F, with OS ZMM state enabled? */
+static bool g_cpu_has_avx512f { false };
+
+/** Does this CPU support AVX-512DQ, with OS ZMM state enabled? */
+static bool g_cpu_has_avx512dq { false };
+
+/** Does this CPU support AVX-512BW, with OS ZMM state enabled? */
+static bool g_cpu_has_avx512bw { false };
+
+/** Does this CPU support AVX-512VL, with OS ZMM state enabled? */
+static bool g_cpu_has_avx512vl { false };
+
+/** Does this CPU support AVX-512 VBMI, with OS ZMM state enabled? */
+static bool g_cpu_has_avx512vbmi { false };
+
 /** Does this CPU support POPCNT? Set to -1 if not yet initialized. */
 static bool g_cpu_has_popcnt { false };
 
@@ -90,6 +105,34 @@ static void detect_cpu_isa()
 		__cpuidex(data, 7, 0);
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
+		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them
+		// before the leaf 1 read below overwrites data[].
+		bool avx512f = (data[1] & (1u << 16)) != 0;
+		bool avx512dq = (data[1] & (1u << 17)) != 0;
+		bool avx512bw = (data[1] & (1u << 30)) != 0;
+		bool avx512vl = (data[1] & (1u << 31)) != 0;
+		bool avx512vbmi = (data[2] & (1u << 1)) != 0;
+		g_cpu_has_avx512f = false;
+		g_cpu_has_avx512dq = false;
+		g_cpu_has_avx512bw = false;
+		g_cpu_has_avx512vl = false;
+		g_cpu_has_avx512vbmi = false;
+		if (avx512f && g_cpu_has_sse41)
+		{
+			__cpuidex(data, 1, 0);
+			bool osxsave = (data[2] & (1 << 27)) != 0;
+			if (osxsave)
+			{
+				// XMM, YMM, and ZMM state (XCR0 bits 1, 2, 5, 6, 7)
+				unsigned long long xcr = _xgetbv(0);
+				bool os_avx512 = (xcr & 0xE6) == 0xE6;
+				g_cpu_has_avx512f = os_avx512 && avx512f;
+				g_cpu_has_avx512dq = os_avx512 && avx512dq;
+				g_cpu_has_avx512bw = os_avx512 && avx512bw;
+				g_cpu_has_avx512vl = os_avx512 && avx512vl;
+				g_cpu_has_avx512vbmi = os_avx512 && avx512vbmi;
+			}
+		}
 	}
 
 	// Ensure state bits are updated before init flag is updated
@@ -121,10 +164,38 @@ static void detect_cpu_isa()
 	}
 
 	g_cpu_has_avx2 = 0;
+	g_cpu_has_avx512f = 0;
+	g_cpu_has_avx512dq = 0;
+	g_cpu_has_avx512bw = 0;
+	g_cpu_has_avx512vl = 0;
+	g_cpu_has_avx512vbmi = 0;
 	if (__get_cpuid_count(7, 0, &data[0], &data[1], &data[2], &data[3]))
 	{
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
+		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them
+		// before the leaf 1 read below overwrites data[].
+		bool avx512f = (data[1] & (1u << 16)) != 0;
+		bool avx512dq = (data[1] & (1u << 17)) != 0;
+		bool avx512bw = (data[1] & (1u << 30)) != 0;
+		bool avx512vl = (data[1] & (1u << 31)) != 0;
+		bool avx512vbmi = (data[2] & (1u << 1)) != 0;
+		if (avx512f)
+		{
+			unsigned int eax, edx;
+			if (__get_cpuid_count(1, 0, &data[0], &data[1], &data[2], &data[3]) &&
+			    (data[2] & (1u << 27)))
+			{
+				// XMM, YMM, and ZMM state (XCR0 bits 1, 2, 5, 6, 7)
+				__asm__ volatile ("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+				bool os_avx512 = (eax & 0xE6) == 0xE6;
+				g_cpu_has_avx512f = os_avx512 && avx512f;
+				g_cpu_has_avx512dq = os_avx512 && avx512dq;
+				g_cpu_has_avx512bw = os_avx512 && avx512bw;
+				g_cpu_has_avx512vl = os_avx512 && avx512vl;
+				g_cpu_has_avx512vbmi = os_avx512 && avx512vbmi;
+			}
+		}
 	}
 
 	// Ensure state bits are updated before init flag is updated
@@ -184,6 +255,83 @@ static bool cpu_supports_sse41()
 }
 #endif
 
+#if ASTCENC_AVX >= 3
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512F.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512f()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512f;
+}
+
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512DQ.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512dq()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512dq;
+}
+
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512BW.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512bw()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512bw;
+}
+
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512VL.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512vl()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512vl;
+}
+
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512 VBMI.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512vbmi()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512vbmi;
+}
+#endif
+
 #if ASTCENC_AVX >= 2
 /**
  * @brief Run-time detection if the host CPU supports AVX 2 extension.
@@ -221,6 +369,38 @@ static inline void print_error(
  */
 static bool validate_cpu_isa()
 {
+	#if ASTCENC_AVX >= 3
+		if (!cpu_supports_avx512f())
+		{
+			print_error("ERROR: Host does not support AVX-512F ISA extension\n");
+			return false;
+		}
+
+		if (!cpu_supports_avx512dq())
+		{
+			print_error("ERROR: Host does not support AVX-512DQ ISA extension\n");
+			return false;
+		}
+
+		if (!cpu_supports_avx512bw())
+		{
+			print_error("ERROR: Host does not support AVX-512BW ISA extension\n");
+			return false;
+		}
+
+		if (!cpu_supports_avx512vl())
+		{
+			print_error("ERROR: Host does not support AVX-512VL ISA extension\n");
+			return false;
+		}
+
+		if (!cpu_supports_avx512vbmi())
+		{
+			print_error("ERROR: Host does not support AVX-512 VBMI ISA extension\n");
+			return false;
+		}
+	#endif
+
 	#if ASTCENC_AVX >= 2
 		if (!cpu_supports_avx2())
 		{
