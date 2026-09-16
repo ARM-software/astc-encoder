@@ -35,6 +35,7 @@ set(CMAKE_XCODE_ATTRIBUTE_VALID_ARCHS "x86_64 x86_64h arm64")
 
 include(CTest)
 
+option(ASTCENC_ISA_AVX512 "Enable astcenc builds for AVX-512 SIMD")
 option(ASTCENC_ISA_AVX2 "Enable astcenc builds for AVX2 SIMD")
 option(ASTCENC_ISA_SSE41 "Enable astcenc builds for SSE4.1 SIMD")
 option(ASTCENC_ISA_SSE2 "Enable astcenc builds for SSE2 SIMD")
@@ -75,14 +76,25 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
         if(${ASTCENC_ISA_NATIVE})
             message(FATAL_ERROR "ISA_NATIVE cannot be used in a universal build")
         endif()
+
+        if(${ASTCENC_ISA_AVX512})
+            message(FATAL_ERROR "ISA_AVX512 cannot be used in a universal build")
+        endif()
     endif()
 else()
     set(ASTCENC_UNIVERSAL_BUILD OFF)
 endif()
 
+# MSVC /arch:AVX512 does not enable AVX-512VBMI; Clang-CL and GNU do.
+if(${ASTCENC_ISA_AVX512} AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    message(FATAL_ERROR
+        "ASTCENC_ISA_AVX512 requires Clang or GCC (AVX-512VBMI). "
+        "MSVC /arch:AVX512 is not sufficient; configure with -T ClangCL.")
+endif()
+
 # Count options which MUST be x64
 set(ASTCENC_X64_ISA_COUNT 0)
-set(ASTCENC_CONFIGS ${ASTCENC_ISA_AVX2} ${ASTCENC_ISA_SSE41} ${ASTCENC_ISA_SSE2})
+set(ASTCENC_CONFIGS ${ASTCENC_ISA_AVX512} ${ASTCENC_ISA_AVX2} ${ASTCENC_ISA_SSE41} ${ASTCENC_ISA_SSE2})
 foreach(ASTCENC_CONFIG ${ASTCENC_CONFIGS})
     if(${ASTCENC_CONFIG})
         math(EXPR ASTCENC_X64_ISA_COUNT "${ASTCENC_X64_ISA_COUNT} + 1")
@@ -127,6 +139,7 @@ printopt("SVE 256b backend   " ${ASTCENC_ISA_SVE_256})
 printopt("SVE 128b backend   " ${ASTCENC_ISA_SVE_128})
 printopt("NEON backend       " ${ASTCENC_ISA_NEON})
 message(STATUS "x86-64 backend options")
+printopt("AVX-512 backend    " ${ASTCENC_ISA_AVX512})
 printopt("AVX2 backend       " ${ASTCENC_ISA_AVX2})
 printopt("SSE4.1 backend     " ${ASTCENC_ISA_SSE41})
 printopt("SSE2 backend       " ${ASTCENC_ISA_SSE2})
