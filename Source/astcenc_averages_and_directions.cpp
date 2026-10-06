@@ -63,14 +63,27 @@ static void compute_partition_averages_rgb(
 	{
 		vfloatacc pp_avg_rgb[3] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
+			vmask p0_mask = texel_partition == vint(0);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgb[0], data_r, p0_mask);
 
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgb[1], data_g, p0_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgb[2], data_b, p0_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 
 			vfloat data_r = loada(blk.data_r + i);
@@ -99,13 +112,32 @@ static void compute_partition_averages_rgb(
 	{
 		vfloatacc pp_avg_rgb[2][3] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vmask p0_mask = texel_partition == vint(0);
+			vmask p1_mask = texel_partition == vint(1);
+
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgb[0][0], data_r, p0_mask);
+			haccumulate(pp_avg_rgb[1][0], data_r, p1_mask);
+
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgb[0][1], data_g, p0_mask);
+			haccumulate(pp_avg_rgb[1][1], data_g, p1_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgb[0][2], data_b, p0_mask);
+			haccumulate(pp_avg_rgb[1][2], data_b, p1_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 			vmask p1_mask = lane_mask & (texel_partition == vint(1));
@@ -144,13 +176,36 @@ static void compute_partition_averages_rgb(
 		// For 4 partitions scan results for partition 0/1/2, compute partition 3
 		vfloatacc pp_avg_rgb[3][3] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vmask p0_mask = texel_partition == vint(0);
+			vmask p1_mask = texel_partition == vint(1);
+			vmask p2_mask = texel_partition == vint(2);
+
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgb[0][0], data_r, p0_mask);
+			haccumulate(pp_avg_rgb[1][0], data_r, p1_mask);
+			haccumulate(pp_avg_rgb[2][0], data_r, p2_mask);
+
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgb[0][1], data_g, p0_mask);
+			haccumulate(pp_avg_rgb[1][1], data_g, p1_mask);
+			haccumulate(pp_avg_rgb[2][1], data_g, p2_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgb[0][2], data_b, p0_mask);
+			haccumulate(pp_avg_rgb[1][2], data_b, p1_mask);
+			haccumulate(pp_avg_rgb[2][2], data_b, p2_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 			vmask p1_mask = lane_mask & (texel_partition == vint(1));
@@ -234,14 +289,30 @@ static void compute_partition_averages_rgba(
 	{
 		vfloat4 pp_avg_rgba[4] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
+			vmask p0_mask = texel_partition == vint(0);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgba[0], data_r, p0_mask);
 
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgba[1], data_g, p0_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgba[2], data_b, p0_mask);
+
+			vfloat data_a = loada(blk.data_a + i);
+			haccumulate(pp_avg_rgba[3], data_a, p0_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 
 			vfloat data_r = loada(blk.data_r + i);
@@ -274,13 +345,36 @@ static void compute_partition_averages_rgba(
 	{
 		vfloat4 pp_avg_rgba[2][4] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vmask p0_mask = texel_partition == vint(0);
+			vmask p1_mask = texel_partition == vint(1);
+
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgba[0][0], data_r, p0_mask);
+			haccumulate(pp_avg_rgba[1][0], data_r, p1_mask);
+
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgba[0][1], data_g, p0_mask);
+			haccumulate(pp_avg_rgba[1][1], data_g, p1_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgba[0][2], data_b, p0_mask);
+			haccumulate(pp_avg_rgba[1][2], data_b, p1_mask);
+
+			vfloat data_a = loada(blk.data_a + i);
+			haccumulate(pp_avg_rgba[0][3], data_a, p0_mask);
+			haccumulate(pp_avg_rgba[1][3], data_a, p1_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 			vmask p1_mask = lane_mask & (texel_partition == vint(1));
@@ -325,13 +419,41 @@ static void compute_partition_averages_rgba(
 		// For 4 partitions scan results for partition 0/1/2, compute partition 3
 		vfloat4 pp_avg_rgba[3][4] {};
 
-		vint lane_id = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
 			vint texel_partition(pi.partition_of_texel + i);
 
-			vmask lane_mask = lane_id < vint_from_size(texel_count);
-			lane_id += vint(ASTCENC_SIMD_WIDTH);
+			vmask p0_mask = texel_partition == vint(0);
+			vmask p1_mask = texel_partition == vint(1);
+			vmask p2_mask = texel_partition == vint(2);
+
+			vfloat data_r = loada(blk.data_r + i);
+			haccumulate(pp_avg_rgba[0][0], data_r, p0_mask);
+			haccumulate(pp_avg_rgba[1][0], data_r, p1_mask);
+			haccumulate(pp_avg_rgba[2][0], data_r, p2_mask);
+
+			vfloat data_g = loada(blk.data_g + i);
+			haccumulate(pp_avg_rgba[0][1], data_g, p0_mask);
+			haccumulate(pp_avg_rgba[1][1], data_g, p1_mask);
+			haccumulate(pp_avg_rgba[2][1], data_g, p2_mask);
+
+			vfloat data_b = loada(blk.data_b + i);
+			haccumulate(pp_avg_rgba[0][2], data_b, p0_mask);
+			haccumulate(pp_avg_rgba[1][2], data_b, p1_mask);
+			haccumulate(pp_avg_rgba[2][2], data_b, p2_mask);
+
+			vfloat data_a = loada(blk.data_a + i);
+			haccumulate(pp_avg_rgba[0][3], data_a, p0_mask);
+			haccumulate(pp_avg_rgba[1][3], data_a, p1_mask);
+			haccumulate(pp_avg_rgba[2][3], data_a, p2_mask);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vint texel_partition(pi.partition_of_texel + i);
+			vmask lane_mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 
 			vmask p0_mask = lane_mask & (texel_partition == vint(0));
 			vmask p1_mask = lane_mask & (texel_partition == vint(1));
@@ -771,13 +893,63 @@ void compute_error_squared_rgba(
 		vfloat ew_b(blk.channel_weight.lane<2>());
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
-		// This implementation over-shoots, but this is safe as we initialize the texel_indexes
-		// array to extend the last value. This means min/max are not impacted, but we need to mask
-		// out the dummy values when we compute the line weighting.
-		vint lane_ids = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
-			vmask mask = lane_ids < vint_from_size(texel_count);
+			const uint8_t* texel_idxs = texel_indexes + i;
+
+			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
+			vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, texel_idxs);
+			vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, texel_idxs);
+			vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, texel_idxs);
+
+			vfloat uncor_param = (data_r * l_uncor_bs0)
+			                   + (data_g * l_uncor_bs1)
+			                   + (data_b * l_uncor_bs2)
+			                   + (data_a * l_uncor_bs3);
+
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
+
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
+			                   + (uncor_param * l_uncor_bs1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
+			                   + (uncor_param * l_uncor_bs2);
+			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
+			                   + (uncor_param * l_uncor_bs3);
+
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist1 * uncor_dist1)
+			                 + (ew_b * uncor_dist2 * uncor_dist2)
+			                 + (ew_a * uncor_dist3 * uncor_dist3);
+
+			haccumulate(uncor_errorsumv, uncor_err);
+
+			// Process samechroma data
+			vfloat samec_param = (data_r * l_samec_bs0)
+			                   + (data_g * l_samec_bs1)
+			                   + (data_b * l_samec_bs2)
+			                   + (data_a * l_samec_bs3);
+
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
+
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2)
+			                 + (ew_a * samec_dist3 * samec_dist3);
+
+			haccumulate(samec_errorsumv, samec_err);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vmask mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
 			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
@@ -826,8 +998,6 @@ void compute_error_squared_rgba(
 			                 + (ew_a * samec_dist3 * samec_dist3);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
-
-			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		// Turn very small numbers and NaNs into a small number
@@ -885,13 +1055,55 @@ void compute_error_squared_rgb(
 		vfloat ew_g(blk.channel_weight.lane<1>());
 		vfloat ew_b(blk.channel_weight.lane<2>());
 
-		// This implementation over-shoots, but this is safe as we initialize the weights array
-		// to extend the last value. This means min/max are not impacted, but we need to mask
-		// out the dummy values when we compute the line weighting.
-		vint lane_ids = vint::lane_id();
-		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+		for (size_t i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 		{
-			vmask mask = lane_ids < vint_from_size(texel_count);
+			const uint8_t* texel_idxs = texel_indexes + i;
+
+			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
+			vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, texel_idxs);
+			vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, texel_idxs);
+
+			vfloat uncor_param = (data_r * l_uncor_bs0)
+			                   + (data_g * l_uncor_bs1)
+			                   + (data_b * l_uncor_bs2);
+
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
+
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist1 = (l_uncor_amod1 - data_g)
+			                   + (uncor_param * l_uncor_bs1);
+			vfloat uncor_dist2 = (l_uncor_amod2 - data_b)
+			                   + (uncor_param * l_uncor_bs2);
+
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist1 * uncor_dist1)
+			                 + (ew_b * uncor_dist2 * uncor_dist2);
+
+			haccumulate(uncor_errorsumv, uncor_err);
+
+			// Process samechroma data
+			vfloat samec_param = (data_r * l_samec_bs0)
+			                   + (data_g * l_samec_bs1)
+			                   + (data_b * l_samec_bs2);
+
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist1 = samec_param * l_samec_bs1 - data_g;
+			vfloat samec_dist2 = samec_param * l_samec_bs2 - data_b;
+
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist1 * samec_dist1)
+			                 + (ew_b * samec_dist2 * samec_dist2);
+
+			haccumulate(samec_errorsumv, samec_err);
+		}
+
+		if (texel_count_simd < texel_count)
+		{
+			size_t i = texel_count_simd;
+			vmask mask = vint::lane_id() < vint_from_size(texel_count - texel_count_simd);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
 			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
@@ -932,8 +1144,6 @@ void compute_error_squared_rgb(
 			                 + (ew_b * samec_dist2 * samec_dist2);
 
 			haccumulate(samec_errorsumv, samec_err, mask);
-
-			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 		}
 
 		// Turn very small numbers and NaNs into a small number

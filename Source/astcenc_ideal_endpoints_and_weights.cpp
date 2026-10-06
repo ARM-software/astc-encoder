@@ -427,12 +427,16 @@ static void compute_ideal_colors_and_weights_3_comp(
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
+		float base_param = dot3_s(line.a, line.b);
+		float bx = line.b.lane<0>();
+		float by = line.b.lane<1>();
+		float bz = line.b.lane<2>();
+
 		unsigned int partition_texel_count = pi.partition_texel_count[i];
 		for (unsigned int j = 0; j < partition_texel_count; j++)
 		{
 			unsigned int tix = pi.texels_of_partition[i][j];
-			vfloat4 point = vfloat3(data_vr[tix], data_vg[tix], data_vb[tix]);
-			float param = dot3_s(point - line.a, line.b);
+			float param = (data_vr[tix] * bx + data_vg[tix] * by + data_vb[tix] * bz) - base_param;
 			ei.weights[tix] = param;
 
 			lowparam = astc::min(param, lowparam);
@@ -501,7 +505,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 	// Zero initialize any SIMD over-fetch
 	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
-	for (size_t i = texel_count; i < texel_count_simd; i++)
+	for (unsigned int i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
 		ei.weight_error_scale[i] = 0.0f;
@@ -522,16 +526,15 @@ static void compute_ideal_colors_and_weights_4_comp(
 	const partition_info& pi,
 	endpoints_and_weights& ei
 ) {
-	const float error_weight = hadd_s(blk.channel_weight) / 4.0f;
-
 	unsigned int partition_count = pi.partition_count;
-
-	unsigned int texel_count = blk.texel_count;
-	promise(texel_count > 0);
+	size_t texel_count = blk.texel_count;
+	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
 	promise(partition_count > 0);
+	promise(texel_count > 0);
+
+	float error_weight = hadd_s(blk.channel_weight) * (1.0f / 4.0f);
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
-
 	compute_avgs_and_dirs_4_comp(pi, blk, pms);
 
 	bool is_constant_wes { true };
@@ -549,12 +552,17 @@ static void compute_ideal_colors_and_weights_4_comp(
 		float lowparam { 1e10f };
 		float highparam { -1e10f };
 
+		float base_param = dot_s(line.a, line.b);
+		float bx = line.b.lane<0>();
+		float by = line.b.lane<1>();
+		float bz = line.b.lane<2>();
+		float ba = line.b.lane<3>();
+
 		unsigned int partition_texel_count = pi.partition_texel_count[i];
 		for (unsigned int j = 0; j < partition_texel_count; j++)
 		{
 			unsigned int tix = pi.texels_of_partition[i][j];
-			vfloat4 point = blk.texel(tix);
-			float param = dot_s(point - line.a, line.b);
+			float param = (blk.data_r[tix] * bx + blk.data_g[tix] * by + blk.data_b[tix] * bz + blk.data_a[tix] * ba) - base_param;
 			ei.weights[tix] = param;
 
 			lowparam = astc::min(param, lowparam);
@@ -598,7 +606,6 @@ static void compute_ideal_colors_and_weights_4_comp(
 	}
 
 	// Zero initialize any SIMD over-fetch
-	size_t texel_count_simd = round_up_to_simd_multiple_vla(texel_count);
 	for (size_t i = texel_count; i < texel_count_simd; i++)
 	{
 		ei.weights[i] = 0.0f;
@@ -870,38 +877,62 @@ void compute_ideal_weights_for_decimation(
 
 	// Compute an initial average for each decimated weight
 	bool constant_wes = ei.is_constant_weight_error_scale;
-	vfloat weight_error_scale(ei.weight_error_scale[0]);
 
 	// This overshoots - this is OK as we initialize the array tails in the
 	// decimation table structures to safe values ...
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	if (constant_wes)
 	{
-		// Start with a small value to avoid div-by-zero later
-		vfloat weight_weight(1e-10f);
-		vfloat initial_weight = vfloat::zero();
-
-		// Accumulate error weighting of all the texels using this weight
-		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax_s(weight_texel_count);
-		promise(max_texel_count > 0);
-
-		for (unsigned int j = 0; j < max_texel_count; j++)
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			const uint8_t* texel = di.weight_texels_tr[j] + i;
-			vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
+			// Start with a small value to avoid div-by-zero later
+			vfloat weight_weight(1e-10f);
+			vfloat initial_weight = vfloat::zero();
 
-			if (!constant_wes)
+			// Accumulate error weighting of all the texels using this weight
+			vint weight_texel_count(di.weight_texel_count + i);
+			unsigned int max_texel_count = hmax_s(weight_texel_count);
+			promise(max_texel_count > 0);
+
+			for (unsigned int j = 0; j < max_texel_count; j++)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				const uint8_t* texel = di.weight_texels_tr[j] + i;
+				vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
+
+				weight_weight += weight;
+				initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * weight;
 			}
 
-			vfloat contrib_weight = weight * weight_error_scale;
-
-			weight_weight += contrib_weight;
-			initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * contrib_weight;
+			storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
 		}
+	}
+	else
+	{
+		vfloat weight_error_scale(ei.weight_error_scale[0]);
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			// Start with a small value to avoid div-by-zero later
+			vfloat weight_weight(1e-10f);
+			vfloat initial_weight = vfloat::zero();
 
-		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
+			// Accumulate error weighting of all the texels using this weight
+			vint weight_texel_count(di.weight_texel_count + i);
+			unsigned int max_texel_count = hmax_s(weight_texel_count);
+			promise(max_texel_count > 0);
+
+			for (unsigned int j = 0; j < max_texel_count; j++)
+			{
+				const uint8_t* texel = di.weight_texels_tr[j] + i;
+				vfloat weight = loada(di.weights_texel_contribs_tr[j] + i);
+				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+
+				vfloat contrib_weight = weight * weight_error_scale;
+
+				weight_weight += contrib_weight;
+				initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * contrib_weight;
+			}
+
+			storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
+		}
 	}
 
 	// Populate the interpolated weight grid based on the initial average
@@ -930,43 +961,78 @@ void compute_ideal_weights_for_decimation(
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -WEIGHTS_TEXEL_SUM;
 
-	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+	if (constant_wes)
 	{
-		vfloat weight_val = loada(dec_weight_ideal_value + i);
-
-		// Accumulate error weighting of all the texels using this weight
-		// Start with a small value to avoid div-by-zero later
-		vfloat error_change0(1e-10f);
-		vfloat error_change1(0.0f);
-
-		// Accumulate error weighting of all the texels using this weight
-		vint weight_texel_count(di.weight_texel_count + i);
-		unsigned int max_texel_count = hmax_s(weight_texel_count);
-		promise(max_texel_count > 0);
-
-		for (unsigned int j = 0; j < max_texel_count; j++)
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			const uint8_t* texel = di.weight_texels_tr[j] + i;
-			vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
+			vfloat weight_val = loada(dec_weight_ideal_value + i);
 
-			if (!constant_wes)
+			// Accumulate error weighting of all the texels using this weight
+			// Start with a small value to avoid div-by-zero later
+			vfloat error_change0(1e-10f);
+			vfloat error_change1(0.0f);
+
+			// Accumulate error weighting of all the texels using this weight
+			vint weight_texel_count(di.weight_texel_count + i);
+			unsigned int max_texel_count = hmax_s(weight_texel_count);
+			promise(max_texel_count > 0);
+
+			for (unsigned int j = 0; j < max_texel_count; j++)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				const uint8_t* texel = di.weight_texels_tr[j] + i;
+				vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
+
+				vfloat old_weight = gatherf_byte_inds<vfloat>(infilled_weights, texel);
+				vfloat ideal_weight = gatherf_byte_inds<vfloat>(ei.weights, texel);
+
+				error_change0 += contrib_weight * contrib_weight;
+				error_change1 += (old_weight - ideal_weight) * contrib_weight;
 			}
 
-			vfloat scale = weight_error_scale * contrib_weight;
-			vfloat old_weight = gatherf_byte_inds<vfloat>(infilled_weights, texel);
-			vfloat ideal_weight = gatherf_byte_inds<vfloat>(ei.weights, texel);
+			vfloat step = (error_change1 * chd_scale) / error_change0;
+			step = clamp(-stepsize, stepsize, step);
 
-			error_change0 += contrib_weight * scale;
-			error_change1 += (old_weight - ideal_weight) * scale;
+			// Update the weight; note this can store negative values
+			storea(weight_val + step, dec_weight_ideal_value + i);
 		}
+	}
+	else
+	{
+		vfloat weight_error_scale(ei.weight_error_scale[0]);
+		for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vfloat weight_val = loada(dec_weight_ideal_value + i);
 
-		vfloat step = (error_change1 * chd_scale) / error_change0;
-		step = clamp(-stepsize, stepsize, step);
+			// Accumulate error weighting of all the texels using this weight
+			// Start with a small value to avoid div-by-zero later
+			vfloat error_change0(1e-10f);
+			vfloat error_change1(0.0f);
 
-		// Update the weight; note this can store negative values
-		storea(weight_val + step, dec_weight_ideal_value + i);
+			// Accumulate error weighting of all the texels using this weight
+			vint weight_texel_count(di.weight_texel_count + i);
+			unsigned int max_texel_count = hmax_s(weight_texel_count);
+			promise(max_texel_count > 0);
+
+			for (unsigned int j = 0; j < max_texel_count; j++)
+			{
+				const uint8_t* texel = di.weight_texels_tr[j] + i;
+				vfloat contrib_weight = loada(di.weights_texel_contribs_tr[j] + i);
+				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+
+				vfloat scale = weight_error_scale * contrib_weight;
+				vfloat old_weight = gatherf_byte_inds<vfloat>(infilled_weights, texel);
+				vfloat ideal_weight = gatherf_byte_inds<vfloat>(ei.weights, texel);
+
+				error_change0 += contrib_weight * scale;
+				error_change1 += (old_weight - ideal_weight) * scale;
+			}
+
+			vfloat step = (error_change1 * chd_scale) / error_change0;
+			step = clamp(-stepsize, stepsize, step);
+
+			// Update the weight; note this can store negative values
+			storea(weight_val + step, dec_weight_ideal_value + i);
+		}
 	}
 }
 

@@ -120,13 +120,88 @@ static void compute_error_squared_rgb_single_partition(
 	vfloat l_bs1(l_pline.bs.lane<1>());
 	vfloat l_bs2(l_pline.bs.lane<2>());
 
-	vint lane_ids = vint::lane_id();
-	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+	size_t texel_count_simd = round_down_to_simd_multiple_vla(texel_count);
+	for (unsigned int i = 0; i < texel_count_simd; i += ASTCENC_SIMD_WIDTH)
 	{
 		const uint8_t* tix = texel_indexes + i;
 
-		vmask mask = lane_ids < vint(texel_count);
-		lane_ids += vint(ASTCENC_SIMD_WIDTH);
+		// Compute the error that arises from just ditching alpha
+		vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, tix);
+		vfloat alpha_diff = data_a - default_a;
+		alpha_diff = alpha_diff * alpha_diff;
+
+		haccumulate(a_drop_errv, alpha_diff);
+
+		vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, tix);
+		vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, tix);
+		vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, tix);
+
+		// Compute uncorrelated error
+		vfloat param = data_r * uncor_bs0
+		             + data_g * uncor_bs1
+		             + data_b * uncor_bs2;
+
+		vfloat dist0 = (uncor_amod0 + param * uncor_bs0) - data_r;
+		vfloat dist1 = (uncor_amod1 + param * uncor_bs1) - data_g;
+		vfloat dist2 = (uncor_amod2 + param * uncor_bs2) - data_b;
+
+		vfloat error = dist0 * dist0 * ews.lane<0>()
+		             + dist1 * dist1 * ews.lane<1>()
+		             + dist2 * dist2 * ews.lane<2>();
+
+		haccumulate(uncor_errv, error);
+
+		// Compute same chroma error - no "amod", it's always zero
+		param = data_r * samec_bs0
+		      + data_g * samec_bs1
+		      + data_b * samec_bs2;
+
+		dist0 = (param * samec_bs0) - data_r;
+		dist1 = (param * samec_bs1) - data_g;
+		dist2 = (param * samec_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		haccumulate(samec_errv, error);
+
+		// Compute rgbl error
+		param = data_r * rgbl_bs0
+		      + data_g * rgbl_bs1
+		      + data_b * rgbl_bs2;
+
+		dist0 = (rgbl_amod0 + param * rgbl_bs0) - data_r;
+		dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
+		dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		haccumulate(rgbl_errv, error);
+
+		// Compute luma error - no "amod", it's always zero
+		param = data_r * l_bs0
+		      + data_g * l_bs1
+		      + data_b * l_bs2;
+
+		dist0 = (param * l_bs0) - data_r;
+		dist1 = (param * l_bs1) - data_g;
+		dist2 = (param * l_bs2) - data_b;
+
+		error = dist0 * dist0 * ews.lane<0>()
+		      + dist1 * dist1 * ews.lane<1>()
+		      + dist2 * dist2 * ews.lane<2>();
+
+		haccumulate(l_errv, error);
+	}
+
+	if (texel_count_simd < texel_count)
+	{
+		unsigned int i = static_cast<unsigned int>(texel_count_simd);
+		const uint8_t* tix = texel_indexes + i;
+		vmask mask = vint::lane_id() < vint(texel_count - texel_count_simd);
 
 		// Compute the error that arises from just ditching alpha
 		vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, tix);
