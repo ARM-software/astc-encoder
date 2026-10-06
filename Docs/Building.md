@@ -393,7 +393,7 @@ python3 -m venv pve
 . ./pve/bin/activate
 
 # Test tools
-python3 -m pip install numpy pillow pycodestyle pylint
+python3 -m pip install numpy scipy pillow pycodestyle pylint
 
 # Profile tools
 python3 -m pip install gprof2dot

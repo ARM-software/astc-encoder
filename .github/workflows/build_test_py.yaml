@@ -33,7 +33,7 @@ jobs:
       - name: Get Python modules
         run: |
           python -m pip install --upgrade pip
-          python -m pip install numpy Pillow mypy pylint pycodestyle
+          python -m pip install numpy scipy Pillow mypy pylint pycodestyle
 
       - name: Run Python tests
         run: |
