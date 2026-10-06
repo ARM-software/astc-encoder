@@ -1154,6 +1154,16 @@ TEST(SuiteVfloat4, float16_to_float)
 
 	// NaNs must be preserved
 	EXPECT_NE(std::isnan(r.lane<3>()), 0);
+
+	// Negative numbers must keep their sign
+	vint4 b(0xBE00, 0xDB54, 0xFC00, 0x8000);
+	vfloat4 s = float16_to_float(b);
+
+	EXPECT_EQ(s.lane<0>(), -1.5);
+	EXPECT_EQ(s.lane<1>(), -234.5);
+	EXPECT_NE(std::isinf(s.lane<2>()), 0);
+	EXPECT_LT(s.lane<2>(), 0.0f);
+	EXPECT_NE(std::signbit(s.lane<3>()), 0);
 }
 
 /** @brief Test fp16 to float conversion. */
