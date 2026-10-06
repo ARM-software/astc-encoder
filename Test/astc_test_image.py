@@ -357,7 +357,7 @@ def parse_command_line():
     test_encoders = [
         'none', 'native', 'universal',
         'neon', 'sve_256', 'sve_128',
-        'sse2', 'sse4.1', 'avx2'
+        'sse2', 'sse4.1', 'avx2', 'avx512'
     ]
 
     test_encoders_arm64 = [
@@ -365,7 +365,7 @@ def parse_command_line():
     ]
 
     test_encoders_x86 = [
-        'sse2', 'sse4.1', 'avx2'
+        'sse2', 'sse4.1', 'avx2', 'avx512'
     ]
 
     encoder_choices = reference_encoders + test_encoders

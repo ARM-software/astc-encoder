@@ -48,10 +48,10 @@
  * Extended instruction set support
  * ================================
  *
- * This library supports use of extended instruction sets, such as SSE4.1 and AVX2. These are
- * enabled at compile time when building the library. There is no runtime checking in the core
- * library that the instruction sets used are actually available. Checking compatibility is the
- * responsibility of the calling code.
+ * This library supports use of extended instruction sets, such as SSE4.1, AVX2, and AVX-512.
+ * These are enabled at compile time when building the library. There is no runtime checking in
+ * the core library that the instruction sets used are actually available. Checking compatibility
+ * is the responsibility of the calling code.
  *
  * Threading
  * =========

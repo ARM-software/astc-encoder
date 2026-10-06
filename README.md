@@ -67,15 +67,20 @@ Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 For Windows and Linux, the builds of astcenc are provided as multiple binaries,
 each tuned for a specific SIMD instruction set.
 
-For x86-64 we provide, in order of increasing performance:
+For x86-64 we provide these SIMD builds, from the baseline ISA to the
+highest ISA we ship:
 
 * `astcenc-sse2` - uses SSE2
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
 * `astcenc-avx2` - uses AVX2, SSE4.2, POPCNT, and F16C
+* `astcenc-avx512` - uses AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
+  AVX-512VBMI, POPCNT, and F16C
 
 The x86-64 SSE2 builds will work on all x86-64 machines, but it is the slowest
-of the three. The other two require extended CPU instruction set support which
-is not universally available, but each step gains ~15% more performance.
+of the four. The other builds require extended CPU instruction set support
+which is not universally available. AVX2 is typically ~15% faster than SSE4.1.
+The AVX-512 build is a 16-wide VLA backend and needs both AVX-512F and
+AVX-512VBMI in hardware and enabled in the OS (XCR0).
 
 For Arm we provide, in order of increasing performance:
 
