@@ -899,7 +899,7 @@ static void compress_image(
 	const block_size_descriptor& bsd = *ctx.bsd;
 	astcenc_profile decode_mode = ctx.config.profile;
 
-	image_block blk;
+	image_block blk {};
 
 	size_t block_x = bsd.dim_x;
 	size_t block_y = bsd.dim_y;
