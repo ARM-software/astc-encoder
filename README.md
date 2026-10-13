@@ -159,10 +159,10 @@ the correct rounding rules when choosing encodings.
 
 Decompress an image using the `-dl` \ `-ds` \ `-dh` \ `-dH` modes. For example:
 
-    astcenc -dh example.astc example.tga
+    astcenc -dh example.astc example.exr
 
 This decompresses `example.astc` using the full HDR feature profile, storing
-the decompressed output to `example.tga`.
+the decompressed output to `example.exr`.
 
 The modes available mirror the options used for compression, but use a `d`
 prefix. Note that for decompression there is no difference between the two HDR
