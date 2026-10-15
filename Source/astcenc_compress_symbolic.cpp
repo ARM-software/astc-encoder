@@ -278,20 +278,24 @@ static bool realign_weights_decimated(
 			for (unsigned int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
 			{
 				unsigned int texel = di.weight_texels_tr[te_idx][we_idx];
-
 				float tw_base = di.texel_contrib_for_weight[te_idx][we_idx];
 
-				float weight_base = (uq_weightsf[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
-				                   + uq_weightsf[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel])
-					              + (uq_weightsf[di.texel_weights_tr[2][texel]] * di.texel_weight_contribs_float_tr[2][texel]
-				                   + uq_weightsf[di.texel_weights_tr[3][texel]] * di.texel_weight_contribs_float_tr[3][texel]);
+				float weight_base;
+				if (di.max_texel_weight_count <= 2)
+				{
+					weight_base = uq_weightsf[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
+					            + uq_weightsf[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel];
+				}
+				else
+				{
+					weight_base = (uq_weightsf[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
+					             + uq_weightsf[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel])
+					            + (uq_weightsf[di.texel_weights_tr[2][texel]] * di.texel_weight_contribs_float_tr[2][texel]
+					             + uq_weightsf[di.texel_weights_tr[3][texel]] * di.texel_weight_contribs_float_tr[3][texel]);
+				}
 
-				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
-				// float weight = astc::flt_rd(weight_base + 0.5f);
-				// float weight_down = astc::flt_rd(weight_base + 0.5f + uqw_diff_down * tw_base) - weight;
-				// float weight_up = astc::flt_rd(weight_base + 0.5f + uqw_diff_up * tw_base) - weight;
-				float weight_down = weight_base + uqw_diff_down * tw_base - weight_base;
-				float weight_up = weight_base + uqw_diff_up * tw_base - weight_base;
+				float step_down = uqw_diff_down * tw_base;
+				float step_up   = uqw_diff_up * tw_base;
 
 				unsigned int partition = pi.partition_of_texel[texel];
 				vfloat4 color_offset = offset[partition];
@@ -301,8 +305,8 @@ static bool realign_weights_decimated(
 				vfloat4 orig_color = blk.texel(texel);
 
 				vfloat4 color_diff      = color - orig_color;
-				vfloat4 color_down_diff = color_diff + color_offset * weight_down;
-				vfloat4 color_up_diff   = color_diff + color_offset * weight_up;
+				vfloat4 color_down_diff = color_diff + color_offset * step_down;
+				vfloat4 color_up_diff   = color_diff + color_offset * step_up;
 
 				error_basev += color_diff * color_diff;
 				error_downv += color_down_diff * color_down_diff;
