@@ -80,7 +80,7 @@ jobs:
           export CXX=clang++
           mkdir build_rel
           cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
       - name: Upload binaries
@@ -101,10 +101,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install numpy Pillow
 
+      # astcenc-avx512 is always packaged. GitHub-hosted runners may lack
+      # AVX-512F+VBMI (or OS XCR0 state); probe the binary and run it only
+      # when the veneer accepts the host.
       - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          python ./Test/astc_test_image.py --encoder sse2 --test-set Small
+          python ./Test/astc_test_image.py --encoder sse4.1 --test-set Small
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host has no AVX-512F+VBMI"
+          fi
 
   build-macos-universal:
     name: macOS universal
@@ -160,7 +171,7 @@ jobs:
         run: |
           mkdir build_rel
           cd build_rel
-          cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+          cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
           msbuild astcencoder.sln -property:Configuration=Release
           msbuild PACKAGE.vcxproj -property:Configuration=Release
           msbuild INSTALL.vcxproj -property:Configuration=Release
@@ -205,6 +216,12 @@ jobs:
       - name: Run system tests
         run: |
           python ./Test/astc_test_image.py --test-set Small
+          bin\astcenc-avx512.exe -help >nul 2>&1
+          if %ERRORLEVEL%==0 (
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          ) else (
+            echo Skipping avx512 execute tests: host has no AVX-512F+VBMI
+          )
         shell: cmd
 
   sign-binaries:

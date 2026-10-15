@@ -34,6 +34,7 @@ set(ASTCENC_VERSION "main" CACHE STRING "ASTCEncoder git version to import")
 #  *  Add "-DASTCENC_ISA_SSE2:String=ON" and link against "astcenc-sse2-static"
 #  *  Add "-DASTCENC_ISA_SSE41:String=ON" and link against "astcenc-sse4.1-static"
 #  *  Add "-DASTCENC_ISA_AVX2:String=ON" and link against "astcenc-avx2-static"
+#  *  Add "-DASTCENC_ISA_AVX512:String=ON" and link against "astcenc-avx512-static"
 #  *  Add "-DASTCENC_ISA_NEON:String=ON" and link against "astcenc-neon-static"
 #
 # The DOWNLOAD_COMMAND here is slightly convoluted so that we can point the

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2024 Arm Limited
+// Copyright 2020-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -50,6 +50,12 @@ static bool g_cpu_has_sse41 { false };
 /** Does this CPU support AVX2? Set to -1 if not yet initialized. */
 static bool g_cpu_has_avx2 { false };
 
+/** Does this CPU support AVX-512F? Set to -1 if not yet initialized. */
+static bool g_cpu_has_avx512f { false };
+
+/** Does this CPU support AVX-512 VBMI? Set to -1 if not yet initialized. */
+static bool g_cpu_has_avx512vbmi { false };
+
 /** Does this CPU support POPCNT? Set to -1 if not yet initialized. */
 static bool g_cpu_has_popcnt { false };
 
@@ -90,6 +96,23 @@ static void detect_cpu_isa()
 		__cpuidex(data, 7, 0);
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
+		// AVX-512F = Bank 7, EBX, bit 16; also require OS XCR0 zmm state
+		bool avx512f = data[1] & (1 << 16) ? true : false;
+		g_cpu_has_avx512f = false;
+		g_cpu_has_avx512vbmi = false;
+		if (avx512f && g_cpu_has_sse41)
+		{
+			__cpuidex(data, 1, 0);
+			bool osxsave = data[2] & (1 << 27) ? true : false;
+			if (osxsave)
+			{
+				unsigned long long xcr = _xgetbv(0);
+				g_cpu_has_avx512f = (xcr & 0xE6) == 0xE6;
+			}
+		}
+		__cpuidex(data, 7, 0);
+		// AVX-512 VBMI = Bank 7, ECX, bit 1
+		g_cpu_has_avx512vbmi = g_cpu_has_avx512f && (data[2] & (1 << 1));
 	}
 
 	// Ensure state bits are updated before init flag is updated
@@ -121,10 +144,25 @@ static void detect_cpu_isa()
 	}
 
 	g_cpu_has_avx2 = 0;
+	g_cpu_has_avx512f = 0;
+	g_cpu_has_avx512vbmi = 0;
 	if (__get_cpuid_count(7, 0, &data[0], &data[1], &data[2], &data[3]))
 	{
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
+		bool avx512f = data[1] & (1 << 16) ? true : false;
+		bool avx512vbmi = data[2] & (1u << 1) ? true : false;
+		if (avx512f)
+		{
+			unsigned int eax, edx;
+			if (__get_cpuid_count(1, 0, &data[0], &data[1], &data[2], &data[3]) &&
+			    (data[2] & (1u << 27)))
+			{
+				__asm__ volatile ("xgetbv" : "=a"(eax), "=d"(edx) : "c"(0));
+				g_cpu_has_avx512f = (eax & 0xE6) == 0xE6;
+			}
+		}
+		g_cpu_has_avx512vbmi = g_cpu_has_avx512f && avx512vbmi;
 	}
 
 	// Ensure state bits are updated before init flag is updated
@@ -184,6 +222,33 @@ static bool cpu_supports_sse41()
 }
 #endif
 
+#if ASTCENC_AVX >= 3
+/**
+ * @brief Run-time detection if the host CPU supports AVX-512F.
+ *
+ * @return @c true if supported, @c false if not.
+ */
+static bool cpu_supports_avx512f()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512f;
+}
+
+static bool cpu_supports_avx512vbmi()
+{
+	if (!g_init)
+	{
+		detect_cpu_isa();
+	}
+
+	return g_cpu_has_avx512vbmi;
+}
+#endif
+
 #if ASTCENC_AVX >= 2
 /**
  * @brief Run-time detection if the host CPU supports AVX 2 extension.
@@ -221,6 +286,19 @@ static inline void print_error(
  */
 static bool validate_cpu_isa()
 {
+	#if ASTCENC_AVX >= 3
+		if (!cpu_supports_avx512f())
+		{
+			print_error("ERROR: Host does not support AVX-512F ISA extension\n");
+			return false;
+		}
+		if (!cpu_supports_avx512vbmi())
+		{
+			print_error("ERROR: Host does not support AVX-512 VBMI ISA extension\n");
+			return false;
+		}
+	#endif
+
 	#if ASTCENC_AVX >= 2
 		if (!cpu_supports_avx2())
 		{
