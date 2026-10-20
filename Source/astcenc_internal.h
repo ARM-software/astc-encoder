@@ -126,6 +126,14 @@ static constexpr float ERROR_CALC_DEFAULT { 1e30f };
 static constexpr float TUNE_MIN_SEARCH_MODE0 { 0.85f };
 
 /**
+ * @brief The maximum alpha-scale kernel radius supported by alpha-weighted compression.
+ *
+ * The work memory needed by the averaging pre-pass grows multiplicatively with
+ * the radius, so out-of-range values are clamped to keep allocations bounded.
+ */
+static constexpr unsigned int TUNE_MAX_A_SCALE_RADIUS { 64 };
+
+/**
  * @brief The maximum number of candidate encodings tested for each encoding mode.
  *
  * This can be dynamically reduced by the compression quality preset.
