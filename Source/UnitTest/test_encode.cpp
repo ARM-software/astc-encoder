@@ -62,6 +62,40 @@ TEST(compress, overflow_in_z)
 	astcenc_context_free(context);
 }
 
+/** @brief Input validation for config.block_z = 0. */
+TEST(compress, zero_block_z)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	config.block_z = 0;
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	uint8_t data[16];
+	uint8_t input[4 * 4 * 4];
+
+	astcenc_image image;
+	image.dim_x = 4;
+	image.dim_y = 4;
+	image.dim_z = 1;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = input;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	// Compression must succeed despite zero config.block_z value
+	status = astcenc_compress_image(context, &image, &swizzle, data, sizeof(data), 0);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	astcenc_context_free(context);
+}
+
 /** @brief Input overflow tests for xyz * 16. */
 TEST(compress, overflow_in_16)
 {
