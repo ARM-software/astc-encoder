@@ -468,6 +468,9 @@ static astcenc_error validate_config(
 
 	config.rgbm_m_scale = astc::max(config.rgbm_m_scale, 1.0f);
 
+	// Clamp alpha-scale kernel radius to put an upper bound on memory use
+	config.a_scale_radius = astc::min(config.a_scale_radius, ALPHASCALE_MAX_RADIUS);
+
 	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
 	config.tune_2partition_index_limit = astc::clamp(config.tune_2partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);
 	config.tune_3partition_index_limit = astc::clamp(config.tune_3partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);
