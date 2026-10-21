@@ -29,10 +29,14 @@
 	#include <unistd.h>
 #endif
 #include <cassert>
+#include <cerrno>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <limits>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -209,30 +213,179 @@ extern "C" void progress_emitter(
 }
 
 /**
- * @brief Test if a string argument is a well formed float.
+ * @brief Advance past an option and validate its argument count.
+ *
+ * @param         option           The command line option being parsed.
+ * @param         argc             The command line argument count.
+ * @param         argument_count   The number of arguments required by the option.
+ * @param[in,out] argidx           The current command line argument index.
+ *
+ * @return @c true on success, or @c false if arguments are missing.
  */
-static bool is_float(
-	std::string target
+static bool advance_option(
+	const char* option,
+	int argc,
+	int argument_count,
+	int& argidx
 ) {
-	float test;
-	std::istringstream stream(target);
+	argidx += argument_count + 1;
+	if (argidx > argc)
+	{
+		const char* suffix = argument_count == 1 ? "" : "s";
+		print_error("ERROR: %s switch requires %d argument%s\n",
+		            option, argument_count, suffix);
+		return false;
+	}
 
-	// Leading whitespace is an error
-	stream >> std::noskipws >> test;
+	return true;
+}
 
-	// Ensure no remaining string, in addition to checking for parse failure
-	return stream.eof() && !stream.fail();
+/**
+ * @brief Parse an unsigned integer command line argument.
+ *
+ * @param      option   The command line option being parsed.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed unsigned integer.
+ *
+ * @return @c true on success, or @c false if the value is invalid.
+ */
+static bool parse_unsigned(
+	const char* option,
+	const char* value,
+	unsigned int& result
+) {
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
+
+	errno = 0;
+	char* endptr;
+	unsigned long parsed = strtoul(value, &endptr, 10);
+	bool invalid = \
+	    (parse_start[0] == '-') ||                              // Value negative
+	    (errno == ERANGE) ||                                    // Value exceeds range of strtoul
+	    (parsed > std::numeric_limits<unsigned int>::max()) ||  // Value exceeds range of uint
+	    (endptr == parse_start) ||                              // Value empty string
+	    (endptr[0] != '\0');                                    // Value ends with non-numeric values
+
+	if (invalid)
+	{
+		print_error("ERROR: Value for %s switch must be positive integer\n", option);
+		return false;
+	}
+
+	result = static_cast<unsigned int>(parsed);
+	return true;
+}
+
+/**
+ * @brief Parse a signed integer command line argument.
+ *
+ * @param      option   The command line option being parsed.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed signed integer.
+ *
+ * @return @c true on success, or @c false if the value is invalid.
+ */
+static bool parse_signed(
+	const char* option,
+	const char* value,
+	int& result
+) {
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
+
+	errno = 0;
+	char* endptr;
+	long parsed = strtol(value, &endptr, 10);
+	bool invalid = \
+	    (errno == ERANGE) ||                           // Value exceeds range of strtol
+	    (parsed < std::numeric_limits<int>::min()) ||  // Value exceeds low range of int
+	    (parsed > std::numeric_limits<int>::max()) ||  // Value exceeds high range of int
+	    (endptr == parse_start) ||                     // Value empty string
+	    (endptr[0] != '\0');                           // Value ends with non-numeric
+
+	if (invalid)
+	{
+		print_error("ERROR: Value for %s switch must be integer\n", option);
+		return false;
+	}
+
+	result = static_cast<int>(parsed);
+	return true;
+}
+
+/**
+ * @brief Parse a floating-point command line option.
+ *
+ * Note that precision underflow is not an error, and will just round to
+ * nearest representable value.
+ *
+ * @param      option   The command line option being parsed, or @c nullptr to
+ *                      suppress error reporting.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed floating-point value.
+ *
+ * @return @c true on success, or @c false if the value is invalid.
+ */
+static bool parse_float(
+	const char* option,
+	const char* value,
+	float& result
+) {
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
+
+	errno = 0;
+	char* endptr;
+	double parsed = strtod(value, &endptr);
+	bool invalid = \
+	    (errno == ERANGE) ||                                                     // Value exceeds range of strtod
+	    !std::isfinite(parsed) ||                                                // Value is infinity or NaN
+	    (parsed < static_cast<double>(std::numeric_limits<float>::lowest())) ||  // Value exceeds low range of float
+	    (parsed > static_cast<double>(std::numeric_limits<float>::max())) ||     // Value exceeds high range of float
+	    (endptr == parse_start) ||                                               // Value is an empty string
+	    (endptr[0] != '\0');                                                     // Value ends with non-numeric values
+
+	if (invalid)
+	{
+		if (option)
+		{
+			print_error("ERROR: Value for %s switch must be floating-point number\n", option);
+		}
+
+		return false;
+	}
+
+	result = static_cast<float>(parsed);
+	return true;
 }
 
 /**
  * @brief Test if a string ends with a given suffix.
+ *
+ * @param target   The string to test.
+ * @param suffix   The suffix to match.
+ *
+ * @return \c true if ends with suffix \c false otherwise.
  */
 static bool ends_with(
-	const std::string& str,
+	const std::string& target,
 	const std::string& suffix
 ) {
-	return (str.size() >= suffix.size()) &&
-	       (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
+	return (target.size() >= suffix.size()) &&
+	       (0 == target.compare(target.size() - suffix.size(), suffix.size(), suffix));
 }
 
 /**
@@ -581,14 +734,17 @@ static int init_astcenc_config(
 		{
 			quality = ASTCENC_PRE_EXHAUSTIVE;
 		}
-		else if (is_float(argv[5]))
-		{
-			quality = static_cast<float>(atof(argv[5]));
-		}
 		else
 		{
-			print_error("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
-			return 1;
+			float value;
+			bool parsed = parse_float(nullptr, argv[5], value);
+			if (!parsed)
+			{
+				print_error("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
+				return 1;
+			}
+
+			quality = value;
 		}
 
 		argidx = 6;
@@ -717,35 +873,52 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-cw"))
 		{
-			argidx += 5;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 4, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -cw switch with less than 4 arguments\n");
 				return 1;
 			}
 
-			config.cw_r_weight = static_cast<float>(atof(argv[argidx - 4]));
-			config.cw_g_weight = static_cast<float>(atof(argv[argidx - 3]));
-			config.cw_b_weight = static_cast<float>(atof(argv[argidx - 2]));
-			config.cw_a_weight = static_cast<float>(atof(argv[argidx - 1]));
+			float r_weight;
+			float g_weight;
+			float b_weight;
+			float a_weight;
+			bool parsed = parse_float(argv[argidx - 5], argv[argidx - 4], r_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 3], g_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 2], b_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 1], a_weight);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.cw_r_weight = r_weight;
+			config.cw_g_weight = g_weight;
+			config.cw_b_weight = b_weight;
+			config.cw_a_weight = a_weight;
 		}
 		else if (!strcmp(argv[argidx], "-a"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -a switch with no argument\n");
 				return 1;
 			}
 
-			config.a_scale_radius = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.a_scale_radius = value;
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -esw switch with no argument\n");
 				return 1;
 			}
 
@@ -791,10 +964,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-ssw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -ssw switch with no argument\n");
 				return 1;
 			}
 
@@ -845,10 +1017,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-dsw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dsw switch with no argument\n");
 				return 1;
 			}
 
@@ -912,14 +1083,20 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-rgbm"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -rgbm switch with no argument\n");
 				return 1;
 			}
 
-			config.rgbm_m_scale = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.rgbm_m_scale = value;
 			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 		}
 		else if (!strcmp(argv[argidx], "-decode_unorm8"))
@@ -940,171 +1117,267 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -blockmodelimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_block_mode_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_block_mode_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-partitioncountlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -partitioncountlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_partition_count_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_partition_count_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_3partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -4partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_4partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_4partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_2partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_3partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -4partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_4partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_4partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dblimit switch with no argument\n");
 				return 1;
 			}
 
 			if ((config.profile == ASTCENC_PRF_LDR) || (config.profile == ASTCENC_PRF_LDR_SRGB))
 			{
-				config.tune_db_limit = static_cast<float>(atof(argv[argidx - 1]));
+				float value;
+				bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+				if (!parsed)
+				{
+					return 1;
+				}
+
+				config.tune_db_limit = value;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-2partitionlimitfactor"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitionlimitfactor switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_2partition_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionlimitfactor"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitionlimitfactor switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_3partition_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-2planelimitcorrelation"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2planelimitcorrelation switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_2plane_early_out_limit_correlation = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2plane_early_out_limit_correlation = value;
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -refinementlimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_refinement_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_refinement_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-candidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -candidatelimit switch with no argument\n");
 				return 1;
 			}
 
-			config.tune_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -j switch with no argument\n");
 				return 1;
 			}
 
-			cli_config.thread_count = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			cli_config.thread_count = value;
+
+			if (cli_config.thread_count < 1)
+			{
+				print_error("ERROR: -j switch value must be at least 1\n");
+				return 1;
+			}
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
@@ -1113,15 +1386,29 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-mpsnr"))
 		{
-			argidx += 3;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 2, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -mpsnr switch with less than 2 arguments\n");
 				return 1;
 			}
 
-			cli_config.low_fstop = atoi(argv[argidx - 2]);
-			cli_config.high_fstop = atoi(argv[argidx - 1]);
+			int low_fstop;
+			bool parsed = parse_signed(argv[argidx - 3], argv[argidx - 2], low_fstop);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			int high_fstop;
+			parsed = parse_signed(argv[argidx - 3], argv[argidx - 1], high_fstop);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			cli_config.low_fstop = low_fstop;
+			cli_config.high_fstop = high_fstop;
+
 			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
 				print_error("ERROR: -mpsnr switch <low> is greater than the <high>\n");
@@ -1138,35 +1425,39 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			// Image depth must be specified.
-			if (argidx + 2 > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -zdim switch with no argument\n");
 				return 1;
 			}
-			argidx++;
 
-			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
 			{
-				print_error("ERROR: -zdim size '%s' is invalid\n", argv[argidx]);
 				return 1;
 			}
+
+			if (value == 0)
+			{
+				print_error("ERROR: -zdim switch value must be at least 1\n");
+				return 1;
+			}
+
+			cli_config.array_size = value;
 
 			if ((cli_config.array_size > 1) && (config.block_z == 1))
 			{
 				print_error("ERROR: -zdim with 3D input data for a 2D output format\n");
 				return 1;
 			}
-			argidx++;
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
 		else if (!strcmp(argv[argidx], "-dtrace"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dtrace switch with no argument\n");
 				return 1;
 			}
 
