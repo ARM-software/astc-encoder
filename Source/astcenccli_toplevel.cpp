@@ -213,6 +213,34 @@ extern "C" void progress_emitter(
 }
 
 /**
+ * @brief Advance past an option and validate its argument count.
+ *
+ * @param         option           The command line option being parsed.
+ * @param         argc             The command line argument count.
+ * @param         argument_count   The number of arguments required by the option.
+ * @param[in,out] argidx           The current command line argument index.
+ *
+ * @return @c true on success, or @c false if arguments are missing.
+ */
+static bool advance_option(
+	const char* option,
+	int argc,
+	int argument_count,
+	int& argidx
+) {
+	argidx += argument_count + 1;
+	if (argidx > argc)
+	{
+		const char* suffix = argument_count == 1 ? "" : "s";
+		print_error("ERROR: %s switch requires %d argument%s\n",
+		            option, argument_count, suffix);
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * @brief Parse an unsigned integer command line argument.
  *
  * @param      option   The command line option being parsed.
@@ -806,10 +834,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-cw"))
 		{
-			argidx += 5;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 4, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -cw switch with less than 4 arguments\n");
 				return 1;
 			}
 
@@ -820,10 +847,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-a"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -a switch with no argument\n");
 				return 1;
 			}
 
@@ -838,10 +864,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -esw switch with no argument\n");
 				return 1;
 			}
 
@@ -887,10 +912,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-ssw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -ssw switch with no argument\n");
 				return 1;
 			}
 
@@ -941,10 +965,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-dsw"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dsw switch with no argument\n");
 				return 1;
 			}
 
@@ -1008,10 +1031,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-rgbm"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -rgbm switch with no argument\n");
 				return 1;
 			}
 
@@ -1036,10 +1058,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -blockmodelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1054,10 +1075,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-partitioncountlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -partitioncountlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1072,10 +1092,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-2partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1090,10 +1109,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-3partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1108,10 +1126,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -4partitionindexlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1126,10 +1143,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1144,10 +1160,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-3partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1162,10 +1177,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-4partitioncandidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -4partitioncandidatelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1180,10 +1194,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dblimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1194,10 +1207,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-2partitionlimitfactor"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2partitionlimitfactor switch with no argument\n");
 				return 1;
 			}
 
@@ -1205,10 +1217,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-3partitionlimitfactor"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -3partitionlimitfactor switch with no argument\n");
 				return 1;
 			}
 
@@ -1216,10 +1227,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-2planelimitcorrelation"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -2planelimitcorrelation switch with no argument\n");
 				return 1;
 			}
 
@@ -1227,10 +1237,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -refinementlimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1245,10 +1254,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-candidatelimit"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -candidatelimit switch with no argument\n");
 				return 1;
 			}
 
@@ -1263,10 +1271,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -j switch with no argument\n");
 				return 1;
 			}
 
@@ -1291,10 +1298,9 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-mpsnr"))
 		{
-			argidx += 3;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 2, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -mpsnr switch with less than 2 arguments\n");
 				return 1;
 			}
 
@@ -1331,18 +1337,16 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			// Image depth must be specified.
-			if (argidx + 2 > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -zdim switch with no argument\n");
 				return 1;
 			}
-			argidx++;
 
 			// Read array size (image depth).
-			if (!sscanf(argv[argidx], "%u", &cli_config.array_size) || cli_config.array_size == 0)
+			if (!sscanf(argv[argidx - 1], "%u", &cli_config.array_size) || cli_config.array_size == 0)
 			{
-				print_error("ERROR: -zdim size '%s' is invalid\n", argv[argidx]);
+				print_error("ERROR: -zdim size '%s' is invalid\n", argv[argidx - 1]);
 				return 1;
 			}
 
@@ -1351,15 +1355,13 @@ static int edit_astcenc_config(
 				print_error("ERROR: -zdim with 3D input data for a 2D output format\n");
 				return 1;
 			}
-			argidx++;
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
 		else if (!strcmp(argv[argidx], "-dtrace"))
 		{
-			argidx += 2;
-			if (argidx > argc)
+			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
+			if (!has_args)
 			{
-				print_error("ERROR: -dtrace switch with no argument\n");
 				return 1;
 			}
 
