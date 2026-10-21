@@ -448,11 +448,8 @@ static astcenc_error validate_config(
 		return status;
 	}
 
-	// A block_z of zero is accepted as meaning "2D" by validate_block_size(),
-	// matching the normalization that astcenc_config_init() applies, but the
-	// stored value must still be at least one because later code paths in
-	// astcenc_compress_image() and astcenc_decompress_image() divide by the
-	// block dimensions when computing block counts
+	// A block_z of zero is accepted to mean 2D. Normalize to 1u so later code paths
+	// can safely use it as a divisor or loop limit
 	config.block_z = astc::max(config.block_z, 1u);
 
 	status = validate_block_size(config.block_x, config.block_y, config.block_z);
