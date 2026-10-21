@@ -325,6 +325,9 @@ static bool parse_signed(
 /**
  * @brief Parse a floating-point command line option.
  *
+ * Note that precision underflow is not an error, and will just round to
+ * nearest representable value.
+ *
  * @param      option   The command line option being parsed, or @c nullptr to
  *                      suppress error reporting.
  * @param      value    The command line argument to parse.
@@ -348,7 +351,7 @@ static bool parse_float(
 	char* endptr;
 	double parsed = strtod(value, &endptr);
 	bool invalid = \
-		(errno == ERANGE) ||                                                     // Value exceeds range of strtod
+	    (errno == ERANGE) ||                                                     // Value exceeds range of strtod
 	    !std::isfinite(parsed) ||                                                // Value is infinity or NaN
 	    (parsed < static_cast<double>(std::numeric_limits<float>::lowest())) ||  // Value exceeds low range of float
 	    (parsed > static_cast<double>(std::numeric_limits<float>::max())) ||     // Value exceeds high range of float
@@ -357,7 +360,11 @@ static bool parse_float(
 
 	if (invalid)
 	{
-		print_error("ERROR: Value for %s switch must be floating-point number\n", option);
+		if (option)
+		{
+			print_error("ERROR: Value for %s switch must be floating-point number\n", option);
+		}
+
 		return false;
 	}
 
@@ -1369,6 +1376,7 @@ static int edit_astcenc_config(
 			if (cli_config.thread_count < 1)
 			{
 				print_error("ERROR: -j switch value must be at least 1\n");
+				return 1;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
@@ -1423,12 +1431,20 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			// Read array size (image depth).
-			if (!sscanf(argv[argidx - 1], "%u", &cli_config.array_size) || cli_config.array_size == 0)
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
 			{
-				print_error("ERROR: -zdim size '%s' is invalid\n", argv[argidx - 1]);
 				return 1;
 			}
+
+			if (value == 0)
+			{
+				print_error("ERROR: -zdim switch value must be at least 1\n");
+				return 1;
+			}
+
+			cli_config.array_size = value;
 
 			if ((cli_config.array_size > 1) && (config.block_z == 1))
 			{
