@@ -31,12 +31,12 @@
 #include <cassert>
 #include <cerrno>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <functional>
 #include <limits>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <memory>
 #include <utility>
@@ -264,11 +264,14 @@ static bool parse_unsigned(
 	errno = 0;
 	char* endptr;
 	unsigned long parsed = strtoul(value, &endptr, 10);
-	if ((parse_start[0] == '-') ||                              // Value negative
+	bool invalid = \
+	    (parse_start[0] == '-') ||                              // Value negative
 	    (errno == ERANGE) ||                                    // Value exceeds range of strtoul
 	    (parsed > std::numeric_limits<unsigned int>::max()) ||  // Value exceeds range of uint
 	    (endptr == parse_start) ||                              // Value empty string
-	    (endptr[0] != '\0'))                                    // Value ends with non-numeric values
+	    (endptr[0] != '\0');                                    // Value ends with non-numeric values
+
+	if (invalid)
 	{
 		print_error("ERROR: Value for %s switch must be positive integer\n", option);
 		return false;
@@ -302,11 +305,14 @@ static bool parse_signed(
 	errno = 0;
 	char* endptr;
 	long parsed = strtol(value, &endptr, 10);
-	if ((errno == ERANGE) ||                           // Value exceeds range of strtol
+	bool invalid = \
+	    (errno == ERANGE) ||                           // Value exceeds range of strtol
 	    (parsed < std::numeric_limits<int>::min()) ||  // Value exceeds low range of int
 	    (parsed > std::numeric_limits<int>::max()) ||  // Value exceeds high range of int
 	    (endptr == parse_start) ||                     // Value empty string
-	    (endptr[0] != '\0'))                           // Value ends with non-numeric
+	    (endptr[0] != '\0');                           // Value ends with non-numeric
+
+	if (invalid)
 	{
 		print_error("ERROR: Value for %s switch must be integer\n", option);
 		return false;
@@ -317,23 +323,46 @@ static bool parse_signed(
 }
 
 /**
- * @brief Test if a string argument is a well formed float.
+ * @brief Parse a floating-point command line option.
  *
- * @param target   The string to test.
+ * @param      option   The command line option being parsed, or @c nullptr to
+ *                      suppress error reporting.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed floating-point value.
  *
- * @return \c true if well formed, \c false otherwise.
+ * @return @c true on success, or @c false if the value is invalid.
  */
-static bool is_float(
-	const std::string& target
+static bool parse_float(
+	const char* option,
+	const char* value,
+	float& result
 ) {
-	float test;
-	std::istringstream stream(target);
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
 
-	// Leading whitespace is an error
-	stream >> std::noskipws >> test;
+	errno = 0;
+	char* endptr;
+	double parsed = strtod(value, &endptr);
+	bool invalid = \
+		(errno == ERANGE) ||                                                     // Value exceeds range of strtod
+	    !std::isfinite(parsed) ||                                                // Value is infinity or NaN
+	    (parsed < static_cast<double>(std::numeric_limits<float>::lowest())) ||  // Value exceeds low range of float
+	    (parsed > static_cast<double>(std::numeric_limits<float>::max())) ||     // Value exceeds high range of float
+	    (endptr == parse_start) ||                                               // Value is an empty string
+	    (endptr[0] != '\0');                                                     // Value ends with non-numeric values
 
-	// Ensure no remaining string, in addition to checking for parse failure
-	return stream.eof() && !stream.fail();
+	if (invalid)
+	{
+		print_error("ERROR: Value for %s switch must be floating-point number\n", option);
+		return false;
+	}
+
+	result = static_cast<float>(parsed);
+	return true;
 }
 
 /**
@@ -698,14 +727,17 @@ static int init_astcenc_config(
 		{
 			quality = ASTCENC_PRE_EXHAUSTIVE;
 		}
-		else if (is_float(argv[5]))
-		{
-			quality = static_cast<float>(atof(argv[5]));
-		}
 		else
 		{
-			print_error("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
-			return 1;
+			float value;
+			bool parsed = parse_float(nullptr, argv[5], value);
+			if (!parsed)
+			{
+				print_error("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
+				return 1;
+			}
+
+			quality = value;
 		}
 
 		argidx = 6;
@@ -840,10 +872,23 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.cw_r_weight = static_cast<float>(atof(argv[argidx - 4]));
-			config.cw_g_weight = static_cast<float>(atof(argv[argidx - 3]));
-			config.cw_b_weight = static_cast<float>(atof(argv[argidx - 2]));
-			config.cw_a_weight = static_cast<float>(atof(argv[argidx - 1]));
+			float r_weight;
+			float g_weight;
+			float b_weight;
+			float a_weight;
+			bool parsed = parse_float(argv[argidx - 5], argv[argidx - 4], r_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 3], g_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 2], b_weight) &&
+			              parse_float(argv[argidx - 5], argv[argidx - 1], a_weight);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.cw_r_weight = r_weight;
+			config.cw_g_weight = g_weight;
+			config.cw_b_weight = b_weight;
+			config.cw_a_weight = a_weight;
 		}
 		else if (!strcmp(argv[argidx], "-a"))
 		{
@@ -1037,7 +1082,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.rgbm_m_scale = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.rgbm_m_scale = value;
 			config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 		}
 		else if (!strcmp(argv[argidx], "-decode_unorm8"))
@@ -1202,7 +1254,14 @@ static int edit_astcenc_config(
 
 			if ((config.profile == ASTCENC_PRF_LDR) || (config.profile == ASTCENC_PRF_LDR_SRGB))
 			{
-				config.tune_db_limit = static_cast<float>(atof(argv[argidx - 1]));
+				float value;
+				bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+				if (!parsed)
+				{
+					return 1;
+				}
+
+				config.tune_db_limit = value;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-2partitionlimitfactor"))
@@ -1213,7 +1272,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2partition_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionlimitfactor"))
 		{
@@ -1223,7 +1289,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_3partition_early_out_limit_factor = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-2planelimitcorrelation"))
 		{
@@ -1233,7 +1306,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2plane_early_out_limit_correlation = static_cast<float>(atof(argv[argidx - 1]));
+			float value;
+			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2plane_early_out_limit_correlation = value;
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
