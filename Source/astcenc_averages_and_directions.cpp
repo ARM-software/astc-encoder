@@ -735,6 +735,11 @@ void compute_error_squared_rgba(
 	vfloatacc uncor_errorsumv = vfloatacc::zero();
 	vfloatacc samec_errorsumv = vfloatacc::zero();
 
+	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
+	vgatherf_table tg = vgatherf_load(blk.data_g, blk.texel_count);
+	vgatherf_table tb = vgatherf_load(blk.data_b, blk.texel_count);
+	vgatherf_table ta = vgatherf_load(blk.data_a, blk.texel_count);
+
 	for (size_t partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
@@ -780,10 +785,10 @@ void compute_error_squared_rgba(
 			vmask mask = lane_ids < vint_from_size(texel_count);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
-			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
-			vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, texel_idxs);
-			vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, texel_idxs);
-			vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, texel_idxs);
+			vfloat data_r = gatherf(tr, texel_idxs);
+			vfloat data_g = gatherf(tg, texel_idxs);
+			vfloat data_b = gatherf(tb, texel_idxs);
+			vfloat data_a = gatherf(ta, texel_idxs);
 
 			vfloat uncor_param = (data_r * l_uncor_bs0)
 			                   + (data_g * l_uncor_bs1)
@@ -853,6 +858,10 @@ void compute_error_squared_rgb(
 	vfloatacc uncor_errorsumv = vfloatacc::zero();
 	vfloatacc samec_errorsumv = vfloatacc::zero();
 
+	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
+	vgatherf_table tg = vgatherf_load(blk.data_g, blk.texel_count);
+	vgatherf_table tb = vgatherf_load(blk.data_b, blk.texel_count);
+
 	for (size_t partition = 0; partition < partition_count; partition++)
 	{
 		partition_lines3& pl = plines[partition];
@@ -894,9 +903,9 @@ void compute_error_squared_rgb(
 			vmask mask = lane_ids < vint_from_size(texel_count);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
-			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
-			vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, texel_idxs);
-			vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, texel_idxs);
+			vfloat data_r = gatherf(tr, texel_idxs);
+			vfloat data_g = gatherf(tg, texel_idxs);
+			vfloat data_b = gatherf(tb, texel_idxs);
 
 			vfloat uncor_param = (data_r * l_uncor_bs0)
 			                   + (data_g * l_uncor_bs1)

@@ -27,11 +27,11 @@ cd build
 
 # x86-64 using a Visual Studio solution
 cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+    -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # x86-64 using NMake
 cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\ ^
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+    -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 ```
 
 A single CMake configure can build multiple binaries for a single target CPU
@@ -83,7 +83,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ 
 
 # x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ \
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+    -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # macOS universal binary build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ ..
@@ -206,6 +206,16 @@ no explicit SIMD acceleration (the compiler may still auto-vectorize).
 To enable this binary variant add `-DASTCENC_ISA_NONE=ON` to the CMake command
 line when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
+
+### AVX-512 builds
+
+An optional x86-64 AVX-512 backend is enabled with `-DASTCENC_ISA_AVX512=ON`.
+This produces `astcenc-avx512`, a 16-wide VLA codec. It requires AVX-512F and
+AVX-512VBMI in the compiler flags, and will refuse to run unless the CPU and
+OS expose both (including OS XCR0 state).
+
+It is not part of macOS universal builds. Windows builds need Clang or
+Clang-CL (`-T ClangCL`); MSVC `/arch:AVX512` does not enable VBMI.
 
 ### No x86 gather instruction builds
 

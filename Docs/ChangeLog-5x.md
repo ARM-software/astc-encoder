@@ -7,6 +7,18 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.8.0
+
+**Status:** In development.
+
+* **Codec library updates:**
+  * **Optimization:** Added a compile-time AVX-512 SIMD backend
+    (`ASTCENC_SIMD_WIDTH` 16).
+* **Command line tool updates:**
+  * **Feature:** New `astcenc-avx512` binary, enabled with
+    `-DASTCENC_ISA_AVX512=ON`. Requires AVX-512F and AVX-512VBMI.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.7.0
 
 **Status:** Released August 2026.

@@ -49,6 +49,7 @@
  *     * 4-wide for x86-64 SSE4.1
  *     * 8-wide for Armv8-A SVE
  *     * 8-wide for x86-64 AVX2
+ *     * 16-wide for x86-64 AVX-512
  */
 
 #ifndef ASTC_VECMATHLIB_H_INCLUDED
@@ -80,7 +81,34 @@
 
 template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indices);
 
-#if ASTCENC_AVX >= 2
+#if ASTCENC_AVX >= 3
+	// Compile-time AVX-512: expose 16-wide VLA.
+	#include "astcenc_vecmathlib_sse_4.h"
+	#include "astcenc_vecmathlib_common_4.h"
+	#include "astcenc_vecmathlib_avx512_16.h"
+
+	#define ASTCENC_SIMD_WIDTH 16
+
+	using vfloat = vfloat16;
+
+	#if defined(ASTCENC_NO_INVARIANCE)
+		using vfloatacc = vfloat16;
+	#else
+		using vfloatacc = vfloat4;
+	#endif
+
+	using vint = vint16;
+	using vmask = vmask16;
+
+	using vtable_16x8 = vtable16_16x8;
+	using vtable_32x8 = vtable16_32x8;
+	using vtable_64x8 = vtable16_64x8;
+
+	constexpr auto loada = vfloat16::loada;
+	constexpr auto load1 = vfloat16::load1;
+	constexpr auto vint_from_size = vint16_from_size;
+
+#elif ASTCENC_AVX >= 2
 	// If we have AVX2 expose 8-wide VLA.
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
@@ -238,6 +266,34 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto loada = vfloat4::loada;
 	constexpr auto load1 = vfloat4::load1;
 	constexpr auto vint_from_size = vint4_from_size;
+#endif
+
+#ifndef ASTCENC_HAS_VGATHERF_TABLE
+/**
+ * @brief Portable float-table gather: keep the pointer, gather from memory.
+ *
+ * AVX-512 replaces this with a register-resident VBMI table in
+ * astcenc_vecmathlib_avx512_16.h.
+ */
+struct vgatherf_table {
+	const float* base;
+};
+
+ASTCENC_SIMD_INLINE vgatherf_table vgatherf_load(const float* base, unsigned int count)
+{
+	(void)count;
+	return vgatherf_table{base};
+}
+
+ASTCENC_SIMD_INLINE vfloat gatherf(const vgatherf_table& t, vint indices)
+{
+	return gatherf(t.base, indices);
+}
+
+ASTCENC_SIMD_INLINE vfloat gatherf(const vgatherf_table& t, const uint8_t* indices)
+{
+	return gatherf_byte_inds<vfloat>(t.base, indices);
+}
 #endif
 
 /**
