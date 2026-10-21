@@ -29,8 +29,12 @@
 	#include <unistd.h>
 #endif
 #include <cassert>
+#include <cerrno>
+#include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -209,10 +213,90 @@ extern "C" void progress_emitter(
 }
 
 /**
+ * @brief Parse an unsigned integer command line argument.
+ *
+ * @param      option   The command line option being parsed.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed unsigned integer.
+ *
+ * @return @c true on success, or @c false if the value is invalid.
+ */
+static bool parse_unsigned(
+	const char* option,
+	const char* value,
+	unsigned int& result
+) {
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
+
+	errno = 0;
+	char* endptr;
+	unsigned long parsed = strtoul(value, &endptr, 10);
+	if ((parse_start[0] == '-') ||                              // Value negative
+	    (errno == ERANGE) ||                                    // Value exceeds range of strtoul
+	    (parsed > std::numeric_limits<unsigned int>::max()) ||  // Value exceeds range of uint
+	    (endptr == parse_start) ||                              // Value empty string
+	    (endptr[0] != '\0'))                                    // Value ends with non-numeric values
+	{
+		print_error("ERROR: Value for %s switch must be positive integer\n", option);
+		return false;
+	}
+
+	result = static_cast<unsigned int>(parsed);
+	return true;
+}
+
+/**
+ * @brief Parse a signed integer command line argument.
+ *
+ * @param      option   The command line option being parsed.
+ * @param      value    The command line argument to parse.
+ * @param[out] result   The parsed signed integer.
+ *
+ * @return @c true on success, or @c false if the value is invalid.
+ */
+static bool parse_signed(
+	const char* option,
+	const char* value,
+	int& result
+) {
+	// Ignore any spaces at the start of the string
+	const char* parse_start = value;
+	while (std::isspace(static_cast<unsigned char>(*parse_start)))
+	{
+		parse_start++;
+	}
+
+	errno = 0;
+	char* endptr;
+	long parsed = strtol(value, &endptr, 10);
+	if ((errno == ERANGE) ||                           // Value exceeds range of strtol
+	    (parsed < std::numeric_limits<int>::min()) ||  // Value exceeds low range of int
+	    (parsed > std::numeric_limits<int>::max()) ||  // Value exceeds high range of int
+	    (endptr == parse_start) ||                     // Value empty string
+	    (endptr[0] != '\0'))                           // Value ends with non-numeric
+	{
+		print_error("ERROR: Value for %s switch must be integer\n", option);
+		return false;
+	}
+
+	result = static_cast<int>(parsed);
+	return true;
+}
+
+/**
  * @brief Test if a string argument is a well formed float.
+ *
+ * @param target   The string to test.
+ *
+ * @return \c true if well formed, \c false otherwise.
  */
 static bool is_float(
-	std::string target
+	const std::string& target
 ) {
 	float test;
 	std::istringstream stream(target);
@@ -226,13 +310,18 @@ static bool is_float(
 
 /**
  * @brief Test if a string ends with a given suffix.
+ *
+ * @param target   The string to test.
+ * @param suffix   The suffix to match.
+ *
+ * @return \c true if ends with suffix \c false otherwise.
  */
 static bool ends_with(
-	const std::string& str,
+	const std::string& target,
 	const std::string& suffix
 ) {
-	return (str.size() >= suffix.size()) &&
-	       (0 == str.compare(str.size() - suffix.size(), suffix.size(), suffix));
+	return (target.size() >= suffix.size()) &&
+	       (0 == target.compare(target.size() - suffix.size(), suffix.size(), suffix));
 }
 
 /**
@@ -738,7 +827,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.a_scale_radius = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.a_scale_radius = value;
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
@@ -947,7 +1043,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_block_mode_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_block_mode_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-partitioncountlimit"))
 		{
@@ -958,7 +1061,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_partition_count_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_partition_count_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitionindexlimit"))
 		{
@@ -969,7 +1079,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionindexlimit"))
 		{
@@ -980,7 +1097,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_3partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
 		{
@@ -991,7 +1115,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_4partition_index_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_4partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
@@ -1002,7 +1133,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_2partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_2partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitioncandidatelimit"))
 		{
@@ -1013,7 +1151,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_3partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_3partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitioncandidatelimit"))
 		{
@@ -1024,7 +1169,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_4partitioning_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_4partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
@@ -1082,7 +1234,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_refinement_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_refinement_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-candidatelimit"))
 		{
@@ -1093,7 +1252,14 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			config.tune_candidate_limit = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			config.tune_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
@@ -1104,7 +1270,19 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			cli_config.thread_count = atoi(argv[argidx - 1]);
+			unsigned int value;
+			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			cli_config.thread_count = value;
+
+			if (cli_config.thread_count < 1)
+			{
+				print_error("ERROR: -j switch value must be at least 1\n");
+			}
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
 		{
@@ -1120,8 +1298,23 @@ static int edit_astcenc_config(
 				return 1;
 			}
 
-			cli_config.low_fstop = atoi(argv[argidx - 2]);
-			cli_config.high_fstop = atoi(argv[argidx - 1]);
+			int low_fstop;
+			bool parsed = parse_signed(argv[argidx - 3], argv[argidx - 2], low_fstop);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			int high_fstop;
+			parsed = parse_signed(argv[argidx - 3], argv[argidx - 1], high_fstop);
+			if (!parsed)
+			{
+				return 1;
+			}
+
+			cli_config.low_fstop = low_fstop;
+			cli_config.high_fstop = high_fstop;
+
 			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
 				print_error("ERROR: -mpsnr switch <low> is greater than the <high>\n");
