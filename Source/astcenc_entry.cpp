@@ -464,12 +464,8 @@ static astcenc_error validate_config(
 
 	config.rgbm_m_scale = astc::max(config.rgbm_m_scale, 1.0f);
 
-	// The alpha-scale kernel radius is a public tuning field, so may be set to
-	// any value by an application. The averaging pre-pass sizes its work memory
-	// as a product of padded block extents that grow with the radius, so clamp
-	// the radius to the supported maximum to keep that multiplication bounded
-	// for any image size
-	config.a_scale_radius = astc::min(config.a_scale_radius, TUNE_MAX_A_SCALE_RADIUS);
+	// Clamp alpha-scale kernel radius to put an upper bound on memory use
+	config.a_scale_radius = astc::min(config.a_scale_radius, ALPHASCALE_MAX_RADIUS);
 
 	config.tune_partition_count_limit = astc::clamp(config.tune_partition_count_limit, 1u, 4u);
 	config.tune_2partition_index_limit = astc::clamp(config.tune_2partition_index_limit, 1u, BLOCK_MAX_PARTITIONINGS);

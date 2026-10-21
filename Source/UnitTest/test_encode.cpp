@@ -62,42 +62,6 @@ TEST(compress, overflow_in_z)
 	astcenc_context_free(context);
 }
 
-/** @brief Input validation tests for an out-of-range alpha-scale radius. */
-TEST(compress, ascale_radius_clamped)
-{
-	astcenc_error status;
-	astcenc_config config;
-	astcenc_context* context;
-
-	static const astcenc_swizzle swizzle {
-		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
-	};
-
-	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
-	// Any unsigned value is a legal field value; large ones must be clamped
-	config.a_scale_radius = 0xFFFFFFFFu;
-	status = astcenc_context_alloc(&config, 1, &context, nullptr);
-	EXPECT_EQ(status, ASTCENC_SUCCESS);
-
-	uint8_t data[16];
-	uint8_t input[4 * 4 * 4];
-
-	astcenc_image image;
-	image.dim_x = 4;
-	image.dim_y = 4;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
-	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
-
-	// The averaging pre-pass sizes work memory from the radius, which must
-	// stay bounded instead of overflowing or throwing std::bad_alloc
-	status = astcenc_compress_image(context, &image, &swizzle, data, sizeof(data), 0);
-	EXPECT_EQ(status, ASTCENC_SUCCESS);
-
-	astcenc_context_free(context);
-}
-
 /** @brief Input overflow tests for xyz * 16. */
 TEST(compress, overflow_in_16)
 {
@@ -132,6 +96,41 @@ TEST(compress, overflow_in_16)
 	astcenc_context_free(context);
 }
 
+/** @brief Input test for an out-of-range alpha-scale radius. */
+TEST(compress, ascale_radius_clamped)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	static const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+
+	// Set to largest possible value to check input validation
+	config.a_scale_radius = 0xFFFFFFFFu;
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	uint8_t data[16];
+	uint8_t input[4 * 4 * 4];
+
+	astcenc_image image;
+	image.dim_x = 4;
+	image.dim_y = 4;
+	image.dim_z = 1;
+	image.data_type = ASTCENC_TYPE_U8;
+	uint8_t* slices = input;
+	image.data = reinterpret_cast<void**>(&slices);
+
+	// Compression should succeed without bad_alloc or ASAN failure
+	status = astcenc_compress_image(context, &image, &swizzle, data, sizeof(data), 0);
+	EXPECT_EQ(status, ASTCENC_SUCCESS);
+
+	astcenc_context_free(context);
+}
 
 /** @brief Input data buffer overrun tests. */
 TEST(compress, data_buffer_exceeded)
