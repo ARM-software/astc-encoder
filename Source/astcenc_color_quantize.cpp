@@ -90,10 +90,11 @@ static inline vint4 quant_color3(
 	vint4 value
 ) {
 	vint4 index = value * 2 + 1;
+	const uint8_t* table = color_unquant_to_uquant_tables[quant_level - QUANT_6];
 	return vint4(
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<0>()],
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<1>()],
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<2>()],
+		table[index.lane<0>()],
+		table[index.lane<1>()],
+		table[index.lane<2>()],
 		0);
 }
 
@@ -146,10 +147,11 @@ static inline vint4 quant_color3(
 	vmask4 mask = residual >= vfloat4(-0.1f);
 	index = select(index, index + 1, mask);
 
+	const uint8_t* table = color_unquant_to_uquant_tables[quant_level - QUANT_6];
 	return vint4(
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<0>()],
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<1>()],
-		color_unquant_to_uquant_tables[quant_level - QUANT_6][index.lane<2>()],
+		table[index.lane<0>()],
+		table[index.lane<1>()],
+		table[index.lane<2>()],
 		0);
 }
 

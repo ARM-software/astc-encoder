@@ -626,7 +626,7 @@ unsigned int find_best_partition_candidates(
 				uncor_lines[j].a = pm.avg;
 				uncor_lines[j].b = normalize_safe(pm.dir, unit4());
 
-				uncor_plines[j].amod = uncor_lines[j].a - uncor_lines[j].b * dot(uncor_lines[j].a, uncor_lines[j].b);
+				uncor_plines[j].amod = uncor_lines[j].a - uncor_lines[j].b * dot_s(uncor_lines[j].a, uncor_lines[j].b);
 				uncor_plines[j].bs = uncor_lines[j].b;
 
 				samec_lines[j].a = vfloat4::zero();
@@ -660,13 +660,9 @@ unsigned int find_best_partition_candidates(
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				float tpp = static_cast<float>(pi.partition_texel_count[j]);
-				vfloat4 error_weights(tpp * weight_imprecision_estim);
-
-				vfloat4 uncor_vector = uncor_lines[j].b * line_lengths[j];
-				vfloat4 samec_vector = samec_lines[j].b * line_lengths[j];
-
-				uncor_error += dot_s(uncor_vector * uncor_vector, error_weights);
-				samec_error += dot_s(samec_vector * samec_vector, error_weights);
+				float imprecision_error = (line_lengths[j] * line_lengths[j]) * (tpp * weight_imprecision_estim);
+				uncor_error += imprecision_error;
+				samec_error += imprecision_error;
 			}
 
 			insert_result(requested_candidates, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
@@ -697,7 +693,7 @@ unsigned int find_best_partition_candidates(
 				pl.samec_line.a = vfloat4::zero();
 				pl.samec_line.b = normalize_safe(pm.avg, unit3());
 
-				pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3(pl.uncor_line.a, pl.uncor_line.b);
+				pl.uncor_pline.amod = pl.uncor_line.a - pl.uncor_line.b * dot3_s(pl.uncor_line.a, pl.uncor_line.b);
 				pl.uncor_pline.bs   = pl.uncor_line.b;
 
 				pl.samec_pline.amod = vfloat4::zero();
@@ -726,15 +722,10 @@ unsigned int find_best_partition_candidates(
 			for (unsigned int j = 0; j < partition_count; j++)
 			{
 				partition_lines3& pl = plines[j];
-
 				float tpp = static_cast<float>(pi.partition_texel_count[j]);
-				vfloat4 error_weights(tpp * weight_imprecision_estim);
-
-				vfloat4 uncor_vector = pl.uncor_line.b * pl.line_length;
-				vfloat4 samec_vector = pl.samec_line.b * pl.line_length;
-
-				uncor_error += dot3_s(uncor_vector * uncor_vector, error_weights);
-				samec_error += dot3_s(samec_vector * samec_vector, error_weights);
+				float imprecision_error = (pl.line_length * pl.line_length) * (tpp * weight_imprecision_estim);
+				uncor_error += imprecision_error;
+				samec_error += imprecision_error;
 			}
 
 			insert_result(requested_candidates, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
