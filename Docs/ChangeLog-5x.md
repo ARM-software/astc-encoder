@@ -19,9 +19,8 @@ not expected to be reachable in normal usage conditions.
     reliably detect malformed or out-of-range values and emit an error.
   * **Bug fix:** Capped alpha-scale (`-a`) option radius to 64 texels to
     avoid very large intermediate buffer memory allocation.
-    reliably detect malformed or out-of-range values and emit an error.
   * **Bug fix:** Avoid UB caused by SIMD code accessing uninitialized
-    `image_block` data.
+    entries in the `image_block` input data arrays.
   * **Bug fix:** Avoid `float16_to_float()` decoding negative values as NaN in
     builds using x86-64 F16C instructions.
   * **Bug fix:** Avoid div-by-zero error by normalizing `block_z` inside
