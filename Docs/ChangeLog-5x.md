@@ -11,8 +11,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 **Status:** Released November 2026.
 
-The 5.7.1 release is a minor maintenance release, fixing small bugs that are
-not expected to be reachable in normal usage conditions.
+The 5.7.1 release is a minor maintenance release that addresses a small number of bugs. These issues are unlikely to affect normal usage, but the fixes improve robustness and reliability.
 
 * **General:**
   * **Bug fix:** Improved command line option parameter validation to more
@@ -23,9 +22,6 @@ not expected to be reachable in normal usage conditions.
     entries in the `image_block` input data arrays.
   * **Bug fix:** Avoid `float16_to_float()` decoding negative values as NaN in
     builds using x86-64 F16C instructions.
-  * **Bug fix:** Avoid div-by-zero error by normalizing `block_z` inside
-    `astcenc_context_alloc()` in cases where user manually zeroed the dimension
-    after calling `astcenc_config_init()`.
   * **Bug fix:** Avoid div-by-zero error by normalizing `block_z` inside
     `astcenc_context_alloc()` in cases where user manually zeroed the dimension
     after calling `astcenc_config_init()`.
