@@ -14,17 +14,21 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.8.0 release is a minor maintenance release.
 
 * **Codec library updates:**
-  * **Optimization:** Hoist loop invariant weight diff calculation out of
+  * **Optimization:** Hoist loop invariant weight diff calculation out of the
     `compute_ideal_weights_for_decimation()` refinement loop.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of
-    deeper nested `..._find_best_combination...()` selector loop.
+    deeper nested `..._find_best_combination...()` selector loops.
+  * **Optimization:** Hoist loop invariant channel weight out of loop in
+    `realign_weights_decimated()`.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
 
 **Status:** Released November 2026.
 
-The 5.7.1 release is a minor maintenance release that addresses a small number of bugs. These issues are unlikely to affect normal usage, but the fixes improve robustness and reliability.
+The 5.7.1 release is a minor maintenance release that addresses a small number
+of bugs. These issues are unlikely to affect normal usage, but the fixes
+improve robustness and reliability.
 
 * **Codec library updates:**
   * **Bug fix:** Capped alpha-scale (`-a`) option radius to 64 texels to
@@ -174,7 +178,8 @@ The 5.3.0 release is a minor maintenance release.
     count parameter value.
   * **Bug fix:** Builds using MSVC `cl.exe` that do not specify an explicit
     ISA using the preprocessor configuration defines will now correctly
-    default to the SSE2 backend on x86-64 and the NEON backend on Arm64. Previously they would have defaulted to the reference C implementation,
+    default to the SSE2 backend on x86-64 and the NEON backend on Arm64.
+    Previously they would have defaulted to the reference C implementation,
     which is around 3.25 times slower.
 
 
@@ -234,8 +239,8 @@ improvements on all platforms. There are no image quality differences.
 **Status:** Released November 2024
 
 The 5.0.0 release is the first stable release in the 5.x series. The main new
-feature is support for the Arm Scalable Vector Extensions (SVE) SIMD instruction
-set.
+feature is support for the Arm Scalable Vector Extensions (SVE) SIMD
+instruction set.
 
 * **General:**
   * **Bug fix:** Fixed incorrect return type in "None" vector library

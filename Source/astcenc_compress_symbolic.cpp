@@ -232,6 +232,7 @@ static bool realign_weights_decimated(
 
 	uint8_t* dec_weights_uquant = scb.weights;
 	bool adjustments = false;
+	vfloat4 error_weight = blk.channel_weight;
 
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
@@ -309,7 +310,6 @@ static bool realign_weights_decimated(
 				error_upv   += color_up_diff * color_up_diff;
 			}
 
-			vfloat4 error_weight = blk.channel_weight;
 			float error_base = hadd_s(error_basev * error_weight);
 			float error_down = hadd_s(error_downv * error_weight);
 			float error_up   = hadd_s(error_upv   * error_weight);
