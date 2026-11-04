@@ -99,7 +99,7 @@ This build includes SSE4.1 (`x86_64`), AVX2 (`x86_64h`), and NEON (`arm64`)
 build slices in a single output binary. The OS will select the correct variant
 to run for the machine being used. This is the default build target for a macOS
 build, but single-target binaries can still be built by setting
-`-DASTCENC_UNIVERSAL_BINARY=OFF` and then manually selecting the specific ISA
+`-DASTCENC_UNIVERSAL_BUILD=OFF` and then manually selecting the specific ISA
 variants that are required.
 
 ### Building
