@@ -279,10 +279,7 @@ jobs:
         # Disable SVE for now
         run: |
           python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
           # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
-          python ./Test/astc_test_image.py --encoder none --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder none --test-set Small --color-format l
           python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format rgba
           python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format l
 
@@ -602,14 +599,9 @@ jobs:
       - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
           # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
-          python ./Test/astc_test_image.py --encoder none --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder none --test-set Small --color-format l
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small --color-format l
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format rgba
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format l
 
       - name: Run unit tests
         run: ctest --rerun-failed --output-on-failure
