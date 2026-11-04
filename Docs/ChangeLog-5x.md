@@ -16,6 +16,8 @@ The 5.8.0 release is a minor maintenance release.
 * **Codec library updates:**
   * **Optimization:** Hoist loop invariant weight diff calculation out of
     `compute_ideal_weights_for_decimation()` refinement loop.
+  * **Optimization:** Hoist loop invariant error accumulator calculation out of
+    deeper nested `..._find_best_combination...()` selector loop.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1

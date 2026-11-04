@@ -743,6 +743,8 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
+			float error0 = best_error[0][quant][i];
+
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
@@ -753,10 +755,11 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 				}
 
 				int intcnt = i + j;
-				float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j], 1e10f);
-				if (errorterm <= best_combined_error[quant][intcnt])
+				float error01 = error0 + best_error[1][quant][j];
+				error01 = astc::min(error01, 1e10f);
+				if (error01 <= best_combined_error[quant][intcnt])
 				{
-					best_combined_error[quant][intcnt] = errorterm;
+					best_combined_error[quant][intcnt] = error01;
 					best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
 					best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
 				}
@@ -857,6 +860,8 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
+			float error0 = best_error[0][quant][i];
+
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
@@ -865,6 +870,8 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 				{
 					continue;
 				}
+
+				float error01 = error0 + best_error[1][quant][j];
 
 				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
 				{
@@ -876,10 +883,11 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 					}
 
 					int intcnt = i + j + k;
-					float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k], 1e10f);
-					if (errorterm <= best_combined_error[quant][intcnt])
+					float error012 = error01 + best_error[2][quant][k];
+					error012 = astc::min(error012, 1e10f);
+					if (error012 <= best_combined_error[quant][intcnt])
 					{
-						best_combined_error[quant][intcnt] = errorterm;
+						best_combined_error[quant][intcnt] = error012;
 						best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
 						best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
 						best_combined_format[quant][intcnt][2] = best_format[2][quant][k];
@@ -982,6 +990,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
+			float error0 = best_error[0][quant][i];
+
 			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
@@ -991,6 +1001,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 					continue;
 				}
 
+				float error01 = error0 + best_error[1][quant][j];
+
 				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
 				{
 					int low3 = astc::min(k, low2);
@@ -999,6 +1011,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 					{
 						continue;
 					}
+
+					float error012 = error01 + best_error[2][quant][k];
 
 					for (int l = 0; l < 4; l++)	// integer-count for fourth endpoint-pair
 					{
@@ -1010,10 +1024,11 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 						}
 
 						int intcnt = i + j + k + l;
-						float errorterm = astc::min(best_error[0][quant][i] + best_error[1][quant][j] + best_error[2][quant][k] + best_error[3][quant][l], 1e10f);
-						if (errorterm <= best_combined_error[quant][intcnt])
+						float error0123 = error012 + best_error[3][quant][l];
+						error0123 = astc::min(error0123, 1e10f);
+						if (error0123 <= best_combined_error[quant][intcnt])
 						{
-							best_combined_error[quant][intcnt] = errorterm;
+							best_combined_error[quant][intcnt] = error0123;
 							best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
 							best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
 							best_combined_format[quant][intcnt][2] = best_format[2][quant][k];
