@@ -174,6 +174,26 @@ static bool realign_weights_undecimated(
 }
 
 /**
+ * @brief Compute the interpolated weight for a texel in a decimated grid.
+ *
+ * @param di        The weight grid decimation to use.
+ * @param weights   The decimated weight values to use.
+ * @param texel     The texel index to interpolate.
+ *
+ * @return The interpolated weight for the texel.
+ */
+static inline float infill_weight(
+	const decimation_info& di,
+	const float* weights,
+	unsigned int texel
+) {
+	return (weights[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
+	      + weights[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel])
+	     + (weights[di.texel_weights_tr[2][texel]] * di.texel_weight_contribs_float_tr[2][texel]
+	      + weights[di.texel_weights_tr[3][texel]] * di.texel_weight_contribs_float_tr[3][texel]);
+}
+
+/**
  * @brief Attempt to improve weights given a chosen configuration.
  *
  * Given a fixed weight grid decimation and weight value quantization, iterate over all weights (per
@@ -256,6 +276,12 @@ static bool realign_weights_decimated(
 			storea(unquant_valuef, uq_weightsf + we_idx);
 		}
 
+		float infilled_weights[BLOCK_MAX_TEXELS];
+		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
+		{
+			infilled_weights[texel] = infill_weight(di, uq_weightsf, texel);
+		}
+
 		// For each weight compute previous, current, and next errors
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
@@ -282,10 +308,7 @@ static bool realign_weights_decimated(
 
 				float tw_base = di.texel_contrib_for_weight[te_idx][we_idx];
 
-				float weight_base = (uq_weightsf[di.texel_weights_tr[0][texel]] * di.texel_weight_contribs_float_tr[0][texel]
-				                   + uq_weightsf[di.texel_weights_tr[1][texel]] * di.texel_weight_contribs_float_tr[1][texel])
-					              + (uq_weightsf[di.texel_weights_tr[2][texel]] * di.texel_weight_contribs_float_tr[2][texel]
-				                   + uq_weightsf[di.texel_weights_tr[3][texel]] * di.texel_weight_contribs_float_tr[3][texel]);
+				float weight_base = infilled_weights[texel];
 
 				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
 				// float weight = astc::flt_rd(weight_base + 0.5f);
@@ -315,17 +338,28 @@ static bool realign_weights_decimated(
 			float error_up   = hadd_s(error_upv   * error_weight);
 
 			// Check if the prev or next error is better, and if so use it
+			bool weight_adjusted = false;
 			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
 			{
 				uq_weightsf[we_idx] = uqw_up;
 				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_up);
-				adjustments = true;
+				weight_adjusted = true;
 			}
 			else if ((error_down < error_base) && (uqw > 0))
 			{
 				uq_weightsf[we_idx] = uqw_down;
 				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_down);
+				weight_adjusted = true;
+			}
+
+			if (weight_adjusted)
+			{
 				adjustments = true;
+				for (unsigned int te_idx = 0; te_idx < texels_to_evaluate; te_idx++)
+				{
+					unsigned int texel = di.weight_texels_tr[te_idx][we_idx];
+					infilled_weights[texel] = infill_weight(di, uq_weightsf, texel);
+				}
 			}
 		}
 
