@@ -7,15 +7,24 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.8.0
+
+**Status:** In development.
+
+The 5.8.0 release is a minor maintenance release.
+
+* **Codec library updates:**
+  * **Optimization:** Hoist loop invariant weight diff calculation out of
+    `compute_ideal_weights_for_decimation()` refinement loop.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
 
 **Status:** Released November 2026.
 
 The 5.7.1 release is a minor maintenance release that addresses a small number of bugs. These issues are unlikely to affect normal usage, but the fixes improve robustness and reliability.
 
-* **General:**
-  * **Bug fix:** Improved command line option parameter validation to more
-    reliably detect malformed or out-of-range values and emit an error.
+* **Codec library updates:**
   * **Bug fix:** Capped alpha-scale (`-a`) option radius to 64 texels to
     avoid very large intermediate buffer memory allocation.
   * **Bug fix:** Avoid UB caused by SIMD code accessing uninitialized
@@ -25,6 +34,9 @@ The 5.7.1 release is a minor maintenance release that addresses a small number o
   * **Bug fix:** Avoid div-by-zero error by normalizing `block_z` inside
     `astcenc_context_alloc()` in cases where user manually zeroed the dimension
     after calling `astcenc_config_init()`.
+* **Command line tool updates:**
+  * **Bug fix:** Improved command line option parameter validation to more
+    reliably detect malformed or out-of-range values and emit an error.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.0

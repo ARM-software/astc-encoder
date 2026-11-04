@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2024 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -907,13 +907,13 @@ void compute_ideal_weights_for_decimation(
 	// Populate the interpolated weight grid based on the initial average
 	// Process SIMD-width texel coordinates at at time while we can. Safe to
 	// over-process full SIMD vectors - the tail is zeroed.
-	ASTCENC_ALIGNAS float infilled_weights[BLOCK_MAX_TEXELS];
+	ASTCENC_ALIGNAS float infilled_weight_diffs[BLOCK_MAX_TEXELS];
 	if (di.max_texel_weight_count <= 2)
 	{
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla_2(di, dec_weight_ideal_value, i);
-			storea(weight - loada(ei.weights + i), infilled_weights + i);
+			storea(weight - loada(ei.weights + i), infilled_weight_diffs + i);
 		}
 	}
 	else
@@ -921,7 +921,7 @@ void compute_ideal_weights_for_decimation(
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
 			vfloat weight = bilinear_infill_vla(di, dec_weight_ideal_value, i);
-			storea(weight - loada(ei.weights + i), infilled_weights + i);
+			storea(weight - loada(ei.weights + i), infilled_weight_diffs + i);
 		}
 	}
 
@@ -955,7 +955,7 @@ void compute_ideal_weights_for_decimation(
 			}
 
 			vfloat scale = weight_error_scale * contrib_weight;
-			vfloat weight_diff = gatherf_byte_inds<vfloat>(infilled_weights, texel);
+			vfloat weight_diff = gatherf_byte_inds<vfloat>(infilled_weight_diffs, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += weight_diff * scale;
