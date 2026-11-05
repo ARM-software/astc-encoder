@@ -1715,14 +1715,18 @@ void store_image_block(
  * defines an exact position on the partition color line. We can then use these to assess the error
  * introduced by removing and quantizing the weight grid.
  *
- * @param      blk   The image block color data to compress.
- * @param      pi    The partition info for the current trial.
- * @param[out] ei    The endpoint and weight values.
+ * @param      blk           The image block color data to compress.
+ * @param      pi            The partition info for the current trial.
+ * @param[out] ei            The endpoint and weight values.
+ * @param[out] rgb_metrics   The RGB partition metrics, if computed.
+ *
+ * @return @c true if RGB partition metrics were computed, @c false otherwise.
  */
-void compute_ideal_colors_and_weights_1plane(
+bool compute_ideal_colors_and_weights_1plane(
 	const image_block& blk,
 	const partition_info& pi,
-	endpoints_and_weights& ei);
+	endpoints_and_weights& ei,
+	partition_metrics rgb_metrics[BLOCK_MAX_PARTITIONS]);
 
 /**
  * @brief Compute ideal endpoint colors and weights for 2 planes of weights.
@@ -1934,6 +1938,7 @@ void unpack_weights(
  * @param      pi                            The partition info for the current trial.
  * @param      blk                           The image block color data to compress.
  * @param      ep                            The ideal endpoints.
+ * @param      rgb_metrics                   Precomputed RGB partition metrics, or @c nullptr.
  * @param      qwt_bitcounts                 Bit counts for different quantization methods.
  * @param      qwt_errors                    Errors for different quantization methods.
  * @param      tune_candidate_limit          The max number of candidates to return, may be less.
@@ -1951,6 +1956,7 @@ unsigned int compute_ideal_endpoint_formats(
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
+	const partition_metrics* rgb_metrics,
 	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,

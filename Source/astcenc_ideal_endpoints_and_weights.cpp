@@ -350,12 +350,14 @@ static void compute_ideal_colors_and_weights_2_comp(
  * @param      pi                  The partition info for the current trial.
  * @param[out] ei                  The computed ideal endpoints and weights.
  * @param      omitted_component   The color component excluded from the calculation.
+ * @param[out] pms                 The computed partition metrics.
  */
 static void compute_ideal_colors_and_weights_3_comp(
 	const image_block& blk,
 	const partition_info& pi,
 	endpoints_and_weights& ei,
-	unsigned int omitted_component
+	unsigned int omitted_component,
+	partition_metrics pms[BLOCK_MAX_PARTITIONS]
 ) {
 	unsigned int partition_count = pi.partition_count;
 	ei.ep.partition_count = partition_count;
@@ -363,8 +365,6 @@ static void compute_ideal_colors_and_weights_3_comp(
 
 	unsigned int texel_count = blk.texel_count;
 	promise(texel_count > 0);
-
-	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	float error_weight;
 	const float* data_vr = nullptr;
@@ -609,21 +609,22 @@ static void compute_ideal_colors_and_weights_4_comp(
 }
 
 /* See header for documentation. */
-void compute_ideal_colors_and_weights_1plane(
+bool compute_ideal_colors_and_weights_1plane(
 	const image_block& blk,
 	const partition_info& pi,
-	endpoints_and_weights& ei
+	endpoints_and_weights& ei,
+	partition_metrics rgb_metrics[BLOCK_MAX_PARTITIONS]
 ) {
 	bool uses_alpha = !blk.is_constant_channel(3);
 
 	if (uses_alpha)
 	{
 		compute_ideal_colors_and_weights_4_comp(blk, pi, ei);
+		return false;
 	}
-	else
-	{
-		compute_ideal_colors_and_weights_3_comp(blk, pi, ei, 3);
-	}
+
+	compute_ideal_colors_and_weights_3_comp(blk, pi, ei, 3, rgb_metrics);
+	return true;
 }
 
 /* See header for documentation. */
@@ -636,6 +637,7 @@ void compute_ideal_colors_and_weights_2planes(
 ) {
 	const auto& pi = bsd.get_partition_info(1, 0);
 	bool uses_alpha = !blk.is_constant_channel(3);
+	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
 	assert(plane2_component < BLOCK_MAX_COMPONENTS);
 	switch (plane2_component)
@@ -643,7 +645,7 @@ void compute_ideal_colors_and_weights_2planes(
 	case 0: // Separate weights for red
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 0);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 0, pms);
 		}
 		else
 		{
@@ -655,7 +657,7 @@ void compute_ideal_colors_and_weights_2planes(
 	case 1: // Separate weights for green
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 1);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 1, pms);
 		}
 		else
 		{
@@ -667,7 +669,7 @@ void compute_ideal_colors_and_weights_2planes(
 	case 2: // Separate weights for blue
 		if (uses_alpha)
 		{
-			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 2);
+			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 2, pms);
 		}
 		else
 		{
@@ -678,7 +680,7 @@ void compute_ideal_colors_and_weights_2planes(
 
 	default: // Separate weights for alpha
 		assert(uses_alpha);
-		compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 3);
+		compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 3, pms);
 		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 3);
 		break;
 	}

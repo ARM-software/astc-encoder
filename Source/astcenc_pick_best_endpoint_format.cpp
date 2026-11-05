@@ -214,27 +214,32 @@ static void compute_error_squared_rgb_single_partition(
  * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
  * the endpoints are eligible for offset encoding or blue-contraction
  *
- * @param      blk   The image block.
- * @param      pi    The partition info data.
- * @param      ep    The idealized endpoints.
- * @param[out] eci   The resulting encoding choice error metrics.
+ * @param      blk           The image block.
+ * @param      pi            The partition info data.
+ * @param      ep            The idealized endpoints.
+ * @param      rgb_metrics   Precomputed RGB partition metrics, or @c nullptr.
+ * @param[out] eci           The resulting encoding choice error metrics.
   */
 static void compute_encoding_choice_errors(
 	const image_block& blk,
 	const partition_info& pi,
 	const endpoints& ep,
+	const partition_metrics* rgb_metrics,
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS])
 {
 	int partition_count = pi.partition_count;
 	promise(partition_count > 0);
 
-	partition_metrics pms[BLOCK_MAX_PARTITIONS];
-
-	compute_avgs_and_dirs_3_comp_rgb(pi, blk, pms);
+	partition_metrics local_metrics[BLOCK_MAX_PARTITIONS];
+	if (!rgb_metrics)
+	{
+		compute_avgs_and_dirs_3_comp_rgb(pi, blk, local_metrics);
+		rgb_metrics = local_metrics;
+	}
 
 	for (int i = 0; i < partition_count; i++)
 	{
-		partition_metrics& pm = pms[i];
+		const partition_metrics& pm = rgb_metrics[i];
 
 		line3 uncor_rgb_lines;
 		line3 samec_rgb_lines;  // for LDR-RGB-scale
@@ -1112,6 +1117,7 @@ unsigned int compute_ideal_endpoint_formats(
 	const partition_info& pi,
 	const image_block& blk,
 	const endpoints& ep,
+	const partition_metrics* rgb_metrics,
 	 // bitcounts and errors computed for the various quantization methods
 	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
@@ -1135,7 +1141,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// Compute the errors that result from various encoding choices (such as using luminance instead
 	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS];
-	compute_encoding_choice_errors(blk, pi, ep, eci);
+	compute_encoding_choice_errors(blk, pi, ep, rgb_metrics, eci);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
 	uint8_t format_of_choice[BLOCK_MAX_PARTITIONS][21][4];

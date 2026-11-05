@@ -29,6 +29,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
   * **Optimization:** Use analytical calculation of moments in
     `recompute_ideal_colors_1plane()` after the loop, reducing the amount of
     calculation in the loop.
+  * **Optimization:** Reuse RGB partition metrics computed during ideal weight
+    generation when selecting endpoint formats, avoiding a duplicate texel
+    scan.
   * **Optimization:** Interpolate deltas in `lerp_color_int()` and unrolled
     specialization, saving one multiply.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of
