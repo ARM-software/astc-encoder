@@ -586,28 +586,62 @@ void compute_avgs_and_dirs_3_comp_rgb(
 		vfloat4 average = partition_averages[partition];
 		pm[partition].avg = average;
 
-		vfloat4 sum_xp = vfloat4::zero();
-		vfloat4 sum_yp = vfloat4::zero();
-		vfloat4 sum_zp = vfloat4::zero();
+		vfloat average_r(average.lane<0>());
+		vfloat average_g(average.lane<1>());
+		vfloat average_b(average.lane<2>());
 
-		for (size_t i = 0; i < texel_count; i++)
+		// Accumulate a 3x3 matrix, with one row for each positive component mask
+		vfloatacc sum_xp_r = vfloatacc::zero();
+		vfloatacc sum_xp_g = vfloatacc::zero();
+		vfloatacc sum_xp_b = vfloatacc::zero();
+
+		vfloatacc sum_yp_r = vfloatacc::zero();
+		vfloatacc sum_yp_g = vfloatacc::zero();
+		vfloatacc sum_yp_b = vfloatacc::zero();
+
+		vfloatacc sum_zp_r = vfloatacc::zero();
+		vfloatacc sum_zp_g = vfloatacc::zero();
+		vfloatacc sum_zp_b = vfloatacc::zero();
+
+		vint lane_ids = vint::lane_id();
+		vfloat zero = vfloat::zero();
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
-			unsigned int iwt = texel_indexes[i];
+			vmask lane_mask = lane_ids < vint_from_size(texel_count);
+			lane_ids += vint(ASTCENC_SIMD_WIDTH);
 
-			vfloat4 texel_datum = blk.texel3(iwt);
-			texel_datum = texel_datum - average;
+			const uint8_t* texel_idxs = texel_indexes + i;
+			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs) - average_r;
+			vfloat data_g = gatherf_byte_inds<vfloat>(blk.data_g, texel_idxs) - average_g;
+			vfloat data_b = gatherf_byte_inds<vfloat>(blk.data_b, texel_idxs) - average_b;
 
-			vfloat4 zero = vfloat4::zero();
+			vmask tdm0 = lane_mask & (data_r > zero);
+			haccumulate(sum_xp_r, data_r, tdm0);
+			haccumulate(sum_xp_g, data_g, tdm0);
+			haccumulate(sum_xp_b, data_b, tdm0);
 
-			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
-			sum_xp += select(zero, texel_datum, tdm0);
+			vmask tdm1 = lane_mask & (data_g > zero);
+			haccumulate(sum_yp_r, data_r, tdm1);
+			haccumulate(sum_yp_g, data_g, tdm1);
+			haccumulate(sum_yp_b, data_b, tdm1);
 
-			vmask4 tdm1 = texel_datum.swz<1,1,1,1>() > zero;
-			sum_yp += select(zero, texel_datum, tdm1);
-
-			vmask4 tdm2 = texel_datum.swz<2,2,2,2>() > zero;
-			sum_zp += select(zero, texel_datum, tdm2);
+			vmask tdm2 = lane_mask & (data_b > zero);
+			haccumulate(sum_zp_r, data_r, tdm2);
+			haccumulate(sum_zp_g, data_g, tdm2);
+			haccumulate(sum_zp_b, data_b, tdm2);
 		}
+
+		vfloat4 sum_xp = vfloat3(hadd_s(sum_xp_r),
+		                         hadd_s(sum_xp_g),
+		                         hadd_s(sum_xp_b));
+
+		vfloat4 sum_yp = vfloat3(hadd_s(sum_yp_r),
+		                         hadd_s(sum_yp_g),
+		                         hadd_s(sum_yp_b));
+
+		vfloat4 sum_zp = vfloat3(hadd_s(sum_zp_r),
+		                         hadd_s(sum_zp_g),
+		                         hadd_s(sum_zp_b));
 
 		vfloat4 prod_xp = dot(sum_xp, sum_xp);
 		vfloat4 prod_yp = dot(sum_yp, sum_yp);
