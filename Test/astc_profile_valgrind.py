@@ -16,9 +16,10 @@
 # under the License.
 # -----------------------------------------------------------------------------
 '''
-This script is a wrapper around Valgrind that will capture a callgrind profile
-for a single test image, and then use gprof2dot and dot to produce an annotated
-call graph image.
+This script is a wrapper around Valgrind that will capture a callgrind profile,
+and then use gprof2dot and dot to produce an annotated call graph image. The
+command line options following the script options are passed through to astcenc
+unchanged.
 
 This script requires the following tools available on the PATH:
 
@@ -97,30 +98,27 @@ def rank_hot_functions(lines: list[str]) -> str:
     return '\n'.join(report)
 
 
-def run_pass(image: str, encoder: str,
-             block_size: str, quality: str, show_cli: bool) -> None:
+def run_pass(binary: str, arguments: list[str], output: str,
+             show_cli: bool) -> None:
     '''
     Run Valgrind on a single binary.
 
     Args:
-        image: The path of the image to compress.
-        encoder: The encoder variant to use.
-        block_size: The block size to use.
-        quality: The compression quality to use.
+        binary: The astcenc binary path.
+        arguments: The astcenc command-line arguments.
+        output: The output file base name.
         show_cli: Show command line wrapper tool cost in the profile.
 
     Raise:
         CalledProcessException: Any subprocess failed.
     '''
-    binary = f'./bin/astcenc-{encoder}'
-    quality_log = quality.replace('-', '')
-
     # Run Valgrind
     args = [
         'valgrind',
         '--tool=callgrind',
         '--callgrind-out-file=callgrind.txt',
-        binary, '-ch', image, '/dev/null', block_size, quality, '-j', '1'
+        binary,
+        *arguments
     ]
 
     sp.run(args, check=True)
@@ -136,12 +134,12 @@ def run_pass(image: str, encoder: str,
 
     # Write raw annotated callgrind log
     report = '\n'.join(lines)
-    with open(f'perf_{quality_log}_cga.txt', 'w', encoding='utf=8') as handle:
+    with open(f'{output}_cga.txt', 'w', encoding='utf=8') as handle:
         handle.write(report)
 
     # Write our text summary of the top functions
     report = rank_hot_functions(lines)
-    with open(f'perf_{quality_log}.txt', 'w', encoding='utf=8') as handle:
+    with open(f'{output}.txt', 'w', encoding='utf=8') as handle:
         handle.write(report)
 
     # Write the visual call graph
@@ -166,7 +164,7 @@ def run_pass(image: str, encoder: str,
     args = [
         'dot',
         '-Tpng', 'out.dot',
-        '-o', f'perf_{quality_log}.png'
+        '-o', f'{output}.png'
     ]
 
     sp.run(args, check=True, text=True)
@@ -182,28 +180,24 @@ def parse_command_line() -> argparse.Namespace:
     Return:
         The parsed command line.
     '''
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('img', type=argparse.FileType('r'),
-                        help='the image file to compress')
-
-    encoders = ['sse2', 'sse4.1', 'avx2']
-    parser.add_argument('--encoder', dest='encoder', default='avx2',
-                        choices=encoders,
-                        help='the encoder variant to profile')
-
-    testquant = [str(x) for x in range(0, 101, 10)]
-    testqual = ['-fastest', '-fast', '-medium', '-thorough', '-exhaustive']
-    qualities = testqual + testquant
-    parser.add_argument('--test-quality', dest='quality', default='medium',
-                        choices=qualities,
-                        help='the compression quality to profile')
+    parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument('--show-cli', dest='show_cli', default=False,
                         action='store_true',
                         help='enable CLI wrapper nodes in call graph')
 
+    parser.add_argument('--output', default='perf',
+                        help='output file base name (default: %(default)s)')
+
+    parser.add_argument('binary', help='the astcenc binary to profile')
+
+    parser.add_argument('arguments', nargs=argparse.REMAINDER,
+                        help='arguments passed through to the binary')
+
     args = parser.parse_args()
+
+    if not args.arguments:
+        parser.error('no astcenc arguments specified')
 
     return args
 
@@ -216,7 +210,7 @@ def main() -> int:
         int: The process return code.
     '''
     args = parse_command_line()
-    run_pass(args.img.name, args.encoder, '6x6', args.quality, args.show_cli)
+    run_pass(args.binary, args.arguments, args.output, args.show_cli)
     return 0
 
 

@@ -19,7 +19,8 @@
 Utility script to compare the compression performance of two astcenc binaries.
 
 The binaries are run in alternating order and their reported coding times are
-analyzed with a paired, two-sided Student's t-test.
+analyzed with a paired, two-sided Student's t-test. The command line options
+following the script options are passed through to astcenc unchanged.
 '''
 
 import argparse
@@ -34,9 +35,6 @@ from scipy import stats
 
 
 CODING_TIME_PATTERN = re.compile(r'^\s*Coding time:\s*([0-9.]+)\s+s\s*$')
-QUALITY_LEVELS = [
-    'fastest', 'fast', 'medium', 'thorough', 'verythorough', 'exhaustive'
-]
 
 
 def paired_t_test(sample_a: list[float],
@@ -85,17 +83,13 @@ def resolve_binary(binary: str) -> str:
     return resolved
 
 
-def run_encoder(binary: str, image_in: str, image_out: str,
-                block_size: str, quality: str) -> float:
+def run_encoder(binary: str, arguments: list[str]) -> float:
     '''
-    Run one astcenc test-mode compression.
+    Run one astcenc command.
 
     Args:
         binary: The astcenc binary path.
-        image_in: The input image path.
-        image_out: The output image path.
-        block_size: The ASTC block size.
-        quality: The compression quality level.
+        arguments: The astcenc command-line arguments.
 
     Return:
         The reported coding time in seconds.
@@ -104,10 +98,7 @@ def run_encoder(binary: str, image_in: str, image_out: str,
         CalledProcessError: The encoder process failed.
         ValueError: The encoder did not report a coding time.
     '''
-    command = [
-        binary, '-tl', image_in, image_out, block_size, f'-{quality}',
-        '-silent', '-j', '4'
-    ]
+    command = [binary] + arguments
 
     result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                     check=True, text=True)
@@ -119,8 +110,7 @@ def run_encoder(binary: str, image_in: str, image_out: str,
     raise ValueError(f'{binary} did not report a coding time')
 
 
-def collect_samples(binary_a: str, binary_b: str, image_in: str,
-                    image_out: str, block_size: str, quality: str,
+def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
                     warmups: int,
                     runs: int) -> tuple[list[float], list[float]]:
     '''
@@ -129,10 +119,7 @@ def collect_samples(binary_a: str, binary_b: str, image_in: str,
     Args:
         binary_a: The binary A path.
         binary_b: The binary B path.
-        image_in: The input image path.
-        image_out: The output image path.
-        block_size: The ASTC block size.
-        quality: The compression quality level.
+        arguments: The astcenc command-line arguments.
         warmups: The number of warm-up pairs.
         runs: The number of measured pairs.
 
@@ -140,22 +127,18 @@ def collect_samples(binary_a: str, binary_b: str, image_in: str,
         The timing samples for binary A and binary B.
     '''
     for _ in range(warmups):
-        run_encoder(binary_a, image_in, image_out, block_size, quality)
-        run_encoder(binary_b, image_in, image_out, block_size, quality)
+        run_encoder(binary_a, arguments)
+        run_encoder(binary_b, arguments)
 
     samples_a = []
     samples_b = []
     for run in range(runs):
         if run % 2 == 0:
-            time_a = run_encoder(binary_a, image_in, image_out,
-                                 block_size, quality)
-            time_b = run_encoder(binary_b, image_in, image_out,
-                                 block_size, quality)
+            time_a = run_encoder(binary_a, arguments)
+            time_b = run_encoder(binary_b, arguments)
         else:
-            time_b = run_encoder(binary_b, image_in, image_out,
-                                 block_size, quality)
-            time_a = run_encoder(binary_a, image_in, image_out,
-                                 block_size, quality)
+            time_b = run_encoder(binary_b, arguments)
+            time_a = run_encoder(binary_a, arguments)
 
         samples_a.append(time_a)
         samples_b.append(time_b)
@@ -198,15 +181,8 @@ def parse_command_line() -> argparse.Namespace:
 
     parser.add_argument('binary_b', help='the second astcenc binary')
 
-    parser.add_argument('input', help='the input image')
-
-    parser.add_argument('output', help='the output image')
-
-    parser.add_argument('--block-size', default='6x6',
-                        help='the ASTC block size (default: %(default)s)')
-
-    parser.add_argument('--quality', choices=QUALITY_LEVELS, default='medium',
-                        help='the compression quality (default: %(default)s)')
+    parser.add_argument('arguments', nargs=argparse.REMAINDER,
+                        help='arguments passed through to both binaries')
 
     parser.add_argument('--runs', type=int, default=10,
                         help='number of measured pairs (default: %(default)s)')
@@ -225,8 +201,8 @@ def parse_command_line() -> argparse.Namespace:
     if args.warmups < 0:
         parser.error('--warmups cannot be negative')
 
-    if not Path(args.input).is_file():
-        parser.error(f'input image does not exist: {args.input}')
+    if not args.arguments:
+        parser.error('no astcenc arguments specified')
 
     return args
 
@@ -245,8 +221,7 @@ def main() -> int:
         binary_b = resolve_binary(args.binary_b)
 
         samples_a, samples_b = collect_samples(
-            binary_a, binary_b, args.input, args.output,
-            args.block_size, args.quality, args.warmups, args.runs)
+            binary_a, binary_b, args.arguments, args.warmups, args.runs)
 
         statistic, p_value = paired_t_test(samples_a, samples_b)
 
