@@ -516,22 +516,29 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		qwt_bitcounts[i] = static_cast<int8_t>(bitcount);
 
-		ASTCENC_ALIGNAS float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
+		const float* dec_weights = dec_weights_ideal + BLOCK_MAX_WEIGHTS * decimation_mode;
+		uint8_t* dec_weights_quant = dec_weights_uquant + BLOCK_MAX_WEIGHTS * i;
 
-		// Generate the optimized set of weights for the weight mode
-		compute_quantized_weights_for_decimation(
-		    di,
-		    weight_low_value[i], weight_high_value[i],
-		    dec_weights_ideal + BLOCK_MAX_WEIGHTS * decimation_mode,
-		    dec_weights_uquantf,
-		    dec_weights_uquant + BLOCK_MAX_WEIGHTS * i,
-		    bm.get_weight_quant_mode());
+		if (di.weight_count == di.texel_count)
+		{
+			qwt_errors[i] = compute_quantized_weights_for_decimation_1plane_direct(
+			    ei, di, weight_low_value[i], weight_high_value[i],
+			    dec_weights, dec_weights_quant, bm.get_weight_quant_mode());
+		}
+		else
+		{
+			ASTCENC_ALIGNAS float dec_weights_uquantf[BLOCK_MAX_WEIGHTS];
 
-		// Compute weight quantization errors for the block mode
-		qwt_errors[i] = compute_error_of_weight_set_1plane(
-		    ei,
-		    di,
-		    dec_weights_uquantf);
+			// Generate the optimized set of weights for the weight mode
+			compute_quantized_weights_for_decimation(
+			    di, weight_low_value[i], weight_high_value[i],
+			    dec_weights, dec_weights_uquantf,
+			    dec_weights_quant, bm.get_weight_quant_mode());
+
+			// Compute weight quantization errors for the block mode
+			qwt_errors[i] = compute_error_of_weight_set_1plane(
+			    ei, di, dec_weights_uquantf);
+		}
 	}
 
 	// Decide the optimal combination of color endpoint encodings and weight encodings

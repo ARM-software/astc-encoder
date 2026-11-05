@@ -1788,6 +1788,31 @@ void compute_quantized_weights_for_decimation(
 	quant_method quant_level);
 
 /**
+ * @brief Compute quantized weights and their error for a one-plane direct weight grid.
+ *
+ * The direct grid has one weight per texel, so quantization and error calculation can be fused to
+ * avoid storing and reloading temporary unquantized weights.
+ *
+ * @param      eai                       The ideal weights for the full grid.
+ * @param      di                        The selected weight decimation.
+ * @param      low_bound                 The lowest weight allowed.
+ * @param      high_bound                The highest weight allowed.
+ * @param      dec_weight_ideal_value    The ideal weight set.
+ * @param[out] dec_weight_uquant         The output quantized weight as encoded int.
+ * @param      quant_level               The desired weight quant level.
+ *
+ * @return The accumulated error.
+ */
+float compute_quantized_weights_for_decimation_1plane_direct(
+	const endpoints_and_weights& eai,
+	const decimation_info& di,
+	float low_bound,
+	float high_bound,
+	const float* dec_weight_ideal_value,
+	uint8_t* dec_weight_uquant,
+	quant_method quant_level);
+
+/**
  * @brief Compute the error of a decimated weight set for 1 plane.
  *
  * After computing ideal weights for the case with one weight per texel, we want to compute the

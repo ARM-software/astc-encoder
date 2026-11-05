@@ -969,19 +969,33 @@ void compute_ideal_weights_for_decimation(
 	}
 }
 
-/* See header for documentation. */
-void compute_quantized_weights_for_decimation(
+/**
+ * @brief Compute quantized weights and either store or evaluate the unquantized result.
+ *
+ * @param      di                        The selected weight decimation.
+ * @param      low_bound                 The lowest weight allowed.
+ * @param      high_bound                The highest weight allowed.
+ * @param      dec_weight_ideal_value    The ideal weight set.
+ * @param[out] weight_set_out            The output unquantized weights, or @c nullptr.
+ * @param[out] quantized_weight_set      The output quantized weight as encoded int.
+ * @param      quant_level               The desired weight quant level.
+ * @param      eai                       The ideal weights for error calculation, or @c nullptr.
+ */
+template<bool COMPUTE_ERROR>
+static float compute_quantized_weights(
 	const decimation_info& di,
 	float low_bound,
 	float high_bound,
 	const float* dec_weight_ideal_value,
 	float* weight_set_out,
 	uint8_t* quantized_weight_set,
-	quant_method quant_level
+	quant_method quant_level,
+	const endpoints_and_weights* eai
 ) {
 	int weight_count = di.weight_count;
 	promise(weight_count > 0);
 	const quant_and_transfer_table& qat = quant_and_xfer_tables[quant_level];
+	vfloatacc error_sum = vfloatacc::zero();
 
 	// The available quant levels, stored with a minus 1 bias
 	static const float quant_levels_m1[12] {
@@ -1041,7 +1055,17 @@ void compute_quantized_weights_for_decimation(
 			ixl = select(ixl, ixh, mask);
 
 			// Invert the weight-scaling that was done initially
-			storea(ixl * rscalev + low_boundv, weight_set_out + i);
+			vfloat unquantized_weight = ixl * rscalev + low_boundv;
+			if (COMPUTE_ERROR)
+			{
+				vfloat diff = unquantized_weight - loada(eai->weights + i);
+				vfloat significance = loada(eai->weight_error_scale + i);
+				haccumulate(error_sum, diff * diff * significance);
+			}
+			else
+			{
+				storea(unquantized_weight, weight_set_out + i);
+			}
 			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
@@ -1072,10 +1096,52 @@ void compute_quantized_weights_for_decimation(
 			ixl = select(ixl, ixh, mask);
 
 			// Invert the weight-scaling that was done initially
-			storea(ixl * rscalev + low_boundv, weight_set_out + i);
+			vfloat unquantized_weight = ixl * rscalev + low_boundv;
+			if (COMPUTE_ERROR)
+			{
+				vfloat diff = unquantized_weight - loada(eai->weights + i);
+				vfloat significance = loada(eai->weight_error_scale + i);
+				haccumulate(error_sum, diff * diff * significance);
+			}
+			else
+			{
+				storea(unquantized_weight, weight_set_out + i);
+			}
 			pack_and_store_low_bytes(weight, quantized_weight_set + i);
 		}
 	}
+
+	return hadd_s(error_sum);
+}
+
+/* See header for documentation. */
+void compute_quantized_weights_for_decimation(
+	const decimation_info& di,
+	float low_bound,
+	float high_bound,
+	const float* dec_weight_ideal_value,
+	float* weight_set_out,
+	uint8_t* quantized_weight_set,
+	quant_method quant_level
+) {
+	compute_quantized_weights<false>(
+	    di, low_bound, high_bound, dec_weight_ideal_value,
+	    weight_set_out, quantized_weight_set, quant_level, nullptr);
+}
+
+/* See header for documentation. */
+float compute_quantized_weights_for_decimation_1plane_direct(
+	const endpoints_and_weights& eai,
+	const decimation_info& di,
+	float low_bound,
+	float high_bound,
+	const float* dec_weight_ideal_value,
+	uint8_t* quantized_weight_set,
+	quant_method quant_level
+) {
+	return compute_quantized_weights<true>(
+	    di, low_bound, high_bound, dec_weight_ideal_value,
+	    nullptr, quantized_weight_set, quant_level, &eai);
 }
 
 /**
