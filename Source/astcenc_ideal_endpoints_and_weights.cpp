@@ -1223,16 +1223,12 @@ void recompute_ideal_colors_1plane(
 		float wmin1 = 1.0f;
 		float wmax1 = 0.0f;
 
-		float left_sum_s = 0.0f;
-		float middle_sum_s = 0.0f;
+		float weight_sum_s = 0.0f;
 		float right_sum_s = 0.0f;
 
-		vfloat4 color_vec_x = vfloat4::zero();
 		vfloat4 color_vec_y = vfloat4::zero();
 
 		vfloat4 scale_vec = vfloat4::zero();
-
-		float weight_weight_sum_s = 1e-17f;
 
 		vfloat4 color_weight = blk.channel_weight;
 		float ls_weight = hadd_rgb_s(color_weight);
@@ -1252,28 +1248,29 @@ void recompute_ideal_colors_1plane(
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
-			left_sum_s   += om_idx0 * om_idx0;
-			middle_sum_s += om_idx0 * idx0;
-			right_sum_s  += idx0 * idx0;
-			weight_weight_sum_s += idx0;
+			weight_sum_s += idx0;
+			right_sum_s += idx0 * idx0;
 
 			vfloat4 color_idx(idx0);
 			vfloat4 cwprod = rgba;
 			vfloat4 cwiprod = cwprod * color_idx;
 
 			color_vec_y += cwiprod;
-			color_vec_x += cwprod - cwiprod;
 
 			scale_vec += vfloat2(om_idx0, idx0) * (scale * ls_weight);
 		}
+
+		float left_sum_s = static_cast<float>(texel_count) - 2.0f * weight_sum_s + right_sum_s;
+		float middle_sum_s = weight_sum_s - right_sum_s;
+		float weight_weight_sum_s = weight_sum_s + 1e-17f;
 
 		vfloat4 left_sum   = vfloat4(left_sum_s) * color_weight;
 		vfloat4 middle_sum = vfloat4(middle_sum_s) * color_weight;
 		vfloat4 right_sum  = vfloat4(right_sum_s) * color_weight;
 		vfloat4 lmrs_sum   = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
-		color_vec_x = color_vec_x * color_weight;
 		color_vec_y = color_vec_y * color_weight;
+		vfloat4 color_vec_x = rgba_sum - color_vec_y;
 
 		// Initialize the luminance and scale vectors with a reasonable default
 		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
