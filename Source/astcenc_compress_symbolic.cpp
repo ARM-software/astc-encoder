@@ -282,7 +282,7 @@ static bool realign_weights_decimated(
 			infilled_weights[texel] = infill_weight(di, uq_weightsf, texel);
 		}
 
-		// For each weight compute previous, current, and next errors
+		// For each weight compute the error delta for the previous and next values
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
 			int uqw = dec_weights_uquant[we_idx];
@@ -295,6 +295,9 @@ static bool realign_weights_decimated(
 			float uqw_diff_down = uqw_down - uqw_base;
 			float uqw_diff_up = uqw_up - uqw_base;
 
+			// Squared error is quadratic in the weight adjustment d:
+			//   E(d) - E(0) = 2 * d * A + d * d * B
+			// Accumulate the linear coefficient A and quadratic coefficient B once
 			vfloat4 error_linearv = vfloat4::zero();
 			vfloat4 error_quadraticv = vfloat4::zero();
 
@@ -316,17 +319,23 @@ static bool realign_weights_decimated(
 				vfloat4 color = color_base + color_offset * weight_base;
 				vfloat4 orig_color = blk.texel(texel);
 
+				// Current color residual before applying either candidate weight adjustment
 				vfloat4 color_diff = color - orig_color;
+
+				// Color change caused by a unit change to this grid weight
 				vfloat4 color_delta = color_offset * tw_base;
 
+				// Accumulate coefficients
 				error_linearv += color_diff * color_delta;
 				error_quadraticv += color_delta * color_delta;
 			}
 
-			// Compute the error delta for each weight adjustment
+			// Apply the channel weights to scale coefficients
 			float error_linear = hadd_s(error_linearv * error_weight);
 			float error_quadratic = hadd_s(error_quadraticv * error_weight);
 
+			// Evaluate the polynomial for each candidate
+			// Current weight has d = 0 and therefore an error delta of zero.
 			float error_down = 2.0f * uqw_diff_down * error_linear
 			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
 			float error_up = 2.0f * uqw_diff_up * error_linear
