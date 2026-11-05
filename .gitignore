@@ -31,6 +31,7 @@ Test/Images/Scratch*
 
 # Test output
 TestOutput
+/profiles/
 /*.xlsx
 /*.jpg
 /*.json
