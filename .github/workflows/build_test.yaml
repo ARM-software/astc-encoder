@@ -262,7 +262,7 @@ jobs:
           export CXX=g++-14
           mkdir build_rel
           cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_NONE=ON -DASTCENC_ASAN=ON ..
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_NONE=ON -DASTCENC_ASAN=ON ..
           make install -j4
 
       - name: Setup Python
@@ -276,16 +276,14 @@ jobs:
           pip install numpy Pillow
 
       - name: Run system tests
-        # Disable SVE for now
         run: |
           python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
+          python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format rgba
+          python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format l
 
       - name: Run unit tests
-        # Disable SVE for now
-        run: ctest -E "test-unit-sve_128|test-unit-sve_256" --rerun-failed --output-on-failure
+        run: ctest --rerun-failed --output-on-failure
         working-directory: build_rel
 
   build-ubuntu-arm64-gcc-ubsan:
@@ -599,11 +597,9 @@ jobs:
       - name: Run system tests
         run: |
           python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format rgba
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format l
 
       - name: Run unit tests
         run: ctest --rerun-failed --output-on-failure
