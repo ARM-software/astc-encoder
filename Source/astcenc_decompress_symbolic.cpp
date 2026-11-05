@@ -40,11 +40,8 @@ static vint4 lerp_color_int(
 	vint4 color1,
 	vint4 weights
 ) {
-	vint4 weight1 = weights;
-	vint4 weight0 = vint4(64) - weight1;
-
-	vint4 color = (color0 * weight0) + (color1 * weight1) + vint4(32);
-	color = asr<6>(color);
+	vint4 color_delta = color1 - color0;
+	vint4 color = color0 + asr<6>(color_delta * weights + vint4(32));
 
 	// For decode_unorm8 values force the codec to bit replicate. This allows the
 	// rest of the codec to assume the full 0xFFFF range for everything and ignore
@@ -544,28 +541,25 @@ float compute_symbolic_block_difference_1plane_1partition(
 
 	vint lane_id = vint::lane_id();
 
+	vint ep0_r = vint(ep0.lane<0>());
+	vint ep0_g = vint(ep0.lane<1>());
+	vint ep0_b = vint(ep0.lane<2>());
+	vint ep0_a = vint(ep0.lane<3>());
+
+	vint ep_delta_r = vint(ep1.lane<0>()) - ep0_r;
+	vint ep_delta_g = vint(ep1.lane<1>()) - ep0_g;
+	vint ep_delta_b = vint(ep1.lane<2>()) - ep0_b;
+	vint ep_delta_a = vint(ep1.lane<3>()) - ep0_a;
+
 	unsigned int texel_count = bsd.texel_count;
 	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		// Compute EP1 contribution
-		vint weight1 = vint::loada(plane1_weights + i);
-		vint ep1_r = vint(ep1.lane<0>()) * weight1;
-		vint ep1_g = vint(ep1.lane<1>()) * weight1;
-		vint ep1_b = vint(ep1.lane<2>()) * weight1;
-		vint ep1_a = vint(ep1.lane<3>()) * weight1;
+		vint weight = vint::loada(plane1_weights + i);
 
-		// Compute EP0 contribution
-		vint weight0 = vint(64) - weight1;
-		vint ep0_r = vint(ep0.lane<0>()) * weight0;
-		vint ep0_g = vint(ep0.lane<1>()) * weight0;
-		vint ep0_b = vint(ep0.lane<2>()) * weight0;
-		vint ep0_a = vint(ep0.lane<3>()) * weight0;
-
-		// Combine contributions
-		vint colori_r = asr<6>(ep0_r + ep1_r + vint(32));
-		vint colori_g = asr<6>(ep0_g + ep1_g + vint(32));
-		vint colori_b = asr<6>(ep0_b + ep1_b + vint(32));
-		vint colori_a = asr<6>(ep0_a + ep1_a + vint(32));
+		vint colori_r = ep0_r + asr<6>(ep_delta_r * weight + vint(32));
+		vint colori_g = ep0_g + asr<6>(ep_delta_g * weight + vint(32));
+		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
+		vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
 
 		// If using a U8 decode mode bit replicate top 8 bits
 		// so rest of codec can assume 0xFFFF max range everywhere

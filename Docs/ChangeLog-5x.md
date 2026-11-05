@@ -11,7 +11,7 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 **Status:** In development.
 
-The 5.8.0 release is a minor maintenance release.
+The 5.8.0 release is a minor release, focusing on performance optimization.
 
 * **Codec library updates:**
   * **Optimization:** Hoist loop invariant weight diff calculation out of the
@@ -29,6 +29,8 @@ The 5.8.0 release is a minor maintenance release.
   * **Optimization:** Use analytical calculation of moments in
     `recompute_ideal_colors_1plane()` after the loop, reducing the amount of
     calculation in the loop.
+  * **Optimization:** Interpolate deltas in `lerp_color_int()` and unrolled
+    specialization, saving one multiply.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of
     deeper nested `..._find_best_combination...()` selector loops.
 
