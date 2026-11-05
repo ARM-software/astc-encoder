@@ -279,9 +279,13 @@ static void compute_angular_endpoints_for_quant_levels(
 	                                  angular_offsets, lowest_weight, weight_span, error,
 	                                  cut_low_weight_error, cut_high_weight_error);
 
-	// For each quantization level, find the best error terms. Use packed vectors so data-dependent
-	// branches can become selects. This involves some integer to float casts, but the values are
-	// small enough so they never round the wrong way.
+	// Each angular step describes a candidate grid with an inclusive span of N weights. A grid can
+	// be made smaller by discarding the lowest weight, the highest weight, or both.
+	// This gives three candidates using N, N-1, and N-2 quantized weights, respectively.
+	// Record the best candidate found for every resulting weight count.
+	//
+	// Use packed vectors so data-dependent branches can become selects. This involves some integer
+	// to float casts, but the values are small enough so they never round the wrong way.
 	vfloat4 best_results[36];
 
 	// Initialize the array to some safe defaults
@@ -289,11 +293,12 @@ static void compute_angular_endpoints_for_quant_levels(
 	for (unsigned int i = 0; i < (max_quant_steps + 4); i++)
 	{
 		// Lane<0> = Best error
-		// Lane<1> = Best scale; -1 indicates no solution found
-		// Lane<2> = Cut low weight
+		// Lane<1> = Best angular step; -1 indicates no solution found
+		// Lane<2> = 1 if the lowest weight is discarded, 0 otherwise
 		best_results[i] = vfloat4(ERROR_CALC_DEFAULT, -1.0f, 0.0f, 0.0f);
 	}
 
+	// Test each angular step against all three usable weight spans
 	promise(max_angular_steps > 0);
 	for (unsigned int i = 0; i < max_angular_steps; i++)
 	{
@@ -305,30 +310,32 @@ static void compute_angular_endpoints_for_quant_levels(
 		float error_cut_high = error[i] + cut_high_weight_error[i];
 		float error_cut_low_high = error[i] + cut_low_weight_error[i] + cut_high_weight_error[i];
 
-		// Check best error against record N
+		// Keep both end weights, giving an N-weight result
 		vfloat4 best_result = best_results[idx_span];
 		vfloat4 new_result = vfloat4(error[i], i_flt, 0.0f, 0.0f);
 		vmask4 mask = vfloat4(best_result.lane<0>()) > vfloat4(error[i]);
 		best_results[idx_span] = select(best_result, new_result, mask);
 
-		// Check best error against record N-1 with either cut low or cut high
+		// Discard one end weight, giving an N-1 weight result. Pick the cheaper end to discard.
 		best_result = best_results[idx_span - 1];
 
-		new_result = vfloat4(error_cut_low, i_flt, 1.0f, 0.0f);
-		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_low);
-		best_result = select(best_result, new_result, mask);
 
-		new_result = vfloat4(error_cut_high, i_flt, 0.0f, 0.0f);
-		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_high);
+		// Preserve the existing cut-low preference when the errors are equal
+		float error_cut = astc::min(error_cut_low, error_cut_high);
+		float cut_low_flt = static_cast<float>(error_cut == error_cut_low);
+
+		new_result = vfloat4(error_cut, i_flt, cut_low_flt, 0.0f);
+		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut);
 		best_results[idx_span - 1] = select(best_result, new_result, mask);
 
-		// Check best error against record N-2 with both cut low and high
+		// Discard both end weights, giving an N-2 weight result
 		best_result = best_results[idx_span - 2];
 		new_result = vfloat4(error_cut_low_high, i_flt, 1.0f, 0.0f);
 		mask = vfloat4(best_result.lane<0>()) > vfloat4(error_cut_low_high);
 		best_results[idx_span - 2] = select(best_result, new_result, mask);
 	}
 
+	// Convert the best candidate for each quantization level back into unquantized endpoints
 	for (unsigned int i = 0; i <= max_quant_level; i++)
 	{
 		unsigned int q = steps_for_quant_level[i];
@@ -345,6 +352,7 @@ static void compute_angular_endpoints_for_quant_levels(
 
 		bsi = astc::max(0, bsi);
 
+		// If the low weight was discarded then the usable range starts one weight higher
 		float lwi = lowest_weight[bsi] + best_results[q].lane<2>();
 		float hwi = lwi + static_cast<float>(q) - 1.0f;
 
