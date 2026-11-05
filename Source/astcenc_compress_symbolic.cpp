@@ -428,7 +428,13 @@ static float compress_symbolic_block_for_partition_1plane(
 
 	// Compute ideal weights and endpoint colors, with no quantization or decimation
 	endpoints_and_weights& ei = tmpbuf.ei1;
-	compute_ideal_colors_and_weights_1plane(blk, pi, ei);
+	partition_metrics rgb_metrics[BLOCK_MAX_PARTITIONS];
+	bool rgb_metrics_valid = compute_ideal_colors_and_weights_1plane(blk, pi, ei, rgb_metrics);
+	const partition_metrics* endpoint_rgb_metrics = nullptr;
+	if (rgb_metrics_valid)
+	{
+		endpoint_rgb_metrics = rgb_metrics;
+	}
 
 	// Compute ideal weights and endpoint colors for every decimation
 	float* dec_weights_ideal = tmpbuf.dec_weights_ideal;
@@ -542,7 +548,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	quant_method color_quant_level_mod[TUNE_MAX_TRIAL_CANDIDATES];
 
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    pi, blk, ei.ep, qwt_bitcounts, qwt_errors,
+	    pi, blk, ei.ep, endpoint_rgb_metrics, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit, 0, max_block_modes,
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
@@ -921,7 +927,7 @@ static float compress_symbolic_block_for_partition_2planes(
 
 	const auto& pi = bsd.get_partition_info(1, 0);
 	unsigned int candidate_count = compute_ideal_endpoint_formats(
-	    pi, blk, epm, qwt_bitcounts, qwt_errors,
+	    pi, blk, epm, nullptr, qwt_bitcounts, qwt_errors,
 	    config.tune_candidate_limit,
 		bsd.block_mode_count_1plane_selected, bsd.block_mode_count_1plane_2plane_selected,
 	    partition_format_specifiers, block_mode_index,
