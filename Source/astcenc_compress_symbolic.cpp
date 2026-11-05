@@ -282,7 +282,7 @@ static bool realign_weights_decimated(
 			infilled_weights[texel] = infill_weight(di, uq_weightsf, texel);
 		}
 
-		// For each weight compute previous, current, and next errors
+		// For each weight compute the error delta for the previous and next values
 		for (unsigned int we_idx = 0; we_idx < weight_count; we_idx++)
 		{
 			int uqw = dec_weights_uquant[we_idx];
@@ -295,9 +295,11 @@ static bool realign_weights_decimated(
 			float uqw_diff_down = uqw_down - uqw_base;
 			float uqw_diff_up = uqw_up - uqw_base;
 
-			vfloat4 error_basev = vfloat4::zero();
-			vfloat4 error_downv = vfloat4::zero();
-			vfloat4 error_upv = vfloat4::zero();
+			// Squared error is quadratic in the weight adjustment d:
+			//   E(d) - E(0) = 2 * d * A + d * d * B
+			// Accumulate the linear coefficient A and quadratic coefficient B once
+			vfloat4 error_linearv = vfloat4::zero();
+			vfloat4 error_quadraticv = vfloat4::zero();
 
 			// Interpolate the colors to create the diffs
 			unsigned int texels_to_evaluate = di.weight_texel_count[we_idx];
@@ -310,13 +312,6 @@ static bool realign_weights_decimated(
 
 				float weight_base = infilled_weights[texel];
 
-				// Ideally this is integer rounded, but IQ gain it isn't worth the overhead
-				// float weight = astc::flt_rd(weight_base + 0.5f);
-				// float weight_down = astc::flt_rd(weight_base + 0.5f + uqw_diff_down * tw_base) - weight;
-				// float weight_up = astc::flt_rd(weight_base + 0.5f + uqw_diff_up * tw_base) - weight;
-				float weight_down = weight_base + uqw_diff_down * tw_base - weight_base;
-				float weight_up = weight_base + uqw_diff_up * tw_base - weight_base;
-
 				unsigned int partition = pi.partition_of_texel[texel];
 				vfloat4 color_offset = offset[partition];
 				vfloat4 color_base   = endpnt0f[partition];
@@ -324,28 +319,37 @@ static bool realign_weights_decimated(
 				vfloat4 color = color_base + color_offset * weight_base;
 				vfloat4 orig_color = blk.texel(texel);
 
-				vfloat4 color_diff      = color - orig_color;
-				vfloat4 color_down_diff = color_diff + color_offset * weight_down;
-				vfloat4 color_up_diff   = color_diff + color_offset * weight_up;
+				// Current color residual before applying either candidate weight adjustment
+				vfloat4 color_diff = color - orig_color;
 
-				error_basev += color_diff * color_diff;
-				error_downv += color_down_diff * color_down_diff;
-				error_upv   += color_up_diff * color_up_diff;
+				// Color change caused by a unit change to this grid weight
+				vfloat4 color_delta = color_offset * tw_base;
+
+				// Accumulate coefficients
+				error_linearv += color_diff * color_delta;
+				error_quadraticv += color_delta * color_delta;
 			}
 
-			float error_base = hadd_s(error_basev * error_weight);
-			float error_down = hadd_s(error_downv * error_weight);
-			float error_up   = hadd_s(error_upv   * error_weight);
+			// Apply the channel weights to scale coefficients
+			float error_linear = hadd_s(error_linearv * error_weight);
+			float error_quadratic = hadd_s(error_quadraticv * error_weight);
+
+			// Evaluate the polynomial for each candidate
+			// Current weight has d = 0 and therefore an error delta of zero.
+			float error_down = 2.0f * uqw_diff_down * error_linear
+			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
+			float error_up = 2.0f * uqw_diff_up * error_linear
+			               + uqw_diff_up * uqw_diff_up * error_quadratic;
 
 			// Check if the prev or next error is better, and if so use it
 			bool weight_adjusted = false;
-			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
+			if ((error_up < 0.0f) && (error_up < error_down) && (uqw < 64))
 			{
 				uq_weightsf[we_idx] = uqw_up;
 				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_up);
 				weight_adjusted = true;
 			}
-			else if ((error_down < error_base) && (uqw > 0))
+			else if ((error_down < 0.0f) && (uqw > 0))
 			{
 				uq_weightsf[we_idx] = uqw_down;
 				dec_weights_uquant[we_idx] = static_cast<uint8_t>(uqw_down);
