@@ -653,7 +653,7 @@ jobs:
 
   build-macos-x64-clang:
     name: macOS x64 Clang
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
@@ -694,7 +694,7 @@ jobs:
 
   build-macos-universal-clang:
     name: macOS universal Clang
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
