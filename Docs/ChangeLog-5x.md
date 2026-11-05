@@ -20,6 +20,9 @@ The 5.8.0 release is a minor maintenance release.
     in `realign_weights_decimated()`, rebuilding set entries if a decimated
     weight changes, rather than always recomputing the infilled value every
     loop iteration.
+  * **Optimization:** Use analytical calculation of moments in
+    `recompute_ideal_colors_1plane()` after the loop, reducing the amount of
+    calculation in the loop.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of
     deeper nested `..._find_best_combination...()` selector loops.
   * **Optimization:** Hoist loop invariant channel weight out of loop in
