@@ -61,10 +61,8 @@
  * @param      blk               The image block.
  * @param      uncor_pline       The endpoint line assuming uncorrelated endpoints.
  * @param[out] uncor_err         The computed error for the uncorrelated endpoint line.
- * @param      samec_pline       The endpoint line assuming the same chroma for both endpoints.
- * @param[out] samec_err         The computed error for the uncorrelated endpoint line.
- * @param      rgbl_pline        The endpoint line assuming RGB + lumashift data.
- * @param[out] rgbl_err          The computed error for the RGB + lumashift endpoint line.
+ * @param      scale_pline       The endpoint line assuming the profile-specific RGB-scale mode.
+ * @param[out] scale_err         The computed error for the RGB-scale endpoint line.
  * @param      l_pline           The endpoint line assuming luminance data.
  * @param[out] l_err             The computed error for the luminance endpoint line.
  * @param[out] a_drop_err        The computed error for dropping the alpha component.
@@ -75,10 +73,8 @@ static void compute_error_squared_rgb_single_partition(
 	const image_block& blk,
 	const processed_line3& uncor_pline,
 	float& uncor_err,
-	const processed_line3& samec_pline,
-	float& samec_err,
-	const processed_line3& rgbl_pline,
-	float& rgbl_err,
+	const processed_line3& scale_pline,
+	float& scale_err,
 	const processed_line3& l_pline,
 	float& l_err,
 	float& a_drop_err
@@ -101,19 +97,14 @@ static void compute_error_squared_rgb_single_partition(
 	vfloat uncor_amod1(uncor_pline.amod.lane<1>());
 	vfloat uncor_amod2(uncor_pline.amod.lane<2>());
 
-	vfloatacc samec_errv = vfloatacc::zero();
-	vfloat samec_bs0(samec_pline.bs.lane<0>());
-	vfloat samec_bs1(samec_pline.bs.lane<1>());
-	vfloat samec_bs2(samec_pline.bs.lane<2>());
+	vfloatacc scale_errv = vfloatacc::zero();
+	vfloat scale_bs0(scale_pline.bs.lane<0>());
+	vfloat scale_bs1(scale_pline.bs.lane<1>());
+	vfloat scale_bs2(scale_pline.bs.lane<2>());
 
-	vfloatacc rgbl_errv = vfloatacc::zero();
-	vfloat rgbl_bs0(rgbl_pline.bs.lane<0>());
-	vfloat rgbl_bs1(rgbl_pline.bs.lane<1>());
-	vfloat rgbl_bs2(rgbl_pline.bs.lane<2>());
-
-	vfloat rgbl_amod0(rgbl_pline.amod.lane<0>());
-	vfloat rgbl_amod1(rgbl_pline.amod.lane<1>());
-	vfloat rgbl_amod2(rgbl_pline.amod.lane<2>());
+	vfloat scale_amod0(scale_pline.amod.lane<0>());
+	vfloat scale_amod1(scale_pline.amod.lane<1>());
+	vfloat scale_amod2(scale_pline.amod.lane<2>());
 
 	vfloatacc l_errv = vfloatacc::zero();
 	vfloat l_bs0(l_pline.bs.lane<0>());
@@ -154,35 +145,20 @@ static void compute_error_squared_rgb_single_partition(
 
 		haccumulate(uncor_errv, error, mask);
 
-		// Compute same chroma error - no "amod", it's always zero
-		param = data_r * samec_bs0
-		      + data_g * samec_bs1
-		      + data_b * samec_bs2;
+		// Compute the profile-specific RGB-scale error
+		param = data_r * scale_bs0
+		      + data_g * scale_bs1
+		      + data_b * scale_bs2;
 
-		dist0 = (param * samec_bs0) - data_r;
-		dist1 = (param * samec_bs1) - data_g;
-		dist2 = (param * samec_bs2) - data_b;
-
-		error = dist0 * dist0 * ews.lane<0>()
-		      + dist1 * dist1 * ews.lane<1>()
-		      + dist2 * dist2 * ews.lane<2>();
-
-		haccumulate(samec_errv, error, mask);
-
-		// Compute rgbl error
-		param = data_r * rgbl_bs0
-		      + data_g * rgbl_bs1
-		      + data_b * rgbl_bs2;
-
-		dist0 = (rgbl_amod0 + param * rgbl_bs0) - data_r;
-		dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
-		dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
+		dist0 = (scale_amod0 + param * scale_bs0) - data_r;
+		dist1 = (scale_amod1 + param * scale_bs1) - data_g;
+		dist2 = (scale_amod2 + param * scale_bs2) - data_b;
 
 		error = dist0 * dist0 * ews.lane<0>()
 		      + dist1 * dist1 * ews.lane<1>()
 		      + dist2 * dist2 * ews.lane<2>();
 
-		haccumulate(rgbl_errv, error, mask);
+		haccumulate(scale_errv, error, mask);
 
 		// Compute luma error - no "amod", it's always zero
 		param = data_r * l_bs0
@@ -202,8 +178,7 @@ static void compute_error_squared_rgb_single_partition(
 
 	a_drop_err = hadd_s(a_drop_errv) * ews.lane<3>();
 	uncor_err = hadd_s(uncor_errv);
-	samec_err = hadd_s(samec_errv);
-	rgbl_err = hadd_s(rgbl_errv);
+	scale_err = hadd_s(scale_errv);
 	l_err = hadd_s(l_errv);
 }
 
@@ -214,12 +189,14 @@ static void compute_error_squared_rgb_single_partition(
  * RGB-lumashift encoding (HDR only), luminance-encoding, and alpha drop. Also determines whether
  * the endpoints are eligible for offset encoding or blue-contraction
  *
- * @param      blk   The image block.
- * @param      pi    The partition info data.
- * @param      ep    The idealized endpoints.
- * @param[out] eci   The resulting encoding choice error metrics.
+ * @param      encode_hdr_rgb  @c true if using HDR for RGB, @c false for LDR.
+ * @param      blk             The image block.
+ * @param      pi              The partition info data.
+ * @param      ep              The idealized endpoints.
+ * @param[out] eci             The resulting encoding choice error metrics.
   */
 static void compute_encoding_choice_errors(
+	bool encode_hdr_rgb,
 	const image_block& blk,
 	const partition_info& pi,
 	const endpoints& ep,
@@ -237,38 +214,32 @@ static void compute_encoding_choice_errors(
 		partition_metrics& pm = pms[i];
 
 		line3 uncor_rgb_lines;
-		line3 samec_rgb_lines;  // for LDR-RGB-scale
-		line3 rgb_luma_lines;   // for HDR-RGB-scale
-
 		processed_line3 uncor_rgb_plines;
-		processed_line3 samec_rgb_plines;
-		processed_line3 rgb_luma_plines;
+		processed_line3 scale_rgb_plines;
 		processed_line3 luminance_plines;
 
 		float uncorr_rgb_error;
-		float samechroma_rgb_error;
-		float rgb_luma_error;
+		float scale_rgb_error;
 		float luminance_rgb_error;
 		float alpha_drop_error;
 
 		uncor_rgb_lines.a = pm.avg;
 		uncor_rgb_lines.b = normalize_safe(pm.dir, unit3());
 
-		samec_rgb_lines.a = vfloat4::zero();
-		samec_rgb_lines.b = normalize_safe(pm.avg, unit3());
-
-		rgb_luma_lines.a = pm.avg;
-		rgb_luma_lines.b = unit3();
-
 		uncor_rgb_plines.amod = uncor_rgb_lines.a - uncor_rgb_lines.b * dot3(uncor_rgb_lines.a, uncor_rgb_lines.b);
 		uncor_rgb_plines.bs   = uncor_rgb_lines.b;
 
-		// Same chroma always goes through zero, so this is simpler than the others
-		samec_rgb_plines.amod = vfloat4::zero();
-		samec_rgb_plines.bs   = samec_rgb_lines.b;
-
-		rgb_luma_plines.amod = rgb_luma_lines.a - rgb_luma_lines.b * dot3(rgb_luma_lines.a, rgb_luma_lines.b);
-		rgb_luma_plines.bs   = rgb_luma_lines.b;
+		if (encode_hdr_rgb)
+		{
+			scale_rgb_plines.amod = pm.avg - unit3() * dot3(pm.avg, unit3());
+			scale_rgb_plines.bs = unit3();
+		}
+		else
+		{
+			// Same chroma always goes through zero, so this is simpler than the others
+			scale_rgb_plines.amod = vfloat4::zero();
+			scale_rgb_plines.bs = normalize_safe(pm.avg, unit3());
+		}
 
 		// Luminance always goes through zero, so this is simpler than the others
 		luminance_plines.amod = vfloat4::zero();
@@ -277,8 +248,7 @@ static void compute_encoding_choice_errors(
 		compute_error_squared_rgb_single_partition(
 		    pi, i, blk,
 		    uncor_rgb_plines, uncorr_rgb_error,
-		    samec_rgb_plines, samechroma_rgb_error,
-		    rgb_luma_plines,  rgb_luma_error,
+		    scale_rgb_plines, scale_rgb_error,
 		    luminance_plines, luminance_rgb_error,
 		                      alpha_drop_error);
 
@@ -290,8 +260,16 @@ static void compute_encoding_choice_errors(
 		bool can_offset_encode = (mask(endpt_can_offset) & 0x7) == 0x7;
 
 		// Store out the settings
-		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
-		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;        // wild guess
+		eci[i].rgb_scale_error = 0.0f;
+		eci[i].rgb_luma_error = 0.0f;
+		if (encode_hdr_rgb)
+		{
+			eci[i].rgb_luma_error = (scale_rgb_error - uncorr_rgb_error) * 1.5f;  // wild guess
+		}
+		else
+		{
+			eci[i].rgb_scale_error = (scale_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
+		}
 		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // empirical
 		eci[i].alpha_drop_error = alpha_drop_error * 3.0f;
 		eci[i].can_offset_encode = can_offset_encode;
@@ -1135,7 +1113,7 @@ unsigned int compute_ideal_endpoint_formats(
 	// Compute the errors that result from various encoding choices (such as using luminance instead
 	// of RGB, discarding Alpha, using RGB-scale in place of two separate RGB endpoints and so on)
 	encoding_choice_errors eci[BLOCK_MAX_PARTITIONS];
-	compute_encoding_choice_errors(blk, pi, ep, eci);
+	compute_encoding_choice_errors(encode_hdr_rgb, blk, pi, ep, eci);
 
 	float best_error[BLOCK_MAX_PARTITIONS][21][4];
 	uint8_t format_of_choice[BLOCK_MAX_PARTITIONS][21][4];
