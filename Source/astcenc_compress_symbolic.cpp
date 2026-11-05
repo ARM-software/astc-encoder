@@ -107,6 +107,7 @@ static bool realign_weights_undecimated(
 
 	uint8_t* dec_weights_uquant = scb.weights;
 	bool adjustments = false;
+	vfloat4 error_weight = blk.channel_weight;
 
 	// For each plane and partition ...
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
@@ -121,44 +122,55 @@ static bool realign_weights_undecimated(
 			offset[pa_idx] = int_to_float(epd) * (1.0f / 64.0f);
 		}
 
-		// For each weight compute previous, current, and next errors
+		// For each weight compute the error delta for the previous and next values
 		promise(bsd.texel_count > 0);
 		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
 		{
 			int uqw = dec_weights_uquant[texel];
-
 			uint32_t prev_and_next = qat.prev_next_values[uqw];
-			int uqw_down = prev_and_next & 0xFF;
-			int uqw_up = (prev_and_next >> 8) & 0xFF;
+
+			float uqw_base = static_cast<float>(uqw);
+			float uqw_down = static_cast<float>(prev_and_next & 0xFF);
+			float uqw_up = static_cast<float>((prev_and_next >> 8) & 0xFF);
+
+			float uqw_diff_down = uqw_down - uqw_base;
+			float uqw_diff_up = uqw_up - uqw_base;
+
+			// Squared error is quadratic in the weight adjustment d:
+			//   E(d) - E(0) = 2 * d * A + d * d * B
 
 			// Interpolate the colors to create the diffs
-			float weight_base = static_cast<float>(uqw);
-			float weight_down = static_cast<float>(uqw_down - uqw);
-			float weight_up = static_cast<float>(uqw_up - uqw);
-
 			unsigned int partition = pi.partition_of_texel[texel];
 			vfloat4 color_offset = offset[partition];
 			vfloat4 color_base   = endpnt0f[partition];
 
-			vfloat4 color = color_base + color_offset * weight_base;
-			vfloat4 orig_color   = blk.texel(texel);
-			vfloat4 error_weight = blk.channel_weight;
+			vfloat4 color = color_base + color_offset * uqw_base;
+			vfloat4 orig_color = blk.texel(texel);
 
-			vfloat4 color_diff      = color - orig_color;
-			vfloat4 color_diff_down = color_diff + color_offset * weight_down;
-			vfloat4 color_diff_up   = color_diff + color_offset * weight_up;
+			// Current color residual before applying either candidate weight adjustment
+			vfloat4 color_diff = color - orig_color;
 
-			float error_base = dot_s(color_diff      * color_diff,      error_weight);
-			float error_down = dot_s(color_diff_down * color_diff_down, error_weight);
-			float error_up   = dot_s(color_diff_up   * color_diff_up,   error_weight);
+			// Color change caused by a unit change to this grid weight
+			vfloat4 color_delta = color_offset;
+
+			// Compute coefficients and apply the channel weights
+			float error_linear = dot_s(color_diff * color_delta, error_weight);
+			float error_quadratic = dot_s(color_delta * color_delta, error_weight);
+
+			// Evaluate the polynomial for each candidate
+			// Current weight has d = 0 and therefore an error delta of zero.
+			float error_down = 2.0f * uqw_diff_down * error_linear
+			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
+			float error_up = 2.0f * uqw_diff_up * error_linear
+			               + uqw_diff_up * uqw_diff_up * error_quadratic;
 
 			// Check if the prev or next error is better, and if so use it
-			if ((error_up < error_base) && (error_up < error_down) && (uqw < 64))
+			if ((error_up < 0.0f) && (error_up < error_down) && (uqw < 64))
 			{
 				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_up);
 				adjustments = true;
 			}
-			else if ((error_down < error_base) && (uqw > 0))
+			else if ((error_down < 0.0f) && (uqw > 0))
 			{
 				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_down);
 				adjustments = true;
