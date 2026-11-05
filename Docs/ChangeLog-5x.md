@@ -21,9 +21,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     weight changes, rather than always recomputing the infilled value every
     loop iteration.
   * **Optimization:** Use analytical calculation of weight change error diffs
-    in `realign_weights_decimated()`. Change accumulates simpler linear and
-    quadratic error coefficients in the loop, and then computes the up and down
-    candidate deltas after the loop.
+    in `realign_weights_decimated()` and `realign_weights_undecimated()`.
+    Changes compute simpler linear and quadratic error coefficients, and then
+    compute the up and down candidate deltas.
   * **Optimization:** Hoist loop invariant channel weight out of loop in
     `realign_weights_decimated()`.
   * **Optimization:** Use analytical calculation of moments in
