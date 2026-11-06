@@ -376,10 +376,13 @@ Install native packages:
 sudo apt update
 
 # Build tools
-sudo apt install clang cmake git
+sudo apt install build-essential clang cmake git
 
 # Test tools
-sudo apt install imagemagick python3-pip
+sudo apt install imagemagick python3-pip python3-venv
+
+# Clang sanitizer builds
+sudo apt install lld
 
 # Profile tools
 sudo apt install graphviz valgrind
