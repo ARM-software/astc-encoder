@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2020-2025 Arm Limited
+// Copyright 2020-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -31,7 +31,32 @@
 #endif
 
 #include <cstdio>
+#include <cstring>
 #include <limits>
+
+// ============================================================================
+// vmask4 operators and functions
+// ============================================================================
+
+#if !defined(ASTCENC_USE_NATIVE_VMASK_ANY_ALL)
+
+/**
+ * @brief True if any lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool any(vmask4 a)
+{
+	return mask(a) != 0;
+}
+
+/**
+ * @brief True if all lanes are enabled, false otherwise.
+ */
+ASTCENC_SIMD_INLINE bool all(vmask4 a)
+{
+	return mask(a) == 0xF;
+}
+
+#endif
 
 // ============================================================================
 // vint4 operators and functions
@@ -121,11 +146,11 @@ ASTCENC_SIMD_INLINE int hmin_s(vint4 a)
 /**
  * @brief Generate a vint4 from a size_t.
  */
- ASTCENC_SIMD_INLINE vint4 vint4_from_size(size_t a)
- {
+ASTCENC_SIMD_INLINE vint4 vint4_from_size(size_t a)
+{
 	assert(a <= std::numeric_limits<int>::max());
 	return vint4(static_cast<int>(a));
- }
+}
 
 /**
  * @brief Return the horizontal maximum of a vector.
@@ -224,7 +249,7 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
  */
 ASTCENC_SIMD_INLINE vfloat4 clamp(float minv, float maxv, vfloat4 a)
 {
-	// Do not reorder - second operand will return if either is NaN
+	// Preserve operation and operand order to give desired NaN handling
 	return min(max(a, minv), maxv);
 }
 
@@ -235,8 +260,7 @@ ASTCENC_SIMD_INLINE vfloat4 clamp(float minv, float maxv, vfloat4 a)
  */
 ASTCENC_SIMD_INLINE vfloat4 clampzo(vfloat4 a)
 {
-	// Do not reorder - second operand will return if either is NaN
-	return min(max(a, vfloat4::zero()), 1.0f);
+	return clamp(0.0f, 1.0f, a);
 }
 
 /**
@@ -269,7 +293,7 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 {
-	accum = accum + a;
+	accum += a;
 }
 
 /**
@@ -280,6 +304,39 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
 	a = select(vfloat4::zero(), a, m);
 	haccumulate(accum, a);
 }
+
+#if !defined(ASTCENC_USE_NATIVE_GATHERF_BYTE_INDS)
+
+/**
+ * @brief Load a vector of gathered results from an array using byte indices from memory.
+ */
+template<>
+ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
+{
+	// Experimentally, in this particular use case (byte indices in memory),
+	// using 4 separate scalar loads is appreciably faster than using gathers
+	// even if they're available, on every x86 uArch tried, so always do the
+	// separate loads even when ASTCENC_X86_GATHERS is enabled.
+	//
+	// Tested on:
+	//   - Intel Skylake-X, Coffee Lake, Crestmont, Redwood Cove
+	//   - AMD Zen 2, Zen 4
+	return vfloat4(base[indices[0]], base[indices[1]], base[indices[2]], base[indices[3]]);
+}
+
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN)
+
+/**
+ * @brief Return an integer value for a float vector, using round-to-nearest.
+ */
+ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
+{
+	return float_to_int(a + vfloat4(0.5f));
+}
+
+#endif
 
 /**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
@@ -371,6 +428,53 @@ static ASTCENC_SIMD_INLINE void bit_transfer_signed(
 	vmask4 mask = (input0 & 0x20) != vint4::zero();
 	input0 = select(input0, input0 - 0x40, mask);
 }
+
+#if !defined(ASTCENC_USE_NATIVE_STORE_LANE)
+
+/**
+ * @brief Store a single vector lane to an unaligned address.
+ */
+ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
+{
+	std::memcpy(base, &data, sizeof(int));
+}
+
+#endif
+
+#if !defined(ASTCENC_USE_NATIVE_STORE_LANES_MASKED)
+
+/**
+ * @brief Store a vector, skipping masked lanes.
+ *
+ * All masked lanes must be at the end of vector, after all non-masked lanes.
+ */
+ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
+{
+	// Do not use masked vector stores here. Some implementations do not
+	// guarantee fault suppression for masked lanes, which can cause page faults
+	// at the end of an image.
+	if (mask.lane<3>() != 0.0f)
+	{
+		store(data, base);
+	}
+	else if (mask.lane<2>() != 0.0f)
+	{
+		store_lane(base + 0, data.lane<0>());
+		store_lane(base + 4, data.lane<1>());
+		store_lane(base + 8, data.lane<2>());
+	}
+	else if (mask.lane<1>() != 0.0f)
+	{
+		store_lane(base + 0, data.lane<0>());
+		store_lane(base + 4, data.lane<1>());
+	}
+	else if (mask.lane<0>() != 0.0f)
+	{
+		store_lane(base + 0, data.lane<0>());
+	}
+}
+
+#endif
 
 /**
  * @brief Debug function to print a vector of ints.

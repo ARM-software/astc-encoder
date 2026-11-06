@@ -209,6 +209,19 @@ struct vint4
 	}
 
 	/**
+	 * @brief Construct from 1 scalar value replicated across all lanes.
+	 *
+	 * Consider using zero() for constexpr zeros.
+	 */
+	ASTCENC_SIMD_INLINE explicit vint4(int a)
+	{
+		m[0] = a;
+		m[1] = a;
+		m[2] = a;
+		m[3] = a;
+	}
+
+	/**
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
@@ -219,20 +232,6 @@ struct vint4
 		m[1] = b;
 		m[2] = c;
 		m[3] = d;
-	}
-
-
-	/**
-	 * @brief Construct from 4 scalar values replicated across all lanes.
-	 *
-	 * Consider using zero() for constexpr zeros.
-	 */
-	ASTCENC_SIMD_INLINE explicit vint4(int a)
-	{
-		m[0] = a;
-		m[1] = a;
-		m[2] = a;
-		m[3] = a;
 	}
 
 	/**
@@ -417,6 +416,8 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	       (a.m[2] & 0x4) |
 	       (a.m[3] & 0x8);
 }
+
+#define ASTCENC_USE_NATIVE_VMASK_ANY_ALL 1
 
 /**
  * @brief True if any lanes are enabled, false otherwise.
@@ -933,7 +934,7 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
- * @brief Load a vector of gathered results from an array;
+ * @brief Load a vector of gathered results from an array.
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
@@ -943,8 +944,10 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 	               base[indices.m[3]]);
 }
 
+#define ASTCENC_USE_NATIVE_GATHERF_BYTE_INDS 1
+
 /**
- * @brief Load a vector of gathered results from an array using byte indices from memory
+ * @brief Load a vector of gathered results from an array using byte indices from memory.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
@@ -988,8 +991,10 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 	             static_cast<int>(a.m[3]));
 }
 
-/**f
- * @brief Return a integer value for a float vector, using round-to-nearest.
+#define ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN 1
+
+/**
+ * @brief Return an integer value for a float vector, using round-to-nearest.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
@@ -1187,6 +1192,9 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 	return a + lsl<8>(b) + lsl<16>(g) + lsl<24>(r);
 #endif
 }
+
+#define ASTCENC_USE_NATIVE_STORE_LANE 1
+#define ASTCENC_USE_NATIVE_STORE_LANES_MASKED 1
 
 /**
  * @brief Store a single vector lane to an unaligned address.

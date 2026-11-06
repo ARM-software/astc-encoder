@@ -452,14 +452,6 @@ template <int s> ASTCENC_SIMD_INLINE vint lsl(vint a)
 }
 
 /**
- * @brief Arithmetic shift right.
- */
-template <int s> ASTCENC_SIMD_INLINE vint asr(vint a)
-{
-	return vint(__riscv_vsra(a.m, s, vint::vl()));
-}
-
-/**
  * @brief Logical shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint lsr(vint a)
@@ -467,6 +459,14 @@ template <int s> ASTCENC_SIMD_INLINE vint lsr(vint a)
 	vuint32_t r = __riscv_vreinterpret_u32m1(a.m);
 	r = __riscv_vsrl(r, s, vint::vl());
 	return vint(__riscv_vreinterpret_i32m1(r));
+}
+
+/**
+ * @brief Arithmetic shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint asr(vint a)
+{
+	return vint(__riscv_vsra(a.m, s, vint::vl()));
 }
 
 /**
@@ -522,11 +522,11 @@ ASTCENC_SIMD_INLINE int hmax_s(vint a)
 /**
  * @brief Generate a vint from a size_t.
  */
- ASTCENC_SIMD_INLINE vint vint_from_size(size_t a)
- {
+ASTCENC_SIMD_INLINE vint vint_from_size(size_t a)
+{
 	assert(a <= std::numeric_limits<int>::max());
 	return vint(static_cast<int>(a));
- }
+}
 
 /**
  * @brief Store a vector to a 16B aligned memory address.
@@ -746,11 +746,12 @@ ASTCENC_SIMD_INLINE vfloat max(vfloat a, float b)
  */
 ASTCENC_SIMD_INLINE vfloat clamp(float minv, float maxv, vfloat a)
 {
+	// Preserve operation and operand order to give desired NaN handling
 	return min(max(a, minv), maxv);
 }
 
 /**
- * @brief Return a clamped value between 0.0f and 1.0f.
+ * @brief Return the clamped value between 0.0f and 1.0f.
  *
  * If @c a is NaN then zero will be returned for that lane.
  */
@@ -836,6 +837,14 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat a)
 }
 
 /**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat sqrt(vfloat a)
+{
+	return vfloat(__riscv_vfsqrt(a.m, vfloat::vl()));
+}
+
+/**
  * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat select(vfloat a, vfloat b, vmask cond)
@@ -895,15 +904,7 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat& accum, vfloat a, vmask m)
 }
 
 /**
- * @brief Return the sqrt of the lanes in the vector.
- */
-ASTCENC_SIMD_INLINE vfloat sqrt(vfloat a)
-{
-	return vfloat(__riscv_vfsqrt(a.m, vfloat::vl()));
-}
-
-/**
- * @brief Load a vector of gathered results from an array;
+ * @brief Load a vector of gathered results from an array.
  */
 ASTCENC_SIMD_INLINE vfloat gatherf(const float* base, vint indices)
 {
@@ -915,7 +916,7 @@ ASTCENC_SIMD_INLINE vfloat gatherf(const float* base, vint indices)
 }
 
 /**
- * @brief Load a vector of gathered results from an array using byte indices from memory
+ * @brief Load a vector of gathered results from an array using byte indices from memory.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat gatherf_byte_inds<vfloat>(const float* base, const uint8_t* indices)
