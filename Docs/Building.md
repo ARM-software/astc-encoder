@@ -392,11 +392,8 @@ Install Python modules from within a virtual environment:
 python3 -m venv pve
 . ./pve/bin/activate
 
-# Test tools
-python3 -m pip install numpy scipy pillow pycodestyle pylint
-
-# Profile tools
-python3 -m pip install gprof2dot
+# Install modules inside the virtual environment
+python3 -m pip install -r requirements.txt
 ```
 
 - - -

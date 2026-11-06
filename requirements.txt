@@ -1,0 +1,12 @@
+# Image tests and statistical analysis
+numpy
+Pillow
+scipy
+
+# Python static analysis and style checks
+mypy
+pycodestyle
+pylint
+
+# Profiling call graph generation
+gprof2dot
