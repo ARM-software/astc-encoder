@@ -18,15 +18,26 @@
 Shared helpers for the astcenc performance profiling scripts.
 '''
 
+import math
 from pathlib import Path
 import re
 import shutil
 import subprocess as sp
 import sys
+from typing import NamedTuple
 
 
 PROCESSING_TIME_PATTERN = re.compile(
     r'^\s*(?:Coding|Decoding) time:\s*([0-9.]+)\s+s\s*$')
+
+QUALITY_METRICS = {
+    'PSNR (LDR-RGB)': ('dB', 'higher'),
+    'PSNR (LDR-RGBA)': ('dB', 'higher'),
+    'Alpha-weighted PSNR': ('dB', 'higher'),
+    'mPSNR (RGB)': ('dB', 'higher'),
+    'Mean Angular Error': ('degrees', 'lower'),
+    'Worst Angular Error': ('degrees', 'lower')
+}
 
 PROFILE_ERRORS = (
     FileNotFoundError,
@@ -34,6 +45,18 @@ PROFILE_ERRORS = (
     sp.CalledProcessError,
     ValueError
 )
+
+
+class CodecResult(NamedTuple):
+    '''
+    Metrics reported by one codec invocation.
+
+    Attributes:
+        time: The processing time in seconds.
+        quality: The available image quality scores, keyed by metric name.
+    '''
+    time: float
+    quality: dict[str, float]
 
 
 def resolve_binary(binary: str) -> str:
@@ -60,7 +83,7 @@ def resolve_binary(binary: str) -> str:
     return resolved
 
 
-def run_codec(binary: str, arguments: list[str]) -> float:
+def run_codec(binary: str, arguments: list[str]) -> CodecResult:
     '''
     Run one astcenc command.
 
@@ -69,27 +92,44 @@ def run_codec(binary: str, arguments: list[str]) -> float:
         arguments: The astcenc command-line arguments.
 
     Return:
-        The reported processing time in seconds.
+        The reported processing time and available image quality scores.
 
     Raises:
         CalledProcessError: The codec process failed.
-        ValueError: The codec did not report a processing time.
+        ValueError: The time is missing or a quality score is invalid.
     '''
     command = [binary] + arguments
 
     result = sp.run(command, stdout=sp.PIPE, stderr=sp.PIPE,
                     check=True, text=True)
 
+    processing_time = None
+    quality = {}
     for line in result.stdout.splitlines():
-        if match := PROCESSING_TIME_PATTERN.match(line):
-            return float(match.group(1))
+        if processing_time is None:
+            if match := PROCESSING_TIME_PATTERN.match(line):
+                processing_time = float(match.group(1))
+
+        name, _, value = line.strip().partition(':')
+        # Older encoders can include an f-stop range in the mPSNR label.
+        name = re.sub(r'\s+\[.*?\]\s*$', '', name)
+        if name in QUALITY_METRICS:
+            if not value.strip():
+                raise ValueError(f'Codec reported an invalid {name}')
+            score = float(value.split()[0])
+            if not math.isfinite(score):
+                raise ValueError(f'Codec reported a non-finite {name}')
+            quality[name] = score
+
+    if processing_time is not None:
+        return CodecResult(processing_time, quality)
 
     raise ValueError(f'{binary} did not report a processing time')
 
 
 def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
                     warmups: int,
-                    runs: int) -> tuple[list[float], list[float]]:
+                    runs: int) -> tuple[list[CodecResult], list[CodecResult]]:
     '''
     Warm up the codecs and collect interleaved paired timing samples.
 
@@ -101,7 +141,7 @@ def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
         runs: The number of measured pairs.
 
     Return:
-        The timing samples for binary A and binary B.
+        The timing and quality samples for binary A and binary B.
     '''
     for _ in range(warmups):
         run_codec(binary_a, arguments)
@@ -111,17 +151,17 @@ def collect_samples(binary_a: str, binary_b: str, arguments: list[str],
     samples_b = []
     for run in range(runs):
         if run % 2 == 0:
-            time_a = run_codec(binary_a, arguments)
-            time_b = run_codec(binary_b, arguments)
+            result_a = run_codec(binary_a, arguments)
+            result_b = run_codec(binary_b, arguments)
         else:
-            time_b = run_codec(binary_b, arguments)
-            time_a = run_codec(binary_a, arguments)
+            result_b = run_codec(binary_b, arguments)
+            result_a = run_codec(binary_a, arguments)
 
-        samples_a.append(time_a)
-        samples_b.append(time_b)
+        samples_a.append(result_a)
+        samples_b.append(result_b)
         print(f'Pair {run + 1:>2}/{runs}: '
-              f'A {time_a:.4f} s, '
-              f'B {time_b:.4f} s')
+              f'A {result_a.time:.4f} s, '
+              f'B {result_b.time:.4f} s')
 
     return samples_a, samples_b
 
@@ -132,7 +172,7 @@ def profile_binaries(
     arguments: list[str],
     warmups: int,
     runs: int
-) -> tuple[str, str, list[float], list[float]]:
+) -> tuple[str, str, list[CodecResult], list[CodecResult]]:
     '''
     Resolve the binaries and collect timing samples.
 
@@ -144,7 +184,7 @@ def profile_binaries(
         runs: The number of measured pairs.
 
     Return:
-        The two binary paths followed by their timing samples.
+        The two binary paths followed by their timing and quality samples.
     '''
     resolved_a = resolve_binary(binary_a)
     resolved_b = resolve_binary(binary_b)

@@ -27,6 +27,15 @@ Run the functional tests against the appropriate encoder variant using:
 python3 ./Test/astc_test_functional.py -v --encoder <encoder_variant>
 ```
 
+To test a binary directly without installing it into `./bin`, pass its path:
+
+```sh
+python3 ./Test/astc_test_functional.py -v --binary <path_to_astcenc>
+```
+
+`--binary` overrides the path selected by `--encoder`. Without `--binary`,
+the default remains `./bin/astcenc-avx2` (or the selected encoder variant).
+
 # Running Python-based CLI performance and quality tests
 
 Compile the build of `astcenc` you wish to test and profile, and install it into the project `./bin` directory. This can be achieved by configuring the CMake build using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build target.
@@ -62,7 +71,7 @@ Performance regressions will not automatically cause test failure, and must be
 manually reviewed.
 
 **Note:** The upstream reference data contains performance results measured on
-an Intel Core i5 9600K running at 4.3GHz, running each test 5 times.
+an Intel Xeon w7-3465X running at 3.9 GHz, running each test 5 times.
 
 ## Updating reference data
 

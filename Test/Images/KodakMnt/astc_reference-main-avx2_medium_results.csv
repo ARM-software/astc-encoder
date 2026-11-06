@@ -1,0 +1,26 @@
+Image Set,Block Size,Name,PSNR,Total Time,Coding Time,Coding Rate
+KodakMnt,4x4,ldr-l-montage.png,57.1064,0.5101,0.2999,31.4683
+KodakMnt,4x4,ldr-rgb-montage.png,44.7848,1.1827,0.9255,10.1965
+KodakMnt,4x4,ldr-rgba-montage+ca.png,43.7209,0.9891,0.7150,13.1988
+KodakMnt,4x4,ldr-rgba-montage+nca.png,39.9936,1.7357,1.4441,6.5352
+KodakMnt,4x4,ldr-xy-montage.png,37.4492,2.5525,2.1095,4.4736
+KodakMnt,5x5,ldr-l-montage.png,47.5212,0.5740,0.3690,25.5719
+KodakMnt,5x5,ldr-rgb-montage.png,40.7188,0.8817,0.6268,15.0559
+KodakMnt,5x5,ldr-rgba-montage+ca.png,39.8540,0.8893,0.6183,15.2642
+KodakMnt,5x5,ldr-rgba-montage+nca.png,36.5619,1.6847,1.3973,6.7540
+KodakMnt,5x5,ldr-xy-montage.png,31.8980,2.5787,2.1449,4.3998
+KodakMnt,6x6,ldr-l-montage.png,41.2676,0.5557,0.3496,26.9912
+KodakMnt,6x6,ldr-rgb-montage.png,37.5043,0.7426,0.4957,19.0373
+KodakMnt,6x6,ldr-rgba-montage+ca.png,36.8578,0.8286,0.5553,16.9958
+KodakMnt,6x6,ldr-rgba-montage+nca.png,34.2503,1.5310,1.2456,7.5765
+KodakMnt,6x6,ldr-xy-montage.png,29.3244,2.3538,1.9171,4.9226
+KodakMnt,8x8,ldr-l-montage.png,35.4974,0.7004,0.4926,19.1564
+KodakMnt,8x8,ldr-rgb-montage.png,33.5449,0.7932,0.5415,17.4271
+KodakMnt,8x8,ldr-rgba-montage+ca.png,33.0909,0.8792,0.6043,15.6173
+KodakMnt,8x8,ldr-rgba-montage+nca.png,31.2303,1.4855,1.1975,7.8808
+KodakMnt,8x8,ldr-xy-montage.png,26.4281,2.3115,1.8733,5.0378
+KodakMnt,12x12,ldr-l-montage.png,30.5904,0.6838,0.4829,19.5437
+KodakMnt,12x12,ldr-rgb-montage.png,29.5428,0.7045,0.4533,20.8174
+KodakMnt,12x12,ldr-rgba-montage+ca.png,29.2615,0.7791,0.5047,18.6994
+KodakMnt,12x12,ldr-rgba-montage+nca.png,28.0055,1.2021,0.9147,10.3173
+KodakMnt,12x12,ldr-xy-montage.png,23.9686,2.0388,1.5804,5.9715
