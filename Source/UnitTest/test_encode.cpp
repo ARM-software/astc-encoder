@@ -200,7 +200,7 @@ TEST(compress, data_buffer_exceeded)
 	astcenc_context_free(context);
 }
 
-/** @brief Helper to run a compression on a single 4x4 block */
+/** @brief Helper to run a compression on a single 4x4 block. */
 static void run_positive_test(
 	astcenc_profile profile,
 	float* input

@@ -184,7 +184,7 @@ struct astcenc_context_deleter
 using astcenc_context_ptr = std::unique_ptr<astcenc_context, astcenc_context_deleter>;
 
 /**
- * @brief Callback emitting a progress bar
+ * @brief Callback emitting a progress bar.
  */
 extern "C" void progress_emitter(
 	float value
@@ -646,7 +646,7 @@ static int parse_commandline_options(
 }
 
 /**
- * @brief Initialize the astcenc_config
+ * @brief Initialize the astcenc_config.
  *
  * @param      argc         Command line argument count.
  * @param[in]  argv         Command line argument vector.
@@ -844,7 +844,7 @@ static int init_astcenc_config(
 }
 
 /**
- * @brief Edit the astcenc_config
+ * @brief Edit the astcenc_config.
  *
  * @param         argc         Command line argument count.
  * @param[in]     argv         Command line argument vector.

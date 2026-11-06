@@ -49,7 +49,7 @@
 #include "ThirdParty/stb_image_write.h"
 
 /**
- * @brief Compute the array offset in a 2D image
+ * @brief Compute the array offset in a 2D image.
  */
 int pix(int x_pix, int y_idx, int x_idx, int chans, int p_idx)
 {
