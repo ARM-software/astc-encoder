@@ -91,6 +91,25 @@ void unpack_weights(
 	int weights_plane1[BLOCK_MAX_TEXELS],
 	int weights_plane2[BLOCK_MAX_TEXELS]
 ) {
+	// Non-decimated weights are already stored in unquantized form
+	if (di.weight_count == bsd.texel_count)
+	{
+		for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			store(vint(scb.weights + i), weights_plane1 + i);
+		}
+
+		if (is_dual_plane)
+		{
+			for (unsigned int i = 0; i < bsd.texel_count; i += ASTCENC_SIMD_WIDTH)
+			{
+				store(vint(scb.weights + WEIGHTS_PLANE2_OFFSET + i), weights_plane2 + i);
+			}
+		}
+
+		return;
+	}
+
 	// Safe to overshoot as all arrays are allocated to full size
 	if (!is_dual_plane)
 	{
@@ -261,7 +280,7 @@ void decompress_symbolic_block(
 
 	bool is_dual_plane = static_cast<bool>(bm.is_dual_plane);
 
-	// Unquantize and undecimate the weights
+	// Undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, is_dual_plane, plane1_weights, plane2_weights);
@@ -327,7 +346,7 @@ float compute_symbolic_block_difference_2plane(
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
-	// Unquantize and undecimate the weights
+	// Undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	int plane2_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, true, plane1_weights, plane2_weights);
@@ -425,7 +444,7 @@ float compute_symbolic_block_difference_1plane(
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
-	// Unquantize and undecimate the weights
+	// Undecimate the weights
 	int plane1_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 
@@ -518,7 +537,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
 	const decimation_info& di = bsd.get_decimation_info(bm.decimation_mode);
 
-	// Unquantize and undecimate the weights
+	// Undecimate the weights
 	ASTCENC_ALIGNAS int plane1_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, false, plane1_weights, nullptr);
 

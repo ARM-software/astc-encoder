@@ -1115,7 +1115,7 @@ struct symbolic_compressed_block
 		uint8_t color_values[BLOCK_MAX_PARTITIONS][8];
 	};
 
-	/** @brief The quantized and decimated weights.
+	/** @brief The decimated and unquantized weights.
 	 *
 	 * Weights are stored in the 0-64 unpacked range allowing them to be used
 	 * directly in encoding passes without per-use unpacking. Packing happens
@@ -1908,10 +1908,7 @@ void rgba_unpack(
 	vint4& output1);
 
 /**
- * @brief Unpack a set of quantized and decimated weights.
- *
- * TODO: Can we skip this for non-decimated weights now that the @c scb is
- * already storing unquantized weights?
+ * @brief Undecimate a set of weights.
  *
  * @param      bsd              The block size information.
  * @param      scb              The symbolic compressed encoding.
