@@ -62,7 +62,7 @@ Performance regressions will not automatically cause test failure, and must be
 manually reviewed.
 
 **Note:** The upstream reference data contains performance results measured on
-an Intel Core i5 9600K running at 4.3GHz, running each test 5 times.
+an Intel Xeon w7-3465X running at 3.9 GHz, running each test 5 times.
 
 ## Updating reference data
 

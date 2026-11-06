@@ -3,8 +3,8 @@
 This page summarizes the major functional and performance changes in each
 release of the 5.x series.
 
-All performance data on this page is measured on an Intel Core i5-9600K
-clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
+All performance data on this page is measured on an Intel Xeon w7-3465X clocked
+at 3.9 GHz, running `astcenc` using AVX2 and 12 threads.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.8.0
