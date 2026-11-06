@@ -434,22 +434,6 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	return static_cast<unsigned int>(_mm_movemask_ps(a.m));
 }
 
-/**
- * @brief True if any lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool any(vmask4 a)
-{
-	return mask(a) != 0;
-}
-
-/**
- * @brief True if all lanes are enabled, false otherwise.
- */
-ASTCENC_SIMD_INLINE bool all(vmask4 a)
-{
-	return mask(a) == 0xF;
-}
-
 // ============================================================================
 // vint4 operators and functions
 // ============================================================================
@@ -890,7 +874,7 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
- * @brief Load a vector of gathered results from an array;
+ * @brief Load a vector of gathered results from an array.
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
@@ -901,23 +885,6 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 	storea(indices, idx);
 	return vfloat4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
 #endif
-}
-
-/**
- * @brief Load a vector of gathered results from an array using byte indices from memory
- */
-template<>
-ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
-{
-	// Experimentally, in this particular use case (byte indices in memory),
-	// using 4 separate scalar loads is appreciably faster than using gathers
-	// even if they're available, on every x86 uArch tried, so always do the
-	// separate loads even when ASTCENC_X86_GATHERS is enabled.
-	//
-	// Tested on:
-	//   - Intel Skylake-X, Coffee Lake, Crestmont, Redwood Cove
-	//   - AMD Zen 2, Zen 4
-	return vfloat4(base[indices[0]], base[indices[1]], base[indices[2]], base[indices[3]]);
 }
 
 /**
@@ -941,15 +908,6 @@ ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 {
-	return vint4(_mm_cvttps_epi32(a.m));
-}
-
-/**
- * @brief Return a integer value for a float vector, using round-to-nearest.
- */
-ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
-{
-	a = a + vfloat4(0.5f);
 	return vint4(_mm_cvttps_epi32(a.m));
 }
 
@@ -1245,13 +1203,9 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 #endif
 }
 
-/**
- * @brief Store a single vector lane to an unaligned address.
- */
-ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
-{
-	std::memcpy(base, &data, sizeof(int));
-}
+#if ASTCENC_AVX >= 2
+
+#define ASTCENC_USE_NATIVE_STORE_LANES_MASKED 1
 
 /**
  * @brief Store a vector, skipping masked lanes.
@@ -1260,32 +1214,10 @@ ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
 {
-#if ASTCENC_AVX >= 2
 	_mm_maskstore_epi32(reinterpret_cast<int*>(base), _mm_castps_si128(mask.m), data.m);
-#else
-	// Note - we cannot use _mm_maskmoveu_si128 as the underlying hardware doesn't guarantee
-	// fault suppression on masked lanes so we can get page faults at the end of an image.
-	if (mask.lane<3>() != 0.0f)
-	{
-		store(data, base);
-	}
-	else if (mask.lane<2>() != 0.0f)
-	{
-		store_lane(base + 0, data.lane<0>());
-		store_lane(base + 4, data.lane<1>());
-		store_lane(base + 8, data.lane<2>());
-	}
-	else if (mask.lane<1>() != 0.0f)
-	{
-		store_lane(base + 0, data.lane<0>());
-		store_lane(base + 4, data.lane<1>());
-	}
-	else if (mask.lane<0>() != 0.0f)
-	{
-		store_lane(base + 0, data.lane<0>());
-	}
-#endif
 }
+
+#endif
 
 #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
 

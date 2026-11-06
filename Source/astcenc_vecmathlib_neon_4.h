@@ -420,6 +420,8 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 	return vaddvq_u32(vshlq_u32(tmp, shift));
 }
 
+#define ASTCENC_USE_NATIVE_VMASK_ANY_ALL 1
+
 /**
  * @brief True if any lanes are enabled, false otherwise.
  */
@@ -812,7 +814,7 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
- * @brief Load a vector of gathered results from an array;
+ * @brief Load a vector of gathered results from an array.
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
@@ -832,25 +834,23 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 #endif
 }
 
+#if ASTCENC_SVE != 0
+
+#define ASTCENC_USE_NATIVE_GATHERF_BYTE_INDS 1
+
 /**
- * @brief Load a vector of gathered results from an array using byte indices from memory
+ * @brief Load a vector of gathered results from an array using byte indices from memory.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
 {
-#if ASTCENC_SVE == 0
-	alignas(16) float vals[4];
-	vals[0] = base[indices[0]];
-	vals[1] = base[indices[1]];
-	vals[2] = base[indices[2]];
-	vals[3] = base[indices[3]];
-	return vfloat4(vals);
-#else
 	svint32_t offsets = svld1ub_s32(svptrue_pat_b32(SV_VL4), indices);
 	svfloat32_t data = svld1_gather_s32index_f32(svptrue_pat_b32(SV_VL4), base, offsets);
 	return vfloat4(svget_neonq_f32(data));
-#endif
 }
+
+#endif
+
 /**
  * @brief Store a vector to an unaligned memory address.
  */
@@ -874,6 +874,8 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 {
 	return vint4(vcvtq_s32_f32(a.m));
 }
+
+#define ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN 1
 
 /**
  * @brief Return a integer value for a float vector, using round-to-nearest.
@@ -1075,6 +1077,9 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
 	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
 }
+
+#define ASTCENC_USE_NATIVE_STORE_LANE 1
+#define ASTCENC_USE_NATIVE_STORE_LANES_MASKED 1
 
 /**
  * @brief Store a single vector lane to an unaligned address.

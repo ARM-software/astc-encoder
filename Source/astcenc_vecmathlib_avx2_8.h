@@ -331,15 +331,6 @@ ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 }
 
 /**
- * @brief Overload: vector by vector incremental addition.
- */
-ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
-{
-	a = a + b;
-	return a;
-}
-
-/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
@@ -428,19 +419,19 @@ template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
 }
 
 /**
- * @brief Arithmetic shift right.
- */
-template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
-{
-	return vint8(_mm256_srai_epi32(a.m, s));
-}
-
-/**
  * @brief Logical shift right.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
 {
 	return vint8(_mm256_srli_epi32(a.m, s));
+}
+
+/**
+ * @brief Arithmetic shift right.
+ */
+template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
+{
+	return vint8(_mm256_srai_epi32(a.m, s));
 }
 
 /**
@@ -502,15 +493,6 @@ ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
 {
 	return _mm256_cvtsi256_si32(hmax(a).m);
 }
-
-/**
- * @brief Generate a vint8 from a size_t.
- */
- ASTCENC_SIMD_INLINE vint8 vint8_from_size(size_t a)
- {
-	assert(a <= std::numeric_limits<int>::max());
-	return vint8(static_cast<int>(a));
- }
 
 /**
  * @brief Store a vector to a 16B aligned memory address.
@@ -580,15 +562,6 @@ ASTCENC_SIMD_INLINE vfloat8 operator+(vfloat8 a, vfloat8 b)
 }
 
 /**
- * @brief Overload: vector by vector incremental addition.
- */
-ASTCENC_SIMD_INLINE vfloat8& operator+=(vfloat8& a, const vfloat8& b)
-{
-	a = a + b;
-	return a;
-}
-
-/**
  * @brief Overload: vector by vector subtraction.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
@@ -605,43 +578,11 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
 }
 
 /**
- * @brief Overload: vector by scalar multiplication.
- */
-ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, float b)
-{
-	return vfloat8(_mm256_mul_ps(a.m, _mm256_set1_ps(b)));
-}
-
-/**
- * @brief Overload: scalar by vector multiplication.
- */
-ASTCENC_SIMD_INLINE vfloat8 operator*(float a, vfloat8 b)
-{
-	return vfloat8(_mm256_mul_ps(_mm256_set1_ps(a), b.m));
-}
-
-/**
  * @brief Overload: vector by vector division.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, vfloat8 b)
 {
 	return vfloat8(_mm256_div_ps(a.m, b.m));
-}
-
-/**
- * @brief Overload: vector by scalar division.
- */
-ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
-{
-	return vfloat8(_mm256_div_ps(a.m, _mm256_set1_ps(b)));
-}
-
-/**
- * @brief Overload: scalar by vector division.
- */
-ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
-{
-	return vfloat8(_mm256_div_ps(_mm256_set1_ps(a), b.m));
 }
 
 /**
@@ -707,16 +648,6 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 }
 
 /**
- * @brief Return the min vector of a vector and a scalar.
- *
- * If either lane value is NaN, @c b will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
-{
-	return min(a, vfloat8(b));
-}
-
-/**
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
@@ -724,42 +655,6 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 {
 	return vfloat8(_mm256_max_ps(a.m, b.m));
-}
-
-/**
- * @brief Return the max vector of a vector and a scalar.
- *
- * If either lane value is NaN, @c b will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
-{
-	return max(a, vfloat8(b));
-}
-
-/**
- * @brief Return the clamped value between min and max.
- *
- * It is assumed that neither @c min nor @c max are NaN values. If @c a is NaN
- * then @c min will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat8 clamp(float min, float max, vfloat8 a)
-{
-	// Do not reorder - second operand will return if either is NaN
-	a.m = _mm256_max_ps(a.m, _mm256_set1_ps(min));
-	a.m = _mm256_min_ps(a.m, _mm256_set1_ps(max));
-	return a;
-}
-
-/**
- * @brief Return a clamped value between 0.0f and 1.0f.
- *
- * If @c a is NaN then zero will be returned for that lane.
- */
-ASTCENC_SIMD_INLINE vfloat8 clampzo(vfloat8 a)
-{
-	a.m = _mm256_max_ps(a.m, _mm256_setzero_ps());
-	a.m = _mm256_min_ps(a.m, _mm256_set1_ps(1.0f));
-	return a;
 }
 
 /**
@@ -853,6 +748,14 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 }
 
 /**
+ * @brief Return the sqrt of the lanes in the vector.
+ */
+ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
+{
+	return vfloat8(_mm256_sqrt_ps(a.m));
+}
+
+/**
  * @brief Return lanes from @c b if @c cond is set, else @c a.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
@@ -875,27 +778,6 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 }
 
 /**
- * @brief Accumulate lane-wise sums for a vector.
- *
- * This is NOT invariant with 4-wide implementations.
- */
-ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a)
-{
-	accum += a;
-}
-
-/**
- * @brief Accumulate masked lane-wise sums for a vector, folded 4-wide.
- *
- * This is invariant with 4-wide implementations.
- */
-ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
-{
-	a = select(vfloat8::zero(), a, m);
-	haccumulate(accum, a);
-}
-
-/**
  * @brief Accumulate masked lane-wise sums for a vector.
  *
  * This is NOT invariant with 4-wide implementations.
@@ -903,19 +785,11 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
 ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
 {
 	a = select(vfloat8::zero(), a, m);
-	haccumulate(accum, a);
+	accum = accum + a;
 }
 
 /**
- * @brief Return the sqrt of the lanes in the vector.
- */
-ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
-{
-	return vfloat8(_mm256_sqrt_ps(a.m));
-}
-
-/**
- * @brief Load a vector of gathered results from an array;
+ * @brief Load a vector of gathered results from an array.
  */
 ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 {
@@ -923,7 +797,7 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 }
 
 /**
- * @brief Load a vector of gathered results from an array using byte indices from memory
+ * @brief Load a vector of gathered results from an array using byte indices from memory.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
@@ -972,16 +846,6 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 {
 	return vint8(_mm256_cvttps_epi32(a.m));
 }
-
-/**
- * @brief Return a integer value for a float vector, using round-to-nearest.
- */
-ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
-{
-	a = a + vfloat8(0.5f);
-	return vint8(_mm256_cvttps_epi32(a.m));
-}
-
 
 /**
  * @brief Return a float value for an integer vector.
@@ -1155,19 +1019,6 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 }
 
 /**
- * @brief Return a vector of interleaved RGBA data.
- *
- * Input vectors have the value stored in the bottom 8 bits of each lane,
- * with high bits set to zero.
- *
- * Output vector stores a single RGBA texel packed in each lane.
- */
-ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
-{
-	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
-}
-
-/**
  * @brief Store a vector, skipping masked lanes.
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.
@@ -1175,54 +1026,6 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 mask)
 {
 	_mm256_maskstore_epi32(reinterpret_cast<int*>(base), _mm256_castps_si256(mask.m), data.m);
-}
-
-/**
- * @brief Debug function to print a vector of ints.
- */
-ASTCENC_SIMD_INLINE void print(vint8 a)
-{
-	alignas(32) int v[8];
-	storea(a, v);
-	printf("v8_i32:\n  %8d %8d %8d %8d %8d %8d %8d %8d\n",
-	       v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
-}
-
-/**
- * @brief Debug function to print a vector of ints.
- */
-ASTCENC_SIMD_INLINE void printx(vint8 a)
-{
-	alignas(32) int v[8];
-	storea(a, v);
-
-	unsigned int uv[8];
-	std::memcpy(uv, v, sizeof(int) * 8);
-
-	printf("v8_i32:\n  %08x %08x %08x %08x %08x %08x %08x %08x\n",
-		uv[0], uv[1], uv[2], uv[3], uv[4], uv[5], uv[6], uv[7]);
-}
-
-/**
- * @brief Debug function to print a vector of floats.
- */
-ASTCENC_SIMD_INLINE void print(vfloat8 a)
-{
-	alignas(32) float v[8];
-	storea(a, v);
-	printf("v8_f32:\n  %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f\n",
-	       static_cast<double>(v[0]), static_cast<double>(v[1]),
-	       static_cast<double>(v[2]), static_cast<double>(v[3]),
-	       static_cast<double>(v[4]), static_cast<double>(v[5]),
-	       static_cast<double>(v[6]), static_cast<double>(v[7]));
-}
-
-/**
- * @brief Debug function to print a vector of masks.
- */
-ASTCENC_SIMD_INLINE void print(vmask8 a)
-{
-	print(select(vint8(0), vint8(1), a));
 }
 
 #endif // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED

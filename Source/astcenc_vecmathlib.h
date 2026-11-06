@@ -85,6 +85,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx2_8.h"
+	#include "astcenc_vecmathlib_common_8.h"
 
 	#define ASTCENC_SIMD_WIDTH 8
 
@@ -137,6 +138,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_sve_8.h"
+	#include "astcenc_vecmathlib_common_8.h"
 
 	#define ASTCENC_SIMD_WIDTH 8
 
