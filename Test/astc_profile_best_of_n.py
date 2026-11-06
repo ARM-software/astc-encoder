@@ -113,8 +113,8 @@ def main() -> int:
     except PROFILE_ERRORS as ex:
         return report_error(ex)
 
-    best_a = min(samples_a)
-    best_b = min(samples_b)
+    best_a = min(sample.time for sample in samples_a)
+    best_b = min(sample.time for sample in samples_b)
 
     print()
     print(f'A best: {best_a:.6f} s ({binary_a})')

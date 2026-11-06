@@ -11,39 +11,32 @@
 __pycache__
 pve
 Scratch
-Proto
 
-# Precompiled reference binaries for comparison tests
+# Build dirs and other artifacts
+build*
+Source/astcenccli_version.h
+
+# Build installs and reference binaries
 bin
 lib
 Binaries
 
-# Build artifacts
-astcenc
-build*
-
-# General build artifacts
-Test/DocOut
-
 # Test images we download from other sources
 Test/Images/Kodak*/**/*.png
-Test/Images/Scratch*
 
 # Test output
-TestOutput
-/profiles/
-/*.xlsx
+/TestOutput
+/profiles
+/*.astc
+/*.exr
+/*.hdr
 /*.jpg
 /*.json
 /*.log
-/*.txt
-/*.hdr
 /*.png
-/*.exr
-/*.astc
-astc_reference-main*
-Docs/Profiling.md
-Source/astcenccli_version.h
+/*.txt
+/*.xlsx
+/result*
 
 # Do not ignore workflows
 !.github/workflows/

@@ -109,11 +109,12 @@ class CLITestBase(unittest.TestCase):
         binary: The path of the executable to test.
     '''
     test_encoder = 'avx2'
+    test_binary: Optional[Path] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        encoder = te.Encoder2x(self.test_encoder)
+        encoder = te.Encoder2x(self.test_encoder, self.test_binary)
         self.binary = encoder.binary_path
 
     def setUp(self):
@@ -2272,10 +2273,20 @@ def main() -> int:
     coders = ['none', 'neon', 'sve_128', 'sve_256', 'sse2', 'sse4.1', 'avx2']
     parser.add_argument('--encoder', dest='encoder', default='avx2',
                         choices=coders, help='test encoder variant')
+    parser.add_argument('--binary', type=Path,
+                        help='path to the binary to test; overrides the '
+                             'default ./bin/astcenc-<encoder> path')
     args = parser.parse_known_args()
+
+    binary = args[0].binary
+    if binary is not None:
+        binary = binary.resolve()
+        if not binary.is_file():
+            parser.error(f'Binary does not exist or is not a file: {binary}')
 
     # Set the encoder for this test run
     CLITestBase.test_encoder = args[0].encoder
+    CLITestBase.test_binary = binary
 
     # Set the sys.argv to remaining args (leave sys.argv[0] alone)
     sys.argv[1:] = args[1]
