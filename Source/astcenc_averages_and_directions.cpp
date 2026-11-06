@@ -470,7 +470,6 @@ void compute_avgs_and_dirs_3_comp(
 	const float* data_vg = blk.data_g;
 	const float* data_vb = blk.data_b;
 
-	// TODO: Data-driven permute would be useful to avoid this ...
 	if (omitted_component == 0)
 	{
 		partition_averages[0] = partition_averages[0].swz<1, 2, 3>();

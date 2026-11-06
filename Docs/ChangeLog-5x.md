@@ -36,6 +36,8 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     specialization, saving one multiply.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of
     deeper nested `..._find_best_combination...()` selector loops.
+  * **Optimization:** Directly copy non-decimated weight grids when unpacking
+    symbolic blocks, avoiding redundant interpolation.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
