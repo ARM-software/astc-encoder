@@ -376,10 +376,13 @@ Install native packages:
 sudo apt update
 
 # Build tools
-sudo apt install clang cmake git
+sudo apt install build-essential clang cmake git
 
 # Test tools
-sudo apt install imagemagick python3-pip
+sudo apt install imagemagick python3-pip python3-venv
+
+# Clang sanitizer builds
+sudo apt install lld
 
 # Profile tools
 sudo apt install graphviz valgrind
@@ -392,11 +395,8 @@ Install Python modules from within a virtual environment:
 python3 -m venv pve
 . ./pve/bin/activate
 
-# Test tools
-python3 -m pip install numpy scipy pillow pycodestyle pylint
-
-# Profile tools
-python3 -m pip install gprof2dot
+# Install modules inside the virtual environment
+python3 -m pip install -r requirements.txt
 ```
 
 - - -

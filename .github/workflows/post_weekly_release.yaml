@@ -52,7 +52,7 @@ jobs:
       - name: Get Python modules
         run: |
           python -m pip install --upgrade pip
-          pip install numpy Pillow
+          python -m pip install -r requirements.txt
 
       - name: Run system tests
         # Disable SVE testing for now
@@ -99,7 +99,7 @@ jobs:
       - name: Get Python modules
         run: |
           python -m pip install --upgrade pip
-          pip install numpy Pillow
+          python -m pip install -r requirements.txt
 
       - name: Run system tests
         run: |
@@ -138,7 +138,7 @@ jobs:
       - name: Get Python modules
         run: |
           python -m pip install --upgrade pip
-          pip install numpy Pillow
+          python -m pip install -r requirements.txt
 
       - name: Run system tests
         run: |
@@ -199,7 +199,7 @@ jobs:
       - name: Get Python modules
         run: |
           python -m pip install --upgrade pip
-          pip install numpy Pillow
+          python -m pip install -r requirements.txt
         shell: cmd
 
       - name: Run system tests
