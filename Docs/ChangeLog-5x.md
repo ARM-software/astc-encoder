@@ -38,6 +38,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     deeper nested `..._find_best_combination...()` selector loops.
   * **Optimization:** Directly copy non-decimated weight grids when unpacking
     symbolic blocks, avoiding redundant interpolation.
+  * **Optimization:** Specialize `compute_avgs_and_dirs_4_comp()` for blocks
+    with identical `RGB` components, skipping duplicate `GB` calculations.
+    This significantly improves normal map compression performance.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
