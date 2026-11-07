@@ -44,6 +44,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
   * **Optimization:** Specialize `compute_partition_averages_rgba()` for blocks
     with identical `RGB` components, skipping duplicate `GB` calculations.
     This significantly improves normal map compression performance.
+  * **Optimization:** Specialize RGBA partition-error scoring for blocks with
+    identical `RGB` components, reusing channel gathers, projection products,
+    and residual calculations while preserving channel weights and error sums.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1

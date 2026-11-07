@@ -1064,6 +1064,114 @@ void compute_error_squared_rgba(
 }
 
 /* See header for documentation. */
+void compute_error_squared_rgba_grayscale(
+	const partition_info& pi,
+	const image_block& blk,
+	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
+	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
+	float line_lengths[BLOCK_MAX_PARTITIONS],
+	float& uncor_error,
+	float& samec_error
+) {
+	assert(blk.grayscale);
+	size_t partition_count = pi.partition_count;
+	promise(partition_count > 0);
+
+	vfloatacc uncor_errorsumv = vfloatacc::zero();
+	vfloatacc samec_errorsumv = vfloatacc::zero();
+
+	for (size_t partition = 0; partition < partition_count; partition++)
+	{
+		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
+
+		processed_line4 l_uncor = uncor_plines[partition];
+		processed_line4 l_samec = samec_plines[partition];
+
+		assert(all(l_uncor.bs == l_uncor.bs.swz<0, 0, 0, 3>()));
+		assert(all(l_uncor.amod == l_uncor.amod.swz<0, 0, 0, 3>()));
+		assert(all(l_samec.bs == l_samec.bs.swz<0, 0, 0, 3>()));
+		assert(all(l_samec.amod == vfloat4(0.0f)));
+
+		size_t texel_count = pi.partition_texel_count[partition];
+		promise(texel_count > 0);
+
+		// The line coefficients have identical RGB components.
+		vfloat l_uncor_bs0(l_uncor.bs.lane<0>());
+		vfloat l_uncor_bs3(l_uncor.bs.lane<3>());
+		vfloat l_uncor_amod0(l_uncor.amod.lane<0>());
+		vfloat l_uncor_amod3(l_uncor.amod.lane<3>());
+		vfloat l_samec_bs0(l_samec.bs.lane<0>());
+		vfloat l_samec_bs3(l_samec.bs.lane<3>());
+
+		vfloat uncor_loparamv(1e10f);
+		vfloat uncor_hiparamv(-1e10f);
+
+		vfloat ew_r(blk.channel_weight.lane<0>());
+		vfloat ew_g(blk.channel_weight.lane<1>());
+		vfloat ew_b(blk.channel_weight.lane<2>());
+		vfloat ew_a(blk.channel_weight.lane<3>());
+
+		// Padded texel indexes repeat the last value, preserving min/max.
+		// Mask these lanes when accumulating errors.
+		vint lane_ids = vint::lane_id();
+		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
+		{
+			vmask mask = lane_ids < vint_from_size(texel_count);
+			const uint8_t* texel_idxs = texel_indexes + i;
+
+			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
+			vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, texel_idxs);
+
+			// Reuse the RGB product, retaining all three additions in order.
+			vfloat uncor_rgb_param = data_r * l_uncor_bs0;
+			vfloat uncor_param = uncor_rgb_param
+			                   + uncor_rgb_param
+			                   + uncor_rgb_param
+			                   + (data_a * l_uncor_bs3);
+
+			uncor_loparamv = min(uncor_param, uncor_loparamv);
+			uncor_hiparamv = max(uncor_param, uncor_hiparamv);
+
+			vfloat uncor_dist0 = (l_uncor_amod0 - data_r)
+			                   + (uncor_param * l_uncor_bs0);
+			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
+			                   + (uncor_param * l_uncor_bs3);
+
+			// Channel weights may differ, even though the RGB residuals match.
+			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
+			                 + (ew_g * uncor_dist0 * uncor_dist0)
+			                 + (ew_b * uncor_dist0 * uncor_dist0)
+			                 + (ew_a * uncor_dist3 * uncor_dist3);
+
+			haccumulate(uncor_errorsumv, uncor_err, mask);
+
+			vfloat samec_rgb_param = data_r * l_samec_bs0;
+			vfloat samec_param = samec_rgb_param
+			                   + samec_rgb_param
+			                   + samec_rgb_param
+			                   + (data_a * l_samec_bs3);
+
+			vfloat samec_dist0 = samec_param * l_samec_bs0 - data_r;
+			vfloat samec_dist3 = samec_param * l_samec_bs3 - data_a;
+
+			vfloat samec_err = (ew_r * samec_dist0 * samec_dist0)
+			                 + (ew_g * samec_dist0 * samec_dist0)
+			                 + (ew_b * samec_dist0 * samec_dist0)
+			                 + (ew_a * samec_dist3 * samec_dist3);
+
+			haccumulate(samec_errorsumv, samec_err, mask);
+			lane_ids += vint(ASTCENC_SIMD_WIDTH);
+		}
+
+		float uncor_linelen = hmax_s(uncor_hiparamv) - hmin_s(uncor_loparamv);
+		line_lengths[partition] = astc::max(uncor_linelen, 1e-7f);
+	}
+
+	uncor_error = hadd_s(uncor_errorsumv);
+	samec_error = hadd_s(samec_errorsumv);
+}
+
+/* See header for documentation. */
 void compute_error_squared_rgb(
 	const partition_info& pi,
 	const image_block& blk,

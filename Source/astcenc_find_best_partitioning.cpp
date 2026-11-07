@@ -639,13 +639,27 @@ unsigned int find_best_partition_candidates(
 			float uncor_error = 0.0f;
 			float samec_error = 0.0f;
 
-			compute_error_squared_rgba(pi,
-			                           blk,
-			                           uncor_plines,
-			                           samec_plines,
-			                           line_lengths,
-			                           uncor_error,
-			                           samec_error);
+			// Grayscale partition metrics preserve identical RGB line coefficients.
+			if (blk.grayscale)
+			{
+				compute_error_squared_rgba_grayscale(pi,
+				                                     blk,
+				                                     uncor_plines,
+				                                     samec_plines,
+				                                     line_lengths,
+				                                     uncor_error,
+				                                     samec_error);
+			}
+			else
+			{
+				compute_error_squared_rgba(pi,
+				                           blk,
+				                           uncor_plines,
+				                           samec_plines,
+				                           line_lengths,
+				                           uncor_error,
+				                           samec_error);
+			}
 
 			// Compute an estimate of error introduced by weight quantization imprecision.
 			// This error is computed as follows, for each partition
