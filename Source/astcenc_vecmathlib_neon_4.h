@@ -625,6 +625,7 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
  */
 ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* data)
 {
+#if ASTCENC_SVE == 0
 	alignas(16) uint8_t shuf[16] {
 		0, 4, 8, 12,   0, 0, 0, 0,   0, 0, 0, 0,   0, 0, 0, 0
 	};
@@ -632,6 +633,11 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* data)
 	int8x16_t av = vreinterpretq_s8_s32(a.m);
 	a = vint4(vreinterpretq_s32_s8(vqtbl1q_s8(av, idx)));
 	store_nbytes(a, data);
+#else
+	// Limit the store to the four NEON lanes, even on wider SVE targets
+	svuint32_t av = svset_neonq_u32(svundef_u32(), vreinterpretq_u32_s32(a.m));
+	svst1b_u32(svptrue_pat_b32(SV_VL4), data, av);
+#endif
 }
 
 /**

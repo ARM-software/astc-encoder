@@ -56,6 +56,8 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     quantization level to skip unreachable high-precision combinations.
   * **Optimization:** Use NEON combined shift-and-insert for byte packing in
     `interleave_rgba8()`.
+  * **Optimization:** Use SVE narrowing stores in the 4-wide implementation of
+    `pack_and_store_low_bytes()`.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
