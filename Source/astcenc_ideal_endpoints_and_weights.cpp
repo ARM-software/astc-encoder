@@ -1540,6 +1540,30 @@ void recompute_ideal_colors_2planes(
 	vfloat4& rgbo_vector,
 	int plane2_component
 ) {
+	if (blk.is_la_block())
+	{
+		ASTCENC_ALIGNAS float weights1[BLOCK_MAX_TEXELS];
+		ASTCENC_ALIGNAS float weights2[BLOCK_MAX_TEXELS];
+		unpack_refit_weights(di, dec_weights_uquant_plane1, weights1);
+		unpack_refit_weights(di, dec_weights_uquant_plane2, weights2);
+
+		// Select the weight plane for each active channel
+		const float* weights_r = weights1;
+		const float* weights_a = weights1;
+		if (plane2_component == 0)
+		{
+			weights_r = weights2;
+		}
+		else if (plane2_component == 3)
+		{
+			weights_a = weights2;
+		}
+
+		recompute_ideal_colors_ra(blk, bsd.get_partition_info(1, 0), weights_r, weights_a,
+		                          ep, &rgbs_vector);
+		return;
+	}
+
 	unsigned int weight_count = di.weight_count;
 	unsigned int total_texel_count = blk.texel_count;
 
