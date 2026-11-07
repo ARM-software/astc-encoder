@@ -775,6 +775,35 @@ astcenc_error astcenc_context_alloc(
 	astcenc_contexti* ctx = &ctxo->context;
 	ctx->thread_count = thread_count;
 	ctx->config = *configp;
+
+	// Generate an active mask so we can optimize based on zero-weight channels
+	if (has_parent)
+	{
+		ctx->active_channel_mask = parent_context->context.active_channel_mask;
+	}
+	else
+	{
+		ctx->active_channel_mask = 0;
+		if (config.cw_r_weight > 0.0f)
+		{
+			ctx->active_channel_mask |= 1u;
+		}
+
+		if (config.cw_g_weight > 0.0f)
+		{
+			ctx->active_channel_mask |= 2u;
+		}
+
+		if (config.cw_b_weight > 0.0f)
+		{
+			ctx->active_channel_mask |= 4u;
+		}
+
+		if (config.cw_a_weight > 0.0f)
+		{
+			ctx->active_channel_mask |= 8u;
+		}
+	}
 	ctx->working_buffers = nullptr;
 
 	// These are allocated per-compress, as they depend on image size
@@ -930,6 +959,17 @@ static void compress_image(
 	size_t plane_blocks = blocks_x * blocks_y;
 
 	blk.decode_unorm8 = ctxo.context.config.flags & ASTCENC_FLG_USE_DECODE_UNORM8;
+
+	// The L+A refit skips the RGB+offset endpoint calculation needed for HDR mode 7
+	bool is_ldr = ctx.config.profile == ASTCENC_PRF_LDR || ctx.config.profile == ASTCENC_PRF_LDR_SRGB;
+	if (is_ldr)
+	{
+		blk.active_channel_mask = ctx.active_channel_mask;
+	}
+	else
+	{
+		blk.active_channel_mask = 0xF;
+	}
 
 	// Populate the block channel weights
 	blk.channel_weight = vfloat4(ctx.config.cw_r_weight,

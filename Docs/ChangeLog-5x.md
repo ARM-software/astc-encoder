@@ -47,6 +47,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
   * **Optimization:** Specialize RGBA partition-error scoring for blocks with
     identical `RGB` components, reusing channel gathers, projection products,
     and residual calculations while preserving channel weights and error sums.
+  * **Optimization:** Specialize endpoint refitting for LDR blocks with identical
+    `RGB` components and zero requested `GB` weights, fitting only `R` and `A`.
+    This improves normal map compression performance.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
