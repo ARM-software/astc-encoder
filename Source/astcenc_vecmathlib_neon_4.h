@@ -1142,6 +1142,9 @@ ASTCENC_SIMD_INLINE int popcount(uint64_t v)
 
 #define ASTCENC_USE_NATIVE_POPCOUNT_XOR 1
 
+// SVE-256 provides these helpers in astcenc_vecmathlib_sve_8.h
+#if ASTCENC_SVE != 8
+
 /**
  * @brief Count differing bits against four 64-bit values.
  *
@@ -1174,5 +1177,22 @@ ASTCENC_SIMD_INLINE vint4 popcount_xor(uint64_t a, const uint64_t b[4])
 
 	return vint4(vreinterpretq_s32_u32(counts));
 }
+
+/**
+ * @brief Count differing bits against three 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The three values to compare against.
+ *
+ * @return The first three lanes contain counts in the range 0 to 64.
+ *         The last lane is unused.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor_3(uint64_t a, const uint64_t b[3])
+{
+	uint64_t padded_b[4] { b[0], b[1], b[2], 0 };
+	return popcount_xor(a, padded_b);
+}
+
+#endif
 
 #endif // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED

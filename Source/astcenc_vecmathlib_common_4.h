@@ -428,6 +428,20 @@ ASTCENC_SIMD_INLINE vint4 popcount_xor(uint64_t a, const uint64_t b[4])
 	             popcount(a ^ b[2]), popcount(a ^ b[3]));
 }
 
+/**
+ * @brief Count differing bits against three 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The three values to compare against.
+ *
+ * @return The first three lanes contain counts in the range 0 to 64.
+ *         The last lane is unused.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor_3(uint64_t a, const uint64_t b[3])
+{
+	return vint4(popcount(a ^ b[0]), popcount(a ^ b[1]), popcount(a ^ b[2]), 0);
+}
+
 #endif
 
 /**

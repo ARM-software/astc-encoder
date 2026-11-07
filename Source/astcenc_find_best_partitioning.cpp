@@ -274,20 +274,17 @@ static inline uint8_t partition_mismatch3(
 	const uint64_t a[3],
 	const uint64_t b[3]
 ) {
-	// Pad the last lane so the batch cannot read beyond the three input masks
-	uint64_t padded_b[4] { b[0], b[1], b[2], 0 };
-
-	vint4 counts0 = popcount_xor(a[0], padded_b);
+	vint4 counts0 = popcount_xor_3(a[0], b);
 	int p00 = counts0.lane<0>();
 	int p01 = counts0.lane<1>();
 	int p02 = counts0.lane<2>();
 
-	vint4 counts1 = popcount_xor(a[1], padded_b);
+	vint4 counts1 = popcount_xor_3(a[1], b);
 	int p10 = counts1.lane<0>();
 	int p11 = counts1.lane<1>();
 	int p12 = counts1.lane<2>();
 
-	vint4 counts2 = popcount_xor(a[2], padded_b);
+	vint4 counts2 = popcount_xor_3(a[2], b);
 	int p20 = counts2.lane<0>();
 	int p21 = counts2.lane<1>();
 	int p22 = counts2.lane<2>();

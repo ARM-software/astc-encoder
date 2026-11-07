@@ -962,4 +962,45 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 ma
 	svst1_s32(mask.m, reinterpret_cast<int32_t*>(base), data.m);
 }
 
+/**
+ * @brief Count differing bits against four 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The four values to compare against.
+ *
+ * @return Per-lane counts of differing bits, in the range 0 to 64.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor(uint64_t a, const uint64_t b[4])
+{
+	svbool_t pg = svptrue_pat_b64(SV_VL4);
+	svuint64_t bits = sveor_n_u64_x(pg, svld1_u64(pg, b), a);
+	svuint64_t counts = svcnt_u64_x(pg, bits);
+
+	// Compact the four 64-bit counts into the low four 32-bit lanes
+	svuint32_t words = svreinterpret_u32_u64(counts);
+	svuint32_t packed = svuzp1_u32(words, words);
+	return vint4(svget_neonq_s32(svreinterpret_s32_u32(packed)));
+}
+
+/**
+ * @brief Count differing bits against three 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The three values to compare against.
+ *
+ * @return The first three lanes contain counts in the range 0 to 64.
+ *         The last lane is unused.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor_3(uint64_t a, const uint64_t b[3])
+{
+	// Load only the three input masks; the fourth result lane is unused
+	svbool_t pg = svptrue_pat_b64(SV_VL3);
+	svuint64_t bits = sveor_n_u64_x(pg, svld1_u64(pg, b), a);
+	svuint64_t counts = svcnt_u64_x(pg, bits);
+
+	svuint32_t words = svreinterpret_u32_u64(counts);
+	svuint32_t packed = svuzp1_u32(words, words);
+	return vint4(svget_neonq_s32(svreinterpret_s32_u32(packed)));
+}
+
 #endif // #ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED

@@ -54,6 +54,7 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     endpoint-format combinations that exceed the allowed endpoint integer limit.
   * **Optimization:** Batch Arm population counts when scoring three- and
     four-partition candidates, preserving the existing mismatch scores.
+    SVE-256 uses full-width batches and masked three-element loads.
   * **Optimization:** Split multi-partition endpoint-format searches by
     quantization level to skip unreachable high-precision combinations.
   * **Optimization:** Use NEON combined shift-and-insert for byte packing in

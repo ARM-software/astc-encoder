@@ -2066,6 +2066,20 @@ TEST(SuiteVint4, popcount_xor)
 	EXPECT_EQ(result.lane<3>(), 31);
 }
 
+/** @brief Test batched distances from exactly three 64-bit inputs. */
+TEST(SuiteVint4, popcount_xor_3)
+{
+	uint64_t values[3] {
+		0x0123456789ABCDEFULL, 0xFEDCBA9876543210ULL,
+		0x8123456709ABCDEFULL
+	};
+
+	vint4 result = popcount_xor_3(0x0123456789ABCDEFULL, values);
+	EXPECT_EQ(result.lane<0>(), 0);
+	EXPECT_EQ(result.lane<1>(), 64);
+	EXPECT_EQ(result.lane<2>(), 2);
+}
+
 /** @brief Test vint4 rgba byte interleave. */
 TEST(SuiteVint4, interleave_rgba8)
 {

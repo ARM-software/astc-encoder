@@ -40,3 +40,4 @@ Test/Images/Kodak*/**/*.png
 
 # Do not ignore workflows
 !.github/workflows/
+!.github/workflows/*.yaml
