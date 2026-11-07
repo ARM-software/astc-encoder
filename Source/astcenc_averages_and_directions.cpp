@@ -384,8 +384,74 @@ static void compute_partition_averages_rgba(
 	}
 }
 
-/* See header for documentation. */
-void compute_avgs_and_dirs_4_comp(
+/**
+ * @brief Compute RGBA partition averages and directions for grayscale RGB.
+ *
+ * Skips computation of G and B, given we know it will be the same as R.
+ *
+ * @param      pi         The partitioning to use.
+ * @param      blk        The image block color data to process.
+ * @param[out] pm         The partition averages and directions.
+ */
+static void compute_avgs_and_dirs_4_comp_grayscale(
+	const partition_info& pi,
+	const image_block& blk,
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
+) {
+	size_t partition_count = pi.partition_count;
+	promise(partition_count > 0);
+
+	// Pre-compute partition_averages
+	vfloat4 partition_averages[BLOCK_MAX_PARTITIONS];
+	compute_partition_averages_rgba(pi, blk, partition_averages);
+
+	for (size_t partition = 0; partition < partition_count; partition++)
+	{
+		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
+		size_t texel_count = pi.partition_texel_count[partition];
+		promise(texel_count > 0);
+
+		vfloat4 average = partition_averages[partition];
+		pm[partition].avg = average;
+
+		vfloat4 sum_xp = vfloat4::zero();
+		vfloat4 sum_wp = vfloat4::zero();
+
+		for (size_t i = 0; i < texel_count; i++)
+		{
+			unsigned int iwt = texel_indexes[i];
+			vfloat4 texel_datum = blk.texel(iwt);
+			texel_datum = texel_datum - average;
+
+			vfloat4 zero = vfloat4::zero();
+
+			vmask4 tdm0 = texel_datum.swz<0,0,0,0>() > zero;
+			sum_xp += select(zero, texel_datum, tdm0);
+
+			vmask4 tdm3 = texel_datum.swz<3,3,3,3>() > zero;
+			sum_wp += select(zero, texel_datum, tdm3);
+		}
+
+		vfloat4 prod_xp = dot(sum_xp, sum_xp);
+		vfloat4 prod_wp = dot(sum_wp, sum_wp);
+
+		vfloat4 best_vector = sum_xp;
+
+		vmask4 mask = prod_wp > prod_xp;
+		best_vector = select(best_vector, sum_wp, mask);
+
+		pm[partition].dir = best_vector;
+	}
+}
+
+/**
+ * @brief Compute RGBA partition averages and directions for general RGBA data.
+ *
+ * @param      pi         The partitioning to use.
+ * @param      blk        The image block color data to process.
+ * @param[out] pm         The partition averages and directions.
+ */
+static void compute_avgs_and_dirs_4_comp_general(
 	const partition_info& pi,
 	const image_block& blk,
 	partition_metrics pm[BLOCK_MAX_PARTITIONS]
@@ -452,6 +518,22 @@ void compute_avgs_and_dirs_4_comp(
 		best_vector = select(best_vector, sum_wp, mask);
 
 		pm[partition].dir = best_vector;
+	}
+}
+
+/* See header for documentation. */
+void compute_avgs_and_dirs_4_comp(
+	const partition_info& pi,
+	const image_block& blk,
+	partition_metrics pm[BLOCK_MAX_PARTITIONS]
+) {
+	if (blk.grayscale)
+	{
+		compute_avgs_and_dirs_4_comp_grayscale(pi, blk, pm);
+	}
+	else
+	{
+		compute_avgs_and_dirs_4_comp_general(pi, blk, pm);
 	}
 }
 
