@@ -55,10 +55,11 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Run system tests
-        # Disable SVE testing for now
         run: |
           python ./Test/astc_test_functional.py --encoder neon
           python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_functional.py --encoder sve_128
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-x64:
     name: Ubuntu x64
