@@ -41,6 +41,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
   * **Optimization:** Specialize `compute_avgs_and_dirs_4_comp()` for blocks
     with identical `RGB` components, skipping duplicate `GB` calculations.
     This significantly improves normal map compression performance.
+  * **Optimization:** Specialize `compute_partition_averages_rgba()` for blocks
+    with identical `RGB` components, skipping duplicate `GB` calculations.
+    This significantly improves normal map compression performance.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
