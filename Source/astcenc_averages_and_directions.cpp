@@ -563,7 +563,9 @@ static void compute_avgs_and_dirs_4_comp_grayscale(
 		for (size_t i = 0; i < texel_count; i++)
 		{
 			unsigned int iwt = texel_indexes[i];
-			vfloat4 texel_datum = blk.texel(iwt);
+			float data_r = blk.data_r[iwt];
+			float data_a = blk.data_a[iwt];
+			vfloat4 texel_datum(data_r, data_r, data_r, data_a);
 			texel_datum = texel_datum - average;
 
 			vfloat4 zero = vfloat4::zero();
