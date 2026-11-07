@@ -1,0 +1,72 @@
+name: Build and test SVE-256
+run-name: Build and test SVE-256 PR${{ github.event.number }}
+
+# Separate GitHub Actions workflow to run the SVE-256 tests only when the vector
+# library changes, because tests rely on QEMU which is much slower than the
+# other ISAs where we can test natively.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Source/astcenc_vecmathlib*.h'
+      - 'Source/UnitTest/test_simd.cpp'
+      - '.github/workflows/build_test_sve256.yaml'
+
+jobs:
+  build-ubuntu-sve256-clang:
+    name: Ubuntu sve256 Clang
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+      CFLAGS: --target=aarch64-linux-gnu
+      CXX: clang++-18
+      CXXFLAGS: --target=aarch64-linux-gnu
+      QEMU_CPU: max,sve128=on,sve256=on,sve-default-vector-length=32
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install ImageMagick
+        run: sudo apt-get install -y imagemagick
+
+      - name: Install Clang and AArch64 runtime libraries
+        run: sudo apt-get install -y clang-18 lld-18 g++-aarch64-linux-gnu
+
+      - name: Install AArch64 qemu
+        run: sudo apt-get install -y qemu-user-static
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Get Python modules
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Build release
+        run: |
+          cmake -S . -B build_rel -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD" \
+            -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=aarch64 \
+            -DCMAKE_EXE_LINKER_FLAGS="-static -fuse-ld=lld-18" \
+            -DCMAKE_CROSSCOMPILING_EMULATOR=qemu-aarch64-static \
+            -DASTCENC_UNITTEST=ON -DASTCENC_ISA_SVE_256=ON
+          cmake --build build_rel --target install -j4
+
+      - name: Run unit tests
+        run: ctest -R '^test-unit-sve_256$' --output-on-failure --no-tests=error
+        working-directory: build_rel
+
+      - name: Run Small image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder sve_256 --test-set Small
