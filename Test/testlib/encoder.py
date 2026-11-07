@@ -365,6 +365,8 @@ class Encoder2xRel(Encoder2x):
         binary = 'astcenc'
         post = f'-{variant}' if variant != 'universal' else ''
         ext = '.exe' if os.name == 'nt' else ''
-        binary_path = Path('./') / 'Binaries' / f'{binary}{post}{ext}'
+        binary_path = (
+            Path('./') / 'Binaries' / version / f'{binary}{post}{ext}'
+        )
 
         super().__init__(variant, binary_path)
