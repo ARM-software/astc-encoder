@@ -346,8 +346,8 @@ def parse_command_line():
     reference_encoders = [
         'rebuild',
 
-        'ref-5.0-neon',
-        'ref-5.0-sse2', 'ref-5.0-sse4.1', 'ref-5.0-avx2',
+        'ref-5.7-neon',
+        'ref-5.7-sse2', 'ref-5.7-sse4.1', 'ref-5.7-avx2',
 
         'ref-main-neon', 'ref-main-sve_256', 'ref-main-sve_128',
         'ref-main-sse2', 'ref-main-sse4.1', 'ref-main-avx2'

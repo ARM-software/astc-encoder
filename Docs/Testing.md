@@ -85,12 +85,13 @@ local machine, in particular for measuring performance improvements.
 To build new reference CSVs for an official release, checkout and build a
 release build of the baseline release you want to compare against and place it
 in to the `./Binaries/<version>/` directory, where `<version>` must be the
-`major.minor` number of the release, e.g. `5.3`.
+`major.minor` identifier used by the test script, e.g. `5.7`. For AVX2, place
+the binary at `./Binaries/5.7/astcenc-avx2` (`astcenc-avx2.exe` on Windows).
 
 Once this is done, run the command (e.g.):
 
 ```sh
-python3 ./Test/astc_test_image.py --encoder ref-5.3-avx2 ...
+python3 ./Test/astc_test_image.py --encoder ref-5.7-avx2 --reference rebuild ...
 ```
 
 ... for whichever test set you want to build a reference for. This can take
