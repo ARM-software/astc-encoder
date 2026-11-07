@@ -357,13 +357,15 @@ def parse_command_line():
     test_encoders = [
         'none', 'native', 'universal',
         'neon', 'sve_256', 'sve_128',
-        'sse2', 'sse4.1', 'avx2'
+        'sse2', 'sse4.1', 'avx2', 'avx512'
     ]
 
     test_encoders_arm64 = [
         'neon', 'sve_256', 'sve_128'
     ]
 
+    # AVX-512 stays opt-in (--encoder avx512). all-x86 is what the x64 CI
+    # jobs run, and those jobs do not build astcenc-avx512.
     test_encoders_x86 = [
         'sse2', 'sse4.1', 'avx2'
     ]

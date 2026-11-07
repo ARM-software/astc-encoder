@@ -47,10 +47,11 @@ static vfloat bilinear_infill_vla(
 	const uint8_t* weight_idx3 = di.texel_weights_tr[3] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
-	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
-	vfloat weight_val2 = gatherf_byte_inds<vfloat>(weights, weight_idx2);
-	vfloat weight_val3 = gatherf_byte_inds<vfloat>(weights, weight_idx3);
+	vgatherf_table wt = vgatherf_load(weights, di.weight_count);
+	vfloat weight_val0 = gatherf(wt, weight_idx0);
+	vfloat weight_val1 = gatherf(wt, weight_idx1);
+	vfloat weight_val2 = gatherf(wt, weight_idx2);
+	vfloat weight_val3 = gatherf(wt, weight_idx3);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -85,8 +86,9 @@ static vfloat bilinear_infill_vla_2(
 	const uint8_t* weight_idx1 = di.texel_weights_tr[1] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
-	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
+	vgatherf_table wt = vgatherf_load(weights, di.weight_count);
+	vfloat weight_val0 = gatherf(wt, weight_idx0);
+	vfloat weight_val1 = gatherf(wt, weight_idx1);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -873,6 +875,9 @@ void compute_ideal_weights_for_decimation(
 	// Compute an initial average for each decimated weight
 	bool constant_wes = ei.is_constant_weight_error_scale;
 	vfloat weight_error_scale(ei.weight_error_scale[0]);
+	vgatherf_table wtab = vgatherf_load(ei.weights, texel_count);
+	vgatherf_table etab = constant_wes ? wtab
+	                    : vgatherf_load(ei.weight_error_scale, texel_count);
 
 	// This overshoots - this is OK as we initialize the array tails in the
 	// decimation table structures to safe values ...
@@ -894,13 +899,13 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf(etab, texel);
 			}
 
 			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight += contrib_weight;
-			initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * contrib_weight;
+			initial_weight += gatherf(wtab, texel) * contrib_weight;
 		}
 
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
@@ -932,6 +937,8 @@ void compute_ideal_weights_for_decimation(
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -WEIGHTS_TEXEL_SUM;
 
+	vgatherf_table dtab = vgatherf_load(infilled_weight_diffs, texel_count);
+
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight_val = loada(dec_weight_ideal_value + i);
@@ -953,11 +960,11 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf(etab, texel);
 			}
 
 			vfloat scale = weight_error_scale * contrib_weight;
-			vfloat weight_diff = gatherf_byte_inds<vfloat>(infilled_weight_diffs, texel);
+			vfloat weight_diff = gatherf(dtab, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += weight_diff * scale;
