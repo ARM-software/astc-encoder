@@ -1075,7 +1075,10 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
-	return r + lsl<8>(g) + lsl<16>(b) + lsl<24>(a);
+	// Insert each channel above the already packed low bytes
+	int32x4_t rg = vsliq_n_s32(r.m, g.m, 8);
+	int32x4_t rgb = vsliq_n_s32(rg, b.m, 16);
+	return vint4(vsliq_n_s32(rgb, a.m, 24));
 }
 
 #define ASTCENC_USE_NATIVE_STORE_LANE 1

@@ -54,6 +54,8 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     endpoint-format combinations that exceed the allowed endpoint integer limit.
   * **Optimization:** Split multi-partition endpoint-format searches by
     quantization level to skip unreachable high-precision combinations.
+  * **Optimization:** Use NEON combined shift-and-insert for byte packing in
+    `interleave_rgba8()`.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
