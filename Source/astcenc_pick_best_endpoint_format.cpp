@@ -39,6 +39,16 @@
  *   - If we use HDR endpoints the quantization error is higher.
  *
  * Apart from these effects, we assume the error is proportional to the quantization step size.
+ *
+ * ASTC permits at most 18 encoded endpoint integers per block, independent of the available bit
+ * budget. We count these as at most nine integer pairs; each pair is two scalar integers, not two
+ * complete endpoint colors. Endpoint class c (0 to 3) use c + 1 pairs.
+ *
+ * Endpoint classes across partitions must be the same or differ by at most one. If any partition
+ * uses class 3 (four pairs), the other partitions must use at least class 2 (three pairs). This
+ * requires at least 4 + 3 + 3 = 10 pairs for three partitions, or 4 + 3 + 3 + 3 = 13 pairs for four
+ * partitions. Both exceed the nine-pair limit, so we can exploit this to restrict how many
+ * endpoint formats we check as we know statically that they are not reachable.
  */
 
 
@@ -842,6 +852,9 @@ static float two_partitions_find_best_combination_for_bitcount(
 /**
  * @brief For 3 partitions compute the best format combinations for every pair of quant mode and integer count.
  *
+ * Three partitions use three to nine integer pairs in total. The combined tables are indexed by
+ * the total pair count minus three, so seven entries cover all valid counts.
+ *
  * @param      best_error             The best error for a single endpoint quant level and integer count.
  * @param      best_format            The best format for a single endpoint quant level and integer count.
  * @param[out] best_combined_error    The best combined error pairings for the 3 partitions.
@@ -850,24 +863,26 @@ static float two_partitions_find_best_combination_for_bitcount(
 static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 	const float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
 	const uint8_t best_format[3][21][4],
-	float best_combined_error[21][10],
-	uint8_t best_combined_format[21][10][3]
+	float best_combined_error[21][7],
+	uint8_t best_combined_format[21][7][3]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
-		for (int j = 0; j < 10; j++)
+		for (int j = 0; j < 7; j++)
 		{
 			best_combined_error[i][j] = ERROR_CALC_DEFAULT;
 		}
 	}
 
+	// Only classes 0 to 2 are valid; class 3 needs at least 4 + 3 + 3 = 10 pairs
+	// The remaining classes use at most 3 + 3 + 3 = 9 pairs, so no further count limit is needed
 	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
 	{
-		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -878,7 +893,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 
 				float error01 = error0 + best_error[1][quant][j];
 
-				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
+				for (int k = 0; k < 3; k++)	// integer-count for third endpoint-pair
 				{
 					int low3 = astc::min(k, low2);
 					int high3 = astc::max(k, high2);
@@ -916,8 +931,8 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
  * @return The output error for the best pairing.
  */
 static float three_partitions_find_best_combination_for_bitcount(
-	const float best_combined_error[21][10],
-	const uint8_t best_combined_format[21][10][3],
+	const float best_combined_error[21][7],
+	const uint8_t best_combined_format[21][7][3],
 	int bits_available,
 	uint8_t& best_quant_level,
 	uint8_t& best_quant_level_mod,
@@ -972,6 +987,9 @@ static float three_partitions_find_best_combination_for_bitcount(
 /**
  * @brief For 4 partitions compute the best format combinations for every pair of quant mode and integer count.
  *
+ * Four partitions use four to nine integer pairs in total. The combined tables are indexed by
+ * the total pair count minus four, so six entries cover all valid counts.
+ *
  * @param      best_error             The best error for a single endpoint quant level and integer count.
  * @param      best_format            The best format for a single endpoint quant level and integer count.
  * @param[out] best_combined_error    The best combined error pairings for the 4 partitions.
@@ -980,24 +998,25 @@ static float three_partitions_find_best_combination_for_bitcount(
 static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 	const float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
 	const uint8_t best_format[4][21][4],
-	float best_combined_error[21][13],
-	uint8_t best_combined_format[21][13][4]
+	float best_combined_error[21][6],
+	uint8_t best_combined_format[21][6][4]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
 	{
-		for (int j = 0; j < 13; j++)
+		for (int j = 0; j < 6; j++)
 		{
 			best_combined_error[i][j] = ERROR_CALC_DEFAULT;
 		}
 	}
 
+	// Only classes 0 to 2 are valid; class 3 needs at least 4 + 3 + 3 + 3 = 13 pairs
 	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
 	{
-		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -1008,7 +1027,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 				float error01 = error0 + best_error[1][quant][j];
 
-				for (int k = 0; k < 4; k++)	// integer-count for third endpoint-pair
+				for (int k = 0; k < 3; k++)	// integer-count for third endpoint-pair
 				{
 					int low3 = astc::min(k, low2);
 					int high3 = astc::max(k, high2);
@@ -1019,7 +1038,10 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 					float error012 = error01 + best_error[2][quant][k];
 
-					for (int l = 0; l < 4; l++)	// integer-count for fourth endpoint-pair
+					// Each class index adds pairs beyond the four base pairs
+					// 4 + i + j + k + l <= 9 gives the exclusive bound l < 6 - i - j - k
+					int l_limit = astc::min(3, 6 - i - j - k);
+					for (int l = 0; l < l_limit; l++)	// integer-count for fourth endpoint-pair
 					{
 						int low4 = astc::min(l, low3);
 						int high4 = astc::max(l, high3);
@@ -1059,8 +1081,8 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
  * @return best_error The output error for the best pairing.
  */
 static float four_partitions_find_best_combination_for_bitcount(
-	const float best_combined_error[21][13],
-	const uint8_t best_combined_format[21][13][4],
+	const float best_combined_error[21][6],
+	const uint8_t best_combined_format[21][6][4],
 	int bits_available,
 	uint8_t& best_quant_level,
 	uint8_t& best_quant_level_mod,
@@ -1239,8 +1261,8 @@ unsigned int compute_ideal_endpoint_formats(
 	// The block contains 3 partitions
 	else if (partition_count == 3)
 	{
-		float combined_best_error[21][10];
-		uint8_t formats_of_choice[21][10][3];
+		float combined_best_error[21][7];
+		uint8_t formats_of_choice[21][7][3];
 
 		three_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
@@ -1273,8 +1295,8 @@ unsigned int compute_ideal_endpoint_formats(
 	else // if (partition_count == 4)
 	{
 		assert(partition_count == 4);
-		float combined_best_error[21][13];
-		uint8_t formats_of_choice[21][13][4];
+		float combined_best_error[21][6];
+		uint8_t formats_of_choice[21][6][4];
 
 		four_partitions_find_best_combination_for_every_quantization_and_integer_count(
 		    best_error, format_of_choice, combined_best_error, formats_of_choice);
