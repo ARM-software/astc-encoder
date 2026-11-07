@@ -1554,6 +1554,30 @@ void compute_error_squared_rgba(
 	float& samec_error);
 
 /**
+ * @brief Compute RGBA projection errors for grayscale RGB data and lines.
+ *
+ * The block must have identical RGB components. The RGB components of each
+ * line's @c bs and @c amod coefficients must also be identical. Same chroma
+ * @c amod must be zero. Channel weights may differ and are applied separately.
+ *
+ * @param      pi              The partition info for the current trial.
+ * @param      blk             The grayscale image block color data.
+ * @param      uncor_plines    Processed uncorrelated partition lines.
+ * @param      samec_plines    Processed same chroma partition lines.
+ * @param[out] line_lengths    The length of each partition's projection.
+ * @param[out] uncor_error     The cumulative uncorrelated line error.
+ * @param[out] samec_error     The cumulative same chroma line error.
+ */
+void compute_error_squared_rgba_grayscale(
+	const partition_info& pi,
+	const image_block& blk,
+	const processed_line4 uncor_plines[BLOCK_MAX_PARTITIONS],
+	const processed_line4 samec_plines[BLOCK_MAX_PARTITIONS],
+	float line_lengths[BLOCK_MAX_PARTITIONS],
+	float& uncor_error,
+	float& samec_error);
+
+/**
  * @brief Find the best set of partitions to trial for a given block.
  *
  * On return the @c best_partitions list will contain the two best partition
