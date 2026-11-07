@@ -781,8 +781,26 @@ struct image_block
 	/** @brief The relative error significance of the color channels. */
 	vfloat4 channel_weight;
 
+	/**
+	 * @brief Requested active channels.
+	 *
+	 * Used to specialize LDR refits based on zero-weight channels. All channels are
+	 * marked active for HDR compression.
+	 */
+	unsigned int active_channel_mask { 0xF };
+
 	/** @brief Is this grayscale block where R == G == B for all texels? */
 	bool grayscale;
+
+	/**
+	 * @brief Test if this block supports the L+A specialization.
+	 *
+	 * @return True for grayscale RGB data with only R and A requested active.
+	 */
+	bool is_la_block() const
+	{
+		return active_channel_mask == 0x9 && grayscale;
+	}
 
 	/** @brief Is the eventual decode using decode_unorm8 rounding? */
 	bool decode_unorm8;
@@ -1217,6 +1235,9 @@ struct astcenc_contexti
 {
 	/** @brief The configuration this context was created with. */
 	astcenc_config config;
+
+	/** @brief The channels requested active before numerical weight floors are applied. */
+	unsigned int active_channel_mask;
 
 	/** @brief The thread count supported by this context. */
 	unsigned int thread_count;

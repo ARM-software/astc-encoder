@@ -1143,6 +1143,152 @@ static inline vfloat4 compute_rgbo_vector(
 	               dot_s(mat3, vect));
 }
 
+/**
+ * @brief Undecimate unquantized endpoint-refit weights into an aligned texel array.
+ *
+ * @param      di      The weight-grid decimation.
+ * @param      quant   The unquantized integer grid weights, with SIMD padding.
+ * @param[out] texel   The normalized per-texel weights, with SIMD padding.
+ */
+static void unpack_refit_weights(
+	const decimation_info& di,
+	const uint8_t* quant,
+	float* texel
+) {
+	ASTCENC_ALIGNAS float dec[BLOCK_MAX_WEIGHTS];
+	for (unsigned int i = 0; i < di.weight_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		storea(int_to_float(vint(quant + i)) * vfloat(1.0f / 64.0f), dec + i);
+	}
+
+	for (unsigned int i = 0; i < di.texel_count; i += ASTCENC_SIMD_WIDTH)
+	{
+		vfloat weight;
+		if (di.max_texel_weight_count == 1)
+		{
+			weight = loada(dec + i);
+		}
+		else if (di.max_texel_weight_count <= 2)
+		{
+			weight = bilinear_infill_vla_2(di, dec, i);
+		}
+		else
+		{
+			weight = bilinear_infill_vla(di, dec, i);
+		}
+
+		storea(weight, texel + i);
+	}
+}
+
+/**
+ * @brief Refit R/A endpoints without solving duplicate RGB components.
+ *
+ * Fixed positive channel weights cancel from each independent least-squares solve.
+ * Singular systems retain the incoming endpoints; constant weights use the mean.
+ * Fitted R is replicated into RGB for the endpoint encoders, including RGB-scale.
+ *
+ * @param         blk            The L+A image block.
+ * @param         pi             The partitioning to refit.
+ * @param         weights_r      The normalized per-texel R weights.
+ * @param         weights_a      The normalized per-texel A weights.
+ * @param[in,out] ep             The endpoints to refine.
+ * @param[out]    rgbs_vectors   The RGB-scale endpoint representation for each partition.
+ */
+static void recompute_ideal_colors_ra(
+	const image_block& blk,
+	const partition_info& pi,
+	const float* weights_r,
+	const float* weights_a,
+	endpoints& ep,
+	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS]
+) {
+	for (unsigned int partition = 0; partition < pi.partition_count; partition++)
+	{
+		unsigned int count = pi.partition_texel_count[partition];
+		promise(count > 0);
+
+		// Pack R/A into two lanes; fixed channel weights cancel from each endpoint solve
+		vfloat4 color_sum = vfloat4::zero();
+		vfloat4 weight_sum = vfloat4::zero();
+		vfloat4 weight_squared_sum = vfloat4::zero();
+		vfloat4 color_vec_y = vfloat4::zero();
+
+		vfloat4 wmin(1.0f);
+		vfloat4 wmax(0.0f);
+
+		float rmin = 1e10f;
+		float rmax = 0.0f;
+
+		for (unsigned int j = 0; j < count; j++)
+		{
+			unsigned int tix = pi.texels_of_partition[partition][j];
+			vfloat4 color = vfloat2(blk.data_r[tix], blk.data_a[tix]);
+			vfloat4 weight = vfloat2(weights_r[tix], weights_a[tix]);
+
+			// Accumulate sum(c), sum(w), sum(w*w), and sum(w*c)
+			color_sum += color;
+			weight_sum += weight;
+			weight_squared_sum += weight * weight;
+			color_vec_y += weight * color;
+
+			wmin = min(wmin, weight);
+			wmax = max(wmax, weight);
+			rmin = astc::min(rmin, color.lane<0>());
+			rmax = astc::max(rmax, color.lane<0>());
+		}
+
+		// For c = (1-w)*ep0 + w*ep1, form the same normal equations as the general refit
+		vfloat4 left_sum = vfloat4(static_cast<float>(count)) - 2.0f * weight_sum + weight_squared_sum;
+		vfloat4 middle_sum = weight_sum - weight_squared_sum;
+		vfloat4 right_sum = weight_squared_sum;
+		vfloat4 color_vec_x = color_sum - color_vec_y;
+
+		// Reject ill-conditioned systems using the same relative determinant test
+		vfloat4 color_det1 = left_sum * right_sum - middle_sum * middle_sum;
+		vfloat4 color_mss1 = left_sum * left_sum + 2.0f * middle_sum * middle_sum + right_sum * right_sum;
+		vmask4 det_mask = abs(color_det1) > color_mss1 * 1e-4f;
+
+		// Avoid division by zero in rejected systems and unused SIMD lanes
+		vfloat4 color_rdet1 = 1.0f / select(vfloat4(1.0f), color_det1, det_mask);
+
+		// Solve the 2x2 system for both endpoints, as in the general refit
+		vfloat4 fit0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
+		vfloat4 fit1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
+		vmask4 full_mask = det_mask & (fit0 == fit0) & (fit1 == fit1);
+
+		vmask4 constant = wmin >= wmax * 0.999f;
+		vfloat4 avg = color_sum / static_cast<float>(count);
+
+		// Keep the incoming endpoints when the analytic fit is invalid
+		vfloat4 ep0 = select(ep.endpt0[partition].swz<0, 3>(), fit0, full_mask);
+		vfloat4 ep1 = select(ep.endpt1[partition].swz<0, 3>(), fit1, full_mask);
+
+		// Equal weights cannot determine endpoint separation; use the mean for both colors
+		ep0 = select(ep0, avg, constant & (avg == avg));
+		ep1 = select(ep1, avg, constant & (avg == avg));
+
+		// Restore the duplicated RGB components for the endpoint encoders
+		ep.endpt0[partition] = ep0.swz<0, 0, 0, 1>();
+		ep.endpt1[partition] = ep1.swz<0, 0, 0, 1>();
+
+		// Initialize RGB-scale endpoints from the observed R range
+		float scale = astc::clamp1f(rmin / astc::max(rmax, 1e-10f));
+		if (constant.lane<0>())
+		{
+			scale = 1.0f;
+		}
+		else if (full_mask.lane<0>() && fit0.lane<0>() < fit1.lane<0>())
+		{
+			// For R=G=B, the RGB projection and scale solve reduce to the fitted R endpoints
+			rmax = fit1.lane<0>();
+			scale = fit0.lane<0>() / astc::max(rmax, 1e-10f);
+		}
+
+		rgbs_vectors[partition] = vfloat4(rmax, rmax, rmax, scale);
+	}
+}
+
 /* See header for documentation. */
 void recompute_ideal_colors_1plane(
 	const image_block& blk,
@@ -1153,6 +1299,14 @@ void recompute_ideal_colors_1plane(
 	vfloat4 rgbs_vectors[BLOCK_MAX_PARTITIONS],
 	vfloat4 rgbo_vectors[BLOCK_MAX_PARTITIONS]
 ) {
+	if (blk.is_la_block())
+	{
+		ASTCENC_ALIGNAS float weights[BLOCK_MAX_TEXELS];
+		unpack_refit_weights(di, dec_weights_uquant, weights);
+		recompute_ideal_colors_ra(blk, pi, weights, weights, ep, rgbs_vectors);
+		return;
+	}
+
 	unsigned int weight_count = di.weight_count;
 	unsigned int total_texel_count = blk.texel_count;
 	unsigned int partition_count = pi.partition_count;
@@ -1215,6 +1369,7 @@ void recompute_ideal_colors_1plane(
 			}
 		}
 
+		// Compute weighted color sums and the mean RGB direction for RGB-scale fitting
 		rgba_sum = rgba_sum * blk.channel_weight;
 		vfloat4 rgba_weight_sum = max(blk.channel_weight * static_cast<float>(texel_count), 1e-17f);
 		vfloat4 scale_dir = normalize((rgba_sum / rgba_weight_sum).swz<0, 1, 2>());
@@ -1246,10 +1401,12 @@ void recompute_ideal_colors_1plane(
 			wmin1 = astc::min(idx0, wmin1);
 			wmax1 = astc::max(idx0, wmax1);
 
+			// Record the observed range along the RGB-scale direction
 			float scale = dot3_s(scale_dir, rgba);
 			scale_min = astc::min(scale, scale_min);
 			scale_max = astc::max(scale, scale_max);
 
+			// Accumulate sum(w), sum(w*w), and sum(w*c) for the endpoint solve
 			weight_sum_s += idx0;
 			right_sum_s += idx0 * idx0;
 
@@ -1259,22 +1416,26 @@ void recompute_ideal_colors_1plane(
 
 			color_vec_y += cwiprod;
 
+			// Accumulate the right-hand side of the RGB-scale normal equations
 			scale_vec += vfloat2(om_idx0, idx0) * (scale * ls_weight);
 		}
 
+		// For c = (1-w)*ep0 + w*ep1, form the normal-equation matrix terms
 		float left_sum_s = static_cast<float>(texel_count) - 2.0f * weight_sum_s + right_sum_s;
 		float middle_sum_s = weight_sum_s - right_sum_s;
 		float weight_weight_sum_s = weight_sum_s + 1e-17f;
 
+		// Apply the color and RGB-scale weights to their respective matrix terms
 		vfloat4 left_sum   = vfloat4(left_sum_s) * color_weight;
 		vfloat4 middle_sum = vfloat4(middle_sum_s) * color_weight;
 		vfloat4 right_sum  = vfloat4(right_sum_s) * color_weight;
 		vfloat4 lmrs_sum   = vfloat3(left_sum_s, middle_sum_s, right_sum_s) * ls_weight;
 
+		// The color right-hand sides are sum(w*c) and sum((1-w)*c)
 		color_vec_y = color_vec_y * color_weight;
 		vfloat4 color_vec_x = rgba_sum - color_vec_y;
 
-		// Initialize the luminance and scale vectors with a reasonable default
+		// Initialize RGB-scale endpoints from the observed projected RGB range
 		float scalediv = scale_min / astc::max(scale_max, 1e-10f);
 		scalediv = astc::clamp1f(scalediv);
 
@@ -1284,8 +1445,7 @@ void recompute_ideal_colors_1plane(
 
 		if (wmin1 >= wmax1 * 0.999f)
 		{
-			// If all weights in the partition were equal, then just take average of all colors in
-			// the partition and use that as both endpoint colors
+			// Equal weights cannot determine endpoint separation; use the mean for both colors
 			vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 			vmask4 notnan_mask = avg == avg;
@@ -1296,14 +1456,14 @@ void recompute_ideal_colors_1plane(
 		}
 		else
 		{
-			// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
-			// set of texel weights and pixel colors
+			// Compute determinants and reciprocals for the color and RGB-scale systems
 			vfloat4 color_det1 = (left_sum * right_sum) - (middle_sum * middle_sum);
 			vfloat4 color_rdet1 = 1.0f / color_det1;
 
 			float ls_det1  = (lmrs_sum.lane<0>() * lmrs_sum.lane<2>()) - (lmrs_sum.lane<1>() * lmrs_sum.lane<1>());
 			float ls_rdet1 = 1.0f / ls_det1;
 
+			// Squared matrix norms set relative thresholds for rejecting ill-conditioned fits
 			vfloat4 color_mss1 = (left_sum * left_sum)
 			                   + (2.0f * middle_sum * middle_sum)
 			                   + (right_sum * right_sum);
@@ -1312,19 +1472,24 @@ void recompute_ideal_colors_1plane(
 			              + (2.0f * lmrs_sum.lane<1>() * lmrs_sum.lane<1>())
 			              + (lmrs_sum.lane<2>() * lmrs_sum.lane<2>());
 
+			// Solve the 2x2 system for both endpoints
 			vfloat4 ep0 = (right_sum * color_vec_x - middle_sum * color_vec_y) * color_rdet1;
 			vfloat4 ep1 = (left_sum * color_vec_y - middle_sum * color_vec_x) * color_rdet1;
 
+			// Reject ill-conditioned or NaN fits using the relative determinant test
 			vmask4 det_mask = abs(color_det1) > (color_mss1 * 1e-4f);
 			vmask4 notnan_mask = (ep0 == ep0) & (ep1 == ep1);
 			vmask4 full_mask = det_mask & notnan_mask;
 
+			// Keep the incoming endpoints when the analytic fit is invalid
 			ep.endpt0[i] = select(ep.endpt0[i], ep0, full_mask);
 			ep.endpt1[i] = select(ep.endpt1[i], ep1, full_mask);
 
+			// Solve the same system for endpoint magnitudes along the RGB-scale direction
 			float scale_ep0 = (lmrs_sum.lane<2>() * scale_vec.lane<0>() - lmrs_sum.lane<1>() * scale_vec.lane<1>()) * ls_rdet1;
 			float scale_ep1 = (lmrs_sum.lane<0>() * scale_vec.lane<1>() - lmrs_sum.lane<1>() * scale_vec.lane<0>()) * ls_rdet1;
 
+			// Keep the default scale endpoints unless the analytic fit is valid and increasing
 			if (fabsf(ls_det1) > (ls_mss1 * 1e-4f) && scale_ep0 == scale_ep0 && scale_ep1 == scale_ep1 && scale_ep0 < scale_ep1)
 			{
 				float scalediv2 = scale_ep0 / scale_ep1;
