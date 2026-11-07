@@ -1140,4 +1140,39 @@ ASTCENC_SIMD_INLINE int popcount(uint64_t v)
 	return static_cast<int>(vaddlv_u8(vcnt_u8(vcreate_u8(v))));
 }
 
+#define ASTCENC_USE_NATIVE_POPCOUNT_XOR 1
+
+/**
+ * @brief Count differing bits against four 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The four values to compare against.
+ *
+ * @return Per-lane counts of differing bits, in the range 0 to 64.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor(uint64_t a, const uint64_t b[4])
+{
+	uint64x2_t av = vdupq_n_u64(a);
+	uint64x2_t ab = veorq_u64(av, vld1q_u64(b));
+	uint64x2_t cd = veorq_u64(av, vld1q_u64(b + 2));
+
+#if ASTCENC_SVE != 0
+	// Count 64-bit elements, then pack the low 32 bits of each count
+	svuint64_t sab = svset_neonq_u64(svundef_u64(), ab);
+	svuint64_t scd = svset_neonq_u64(svundef_u64(), cd);
+	uint64x2_t count_ab = svget_neonq_u64(svcnt_u64_x(svptrue_pat_b64(SV_VL2), sab));
+	uint64x2_t count_cd = svget_neonq_u64(svcnt_u64_x(svptrue_pat_b64(SV_VL2), scd));
+	uint32x4_t counts = vuzp1q_u32(vreinterpretq_u32_u64(count_ab), vreinterpretq_u32_u64(count_cd));
+#else
+	// Sum byte counts into 32-bit words, then combine pairs for 64-bit masks
+	uint8x16_t bytes_ab = vcntq_u8(vreinterpretq_u8_u64(ab));
+	uint8x16_t bytes_cd = vcntq_u8(vreinterpretq_u8_u64(cd));
+	uint32x4_t words_ab = vpaddlq_u16(vpaddlq_u8(bytes_ab));
+	uint32x4_t words_cd = vpaddlq_u16(vpaddlq_u8(bytes_cd));
+	uint32x4_t counts = vpaddq_u32(words_ab, words_cd);
+#endif
+
+	return vint4(vreinterpretq_s32_u32(counts));
+}
+
 #endif // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED

@@ -52,6 +52,8 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     and `A`. This improves normal map compression performance.
   * **Optimization:** Avoid constructing three- and four-partition
     endpoint-format combinations that exceed the allowed endpoint integer limit.
+  * **Optimization:** Batch Arm population counts when scoring three- and
+    four-partition candidates, preserving the existing mismatch scores.
   * **Optimization:** Split multi-partition endpoint-format searches by
     quantization level to skip unreachable high-precision combinations.
   * **Optimization:** Use NEON combined shift-and-insert for byte packing in

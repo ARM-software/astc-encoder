@@ -412,6 +412,24 @@ static inline int popcount(uint64_t v)
 
 #endif
 
+#if !defined(ASTCENC_USE_NATIVE_POPCOUNT_XOR)
+
+/**
+ * @brief Count differing bits against four 64-bit values.
+ *
+ * @param a   The value to compare.
+ * @param b   The four values to compare against.
+ *
+ * @return Per-lane counts of differing bits, in the range 0 to 64.
+ */
+ASTCENC_SIMD_INLINE vint4 popcount_xor(uint64_t a, const uint64_t b[4])
+{
+	return vint4(popcount(a ^ b[0]), popcount(a ^ b[1]),
+	             popcount(a ^ b[2]), popcount(a ^ b[3]));
+}
+
+#endif
+
 /**
  * @brief Apply signed bit transfer.
  *

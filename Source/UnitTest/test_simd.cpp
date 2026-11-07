@@ -2045,6 +2045,27 @@ TEST(SuiteVint4, vtable4_64x8)
 	EXPECT_EQ(result.lane<3>(), 63);
 }
 
+/** @brief Test batched 64-bit Hamming distances and lane ordering. */
+TEST(SuiteVint4, popcount_xor)
+{
+	uint64_t values[4] {
+		0x0123456789ABCDEFULL, 0xFEDCBA9876543210ULL,
+		0x8123456789ABCDEFULL, 0x0123456709ABCDEFULL
+	};
+
+	vint4 result = popcount_xor(0x0123456789ABCDEFULL, values);
+	EXPECT_EQ(result.lane<0>(), 0);
+	EXPECT_EQ(result.lane<1>(), 64);
+	EXPECT_EQ(result.lane<2>(), 1);
+	EXPECT_EQ(result.lane<3>(), 1);
+
+	result = popcount_xor(0, values);
+	EXPECT_EQ(result.lane<0>(), 32);
+	EXPECT_EQ(result.lane<1>(), 32);
+	EXPECT_EQ(result.lane<2>(), 33);
+	EXPECT_EQ(result.lane<3>(), 31);
+}
+
 /** @brief Test vint4 rgba byte interleave. */
 TEST(SuiteVint4, interleave_rgba8)
 {
