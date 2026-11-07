@@ -735,6 +735,11 @@ static float one_partition_find_best_combination_for_bitcount(
 /**
  * @brief For 2 partitions compute the best format combinations for every pair of quant mode and integer count.
  *
+ * The endpoint budget is at most 111 - 4 - PARTITION_INDEX_BITS - BLOCK_MIN_WEIGHT_BITS = 73 bits.
+ * Class 3 needs at least 4 + 3 = 7 integer pairs, requiring 70 bits at QUANT_32 but 75 at QUANT_40.
+ * Class 2 needs at least 3 + 2 = 5 pairs, requiring 70 bits at QUANT_128 but 74 at QUANT_160.
+ * Split quantization into three ranges with fixed class limits of four, three, and two.
+ *
  * @param      best_error             The best error for a single endpoint quant level and integer count.
  * @param      best_format            The best format for a single endpoint quant level and integer count.
  * @param[out] best_combined_error    The best combined error pairings for the 2 partitions.
@@ -754,7 +759,8 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 		}
 	}
 
-	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
+	// Class 3 needs seven pairs, limiting it to QUANT_32 within the 73-bit budget
+	for (int quant = QUANT_6; quant <= QUANT_32; quant++)
 	{
 		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
 		{
@@ -769,6 +775,58 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 					continue;
 				}
 
+				int intcnt = i + j;
+				float error01 = error0 + best_error[1][quant][j];
+				error01 = astc::min(error01, 1e10f);
+				if (error01 <= best_combined_error[quant][intcnt])
+				{
+					best_combined_error[quant][intcnt] = error01;
+					best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
+					best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
+				}
+			}
+		}
+	}
+
+	// Class 2 needs five pairs, limiting it to QUANT_128 within the 73-bit budget
+	for (int quant = QUANT_40; quant <= QUANT_128; quant++)
+	{
+		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
+		{
+			float error0 = best_error[0][quant][i];
+
+			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
+			{
+				int low2 = astc::min(i, j);
+				int high2 = astc::max(i, j);
+				if ((high2 - low2) > 1)
+				{
+					continue;
+				}
+
+				int intcnt = i + j;
+				float error01 = error0 + best_error[1][quant][j];
+				error01 = astc::min(error01, 1e10f);
+				if (error01 <= best_combined_error[quant][intcnt])
+				{
+					best_combined_error[quant][intcnt] = error01;
+					best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
+					best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
+				}
+			}
+		}
+	}
+
+	// Above QUANT_128 only classes 0 and 1 fit
+	// Every combination has max_class - min_class <= 1, so no class-spread check is needed
+	for (int quant = QUANT_160; quant <= QUANT_256; quant++)
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			float error0 = best_error[0][quant][i];
+
+			for (int j = 0; j < 2; j++)
+			{
 				int intcnt = i + j;
 				float error01 = error0 + best_error[1][quant][j];
 				error01 = astc::min(error01, 1e10f);
@@ -855,6 +913,10 @@ static float two_partitions_find_best_combination_for_bitcount(
  * Three partitions use three to nine integer pairs in total. The combined tables are indexed by
  * the total pair count minus three, so seven entries cover all valid counts.
  *
+ * The endpoint budget is at most 108 - 4 - PARTITION_INDEX_BITS - BLOCK_MIN_WEIGHT_BITS = 70 bits.
+ * Class 2 needs at least 3 + 2 + 2 = 7 integer pairs, requiring 70 bits at QUANT_32 but 75 at
+ * QUANT_40. Higher quantization levels therefore only need the class 0 and 1 combinations.
+ *
  * @param      best_error             The best error for a single endpoint quant level and integer count.
  * @param      best_format            The best format for a single endpoint quant level and integer count.
  * @param[out] best_combined_error    The best combined error pairings for the 3 partitions.
@@ -876,7 +938,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 
 	// Only classes 0 to 2 are valid; class 3 needs at least 4 + 3 + 3 = 10 pairs
 	// The remaining classes use at most 3 + 3 + 3 = 9 pairs, so no further count limit is needed
-	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
+	for (int quant = QUANT_6; quant <= QUANT_32; quant++)
 	{
 		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
 		{
@@ -902,6 +964,36 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 						continue;
 					}
 
+					int intcnt = i + j + k;
+					float error012 = error01 + best_error[2][quant][k];
+					error012 = astc::min(error012, 1e10f);
+					if (error012 <= best_combined_error[quant][intcnt])
+					{
+						best_combined_error[quant][intcnt] = error012;
+						best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
+						best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
+						best_combined_format[quant][intcnt][2] = best_format[2][quant][k];
+					}
+				}
+			}
+		}
+	}
+
+	// Above QUANT_32, class 2 needs at least seven pairs, which cannot fit in 70 bits
+	// With only classes 0 and 1, max_class - min_class is always <= 1, so omit that check
+	// Each partition uses one or two integer pairs, keeping the total at or below six
+	for (int quant = QUANT_40; quant <= QUANT_256; quant++)
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			float error0 = best_error[0][quant][i];
+
+			for (int j = 0; j < 2; j++)
+			{
+				float error01 = error0 + best_error[1][quant][j];
+
+				for (int k = 0; k < 2; k++)
+				{
 					int intcnt = i + j + k;
 					float error012 = error01 + best_error[2][quant][k];
 					error012 = astc::min(error012, 1e10f);
@@ -990,6 +1082,10 @@ static float three_partitions_find_best_combination_for_bitcount(
  * Four partitions use four to nine integer pairs in total. The combined tables are indexed by
  * the total pair count minus four, so six entries cover all valid counts.
  *
+ * The endpoint budget is at most 105 - 4 - PARTITION_INDEX_BITS - BLOCK_MIN_WEIGHT_BITS = 67 bits.
+ * Class 2 requires at least 3 + 2 + 2 + 2 = 9 integer pairs. These need 65 bits at QUANT_12, but
+ * 72 bits at QUANT_16, so higher quantization levels only need the class 0 and 1 combinations.
+ *
  * @param      best_error             The best error for a single endpoint quant level and integer count.
  * @param      best_format            The best format for a single endpoint quant level and integer count.
  * @param[out] best_combined_error    The best combined error pairings for the 4 partitions.
@@ -1010,7 +1106,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 	}
 
 	// Only classes 0 to 2 are valid; class 3 needs at least 4 + 3 + 3 + 3 = 13 pairs
-	for (int quant = QUANT_6; quant <= QUANT_256; quant++)
+	for (int quant = QUANT_6; quant <= QUANT_12; quant++)
 	{
 		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
 		{
@@ -1050,6 +1146,42 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 							continue;
 						}
 
+						int intcnt = i + j + k + l;
+						float error0123 = error012 + best_error[3][quant][l];
+						error0123 = astc::min(error0123, 1e10f);
+						if (error0123 <= best_combined_error[quant][intcnt])
+						{
+							best_combined_error[quant][intcnt] = error0123;
+							best_combined_format[quant][intcnt][0] = best_format[0][quant][i];
+							best_combined_format[quant][intcnt][1] = best_format[1][quant][j];
+							best_combined_format[quant][intcnt][2] = best_format[2][quant][k];
+							best_combined_format[quant][intcnt][3] = best_format[3][quant][l];
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Above QUANT_12, class 2 needs at least nine pairs, which cannot fit in 67 bits
+	// With only classes 0 and 1, max_class - min_class is always <= 1, so omit that check
+	// Each partition uses one or two integer pairs, keeping the total at or below eight
+	for (int quant = QUANT_16; quant <= QUANT_256; quant++)
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			float error0 = best_error[0][quant][i];
+
+			for (int j = 0; j < 2; j++)
+			{
+				float error01 = error0 + best_error[1][quant][j];
+
+				for (int k = 0; k < 2; k++)
+				{
+					float error012 = error01 + best_error[2][quant][k];
+
+					for (int l = 0; l < 2; l++)
+					{
 						int intcnt = i + j + k + l;
 						float error0123 = error012 + best_error[3][quant][l];
 						error0123 = astc::min(error0123, 1e10f);
