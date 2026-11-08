@@ -45,9 +45,10 @@
  *
  *     * 1-wide for scalar reference
  *     * 4-wide for Armv8-A NEON
+ *     * 4-wide for Armv8-A NEON augented with 128-bit SVE
  *     * 4-wide for x86-64 SSE2
  *     * 4-wide for x86-64 SSE4.1
- *     * 8-wide for Armv8-A SVE
+ *     * 8-wide for Armv8-A 256-bit SVE
  *     * 8-wide for x86-64 AVX2
  *     * 16-wide for x86-64 AVX-512
  */
@@ -79,6 +80,14 @@
 	#define ASTCENC_NO_INLINE __attribute__ ((noinline))
 #endif
 
+/**
+ * @brief Gather float values using byte-sized indices.
+ *
+ * @tparam T         The vector type of the gathered values.
+ *
+ * @param  base      The source float table.
+ * @param  indices   The byte-sized table indices, one per lane.
+ */
 template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indices);
 
 #if ASTCENC_AVX >= 3
@@ -301,6 +310,9 @@ ASTCENC_SIMD_INLINE vgatherf_table vgatherf_load(const float* base, unsigned int
 
 /**
  * @brief Gather from a prepared float table using vector indices.
+ *
+ * @param t         The prepared float table.
+ * @param indices   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vfloat gatherf(const vgatherf_table& t, vint indices)
 {
@@ -309,6 +321,9 @@ ASTCENC_SIMD_INLINE vfloat gatherf(const vgatherf_table& t, vint indices)
 
 /**
  * @brief Gather from a prepared float table using byte indices from memory.
+ *
+ * @param t         The prepared float table.
+ * @param indices   The byte-sized table indices, one per lane.
  */
 ASTCENC_SIMD_INLINE vfloat gatherf(const vgatherf_table& t, const uint8_t* indices)
 {
@@ -347,6 +362,9 @@ ASTCENC_SIMD_INLINE size_t round_up_to_simd_multiple_vla(size_t count)
 
 /**
  * @brief Return @c a with lanes negated if the @c b lane is negative.
+ *
+ * @param a   The values to conditionally negate.
+ * @param b   The values whose sign bits control negation.
  */
 ASTCENC_SIMD_INLINE vfloat change_sign(vfloat a, vfloat b)
 {
@@ -361,6 +379,8 @@ ASTCENC_SIMD_INLINE vfloat change_sign(vfloat a, vfloat b)
  * @brief Return fast, but approximate, vector atan(x).
  *
  * Max error of this implementation is 0.004883.
+ *
+ * @param x   The values whose arctangents are required.
  */
 ASTCENC_SIMD_INLINE vfloat atan(vfloat x)
 {
@@ -373,6 +393,9 @@ ASTCENC_SIMD_INLINE vfloat atan(vfloat x)
 
 /**
  * @brief Return fast, but approximate, vector atan2(x, y).
+ *
+ * @param y   The y coordinates.
+ * @param x   The x coordinates.
  */
 ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 {
@@ -381,7 +404,7 @@ ASTCENC_SIMD_INLINE vfloat atan2(vfloat y, vfloat x)
 	return change_sign(select(z, vfloat(astc::PI) - z, xmask), y);
 }
 
-/*
+/**
  * @brief Factory that returns a unit length 4 component vfloat4.
  */
 static ASTCENC_SIMD_INLINE vfloat4 unit4()
@@ -409,6 +432,10 @@ static ASTCENC_SIMD_INLINE vfloat4 unit2()
 
 /**
  * @brief Factory that returns a 3 component vfloat4.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
+ * @param c   The value for lane 2.
  */
 static ASTCENC_SIMD_INLINE vfloat4 vfloat3(float a, float b, float c)
 {
@@ -417,6 +444,9 @@ static ASTCENC_SIMD_INLINE vfloat4 vfloat3(float a, float b, float c)
 
 /**
  * @brief Factory that returns a 2 component vfloat4.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
  */
 static ASTCENC_SIMD_INLINE vfloat4 vfloat2(float a, float b)
 {
@@ -425,6 +455,8 @@ static ASTCENC_SIMD_INLINE vfloat4 vfloat2(float a, float b)
 
 /**
  * @brief Normalize a non-zero length vector to unit length.
+ *
+ * @param a   The non-zero vector to normalize.
  */
 static ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
 {
@@ -434,6 +466,9 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize(vfloat4 a)
 
 /**
  * @brief Normalize a vector, returning @c safe if len is zero.
+ *
+ * @param a      The vector to normalize.
+ * @param safe   The fallback vector if @c a has zero length.
  */
 static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 {
@@ -448,11 +483,67 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
 
 
 
+/**
+ * @brief Evaluate a degree-0 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument; unused for a constant.
+ * @param c0   The constant coefficient.
+ */
 #define POLY0(x, c0)                     (                                     c0)
+
+/**
+ * @brief Evaluate a degree-1 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument.
+ * @param c0   The constant coefficient.
+ * @param c1   The coefficient of x^1.
+ */
 #define POLY1(x, c0, c1)                 ((POLY0(x, c1) * x)                 + c0)
+
+/**
+ * @brief Evaluate a degree-2 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument.
+ * @param c0   The constant coefficient.
+ * @param c1   The coefficient of x^1.
+ * @param c2   The coefficient of x^2.
+ */
 #define POLY2(x, c0, c1, c2)             ((POLY1(x, c1, c2) * x)             + c0)
+
+/**
+ * @brief Evaluate a degree-3 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument.
+ * @param c0   The constant coefficient.
+ * @param c1   The coefficient of x^1.
+ * @param c2   The coefficient of x^2.
+ * @param c3   The coefficient of x^3.
+ */
 #define POLY3(x, c0, c1, c2, c3)         ((POLY2(x, c1, c2, c3) * x)         + c0)
+
+/**
+ * @brief Evaluate a degree-4 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument.
+ * @param c0   The constant coefficient.
+ * @param c1   The coefficient of x^1.
+ * @param c2   The coefficient of x^2.
+ * @param c3   The coefficient of x^3.
+ * @param c4   The coefficient of x^4.
+ */
 #define POLY4(x, c0, c1, c2, c3, c4)     ((POLY3(x, c1, c2, c3, c4) * x)     + c0)
+
+/**
+ * @brief Evaluate a degree-5 polynomial using Horner's method.
+ *
+ * @param x    The polynomial argument.
+ * @param c0   The constant coefficient.
+ * @param c1   The coefficient of x^1.
+ * @param c2   The coefficient of x^2.
+ * @param c3   The coefficient of x^3.
+ * @param c4   The coefficient of x^4.
+ * @param c5   The coefficient of x^5.
+ */
 #define POLY5(x, c0, c1, c2, c3, c4, c5) ((POLY4(x, c1, c2, c3, c4, c5) * x) + c0)
 
 /**
@@ -460,6 +551,8 @@ static ASTCENC_SIMD_INLINE vfloat4 normalize_safe(vfloat4 a, vfloat4 safe)
  *
  * Based on 5th degree minimax polynomials, ported from this blog
  * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ *
+ * @param x   The exponents.
  */
 static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
 {
@@ -488,6 +581,8 @@ static ASTCENC_SIMD_INLINE vfloat4 exp2(vfloat4 x)
  *
  * Based on 5th degree minimax polynomials, ported from this blog
  * https://jrfonseca.blogspot.com/2008/09/fast-sse2-pow-tables-or-polynomials.html
+ *
+ * @param x   The values whose logarithms are required.
  */
 static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
 {
@@ -519,6 +614,9 @@ static ASTCENC_SIMD_INLINE vfloat4 log2(vfloat4 x)
  * @brief Compute an approximate pow(x, y) for each lane in the vector.
  *
  * Power function based on the exp2(log2(x) * y) transform.
+ *
+ * @param x   The bases.
+ * @param y   The exponents.
  */
 static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
 {
@@ -533,6 +631,8 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
  * @brief Count the leading zeros for each lane in @c a.
  *
  * Valid for all data values of @c a; will return a per-lane value [0, 32].
+ *
+ * @param a   The values whose leading zeros are counted.
  */
 static ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 {
@@ -555,6 +655,8 @@ static ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
  * @brief Return lanewise 2^a for each lane in @c a.
  *
  * Use of signed int means that this is only valid for values in range [0, 31].
+ *
+ * @param a   The exponents, in the range [0, 30].
  */
 static ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 {
@@ -575,6 +677,8 @@ static ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 
 /**
  * @brief Convert unorm16 [0, 65535] to float16 in range [0, 1].
+ *
+ * @param p   The unsigned normalized 16-bit values.
  */
 static ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 {
@@ -609,6 +713,8 @@ static ASTCENC_SIMD_INLINE vint4 unorm16_to_sf16(vint4 p)
 
 /**
  * @brief Convert 16-bit LNS to float16.
+ *
+ * @param p   The 16-bit LNS values.
  */
 static ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
 {
@@ -634,8 +740,8 @@ static ASTCENC_SIMD_INLINE vint4 lns_to_sf16(vint4 p)
 /**
  * @brief Extract mantissa and exponent of a float value.
  *
- * @param      a      The input value.
- * @param[out] exp    The output exponent.
+ * @param      a     The input value.
+ * @param[out] exp   The output exponent.
  *
  * @return The mantissa.
  */
@@ -654,6 +760,8 @@ static ASTCENC_SIMD_INLINE vfloat4 frexp(vfloat4 a, vint4& exp)
 
 /**
  * @brief Convert float to 16-bit LNS.
+ *
+ * @param a   The floating-point values to convert.
  */
 static ASTCENC_SIMD_INLINE vfloat4 float_to_lns(vfloat4 a)
 {
@@ -698,6 +806,12 @@ static ASTCENC_SIMD_INLINE vfloat4 float_to_lns(vfloat4 a)
 namespace astc
 {
 
+/**
+ * @brief Compute an approximate scalar pow(x, y).
+ *
+ * @param x   The base.
+ * @param y   The exponent.
+ */
 static ASTCENC_SIMD_INLINE float pow(float x, float y)
 {
 	return pow(vfloat4(x), vfloat4(y)).lane<0>();
