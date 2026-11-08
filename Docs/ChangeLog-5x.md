@@ -32,6 +32,9 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
   * **Optimization:** Reuse RGB partition metrics computed during ideal weight
     generation when selecting endpoint formats, avoiding a duplicate texel
     scan.
+  * **Optimization:** Reuse RGB partition metrics from grayscale RGBA statistics
+    during single-plane endpoint selection, improving normal map compression
+    performance.
   * **Optimization:** Interpolate deltas in `lerp_color_int()` and unrolled
     specialization, saving one multiply.
   * **Optimization:** Hoist loop invariant error accumulator calculation out of

@@ -513,14 +513,16 @@ static void compute_ideal_colors_and_weights_3_comp(
 /**
  * @brief Compute the ideal endpoints and weights for 4 color components.
  *
- * @param      blk   The image block color data to compress.
- * @param      pi    The partition info for the current trial.
- * @param[out] ei    The computed ideal endpoints and weights.
+ * @param      blk           The image block color data to compress.
+ * @param      pi            The partition info for the current trial.
+ * @param[out] ei            The computed ideal endpoints and weights.
+ * @param[out] rgb_metrics   The RGB partition metrics, only initialized for grayscale RGB.
  */
 static void compute_ideal_colors_and_weights_4_comp(
 	const image_block& blk,
 	const partition_info& pi,
-	endpoints_and_weights& ei
+	endpoints_and_weights& ei,
+	partition_metrics rgb_metrics[BLOCK_MAX_PARTITIONS]
 ) {
 	const float error_weight = hadd_s(blk.channel_weight) / 4.0f;
 
@@ -532,7 +534,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 
 	partition_metrics pms[BLOCK_MAX_PARTITIONS];
 
-	compute_avgs_and_dirs_4_comp(pi, blk, pms);
+	compute_avgs_and_dirs_4_comp(pi, blk, pms, rgb_metrics);
 
 	bool is_constant_wes { true };
 	float partition0_len_sq { 0.0f };
@@ -619,8 +621,8 @@ bool compute_ideal_colors_and_weights_1plane(
 
 	if (uses_alpha)
 	{
-		compute_ideal_colors_and_weights_4_comp(blk, pi, ei);
-		return false;
+		compute_ideal_colors_and_weights_4_comp(blk, pi, ei, rgb_metrics);
+		return blk.grayscale;
 	}
 
 	compute_ideal_colors_and_weights_3_comp(blk, pi, ei, 3, rgb_metrics);

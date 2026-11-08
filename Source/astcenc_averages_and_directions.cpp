@@ -532,14 +532,16 @@ static void compute_partition_averages_rgba_grayscale(
  *
  * Skips computation of G and B, given we know it will be the same as R.
  *
- * @param      pi         The partitioning to use.
- * @param      blk        The image block color data to process.
- * @param[out] pm         The partition averages and directions.
+ * @param      pi            The partitioning to use.
+ * @param      blk           The image block color data to process.
+ * @param[out] pm            The partition averages and directions.
+ * @param[out] rgb_metrics   The RGB partition metrics, or @c nullptr to omit.
  */
 static void compute_avgs_and_dirs_4_comp_grayscale(
 	const partition_info& pi,
 	const image_block& blk,
-	partition_metrics pm[BLOCK_MAX_PARTITIONS]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS],
+	partition_metrics* rgb_metrics
 ) {
 	size_t partition_count = pi.partition_count;
 	promise(partition_count > 0);
@@ -575,6 +577,13 @@ static void compute_avgs_and_dirs_4_comp_grayscale(
 
 			vmask4 tdm3 = texel_datum.swz<3,3,3,3>() > zero;
 			sum_wp += select(zero, texel_datum, tdm3);
+		}
+
+		// Preserve the RGB-only direction before alpha can change the RGBA winner
+		if (rgb_metrics)
+		{
+			rgb_metrics[partition].avg = average.swz<0, 1, 2>();
+			rgb_metrics[partition].dir = sum_xp.swz<0, 1, 2>();
 		}
 
 		vfloat4 prod_xp = dot(sum_xp, sum_xp);
@@ -670,11 +679,12 @@ static void compute_avgs_and_dirs_4_comp_general(
 void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	partition_metrics pm[BLOCK_MAX_PARTITIONS]
+	partition_metrics pm[BLOCK_MAX_PARTITIONS],
+	partition_metrics* rgb_metrics
 ) {
 	if (blk.grayscale)
 	{
-		compute_avgs_and_dirs_4_comp_grayscale(pi, blk, pm);
+		compute_avgs_and_dirs_4_comp_grayscale(pi, blk, pm, rgb_metrics);
 	}
 	else
 	{
