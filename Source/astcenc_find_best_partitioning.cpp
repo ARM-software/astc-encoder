@@ -137,6 +137,10 @@ static void kmeans_init(
 /**
  * @brief Assign texels to clusters, based on a set of chosen center points.
  *
+ * Assignments beyond @c texel_count in the final SIMD batch may also be written.
+ * The output array is already required to be a multiple of @c ASTCENC_SIMD_WIDTH,
+ * so the full batch store is in bounds. Later consumers only read real texel assignments.
+ *
  * @param      blk                  The image block color data to compress.
  * @param      texel_count          The number of texels in the block.
  * @param      partition_count      The number of partitions in the block.
@@ -153,28 +157,49 @@ static void kmeans_assign(
 	promise(texel_count > 0);
 	promise(partition_count > 0);
 
-	uint8_t partition_texel_count[BLOCK_MAX_PARTITIONS] { 0 };
+	vfloat weight_r(blk.channel_weight.lane<0>());
+	vfloat weight_g(blk.channel_weight.lane<1>());
+	vfloat weight_b(blk.channel_weight.lane<2>());
+	vfloat weight_a(blk.channel_weight.lane<3>());
 
-	// Find the best partition for every texel
-	for (unsigned int i = 0; i < texel_count; i++)
+	// Find the best partition for SIMD batches of texels
+	for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 	{
-		float best_distance = std::numeric_limits<float>::max();
-		unsigned int best_partition = 0;
+		vfloat best_distance(std::numeric_limits<float>::max());
+		vint best_partition(0);
 
-		vfloat4 color = blk.texel(i);
+		vfloat data_r = loada(blk.data_r + i);
+		vfloat data_g = loada(blk.data_g + i);
+		vfloat data_b = loada(blk.data_b + i);
+		vfloat data_a = loada(blk.data_a + i);
+
 		for (unsigned int j = 0; j < partition_count; j++)
 		{
-			vfloat4 diff = color - cluster_centers[j];
-			float distance = dot_s(diff * diff, blk.channel_weight);
-			if (distance < best_distance)
-			{
-				best_distance = distance;
-				best_partition = j;
-			}
+			vfloat diff_r = data_r - vfloat(cluster_centers[j].lane<0>());
+			vfloat diff_g = data_g - vfloat(cluster_centers[j].lane<1>());
+			vfloat diff_b = data_b - vfloat(cluster_centers[j].lane<2>());
+			vfloat diff_a = data_a - vfloat(cluster_centers[j].lane<3>());
+
+			vfloat distance_r = diff_r * diff_r * weight_r;
+			vfloat distance_g = diff_g * diff_g * weight_g;
+			vfloat distance_b = diff_b * diff_b * weight_b;
+			vfloat distance_a = diff_a * diff_a * weight_a;
+
+			// Match the dot product reduction order and keep the first cluster on ties
+			vfloat distance = (distance_r + distance_b) + (distance_g + distance_a);
+			vmask closer = distance < best_distance;
+			best_distance = select(best_distance, distance, closer);
+			best_partition = select(best_partition, vint(j), closer);
 		}
 
-		partition_of_texel[i] = static_cast<uint8_t>(best_partition);
-		partition_texel_count[best_partition]++;
+		pack_and_store_low_bytes(best_partition, partition_of_texel + i);
+	}
+
+	// Count only real texels, ignoring assignments in the final SIMD padding
+	uint8_t partition_texel_count[BLOCK_MAX_PARTITIONS] { 0 };
+	for (unsigned int i = 0; i < texel_count; i++)
+	{
+		partition_texel_count[partition_of_texel[i]]++;
 	}
 
 	// It is possible to get a situation where a partition ends up without any texels. In this case,
