@@ -74,7 +74,7 @@
  * @param      samec_pline       The endpoint line assuming the same chroma for both endpoints.
  * @param[out] samec_err         The computed error for the uncorrelated endpoint line.
  * @param      rgbl_pline        The endpoint line assuming RGB + lumashift data.
- * @param[out] rgbl_err          The computed error for the RGB + lumashift endpoint line.
+ * @param[out] rgbl_err          The RGB + lumashift endpoint line error, or zero for LDR RGB.
  * @param      l_pline           The endpoint line assuming luminance data.
  * @param[out] l_err             The computed error for the luminance endpoint line.
  * @param[out] a_drop_err        The computed error for dropping the alpha component.
@@ -94,6 +94,7 @@ static void compute_error_squared_rgb_single_partition(
 	float& a_drop_err
 ) {
 	vfloat4 ews = blk.channel_weight;
+	bool encode_hdr_rgb = static_cast<bool>(blk.rgb_lns[0]);
 
 	unsigned int texel_count = pi.partition_texel_count[partition_index];
 	const uint8_t* texel_indexes = pi.texels_of_partition[partition_index];
@@ -179,20 +180,23 @@ static void compute_error_squared_rgb_single_partition(
 
 		haccumulate(samec_errv, error, mask);
 
-		// Compute rgbl error
-		param = data_r * rgbl_bs0
-		      + data_g * rgbl_bs1
-		      + data_b * rgbl_bs2;
+		// RGB + lumashift is only considered for HDR endpoint formats
+		if (encode_hdr_rgb)
+		{
+			param = data_r * rgbl_bs0
+			      + data_g * rgbl_bs1
+			      + data_b * rgbl_bs2;
 
-		dist0 = (rgbl_amod0 + param * rgbl_bs0) - data_r;
-		dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
-		dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
+			dist0 = (rgbl_amod0 + param * rgbl_bs0) - data_r;
+			dist1 = (rgbl_amod1 + param * rgbl_bs1) - data_g;
+			dist2 = (rgbl_amod2 + param * rgbl_bs2) - data_b;
 
-		error = dist0 * dist0 * ews.lane<0>()
-		      + dist1 * dist1 * ews.lane<1>()
-		      + dist2 * dist2 * ews.lane<2>();
+			error = dist0 * dist0 * ews.lane<0>()
+			      + dist1 * dist1 * ews.lane<1>()
+			      + dist2 * dist2 * ews.lane<2>();
 
-		haccumulate(rgbl_errv, error, mask);
+			haccumulate(rgbl_errv, error, mask);
+		}
 
 		// Compute luma error - no "amod", it's always zero
 		param = data_r * l_bs0
