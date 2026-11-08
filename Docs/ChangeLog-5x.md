@@ -7,6 +7,18 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## 5.7.2
+
+**Status:** In development.
+
+The 5.7.2 release is a minor maintenance release.
+
+* **Build system updates:**
+  * **Bug fix:** Restore Clang compression performance by disabling unintended
+    floating-point trapping, retaining precise arithmetic and the configured
+    FMA contraction policy.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
 
 **Status:** Released November 2026.
