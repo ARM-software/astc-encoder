@@ -68,19 +68,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
       - name: Run unit tests
         # The runner only supports 128-bit SVE
         run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-arm64-clang-asan:
     name: Ubuntu arm64 Clang (ASAN)
@@ -115,19 +118,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
       - name: Run unit tests
         # The runner only supports 128-bit SVE
         run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-arm64-clang-ubasn:
     name: Ubuntu arm64 Clang (UBSAN)
@@ -162,19 +168,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
       - name: Run unit tests
         # The runner only supports 128-bit SVE
         run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-arm64-gcc:
     name: Ubuntu arm64 GCC
@@ -229,19 +238,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
       - name: Run unit tests
         # The runner only supports 128-bit SVE
         run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-arm64-gcc-asan:
     name: Ubuntu arm64 GCC (ASAN)
@@ -279,19 +291,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
+      - name: Run unit tests
+        run: ctest --rerun-failed --output-on-failure
+        working-directory: build_rel
+
+      - name: Run functional tests
         run: |
           python ./Test/astc_test_functional.py --encoder none
           python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
           # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
           python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format rgba
           python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format l
           python ./Test/astc_test_image.py --encoder sve_128 --test-set Small --color-format rgba
           python ./Test/astc_test_image.py --encoder sve_128 --test-set Small --color-format l
-
-      - name: Run unit tests
-        run: ctest --rerun-failed --output-on-failure
-        working-directory: build_rel
 
   build-ubuntu-arm64-gcc-ubsan:
     name: Ubuntu arm64 GCC (UBSAN)
@@ -329,19 +344,22 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
       - name: Run unit tests
         # The runner only supports 128-bit SVE
         run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder neon
+          python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-x64-clang:
     name: Ubuntu x64 Clang
@@ -401,21 +419,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -425,6 +428,28 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-ubuntu-x64-clang-asan:
     name: Ubuntu x64 Clang (ASAN)
@@ -459,21 +484,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -483,6 +493,28 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-ubuntu-x64-clang-ubsan:
     name: Ubuntu x64 Clang (UBSAN)
@@ -517,21 +549,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -541,6 +558,28 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-ubuntu-x64-gcc:
     name: Ubuntu x64 GCC
@@ -592,21 +631,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -616,6 +640,28 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-ubuntu-x64-gcc-asan:
     name: Ubuntu x64 GCC (ASAN)
@@ -650,19 +696,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
-          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format l
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format rgba
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format l
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -672,6 +705,22 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+
+      - name: Run image tests
+        run: |
+          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format rgba
+          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format l
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format rgba
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format l
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-ubuntu-x64-gcc-ubsan:
     name: Ubuntu x64 GCC (UBSAN)
@@ -706,21 +755,6 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
       - name: Run unit tests
         run: |
           if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
@@ -730,6 +764,28 @@ jobs:
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py --encoder none
+          python ./Test/astc_test_functional.py --encoder sse2
+          python ./Test/astc_test_functional.py --encoder sse4.1
+          python ./Test/astc_test_functional.py --encoder avx2
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
+          else
+            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+          fi
 
   build-macos-x64-clang:
     name: macOS x64 Clang
@@ -764,13 +820,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_image.py  --encoder sse4.1 --test-set Small
-
       - name: Run unit tests
         run: ctest -E test-unit-avx2 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py  --encoder sse4.1 --test-set Small
 
   build-macos-universal-clang:
     name: macOS universal Clang
@@ -813,13 +869,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_image.py --encoder universal --test-set Small
-
       - name: Run unit tests
         run: ctest -E test-unit-avx2 --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder universal --test-set Small
 
   build-windows-x64-msvc:
     name: Windows x64 MSVC
@@ -860,14 +916,14 @@ jobs:
           python -m pip install -r requirements.txt
         shell: cmd
 
-      - name: Run system tests
-        run: |
-          python ./Test/astc_test_image.py --test-set Small
-        shell: cmd
-
       - name: Run unit tests
         run: ctest -C Release --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --test-set Small
+        shell: cmd
 
   build-windows-x64-clangcl:
     name: Windows x64 ClangCL
@@ -918,7 +974,19 @@ jobs:
           python -m pip install -r requirements.txt
         shell: cmd
 
-      - name: Run system tests
+      - name: Run unit tests
+        run: |
+          set "ASTCENC_EXCLUDE_TESTS="
+          ..\bin\astcenc-avx512.exe -help >nul 2>&1
+          if errorlevel 1 (
+            set "ASTCENC_EXCLUDE_TESTS=-E test-unit-avx512"
+          )
+          ctest -C Release %ASTCENC_EXCLUDE_TESTS% --rerun-failed --output-on-failure
+          exit /b %errorlevel%
+        shell: cmd
+        working-directory: build_rel
+
+      - name: Run image tests
         run: |
           python ./Test/astc_test_image.py --test-set Small
           if errorlevel 1 (
@@ -935,18 +1003,6 @@ jobs:
           )
           exit /b 0
         shell: cmd
-
-      - name: Run unit tests
-        run: |
-          set "ASTCENC_EXCLUDE_TESTS="
-          ..\bin\astcenc-avx512.exe -help >nul 2>&1
-          if errorlevel 1 (
-            set "ASTCENC_EXCLUDE_TESTS=-E test-unit-avx512"
-          )
-          ctest -C Release %ASTCENC_EXCLUDE_TESTS% --rerun-failed --output-on-failure
-          exit /b %errorlevel%
-        shell: cmd
-        working-directory: build_rel
 
   build-windows-arm64-clangcl:
     name: Windows arm64 ClangCL

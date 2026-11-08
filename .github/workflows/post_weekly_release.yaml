@@ -54,11 +54,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
+      - name: Run functional tests
         run: |
           python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
           python ./Test/astc_test_functional.py --encoder sve_128
+
+      - name: Run image tests
+        run: |
+          python ./Test/astc_test_image.py --encoder neon --test-set Small
           python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
   build-ubuntu-x64:
@@ -104,14 +107,21 @@ jobs:
 
       # The astcenc-avx512 binary is always packaged, but GitHub runners may lack support
       # Probe the binary and run it only when the veneer accepts the host.
-      - name: Run system tests
+      - name: Run functional tests
         run: |
           python ./Test/astc_test_functional.py
+          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx512
+          else
+            echo "Skipping avx512 tests: host does not support AVX-512"
+          fi
+
+      - name: Run image tests
+        run: |
           python ./Test/astc_test_image.py --encoder sse2 --test-set Small
           python ./Test/astc_test_image.py --encoder sse4.1 --test-set Small
           python ./Test/astc_test_image.py --encoder avx2 --test-set Small
           if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
             python ./Test/astc_test_image.py --encoder avx512 --test-set Small
           else
             echo "Skipping avx512 tests: host does not support AVX-512"
@@ -151,7 +161,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Run system tests
+      - name: Run image tests
         run: |
           python ./Test/astc_test_image.py --test-set Small --encoder universal
 
@@ -213,7 +223,7 @@ jobs:
           python -m pip install -r requirements.txt
         shell: cmd
 
-      - name: Run system tests
+      - name: Run image tests
         run: |
           python ./Test/astc_test_image.py --test-set Small
           if errorlevel 1 (

@@ -72,8 +72,8 @@ jobs:
 
       - name: Run functional tests
         run: |
-          python ./Test/astc_test_functional.py CLIPTest --encoder sve_256 --durations 10
+          python ./Test/astc_test_functional.py CLIPTest --encoder sve_256
 
-      - name: Run Small image tests
+      - name: Run image tests
         run: |
           python ./Test/astc_test_image.py --encoder sve_256 --test-set Small --pairwise
