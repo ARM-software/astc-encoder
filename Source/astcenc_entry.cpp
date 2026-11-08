@@ -554,7 +554,7 @@ astcenc_error astcenc_config_init(
 		return ASTCENC_ERR_BAD_QUALITY;
 	}
 
-	static const std::array<astcenc_preset_config, 6>* preset_configs;
+	const std::array<astcenc_preset_config, 6>* preset_configs;
 	size_t texels_int = block_x * block_y * block_z;
 	if (texels_int < 25)
 	{
@@ -847,7 +847,10 @@ astcenc_error astcenc_context_alloc(
 	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
 		// Turn a dB limit into a per-texel error for faster use later
-		if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
+		if (parent_context)
+		{
+		}
+		else if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
 		{
 			ctx->config.tune_db_limit = astc::pow(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
 		}
