@@ -25,6 +25,7 @@
  * failing and the values in the test may need updating.
  */
 
+#include <cstring>
 #include <limits>
 
 #include "gtest/gtest.h"
@@ -4102,6 +4103,48 @@ TEST(SuiteVfloat16, gatherf_table144)
 	EXPECT_EQ(ra[7], 127.0f);
 	EXPECT_EQ(ra[10], 142.0f);
 	EXPECT_EQ(ra[15], 128.0f);
+}
+
+/** @brief Test float-table gather bit preservation across table-size boundaries. */
+TEST(SuiteVfloat16, gatherf_table_bits)
+{
+	// Include signed zeros, infinities, and NaNs with distinct payloads
+	uint32_t bits[65] {
+		0x00000000, 0x80000000, 0x7F800000, 0xFF800000,
+		0x7FC00001, 0x7FC12345, 0x7FA12345, 0xFFC12345
+	};
+
+	for (unsigned int i = 8; i < 65; i++)
+	{
+		bits[i] = 1664525u * i + 1013904223u;
+	}
+
+	float data[65];
+	std::memcpy(data, bits, sizeof(data));
+
+	// Exercise partial tables, each register boundary, and the scalar fallback
+	for (unsigned int count = 1; count <= 65; count++)
+	{
+		vgatherf_table table = vgatherf_load(data, count);
+		for (unsigned int start = 0; start < count; start += 16)
+		{
+			alignas(64) int indices[16];
+			for (unsigned int lane = 0; lane < 16; lane++)
+			{
+				indices[lane] = static_cast<int>((start + lane) % count);
+			}
+
+			vfloat16 result = gatherf(table, vint16::loada(indices));
+			alignas(64) int actual[16];
+			storea(float_as_int(result), actual);
+
+			for (unsigned int lane = 0; lane < 16; lane++)
+			{
+				EXPECT_EQ(static_cast<uint32_t>(actual[lane]), bits[indices[lane]])
+				    << "count " << count << " index " << indices[lane];
+			}
+		}
+	}
 }
 
 /** @brief Test vfloat16 select. */
