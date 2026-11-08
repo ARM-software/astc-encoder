@@ -43,12 +43,12 @@
 /**
  * @brief Compute the error of an LDR RGB or RGBA encoding.
  *
- * @param uquant0    The original endpoint 0 color.
- * @param uquant1    The original endpoint 1 color.
- * @param quant0     The unpacked quantized endpoint 0 color.
- * @param quant1     The unpacked quantized endpoint 1 color.
+ * @param uquant0   The original endpoint 0 color.
+ * @param uquant1   The original endpoint 1 color.
+ * @param quant0    The unpacked quantized endpoint 0 color.
+ * @param quant1    The unpacked quantized endpoint 1 color.
  *
- * @return The MSE of the encoding.
+ * @return The sum of squared endpoint component errors.
  */
 static float get_rgba_encoding_error(
 	vfloat4 uquant0,
@@ -491,13 +491,13 @@ static bool try_quantize_rgb_delta_blue_contract(
  * we then unquantize both values as if they contain one extra bit. If the sum of the offsets is
  * non-negative, then we encode a regular delta.
  *
- * This function only compressed the alpha - the other elements in the output array are not touched.
+ * Only the alpha lanes are modified; the existing RGB lanes are preserved.
  *
- * @param      color0        The input unquantized color0 endpoint.
- * @param      color1        The input unquantized color1 endpoint.
- * @param[out] color0_out    The output quantized color0 endpoint; must preserve lane 0/1/2.
- * @param[out] color1_out    The output quantized color1 endpoint; must preserve lane 0/1/2.
- * @param      quant_level   The quantization level to use.
+ * @param         color0        The input unquantized color0 endpoint.
+ * @param         color1        The input unquantized color1 endpoint.
+ * @param[in,out] color0_out    The quantized color0 endpoint; RGB lanes are preserved.
+ * @param[in,out] color1_out    The quantized color1 endpoint; RGB lanes are preserved.
+ * @param         quant_level   The quantization level to use.
  *
  * @return Returns @c false on failure, @c true on success.
  */
@@ -560,8 +560,6 @@ static bool try_quantize_alpha_delta(
  * At decode time we move one bit from the offset to the base and seize another bit as a sign bit;
  * we then unquantize both values as if they contain one extra bit. If the sum of the offsets is
  * non-negative, then we encode a regular delta.
- *
- * This function only compressed the alpha - the other elements in the output array are not touched.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -674,12 +672,10 @@ static bool try_quantize_luminance_alpha_delta(
  * we then unquantize both values as if they contain one extra bit. If the sum of the offsets is
  * non-negative, then we encode a regular delta.
  *
- * This function only compressed the alpha - the other elements in the output array are not touched.
- *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
- * @param[out] color0_out   The output quantized color0 endpoint
- * @param[out] color1_out   The output quantized color1 endpoint
+ * @param[out] color0_out    The output quantized color0 endpoint.
+ * @param[out] color1_out    The output quantized color1 endpoint.
  * @param      quant_level   The quantization level to use.
  *
  * @return Returns @c false on failure, @c true on success.
@@ -702,13 +698,11 @@ static bool try_quantize_rgba_delta(
  * we then unquantize both values as if they contain one extra bit. If the sum of the offsets is
  * non-negative, then we encode a regular delta.
  *
- * This function only compressed the alpha - the other elements in the output array are not touched.
- *
- * @param      color0       The input unquantized color0 endpoint.
- * @param      color1       The input unquantized color1 endpoint.
- * @param[out] color0_out   The output quantized color0 endpoint
- * @param[out] color1_out   The output quantized color1 endpoint
- * @param      quant_level  The quantization level to use.
+ * @param      color0        The input unquantized color0 endpoint.
+ * @param      color1        The input unquantized color1 endpoint.
+ * @param[out] color0_out    The output quantized color0 endpoint.
+ * @param[out] color1_out    The output quantized color1 endpoint.
+ * @param      quant_level   The quantization level to use.
  *
  * @return Returns @c false on failure, @c true on success.
  */
@@ -762,11 +756,11 @@ static void quantize_rgbs(
 /**
  * @brief Quantize an LDR RGBA color using scale encoding.
  *
- * @param      color0       The input unquantized color0 alpha endpoint.
- * @param      color1       The input unquantized color1 alpha endpoint.
- * @param      color        The input unquantized color endpoint and scale factor.
- * @param[out] output       The output endpoints, returned as (r0, g0, b0, s, a0, a1).
- * @param      quant_level  The quantization level to use.
+ * @param      color0        The input unquantized color0 alpha endpoint.
+ * @param      color1        The input unquantized color1 alpha endpoint.
+ * @param      color         The input unquantized color endpoint and scale factor.
+ * @param[out] output        The output endpoints, returned as (r0, g0, b0, s, a0, a1).
+ * @param      quant_level   The quantization level to use.
  */
 static void quantize_rgbs_alpha(
 	vfloat4 color0,
@@ -785,7 +779,7 @@ static void quantize_rgbs_alpha(
 }
 
 /**
- * @brief Quantize a LDR L color.
+ * @brief Quantize an LDR L color.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -813,7 +807,7 @@ static void quantize_luminance(
 }
 
 /**
- * @brief Quantize a LDR LA color.
+ * @brief Quantize an LDR LA color.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -841,9 +835,9 @@ static void quantize_luminance_alpha(
 /**
  * @brief Quantize and unquantize a value ensuring top two bits are the same.
  *
- * @param      quant_level     The quantization level to use.
- * @param      value           The input unquantized value.
- * @param[out] quant_value     The quantized value.
+ * @param      quant_level   The quantization level to use.
+ * @param      value         The input unquantized value.
+ * @param[out] quant_value   The quantized value.
  */
 static inline void quantize_and_unquantize_retain_top_two_bits(
 	quant_method quant_level,
@@ -880,9 +874,9 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
 /**
  * @brief Quantize and unquantize a value ensuring top four bits are the same.
  *
- * @param      quant_level     The quantization level to use.
- * @param      value           The input unquantized value.
- * @param[out] quant_value     The quantized value in 0-255 range.
+ * @param      quant_level   The quantization level to use.
+ * @param      value         The input unquantized value.
+ * @param[out] quant_value   The quantized value in 0-255 range.
  */
 static inline void quantize_and_unquantize_retain_top_four_bits(
 	quant_method quant_level,
@@ -916,10 +910,10 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 }
 
 /**
- * @brief Quantize a HDR RGB color using RGB + offset.
+ * @brief Quantize an HDR RGB color using RGB + offset.
  *
  * @param      color         The input unquantized color endpoint and offset.
- * @param[out] output        The output endpoints, returned as packed RGBS with some mode bits.
+ * @param[out] output        The output endpoints, returned as packed RGB+offset with mode bits.
  * @param      quant_level   The quantization level to use.
  */
 static void quantize_hdr_rgbo(
@@ -1243,7 +1237,7 @@ static void quantize_hdr_rgbo(
 }
 
 /**
- * @brief Quantize a HDR RGB color using direct RGB encoding.
+ * @brief Quantize an HDR RGB color using direct RGB encoding.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -1609,7 +1603,7 @@ static void quantize_hdr_rgb(
 }
 
 /**
- * @brief Quantize a HDR RGB + LDR A color using direct RGBA encoding.
+ * @brief Quantize an HDR RGB + LDR A color using direct RGBA encoding.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -1634,7 +1628,7 @@ static void quantize_hdr_rgb_ldr_alpha(
 }
 
 /**
- * @brief Quantize a HDR L color using the large range encoding.
+ * @brief Quantize an HDR L color using the large range encoding.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -1706,7 +1700,7 @@ static void quantize_hdr_luminance_large_range(
 }
 
 /**
- * @brief Quantize a HDR L color using the small range encoding.
+ * @brief Quantize an HDR L color using the small range encoding.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.
@@ -1810,11 +1804,11 @@ static bool try_quantize_hdr_luminance_small_range(
 }
 
 /**
- * @brief Quantize a HDR A color using either delta or direct RGBA encoding.
+ * @brief Quantize HDR alpha endpoints using delta or direct encoding.
  *
  * @param      alpha0        The input unquantized color0 endpoint.
  * @param      alpha1        The input unquantized color1 endpoint.
- * @param[out] output        The output endpoints, returned as packed RGBA+RGBA pairs with mode bits.
+ * @param[out] output        The packed alpha endpoint pair, including mode bits.
  * @param      quant_level   The quantization level to use.
  */
 static void quantize_hdr_alpha(
@@ -1888,7 +1882,7 @@ static void quantize_hdr_alpha(
 }
 
 /**
- * @brief Quantize a HDR RGBA color using either delta or direct RGBA encoding.
+ * @brief Quantize an HDR RGBA color using either delta or direct RGBA encoding.
  *
  * @param      color0        The input unquantized color0 endpoint.
  * @param      color1        The input unquantized color1 endpoint.

@@ -44,6 +44,11 @@ int astcenc_main(
 
 /**
  * @brief Print a formatted string to stderr.
+ *
+ * @tparam _Args    The types of the format arguments.
+ *
+ * @param  format   The printf-style format string.
+ * @param  args     The values to format.
  */
 template<typename ... _Args>
 static inline void print_error(

@@ -185,6 +185,8 @@ using astcenc_context_ptr = std::unique_ptr<astcenc_context, astcenc_context_del
 
 /**
  * @brief Callback emitting a progress bar.
+ *
+ * @param value   The compression progress percentage, from 0 to 100.
  */
 extern "C" void progress_emitter(
 	float value
@@ -455,9 +457,9 @@ static void decompression_workload_runner(
  *
  * Convert "foo/bar.png" into "foo/bar_<slice>.png"
  *
- * @param basename   The base pattern; must contain a file extension.
- * @param index      The slice index.
- * @param error      Set to false on success, true on error (no extension found).
+ * @param      basename   The base pattern; must contain a file extension.
+ * @param      index      The slice index.
+ * @param[out] error      Set to false on success, true on error (no extension found).
  *
  * @return The slice file name.
  */
@@ -481,7 +483,7 @@ static std::string get_slice_filename(
 }
 
 /**
- * @brief Load a non-astc image file from memory.
+ * @brief Load an uncompressed image from disk, optionally from slice files.
  *
  * @param      filename          The file to load, or a pattern for array loads.
  * @param      dim_z             The number of slices to load.
@@ -489,7 +491,7 @@ static std::string get_slice_filename(
  * @param[out] is_hdr            Is the loaded image HDR?
  * @param[out] component_count   The number of components in the loaded image.
  *
- * @return The astc image file, or nullptr on error.
+ * @return The loaded image, or @c nullptr on error.
  */
 static astcenc_image_ptr load_uncomp_file(
 	const char* filename,
@@ -650,8 +652,8 @@ static int parse_commandline_options(
  *
  * @param      argc         Command line argument count.
  * @param[in]  argv         Command line argument vector.
+ * @param      profile      Codec color profile.
  * @param      operation    Codec operation mode.
- * @param[out] profile      Codec color profile.
  * @param      comp_image   Compressed image if a decompress operation.
  * @param[out] preprocess   Image preprocess operation.
  * @param[out] config       Codec configuration.
@@ -1570,12 +1572,12 @@ static void print_astcenc_config(
  * checks in the inner-most loop. For the CLI preprocess passes this is deemed
  * acceptable as these are not performance critical paths.
  *
- * @param[in] img   The output image.
+ * @param[in] img   The input image.
  * @param     x     The pixel x coordinate.
  * @param     y     The pixel y coordinate.
  * @param     z     The pixel z coordinate.
  *
- * @return      pixel   The pixel color value to write.
+ * @return The sampled pixel color.
  */
 static vfloat4 image_get_pixel(
 	const astcenc_image& img,
@@ -1660,7 +1662,7 @@ static void image_set_pixel(
 /**
  * @brief Set the value of a single pixel in an image.
  *
- * @param[out] img     The output image; must use F32 texture components.
+ * @param[out] img     The output image; must use U8 texture components.
  * @param      x       The pixel x coordinate.
  * @param      y       The pixel y coordinate.
  * @param      pixel   The pixel color value to write.
@@ -1731,6 +1733,8 @@ static void image_preprocess_normalize(
 /**
  * @brief Linearize an sRGB value.
  *
+ * @param a   The sRGB color component to linearize.
+ *
  * @return The linearized value.
  */
 static float srgb_to_linear(
@@ -1746,6 +1750,8 @@ static float srgb_to_linear(
 
 /**
  * @brief sRGB gamma-encode a linear value.
+ *
+ * @param a   The linear color component to gamma-encode.
  *
  * @return The gamma encoded value.
  */
@@ -1814,10 +1820,10 @@ static void image_preprocess_premultiply(
 /**
  * @brief Populate a single diagnostic image showing aspects of the encoding.
  *
- * @param context      The context to use.
- * @param image        The compressed image to analyze.
- * @param diag_image   The output visualization image to populate.
- * @param texel_func   The per-texel callback used to determine output color.
+ * @param      context      The context to use.
+ * @param      image        The compressed image to analyze.
+ * @param[out] diag_image   The output visualization image to populate.
+ * @param      texel_func   The per-texel callback used to determine output color.
  */
 static void print_diagnostic_image(
 	astcenc_context* context,

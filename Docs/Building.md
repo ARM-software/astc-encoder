@@ -348,7 +348,8 @@ integrated into other projects. We recommend integrating the project in a way
 that lets you control which version of `astcenc` you are using, as this allows
 you to manage API version changes.
 
-A basic example of CMake integration and codec API usage can be found in the `./Utils/Example` directory. See the [Example Readme](../Utils/Example/README.md) for more details.
+A basic example of CMake integration and codec API usage can be found in the
+`./Utils/Example` directory. See the [Example Readme][1] for more details.
 
 > [!CAUTION]
 > This example is designed to always use the latest main branch so that it
@@ -411,3 +412,5 @@ python3 -m pip install -r requirements.txt
 - - -
 
 _Copyright © 2019-2026, Arm Limited and contributors._
+
+[1]: ../Utils/Example/README.md

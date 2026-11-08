@@ -578,7 +578,7 @@ struct astcenc_config
 	/**
 	 * @brief The config enable for the mode0 fast-path search.
 	 *
-	 * If this is set to TUNE_MIN_TEXELS_MODE0 or higher then the early-out fast mode0
+	 * If this is set to TUNE_MIN_SEARCH_MODE0 or higher then the early-out fast mode0
 	 * search is enabled. This option is ineffective for 3D block sizes.
 	 */
 	float tune_search_mode0_enable;
@@ -734,7 +734,7 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_config_init(
 /**
  * @brief Allocate a new codec context based on a config.
  *
- * This function allocates all of the memory resources and threads needed by the codec. This can be
+ * This function allocates all of the memory resources needed by the codec. This can be
  * slow, so it is recommended that contexts are reused to serially compress or decompress multiple
  * images to amortize setup cost.
  *
@@ -870,9 +870,9 @@ ASTCENC_PUBLIC void astcenc_context_free(
  * This feature is primarily useful for codec developers but may be useful for developers building
  * advanced content packaging pipelines.
  *
- * @param context   Codec context.
- * @param data      One block of compressed ASTC data.
- * @param info      The output info structure to populate.
+ * @param      context   Codec context.
+ * @param      data      One block of compressed ASTC data.
+ * @param[out] info      The output info structure to populate.
  *
  * @return @c ASTCENC_SUCCESS if the block was decoded, or an error otherwise. Note that this
  *         function will return success even if the block itself was an error block encoding, as the

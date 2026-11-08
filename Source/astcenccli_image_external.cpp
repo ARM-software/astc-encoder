@@ -56,6 +56,8 @@
 
 /**
  * @brief Trap image load failures and convert into a runtime error.
+ *
+ * @param condition   The condition that must hold for the image decoder.
  */
 static void astcenc_runtime_assert(bool condition)
 {

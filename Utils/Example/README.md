@@ -53,3 +53,7 @@ From the build directory above.
 ```
 astcenc_example <input.png> <output.png>
 ```
+
+- - -
+
+_Copyright © 2019-2026, Arm Limited and contributors._

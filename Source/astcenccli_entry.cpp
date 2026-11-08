@@ -351,6 +351,8 @@ static bool cpu_supports_avx2()
 
 /**
  * @brief Print a string to stderr.
+ *
+ * @param format   The string to print.
  */
 static inline void print_error(
 	const char* format
@@ -448,6 +450,8 @@ static bool cpu_supports_sve()
 
 /**
  * @brief Print a string to stderr.
+ *
+ * @param format   The string to print.
  */
 static inline void print_error(
 	const char* format

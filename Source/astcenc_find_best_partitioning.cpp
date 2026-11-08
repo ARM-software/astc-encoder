@@ -226,11 +226,11 @@ static void kmeans_assign(
 /**
  * @brief Compute new cluster centers based on their center of gravity.
  *
- * @param       blk                  The image block color data to compress.
- * @param       texel_count          The number of texels in the block.
- * @param       partition_count      The number of partitions in the block.
- * @param[out]  cluster_centers      The new cluster center colors.
- * @param       partition_of_texel   The partition assigned for each texel.
+ * @param      blk                  The image block color data to compress.
+ * @param      texel_count          The number of texels in the block.
+ * @param      partition_count      The number of partitions in the block.
+ * @param[out] cluster_centers      The new cluster center colors.
+ * @param      partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_update(
 	const image_block& blk,
@@ -428,11 +428,12 @@ static void count_partition_mismatch_bits(
 /**
  * @brief Use counting sort on the mismatch array to sort partition candidates.
  *
+ * @param      texel_count          The number of texels used for clustering.
  * @param      partitioning_count   The number of packed partitionings.
  * @param      mismatch_count       Partitioning mismatch counts, in index order.
  * @param[out] partition_ordering   Partition index values, in mismatch order.
  *
- * @return The number of active partitions in this selection.
+ * @return The number of active partitionings in this selection.
  */
 static unsigned int get_partition_ordering_by_mismatch_bits(
 	unsigned int texel_count,
@@ -471,7 +472,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 }
 
 /**
- * @brief Use k-means clustering to compute a partition ordering for a block..
+ * @brief Use k-means clustering to compute a partition ordering for a block.
  *
  * @param      bsd                  The block size information.
  * @param      blk                  The image block color data to compress.
@@ -526,13 +527,13 @@ static unsigned int compute_kmeans_partition_ordering(
 }
 
 /**
- * @brief Insert a partitioning into an order list of results, sorted by error.
+ * @brief Insert a partitioning into an ordered list of results, sorted by error.
  *
- * @param      max_values      The max number of entries in the best result arrays.
- * @param      this_error      The error of the new entry.
- * @param      this_partition  The partition ID of the new entry.
- * @param[out] best_errors     The array of best error values.
- * @param[out] best_partitions The array of best partition values.
+ * @param         max_values        The max number of entries in the best result arrays.
+ * @param         this_error        The error of the new entry.
+ * @param         this_partition    The partition ID of the new entry.
+ * @param[in,out] best_errors       The array of best error values.
+ * @param[in,out] best_partitions   The array of best partition values.
  */
 static void insert_result(
 	unsigned int max_values,

@@ -61,10 +61,10 @@ static void merge_endpoints(
  * therefore primarily improving the performance of 4x4 and 5x5 blocks where grid decimation
  * is needed less often.
  *
- * @param      decode_mode   The decode mode (LDR, HDR).
- * @param      bsd           The block size information.
- * @param      blk           The image block color data to compress.
- * @param[out] scb           The symbolic compressed block output.
+ * @param         decode_mode   The decode mode (LDR, HDR).
+ * @param         bsd           The block size information.
+ * @param         blk           The image block color data to compress.
+ * @param[in,out] scb           The symbolic block whose weights are refined.
  */
 static bool realign_weights_undecimated(
 	astcenc_profile decode_mode,
@@ -212,10 +212,10 @@ static inline float infill_weight(
  * partition and per plane) and attempt to improve image quality by moving each weight up by one or
  * down by one quantization step.
  *
- * @param      decode_mode   The decode mode (LDR, HDR).
- * @param      bsd           The block size information.
- * @param      blk           The image block color data to compress.
- * @param[out] scb           The symbolic compressed block output.
+ * @param         decode_mode   The decode mode (LDR, HDR).
+ * @param         bsd           The block size information.
+ * @param         blk           The image block color data to compress.
+ * @param[in,out] scb           The symbolic block whose weights are refined.
  */
 static bool realign_weights_decimated(
 	astcenc_profile decode_mode,
@@ -398,7 +398,8 @@ static bool realign_weights_decimated(
  * @param      partition_count           The partition count.
  * @param      partition_index           The partition index if @c partition_count is 2-4.
  * @param[out] scb                       The symbolic compressed block output.
- * @param[out] tmpbuf                    The quantized weights for plane 1.
+ * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
+ * @param      quant_limit               The maximum allowed weight quantization method.
  */
 static float compress_symbolic_block_for_partition_1plane(
 	const astcenc_config& config,
@@ -766,7 +767,8 @@ static float compress_symbolic_block_for_partition_1plane(
  * @param      tune_errorval_threshold   The error value threshold.
  * @param      plane2_component          The component index for the second plane of weights.
  * @param[out] scb                       The symbolic compressed block output.
- * @param[out] tmpbuf                    The quantized weights for plane 1.
+ * @param[out] tmpbuf                    Preallocated scratch buffers for the compressor.
+ * @param      quant_limit               The maximum allowed weight quantization method.
  */
 static float compress_symbolic_block_for_partition_2planes(
 	const astcenc_config& config,

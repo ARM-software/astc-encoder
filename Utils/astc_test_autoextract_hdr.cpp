@@ -50,6 +50,12 @@
 
 /**
  * @brief Compute the array offset in a 2D image.
+ *
+ * @param x_pix   The image width, in pixels.
+ * @param y_idx   The pixel Y coordinate.
+ * @param x_idx   The pixel X coordinate.
+ * @param chans   The number of components per pixel.
+ * @param p_idx   The component index within the pixel.
  */
 int pix(int x_pix, int y_idx, int x_idx, int chans, int p_idx)
 {

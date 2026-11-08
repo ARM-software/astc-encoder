@@ -445,7 +445,7 @@ static void init_decimation_info_2d(
  * @param      weights_y   The number of weights in the Y dimension.
  * @param      weights_z   The number of weights in the Z dimension.
  * @param[out] di          The decimation info structure to populate.
-   @param[out] wb          The decimation table init scratch working buffers.
+ * @param[out] wb          The decimation table init scratch working buffers.
  */
 static void init_decimation_info_3d(
 	unsigned int texels_x,
