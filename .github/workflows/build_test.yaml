@@ -85,106 +85,6 @@ jobs:
           python ./Test/astc_test_image.py --encoder neon --test-set Small
           python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
 
-  build-ubuntu-arm64-clang-asan:
-    name: Ubuntu arm64 Clang (ASAN)
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Build release
-        run: |
-          export CXX=clang++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON -DASTCENC_ISA_NONE=ON -DASTCENC_PACKAGE=arm64 -DASTCENC_ASAN=ON ..
-          make install package -j4
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        # The runner only supports 128-bit SVE
-        run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
-  build-ubuntu-arm64-clang-ubasn:
-    name: Ubuntu arm64 Clang (UBSAN)
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Build release
-        run: |
-          export CXX=clang++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_SVE_256=ON -DASTCENC_ISA_NONE=ON -DASTCENC_PACKAGE=arm64 -DASTCENC_UBSAN=ON ..
-          make install package -j4
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        # The runner only supports 128-bit SVE
-        run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
   build-ubuntu-arm64-gcc:
     name: Ubuntu arm64 GCC
     runs-on: ubuntu-24.04-arm
@@ -227,112 +127,6 @@ jobs:
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DASTCENC_VERSION=refs/pull/${{ github.event.number }}/head ..
           make -j4
         working-directory: Utils/Example
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        # The runner only supports 128-bit SVE
-        run: ctest -E test-unit-sve_256 --rerun-failed --output-on-failure
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder neon
-          python ./Test/astc_test_functional.py --encoder sve_128
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder neon --test-set Small
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small
-
-  build-ubuntu-arm64-gcc-asan:
-    name: Ubuntu arm64 GCC (ASAN)
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Install GCC 14
-        run: sudo apt-get install -y gcc-14
-
-      - name: Build release
-        run: |
-          export CXX=g++-14
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_NONE=ON -DASTCENC_ASAN=ON ..
-          make install -j4
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        run: ctest --rerun-failed --output-on-failure
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sve_128
-
-      - name: Run image tests
-        run: |
-          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
-          python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder neon --test-set Small --color-format l
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder sve_128 --test-set Small --color-format l
-
-  build-ubuntu-arm64-gcc-ubsan:
-    name: Ubuntu arm64 GCC (UBSAN)
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Install GCC 14
-        run: sudo apt-get install -y gcc-14
-
-      - name: Build release
-        run: |
-          export CXX=g++-14
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UBSAN=ON ..
-          make install -j4
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -408,136 +202,6 @@ jobs:
           path: |
             build_rel/*.zip
             build_rel/*.zip.sha256
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        run: |
-          if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            ctest --rerun-failed --output-on-failure
-          else
-            echo "Skipping avx512 unit tests: host does not support the AVX-512 binary"
-            ctest -E test-unit-avx512 --rerun-failed --output-on-failure
-          fi
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-  build-ubuntu-x64-clang-asan:
-    name: Ubuntu x64 Clang (ASAN)
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Build release
-        run: |
-          export CXX=clang++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_ASAN=ON -DASTCENC_PACKAGE=x64 ..
-          make install package -j4
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        run: |
-          if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            ctest --rerun-failed --output-on-failure
-          else
-            echo "Skipping avx512 unit tests: host does not support the AVX-512 binary"
-            ctest -E test-unit-avx512 --rerun-failed --output-on-failure
-          fi
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-  build-ubuntu-x64-clang-ubsan:
-    name: Ubuntu x64 Clang (UBSAN)
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Build release
-        run: |
-          export CXX=clang++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_UBSAN=ON -DASTCENC_PACKAGE=x64 ..
-          make install package -j4
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -663,9 +327,56 @@ jobs:
             echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
           fi
 
-  build-ubuntu-x64-gcc-asan:
-    name: Ubuntu x64 GCC (ASAN)
-    runs-on: ubuntu-24.04
+  build-ubuntu-sanitizers:
+    name: Ubuntu ${{ matrix.platform }} ${{ matrix.compiler }} (${{ matrix.sanitizer }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [ASAN, UBSAN]
+        platform: [arm64, x64]
+        compiler: [Clang, GCC]
+        include:
+          - platform: arm64
+            runner: ubuntu-24.04-arm
+            isa_flags: -DASTCENC_ISA_NEON=ON -DASTCENC_ISA_SVE_128=ON -DASTCENC_ISA_NONE=ON
+            # The runner only supports 128-bit SVE
+            ctest_flags: -E test-unit-sve_256
+            functional_encoders: none neon sve_128
+            image_encoders: none neon sve_128
+          - platform: x64
+            runner: ubuntu-24.04
+            isa_flags: -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON
+            extra_flags: -DASTCENC_PACKAGE=x64
+            functional_encoders: none sse2 sse4.1 avx2 avx512
+            image_encoders: none all-x86 avx512
+          - compiler: Clang
+            cxx: clang++
+            build_targets: install package
+          - compiler: GCC
+            cxx: g++
+            build_targets: install package
+          - platform: arm64
+            compiler: Clang
+            extra_flags: -DASTCENC_ISA_SVE_256=ON -DASTCENC_PACKAGE=arm64
+          - platform: arm64
+            compiler: GCC
+            cxx: g++-14
+            build_targets: install
+          # GCC ASAN retains its existing reduced test selections
+          - platform: arm64
+            compiler: GCC
+            sanitizer: ASAN
+            ctest_flags: ''
+            functional_encoders: none sve_128
+            image_encoders: neon sve_128
+          - platform: x64
+            compiler: GCC
+            sanitizer: ASAN
+            functional_encoders: none
+            image_encoders: avx2 avx512
+    env:
+      CXX: ${{ matrix.cxx }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v6
@@ -678,13 +389,17 @@ jobs:
       - name: Install ImageMagick
         run: sudo apt-get install imagemagick
 
+      - name: Install GCC 14
+        if: matrix.platform == 'arm64' && matrix.compiler == 'GCC'
+        run: sudo apt-get install -y gcc-14
+
       - name: Build release
         run: |
-          export CXX=g++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_ASAN=ON -DASTCENC_PACKAGE=x64 ..
-          make install package -j4
+          cmake -S . -B build_rel -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX="$PWD" \
+            -DASTCENC_UNITTEST=ON -DASTCENC_${{ matrix.sanitizer }}=ON \
+            ${{ matrix.isa_flags }} ${{ matrix.extra_flags }}
+          cmake --build build_rel --target ${{ matrix.build_targets }} -j4
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -698,94 +413,36 @@ jobs:
 
       - name: Run unit tests
         run: |
-          if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            ctest --rerun-failed --output-on-failure
-          else
+          if [ "${{ matrix.platform }}" = x64 ] &&
+             ! ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
             echo "Skipping avx512 unit tests: host does not support the AVX-512 binary"
             ctest -E test-unit-avx512 --rerun-failed --output-on-failure
+          else
+            ctest ${{ matrix.ctest_flags }} --rerun-failed --output-on-failure
           fi
         working-directory: build_rel
 
       - name: Run functional tests
         run: |
-          python ./Test/astc_test_functional.py --encoder none
+          for ENCODER in ${{ matrix.functional_encoders }}; do
+            if [ "$ENCODER" = avx512 ] &&
+               ! ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+              echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+              continue
+            fi
+            python ./Test/astc_test_functional.py --encoder "$ENCODER"
+          done
 
       - name: Run image tests
         run: |
-          # Use a reduced image set for ASAN, retaining LDR, sRGB, HDR, alpha, and 3D coverage
-          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format rgba
-          python ./Test/astc_test_image.py --encoder avx2 --test-set Small --color-format l
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format rgba
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small --color-format l
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-  build-ubuntu-x64-gcc-ubsan:
-    name: Ubuntu x64 GCC (UBSAN)
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: 'true'
-
-      - name: Update apt packages
-        run: sudo apt-get update
-
-      - name: Install ImageMagick
-        run: sudo apt-get install imagemagick
-
-      - name: Build release
-        run: |
-          export CXX=g++
-          mkdir build_rel
-          cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_UNITTEST=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_NONE=ON -DASTCENC_UNITTEST=ON -DASTCENC_UBSAN=ON -DASTCENC_PACKAGE=x64 ..
-          make install package -j4
-
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - name: Get Python modules
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-
-      - name: Run unit tests
-        run: |
-          if ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            ctest --rerun-failed --output-on-failure
-          else
-            echo "Skipping avx512 unit tests: host does not support the AVX-512 binary"
-            ctest -E test-unit-avx512 --rerun-failed --output-on-failure
-          fi
-        working-directory: build_rel
-
-      - name: Run functional tests
-        run: |
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_functional.py --encoder sse2
-          python ./Test/astc_test_functional.py --encoder sse4.1
-          python ./Test/astc_test_functional.py --encoder avx2
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_functional.py --encoder avx512
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
-
-      - name: Run image tests
-        run: |
-          python ./Test/astc_test_image.py --encoder none --test-set Small
-          python ./Test/astc_test_image.py --encoder all-x86 --test-set Small
-          if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            python ./Test/astc_test_image.py --encoder avx512 --test-set Small
-          else
-            echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
-          fi
+          for ENCODER in ${{ matrix.image_encoders }}; do
+            if [ "$ENCODER" = avx512 ] &&
+               ! ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+              echo "Skipping avx512 execute tests: host does not support the AVX-512 binary"
+              continue
+            fi
+            python ./Test/astc_test_image.py --encoder "$ENCODER" --test-set Small --pairwise
+          done
 
   build-macos-x64-clang:
     name: macOS x64 Clang

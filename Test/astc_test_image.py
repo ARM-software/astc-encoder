@@ -74,9 +74,10 @@ def select_test_cases(test_set: TestSet, block_sizes: list[str],
     '''
     Select image, block size, and quality combinations to test.
 
-    Pairwise selection covers every feasible pair of color format, block size,
-    and quality, and tests every image with a compatible block size at least
-    once. Ties are resolved in input order to keep selection deterministic.
+    Pairwise selection groups images by color profile and format, then covers
+    every feasible pair of image group, block size, and quality. Every image
+    with a compatible block size is tested at least once. Ties are resolved in
+    input order to keep selection deterministic.
 
     Args:
         test_set: The test set to run.
@@ -101,8 +102,10 @@ def select_test_cases(test_set: TestSet, block_sizes: list[str],
     coverage = [
         {
             ('image', str(image.file_path), ''),
-            ('format-block', image.color_format, block_size),
-            ('format-quality', image.color_format, quality),
+            ('format-block', (image.color_profile, image.color_format),
+             block_size),
+            ('format-quality', (image.color_profile, image.color_format),
+             quality),
             ('block-quality', block_size, quality)
         }
         for image, block_size, quality in cases
@@ -436,7 +439,8 @@ def parse_command_line():
                         choices=quality_choices, help='test quality')
 
     parser.add_argument('--pairwise', action='store_true',
-                        help='cover all format/block/quality pairs and images')
+                        help='cover all profile-format/block/quality pairs '
+                             'and images')
 
     parser.add_argument('--repeats', dest='repeats', default=1,
                         type=int, help='test repeat count')

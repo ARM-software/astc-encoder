@@ -57,18 +57,18 @@ class ImageSelectionTests(unittest.TestCase):
         '''
         Cover all feasible pairs and every image without duplicate runs.
         '''
-        qualities = ['fastest', 'fast', 'medium']
+        qualities = ['fastest', 'fast', 'medium', 'thorough']
         full = ati.select_test_cases(
             self.test_set, ati.TEST_BLOCK_SIZES, qualities)
         selected = ati.select_test_cases(
             self.test_set, ati.TEST_BLOCK_SIZES, qualities, True)
 
         full_values = [
-            (image.color_format, block, quality)
+            ((image.color_profile, image.color_format), block, quality)
             for image, block, quality in full
         ]
         selected_values = [
-            (image.color_format, block, quality)
+            ((image.color_profile, image.color_format), block, quality)
             for image, block, quality in selected
         ]
 

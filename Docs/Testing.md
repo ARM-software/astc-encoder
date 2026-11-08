@@ -56,15 +56,11 @@ The `--color-format`, `--block-size`, and `--test-quality` options allow you
 to subset which compressor options are tested. The `-j` option lets you control
 how many threads the compressor is allowed to use.
 
-For a smaller smoke test, pass `--pairwise`. This covers every valid pair of
-color format, block size, and selected quality, and tests each image with a
-compatible block size at least once. This is less exhausive, but dramatically
-cuts down the number of tests that need running. For example, to run pairwise while also excluding thorough testing:
-
-```sh
-python3 ./Test/astc_test_image.py --pairwise --test-quality fastest \
-    --test-quality fast --test-quality medium
-```
+For a smaller smoke test, pass `--pairwise`. This groups images by color profile
+and format, covers every valid pair of image group, block size, and selected
+quality, and tests each image with a compatible block size at least once. For
+the Small set, all four default presets take 46 runs per encoder, compared with
+596 for the full matrix.
 
 By default output images are discarded during testing. To store images for
 debug purposes, the decompressed output images can be kept by passing
