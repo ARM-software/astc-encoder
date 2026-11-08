@@ -1513,16 +1513,19 @@ void compute_avgs_and_dirs_3_comp_rgb(
 /**
  * @brief Compute averages and dominant directions for each partition in a 4 component texture.
  *
- * @param      pi    The partition info for the current trial.
- * @param      blk   The image block color data to be compressed.
- * @param[out] pm    The output partition metrics.
- *                   - Only pi.partition_count array entries actually get initialized.
- *                   - Direction vectors @c pm.dir are not normalized.
+ * @param      pi            The partition info for the current trial.
+ * @param      blk           The image block color data to be compressed.
+ * @param[out] pm            The output partition metrics.
+ *                           - Only pi.partition_count array entries actually get initialized.
+ *                           - Direction vectors @c pm.dir are not normalized.
+ * @param[out] rgb_metrics   The RGB partition metrics, or @c nullptr to omit.
+ *                           Only initialized for grayscale RGB blocks; alpha lanes are zero.
  */
 void compute_avgs_and_dirs_4_comp(
 	const partition_info& pi,
 	const image_block& blk,
-	partition_metrics pm[BLOCK_MAX_PARTITIONS]);
+	partition_metrics pm[BLOCK_MAX_PARTITIONS],
+	partition_metrics* rgb_metrics = nullptr);
 
 /**
  * @brief Compute the RGB error for uncorrelated and same chroma projections.
