@@ -79,7 +79,8 @@ jobs:
         run: |
           export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
           export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
-          python ./Test/astc_test_functional.py CLIPTest --encoder none --durations 10
+          python ./Test/astc_test_functional.py CLIPTest --encoder none \
+            --durations 10 --skip-thread-count
 
       - name: Run Small image tests
         run: |

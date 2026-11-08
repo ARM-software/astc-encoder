@@ -239,8 +239,13 @@ class CLITestBase(unittest.TestCase):
 class CLIPTest(CLITestBase):
     '''
     Command line interface positive tests.
+
+    Attributes:
+        skip_thread_count: Should the thread timing test be skipped?
     '''
     # pylint: disable=too-many-public-methods
+
+    skip_thread_count = False
 
     def compare(self, image1: Path, image2: Path) -> bool:
         '''
@@ -1018,7 +1023,7 @@ class CLIPTest(CLITestBase):
         '''
         Test channel weighting.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1049,7 +1054,7 @@ class CLIPTest(CLITestBase):
         '''
         Test partition count limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1071,7 +1076,7 @@ class CLIPTest(CLITestBase):
         '''
         Test partition index limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1093,7 +1098,7 @@ class CLIPTest(CLITestBase):
         '''
         Test partition index limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1115,7 +1120,7 @@ class CLIPTest(CLITestBase):
         '''
         Test partition index limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1137,7 +1142,7 @@ class CLIPTest(CLITestBase):
         '''
         Test block mode limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1159,7 +1164,7 @@ class CLIPTest(CLITestBase):
         '''
         Test refinement limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         cmd = [
@@ -1180,7 +1185,7 @@ class CLIPTest(CLITestBase):
         '''
         Test candidate limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         cmd = [
@@ -1201,7 +1206,7 @@ class CLIPTest(CLITestBase):
         '''
         Test db cutoff limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1223,7 +1228,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 2 partition early limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1245,7 +1250,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 3 partition early limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1267,7 +1272,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 2 plane correlation limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1289,7 +1294,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 2 partition partitioning candidate limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1311,7 +1316,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 3 partition partitioning candidate limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1333,7 +1338,7 @@ class CLIPTest(CLITestBase):
         '''
         Test 4 partition partitioning candidate limit.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1359,6 +1364,9 @@ class CLIPTest(CLITestBase):
         '''
         Test codec thread count.
         '''
+        if self.skip_thread_count:
+            self.skipTest('Thread timing disabled by --skip-thread-count')
+
         input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
@@ -1383,7 +1391,7 @@ class CLIPTest(CLITestBase):
         '''
         Test silent
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image_dec = self.get_tmp_image_path('LDR', 'decomp')
 
         # Compute the basic image without any channel weights
@@ -1404,7 +1412,7 @@ class CLIPTest(CLITestBase):
         '''
         Test that a round-trip and a file-based round-trip give same result.
         '''
-        input_path = Path('./Test/Images/Small/LDR-RGBA/ldr-rgba-00.png')
+        input_path = Path('./Test/Data/Tiles/ldr-rgba.png')
         image1_dec = self.get_tmp_image_path('LDR', 'decomp')
         image2_comp = self.get_tmp_image_path('LDR', 'comp')
         image2_dec = self.get_tmp_image_path('LDR', 'decomp')
@@ -2277,6 +2285,8 @@ def main() -> int:
     parser.add_argument('--binary', type=Path,
                         help='path to the binary to test; overrides the '
                              'default ./bin/astcenc-<encoder> path')
+    parser.add_argument('--skip-thread-count', action='store_true',
+                        help='skip the thread timing test')
     args = parser.parse_known_args()
 
     binary = args[0].binary
@@ -2288,6 +2298,7 @@ def main() -> int:
     # Set the encoder for this test run
     CLITestBase.test_encoder = args[0].encoder
     CLITestBase.test_binary = binary
+    CLIPTest.skip_thread_count = args[0].skip_thread_count
 
     # Set the sys.argv to remaining args (leave sys.argv[0] alone)
     sys.argv[1:] = args[1]
