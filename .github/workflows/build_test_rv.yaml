@@ -5,6 +5,9 @@ run-name: Build and test RISC-V PR${{ github.event.number }}
 # SIMD backend changes, because tests rely on QEMU which is much slower than
 # the other ISAs where we can test natively.
 
+# Smoke test every Small set image with pairwise format/block/quality coverage
+# to reduce test runtime.
+
 on:
   workflow_dispatch:
   pull_request:
@@ -13,6 +16,7 @@ on:
     paths:
       - 'Source/astcenc_vecmathlib_rvv_n.h'
       - 'Source/UnitTest/test_simd.cpp'
+      - '.github/workflows/build_test_rv.yaml'
 
 jobs:
   build-ubuntu-rvv256-clang:
@@ -69,7 +73,7 @@ jobs:
           export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
           export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
           python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_image.py --encoder none --test-set Small
+          python ./Test/astc_test_image.py --encoder none --test-set Small --pairwise
 
       - name: Run unit tests
         run: |

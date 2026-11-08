@@ -5,6 +5,9 @@ run-name: Build and test SVE-256 PR${{ github.event.number }}
 # library changes, because tests rely on QEMU which is much slower than the
 # other ISAs where we can test natively.
 
+# Smoke test every Small set image with pairwise format/block/quality coverage
+# to reduce test runtime.
+
 on:
   workflow_dispatch:
   pull_request:
@@ -69,4 +72,4 @@ jobs:
 
       - name: Run Small image tests
         run: |
-          python ./Test/astc_test_image.py --encoder sve_256 --test-set Small
+          python ./Test/astc_test_image.py --encoder sve_256 --test-set Small --pairwise

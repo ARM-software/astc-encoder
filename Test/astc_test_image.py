@@ -68,27 +68,56 @@ def is_3d(block_size: str) -> bool:
     return block_size.count('x') == 2
 
 
-def count_test_set(test_set: TestSet, block_sizes: list[str]) -> int:
+def select_test_cases(test_set: TestSet, block_sizes: list[str],
+                      qualities: list[str], pairwise: bool = False) \
+                      -> list[tuple[TestImage, str, str]]:
     '''
-    Count the number of test executions needed for a test set.
+    Select image, block size, and quality combinations to test.
+
+    Pairwise selection covers every feasible pair of color format, block size,
+    and quality, and tests every image with a compatible block size at least
+    once. Ties are resolved in input order to keep selection deterministic.
 
     Args:
         test_set: The test set to run.
         block_sizes: The block sizes to run.
+        qualities: The quality levels to run.
+        pairwise: Select pairwise coverage instead of all combinations?
 
     Return:
-        The number of test executions needed.
+        The selected image, block size, and quality tuples.
     '''
-    count = 0
-    for block_size in block_sizes:
-        for image in test_set.tests:
-            # 3D block sizes require 3D images
-            if is_3d(block_size) != image.is_3d:
-                continue
+    cases = [
+        (image, block_size, quality)
+        for block_size in block_sizes
+        for image in test_set.tests
+        if is_3d(block_size) == image.is_3d
+        for quality in qualities
+    ]
 
-            count += 1
+    if not pairwise:
+        return cases
 
-    return count
+    coverage = [
+        {
+            ('image', str(image.file_path), ''),
+            ('format-block', image.color_format, block_size),
+            ('format-quality', image.color_format, quality),
+            ('block-quality', block_size, quality)
+        }
+        for image, block_size, quality in cases
+    ]
+
+    uncovered = set().union(*coverage)
+    selected = set()
+
+    while uncovered:
+        index = max(range(len(cases)),
+                    key=lambda i: len(coverage[i] & uncovered))
+        selected.add(index)
+        uncovered.difference_update(coverage[index])
+
+    return [case for index, case in enumerate(cases) if index in selected]
 
 
 def determine_result(image: TestImage, reference: Record,
@@ -234,7 +263,8 @@ def run_test_image(encoder: te.EncoderBase, reference: Optional[ResultSet],
 
 
 def run_test_set(encoder: te.EncoderBase, reference: Optional[ResultSet],
-                 test_set: TestSet, quality: str, block_sizes: list[str],
+                 test_set: TestSet, quality: str,
+                 test_cases: list[tuple[TestImage, str]],
                  repeats: int, keep_output: bool,
                  threads: Optional[int]) -> ResultSet:
     '''
@@ -245,7 +275,7 @@ def run_test_set(encoder: te.EncoderBase, reference: Optional[ResultSet],
         reference: The reference test results to compare against.
         test_set: The set of images to test.
         quality: The quality level to test.
-        block_sizes: The block sizes to test.
+        test_cases: The image and block size pairs to test.
         repeats: The number of test repeats to run.
         keep_output: Should the test preserve output images?
         threads (int or None): The thread count to use, or None to use
@@ -257,31 +287,26 @@ def run_test_set(encoder: te.EncoderBase, reference: Optional[ResultSet],
     result_set = ResultSet(test_set.name)
 
     current_test_index = 0
-    max_test_index = count_test_set(test_set, block_sizes)
+    max_test_index = len(test_cases)
 
     title = f'Test Set: {test_set.name} / Encoder: {encoder.name} -{quality}'
     print(title)
     print('=' * len(title))
 
-    for block_size in block_sizes:
-        for image in test_set.tests:
-            # 3D block sizes require 3D images
-            if is_3d(block_size) != image.is_3d:
-                continue
+    for image, block_size in test_cases:
+        current_test_index += 1
 
-            current_test_index += 1
+        progress = f'{current_test_index}/{max_test_index}'
+        msg = f'Running {progress} {block_size} {image.file_name} ... '
+        print(msg, end='', flush=True)
 
-            progress = f'{current_test_index}/{max_test_index}'
-            msg = f'Running {progress} {block_size} {image.file_name} ... '
-            print(msg, end='', flush=True)
+        record, report = run_test_image(
+            encoder, reference, image, quality, block_size,
+            repeats, keep_output, threads)
 
-            record, report = run_test_image(
-                encoder, reference, image, quality, block_size,
-                repeats, keep_output, threads)
+        result_set.add_record(record)
 
-            result_set.add_record(record)
-
-            print(f'\r[{current_test_index:>3}] {report}')
+        print(f'\r[{current_test_index:>3}] {report}')
 
     return result_set
 
@@ -410,6 +435,9 @@ def parse_command_line():
     parser.add_argument('--test-quality', dest='test_qual', action='append',
                         choices=quality_choices, help='test quality')
 
+    parser.add_argument('--pairwise', action='store_true',
+                        help='cover all format/block/quality pairs and images')
+
     parser.add_argument('--repeats', dest='repeats', default=1,
                         type=int, help='test repeat count')
 
@@ -495,10 +523,17 @@ def main() -> int:
                 test_set = TestSet(
                     test_set_name, Path(test_dir),
                     args.profiles, args.formats, args.test_image)
+                test_cases = [
+                    (image, block_size)
+                    for image, block_size, test_quality in select_test_cases(
+                        test_set, args.block_sizes, args.test_qual,
+                        args.pairwise)
+                    if test_quality == quality
+                ]
 
                 result_set = run_test_set(
                     encoder, reference, test_set, quality,
-                    args.block_sizes, args.repeats,
+                    test_cases, args.repeats,
                     args.keep_output, args.threads)
 
                 result_set.save_to_file(Path(test_csv))
