@@ -70,6 +70,10 @@ jobs:
         run: ctest -R '^test-unit-sve_256$' --output-on-failure --no-tests=error
         working-directory: build_rel
 
+      - name: Run functional tests
+        run: |
+          python ./Test/astc_test_functional.py CLIPTest --encoder sve_256 --durations 10
+
       - name: Run Small image tests
         run: |
           python ./Test/astc_test_image.py --encoder sve_256 --test-set Small --pairwise

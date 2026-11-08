@@ -68,16 +68,21 @@ jobs:
           cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DASTCENC_ISA_NONE=ON ..
           make -j4
 
-      - name: Run system tests
-        run: |
-          export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
-          export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
-          python ./Test/astc_test_functional.py --encoder none
-          python ./Test/astc_test_image.py --encoder none --test-set Small --pairwise
-
       - name: Run unit tests
         run: |
           export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
           export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
           ctest --rerun-failed --output-on-failure
         working-directory: build_rel
+
+      - name: Run functional tests
+        run: |
+          export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
+          export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
+          python ./Test/astc_test_functional.py CLIPTest --encoder none --durations 10
+
+      - name: Run Small image tests
+        run: |
+          export QEMU_CPU="max,vlen=256,rvv_ta_all_1s=on,rvv_ma_all_1s=on"
+          export QEMU_LD_PREFIX="/usr/riscv64-linux-gnu"
+          python ./Test/astc_test_image.py --encoder none --test-set Small --pairwise
