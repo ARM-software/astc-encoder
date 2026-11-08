@@ -210,6 +210,8 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 $<${is_clang}:-fuse-ld=lld>)
     endif()
 
+    # Clang's -fno-unsafe-math-optimizations enables FP trapping
+    # Disable traps explicitly without relaxing floating-point value semantics
     if(NOT ${ASTCENC_INVARIANCE})
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
@@ -231,6 +233,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=fast>
 
                 $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
+                $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-trapping-math>
 
                 $<${is_gnu_fe}:-ffp-contract=fast>
                 $<${is_gnu_fe}:-fno-math-errno>)
@@ -250,6 +253,7 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=off>
 
                 $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
+                $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-trapping-math>
 
                 $<${is_gnu_fe}:-ffp-contract=off>
                 $<${is_gnu_fe}:-fno-math-errno>)
