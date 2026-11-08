@@ -822,7 +822,7 @@ class CLIPTest(CLITestBase):
 
         cmd = [
             self.binary, '-tl',
-            './Test/Images/Small/LDR-XY/ldr-xy-00.png',
+            './Test/Data/Tiles/ldr-normal.png',
             image_dec, '5x5', '-exhaustive']
 
         ref_db = float(self.exec(cmd, LDR_RGB_PSNR_PATTERN))
@@ -843,7 +843,7 @@ class CLIPTest(CLITestBase):
 
         cmd = [
             self.binary, '-tl',
-            './Test/Images/Small/LDR-XY/ldr-xy-00.png',
+            './Test/Data/Tiles/ldr-normal.png',
             image_dec, '4x4', '-exhaustive']
 
         ref_db = float(self.exec(cmd, LDR_RGB_PSNR_PATTERN))
