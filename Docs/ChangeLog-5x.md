@@ -58,6 +58,10 @@ The 5.8.0 release is a minor release, focusing on performance optimization.
     `interleave_rgba8()`.
   * **Optimization:** Use SVE narrowing stores in the 4-wide implementation of
     `pack_and_store_low_bytes()`.
+* **Build system updates:**
+  * **Bug fix:** Restore Clang compression performance by disabling unintended
+    floating-point trapping, retaining precise arithmetic and the configured
+    FMA contraction policy.
 
 <!-- ---------------------------------------------------------------------- -->
 ## 5.7.1
