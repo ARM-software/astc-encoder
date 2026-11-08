@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2025 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -1097,6 +1097,9 @@ void compute_error_squared_rgba_grayscale(
 	vfloatacc uncor_errorsumv = vfloatacc::zero();
 	vfloatacc samec_errorsumv = vfloatacc::zero();
 
+	vgatherf_table tr = vgatherf_load(blk.data_r, blk.texel_count);
+	vgatherf_table ta = vgatherf_load(blk.data_a, blk.texel_count);
+
 	for (size_t partition = 0; partition < partition_count; partition++)
 	{
 		const uint8_t *texel_indexes = pi.texels_of_partition[partition];
@@ -1136,8 +1139,8 @@ void compute_error_squared_rgba_grayscale(
 			vmask mask = lane_ids < vint_from_size(texel_count);
 			const uint8_t* texel_idxs = texel_indexes + i;
 
-			vfloat data_r = gatherf_byte_inds<vfloat>(blk.data_r, texel_idxs);
-			vfloat data_a = gatherf_byte_inds<vfloat>(blk.data_a, texel_idxs);
+			vfloat data_r = gatherf(tr, texel_idxs);
+			vfloat data_a = gatherf(ta, texel_idxs);
 
 			// Reuse the RGB product, retaining all three additions in order.
 			vfloat uncor_rgb_param = data_r * l_uncor_bs0;
