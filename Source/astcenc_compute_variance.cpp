@@ -41,9 +41,9 @@
  * ... and modify in-place to turn it into a prefix-sum array of the form:
  *     v0, v0+v1, v0+v1+v2, ...
  *
- * @param d      The array to prefix-sum.
- * @param items  The number of items in the array.
- * @param stride The item spacing in the array; i.e. dense arrays should use 1.
+ * @param[in,out] d        The array to prefix-sum.
+ * @param         items    The number of items in the array.
+ * @param         stride   The item spacing in the array; i.e. dense arrays should use 1.
  */
 static void brent_kung_prefix_sum(
 	vfloat4* d,

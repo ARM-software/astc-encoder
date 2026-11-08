@@ -72,7 +72,7 @@
  * @param      uncor_pline       The endpoint line assuming uncorrelated endpoints.
  * @param[out] uncor_err         The computed error for the uncorrelated endpoint line.
  * @param      samec_pline       The endpoint line assuming the same chroma for both endpoints.
- * @param[out] samec_err         The computed error for the uncorrelated endpoint line.
+ * @param[out] samec_err         The computed error for the same chroma endpoint line.
  * @param      rgbl_pline        The endpoint line assuming RGB + lumashift data.
  * @param[out] rgbl_err          The RGB + lumashift endpoint line error, or zero for LDR RGB.
  * @param      l_pline           The endpoint line assuming luminance data.
@@ -332,7 +332,7 @@ static void compute_encoding_choice_errors(
  * @param      pi                 The partition info.
  * @param      eci                The encoding choice error metrics.
  * @param      ep                 The idealized endpoints.
- * @param      error_weight       The resulting encoding choice error metrics.
+ * @param      error_weight       The per-channel error weights for this partition.
  * @param[out] best_error         The best error for each integer count and quant level.
  * @param[out] format_of_choice   The preferred endpoint format for each integer count and quant level.
  */
@@ -1219,7 +1219,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
  * @param[out] best_quant_level_mod   The output best color quant level assuming two more bits are available.
  * @param[out] best_formats           The output best color formats.
  *
- * @return best_error The output error for the best pairing.
+ * @return The output error for the best pairing.
  */
 static float four_partitions_find_best_combination_for_bitcount(
 	const float best_combined_error[21][6],

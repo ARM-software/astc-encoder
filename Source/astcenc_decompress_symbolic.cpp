@@ -27,10 +27,10 @@
 /**
  * @brief Compute the integer linear interpolation of two color endpoints.
  *
- * @param u8_mask       The mask for lanes using decode_unorm8 rather than decode_f16.
- * @param color0        The endpoint0 color.
- * @param color1        The endpoint1 color.
- * @param weights       The interpolation weight (between 0 and 64).
+ * @param u8_mask   The mask for lanes using decode_unorm8 rather than decode_f16.
+ * @param color0    The endpoint0 color.
+ * @param color1    The endpoint1 color.
+ * @param weights   The interpolation weight (between 0 and 64).
  *
  * @return The interpolated color.
  */

@@ -265,11 +265,11 @@ static uint8_t select_partition(
 /**
  * @brief Generate a single partition info structure.
  *
- * @param[out] bsd                     The block size information.
- * @param      partition_count         The partition count of this partitioning.
- * @param      partition_index         The partition index / seed of this partitioning.
- * @param      partition_remap_index   The remapped partition index of this partitioning.
- * @param[out] pi                      The partition info structure to populate.
+ * @param[in,out] bsd                     The block size information.
+ * @param         partition_count         The partition count of this partitioning.
+ * @param         partition_index         The partition index / seed of this partitioning.
+ * @param         partition_remap_index   The remapped partition index of this partitioning.
+ * @param[out]    pi                      The partition info structure to populate.
  *
  * @return True if this is a useful partition index, False if we can skip it.
  */

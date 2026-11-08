@@ -469,9 +469,9 @@ static inline void write_bits(
  * This function reads a packed N-bit field from two bytes in memory. The stored value must exist
  * within the two bytes, but can start at an arbitrary bit offset and span the two bytes in memory.
  *
- * @param         bitcount    The number of bits to read.
- * @param         bitoffset   The bit offset to read from, between 0 and 7.
- * @param[in,out] ptr         The data pointer to read from.
+ * @param bitcount    The number of bits to read.
+ * @param bitoffset   The bit offset to read from, between 0 and 7.
+ * @param ptr         The data pointer to read from.
  *
  * @return The read value.
  */

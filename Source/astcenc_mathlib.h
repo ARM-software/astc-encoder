@@ -152,11 +152,11 @@ static inline float fabs(float v)
 }
 
 /**
- * @brief Test if a float value is a nan.
+ * @brief Test if a float value is a NaN.
  *
- * @param v    The value test.
+ * @param v   The value to test.
  *
- * @return Zero is not a NaN, non-zero otherwise.
+ * @return @c true if the value is a NaN, @c false otherwise.
  */
 static inline bool isnan(float v)
 {
@@ -166,10 +166,12 @@ static inline bool isnan(float v)
 /**
  * @brief Return the minimum of two values.
  *
- * For floats, NaNs are turned into @c q.
+ * For floats, an unordered comparison selects @c q.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
  *
  * @return The smallest value.
  */
@@ -182,11 +184,14 @@ static inline T min(T p, T q)
 /**
  * @brief Return the minimum of three values.
  *
- * For floats, NaNs are turned into @c r.
+ * For floats, each pairwise min selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
  *
  * @return The smallest value.
  */
@@ -199,12 +204,15 @@ static inline T min(T p, T q, T r)
 /**
  * @brief Return the minimum of four values.
  *
- * For floats, NaNs are turned into @c s.
+ * For floats, each pairwise min selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
- * @param s   The fourth value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
+ * @param  s   The fourth value to compare.
  *
  * @return The smallest value.
  */
@@ -217,10 +225,12 @@ static inline T min(T p, T q, T r, T s)
 /**
  * @brief Return the maximum of two values.
  *
- * For floats, NaNs are turned into @c q.
+ * For floats, an unordered comparison selects @c q.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
  *
  * @return The largest value.
  */
@@ -233,11 +243,14 @@ static inline T max(T p, T q)
 /**
  * @brief Return the maximum of three values.
  *
- * For floats, NaNs are turned into @c r.
+ * For floats, each pairwise max selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
  *
  * @return The largest value.
  */
@@ -250,12 +263,15 @@ static inline T max(T p, T q, T r)
 /**
  * @brief Return the maximum of four values.
  *
- * For floats, NaNs are turned into @c s.
+ * For floats, each pairwise max selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
- * @param s   The fourth value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
+ * @param  s   The fourth value to compare.
  *
  * @return The largest value.
  */
@@ -270,9 +286,11 @@ static inline T max(T p, T q, T r, T s)
  *
  * For floats, NaNs are turned into @c mn.
  *
- * @param v      The value to clamp.
- * @param mn     The min value (inclusive).
- * @param mx     The max value (inclusive).
+ * @tparam T    The value type.
+ *
+ * @param  v    The value to clamp.
+ * @param  mn   The min value (inclusive).
+ * @param  mx   The max value (inclusive).
  *
  * @return The clamped value.
  */
@@ -305,7 +323,7 @@ static inline float clamp1f(float v)
  *
  * NaNs are turned into 0.0f.
  *
- * @param v  The value to clamp.
+ * @param v   The value to clamp.
  *
  * @return The clamped value.
  */
@@ -329,7 +347,7 @@ static inline float flt_rd(float v)
 /**
  * @brief SP float round-to-nearest and convert to integer.
  *
- * @param v   The value to round.
+ * @param v   The nonnegative value to round; halfway cases round upward.
  *
  * @return The rounded value.
  */
@@ -442,11 +460,11 @@ static inline int uint_as_int(unsigned int v)
 }
 
 /**
- * @brief Fast approximation of 1.0 / sqrt(val).
+ * @brief Compute the reciprocal square root.
  *
  * @param v   The input value.
  *
- * @return The approximated result.
+ * @return The reciprocal square root.
  */
 static inline float rsqrt(float v)
 {
@@ -454,11 +472,11 @@ static inline float rsqrt(float v)
 }
 
 /**
- * @brief Fast approximation of sqrt(val).
+ * @brief Compute the square root.
  *
  * @param v   The input value.
  *
- * @return The approximated result.
+ * @return The square root.
  */
 static inline float sqrt(float v)
 {
@@ -468,7 +486,7 @@ static inline float sqrt(float v)
 /**
  * @brief Extract mantissa and exponent of a float value.
  *
- * @param      v      The input value.
+ * @param      v      The finite, normalized input value.
  * @param[out] expo   The output exponent.
  *
  * @return The mantissa.
@@ -546,7 +564,7 @@ static inline size_t get_block_count_safe(
  * platforms. Every PRNG created by this call will therefore return the same
  * sequence of values ...
  *
- * @param state The state structure to initialize.
+ * @param[out] state   The state structure to initialize.
  */
 void rand_init(uint64_t state[2]);
 
@@ -557,7 +575,7 @@ void rand_init(uint64_t state[2]);
  * public-domain implementation given by David Blackman & Sebastiano Vigna at
  * http://vigna.di.unimi.it/xorshift/xoroshiro128plus.c
  *
- * @param state The state structure to use/update.
+ * @param[in,out] state   The state structure to use/update.
  */
 uint64_t rand(uint64_t state[2]);
 

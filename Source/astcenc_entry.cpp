@@ -918,11 +918,11 @@ void astcenc_context_free(
 /**
  * @brief Compress an image, after any preflight has completed.
  *
- * @param[out] ctxo           The compressor context.
- * @param      thread_index   The thread index.
- * @param      image          The input image.
- * @param      swizzle        The input swizzle.
- * @param[out] buffer         The output array for the compressed data.
+ * @param[in,out] ctxo           The compressor context.
+ * @param         thread_index   The thread index.
+ * @param         image          The input image.
+ * @param         swizzle        The input swizzle.
+ * @param[out]    buffer         The output array for the compressed data.
  */
 static void compress_image(
 	astcenc_context& ctxo,
@@ -1095,10 +1095,10 @@ static void compress_image(
  * This function can be called by multiple threads, but only after a single
  * thread calls the setup function @c init_compute_averages().
  *
- * Results are written back into @c img->input_alpha_averages.
+ * Results are written back into @c ctx.context.input_alpha_averages.
  *
- * @param[out] ctx   The context.
- * @param      ag    The average and variance arguments created during setup.
+ * @param[in,out] ctx   The context.
+ * @param         ag    The regional averaging arguments created during setup.
  */
 static void compute_averages(
 	astcenc_context& ctx,

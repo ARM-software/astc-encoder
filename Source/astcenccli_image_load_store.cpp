@@ -40,6 +40,8 @@
 
 /**
  * @brief Reverse the bytes in a uint32_t value.
+ *
+ * @param val   The value whose bytes are to be reversed.
  */
 static uint32_t reverse_bytes_u32(
 	uint32_t val
@@ -1285,9 +1287,9 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 /**
  * @brief Load a KTX compressed image using the local custom loader.
  *
- * @param      filename          The name of the file to load.
- * @param[out] is_srgb           @c true if this is an sRGB image, @c false otherwise.
- * @param[out] img               The output image to populate.
+ * @param      filename   The name of the file to load.
+ * @param[out] is_srgb    @c true if this is an sRGB image, @c false otherwise.
+ * @param[out] img        The output image to populate.
  *
  * @return @c true on error, @c false otherwise.
  */

@@ -601,9 +601,9 @@ static void compute_avgs_and_dirs_4_comp_grayscale(
 /**
  * @brief Compute RGBA partition averages and directions for general RGBA data.
  *
- * @param      pi         The partitioning to use.
- * @param      blk        The image block color data to process.
- * @param[out] pm         The partition averages and directions.
+ * @param      pi    The partitioning to use.
+ * @param      blk   The image block color data to process.
+ * @param[out] pm    The partition averages and directions.
  */
 static void compute_avgs_and_dirs_4_comp_general(
 	const partition_info& pi,

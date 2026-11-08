@@ -45,9 +45,9 @@ static inline int bitrev8(int p)
  * The stored value is at most 8 bits, but can be stored at an offset of between 0 and 7 bits so may
  * span two separate bytes in memory.
  *
- * @param         bitcount    The number of bits to read.
- * @param         bitoffset   The bit offset to read from, between 0 and 7.
- * @param[in,out] ptr         The data pointer to read from.
+ * @param bitcount    The number of bits to read.
+ * @param bitoffset   The bit offset to read from, between 0 and 7.
+ * @param ptr         The data pointer to read from.
  *
  * @return The read value.
  */

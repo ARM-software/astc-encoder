@@ -41,6 +41,15 @@ namespace astcenc
  * @brief Construct from 8 scalar values.
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
+ * @param c   The value for lane 2.
+ * @param d   The value for lane 3.
+ * @param e   The value for lane 4.
+ * @param f   The value for lane 5.
+ * @param g   The value for lane 6.
+ * @param h   The value for lane 7.
  */
 static vfloat8 vfloat8_lit(
 	float a, float b, float c, float d,
@@ -57,6 +66,15 @@ static vfloat8 vfloat8_lit(
  * @brief Construct from 8 scalar values.
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
+ * @param c   The value for lane 2.
+ * @param d   The value for lane 3.
+ * @param e   The value for lane 4.
+ * @param f   The value for lane 5.
+ * @param g   The value for lane 6.
+ * @param h   The value for lane 7.
  */
 static vint8 vint8_lit(
 	int a, int b, int c, int d,
@@ -76,6 +94,23 @@ static vint8 vint8_lit(
  * @brief Construct from 16 scalar values.
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
+ * @param c   The value for lane 2.
+ * @param d   The value for lane 3.
+ * @param e   The value for lane 4.
+ * @param f   The value for lane 5.
+ * @param g   The value for lane 6.
+ * @param h   The value for lane 7.
+ * @param i   The value for lane 8.
+ * @param j   The value for lane 9.
+ * @param k   The value for lane 10.
+ * @param l   The value for lane 11.
+ * @param m   The value for lane 12.
+ * @param n   The value for lane 13.
+ * @param o   The value for lane 14.
+ * @param p   The value for lane 15.
  */
 static vfloat16 vfloat16_lit(
 	float a, float b, float c, float d,
@@ -94,6 +129,23 @@ static vfloat16 vfloat16_lit(
  * @brief Construct from 16 scalar values.
  *
  * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+ *
+ * @param a   The value for lane 0.
+ * @param b   The value for lane 1.
+ * @param c   The value for lane 2.
+ * @param d   The value for lane 3.
+ * @param e   The value for lane 4.
+ * @param f   The value for lane 5.
+ * @param g   The value for lane 6.
+ * @param h   The value for lane 7.
+ * @param i   The value for lane 8.
+ * @param j   The value for lane 9.
+ * @param k   The value for lane 10.
+ * @param l   The value for lane 11.
+ * @param m   The value for lane 12.
+ * @param n   The value for lane 13.
+ * @param o   The value for lane 14.
+ * @param p   The value for lane 15.
  */
 static vint16 vint16_lit(
 	int a, int b, int c, int d,

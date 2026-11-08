@@ -58,6 +58,11 @@ typedef int pthread_attr_t;
 
 /**
  * @brief Proxy Windows @c CreateThread underneath a pthreads-like wrapper.
+ *
+ * @param[out] thread       The native handle of the created thread.
+ * @param      attribs      Unused thread attributes.
+ * @param      threadfunc   The thread entry point.
+ * @param      thread_arg   The payload passed to the thread entry point.
  */
 static int pthread_create(
 	pthread_t* thread,
@@ -84,6 +89,9 @@ static int pthread_create(
  * This is needed on Windows 10 or older to allow benefit from large core count
  * systems with more than 64 logical CPUs. The assignment is skipped on systems
  * with a single processor group, as it is not necessary.
+ *
+ * @param thread         The native thread handle.
+ * @param thread_index   The thread index used to select a CPU group.
  */
 static void set_group_affinity(
 	pthread_t thread,
@@ -125,6 +133,9 @@ static void set_group_affinity(
 
 /**
  * @brief Proxy Windows @c WaitForSingleObject underneath a pthreads-like wrapper.
+ *
+ * @param thread   The native thread handle to wait for.
+ * @param value    Unused pointer; the thread return value is not stored.
  */
 static int pthread_join(
 	pthread_t thread,
@@ -229,10 +240,10 @@ struct launch_desc
 /**
  * @brief Helper function to translate thread entry points.
  *
- * Convert a (void*) thread entry to an (int, void*) thread entry, where the
- * integer contains the thread ID in the thread pool.
+ * Convert a (void*) thread entry to an (int, int, void*) thread entry, passing
+ * the thread count, thread ID, and user payload.
  *
- * @param p The thread launch helper payload.
+ * @param p   The thread launch helper payload.
  */
 static void* launch_threads_helper(
 	void *p

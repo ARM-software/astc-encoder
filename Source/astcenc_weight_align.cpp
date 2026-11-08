@@ -86,10 +86,10 @@ void prepare_angular_tables()
 /**
  * @brief Compute the angular alignment factors and offsets.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_angular_steps         The maximum number of steps to be tested.
- * @param[out] offsets                   The output angular offsets array.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_angular_steps        The maximum number of steps to be tested.
+ * @param[out] offsets                  The output angular offsets array.
  */
 static void compute_angular_offsets(
 	unsigned int weight_count,
@@ -146,16 +146,16 @@ static void compute_angular_offsets(
  * offset, and then compute the resulting error. The cut errors indicate the error that results from
  * forcing samples that should have had one weight value one step up or down.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_angular_steps         The maximum number of steps to be tested.
- * @param      max_quant_steps           The maximum quantization level to be tested.
- * @param      offsets                   The angular offsets array.
- * @param[out] lowest_weight             Per angular step, the lowest weight.
- * @param[out] weight_span               Per angular step, the span between lowest and highest weight.
- * @param[out] error                     Per angular step, the error.
- * @param[out] cut_low_weight_error      Per angular step, the low weight cut error.
- * @param[out] cut_high_weight_error     Per angular step, the high weight cut error.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_angular_steps        The maximum number of steps to be tested.
+ * @param      max_quant_steps          The maximum quantization level to be tested.
+ * @param      offsets                  The angular offsets array.
+ * @param[out] lowest_weight            Per angular step, the lowest weight.
+ * @param[out] weight_span              Per angular step, the span between lowest and highest weight.
+ * @param[out] error                    Per angular step, the error.
+ * @param[out] cut_low_weight_error     Per angular step, the low weight cut error.
+ * @param[out] cut_high_weight_error    Per angular step, the high weight cut error.
  */
 static void compute_lowest_and_highest_weight(
 	unsigned int weight_count,
@@ -247,11 +247,11 @@ static void compute_lowest_and_highest_weight(
 /**
  * @brief The main function for the angular algorithm.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_quant_level           The maximum quantization level to be tested.
- * @param[out] low_value                 Per angular step, the lowest weight value.
- * @param[out] high_value                Per angular step, the highest weight value.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_quant_level          The maximum quantization level to be tested.
+ * @param[out] low_value                Per angular step, the lowest weight value.
+ * @param[out] high_value               Per angular step, the highest weight value.
  */
 static void compute_angular_endpoints_for_quant_levels(
 	unsigned int weight_count,

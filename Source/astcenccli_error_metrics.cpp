@@ -40,10 +40,10 @@ public:
 /**
  * @brief Incremental addition operator for error accumulators.
  *
- * @param val The accumulator to increment
- * @param inc The increment to apply
+ * @param[in,out] val   The accumulator to increment.
+ * @param         inc   The increment to apply.
  *
- * @return The updated accumulator
+ * @return The updated accumulator.
  */
 static error_accum4& operator+=(
 	error_accum4 &val,
@@ -59,10 +59,10 @@ static error_accum4& operator+=(
 /**
  * @brief mPSNR tone-mapping operator for HDR images.
  *
- * @param val     The color value to tone map
- * @param fstop   The exposure fstop; should be in range [-125, 125]
+ * @param val     The color value to tone map.
+ * @param fstop   The exposure fstop; should be in range [-125, 125].
  *
- * @return The mapped color value in [0.0f, 255.0f] range
+ * @return The mapped color value in [0.0f, 255.0f] range.
  */
 static float mpsnr_operator(
 	float val,
@@ -78,16 +78,16 @@ static float mpsnr_operator(
 }
 
 /**
- * @brief mPSNR difference between two values.
+ * @brief Sum squared tone-mapped differences between two values.
  *
- * Differences are given as "val1 - val2".
+ * Each difference is squared after applying the mPSNR tone mapping.
  *
- * @param val1       The first color value
- * @param val2       The second color value
- * @param fstop_lo   The low exposure fstop; should be in range [-125, 125]
- * @param fstop_hi   The high exposure fstop; should be in range [-125, 125]
+ * @param val1       The first color value.
+ * @param val2       The second color value.
+ * @param fstop_lo   The low exposure fstop; should be in range [-125, 125].
+ * @param fstop_hi   The high exposure fstop; should be in range [-125, 125].
  *
- * @return The summed mPSNR difference across all active fstop levels
+ * @return The summed squared difference across all active fstop levels.
  */
 static float mpsnr_sumdiff(
 	float val1,

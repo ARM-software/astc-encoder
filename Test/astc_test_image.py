@@ -318,7 +318,7 @@ def get_encoder_params(encoder_name: str, reference_name: str,
                        test_set_name: str) \
                        -> tuple[te.EncoderBase, str, str, str]:
     '''
-    The the encoder and image set parameters for a test run.
+    Get the encoder and image set parameters for a test run.
 
     Args:
         encoder_name: The encoder name.
