@@ -284,7 +284,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 /**
  * @brief Portable float-table gather: keep the pointer, gather from memory.
  *
- * AVX-512 replaces this with a register-resident VBMI table in
+ * AVX-512 replaces this with a register-resident float table in
  * astcenc_vecmathlib_avx512_16.h.
  */
 struct vgatherf_table {

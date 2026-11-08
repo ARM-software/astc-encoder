@@ -26,11 +26,11 @@
  * modulo data type, so we can use them as substitutable implementations in VLA
  * code.
  *
- * gatherf is implemented with AVX-512 VBMI (vpermb / vpermt2b) for tables that
- * fit in 1-4 ZMM registers, and scalar loads for larger index ranges. It does
- * not use AVX-512F vgatherdps. vgatherf_load hoists those masked ZMM loads so
- * callers can permute many times from one table. vtable_lookup_32bit uses
- * vpermb over packed byte tables instead of AVX2-style lane-local pshufb.
+ * gatherf uses native 32-bit permutes for tables that fit in 1-4 ZMM registers,
+ * and scalar loads for larger index ranges. It does not use vgatherdps.
+ * vgatherf_load hoists those masked ZMM loads so callers can permute many
+ * times from one table. vtable_lookup_32bit uses VBMI vpermb over packed byte
+ * tables instead of AVX2-style lane-local pshufb.
  */
 
 #ifndef ASTC_VECMATHLIB_AVX512_16_H_INCLUDED
@@ -1068,20 +1068,6 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat16& accum, vfloat16 a, vmask16 m)
 }
 
 /**
- * @brief Expand 16 dword indices into VBMI byte indices for a float table.
- *
- * Lane i with float index k becomes bytes {4k, 4k+1, 4k+2, 4k+3}.
- *
- * @param idx32   The float table index for each 32-bit lane.
- */
-ASTCENC_SIMD_INLINE __m512i vbmi_float_byte_idx(__m512i idx32)
-{
-	return _mm512_add_epi32(
-	    _mm512_mullo_epi32(idx32, _mm512_set1_epi32(0x04040404)),
-	    _mm512_set1_epi32(0x03020100));
-}
-
-/**
  * @brief Return a mask for the live lanes of a 16-entry float table load.
  *
  * @param count    The number of entries in the table.
@@ -1123,7 +1109,7 @@ ASTCENC_SIMD_INLINE vfloat16 gatherf_scalar(const float* base, vint16 indices)
 }
 
 /**
- * @brief Register-resident float table for VBMI gatherf (up to 64 entries).
+ * @brief Register-resident float table for gatherf (up to 64 entries).
  *
  * Load once with vgatherf_load; permute many times with gatherf. Tables larger
  * than 64 keep the pointer and use the scalar-load gather.
@@ -1206,10 +1192,10 @@ ASTCENC_SIMD_INLINE vgatherf_table vgatherf_load(const float* base, unsigned int
 #endif
 
 /**
- * @brief Gather 16 floats from a preloaded VBMI table, else scalar loads.
+ * @brief Gather 16 floats from a preloaded float table, else scalar loads.
  *
- * Replaces AVX-512F vgatherdps: convert dword indices to byte indices and
- * vpermb (16-entry table) or vpermt2b (32-entry, or two vpermt2b for 64).
+ * Use one 32-bit permute for up to 32 entries. Larger tables use two permutes
+ * with the same low 5 index bits, selecting the half with index bit 5.
  *
  * @param t         The prepared float table.
  * @param indices   The table index for each lane.
@@ -1223,30 +1209,18 @@ ASTCENC_SIMD_INLINE vfloat16 gatherf(const vgatherf_table& t, vint16 indices)
 
 	if (t.count <= 16)
 	{
-		__m512i r = _mm512_permutexvar_epi8(
-		    vbmi_float_byte_idx(indices.m), _mm512_castps_si512(t.t0));
-		return vfloat16(_mm512_castsi512_ps(r));
+		return vfloat16(_mm512_permutexvar_ps(indices.m, t.t0));
 	}
 
 	if (t.count <= 32)
 	{
-		__m512i r = _mm512_permutex2var_epi8(
-		    _mm512_castps_si512(t.t0),
-		    vbmi_float_byte_idx(indices.m),
-		    _mm512_castps_si512(t.t1));
-		return vfloat16(_mm512_castsi512_ps(r));
+		return vfloat16(_mm512_permutex2var_ps(t.t0, indices.m, t.t1));
 	}
 
-	__m512i bidx_lo = vbmi_float_byte_idx(indices.m);
-	__m512i bidx_hi = vbmi_float_byte_idx(
-	    _mm512_sub_epi32(indices.m, _mm512_set1_epi32(32)));
-	__m512i lo = _mm512_permutex2var_epi8(
-	    _mm512_castps_si512(t.t0), bidx_lo, _mm512_castps_si512(t.t1));
-	__m512i hi = _mm512_permutex2var_epi8(
-	    _mm512_castps_si512(t.t2), bidx_hi, _mm512_castps_si512(t.t3));
+	__m512 lo = _mm512_permutex2var_ps(t.t0, indices.m, t.t1);
+	__m512 hi = _mm512_permutex2var_ps(t.t2, indices.m, t.t3);
 	__mmask16 ge32 = _mm512_cmpge_epi32_mask(indices.m, _mm512_set1_epi32(32));
-	return vfloat16(_mm512_mask_blend_ps(ge32, _mm512_castsi512_ps(lo),
-	                                     _mm512_castsi512_ps(hi)));
+	return vfloat16(_mm512_mask_blend_ps(ge32, lo, hi));
 }
 
 /**
@@ -1261,7 +1235,7 @@ ASTCENC_SIMD_INLINE vfloat16 gatherf(const vgatherf_table& t, const uint8_t* ind
 }
 
 /**
- * @brief Gather 16 floats with AVX-512 VBMI permutes, else scalar loads.
+ * @brief Gather 16 floats with AVX-512 32-bit permutes, else scalar loads.
  *
  * Convenience wrapper: infers the live table span from the index vector
  * (hmax + 1) then permutes. Prefer vgatherf_load when the same table is
