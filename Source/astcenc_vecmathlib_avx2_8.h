@@ -37,6 +37,12 @@
 #include <cstdio>
 
 // Define convenience intrinsics that are missing on older compilers
+/**
+ * @brief Combine two 128-bit integer vectors into one 256-bit vector.
+ *
+ * @param m   The upper 128-bit vector.
+ * @param n   The lower 128-bit vector.
+ */
 #define astcenc_mm256_set_m128i(m, n) _mm256_insertf128_si256(_mm256_castsi128_si256((n)), (m), 1)
 
 // ============================================================================
@@ -49,7 +55,7 @@
 struct vfloat8
 {
 	/**
-	 * @brief Construct from zero-initialized value.
+	 * @brief Construct with default initialization.
 	 */
 	ASTCENC_SIMD_INLINE vfloat8() = default;
 
@@ -58,6 +64,8 @@ struct vfloat8
 	 *
 	 * Consider using loada() which is better with vectors if data is aligned
 	 * to vector length.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(const float *p)
 	{
@@ -68,6 +76,8 @@ struct vfloat8
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using zero() for constexpr zeros.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(float a)
 	{
@@ -76,6 +86,8 @@ struct vfloat8
 
 	/**
 	 * @brief Construct from an existing SIMD register.
+	 *
+	 * @param a   The SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat8(__m256 a)
 	{
@@ -92,6 +104,8 @@ struct vfloat8
 
 	/**
 	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 *
+	 * @param p   The address of the scalar to replicate.
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 load1(const float* p)
 	{
@@ -100,6 +114,8 @@ struct vfloat8
 
 	/**
 	 * @brief Factory that returns a vector loaded from 32B aligned memory.
+	 *
+	 * @param p   The aligned source address.
 	 */
 	static ASTCENC_SIMD_INLINE vfloat8 loada(const float* p)
 	{
@@ -122,7 +138,7 @@ struct vfloat8
 struct vint8
 {
 	/**
-	 * @brief Construct from zero-initialized value.
+	 * @brief Construct with default initialization.
 	 */
 	ASTCENC_SIMD_INLINE vint8() = default;
 
@@ -131,6 +147,8 @@ struct vint8
 	 *
 	 * Consider using loada() which is better with vectors if data is aligned
 	 * to vector length.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const int *p)
 	{
@@ -139,6 +157,8 @@ struct vint8
 
 	/**
 	 * @brief Construct from 8 uint8_t loaded from an unaligned address.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
@@ -156,6 +176,8 @@ struct vint8
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using zero() for constexpr zeros.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(int a)
 	{
@@ -164,6 +186,8 @@ struct vint8
 
 	/**
 	 * @brief Construct from an existing SIMD register.
+	 *
+	 * @param a   The SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(__m256i a)
 	{
@@ -180,6 +204,8 @@ struct vint8
 
 	/**
 	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 *
+	 * @param p   The address of the scalar to replicate.
 	 */
 	static ASTCENC_SIMD_INLINE vint8 load1(const int* p)
 	{
@@ -189,6 +215,8 @@ struct vint8
 
 	/**
 	 * @brief Factory that returns a vector loaded from unaligned memory.
+	 *
+	 * @param p   The source bytes.
 	 */
 	static ASTCENC_SIMD_INLINE vint8 load(const uint8_t* p)
 	{
@@ -197,6 +225,8 @@ struct vint8
 
 	/**
 	 * @brief Factory that returns a vector loaded from 32B aligned memory.
+	 *
+	 * @param p   The aligned source address.
 	 */
 	static ASTCENC_SIMD_INLINE vint8 loada(const int* p)
 	{
@@ -228,6 +258,8 @@ struct vmask8
 {
 	/**
 	 * @brief Construct from an existing SIMD register.
+	 *
+	 * @param a   The SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask8(__m256 a)
 	{
@@ -236,6 +268,8 @@ struct vmask8
 
 	/**
 	 * @brief Construct from an existing SIMD register.
+	 *
+	 * @param a   The SIMD register.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask8(__m256i a)
 	{
@@ -244,6 +278,8 @@ struct vmask8
 
 	/**
 	 * @brief Construct from 1 scalar value.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask8(bool a)
 	{
@@ -263,6 +299,9 @@ struct vmask8
 
 /**
  * @brief Overload: mask union (or).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator|(vmask8 a, vmask8 b)
 {
@@ -271,6 +310,9 @@ ASTCENC_SIMD_INLINE vmask8 operator|(vmask8 a, vmask8 b)
 
 /**
  * @brief Overload: mask intersect (and).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator&(vmask8 a, vmask8 b)
 {
@@ -279,6 +321,9 @@ ASTCENC_SIMD_INLINE vmask8 operator&(vmask8 a, vmask8 b)
 
 /**
  * @brief Overload: mask difference (xor).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator^(vmask8 a, vmask8 b)
 {
@@ -287,6 +332,8 @@ ASTCENC_SIMD_INLINE vmask8 operator^(vmask8 a, vmask8 b)
 
 /**
  * @brief Overload: mask invert (not).
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
 {
@@ -297,6 +344,8 @@ ASTCENC_SIMD_INLINE vmask8 operator~(vmask8 a)
  * @brief Return an 8-bit mask code indicating mask status.
  *
  * bit0 = lane 0
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
 {
@@ -305,6 +354,8 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask8 a)
 
 /**
  * @brief True if any lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool any(vmask8 a)
 {
@@ -313,6 +364,8 @@ ASTCENC_SIMD_INLINE bool any(vmask8 a)
 
 /**
  * @brief True if all lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool all(vmask8 a)
 {
@@ -324,6 +377,9 @@ ASTCENC_SIMD_INLINE bool all(vmask8 a)
 // ============================================================================
 /**
  * @brief Overload: vector by vector addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 {
@@ -332,6 +388,9 @@ ASTCENC_SIMD_INLINE vint8 operator+(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 {
@@ -340,6 +399,9 @@ ASTCENC_SIMD_INLINE vint8 operator-(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
 {
@@ -348,6 +410,8 @@ ASTCENC_SIMD_INLINE vint8 operator*(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector bit invert.
+ *
+ * @param a   The input vector.
  */
 ASTCENC_SIMD_INLINE vint8 operator~(vint8 a)
 {
@@ -356,6 +420,9 @@ ASTCENC_SIMD_INLINE vint8 operator~(vint8 a)
 
 /**
  * @brief Overload: vector by vector bitwise or.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator|(vint8 a, vint8 b)
 {
@@ -364,6 +431,9 @@ ASTCENC_SIMD_INLINE vint8 operator|(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector bitwise and.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator&(vint8 a, vint8 b)
 {
@@ -372,6 +442,9 @@ ASTCENC_SIMD_INLINE vint8 operator&(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector bitwise xor.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint8 operator^(vint8 a, vint8 b)
 {
@@ -380,6 +453,9 @@ ASTCENC_SIMD_INLINE vint8 operator^(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector equality.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator==(vint8 a, vint8 b)
 {
@@ -388,6 +464,9 @@ ASTCENC_SIMD_INLINE vmask8 operator==(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector inequality.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator!=(vint8 a, vint8 b)
 {
@@ -396,6 +475,9 @@ ASTCENC_SIMD_INLINE vmask8 operator!=(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector less than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator<(vint8 a, vint8 b)
 {
@@ -404,6 +486,9 @@ ASTCENC_SIMD_INLINE vmask8 operator<(vint8 a, vint8 b)
 
 /**
  * @brief Overload: vector by vector greater than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 {
@@ -412,6 +497,10 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vint8 a, vint8 b)
 
 /**
  * @brief Logical shift left.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
 {
@@ -420,6 +509,10 @@ template <int s> ASTCENC_SIMD_INLINE vint8 lsl(vint8 a)
 
 /**
  * @brief Logical shift right.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
 {
@@ -428,6 +521,10 @@ template <int s> ASTCENC_SIMD_INLINE vint8 lsr(vint8 a)
 
 /**
  * @brief Arithmetic shift right.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
 {
@@ -436,6 +533,9 @@ template <int s> ASTCENC_SIMD_INLINE vint8 asr(vint8 a)
 
 /**
  * @brief Return the min vector of two vectors.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vint8 min(vint8 a, vint8 b)
 {
@@ -444,6 +544,9 @@ ASTCENC_SIMD_INLINE vint8 min(vint8 a, vint8 b)
 
 /**
  * @brief Return the max vector of two vectors.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vint8 max(vint8 a, vint8 b)
 {
@@ -452,6 +555,8 @@ ASTCENC_SIMD_INLINE vint8 max(vint8 a, vint8 b)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 {
@@ -466,6 +571,8 @@ ASTCENC_SIMD_INLINE vint8 hmin(vint8 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
 {
@@ -474,6 +581,8 @@ ASTCENC_SIMD_INLINE int hmin_s(vint8 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 {
@@ -488,6 +597,8 @@ ASTCENC_SIMD_INLINE vint8 hmax(vint8 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
 {
@@ -495,7 +606,10 @@ ASTCENC_SIMD_INLINE int hmax_s(vint8 a)
 }
 
 /**
- * @brief Store a vector to a 16B aligned memory address.
+ * @brief Store a vector to a 32B aligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The aligned destination address.
  */
 ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
 {
@@ -504,6 +618,9 @@ ASTCENC_SIMD_INLINE void storea(vint8 a, int* p)
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
 {
@@ -512,6 +629,9 @@ ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
 
 /**
  * @brief Store lowest N (vector width) bytes into an unaligned address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 {
@@ -522,7 +642,10 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 }
 
 /**
- * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
+ * @brief Pack the low 8 bits of each lane and store to an unaligned address.
+ *
+ * @param      v   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 {
@@ -542,6 +665,10 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 
 /**
  * @brief Return lanes from @c b if @c cond is set, else @c a.
+ *
+ * @param a      The vector selected where @c cond is false.
+ * @param b      The vector selected where @c cond is true.
+ * @param cond   The selection mask.
  */
 ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 {
@@ -555,6 +682,9 @@ ASTCENC_SIMD_INLINE vint8 select(vint8 a, vint8 b, vmask8 cond)
 
 /**
  * @brief Overload: vector by vector addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator+(vfloat8 a, vfloat8 b)
 {
@@ -563,6 +693,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator+(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
 {
@@ -571,6 +704,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator-(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
 {
@@ -579,6 +715,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, vfloat8 b)
 {
@@ -589,6 +728,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, vfloat8 b)
  * @brief Overload: vector by vector equality.
  *
  * Returns vector of false mask values if a or b is NaN.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator==(vfloat8 a, vfloat8 b)
 {
@@ -599,6 +741,9 @@ ASTCENC_SIMD_INLINE vmask8 operator==(vfloat8 a, vfloat8 b)
  * @brief Overload: vector by vector inequality.
  *
  * Returns vector of true mask values if a or b is NaN.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator!=(vfloat8 a, vfloat8 b)
 {
@@ -607,6 +752,9 @@ ASTCENC_SIMD_INLINE vmask8 operator!=(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector less than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator<(vfloat8 a, vfloat8 b)
 {
@@ -615,6 +763,9 @@ ASTCENC_SIMD_INLINE vmask8 operator<(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector greater than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator>(vfloat8 a, vfloat8 b)
 {
@@ -623,6 +774,9 @@ ASTCENC_SIMD_INLINE vmask8 operator>(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector less than or equal.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator<=(vfloat8 a, vfloat8 b)
 {
@@ -631,6 +785,9 @@ ASTCENC_SIMD_INLINE vmask8 operator<=(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Overload: vector by vector greater than or equal.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask8 operator>=(vfloat8 a, vfloat8 b)
 {
@@ -641,6 +798,9 @@ ASTCENC_SIMD_INLINE vmask8 operator>=(vfloat8 a, vfloat8 b)
  * @brief Return the min vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
 {
@@ -651,6 +811,9 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, vfloat8 b)
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 {
@@ -659,6 +822,8 @@ ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, vfloat8 b)
 
 /**
  * @brief Return the absolute value of the float vector.
+ *
+ * @param a   The values whose absolute values are required.
  */
 ASTCENC_SIMD_INLINE vfloat8 abs(vfloat8 a)
 {
@@ -668,6 +833,8 @@ ASTCENC_SIMD_INLINE vfloat8 abs(vfloat8 a)
 
 /**
  * @brief Return a float rounded to the nearest integer value.
+ *
+ * @param a   The values to round.
  */
 ASTCENC_SIMD_INLINE vfloat8 round(vfloat8 a)
 {
@@ -677,6 +844,8 @@ ASTCENC_SIMD_INLINE vfloat8 round(vfloat8 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 {
@@ -700,6 +869,8 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 {
@@ -708,6 +879,8 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat8 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 {
@@ -730,6 +903,8 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 {
@@ -737,7 +912,9 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat8 a)
 }
 
 /**
- * @brief Return the horizontal sum of a vector.
+ * @brief Return the horizontal sum of a vector as a scalar.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 {
@@ -749,6 +926,8 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat8 a)
 
 /**
  * @brief Return the sqrt of the lanes in the vector.
+ *
+ * @param a   The values whose square roots are required.
  */
 ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 {
@@ -757,6 +936,10 @@ ASTCENC_SIMD_INLINE vfloat8 sqrt(vfloat8 a)
 
 /**
  * @brief Return lanes from @c b if @c cond is set, else @c a.
+ *
+ * @param a      The vector selected where @c cond is false.
+ * @param b      The vector selected where @c cond is true.
+ * @param cond   The selection mask.
  */
 ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
 {
@@ -767,6 +950,9 @@ ASTCENC_SIMD_INLINE vfloat8 select(vfloat8 a, vfloat8 b, vmask8 cond)
  * @brief Accumulate lane-wise sums for a vector, folded 4-wide.
  *
  * This is invariant with 4-wide implementations.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 {
@@ -778,9 +964,13 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a)
 }
 
 /**
- * @brief Accumulate masked lane-wise sums for a vector.
+ * @brief Accumulate masked lane-wise sums for a vector, folded 4-wide.
  *
  * This is NOT invariant with 4-wide implementations.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
+ * @param         m       The lanes to include in the accumulation.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
 {
@@ -790,6 +980,9 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
 
 /**
  * @brief Load a vector of gathered results from an array.
+ *
+ * @param base      The source float table.
+ * @param indices   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 {
@@ -798,6 +991,9 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf(const float* base, vint8 indices)
 
 /**
  * @brief Load a vector of gathered results from an array using byte indices from memory.
+ *
+ * @param base      The source float table.
+ * @param indices   The byte-sized table indices, one per lane.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
@@ -825,6 +1021,9 @@ ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const 
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
 {
@@ -833,6 +1032,9 @@ ASTCENC_SIMD_INLINE void store(vfloat8 a, float* p)
 
 /**
  * @brief Store a vector to a 32B aligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The aligned destination address.
  */
 ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
 {
@@ -840,7 +1042,9 @@ ASTCENC_SIMD_INLINE void storea(vfloat8 a, float* p)
 }
 
 /**
- * @brief Return a integer value for a float vector, using truncation.
+ * @brief Return an integer value for a float vector, using truncation.
+ *
+ * @param a   The floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 {
@@ -849,6 +1053,8 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 
 /**
  * @brief Return a float value for an integer vector.
+ *
+ * @param a   The integer values to convert.
  */
 ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
 {
@@ -861,6 +1067,8 @@ ASTCENC_SIMD_INLINE vfloat8 int_to_float(vint8 a)
  * It is a common trick to convert floats into integer bit patterns, perform
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the first half of that flip.
+ *
+ * @param a   The floating-point vector to reinterpret.
  */
 ASTCENC_SIMD_INLINE vint8 float_as_int(vfloat8 a)
 {
@@ -868,11 +1076,13 @@ ASTCENC_SIMD_INLINE vint8 float_as_int(vfloat8 a)
 }
 
 /**
- * @brief Return a integer value as a float bit pattern (i.e. no conversion).
+ * @brief Return an integer value as a float bit pattern (i.e. no conversion).
  *
  * It is a common trick to convert floats into integer bit patterns, perform
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the second half of that flip.
+ *
+ * @param a   The integer vector to reinterpret.
  */
 ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 {
@@ -905,7 +1115,10 @@ struct vtable8_64x8 {
 };
 
 /**
- * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_16x8& table,
@@ -918,7 +1131,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 }
 
 /**
- * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_32x8& table,
@@ -936,7 +1152,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 }
 
 /**
- * @brief Prepare a vtable lookup table 64x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 64x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_64x8& table,
@@ -961,6 +1180,9 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 
 /**
  * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_16x8& tbl,
@@ -975,6 +1197,9 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 
 /**
  * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_32x8& tbl,
@@ -993,6 +1218,9 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 
 /**
  * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_64x8& tbl,
@@ -1022,6 +1250,10 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
  * @brief Store a vector, skipping masked lanes.
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.
+ *
+ * @param[out] base   The destination address.
+ * @param      data   The vector to store.
+ * @param      mask   The lanes to store.
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 mask)
 {

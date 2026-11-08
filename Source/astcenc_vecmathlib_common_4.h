@@ -42,6 +42,8 @@
 
 /**
  * @brief True if any lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool any(vmask4 a)
 {
@@ -50,6 +52,8 @@ ASTCENC_SIMD_INLINE bool any(vmask4 a)
 
 /**
  * @brief True if all lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool all(vmask4 a)
 {
@@ -64,6 +68,9 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 
 /**
  * @brief Overload: vector by scalar addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 {
@@ -72,6 +79,9 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, int b)
 
 /**
  * @brief Overload: vector by vector incremental addition.
+ *
+ * @param[in,out] a   The accumulator to update.
+ * @param         b   The values to add.
  */
 ASTCENC_SIMD_INLINE vint4& operator+=(vint4& a, const vint4& b)
 {
@@ -81,6 +91,9 @@ ASTCENC_SIMD_INLINE vint4& operator+=(vint4& a, const vint4& b)
 
 /**
  * @brief Overload: vector by scalar subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
 {
@@ -89,6 +102,9 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, int b)
 
 /**
  * @brief Overload: vector by scalar multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
 {
@@ -97,6 +113,9 @@ ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, int b)
 
 /**
  * @brief Overload: vector by scalar bitwise or.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, int b)
 {
@@ -105,6 +124,9 @@ ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, int b)
 
 /**
  * @brief Overload: vector by scalar bitwise and.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, int b)
 {
@@ -113,6 +135,9 @@ ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, int b)
 
 /**
  * @brief Overload: vector by scalar bitwise xor.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
 {
@@ -121,6 +146,10 @@ ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, int b)
 
 /**
  * @brief Return the clamped value between min and max.
+ *
+ * @param minv   The inclusive lower bound.
+ * @param maxv   The inclusive upper bound.
+ * @param a      The values to clamp.
  */
 ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 {
@@ -129,6 +158,8 @@ ASTCENC_SIMD_INLINE vint4 clamp(int minv, int maxv, vint4 a)
 
 /**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 {
@@ -137,6 +168,8 @@ ASTCENC_SIMD_INLINE int hadd_rgb_s(vint4 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE int hmin_s(vint4 a)
 {
@@ -145,6 +178,8 @@ ASTCENC_SIMD_INLINE int hmin_s(vint4 a)
 
 /**
  * @brief Generate a vint4 from a size_t.
+ *
+ * @param a   The scalar size to replicate across all lanes.
  */
 ASTCENC_SIMD_INLINE vint4 vint4_from_size(size_t a)
 {
@@ -154,6 +189,8 @@ ASTCENC_SIMD_INLINE vint4 vint4_from_size(size_t a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE int hmax_s(vint4 a)
 {
@@ -166,6 +203,9 @@ ASTCENC_SIMD_INLINE int hmax_s(vint4 a)
 
 /**
  * @brief Overload: vector by vector incremental addition.
+ *
+ * @param[in,out] a   The accumulator to update.
+ * @param         b   The values to add.
  */
 ASTCENC_SIMD_INLINE vfloat4& operator+=(vfloat4& a, const vfloat4& b)
 {
@@ -175,6 +215,9 @@ ASTCENC_SIMD_INLINE vfloat4& operator+=(vfloat4& a, const vfloat4& b)
 
 /**
  * @brief Overload: vector by scalar addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
 {
@@ -183,6 +226,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, float b)
 
 /**
  * @brief Overload: vector by scalar subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
 {
@@ -191,6 +237,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, float b)
 
 /**
  * @brief Overload: vector by scalar multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, float b)
 {
@@ -199,6 +248,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, float b)
 
 /**
  * @brief Overload: scalar by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator*(float a, vfloat4 b)
 {
@@ -207,6 +259,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator*(float a, vfloat4 b)
 
 /**
  * @brief Overload: vector by scalar division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
 {
@@ -215,6 +270,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, float b)
 
 /**
  * @brief Overload: scalar by vector division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
 {
@@ -225,6 +283,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(float a, vfloat4 b)
  * @brief Return the min vector of a vector and a scalar.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
 {
@@ -235,6 +296,9 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, float b)
  * @brief Return the max vector of a vector and a scalar.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
 {
@@ -246,6 +310,10 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, float b)
  *
  * It is assumed that neither @c min nor @c max are NaN values. If @c a is NaN
  * then @c min will be returned for that lane.
+ *
+ * @param minv   The inclusive lower bound.
+ * @param maxv   The inclusive upper bound.
+ * @param a      The values to clamp.
  */
 ASTCENC_SIMD_INLINE vfloat4 clamp(float minv, float maxv, vfloat4 a)
 {
@@ -257,6 +325,8 @@ ASTCENC_SIMD_INLINE vfloat4 clamp(float minv, float maxv, vfloat4 a)
  * @brief Return the clamped value between 0.0f and 1.0f.
  *
  * If @c a is NaN then zero will be returned for that lane.
+ *
+ * @param a   The values to clamp.
  */
 ASTCENC_SIMD_INLINE vfloat4 clampzo(vfloat4 a)
 {
@@ -265,6 +335,8 @@ ASTCENC_SIMD_INLINE vfloat4 clampzo(vfloat4 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
 {
@@ -273,6 +345,8 @@ ASTCENC_SIMD_INLINE float hmin_s(vfloat4 a)
 
 /**
  * @brief Return the horizontal min of RGB vector lanes as a scalar.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
 {
@@ -282,6 +356,8 @@ ASTCENC_SIMD_INLINE float hmin_rgb_s(vfloat4 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
 {
@@ -290,6 +366,9 @@ ASTCENC_SIMD_INLINE float hmax_s(vfloat4 a)
 
 /**
  * @brief Accumulate lane-wise sums for a vector.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 {
@@ -297,7 +376,11 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a)
 }
 
 /**
- * @brief Accumulate lane-wise sums for a masked vector.
+ * @brief Accumulate masked lane-wise sums for a vector.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
+ * @param         m       The lanes to include in the accumulation.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
 {
@@ -309,6 +392,9 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
 
 /**
  * @brief Load a vector of gathered results from an array using byte indices from memory.
+ *
+ * @param base      The source float table.
+ * @param indices   The byte-sized table indices, one per lane.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
@@ -329,7 +415,9 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const 
 #if !defined(ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN)
 
 /**
- * @brief Return an integer value for a float vector, using round-to-nearest.
+ * @brief Return integers rounded to nearest for nonnegative float values.
+ *
+ * @param a   The nonnegative floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
@@ -340,6 +428,8 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 
 /**
  * @brief Return the horizontal sum of RGB vector lanes as a scalar.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 {
@@ -350,6 +440,9 @@ ASTCENC_SIMD_INLINE float hadd_rgb_s(vfloat4 a)
 
 /**
  * @brief Return the dot product for the full 4 lanes, returning scalar.
+ *
+ * @param a   The first vector.
+ * @param b   The second vector.
  */
 ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 {
@@ -359,6 +452,9 @@ ASTCENC_SIMD_INLINE float dot_s(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Return the dot product for the full 4 lanes, returning vector.
+ *
+ * @param a   The first vector.
+ * @param b   The second vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 {
@@ -368,6 +464,9 @@ ASTCENC_SIMD_INLINE vfloat4 dot(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Return the dot product for the bottom 3 lanes, returning scalar.
+ *
+ * @param a   The first vector.
+ * @param b   The second vector.
  */
 ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 {
@@ -377,6 +476,9 @@ ASTCENC_SIMD_INLINE float dot3_s(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Return the dot product for the bottom 3 lanes, returning vector.
+ *
+ * @param a   The first vector.
+ * @param b   The second vector.
  */
 ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 {
@@ -415,8 +517,8 @@ static inline int popcount(uint64_t v)
 /**
  * @brief Apply signed bit transfer.
  *
- * @param input0   The first encoded endpoint.
- * @param input1   The second encoded endpoint.
+ * @param[in,out] input0   The first encoded endpoint.
+ * @param[in,out] input1   The second encoded endpoint.
  */
 static ASTCENC_SIMD_INLINE void bit_transfer_signed(
 	vint4& input0,
@@ -433,6 +535,9 @@ static ASTCENC_SIMD_INLINE void bit_transfer_signed(
 
 /**
  * @brief Store a single vector lane to an unaligned address.
+ *
+ * @param[out] base   The destination address.
+ * @param      data   The lane value to store.
  */
 ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
 {
@@ -447,6 +552,10 @@ ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
  * @brief Store a vector, skipping masked lanes.
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.
+ *
+ * @param[out] base   The destination address.
+ * @param      data   The vector to store.
+ * @param      mask   The lanes to store.
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
 {
@@ -478,6 +587,8 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 ma
 
 /**
  * @brief Debug function to print a vector of ints.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vint4 a)
 {
@@ -489,6 +600,8 @@ ASTCENC_SIMD_INLINE void print(vint4 a)
 
 /**
  * @brief Debug function to print a vector of ints.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void printx(vint4 a)
 {
@@ -504,6 +617,8 @@ ASTCENC_SIMD_INLINE void printx(vint4 a)
 
 /**
  * @brief Debug function to print a vector of floats.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vfloat4 a)
 {
@@ -516,6 +631,8 @@ ASTCENC_SIMD_INLINE void print(vfloat4 a)
 
 /**
  * @brief Debug function to print a vector of masks.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vmask4 a)
 {

@@ -55,7 +55,7 @@
 struct vfloat4
 {
 	/**
-	 * @brief Construct from zero-initialized value.
+	 * @brief Construct with default initialization.
 	 */
 	ASTCENC_SIMD_INLINE vfloat4() = default;
 
@@ -64,6 +64,8 @@ struct vfloat4
 	 *
 	 * Consider using loada() which is better with wider VLA vectors if data is
 	 * aligned to vector length.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat4(const float* p)
 	{
@@ -74,9 +76,11 @@ struct vfloat4
 	}
 
 	/**
-	 * @brief Construct from 4 scalar values replicated across all lanes.
+	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using zero() for constexpr zeros.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat4(float a)
 	{
@@ -90,6 +94,11 @@ struct vfloat4
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 *
+	 * @param a   The value for lane 0.
+	 * @param b   The value for lane 1.
+	 * @param c   The value for lane 2.
+	 * @param d   The value for lane 3.
 	 */
 	ASTCENC_SIMD_INLINE explicit vfloat4(float a, float b, float c, float d)
 	{
@@ -101,6 +110,8 @@ struct vfloat4
 
 	/**
 	 * @brief Get the scalar value of a single lane.
+	 *
+	 * @tparam l   The lane index to read.
 	 */
 	template <int l> ASTCENC_SIMD_INLINE float lane() const
 	{
@@ -109,6 +120,10 @@ struct vfloat4
 
 	/**
 	 * @brief Set the scalar value of a single lane.
+	 *
+	 * @tparam l   The lane index to update.
+	 *
+	 * @param  a   The value to store in the selected lane.
 	 */
 	template <int l> ASTCENC_SIMD_INLINE void set_lane(float a)
 	{
@@ -125,6 +140,8 @@ struct vfloat4
 
 	/**
 	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 *
+	 * @param p   The address of the scalar to replicate.
 	 */
 	static ASTCENC_SIMD_INLINE vfloat4 load1(const float* p)
 	{
@@ -132,7 +149,9 @@ struct vfloat4
 	}
 
 	/**
-	 * @brief Factory that returns a vector loaded from aligned memory.
+	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 *
+	 * @param p   The aligned source address.
 	 */
 	static ASTCENC_SIMD_INLINE vfloat4 loada(const float* p)
 	{
@@ -141,6 +160,9 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 2.
+	 *
+	 * @tparam l0   The source lane for output lane 0.
+	 * @tparam l1   The source lane for output lane 1.
 	 */
 	template <int l0, int l1> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
@@ -149,6 +171,10 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 3.
+	 *
+	 * @tparam l0   The source lane for output lane 0.
+	 * @tparam l1   The source lane for output lane 1.
+	 * @tparam l2   The source lane for output lane 2.
 	 */
 	template <int l0, int l1, int l2> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
@@ -157,6 +183,11 @@ struct vfloat4
 
 	/**
 	 * @brief Return a swizzled float 4.
+	 *
+	 * @tparam l0   The source lane for output lane 0.
+	 * @tparam l1   The source lane for output lane 1.
+	 * @tparam l2   The source lane for output lane 2.
+	 * @tparam l3   The source lane for output lane 3.
 	 */
 	template <int l0, int l1, int l2, int l3> ASTCENC_SIMD_INLINE vfloat4 swz() const
 	{
@@ -179,7 +210,7 @@ struct vfloat4
 struct vint4
 {
 	/**
-	 * @brief Construct from zero-initialized value.
+	 * @brief Construct with default initialization.
 	 */
 	ASTCENC_SIMD_INLINE vint4() = default;
 
@@ -188,6 +219,8 @@ struct vint4
 	 *
 	 * Consider using vint4::loada() which is better with wider VLA vectors
 	 * if data is aligned.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const int* p)
 	{
@@ -199,6 +232,8 @@ struct vint4
 
 	/**
 	 * @brief Construct from 4 uint8_t loaded from an unaligned address.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
@@ -212,6 +247,8 @@ struct vint4
 	 * @brief Construct from 1 scalar value replicated across all lanes.
 	 *
 	 * Consider using zero() for constexpr zeros.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(int a)
 	{
@@ -225,6 +262,11 @@ struct vint4
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 *
+	 * @param a   The value for lane 0.
+	 * @param b   The value for lane 1.
+	 * @param c   The value for lane 2.
+	 * @param d   The value for lane 3.
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(int a, int b, int c, int d)
 	{
@@ -236,6 +278,8 @@ struct vint4
 
 	/**
 	 * @brief Get the scalar value of a single lane.
+	 *
+	 * @tparam l   The lane index to read.
 	 */
 	template <int l> ASTCENC_SIMD_INLINE int lane() const
 	{
@@ -244,6 +288,10 @@ struct vint4
 
 	/**
 	 * @brief Set the scalar value of a single lane.
+	 *
+	 * @tparam l   The lane index to update.
+	 *
+	 * @param  a   The value to store in the selected lane.
 	 */
 	template <int l> ASTCENC_SIMD_INLINE void set_lane(int a)
 	{
@@ -260,6 +308,8 @@ struct vint4
 
 	/**
 	 * @brief Factory that returns a replicated scalar loaded from memory.
+	 *
+	 * @param p   The address of the scalar to replicate.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 load1(const int* p)
 	{
@@ -268,6 +318,8 @@ struct vint4
 
 	/**
 	 * @brief Factory that returns a vector loaded from unaligned memory.
+	 *
+	 * @param p   The source bytes.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 load(const uint8_t* p)
 	{
@@ -278,6 +330,8 @@ struct vint4
 
 	/**
 	 * @brief Factory that returns a vector loaded from 16B aligned memory.
+	 *
+	 * @param p   The aligned source address.
 	 */
 	static ASTCENC_SIMD_INLINE vint4 loada(const int* p)
 	{
@@ -309,6 +363,8 @@ struct vmask4
 {
 	/**
 	 * @brief Construct from an existing mask value.
+	 *
+	 * @param p   The source values.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(int* p)
 	{
@@ -320,6 +376,8 @@ struct vmask4
 
 	/**
 	 * @brief Construct from 1 scalar value.
+	 *
+	 * @param a   The value to replicate across all lanes.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(bool a)
 	{
@@ -333,6 +391,11 @@ struct vmask4
 	 * @brief Construct from 4 scalar values.
 	 *
 	 * The value of @c a is stored to lane 0 (LSB) in the SIMD register.
+	 *
+	 * @param a   The value for lane 0.
+	 * @param b   The value for lane 1.
+	 * @param c   The value for lane 2.
+	 * @param d   The value for lane 3.
 	 */
 	ASTCENC_SIMD_INLINE explicit vmask4(bool a, bool b, bool c, bool d)
 	{
@@ -344,6 +407,8 @@ struct vmask4
 
 	/**
 	 * @brief Get the scalar value of a single lane.
+	 *
+	 * @tparam l   The lane index to read.
 	 */
 	template <int l> ASTCENC_SIMD_INLINE bool lane() const
 	{
@@ -362,6 +427,9 @@ struct vmask4
 
 /**
  * @brief Overload: mask union (or).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator|(vmask4 a, vmask4 b)
 {
@@ -373,6 +441,9 @@ ASTCENC_SIMD_INLINE vmask4 operator|(vmask4 a, vmask4 b)
 
 /**
  * @brief Overload: mask intersect (and).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator&(vmask4 a, vmask4 b)
 {
@@ -384,6 +455,9 @@ ASTCENC_SIMD_INLINE vmask4 operator&(vmask4 a, vmask4 b)
 
 /**
  * @brief Overload: mask difference (xor).
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator^(vmask4 a, vmask4 b)
 {
@@ -395,6 +469,8 @@ ASTCENC_SIMD_INLINE vmask4 operator^(vmask4 a, vmask4 b)
 
 /**
  * @brief Overload: mask invert (not).
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
 {
@@ -405,9 +481,11 @@ ASTCENC_SIMD_INLINE vmask4 operator~(vmask4 a)
 }
 
 /**
- * @brief Return a 1-bit mask code indicating mask status.
+ * @brief Return a 4-bit mask code indicating mask status.
  *
  * bit0 = lane 0
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 {
@@ -421,6 +499,8 @@ ASTCENC_SIMD_INLINE unsigned int mask(vmask4 a)
 
 /**
  * @brief True if any lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool any(vmask4 a)
 {
@@ -429,6 +509,8 @@ ASTCENC_SIMD_INLINE bool any(vmask4 a)
 
 /**
  * @brief True if all lanes are enabled, false otherwise.
+ *
+ * @param a   The input mask.
  */
 ASTCENC_SIMD_INLINE bool all(vmask4 a)
 {
@@ -441,6 +523,9 @@ ASTCENC_SIMD_INLINE bool all(vmask4 a)
 
 /**
  * @brief Overload: vector by vector addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 {
@@ -452,6 +537,9 @@ ASTCENC_SIMD_INLINE vint4 operator+(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 {
@@ -463,6 +551,9 @@ ASTCENC_SIMD_INLINE vint4 operator-(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 {
@@ -474,6 +565,8 @@ ASTCENC_SIMD_INLINE vint4 operator*(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector bit invert.
+ *
+ * @param a   The input vector.
  */
 ASTCENC_SIMD_INLINE vint4 operator~(vint4 a)
 {
@@ -485,6 +578,9 @@ ASTCENC_SIMD_INLINE vint4 operator~(vint4 a)
 
 /**
  * @brief Overload: vector by vector bitwise or.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, vint4 b)
 {
@@ -496,6 +592,9 @@ ASTCENC_SIMD_INLINE vint4 operator|(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector bitwise and.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
 {
@@ -507,6 +606,9 @@ ASTCENC_SIMD_INLINE vint4 operator&(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector bitwise xor.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, vint4 b)
 {
@@ -518,6 +620,9 @@ ASTCENC_SIMD_INLINE vint4 operator^(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector equality.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vint4 a, vint4 b)
 {
@@ -529,6 +634,9 @@ ASTCENC_SIMD_INLINE vmask4 operator==(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector inequality.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator!=(vint4 a, vint4 b)
 {
@@ -540,6 +648,9 @@ ASTCENC_SIMD_INLINE vmask4 operator!=(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector less than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, vint4 b)
 {
@@ -551,6 +662,9 @@ ASTCENC_SIMD_INLINE vmask4 operator<(vint4 a, vint4 b)
 
 /**
  * @brief Overload: vector by vector greater than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 {
@@ -562,6 +676,10 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vint4 a, vint4 b)
 
 /**
  * @brief Logical shift left.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 {
@@ -579,6 +697,10 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsl(vint4 a)
 
 /**
  * @brief Logical shift right.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
 {
@@ -596,6 +718,10 @@ template <int s> ASTCENC_SIMD_INLINE vint4 lsr(vint4 a)
 
 /**
  * @brief Arithmetic shift right.
+ *
+ * @tparam s   The shift distance, in bits.
+ *
+ * @param  a   The values to shift.
  */
 template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 {
@@ -607,6 +733,9 @@ template <int s> ASTCENC_SIMD_INLINE vint4 asr(vint4 a)
 
 /**
  * @brief Return the min vector of two vectors.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vint4 min(vint4 a, vint4 b)
 {
@@ -617,7 +746,10 @@ ASTCENC_SIMD_INLINE vint4 min(vint4 a, vint4 b)
 }
 
 /**
- * @brief Return the min vector of two vectors.
+ * @brief Return the max vector of two vectors.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 {
@@ -628,7 +760,9 @@ ASTCENC_SIMD_INLINE vint4 max(vint4 a, vint4 b)
 }
 
 /**
- * @brief Return the horizontal minimum of a single vector.
+ * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
 {
@@ -638,7 +772,9 @@ ASTCENC_SIMD_INLINE vint4 hmin(vint4 a)
 }
 
 /**
- * @brief Return the horizontal maximum of a single vector.
+ * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
 {
@@ -648,7 +784,10 @@ ASTCENC_SIMD_INLINE vint4 hmax(vint4 a)
 }
 
 /**
- * @brief Store a vector to an aligned memory address.
+ * @brief Store a vector to a 16B aligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The aligned destination address.
  */
 ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 {
@@ -660,6 +799,9 @@ ASTCENC_SIMD_INLINE void storea(vint4 a, int* p)
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
 {
@@ -671,6 +813,9 @@ ASTCENC_SIMD_INLINE void store(vint4 a, int* p)
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store(vint4 a, uint8_t* p)
 {
@@ -679,6 +824,9 @@ ASTCENC_SIMD_INLINE void store(vint4 a, uint8_t* p)
 
 /**
  * @brief Store lowest N (vector width) bytes into an unaligned address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 {
@@ -686,26 +834,33 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint4 a, uint8_t* p)
 }
 
 /**
- * @brief Pack low 8 bits of N (vector width) lanes into bottom of vector.
+ * @brief Pack the low 8 bits of each lane and store to an unaligned address.
+ *
+ * @param      v   The vector to store.
+ * @param[out] p   The destination address.
  */
-ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 a, uint8_t* p)
+ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint4 v, uint8_t* p)
 {
-	int b0 = a.m[0] & 0xFF;
-	int b1 = a.m[1] & 0xFF;
-	int b2 = a.m[2] & 0xFF;
-	int b3 = a.m[3] & 0xFF;
+	int b0 = v.m[0] & 0xFF;
+	int b1 = v.m[1] & 0xFF;
+	int b2 = v.m[2] & 0xFF;
+	int b3 = v.m[3] & 0xFF;
 
 #if !defined(ASTCENC_BIG_ENDIAN)
 	int b = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
 #else
 	int b = b3 | (b2 << 8) | (b1 << 16) | (b0 << 24);
 #endif
-	a = vint4(b, 0, 0, 0);
-	store_nbytes(a, p);
+	v = vint4(b, 0, 0, 0);
+	store_nbytes(v, p);
 }
 
 /**
  * @brief Return lanes from @c b if MSB of @c cond is set, else @c a.
+ *
+ * @param a      The vector selected where @c cond is false.
+ * @param b      The vector selected where @c cond is true.
+ * @param cond   The selection mask.
  */
 ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 {
@@ -721,6 +876,9 @@ ASTCENC_SIMD_INLINE vint4 select(vint4 a, vint4 b, vmask4 cond)
 
 /**
  * @brief Overload: vector by vector addition.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 {
@@ -732,6 +890,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator+(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector subtraction.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 {
@@ -743,6 +904,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator-(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, vfloat4 b)
 {
@@ -754,6 +918,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator*(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
 {
@@ -767,6 +934,9 @@ ASTCENC_SIMD_INLINE vfloat4 operator/(vfloat4 a, vfloat4 b)
  * @brief Overload: vector by vector equality.
  *
  * Returns vector of false mask values if a or b is NaN.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
 {
@@ -780,6 +950,9 @@ ASTCENC_SIMD_INLINE vmask4 operator==(vfloat4 a, vfloat4 b)
  * @brief Overload: vector by vector inequality.
  *
  * Returns vector of true mask values if a or b is NaN.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator!=(vfloat4 a, vfloat4 b)
 {
@@ -791,6 +964,9 @@ ASTCENC_SIMD_INLINE vmask4 operator!=(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector less than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator<(vfloat4 a, vfloat4 b)
 {
@@ -802,6 +978,9 @@ ASTCENC_SIMD_INLINE vmask4 operator<(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector greater than.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator>(vfloat4 a, vfloat4 b)
 {
@@ -813,6 +992,9 @@ ASTCENC_SIMD_INLINE vmask4 operator>(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector less than or equal.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator<=(vfloat4 a, vfloat4 b)
 {
@@ -824,6 +1006,9 @@ ASTCENC_SIMD_INLINE vmask4 operator<=(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Overload: vector by vector greater than or equal.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vmask4 operator>=(vfloat4 a, vfloat4 b)
 {
@@ -837,6 +1022,9 @@ ASTCENC_SIMD_INLINE vmask4 operator>=(vfloat4 a, vfloat4 b)
  * @brief Return the min vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
 {
@@ -850,6 +1038,9 @@ ASTCENC_SIMD_INLINE vfloat4 min(vfloat4 a, vfloat4 b)
  * @brief Return the max vector of two vectors.
  *
  * If either lane value is NaN, @c b will be returned for that lane.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 {
@@ -861,6 +1052,8 @@ ASTCENC_SIMD_INLINE vfloat4 max(vfloat4 a, vfloat4 b)
 
 /**
  * @brief Return the absolute value of the float vector.
+ *
+ * @param a   The values whose absolute values are required.
  */
 ASTCENC_SIMD_INLINE vfloat4 abs(vfloat4 a)
 {
@@ -872,6 +1065,8 @@ ASTCENC_SIMD_INLINE vfloat4 abs(vfloat4 a)
 
 /**
  * @brief Return a float rounded to the nearest integer value.
+ *
+ * @param a   The values to round.
  */
 ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 {
@@ -884,6 +1079,8 @@ ASTCENC_SIMD_INLINE vfloat4 round(vfloat4 a)
 
 /**
  * @brief Return the horizontal minimum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 {
@@ -894,6 +1091,8 @@ ASTCENC_SIMD_INLINE vfloat4 hmin(vfloat4 a)
 
 /**
  * @brief Return the horizontal maximum of a vector.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 {
@@ -903,7 +1102,9 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
 }
 
 /**
- * @brief Return the horizontal sum of a vector.
+ * @brief Return the horizontal sum of a vector as a scalar.
+ *
+ * @param a   The vector to reduce.
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
@@ -913,6 +1114,8 @@ ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 
 /**
  * @brief Return the sqrt of the lanes in the vector.
+ *
+ * @param a   The values whose square roots are required.
  */
 ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 {
@@ -924,6 +1127,10 @@ ASTCENC_SIMD_INLINE vfloat4 sqrt(vfloat4 a)
 
 /**
  * @brief Return lanes from @c b if @c cond is set, else @c a.
+ *
+ * @param a      The vector selected where @c cond is false.
+ * @param b      The vector selected where @c cond is true.
+ * @param cond   The selection mask.
  */
 ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 {
@@ -935,6 +1142,9 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 
 /**
  * @brief Load a vector of gathered results from an array.
+ *
+ * @param base      The source float table.
+ * @param indices   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 {
@@ -948,6 +1158,9 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf(const float* base, vint4 indices)
 
 /**
  * @brief Load a vector of gathered results from an array using byte indices from memory.
+ *
+ * @param base      The source float table.
+ * @param indices   The byte-sized table indices, one per lane.
  */
 template<>
 ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
@@ -960,28 +1173,36 @@ ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const 
 
 /**
  * @brief Store a vector to an unaligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The destination address.
  */
-ASTCENC_SIMD_INLINE void store(vfloat4 a, float* ptr)
+ASTCENC_SIMD_INLINE void store(vfloat4 a, float* p)
 {
-	ptr[0] = a.m[0];
-	ptr[1] = a.m[1];
-	ptr[2] = a.m[2];
-	ptr[3] = a.m[3];
+	p[0] = a.m[0];
+	p[1] = a.m[1];
+	p[2] = a.m[2];
+	p[3] = a.m[3];
 }
 
 /**
- * @brief Store a vector to an aligned memory address.
+ * @brief Store a vector to a 16B aligned memory address.
+ *
+ * @param      a   The vector to store.
+ * @param[out] p   The aligned destination address.
  */
-ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* ptr)
+ASTCENC_SIMD_INLINE void storea(vfloat4 a, float* p)
 {
-	ptr[0] = a.m[0];
-	ptr[1] = a.m[1];
-	ptr[2] = a.m[2];
-	ptr[3] = a.m[3];
+	p[0] = a.m[0];
+	p[1] = a.m[1];
+	p[2] = a.m[2];
+	p[3] = a.m[3];
 }
 
 /**
- * @brief Return a integer value for a float vector, using truncation.
+ * @brief Return an integer value for a float vector, using truncation.
+ *
+ * @param a   The floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 {
@@ -994,7 +1215,9 @@ ASTCENC_SIMD_INLINE vint4 float_to_int(vfloat4 a)
 #define ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN 1
 
 /**
- * @brief Return an integer value for a float vector, using round-to-nearest.
+ * @brief Return integers rounded to nearest for nonnegative float values.
+ *
+ * @param a   The nonnegative floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 {
@@ -1006,7 +1229,9 @@ ASTCENC_SIMD_INLINE vint4 float_to_int_rtn(vfloat4 a)
 }
 
 /**
- * @brief Return a float value for a integer vector.
+ * @brief Return a float value for an integer vector.
+ *
+ * @param a   The integer values to convert.
  */
 ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 {
@@ -1018,6 +1243,8 @@ ASTCENC_SIMD_INLINE vfloat4 int_to_float(vint4 a)
 
 /**
  * @brief Return a float16 value for a float vector, using round-to-nearest.
+ *
+ * @param a   The floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
 {
@@ -1030,6 +1257,8 @@ ASTCENC_SIMD_INLINE vint4 float_to_float16(vfloat4 a)
 
 /**
  * @brief Return a float16 value for a float scalar, using round-to-nearest.
+ *
+ * @param a   The floating-point value to convert.
  */
 static inline uint16_t float_to_float16(float a)
 {
@@ -1038,6 +1267,8 @@ static inline uint16_t float_to_float16(float a)
 
 /**
  * @brief Return a float value for a float16 vector.
+ *
+ * @param a   The half-precision bit patterns to convert.
  */
 ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
 {
@@ -1050,6 +1281,8 @@ ASTCENC_SIMD_INLINE vfloat4 float16_to_float(vint4 a)
 
 /**
  * @brief Return a float value for a float16 scalar.
+ *
+ * @param a   The half-precision bit pattern to convert.
  */
 ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
 {
@@ -1062,6 +1295,8 @@ ASTCENC_SIMD_INLINE float float16_to_float(uint16_t a)
  * It is a common trick to convert floats into integer bit patterns, perform
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the first half of that flip.
+ *
+ * @param a   The floating-point vector to reinterpret.
  */
 ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 {
@@ -1073,11 +1308,13 @@ ASTCENC_SIMD_INLINE vint4 float_as_int(vfloat4 a)
 }
 
 /**
- * @brief Return a integer value as a float bit pattern (i.e. no conversion).
+ * @brief Return an integer value as a float bit pattern (i.e. no conversion).
  *
  * It is a common trick to convert floats into integer bit patterns, perform
  * some bit hackery based on knowledge they are IEEE 754 layout, and then
  * convert them back again. This is the second half of that flip.
+ *
+ * @param a   The integer vector to reinterpret.
  */
 ASTCENC_SIMD_INLINE vfloat4 int_as_float(vint4 a)
 {
@@ -1108,7 +1345,10 @@ struct vtable4_64x8 {
 };
 
 /**
- * @brief Prepare a vtable lookup table for 16x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 16x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_16x8& table,
@@ -1118,7 +1358,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 }
 
 /**
- * @brief Prepare a vtable lookup table for 32x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 32x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_32x8& table,
@@ -1128,7 +1371,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 }
 
 /**
- * @brief Prepare a vtable lookup table 64x 8-bit entry table.
+ * @brief Prepare a vtable lookup table for 64x 8-bit entries.
+ *
+ * @param[out] table   The lookup table to prepare.
+ * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable4_64x8& table,
@@ -1139,41 +1385,50 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 
 /**
  * @brief Perform a vtable lookup in a 16x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
-	const vtable4_16x8& table,
+	const vtable4_16x8& tbl,
 	vint4 idx
 ) {
-	return vint4(table.data[idx.lane<0>()],
-	             table.data[idx.lane<1>()],
-	             table.data[idx.lane<2>()],
-	             table.data[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 }
 
 /**
  * @brief Perform a vtable lookup in a 32x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
-	const vtable4_32x8& table,
+	const vtable4_32x8& tbl,
 	vint4 idx
 ) {
-	return vint4(table.data[idx.lane<0>()],
-	             table.data[idx.lane<1>()],
-	             table.data[idx.lane<2>()],
-	             table.data[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 }
 
 /**
  * @brief Perform a vtable lookup in a 64x 8-bit table with 32-bit indices.
+ *
+ * @param tbl   The prepared lookup table.
+ * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
-	const vtable4_64x8& table,
+	const vtable4_64x8& tbl,
 	vint4 idx
 ) {
-	return vint4(table.data[idx.lane<0>()],
-	             table.data[idx.lane<1>()],
-	             table.data[idx.lane<2>()],
-	             table.data[idx.lane<3>()]);
+	return vint4(tbl.data[idx.lane<0>()],
+	             tbl.data[idx.lane<1>()],
+	             tbl.data[idx.lane<2>()],
+	             tbl.data[idx.lane<3>()]);
 }
 
 /**
@@ -1183,6 +1438,11 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
  * with high  bits set to zero.
  *
  * Output vector stores a single RGBA texel packed in each lane.
+ *
+ * @param r   The red channel values.
+ * @param g   The green channel values.
+ * @param b   The blue channel values.
+ * @param a   The alpha channel values.
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
@@ -1198,6 +1458,9 @@ ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 
 /**
  * @brief Store a single vector lane to an unaligned address.
+ *
+ * @param[out] base   The destination address.
+ * @param      data   The lane value to store.
  */
 ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
 {
@@ -1209,6 +1472,10 @@ ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
  *
  * All masked lanes must be at the end of vector, after all non-masked lanes.
  * Input is a byte array of at least 4 bytes per unmasked entry.
+ *
+ * @param[out] base   The destination address.
+ * @param      data   The vector to store.
+ * @param      mask   The lanes to store.
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
 {
