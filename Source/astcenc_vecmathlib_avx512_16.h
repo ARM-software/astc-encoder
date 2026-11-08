@@ -1077,8 +1077,8 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat16& accum, vfloat16 a, vmask16 m)
 ASTCENC_SIMD_INLINE __m512i vbmi_float_byte_idx(__m512i idx32)
 {
 	return _mm512_add_epi32(
-		_mm512_mullo_epi32(idx32, _mm512_set1_epi32(0x04040404)),
-		_mm512_set1_epi32(0x03020100));
+	    _mm512_mullo_epi32(idx32, _mm512_set1_epi32(0x04040404)),
+	    _mm512_set1_epi32(0x03020100));
 }
 
 /**
@@ -1116,10 +1116,10 @@ ASTCENC_SIMD_INLINE vfloat16 gatherf_scalar(const float* base, vint16 indices)
 	ASTCENC_ALIGNAS int idx[16];
 	_mm512_store_si512(idx, indices.m);
 	return vfloat16(_mm512_setr_ps(
-		base[idx[0]],  base[idx[1]],  base[idx[2]],  base[idx[3]],
-		base[idx[4]],  base[idx[5]],  base[idx[6]],  base[idx[7]],
-		base[idx[8]],  base[idx[9]],  base[idx[10]], base[idx[11]],
-		base[idx[12]], base[idx[13]], base[idx[14]], base[idx[15]]));
+	    base[idx[0]],  base[idx[1]],  base[idx[2]],  base[idx[3]],
+	    base[idx[4]],  base[idx[5]],  base[idx[6]],  base[idx[7]],
+	    base[idx[8]],  base[idx[9]],  base[idx[10]], base[idx[11]],
+	    base[idx[12]], base[idx[13]], base[idx[14]], base[idx[15]]));
 }
 
 /**
@@ -1224,26 +1224,26 @@ ASTCENC_SIMD_INLINE vfloat16 gatherf(const vgatherf_table& t, vint16 indices)
 	if (t.count <= 16)
 	{
 		__m512i r = _mm512_permutexvar_epi8(
-			vbmi_float_byte_idx(indices.m), _mm512_castps_si512(t.t0));
+		    vbmi_float_byte_idx(indices.m), _mm512_castps_si512(t.t0));
 		return vfloat16(_mm512_castsi512_ps(r));
 	}
 
 	if (t.count <= 32)
 	{
 		__m512i r = _mm512_permutex2var_epi8(
-			_mm512_castps_si512(t.t0),
-			vbmi_float_byte_idx(indices.m),
-			_mm512_castps_si512(t.t1));
+		    _mm512_castps_si512(t.t0),
+		    vbmi_float_byte_idx(indices.m),
+		    _mm512_castps_si512(t.t1));
 		return vfloat16(_mm512_castsi512_ps(r));
 	}
 
 	__m512i bidx_lo = vbmi_float_byte_idx(indices.m);
 	__m512i bidx_hi = vbmi_float_byte_idx(
-		_mm512_sub_epi32(indices.m, _mm512_set1_epi32(32)));
+	    _mm512_sub_epi32(indices.m, _mm512_set1_epi32(32)));
 	__m512i lo = _mm512_permutex2var_epi8(
-		_mm512_castps_si512(t.t0), bidx_lo, _mm512_castps_si512(t.t1));
+	    _mm512_castps_si512(t.t0), bidx_lo, _mm512_castps_si512(t.t1));
 	__m512i hi = _mm512_permutex2var_epi8(
-		_mm512_castps_si512(t.t2), bidx_hi, _mm512_castps_si512(t.t3));
+	    _mm512_castps_si512(t.t2), bidx_hi, _mm512_castps_si512(t.t3));
 	__mmask16 ge32 = _mm512_cmpge_epi32_mask(indices.m, _mm512_set1_epi32(32));
 	return vfloat16(_mm512_mask_blend_ps(ge32, _mm512_castsi512_ps(lo),
 	                                     _mm512_castsi512_ps(hi)));
@@ -1423,11 +1423,11 @@ ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit_vbmi(vint16 table, vint16 idx)
  * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vtable16_16x8& table,
-	const uint8_t* data
+    vtable16_16x8& table,
+    const uint8_t* data
 ) {
 	table.t0 = vint16(_mm512_zextsi128_si512(_mm_loadu_si128(
-		reinterpret_cast<const __m128i*>(data))));
+	    reinterpret_cast<const __m128i*>(data))));
 }
 
 /**
@@ -1437,11 +1437,11 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
  * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vtable16_32x8& table,
-	const uint8_t* data
+    vtable16_32x8& table,
+    const uint8_t* data
 ) {
 	table.t0 = vint16(_mm512_zextsi256_si512(_mm256_loadu_si256(
-		reinterpret_cast<const __m256i*>(data))));
+	    reinterpret_cast<const __m256i*>(data))));
 }
 
 /**
@@ -1451,8 +1451,8 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
  * @param      data    The source table bytes.
  */
 ASTCENC_SIMD_INLINE void vtable_prepare(
-	vtable16_64x8& table,
-	const uint8_t* data
+    vtable16_64x8& table,
+    const uint8_t* data
 ) {
 	table.t0 = vint16(_mm512_loadu_si512(data));
 }
@@ -1464,8 +1464,8 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
  * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit(
-	const vtable16_16x8& tbl,
-	vint16 idx
+    const vtable16_16x8& tbl,
+    vint16 idx
 ) {
 	return vtable_lookup_32bit_vbmi(tbl.t0, idx);
 }
@@ -1477,8 +1477,8 @@ ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit(
  * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit(
-	const vtable16_32x8& tbl,
-	vint16 idx
+    const vtable16_32x8& tbl,
+    vint16 idx
 ) {
 	return vtable_lookup_32bit_vbmi(tbl.t0, idx);
 }
@@ -1490,8 +1490,8 @@ ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit(
  * @param idx   The table index for each lane.
  */
 ASTCENC_SIMD_INLINE vint16 vtable_lookup_32bit(
-	const vtable16_64x8& tbl,
-	vint16 idx
+    const vtable16_64x8& tbl,
+    vint16 idx
 ) {
 	return vtable_lookup_32bit_vbmi(tbl.t0, idx);
 }
