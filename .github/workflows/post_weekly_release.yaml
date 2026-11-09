@@ -331,7 +331,7 @@ jobs:
         shell: cmd
 
   sign-binaries:
-    if: github.repository_owner == 'Arm-software'
+    if: ${{ (startsWith(github.event.ref, 'refs/tags/')) && (github.repository_owner == 'Arm-software') }}
     name: Sign Windows and macOS
     runs-on: [self-hosted-ubuntu-latest-x64]
     needs: [build-macos-universal, build-windows-multi]
