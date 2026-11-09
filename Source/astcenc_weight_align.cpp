@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <cassert>
 #include <cstring>
+#include <mutex>
 
 static constexpr unsigned int ANGULAR_STEPS { 32 };
 
@@ -67,8 +68,8 @@ ASTCENC_ALIGNAS static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 	static bool print_once { true };
 #endif
 
-/* See header for documentation. */
-void prepare_angular_tables()
+/** @brief Initialize the angular alignment lookup tables. */
+static void fill_angular_tables()
 {
 	for (unsigned int i = 0; i < ANGULAR_STEPS; i++)
 	{
@@ -80,6 +81,13 @@ void prepare_angular_tables()
 			cos_table[j][i] = static_cast<float>(cosf((2.0f * astc::PI / (SINCOS_STEPS - 1.0f)) * angle_step * static_cast<float>(j)));
 		}
 	}
+}
+
+/* See header for documentation. */
+void prepare_angular_tables()
+{
+	static std::once_flag filled;
+	std::call_once(filled, fill_angular_tables);
 }
 
 /**
