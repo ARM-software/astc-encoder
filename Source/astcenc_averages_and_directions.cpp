@@ -53,7 +53,7 @@ static void compute_partition_averages_rgb(
 	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
-	// For 1 partition just use the precomputed mean
+	// Use the precomputed mean for a single partition
 	if (partition_count == 1)
 	{
 		averages[0] = blk.data_mean.swz<0, 1, 2>();
@@ -224,7 +224,7 @@ static void compute_partition_averages_rgba(
 	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
-	// For 1 partition just use the precomputed mean
+	// Use the precomputed mean for a single partition
 	if (partition_count == 1)
 	{
 		averages[0] = blk.data_mean;
@@ -403,7 +403,7 @@ static void compute_partition_averages_rgba_grayscale(
 	size_t texel_count = blk.texel_count;
 	promise(texel_count > 0);
 
-	// For 1 partition just use the precomputed mean
+	// Use the precomputed mean for a single partition
 	if (partition_count == 1)
 	{
 		averages[0] = blk.data_mean;
@@ -890,7 +890,7 @@ void compute_avgs_and_dirs_2_comp(
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
 	}
-	else // (component1 == 1 && component2 == 2)
+	else  // (component1 == 1 && component2 == 2)
 	{
 		assert(component1 == 1 && component2 == 2);
 
@@ -1012,9 +1012,8 @@ void compute_error_squared_rgba(
 		vfloat ew_b(blk.channel_weight.lane<2>());
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
-		// This implementation over-shoots, but this is safe as we initialize the texel_indexes
-		// array to extend the last value. This means min/max are not impacted, but we need to mask
-		// out the dummy values when we compute the line weighting.
+		// Padded texel indexes repeat the last value, preserving min/max. Mask padded lanes when
+		// computing line weights.
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1115,7 +1114,7 @@ void compute_error_squared_rgba_grayscale(
 		size_t texel_count = pi.partition_texel_count[partition];
 		promise(texel_count > 0);
 
-		// The line coefficients have identical RGB components.
+		// The line coefficients have identical RGB components
 		vfloat l_uncor_bs0(l_uncor.bs.lane<0>());
 		vfloat l_uncor_bs3(l_uncor.bs.lane<3>());
 		vfloat l_uncor_amod0(l_uncor.amod.lane<0>());
@@ -1131,8 +1130,8 @@ void compute_error_squared_rgba_grayscale(
 		vfloat ew_b(blk.channel_weight.lane<2>());
 		vfloat ew_a(blk.channel_weight.lane<3>());
 
-		// Padded texel indexes repeat the last value, preserving min/max.
-		// Mask these lanes when accumulating errors.
+		// Padded texel indexes repeat the last value, preserving min/max. Mask these lanes when
+		// accumulating errors.
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{
@@ -1142,7 +1141,7 @@ void compute_error_squared_rgba_grayscale(
 			vfloat data_r = gatherf(tr, texel_idxs);
 			vfloat data_a = gatherf(ta, texel_idxs);
 
-			// Reuse the RGB product, retaining all three additions in order.
+			// Reuse the RGB product, retaining all three additions in order
 			vfloat uncor_rgb_param = data_r * l_uncor_bs0;
 			vfloat uncor_param = uncor_rgb_param
 			                   + uncor_rgb_param
@@ -1157,7 +1156,7 @@ void compute_error_squared_rgba_grayscale(
 			vfloat uncor_dist3 = (l_uncor_amod3 - data_a)
 			                   + (uncor_param * l_uncor_bs3);
 
-			// Channel weights may differ, even though the RGB residuals match.
+			// Channel weights may differ, even though the RGB residuals match
 			vfloat uncor_err = (ew_r * uncor_dist0 * uncor_dist0)
 			                 + (ew_g * uncor_dist0 * uncor_dist0)
 			                 + (ew_b * uncor_dist0 * uncor_dist0)
@@ -1241,9 +1240,8 @@ void compute_error_squared_rgb(
 		vfloat ew_g(blk.channel_weight.lane<1>());
 		vfloat ew_b(blk.channel_weight.lane<2>());
 
-		// This implementation over-shoots, but this is safe as we initialize the weights array
-		// to extend the last value. This means min/max are not impacted, but we need to mask
-		// out the dummy values when we compute the line weighting.
+		// Padded weights repeat the last value, preserving min/max. Mask padded lanes when
+		// computing line weights.
 		vint lane_ids = vint::lane_id();
 		for (size_t i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
 		{

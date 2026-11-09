@@ -33,16 +33,15 @@ astcenc_image_ptr alloc_image(
 ) {
 	astcenc_image_ptr img { new astcenc_image };
 
-	// Initialize everything so that we can handle deletion of a partially
-	// constructed object if new[] throws a bad_alloc exception
+	// Initialize the image so cleanup is safe if new[] throws bad_alloc
 	img->dim_x = dim_x;
 	img->dim_y = dim_y;
 	img->dim_z = dim_z;
 	img->data_type = ASTCENC_TYPE_U8;
 	img->data = nullptr;
 
-	// Ensure this is done as a size_t to avoid overflow - calling code has
-	// checked that the product will fit in a size_t without overflowing.
+	// Ensure this is done as a size_t to avoid overflow - calling code has checked that the product
+	// will fit in a size_t without overflowing
 	size_t plane_components = static_cast<size_t>(dim_x) * dim_y * 4;
 
 	void** data = new void*[dim_z] {};
@@ -64,7 +63,7 @@ astcenc_image_ptr alloc_image(
 			data[z] = new uint16_t[plane_components];
 		}
 	}
-	else // if (bitness == 32)
+	else  // if (bitness == 32)
 	{
 		assert(bitness == 32);
 		img->data_type = ASTCENC_TYPE_F32;
@@ -166,7 +165,7 @@ unsigned int determine_image_components(
 			}
 		}
 	}
-	else // if (img->data_type == ASTCENC_TYPE_F32)
+	else  // if (img->data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
 
@@ -306,7 +305,7 @@ std::vector<float> floatx4_array_from_astc_img(
 			}
 		}
 	}
-	else // if (img->data_type == ASTCENC_TYPE_F32)
+	else  // if (img->data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
 		float* data32 = static_cast<float*>(img->data[z_index]);

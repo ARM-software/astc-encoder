@@ -873,22 +873,22 @@ static unsigned int get_format(
 struct ktx_header
 {
 	uint8_t magic[12];
-	uint32_t endianness;				// should be 0x04030201; if it is instead 0x01020304, then the endianness of everything must be switched.
-	uint32_t gl_type;					// 0 for compressed textures, otherwise value from table 3.2 (page 162) of OpenGL 4.0 spec
-	uint32_t gl_type_size;				// size of data elements to do endianness swap on (1=endian-neutral data)
-	uint32_t gl_format;					// 0 for compressed textures, otherwise value from table 3.3 (page 163) of OpenGL spec
-	uint32_t gl_internal_format;		// sized-internal-format, corresponding to table 3.12 to 3.14 (pages 182-185) of OpenGL spec
-	uint32_t gl_base_internal_format;	// unsized-internal-format: corresponding to table 3.11 (page 179) of OpenGL spec
-	uint32_t pixel_width;				// texture dimensions; not rounded up to block size for compressed.
-	uint32_t pixel_height;				// must be 0 for 1D textures.
-	uint32_t pixel_depth;				// must be 0 for 1D, 2D and cubemap textures.
-	uint32_t number_of_array_elements;	// 0 if not a texture array
-	uint32_t number_of_faces;			// 6 for cubemaps, 1 for non-cubemaps
-	uint32_t number_of_mipmap_levels;	// 0 or 1 for non-mipmapped textures; 0 indicates that auto-mipmap-gen should be done at load time.
-	uint32_t bytes_of_key_value_data;	// size in bytes of the key-and-value area immediately following the header.
+	uint32_t endianness;                // 0x04030201, or 0x01020304 when byte-swapping is needed
+	uint32_t gl_type;                   // 0 for compressed textures, otherwise value from table 3.2 (page 162) of OpenGL 4.0 spec
+	uint32_t gl_type_size;              // Size of data elements to do endianness swap on (1=endian-neutral data)
+	uint32_t gl_format;                 // 0 for compressed textures, otherwise value from table 3.3 (page 163) of OpenGL spec
+	uint32_t gl_internal_format;        // Sized-internal-format, corresponding to table 3.12 to 3.14 (pages 182-185) of OpenGL spec
+	uint32_t gl_base_internal_format;   // Unsized-internal-format: corresponding to table 3.11 (page 179) of OpenGL spec
+	uint32_t pixel_width;               // Texture dimensions; not rounded up to block size for compressed
+	uint32_t pixel_height;              // Must be 0 for 1D textures
+	uint32_t pixel_depth;               // Must be 0 for 1D, 2D and cubemap textures
+	uint32_t number_of_array_elements;  // 0 if not a texture array
+	uint32_t number_of_faces;           // 6 for cubemaps, 1 for non-cubemaps
+	uint32_t number_of_mipmap_levels;   // 0 or 1 for no mipmaps; 0 requests mipmap generation on load
+	uint32_t bytes_of_key_value_data;   // Size in bytes of the key-and-value area immediately following the header
 };
 
-// Magic 12-byte sequence that must appear at the beginning of every KTX file.
+// Magic 12-byte sequence that must appear at the beginning of every KTX file
 static uint8_t ktx_magic[12] {
 	0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 };
@@ -1161,7 +1161,7 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	unsigned int dim_y = astc::max(hdr.pixel_height, 1u);
 	unsigned int dim_z = astc::max(hdr.pixel_depth, 1u);
 
-	// ignore the key/value data
+	// Ignore the key/value data
 	file.seekg(hdr.bytes_of_key_value_data, std::ios::cur);
 	if (file.fail())
 	{
@@ -1192,8 +1192,8 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
 	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
 
-	// Also verify that our output plane allocation does not overflow because
-	// this always uses 4 components which can be more than the input file used
+	// Also verify that our output plane allocation does not overflow because this always uses 4
+	// components which can be more than the input file used
 	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
 	astc::mul_safe(plane_texels, 4, overflow);
 
@@ -1222,7 +1222,7 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	// Perform an endianness swap on the surface if needed.
+	// Perform an endianness swap on the surface if needed
 	if (switch_endianness)
 	{
 		if (hdr.gl_type_size == 2)
@@ -1249,9 +1249,7 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	// TODO: Change astenc_image struct to store size_t rather than unsigned
-	// int then make dim_x/y/z size_t at the start of the function. This is an
-	// API break, so needs to wait until we make a major version.
+	// TODO: Use size_t for astcenc_image dimensions and local sizes in the next major API revision
 	size_t dim_y_sz = dim_y;
 	size_t dim_z_sz = dim_z;
 
@@ -1267,7 +1265,7 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
 				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
-			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
+			else  // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
@@ -1363,8 +1361,8 @@ bool load_ktx_compressed_image(
 		data_len = reverse_bytes_u32(data_len);
 	}
 
-	// The data size and pixel dimensions are independent header fields, so
-	// reject a data size that is too small for the given image dimensions
+	// The data size and pixel dimensions are independent header fields, so reject a data size that
+	// is too small for the given image dimensions
 	size_t block_x = fmt->x;
 	size_t block_y = fmt->y;
 	size_t block_z = fmt->z == 0 ? 1 : fmt->z;
@@ -1496,8 +1494,8 @@ static bool store_ktx_uncompressed_image(
 	// Size of image data padded to a multiple of 4 bytes
 	size_t image_write_bytes = (image_bytes + 3) & ~3;
 
-	// The KTX data size field is a fixed 32-bit value, so check that the
-	// size_t value can be safely narrowed and does not wrap when padded
+	// The KTX data size field is a fixed 32-bit value, so check that the size_t value can be safely
+	// narrowed and does not wrap when padded
 	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
 	if ((image_bytes_field != image_bytes) || (image_write_bytes < image_bytes))
 	{
@@ -1617,7 +1615,7 @@ static bool store_ktx_uncompressed_image(
 			}
 		}
 	}
-	else  // if bitness == 16
+	else  // If bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -1719,23 +1717,23 @@ static bool store_ktx_uncompressed_image(
 */
 struct dds_pixelformat
 {
-	uint32_t size;				// structure size, set to 32.
+	uint32_t size;         // Structure size, set to 32
 	/*
 	   flags bits are a combination of the following: 0x1 : Texture contains alpha data 0x2 : ---- (older files: texture contains alpha data, for Alpha-only texture) 0x4 : The fourcc field is valid,
 	   indicating a compressed or DX10 texture format 0x40 : texture contains uncompressed RGB data 0x200 : ---- (YUV in older files) 0x20000 : Texture contains Luminance data (can be combined with
 	   0x1 for Lum-Alpha) */
 	uint32_t flags;
-	uint32_t fourcc;			// "DX10" to indicate a DX10 format, "DXTn" for the DXT formats
-	uint32_t rgbbitcount;		// number of bits per texel; up to 32 for non-DX10 formats.
-	uint32_t rbitmask;			// bitmap indicating position of red/luminance color component
-	uint32_t gbitmask;			// bitmap indicating position of green color component
-	uint32_t bbitmask;			// bitmap indicating position of blue color component
-	uint32_t abitmask;			// bitmap indicating position of alpha color component
+	uint32_t fourcc;       // "DX10" to indicate a DX10 format, "DXTn" for the DXT formats
+	uint32_t rgbbitcount;  // Number of bits per texel; up to 32 for non-DX10 formats
+	uint32_t rbitmask;     // Bitmap indicating position of red/luminance color component
+	uint32_t gbitmask;     // Bitmap indicating position of green color component
+	uint32_t bbitmask;     // Bitmap indicating position of blue color component
+	uint32_t abitmask;     // Bitmap indicating position of alpha color component
 };
 
 struct dds_header
 {
-	uint32_t size;				// header size; must be exactly 124.
+	uint32_t size;                  // Header size; must be exactly 124
 	/*
 	   flag field is an OR or the following bits, that indicate fields containing valid data:
 		1: caps/caps2/caps3/caps4 (set in all DDS files, ignore on read)
@@ -1750,10 +1748,10 @@ struct dds_header
 	uint32_t flags;
 	uint32_t height;
 	uint32_t width;
-	uint32_t pitch_or_linear_size;	// scanline pitch for uncompressed; total size in bytes for compressed
+	uint32_t pitch_or_linear_size;  // Scanline pitch for uncompressed; total size in bytes for compressed
 	uint32_t depth;
 	uint32_t mipmapcount;
-	// unused, set to 0
+	// Unused, set to 0
 	uint32_t reserved1[11];
 	dds_pixelformat ddspf;
 	/*
@@ -1775,11 +1773,11 @@ struct dds_header
 		0x200000 : texture is a 3d texture.
 	*/
 	uint32_t caps2;
-	// unused, set to 0
+	// Unused, set to 0
 	uint32_t caps3;
-	// unused, set to 0
+	// Unused, set to 0
 	uint32_t caps4;
-	// unused, set to 0
+	// Unused, set to 0
 	uint32_t reserved2;
 };
 
@@ -1789,7 +1787,7 @@ struct dds_header_dx10
 	uint32_t resource_dimension;  // Set to 2 (1D tex), 3 (2D tex or cube), or 4 (3D tex)
 	uint32_t misc_flag;           // Set to 4 if cubemap, else 0
 	uint32_t array_size;          // Set to size of array if texture array; else 1
-	uint32_t reserved;            // Set to 0.
+	uint32_t reserved;            // Set to 0
 };
 
 #define DDS_MAGIC 0x20534444
@@ -1837,7 +1835,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	// Validate that we can read the DDS header
+	// Check that the DDS header was read
 	dds_header hdr;
 	file.read(reinterpret_cast<char*>(&hdr), sizeof(hdr));
 	if (file.fail())
@@ -1893,7 +1891,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	size_t dim_y = hdr.height;
 	size_t dim_z = (hdr.flags & 0x800000) ? hdr.depth : 1;
 
-	// The bitcount that we will use internally in the codec
+	// Internal codec bit depth
 	unsigned int bitness = 0;
 
 	// The bytes per component in the DDS file itself
@@ -1901,10 +1899,10 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	unsigned int components = 0;
 	scanline_transfer copy_method = R8_TO_RGBA8;
 
-	// figure out the format actually used in the DDS file.
+	// Identify the DDS pixel format
 	if (use_dx10_header)
 	{
-		// DX10 header present; use the DXGI format.
+		// DX10 header present; use the DXGI format
 		#define DXGI_FORMAT_R32G32B32A32_FLOAT   2
 		#define DXGI_FORMAT_R32G32B32_FLOAT      6
 		#define DXGI_FORMAT_R16G16B16A16_FLOAT  10
@@ -1971,8 +1969,8 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	}
 	else
 	{
-		// No DX10 header present. Then try to match the bitcount and bitmask against
-		// a set of prepared patterns.
+		// No DX10 header present. Then try to match the bitcount and bitmask against a set of
+		// prepared patterns.
 		uint32_t flags = hdr.ddspf.flags;
 		uint32_t bitcount = hdr.ddspf.rgbbitcount;
 		uint32_t rmask = hdr.ddspf.rbitmask;
@@ -2069,8 +2067,8 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	size_t bytes_per_plane = astc::mul_safe(bytes_per_row, dim_y, overflow);
 	size_t bytes_per_image = astc::mul_safe(bytes_per_plane, dim_z, overflow);
 
-	// Also verify that our output plane allocation does not overflow because
-	// this always uses 4 components which can be more than the input file used
+	// Also verify that our output plane allocation does not overflow because this always uses 4
+	// components which can be more than the input file used
 	size_t plane_texels = astc::mul_safe(dim_x, dim_y, overflow);
 	astc::mul_safe(plane_texels, 4, overflow);
 
@@ -2117,9 +2115,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	// TODO: Change astenc_image struct to store size_t rather than unsigned
-	// int then make dim_x/y/z size_t at the start of the function. This is an
-	// API break, so needs to wait until we make a major version.
+	// TODO: Use size_t for astcenc_image dimensions and local sizes in the next major API revision
 	size_t dim_y_sz = dim_y;
 	size_t dim_z_sz = dim_z;
 
@@ -2135,7 +2131,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 				uint8_t* data8 = static_cast<uint8_t*>(astc_img->data[z]);
 				dst = static_cast<void*>(&data8[4 * dim_x * mod_y]);
 			}
-			else // if (astc_img->data_type == ASTCENC_TYPE_F16)
+			else  // if (astc_img->data_type == ASTCENC_TYPE_F16)
 			{
 				assert(astc_img->data_type == ASTCENC_TYPE_F16);
 				uint16_t* data16 = static_cast<uint16_t*>(astc_img->data[z]);
@@ -2187,24 +2183,24 @@ static bool store_dds_uncompressed_image(
 	// Must be smaller than image_bytes, so no need to check overflow here
 	size_t pitch_bytes = dim_x * image_components * (bitness / 8);
 
-	// The pitch_or_linear_size field is a fixed 32-bit value, so the size_t used
-	// for buffer sizing must be narrowed before it is serialized into the file.
+	// The pitch_or_linear_size field is a fixed 32-bit value, so the size_t used for buffer sizing
+	// must be narrowed before it is serialized into the file
 	uint32_t pitch_bytes_field = static_cast<uint32_t>(pitch_bytes);
 	if (pitch_bytes_field != pitch_bytes)
 	{
 		return false;
 	}
 
-	// DDS-pixel-format structures to use when storing LDR image with 1,2,3 or 4 components.
+	// DDS-pixel-format structures to use when storing LDR image with 1,2,3 or 4 components
 	static const dds_pixelformat format_of_image_components[4] =
 	{
-		{32, 0x20000, 0, 8, 0xFF, 0, 0, 0},	// luminance
-		{32, 0x20001, 0, 16, 0xFF, 0, 0, 0xFF00},	// L8A8
-		{32, 0x40, 0, 24, 0xFF, 0xFF00, 0xFF0000, 0},	// RGB8
-		{32, 0x41, 0, 32, 0xFF, 0xFF00, 0xFF0000, 0xFF000000}	// RGBA8
+		{32, 0x20000, 0, 8, 0xFF, 0, 0, 0},                    // Luminance
+		{32, 0x20001, 0, 16, 0xFF, 0, 0, 0xFF00},              // L8A8
+		{32, 0x40, 0, 24, 0xFF, 0xFF00, 0xFF0000, 0},          // RGB8
+		{32, 0x41, 0, 32, 0xFF, 0xFF00, 0xFF0000, 0xFF000000}  // RGBA8
 	};
 
-	// DDS-pixel-format structures to use when storing HDR image.
+	// DDS-pixel-format structures to use when storing HDR image
 	static const dds_pixelformat dxt10_diverter =
 	{
 		32, 4, DX10_MAGIC, 0, 0, 0, 0, 0
@@ -2328,7 +2324,7 @@ static bool store_dds_uncompressed_image(
 			}
 		}
 	}
-	else  // if bitness == 16
+	else  // If bitness == 16
 	{
 		row_pointers16.resize(dim_z);
 		row_data16.resize(dim_y * dim_z);
@@ -2542,7 +2538,7 @@ astcenc_image_ptr load_ncimage(
 		}
 	}
 
-	// We must always match a loader - stb_image provides a generic handler
+	// stb_image provides a fallback loader for unmatched formats
 	assert(loader);
 
 	try
@@ -2566,7 +2562,7 @@ bool store_ncimage(
 	const char* eptr = strrchr(filename, '.');
 	if (!eptr)
 	{
-		eptr = ".ktx"; // use KTX file format if we don't have an ending.
+		eptr = ".ktx";  // Default to KTX when no extension is given
 	}
 
 	// Scan through descriptors until a matching storer is found
@@ -2581,8 +2577,8 @@ bool store_ncimage(
 		}
 	}
 
-	// Should never fail this, get_output_filename_enforced_bitness should have
-	// acted as a preflight check
+	// Should never fail this, get_output_filename_enforced_bitness should have acted as a
+	// preflight check
 	if (!storer)
 	{
 		return false;
@@ -2699,7 +2695,7 @@ int load_cimage(
 		return 1;
 	}
 
-	// Casts are safe - we know individual values are small enough
+	// Values fit within the cast destination types
 	img.block_x = static_cast<unsigned int>(block_x);
 	img.block_y = static_cast<unsigned int>(block_y);
 	img.block_z = static_cast<unsigned int>(block_z);

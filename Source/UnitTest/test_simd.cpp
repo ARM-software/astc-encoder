@@ -1225,8 +1225,8 @@ TEST(SuiteVfloat4, float_to_float16)
 	EXPECT_EQ(r.lane<2>(), 0x7C00);
 
 	// NaN must convert to any valid NaN encoding
-	EXPECT_EQ((r.lane<3>() >> 10) & 0x1F, 0x1F); // Exponent must be all 1s
-	EXPECT_NE(r.lane<3>() & (0x3FF), 0);         // Mantissa must be non-zero
+	EXPECT_EQ((r.lane<3>() >> 10) & 0x1F, 0x1F);  // Exponent must be all 1s
+	EXPECT_NE(r.lane<3>() & (0x3FF), 0);          // Mantissa must be non-zero
 }
 
 /** @brief Test float to fp16 conversion. */
@@ -1835,9 +1835,9 @@ TEST(SuiteVint4, two_to_the_n)
 	EXPECT_EQ(r2.lane<2>(), 1 << 29);
 	EXPECT_EQ(r2.lane<3>(), 1 << 30);
 
-	// Shifts higher than 30 are not allowed as it overflows the int type;
-	// and results in implementation-defined behavior because of how we
-	// generate the shifted result in two_to_the_n().
+	// Shifts higher than 30 are not allowed as it overflows the int type; and results in
+	// implementation-defined behavior because of how we generate the shifted result
+	// in two_to_the_n()
 	// -  Shift by 31 shifts into sign bit
 	// -  Shift by 32 shifts off the end
 }

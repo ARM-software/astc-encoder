@@ -144,7 +144,7 @@ static void compute_error_squared_rgb_single_partition(
 		vmask mask = lane_ids < vint(texel_count);
 		lane_ids += vint(ASTCENC_SIMD_WIDTH);
 
-		// Compute the error that arises from just ditching alpha
+		// Compute the error from discarding alpha
 		vfloat data_a = gatherf(ta, tix);
 		vfloat alpha_diff = data_a - default_a;
 		alpha_diff = alpha_diff * alpha_diff;
@@ -261,8 +261,8 @@ static void compute_encoding_choice_errors(
 		const partition_metrics& pm = rgb_metrics[i];
 
 		line3 uncor_rgb_lines;
-		line3 samec_rgb_lines;  // for LDR-RGB-scale
-		line3 rgb_luma_lines;   // for HDR-RGB-scale
+		line3 samec_rgb_lines;  // For LDR-RGB-scale
+		line3 rgb_luma_lines;   // For HDR-RGB-scale
 
 		processed_line3 uncor_rgb_plines;
 		processed_line3 samec_rgb_plines;
@@ -306,7 +306,7 @@ static void compute_encoding_choice_errors(
 		    luminance_plines, luminance_rgb_error,
 		                      alpha_drop_error);
 
-		// Determine if we can offset encode RGB lanes
+		// Check RGB delta-encoding eligibility
 		vfloat4 endpt0 = ep.endpt0[i];
 		vfloat4 endpt1 = ep.endpt1[i];
 		vfloat4 endpt_diff = abs(endpt1 - endpt0);
@@ -314,9 +314,9 @@ static void compute_encoding_choice_errors(
 		bool can_offset_encode = (mask(endpt_can_offset) & 0x7) == 0x7;
 
 		// Store out the settings
-		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // empirical
-		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;        // wild guess
-		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // empirical
+		eci[i].rgb_scale_error = (samechroma_rgb_error - uncorr_rgb_error) * 0.7f;  // Empirical
+		eci[i].rgb_luma_error  = (rgb_luma_error - uncorr_rgb_error) * 1.5f;        // Wild guess
+		eci[i].luminance_error = (luminance_rgb_error - uncorr_rgb_error) * 3.0f;   // Empirical
 		eci[i].alpha_drop_error = alpha_drop_error * 3.0f;
 		eci[i].can_offset_encode = can_offset_encode;
 		eci[i].can_blue_contract = !blk.is_luminance();
@@ -380,8 +380,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 	float range_upper_limit_rgb = encode_hdr_rgb ? 61440.0f : 65535.0f;
 	float range_upper_limit_alpha = encode_hdr_alpha ? 61440.0f : 65535.0f;
 
-	// It is possible to get endpoint colors significantly outside [0,upper-limit] even if the
-	// input data are safely contained in [0,upper-limit]; we need to add an error term for this
+	// Penalize endpoints outside [0,upper-limit], even when input colors are in range
 	vfloat4 offset(range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_rgb, range_upper_limit_alpha);
 	vfloat4 ep0_range_error_high = max(ep0 - offset, 0.0f);
 	vfloat4 ep1_range_error_high = max(ep1 - offset, 0.0f);
@@ -428,94 +427,93 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		// Estimate of color-component spread in low endpoint color
 		float df = hmax_s(abs(pdif));
 
-		// Endpoint colors can fall well outside the input range, and an HDR
-		// input may contain very large or non-finite values, so these spreads
-		// are not bounded by the int range. Clamp before the narrowing cast to
-		// avoid undefined behavior; the values are only used in the threshold
-		// comparisons below and the largest threshold is 32768, so saturating
-		// at 65536 leaves every comparison result unchanged.
+		// Endpoint colors can fall well outside the input range, and an HDR input may contain very
+		// large or non-finite values, so these spreads are not bounded by the int range. Clamp
+		// before the narrowing cast to avoid undefined behavior; the values are only used in the
+		// threshold comparisons below and the largest threshold is 32768, so saturating at 65536
+		// leaves every comparison result unchanged.
 		int b = static_cast<int>(astc::clamp(bf, 0.0f, 65536.0f));
 		int c = static_cast<int>(astc::clamp(cf, 0.0f, 65536.0f));
 		int d = static_cast<int>(astc::clamp(df, 0.0f, 65536.0f));
 
-		// Determine which one of the 6 submodes is likely to be used in case of an RGBO-mode
-		int rgbo_mode = 5;		// 7 bits per component
-		// mode 4: 8 7 6
+		// Estimate the RGBO submode from component ranges
+		int rgbo_mode = 5;  // 7 bits per component
+		// Mode 4: 8 7 6
 		if (b < 32768 && c < 16384)
 		{
 			rgbo_mode = 4;
 		}
 
-		// mode 3: 9 6 7
+		// Mode 3: 9 6 7
 		if (b < 8192 && c < 16384)
 		{
 			rgbo_mode = 3;
 		}
 
-		// mode 2: 10 5 8
+		// Mode 2: 10 5 8
 		if (b < 2048 && c < 16384)
 		{
 			rgbo_mode = 2;
 		}
 
-		// mode 1: 11 6 5
+		// Mode 1: 11 6 5
 		if (b < 2048 && c < 1024)
 		{
 			rgbo_mode = 1;
 		}
 
-		// mode 0: 11 5 7
+		// Mode 0: 11 5 7
 		if (b < 1024 && c < 4096)
 		{
 			rgbo_mode = 0;
 		}
 
-		// Determine which one of the 9 submodes is likely to be used in case of an RGB-mode.
-		int rgb_mode = 8;		// 8 bits per component, except 7 bits for blue
+		// Estimate the RGB submode from component ranges
+		int rgb_mode = 8;  // 8 bits per component, except 7 bits for blue
 
-		// mode 0: 9 7 6 7
+		// Mode 0: 9 7 6 7
 		if (b < 16384 && c < 8192 && d < 8192)
 		{
 			rgb_mode = 0;
 		}
 
-		// mode 1: 9 8 6 6
+		// Mode 1: 9 8 6 6
 		if (b < 32768 && c < 8192 && d < 4096)
 		{
 			rgb_mode = 1;
 		}
 
-		// mode 2: 10 6 7 7
+		// Mode 2: 10 6 7 7
 		if (b < 4096 && c < 8192 && d < 4096)
 		{
 			rgb_mode = 2;
 		}
 
-		// mode 3: 10 7 7 6
+		// Mode 3: 10 7 7 6
 		if (b < 8192 && c < 8192 && d < 2048)
 		{
 			rgb_mode = 3;
 		}
 
-		// mode 4: 11 8 6 5
+		// Mode 4: 11 8 6 5
 		if (b < 8192 && c < 2048 && d < 512)
 		{
 			rgb_mode = 4;
 		}
 
-		// mode 5: 11 6 8 6
+		// Mode 5: 11 6 8 6
 		if (b < 2048 && c < 8192 && d < 1024)
 		{
 			rgb_mode = 5;
 		}
 
-		// mode 6: 12 7 7 5
+		// Mode 6: 12 7 7 5
 		if (b < 2048 && c < 2048 && d < 256)
 		{
 			rgb_mode = 6;
 		}
 
-		// mode 7: 12 6 7 6
+		// Mode 7: 12 6 7 6
 		if (b < 1024 && c < 2048 && d < 512)
 		{
 			rgb_mode = 7;
@@ -524,8 +522,8 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		static const float rgbo_error_scales[6] { 4.0f, 4.0f, 16.0f, 64.0f, 256.0f, 1024.0f };
 		static const float rgb_error_scales[9] { 64.0f, 64.0f, 16.0f, 16.0f, 4.0f, 4.0f, 1.0f, 1.0f, 384.0f };
 
-		float mode7mult = rgbo_error_scales[rgbo_mode] * 0.0015f;  // Empirically determined ....
-		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;    // Empirically determined ....
+		float mode7mult = rgbo_error_scales[rgbo_mode] * 0.0015f;  // Empirically determined
+		float mode11mult = rgb_error_scales[rgb_mode] * 0.010f;    // Empirically determined
 
 
 		float lum_high = hadd_rgb_s(ep1) * (1.0f / 3.0f);
@@ -533,7 +531,7 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 		float lumdif = lum_high - lum_low;
 		float mode23mult = lumdif < 960 ? 4.0f : lumdif < 3968 ? 16.0f : 128.0f;
 
-		mode23mult *= 0.0005f;  // Empirically determined ....
+		mode23mult *= 0.0005f;  // Empirically determined
 
 		// Pick among the available HDR endpoint modes
 		for (int i = QUANT_2; i < QUANT_16; i++)
@@ -559,24 +557,24 @@ static void compute_color_error_for_every_integer_count_and_quant_level(
 			float alpha_quantization_error = error_weight.lane<3>() * base_quant_error * 2.0f;
 			float rgba_quantization_error = rgb_quantization_error + alpha_quantization_error;
 
-			// For 8 integers, we have two encodings: one with HDR A and another one with LDR A
+			// Eight integers support HDR RGB with HDR or LDR alpha
 
 			float full_hdr_rgba_error = rgba_quantization_error + rgb_range_error + alpha_range_error;
 			best_error[i][3] = full_hdr_rgba_error;
 			format_of_choice[i][3] = static_cast<uint8_t>(encode_hdr_alpha ? FMT_HDR_RGBA : FMT_HDR_RGB_LDR_ALPHA);
 
-			// For 6 integers, we have one HDR-RGB encoding
+			// Six integers support HDR RGB
 			float full_hdr_rgb_error = (rgb_quantization_error * mode11mult) + rgb_range_error + eci.alpha_drop_error;
 			best_error[i][2] = full_hdr_rgb_error;
 			format_of_choice[i][2] = FMT_HDR_RGB;
 
-			// For 4 integers, we have one HDR-RGB-Scale encoding
+			// Four integers support HDR RGB-scale
 			float hdr_rgb_scale_error = (rgb_quantization_error * mode7mult) + rgb_range_error + eci.alpha_drop_error + eci.rgb_luma_error;
 
 			best_error[i][1] = hdr_rgb_scale_error;
 			format_of_choice[i][1] = FMT_HDR_RGB_SCALE;
 
-			// For 2 integers, we assume luminance-with-large-range
+			// Assume large-range luminance for two integers
 			float hdr_luminance_error = (rgb_quantization_error * mode23mult) + rgb_range_error + eci.alpha_drop_error + eci.luminance_error;
 			best_error[i][0] = hdr_luminance_error;
 			format_of_choice[i][0] = FMT_HDR_LUMINANCE_LARGE_RANGE;
@@ -755,9 +753,9 @@ static float one_partition_find_best_combination_for_bitcount(
  * @param[out] best_combined_format   The best combined format pairings for the 2 partitions.
  */
 static void two_partitions_find_best_combination_for_every_quantization_and_integer_count(
-	const float best_error[2][21][4],	// indexed by (partition, quant-level, integer-pair-count-minus-1)
+	const float best_error[2][21][4],  // Indexed by (partition, quant-level, integer-pair-count-minus-1)
 	const uint8_t best_format[2][21][4],
-	float best_combined_error[21][7],	// indexed by (quant-level, integer-pair-count-minus-2)
+	float best_combined_error[21][7],  // Indexed by (quant-level, integer-pair-count-minus-2)
 	uint8_t best_combined_format[21][7][2]
 ) {
 	for (int i = QUANT_2; i <= QUANT_256; i++)
@@ -771,11 +769,11 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 	// Class 3 needs seven pairs, limiting it to QUANT_32 within the 73-bit budget
 	for (int quant = QUANT_6; quant <= QUANT_32; quant++)
 	{
-		for (int i = 0; i < 4; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 4; i++)  // Integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 4; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 4; j++)  // Integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -800,11 +798,11 @@ static void two_partitions_find_best_combination_for_every_quantization_and_inte
 	// Class 2 needs five pairs, limiting it to QUANT_128 within the 73-bit budget
 	for (int quant = QUANT_40; quant <= QUANT_128; quant++)
 	{
-		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 3; i++)  // Integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 3; j++)  // Integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -932,7 +930,7 @@ static float two_partitions_find_best_combination_for_bitcount(
  * @param[out] best_combined_format   The best combined format pairings for the 3 partitions.
  */
 static void three_partitions_find_best_combination_for_every_quantization_and_integer_count(
-	const float best_error[3][21][4],	// indexed by (partition, quant-level, integer-count)
+	const float best_error[3][21][4],  // Indexed by (partition, quant-level, integer-count)
 	const uint8_t best_format[3][21][4],
 	float best_combined_error[21][7],
 	uint8_t best_combined_format[21][7][3]
@@ -949,11 +947,11 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 	// The remaining classes use at most 3 + 3 + 3 = 9 pairs, so no further count limit is needed
 	for (int quant = QUANT_6; quant <= QUANT_32; quant++)
 	{
-		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 3; i++)  // Integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 3; j++)  // Integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -964,7 +962,7 @@ static void three_partitions_find_best_combination_for_every_quantization_and_in
 
 				float error01 = error0 + best_error[1][quant][j];
 
-				for (int k = 0; k < 3; k++)	// integer-count for third endpoint-pair
+				for (int k = 0; k < 3; k++)  // Integer-count for third endpoint-pair
 				{
 					int low3 = astc::min(k, low2);
 					int high3 = astc::max(k, high2);
@@ -1101,7 +1099,7 @@ static float three_partitions_find_best_combination_for_bitcount(
  * @param[out] best_combined_format   The best combined format pairings for the 4 partitions.
  */
 static void four_partitions_find_best_combination_for_every_quantization_and_integer_count(
-	const float best_error[4][21][4],	// indexed by (partition, quant-level, integer-count)
+	const float best_error[4][21][4],  // Indexed by (partition, quant-level, integer-count)
 	const uint8_t best_format[4][21][4],
 	float best_combined_error[21][6],
 	uint8_t best_combined_format[21][6][4]
@@ -1117,11 +1115,11 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 	// Only classes 0 to 2 are valid; class 3 needs at least 4 + 3 + 3 + 3 = 13 pairs
 	for (int quant = QUANT_6; quant <= QUANT_12; quant++)
 	{
-		for (int i = 0; i < 3; i++)	// integer-count for first endpoint-pair
+		for (int i = 0; i < 3; i++)  // Integer-count for first endpoint-pair
 		{
 			float error0 = best_error[0][quant][i];
 
-			for (int j = 0; j < 3; j++)	// integer-count for second endpoint-pair
+			for (int j = 0; j < 3; j++)  // Integer-count for second endpoint-pair
 			{
 				int low2 = astc::min(i, j);
 				int high2 = astc::max(i, j);
@@ -1132,7 +1130,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 
 				float error01 = error0 + best_error[1][quant][j];
 
-				for (int k = 0; k < 3; k++)	// integer-count for third endpoint-pair
+				for (int k = 0; k < 3; k++)  // Integer-count for third endpoint-pair
 				{
 					int low3 = astc::min(k, low2);
 					int high3 = astc::max(k, high2);
@@ -1146,7 +1144,7 @@ static void four_partitions_find_best_combination_for_every_quantization_and_int
 					// Each class index adds pairs beyond the four base pairs
 					// 4 + i + j + k + l <= 9 gives the exclusive bound l < 6 - i - j - k
 					int l_limit = astc::min(3, 6 - i - j - k);
-					for (int l = 0; l < l_limit; l++)	// integer-count for fourth endpoint-pair
+					for (int l = 0; l < l_limit; l++)  // Integer-count for fourth endpoint-pair
 					{
 						int low4 = astc::min(l, low3);
 						int high4 = astc::max(l, high3);
@@ -1281,13 +1279,13 @@ unsigned int compute_ideal_endpoint_formats(
 	const image_block& blk,
 	const endpoints& ep,
 	const partition_metrics* rgb_metrics,
-	 // bitcounts and errors computed for the various quantization methods
+	// Bitcounts and errors computed for the various quantization methods
 	const int8_t* qwt_bitcounts,
 	const float* qwt_errors,
 	unsigned int tune_candidate_limit,
 	unsigned int start_block_mode,
 	unsigned int end_block_mode,
-	// output data
+	// Output data
 	uint8_t partition_format_specifiers[TUNE_MAX_TRIAL_CANDIDATES][BLOCK_MAX_PARTITIONS],
 	int block_mode[TUNE_MAX_TRIAL_CANDIDATES],
 	quant_method quant_level[TUNE_MAX_TRIAL_CANDIDATES],
@@ -1433,7 +1431,7 @@ unsigned int compute_ideal_endpoint_formats(
 		}
 	}
 	// The block contains 4 partitions
-	else // if (partition_count == 4)
+	else  // if (partition_count == 4)
 	{
 		assert(partition_count == 4);
 		float combined_best_error[21][6];
@@ -1482,9 +1480,8 @@ unsigned int compute_ideal_endpoint_formats(
 		vint vbest_error_index(-1);
 		vfloat vbest_ep_error(ERROR_CALC_DEFAULT);
 
-		// TODO: This should use size_t for the inputs of start/end_block_mode
-		// to avoid some of this type conversion, but that propagates and will
-		// need a bigger PR to fix
+		// TODO: This should use size_t for the inputs of start/end_block_mode to avoid some of this
+		// type conversion, but that propagates and will need a bigger PR to fix
 		size_t start_mode = round_down_to_simd_multiple_vla(start_block_mode);
 		vint lane_ids = vint::lane_id() + vint_from_size(start_mode);
 		for (size_t j = start_mode; j < end_block_mode; j += ASTCENC_SIMD_WIDTH)
@@ -1504,7 +1501,7 @@ unsigned int compute_ideal_endpoint_formats(
 
 		best_error_weights[i] = best_error_index;
 
-		// Max the error for this candidate so we don't pick it again
+		// Set the error to its maximum to exclude this candidate
 		if (best_error_index >= 0)
 		{
 			errors_of_best_combination[best_error_index] = ERROR_CALC_DEFAULT;

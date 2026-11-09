@@ -53,8 +53,8 @@ static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
 static_assert(ANGULAR_STEPS >= 32,
               "ANGULAR_STEPS must be at least max(steps_for_quant_level)");
 
-// Store a reduced sin/cos table for 64 possible weight values; this causes
-// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
+// Store a reduced sin/cos table for 64 possible weight values; this causes slight quality loss
+// compared to using sin() and cos() directly. Must be 2^N.
 static constexpr unsigned int SINCOS_STEPS { 64 };
 
 static const uint8_t steps_for_quant_level[12] {
@@ -174,9 +174,8 @@ static void compute_lowest_and_highest_weight(
 
 	vfloat rcp_stepsize = int_to_float(vint::lane_id()) + vfloat(1.0f);
 
-	// Compute minimum/maximum weights in the weight array. Our remapping
-	// is monotonic, so the min/max rounded weights relate to the min/max
-	// unrounded weights in a straightforward way.
+	// Compute minimum/maximum weights in the weight array. Our remapping is monotonic, so the
+	// min/max rounded weights relate to the min/max unrounded weights in a straightforward way.
 	vfloat min_weight(FLT_MAX);
 	vfloat max_weight(-FLT_MAX);
 
@@ -202,8 +201,7 @@ static void compute_lowest_and_highest_weight(
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(offsets + sp);
 
-		// We know the min and max weight values, so we can figure out
-		// the corresponding indices before we enter the loop.
+		// Compute the minimum and maximum weight indices before the texel loop
 		vfloat minidx = round(min_weight * rcp_stepsize - offset);
 		vfloat maxidx = round(max_weight * rcp_stepsize - offset);
 
@@ -233,7 +231,7 @@ static void compute_lowest_and_highest_weight(
 		storea(span, weight_span + sp);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
-		// samples that should have had the weight value one step (up/down).
+		// samples that should have had the weight value one step (up/down)
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, error + sp);
@@ -280,9 +278,9 @@ static void compute_angular_endpoints_for_quant_levels(
 	                                  cut_low_weight_error, cut_high_weight_error);
 
 	// Each angular step describes a candidate grid with an inclusive span of N weights. A grid can
-	// be made smaller by discarding the lowest weight, the highest weight, or both.
-	// This gives three candidates using N, N-1, and N-2 quantized weights, respectively.
-	// Record the best candidate found for every resulting weight count.
+	// be made smaller by discarding the lowest weight, the highest weight, or both. This gives
+	// three candidates using N, N-1, and N-2 quantized weights, respectively. Record the best
+	// candidate found for every resulting weight count.
 	//
 	// Use packed vectors so data-dependent branches can become selects. This involves some integer
 	// to float casts, but the values are small enough so they never round the wrong way.
@@ -341,7 +339,7 @@ static void compute_angular_endpoints_for_quant_levels(
 		unsigned int q = steps_for_quant_level[i];
 		int bsi = static_cast<int>(best_results[q].lane<1>());
 
-		// Did we find anything?
+		// Report a missing candidate once
 #if defined(ASTCENC_DIAGNOSTICS)
 		if ((bsi < 0) && print_once)
 		{

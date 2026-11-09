@@ -166,7 +166,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 
 #elif ASTCENC_SVE == 8
-	// Check the compiler is configured with fixed-length 256-bit SVE.
+	// Check the compiler is configured with fixed-length 256-bit SVE
 	#if !defined(__ARM_FEATURE_SVE_BITS) || (__ARM_FEATURE_SVE_BITS != 256)
 		#error "__ARM_FEATURE_SVE_BITS is not set to 256 bits"
 	#endif
@@ -245,21 +245,15 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 #else
 	// If we have no SIMD, expose 4-wide VLA and 4-wide fixed width
 
-	// Note: We no longer expose the 1-wide scalar fallback because it is not
-	// invariant with the 4-wide path due to algorithms that use horizontal
-	// operations that accumulate a local vector sum before accumulating into
-	// a running sum.
+	// The scalar fallback uses four lanes to preserve the SIMD accumulation order:
 	//
-	// For 4 items adding into an accumulator using 1-wide vectors the sum is:
-	//
+	// One-lane accumulation:
 	//     result = ((((sum + l0) + l1) + l2) + l3)
 	//
-	// ... whereas the accumulator for a 4-wide vector sum is:
-	//
+	// Four-lane accumulation:
 	//     result = sum + ((l0 + l2) + (l1 + l3))
 	//
-	// In "normal maths" this is the same, but the floating point reassociation
-	// differences mean that these will not produce the same result.
+	// These are algebraically equivalent, but floating-point reassociation can change the result
 
 	#include "astcenc_vecmathlib_none_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
@@ -637,11 +631,9 @@ static ASTCENC_SIMD_INLINE vfloat4 pow(vfloat4 x, vfloat4 y)
  */
 static ASTCENC_SIMD_INLINE vint4 clz(vint4 a)
 {
-	// This function is a horrible abuse of floating point exponents to convert
-	// the original integer value into a 2^N encoding we can recover easily.
+	// Derive the highest set bit from the integer's floating-point exponent
 
-	// Convert to float without risk of rounding up by keeping only top 8 bits.
-	// This trick is guaranteed to keep top 8 bits and clear the 9th.
+	// Keep the top eight bits and clear the ninth to prevent rounding up during float conversion
 	a = (~lsr<8>(a)) & a;
 	a = float_as_int(int_to_float(a));
 
@@ -664,8 +656,8 @@ static ASTCENC_SIMD_INLINE vint4 two_to_the_n(vint4 a)
 	// 2^30 is the largest signed number than can be represented
 	assert(all(a < vint4(31)));
 
-	// This function is a horrible abuse of floating point to use the exponent
-	// and float conversion to generate a 2^N multiple.
+	// This function is a horrible abuse of floating point to use the exponent and float conversion
+	// to generate a 2^N multiple
 
 	// Bias the exponent
 	vint4 exp = a + 127;
@@ -769,11 +761,11 @@ static ASTCENC_SIMD_INLINE vfloat4 float_to_lns(vfloat4 a)
 	vint4 exp;
 	vfloat4 mant = frexp(a, exp);
 
-	// Do these early before we start messing about ...
+	// Classify underflow, NaNs, and infinity before transforming the input
 	vmask4 mask_underflow_nan = ~(a > vfloat4(1.0f / 67108864.0f));
 	vmask4 mask_infinity = a >= vfloat4(65536.0f);
 
-	// If input is smaller than 2^-14, multiply by 2^25 and don't bias.
+	// If input is smaller than 2^-14, multiply by 2^25 and don't bias
 	vmask4 exp_lt_m13 = exp < vint4(-13);
 
 	vfloat4 a1a = a * 33554432.0f;
@@ -820,4 +812,4 @@ static ASTCENC_SIMD_INLINE float pow(float x, float y)
 
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_H_INCLUDED

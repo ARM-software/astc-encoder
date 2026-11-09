@@ -232,8 +232,8 @@ struct vint4
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
 #if ASTCENC_SVE == 0
-		// Copy through a uint32_t to avoid load through a reinterpreted
-		// pointer, which is both unaligned and an aliasing violation.
+		// Copy through a uint32_t to avoid load through a reinterpreted pointer, which is both
+		// unaligned and an aliasing violation
 		uint32_t tmp;
 		std::memcpy(&tmp, p, sizeof(tmp));
 
@@ -1004,8 +1004,7 @@ ASTCENC_SIMD_INLINE vfloat4 hmax(vfloat4 a)
  */
 ASTCENC_SIMD_INLINE float hadd_s(vfloat4 a)
 {
-	// Perform halving add to ensure invariance; we cannot use vaddqv as this
-	// does (0 + 1 + 2 + 3) which is not invariant with x86 (0 + 2) + (1 + 3).
+	// Match the x86 reduction order (0 + 2) + (1 + 3); vaddqv uses a different association
 	float32x2_t t = vadd_f32(vget_high_f32(a.m), vget_low_f32(a.m));
 	return vget_lane_f32(vpadd_f32(t, t), 0);
 }
@@ -1413,4 +1412,4 @@ ASTCENC_SIMD_INLINE int popcount(uint64_t v)
 	return static_cast<int>(vaddlv_u8(vcnt_u8(vcreate_u8(v))));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED

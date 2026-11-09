@@ -291,4 +291,4 @@ ASTCENC_SIMD_INLINE void print(vmask8 a)
 	print(select(vint8(0), vint8(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_COMMON_8_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_COMMON_8_H_INCLUDED

@@ -18,21 +18,19 @@
 // Overview
 // ========
 //
-// This is a utility tool to automatically generate single tile test vectors
-// out of a larger test image. This tool takes three input images:
+// Extract single-block test vectors from a larger image using three inputs:
 //
 //    - the uncompressed referenced,
 //    - the known-good compressed reference,
 //    - a new compressed image.
 //
-// The two compressed images are compared block-by-block, and if any block
-// differences are found the worst block is extracted from the uncompressed
-// reference and written back to disk as a single tile output image.
+// Compare compressed images block by block, then save the worst differing block from the
+// uncompressed reference as a single-block image.
 //
 // Limitations
 // ===========
 //
-// This tool only currently supports 2D LDR images.
+// Only 2D LDR images are supported
 //
 // Build
 // =====

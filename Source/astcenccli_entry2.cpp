@@ -62,8 +62,7 @@ int astcenc_main_veneer(
 	int argc,
 	char **argv
 ) {
-	// We don't need this check for 128-bit SVE, because that is compiled as
-	// VLA code, using predicate masks in the augmented NEON.
+	// Only check for > 128-bit SVE, the 128-bit version uses predicates to run on wider hardware
 #if ASTCENC_SVE > 4
 	// svcntw() returns compile-time length if used with -msve-vector-bits
 	if (svcntw() != ASTCENC_SVE)

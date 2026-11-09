@@ -46,9 +46,8 @@ static void generate_canonical_partitioning(
 		bit_pattern[i] = 0;
 	}
 
-	// Store a mapping to reorder the raw partitions so that the partitions are ordered such
-	// that the lowest texel index in partition N is smaller than the lowest texel index in
-	// partition N + 1.
+	// Store a mapping to reorder the raw partitions so that they are ordered such that the lowest
+	// texel index in partition N is smaller than the lowest texel index in partition N+1
 	int mapped_index[BLOCK_MAX_PARTITIONS];
 	int map_weight_count = 0;
 
@@ -172,7 +171,7 @@ static uint8_t select_partition(
 	uint8_t seed11 = (rnum >> 26) & 0xF;
 	uint8_t seed12 = ((rnum >> 30) | (rnum << 2)) & 0xF;
 
-	// Squaring all the seeds in order to bias their distribution towards lower values.
+	// Square the seeds to bias their distribution toward lower values
 	seed1 *= seed1;
 	seed2 *= seed2;
 	seed3 *= seed3;
@@ -225,7 +224,7 @@ static uint8_t select_partition(
 	c &= 0x3F;
 	d &= 0x3F;
 
-	// Remove some of the components if we are to output < 4 partitions.
+	// Remove unused components for fewer than four partitions
 	if (partition_count <= 3)
 	{
 		d = 0;
@@ -398,10 +397,8 @@ static void build_partition_table_for_one_partition_count(
 	bsd.partitioning_count_selected[partition_count - 1] = 0;
 	bsd.partitioning_count_all[partition_count - 1] = 0;
 
-	// Mark all partitionings as unused; the loops below overwrite the entries
-	// that are actually kept. Partitionings dropped in self-decompress mode
-	// must retain this known-bad value so that decoding an unknown raw
-	// partition index does not result in a bad packed index.
+	// Initialize all partitionings to invalid, then overwrite retained entries. This lets
+	// decoding reject partitionings omitted in self-decompress mode before using their packed index
 	for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 	{
 		bsd.partitioning_packed_index[partition_count - 2][i] = BLOCK_BAD_PARTITIONING;
@@ -418,13 +415,13 @@ static void build_partition_table_for_one_partition_count(
 	//   - Pass 1: Keep non-selected partitionings (skip if in omit mode)
 	unsigned int max_iter = can_omit_partitionings ? 1 : 2;
 
-	// Tracker for things we built in the first iteration
+	// Track partitionings included in the first pass
 	uint8_t build[BLOCK_MAX_PARTITIONINGS] { 0 };
 	for (unsigned int x = 0; x < max_iter; x++)
 	{
 		for (unsigned int i = 0; i < BLOCK_MAX_PARTITIONINGS; i++)
 		{
-			// Don't include things we built in the first pass
+			// Skip partitionings included in the first pass
 			if ((x == 1) && build[i])
 			{
 				continue;

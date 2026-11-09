@@ -172,13 +172,13 @@ void set_thread_name(
 	size_t name_len = std::strlen(name);
 	size_t clamp_len = std::min<size_t>(name_len, 15);
 
-	// We know we only have basic 7-bit ASCII so just widen
+	// Widen the thread name to wchar_t
 	for (size_t i = 0; i < clamp_len; i++)
 	{
 		wname[i] = static_cast<wchar_t>(name[i]);
 	}
 
- 	SetThreadDescription(GetCurrentThread(), wname);
+	SetThreadDescription(GetCurrentThread(), wname);
 }
 
 /* ============================================================================
@@ -278,14 +278,14 @@ void launch_threads(
 		thread_descs[actual_thread_count].payload = payload;
 		thread_descs[actual_thread_count].func = func;
 
-		// Handle pthread_create failing by simply using fewer threads
+		// Continue with fewer threads if pthread_create fails
 		int error = pthread_create(
 			&(thread_descs[actual_thread_count].thread_handle),
 			nullptr,
 			launch_threads_helper,
 			reinterpret_cast<void*>(&thread_descs[actual_thread_count]));
 
-		// Track how many threads we actually created
+		// Count successfully created threads
 		if (!error)
 		{
 			// Windows needs explicit thread assignment to handle large core count systems
@@ -299,7 +299,7 @@ void launch_threads(
 		}
 	}
 
-	// If we did not create thread_count threads then emit a warning
+	// Warn if fewer threads were created than requested
 	if (actual_thread_count != thread_count)
 	{
 		int log_count = actual_thread_count == 0 ? 1 : actual_thread_count;
@@ -308,7 +308,7 @@ void launch_threads(
 		       operation, log_count, log_s);
 	}
 
-	// If we managed to spawn any threads wait for them to complete
+	// Wait for successfully created threads
 	if (actual_thread_count != 0)
 	{
 		for (int i = 0; i < actual_thread_count; i++)

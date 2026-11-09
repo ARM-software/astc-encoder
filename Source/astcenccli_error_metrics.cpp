@@ -179,7 +179,7 @@ void compute_error_metrics(
 					color1 = float16_to_float(color1i);
 					color1 = clamp(0, 65504.0f, color1);
 				}
-				else // if (img1->data_type == ASTCENC_TYPE_F32)
+				else  // if (img1->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img1->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img1->data[z]);
@@ -218,7 +218,7 @@ void compute_error_metrics(
 					color2 = float16_to_float(color2i);
 					color2 = clamp(0, 65504.0f, color2);
 				}
-				else // if (img2->data_type == ASTCENC_TYPE_F32)
+				else  // if (img2->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img2->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img2->data[z]);

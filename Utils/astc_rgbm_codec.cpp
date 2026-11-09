@@ -15,7 +15,7 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-// This is a utility tool to encode HDR into RGBM, or decode RGBM into HDR.
+// Encode HDR as RGBM, or decode RGBM to HDR
 
 #include <stdint.h>
 #include <stdio.h>
@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
- 	float rgbm_multiplier = atof(argv[2]);
- 	float low_clamp = atof(argv[3]);
+	float rgbm_multiplier = atof(argv[2]);
+	float low_clamp = atof(argv[3]);
 
 	const char* src_file = argv[4];
 	const char* dst_file = argv[5];
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 
 				float max_rgb = astc::max(r_in, g_in, b_in);
 
-				// Ensure we always round up to next largest M
+				// Round M up to the next representable value
 				float m_scale = astc::min(1.0f, ceil(max_rgb * 255.0f) / 255.0f);
 
 				// But keep well above zero to avoid clamps in the compressor

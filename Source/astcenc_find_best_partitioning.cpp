@@ -98,7 +98,7 @@ static void kmeans_init(
 	// Pick the remaining samples as needed
 	while (true)
 	{
-		// Pick the next center in a weighted-random fashion.
+		// Pick the next center in a weighted-random fashion
 		float summa = 0.0f;
 		float distance_cutoff = distance_sum * cluster_cutoffs[cutoff++];
 		for (sample = 0; sample < texel_count; sample++)
@@ -202,10 +202,8 @@ static void kmeans_assign(
 		partition_texel_count[partition_of_texel[i]]++;
 	}
 
-	// It is possible to get a situation where a partition ends up without any texels. In this case,
-	// assign texel N to partition N. This is silly, but ensures that every partition retains at
-	// least one texel. Reassigning a texel in this manner may cause another partition to go empty,
-	// so if we actually did a reassignment, run the whole loop over again.
+	// Assign texel N to empty partition N. Reassignment may empty another partition, so repeat
+	// until every partition has a texel.
 	bool problem_case;
 	do
 	{
@@ -282,8 +280,8 @@ static inline uint8_t partition_mismatch2(
 	int v1 = popcount(a[0] ^ b[0]) + popcount(a[1] ^ b[1]);
 	int v2 = popcount(a[0] ^ b[1]) + popcount(a[1] ^ b[0]);
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v1, v2) / 2);
 }
 
@@ -323,8 +321,8 @@ static inline uint8_t partition_mismatch3(
 	int s5 = p11 + p20;
 	int v2 = astc::min(s4, s5) + p02;
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2) / 2);
 }
 
@@ -372,8 +370,8 @@ static inline uint8_t partition_mismatch4(
 	int v2 = p02 + astc::min(p11 + mx03, p10 + mx13, p13 + mx01);
 	int v3 = p03 + astc::min(p11 + mx02, p12 + mx01, p10 + mx12);
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2, v3) / 2);
 }
 
@@ -460,8 +458,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 		sum += cnt;
 	}
 
-	// Use the running sum as the index, incrementing after read to allow
-	// sequential entries with the same count
+	// Use running sum as index, incrementing after read to allow sequential entries with same count
 	for (unsigned int i = 0; i < partitioning_count; i++)
 	{
 		unsigned int idx = mscount[mismatch_count[i]]++;
@@ -665,7 +662,7 @@ unsigned int find_best_partition_candidates(
 			float uncor_error = 0.0f;
 			float samec_error = 0.0f;
 
-			// Grayscale partition metrics preserve identical RGB line coefficients.
+			// Grayscale partition metrics preserve identical RGB line coefficients
 			if (blk.grayscale)
 			{
 				compute_error_squared_rgba_grayscale(pi,
@@ -687,8 +684,8 @@ unsigned int find_best_partition_candidates(
 				                           samec_error);
 			}
 
-			// Compute an estimate of error introduced by weight quantization imprecision.
-			// This error is computed as follows, for each partition
+			// Compute an estimate of error introduced by weight quantization imprecision. This
+			// error is computed as follows, for each partition:
 			//     1: compute the principal-axis vector (full length) in error-space
 			//     2: convert the principal-axis vector to regular RGB-space
 			//     3: scale the vector by a constant that estimates average quantization error
@@ -753,8 +750,8 @@ unsigned int find_best_partition_candidates(
 			                          uncor_error,
 			                          samec_error);
 
-			// Compute an estimate of error introduced by weight quantization imprecision.
-			// This error is computed as follows, for each partition
+			// Compute an estimate of error introduced by weight quantization imprecision. This
+			// error is computed as follows, for each partition:
 			//     1: compute the principal-axis vector (full length) in error-space
 			//     2: convert the principal-axis vector to regular RGB-space
 			//     3: scale the vector by a constant that estimates average quantization error

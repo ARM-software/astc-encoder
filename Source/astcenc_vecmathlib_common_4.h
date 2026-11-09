@@ -399,10 +399,9 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat4 a, vmask4 m)
 template<>
 ASTCENC_SIMD_INLINE vfloat4 gatherf_byte_inds<vfloat4>(const float* base, const uint8_t* indices)
 {
-	// Experimentally, in this particular use case (byte indices in memory),
-	// using 4 separate scalar loads is appreciably faster than using gathers
-	// even if they're available, on every x86 uArch tried, so always do the
-	// separate loads even when ASTCENC_X86_GATHERS is enabled.
+	// Experimentally, in this particular use case (byte indices in memory), using 4 separate scalar
+	// loads is appreciably faster than using gathers even if they're available, on every x86 uArch
+	// tried, so always do the separate loads even when ASTCENC_X86_GATHERS is enabled
 	//
 	// Tested on:
 	//   - Intel Skylake-X, Coffee Lake, Crestmont, Redwood Cove
@@ -559,9 +558,8 @@ ASTCENC_SIMD_INLINE void store_lane(uint8_t* base, int data)
  */
 ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 mask)
 {
-	// Do not use masked vector stores here. Some implementations do not
-	// guarantee fault suppression for masked lanes, which can cause page faults
-	// at the end of an image.
+	// Do not use masked vector stores here. Some implementations do not guarantee fault suppression
+	// for masked lanes, which can cause page faults at the end of an image.
 	if (mask.lane<3>() != 0.0f)
 	{
 		store(data, base);
@@ -639,4 +637,4 @@ ASTCENC_SIMD_INLINE void print(vmask4 a)
 	print(select(vint4(0), vint4(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_COMMON_4_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_COMMON_4_H_INCLUDED

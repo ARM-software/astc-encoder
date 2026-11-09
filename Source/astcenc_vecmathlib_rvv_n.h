@@ -261,7 +261,7 @@ struct vint
 	/**
 	 * @brief The vector ...
 	 */
-	 vint32_t m;
+	vint32_t m;
 };
 
 // ============================================================================
@@ -1508,4 +1508,4 @@ ASTCENC_SIMD_INLINE void print(vmask a)
 	print(select(vint(0), vint(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_RVV_N_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_RVV_N_H_INCLUDED
