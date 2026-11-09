@@ -27,10 +27,10 @@
  * code.
  */
 
-#ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED
+#if !defined(ASTC_VECMATHLIB_SVE_8_H_INCLUDED)
 #define ASTC_VECMATHLIB_SVE_8_H_INCLUDED
 
-#ifndef ASTCENC_SIMD_INLINE
+#if !defined(ASTCENC_SIMD_INLINE)
 	#error "Include astcenc_vecmathlib.h, do not include directly"
 #endif
 

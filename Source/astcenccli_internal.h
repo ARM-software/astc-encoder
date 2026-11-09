@@ -19,7 +19,7 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTCENCCLI_INTERNAL_INCLUDED
+#if !defined(ASTCENCCLI_INTERNAL_INCLUDED)
 #define ASTCENCCLI_INTERNAL_INCLUDED
 
 #include <cstddef>
