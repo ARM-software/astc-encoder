@@ -33,10 +33,10 @@
  * tables instead of AVX2-style lane-local pshufb.
  */
 
-#ifndef ASTC_VECMATHLIB_AVX512_16_H_INCLUDED
+#if !defined(ASTC_VECMATHLIB_AVX512_16_H_INCLUDED)
 #define ASTC_VECMATHLIB_AVX512_16_H_INCLUDED
 
-#ifndef ASTCENC_SIMD_INLINE
+#if !defined(ASTCENC_SIMD_INLINE)
 	#error "Include astcenc_vecmathlib.h, do not include directly"
 #endif
 

@@ -20,7 +20,7 @@
  * functions used by the codec.
  */
 
-#ifndef ASTC_MATHLIB_H_INCLUDED
+#if !defined(ASTC_MATHLIB_H_INCLUDED)
 #define ASTC_MATHLIB_H_INCLUDED
 
 #include <cassert>
@@ -28,7 +28,7 @@
 #include <cmath>
 #include <cstring>
 
-#ifndef ASTCENC_POPCNT
+#if !defined(ASTCENC_POPCNT)
   #if defined(__POPCNT__)
     #define ASTCENC_POPCNT 1
   #else
@@ -36,7 +36,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_F16C
+#if !defined(ASTCENC_F16C)
   #if defined(__F16C__)
     #define ASTCENC_F16C 1
   #else
@@ -44,7 +44,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_SSE
+#if !defined(ASTCENC_SSE)
   #if defined(__SSE4_2__)
     #define ASTCENC_SSE 42
   #elif defined(__SSE4_1__)
@@ -57,7 +57,7 @@
 #endif
 
 // AVX levels: 1 = AVX, 2 = AVX2, 3 = AVX512 8-wide, 4 = AVX512 16-wide
-#ifndef ASTCENC_AVX
+#if !defined(ASTCENC_AVX)
   #if defined(__AVX512F__) && defined(__AVX512VBMI__)
     #define ASTCENC_AVX 4
     #define ASTCENC_X86_GATHERS 1
@@ -72,7 +72,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_NEON
+#if !defined(ASTCENC_NEON)
   #if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
     #define ASTCENC_NEON 1
   #else
@@ -80,7 +80,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_SVE
+#if !defined(ASTCENC_SVE)
   #if defined(__ARM_FEATURE_SVE)
     #if defined(__ARM_FEATURE_SVE_BITS) && __ARM_FEATURE_SVE_BITS == 256
       #define ASTCENC_SVE 8

@@ -19,7 +19,7 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTCENC_INTERNAL_INCLUDED
+#if !defined(ASTCENC_INTERNAL_INCLUDED)
 #define ASTCENC_INTERNAL_INCLUDED
 
 #include <algorithm>

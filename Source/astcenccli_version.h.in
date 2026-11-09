@@ -19,7 +19,7 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTCENCCLI_VERSION_INCLUDED
+#if !defined(ASTCENCCLI_VERSION_INCLUDED)
 #define ASTCENCCLI_VERSION_INCLUDED
 
 #define VERSION_STRING "@astcencoder_VERSION@"

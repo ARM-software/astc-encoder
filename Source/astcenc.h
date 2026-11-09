@@ -166,7 +166,7 @@
  * returning as solid magenta or NaN value error blocks.
  */
 
-#ifndef ASTCENC_INCLUDED
+#if !defined(ASTCENC_INCLUDED)
 #define ASTCENC_INCLUDED
 
 #if defined(__cplusplus)

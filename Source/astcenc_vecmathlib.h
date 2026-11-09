@@ -53,7 +53,7 @@
  *     * 16-wide for x86-64 AVX-512
  */
 
-#ifndef ASTC_VECMATHLIB_H_INCLUDED
+#if !defined(ASTC_VECMATHLIB_H_INCLUDED)
 #define ASTC_VECMATHLIB_H_INCLUDED
 
 #if ASTCENC_SSE != 0 || ASTCENC_AVX != 0
@@ -274,7 +274,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 #endif
 
-#ifndef ASTCENC_HAS_VGATHERF_TABLE
+#if !defined(ASTCENC_HAS_VGATHERF_TABLE)
 
 /**
  * @brief Portable float-table gather: keep the pointer, gather from memory.

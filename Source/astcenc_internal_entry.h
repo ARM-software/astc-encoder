@@ -23,7 +23,7 @@
  * majority of the codec library does not include this.
  */
 
-#ifndef ASTCENC_INTERNAL_ENTRY_INCLUDED
+#if !defined(ASTCENC_INTERNAL_ENTRY_INCLUDED)
 #define ASTCENC_INTERNAL_ENTRY_INCLUDED
 
 #include <atomic>
