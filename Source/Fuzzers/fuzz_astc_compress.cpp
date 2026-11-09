@@ -88,7 +88,7 @@ extern "C" int LLVMFuzzerTestOneInput(
 		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
 	};
 
-	size_t compressed_data_len = 16; // One block
+	size_t compressed_data_len = 16;  // One block
 	std::vector<uint8_t> compressed_data(compressed_data_len);
 
 	status = astcenc_compress_image(context, &image, &swizzle, compressed_data.data(), compressed_data.size(), 0);

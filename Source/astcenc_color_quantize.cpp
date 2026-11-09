@@ -113,8 +113,7 @@ static inline uint8_t quant_color(
 ) {
 	int index = value * 2;
 
-	// Compute the residual to determine if we should round down or up ties.
-	// Test should be residual >= 0, but empirical testing shows small bias helps.
+	// Break rounding ties using the residual, with an empirically tuned bias toward rounding up
 	float residual = valuef - static_cast<float>(value);
 	if (residual >= -0.1f)
 	{
@@ -140,8 +139,7 @@ static inline vint4 quant_color3(
 ) {
 	vint4 index = value * 2;
 
-	// Compute the residual to determine if we should round down or up ties.
-	// Test should be residual >= 0, but empirical testing shows small bias helps.
+	// Break rounding ties using the residual, with an empirically tuned bias toward rounding up
 	vfloat4 residual = valuef - int_to_float(value);
 	vmask4 mask = residual >= vfloat4(-0.1f);
 	index = select(index, index + 1, mask);
@@ -257,8 +255,7 @@ static bool try_quantize_rgb_blue_contract(
 	vint4 color0i = quant_color3(quant_level, float_to_int_rtn(color0), color0);
 	vint4 color1i = quant_color3(quant_level, float_to_int_rtn(color1), color1);
 
-	// If color #1 is not larger than color #0 then blue-contraction cannot be used
-	// We must test afterwards because quantization can change the order
+	// Blue-contraction requires color1 > color0, check after quantization which can change order
 	if (hadd_rgb_s(color1i) <= hadd_rgb_s(color0i))
 	{
 		return false;
@@ -333,19 +330,19 @@ static bool try_quantize_rgb_delta(
 	// Mask off the top bit
 	vint4 color0b = color0a & 0xFF;
 
-	// Quantize then unquantize in order to get a value that we take differences against
+	// Quantize and unquantize the base before computing the delta
 	vint4 color0be = quant_color3(quant_level, color0b);
 	color0b = color0be | (color0a & 0x100);
 
-	// Get hold of the second value
+	// Convert the second endpoint
 	vint4 color1d = float_to_int_rtn(color1);
 	color1d = lsl<1>(color1d);
 
-	// ... and take differences
+	// Compute the endpoint delta
 	color1d = color1d - color0b;
 	color1d.set_lane<3>(0);
 
-	// Check if the difference is too large to be encodable
+	// Reject deltas outside the encodable range
 	if (any((color1d > vint4(63)) | (color1d < vint4(-64))))
 	{
 		return false;
@@ -355,8 +352,7 @@ static bool try_quantize_rgb_delta(
 	color1d = color1d & 0x7F;
 	color1d = color1d | lsr<1>(color0b & 0x100);
 
-	// Then quantize and unquantize; if this causes either top two bits to flip, then encoding fails
-	// since we have then corrupted either the top bit of the base or the sign bit of the offset
+	// Reject quantization that changes either top bit: the base high bit or the delta sign bit
 	vint4 color1de = quant_color3(quant_level, color1d);
 
 	vint4 color_flips = (color1d ^ color1de) & 0xC0;
@@ -407,7 +403,7 @@ static bool try_quantize_rgb_delta_blue_contract(
 	vint4& color1_out,
 	quant_method quant_level
 ) {
-	// Note: Switch around endpoint colors already at start
+	// Swap endpoints before blue-contraction
 	std::swap(color0, color1);
 
 	// Apply inverse blue-contraction
@@ -430,19 +426,19 @@ static bool try_quantize_rgb_delta_blue_contract(
 	// Mask off the top bit
 	vint4 color0b = color0a & 0xFF;
 
-	// Quantize then unquantize in order to get a value that we take differences against
+	// Quantize and unquantize the base before computing the delta
 	vint4 color0be = quant_color3(quant_level, color0b);
 	color0b = color0be | (color0a & 0x100);
 
-	// Get hold of the second value
+	// Convert the second endpoint
 	vint4 color1d = float_to_int_rtn(color1);
 	color1d = lsl<1>(color1d);
 
-	// ... and take differences
+	// Compute the endpoint delta
 	color1d = color1d - color0b;
 	color1d.set_lane<3>(0);
 
-	// Check if the difference is too large to be encodable
+	// Reject deltas outside the encodable range
 	if (any((color1d > vint4(63)) | (color1d < vint4(-64))))
 	{
 		return false;
@@ -452,8 +448,7 @@ static bool try_quantize_rgb_delta_blue_contract(
 	color1d = color1d & 0x7F;
 	color1d = color1d | lsr<1>(color0b & 0x100);
 
-	// Then quantize and unquantize; if this causes either top two bits to flip, then encoding fails
-	// since we have then corrupted either the top bit of the base or the sign bit of the offset
+	// Reject quantization that changes either top bit: the base high bit or the delta sign bit
 	vint4 color1de = quant_color3(quant_level, color1d);
 
 	vint4 color_flips = (color1d ^ color1de) & 0xC0;
@@ -713,7 +708,7 @@ static bool try_quantize_rgba_delta_blue_contract(
 	vint4& color1_out,
 	quant_method quant_level
 ) {
-	// Note that we swap the color0 and color1 ordering for alpha to match RGB blue-contract
+	// Swap alpha endpoints to match RGB blue-contraction
 	return try_quantize_rgb_delta_blue_contract(color0, color1, color0_out, color1_out, quant_level) &&
 	       try_quantize_alpha_delta(color1, color0, color0_out, color1_out, quant_level);
 }
@@ -856,14 +851,14 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
 
 		if ((quantval & 0xC0) > (value & 0xC0))
 		{
-			// Quant/unquant rounded UP so that the top two bits changed;
-			// decrement the input in hopes that this will avoid rounding up.
+			/// Quant/unquant rounded up so that the top two bits changed; decrement input value to
+			// check if this avoids rounding up
 			value--;
 		}
 		else if ((quantval & 0xC0) < (value & 0xC0))
 		{
-			// Quant/unquant rounded DOWN so that the top two bits changed;
-			// decrement the input in hopes that this will avoid rounding down.
+			// Quant/unquant rounded down so that the top two bits changed; decrement input value
+			// to check if this avoids rounding down
 			value--;
 		}
 	} while (perform_loop);
@@ -894,14 +889,14 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 
 		if ((quantval & 0xF0) > (value & 0xF0))
 		{
-			// Quant/unquant rounded UP so that the top four bits changed;
-			// decrement the input value in hopes that this will avoid rounding up.
+			// Quant/unquant rounded up so that the top four bits changed; decrement input value to
+			// check if this avoids rounding up rounding up
 			value--;
 		}
 		else if ((quantval & 0xF0) < (value & 0xF0))
 		{
-			// Quant/unquant rounded DOWN so that the top four bits changed;
-			// decrement the input value in hopes that this will avoid rounding down.
+			// Quant/unquant rounded down so that the top four bits changed; decrement input value
+			// to check if this avoids rounding down
 			value--;
 		}
 	} while (perform_loop);
@@ -932,26 +927,32 @@ static void quantize_hdr_rgbo(
 	int majcomp;
 	if (color.lane<0>() > color.lane<1>() && color.lane<0>() > color.lane<2>())
 	{
-		majcomp = 0;			// red is largest component
+		// Red is largest component
+		majcomp = 0;
 	}
 	else if (color.lane<1>() > color.lane<2>())
 	{
-		majcomp = 1;			// green is largest component
+		// Green is largest component
+		majcomp = 1;
 	}
 	else
 	{
-		majcomp = 2;			// blue is largest component
+		// Blue is largest component
+		majcomp = 2;
 	}
 
-	// swap around the red component and the largest component.
+	// Swap red with the largest component
 	switch (majcomp)
 	{
+	// Swap red and green
 	case 1:
 		color = color.swz<1, 0, 2, 3>();
 		break;
+	// Swap red and blue
 	case 2:
 		color = color.swz<2, 1, 0, 3>();
 		break;
+	// No swap
 	default:
 		break;
 	}
@@ -1128,10 +1129,9 @@ static void quantize_hdr_rgbo(
 		g_fval = static_cast<float>(g_intval) * mode_rscale;
 		b_fval = static_cast<float>(b_intval) * mode_rscale;
 
-		// Recompute the scale value, based on the errors introduced to red, green and blue
+		// Adjust the scale to compensate for RGB quantization error
 
-		// If the error is positive, then the R,G,B errors combined have raised the color
-		// value overall; as such, the scale value needs to be increased.
+		// A positive RGB error raises the reconstructed color, so increase the scale to compensate
 		float rgb_errorsum = (r_fval - color.lane<0>() ) + (r_fval - g_fval - color.lane<1>() ) + (r_fval - b_fval - color.lane<2>() );
 
 		float s_fval = s_base + rgb_errorsum * (1.0f / 3.0f);
@@ -1250,7 +1250,7 @@ static void quantize_hdr_rgb(
 	uint8_t output[6],
 	quant_method quant_level
 ) {
-	// Note: color*.lane<3> is not used so we can ignore it
+	// Ignore the unused alpha lanes
 	color0 = clamp(0.0f, 65535.0f, color0);
 	color1 = clamp(0.0f, 65535.0f, color1);
 
@@ -1271,17 +1271,20 @@ static void quantize_hdr_rgb(
 		majcomp = 2;
 	}
 
-	// Swizzle the components
+	// Swap red with the largest component
 	switch (majcomp)
 	{
-	case 1:  // red-green swap
+	// Swap red and green
+	case 1:
 		color0 = color0.swz<1, 0, 2, 3>();
 		color1 = color1.swz<1, 0, 2, 3>();
 		break;
-	case 2:  // red-blue swap
+	// Swap red and blue
+	case 2:
 		color0 = color0.swz<2, 1, 0, 3>();
 		color1 = color1.swz<2, 1, 0, 3>();
 		break;
+	// No swap
 	default:
 		break;
 	}
@@ -1297,8 +1300,8 @@ static void quantize_hdr_rgb(
 
 	// Number of bits in the various fields in the various modes
 	static const int mode_bits[8][4] {
-		{9, 7, 6, 7},
-		{9, 8, 6, 6},
+		{ 9, 7, 6, 7},
+		{ 9, 8, 6, 6},
 		{10, 6, 7, 7},
 		{10, 7, 7, 6},
 		{11, 8, 6, 5},
@@ -1307,17 +1310,17 @@ static void quantize_hdr_rgb(
 		{12, 6, 7, 6}
 	};
 
-	// Cutoffs to use for the computed values of a,b,c,d, assuming the
-	// range 0..65535 are LNS values corresponding to fp16.
+	// Cutoffs to use for the computed values of a,b,c,d, assuming the range 0..65535 are LNS values
+	// corresponding to fp16
 	static const float mode_cutoffs[8][4] {
-		{16384, 8192, 8192, 8},	// mode 0: 9,7,6,7
-		{32768, 8192, 4096, 8},	// mode 1: 9,8,6,6
-		{4096, 8192, 4096, 4},	// mode 2: 10,6,7,7
-		{8192, 8192, 2048, 4},	// mode 3: 10,7,7,6
-		{8192, 2048, 512, 2},	// mode 4: 11,8,6,5
-		{2048, 8192, 1024, 2},	// mode 5: 11,6,8,6
-		{2048, 2048, 256, 1},	// mode 6: 12,7,7,5
-		{1024, 2048, 512, 1},	// mode 7: 12,6,7,6
+		{16384, 8192, 8192, 8},  // Mode 0: 9,7,6,7
+		{32768, 8192, 4096, 8},  // Mode 1: 9,8,6,6
+		{ 4096, 8192, 4096, 4},  // Mode 2: 10,6,7,7
+		{ 8192, 8192, 2048, 4},  // Mode 3: 10,7,7,6
+		{ 8192, 2048,  512, 2},  // Mode 4: 11,8,6,5
+		{ 2048, 8192, 1024, 2},  // Mode 5: 11,6,8,6
+		{ 2048, 2048,  256, 1},  // Mode 6: 12,7,7,5
+		{ 1024, 2048,  512, 1},  // Mode 7: 12,6,7,6
 	};
 
 	static const float mode_scales[8] {
@@ -1331,7 +1334,7 @@ static void quantize_hdr_rgb(
 		1.0f / 16.0f,
 	};
 
-	// Scaling factors when going from what was encoded in the mode to 16 bits.
+	// Scaling factors when going from what was encoded in the mode to 16 bits
 	static const float mode_rscales[8] {
 		128.0f,
 		128.0f,
@@ -1343,12 +1346,10 @@ static void quantize_hdr_rgb(
 		16.0f
 	};
 
-	// Try modes one by one, with the highest-precision mode first.
+	// Try modes in decreasing precision order
 	for (int mode = 7; mode >= 0; mode--)
 	{
-		// For each mode, test if we can in fact accommodate the computed b, c, and d values.
-		// If we clearly can't, then we skip to the next mode.
-
+		// Skip modes whose ranges cannot contain the computed b, c, and d values
 		float b_cutoff = mode_cutoffs[mode][0];
 		float c_cutoff = mode_cutoffs[mode][1];
 		float d_cutoff = mode_cutoffs[mode][2];
@@ -1365,7 +1366,7 @@ static void quantize_hdr_rgb(
 		int c_intcutoff = 1 << mode_bits[mode][2];
 		int d_intcutoff = 1 << (mode_bits[mode][3] - 1);
 
-		// Quantize and unquantize A, with the assumption that its high bits can be handled safely.
+		// Quantize and unquantize A, with the assumption that its high bits can be handled safely
 		int a_intval = astc::flt2int_rtn(a_base * mode_scale);
 		int a_lowbits = a_intval & 0xFF;
 
@@ -1569,10 +1570,8 @@ static void quantize_hdr_rgb(
 		return;
 	}
 
-	// If neither of the modes fit we will use a flat representation for storing data, using 8 bits
-	// for red and green, and 7 bits for blue. This gives color accuracy roughly similar to LDR
-	// 4:4:3 which is not at all great but usable. This representation is used if the light color is
-	// more than 4x the color value of the dark color.
+	// Fall back to flat 8-bit red/green and 7-bit blue, with accuracy comparable to LDR 4:4:3. This
+	// handles light endpoints more than 4x the dark endpoint.
 	float vals[6];
 	vals[0] = color0_bak.lane<0>();
 	vals[1] = color1_bak.lane<0>();
@@ -1912,11 +1911,11 @@ uint8_t pack_color_endpoints(
 	assert(QUANT_6 <= quant_level && quant_level <= QUANT_256);
 
 	// Clamp colors to a valid LDR range
-	// Note that HDR has a lower max, handled in the conversion functions
+	// Conversion functions handle the lower HDR maximum
 	color0 = clamp(0.0f, 65535.0f, color0);
 	color1 = clamp(0.0f, 65535.0f, color1);
 
-	// Pre-scale the LDR value we need to the 0-255 quantizable range
+	// Scale LDR values to the 0-255 quantization range
 	vfloat4 color0_ldr = color0 * (1.0f  / 257.0f);
 	vfloat4 color1_ldr = color1 * (1.0f  / 257.0f);
 

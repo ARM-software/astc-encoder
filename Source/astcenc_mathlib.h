@@ -84,9 +84,9 @@
   #if defined(__ARM_FEATURE_SVE)
     #if defined(__ARM_FEATURE_SVE_BITS) && __ARM_FEATURE_SVE_BITS == 256
       #define ASTCENC_SVE 8
-    // Auto-detected SVE can only assume vector width of 4 is available, but
-    // must also allow for hardware being longer and so all use of intrinsics
-    // must explicitly use predicate masks to limit to 4-wide.
+    // Auto-detected SVE can only assume vector width of 4 is available, but must also allow for
+    // hardware being longer and so all use of intrinsics must explicitly use predicate masks to
+    // limit to 4-wide
     #else
       #define ASTCENC_SVE 4
     #endif
@@ -107,8 +107,8 @@
   #define ASTCENC_VECALIGN 0
 #endif
 
-// C++11 states that alignas(0) should be ignored but GCC doesn't do
-// this on some versions, so workaround and avoid emitting alignas(0)
+// C++11 states that alignas(0) should be ignored but GCC doesn't do this on some versions, so
+// workaround and avoid emitting alignas(0)
 #if ASTCENC_VECALIGN > 0
 	#define ASTCENC_ALIGNAS alignas(ASTCENC_VECALIGN)
 #else
@@ -130,7 +130,7 @@
   to future vectorization.
 ============================================================================ */
 
-// These are namespaced to avoid colliding with C standard library functions.
+// These are namespaced to avoid colliding with C standard library functions
 namespace astc
 {
 
@@ -295,8 +295,7 @@ static inline T max(T p, T q, T r, T s)
 template<typename T>
 inline T clamp(T v, T mn, T mx)
 {
-	// Do not reorder; correct NaN handling relies on the fact that comparison
-	// with NaN returns false and will fall-through to the "min" value.
+	// Preserve comparison order so NaN falls through to the minimum
 	if (v > mx) return mx;
 	if (v > mn) return v;
 	return mn;
@@ -596,43 +595,63 @@ uint64_t rand(uint64_t state[2]);
 /*********************************
   Declaration of line types
 *********************************/
-// parametric line, 2D: The line is given by line = a + b * t.
-
+/** @brief A 2D parametric line, @c a + @c b * @c t. */
 struct line2
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
-// parametric line, 3D
+/** @brief A 3D parametric line, @c a + @c b * @c t. */
 struct line3
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
+/** @brief A 4D parametric line, @c a + @c b * @c t. */
 struct line4
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
-
+/** @brief A 2D line preprocessed for projecting points onto it. */
 struct processed_line2
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 
+/** @brief A 3D line preprocessed for projecting points onto it. */
 struct processed_line3
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 
+/** @brief A 4D line preprocessed for projecting points onto it. */
 struct processed_line4
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 

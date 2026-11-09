@@ -236,7 +236,7 @@ struct vint8
 	/**
 	 * @brief The vector ...
 	 */
-	 svint32_8_t m;
+	svint32_8_t m;
 };
 
 // ============================================================================
@@ -674,7 +674,7 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, vfloat8 b)
 	return vfloat8(svmul_f32_x(svptrue_b32(), a.m, b.m));
 }
 
-// Retain native forms to avoid fixed-length SVE code generation regressions.
+// Retain native forms to avoid fixed-length SVE code generation regressions
 #define ASTCENC_USE_NATIVE_VFLOAT8_SCALAR_ARITH 1
 
 /**
@@ -1010,7 +1010,7 @@ ASTCENC_SIMD_INLINE vint8 float_to_int(vfloat8 a)
 	return vint8(svcvt_s32_f32_x(svptrue_b32(), a.m));
 }
 
-// Retain the native form to avoid fixed-length SVE code generation regressions.
+// Retain the native form to avoid fixed-length SVE code generation regressions
 #define ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN_8 1
 
 /**
@@ -1200,4 +1200,4 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 ma
 	svst1_s32(mask.m, reinterpret_cast<int32_t*>(base), data.m);
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_SVE_8_H_INCLUDED

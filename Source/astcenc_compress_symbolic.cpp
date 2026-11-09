@@ -109,7 +109,7 @@ static bool realign_weights_undecimated(
 	bool adjustments = false;
 	vfloat4 error_weight = blk.channel_weight;
 
-	// For each plane and partition ...
+	// For each plane and partition
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
 		for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
@@ -158,7 +158,7 @@ static bool realign_weights_undecimated(
 			float error_quadratic = dot_s(color_delta * color_delta, error_weight);
 
 			// Evaluate the polynomial for each candidate
-			// Current weight has d = 0 and therefore an error delta of zero.
+			// Current weight has d = 0 and therefore an error delta of zero
 			float error_down = 2.0f * uqw_diff_down * error_linear
 			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
 			float error_up = 2.0f * uqw_diff_up * error_linear
@@ -266,7 +266,7 @@ static bool realign_weights_decimated(
 	bool adjustments = false;
 	vfloat4 error_weight = blk.channel_weight;
 
-	// For each plane and partition ...
+	// For each plane and partition
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
 		for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
@@ -309,7 +309,7 @@ static bool realign_weights_decimated(
 
 			// Squared error is quadratic in the weight adjustment d:
 			//   E(d) - E(0) = 2 * d * A + d * d * B
-			// Accumulate the linear coefficient A and quadratic coefficient B once
+			// Accumulate linear coefficient A and quadratic coefficient B once
 			vfloat4 error_linearv = vfloat4::zero();
 			vfloat4 error_quadraticv = vfloat4::zero();
 
@@ -347,7 +347,7 @@ static bool realign_weights_decimated(
 			float error_quadratic = hadd_s(error_quadraticv * error_weight);
 
 			// Evaluate the polynomial for each candidate
-			// Current weight has d = 0 and therefore an error delta of zero.
+			// Current weight has d = 0 and therefore an error delta of zero
 			float error_down = 2.0f * uqw_diff_down * error_linear
 			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
 			float error_up = 2.0f * uqw_diff_up * error_linear
@@ -554,7 +554,7 @@ static float compress_symbolic_block_for_partition_1plane(
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
-	// Iterate over the N believed-to-be-best modes to find out which one is actually best
+	// Evaluate the shortlisted modes to find the lowest error
 	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
 	float best_errorval_in_scb = scb.errorval;
 
@@ -611,9 +611,7 @@ static float compress_symbolic_block_for_partition_1plane(
 				all_same = all_same && workscb.color_formats[j] == workscb.color_formats[0];
 			}
 
-			// If all the color endpoint modes are the same, we get a few more bits to store colors;
-			// let's see if we can take advantage of this: requantize all the colors and see if the
-			// endpoint modes remain the same.
+			// Matching endpoint modes free extra color bits; try requantizing at higher precision
 			workscb.color_formats_matched = 0;
 			if (partition_count >= 2 && all_same)
 			{
@@ -675,10 +673,8 @@ static float compress_symbolic_block_for_partition_1plane(
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-				// Average refinement improvement is 3.5% per iteration (allow 4.5%), but the first
-				// iteration can help more so we give it an extra 8% leeway. Use this knowledge to
-				// drive a heuristic to skip blocks that are unlikely to catch up with the best
-				// block we have already.
+				// Stop candidates unlikely to beat the best block. Refinement averages 3.5%
+				// improvement per iteration; allow 4.5% plus an extra 8% for the first iteration.
 				unsigned int iters_remaining = config.tune_refinement_limit - l;
 				float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.08f;
 				if (errorval > (threshold * best_errorval_in_scb))
@@ -724,9 +720,8 @@ static float compress_symbolic_block_for_partition_1plane(
 			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-			// Average refinement improvement is 3.5% per iteration, so skip blocks that are
-			// unlikely to catch up with the best block we have already. Assume a 4.5% per step to
-			// give benefit of the doubt ...
+			// Stop candidates unlikely to beat the best block. Allow 4.5% improvement per remaining
+			// iteration, above the observed 3.5% average.
 			unsigned int iters_remaining = config.tune_refinement_limit - 1 - l;
 			float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
@@ -935,7 +930,7 @@ static float compress_symbolic_block_for_partition_2planes(
 	    partition_format_specifiers, block_mode_index,
 	    color_quant_level, color_quant_level_mod, tmpbuf);
 
-	// Iterate over the N believed-to-be-best modes to find out which one is actually best
+	// Evaluate the shortlisted modes to find the lowest error
 	float best_errorval_in_mode = ERROR_CALC_DEFAULT;
 	float best_errorval_in_scb = scb.errorval;
 
@@ -1010,10 +1005,8 @@ static float compress_symbolic_block_for_partition_2planes(
 				trace_add_data("error_prerealign", errorval);
 				best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-				// Average refinement improvement is 3.5% per iteration (allow 4.5%), but the first
-				// iteration can help more so we give it an extra 8% leeway. Use this knowledge to
-				// drive a heuristic to skip blocks that are unlikely to catch up with the best
-				// block we have already.
+				// Stop candidates unlikely to beat the best block. Refinement averages 3.5%
+				// improvement per iteration; allow 4.5% plus an extra 8% for the first iteration.
 				unsigned int iters_remaining = config.tune_refinement_limit - l;
 				float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.08f;
 				if (errorval > (threshold * best_errorval_in_scb))
@@ -1036,7 +1029,7 @@ static float compress_symbolic_block_for_partition_2planes(
 				}
 			}
 
-			// Perform a final pass over the weights to try to improve them.
+			// Perform a final pass over the weights to try to improve them
 			bool adjustments;
 			if (di.weight_count != bsd.texel_count)
 			{
@@ -1060,9 +1053,8 @@ static float compress_symbolic_block_for_partition_2planes(
 			trace_add_data("error_postrealign", errorval);
 			best_errorval_in_mode = astc::min(errorval, best_errorval_in_mode);
 
-			// Average refinement improvement is 3.5% per iteration, so skip blocks that are
-			// unlikely to catch up with the best block we have already. Assume a 4.5% per step to
-			// give benefit of the doubt ...
+			// Stop candidates unlikely to beat the best block. Allow 4.5% improvement per remaining
+			// iteration, above the observed 3.5% average.
 			unsigned int iters_remaining = config.tune_refinement_limit - 1 - l;
 			float threshold = (0.045f * static_cast<float>(iters_remaining)) + 1.0f;
 			if (errorval > (threshold * best_errorval_in_scb))
@@ -1106,8 +1098,7 @@ static float prepare_block_statistics(
 	int texels_per_block,
 	const image_block& blk
 ) {
-	// Compute covariance matrix, as a collection of 10 scalars that form the upper-triangular row
-	// of the matrix. The matrix is symmetric, so this is all we need for this use case.
+	// Accumulate the 10 upper-triangle entries of the symmetric covariance matrix
 	float rs = 0.0f;
 	float gs = 0.0f;
 	float bs = 0.0f;
@@ -1233,11 +1224,11 @@ void compress_block(
 	trace_add_data("pos_y", blk.pos_y);
 	trace_add_data("pos_z", blk.pos_z);
 
-	// Set stricter block targets for luminance data as we have more bits to play with
+	// Use stricter error targets for luminance blocks, which need fewer endpoint bits
 	bool block_is_l = blk.is_luminance();
 	float block_is_l_scale = block_is_l ? 1.0f / 1.5f : 1.0f;
 
-	// Set slightly stricter block targets for lumalpha data as we have more bits to play with
+	// Use stricter error targets for luminance-alpha blocks, which need fewer endpoint bits
 	bool block_is_la = blk.is_luminancealpha();
 	float block_is_la_scale = block_is_la ? 1.0f / 1.05f : 1.0f;
 
@@ -1257,8 +1248,7 @@ void compress_block(
 	};
 
 #if defined(ASTCENC_DIAGNOSTICS)
-	// Do this early in diagnostic builds so we can dump uniform metrics
-	// for every block. Do it later in release builds to avoid redundant work!
+	// Always compute metrics in diagnostic builds; defer in release builds to avoid redundant work
 	float error_weight_sum = hadd_s(blk.channel_weight) * bsd.texel_count;
 	float error_threshold = ctx.config.tune_db_limit
 	                      * error_weight_sum
@@ -1325,12 +1315,10 @@ void compress_block(
 		0.0f
 	};
 
-	// Trial using 1 plane of weights and 1 partition.
+	// Trial using 1 plane of weights and 1 partition
 
-	// Most of the time we test it twice, first with a mode cutoff of 0 and then with the specified
-	// mode cutoff. This causes an early-out that speeds up encoding of easy blocks. However, this
-	// optimization is disabled for 4x4 and 5x4 blocks where it nearly always slows down the
-	// compression and slightly reduces image quality.
+	// Try mode cutoff 0 first to exit early for easy blocks, then use the configured cutoff. Skip
+	// this fast pass for 4x4 and 5x4 blocks, where it costs time and slightly reduces quality.
 
 	float errorval_mult[2] {
 		1.0f / ctx.config.tune_mse_overshoot,
@@ -1342,7 +1330,7 @@ void compress_block(
 	// Only enable MODE0 fast path if enabled
 	// Never enable for 3D blocks as no "always" block modes are available
 	int start_trial = 1;
- 	if ((ctx.config.tune_search_mode0_enable >= TUNE_MIN_SEARCH_MODE0) && (bsd.dim_z == 1))
+	if ((ctx.config.tune_search_mode0_enable >= TUNE_MIN_SEARCH_MODE0) && (bsd.dim_z == 1))
 	{
 		start_trial = 0;
 	}
@@ -1360,7 +1348,7 @@ void compress_block(
 		    error_threshold * errorval_mult[i] * errorval_overshoot,
 		    1, 0,  scb, tmpbuf, QUANT_32);
 
-		// Record the quant level so we can use the filter later searches
+		// Record the quantization level to filter later searches
 		if (scb.block_type != SYM_BTYPE_ERROR)
 		{
 			const auto& bm = bsd.get_block_mode(scb.block_mode);
@@ -1381,8 +1369,7 @@ void compress_block(
 
 	block_skip_two_plane = lowest_correl > ctx.config.tune_2plane_early_out_limit_correlation;
 
-	// Test the four possible 1-partition, 2-planes modes. Do this in reverse, as
-	// alpha is the most likely to be non-correlated if it is present in the data.
+	// Test all single-partition dual-plane modes, alpha first, as most likely to be uncorrelated
 	for (int i = BLOCK_MAX_COMPONENTS - 1; i >= 0; i--)
 	{
 		TRACE_NODE(node1, "pass");
@@ -1412,8 +1399,8 @@ void compress_block(
 		    ctx.config, bsd, blk, error_threshold * errorval_overshoot,
 		    i, scb, tmpbuf, quant_limit);
 
-		// If attempting two planes is much worse than the best one plane result
-		// then further two plane searches are unlikely to help so move on ...
+		// If attempting two planes is much worse than the best one plane result then further two
+		// plane searches are unlikely to help, so move on
 		if (errorval > (best_errorvals_for_pcount[0] * 1.85f))
 		{
 			break;
@@ -1457,10 +1444,8 @@ void compress_block(
 
 			best_errorvals_for_pcount[partition_count - 1] = astc::min(best_errorvals_for_pcount[partition_count - 1], errorval);
 
-			// If using N partitions doesn't improve much over using N-1 partitions then skip trying
-			// N+1. Error can dramatically improve if the data is correlated or non-correlated and
-			// aligns with a partitioning that suits that encoding, so for this inner loop check add
-			// a large error scale because the "other" trial could be a lot better.
+			// Skip N+1 partitions if N barely improves on N-1. Allow extra margin inside this loop
+			// because the other correlation trial may fit the partitioning much better.
 			float best_error = best_errorvals_for_pcount[partition_count - 1];
 			float best_error_scale = exit_thresholds_for_pcount[partition_count - 1] * 1.85f;
 			if (best_error > (best_error_in_prev * best_error_scale))
@@ -1489,8 +1474,8 @@ void compress_block(
 	trace_add_data("exit", "quality not hit");
 
 END_OF_TESTS:
-	// If we still have an error block then convert to something we can encode
-	// TODO: Do something more sensible here, such as average color block
+	// Replace any remaining error block with a valid encoding
+	// TODO: Use a better fallback, such as the average color
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 #if defined(ASTCENC_DIAGNOSTICS)

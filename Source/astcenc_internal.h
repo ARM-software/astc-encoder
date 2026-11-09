@@ -55,7 +55,7 @@
 		#else
 			#define promise(cond)
 		#endif
-	#else // Assume GCC
+	#else  // Assume GCC
 		#define promise(cond) if (!(cond)) { __builtin_unreachable(); }
 	#endif
 #else
@@ -1136,7 +1136,7 @@ struct symbolic_compressed_block
 	/** @brief The error of the current encoding; valid for @c NONCONST blocks. */
 	float errorval;
 
-	// We can't have both of these at the same time
+	// Constant and nonconstant blocks share this storage
 	union {
 		/** @brief The constant color; valid for @c CONST blocks. */
 		int constant_color[BLOCK_MAX_COMPONENTS];

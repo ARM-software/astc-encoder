@@ -146,8 +146,7 @@ void symbolic_to_physical(
 
 	unsigned int partition_count = scb.partition_count;
 
-	// Compress the weights.
-	// They are encoded as an ordinary integer-sequence, then bit-reversed
+	// Compress the weights into to a bitreversed ISE stream
 	uint8_t weightbuf[16] { 0 };
 
 	const auto& bm = bsd.get_block_mode(scb.block_mode);
@@ -476,12 +475,10 @@ void physical_to_symbolic(
 		}
 		scb.partition_index = static_cast<uint16_t>(read_bits(10, 13, pcb));
 
-		// Reject blocks selecting a partitioning that is not present in this
-		// block size descriptor. A SELF_DECOMPRESS_ONLY context drops the
-		// partitionings its compressor never emits, so a texture compressed
-		// with a different context can reference an inactive entry. This is an
-		// API contract break from the application, and should not happen in
-		// valid usage.
+		// Reject blocks selecting a partitioning that is not present in this block size descriptor.
+		// A SELF_DECOMPRESS_ONLY context drops the partitionings its compressor never emits, so a
+		// texture compressed with a different context can reference an inactive entry. This is an
+		// API contract break from the application, and should not happen in valid usage.
 		if (bsd.partitioning_packed_index[partition_count - 2][scb.partition_index] == BLOCK_BAD_PARTITIONING)
 		{
 			scb.block_type = SYM_BTYPE_ERROR;
@@ -547,7 +544,7 @@ void physical_to_symbolic(
 		valuecount_to_decode += vals;
 	}
 
-	// Fetch component for second-plane in the case of dual plane of weights.
+	// Fetch component for second-plane in the case of dual plane of weights
 	scb.plane2_component = -1;
 	if (is_dual_plane)
 	{

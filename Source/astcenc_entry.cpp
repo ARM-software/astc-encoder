@@ -190,7 +190,7 @@ static size_t get_blocks_count(
 	size_t blocks_count = astc::mul_safe(blocks_x, blocks_y, overflow);
 	blocks_count = astc::mul_safe(blocks_count, blocks_z, overflow);
 
-	// Also compute byte count, but we only use overflow and not the result
+	// Check byte-count overflow without retaining the result
 	astc::mul_safe(blocks_count, 16, overflow);
 
 	if (overflow)
@@ -236,8 +236,7 @@ static astcenc_error validate_cpu_float()
 static astcenc_error validate_profile(
 	astcenc_profile profile
 ) {
-	// Values in this enum are from an external user, so not guaranteed to be
-	// bounded to the enum values
+	// Values from an external user, so not guaranteed to be bounded to the enum values
 	switch (static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR_SRGB:
@@ -379,8 +378,7 @@ static astcenc_error validate_compression_swizzle(
 static astcenc_error validate_decompression_swz(
 	astcenc_swz swizzle
 ) {
-	// Values in this enum are from an external user, so not guaranteed to be
-	// bounded to the enum values
+	// Values from an external user, so not guaranteed to be bounded to the enum values
 	switch (static_cast<int>(swizzle))
 	{
 	case ASTCENC_SWZ_R:
@@ -448,8 +446,7 @@ static astcenc_error validate_config(
 		return status;
 	}
 
-	// A block_z of zero is accepted to mean 2D. Normalize to 1u so later code paths
-	// can safely use it as a divisor or loop limit
+	// A block_z of 0 is accepted to mean 2D, normalize to 1 to avoid div-by-zero later
 	config.block_z = astc::max(config.block_z, 1u);
 
 	status = validate_block_size(config.block_x, config.block_y, config.block_z);
@@ -545,9 +542,7 @@ astcenc_error astcenc_config_init(
 	float texels = static_cast<float>(block_x * block_y * block_z);
 	float ltexels = logf(texels) / logf(10.0f);
 
-	// Process the performance quality level or preset; note that this must be done before we
-	// process any additional settings, such as color profile and flags, which may replace some of
-	// these settings with more use case tuned values
+	// Apply the quality preset before profile and flag adjustments, which may override its settings
 	if (quality < ASTCENC_PRE_FASTEST ||
 	    quality > ASTCENC_PRE_EXHAUSTIVE)
 	{
@@ -582,7 +577,7 @@ astcenc_error astcenc_config_init(
 
 	start = end == 0 ? 0 : end - 1;
 
-	// Start and end node are the same - so just transfer the values.
+	// Copy values directly when the preset nodes match
 	if (start == end)
 	{
 		config.tune_partition_count_limit = (*preset_configs)[start].tune_partition_count_limit;
@@ -660,8 +655,7 @@ astcenc_error astcenc_config_init(
 
 	config.profile = profile;
 
-	// Values in this enum are from an external user, so not guaranteed to be
-	// bounded to the enum values
+	// Values from an external user, so not guaranteed to be bounded to the enum values
 	switch (static_cast<int>(profile))
 	{
 	case ASTCENC_PRF_LDR:
@@ -685,9 +679,8 @@ astcenc_error astcenc_config_init(
 
 	if (flags & ASTCENC_FLG_MAP_NORMAL)
 	{
-		// Normal map encoding uses L+A blocks, so allow one more partitioning
-		// than usual. We need fewer bits for endpoints, so are more likely
-		// to be able to use more partitions
+		// Allow an extra partition for normal maps; L+A endpoints need fewer bits, leaving more
+		// room for partitions
 		config.tune_partition_count_limit = astc::min(config.tune_partition_count_limit + 1u, 4u);
 
 		config.cw_g_weight = 0.0f;
@@ -696,8 +689,7 @@ astcenc_error astcenc_config_init(
 		config.tune_3partition_early_out_limit_factor *= 1.5f;
 		config.tune_2plane_early_out_limit_correlation = 0.99f;
 
-		// Normals are prone to blocking artifacts on smooth curves so force
-		// compressor to try harder
+		// Raise the quality target to reduce blocking artifacts on smooth normal-map curves
 		config.tune_db_limit *= 1.03f;
 	}
 	else if (flags & ASTCENC_FLG_MAP_RGBM)
@@ -705,18 +697,11 @@ astcenc_error astcenc_config_init(
 		config.rgbm_m_scale = 5.0f;
 		config.cw_a_weight = 2.0f * config.rgbm_m_scale;
 	}
-	else // (This is color data)
+	else  // Color data
 	{
-		// This is a very basic perceptual metric for RGB color data, which weights error
-		// significance by the perceptual luminance contribution of each color channel. For
-		// luminance the usual weights to compute luminance from a linear RGB value are as
-		// follows:
-		//
+		// Weight RGB error by each channel's contribution to linear luminance:
 		//     l = r * 0.3 + g * 0.59 + b * 0.11
-		//
-		// ... but we scale these up to keep a better balance between color and alpha. Note
-		// that if the content is using alpha we'd recommend using the -a option to weight
-		// the color contribution by the alpha transparency.
+		// Scale these weights to balance color and alpha error.
 		if (flags & ASTCENC_FLG_USE_PERCEPTUAL)
 		{
 			config.cw_r_weight = 0.30f * 2.25f;
@@ -776,7 +761,7 @@ astcenc_error astcenc_context_alloc(
 	ctx->thread_count = thread_count;
 	ctx->config = *configp;
 
-	// Generate an active mask so we can optimize based on zero-weight channels
+	// Build the active-channel mask for zero-weight specializations
 	if (has_parent)
 	{
 		ctx->active_channel_mask = parent_context->context.active_channel_mask;
@@ -809,7 +794,7 @@ astcenc_error astcenc_context_alloc(
 	// These are allocated per-compress, as they depend on image size
 	ctx->input_alpha_averages = nullptr;
 
-	// Copy the config first and validate the copy (we may modify it)
+	// Validate a config copy because validation may modify it
 	status = validate_config(ctx->config);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -980,10 +965,10 @@ static void compress_image(
 	// Use preallocated scratch buffer
 	auto& temp_buffers = ctx.working_buffers[thread_index];
 
-	// Only the first thread actually runs the initializer
+	// Only the first thread runs initialization
 	ctxo.manage_compress.init(block_count, ctx.config.progress_callback);
 
-	// Determine if we can use an optimized load function
+	// Select the optimized loader when supported
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
 	                 (swizzle.b != ASTCENC_SWZ_B) || (swizzle.a != ASTCENC_SWZ_A);
 
@@ -999,7 +984,7 @@ static void compress_image(
 		load_func = load_image_block_fast_ldr;
 	}
 
-	// All threads run this processing loop until there is no work remaining
+	// Each thread claims tasks until none remain
 	while (true)
 	{
 		size_t count;
@@ -1017,7 +1002,7 @@ static void compress_image(
 			size_t y = rem / row_blocks;
 			size_t x = rem - (y * row_blocks);
 
-			// Test if we can apply some basic alpha-scale RDO
+			// Check for blocks with negligible alpha contribution
 			bool use_full_block = true;
 			if (ctx.config.a_scale_radius != 0 && block_z == 1)
 			{
@@ -1027,16 +1012,15 @@ static void compress_image(
 				size_t start_y = y * block_y;
 				size_t end_y = astc::min(dim_y, start_y + block_y);
 
-				// SATs accumulate error, so don't test exactly zero. Test for
-				// less than 1 alpha in the expanded block footprint that
-				// includes the alpha radius.
+				// SATs accumulate error, so don't test exactly zero. Test for less than 1 alpha in
+				// the expanded block footprint that includes the alpha radius.
 				size_t x_footprint = block_x + 2 * (ctx.config.a_scale_radius - 1);
 				size_t y_footprint = block_y + 2 * (ctx.config.a_scale_radius - 1);
 
 				float footprint = static_cast<float>(x_footprint * y_footprint);
 				float threshold = 0.9f / (255.0f * footprint);
 
-				// Do we have any alpha values?
+				// Check for alpha values above the threshold
 				use_full_block = false;
 				for (size_t ay = start_y; ay < end_y; ay++)
 				{
@@ -1058,9 +1042,8 @@ static void compress_image(
 			{
 				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
 
-				// Scale RGB error contribution by the maximum alpha in the block
-				// This encourages preserving alpha accuracy in regions with high
-				// transparency, and can buy up to 0.5 dB PSNR.
+				// Scale RGB error contribution by the maximum alpha in the block. This encourages
+				// alpha accuracy in regions with high transparency, and can gain up to 0.5 dB.
 				if (ctx.config.flags & ASTCENC_FLG_USE_ALPHA_WEIGHT)
 				{
 					float alpha_scale = blk.data_max.lane<3>() * (1.0f / 65535.0f);
@@ -1116,7 +1099,7 @@ static void compute_averages(
 
 	size_t tasks_y = (size_y + step_xy - 1) / step_xy;
 
-	// All threads run this processing loop until there is no work remaining
+	// Each thread claims tasks until none remain
 	while (true)
 	{
 		size_t count;
@@ -1220,8 +1203,7 @@ astcenc_error astcenc_compress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	// Check we have enough output space, size_needed calc cannot overflow as
-	// get_blocks_count() already validated that a byte count would fit
+	// Check output capacity; get_blocks_count() already ruled out byte-count overflow
 	size_t size_needed = block_count * 16;
 	if (data_len < size_needed)
 	{
@@ -1236,8 +1218,7 @@ astcenc_error astcenc_compress_image(
 
 	if (ctx->config.a_scale_radius != 0)
 	{
-		// First thread to enter will do setup, other threads will subsequently
-		// enter the critical section but simply skip over the initialization
+		// Initialize shared preprocessing buffers once, in the first thread
 		auto init_avg = [ctx, &image, swizzle, texel_count]() {
 			// Perform memory allocations for the destination buffers
 			ctx->input_alpha_averages = new float[texel_count];
@@ -1247,10 +1228,10 @@ astcenc_error astcenc_compress_image(
 				ctx->avg_preprocess_args);
 		};
 
-		// Only the first thread actually runs the initializer
+		// Only the first thread runs initialization
 		ctxo->manage_avg.init(init_avg);
 
-		// All threads will enter this function and dynamically grab work
+		// Distribute preprocessing tasks across all threads
 		compute_averages(*ctxo, ctx->avg_preprocess_args);
 	}
 
@@ -1267,7 +1248,7 @@ astcenc_error astcenc_compress_image(
 		ctx->input_alpha_averages = nullptr;
 	};
 
-	// Only the first thread to arrive actually runs the term
+	// Only the first thread performs cleanup
 	ctxo->manage_compress.term(term_compress);
 
 	return ASTCENC_SUCCESS;
@@ -1308,9 +1289,9 @@ astcenc_error astcenc_compress_cancel(
 		return ASTCENC_ERR_BAD_CONTEXT;
 	}
 
-	// Cancel compression before cancelling avg. This avoids the race condition
-	// where cancelling them in the other order could see a compression worker
-	// starting to process even though some of the avg data is undefined.
+	// Cancel compression before cancelling avg. This avoids the race condition where cancelling
+	// them in the other order could see a compression worker starting to process even though some
+	// of the avg data is undefined.
 	ctxo->manage_compress.cancel();
 	ctxo->manage_avg.cancel();
 	return ASTCENC_SUCCESS;
@@ -1368,8 +1349,7 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	// Check we have enough output space, size_needed calc cannot overflow as
-	// get_blocks_count() already validated that a byte count would fit
+	// Check output capacity; get_blocks_count() already ruled out byte-count overflow
 	size_t size_needed = block_count * 16;
 	if (data_len < size_needed)
 	{
@@ -1391,10 +1371,10 @@ astcenc_error astcenc_decompress_image(
 		astcenc_decompress_reset(ctxo);
 	}
 
-	// Only the first thread actually runs the initializer
+	// Only the first thread runs initialization
 	ctxo->manage_decompress.init(block_count, nullptr);
 
-	// All threads run this processing loop until there is no work remaining
+	// Each thread claims tasks until none remain
 	while (true)
 	{
 		size_t count;
@@ -1567,8 +1547,7 @@ astcenc_error astcenc_get_block_info(
 const char* astcenc_get_error_string(
 	astcenc_error status
 ) {
-	// Values in this enum are from an external user, so not guaranteed to be
-	// bounded to the enum values
+	// Values from an external user, so not guaranteed to be bounded to the enum values
 	switch (static_cast<int>(status))
 	{
 	case ASTCENC_SUCCESS:

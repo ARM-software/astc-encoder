@@ -105,8 +105,8 @@ static void detect_cpu_isa()
 		__cpuidex(data, 7, 0);
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
-		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them
-		// before the leaf 1 read below overwrites data[].
+		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them before the leaf 1 read
+		// below overwrites data[].
 		bool avx512f = (data[1] & (1u << 16)) != 0;
 		bool avx512dq = (data[1] & (1u << 17)) != 0;
 		bool avx512bw = (data[1] & (1u << 30)) != 0;
@@ -173,8 +173,8 @@ static void detect_cpu_isa()
 	{
 		// AVX2 = Bank 7, EBX, bit 5
 		g_cpu_has_avx2 = data[1] & (1 << 5) ? true : false;
-		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them
-		// before the leaf 1 read below overwrites data[].
+		// AVX-512 Bank 7: F/DQ/BW/VL are EBX, VBMI is ECX. Capture them before the leaf 1 read
+		// below overwrites data[].
 		bool avx512f = (data[1] & (1u << 16)) != 0;
 		bool avx512dq = (data[1] & (1u << 17)) != 0;
 		bool avx512bw = (data[1] & (1u << 30)) != 0;

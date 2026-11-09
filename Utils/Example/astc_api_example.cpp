@@ -15,17 +15,14 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-// This is a minimal example of using the astcenc library.
+// Minimal astcenc library example
 //
-// This sample shows how to include the astcenc library in your CMake project
-// as an external dependency, and how to compress and decompress images using
-// the C library API.
+// This sample shows how to include the astcenc library in your CMake project as an external
+// dependency, and how to compress and decompress images using the C library API.
 //
-// For sake of clarity the command line exposed by the sample is minimalistic,
-// and the compression uses a fixed set of options, but the code is commented
-// to indicate where extension would be possible. Errors handling points are
-// detected and logged, but resources are not cleaned up on error paths to keep
-// the sample control path simple, so resources will leak on error.
+// The sample uses a minimal command line and fixed compression settings. Comments indicate
+// extension points. Error paths log failures and exit without freeing resources, keeping the
+// example simple.
 
 #include <stdio.h>
 
@@ -51,7 +48,7 @@ int main(int argc, char **argv)
 	}
 
 	// ------------------------------------------------------------------------
-	// For the purposes of this sample we hard-code the compressor settings
+	// Use fixed compressor settings for this example
 	static const unsigned int thread_count = 1;
 	static const unsigned int block_x = 6;
 	static const unsigned int block_y = 6;
@@ -87,8 +84,8 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// ... power users can customize any config settings after calling
-	// config_init() and before calling context alloc().
+	// Power users can customize any config settings after calling config_init() and before calling
+	// context alloc()
 
 	// ------------------------------------------------------------------------
 	// Create a context based on the configuration
@@ -121,16 +118,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// ... the comp_data array contains the raw compressed data you would pass
-	// to the graphics API, or pack into a wrapper format such as a KTX file.
+	// The comp_data array contains the raw compressed data you would pass to the graphics API, or
+	// pack into a wrapper format such as a KTX file
 
-	// If using multithreaded compression to sequentially compress multiple
-	// images you should reuse the same context, calling the function
-	// astcenc_compress_reset() between each image in the series.
+	// If using multithreaded compression to sequentially compress multiple images you should reuse
+	// the same context, calling the function astcenc_compress_reset() between each image in
+	// the series
 
 	// ------------------------------------------------------------------------
 	// Decompress the image
-	// Note we just reuse the image structure to store the output here ...
+	// Reuse the image structure for decompressed output
 	status = astcenc_decompress_image(context, comp_data, comp_len, &image, &swizzle, 0);
 	if (status != ASTCENC_SUCCESS)
 	{
@@ -138,9 +135,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	// If using multithreaded decompression to sequentially decompress multiple
-	// images you should reuse the same context, calling the function
-	// astcenc_decompress_reset() between each image in the series.
+	// If using multithreaded decompression to sequentially decompress multiple images you should
+	// reuse the same context, calling the function astcenc_decompress_reset() between each image in
+	// the series
 
 	// ------------------------------------------------------------------------
 	// Store the result back to disk

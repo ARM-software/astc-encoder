@@ -1136,8 +1136,8 @@ struct vgatherf_table {
 
 #define ASTCENC_HAS_VGATHERF_TABLE 1
 
-// GCC 13 reports array bounds errors in unreachable loads after inlining
-// when the table span is inferred from a vector of constant gather indices
+// GCC 13 reports array bounds errors in unreachable loads after inlining when the table span is
+// inferred from a vector of constant gather indices
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 13
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
@@ -1564,4 +1564,4 @@ ASTCENC_SIMD_INLINE void print(vmask16 a)
 	print(select(vint16(0), vint16(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_AVX512_16_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_AVX512_16_H_INCLUDED

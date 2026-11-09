@@ -245,8 +245,7 @@ public:
 	 */
 	void complete_task_assignment(size_t count)
 	{
-		// Note: m_done_count cannot use an atomic without the mutex; this has a race between the
-		// update here and the wait() for other threads
+		// Keep m_done_count under the mutex; an atomic alone races with threads entering wait()
 		size_t local_count;
 		float local_last_value;
 		{
@@ -271,10 +270,10 @@ public:
 			}
 		}
 
-		// Process progress callback if we have one
+		// Report progress when a callback is registered
 		if (m_callback)
 		{
-			// Initial lockless test - have we progressed enough to emit?
+			// Check the reporting interval before taking the callback lock
 			float num = static_cast<float>(local_count);
 			float den = static_cast<float>(m_task_count);
 			float this_value =  (num / den) * 100.0f;

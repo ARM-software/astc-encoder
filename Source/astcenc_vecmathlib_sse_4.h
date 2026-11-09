@@ -244,13 +244,13 @@ struct vint4
 	 */
 	ASTCENC_SIMD_INLINE explicit vint4(const uint8_t *p)
 	{
-		// Copy through a uint32_t to avoid load through a reinterpreted
-		// pointer, which is both unaligned and an aliasing violation.
+		// Copy through a uint32_t to avoid load through a reinterpreted pointer, which is both
+		// unaligned and an aliasing violation
 		int32_t tmp;
 		std::memcpy(&tmp, p, sizeof(tmp));
 
-		// _mm_loadu_si32 would be nicer syntax, but missing on older GCC and
-		// generates broken code on GCC 11.x before 11.3.
+		// _mm_loadu_si32 would be nicer syntax, but missing on older GCC and generates broken code
+		// on GCC 11.x before 11.3
 		__m128i t = _mm_cvtsi32_si128(tmp);
 
 #if ASTCENC_SSE >= 41
@@ -1443,8 +1443,7 @@ ASTCENC_SIMD_INLINE vint4 vtable_lookup_32bit(
  */
 ASTCENC_SIMD_INLINE vint4 interleave_rgba8(vint4 r, vint4 g, vint4 b, vint4 a)
 {
-// Workaround an Xcode compiler internal fault; note it is slower than slli_epi32
-// so we should revert this when we get the opportunity
+// Work around an Xcode internal compiler error; restore the faster slli_epi32 when fixed
 #if defined(__APPLE__)
 	__m128i value = r.m;
 	value = _mm_add_epi32(value, _mm_bslli_si128(g.m, 1));
@@ -1528,7 +1527,7 @@ ASTCENC_SIMD_INLINE vfloat4 dot3(vfloat4 a, vfloat4 b)
 	return vfloat4(_mm_dp_ps(a.m, b.m, 0x77));
 }
 
-#endif // #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
+#endif  // #if defined(ASTCENC_NO_INVARIANCE) && (ASTCENC_SSE >= 41)
 
 #if ASTCENC_POPCNT >= 1
 
@@ -1550,6 +1549,6 @@ ASTCENC_SIMD_INLINE int popcount(uint64_t v)
 #endif
 }
 
-#endif // ASTCENC_POPCNT >= 1
+#endif  // ASTCENC_POPCNT >= 1
 
-#endif // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_SSE_4_H_INCLUDED

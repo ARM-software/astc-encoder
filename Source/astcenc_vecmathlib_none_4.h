@@ -1500,4 +1500,4 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 ma
 	}
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_NONE_4_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_NONE_4_H_INCLUDED

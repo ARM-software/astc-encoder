@@ -162,13 +162,13 @@ struct vint8
 	 */
 	ASTCENC_SIMD_INLINE explicit vint8(const uint8_t *p)
 	{
-		// Copy through a uint32_t to avoid load through a reinterpreted
-		// pointer, which is both unaligned and an aliasing violation.
+		// Copy through a uint32_t to avoid load through a reinterpreted pointer, which is both
+		// unaligned and an aliasing violation
 		uint64_t tmp;
 		std::memcpy(&tmp, p, sizeof(tmp));
 
-		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC and
-		// generates broken code on GCC 11.x before 11.3.
+		// _mm_loadu_si64 would be nicer syntax, but missing on older GCC and generates broken code
+		// on GCC 11.x before 11.3
 		m = _mm256_cvtepu8_epi32(_mm_cvtsi64_si128(tmp));
 	}
 
@@ -635,9 +635,7 @@ ASTCENC_SIMD_INLINE void store(vint8 a, int* p)
  */
 ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
 {
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	// _mm_storeu_si64(ptr, _mm256_extracti128_si256(v.m, 0))
+	// Use _mm_storel_epi64 for compatibility; _mm_storeu_si64 requires GCC 9 or Clang 9
 	_mm_storel_epi64(reinterpret_cast<__m128i*>(p), _mm256_extracti128_si256(a.m, 0));
 }
 
@@ -857,15 +855,13 @@ ASTCENC_SIMD_INLINE vfloat8 hmin(vfloat8 a)
 	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
 	vlow = _mm_min_ps(vlow, vhigh);
 
-	// First do an horizontal reduction.
+	// First do an horizontal reduction
 	__m128 shuf = _mm_shuffle_ps(vlow, vlow, _MM_SHUFFLE(2, 3, 0, 1));
 	__m128 mins = _mm_min_ps(vlow, shuf);
 	shuf = _mm_movehl_ps(shuf, mins);
 	mins = _mm_min_ss(mins, shuf);
 
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128(m, m)
+	// Use insertf128 for compatibility; _mm256_set_m128 requires GCC 9 or Clang 9
 	__m256 r = _mm256_insertf128_ps(_mm256_castps128_ps256(mins), mins, 1);
 
 	return vfloat8(_mm256_permute_ps(r, 0));
@@ -892,15 +888,13 @@ ASTCENC_SIMD_INLINE vfloat8 hmax(vfloat8 a)
 	__m128 vhigh = _mm256_extractf128_ps(a.m, 1);
 	vhigh = _mm_max_ps(vlow, vhigh);
 
-	// First do an horizontal reduction.
+	// First do an horizontal reduction
 	__m128 shuf = _mm_shuffle_ps(vhigh, vhigh, _MM_SHUFFLE(2, 3, 0, 1));
 	__m128 maxs = _mm_max_ps(vhigh, shuf);
 	shuf = _mm_movehl_ps(shuf,maxs);
 	maxs = _mm_max_ss(maxs, shuf);
 
-	// This is the most logical implementation, but the convenience intrinsic
-	// is missing on older compilers (supported in g++ 9 and clang++ 9).
-	//__m256i r = _mm256_set_m128(m, m)
+	// Use insertf128 for compatibility; _mm256_set_m128 requires GCC 9 or Clang 9
 	__m256 r = _mm256_insertf128_ps(_mm256_castps128_ps256(maxs), maxs, 1);
 	return vfloat8(_mm256_permute_ps(r, 0));
 }
@@ -1003,10 +997,8 @@ template<>
 ASTCENC_SIMD_INLINE vfloat8 gatherf_byte_inds<vfloat8>(const float* base, const uint8_t* indices)
 {
 #if ASTCENC_X86_GATHERS == 0
-	// Perform manual gather using scalar loads in two separate dependency chains,
-	// then merge late. MSVC translates this 1:1, which is OK. Clang turns it
-	// into a bunch of memory-operand inserts on 128-bit halves then merges late,
-	// which performs significantly worse in tests.
+	// Gather with scalar loads in two dependency chains, merging late. MSVC preserves this layout;
+	// Clang instead uses memory-operand inserts into 128-bit halves, which benchmark slower.
 	__m256 m0 = _mm256_broadcast_ss(base + indices[0]);
 	__m256 m1 = _mm256_broadcast_ss(base + indices[1]);
 	m0 = _mm256_blend_ps(m0, _mm256_broadcast_ss(base + indices[2]), 1 << 2);
@@ -1290,4 +1282,4 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint8 data, vmask8 ma
 	_mm256_maskstore_epi32(reinterpret_cast<int*>(base), _mm256_castps_si256(mask.m), data.m);
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_AVX2_8_H_INCLUDED
