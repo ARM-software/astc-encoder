@@ -58,7 +58,8 @@ from 0.89 bits/pixel up to 8 bits/pixel.
 Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
-* Change log: [5.x series](./Docs/ChangeLog-5x.md)
+* [Change log for 6.x series](./Docs/ChangeLog-6x.md)
+* [Change log for 5.x series](./Docs/ChangeLog-5x.md)
 
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
@@ -107,22 +108,20 @@ Support is provided for three architecture slices:
 
 ## Repository branches
 
-The `main` branch is an active development branch for the compressor. It aims
-to be a stable branch for the latest major release series, but as it is used
-for ongoing development expect it to have some volatility. We recommend using
-the latest stable release tag for production development.
+We recommend using the latest stable release tag for production development.
 
-The `4.x` branch is a stable branch for the older 4.x release series. It is no
-longer under active development, but is a supported branch that continues to
-get back-ported bug fixes.
+The `main` branch is an active development branch for the compressor. It is
+currently a development branch for the new 6.x major release series, and
+subject to breaking API changes.
 
-Older releases are no longer available as a release branch, but any official
-releases are still available via their git tag. We recommend that developers
-using an older version migrate to the latest 5.x series stable release tag.
+The `5.x` and `4.x` branches are stable support branches for older release
+series. They are no longer under active development, but continue to get bug
+fixes and security updates.
+
+Older major release series no longer have dedicated branches, but all releases remain available via Git tags.
 
 Any other branches you might find are development branches for new features or
-optimizations, so might be interesting to play with but should be considered
-transient and unstable.
+optimizations. They are transient and could be unstable.
 
 # Getting started
 
