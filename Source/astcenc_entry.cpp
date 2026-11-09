@@ -847,16 +847,17 @@ astcenc_error astcenc_context_alloc(
 	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
 		// Turn a dB limit into a per-texel error for faster use later
-		if (parent_context)
+		if (!parent_context)
 		{
-		}
-		else if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
-		{
-			ctx->config.tune_db_limit = astc::pow(0.1f, ctx->config.tune_db_limit * 0.1f) * 65535.0f * 65535.0f;
-		}
-		else
-		{
-			ctx->config.tune_db_limit = 0.0f;
+			if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
+			{
+				ctx->config.tune_db_limit = astc::pow(0.1f, ctx->config.tune_db_limit * 0.1f)
+				                          * 65535.0f * 65535.0f;
+			}
+			else
+			{
+				ctx->config.tune_db_limit = 0.0f;
+			}
 		}
 
 		size_t worksize = sizeof(compression_working_buffers) * thread_count;
