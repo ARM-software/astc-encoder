@@ -400,13 +400,13 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 
-    elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512")
+    elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512|avx256")
         target_compile_definitions(${ASTCENC_TARGET_NAME}
             PRIVATE
                 ASTCENC_NEON=0
                 ASTCENC_SVE=0
                 ASTCENC_SSE=41
-                ASTCENC_AVX=3
+                ASTCENC_AVX=$<IF:$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>,3,4>
                 ASTCENC_X86_GATHERS=$<BOOL:${ASTCENC_X86_GATHERS}>
                 ASTCENC_POPCNT=1
                 ASTCENC_F16C=1)
@@ -414,15 +414,15 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
         if (${ASTCENC_VENEER_TYPE} GREATER 0)
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
+                    $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
                     $<${is_gnu_fe}:-msse2>
                     $<${is_gnu_fe}:-mno-sse4.1>
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         else()
             target_compile_options(${ASTCENC_TARGET_NAME}
                 PRIVATE
-                    $<${is_msvc_fe}:/arch:AVX512>
-                    $<${is_clangcl}:-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c>
-                    $<${is_gnu_fe}:-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c>
+                    $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
+                    -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c
                     $<${is_gnu_fe}:-Wno-unused-command-line-argument>)
         endif()
 

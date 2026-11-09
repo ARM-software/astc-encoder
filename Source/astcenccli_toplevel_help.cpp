@@ -561,8 +561,10 @@ QUICK REFERENCE
 /* See header for documentation. */
 void astcenc_print_header()
 {
-#if (ASTCENC_AVX >= 3)
+#if (ASTCENC_AVX >= 4)
 	const char* simdtype = "avx512+vbmi";
+#elif (ASTCENC_AVX == 3)
+	const char* simdtype = "avx256+vbmi";
 #elif (ASTCENC_AVX == 2)
 	const char* simdtype = "avx2";
 #elif (ASTCENC_SSE == 41)

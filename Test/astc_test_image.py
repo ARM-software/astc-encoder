@@ -385,15 +385,15 @@ def parse_command_line():
     test_encoders = [
         'none', 'native', 'universal',
         'neon', 'sve_256', 'sve_128',
-        'sse2', 'sse4.1', 'avx2', 'avx512'
+        'sse2', 'sse4.1', 'avx2', 'avx256', 'avx512'
     ]
 
     test_encoders_arm64 = [
         'neon', 'sve_256', 'sve_128'
     ]
 
-    # Keep AVX-512 opt-in (--encoder avx512) so CI can probe host support
-    # before running the AVX-512 tests explicitly
+    # Keep AVX-512 variants opt-in so CI can probe host support before running
+    # the AVX-512 tests explicitly
     test_encoders_x86 = [
         'sse2', 'sse4.1', 'avx2'
     ]

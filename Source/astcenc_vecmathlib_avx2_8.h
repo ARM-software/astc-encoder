@@ -19,7 +19,7 @@
  * @brief 8x32-bit vectors, implemented using AVX2.
  *
  * This module implements 8-wide 32-bit float, int, and mask vectors for x86
- * AVX2.
+ * AVX2, optionally enhanced with 256-bit AVX-512 instructions for AVX256 builds.
  *
  * There is a baseline level of functionality provided by all vector widths and
  * implementations. This is implemented using identical function signatures,
@@ -649,6 +649,9 @@ ASTCENC_SIMD_INLINE void store_nbytes(vint8 a, uint8_t* p)
  */
 ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 {
+#if ASTCENC_AVX >= 3
+	_mm256_mask_cvtepi32_storeu_epi8(p, 0xFF, v.m);
+#else
 	__m256i shuf = _mm256_set_epi8(0, 0, 0, 0,  0,  0,  0,  0,
 	                               0, 0, 0, 0, 28, 24, 20, 16,
 	                               0, 0, 0, 0,  0,  0,  0,  0,
@@ -661,6 +664,7 @@ ASTCENC_SIMD_INLINE void pack_and_store_low_bytes(vint8 v, uint8_t* p)
 	__m256i r = astcenc_mm256_set_m128i(b, b);
 
 	store_nbytes(vint8(r), p);
+#endif
 }
 
 /**
@@ -1089,29 +1093,34 @@ ASTCENC_SIMD_INLINE vfloat8 int_as_float(vint8 a)
 	return vfloat8(_mm256_castsi256_ps(a.m));
 }
 
-/*
- * Table structure for a 16x 8-bit entry table.
- */
+/** @brief Prepared lookup table for 16x 8-bit entries. */
 struct vtable8_16x8 {
+	/** @brief The table entries, replicated in each 128-bit half. */
 	vint8 t0;
 };
 
-/*
- * Table structure for a 32x 8-bit entry table.
- */
+/** @brief Prepared lookup table for 32x 8-bit entries. */
 struct vtable8_32x8 {
+	/** @brief The table entries, or the replicated first 16 entries for AVX2. */
 	vint8 t0;
+#if ASTCENC_AVX < 3
+	/** @brief The second 16 entries, XOR-chained with the first. */
 	vint8 t1;
+#endif
 };
 
-/*
- * Table structure for a 64x 8-bit entry table.
- */
+/** @brief Prepared lookup table for 64x 8-bit entries. */
 struct vtable8_64x8 {
+	/** @brief The first 32 entries, or replicated first 16 entries for AVX2. */
 	vint8 t0;
+	/** @brief The second 32 entries, or the second XOR-chained AVX2 row. */
 	vint8 t1;
+#if ASTCENC_AVX < 3
+	/** @brief The third XOR-chained AVX2 row. */
 	vint8 t2;
+	/** @brief The fourth XOR-chained AVX2 row. */
 	vint8 t3;
+#endif
 };
 
 /**
@@ -1140,6 +1149,10 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_32x8& table,
 	const uint8_t* data
 ) {
+#if ASTCENC_AVX >= 3
+	// VBMI permutes can index across the full 256-bit register
+	table.t0 = vint8::load(data);
+#else
 	// AVX2 tables duplicate table entries in each 128-bit half-register
 	vint4 d0 = vint4::load(data);
 	vint4 d1 = vint4::load(data + 16);
@@ -1149,6 +1162,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 
 	// XOR chain the high rows to allow table emulation
 	table.t1 = table.t1 ^ table.t0;
+#endif
 }
 
 /**
@@ -1161,6 +1175,11 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	vtable8_64x8& table,
 	const uint8_t* data
 ) {
+#if ASTCENC_AVX >= 3
+	// Two full-width registers hold all 64 table entries
+	table.t0 = vint8::load(data);
+	table.t1 = vint8::load(data + 32);
+#else
 	// AVX2 tables duplicate table entries in each 128-bit half-register
 	vint4 d0 = vint4::load(data);
 	vint4 d1 = vint4::load(data + 16);
@@ -1176,6 +1195,7 @@ ASTCENC_SIMD_INLINE void vtable_prepare(
 	table.t3 = table.t3 ^ table.t2;
 	table.t2 = table.t2 ^ table.t1;
 	table.t1 = table.t1 ^ table.t0;
+#endif
 }
 
 /**
@@ -1205,6 +1225,10 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_32x8& tbl,
 	vint8 idx
 ) {
+#if ASTCENC_AVX >= 3
+	// Select one byte per dword and zero the three unused result bytes
+	return vint8(_mm256_maskz_permutexvar_epi8(0x11111111, idx.m, tbl.t0.m));
+#else
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
@@ -1214,6 +1238,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	__m256i result2 = _mm256_shuffle_epi8(tbl.t1.m, idxx);
 	result = _mm256_xor_si256(result, result2);
 	return vint8(result);
+#endif
 }
 
 /**
@@ -1226,6 +1251,10 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	const vtable8_64x8& tbl,
 	vint8 idx
 ) {
+#if ASTCENC_AVX >= 3
+	// Index bit 5 selects between the two 32-byte table registers
+	return vint8(_mm256_maskz_permutex2var_epi8(0x11111111, tbl.t0.m, idx.m, tbl.t1.m));
+#else
 	// Set index byte MSB to 1 for unused bytes so shuffle returns zero
 	__m256i idxx = _mm256_or_si256(idx.m, _mm256_set1_epi32(static_cast<int>(0xFFFFFF00)));
 
@@ -1244,6 +1273,7 @@ ASTCENC_SIMD_INLINE vint8 vtable_lookup_32bit(
 	result = _mm256_xor_si256(result, result2);
 
 	return vint8(result);
+#endif
 }
 
 /**

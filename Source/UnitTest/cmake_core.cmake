@@ -174,20 +174,20 @@ elseif(${ASTCENC_ISA_SIMD} MATCHES "sse4.1")
         PRIVATE
             $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-msse4.1 -mpopcnt>)
 
-elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512")
+elseif(${ASTCENC_ISA_SIMD} MATCHES "avx512|avx256")
     target_compile_definitions(${ASTCENC_TEST}
         PRIVATE
             ASTCENC_NEON=0
             ASTCENC_SVE=0
             ASTCENC_SSE=41
-            ASTCENC_AVX=3
+            ASTCENC_AVX=$<IF:$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>,3,4>
             ASTCENC_POPCNT=1
             ASTCENC_F16C=1)
 
     target_compile_options(${ASTCENC_TEST}
         PRIVATE
-            $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c>
-            $<$<CXX_COMPILER_ID:MSVC>:/arch:AVX512>)
+            $<$<STREQUAL:${ASTCENC_ISA_SIMD},avx256>:-mprefer-vector-width=256>
+            -mavx512f -mavx512bw -mavx512dq -mavx512vl -mavx512vbmi -mpopcnt -mf16c)
 
 elseif(${ASTCENC_ISA_SIMD} MATCHES "avx2")
     target_compile_definitions(${ASTCENC_TEST}

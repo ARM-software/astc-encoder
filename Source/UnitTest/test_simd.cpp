@@ -3716,19 +3716,22 @@ TEST(SuiteVint8, store_lanes_masked_unaligned)
 /** @brief Test vint8 pack_and_store_low_bytes. */
 TEST(SuiteVint8, pack_and_store_low_bytes)
 {
-	vint8 a = vint8_lit(1, 2, 3, 4, 2, 3, 4, 5);
-	uint8_t bytes[8] { 0 };
+	vint8 a = vint8_lit(0x12345678, -0x1, 0x100, -0x100, 0x7F, 0x80, 0xFF, 0x00);
+	uint8_t bytes[10] { 0xA5 };
+	bytes[9] = 0xA5;
 
-	pack_and_store_low_bytes(a, bytes);
+	pack_and_store_low_bytes(a, bytes + 1);
 
-	EXPECT_EQ(bytes[0], 1);
-	EXPECT_EQ(bytes[1], 2);
-	EXPECT_EQ(bytes[2], 3);
-	EXPECT_EQ(bytes[3], 4);
-	EXPECT_EQ(bytes[4], 2);
-	EXPECT_EQ(bytes[5], 3);
-	EXPECT_EQ(bytes[6], 4);
-	EXPECT_EQ(bytes[7], 5);
+	EXPECT_EQ(bytes[0], 0xA5);
+	EXPECT_EQ(bytes[1], 0x78);
+	EXPECT_EQ(bytes[2], 0xFF);
+	EXPECT_EQ(bytes[3], 0x00);
+	EXPECT_EQ(bytes[4], 0x00);
+	EXPECT_EQ(bytes[5], 0x7F);
+	EXPECT_EQ(bytes[6], 0x80);
+	EXPECT_EQ(bytes[7], 0xFF);
+	EXPECT_EQ(bytes[8], 0x00);
+	EXPECT_EQ(bytes[9], 0xA5);
 }
 
 /** @brief Test vint8 select. */
@@ -3935,6 +3938,40 @@ TEST(SuiteVint8, vtable8_64x8)
 	EXPECT_EQ(ra[7], 63);
 }
 
+/** @brief Test every byte-table index in every lane, including unsigned bytes. */
+TEST(SuiteVint8, vtable8_all_indices)
+{
+	uint8_t data[64];
+	for (int i = 0; i < 64; i++)
+	{
+		data[i] = static_cast<uint8_t>(255 - 3 * i);
+	}
+
+	vtable8_16x8 table16;
+	vtable8_32x8 table32;
+	vtable8_64x8 table64;
+	vtable_prepare(table16, data);
+	vtable_prepare(table32, data);
+	vtable_prepare(table64, data);
+
+	for (int i = 0; i < 64; i++)
+	{
+		vint8 index = vint8::lane_id() + vint8(i);
+		int result16[8];
+		int result32[8];
+		int result64[8];
+		store(vtable_lookup_32bit(table16, index & vint8(15)), result16);
+		store(vtable_lookup_32bit(table32, index & vint8(31)), result32);
+		store(vtable_lookup_32bit(table64, index & vint8(63)), result64);
+
+		for (int lane = 0; lane < 8; lane++)
+		{
+			EXPECT_EQ(result16[lane], data[(i + lane) & 15]);
+			EXPECT_EQ(result32[lane], data[(i + lane) & 31]);
+			EXPECT_EQ(result64[lane], data[(i + lane) & 63]);
+		}
+	}
+}
 #endif
 
 #if ASTCENC_SIMD_WIDTH == 16
