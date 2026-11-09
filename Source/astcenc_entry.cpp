@@ -831,7 +831,8 @@ astcenc_error astcenc_context_alloc(
 	// Do setup only needed by compression
 	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY))
 	{
-		// Turn a dB limit into a per-texel error for faster use later
+		// Turn a dB limit into a per-texel error for faster use later, but not if copying from a
+		// parent context which has already done it
 		if (!parent_context)
 		{
 			if ((ctx->config.profile == ASTCENC_PRF_LDR) || (ctx->config.profile == ASTCENC_PRF_LDR_SRGB))
