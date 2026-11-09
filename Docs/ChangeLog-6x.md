@@ -22,6 +22,10 @@ compatibility with the 5.x library API are also planned.
     full AVX-512 operating on 512-bit vectors. Note that full AVX-512
     performance can be slower than AVX2 for smaller block sizes.
 * **Codec library updates:**
+  * **Bug fix:** Remove data races when initializing configurations and
+    allocating contexts concurrently.
+  * **Bug fix:** Preserve the error threshold inherited by child contexts,
+    avoiding a second conversion from dB.
   * **Optimization:** Hoist loop invariant weight diff calculation out of the
     `compute_ideal_weights_for_decimation()` refinement loop.
   * **Optimization:** Precompute an infilled weight set for the realign loop

@@ -69,6 +69,7 @@ ASTCENC_ALIGNAS static float cos_table[SINCOS_STEPS][ANGULAR_STEPS];
 	static bool print_once { true };
 #endif
 
+/** @brief Initialize the angular alignment lookup tables. */
 static void fill_angular_tables()
 {
 	for (unsigned int i = 0; i < ANGULAR_STEPS; i++)
