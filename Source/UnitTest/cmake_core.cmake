@@ -21,10 +21,6 @@ set(ASTCENC_TEST test-unit-${ASTCENC_ISA_SIMD})
 
 add_executable(${ASTCENC_TEST})
 
-set_property(TARGET ${ASTCENC_TEST}
-    PROPERTY
-        CXX_STANDARD 17)
-
 # Enable LTO under the conditions where the codec library will use LTO.
 # The library link will fail if the settings don't match
 if(${ASTCENC_CLI})

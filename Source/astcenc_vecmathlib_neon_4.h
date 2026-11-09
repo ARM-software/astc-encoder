@@ -1398,18 +1398,4 @@ ASTCENC_SIMD_INLINE void store_lanes_masked(uint8_t* base, vint4 data, vmask4 ma
 	}
 }
 
-#define ASTCENC_USE_NATIVE_POPCOUNT 1
-
-/**
- * @brief Population bit count.
- *
- * @param v   The value to population count.
- *
- * @return The number of 1 bits.
- */
-ASTCENC_SIMD_INLINE int popcount(uint64_t v)
-{
-	return static_cast<int>(vaddlv_u8(vcnt_u8(vcreate_u8(v))));
-}
-
 #endif  // #ifndef ASTC_VECMATHLIB_NEON_4_H_INCLUDED

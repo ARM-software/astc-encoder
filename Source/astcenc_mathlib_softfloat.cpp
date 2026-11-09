@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // ----------------------------------------------------------------------------
-// Copyright 2011-2021,2025 Arm Limited
+// Copyright 2011-2026 Arm Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy
@@ -32,18 +32,6 @@ typedef uint32_t sf32;
 /******************************************
   helper functions
  ******************************************/
-
-/* Idiomatic count-leading zeros, generates native instruction on modern compilers. */
-static uint32_t clz32(uint32_t inp)
-{
-    uint32_t count = 32;
-    while (inp)
-    {
-        inp >>= 1;
-        count--;
-    }
-    return count;
-}
 
 /* the five rounding modes that IEEE-754r defines */
 typedef enum
@@ -135,7 +123,7 @@ static sf32 sf16_to_sf32(sf16 inp)
 	/* Denormal cases */
 	uint32_t sign = (inpx & 0x8000) << 16;
 	uint32_t mskval = inpx & 0x7FFF;
-	uint32_t leadingzeroes = clz32(mskval);
+	uint32_t leadingzeroes = static_cast<uint32_t>(std::countl_zero(mskval));
 	mskval <<= leadingzeroes;
 	return (mskval >> 8) + ((0x85 - leadingzeroes) << 23) + sign;
 }
@@ -345,13 +333,13 @@ static sf16 sf32_to_sf16(sf32 inp, roundmode rmode)
 /* convert from soft-float to native-float */
 float sf16_to_float(uint16_t p)
 {
-	return astc::uint_as_float(sf16_to_sf32(p));
+	return std::bit_cast<float>(sf16_to_sf32(p));
 }
 
 /* convert from native-float to soft-float */
 uint16_t float_to_sf16(float p)
 {
-	unsigned int ip = astc::float_as_uint(p);
+	unsigned int ip = std::bit_cast<unsigned int>(p);
 	return sf32_to_sf16(ip, SF_NEARESTEVEN);
 }
 

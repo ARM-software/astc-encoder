@@ -112,10 +112,6 @@ endif()
 
 macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
 
-    target_compile_features(${ASTCENC_TARGET_NAME}
-        PRIVATE
-            cxx_std_14)
-
     target_compile_definitions(${ASTCENC_TARGET_NAME}
         PRIVATE
             $<${is_msvc_fe}:_CRT_SECURE_NO_WARNINGS>)

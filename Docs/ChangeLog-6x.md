@@ -15,12 +15,17 @@ The 6.0.0 release is a major release, adding support for two flavors of AVX-512
 and making significant performance optimizations. Changes that break
 compatibility with the 5.x library API are also planned.
 
-* **General updates:**
+* **Major feature updates:**
   * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
     command line tool variants. Implementation provides "AVX-256", which uses
     an enhanced version of the AVX2 backend operating on 256-bit vectors, and
     full AVX-512 operating on 512-bit vectors. Note that full AVX-512
     performance can be slower than AVX2 for smaller block sizes.
+  * **Change:** Require C++20 to build the codec, replacing local library
+    functions with new standard library operations where possible.
+  * **Change:** Minimum supported compiler versions increased to Clang 18, GCC
+    13, and Visual Studio 2022. Minimum supported CMake version increased to
+    3.21.
 * **Codec library updates:**
   * **Bug fix:** Remove data races when initializing configurations and
     allocating contexts concurrently.
