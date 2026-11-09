@@ -13,6 +13,11 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 The 5.7.2 release is a minor maintenance release.
 
+* **Codec library updates:**
+  * **Bug fix:** Remove data races when initializing configurations and
+    allocating contexts concurrently.
+  * **Bug fix:** Preserve the error threshold inherited by child contexts,
+    avoiding a second conversion from dB.
 * **Build system updates:**
   * **Bug fix:** Restore Clang compression performance by disabling unintended
     floating-point trapping, retaining precise arithmetic and the configured
