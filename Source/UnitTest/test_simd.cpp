@@ -27,6 +27,7 @@
 
 #include <cstring>
 #include <limits>
+#include <memory>
 
 #include "gtest/gtest.h"
 
@@ -89,6 +90,127 @@ static vint8 vint8_lit(
 }
 
 #endif
+
+/** @brief Pack four-lane float groups in order at every VLA width. */
+TEST(SuiteVfloat, pack_quads)
+{
+	vfloat4 groups[ASTCENC_SIMD_WIDTH / 4];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	{
+		float base = static_cast<float>(c * 4);
+		groups[c] = vfloat4(base, base + 1, base + 2, base + 3);
+	}
+
+	ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
+	storea(pack_quads(groups), result);
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		EXPECT_EQ(result[i], static_cast<float>(i));
+	}
+}
+
+/** @brief Store only lane zero of each quad without overwriting adjacent floats. */
+TEST(SuiteVfloat, store_lane0_quads)
+{
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		values[i] = static_cast<float>(i) + 0.5f;
+	}
+
+	constexpr unsigned int count = ASTCENC_SIMD_WIDTH / 4;
+	constexpr float sentinel = -1.0f;
+	ASTCENC_ALIGNAS float result[count + 2];
+	for (float& value : result)
+	{
+		value = sentinel;
+	}
+
+	store_lane0_quads(vfloat::loada(values), result + 1);
+	EXPECT_EQ(result[0], sentinel);
+	for (unsigned int c = 0; c < count; c++)
+	{
+		float expected = values[c * 4];
+		EXPECT_EQ(result[c + 1], expected);
+	}
+
+	EXPECT_EQ(result[count + 1], sentinel);
+}
+
+/** @brief Pack four-lane integer groups in order at every VLA width. */
+TEST(SuiteVint, pack_quads)
+{
+	vint4 groups[ASTCENC_SIMD_WIDTH / 4];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	{
+		int base = static_cast<int>(c * 4) - 8;
+		groups[c] = vint4(base, base + 1, base + 2, base + 3);
+	}
+
+	ASTCENC_ALIGNAS int result[ASTCENC_SIMD_WIDTH];
+	storea(pack_quads(groups), result);
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		EXPECT_EQ(result[i], static_cast<int>(i) - 8);
+	}
+}
+
+/** @brief Swizzles and broadcasts retain four-lane group boundaries. */
+TEST(SuiteVfloat, swizzle_quads)
+{
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		values[i] = static_cast<float>(i);
+	}
+
+	vfloat a = vfloat::loada(values);
+	vfloat outputs[] {
+		swizzle_quads<0, 1, 2, 3>(a), swizzle_quads<2, 0, 3, 1>(a),
+		swizzle_quads<0, 0, 0, 0>(a), swizzle_quads<1, 1, 1, 1>(a),
+		swizzle_quads<2, 2, 2, 2>(a), swizzle_quads<3, 3, 3, 3>(a)
+	};
+	unsigned int indices[][4] {
+		{ 0, 1, 2, 3 }, { 2, 0, 3, 1 },
+		{ 0, 0, 0, 0 }, { 1, 1, 1, 1 },
+		{ 2, 2, 2, 2 }, { 3, 3, 3, 3 }
+	};
+	for (unsigned int test = 0; test < 6; test++)
+	{
+		ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
+		storea(outputs[test], result);
+		for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+		{
+			EXPECT_EQ(result[i], values[(i & ~3u) + indices[test][i & 3u]]);
+		}
+	}
+}
+
+/** @brief Group reductions retain boundaries and four-wide reduction order. */
+TEST(SuiteVfloat, group_reductions)
+{
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	for (unsigned int i = 0; i < ASTCENC_SIMD_WIDTH; i++)
+	{
+		values[i] = static_cast<float>(i) - 7.5f;
+	}
+	vfloat a = vfloat::loada(values);
+	vfloat reduced[] { sum_quads(a), sum_rgb_quads(a), min_quads(a), max_quads(a) };
+	for (unsigned int test = 0; test < 4; test++)
+	{
+		ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
+		storea(reduced[test], result);
+		for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+		{
+			vfloat4 group = vfloat4::loada(values + c * 4);
+			float expected[] { hadd_s(group), hadd_rgb_s(group), hmin_s(group), hmax_s(group) };
+			for (unsigned int lane = 0; lane < 4; lane++)
+			{
+				EXPECT_EQ(result[c * 4 + lane], expected[test]);
+			}
+		}
+	}
+}
 
 #if ASTCENC_SIMD_WIDTH == 16
 /**

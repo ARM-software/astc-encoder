@@ -294,6 +294,69 @@ struct vmask8
 };
 
 // ============================================================================
+// Quad operations (four consecutive lanes)
+// ============================================================================
+
+#define ASTCENC_HAS_NATIVE_QUAD_OPS
+
+/**
+ * @brief Store lane zero from each quad as two consecutive floats.
+ *
+ * @param      a   The input vector.
+ * @param[out] p   The unaligned output array of two floats.
+ */
+ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat8 a, float* p)
+{
+	__m256 compacted = _mm256_permutevar8x32_ps(a.m, _mm256_setr_epi32(0, 4, 0, 4, 0, 4, 0, 4));
+	__m128i lo = _mm_castps_si128(_mm256_castps256_ps128(compacted));
+	_mm_storel_epi64(reinterpret_cast<__m128i*>(p), lo);
+}
+
+/**
+ * @brief Pack two four-lane float vectors into one eight-lane vector.
+ *
+ * @param groups   The two source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vfloat8 pack_quads(const vfloat4* groups)
+{
+	return vfloat8(_mm256_insertf128_ps(_mm256_castps128_ps256(groups[0].m), groups[1].m, 1));
+}
+
+/**
+ * @brief Pack two four-lane integer vectors into one eight-lane vector.
+ *
+ * @param groups   The two source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vint8 pack_quads(const vint4* groups)
+{
+	return vint8(_mm256_insertf128_si256(_mm256_castsi128_si256(groups[0].m), groups[1].m, 1));
+}
+
+/**
+ * @brief Apply the same swizzle independently within each quad of four lanes.
+ *
+ * @tparam l0   The source lane for output lane 0 in each group.
+ * @tparam l1   The source lane for output lane 1 in each group.
+ * @tparam l2   The source lane for output lane 2 in each group.
+ * @tparam l3   The source lane for output lane 3 in each group.
+ *
+ * @param a   The input vector.
+ *
+ * @return The vector with lanes swizzled within each quad.
+ */
+template <int l0, int l1, int l2, int l3>
+ASTCENC_SIMD_INLINE vfloat8 swizzle_quads(vfloat8 a)
+{
+	static_assert(l0 >= 0 && l0 < 4 && l1 >= 0 && l1 < 4 &&
+	              l2 >= 0 && l2 < 4 && l3 >= 0 && l3 < 4, "Invalid four-lane swizzle");
+	return vfloat8(_mm256_permute_ps(a.m, _MM_SHUFFLE(l3, l2, l1, l0)));
+}
+
+// ============================================================================
 // vmask8 operators and functions
 // ============================================================================
 

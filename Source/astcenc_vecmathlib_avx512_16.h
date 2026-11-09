@@ -278,6 +278,77 @@ struct vmask16
 };
 
 // ============================================================================
+// Quad operations (four consecutive lanes)
+// ============================================================================
+
+#define ASTCENC_HAS_NATIVE_QUAD_OPS
+
+/**
+ * @brief Store lane zero from each quad as four consecutive floats.
+ *
+ * @param      a   The input vector.
+ * @param[out] p   The unaligned output array of four floats.
+ */
+ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat16 a, float* p)
+{
+	__m512i indices = _mm512_setr_epi32(0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12, 0, 4, 8, 12);
+	__m512 compacted = _mm512_permutexvar_ps(indices, a.m);
+	_mm_storeu_ps(p, _mm512_castps512_ps128(compacted));
+}
+
+/**
+ * @brief Pack four four-lane float vectors into one sixteen-lane vector.
+ *
+ * @param groups   The four source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vfloat16 pack_quads(const vfloat4* groups)
+{
+	__m512 values = _mm512_castps128_ps512(groups[0].m);
+	values = _mm512_insertf32x4(values, groups[1].m, 1);
+	values = _mm512_insertf32x4(values, groups[2].m, 2);
+	values = _mm512_insertf32x4(values, groups[3].m, 3);
+	return vfloat16(values);
+}
+
+/**
+ * @brief Pack four four-lane integer vectors into one sixteen-lane vector.
+ *
+ * @param groups   The four source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vint16 pack_quads(const vint4* groups)
+{
+	__m512i values = _mm512_castsi128_si512(groups[0].m);
+	values = _mm512_inserti32x4(values, groups[1].m, 1);
+	values = _mm512_inserti32x4(values, groups[2].m, 2);
+	values = _mm512_inserti32x4(values, groups[3].m, 3);
+	return vint16(values);
+}
+
+/**
+ * @brief Apply the same swizzle independently within each quad of four lanes.
+ *
+ * @tparam l0   The source lane for output lane 0 in each group.
+ * @tparam l1   The source lane for output lane 1 in each group.
+ * @tparam l2   The source lane for output lane 2 in each group.
+ * @tparam l3   The source lane for output lane 3 in each group.
+ *
+ * @param a   The input vector.
+ *
+ * @return The vector with lanes swizzled within each quad.
+ */
+template <int l0, int l1, int l2, int l3>
+ASTCENC_SIMD_INLINE vfloat16 swizzle_quads(vfloat16 a)
+{
+	static_assert(l0 >= 0 && l0 < 4 && l1 >= 0 && l1 < 4 &&
+	              l2 >= 0 && l2 < 4 && l3 >= 0 && l3 < 4, "Invalid four-lane swizzle");
+	return vfloat16(_mm512_permute_ps(a.m, _MM_SHUFFLE(l3, l2, l1, l0)));
+}
+
+// ============================================================================
 // vmask16 operators and functions
 // ============================================================================
 

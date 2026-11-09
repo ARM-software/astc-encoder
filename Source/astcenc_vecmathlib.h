@@ -274,6 +274,199 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 #endif
 
+#if !defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+
+/**
+ * @brief Store lane zero from each quad as consecutive floats.
+ *
+ * @param      a   The input vector.
+ * @param[out] p   The unaligned output array of ASTCENC_SIMD_WIDTH / 4 floats.
+ */
+ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat a, float* p)
+{
+#if ASTCENC_SIMD_WIDTH == 4
+	p[0] = a.lane<0>();
+#else
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	storea(a, values);
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	{
+		p[c] = values[c * 4];
+	}
+#endif
+}
+
+/**
+ * @brief Pack consecutive four-lane float vectors into a VLA vector.
+ *
+ * A quad is four consecutive lanes. Quad c occupies lanes 4*c through 4*c+3.
+ * Four-wide backends return quad zero.
+ *
+ * @param groups   The ASTCENC_SIMD_WIDTH / 4 source groups.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vfloat pack_quads(const vfloat4* groups)
+{
+#if ASTCENC_SIMD_WIDTH == 4
+	return groups[0];
+#else
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	{
+		storea(groups[c], values + c * 4);
+	}
+	return vfloat::loada(values);
+#endif
+}
+
+/**
+ * @brief Pack consecutive four-lane integer vectors into a VLA vector.
+ *
+ * A quad is four consecutive lanes. Quad c occupies lanes 4*c through 4*c+3.
+ * Four-wide backends return quad zero.
+ *
+ * @param groups   The ASTCENC_SIMD_WIDTH / 4 source groups.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vint pack_quads(const vint4* groups)
+{
+#if ASTCENC_SIMD_WIDTH == 4
+	return groups[0];
+#else
+	ASTCENC_ALIGNAS int values[ASTCENC_SIMD_WIDTH];
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH / 4; c++)
+	{
+		storea(groups[c], values + c * 4);
+	}
+	return vint::loada(values);
+#endif
+}
+
+/**
+ * @brief Apply the same swizzle independently within each quad of four lanes.
+ *
+ * Indices are relative to each group; values never cross group boundaries.
+ *
+ * @tparam l0   The source lane for output lane 0 in each group.
+ * @tparam l1   The source lane for output lane 1 in each group.
+ * @tparam l2   The source lane for output lane 2 in each group.
+ * @tparam l3   The source lane for output lane 3 in each group.
+ *
+ * @param a   The input vector.
+ *
+ * @return The vector with lanes swizzled within each quad.
+ */
+template <int l0, int l1, int l2, int l3>
+ASTCENC_SIMD_INLINE vfloat swizzle_quads(vfloat a)
+{
+	static_assert(l0 >= 0 && l0 < 4 && l1 >= 0 && l1 < 4 &&
+	              l2 >= 0 && l2 < 4 && l3 >= 0 && l3 < 4, "Invalid four-lane swizzle");
+#if ASTCENC_SIMD_WIDTH == 4
+	return a.swz<l0, l1, l2, l3>();
+#else
+	ASTCENC_ALIGNAS float values[ASTCENC_SIMD_WIDTH];
+	ASTCENC_ALIGNAS float result[ASTCENC_SIMD_WIDTH];
+	storea(a, values);
+	for (unsigned int c = 0; c < ASTCENC_SIMD_WIDTH; c += 4)
+	{
+		result[c] = values[c + l0];
+		result[c + 1] = values[c + l1];
+		result[c + 2] = values[c + l2];
+		result[c + 3] = values[c + l3];
+	}
+	return vfloat::loada(result);
+#endif
+}
+#endif
+
+/**
+ * @brief Sum each quad independently, replicating the result within its four lanes.
+ *
+ * The reduction order matches hadd_s(vfloat4).
+ *
+ * @param a   The input vector.
+ *
+ * @return The sums replicated within their respective quads.
+ */
+ASTCENC_SIMD_INLINE vfloat sum_quads(vfloat a)
+{
+	vfloat pairs = a + swizzle_quads<2, 3, 0, 1>(a);
+	return pairs + swizzle_quads<1, 0, 3, 2>(pairs);
+}
+
+/**
+ * @brief Compute a four-lane dot product independently for each quad.
+ *
+ * Each result is replicated within its quad using the invariant four-lane reduction order.
+ *
+ * @param a   The first vector.
+ * @param b   The second vector.
+ *
+ * @return The dot products replicated within their respective quads.
+ */
+ASTCENC_SIMD_INLINE vfloat dot_quads(vfloat a, vfloat b)
+{
+	return sum_quads(a * b);
+}
+
+/**
+ * @brief Normalize each quad, returning @c safe for zero-length quads.
+ *
+ * @param a      The vector to normalize.
+ * @param safe   The fallback vector for zero-length quads.
+ *
+ * @return The normalized vectors or fallback vectors in each quad.
+ */
+ASTCENC_SIMD_INLINE vfloat normalize_safe_quads(vfloat a, vfloat safe)
+{
+	vfloat length = dot_quads(a, a);
+	vmask is_zero = length == vfloat::zero();
+	vfloat normalized = a / sqrt(length);
+	return select(normalized, safe, is_zero);
+}
+
+/**
+ * @brief Sum RGB lanes in each quad, replicating the result within its four lanes.
+ *
+ * The reduction order matches hadd_rgb_s(vfloat4).
+ *
+ * @param a   The input vector.
+ *
+ * @return The RGB sums replicated within their respective quads.
+ */
+ASTCENC_SIMD_INLINE vfloat sum_rgb_quads(vfloat a)
+{
+	return (swizzle_quads<0, 0, 0, 0>(a) + swizzle_quads<1, 1, 1, 1>(a)) + swizzle_quads<2, 2, 2, 2>(a);
+}
+
+/**
+ * @brief Find the minimum in each quad, replicating the result within its four lanes.
+ *
+ * @param a   The input vector.
+ *
+ * @return The minima replicated within their respective quads.
+ */
+ASTCENC_SIMD_INLINE vfloat min_quads(vfloat a)
+{
+	vfloat pairs = min(a, swizzle_quads<2, 3, 0, 1>(a));
+	return min(pairs, swizzle_quads<1, 0, 3, 2>(pairs));
+}
+
+/**
+ * @brief Find the maximum in each quad, replicating the result within its four lanes.
+ *
+ * @param a   The input vector.
+ *
+ * @return The maxima replicated within their respective quads.
+ */
+ASTCENC_SIMD_INLINE vfloat max_quads(vfloat a)
+{
+	vfloat pairs = max(a, swizzle_quads<2, 3, 0, 1>(a));
+	return max(pairs, swizzle_quads<1, 0, 3, 2>(pairs));
+}
+
 #if !defined(ASTCENC_HAS_VGATHERF_TABLE)
 
 /**

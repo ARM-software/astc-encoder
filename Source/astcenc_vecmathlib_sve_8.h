@@ -275,6 +275,74 @@ struct vmask8
 };
 
 // ============================================================================
+// Quad operations (four consecutive lanes)
+// ============================================================================
+
+#define ASTCENC_HAS_NATIVE_QUAD_OPS
+
+/**
+ * @brief Store lane zero from each quad as two consecutive floats.
+ *
+ * @param      a   The input vector.
+ * @param[out] p   The unaligned output array of two floats.
+ */
+ASTCENC_SIMD_INLINE void store_lane0_quads(vfloat8 a, float* p)
+{
+	svfloat32_t compacted = svtbl_f32(a.m, svindex_u32(0, 4));
+	svst1_f32(svptrue_pat_b32(SV_VL2), p, compacted);
+}
+
+/**
+ * @brief Pack two four-lane float vectors into one eight-lane vector.
+ *
+ * @param groups   The two source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vfloat8 pack_quads(const vfloat4* groups)
+{
+	svfloat32_t lo = svset_neonq_f32(svundef_f32(), groups[0].m);
+	svfloat32_t hi = svset_neonq_f32(svundef_f32(), groups[1].m);
+	return vfloat8(svsplice_f32(svptrue_pat_b32(SV_VL4), lo, hi));
+}
+
+/**
+ * @brief Pack two four-lane integer vectors into one eight-lane vector.
+ *
+ * @param groups   The two source groups, in lane order.
+ *
+ * @return The packed vector with source groups in consecutive quads.
+ */
+ASTCENC_SIMD_INLINE vint8 pack_quads(const vint4* groups)
+{
+	svint32_t lo = svset_neonq_s32(svundef_s32(), groups[0].m);
+	svint32_t hi = svset_neonq_s32(svundef_s32(), groups[1].m);
+	return vint8(svsplice_s32(svptrue_pat_b32(SV_VL4), lo, hi));
+}
+
+/**
+ * @brief Apply the same swizzle independently within each quad of four lanes.
+ *
+ * @tparam l0   The source lane for output lane 0 in each group.
+ * @tparam l1   The source lane for output lane 1 in each group.
+ * @tparam l2   The source lane for output lane 2 in each group.
+ * @tparam l3   The source lane for output lane 3 in each group.
+ *
+ * @param a   The input vector.
+ *
+ * @return The vector with lanes swizzled within each quad.
+ */
+template <int l0, int l1, int l2, int l3>
+ASTCENC_SIMD_INLINE vfloat8 swizzle_quads(vfloat8 a)
+{
+	static_assert(l0 >= 0 && l0 < 4 && l1 >= 0 && l1 < 4 &&
+	              l2 >= 0 && l2 < 4 && l3 >= 0 && l3 < 4, "Invalid four-lane swizzle");
+	svuint32_t groups = svand_n_u32_x(svptrue_b32(), svindex_u32(0, 1), ~3u);
+	svuint32_t lanes = svdupq_n_u32(l0, l1, l2, l3);
+	return vfloat8(svtbl_f32(a.m, svorr_u32_x(svptrue_b32(), groups, lanes)));
+}
+
+// ============================================================================
 // vmask8 operators and functions
 // ============================================================================
 

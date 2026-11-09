@@ -249,6 +249,7 @@ void load_image_block(
 				blk.data_g[idx] = datav.lane<1>();
 				blk.data_b[idx] = datav.lane<2>();
 				blk.data_a[idx] = datav.lane<3>();
+				blk.data_rgba[idx] = datav;
 
 				blk.rgb_lns[idx] = rgb_lns;
 				blk.alpha_lns[idx] = a_lns;
@@ -328,6 +329,7 @@ void load_image_block_fast_ldr(
 			blk.data_g[idx] = datav.lane<1>();
 			blk.data_b[idx] = datav.lane<2>();
 			blk.data_a[idx] = datav.lane<3>();
+			blk.data_rgba[idx] = datav;
 
 			idx++;
 		}
