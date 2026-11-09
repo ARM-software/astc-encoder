@@ -3,14 +3,19 @@
 This page provides instructions for building `astcenc` from the sources in
 this repository.
 
-Builds must use CMake 3.15 or higher as the build system generator. The
-examples on this page show how to use it to generate build systems for NMake
-(Windows) and Make (Linux and macOS), but CMake supports other build system
-backends.
+Building the codec requires a C++20 compiler and standard library. We recommend
+Clang 18, GCC 13, and Visual Studio 2022, or newer. For Visual Studio, the
+LLVM-based ClangCL toolset gives the best codec performance.
+
+Builds require CMake 3.21 or newer as the build system generator. The
+examples on this page show how to use it to generate build systems for Visual
+Studio (Windows), NMake (Windows), and Make (Linux and macOS), but other
+backends are available.
 
 ## Windows
 
-Builds for Windows are tested with CMake 3.17, and Visual Studio 2019 or newer.
+The examples below use CMake to generate a Visual Studio solution or NMake
+makefiles.
 
 ### Configuring the build
 
@@ -26,7 +31,7 @@ cd build
 # Configure your build of choice, for example:
 
 # x86-64 using a Visual Studio solution
-cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
+cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
     -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # x86-64 using NMake
@@ -38,10 +43,6 @@ A single CMake configure can build multiple binaries for a single target CPU
 architecture, for example building x64 for both SSE2 and AVX2. Each binary name
 will include the build variant as a postfix. It is possible to build any set of
 the supported SIMD variants by enabling only the ones you require.
-
-Using the Visual Studio Clang-CL LLVM toolchain (`-T ClangCL`) is optional but
-produces significantly faster binaries than the default toolchain. The C++ LLVM
-toolchain component must be installed via the Visual Studio installer.
 
 ### Building
 
@@ -56,8 +57,7 @@ nmake install
 
 ## macOS and Linux using Make
 
-Builds for macOS and Linux are tested with CMake 3.17, and clang++ 18.0 or
-newer.
+The examples below use CMake to generate Makefiles for macOS and Linux.
 
 > Compiling using g++ is supported, but clang++ builds are faster by ~15%.
 
@@ -68,7 +68,7 @@ in the root of the astcenc checkout, and then run `cmake` inside that directory
 to generate the build system.
 
 ```shell
-# Select your compiler (clang++ recommended, but g++ works)
+# Select your compiler
 export CXX=clang++
 
 # Create a build directory
@@ -116,8 +116,7 @@ make install -j16
 
 ## macOS using Xcode
 
-Builds for macOS and Linux are tested with CMake 3.17, and Xcode 14.0 or
-newer.
+The examples below use CMake to generate an Xcode project for macOS.
 
 ### Configuring the build
 
@@ -285,7 +284,7 @@ tool for Android. Once built the application can be pushed to, e.g.,
 
 ```shell
 ANDROID_ABI=arm64-v8a
-ANDROID_NDK=/work/tools/android/ndk/22.1.7171670
+ANDROID_NDK=/work/tools/android/ndk/27.2.12479018
 
 BUILD_TYPE=RelWithDebInfo
 

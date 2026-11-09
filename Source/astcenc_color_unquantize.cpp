@@ -41,10 +41,7 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
 }
 
 /**
- * @brief Signed left shift that allows all bits to be shifted out.
- *
- * Doing this directly on a 32-bit signed type results in undefined behavior
- * for many possible shifts although works in practice for most compilers.
+ * @brief Shift an encoded endpoint using its unsigned bit representation.
  *
  * @param val     The original value.
  * @param shift   The left shift amount.
@@ -53,9 +50,9 @@ static ASTCENC_SIMD_INLINE vint4 uncontract_color(
  */
 static ASTCENC_SIMD_INLINE int safe_signed_lsh(int val, int shift)
 {
-	unsigned int uval = astc::int_as_uint(val);
+	unsigned int uval = std::bit_cast<unsigned int>(val);
 	uval <<= shift;
-	return astc::uint_as_int(uval);
+	return std::bit_cast<int>(uval);
 }
 
 void rgba_delta_unpack(

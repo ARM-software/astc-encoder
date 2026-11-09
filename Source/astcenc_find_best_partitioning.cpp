@@ -46,6 +46,7 @@
  * lines for endpoint selection.
  */
 
+#include <bit>
 #include <limits>
 #include "astcenc_internal.h"
 
@@ -277,8 +278,8 @@ static inline uint8_t partition_mismatch2(
 	const uint64_t a[2],
 	const uint64_t b[2]
 ) {
-	int v1 = popcount(a[0] ^ b[0]) + popcount(a[1] ^ b[1]);
-	int v2 = popcount(a[0] ^ b[1]) + popcount(a[1] ^ b[0]);
+	int v1 = std::popcount(a[0] ^ b[0]) + std::popcount(a[1] ^ b[1]);
+	int v2 = std::popcount(a[0] ^ b[1]) + std::popcount(a[1] ^ b[0]);
 
 	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
 	// position, and again when present in the wrong partition
@@ -297,17 +298,17 @@ static inline uint8_t partition_mismatch3(
 	const uint64_t a[3],
 	const uint64_t b[3]
 ) {
-	int p00 = popcount(a[0] ^ b[0]);
-	int p01 = popcount(a[0] ^ b[1]);
-	int p02 = popcount(a[0] ^ b[2]);
+	int p00 = std::popcount(a[0] ^ b[0]);
+	int p01 = std::popcount(a[0] ^ b[1]);
+	int p02 = std::popcount(a[0] ^ b[2]);
 
-	int p10 = popcount(a[1] ^ b[0]);
-	int p11 = popcount(a[1] ^ b[1]);
-	int p12 = popcount(a[1] ^ b[2]);
+	int p10 = std::popcount(a[1] ^ b[0]);
+	int p11 = std::popcount(a[1] ^ b[1]);
+	int p12 = std::popcount(a[1] ^ b[2]);
 
-	int p20 = popcount(a[2] ^ b[0]);
-	int p21 = popcount(a[2] ^ b[1]);
-	int p22 = popcount(a[2] ^ b[2]);
+	int p20 = std::popcount(a[2] ^ b[0]);
+	int p21 = std::popcount(a[2] ^ b[1]);
+	int p22 = std::popcount(a[2] ^ b[2]);
 
 	int s0 = p11 + p22;
 	int s1 = p12 + p21;
@@ -338,25 +339,25 @@ static inline uint8_t partition_mismatch4(
 	const uint64_t a[4],
 	const uint64_t b[4]
 ) {
-	int p00 = popcount(a[0] ^ b[0]);
-	int p01 = popcount(a[0] ^ b[1]);
-	int p02 = popcount(a[0] ^ b[2]);
-	int p03 = popcount(a[0] ^ b[3]);
+	int p00 = std::popcount(a[0] ^ b[0]);
+	int p01 = std::popcount(a[0] ^ b[1]);
+	int p02 = std::popcount(a[0] ^ b[2]);
+	int p03 = std::popcount(a[0] ^ b[3]);
 
-	int p10 = popcount(a[1] ^ b[0]);
-	int p11 = popcount(a[1] ^ b[1]);
-	int p12 = popcount(a[1] ^ b[2]);
-	int p13 = popcount(a[1] ^ b[3]);
+	int p10 = std::popcount(a[1] ^ b[0]);
+	int p11 = std::popcount(a[1] ^ b[1]);
+	int p12 = std::popcount(a[1] ^ b[2]);
+	int p13 = std::popcount(a[1] ^ b[3]);
 
-	int p20 = popcount(a[2] ^ b[0]);
-	int p21 = popcount(a[2] ^ b[1]);
-	int p22 = popcount(a[2] ^ b[2]);
-	int p23 = popcount(a[2] ^ b[3]);
+	int p20 = std::popcount(a[2] ^ b[0]);
+	int p21 = std::popcount(a[2] ^ b[1]);
+	int p22 = std::popcount(a[2] ^ b[2]);
+	int p23 = std::popcount(a[2] ^ b[3]);
 
-	int p30 = popcount(a[3] ^ b[0]);
-	int p31 = popcount(a[3] ^ b[1]);
-	int p32 = popcount(a[3] ^ b[2]);
-	int p33 = popcount(a[3] ^ b[3]);
+	int p30 = std::popcount(a[3] ^ b[0]);
+	int p31 = std::popcount(a[3] ^ b[1]);
+	int p32 = std::popcount(a[3] ^ b[2]);
+	int p33 = std::popcount(a[3] ^ b[3]);
 
 	int mx23 = astc::min(p22 + p33, p23 + p32);
 	int mx13 = astc::min(p21 + p33, p23 + p31);

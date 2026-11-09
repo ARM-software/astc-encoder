@@ -69,9 +69,9 @@ static float mpsnr_operator(
 	int fstop
 ) {
 	// Fast implementation of pow(2.0, fstop), assuming IEEE float layout
-	// Memcpy to uint avoids ubsan complaints shift of negative int
-	unsigned int uscale = 0x3f800000u + (astc::int_as_uint(fstop) << 23);
-	float scale = astc::uint_as_float(uscale);
+	// Use unsigned arithmetic to construct the exponent bit pattern
+	unsigned int uscale = 0x3f800000u + (std::bit_cast<unsigned int>(fstop) << 23);
+	float scale = std::bit_cast<float>(uscale);
 
 	val = powf(val * scale, (1.0f / 2.2f));
 	return astc::clamp(val * 255.0f, 0.0f, 255.0f);

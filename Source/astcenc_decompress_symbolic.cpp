@@ -178,7 +178,7 @@ void unpack_weights(
  */
 static float error_color_nan()
 {
-	return astc::uint_as_float(0xFFFFE000u);
+	return std::bit_cast<float>(0xFFFFE000u);
 }
 
 /* See header for documentation. */

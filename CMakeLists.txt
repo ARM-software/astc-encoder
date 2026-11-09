@@ -16,7 +16,7 @@
 #  ----------------------------------------------------------------------------
 
 # CMake configuration
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.21)
 cmake_policy(SET CMP0069 NEW)  # LTO support
 cmake_policy(SET CMP0091 NEW)  # MSVC runtime support
 
@@ -27,7 +27,7 @@ endif()
 
 project(astcencoder VERSION 6.0.0)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)

@@ -24,6 +24,7 @@
 #define ASTC_MATHLIB_H_INCLUDED
 
 #include <cassert>
+#include <bit>
 #include <cstdint>
 #include <cmath>
 #include <cstring>
@@ -367,96 +368,6 @@ static inline int flt2int_rd(float v)
 }
 
 /**
- * @brief SP float bit-interpreted as an integer.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline int float_as_int(float v)
-{
-	// Future: Can use std:bit_cast with C++20
-	int iv;
-	std::memcpy(&iv, &v, sizeof(float));
-	return iv;
-}
-
-/**
- * @brief Integer bit-interpreted as an SP float.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline float int_as_float(int v)
-{
-	// Future: Can use std:bit_cast with C++20
-	float fv;
-	std::memcpy(&fv, &v, sizeof(int));
-	return fv;
-}
-
-/**
- * @brief SP float bit-interpreted as an unsigned integer.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline unsigned int float_as_uint(float v)
-{
-	// Future: Can use std:bit_cast with C++20
-	unsigned int iv;
-	std::memcpy(&iv, &v, sizeof(float));
-	return iv;
-}
-
-/**
- * @brief Unsigned integer bit-interpreted as an SP float.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline float uint_as_float(unsigned int v)
-{
-	// Future: Can use std:bit_cast with C++20
-	float fv;
-	std::memcpy(&fv, &v, sizeof(unsigned int));
-	return fv;
-}
-
-/**
- * @brief Signed int bit-interpreted as an unsigned integer.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline unsigned int int_as_uint(int v)
-{
-	// Future: Can use std:bit_cast with C++20
-	unsigned int uv;
-	std::memcpy(&uv, &v, sizeof(int));
-	return uv;
-}
-
-/**
- * @brief Unsigned integer bit-interpreted as a signed integer.
- *
- * @param v   The value to bitcast.
- *
- * @return The converted value.
- */
-static inline int uint_as_int(unsigned int v)
-{
-	// Future: Can use std:bit_cast with C++20
-	int sv;
-	std::memcpy(&sv, &v, sizeof(unsigned int));
-	return sv;
-}
-
-/**
  * @brief Compute the reciprocal square root.
  *
  * @param v   The input value.
@@ -490,10 +401,10 @@ static inline float sqrt(float v)
  */
 static inline float frexp(float v, int* expo)
 {
-	unsigned int iv = astc::float_as_uint(v);
+	unsigned int iv = std::bit_cast<unsigned int>(v);
 	*expo = ((iv >> 23) & 0xFF) - 126;
 	iv = (iv & 0x807fffff) | 0x3f000000;
-	return astc::uint_as_float(iv);
+	return std::bit_cast<float>(iv);
 }
 
 /**
