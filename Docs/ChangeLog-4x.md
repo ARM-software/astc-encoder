@@ -7,6 +7,11 @@ All performance data on this page is measured on an Intel Core i5-9600K
 clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 
 <!-- ---------------------------------------------------------------------- -->
+## Long term support changes
+
+LTS maintenance patches will be reflected on the `4.x` branch, not here.
+
+<!-- ---------------------------------------------------------------------- -->
 ## 4.8.0
 
 **Status:** Released May 2024
