@@ -437,7 +437,7 @@ static void hdr_rgbo_unpack(
 		red |= bit5 << 10;
 	}
 
-	// expand to 12 bits.
+	// Expand to 12 bits
 	static const int shamts[6] { 1, 1, 2, 3, 4, 5 };
 	int shamt = shamts[mode];
 	red <<= shamt;
@@ -445,15 +445,14 @@ static void hdr_rgbo_unpack(
 	blue <<= shamt;
 	scale <<= shamt;
 
-	// on modes 0 to 4, the values stored for "green" and "blue" are differentials,
-	// not absolute values.
+	// For modes 0 to 4, the "green" and "blue" are differentials, not absolute values
 	if (mode != 5)
 	{
 		green = red - green;
 		blue = red - blue;
 	}
 
-	// switch around components.
+	// Undo the swap of red with the largest component
 	int temp;
 	switch (majcomp)
 	{
@@ -475,7 +474,7 @@ static void hdr_rgbo_unpack(
 	int green0 = green - scale;
 	int blue0 = blue - scale;
 
-	// clamp to [0,0xFFF].
+	// Clamp to [0,0xFFF]
 	red = astc::max(red, 0);
 	green = astc::max(green, 0);
 	blue = astc::max(blue, 0);
@@ -508,7 +507,7 @@ static void hdr_rgb_unpack(
 	int v4 = input[4];
 	int v5 = input[5];
 
-	// extract all the fixed-placement bitfields
+	// Extract all the fixed-placement bitfields
 	int modeval = ((v1 & 0x80) >> 7) | (((v2 & 0x80) >> 7) << 1) | (((v3 & 0x80) >> 7) << 2);
 
 	int majcomp = ((v4 & 0x80) >> 7) | (((v5 & 0x80) >> 7) << 1);
@@ -527,11 +526,11 @@ static void hdr_rgb_unpack(
 	int d0 = v4 & 0x7f;
 	int d1 = v5 & 0x7f;
 
-	// get hold of the number of bits in 'd0' and 'd1'
+	// Determine the number of bits in 'd0' and 'd1'
 	static const int dbits_tab[8] { 7, 6, 7, 6, 5, 6, 5, 6 };
 	int dbits = dbits_tab[modeval];
 
-	// extract six variable-placement bits
+	// Extract six variable-placement bits
 	int bit0 = (v2 >> 6) & 1;
 	int bit1 = (v3 >> 6) & 1;
 	int bit2 = (v4 >> 6) & 1;
@@ -539,8 +538,10 @@ static void hdr_rgb_unpack(
 	int bit4 = (v4 >> 5) & 1;
 	int bit5 = (v5 >> 5) & 1;
 
-	// and prepend the variable-placement bits depending on mode.
-	int ohmod = 1 << modeval;	// one-hot-mode
+	// Prepend the variable-placement bits depending on mode
+
+	// One-hot-mode
+	int ohmod = 1 << modeval;
 	if (ohmod & 0xA4)
 	{
 		a |= bit0 << 9;
@@ -610,8 +611,7 @@ static void hdr_rgb_unpack(
 		d1 |= bit3 << 6;
 	}
 
-	// sign-extend 'd0' and 'd1'
-	// note: this code assumes that signed right-shift actually sign-fills, not zero-fills.
+	// Sign-extend 'd0' and 'd1', assuing signed right-shift sign-fills
 	int32_t d0x = d0;
 	int32_t d1x = d1;
 	int sx_shamt = 32 - dbits;
@@ -624,7 +624,7 @@ static void hdr_rgb_unpack(
 	d0 = d0x;
 	d1 = d1x;
 
-	// expand all values to 12 bits, with left-shift as needed.
+	// Expand all values to 12 bits, with left-shift as needed
 	int val_shamt = (modeval >> 1) ^ 3;
 	a = safe_signed_lsh(a, val_shamt);
 	b0 = safe_signed_lsh(b0, val_shamt);
@@ -633,7 +633,7 @@ static void hdr_rgb_unpack(
 	d0 = safe_signed_lsh(d0, val_shamt);
 	d1 = safe_signed_lsh(d1, val_shamt);
 
-	// then compute the actual color values.
+	// Compute the actual color values
 	int red1 = a;
 	int green1 = a - b0;
 	int blue1 = a - b1;
@@ -641,7 +641,7 @@ static void hdr_rgb_unpack(
 	int green0 = a - b0 - c - d0;
 	int blue0 = a - b1 - c - d1;
 
-	// clamp the color components to [0,2^12 - 1]
+	// Clamp the color components to [0,2^12 - 1]
 	red0 = astc::clamp(red0, 0, 4095);
 	green0 = astc::clamp(green0, 0, 4095);
 	blue0 = astc::clamp(blue0, 0, 4095);
@@ -650,11 +650,12 @@ static void hdr_rgb_unpack(
 	green1 = astc::clamp(green1, 0, 4095);
 	blue1 = astc::clamp(blue1, 0, 4095);
 
-	// switch around the color components
+	// Undo the swap of red with the largest component
 	int temp0, temp1;
 	switch (majcomp)
 	{
-	case 1:					// switch around red and green
+	// Swap red and green
+	case 1:
 		temp0 = red0;
 		temp1 = red1;
 		red0 = green0;
@@ -662,7 +663,8 @@ static void hdr_rgb_unpack(
 		green0 = temp0;
 		green1 = temp1;
 		break;
-	case 2:					// switch around red and blue
+	// Swap red and blue
+	case 2:
 		temp0 = red0;
 		temp1 = red1;
 		red0 = blue0;
@@ -670,7 +672,8 @@ static void hdr_rgb_unpack(
 		blue0 = temp0;
 		blue1 = temp1;
 		break;
-	case 0:					// no switch
+	// No swap
+	case 0:
 		break;
 	}
 
@@ -1010,9 +1013,8 @@ void unpack_color_endpoints(
 		output0 = lsl<8>(output0) | vint4(0x80);
 		output1 = lsl<8>(output1) | vint4(0x80);
 	}
-	// An HDR profile decode, but may be using linear LDR endpoints
-	// Linear LDR 8-bit endpoints are expanded to 16-bit by replication
-	// HDR endpoints are already 16-bit
+	// An HDR profile decode, but may be using linear LDR endpoints. LDR endpoints are 8-bit and
+	// expanded to 16-bit by replication, HDR endpoints are already 16-bit.
 	else
 	{
 		vmask4 hdr_lanes(rgb_hdr, rgb_hdr, rgb_hdr, alpha_hdr);

@@ -41,9 +41,9 @@
  * ... and modify in-place to turn it into a prefix-sum array of the form:
  *     v0, v0+v1, v0+v1+v2, ...
  *
- * @param d      The array to prefix-sum.
- * @param items  The number of items in the array.
- * @param stride The item spacing in the array; i.e. dense arrays should use 1.
+ * @param[in,out] d        The array to prefix-sum.
+ * @param         items    The number of items in the array.
+ * @param         stride   The item spacing in the array; i.e. dense arrays should use 1.
  */
 static void brent_kung_prefix_sum(
 	vfloat4* d,
@@ -122,7 +122,7 @@ void compute_pixel_region_variance(
 	float*   input_alpha_averages = ctx.input_alpha_averages;
 	vfloat4* work_memory = arg.work_memory;
 
-	// Compute memory sizes and dimensions that we need
+	// Compute buffer sizes and dimensions
 	size_t kernel_radius = alpha_kernel_radius;
 	size_t kerneldim = 2 * kernel_radius + 1;
 	size_t kernel_radius_xy = kernel_radius;
@@ -288,7 +288,7 @@ void compute_pixel_region_variance(
 			}
 		}
 	}
-	else // if (img->data_type == ASTCENC_TYPE_F32)
+	else  // if (img->data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
 
@@ -389,8 +389,8 @@ void compute_pixel_region_variance(
 		}
 	}
 
-	// Generate summed-area tables for N and N^2; this is done in-place, using
-	// a Brent-Kung parallel-prefix based algorithm to minimize precision loss
+	// Generate summed-area tables for N and N^2; this is done in-place, using a Brent-Kung
+	// parallel-prefix based algorithm to minimize precision loss
 	for (size_t z = zd_start; z < padsize_z; z++)
 	{
 		for (size_t y = 1; y < padsize_y; y++)
@@ -421,7 +421,7 @@ void compute_pixel_region_variance(
 		}
 	}
 
-	// Compute a few constants used in the variance-calculation.
+	// Compute constants used in the variance-calculation
 	float alpha_kdim = static_cast<float>(2 * alpha_kernel_radius + 1);
 	float alpha_rsamples;
 

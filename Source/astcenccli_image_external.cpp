@@ -27,7 +27,7 @@
 
 #include "astcenccli_internal.h"
 
-// Configure the STB image write library build.
+// Configure the STB image write library build
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STBI_NO_GIF
@@ -38,13 +38,13 @@
 #define STBI_SUPPORT_ZLIB
 #define STBI_ASSERT(x) astcenc_runtime_assert(x)
 
-// Configure the TinyEXR library build.
+// Configure the TinyEXR library build
 #define TINYEXR_IMPLEMENTATION
 #define TINYEXR_USE_MINIZ 0
 #define TINYEXR_USE_STB_ZLIB 1
 #define TEXR_ASSERT(x) astcenc_runtime_assert(x)
 
-// Configure the Wuffs library build.
+// Configure the Wuffs library build
 #define WUFFS_IMPLEMENTATION
 #define WUFFS_CONFIG__MODULES
 #define WUFFS_CONFIG__MODULE__ADLER32
@@ -56,6 +56,8 @@
 
 /**
  * @brief Trap image load failures and convert into a runtime error.
+ *
+ * @param condition   The condition that must hold for the image decoder.
  */
 static void astcenc_runtime_assert(bool condition)
 {

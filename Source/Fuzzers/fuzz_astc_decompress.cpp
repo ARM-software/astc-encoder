@@ -27,7 +27,8 @@ extern "C" int LLVMFuzzerTestOneInput(
 	FuzzedDataProvider fdp(data, size);
 
 	// Randomize block size
-	// Legal 2D block sizes: 4x4, 5x4, 5x5, 6x5, 6x6, 8x5, 8x6, 8x8, 10x5, 10x6, 10x8, 10x10, 12x10, 12x12
+	// Legal 2D block sizes: 4x4, 5x4, 5x5, 6x5, 6x6, 8x5, 8x6, 8x8, 10x5, 10x6, 10x8, 10x10,
+	// 12x10, 12x12
 	static const struct { uint8_t x, y; } block_sizes[] = {
 		{4, 4}, {5, 4}, {5, 5}, {6, 5}, {6, 6}, {8, 5}, {8, 6}, {8, 8},
 		{10, 5}, {10, 6}, {10, 8}, {10, 10}, {12, 10}, {12, 12}
@@ -63,8 +64,7 @@ extern "C" int LLVMFuzzerTestOneInput(
 	}
 
 	// Prepare for decompression
-	// We need some "compressed" data. ASTC blocks are 16 bytes.
-	// Let's decide how many blocks to decompress.
+	// Choose the number of 16-byte ASTC blocks to decompress
 	size_t num_blocks_x = fdp.ConsumeIntegralInRange<size_t>(1, 4);
 	size_t num_blocks_y = fdp.ConsumeIntegralInRange<size_t>(1, 4);
 	size_t compressed_data_len = num_blocks_x * num_blocks_y * 16;

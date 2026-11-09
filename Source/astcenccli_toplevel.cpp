@@ -185,6 +185,8 @@ using astcenc_context_ptr = std::unique_ptr<astcenc_context, astcenc_context_del
 
 /**
  * @brief Callback emitting a progress bar.
+ *
+ * @param value   The compression progress percentage, from 0 to 100.
  */
 extern "C" void progress_emitter(
 	float value
@@ -411,8 +413,7 @@ static void compression_workload_runner(
 	                       work->context, work->image, &work->swizzle,
 	                       work->data_out, work->data_len, thread_id);
 
-	// This is a racy update, so which error gets returned is a random, but it
-	// will reliably report an error if an error occurs
+	// Concurrent error writes race; which failure is reported is nondeterministic
 	if (error != ASTCENC_SUCCESS)
 	{
 		work->error = error;
@@ -442,8 +443,7 @@ static void decompression_workload_runner(
 	                       work->context, work->data, work->data_len,
 	                       work->image_out, &work->swizzle, thread_id);
 
-	// This is a racy update, so which error gets returned is a random, but it
-	// will reliably report an error if an error occurs
+	// Concurrent error writes race; which failure is reported is nondeterministic
 	if (error != ASTCENC_SUCCESS)
 	{
 		work->error = error;
@@ -455,9 +455,9 @@ static void decompression_workload_runner(
  *
  * Convert "foo/bar.png" into "foo/bar_<slice>.png"
  *
- * @param basename   The base pattern; must contain a file extension.
- * @param index      The slice index.
- * @param error      Set to false on success, true on error (no extension found).
+ * @param      basename   The base pattern; must contain a file extension.
+ * @param      index      The slice index.
+ * @param[out] error      Set to false on success, true on error (no extension found).
  *
  * @return The slice file name.
  */
@@ -481,7 +481,7 @@ static std::string get_slice_filename(
 }
 
 /**
- * @brief Load a non-astc image file from memory.
+ * @brief Load an uncompressed image from disk, optionally from slice files.
  *
  * @param      filename          The file to load, or a pattern for array loads.
  * @param      dim_z             The number of slices to load.
@@ -489,7 +489,7 @@ static std::string get_slice_filename(
  * @param[out] is_hdr            Is the loaded image HDR?
  * @param[out] component_count   The number of components in the loaded image.
  *
- * @return The astc image file, or nullptr on error.
+ * @return The loaded image, or @c nullptr on error.
  */
 static astcenc_image_ptr load_uncomp_file(
 	const char* filename,
@@ -500,7 +500,7 @@ static astcenc_image_ptr load_uncomp_file(
 ) {
 	astcenc_image_ptr image;
 
-	// For a 2D image just load the image directly
+	// Load 2D images directly
 	if (dim_z == 1)
 	{
 		return load_ncimage(filename, y_flip, is_hdr, component_count);
@@ -589,7 +589,7 @@ static astcenc_image_ptr load_uncomp_file(
 					size_t copy_size = slice_size * 4 * sizeof(uint16_t);
 					memcpy(data16, data16src, copy_size);
 				}
-				else // if (image->data_type == ASTCENC_TYPE_F32)
+				else  // if (image->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(image->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(image->data[z]);
@@ -650,8 +650,8 @@ static int parse_commandline_options(
  *
  * @param      argc         Command line argument count.
  * @param[in]  argv         Command line argument vector.
+ * @param      profile      Codec color profile.
  * @param      operation    Codec operation mode.
- * @param[out] profile      Codec color profile.
  * @param      comp_image   Compressed image if a decompress operation.
  * @param[out] preprocess   Image preprocess operation.
  * @param[out] config       Codec configuration.
@@ -671,7 +671,7 @@ static int init_astcenc_config(
 	unsigned int block_y = 0;
 	unsigned int block_z = 1;
 
-	// For decode the block size is set by the incoming image.
+	// For decode the block size is set by the incoming image
 	if (operation == ASTCENC_OP_DECOMPRESS)
 	{
 		block_x = comp_image.block_x;
@@ -682,7 +682,7 @@ static int init_astcenc_config(
 	float quality = 0.0f;
 	preprocess = ASTCENC_PP_NONE;
 
-	// parse the command line's encoding options.
+	// Parse the command line's encoding options
 	int argidx = 4;
 	if (operation & ASTCENC_STAGE_COMPRESS)
 	{
@@ -752,7 +752,7 @@ static int init_astcenc_config(
 
 	unsigned int flags = 0;
 
-	// Gather the flags that we need
+	// Assemble codec flags
 	while (argidx < argc)
 	{
 		if (!strcmp(argv[argidx], "-a"))
@@ -808,9 +808,7 @@ static int init_astcenc_config(
 	{
 		flags |= ASTCENC_FLG_DECOMPRESS_ONLY;
 	}
-	// Compression and test passes can skip some decimation initialization
-	// as we know we are decompressing images that were compressed using the
-	// same settings and heuristics ...
+	// Full codec, but only decodes own output, so codec can omit unused tables
 	else
 	{
 		flags |= ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
@@ -1066,7 +1064,7 @@ static int edit_astcenc_config(
 			cli_config.swz_decode.b = swizzle_components[2];
 			cli_config.swz_decode.a = swizzle_components[3];
 		}
-		// presets begin here
+		// Presets begin here
 		else if (!strcmp(argv[argidx], "-normal"))
 		{
 			argidx++;
@@ -1415,7 +1413,6 @@ static int edit_astcenc_config(
 				return 1;
 			}
 		}
-		// Option: Encode a 3D image from a sequence of 2D images.
 		else if (!strcmp(argv[argidx], "-zdim"))
 		{
 			// Only supports compressing
@@ -1469,7 +1466,7 @@ static int edit_astcenc_config(
 			cli_config.diagnostic_images = true;
 		}
 #endif
-		else // check others as well
+		else
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
 			return 1;
@@ -1570,12 +1567,12 @@ static void print_astcenc_config(
  * checks in the inner-most loop. For the CLI preprocess passes this is deemed
  * acceptable as these are not performance critical paths.
  *
- * @param[in] img   The output image.
+ * @param[in] img   The input image.
  * @param     x     The pixel x coordinate.
  * @param     y     The pixel y coordinate.
  * @param     z     The pixel z coordinate.
  *
- * @return      pixel   The pixel color value to write.
+ * @return The sampled pixel color.
  */
 static vfloat4 image_get_pixel(
 	const astcenc_image& img,
@@ -1612,7 +1609,7 @@ static vfloat4 image_get_pixel(
 
 		return float16_to_float(colori);
 	}
-	else // if (img.data_type == ASTCENC_TYPE_F32)
+	else  // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 		float* data = static_cast<float*>(img.data[z]);
@@ -1660,7 +1657,7 @@ static void image_set_pixel(
 /**
  * @brief Set the value of a single pixel in an image.
  *
- * @param[out] img     The output image; must use F32 texture components.
+ * @param[out] img     The output image; must use U8 texture components.
  * @param      x       The pixel x coordinate.
  * @param      y       The pixel y coordinate.
  * @param      pixel   The pixel color value to write.
@@ -1731,6 +1728,8 @@ static void image_preprocess_normalize(
 /**
  * @brief Linearize an sRGB value.
  *
+ * @param a   The sRGB color component to linearize.
+ *
  * @return The linearized value.
  */
 static float srgb_to_linear(
@@ -1746,6 +1745,8 @@ static float srgb_to_linear(
 
 /**
  * @brief sRGB gamma-encode a linear value.
+ *
+ * @param a   The linear color component to gamma-encode.
  *
  * @return The gamma encoded value.
  */
@@ -1814,10 +1815,10 @@ static void image_preprocess_premultiply(
 /**
  * @brief Populate a single diagnostic image showing aspects of the encoding.
  *
- * @param context      The context to use.
- * @param image        The compressed image to analyze.
- * @param diag_image   The output visualization image to populate.
- * @param texel_func   The per-texel callback used to determine output color.
+ * @param      context      The context to use.
+ * @param      image        The compressed image to analyze.
+ * @param[out] diag_image   The output visualization image to populate.
+ * @param      texel_func   The per-texel callback used to determine output color.
  */
 static void print_diagnostic_image(
 	astcenc_context* context,
@@ -1872,7 +1873,7 @@ static void print_diagnostic_images(
 		return;
 	}
 
-	// Try to find a file extension we know about
+	// Find a supported file extension
 	size_t index = output_file.find_last_of(".");
 	std::string stem = output_file;
 	if (index != std::string::npos)
@@ -2384,8 +2385,7 @@ int astcenc_main(
 
 		if (preprocess != ASTCENC_PP_NONE)
 		{
-			// Allocate a float image so we can avoid additional quantization,
-			// as e.g. premultiplication can result in fractional color values
+			// Use float storage to preserve fractional color values during preprocessing
 			auto image_pp = alloc_image(32,
 			                            image_uncomp_in->dim_x,
 			                            image_uncomp_in->dim_y,
@@ -2464,8 +2464,8 @@ int astcenc_main(
 		work.data_len = buffer_size;
 		work.error = ASTCENC_SUCCESS;
 
-		// Only launch worker threads for multi-threaded use - it makes basic
-		// single-threaded profiling and debugging a little less convoluted
+		// Only launch worker threads for multi-threaded use - it makes basic single-threaded
+		// profiling and debugging a little less convoluted
 		double start_compression_time = get_time();
 
 		if (config.progress_callback)
@@ -2526,8 +2526,8 @@ int astcenc_main(
 		work.swizzle = cli_config.swz_decode;
 		work.error = ASTCENC_SUCCESS;
 
-		// Only launch worker threads for multi-threaded use - it makes basic
-		// single-threaded profiling and debugging a little less convoluted
+		// Only launch worker threads for multi-threaded use - it makes basic single-threaded
+		// profiling and debugging a little less convoluted
 		double start_decompression_time = get_time();
 
 		if (cli_config.thread_count > 1)

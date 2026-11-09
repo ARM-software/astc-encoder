@@ -72,7 +72,7 @@ class EncoderBase:
         Args:
             name: The name of the encoder.
             variant: The SIMD variant of the encoder.
-            binary: The path to the binary on the file system.
+            binary_path: The path to the binary on the file system.
         '''
         self.name = name
         self.variant = variant

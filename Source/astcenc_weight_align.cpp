@@ -54,8 +54,8 @@ static_assert((ANGULAR_STEPS % ASTCENC_SIMD_WIDTH) == 0,
 static_assert(ANGULAR_STEPS >= 32,
               "ANGULAR_STEPS must be at least max(steps_for_quant_level)");
 
-// Store a reduced sin/cos table for 64 possible weight values; this causes
-// slight quality loss compared to using sin() and cos() directly. Must be 2^N.
+// Store a reduced sin/cos table for 64 possible weight values; this causes slight quality loss
+// compared to using sin() and cos() directly. Must be 2^N.
 static constexpr unsigned int SINCOS_STEPS { 64 };
 
 static const uint8_t steps_for_quant_level[12] {
@@ -93,10 +93,10 @@ void prepare_angular_tables()
 /**
  * @brief Compute the angular alignment factors and offsets.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_angular_steps         The maximum number of steps to be tested.
- * @param[out] offsets                   The output angular offsets array.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_angular_steps        The maximum number of steps to be tested.
+ * @param[out] offsets                  The output angular offsets array.
  */
 static void compute_angular_offsets(
 	unsigned int weight_count,
@@ -153,16 +153,16 @@ static void compute_angular_offsets(
  * offset, and then compute the resulting error. The cut errors indicate the error that results from
  * forcing samples that should have had one weight value one step up or down.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_angular_steps         The maximum number of steps to be tested.
- * @param      max_quant_steps           The maximum quantization level to be tested.
- * @param      offsets                   The angular offsets array.
- * @param[out] lowest_weight             Per angular step, the lowest weight.
- * @param[out] weight_span               Per angular step, the span between lowest and highest weight.
- * @param[out] error                     Per angular step, the error.
- * @param[out] cut_low_weight_error      Per angular step, the low weight cut error.
- * @param[out] cut_high_weight_error     Per angular step, the high weight cut error.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_angular_steps        The maximum number of steps to be tested.
+ * @param      max_quant_steps          The maximum quantization level to be tested.
+ * @param      offsets                  The angular offsets array.
+ * @param[out] lowest_weight            Per angular step, the lowest weight.
+ * @param[out] weight_span              Per angular step, the span between lowest and highest weight.
+ * @param[out] error                    Per angular step, the error.
+ * @param[out] cut_low_weight_error     Per angular step, the low weight cut error.
+ * @param[out] cut_high_weight_error    Per angular step, the high weight cut error.
  */
 static void compute_lowest_and_highest_weight(
 	unsigned int weight_count,
@@ -181,9 +181,8 @@ static void compute_lowest_and_highest_weight(
 
 	vfloat rcp_stepsize = int_to_float(vint::lane_id()) + vfloat(1.0f);
 
-	// Compute minimum/maximum weights in the weight array. Our remapping
-	// is monotonic, so the min/max rounded weights relate to the min/max
-	// unrounded weights in a straightforward way.
+	// Compute minimum/maximum weights in the weight array. Our remapping is monotonic, so the
+	// min/max rounded weights relate to the min/max unrounded weights in a straightforward way.
 	vfloat min_weight(FLT_MAX);
 	vfloat max_weight(-FLT_MAX);
 
@@ -209,8 +208,7 @@ static void compute_lowest_and_highest_weight(
 		vfloat cut_high_weight_err = vfloat::zero();
 		vfloat offset = loada(offsets + sp);
 
-		// We know the min and max weight values, so we can figure out
-		// the corresponding indices before we enter the loop.
+		// Compute the minimum and maximum weight indices before the texel loop
 		vfloat minidx = round(min_weight * rcp_stepsize - offset);
 		vfloat maxidx = round(max_weight * rcp_stepsize - offset);
 
@@ -240,7 +238,7 @@ static void compute_lowest_and_highest_weight(
 		storea(span, weight_span + sp);
 
 		// The cut_(lowest/highest)_weight_error indicate the error that results from  forcing
-		// samples that should have had the weight value one step (up/down).
+		// samples that should have had the weight value one step (up/down)
 		vfloat ssize = 1.0f / rcp_stepsize;
 		vfloat errscale = ssize * ssize;
 		storea(errval * errscale, error + sp);
@@ -254,11 +252,11 @@ static void compute_lowest_and_highest_weight(
 /**
  * @brief The main function for the angular algorithm.
  *
- * @param      weight_count              The number of (decimated) weights.
- * @param      dec_weight_ideal_value    The ideal decimated unquantized weight values.
- * @param      max_quant_level           The maximum quantization level to be tested.
- * @param[out] low_value                 Per angular step, the lowest weight value.
- * @param[out] high_value                Per angular step, the highest weight value.
+ * @param      weight_count             The number of (decimated) weights.
+ * @param      dec_weight_ideal_value   The ideal decimated unquantized weight values.
+ * @param      max_quant_level          The maximum quantization level to be tested.
+ * @param[out] low_value                Per angular step, the lowest weight value.
+ * @param[out] high_value               Per angular step, the highest weight value.
  */
 static void compute_angular_endpoints_for_quant_levels(
 	unsigned int weight_count,
@@ -287,9 +285,9 @@ static void compute_angular_endpoints_for_quant_levels(
 	                                  cut_low_weight_error, cut_high_weight_error);
 
 	// Each angular step describes a candidate grid with an inclusive span of N weights. A grid can
-	// be made smaller by discarding the lowest weight, the highest weight, or both.
-	// This gives three candidates using N, N-1, and N-2 quantized weights, respectively.
-	// Record the best candidate found for every resulting weight count.
+	// be made smaller by discarding the lowest weight, the highest weight, or both. This gives
+	// three candidates using N, N-1, and N-2 quantized weights, respectively. Record the best
+	// candidate found for every resulting weight count.
 	//
 	// Use packed vectors so data-dependent branches can become selects. This involves some integer
 	// to float casts, but the values are small enough so they never round the wrong way.
@@ -348,7 +346,7 @@ static void compute_angular_endpoints_for_quant_levels(
 		unsigned int q = steps_for_quant_level[i];
 		int bsi = static_cast<int>(best_results[q].lane<1>());
 
-		// Did we find anything?
+		// Report a missing candidate once
 #if defined(ASTCENC_DIAGNOSTICS)
 		if ((bsi < 0) && print_once)
 		{

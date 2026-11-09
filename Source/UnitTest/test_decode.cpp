@@ -243,8 +243,8 @@ TEST(decompress, self_decompress_unsupported_partition)
 		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
 	};
 
-	// A 3-partition block. An 8x8 fastest self-decompress-only context keeps no
-	// 3-partition tables, so this selects a partitioning that is not present.
+	// A 3-partition block. An 8x8 fastest self-decompress-only context keeps no 3-partition tables,
+	// so this selects a partitioning that is not present.
 	uint8_t data[16] {
 		0xCF, 0x50, 0x80, 0x64, 0x84, 0xCD, 0xD8, 0xB7,
 		0xB0, 0xF1, 0x1E, 0x6A, 0x4F, 0x96, 0xC6, 0xBC

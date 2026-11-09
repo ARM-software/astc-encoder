@@ -23,10 +23,10 @@
  * operations that are ISA-specific.
  */
 
-#ifndef ASTC_VECMATHLIB_COMMON_8_H_INCLUDED
+#if !defined(ASTC_VECMATHLIB_COMMON_8_H_INCLUDED)
 #define ASTC_VECMATHLIB_COMMON_8_H_INCLUDED
 
-#ifndef ASTCENC_SIMD_INLINE
+#if !defined(ASTCENC_SIMD_INLINE)
 	#error "Include astcenc_vecmathlib.h, do not include directly"
 #endif
 
@@ -40,6 +40,9 @@
 
 /**
  * @brief Overload: vector by vector incremental addition.
+ *
+ * @param[in,out] a   The accumulator to update.
+ * @param         b   The values to add.
  */
 ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
 {
@@ -49,6 +52,8 @@ ASTCENC_SIMD_INLINE vint8& operator+=(vint8& a, const vint8& b)
 
 /**
  * @brief Generate a vint8 from a size_t.
+ *
+ * @param a   The scalar size to replicate across all lanes.
  */
 ASTCENC_SIMD_INLINE vint8 vint8_from_size(size_t a)
 {
@@ -62,6 +67,9 @@ ASTCENC_SIMD_INLINE vint8 vint8_from_size(size_t a)
 
 /**
  * @brief Overload: vector by vector incremental addition.
+ *
+ * @param[in,out] a   The accumulator to update.
+ * @param         b   The values to add.
  */
 ASTCENC_SIMD_INLINE vfloat8& operator+=(vfloat8& a, const vfloat8& b)
 {
@@ -73,6 +81,9 @@ ASTCENC_SIMD_INLINE vfloat8& operator+=(vfloat8& a, const vfloat8& b)
 
 /**
  * @brief Overload: vector by scalar multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, float b)
 {
@@ -81,6 +92,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(vfloat8 a, float b)
 
 /**
  * @brief Overload: scalar by vector multiplication.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator*(float a, vfloat8 b)
 {
@@ -89,6 +103,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator*(float a, vfloat8 b)
 
 /**
  * @brief Overload: vector by scalar division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
 {
@@ -97,6 +114,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(vfloat8 a, float b)
 
 /**
  * @brief Overload: scalar by vector division.
+ *
+ * @param a   The left operand.
+ * @param b   The right operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
 {
@@ -107,6 +127,9 @@ ASTCENC_SIMD_INLINE vfloat8 operator/(float a, vfloat8 b)
 
 /**
  * @brief Return the min vector of a vector and a scalar.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
 {
@@ -115,6 +138,9 @@ ASTCENC_SIMD_INLINE vfloat8 min(vfloat8 a, float b)
 
 /**
  * @brief Return the max vector of a vector and a scalar.
+ *
+ * @param a   The first operand.
+ * @param b   The second operand.
  */
 ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
 {
@@ -126,6 +152,10 @@ ASTCENC_SIMD_INLINE vfloat8 max(vfloat8 a, float b)
  *
  * It is assumed that neither @c min nor @c max are NaN values. If @c a is NaN
  * then @c min will be returned for that lane.
+ *
+ * @param minv   The inclusive lower bound.
+ * @param maxv   The inclusive upper bound.
+ * @param a      The values to clamp.
  */
 ASTCENC_SIMD_INLINE vfloat8 clamp(float minv, float maxv, vfloat8 a)
 {
@@ -137,6 +167,8 @@ ASTCENC_SIMD_INLINE vfloat8 clamp(float minv, float maxv, vfloat8 a)
  * @brief Return the clamped value between 0.0f and 1.0f.
  *
  * If @c a is NaN then zero will be returned for that lane.
+ *
+ * @param a   The values to clamp.
  */
 ASTCENC_SIMD_INLINE vfloat8 clampzo(vfloat8 a)
 {
@@ -147,6 +179,9 @@ ASTCENC_SIMD_INLINE vfloat8 clampzo(vfloat8 a)
  * @brief Accumulate lane-wise sums for a vector.
  *
  * This is NOT invariant with 4-wide implementations.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a)
 {
@@ -157,6 +192,10 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a)
  * @brief Accumulate masked lane-wise sums for a vector, folded 4-wide.
  *
  * This is invariant with 4-wide implementations.
+ *
+ * @param[in,out] accum   The accumulator to update.
+ * @param         a       The values to accumulate.
+ * @param         m       The lanes to include in the accumulation.
  */
 ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
 {
@@ -167,7 +206,9 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat4& accum, vfloat8 a, vmask8 m)
 #if !defined(ASTCENC_USE_NATIVE_FLOAT_TO_INT_RTN_8)
 
 /**
- * @brief Return an integer value for a float vector, using round-to-nearest.
+ * @brief Return integers rounded to nearest for nonnegative float values.
+ *
+ * @param a   The nonnegative floating-point values to convert.
  */
 ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
 {
@@ -183,6 +224,11 @@ ASTCENC_SIMD_INLINE vint8 float_to_int_rtn(vfloat8 a)
  * with high bits set to zero.
  *
  * Output vector stores a single RGBA texel packed in each lane.
+ *
+ * @param r   The red channel values.
+ * @param g   The green channel values.
+ * @param b   The blue channel values.
+ * @param a   The alpha channel values.
  */
 ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 {
@@ -191,6 +237,8 @@ ASTCENC_SIMD_INLINE vint8 interleave_rgba8(vint8 r, vint8 g, vint8 b, vint8 a)
 
 /**
  * @brief Debug function to print a vector of ints.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vint8 a)
 {
@@ -202,6 +250,8 @@ ASTCENC_SIMD_INLINE void print(vint8 a)
 
 /**
  * @brief Debug function to print a vector of ints.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void printx(vint8 a)
 {
@@ -217,6 +267,8 @@ ASTCENC_SIMD_INLINE void printx(vint8 a)
 
 /**
  * @brief Debug function to print a vector of floats.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vfloat8 a)
 {
@@ -231,10 +283,12 @@ ASTCENC_SIMD_INLINE void print(vfloat8 a)
 
 /**
  * @brief Debug function to print a vector of masks.
+ *
+ * @param a   The vector to print.
  */
 ASTCENC_SIMD_INLINE void print(vmask8 a)
 {
 	print(select(vint8(0), vint8(1), a));
 }
 
-#endif // #ifndef ASTC_VECMATHLIB_COMMON_8_H_INCLUDED
+#endif  // #ifndef ASTC_VECMATHLIB_COMMON_8_H_INCLUDED

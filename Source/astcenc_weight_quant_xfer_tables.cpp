@@ -21,7 +21,7 @@
 
 #include "astcenc_internal.h"
 
-#define _ 0 // Using _ to indicate an entry that will not be used.
+#define _ 0  // Using _ to indicate an entry that will not be used
 
 const quant_and_transfer_table quant_and_xfer_tables[12] {
 	// QUANT2, range 0..1

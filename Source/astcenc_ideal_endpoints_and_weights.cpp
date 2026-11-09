@@ -47,10 +47,11 @@ static vfloat bilinear_infill_vla(
 	const uint8_t* weight_idx3 = di.texel_weights_tr[3] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
-	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
-	vfloat weight_val2 = gatherf_byte_inds<vfloat>(weights, weight_idx2);
-	vfloat weight_val3 = gatherf_byte_inds<vfloat>(weights, weight_idx3);
+	vgatherf_table wt = vgatherf_load(weights, di.weight_count);
+	vfloat weight_val0 = gatherf(wt, weight_idx0);
+	vfloat weight_val1 = gatherf(wt, weight_idx1);
+	vfloat weight_val2 = gatherf(wt, weight_idx2);
+	vfloat weight_val3 = gatherf(wt, weight_idx3);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -85,8 +86,9 @@ static vfloat bilinear_infill_vla_2(
 	const uint8_t* weight_idx1 = di.texel_weights_tr[1] + index;
 
 	// Load the bilinear filter weights from the decimated grid
-	vfloat weight_val0 = gatherf_byte_inds<vfloat>(weights, weight_idx0);
-	vfloat weight_val1 = gatherf_byte_inds<vfloat>(weights, weight_idx1);
+	vgatherf_table wt = vgatherf_load(weights, di.weight_count);
+	vfloat weight_val0 = gatherf(wt, weight_idx0);
+	vfloat weight_val1 = gatherf(wt, weight_idx1);
 
 	// Load the weight contribution factors for each decimated weight
 	vfloat tex_weight_float0 = loada(di.texel_weight_contribs_float_tr[0] + index);
@@ -248,7 +250,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 		data_vr = blk.data_r;
 		data_vg = blk.data_b;
 	}
-	else // (component1 == 1 && component2 == 2)
+	else  // (component1 == 1 && component2 == 2)
 	{
 		assert(component1 == 1 && component2 == 2);
 
@@ -290,8 +292,7 @@ static void compute_ideal_colors_and_weights_2_comp(
 			highparam = astc::max(param, highparam);
 		}
 
-		// It is possible for a uniform-color partition to produce length=0;
-		// this causes NaN issues so set to small value to avoid this problem
+		// Set to small value to avoid NaNs from zero-length directions in uniform color partitions
 		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
@@ -439,8 +440,7 @@ static void compute_ideal_colors_and_weights_3_comp(
 			highparam = astc::max(param, highparam);
 		}
 
-		// It is possible for a uniform-color partition to produce length=0;
-		// this causes NaN issues so set to small value to avoid this problem
+		// Set to small value to avoid NaNs from zero-length directions in uniform color partitions
 		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
@@ -563,8 +563,7 @@ static void compute_ideal_colors_and_weights_4_comp(
 			highparam = astc::max(param, highparam);
 		}
 
-		// It is possible for a uniform-color partition to produce length=0;
-		// this causes NaN issues so set to small value to avoid this problem
+		// Set to small value to avoid NaNs from zero-length directions in uniform color partitions
 		if (highparam <= lowparam)
 		{
 			lowparam = 0.0f;
@@ -644,7 +643,7 @@ void compute_ideal_colors_and_weights_2planes(
 	assert(plane2_component < BLOCK_MAX_COMPONENTS);
 	switch (plane2_component)
 	{
-	case 0: // Separate weights for red
+	case 0:  // Separate weights for red
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 0, pms);
@@ -656,7 +655,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 0);
 		break;
 
-	case 1: // Separate weights for green
+	case 1:  // Separate weights for green
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 1, pms);
@@ -668,7 +667,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 1);
 		break;
 
-	case 2: // Separate weights for blue
+	case 2:  // Separate weights for blue
 		if (uses_alpha)
 		{
 			compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 2, pms);
@@ -680,7 +679,7 @@ void compute_ideal_colors_and_weights_2planes(
 		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 2);
 		break;
 
-	default: // Separate weights for alpha
+	default:  // Separate weights for alpha
 		assert(uses_alpha);
 		compute_ideal_colors_and_weights_3_comp(blk, pi, ei1, 3, pms);
 		compute_ideal_colors_and_weights_1_comp(blk, pi, ei2, 3);
@@ -857,8 +856,7 @@ void compute_ideal_weights_for_decimation(
 	promise(texel_count > 0);
 	promise(weight_count > 0);
 
-	// If we have a 1:1 mapping just shortcut the computation. Transfer enough to also copy the
-	// zero-initialized SIMD over-fetch region
+	// Copy weights directly for a 1:1 mapping, including the zeroed SIMD padding
 	if (is_direct)
 	{
 		for (unsigned int i = 0; i < texel_count; i += ASTCENC_SIMD_WIDTH)
@@ -875,9 +873,14 @@ void compute_ideal_weights_for_decimation(
 	// Compute an initial average for each decimated weight
 	bool constant_wes = ei.is_constant_weight_error_scale;
 	vfloat weight_error_scale(ei.weight_error_scale[0]);
+	vgatherf_table wtab = vgatherf_load(ei.weights, texel_count);
+	vgatherf_table etab = wtab;
+	if (!constant_wes)
+	{
+		etab = vgatherf_load(ei.weight_error_scale, texel_count);
+	}
 
-	// This overshoots - this is OK as we initialize the array tails in the
-	// decimation table structures to safe values ...
+	// Full SIMD loads are safe because decimation table tails are initialized
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		// Start with a small value to avoid div-by-zero later
@@ -896,21 +899,20 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf(etab, texel);
 			}
 
 			vfloat contrib_weight = weight * weight_error_scale;
 
 			weight_weight += contrib_weight;
-			initial_weight += gatherf_byte_inds<vfloat>(ei.weights, texel) * contrib_weight;
+			initial_weight += gatherf(wtab, texel) * contrib_weight;
 		}
 
 		storea(initial_weight / weight_weight, dec_weight_ideal_value + i);
 	}
 
 	// Populate the interpolated weight grid based on the initial average
-	// Process SIMD-width texel coordinates at at time while we can. Safe to
-	// over-process full SIMD vectors - the tail is zeroed.
+	// Process full SIMD vectors; the zeroed tail makes excess lanes safe
 	ASTCENC_ALIGNAS float infilled_weight_diffs[BLOCK_MAX_TEXELS];
 	if (di.max_texel_weight_count <= 2)
 	{
@@ -934,6 +936,8 @@ void compute_ideal_weights_for_decimation(
 	constexpr float stepsize = 0.25f;
 	constexpr float chd_scale = -WEIGHTS_TEXEL_SUM;
 
+	vgatherf_table dtab = vgatherf_load(infilled_weight_diffs, texel_count);
+
 	for (unsigned int i = 0; i < weight_count; i += ASTCENC_SIMD_WIDTH)
 	{
 		vfloat weight_val = loada(dec_weight_ideal_value + i);
@@ -955,11 +959,11 @@ void compute_ideal_weights_for_decimation(
 
 			if (!constant_wes)
 			{
-				weight_error_scale = gatherf_byte_inds<vfloat>(ei.weight_error_scale, texel);
+				weight_error_scale = gatherf(etab, texel);
 			}
 
 			vfloat scale = weight_error_scale * contrib_weight;
-			vfloat weight_diff = gatherf_byte_inds<vfloat>(infilled_weight_diffs, texel);
+			vfloat weight_diff = gatherf(dtab, texel);
 
 			error_change0 += contrib_weight * scale;
 			error_change1 += weight_diff * scale;
@@ -968,7 +972,7 @@ void compute_ideal_weights_for_decimation(
 		vfloat step = (error_change1 * chd_scale) / error_change0;
 		step = clamp(-stepsize, stepsize, step);
 
-		// Update the weight; note this can store negative values
+		// Update the weight, allowing negative values
 		storea(weight_val + step, dec_weight_ideal_value + i);
 	}
 }
@@ -997,7 +1001,7 @@ void compute_quantized_weights_for_decimation(
 
 	// Quantize the weight set using both the specified low/high bounds and standard 0..1 bounds
 
-	// TODO: Oddity to investigate; triggered by test in issue #265.
+	// TODO: Oddity to investigate; triggered by test in issue #265
 	if (high_bound <= low_bound)
 	{
 		low_bound = 0.0f;
@@ -1512,8 +1516,7 @@ void recompute_ideal_colors_1plane(
 			vfloat4 rgbovec = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
 			rgbo_vectors[i] = rgbovec;
 
-			// We can get a failure due to the use of a singular (non-invertible) matrix
-			// If it failed, compute rgbo_vectors[] with a different method ...
+			// Fall back to an endpoint-based estimate if the matrix is singular
 			if (astc::isnan(dot_s(rgbovec, rgbovec)))
 			{
 				vfloat4 v0 = ep.endpt0[i];
@@ -1722,8 +1725,7 @@ void recompute_ideal_colors_2planes(
 
 	if (wmin1 >= wmax1 * 0.999f)
 	{
-		// If all weights in the partition were equal, then just take average of all colors in
-		// the partition and use that as both endpoint colors
+		// Use the partition's average color for both endpoints when all weights are equal
 		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 p1_mask = vint4::lane_id() != vint4(plane2_component);
@@ -1737,8 +1739,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
-		// set of texel weights and pixel colors
+		// Solve for ideal endpoints using the texel weights and colors
 		vfloat4 color_det1 = (left1_sum * right1_sum) - (middle1_sum * middle1_sum);
 		vfloat4 color_rdet1 = 1.0f / color_det1;
 
@@ -1777,8 +1778,7 @@ void recompute_ideal_colors_2planes(
 
 	if (wmin2 >= wmax2 * 0.999f)
 	{
-		// If all weights in the partition were equal, then just take average of all colors in
-		// the partition and use that as both endpoint colors
+		// Use the partition's average color for both endpoints when all weights are equal
 		vfloat4 avg = (color_vec_x + color_vec_y) / rgba_weight_sum;
 
 		vmask4 notnan_mask = avg == avg;
@@ -1789,8 +1789,7 @@ void recompute_ideal_colors_2planes(
 	}
 	else
 	{
-		// Otherwise, complete the analytic calculation of ideal-endpoint-values for the given
-		// set of texel weights and pixel colors
+		// Solve for ideal endpoints using the texel weights and colors
 		vfloat4 color_det2 = (left2_sum * right2_sum) - (middle2_sum * middle2_sum);
 		vfloat4 color_rdet2 = 1.0f / color_det2;
 
@@ -1820,8 +1819,7 @@ void recompute_ideal_colors_2planes(
 
 		rgbo_vector = compute_rgbo_vector(rgba_weight_sum, weight_weight_sum, rgbq_sum, psum);
 
-		// We can get a failure due to the use of a singular (non-invertible) matrix
-		// If it failed, compute rgbo_vectors[] with a different method ...
+		// Fall back to an endpoint-based estimate if the matrix is singular
 		if (astc::isnan(dot_s(rgbo_vector, rgbo_vector)))
 		{
 			vfloat4 v0 = ep.endpt0[0];

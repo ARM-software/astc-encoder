@@ -27,7 +27,7 @@ cd build
 
 # x86-64 using a Visual Studio solution
 cmake -G "Visual Studio 16 2019" -T ClangCL -DCMAKE_INSTALL_PREFIX=..\ ^
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+    -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # x86-64 using NMake
 cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..\ ^
@@ -56,7 +56,7 @@ nmake install
 
 ## macOS and Linux using Make
 
-Builds for macOS and Linux are tested with CMake 3.17, and clang++ 9.0 or
+Builds for macOS and Linux are tested with CMake 3.17, and clang++ 18.0 or
 newer.
 
 > Compiling using g++ is supported, but clang++ builds are faster by ~15%.
@@ -83,7 +83,7 @@ cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ 
 
 # x86-64
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ \
-    -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
+    -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON ..
 
 # macOS universal binary build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ ..
@@ -206,6 +206,29 @@ no explicit SIMD acceleration (the compiler may still auto-vectorize).
 To enable this binary variant add `-DASTCENC_ISA_NONE=ON` to the CMake command
 line when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
+
+### 256-bit AVX-512 builds
+
+Enable `-DASTCENC_ISA_AVX256=ON` to build `astcenc-avx256`. This variant uses
+AVX-512 instructions with the existing AVX2 256-bit vector size. It generally
+gives a consistent speedup over AVX2, and can be faster than `astcenc-avx512`
+for smaller block sizes.
+
+This build requires these AVX-512 features: AVX-512F, AVX-512BW, AVX-512DQ,
+AVX-512VL, and AVX-512VBMI. Windows builds need to use Clang or Clang-CL
+(`-T ClangCL`) because MSVC `/arch:AVX512` does not enable VBMI.
+
+### 512-bit AVX-512 builds
+
+Enable `-DASTCENC_ISA_AVX512=ON` to build `astcenc-avx512`. This variant uses
+AVX-512 instructions with the full 512-bit vector size. Performance gain
+versus `astcenc-avx256` is situational. It usually gives a good speedup for
+larger block sizes, such as 8x8, where the longer vector is more fully
+utilized. For smaller block sizes it can be slower than `astcenc-avx256`.
+
+This build requires these AVX-512 features: AVX-512F, AVX-512BW, AVX-512DQ,
+AVX-512VL, and AVX-512VBMI. Windows builds need to use Clang or Clang-CL
+(`-T ClangCL`) because MSVC `/arch:AVX512` does not enable VBMI.
 
 ### No x86 gather instruction builds
 
@@ -339,7 +362,8 @@ integrated into other projects. We recommend integrating the project in a way
 that lets you control which version of `astcenc` you are using, as this allows
 you to manage API version changes.
 
-A basic example of CMake integration and codec API usage can be found in the `./Utils/Example` directory. See the [Example Readme](../Utils/Example/README.md) for more details.
+A basic example of CMake integration and codec API usage can be found in the
+`./Utils/Example` directory. See the [Example Readme][1] for more details.
 
 > [!CAUTION]
 > This example is designed to always use the latest main branch so that it
@@ -402,3 +426,5 @@ python3 -m pip install -r requirements.txt
 - - -
 
 _Copyright © 2019-2026, Arm Limited and contributors._
+
+[1]: ../Utils/Example/README.md

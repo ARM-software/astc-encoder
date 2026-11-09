@@ -98,7 +98,7 @@ static void kmeans_init(
 	// Pick the remaining samples as needed
 	while (true)
 	{
-		// Pick the next center in a weighted-random fashion.
+		// Pick the next center in a weighted-random fashion
 		float summa = 0.0f;
 		float distance_cutoff = distance_sum * cluster_cutoffs[cutoff++];
 		for (sample = 0; sample < texel_count; sample++)
@@ -202,10 +202,8 @@ static void kmeans_assign(
 		partition_texel_count[partition_of_texel[i]]++;
 	}
 
-	// It is possible to get a situation where a partition ends up without any texels. In this case,
-	// assign texel N to partition N. This is silly, but ensures that every partition retains at
-	// least one texel. Reassigning a texel in this manner may cause another partition to go empty,
-	// so if we actually did a reassignment, run the whole loop over again.
+	// Assign texel N to empty partition N. Reassignment may empty another partition, so repeat
+	// until every partition has a texel.
 	bool problem_case;
 	do
 	{
@@ -226,11 +224,11 @@ static void kmeans_assign(
 /**
  * @brief Compute new cluster centers based on their center of gravity.
  *
- * @param       blk                  The image block color data to compress.
- * @param       texel_count          The number of texels in the block.
- * @param       partition_count      The number of partitions in the block.
- * @param[out]  cluster_centers      The new cluster center colors.
- * @param       partition_of_texel   The partition assigned for each texel.
+ * @param      blk                  The image block color data to compress.
+ * @param      texel_count          The number of texels in the block.
+ * @param      partition_count      The number of partitions in the block.
+ * @param[out] cluster_centers      The new cluster center colors.
+ * @param      partition_of_texel   The partition assigned for each texel.
  */
 static void kmeans_update(
 	const image_block& blk,
@@ -282,8 +280,8 @@ static inline uint8_t partition_mismatch2(
 	int v1 = popcount(a[0] ^ b[0]) + popcount(a[1] ^ b[1]);
 	int v2 = popcount(a[0] ^ b[1]) + popcount(a[1] ^ b[0]);
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v1, v2) / 2);
 }
 
@@ -323,8 +321,8 @@ static inline uint8_t partition_mismatch3(
 	int s5 = p11 + p20;
 	int v2 = astc::min(s4, s5) + p02;
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2) / 2);
 }
 
@@ -372,8 +370,8 @@ static inline uint8_t partition_mismatch4(
 	int v2 = p02 + astc::min(p11 + mx03, p10 + mx13, p13 + mx01);
 	int v3 = p03 + astc::min(p11 + mx02, p12 + mx01, p10 + mx12);
 
-	// Divide by 2 because XOR always counts errors twice, once when missing
-	// in the expected position, and again when present in the wrong partition
+	// Divide by 2 because XOR always counts errors twice, once when missing in the expected
+	// position, and again when present in the wrong partition
 	return static_cast<uint8_t>(astc::min(v0, v1, v2, v3) / 2);
 }
 
@@ -428,11 +426,12 @@ static void count_partition_mismatch_bits(
 /**
  * @brief Use counting sort on the mismatch array to sort partition candidates.
  *
+ * @param      texel_count          The number of texels used for clustering.
  * @param      partitioning_count   The number of packed partitionings.
  * @param      mismatch_count       Partitioning mismatch counts, in index order.
  * @param[out] partition_ordering   Partition index values, in mismatch order.
  *
- * @return The number of active partitions in this selection.
+ * @return The number of active partitionings in this selection.
  */
 static unsigned int get_partition_ordering_by_mismatch_bits(
 	unsigned int texel_count,
@@ -459,8 +458,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 		sum += cnt;
 	}
 
-	// Use the running sum as the index, incrementing after read to allow
-	// sequential entries with the same count
+	// Use running sum as index, incrementing after read to allow sequential entries with same count
 	for (unsigned int i = 0; i < partitioning_count; i++)
 	{
 		unsigned int idx = mscount[mismatch_count[i]]++;
@@ -471,7 +469,7 @@ static unsigned int get_partition_ordering_by_mismatch_bits(
 }
 
 /**
- * @brief Use k-means clustering to compute a partition ordering for a block..
+ * @brief Use k-means clustering to compute a partition ordering for a block.
  *
  * @param      bsd                  The block size information.
  * @param      blk                  The image block color data to compress.
@@ -526,13 +524,13 @@ static unsigned int compute_kmeans_partition_ordering(
 }
 
 /**
- * @brief Insert a partitioning into an order list of results, sorted by error.
+ * @brief Insert a partitioning into an ordered list of results, sorted by error.
  *
- * @param      max_values      The max number of entries in the best result arrays.
- * @param      this_error      The error of the new entry.
- * @param      this_partition  The partition ID of the new entry.
- * @param[out] best_errors     The array of best error values.
- * @param[out] best_partitions The array of best partition values.
+ * @param         max_values        The max number of entries in the best result arrays.
+ * @param         this_error        The error of the new entry.
+ * @param         this_partition    The partition ID of the new entry.
+ * @param[in,out] best_errors       The array of best error values.
+ * @param[in,out] best_partitions   The array of best partition values.
  */
 static void insert_result(
 	unsigned int max_values,
@@ -664,7 +662,7 @@ unsigned int find_best_partition_candidates(
 			float uncor_error = 0.0f;
 			float samec_error = 0.0f;
 
-			// Grayscale partition metrics preserve identical RGB line coefficients.
+			// Grayscale partition metrics preserve identical RGB line coefficients
 			if (blk.grayscale)
 			{
 				compute_error_squared_rgba_grayscale(pi,
@@ -686,8 +684,8 @@ unsigned int find_best_partition_candidates(
 				                           samec_error);
 			}
 
-			// Compute an estimate of error introduced by weight quantization imprecision.
-			// This error is computed as follows, for each partition
+			// Compute an estimate of error introduced by weight quantization imprecision. This
+			// error is computed as follows, for each partition:
 			//     1: compute the principal-axis vector (full length) in error-space
 			//     2: convert the principal-axis vector to regular RGB-space
 			//     3: scale the vector by a constant that estimates average quantization error
@@ -752,8 +750,8 @@ unsigned int find_best_partition_candidates(
 			                          uncor_error,
 			                          samec_error);
 
-			// Compute an estimate of error introduced by weight quantization imprecision.
-			// This error is computed as follows, for each partition
+			// Compute an estimate of error introduced by weight quantization imprecision. This
+			// error is computed as follows, for each partition:
 			//     1: compute the principal-axis vector (full length) in error-space
 			//     2: convert the principal-axis vector to regular RGB-space
 			//     3: scale the vector by a constant that estimates average quantization error

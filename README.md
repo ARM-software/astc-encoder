@@ -58,7 +58,8 @@ from 0.89 bits/pixel up to 8 bits/pixel.
 Release build binaries for the `astcenc` stable releases are provided in the
 [GitHub Releases page][3].
 
-* Change log: [5.x series](./Docs/ChangeLog-5x.md)
+* [Change log for 6.x series](./Docs/ChangeLog-6x.md)
+* [Change log for 5.x series](./Docs/ChangeLog-5x.md)
 
 Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 
@@ -67,21 +68,29 @@ Binaries are provided for 64-bit builds on Windows, macOS, and Linux.
 For Windows and Linux, the builds of astcenc are provided as multiple binaries,
 each tuned for a specific SIMD instruction set.
 
-For x86-64 we provide, in order of increasing performance:
+For x86-64 we provide multiple SIMD builds. From the baseline ISA to the latest
+ISA, we ship:
 
 * `astcenc-sse2` - uses SSE2
 * `astcenc-sse4.1` - uses SSE4.1 and POPCNT
 * `astcenc-avx2` - uses AVX2, SSE4.2, POPCNT, and F16C
+* `astcenc-avx256` - uses AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
+   AVX-512VBMI, POPCNT, and F16C
+* `astcenc-avx512` - uses AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
+   AVX-512VBMI, POPCNT, and F16C
 
 The x86-64 SSE2 builds will work on all x86-64 machines, but it is the slowest
-of the three. The other two require extended CPU instruction set support which
-is not universally available, but each step gains ~15% more performance.
+of the set. The other builds require extended CPU instruction set support which
+is not universally available, but can give better performance. AVX-512
+performance varies, and may even be slower than the AVX2 build on some
+hardware.
 
-For Arm we provide, in order of increasing performance:
+For Arm we provide multiple SIMD builds. From the baseline ISA to the latest
+ISA, we ship:
 
-* `astcenc-sve_256` - uses 256-bit SVE
-* `astcenc-sve_128` - uses 128-bit SVE
 * `astcenc-neon` - uses NEON
+* `astcenc-sve_128` - uses 128-bit SVE
+* `astcenc-sve_256` - uses 256-bit SVE
 
 Note: The Arm Scalable Vector Extensions (SVE) allow CPUs to have a variable
 vector length. The astcenc implementation is not written in a length-agnostic
@@ -93,28 +102,26 @@ For macOS, we provide a single universal binary `astcenc`, which allows the OS
 to automatically use the correct binary variant for the current host machine.
 Support is provided for three architecture slices:
 
+* `arm64` - uses the `astcenc-neon` build defined above.
 * `x86_64` - uses the `astcenc-sse4.1` build defined above.
 * `x86_64h` - uses the `astcenc-avx2` build defined above.
-* `arm64` - uses the `astcenc-neon` build defined above.
 
 ## Repository branches
 
-The `main` branch is an active development branch for the compressor. It aims
-to be a stable branch for the latest major release series, but as it is used
-for ongoing development expect it to have some volatility. We recommend using
-the latest stable release tag for production development.
+We recommend using the latest stable release tag for production development.
 
-The `4.x` branch is a stable branch for the older 4.x release series. It is no
-longer under active development, but is a supported branch that continues to
-get back-ported bug fixes.
+The `main` branch is an active development branch for the compressor. It is
+currently a development branch for the new 6.x major release series, and
+subject to breaking API changes.
 
-Older releases are no longer available as a release branch, but any official
-releases are still available via their git tag. We recommend that developers
-using an older version migrate to the latest 5.x series stable release tag.
+The `5.x` and `4.x` branches are stable support branches for older release
+series. They are no longer under active development, but continue to get bug
+fixes and security updates.
+
+Older major release series no longer have dedicated branches, but all releases remain available via Git tags.
 
 Any other branches you might find are development branches for new features or
-optimizations, so might be interesting to play with but should be considered
-transient and unstable.
+optimizations. They are transient and could be unstable.
 
 # Getting started
 

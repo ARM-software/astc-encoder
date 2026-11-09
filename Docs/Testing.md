@@ -1,13 +1,15 @@
 # Testing astcenc
 
-The repository contains a suite of tests which can be used to validate source code changes to the compressor. The test suite is split into three main test
+The repository contains a suite of tests which can be used to validate source
+code changes to the compressor. The test suite is split into three main test
 types:
 
 * Python tests that drive the command line functional interface tests.
 * Python tests that drive command line performance and image quality tests.
 * C++ unit tests for some internal codec components.
 
-There is currently no test suite for the library API, and we try to exercise all of the functionality via the command line functional interface tests. This
+There is currently no test suite for the library API, and we try to exercise
+all of the functionality via the command line functional interface tests. This
 gives good coverage, but is not able to reach all of the API.
 
 In addition to the tests, we have automated Python script lint, typing, and
@@ -19,7 +21,10 @@ Running the tests requires Python 3.12 to be installed on the host machine.
 
 # Running Python-based CLI functional tests
 
-Compile the build of `astcenc` you wish to test, and install it into the project `./bin` directory. This can be achieved by configuring the CMake build using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build target.
+Compile the build of `astcenc` you wish to test, and install it into the
+project `./bin` directory. This can be achieved by configuring the CMake build
+using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then running a build
+with the `install` build target.
 
 Run the functional tests against the appropriate encoder variant using:
 
@@ -38,7 +43,10 @@ the default remains `./bin/astcenc-avx2` (or the selected encoder variant).
 
 # Running Python-based CLI performance and quality tests
 
-Compile the build of `astcenc` you wish to test and profile, and install it into the project `./bin` directory. This can be achieved by configuring the CMake build using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then running a build with the `install` build target.
+Compile the build of `astcenc` you wish to test and profile, and install it
+into the project `./bin` directory. This can be achieved by configuring the
+CMake build using the install prefix `-DCMAKE_INSTALL_PREFIX=../` and then
+running a build with the `install` build target.
 
 To run the image test suite run the following command from the root directory
 of the repository:
@@ -56,6 +64,12 @@ The `--color-format`, `--block-size`, and `--test-quality` options allow you
 to subset which compressor options are tested. The `-j` option lets you control
 how many threads the compressor is allowed to use.
 
+For a smaller smoke test, pass `--pairwise`. This groups images by color profile
+and format, covers every valid pair of image group, block size, and selected
+quality, and tests each image with a compatible block size at least once. For
+the Small set, all four default presets take 46 runs per encoder, compared with
+596 for the full matrix.
+
 By default output images are discarded during testing. To store images for
 debug purposes, the decompressed output images can be kept by passing
 `--keep-output`. The resulting images are stored in the `TestOutput`
@@ -65,7 +79,8 @@ folder.
 ## Benchmarking
 
 All runs of this test suite will report performance data. To improve result
-stability, the `--repeats` option makes the test suite process each image multiple times and return the best measured performance.
+stability, the `--repeats` option makes the test suite process each image
+multiple times and return the best measured performance.
 
 Performance regressions will not automatically cause test failure, and must be
 manually reviewed.

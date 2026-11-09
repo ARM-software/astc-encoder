@@ -18,21 +18,19 @@
 // Overview
 // ========
 //
-// This is a utility tool to automatically generate single tile test vectors
-// out of a larger test image. This tool takes three input images:
+// Extract single-block test vectors from a larger image using three inputs:
 //
 //    - the uncompressed referenced,
 //    - the known-good compressed reference,
 //    - a new compressed image.
 //
-// The two compressed images are compared block-by-block, and if any block
-// differences are found the worst block is extracted from the uncompressed
-// reference and written back to disk as a single tile output image.
+// Compare compressed images block by block, then save the worst differing block from the
+// uncompressed reference as a single-block image.
 //
 // Limitations
 // ===========
 //
-// This tool only currently supports 2D LDR images.
+// Only 2D LDR images are supported
 //
 // Build
 // =====
@@ -50,6 +48,12 @@
 
 /**
  * @brief Compute the array offset in a 2D image.
+ *
+ * @param x_pix   The image width, in pixels.
+ * @param y_idx   The pixel Y coordinate.
+ * @param x_idx   The pixel X coordinate.
+ * @param chans   The number of components per pixel.
+ * @param p_idx   The component index within the pixel.
  */
 int pix(int x_pix, int y_idx, int x_idx, int chans, int p_idx)
 {

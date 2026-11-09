@@ -19,7 +19,7 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTCENC_INTERNAL_INCLUDED
+#if !defined(ASTCENC_INTERNAL_INCLUDED)
 #define ASTCENC_INTERNAL_INCLUDED
 
 #include <algorithm>
@@ -55,7 +55,7 @@
 		#else
 			#define promise(cond)
 		#endif
-	#else // Assume GCC
+	#else  // Assume GCC
 		#define promise(cond) if (!(cond)) { __builtin_unreachable(); }
 	#endif
 #else
@@ -66,7 +66,12 @@
   Constants
 ============================================================================ */
 #if !defined(ASTCENC_BLOCK_MAX_TEXELS)
-	#define ASTCENC_BLOCK_MAX_TEXELS 216 // A 3D 6x6x6 block
+	// 6x6x6 = 216 live texels. SIMD_WIDTH 16 needs a multiple of 16, so pad to 224.
+	#if ASTCENC_AVX >= 4
+		#define ASTCENC_BLOCK_MAX_TEXELS 224
+	#else
+		#define ASTCENC_BLOCK_MAX_TEXELS 216
+	#endif
 #endif
 
 /** @brief The maximum number of texels a block can support (6x6x6 block). */
@@ -160,8 +165,13 @@ static constexpr unsigned int TUNE_MAX_ANGULAR_QUANT { 7 }; /* QUANT_12 */
 static_assert((BLOCK_MAX_TEXELS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_TEXELS must be multiple of ASTCENC_SIMD_WIDTH");
 
+#if ASTCENC_AVX >= 4
+static_assert(BLOCK_MAX_TEXELS <= 224,
+              "BLOCK_MAX_TEXELS must not be greater than 224");
+#else
 static_assert(BLOCK_MAX_TEXELS <= 216,
               "BLOCK_MAX_TEXELS must not be greater than 216");
+#endif
 
 static_assert((BLOCK_MAX_WEIGHTS % ASTCENC_SIMD_WIDTH) == 0,
               "BLOCK_MAX_WEIGHTS must be multiple of ASTCENC_SIMD_WIDTH");
@@ -868,6 +878,8 @@ struct image_block
 	 * always returns the same value, irrespective of the weight used. They therefore can be ignored
 	 * for the purposes of weight selection and use of a second weight plane.
 	 *
+	 * @param channel   The color channel index, from 0 (R) to 3 (A).
+	 *
 	 * @return @c true if the channel is constant across the block, @c false otherwise.
 	 */
 	inline bool is_constant_channel(int channel) const
@@ -1124,7 +1136,7 @@ struct symbolic_compressed_block
 	/** @brief The error of the current encoding; valid for @c NONCONST blocks. */
 	float errorval;
 
-	// We can't have both of these at the same time
+	// Constant and nonconstant blocks share this storage
 	union {
 		/** @brief The constant color; valid for @c CONST blocks. */
 		int constant_color[BLOCK_MAX_COMPONENTS];
@@ -1144,7 +1156,7 @@ struct symbolic_compressed_block
 	ASTCENC_ALIGNAS uint8_t weights[BLOCK_MAX_WEIGHTS];
 
 	/**
-	 * @brief Get the weight quantization used by this block mode.
+	 * @brief Get the endpoint color quantization used by this block.
 	 *
 	 * @return The quantization level.
 	 */
@@ -1309,9 +1321,9 @@ void init_block_size_descriptor(
  * Note the @c bsd descriptor must be initialized by calling @c init_block_size_descriptor() before
  * calling this function.
  *
- * @param[out] bsd                      The block size information structure to populate.
- * @param      can_omit_partitionings   True if we can we drop partitionings that astcenc won't use.
- * @param      partition_count_cutoff   The partition count cutoff to use, if we can omit partitionings.
+ * @param[in,out] bsd                      The block size information structure to populate.
+ * @param         can_omit_partitionings   True if we can drop partitionings that astcenc won't use.
+ * @param         partition_count_cutoff   The partition count cutoff to use, if we can omit partitionings.
  */
 void init_partition_tables(
 	block_size_descriptor& bsd,
@@ -1326,8 +1338,8 @@ void init_partition_tables(
  *
  * Returns a dynamically allocated array; caller must free with delete[].
  *
- * @param dim_x The block x size.
- * @param dim_y The block y size.
+ * @param dim_x   The block x size.
+ * @param dim_y   The block y size.
  *
  * @return The unpacked table.
  */
@@ -1338,6 +1350,9 @@ const float* get_2d_percentile_table(
 /**
  * @brief Query if a 2D block size is legal.
  *
+ * @param dim_x   The block X dimension, in texels.
+ * @param dim_y   The block Y dimension, in texels.
+ *
  * @return True if legal, false otherwise.
  */
 bool is_legal_2d_block_size(
@@ -1346,6 +1361,10 @@ bool is_legal_2d_block_size(
 
 /**
  * @brief Query if a 3D block size is legal.
+ *
+ * @param dim_x   The block X dimension, in texels.
+ * @param dim_y   The block Y dimension, in texels.
+ * @param dim_z   The block Z dimension, in texels.
  *
  * @return True if legal, false otherwise.
  */
@@ -1427,11 +1446,11 @@ void encode_ise(
  * Note that BISE input strings are not a whole number of bytes in length, and ASTC can start
  * strings at arbitrary bit offsets in the encoded data.
  *
- * @param         quant_level       The BISE alphabet size.
- * @param         character_count   The number of characters in the string.
- * @param         input_data        The packed string.
- * @param[in,out] output_data       The output storage, one byte per character.
- * @param         bit_offset        The starting offset in the output storage.
+ * @param      quant_level       The BISE alphabet size.
+ * @param      character_count   The number of characters in the string.
+ * @param      input_data        The packed string.
+ * @param[out] output_data       The output storage, one byte per character.
+ * @param      bit_offset        The starting offset in the output storage.
  */
 void decode_ise(
 	quant_method quant_level,
@@ -1530,10 +1549,9 @@ void compute_avgs_and_dirs_4_comp(
 /**
  * @brief Compute the RGB error for uncorrelated and same chroma projections.
  *
- * The output of compute averages and dirs is post processed to define two lines, both of which go
- * through the mean-color-value.  One line has a direction defined by the dominant direction; this
- * is used to assess the error from using an uncorrelated color representation. The other line goes
- * through (0,0,0) and is used to assess the error from using an RGBS color representation.
+ * The uncorrelated line passes through the partition mean color and follows
+ * its dominant direction. The same chroma line passes through (0,0,0) and
+ * follows the partition mean color.
  *
  * This function computes the squared error when using these two representations.
  *
@@ -1553,20 +1571,19 @@ void compute_error_squared_rgb(
 /**
  * @brief Compute the RGBA error for uncorrelated and same chroma projections.
  *
- * The output of compute averages and dirs is post processed to define two lines, both of which go
- * through the mean-color-value.  One line has a direction defined by the dominant direction; this
- * is used to assess the error from using an uncorrelated color representation. The other line goes
- * through (0,0,0,1) and is used to assess the error from using an RGBS color representation.
+ * The uncorrelated line passes through the partition mean color and follows
+ * its dominant direction. The same chroma line passes through (0,0,0,0) and
+ * follows the partition mean color.
  *
  * This function computes the squared error when using these two representations.
  *
- * @param      pi              The partition info for the current trial.
- * @param      blk             The image block color data to be compressed.
- * @param      uncor_plines    Processed uncorrelated partition lines for each partition.
- * @param      samec_plines    Processed same chroma partition lines for each partition.
- * @param[out] line_lengths    The length of each components deviation from the line.
- * @param[out] uncor_error     The cumulative error for using the uncorrelated line.
- * @param[out] samec_error     The cumulative error for using the same chroma line.
+ * @param      pi             The partition info for the current trial.
+ * @param      blk            The image block color data to be compressed.
+ * @param      uncor_plines   Processed uncorrelated partition lines for each partition.
+ * @param      samec_plines   Processed same chroma partition lines for each partition.
+ * @param[out] line_lengths   The length of each partition's uncorrelated projection.
+ * @param[out] uncor_error    The cumulative error for using the uncorrelated line.
+ * @param[out] samec_error    The cumulative error for using the same chroma line.
  */
 void compute_error_squared_rgba(
 	const partition_info& pi,
@@ -1584,13 +1601,13 @@ void compute_error_squared_rgba(
  * line's @c bs and @c amod coefficients must also be identical. Same chroma
  * @c amod must be zero. Channel weights may differ and are applied separately.
  *
- * @param      pi              The partition info for the current trial.
- * @param      blk             The grayscale image block color data.
- * @param      uncor_plines    Processed uncorrelated partition lines.
- * @param      samec_plines    Processed same chroma partition lines.
- * @param[out] line_lengths    The length of each partition's projection.
- * @param[out] uncor_error     The cumulative uncorrelated line error.
- * @param[out] samec_error     The cumulative same chroma line error.
+ * @param      pi             The partition info for the current trial.
+ * @param      blk            The grayscale image block color data.
+ * @param      uncor_plines   Processed uncorrelated partition lines.
+ * @param      samec_plines   Processed same chroma partition lines.
+ * @param[out] line_lengths   The length of each partition's projection.
+ * @param[out] uncor_error    The cumulative uncorrelated line error.
+ * @param[out] samec_error    The cumulative same chroma line error.
  */
 void compute_error_squared_rgba_grayscale(
 	const partition_info& pi,
@@ -1604,9 +1621,8 @@ void compute_error_squared_rgba_grayscale(
 /**
  * @brief Find the best set of partitions to trial for a given block.
  *
- * On return the @c best_partitions list will contain the two best partition
- * candidates; one assuming data has uncorrelated chroma and one assuming the
- * data has correlated chroma. The best candidate is returned first in the list.
+ * On return @c best_partitions contains up to @c requested_candidates unique
+ * partitionings, interleaved from the uncorrelated and same chroma rankings.
  *
  * @param      bsd                      The block size information.
  * @param      blk                      The image block color data to compress.
@@ -1657,12 +1673,13 @@ static inline vmask4 get_u8_component_mask(
  * This must be done by a single thread per image, before any thread calls
  * @c compute_averages().
  *
- * Results are written back into @c img->input_alpha_averages.
+ * The initialized arguments are used by @c compute_averages() to write into
+ * the context's @c input_alpha_averages buffer.
  *
- * @param      img                   The input image data, also holds output data.
+ * @param      img                   The input image data.
  * @param      alpha_kernel_radius   The kernel radius (in pixels) for alpha mods.
  * @param      swz                   Input data component swizzle.
- * @param[out] ag                    The average variance arguments to init.
+ * @param[out] ag                    The regional averaging arguments to initialize.
  *
  * @return The number of tasks in the processing stage.
  */
@@ -1675,11 +1692,11 @@ size_t init_compute_averages(
 /**
  * @brief Compute averages for a pixel region.
  *
- * The routine computes both in a single pass, using a summed-area table to decouple the running
- * time from the averaging/variance kernel size.
+ * The routine uses a summed-area table to decouple the running time from the
+ * averaging kernel size.
  *
- * @param[out] ctx   The compressor context storing the output data.
- * @param      arg   The input parameter structure.
+ * @param[in,out] ctx   The compressor context storing the output data.
+ * @param         arg   The input parameter structure.
  */
 void compute_pixel_region_variance(
 	astcenc_contexti& ctx,
@@ -1735,13 +1752,13 @@ void load_image_block_fast_ldr(
 /**
  * @brief Store a single image block to the output image.
  *
- * @param[out] img    The output image data.
- * @param      blk    The image block to export.
- * @param      bsd    The block size information.
- * @param      pos_x  The block X coordinate in the input image.
- * @param      pos_y  The block Y coordinate in the input image.
- * @param      pos_z  The block Z coordinate in the input image.
- * @param      swz    The swizzle to apply on store.
+ * @param[out] img     The output image data.
+ * @param      blk     The image block to export.
+ * @param      bsd     The block size information.
+ * @param      pos_x   The block X coordinate in the output image.
+ * @param      pos_y   The block Y coordinate in the output image.
+ * @param      pos_z   The block Z coordinate in the output image.
+ * @param      swz     The swizzle to apply on store.
  */
 void store_image_block(
 	astcenc_image& img,
@@ -1799,13 +1816,9 @@ void compute_ideal_colors_and_weights_2planes(
 /**
  * @brief Compute the optimal unquantized weights for a decimation table.
  *
- * After computing ideal weights for the case for a complete weight grid, we we want to compute the
- * ideal weights for the case where weights exist only for some texels. We do this with a
- * steepest-descent grid solver which works as follows:
- *
- * First, for each actual weight, perform a weighted averaging of the texels affected by the weight.
- * Then, set step size to <some initial value> and attempt one step towards the original ideal
- * weight if it helps to reduce error.
+ * For each stored weight, first compute a contribution-weighted average of
+ * the ideal texel weights. Then apply one refinement step using the errors
+ * from infilling the reduced weight grid.
  *
  * @param      ei                       The non-decimated endpoints and weights.
  * @param      di                       The selected weight decimation.
@@ -1827,7 +1840,7 @@ void compute_ideal_weights_for_decimation(
  * @param      high_bound                The highest weight allowed.
  * @param      dec_weight_ideal_value    The ideal weight set.
  * @param[out] dec_weight_quant_uvalue   The output quantized weight as a float.
- * @param[out] dec_weight_uquant         The output quantized weight as encoded int.
+ * @param[out] dec_weight_uquant         The quantized weights in the unquantized 0-64 integer range.
  * @param      quant_level               The desired weight quant level.
  */
 void compute_quantized_weights_for_decimation(
@@ -1888,9 +1901,9 @@ float compute_error_of_weight_set_2planes(
  * @param      color0        The input unquantized color0 endpoint for absolute endpoint pairs.
  * @param      color1        The input unquantized color1 endpoint for absolute endpoint pairs.
  * @param      rgbs_color    The input unquantized RGBS variant endpoint for same chroma endpoints.
- * @param      rgbo_color    The input unquantized RGBS variant endpoint for HDR endpoints.
+ * @param      rgbo_color    The input unquantized RGB+offset variant endpoint for HDR endpoints.
  * @param      format        The desired base format.
- * @param[out] output        The output storage for the quantized colors/
+ * @param[out] output        The output storage for the quantized colors.
  * @param      quant_level   The quantization level requested.
  *
  * @return The actual endpoint mode used.
@@ -1907,7 +1920,7 @@ uint8_t pack_color_endpoints(
 /**
  * @brief Unpack a single pair of encoded endpoints.
  *
- * Endpoints must be unscrambled and converted into the 0-255 range before calling this functions.
+ * Endpoints must be unscrambled and converted into the 0-255 range before calling this function.
  *
  * @param      decode_mode   The decode mode (LDR, HDR, etc).
  * @param      format        The color endpoint mode used.
@@ -2124,6 +2137,7 @@ void compress_block(
  * @param      pos_x         The X coordinate of the block in the overall image.
  * @param      pos_y         The Y coordinate of the block in the overall image.
  * @param      pos_z         The Z coordinate of the block in the overall image.
+ * @param      scb           The symbolic compressed encoding.
  * @param[out] blk           The decompressed image block color data.
  */
 void decompress_symbolic_block(
@@ -2202,7 +2216,7 @@ float compute_symbolic_block_difference_1plane_1partition(
  * @brief Convert a symbolic representation into a binary physical encoding.
  *
  * It is assumed that the symbolic encoding is valid and encodable, or
- * previously flagged as an error block if an error color it to be encoded.
+ * previously flagged as an error block if an error color is to be encoded.
  *
  * @param      bsd   The block size information.
  * @param      scb   The symbolic representation.
@@ -2236,8 +2250,10 @@ Platform-specific functions.
  *
  * Allocated memory must be freed by aligned_free.
  *
- * @param size    The desired buffer size.
- * @param align   The desired buffer alignment; must be 2^N, may be increased
+ * @tparam T       The buffer element type.
+ *
+ * @param  size    The desired buffer size, in bytes.
+ * @param  align   The desired buffer alignment; must be 2^N, may be increased
  *                by the implementation to a minimum allowable alignment.
  *
  * @return The memory buffer pointer or nullptr on allocation failure.
@@ -2269,7 +2285,9 @@ T* aligned_malloc(size_t size, size_t align)
 /**
  * @brief Free an aligned memory buffer.
  *
- * @param ptr   The buffer to free.
+ * @tparam T     The buffer element type.
+ *
+ * @param  ptr   The buffer to free.
  */
 template<typename T>
 void aligned_free(T* ptr)

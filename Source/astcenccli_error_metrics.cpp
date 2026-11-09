@@ -40,10 +40,10 @@ public:
 /**
  * @brief Incremental addition operator for error accumulators.
  *
- * @param val The accumulator to increment
- * @param inc The increment to apply
+ * @param[in,out] val   The accumulator to increment.
+ * @param         inc   The increment to apply.
  *
- * @return The updated accumulator
+ * @return The updated accumulator.
  */
 static error_accum4& operator+=(
 	error_accum4 &val,
@@ -59,10 +59,10 @@ static error_accum4& operator+=(
 /**
  * @brief mPSNR tone-mapping operator for HDR images.
  *
- * @param val     The color value to tone map
- * @param fstop   The exposure fstop; should be in range [-125, 125]
+ * @param val     The color value to tone map.
+ * @param fstop   The exposure fstop; should be in range [-125, 125].
  *
- * @return The mapped color value in [0.0f, 255.0f] range
+ * @return The mapped color value in [0.0f, 255.0f] range.
  */
 static float mpsnr_operator(
 	float val,
@@ -78,16 +78,16 @@ static float mpsnr_operator(
 }
 
 /**
- * @brief mPSNR difference between two values.
+ * @brief Sum squared tone-mapped differences between two values.
  *
- * Differences are given as "val1 - val2".
+ * Each difference is squared after applying the mPSNR tone mapping.
  *
- * @param val1       The first color value
- * @param val2       The second color value
- * @param fstop_lo   The low exposure fstop; should be in range [-125, 125]
- * @param fstop_hi   The high exposure fstop; should be in range [-125, 125]
+ * @param val1       The first color value.
+ * @param val2       The second color value.
+ * @param fstop_lo   The low exposure fstop; should be in range [-125, 125].
+ * @param fstop_hi   The high exposure fstop; should be in range [-125, 125].
  *
- * @return The summed mPSNR difference across all active fstop levels
+ * @return The summed squared difference across all active fstop levels.
  */
 static float mpsnr_sumdiff(
 	float val1,
@@ -179,7 +179,7 @@ void compute_error_metrics(
 					color1 = float16_to_float(color1i);
 					color1 = clamp(0, 65504.0f, color1);
 				}
-				else // if (img1->data_type == ASTCENC_TYPE_F32)
+				else  // if (img1->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img1->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img1->data[z]);
@@ -218,7 +218,7 @@ void compute_error_metrics(
 					color2 = float16_to_float(color2i);
 					color2 = clamp(0, 65504.0f, color2);
 				}
-				else // if (img2->data_type == ASTCENC_TYPE_F32)
+				else  // if (img2->data_type == ASTCENC_TYPE_F32)
 				{
 					assert(img2->data_type == ASTCENC_TYPE_F32);
 					float* data32 = static_cast<float*>(img2->data[z]);

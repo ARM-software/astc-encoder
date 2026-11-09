@@ -21,6 +21,7 @@ test code base.
 '''
 
 import io
+from pathlib import Path
 import re
 import sys
 import unittest
@@ -31,6 +32,86 @@ import pycodestyle
 import pylint
 import pylint.lint
 from pylint.reporters.text import TextReporter
+
+import astc_test_image as ati
+from testlib.testset import TestSet
+
+
+class ImageSelectionTests(unittest.TestCase):
+    '''
+    Check pairwise image coverage against the full test matrix.
+
+    Attributes:
+        test_set: The Small image test set.
+    '''
+
+    def setUp(self):
+        '''
+        Load the Small test images without running the compressor.
+        '''
+        self.test_set = TestSet(
+            'Small', Path(__file__).parent / 'Images' / 'Small',
+            ['ldr', 'ldrs', 'hdr'], ['l', 'xy', 'rgb', 'rgba'])
+
+    def test_pairwise_coverage(self):
+        '''
+        Cover all feasible pairs and every image without duplicate runs.
+        '''
+        qualities = ['fastest', 'fast', 'medium', 'thorough']
+        full = ati.select_test_cases(
+            self.test_set, ati.TEST_BLOCK_SIZES, qualities)
+        selected = ati.select_test_cases(
+            self.test_set, ati.TEST_BLOCK_SIZES, qualities, True)
+
+        full_values = [
+            ((image.color_profile, image.color_format), block, quality)
+            for image, block, quality in full
+        ]
+        selected_values = [
+            ((image.color_profile, image.color_format), block, quality)
+            for image, block, quality in selected
+        ]
+
+        for first, second in [(0, 1), (0, 2), (1, 2)]:
+            self.assertEqual(
+                {(case[first], case[second]) for case in full_values},
+                {(case[first], case[second]) for case in selected_values})
+
+        self.assertEqual(
+            {case[0].file_path for case in full},
+            {case[0].file_path for case in selected})
+        self.assertEqual(len(selected), len(set(selected)))
+        self.assertTrue(set(selected).issubset(full))
+        self.assertLess(len(selected), len(full))
+        self.assertEqual(
+            selected, ati.select_test_cases(
+                self.test_set, ati.TEST_BLOCK_SIZES, qualities, True))
+
+    def test_filtered_selection(self):
+        '''
+        Respect block size and quality filters, including empty selections.
+        '''
+        for blocks in [[], ['4x4'], ['3x3x3']]:
+            with self.subTest(blocks=blocks):
+                full = ati.select_test_cases(self.test_set, blocks, ['fast'])
+                selected = ati.select_test_cases(
+                    self.test_set, blocks, ['fast'], True)
+                self.assertEqual(full, selected)
+
+    def test_full_selection(self):
+        '''
+        Preserve the default execution order and dimensionality constraints.
+        '''
+        expected = [
+            (image, block, 'fast')
+            for block in ati.TEST_BLOCK_SIZES
+            for image in self.test_set.tests
+            if image.is_3d == (block.count('x') == 2)
+        ]
+
+        self.assertEqual(
+            expected, ati.select_test_cases(
+                self.test_set, ati.TEST_BLOCK_SIZES, ['fast']))
 
 
 class PythonTests(unittest.TestCase):

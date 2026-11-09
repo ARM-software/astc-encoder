@@ -38,9 +38,9 @@ struct BlockSizes
 };
 
 std::array<BlockSizes, 3> testSz {{
-	{ 4,  4, 1}, // Highest bitrate
-	{12, 12, 1}, // Largest 2D block
-	{6,  6,  6}  // Largest 3D block
+	{ 4,  4, 1},  // Highest bitrate
+	{12, 12, 1},  // Largest 2D block
+	{6,  6,  6}   // Largest 3D block
 }};
 
 std::array<block_size_descriptor, 3> testBSD;

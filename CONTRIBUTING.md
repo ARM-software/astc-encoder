@@ -75,3 +75,7 @@ library interface, the operation must be implemented for all supported
 architectures, using multi-instruction emulation where necessary. This
 restriction reduces some optimization opportunities but makes the code much
 easier to maintain.
+
+- - -
+
+_Copyright © 2026, Arm Limited and contributors._

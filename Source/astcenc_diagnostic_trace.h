@@ -61,7 +61,7 @@
  *     #endif
  */
 
-#ifndef ASTCENC_DIAGNOSTIC_TRACE_INCLUDED
+#if !defined(ASTCENC_DIAGNOSTIC_TRACE_INCLUDED)
 #define ASTCENC_DIAGNOSTIC_TRACE_INCLUDED
 
 #if defined(ASTCENC_DIAGNOSTICS)
@@ -170,8 +170,8 @@ private:
 /**
  * @brief Utility macro to create a trace node on the stack.
  *
- * @param name     The variable name to use.
- * @param ...      The name template and format parameters.
+ * @param name   The variable name to use.
+ * @param ...    The name template and format parameters.
  */
 #define TRACE_NODE(name, ...) TraceNode name(__VA_ARGS__);
 

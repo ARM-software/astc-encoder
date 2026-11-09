@@ -58,6 +58,11 @@ typedef int pthread_attr_t;
 
 /**
  * @brief Proxy Windows @c CreateThread underneath a pthreads-like wrapper.
+ *
+ * @param[out] thread       The native handle of the created thread.
+ * @param      attribs      Unused thread attributes.
+ * @param      threadfunc   The thread entry point.
+ * @param      thread_arg   The payload passed to the thread entry point.
  */
 static int pthread_create(
 	pthread_t* thread,
@@ -84,6 +89,9 @@ static int pthread_create(
  * This is needed on Windows 10 or older to allow benefit from large core count
  * systems with more than 64 logical CPUs. The assignment is skipped on systems
  * with a single processor group, as it is not necessary.
+ *
+ * @param thread         The native thread handle.
+ * @param thread_index   The thread index used to select a CPU group.
  */
 static void set_group_affinity(
 	pthread_t thread,
@@ -125,6 +133,9 @@ static void set_group_affinity(
 
 /**
  * @brief Proxy Windows @c WaitForSingleObject underneath a pthreads-like wrapper.
+ *
+ * @param thread   The native thread handle to wait for.
+ * @param value    Unused pointer; the thread return value is not stored.
  */
 static int pthread_join(
 	pthread_t thread,
@@ -161,13 +172,13 @@ void set_thread_name(
 	size_t name_len = std::strlen(name);
 	size_t clamp_len = std::min<size_t>(name_len, 15);
 
-	// We know we only have basic 7-bit ASCII so just widen
+	// Widen the thread name to wchar_t
 	for (size_t i = 0; i < clamp_len; i++)
 	{
 		wname[i] = static_cast<wchar_t>(name[i]);
 	}
 
- 	SetThreadDescription(GetCurrentThread(), wname);
+	SetThreadDescription(GetCurrentThread(), wname);
 }
 
 /* ============================================================================
@@ -229,10 +240,10 @@ struct launch_desc
 /**
  * @brief Helper function to translate thread entry points.
  *
- * Convert a (void*) thread entry to an (int, void*) thread entry, where the
- * integer contains the thread ID in the thread pool.
+ * Convert a (void*) thread entry to an (int, int, void*) thread entry, passing
+ * the thread count, thread ID, and user payload.
  *
- * @param p The thread launch helper payload.
+ * @param p   The thread launch helper payload.
  */
 static void* launch_threads_helper(
 	void *p
@@ -267,14 +278,14 @@ void launch_threads(
 		thread_descs[actual_thread_count].payload = payload;
 		thread_descs[actual_thread_count].func = func;
 
-		// Handle pthread_create failing by simply using fewer threads
+		// Continue with fewer threads if pthread_create fails
 		int error = pthread_create(
 			&(thread_descs[actual_thread_count].thread_handle),
 			nullptr,
 			launch_threads_helper,
 			reinterpret_cast<void*>(&thread_descs[actual_thread_count]));
 
-		// Track how many threads we actually created
+		// Count successfully created threads
 		if (!error)
 		{
 			// Windows needs explicit thread assignment to handle large core count systems
@@ -288,7 +299,7 @@ void launch_threads(
 		}
 	}
 
-	// If we did not create thread_count threads then emit a warning
+	// Warn if fewer threads were created than requested
 	if (actual_thread_count != thread_count)
 	{
 		int log_count = actual_thread_count == 0 ? 1 : actual_thread_count;
@@ -297,7 +308,7 @@ void launch_threads(
 		       operation, log_count, log_s);
 	}
 
-	// If we managed to spawn any threads wait for them to complete
+	// Wait for successfully created threads
 	if (actual_thread_count != 0)
 	{
 		for (int i = 0; i < actual_thread_count; i++)

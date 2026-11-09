@@ -350,27 +350,27 @@ struct btq_count
  * @brief The table of bits, trits, and quints needed for a quant encode.
  */
 static const std::array<btq_count, 21> btq_counts {{
-	{ 1, 0, 0 }, // QUANT_2
-	{ 0, 1, 0 }, // QUANT_3
-	{ 2, 0, 0 }, // QUANT_4
-	{ 0, 0, 1 }, // QUANT_5
-	{ 1, 1, 0 }, // QUANT_6
-	{ 3, 0, 0 }, // QUANT_8
-	{ 1, 0, 1 }, // QUANT_10
-	{ 2, 1, 0 }, // QUANT_12
-	{ 4, 0, 0 }, // QUANT_16
-	{ 2, 0, 1 }, // QUANT_20
-	{ 3, 1, 0 }, // QUANT_24
-	{ 5, 0, 0 }, // QUANT_32
-	{ 3, 0, 1 }, // QUANT_40
-	{ 4, 1, 0 }, // QUANT_48
-	{ 6, 0, 0 }, // QUANT_64
-	{ 4, 0, 1 }, // QUANT_80
-	{ 5, 1, 0 }, // QUANT_96
-	{ 7, 0, 0 }, // QUANT_128
-	{ 5, 0, 1 }, // QUANT_160
-	{ 6, 1, 0 }, // QUANT_192
-	{ 8, 0, 0 }  // QUANT_256
+	{ 1, 0, 0 },  // QUANT_2
+	{ 0, 1, 0 },  // QUANT_3
+	{ 2, 0, 0 },  // QUANT_4
+	{ 0, 0, 1 },  // QUANT_5
+	{ 1, 1, 0 },  // QUANT_6
+	{ 3, 0, 0 },  // QUANT_8
+	{ 1, 0, 1 },  // QUANT_10
+	{ 2, 1, 0 },  // QUANT_12
+	{ 4, 0, 0 },  // QUANT_16
+	{ 2, 0, 1 },  // QUANT_20
+	{ 3, 1, 0 },  // QUANT_24
+	{ 5, 0, 0 },  // QUANT_32
+	{ 3, 0, 1 },  // QUANT_40
+	{ 4, 1, 0 },  // QUANT_48
+	{ 6, 0, 0 },  // QUANT_64
+	{ 4, 0, 1 },  // QUANT_80
+	{ 5, 1, 0 },  // QUANT_96
+	{ 7, 0, 0 },  // QUANT_128
+	{ 5, 0, 1 },  // QUANT_160
+	{ 6, 1, 0 },  // QUANT_192
+	{ 8, 0, 0 }   // QUANT_256
 }};
 
 /**
@@ -392,27 +392,27 @@ struct ise_size
  * @brief The table of scale, round, and divisors needed for quant sizing.
  */
 static const std::array<ise_size, 21> ise_sizes {{
-	{  1, 0 }, // QUANT_2
-	{  8, 2 }, // QUANT_3
-	{  2, 0 }, // QUANT_4
-	{  7, 1 }, // QUANT_5
-	{ 13, 2 }, // QUANT_6
-	{  3, 0 }, // QUANT_8
-	{ 10, 1 }, // QUANT_10
-	{ 18, 2 }, // QUANT_12
-	{  4, 0 }, // QUANT_16
-	{ 13, 1 }, // QUANT_20
-	{ 23, 2 }, // QUANT_24
-	{  5, 0 }, // QUANT_32
-	{ 16, 1 }, // QUANT_40
-	{ 28, 2 }, // QUANT_48
-	{  6, 0 }, // QUANT_64
-	{ 19, 1 }, // QUANT_80
-	{ 33, 2 }, // QUANT_96
-	{  7, 0 }, // QUANT_128
-	{ 22, 1 }, // QUANT_160
-	{ 38, 2 }, // QUANT_192
-	{  8, 0 }  // QUANT_256
+	{  1, 0 },  // QUANT_2
+	{  8, 2 },  // QUANT_3
+	{  2, 0 },  // QUANT_4
+	{  7, 1 },  // QUANT_5
+	{ 13, 2 },  // QUANT_6
+	{  3, 0 },  // QUANT_8
+	{ 10, 1 },  // QUANT_10
+	{ 18, 2 },  // QUANT_12
+	{  4, 0 },  // QUANT_16
+	{ 13, 1 },  // QUANT_20
+	{ 23, 2 },  // QUANT_24
+	{  5, 0 },  // QUANT_32
+	{ 16, 1 },  // QUANT_40
+	{ 28, 2 },  // QUANT_48
+	{  6, 0 },  // QUANT_64
+	{ 19, 1 },  // QUANT_80
+	{ 33, 2 },  // QUANT_96
+	{  7, 0 },  // QUANT_128
+	{ 22, 1 },  // QUANT_160
+	{ 38, 2 },  // QUANT_192
+	{  8, 0 }   // QUANT_256
 }};
 
 /* See header for documentation. */
@@ -469,9 +469,9 @@ static inline void write_bits(
  * This function reads a packed N-bit field from two bytes in memory. The stored value must exist
  * within the two bytes, but can start at an arbitrary bit offset and span the two bytes in memory.
  *
- * @param         bitcount    The number of bits to read.
- * @param         bitoffset   The bit offset to read from, between 0 and 7.
- * @param[in,out] ptr         The data pointer to read from.
+ * @param bitcount    The number of bits to read.
+ * @param bitoffset   The bit offset to read from, between 0 and 7.
+ * @param ptr         The data pointer to read from.
  *
  * @return The read value.
  */
@@ -520,8 +520,7 @@ void encode_ise(
 
 			uint8_t T = integer_of_trits[i4][i3][i2][i1][i0];
 
-			// The max size of a trit bit count is 6, so we can always safely
-			// pack a single MX value with the following 1 or 2 T bits.
+			// Trits are max of 6-bits, so can pack a single MX value with following 1-2 T bits
 			uint8_t pack;
 
 			// Element 0 + T0 + T1
@@ -553,8 +552,8 @@ void encode_ise(
 		// Loop tail for a partial block
 		if (i != character_count)
 		{
-			// i4 cannot be present - we know the block is partial
-			// i0 must be present - we know the block isn't empty
+			// A partial block has no i4
+			// A nonempty block always has i0
 			unsigned int i4 =                            0;
 			unsigned int i3 = i + 3 >= character_count ? 0 : input_data[i + 3] >> bits;
 			unsigned int i2 = i + 2 >= character_count ? 0 : input_data[i + 2] >> bits;
@@ -591,8 +590,8 @@ void encode_ise(
 
 			uint8_t T = integer_of_quints[i2][i1][i0];
 
-			// The max size of a quint bit count is 5, so we can always safely
-			// pack a single M value with the following 2 or 3 T bits.
+
+			// Quints are max of 5-bits, so can pack a single M value with following 2-3 T bits
 			uint8_t pack;
 
 			// Element 0
@@ -614,8 +613,8 @@ void encode_ise(
 		// Loop tail for a partial block
 		if (i != character_count)
 		{
-			// i2 cannot be present - we know the block is partial
-			// i0 must be present - we know the block isn't empty
+			// A partial block has no i2
+			// A nonempty block always has i0
 			unsigned int i2 =                            0;
 			unsigned int i1 = i + 1 >= character_count ? 0 : input_data[i + 1] >> bits;
 			unsigned int i0 =                                input_data[i + 0] >> bits;
@@ -636,7 +635,7 @@ void encode_ise(
 			}
 		}
 	}
-	// Write out just bits
+	// Write the remaining bits
 	else
 	{
 		for (unsigned int i = 0; i < character_count; i++)
@@ -657,11 +656,10 @@ void decode_ise(
 ) {
 	promise(character_count > 0);
 
-	// Note: due to how the trit/quint-block unpacking is done in this function, we may write more
-	// temporary results than the number of outputs. The maximum actual number of results is 64 bit,
-	// but we keep 4 additional character_count of padding.
+	// Trit/quint unpacking can write beyond character_count. Reserve four padding entries after the
+	// maximum 64 results.
 	uint8_t results[68];
-	uint8_t tq_blocks[22] { 0 }; // Trit-blocks or quint-blocks, must be zeroed
+	uint8_t tq_blocks[22] { 0 };  // Trit-blocks or quint-blocks, must be zeroed
 
 	unsigned int bits = btq_counts[quant_level].bits;
 	unsigned int trits = btq_counts[quant_level].trits;
@@ -670,7 +668,7 @@ void decode_ise(
 	unsigned int lcounter = 0;
 	unsigned int hcounter = 0;
 
-	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks.
+	// Collect bits for each element, as well as bits for any trit-blocks and quint-blocks
 	for (unsigned int i = 0; i < character_count; i++)
 	{
 		results[i] = static_cast<uint8_t>(read_bits(bits, bit_offset, input_data));

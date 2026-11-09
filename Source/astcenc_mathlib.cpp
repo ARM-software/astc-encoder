@@ -20,8 +20,8 @@
 /**
  * @brief 64-bit rotate left.
  *
- * @param val   The value to rotate.
- * @param count The rotation, in bits.
+ * @param val     The value to rotate.
+ * @param count   The rotation, in bits.
  */
 static inline uint64_t rotl(uint64_t val, int count)
 {

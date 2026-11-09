@@ -1101,8 +1101,8 @@ static const packed_percentile_table block_pcd_12x12 {
 /**
  * @brief Fetch the packed percentile table for the given 2D block size.
  *
- * @param dim_x The block x size.
- * @param dim_y The block y size.
+ * @param dim_x   The block x size.
+ * @param dim_y   The block y size.
  *
  * @return The packed table.
  */

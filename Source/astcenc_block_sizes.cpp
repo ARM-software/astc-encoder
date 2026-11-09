@@ -341,7 +341,7 @@ static void init_decimation_info_2d(
 			di.texel_weights_tr[j][i] = wb.grid_weights_of_texel[i][j];
 		}
 
-		// Init all 4 entries so we can rely on zeros for vectorization
+		// Zero-initialize entries needed by SIMD loads
 		for (unsigned int j = wb.weight_count_of_texel[i]; j < 4; j++)
 		{
 			di.texel_weight_contribs_int_tr[j][i] = 0;
@@ -382,8 +382,7 @@ static void init_decimation_info_2d(
 			}
 		}
 
-		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-		// Match last texel in active lane in SIMD group, for better gathers
+		// Pad for full SIMD loads, repeating the last active texel for coherent gathers
 		uint8_t last_texel = di.weight_texels_tr[texel_count_wt - 1][i];
 		for (unsigned int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
@@ -393,7 +392,7 @@ static void init_decimation_info_2d(
 	}
 #endif
 
-	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
+	// Pad for full SIMD loads without a scalar tail
 	size_t texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
 	for (size_t i = texels_per_block; i < texels_per_block_simd; i++)
 	{
@@ -410,8 +409,7 @@ static void init_decimation_info_2d(
 	}
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-	// Match last texel in active lane in SIMD group, for better gathers
+	// Pad for full SIMD loads, repeating the last active texel for coherent gathers
 	unsigned int last_texel_count_wt = wb.texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = di.weight_texels_tr[last_texel_count_wt - 1][weights_per_block - 1];
 
@@ -445,7 +443,7 @@ static void init_decimation_info_2d(
  * @param      weights_y   The number of weights in the Y dimension.
  * @param      weights_z   The number of weights in the Z dimension.
  * @param[out] di          The decimation info structure to populate.
-   @param[out] wb          The decimation table init scratch working buffers.
+ * @param[out] wb          The decimation table init scratch working buffers.
  */
 static void init_decimation_info_3d(
 	unsigned int texels_x,
@@ -500,7 +498,7 @@ static void init_decimation_info_3d(
 				qweight[0] = (z_weight_int * weights_y + y_weight_int) * weights_x + x_weight_int;
 				qweight[3] = ((z_weight_int + 1) * weights_y + (y_weight_int + 1)) * weights_x + (x_weight_int + 1);
 
-				// simplex interpolation
+				// Simplex interpolation
 				int fs = x_weight_frac;
 				int ft = y_weight_frac;
 				int fp = z_weight_frac;
@@ -602,7 +600,7 @@ static void init_decimation_info_3d(
 		di.texel_weight_count[i] = wb.weight_count_of_texel[i];
 		max_texel_weight_count = astc::max(max_texel_weight_count, di.texel_weight_count[i]);
 
-		// Init all 4 entries so we can rely on zeros for vectorization
+		// Zero-initialize entries needed by SIMD loads
 		for (unsigned int j = 0; j < 4; j++)
 		{
 			di.texel_weight_contribs_int_tr[j][i] = 0;
@@ -652,8 +650,7 @@ static void init_decimation_info_3d(
 			}
 		}
 
-		// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-		// Match last texel in active lane in SIMD group, for better gathers
+		// Pad for full SIMD loads, repeating the last active texel for coherent gathers
 		uint8_t last_texel = di.weight_texels_tr[texel_count_wt - 1][i];
 		for (unsigned int j = texel_count_wt; j < max_texel_count_of_weight; j++)
 		{
@@ -663,7 +660,7 @@ static void init_decimation_info_3d(
 	}
 #endif
 
-	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
+	// Pad for full SIMD loads without a scalar tail
 	size_t texels_per_block_simd = round_up_to_simd_multiple_vla(texels_per_block);
 	for (size_t i = texels_per_block; i < texels_per_block_simd; i++)
 	{
@@ -680,8 +677,7 @@ static void init_decimation_info_3d(
 	}
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-	// Initialize array tail so we can over-fetch with SIMD later to avoid loop tails
-	// Match last texel in active lane in SIMD group, for better gathers
+	// Pad for full SIMD loads, repeating the last active texel for coherent gathers
 	int last_texel_count_wt = wb.texel_count_of_weight[weights_per_block - 1];
 	uint8_t last_texel = di.weight_texels_tr[last_texel_count_wt - 1][weights_per_block - 1];
 
@@ -826,8 +822,8 @@ static void construct_block_size_descriptor_2d(
 	float mode_cutoff,
 	block_size_descriptor& bsd
 ) {
-	// Store a remap table for storing packed decimation modes.
-	// Indexing uses [Y * 16 + X] and max size for each axis is 12.
+	// Store a remap table for storing packed decimation modes. Indexing uses [Y * 16 + X] and max
+	// size for each axis is 12.
 	static const unsigned int MAX_DMI = 12 * 16 + 12;
 	int decimation_mode_index[MAX_DMI];
 
@@ -877,7 +873,7 @@ static void construct_block_size_descriptor_2d(
 	{
 		for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 		{
-			// Skip modes we've already included in a previous pass
+			// Skip modes included in an earlier pass
 			if (bsd.block_mode_packed_index[i] != BLOCK_BAD_BLOCK_MODE)
 			{
 				continue;
@@ -903,27 +899,27 @@ static void construct_block_size_descriptor_2d(
 				continue;
 			}
 
-			// Always skip encodings we can't physically encode based on
-			// generic encoding bit availability
+			// Skip modes with no bits left for endpoints
 			if (is_dual_plane)
 			{
-				 // This is the only check we need as only support 1 partition
-				 if ((109 - weight_bits) <= 0)
-				 {
+				// Dual-plane modes support only one partition
+				if ((109 - weight_bits) <= 0)
+				{
 					continue;
-				 }
+				}
 			}
 			else
 			{
-				// This is conservative - fewer bits may be available for > 1 partition
-				 if ((111 - weight_bits) <= 0)
-				 {
+				// Conservative bound; multiple partitions leave fewer endpoint bits
+				if ((111 - weight_bits) <= 0)
+				{
 					continue;
-				 }
+				}
 			}
 
 			// Selectively skip encodings based on percentile
 			bool percentile_hit = false;
+
 	#if !defined(ASTCENC_DECOMPRESS_ONLY)
 			if (j == 0)
 			{
@@ -940,7 +936,7 @@ static void construct_block_size_descriptor_2d(
 				continue;
 			}
 
-			// Allocate and initialize the decimation table entry if we've not used it yet
+			// Initialize each decimation table entry on first use
 			int decimation_mode = decimation_mode_index[weights_y * 16 + weights_x];
 			if (decimation_mode < 0)
 			{
@@ -1004,7 +1000,7 @@ static void construct_block_size_descriptor_2d(
 	}
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-	// Determine the texels to use for kmeans clustering.
+	// Determine the texels to use for kmeans clustering
 	assign_kmeans_texels(bsd);
 #endif
 
@@ -1028,8 +1024,8 @@ static void construct_block_size_descriptor_3d(
 	unsigned int texels_z,
 	block_size_descriptor& bsd
 ) {
-	// Store a remap table for storing packed decimation modes.
-	// Indexing uses [Z * 64 + Y *  8 + X] and max size for each axis is 6.
+	// Store a remap table for storing packed decimation modes. Indexing uses [Z * 64 + Y *  8 + X]
+	// and max size for each axis is 6.
 	static constexpr unsigned int MAX_DMI = 6 * 64 + 6 * 8 + 6;
 	int decimation_mode_index[MAX_DMI];
 	unsigned int decimation_mode_count = 0;
@@ -1046,7 +1042,7 @@ static void construct_block_size_descriptor_3d(
 		decimation_mode_index[i] = -1;
 	}
 
-	// gather all the infill-modes that can be used with the current block size
+	// Gather all the infill-modes that can be used with the current block size
 	for (unsigned int weights_x = 2; weights_x <= texels_x; weights_x++)
 	{
 		for (unsigned int weights_y = 2; weights_y <= texels_y; weights_y++)
@@ -1103,7 +1099,7 @@ static void construct_block_size_descriptor_3d(
 		bsd.decimation_modes[i].refprec_2planes = 0;
 	}
 
-	bsd.decimation_mode_count_always = 0; // Skipped for 3D modes
+	bsd.decimation_mode_count_always = 0;  // Skipped for 3D modes
 	bsd.decimation_mode_count_selected = decimation_mode_count;
 	bsd.decimation_mode_count_all = decimation_mode_count;
 
@@ -1125,7 +1121,7 @@ static void construct_block_size_descriptor_3d(
 	{
 		for (unsigned int i = 0; i < WEIGHTS_MAX_BLOCK_MODES; i++)
 		{
-			// Skip modes we've already included in a previous pass
+			// Skip modes included in an earlier pass
 			if (bsd.block_mode_packed_index[i] != BLOCK_BAD_BLOCK_MODE)
 			{
 				continue;
@@ -1151,22 +1147,22 @@ static void construct_block_size_descriptor_3d(
 				continue;
 			}
 
-			// Always skip encodings we can't physically encode based on bit availability
+			// Skip modes with no bits left for endpoints
 			if (is_dual_plane)
 			{
-				 // This is the only check we need as only support 1 partition
-				 if ((109 - weight_bits) <= 0)
-				 {
+				// Dual-plane modes support only one partition
+				if ((109 - weight_bits) <= 0)
+				{
 					continue;
-				 }
+				}
 			}
 			else
 			{
-				// This is conservative - fewer bits may be available for > 1 partition
-				 if ((111 - weight_bits) <= 0)
-				 {
+				// Conservative bound; multiple partitions leave fewer endpoint bits
+				if ((111 - weight_bits) <= 0)
+				{
 					continue;
-				 }
+				}
 			}
 
 			int decimation_mode = decimation_mode_index[weights_z * 64 + weights_y * 8 + weights_x];
@@ -1188,7 +1184,7 @@ static void construct_block_size_descriptor_3d(
 	bsd.block_mode_count_all = bm_counts[0] + bm_counts[1];
 
 #if !defined(ASTCENC_DECOMPRESS_ONLY)
-	// Determine the texels to use for kmeans clustering.
+	// Determine the texels to use for kmeans clustering
 	assign_kmeans_texels(bsd);
 #endif
 

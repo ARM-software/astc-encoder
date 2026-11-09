@@ -15,7 +15,7 @@
 // under the License.
 // ----------------------------------------------------------------------------
 
-// This is a utility tool to generate quant tables
+// Generate quantization tables
 #include <algorithm>
 #include <array>
 #include <bitset>

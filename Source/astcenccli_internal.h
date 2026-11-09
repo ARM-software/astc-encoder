@@ -19,7 +19,7 @@
  * @brief Functions and data declarations.
  */
 
-#ifndef ASTCENCCLI_INTERNAL_INCLUDED
+#if !defined(ASTCENCCLI_INTERNAL_INCLUDED)
 #define ASTCENCCLI_INTERNAL_INCLUDED
 
 #include <cstddef>
@@ -101,6 +101,8 @@ struct cli_config_options
 
 /**
  * @brief Print a string to stderr.
+ *
+ * @param format   The string to print.
  */
 static inline void print_error(
 	const char* format
@@ -110,6 +112,11 @@ static inline void print_error(
 
 /**
  * @brief Print a formatted string to stderr.
+ *
+ * @tparam _Args    The types of the format arguments.
+ *
+ * @param  format   The printf-style format string.
+ * @param  args     The values to format.
  */
 template<typename ... _Args>
 static inline void print_error(
@@ -135,12 +142,12 @@ using astcenc_image_ptr = std::unique_ptr<astcenc_image, astcenc_image_deleter>;
 /**
  * @brief Load uncompressed image.
  *
- * @param filename               The file path on disk.
- * @param y_flip                 Should this image be Y flipped?
+ * @param      filename          The file path on disk.
+ * @param      y_flip            Should this image be Y flipped?
  * @param[out] is_hdr            Is the loaded image HDR?
  * @param[out] component_count   The number of components in the loaded image.
  *
- * @return The astc image file, or nullptr on error.
+ * @return The loaded image, or @c nullptr on error.
  */
 astcenc_image_ptr load_ncimage(
 	const char* filename,
@@ -151,12 +158,12 @@ astcenc_image_ptr load_ncimage(
 /**
  * @brief Load uncompressed PNG image.
  *
- * @param filename               The file path on disk.
- * @param y_flip                 Should this image be Y flipped?
+ * @param      filename          The file path on disk.
+ * @param      y_flip            Should this image be Y flipped?
  * @param[out] is_hdr            Is the loaded image HDR?
  * @param[out] component_count   The number of components in the loaded image.
  *
- * @return The astc image file, or nullptr on error.
+ * @return The loaded image, or @c nullptr on error.
  */
 astcenc_image_ptr load_png_with_wuffs(
 	const char* filename,
@@ -223,8 +230,8 @@ unsigned int determine_image_components(
 /**
  * @brief Load a compressed .astc image.
  *
- * @param filename   The file to load.
- * @param img        The image to populate with loaded data.
+ * @param      filename   The file to load.
+ * @param[out] img        The image to populate with loaded data.
  *
  * @return Non-zero on error, zero on success.
  */
@@ -247,9 +254,9 @@ int store_cimage(
 /**
  * @brief Load a compressed .ktx image.
  *
- * @param filename   The file to load.
- * @param is_srgb    Is this an sRGB encoded file?
- * @param img        The image to populate with loaded data.
+ * @param      filename   The file to load.
+ * @param[out] is_srgb    Is this an sRGB encoded file?
+ * @param[out] img        The image to populate with loaded data.
  *
  * @return Non-zero on error, zero on success.
  */
@@ -365,9 +372,9 @@ void compute_error_metrics(
 double get_time();
 
 /**
- * @brief Get the number of CPU cores.
+ * @brief Get the number of logical CPUs.
  *
- * @return The number of online or onlineable CPU cores in the system.
+ * @return The number of online or onlineable logical CPUs in the system.
  */
 int get_cpu_count();
 

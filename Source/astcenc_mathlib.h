@@ -20,7 +20,7 @@
  * functions used by the codec.
  */
 
-#ifndef ASTC_MATHLIB_H_INCLUDED
+#if !defined(ASTC_MATHLIB_H_INCLUDED)
 #define ASTC_MATHLIB_H_INCLUDED
 
 #include <cassert>
@@ -28,7 +28,7 @@
 #include <cmath>
 #include <cstring>
 
-#ifndef ASTCENC_POPCNT
+#if !defined(ASTCENC_POPCNT)
   #if defined(__POPCNT__)
     #define ASTCENC_POPCNT 1
   #else
@@ -36,7 +36,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_F16C
+#if !defined(ASTCENC_F16C)
   #if defined(__F16C__)
     #define ASTCENC_F16C 1
   #else
@@ -44,7 +44,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_SSE
+#if !defined(ASTCENC_SSE)
   #if defined(__SSE4_2__)
     #define ASTCENC_SSE 42
   #elif defined(__SSE4_1__)
@@ -56,8 +56,12 @@
   #endif
 #endif
 
-#ifndef ASTCENC_AVX
-  #if defined(__AVX2__)
+// AVX levels: 1 = AVX, 2 = AVX2, 3 = AVX512 8-wide, 4 = AVX512 16-wide
+#if !defined(ASTCENC_AVX)
+  #if defined(__AVX512F__) && defined(__AVX512VBMI__)
+    #define ASTCENC_AVX 4
+    #define ASTCENC_X86_GATHERS 1
+  #elif defined(__AVX2__)
     #define ASTCENC_AVX 2
     #define ASTCENC_X86_GATHERS 1
   #elif defined(__AVX__)
@@ -68,7 +72,7 @@
   #endif
 #endif
 
-#ifndef ASTCENC_NEON
+#if !defined(ASTCENC_NEON)
   #if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC)
     #define ASTCENC_NEON 1
   #else
@@ -76,13 +80,13 @@
   #endif
 #endif
 
-#ifndef ASTCENC_SVE
+#if !defined(ASTCENC_SVE)
   #if defined(__ARM_FEATURE_SVE)
     #if defined(__ARM_FEATURE_SVE_BITS) && __ARM_FEATURE_SVE_BITS == 256
       #define ASTCENC_SVE 8
-    // Auto-detected SVE can only assume vector width of 4 is available, but
-    // must also allow for hardware being longer and so all use of intrinsics
-    // must explicitly use predicate masks to limit to 4-wide.
+    // Auto-detected SVE can only assume vector width of 4 is available, but must also allow for
+    // hardware being longer and so all use of intrinsics must explicitly use predicate masks to
+    // limit to 4-wide
     #else
       #define ASTCENC_SVE 4
     #endif
@@ -92,7 +96,9 @@
 #endif
 
 // Force vector-sized SIMD alignment
-#if ASTCENC_AVX || ASTCENC_SVE == 8
+#if ASTCENC_AVX >= 4
+  #define ASTCENC_VECALIGN 64
+#elif ASTCENC_AVX || ASTCENC_SVE == 8
   #define ASTCENC_VECALIGN 32
 #elif ASTCENC_SSE || ASTCENC_NEON || ASTCENC_SVE == 4
   #define ASTCENC_VECALIGN 16
@@ -101,8 +107,8 @@
   #define ASTCENC_VECALIGN 0
 #endif
 
-// C++11 states that alignas(0) should be ignored but GCC doesn't do
-// this on some versions, so workaround and avoid emitting alignas(0)
+// C++11 states that alignas(0) should be ignored but GCC doesn't do this on some versions, so
+// workaround and avoid emitting alignas(0)
 #if ASTCENC_VECALIGN > 0
 	#define ASTCENC_ALIGNAS alignas(ASTCENC_VECALIGN)
 #else
@@ -124,7 +130,7 @@
   to future vectorization.
 ============================================================================ */
 
-// These are namespaced to avoid colliding with C standard library functions.
+// These are namespaced to avoid colliding with C standard library functions
 namespace astc
 {
 
@@ -144,11 +150,11 @@ static inline float fabs(float v)
 }
 
 /**
- * @brief Test if a float value is a nan.
+ * @brief Test if a float value is a NaN.
  *
- * @param v    The value test.
+ * @param v   The value to test.
  *
- * @return Zero is not a NaN, non-zero otherwise.
+ * @return @c true if the value is a NaN, @c false otherwise.
  */
 static inline bool isnan(float v)
 {
@@ -158,10 +164,12 @@ static inline bool isnan(float v)
 /**
  * @brief Return the minimum of two values.
  *
- * For floats, NaNs are turned into @c q.
+ * For floats, an unordered comparison selects @c q.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
  *
  * @return The smallest value.
  */
@@ -174,11 +182,14 @@ static inline T min(T p, T q)
 /**
  * @brief Return the minimum of three values.
  *
- * For floats, NaNs are turned into @c r.
+ * For floats, each pairwise min selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
  *
  * @return The smallest value.
  */
@@ -191,12 +202,15 @@ static inline T min(T p, T q, T r)
 /**
  * @brief Return the minimum of four values.
  *
- * For floats, NaNs are turned into @c s.
+ * For floats, each pairwise min selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
- * @param s   The fourth value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
+ * @param  s   The fourth value to compare.
  *
  * @return The smallest value.
  */
@@ -209,10 +223,12 @@ static inline T min(T p, T q, T r, T s)
 /**
  * @brief Return the maximum of two values.
  *
- * For floats, NaNs are turned into @c q.
+ * For floats, an unordered comparison selects @c q.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
  *
  * @return The largest value.
  */
@@ -225,11 +241,14 @@ static inline T max(T p, T q)
 /**
  * @brief Return the maximum of three values.
  *
- * For floats, NaNs are turned into @c r.
+ * For floats, each pairwise max selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
  *
  * @return The largest value.
  */
@@ -242,12 +261,15 @@ static inline T max(T p, T q, T r)
 /**
  * @brief Return the maximum of four values.
  *
- * For floats, NaNs are turned into @c s.
+ * For floats, each pairwise max selects its second operand when the
+ * comparison is unordered.
  *
- * @param p   The first value to compare.
- * @param q   The second value to compare.
- * @param r   The third value to compare.
- * @param s   The fourth value to compare.
+ * @tparam T   The value type.
+ *
+ * @param  p   The first value to compare.
+ * @param  q   The second value to compare.
+ * @param  r   The third value to compare.
+ * @param  s   The fourth value to compare.
  *
  * @return The largest value.
  */
@@ -262,17 +284,18 @@ static inline T max(T p, T q, T r, T s)
  *
  * For floats, NaNs are turned into @c mn.
  *
- * @param v      The value to clamp.
- * @param mn     The min value (inclusive).
- * @param mx     The max value (inclusive).
+ * @tparam T    The value type.
+ *
+ * @param  v    The value to clamp.
+ * @param  mn   The min value (inclusive).
+ * @param  mx   The max value (inclusive).
  *
  * @return The clamped value.
  */
 template<typename T>
 inline T clamp(T v, T mn, T mx)
 {
-	// Do not reorder; correct NaN handling relies on the fact that comparison
-	// with NaN returns false and will fall-through to the "min" value.
+	// Preserve comparison order so NaN falls through to the minimum
 	if (v > mx) return mx;
 	if (v > mn) return v;
 	return mn;
@@ -297,7 +320,7 @@ static inline float clamp1f(float v)
  *
  * NaNs are turned into 0.0f.
  *
- * @param v  The value to clamp.
+ * @param v   The value to clamp.
  *
  * @return The clamped value.
  */
@@ -321,7 +344,7 @@ static inline float flt_rd(float v)
 /**
  * @brief SP float round-to-nearest and convert to integer.
  *
- * @param v   The value to round.
+ * @param v   The nonnegative value to round; halfway cases round upward.
  *
  * @return The rounded value.
  */
@@ -434,11 +457,11 @@ static inline int uint_as_int(unsigned int v)
 }
 
 /**
- * @brief Fast approximation of 1.0 / sqrt(val).
+ * @brief Compute the reciprocal square root.
  *
  * @param v   The input value.
  *
- * @return The approximated result.
+ * @return The reciprocal square root.
  */
 static inline float rsqrt(float v)
 {
@@ -446,11 +469,11 @@ static inline float rsqrt(float v)
 }
 
 /**
- * @brief Fast approximation of sqrt(val).
+ * @brief Compute the square root.
  *
  * @param v   The input value.
  *
- * @return The approximated result.
+ * @return The square root.
  */
 static inline float sqrt(float v)
 {
@@ -460,7 +483,7 @@ static inline float sqrt(float v)
 /**
  * @brief Extract mantissa and exponent of a float value.
  *
- * @param      v      The input value.
+ * @param      v      The finite, normalized input value.
  * @param[out] expo   The output exponent.
  *
  * @return The mantissa.
@@ -538,7 +561,7 @@ static inline size_t get_block_count_safe(
  * platforms. Every PRNG created by this call will therefore return the same
  * sequence of values ...
  *
- * @param state The state structure to initialize.
+ * @param[out] state   The state structure to initialize.
  */
 void rand_init(uint64_t state[2]);
 
@@ -549,7 +572,7 @@ void rand_init(uint64_t state[2]);
  * public-domain implementation given by David Blackman & Sebastiano Vigna at
  * http://vigna.di.unimi.it/xorshift/xoroshiro128plus.c
  *
- * @param state The state structure to use/update.
+ * @param[in,out] state   The state structure to use/update.
  */
 uint64_t rand(uint64_t state[2]);
 
@@ -572,43 +595,63 @@ uint64_t rand(uint64_t state[2]);
 /*********************************
   Declaration of line types
 *********************************/
-// parametric line, 2D: The line is given by line = a + b * t.
-
+/** @brief A 2D parametric line, @c a + @c b * @c t. */
 struct line2
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
-// parametric line, 3D
+/** @brief A 3D parametric line, @c a + @c b * @c t. */
 struct line3
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
+/** @brief A 4D parametric line, @c a + @c b * @c t. */
 struct line4
 {
+	/** @brief A point on the line. */
 	vfloat4 a;
+
+	/** @brief The line direction vector. */
 	vfloat4 b;
 };
 
-
+/** @brief A 2D line preprocessed for projecting points onto it. */
 struct processed_line2
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 
+/** @brief A 3D line preprocessed for projecting points onto it. */
 struct processed_line3
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 
+/** @brief A 4D line preprocessed for projecting points onto it. */
 struct processed_line4
 {
+	/** @brief The point on the line closest to the origin. */
 	vfloat4 amod;
+
+	/** @brief The unit-length line direction vector. */
 	vfloat4 bs;
 };
 

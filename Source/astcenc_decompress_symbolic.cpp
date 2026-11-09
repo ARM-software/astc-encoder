@@ -27,10 +27,10 @@
 /**
  * @brief Compute the integer linear interpolation of two color endpoints.
  *
- * @param u8_mask       The mask for lanes using decode_unorm8 rather than decode_f16.
- * @param color0        The endpoint0 color.
- * @param color1        The endpoint1 color.
- * @param weights       The interpolation weight (between 0 and 64).
+ * @param u8_mask   The mask for lanes using decode_unorm8 rather than decode_f16.
+ * @param color0    The endpoint0 color.
+ * @param color1    The endpoint1 color.
+ * @param weights   The interpolation weight (between 0 and 64).
  *
  * @return The interpolated color.
  */
@@ -43,9 +43,8 @@ static vint4 lerp_color_int(
 	vint4 color_delta = color1 - color0;
 	vint4 color = color0 + asr<6>(color_delta * weights + vint4(32));
 
-	// For decode_unorm8 values force the codec to bit replicate. This allows the
-	// rest of the codec to assume the full 0xFFFF range for everything and ignore
-	// the decode_mode setting
+	// For decode_unorm8 values force the codec to bit replicate. This allows the rest of the codec
+	// to assume the full 0xFFFF range for everything and ignore the decode_mode setting
 	vint4 color_u8 = asr<8>(color) * vint4(257);
 	color = select(color, color_u8, u8_mask);
 
@@ -201,7 +200,7 @@ void decompress_symbolic_block(
 	blk.data_max = vfloat4::zero();
 	blk.grayscale = false;
 
-	// If we detected an error-block, blow up immediately.
+	// Reject error blocks
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		for (unsigned int i = 0; i < bsd.texel_count; i++)
@@ -231,8 +230,7 @@ void decompress_symbolic_block(
 			// Determine the UNORM8 rounding on the decode
 			vmask4 u8_mask = get_u8_component_mask(decode_mode, blk);
 
-			// The real decoder would just use the top 8 bits, but we rescale
-			// into a 16-bit value that rounds correctly.
+			// Real decoder uses top 8 bits, but rescale into 16-bits that rounds correctly
 			vint4 colori_u8 = asr<8>(colori) * 257;
 			colori = select(colori, colori_u8, u8_mask);
 
@@ -250,7 +248,7 @@ void decompress_symbolic_block(
 				break;
 			case ASTCENC_PRF_HDR_RGB_LDR_A:
 			case ASTCENC_PRF_HDR:
-				// Constant-color block; unpack from FP16 to FP32.
+				// Constant-color block; unpack from FP16 to FP32
 				color = float16_to_float(vint4(scb.constant_color));
 				use_lns = 1;
 				break;
@@ -285,7 +283,7 @@ void decompress_symbolic_block(
 	int plane2_weights[BLOCK_MAX_TEXELS];
 	unpack_weights(bsd, scb, di, is_dual_plane, plane1_weights, plane2_weights);
 
-	// Now that we have endpoint colors and weights, we can unpack texel colors
+	// Interpolate texel colors from the endpoints and weights
 	int plane2_component = scb.plane2_component;
 	vmask4 plane2_mask = vint4::lane_id() == vint4(plane2_component);
 
@@ -332,7 +330,7 @@ float compute_symbolic_block_difference_2plane(
 	const symbolic_compressed_block& scb,
 	const image_block& blk
 ) {
-	// If we detected an error-block, blow up immediately.
+	// Reject error blocks
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		return ERROR_CALC_DEFAULT;
@@ -382,12 +380,9 @@ float compute_symbolic_block_difference_2plane(
 		// Compare error using a perceptual decode metric for RGBM textures
 		if (config.flags & ASTCENC_FLG_MAP_RGBM)
 		{
-			// Fail encodings that result in zero weight M pixels. Note that this can cause
-			// "interesting" artifacts if we reject all useful encodings - we typically get max
-			// brightness encodings instead which look just as bad. We recommend users apply a
-			// bias to their stored M value, limiting the lower value to 16 or 32 to avoid
-			// getting small M values post-quantization, but we can't prove it would never
-			// happen, especially at low bit rates ...
+			// Reject zero-M texels. Rejecting all useful encodings can force maximum-brightness
+			// artifacts. Biasing input M to at least 16 or 32 reduces this risk, but cannot
+			// eliminate it at low bit rates.
 			if (color.lane<3>() == 0.0f)
 			{
 				return -ERROR_CALC_DEFAULT;
@@ -428,7 +423,7 @@ float compute_symbolic_block_difference_1plane(
 ) {
 	assert(bsd.get_block_mode(scb.block_mode).is_dual_plane == 0);
 
-	// If we detected an error-block, blow up immediately.
+	// Reject error blocks
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		return ERROR_CALC_DEFAULT;
@@ -479,12 +474,9 @@ float compute_symbolic_block_difference_1plane(
 			// Compare error using a perceptual decode metric for RGBM textures
 			if (config.flags & ASTCENC_FLG_MAP_RGBM)
 			{
-				// Fail encodings that result in zero weight M pixels. Note that this can cause
-				// "interesting" artifacts if we reject all useful encodings - we typically get max
-				// brightness encodings instead which look just as bad. We recommend users apply a
-				// bias to their stored M value, limiting the lower value to 16 or 32 to avoid
-				// getting small M values post-quantization, but we can't prove it would never
-				// happen, especially at low bit rates ...
+				// Reject zero-M texels. Rejecting all useful encodings can force maximum-brightness
+				// artifacts. Biasing input M to at least 16 or 32 reduces this risk, but cannot
+				// eliminate it at low bit rates.
 				if (color.lane<3>() == 0.0f)
 				{
 					return -ERROR_CALC_DEFAULT;
@@ -524,7 +516,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 	const symbolic_compressed_block& scb,
 	const image_block& blk
 ) {
-	// If we detected an error-block, blow up immediately.
+	// Reject error blocks
 	if (scb.block_type == SYM_BTYPE_ERROR)
 	{
 		return ERROR_CALC_DEFAULT;
@@ -580,8 +572,7 @@ float compute_symbolic_block_difference_1plane_1partition(
 		vint colori_b = ep0_b + asr<6>(ep_delta_b * weight + vint(32));
 		vint colori_a = ep0_a + asr<6>(ep_delta_a * weight + vint(32));
 
-		// If using a U8 decode mode bit replicate top 8 bits
-		// so rest of codec can assume 0xFFFF max range everywhere
+		// If using U8 decode mode, replicate top 8 bits so rest of codec can assume 0xFFFF max
 		vint colori_r8 = asr<8>(colori_r) * vint(257);
 		colori_r = select(colori_r, colori_r8, vmask(u8_mask.lane<0>()));
 

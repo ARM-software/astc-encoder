@@ -133,8 +133,8 @@ static vfloat4 encode_texel_unorm(
 	(void)lns_mask;
 	vfloat4 raw_value = data * 65535.0f;
 
-	// Unorm data must be in 0-1 range, so clamp because data can come from an
-	// unconstrained float. This will replace NaNs with zero.
+	// Unorm data must be in 0-1 range, so clamp because data can come from an unconstrained float.
+	// This will replace NaNs with zero.
 	return clamp(0.0f, 65535.0f, raw_value);
 }
 
@@ -188,7 +188,7 @@ void load_image_block(
 	vmask4 grayscalev(true);
 	size_t idx = 0;
 
-	// This works because we impose the same choice everywhere during encode
+	// Use the same channel encoding throughout compression
 	uint8_t rgb_lns = (decode_mode == ASTCENC_PRF_HDR) ||
 	                  (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A) ? 1 : 0;
 	uint8_t a_lns = decode_mode == ASTCENC_PRF_HDR ? 1 : 0;
@@ -435,7 +435,7 @@ void store_image_block(
 					}
 
 					// Errors are NaN encoded - convert to magenta error color
-					// Branch is OK here - it is almost never true so predicts well
+					// NaNs are rare, so this branch predicts well
 					vmask nan_mask = data_r != data_r;
 					if (any(nan_mask))
 					{
@@ -518,7 +518,7 @@ void store_image_block(
 			idx += nudge_y;
 		}
 	}
-	else // if (img.data_type == ASTCENC_TYPE_F32)
+	else  // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 

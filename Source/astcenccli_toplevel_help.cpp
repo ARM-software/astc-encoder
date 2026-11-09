@@ -262,8 +262,7 @@ COMPRESSION
         Explicitly specify the number of threads to use in the codec. If
         not specified, the codec will use one thread per CPU detected in
         the system.)"
-// This split in the literals is needed for Visual Studio; the compiler
-// will concatenate these two strings together ...
+// This split in the literals needed for MSVC, compiler will concatenate
 R"(
 
 ADVANCED COMPRESSION
@@ -407,8 +406,7 @@ ADVANCED COMPRESSION
             -verythorough : 0.98
             -exhaustive   : 0.99
 )"
-// This split in the literals is needed for Visual Studio; the compiler
-// will concatenate these two strings together ...
+// This split in the literals needed for MSVC, compiler will concatenate
 R"(
     Other options
     -------------
@@ -457,8 +455,7 @@ R"(
     -silent
         Suppress all non-essential diagnostic output from the codec.
 )"
-// This split in the literals is needed for Visual Studio; the compiler
-// will concatenate these two strings together ...
+// This split in the literals needed for MSVC, compiler will concatenate
 R"(
 
 DECOMPRESSION
@@ -561,7 +558,11 @@ QUICK REFERENCE
 /* See header for documentation. */
 void astcenc_print_header()
 {
-#if (ASTCENC_AVX == 2)
+#if (ASTCENC_AVX >= 4)
+	const char* simdtype = "avx512+vbmi";
+#elif (ASTCENC_AVX == 3)
+	const char* simdtype = "avx256+vbmi";
+#elif (ASTCENC_AVX == 2)
 	const char* simdtype = "avx2";
 #elif (ASTCENC_SSE == 41)
 	const char* simdtype = "sse4.1";
