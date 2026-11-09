@@ -207,14 +207,28 @@ To enable this binary variant add `-DASTCENC_ISA_NONE=ON` to the CMake command
 line when configuring. It is NOT recommended to use this for production; it is
 significantly slower than the vectorized SIMD builds.
 
-### AVX-512 builds
+### 256-bit AVX-512 builds
 
-An optional x86-64 AVX-512 backend is enabled with `-DASTCENC_ISA_AVX512=ON`.
-It requires these AVX-512 features: AVX-512F, AVX-512BW, AVX-512DQ, AVX-512VL,
-and AVX-512VBMI.
+Enable `-DASTCENC_ISA_AVX256=ON` to build `astcenc-avx256`. This variant uses
+AVX-512 instructions with the existing AVX2 256-bit vector size. It generally
+gives a consistent speedup over AVX2, and can be faster than `astcenc-avx512`
+for smaller block sizes.
 
-Windows builds need to use Clang or Clang-CL (`-T ClangCL`); MSVC
-`/arch:AVX512` does not enable VBMI.
+This build requires these AVX-512 features: AVX-512F, AVX-512BW, AVX-512DQ,
+AVX-512VL, and AVX-512VBMI. Windows builds need to use Clang or Clang-CL
+(`-T ClangCL`) because MSVC `/arch:AVX512` does not enable VBMI.
+
+### 512-bit AVX-512 builds
+
+Enable `-DASTCENC_ISA_AVX512=ON` to build `astcenc-avx512`. This variant uses
+AVX-512 instructions with the full 512-bit vector size. Performance gain
+versus `astcenc-avx256` is situational. It usually gives a good speedup for
+larger block sizes, such as 8x8, where the longer vector is more fully
+utilized. For smaller block sizes it can be slower than `astcenc-avx256`.
+
+This build requires these AVX-512 features: AVX-512F, AVX-512BW, AVX-512DQ,
+AVX-512VL, and AVX-512VBMI. Windows builds need to use Clang or Clang-CL
+(`-T ClangCL`) because MSVC `/arch:AVX512` does not enable VBMI.
 
 ### No x86 gather instruction builds
 

@@ -84,7 +84,7 @@ jobs:
           export CXX=clang++
           mkdir build_rel
           cd build_rel
-          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+          cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX256=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
           make install package -j4
 
       - name: Upload binaries
@@ -105,15 +105,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      # The astcenc-avx512 binary is always packaged, but GitHub runners may lack support
-      # Probe the binary and run it only when the veneer accepts the host.
+      # AVX256 and AVX512 binaries are always packaged, but runners may lack support
+      # Both require the same ISA features, so probe the AVX512 binary before running
       - name: Run functional tests
         run: |
           python ./Test/astc_test_functional.py
           if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx256
             python ./Test/astc_test_functional.py --encoder avx512
           else
-            echo "Skipping avx512 tests: host does not support AVX-512"
+            echo "Skipping avx256/avx512 tests: host does not support AVX-512"
           fi
 
       - name: Run image tests
@@ -122,9 +123,10 @@ jobs:
           python ./Test/astc_test_image.py --encoder sse4.1 --test-set Small
           python ./Test/astc_test_image.py --encoder avx2 --test-set Small
           if ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx256 --test-set Small
             python ./Test/astc_test_image.py --encoder avx512 --test-set Small
           else
-            echo "Skipping avx512 tests: host does not support AVX-512"
+            echo "Skipping avx256/avx512 tests: host does not support AVX-512"
           fi
 
   test-ubuntu-sanitizers:
@@ -143,7 +145,7 @@ jobs:
             encoders: none neon sve_128
           - platform: x64
             runner: ubuntu-24.04
-            isa_flags: -DASTCENC_ISA_NONE=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_AVX512=ON
+            isa_flags: -DASTCENC_ISA_NONE=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX256=ON
             encoders: none sse2 sse4.1 avx2
     env:
       CXX: clang++
@@ -181,8 +183,8 @@ jobs:
         run: |
           if [ "${{ matrix.platform }}" = x64 ] &&
              ! ../bin/astcenc-avx512 -help >/dev/null 2>&1; then
-            echo "Skipping avx512 unit tests: host does not support the AVX-512 binary"
-            ctest -E test-unit-avx512 --output-on-failure --no-tests=error
+            echo "Skipping avx256/avx512 unit tests: host does not support the AVX-512 variants"
+            ctest -E 'test-unit-avx(256|512)' --output-on-failure --no-tests=error
           else
             ctest --output-on-failure --no-tests=error
           fi
@@ -195,6 +197,7 @@ jobs:
           done
           if [ "${{ matrix.platform }}" = x64 ] &&
              ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_functional.py --encoder avx256
             python ./Test/astc_test_functional.py --encoder avx512
           fi
 
@@ -205,6 +208,7 @@ jobs:
           done
           if [ "${{ matrix.platform }}" = x64 ] &&
              ./bin/astcenc-avx512 -help >/dev/null 2>&1; then
+            python ./Test/astc_test_image.py --encoder avx256 --test-set Small
             python ./Test/astc_test_image.py --encoder avx512 --test-set Small
           fi
 
@@ -262,7 +266,7 @@ jobs:
         run: |
           mkdir build_rel
           cd build_rel
-          cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
+          cmake -G "Visual Studio 17 2022" -T ClangCL -DCMAKE_INSTALL_PREFIX=../ -DASTCENC_ISA_AVX512=ON -DASTCENC_ISA_AVX256=ON -DASTCENC_ISA_AVX2=ON -DASTCENC_ISA_SSE41=ON -DASTCENC_ISA_SSE2=ON -DASTCENC_PACKAGE=x64 ..
           msbuild astcencoder.sln -property:Configuration=Release
           msbuild PACKAGE.vcxproj -property:Configuration=Release
           msbuild INSTALL.vcxproj -property:Configuration=Release
@@ -312,8 +316,12 @@ jobs:
           )
           bin\astcenc-avx512.exe -help >nul 2>&1
           if errorlevel 1 (
-            echo Skipping avx512 tests: host does not support AVX-512
+            echo Skipping avx256/avx512 tests: host does not support AVX-512
           ) else (
+            python ./Test/astc_test_image.py --encoder avx256 --test-set Small
+            if errorlevel 1 (
+              exit /b 1
+            )
             python ./Test/astc_test_image.py --encoder avx512 --test-set Small
             if errorlevel 1 (
               exit /b 1

@@ -56,12 +56,10 @@
   #endif
 #endif
 
+// AVX levels: 1 = AVX, 2 = AVX2, 3 = AVX512 8-wide, 4 = AVX512 16-wide
 #ifndef ASTCENC_AVX
-  // AVX-512 backend needs VBMI (vpermb / vpermt2b). AVX-512F-only CPUs
-  // (Skylake-X, Cascade Lake) must stay on the AVX2 8-wide path.
-  // F+VBMI selects this 16-wide backend.
   #if defined(__AVX512F__) && defined(__AVX512VBMI__)
-    #define ASTCENC_AVX 3
+    #define ASTCENC_AVX 4
     #define ASTCENC_X86_GATHERS 1
   #elif defined(__AVX2__)
     #define ASTCENC_AVX 2
@@ -98,7 +96,7 @@
 #endif
 
 // Force vector-sized SIMD alignment
-#if ASTCENC_AVX >= 3
+#if ASTCENC_AVX >= 4
   #define ASTCENC_VECALIGN 64
 #elif ASTCENC_AVX || ASTCENC_SVE == 8
   #define ASTCENC_VECALIGN 32

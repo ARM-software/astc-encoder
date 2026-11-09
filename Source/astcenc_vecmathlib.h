@@ -90,8 +90,8 @@
  */
 template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indices);
 
-#if ASTCENC_AVX >= 3
-	// Compile-time AVX-512: expose 16-wide VLA
+#if ASTCENC_AVX >= 4
+	// If we have 512-bit AVX-512, expose 16-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx512_16.h"
@@ -118,7 +118,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint16_from_size;
 
 #elif ASTCENC_AVX >= 2
-	// If we have AVX2 expose 8-wide VLA.
+	// If we have AVX2 or 256-bit AVX-512, expose 8-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_avx2_8.h"
@@ -146,7 +146,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint8_from_size;
 
 #elif ASTCENC_SSE >= 20
-	// If we have SSE expose 4-wide VLA, and 4-wide fixed width.
+	// If we have SSE, expose 4-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_sse_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
@@ -171,7 +171,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 		#error "__ARM_FEATURE_SVE_BITS is not set to 256 bits"
 	#endif
 
-	// If we have SVE configured as 8-wide, expose 8-wide VLA.
+	// If we have 256-bit SVE, expose 8-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 	#include "astcenc_vecmathlib_sve_8.h"
@@ -199,7 +199,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint8_from_size;
 
 #elif ASTCENC_NEON > 0
-	// If we have NEON expose 4-wide VLA.
+	// If we have NEON, expose 4-wide VLA and 4-wide fixed width
 	#include "astcenc_vecmathlib_neon_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
 
@@ -219,6 +219,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	constexpr auto vint_from_size = vint4_from_size;
 
 #elif defined(__riscv_v_fixed_vlen) && (__riscv_v_fixed_vlen == 256)
+	// If we have 256-bit RVV, expose 8-wide VLA and 4-wide fixed width
 	#include <riscv_vector.h>
 	#include "astcenc_vecmathlib_none_4.h"
 	#include "astcenc_vecmathlib_common_4.h"
@@ -242,7 +243,7 @@ template<typename T> T gatherf_byte_inds(const float* base, const uint8_t* indic
 	using vtable8_64x8 = vtable_64x8;
 
 #else
-	// If we have nothing expose 4-wide VLA, and 4-wide fixed width.
+	// If we have no SIMD, expose 4-wide VLA and 4-wide fixed width
 
 	// Note: We no longer expose the 1-wide scalar fallback because it is not
 	// invariant with the 4-wide path due to algorithms that use horizontal

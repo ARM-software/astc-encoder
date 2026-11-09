@@ -14,9 +14,11 @@ at 3.9 GHz, running `astcenc` using AVX2 and 12 threads.
 The 5.8.0 release is a minor release, focusing on performance optimization.
 
 * **General updates:**
-  * **Feature:** Add AVX-512 SIMD backend to library, and corresponding command
-    line tool variant. Performance is sensitive to hardware, and may be slower
-    than AVX2 on some implementations.
+  * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
+    command line tool variants. Implementation provides "AVX-256", which uses
+    an enhanced version of the AVX2 backend operating on 256-bit vectors, and
+    full AVX-512 operating on 512-bit vectors. Note that full AVX-512
+    performance can be slower than AVX2 for smaller block sizes.
 * **Codec library updates:**
   * **Optimization:** Hoist loop invariant weight diff calculation out of the
     `compute_ideal_weights_for_decimation()` refinement loop.
