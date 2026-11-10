@@ -15,6 +15,7 @@ The 4.9.0 release is a small release adding support for Arm Scalable Vector
 Extensions SIMD, as well as some minor bug fixes.
 
 * **General:**
+  * **Bug fix:** Remove a data race when reporting compression progress.
   * **Bug fix:** Remove data races when initializing configurations and
     allocating contexts concurrently.
   * **Bug fix:** Fixed incorrect return type in "None" vector library

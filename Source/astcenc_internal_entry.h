@@ -127,7 +127,7 @@ private:
 	/** @brief Minimum progress before making a callback. */
 	float m_callback_min_diff;
 
-	/** @brief Last progress callback value. */
+	/** @brief Last progress callback value, protected by @c m_callback_lock. */
 	float m_callback_last_value;
 
 public:
@@ -231,50 +231,36 @@ public:
 	 */
 	void complete_task_assignment(unsigned int count)
 	{
-		// Note: m_done_count cannot use an atomic without the mutex; this has a race between the
-		// update here and the wait() for other threads
+		// Update m_done_count under the mutex to synchronize with threads entering wait()
 		unsigned int local_count;
-		float local_last_value;
 		{
 			std::unique_lock<std::mutex> lck(m_lock);
+
 			m_done_count += count;
 			local_count = m_done_count;
-			local_last_value = m_callback_last_value;
 
 			if (m_done_count == m_task_count)
 			{
-				// Ensure the progress bar hits 100%
-				if (m_callback)
-				{
-					std::unique_lock<std::mutex> cblck(m_callback_lock);
-					m_callback(100.0f);
-					m_callback_last_value = 100.0f;
-				}
-
 				lck.unlock();
 				m_complete.notify_all();
 			}
 		}
 
-		// Process progress callback if we have one
+		// Report progress when a callback is registered
 		if (m_callback)
 		{
-			// Initial lockless test - have we progressed enough to emit?
+			std::lock_guard<std::mutex> cblck(m_callback_lock);
+
 			float num = static_cast<float>(local_count);
 			float den = static_cast<float>(m_task_count);
-			float this_value =  (num / den) * 100.0f;
-			bool report_test = (this_value - local_last_value) > m_callback_min_diff;
+			float this_value = (num / den) * 100.0f;
+			bool report_test = (local_count == m_task_count) ||
+			                   ((this_value - m_callback_last_value) > m_callback_min_diff);
 
-			// Recheck under lock, because another thread might report first
 			if (report_test)
 			{
-				std::unique_lock<std::mutex> cblck(m_callback_lock);
-				bool report_retest = (this_value - m_callback_last_value) > m_callback_min_diff;
-				if (report_retest)
-				{
-					m_callback(this_value);
-					m_callback_last_value = this_value;
-				}
+				m_callback(this_value);
+				m_callback_last_value = this_value;
 			}
 		}
 	}
