@@ -27,6 +27,7 @@
 #include <climits>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <memory>
 #include <new>
 #include <sstream>
@@ -38,6 +39,11 @@
 #include "ThirdParty/stb_image.h"
 #include "ThirdParty/stb_image_write.h"
 #include "ThirdParty/tinyexr.h"
+
+// Convenience variables for file format limit checks
+static constexpr uint32_t max_u32 = std::numeric_limits<uint32_t>::max();
+static constexpr int32_t max_s32 = std::numeric_limits<int32_t>::max();
+static constexpr uint16_t max_u16 = std::numeric_limits<uint16_t>::max();
 
 /**
  * @brief Reverse the bytes in a uint32_t value.
@@ -212,7 +218,7 @@ static bool store_exr_image_with_tinyexr(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > INT_MAX || img->dim_y > INT_MAX)
+	if ((img->dim_x > max_s32) || (img->dim_y > max_s32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -251,7 +257,7 @@ static bool store_png_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	if ((img->dim_x > max_s32 / 4) || (img->dim_y > max_s32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -293,7 +299,7 @@ static bool store_tga_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > UINT16_MAX || img->dim_y > UINT16_MAX)
+	if ((img->dim_x > max_u16) || (img->dim_y > max_u16))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -335,7 +341,7 @@ static bool store_bmp_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	if ((img->dim_x > max_s32 / 4) || (img->dim_y > max_s32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -377,7 +383,7 @@ static bool store_hdr_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	if ((img->dim_x > max_s32 / 4) || (img->dim_y > max_s32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -1463,8 +1469,8 @@ bool store_ktx_compressed_image(
 	const char* filename,
 	bool is_srgb
 ) {
-	if (img.dim_x > UINT32_MAX || img.dim_y > UINT32_MAX || img.dim_z > UINT32_MAX ||
-	    img.data.size() > UINT32_MAX)
+	if ((img.dim_x > max_u32) || (img.dim_y > max_u32) || (img.dim_z > max_u32) ||
+	    (img.data.size() > max_u32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -1528,7 +1534,7 @@ static bool store_ktx_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
+	if ((img->dim_x > max_u32) || (img->dim_y > max_u32) || (img->dim_z > max_u32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -2224,7 +2230,7 @@ static bool store_dds_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
-	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
+	if ((img->dim_x > max_u32) || (img->dim_y > max_u32) || (img->dim_z > max_u32))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
@@ -2784,7 +2790,7 @@ bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename
 ) {
-	if (img.dim_x > 0xFFFFFF || img.dim_y > 0xFFFFFF || img.dim_z > 0xFFFFFF)
+	if ((img.dim_x > 0xFFFFFF) || (img.dim_y > 0xFFFFFF) || (img.dim_z > 0xFFFFFF))
 	{
 		print_error("ERROR: Image exceeds file format size limits\n");
 		return true;
