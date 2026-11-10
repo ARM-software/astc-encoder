@@ -194,6 +194,18 @@ macro(astcenc_set_properties ASTCENC_TARGET_NAME ASTCENC_VENEER_TYPE)
                 $<${is_clang}:-fuse-ld=lld>)
     endif()
 
+    if(${ASTCENC_TSAN})
+        target_compile_options(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                $<${is_gnu_fe}:-fsanitize=thread>
+                $<${is_gnu_fe}:-fno-sanitize-recover=all>)
+
+        target_link_options(${ASTCENC_TARGET_NAME}
+            PRIVATE
+                $<${is_gnu_fe}:-fsanitize=thread>
+                $<${is_clang}:-fuse-ld=lld>)
+    endif()
+
     if(${ASTCENC_UBSAN})
         target_compile_options(${ASTCENC_TARGET_NAME}
             PRIVATE
@@ -525,6 +537,14 @@ set_source_files_properties(astcenccli_image_external.cpp
         COMPILE_FLAGS ${EXTERNAL_CXX_FLAGS})
 
 astcenc_set_properties(${ASTCENC_TARGET}-static OFF)
+
+# The monkey test requires compression support and excludes diagnostic tracing
+if(ASTCENC_UNITTEST AND NOT ASTCENC_DECOMPRESSOR AND NOT ASTCENC_DIAGNOSTICS)
+    set(ASTCENC_MONKEY_TARGET test-monkey-${ASTCENC_ISA_SIMD})
+    add_executable(${ASTCENC_MONKEY_TARGET} UnitTest/astc_test_threading.cpp)
+    target_link_libraries(${ASTCENC_MONKEY_TARGET} PRIVATE ${ASTCENC_TARGET}-static)
+    astcenc_set_properties(${ASTCENC_MONKEY_TARGET} OFF)
+endif()
 
 target_compile_options(${ASTCENC_TARGET}-static
     PRIVATE

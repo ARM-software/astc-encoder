@@ -269,6 +269,10 @@ We support building with sanitizers on Linux and macOS when using Clang.
 To build binaries with ASAN checking enabled add `-DASTCENC_ASAN=ON` to the
 CMake command line when configuring.
 
+To build binaries with TSAN checking enabled add `-DASTCENC_TSAN=ON` to the
+CMake command line when configuring. ASAN and TSAN require separate builds
+and cannot be enabled together.
+
 To build binaries with UBSAN checking enabled add `-DASTCENC_UBSAN=ON` to the
 CMake command line when configuring.
 
