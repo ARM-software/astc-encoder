@@ -222,7 +222,7 @@ extern "C" void progress_emitter(
  * @param         argument_count   The number of arguments required by the option.
  * @param[in,out] argidx           The current command line argument index.
  *
- * @return @c true on success, or @c false if arguments are missing.
+ * @return @c true if arguments are missing, @c false on success.
  */
 static bool advance_option(
 	const char* option,
@@ -236,10 +236,10 @@ static bool advance_option(
 		const char* suffix = argument_count == 1 ? "" : "s";
 		print_error("ERROR: %s switch requires %d argument%s\n",
 		            option, argument_count, suffix);
-		return false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 /**
@@ -249,7 +249,7 @@ static bool advance_option(
  * @param      value    The command line argument to parse.
  * @param[out] result   The parsed unsigned integer.
  *
- * @return @c true on success, or @c false if the value is invalid.
+ * @return @c true if the value is invalid, @c false on success.
  */
 static bool parse_unsigned(
 	const char* option,
@@ -276,11 +276,11 @@ static bool parse_unsigned(
 	if (invalid)
 	{
 		print_error("ERROR: Value for %s switch must be positive integer\n", option);
-		return false;
+		return true;
 	}
 
 	result = static_cast<unsigned int>(parsed);
-	return true;
+	return false;
 }
 
 /**
@@ -290,7 +290,7 @@ static bool parse_unsigned(
  * @param      value    The command line argument to parse.
  * @param[out] result   The parsed signed integer.
  *
- * @return @c true on success, or @c false if the value is invalid.
+ * @return @c true if the value is invalid, @c false on success.
  */
 static bool parse_signed(
 	const char* option,
@@ -317,11 +317,11 @@ static bool parse_signed(
 	if (invalid)
 	{
 		print_error("ERROR: Value for %s switch must be integer\n", option);
-		return false;
+		return true;
 	}
 
 	result = static_cast<int>(parsed);
-	return true;
+	return false;
 }
 
 /**
@@ -335,7 +335,7 @@ static bool parse_signed(
  * @param      value    The command line argument to parse.
  * @param[out] result   The parsed floating-point value.
  *
- * @return @c true on success, or @c false if the value is invalid.
+ * @return @c true if the value is invalid, @c false on success.
  */
 static bool parse_float(
 	const char* option,
@@ -367,11 +367,11 @@ static bool parse_float(
 			print_error("ERROR: Value for %s switch must be floating-point number\n", option);
 		}
 
-		return false;
+		return true;
 	}
 
 	result = static_cast<float>(parsed);
-	return true;
+	return false;
 }
 
 /**
@@ -612,9 +612,9 @@ static astcenc_image_ptr load_uncomp_file(
  * @param[out] operation   Codec operation mode.
  * @param[out] profile     Codec color profile.
  *
- * @return 0 if everything is okay, 1 if there is some error
+ * @return @c true on error, @c false on success.
  */
-static int parse_commandline_options(
+static bool parse_commandline_options(
 	int argc,
 	char **argv,
 	astcenc_operation& operation,
@@ -639,10 +639,10 @@ static int parse_commandline_options(
 	if (operation == ASTCENC_OP_UNKNOWN)
 	{
 		print_error("ERROR: Unrecognized operation '%s'\n", argv[1]);
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 /**
@@ -656,9 +656,9 @@ static int parse_commandline_options(
  * @param[out] preprocess   Image preprocess operation.
  * @param[out] config       Codec configuration.
  *
- * @return 0 if everything is okay, 1 if there is some error
+ * @return @c true on error, @c false on success.
  */
-static int init_astcenc_config(
+static bool init_astcenc_config(
 	int argc,
 	char **argv,
 	astcenc_profile profile,
@@ -690,7 +690,7 @@ static int init_astcenc_config(
 		if (argc < 5)
 		{
 			print_error("ERROR: Block size must be specified\n");
-			return 1;
+			return true;
 		}
 
 		int cnt2D, cnt3D;
@@ -700,14 +700,14 @@ static int init_astcenc_config(
 		if (!(((dimensions == 2) && !argv[4][cnt2D]) || ((dimensions == 3) && !argv[4][cnt3D])))
 		{
 			print_error("ERROR: Block size '%s' is invalid\n", argv[4]);
-			return 1;
+			return true;
 		}
 
 		// Read and decode search quality
 		if (argc < 6)
 		{
 			print_error("ERROR: Search quality level must be specified\n");
-			return 1;
+			return true;
 		}
 
 		if (!strcmp(argv[5], "-fastest"))
@@ -737,11 +737,11 @@ static int init_astcenc_config(
 		else
 		{
 			float value;
-			bool parsed = parse_float(nullptr, argv[5], value);
-			if (!parsed)
+			bool parse_error = parse_float(nullptr, argv[5], value);
+			if (parse_error)
 			{
 				print_error("ERROR: Search quality/preset '%s' is invalid\n", argv[5]);
-				return 1;
+				return true;
 			}
 
 			quality = value;
@@ -784,7 +784,7 @@ static int init_astcenc_config(
 			if (preprocess != ASTCENC_PP_NONE)
 			{
 				print_error("ERROR: Only a single image preprocess can be used\n");
-				return 1;
+				return true;
 			}
 			preprocess = ASTCENC_PP_NORMALIZE;
 		}
@@ -793,7 +793,7 @@ static int init_astcenc_config(
 			if (preprocess != ASTCENC_PP_NONE)
 			{
 				print_error("ERROR: Only a single image preprocess can be used\n");
-				return 1;
+				return true;
 			}
 			preprocess = ASTCENC_PP_PREMULTIPLY;
 		}
@@ -820,25 +820,25 @@ static int init_astcenc_config(
 	if (status == ASTCENC_ERR_BAD_BLOCK_SIZE)
 	{
 		print_error("ERROR: Block size '%ux%ux%u' is invalid\n", block_x, block_y, block_z);
-		return 1;
+		return true;
 	}
 	else if (status == ASTCENC_ERR_BAD_DECODE_MODE)
 	{
 		print_error("ERROR: decode_unorm8 is not supported by HDR profiles\n");
-		return 1;
+		return true;
 	}
 	else if (status == ASTCENC_ERR_BAD_CPU_FLOAT)
 	{
 		print_error("ERROR: astcenc must not be compiled with -ffast-math\n");
-		return 1;
+		return true;
 	}
 	else if (status != ASTCENC_SUCCESS)
 	{
 		print_error("ERROR: Init config failed with %s\n", astcenc_get_error_string(status));
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
 /**
@@ -850,9 +850,9 @@ static int init_astcenc_config(
  * @param[out]    cli_config   Command line config.
  * @param[in,out] config       Codec configuration.
  *
- * @return 0 if everything is OK, 1 if there is some error
+ * @return @c true on error, @c false on success.
  */
-static int edit_astcenc_config(
+static bool edit_astcenc_config(
 	int argc,
 	char **argv,
 	const astcenc_operation operation,
@@ -871,23 +871,23 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-cw"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 4, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 4, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			float r_weight;
 			float g_weight;
 			float b_weight;
 			float a_weight;
-			bool parsed = parse_float(argv[argidx - 5], argv[argidx - 4], r_weight) &&
-			              parse_float(argv[argidx - 5], argv[argidx - 3], g_weight) &&
-			              parse_float(argv[argidx - 5], argv[argidx - 2], b_weight) &&
-			              parse_float(argv[argidx - 5], argv[argidx - 1], a_weight);
-			if (!parsed)
+			bool parse_error = parse_float(argv[argidx - 5], argv[argidx - 4], r_weight) ||
+			                   parse_float(argv[argidx - 5], argv[argidx - 3], g_weight) ||
+			                   parse_float(argv[argidx - 5], argv[argidx - 2], b_weight) ||
+			                   parse_float(argv[argidx - 5], argv[argidx - 1], a_weight);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.cw_r_weight = r_weight;
@@ -897,33 +897,33 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-a"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.a_scale_radius = value;
 		}
 		else if (!strcmp(argv[argidx], "-esw"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
 				print_error("ERROR: -esw pattern does not contain 4 characters\n");
-				return 1;
+				return true;
 			}
 
 			astcenc_swz swizzle_components[4];
@@ -951,7 +951,7 @@ static int edit_astcenc_config(
 					break;
 				default:
 					print_error("ERROR: -esw component '%c' is not valid\n", argv[argidx - 1][i]);
-					return 1;
+					return true;
 				}
 			}
 
@@ -962,23 +962,23 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-ssw"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			size_t char_count = strlen(argv[argidx - 1]);
 			if (char_count == 0)
 			{
 				print_error("ERROR: -ssw pattern contains no characters\n");
-				return 1;
+				return true;
 			}
 
 			if (char_count > 4)
 			{
 				print_error("ERROR: -ssw pattern contains more than 4 characters\n");
-				return 1;
+				return true;
 			}
 
 			bool found_r = false;
@@ -1004,7 +1004,7 @@ static int edit_astcenc_config(
 					break;
 				default:
 					print_error("ERROR: -ssw component '%c' is not valid\n", argv[argidx - 1][i]);
-					return 1;
+					return true;
 				}
 			}
 
@@ -1015,16 +1015,16 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-dsw"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			if (strlen(argv[argidx - 1]) != 4)
 			{
 				print_error("ERROR: -dsw switch does not contain 4 characters\n");
-				return 1;
+				return true;
 			}
 
 			astcenc_swz swizzle_components[4];
@@ -1055,7 +1055,7 @@ static int edit_astcenc_config(
 					break;
 				default:
 					print_error("ERROR: -dsw component '%c' is not valid\n", argv[argidx - 1][i]);
-					return 1;
+					return true;
 				}
 			}
 
@@ -1081,17 +1081,17 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-rgbm"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			float value;
-			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.rgbm_m_scale = value;
@@ -1115,155 +1115,155 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-blockmodelimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_block_mode_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-partitioncountlimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_partition_count_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitionindexlimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_2partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionindexlimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_3partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitionindexlimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_4partition_index_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-2partitioncandidatelimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_2partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitioncandidatelimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_3partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-4partitioncandidatelimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_4partitioning_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-dblimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			if ((config.profile == ASTCENC_PRF_LDR) || (config.profile == ASTCENC_PRF_LDR_SRGB))
 			{
 				float value;
-				bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
-				if (!parsed)
+				bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+				if (parse_error)
 				{
-					return 1;
+					return true;
 				}
 
 				config.tune_db_limit = value;
@@ -1271,102 +1271,102 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-2partitionlimitfactor"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			float value;
-			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_2partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-3partitionlimitfactor"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			float value;
-			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_3partition_early_out_limit_factor = value;
 		}
 		else if (!strcmp(argv[argidx], "-2planelimitcorrelation"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			float value;
-			bool parsed = parse_float(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_float(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_2plane_early_out_limit_correlation = value;
 		}
 		else if (!strcmp(argv[argidx], "-refinementlimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_refinement_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-candidatelimit"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.tune_candidate_limit = value;
 		}
 		else if (!strcmp(argv[argidx], "-j"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			cli_config.thread_count = value;
@@ -1374,7 +1374,7 @@ static int edit_astcenc_config(
 			if (cli_config.thread_count < 1)
 			{
 				print_error("ERROR: -j switch value must be at least 1\n");
-				return 1;
+				return true;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-yflip"))
@@ -1384,24 +1384,24 @@ static int edit_astcenc_config(
 		}
 		else if (!strcmp(argv[argidx], "-mpsnr"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 2, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 2, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			int low_fstop;
-			bool parsed = parse_signed(argv[argidx - 3], argv[argidx - 2], low_fstop);
-			if (!parsed)
+			bool parse_error = parse_signed(argv[argidx - 3], argv[argidx - 2], low_fstop);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			int high_fstop;
-			parsed = parse_signed(argv[argidx - 3], argv[argidx - 1], high_fstop);
-			if (!parsed)
+			parse_error = parse_signed(argv[argidx - 3], argv[argidx - 1], high_fstop);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			cli_config.low_fstop = low_fstop;
@@ -1409,8 +1409,8 @@ static int edit_astcenc_config(
 
 			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
-				print_error("ERROR: -mpsnr switch <low> is greater than the <high>\n");
-				return 1;
+				print_error("ERROR: -mpsnr switch <low> is greater than <high>\n");
+				return true;
 			}
 		}
 		else if (!strcmp(argv[argidx], "-zdim"))
@@ -1419,26 +1419,26 @@ static int edit_astcenc_config(
 			if (!(operation & ASTCENC_STAGE_COMPRESS))
 			{
 				print_error("ERROR: -zdim switch is only valid for compression\n");
-				return 1;
+				return true;
 			}
 
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			unsigned int value;
-			bool parsed = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
-			if (!parsed)
+			bool parse_error = parse_unsigned(argv[argidx - 2], argv[argidx - 1], value);
+			if (parse_error)
 			{
-				return 1;
+				return true;
 			}
 
 			if (value == 0)
 			{
 				print_error("ERROR: -zdim switch value must be at least 1\n");
-				return 1;
+				return true;
 			}
 
 			cli_config.array_size = value;
@@ -1446,16 +1446,16 @@ static int edit_astcenc_config(
 			if ((cli_config.array_size > 1) && (config.block_z == 1))
 			{
 				print_error("ERROR: -zdim with 3D input data for a 2D output format\n");
-				return 1;
+				return true;
 			}
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
 		else if (!strcmp(argv[argidx], "-dtrace"))
 		{
-			bool has_args = advance_option(argv[argidx], argc, 1, argidx);
-			if (!has_args)
+			bool arg_error = advance_option(argv[argidx], argc, 1, argidx);
+			if (arg_error)
 			{
-				return 1;
+				return true;
 			}
 
 			config.trace_file_path = argv[argidx - 1];
@@ -1469,7 +1469,7 @@ static int edit_astcenc_config(
 		else
 		{
 			print_error("ERROR: Argument '%s' not recognized\n", argv[argidx]);
-			return 1;
+			return true;
 		}
 	}
 
@@ -1485,11 +1485,11 @@ static int edit_astcenc_config(
 	if (!config.trace_file_path)
 	{
 		print_error("ERROR: Diagnostics builds must set -dtrace\n");
-		return 1;
+		return true;
 	}
 #endif
 
-	return 0;
+	return false;
 }
 
 /**
@@ -2194,7 +2194,7 @@ int astcenc_main(
 
 	astcenc_operation operation;
 	astcenc_profile profile;
-	int error = parse_commandline_options(argc, argv, operation, profile);
+	bool error = parse_commandline_options(argc, argv, operation, profile);
 	if (error)
 	{
 		return 1;
@@ -2608,9 +2608,9 @@ int astcenc_main(
 	{
 		if (!is_null)
 		{
-			bool store_result = store_ncimage(image_decomp_out.get(), output_filename.c_str(),
+			bool store_error = store_ncimage(image_decomp_out.get(), output_filename.c_str(),
 			                                  cli_config.y_flip);
-			if (!store_result)
+			if (store_error)
 			{
 				print_error("ERROR: Failed to write output image %s\n", output_filename.c_str());
 				return 1;

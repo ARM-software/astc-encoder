@@ -367,7 +367,7 @@ static inline void print_error(
  * SIMD support or other ISA extensions such as POPCNT. This function checks that the host CPU
  * actually supports everything this build needs.
  *
- * @return Return @c true if validated, @c false otherwise.
+ * @return @c true on error, @c false on success.
  */
 static bool validate_cpu_isa()
 {
@@ -375,31 +375,31 @@ static bool validate_cpu_isa()
 		if (!cpu_supports_avx512f())
 		{
 			print_error("ERROR: Host does not support AVX-512F ISA extension\n");
-			return false;
+			return true;
 		}
 
 		if (!cpu_supports_avx512dq())
 		{
 			print_error("ERROR: Host does not support AVX-512DQ ISA extension\n");
-			return false;
+			return true;
 		}
 
 		if (!cpu_supports_avx512bw())
 		{
 			print_error("ERROR: Host does not support AVX-512BW ISA extension\n");
-			return false;
+			return true;
 		}
 
 		if (!cpu_supports_avx512vl())
 		{
 			print_error("ERROR: Host does not support AVX-512VL ISA extension\n");
-			return false;
+			return true;
 		}
 
 		if (!cpu_supports_avx512vbmi())
 		{
 			print_error("ERROR: Host does not support AVX-512 VBMI ISA extension\n");
-			return false;
+			return true;
 		}
 	#endif
 
@@ -407,7 +407,7 @@ static bool validate_cpu_isa()
 		if (!cpu_supports_avx2())
 		{
 			print_error("ERROR: Host does not support AVX2 ISA extension\n");
-			return false;
+			return true;
 		}
 	#endif
 
@@ -415,7 +415,7 @@ static bool validate_cpu_isa()
 		if (!cpu_supports_f16c())
 		{
 			print_error("ERROR: Host does not support F16C ISA extension\n");
-			return false;
+			return true;
 		}
 	#endif
 
@@ -423,7 +423,7 @@ static bool validate_cpu_isa()
 		if (!cpu_supports_sse41())
 		{
 			print_error("ERROR: Host does not support SSE4.1 ISA extension\n");
-			return false;
+			return true;
 		}
 	#endif
 
@@ -431,11 +431,11 @@ static bool validate_cpu_isa()
 		if (!cpu_supports_popcnt())
 		{
 			print_error("ERROR: Host does not support POPCNT ISA extension\n");
-			return false;
+			return true;
 		}
 	#endif
 
-	return true;
+	return false;
 }
 
 // Validate Arm SVE availability
@@ -465,24 +465,30 @@ static inline void print_error(
  * Note that this function checks that SVE is supported, but because it
  * runs in the veneer which is compiled without SVE support, we cannot
  * check the SVE width is correct. This is checked later.
+ *
+ * @return @c true on error, @c false on success.
  */
 static bool validate_cpu_isa()
 {
 	if (!cpu_supports_sve())
 	{
 		print_error("ERROR: Host does not support SVE ISA extension\n");
-		return false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 #else
 
-// Fallback for cases with no dynamic ISA availability
+/**
+ * @brief Validate CPU ISA support when no runtime check is needed.
+ *
+ * @return Always @c false (success).
+ */
 static bool validate_cpu_isa()
 {
-	return true;
+	return false;
 }
 
 #endif
@@ -491,7 +497,8 @@ int main(
 	int argc,
 	char **argv
 ) {
-	if (!validate_cpu_isa())
+	bool error = validate_cpu_isa();
+	if (error)
 	{
 		return 1;
 	}
