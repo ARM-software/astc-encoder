@@ -214,6 +214,18 @@ if(${ASTCENC_ASAN})
             $<${is_clang}:-fuse-ld=lld>)
 endif()
 
+if(${ASTCENC_TSAN})
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            $<${is_gnu_fe}:-fsanitize=thread>
+            $<${is_gnu_fe}:-fno-sanitize-recover=all>)
+
+    target_link_options(${ASTCENC_TEST}
+        PRIVATE
+            $<${is_gnu_fe}:-fsanitize=thread>
+            $<${is_clang}:-fuse-ld=lld>)
+endif()
+
 if(${ASTCENC_UBSAN})
     target_compile_options(${ASTCENC_TEST}
         PRIVATE

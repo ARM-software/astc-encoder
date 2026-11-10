@@ -448,6 +448,43 @@ jobs:
             python ./Test/astc_test_image.py --encoder "$ENCODER" --test-set Small --pairwise
           done
 
+  test-ubuntu-clang-monkey:
+    name: Ubuntu x64 Clang monkey (${{ matrix.sanitizer }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        sanitizer: [ASAN, TSAN, UBSAN]
+    env:
+      CXX: clang++
+      TSAN_OPTIONS: halt_on_error=1
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: 'true'
+
+      - name: Update apt packages
+        run: sudo apt-get update
+
+      - name: Install LLD
+        run: sudo apt-get install -y lld
+
+      - name: Build monkey test
+        run: |
+          cmake -S . -B build_monkey -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo -DASTCENC_ISA_AVX2=ON \
+            -DASTCENC_CLI=OFF -DASTCENC_UNITTEST=ON \
+            -DASTCENC_${{ matrix.sanitizer }}=ON
+          cmake --build build_monkey --target test-monkey-avx2 -j4
+
+      - name: Run monkey test for three minutes
+        run: |
+          ./build_monkey/Source/test-monkey-avx2 \
+            --duration 180 --workers 4 --max-threads 4 --seed 1
+
   build-macos-x64-clang:
     name: macOS x64 Clang
     runs-on: macos-26

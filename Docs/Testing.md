@@ -1,23 +1,25 @@
 # Testing astcenc
 
 The repository contains a suite of tests which can be used to validate source
-code changes to the compressor. The test suite is split into three main test
+code changes to the compressor. The test suite is split into four main test
 types:
 
 * Python tests that drive the command line functional interface tests.
 * Python tests that drive command line performance and image quality tests.
 * C++ unit tests for some internal codec components.
+* C++ threading monkey tests for concurrent use of the library API.
 
-There is currently no test suite for the library API, and we try to exercise
-all of the functionality via the command line functional interface tests. This
-gives good coverage, but is not able to reach all of the API.
+Most library API coverage comes from the command line functional interface
+tests. A separate C++ threading monkey test exercises concurrent library use,
+including context inheritance and compression cancellation.
 
 In addition to the tests, we have automated Python script lint, typing, and
 style checkers.
 
 ## Prerequisites
 
-Running the tests requires Python 3.12 to be installed on the host machine.
+Running the Python tests requires Python 3.12 to be installed on the host
+machine.
 
 # Running Python-based CLI functional tests
 
@@ -134,16 +136,102 @@ cd build
 ctest --verbose
 ```
 
-# Using ASAN and UBSAN
+# Running the threading monkey test
 
-Running builds compiled with ASAN (address sanitizer) and UBSAN (undefined
-behavior sanitizer) is one way to check that we have not introduced memory
-or undefined behavior errors. Support for both is integrated into the build
-system for both GCC and Clang on Linux targets.
+The monkey test runs independent workers that repeatedly initialize
+configurations, create, reuse, and free contexts, compress images, and
+decompress images compressed by other workers. It uses standalone contexts
+and parent-child chains, including creating children from active parents and
+freeing intermediate parents while their descendants remain alive. Root
+contexts remain alive until all of their descendants have been freed.
+
+Enabling `ASTCENC_UNITTEST` also builds the monkey test as a separate executable
+for each selected ISA in full codec builds without diagnostic tracing. It is
+not registered with CTest. Build it for the ISA you want to test:
+
+```sh
+cmake -S . -B build-monkey -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DASTCENC_ISA_AVX2=ON -DASTCENC_CLI=OFF -DASTCENC_UNITTEST=ON
+cmake --build build-monkey -j
+./build-monkey/Source/test-monkey-avx2 --duration 60 --workers 4 --seed 1
+```
+
+`--duration` sets the randomized loop duration in seconds, from 1 to 86400,
+defaulting to 30.
+Reference generation and finishing operations already in progress add some
+time. A watchdog terminates the process with a failure if the test exceeds
+the requested duration plus 30 seconds, including reference generation.
+`--workers` sets the number of independent workers, from 2 to 64, defaulting
+to four. `--max-threads` limits the configured thread count per context, from
+1 to 16, defaulting to four. Invalid numeric values report the option,
+rejected value, and allowed range. Operations randomly use one or more of
+each context's thread indices, with staggered starts. Each context processes
+one image at a time, and all participating threads join before it is reset
+or freed.
+
+The test reuses four generated images across a fixed settings matrix
+covering LDR, sRGB, HDR, normal maps, alpha weighting and preprocessing, 2D
+and 3D block sizes, several quality presets, and decompress-only contexts.
+It first records serial configurations and single-threaded compressed and
+decompressed reference bytes. Newly initialized configurations must match
+their serial references field-for-field. Every completed compression and
+decompression must match its reference bytes exactly. Cancelled output is
+discarded; the same context is then reset and used for a complete
+compression, which must match the reference. Cancellation is requested
+externally and from progress callbacks. Only compression cancellation is
+supported by the API.
+
+Aggregate context and operation counts are logged every five seconds and at
+shutdown. These include validated configurations, compressions and
+decompressions, transfers between workers, and cancellation requests. Final
+output also shows compression and decompression counts for each
+image/settings pair. Settings 0 through 7 are:
+
+| Setting | Profile | Block size | Quality | Additional settings |
+| --- | --- | --- | --- | --- |
+| 0 | LDR | 4x4 | Fastest | None |
+| 1 | LDR | 6x6 | Fast | Alpha weighting, alpha-scale radius 4 |
+| 2 | sRGB | 8x8 | Medium | UNORM8 decode rounding |
+| 3 | LDR | 4x4 | Medium | Normal map |
+| 4 | HDR | 6x6 | Fast | None |
+| 5 | HDR RGB, LDR alpha | 4x4 | Fastest | None |
+| 6 | LDR | 4x4x4 | Fastest | None |
+| 7 | LDR | 6x6 | Fast | Decompress-only context |
+
+Images 0 through 3 have dimensions 33x29, 127x65, 257x513, and 25x19x5.
+Each 2D setting uses all three 2D images; setting 6 uses the 3D image.
+Setting 7 has no compression counts because its contexts only decompress.
+
+Failures report the seed, worker, iteration, and reference index. Watchdog
+timeouts also report each worker's current operation. Reusing a seed gives
+each worker the same initial random state, but scheduling and cross-worker
+exchanges affect later choices, so a seed does not reproduce an exact run.
+The executable returns nonzero on failure and is kept separate from the CTest
+unit suite.
+
+ASAN, TSAN, and UBSAN can be enabled using the options below. For a ThreadSanitizer
+build with Clang or GCC on Linux, configure a separate build directory:
+
+```sh
+cmake -S . -B build-monkey-tsan -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DASTCENC_ISA_AVX2=ON -DASTCENC_CLI=OFF -DASTCENC_UNITTEST=ON \
+    -DASTCENC_TSAN=ON
+cmake --build build-monkey-tsan -j
+TSAN_OPTIONS=halt_on_error=1 \
+    ./build-monkey-tsan/Source/test-monkey-avx2 --duration 60 --seed 1
+```
+
+# Using ASAN, TSAN, and UBSAN
+
+Running builds compiled with ASAN (address sanitizer), TSAN (thread sanitizer),
+and UBSAN (undefined behavior sanitizer) can detect memory errors, data races,
+and undefined behavior. Support is integrated into the build system for GCC
+and Clang on Linux targets.
 
 Build a release build with debug information using
-`-DCMAKE_BUILD_TYPE=RelWithDebInfo` and specify either
-`-DASTCENC_ASAN=ON` or `-DASTCENC_UBSAN=ON`.
+`-DCMAKE_BUILD_TYPE=RelWithDebInfo` and specify one of
+`-DASTCENC_ASAN=ON`, `-DASTCENC_TSAN=ON`, or `-DASTCENC_UBSAN=ON`.
+ASAN and TSAN require separate builds and cannot be enabled together.
 
 Run test commands as normal with the generated binaries.
 

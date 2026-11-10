@@ -50,12 +50,17 @@ option(ASTCENC_SHAREDLIB "Enable astcenc builds with core library shared objects
 option(ASTCENC_BIG_ENDIAN "Enable astcenc big-endian support")
 option(ASTCENC_DIAGNOSTICS "Enable astcenc builds with diagnostic trace")
 option(ASTCENC_ASAN "Enable astcenc builds with address sanitizer")
+option(ASTCENC_TSAN "Enable astcenc builds with thread sanitizer")
 option(ASTCENC_UBSAN "Enable astcenc builds with undefined behavior sanitizer")
 option(ASTCENC_UNITTEST "Enable astcenc builds with unit tests")
 option(ASTCENC_INVARIANCE "Enable astcenc floating point invariance" ON)
 option(ASTCENC_CLI "Enable build of astcenc command line tools" ON)
 option(ASTCENC_X86_GATHERS "Enable use of native x86 gathers" ON)
 option(ASTCENC_WERROR "Force builds to treat warnings as errors" ON)
+
+if(ASTCENC_ASAN AND ASTCENC_TSAN)
+    message(FATAL_ERROR "ASTCENC_ASAN and ASTCENC_TSAN cannot be enabled together.")
+endif()
 
 # Preflight for some macOS-specific build options
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
@@ -162,6 +167,7 @@ printopt("Decompressor       " ${ASTCENC_DECOMPRESSOR})
 message(STATUS "Developer options")
 printopt("Diagnostics        " ${ASTCENC_DIAGNOSTICS})
 printopt("ASAN               " ${ASTCENC_ASAN})
+printopt("TSAN               " ${ASTCENC_TSAN})
 printopt("UBSAN              " ${ASTCENC_UBSAN})
 printopt("Unit tests         " ${ASTCENC_UNITTEST})
 
