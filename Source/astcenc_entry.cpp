@@ -31,28 +31,38 @@
 #include "astcenc_preset_configs.h"
 
 /**
- * @brief Get the total number of texels in an image.
+ * @brief Get the texel count, validating the image memory size.
  *
- * This function validates that the total size would fit in a size_t and returns
- * 0 if it does not.
+ * @param image   The image descriptor.
  *
- * @param texels_x   Number of texels in the X axis.
- * @param texels_y   Number of texels in the Y axis.
- * @param texels_z   Number of texels in the Z axis.
- *
- * @return The number of texels in the image, or zero if total size would not
- *         fit into a size_t.
+ * @return The texel count, or zero for invalid dimensions, data type, or byte size.
  */
 static size_t get_texels_count(
-	size_t texels_x,
-	size_t texels_y,
-	size_t texels_z
+	const astcenc_image& image
 ) {
-	bool overflow { false };
+	size_t component_size;
+	switch (image.data_type)
+	{
+	case ASTCENC_TYPE_U8:
+		component_size = sizeof(uint8_t);
+		break;
+	case ASTCENC_TYPE_F16:
+		component_size = sizeof(uint16_t);
+		break;
+	case ASTCENC_TYPE_F32:
+		component_size = sizeof(float);
+		break;
+	default:
+		return 0;
+	}
 
-	// Compute texel count
-	size_t texels_count = astc::mul_safe(texels_x, texels_y, overflow);
-	texels_count = astc::mul_safe(texels_count, texels_z, overflow);
+	bool overflow { false };
+	size_t texels_count = astc::mul_safe(image.dim_x, image.dim_y, overflow);
+	texels_count = astc::mul_safe(texels_count, image.dim_z, overflow);
+
+	// Validate RGBA storage and the array of slice pointers
+	astc::mul_safe(texels_count, 4 * component_size, overflow);
+	astc::mul_safe(image.dim_z, sizeof(void*), overflow);
 
 	if (overflow)
 	{
@@ -613,7 +623,7 @@ astcenc_error astcenc_config_init(
 /* See header for documentation. */
 astcenc_error astcenc_context_alloc(
 	const astcenc_config* configp,
-	unsigned int thread_count,
+	size_t thread_count,
 	astcenc_context** context,
 	const astcenc_context* parent_context
 ) {
@@ -698,6 +708,16 @@ astcenc_error astcenc_context_alloc(
 		return status;
 	}
 
+#if !defined(ASTCENC_DECOMPRESS_ONLY)
+	bool overflow { false };
+	size_t worksize = astc::mul_safe(sizeof(compression_working_buffers), thread_count, overflow);
+	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY) && overflow)
+	{
+		delete ctxo;
+		return ASTCENC_ERR_BAD_PARAM;
+	}
+#endif
+
 	if (!parent_context)
 	{
 		block_size_descriptor* bsd = aligned_malloc<block_size_descriptor>(sizeof(block_size_descriptor), ASTCENC_VECALIGN);
@@ -742,7 +762,6 @@ astcenc_error astcenc_context_alloc(
 			}
 		}
 
-		size_t worksize = sizeof(compression_working_buffers) * thread_count;
 		ctx->working_buffers = aligned_malloc<compression_working_buffers>(worksize, ASTCENC_VECALIGN);
 		static_assert((ASTCENC_VECALIGN == 0) || ((sizeof(compression_working_buffers) % ASTCENC_VECALIGN) == 0),
 		              "compression_working_buffers size must be multiple of vector alignment");
@@ -812,7 +831,7 @@ void astcenc_context_free(
  */
 static void compress_image(
 	astcenc_context& ctxo,
-	unsigned int thread_index,
+	size_t thread_index,
 	const astcenc_image& image,
 	const astcenc_swizzle& swizzle,
 	uint8_t* buffer
@@ -1047,7 +1066,7 @@ astcenc_error astcenc_compress_image(
 	const astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	unsigned int thread_index
+	size_t thread_index
 ) {
 #if defined(ASTCENC_DECOMPRESS_ONLY)
 	(void)ctxo;
@@ -1082,8 +1101,9 @@ astcenc_error astcenc_compress_image(
 	size_t dim_y = image.dim_y;
 	size_t dim_z = image.dim_z;
 
-	size_t texel_count = get_texels_count(dim_x, dim_y, dim_z);
-	// Cumulative texel sizes would overflow a size_t
+	size_t texel_count = get_texels_count(image);
+
+	// Image storage must fit in a size_t
 	if (texel_count == 0)
 	{
 		return ASTCENC_ERR_BAD_PARAM;
@@ -1206,7 +1226,7 @@ astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	astcenc_image* image_outp,
 	const astcenc_swizzle* swizzle,
-	unsigned int thread_index
+	size_t thread_index
 ) {
 	astcenc_error status;
 	astcenc_image& image_out = *image_outp;
@@ -1228,8 +1248,9 @@ astcenc_error astcenc_decompress_image(
 	size_t dim_y = image_out.dim_y;
 	size_t dim_z = image_out.dim_z;
 
-	size_t texel_count = get_texels_count(dim_x, dim_y, dim_z);
-	// Cumulative texel sizes would overflow a size_t
+	size_t texel_count = get_texels_count(image_out);
+
+	// Image storage must fit in a size_t
 	if (texel_count == 0)
 	{
 		return ASTCENC_ERR_BAD_PARAM;
@@ -1250,7 +1271,7 @@ astcenc_error astcenc_decompress_image(
 		return ASTCENC_ERR_BAD_PARAM;
 	}
 
-	// Check output capacity; get_blocks_count() already ruled out byte-count overflow
+	// Check input capacity; get_blocks_count() already ruled out byte-count overflow
 	size_t size_needed = block_count * 16;
 	if (data_len < size_needed)
 	{

@@ -24,6 +24,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <climits>
 #include <fstream>
 #include <iomanip>
 #include <memory>
@@ -64,7 +65,7 @@ static uint32_t reverse_bytes_u32(
 static std::string get_output_filename(
 	const astcenc_image* img,
 	const char* filename,
-	unsigned int index
+	size_t index
 ) {
 	if (img->dim_z <= 1)
 	{
@@ -211,14 +212,21 @@ static bool store_exr_image_with_tinyexr(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > INT_MAX || img->dim_y > INT_MAX)
+	{
+		return false;
+	}
+
+	int dim_x = static_cast<int>(img->dim_x);
+	int dim_y = static_cast<int>(img->dim_y);
 	int res { 0 };
 
-	for (unsigned int i = 0; i < img->dim_z; i++)
+	for (size_t i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
 		std::vector<float> buf = floatx4_array_from_astc_img(img, y_flip, i);
 
-		res = SaveEXR(buf.data(), img->dim_x, img->dim_y, 4, 1, fnmod.c_str(), nullptr);
+		res = SaveEXR(buf.data(), dim_x, dim_y, 4, 1, fnmod.c_str(), nullptr);
 		if (res < 0)
 		{
 			break;
@@ -242,17 +250,24 @@ static bool store_png_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	{
+		return false;
+	}
+
+	int dim_x = static_cast<int>(img->dim_x);
+	int dim_y = static_cast<int>(img->dim_y);
 	int res { 0 };
 
 	assert(img->data_type == ASTCENC_TYPE_U8);
 
-	for (unsigned int i = 0; i < img->dim_z; i++)
+	for (size_t i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
 		uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[i]);
 
 		stbi_flip_vertically_on_write(y_flip);
-		res = stbi_write_png(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf, img->dim_x * 4);
+		res = stbi_write_png(fnmod.c_str(), dim_x, dim_y, 4, buf, dim_x * 4);
 		if (res == 0)
 		{
 			break;
@@ -276,17 +291,24 @@ static bool store_tga_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > UINT16_MAX || img->dim_y > UINT16_MAX)
+	{
+		return false;
+	}
+
+	int dim_x = static_cast<int>(img->dim_x);
+	int dim_y = static_cast<int>(img->dim_y);
 	int res { 0 };
 
 	assert(img->data_type == ASTCENC_TYPE_U8);
 
-	for (unsigned int i = 0; i < img->dim_z; i++)
+	for (size_t i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
 		uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[i]);
 
 		stbi_flip_vertically_on_write(y_flip);
-		res = stbi_write_tga(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf);
+		res = stbi_write_tga(fnmod.c_str(), dim_x, dim_y, 4, buf);
 		if (res == 0)
 		{
 			break;
@@ -310,17 +332,24 @@ static bool store_bmp_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	{
+		return false;
+	}
+
+	int dim_x = static_cast<int>(img->dim_x);
+	int dim_y = static_cast<int>(img->dim_y);
 	int res { 0 };
 
 	assert(img->data_type == ASTCENC_TYPE_U8);
 
-	for (unsigned int i = 0; i < img->dim_z; i++)
+	for (size_t i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
 		uint8_t* buf = reinterpret_cast<uint8_t*>(img->data[i]);
 
 		stbi_flip_vertically_on_write(y_flip);
-		res = stbi_write_bmp(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf);
+		res = stbi_write_bmp(fnmod.c_str(), dim_x, dim_y, 4, buf);
 		if (res == 0)
 		{
 			break;
@@ -344,14 +373,21 @@ static bool store_hdr_image_with_stb(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
+	{
+		return false;
+	}
+
+	int dim_x = static_cast<int>(img->dim_x);
+	int dim_y = static_cast<int>(img->dim_y);
 	int res { 0 };
 
-	for (unsigned int i = 0; i < img->dim_z; i++)
+	for (size_t i = 0; i < img->dim_z; i++)
 	{
 		std::string fnmod = get_output_filename(img, filename, i);
 		std::vector<float> buf = floatx4_array_from_astc_img(img, y_flip, i);
 
-		res = stbi_write_hdr(fnmod.c_str(), img->dim_x, img->dim_y, 4, buf.data());
+		res = stbi_write_hdr(fnmod.c_str(), dim_x, dim_y, 4, buf.data());
 		if (res == 0)
 		{
 			break;
@@ -1157,9 +1193,9 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		printf("WARNING: Only the first of %u cube faces will be compressed '%s'.\n", hdr.number_of_faces, filename);
 	}
 
-	unsigned int dim_x = hdr.pixel_width;
-	unsigned int dim_y = astc::max(hdr.pixel_height, 1u);
-	unsigned int dim_z = astc::max(hdr.pixel_depth, 1u);
+	size_t dim_x = hdr.pixel_width;
+	size_t dim_y = astc::max(hdr.pixel_height, 1u);
+	size_t dim_z = astc::max(hdr.pixel_depth, 1u);
 
 	// Ignore the key/value data
 	file.seekg(hdr.bytes_of_key_value_data, std::ios::cur);
@@ -1249,15 +1285,11 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
-	// TODO: Use size_t for astcenc_image dimensions and local sizes in the next major API revision
-	size_t dim_y_sz = dim_y;
-	size_t dim_z_sz = dim_z;
-
-	for (size_t z = 0; z < dim_z_sz; z++)
+	for (size_t z = 0; z < dim_z; z++)
 	{
-		for (size_t y = 0; y < dim_y_sz; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
+			size_t mod_y = y_flip ? dim_y - y - 1 : y;
 			void *dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
@@ -1420,6 +1452,13 @@ bool store_ktx_compressed_image(
 	const char* filename,
 	bool is_srgb
 ) {
+	if (img.dim_x > UINT32_MAX || img.dim_y > UINT32_MAX || img.dim_z > UINT32_MAX ||
+	    img.data.size() > UINT32_MAX)
+	{
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
+	}
+
 	unsigned int fmt = get_format(img.block_x, img.block_y, img.block_z, is_srgb);
 
 	ktx_header hdr;
@@ -1430,9 +1469,9 @@ bool store_ktx_compressed_image(
 	hdr.gl_format = 0;
 	hdr.gl_internal_format = fmt;
 	hdr.gl_base_internal_format = GL_RGBA;
-	hdr.pixel_width = img.dim_x;
-	hdr.pixel_height = img.dim_y;
-	hdr.pixel_depth = (img.dim_z == 1) ? 0 : img.dim_z;
+	hdr.pixel_width = static_cast<uint32_t>(img.dim_x);
+	hdr.pixel_height = static_cast<uint32_t>(img.dim_y);
+	hdr.pixel_depth = static_cast<uint32_t>((img.dim_z == 1) ? 0 : img.dim_z);
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
@@ -1474,6 +1513,12 @@ static bool store_ktx_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
+	{
+		print_error("ERROR: Image dimensions exceed file format size limits\n");
+		return false;
+	}
+
 	size_t dim_x = img->dim_x;
 	size_t dim_y = img->dim_y;
 	size_t dim_z = img->dim_z;
@@ -2102,12 +2147,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 	astcenc_image_ptr astc_img;
 	try
 	{
-		astc_img = alloc_image(
-			bitness,
-			// TODO: Casts are ugly, should fix astcenc_image to accept size_t
-			static_cast<unsigned int>(dim_x),
-			static_cast<unsigned int>(dim_y),
-			static_cast<unsigned int>(dim_z));
+		astc_img = alloc_image(bitness, dim_x, dim_y, dim_z);
 	}
 	catch (const std::bad_alloc &e)
 	{
@@ -2116,15 +2156,11 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
-	// TODO: Use size_t for astcenc_image dimensions and local sizes in the next major API revision
-	size_t dim_y_sz = dim_y;
-	size_t dim_z_sz = dim_z;
-
-	for (size_t z = 0; z < dim_z_sz; z++)
+	for (size_t z = 0; z < dim_z; z++)
 	{
-		for (size_t y = 0; y < dim_y_sz; y++)
+		for (size_t y = 0; y < dim_y; y++)
 		{
-			size_t mod_y = y_flip ? dim_y_sz - y - 1 : y;
+			size_t mod_y = y_flip ? dim_y - y - 1 : y;
 			void* dst;
 
 			if (astc_img->data_type == ASTCENC_TYPE_U8)
@@ -2163,6 +2199,12 @@ static bool store_dds_uncompressed_image(
 	const char* filename,
 	int y_flip
 ) {
+	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
+	{
+		print_error("ERROR: Image dimensions exceed file format size limits\n");
+		return false;
+	}
+
 	size_t dim_x = img->dim_x;
 	size_t dim_y = img->dim_y;
 	size_t dim_z = img->dim_z;
@@ -2701,9 +2743,9 @@ bool load_cimage(
 	img.block_y = static_cast<unsigned int>(block_y);
 	img.block_z = static_cast<unsigned int>(block_z);
 
-	img.dim_x = static_cast<unsigned int>(dim_x);
-	img.dim_y = static_cast<unsigned int>(dim_y);
-	img.dim_z = static_cast<unsigned int>(dim_z);
+	img.dim_x = dim_x;
+	img.dim_y = dim_y;
+	img.dim_z = dim_z;
 
 	return false;
 }
@@ -2713,6 +2755,12 @@ bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename
 ) {
+	if (img.dim_x > 0xFFFFFF || img.dim_y > 0xFFFFFF || img.dim_z > 0xFFFFFF)
+	{
+		print_error("ERROR: Image dimensions exceed file format size limits\n");
+		return 1;
+	}
+
 	astc_header hdr;
 	hdr.magic[0] =  ASTC_MAGIC_ID        & 0xFF;
 	hdr.magic[1] = (ASTC_MAGIC_ID >>  8) & 0xFF;

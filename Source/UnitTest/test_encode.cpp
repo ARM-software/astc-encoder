@@ -47,14 +47,16 @@ TEST(compress, overflow_in_z)
 	uint8_t data[1];
 	uint8_t input[1];
 
-	astcenc_image image;
-	// x * y always fits in 64-bit size_t, but xy * z will overflow
-	image.dim_x = 0xFFFFFFFFu;
-	image.dim_y = 0xFFFFFFFFu;
-	image.dim_z = 0xFFFFFFFFu;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+
+	// x * y always fits in 64-bit size_t, but xy * z will overflow
+	astcenc_image image {
+		.dim_x = 0xFFFFFFFFu,
+		.dim_y = 0xFFFFFFFFu,
+		.dim_z = 0xFFFFFFFFu,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
@@ -81,13 +83,14 @@ TEST(compress, zero_block_z)
 	uint8_t data[16];
 	uint8_t input[4 * 4 * 4];
 
-	astcenc_image image;
-	image.dim_x = 4;
-	image.dim_y = 4;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 4,
+		.dim_y = 4,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	// Compression must succeed despite zero config.block_z value
 	status = astcenc_compress_image(context, &image, &swizzle, data, sizeof(data), 0);
@@ -96,7 +99,7 @@ TEST(compress, zero_block_z)
 	astcenc_context_free(context);
 }
 
-/** @brief Input overflow tests for xyz * 16. */
+/** @brief Compressed byte size overflow with a valid uncompressed byte size. */
 TEST(compress, overflow_in_16)
 {
 	astcenc_error status;
@@ -115,14 +118,16 @@ TEST(compress, overflow_in_16)
 	uint8_t data[1];
 	uint8_t input[1];
 
-	astcenc_image image;
-	// xyz (in blocks) always fits in 64-bit size_t, but xyz * 16 will overflow
-	image.dim_x = 0x80000000u;
-	image.dim_y = 0x80000000u;
-	image.dim_z = 0x00000010u;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+
+	// Rounding up to a full block makes the compressed byte size overflow
+	astcenc_image image {
+		.dim_x = std::numeric_limits<size_t>::max() / 4,
+		.dim_y = 1,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
@@ -151,19 +156,147 @@ TEST(compress, ascale_radius_clamped)
 	uint8_t data[16];
 	uint8_t input[4 * 4 * 4];
 
-	astcenc_image image;
-	image.dim_x = 4;
-	image.dim_y = 4;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 4,
+		.dim_y = 4,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	// Compression should succeed without bad_alloc or ASAN failure
 	status = astcenc_compress_image(context, &image, &swizzle, data, sizeof(data), 0);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
 
 	astcenc_context_free(context);
+}
+
+/** @brief Image storage overflow must be rejected before accessing the data. */
+TEST(compress, image_size_overflow)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	// Use 3D blocks so compressed storage does not mask RGBA byte overflow
+	astcenc_config_init(ASTCENC_PRF_LDR, 6, 6, 6, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	for (size_t component_size : { 1u, 2u, 4u })
+	{
+		astcenc_type type = component_size == 1 ? ASTCENC_TYPE_U8 :
+		                    component_size == 2 ? ASTCENC_TYPE_F16 : ASTCENC_TYPE_F32;
+
+		for (size_t axis = 0; axis < 3; axis++)
+		{
+			size_t dims[3] { 1, 1, 1 };
+			dims[axis] = std::numeric_limits<size_t>::max() / (4 * component_size) + 1;
+			astcenc_image image {
+				.dim_x = dims[0],
+				.dim_y = dims[1],
+				.dim_z = dims[2],
+				.data_type = type,
+				.data = nullptr
+			};
+			status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
+			EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+			// Include a multi-row or multi-slice product overflow
+			dims[axis] = std::numeric_limits<size_t>::max() / (8 * component_size) + 1;
+			dims[(axis + 1) % 3] = 2;
+			image = {
+				.dim_x = dims[0],
+				.dim_y = dims[1],
+				.dim_z = dims[2],
+				.data_type = type,
+				.data = nullptr
+			};
+
+			status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
+			EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+		}
+	}
+
+	// The slice pointer array can overflow even when U8 texel storage fits
+	astcenc_image image {
+		.dim_x = 1,
+		.dim_y = 1,
+		.dim_z = std::numeric_limits<size_t>::max() / sizeof(void*) + 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = nullptr
+	};
+	status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Dimensions wider than unsigned int must reach the buffer capacity check. */
+TEST(compress, large_dimensions)
+{
+	if (sizeof(size_t) <= sizeof(unsigned int))
+	{
+		GTEST_SKIP();
+	}
+
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	for (size_t axis = 0; axis < 3; axis++)
+	{
+		size_t dims[3] { 1, 1, 1 };
+		dims[axis] = static_cast<size_t>(std::numeric_limits<unsigned int>::max()) + 1;
+		astcenc_image image {
+			.dim_x = dims[0],
+			.dim_y = dims[1],
+			.dim_z = dims[2],
+			.data_type = ASTCENC_TYPE_U8,
+			.data = nullptr
+		};
+
+		status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
+		EXPECT_EQ(status, ASTCENC_ERR_OUT_OF_MEM);
+	}
+
+	astcenc_image image {
+		.dim_x = 1,
+		.dim_y = 1,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = nullptr
+	};
+
+	status = astcenc_compress_image(
+		context, &image, &swizzle, nullptr, 0, std::numeric_limits<size_t>::max());
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Per-thread scratch storage must not wrap when allocating a context. */
+TEST(compress, thread_count_overflow)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context = nullptr;
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, std::numeric_limits<size_t>::max(), &context, nullptr);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+	EXPECT_EQ(context, nullptr);
 }
 
 /** @brief Input data buffer overrun tests. */
@@ -185,13 +318,14 @@ TEST(compress, data_buffer_exceeded)
 	uint8_t data[1];
 	uint8_t input[1];
 
-	astcenc_image image;
-	image.dim_x = 0x4u;
-	image.dim_y = 0x4u;
-	image.dim_z = 0x1u;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 0x4u,
+		.dim_y = 0x4u,
+		.dim_z = 0x1u,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	// Data size is 1 byte too short so this should error
 	status = astcenc_compress_image(context, &image, &swizzle, data, 15, 0);
@@ -225,13 +359,14 @@ static void run_positive_test(
 	// Single 16 byte block output data
 	uint8_t data[16];
 
-	astcenc_image image;
-	image.dim_x = 4u;
-	image.dim_y = 4u;
-	image.dim_z = 1u;
-	image.data_type = ASTCENC_TYPE_F32;
 	float* slices = input;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 4u,
+		.dim_y = 4u,
+		.dim_z = 1u,
+		.data_type = ASTCENC_TYPE_F32,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	// Should not error or trip any UBSAN errors
 	status = astcenc_compress_image(context, &image, &swizzle, data, 16, 0);

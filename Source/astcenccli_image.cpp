@@ -21,15 +21,16 @@
 
 #include <cassert>
 #include <cstring>
+#include <new>
 
 #include "astcenccli_internal.h"
 
 /* See header for documentation. */
 astcenc_image_ptr alloc_image(
 	unsigned int bitness,
-	unsigned int dim_x,
-	unsigned int dim_y,
-	unsigned int dim_z
+	size_t dim_x,
+	size_t dim_y,
+	size_t dim_z
 ) {
 	astcenc_image_ptr img { new astcenc_image };
 
@@ -40,9 +41,18 @@ astcenc_image_ptr alloc_image(
 	img->data_type = ASTCENC_TYPE_U8;
 	img->data = nullptr;
 
-	// Ensure this is done as a size_t to avoid overflow - calling code has checked that the product
-	// will fit in a size_t without overflowing
-	size_t plane_components = static_cast<size_t>(dim_x) * dim_y * 4;
+	bool overflow { false };
+
+	size_t plane_components = astc::mul_safe(dim_x, dim_y, overflow);
+	plane_components = astc::mul_safe(plane_components, 4, overflow);
+
+	size_t image_components = astc::mul_safe(plane_components, dim_z, overflow);
+	astc::mul_safe(image_components, bitness / 8, overflow);
+	astc::mul_safe(dim_z, sizeof(void*), overflow);
+	if (overflow)
+	{
+		throw std::bad_array_new_length();
+	}
 
 	void** data = new void*[dim_z] {};
 	img->data = data;
@@ -50,7 +60,7 @@ astcenc_image_ptr alloc_image(
 	if (bitness == 8)
 	{
 		img->data_type = ASTCENC_TYPE_U8;
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			data[z] = new uint8_t[plane_components];
 		}
@@ -58,7 +68,7 @@ astcenc_image_ptr alloc_image(
 	else if (bitness == 16)
 	{
 		img->data_type = ASTCENC_TYPE_F16;
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			data[z] = new uint16_t[plane_components];
 		}
@@ -67,7 +77,7 @@ astcenc_image_ptr alloc_image(
 	{
 		assert(bitness == 32);
 		img->data_type = ASTCENC_TYPE_F32;
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			data[z] = new float[plane_components];
 		}
@@ -87,7 +97,7 @@ void astcenc_image_deleter::operator()(
 
 	if (img->data)
 	{
-		for (unsigned int z = 0; z < img->dim_z; z++)
+		for (size_t z = 0; z < img->dim_z; z++)
 		{
 			if (img->data_type == ASTCENC_TYPE_U8)
 			{
@@ -114,9 +124,9 @@ void astcenc_image_deleter::operator()(
 unsigned int determine_image_components(
 	const astcenc_image * img
 ) {
-	unsigned int dim_x = img->dim_x;
-	unsigned int dim_y = img->dim_y;
-	unsigned int dim_z = img->dim_z;
+	size_t dim_x = img->dim_x;
+	size_t dim_y = img->dim_y;
+	size_t dim_z = img->dim_z;
 
 	// Scan through the image data to determine how many color components the image has
 	bool is_luma = true;
@@ -124,13 +134,13 @@ unsigned int determine_image_components(
 
 	if (img->data_type == ASTCENC_TYPE_U8)
 	{
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				for (unsigned int x = 0; x < dim_x; x++)
+				for (size_t x = 0; x < dim_x; x++)
 				{
 					int r = data8[(4 * dim_x * y) + (4 * x    )];
 					int g = data8[(4 * dim_x * y) + (4 * x + 1)];
@@ -145,13 +155,13 @@ unsigned int determine_image_components(
 	}
 	else if (img->data_type == ASTCENC_TYPE_F16)
 	{
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				for (unsigned int x = 0; x < dim_x; x++)
+				for (size_t x = 0; x < dim_x; x++)
 				{
 					int r = data16[(4 * dim_x * y) + (4 * x    )];
 					int g = data16[(4 * dim_x * y) + (4 * x + 1)];
@@ -169,13 +179,13 @@ unsigned int determine_image_components(
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
 
-		for (unsigned int z = 0; z < dim_z; z++)
+		for (size_t z = 0; z < dim_z; z++)
 		{
 			float* data32 = static_cast<float*>(img->data[z]);
 
-			for (unsigned int y = 0; y < dim_y; y++)
+			for (size_t y = 0; y < dim_y; y++)
 			{
-				for (unsigned int x = 0; x < dim_x; x++)
+				for (size_t x = 0; x < dim_x; x++)
 				{
 					float r = data32[(4 * dim_x * y) + (4 * x    )];
 					float g = data32[(4 * dim_x * y) + (4 * x + 1)];
@@ -195,19 +205,19 @@ unsigned int determine_image_components(
 /* See header for documentation. */
 astcenc_image_ptr astc_img_from_floatx4_array(
 	const float* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip
 ) {
 	auto img = alloc_image(16, dim_x, dim_y, 1);
 
-	for (unsigned int y = 0; y < dim_y; y++)
+	for (size_t y = 0; y < dim_y; y++)
 	{
 		uint16_t* data16 = static_cast<uint16_t*>(img->data[0]);
-		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
+		size_t y_src = y_flip ? (dim_y - y - 1) : y;
 		const float* src = data + 4 * dim_x * y_src;
 
-		for (unsigned int x = 0; x < dim_x; x++)
+		for (size_t x = 0; x < dim_x; x++)
 		{
 			vint4 colorf16 = float_to_float16(vfloat4(
 				src[4 * x    ],
@@ -229,19 +239,19 @@ astcenc_image_ptr astc_img_from_floatx4_array(
 /* See header for documentation. */
 astcenc_image_ptr astc_img_from_unorm8x4_array(
 	const uint8_t* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip
 ) {
 	auto img = alloc_image(8, dim_x, dim_y, 1);
 
-	for (unsigned int y = 0; y < dim_y; y++)
+	for (size_t y = 0; y < dim_y; y++)
 	{
 		uint8_t* data8 = static_cast<uint8_t*>(img->data[0]);
-		unsigned int y_src = y_flip ? (dim_y - y - 1) : y;
+		size_t y_src = y_flip ? (dim_y - y - 1) : y;
 		const uint8_t* src = data + 4 * dim_x * y_src;
 
-		for (unsigned int x = 0; x < dim_x; x++)
+		for (size_t x = 0; x < dim_x; x++)
 		{
 			data8[(4 * dim_x * y) + (4 * x    )] = src[4 * x    ];
 			data8[(4 * dim_x * y) + (4 * x + 1)] = src[4 * x + 1];
@@ -257,7 +267,7 @@ astcenc_image_ptr astc_img_from_unorm8x4_array(
 std::vector<float> floatx4_array_from_astc_img(
 	const astcenc_image* img,
 	bool y_flip,
-	unsigned int z_index
+	size_t z_index
 ) {
 	size_t dim_x = img->dim_x;
 	size_t dim_y = img->dim_y;

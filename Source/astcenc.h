@@ -607,19 +607,19 @@ struct astcenc_config
 /**
  * @brief An uncompressed 2D or 3D image.
  *
- * 3D image are passed in as an array of 2D slices. Each slice has identical
+ * 3D images are passed in as an array of 2D slices. Each slice has identical
  * size and color format.
  */
 struct astcenc_image
 {
 	/** @brief The X dimension of the image, in texels. */
-	unsigned int dim_x;
+	size_t dim_x;
 
 	/** @brief The Y dimension of the image, in texels. */
-	unsigned int dim_y;
+	size_t dim_y;
 
 	/** @brief The Z dimension of the image, in texels. */
-	unsigned int dim_z;
+	size_t dim_z;
 
 	/** @brief The data type per component. */
 	enum astcenc_type data_type;
@@ -760,7 +760,7 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_config_init(
  */
 ASTCENC_PUBLIC enum astcenc_error astcenc_context_alloc(
 	const struct astcenc_config* config,
-	unsigned int thread_count,
+	size_t thread_count,
 	struct astcenc_context** context,
 	const struct astcenc_context* parent_context);
 
@@ -788,7 +788,7 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_compress_image(
 	const struct astcenc_swizzle* swizzle,
 	uint8_t* data_out,
 	size_t data_len,
-	unsigned int thread_index);
+	size_t thread_index);
 
 /**
  * @brief Reset the codec state for a new compression.
@@ -838,7 +838,7 @@ ASTCENC_PUBLIC enum astcenc_error astcenc_decompress_image(
 	size_t data_len,
 	struct astcenc_image* image_out,
 	const struct astcenc_swizzle* swizzle,
-	unsigned int thread_index);
+	size_t thread_index);
 
 /**
  * @brief Reset the codec state for a new decompression.
