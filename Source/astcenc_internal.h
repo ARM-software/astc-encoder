@@ -773,6 +773,9 @@ struct image_block
 	/** @brief The input (compress) or output (decompress) data for the alpha color component. */
 	ASTCENC_ALIGNAS float data_a[BLOCK_MAX_TEXELS + ASTCENC_SIMD_WIDTH - 1];
 
+	/** @brief Packed texels, same content as the per-channel data_rgba arrays, different layout. */
+	vfloat4 data_rgba[BLOCK_MAX_TEXELS];
+
 	/** @brief The number of texels in the block. */
 	uint8_t texel_count;
 
@@ -839,10 +842,7 @@ struct image_block
 	 */
 	inline vfloat4 texel(size_t index) const
 	{
-		return vfloat4(data_r[index],
-		               data_g[index],
-		               data_b[index],
-		               data_a[index]);
+		return data_rgba[index];
 	}
 
 	/**
@@ -854,9 +854,7 @@ struct image_block
 	 */
 	inline vfloat4 texel3(size_t index) const
 	{
-		return vfloat3(data_r[index],
-		               data_g[index],
-		               data_b[index]);
+		return data_rgba[index].swz<0, 1, 2>();
 	}
 
 	/**
@@ -1567,6 +1565,30 @@ void compute_error_squared_rgb(
 	partition_lines3 plines[BLOCK_MAX_PARTITIONS],
 	float& uncor_error,
 	float& samec_error);
+
+#if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+
+/**
+ * @brief Estimate partition errors while retaining candidate data in wide vectors.
+ *
+ * All candidates have the same partition count. Packed block texels are shared
+ * by all partition searches for the block. Error accumulation retains four
+ * ordered texel lanes per candidate.
+ *
+ * @param      candidates           The ASTCENC_SIMD_WIDTH / 4 partition candidates.
+ * @param      blk                  The source image block.
+ * @param      weight_imprecision   The squared weight quantization error estimate.
+ * @param[out] uncor_errors         The uncorrelated-line errors for each candidate.
+ * @param[out] samec_errors         The same-chroma-line errors for each candidate.
+ */
+void compute_partition_errors_rgb_batch(
+	const partition_info* const* candidates,
+	const image_block& blk,
+	float weight_imprecision,
+	float* uncor_errors,
+	float* samec_errors);
+
+#endif
 
 /**
  * @brief Compute the RGBA error for uncorrelated and same chroma projections.

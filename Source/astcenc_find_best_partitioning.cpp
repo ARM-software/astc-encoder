@@ -713,6 +713,40 @@ unsigned int find_best_partition_candidates(
 	}
 	else
 	{
+#if defined(ASTCENC_HAS_NATIVE_QUAD_OPS)
+		constexpr unsigned int batch_size = ASTCENC_SIMD_WIDTH / 4;
+
+		unsigned int padded_limit = (partition_search_limit + batch_size - 1) & ~(batch_size - 1);
+		for (unsigned int i = partition_search_limit; i < padded_limit; i++)
+		{
+			partition_sequence[i] = partition_sequence[partition_search_limit - 1];
+		}
+
+		for (unsigned int i = 0; i < partition_search_limit; i += batch_size)
+		{
+			const partition_info* candidates[batch_size];
+			for (unsigned int c = 0; c < batch_size; c++)
+			{
+				candidates[c] = &bsd.get_raw_partition_info(partition_count, partition_sequence[i + c]);
+			}
+
+			float uncor_errors[batch_size];
+			float samec_errors[batch_size];
+			compute_partition_errors_rgb_batch(candidates, blk, weight_imprecision_estim,
+			                                   uncor_errors, samec_errors);
+
+			// Ignore padded candidates so they cannot displace real results or change tie ordering
+			unsigned int active_count = astc::min(batch_size, partition_search_limit - i);
+			for (unsigned int c = 0; c < active_count; c++)
+			{
+				unsigned int partition = partition_sequence[i + c];
+				insert_result(requested_candidates, uncor_errors[c], partition,
+				              uncor_best_errors, uncor_best_partitions);
+				insert_result(requested_candidates, samec_errors[c], partition,
+				              samec_best_errors, samec_best_partitions);
+			}
+		}
+#else
 		for (unsigned int i = 0; i < partition_search_limit; i++)
 		{
 			unsigned int partition = partition_sequence[i];
@@ -745,11 +779,7 @@ unsigned int find_best_partition_candidates(
 			float uncor_error = 0.0f;
 			float samec_error = 0.0f;
 
-			compute_error_squared_rgb(pi,
-			                          blk,
-			                          plines,
-			                          uncor_error,
-			                          samec_error);
+			compute_error_squared_rgb(pi,blk, plines, uncor_error, samec_error);
 
 			// Compute an estimate of error introduced by weight quantization imprecision. This
 			// error is computed as follows, for each partition:
@@ -778,6 +808,7 @@ unsigned int find_best_partition_candidates(
 			insert_result(requested_candidates, uncor_error, partition, uncor_best_errors, uncor_best_partitions);
 			insert_result(requested_candidates, samec_error, partition, samec_best_errors, samec_best_partitions);
 		}
+#endif
 	}
 
 	unsigned int interleave[2 * TUNE_MAX_PARTITIONING_CANDIDATES];

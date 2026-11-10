@@ -86,6 +86,56 @@ target_compile_options(${ASTCENC_TEST}
         $<${is_gnu_fe}:-Wno-reserved-identifier>
         $<${is_gnu_fe}:-Wno-global-constructors>)
 
+# Match the codec floating-point settings for reference calculations
+# Clang's -fno-unsafe-math-optimizations enables FP trapping
+# Disable traps explicitly without relaxing floating-point value semantics
+if(NOT ${ASTCENC_INVARIANCE})
+    target_compile_definitions(${ASTCENC_TEST}
+        PRIVATE
+            ASTCENC_NO_INVARIANCE=1)
+
+    # For Visual Studio prior to 2022 (compiler < 19.30) /fp:precise
+    # For Visual Studio 2022 (compiler >= 19.30) /fp:precise and /fp:contract
+
+    # For Visual Studio 2022 ClangCL seems to have accidentally enabled contraction by default,
+    # so behaves differently to CL.exe. Use the -Xclang argument to workaround and allow access
+    # GNU-style switch to control contraction on the assumption this gets fixed and disabled.
+    # Note ClangCL does not accept /fp:contract as an argument as of v15.0.7.
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            $<${is_msvccl}:/fp:precise>
+            $<$<AND:${is_msvccl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.30>>:/fp:contract>
+
+            $<${is_clangcl}:/fp:precise>
+            $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=fast>
+
+            $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
+            $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-trapping-math>
+
+            $<${is_gnu_fe}:-ffp-contract=fast>
+            $<${is_gnu_fe}:-fno-math-errno>)
+else()
+    # For Visual Studio prior to 2022 (compiler < 19.30) /fp:strict
+    # For Visual Studio 2022 (compiler >= 19.30) /fp:precise
+
+    # For Visual Studio 2022 ClangCL seems to have accidentally enabled contraction by default,
+    # so behaves differently to CL.exe. Use the -Xclang argument to workaround and allow access
+    # GNU-style switch to control contraction and force disable.
+    target_compile_options(${ASTCENC_TEST}
+        PRIVATE
+            $<$<AND:${is_msvccl},$<VERSION_LESS:$<CXX_COMPILER_VERSION>,19.30>>:/fp:strict>
+            $<$<AND:${is_msvccl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,19.30>>:/fp:precise>
+
+            $<${is_clangcl}:/fp:precise>
+            $<$<AND:${is_clangcl},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,14.0.0>>:-Xclang -ffp-contract=off>
+
+            $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-unsafe-math-optimizations>
+            $<$<AND:${is_clang},$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,10.0.0>>:-fno-trapping-math>
+
+            $<${is_gnu_fe}:-ffp-contract=off>
+            $<${is_gnu_fe}:-fno-math-errno>)
+endif()
+
 # Set up configuration for SIMD ISA builds
 if(${ASTCENC_ISA_SIMD} MATCHES "none")
     target_compile_definitions(${ASTCENC_TEST}

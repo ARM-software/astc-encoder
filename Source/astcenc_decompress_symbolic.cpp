@@ -209,6 +209,7 @@ void decompress_symbolic_block(
 			blk.data_g[i] = error_color_nan();
 			blk.data_b[i] = error_color_nan();
 			blk.data_a[i] = error_color_nan();
+			blk.data_rgba[i] = vfloat4(error_color_nan());
 			blk.rgb_lns[i] = 0;
 			blk.alpha_lns[i] = 0;
 		}
@@ -261,6 +262,7 @@ void decompress_symbolic_block(
 			blk.data_g[i] = color.lane<1>();
 			blk.data_b[i] = color.lane<2>();
 			blk.data_a[i] = color.lane<3>();
+			blk.data_rgba[i] = color;
 			blk.rgb_lns[i] = use_lns;
 			blk.alpha_lns[i] = use_lns;
 		}
@@ -317,6 +319,7 @@ void decompress_symbolic_block(
 			blk.data_g[tix] = colorf.lane<1>();
 			blk.data_b[tix] = colorf.lane<2>();
 			blk.data_a[tix] = colorf.lane<3>();
+			blk.data_rgba[tix] = colorf;
 		}
 	}
 }
