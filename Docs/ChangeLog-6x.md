@@ -30,6 +30,9 @@ header from the same release to avoid compatibility issues.
     13, and Visual Studio 2022. Minimum supported CMake version increased to
     3.21.
 * **Codec library updates:**
+  * **Bug fix:** Wait for outstanding tasks to finish before releasing shared
+    buffers when compression is cancelled.
+  * **Bug fix:** Remove a data race when reporting compression progress.
   * **Change:** Use `size_t` for image dimensions, context thread counts, and
     thread indices in the library API.
   * **Bug fix:** Remove data races when initializing configurations and

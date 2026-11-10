@@ -26,7 +26,6 @@
 #if !defined(ASTCENC_INTERNAL_ENTRY_INCLUDED)
 #define ASTCENC_INTERNAL_ENTRY_INCLUDED
 
-#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -101,7 +100,7 @@ private:
 	std::mutex m_lock;
 
 	/** @brief True if the current operation is cancelled. */
-	std::atomic<bool> m_is_cancelled;
+	bool m_is_cancelled;
 
 	/** @brief True if the stage init() step has been executed. */
 	bool m_init_done;
@@ -112,14 +111,14 @@ private:
 	/** @brief Condition variable for tracking stage processing completion. */
 	std::condition_variable m_complete;
 
-	/** @brief Number of tasks started, but not necessarily finished. */
-	std::atomic<size_t> m_start_count;
+	/** @brief Number of tasks issued to workers, but not necessarily finished. */
+	size_t m_issued_task_count;
 
 	/** @brief Number of tasks finished. */
-	size_t m_done_count;
+	size_t m_done_task_count;
 
-	/** @brief Number of tasks that need to be processed. */
-	size_t m_task_count;
+	/** @brief Total number of tasks in the stage. */
+	size_t m_total_task_count;
 
 	/** @brief Progress callback (optional). */
 	astcenc_progress_callback m_callback;
@@ -130,7 +129,7 @@ private:
 	/** @brief Minimum progress before making a callback. */
 	float m_callback_min_diff;
 
-	/** @brief Last progress callback value. */
+	/** @brief Last progress callback value, protected by @c m_callback_lock. */
 	float m_callback_last_value;
 
 public:
@@ -148,25 +147,32 @@ public:
 	 */
 	void reset()
 	{
+		// Single-threaded contexts reset on entry while another thread may request cancellation
+		std::lock_guard<std::mutex> lck(m_lock);
+
 		m_init_done = false;
 		m_term_done = false;
 		m_is_cancelled = false;
-		m_start_count = 0;
-		m_done_count = 0;
-		m_task_count = 0;
+		m_issued_task_count = 0;
+		m_done_task_count = 0;
+		m_total_task_count = 0;
 		m_callback = nullptr;
 		m_callback_last_value = 0.0f;
 		m_callback_min_diff = 1.0f;
 	}
 
 	/**
-	 * @brief Clear the tracker and stop new tasks being assigned.
+	 * @brief Stop new tasks being assigned while preserving outstanding work.
 	 *
 	 * Note, all in-flight tasks in a worker will still complete normally.
 	 */
 	void cancel()
 	{
+		std::unique_lock<std::mutex> lck(m_lock);
+
 		m_is_cancelled = true;
+		lck.unlock();
+		m_complete.notify_all();
 	}
 
 	/**
@@ -181,9 +187,10 @@ public:
 	void init(std::function<size_t(void)> init_func)
 	{
 		std::lock_guard<std::mutex> lck(m_lock);
+
 		if (!m_init_done)
 		{
-			m_task_count = init_func();
+			m_total_task_count = init_func();
 			m_init_done = true;
 		}
 	}
@@ -200,10 +207,11 @@ public:
 	void init(size_t task_count, astcenc_progress_callback callback)
 	{
 		std::lock_guard<std::mutex> lck(m_lock);
+
 		if (!m_init_done)
 		{
 			m_callback = callback;
-			m_task_count = task_count;
+			m_total_task_count = task_count;
 			m_init_done = true;
 
 			// Report every 1% or 4096 blocks, whichever is larger, to avoid callback overhead
@@ -224,14 +232,17 @@ public:
 	 */
 	size_t get_task_assignment(size_t granule, size_t& count)
 	{
-		size_t base = m_start_count.fetch_add(granule, std::memory_order_relaxed);
-		if (m_is_cancelled || base >= m_task_count)
+		std::lock_guard<std::mutex> lck(m_lock);
+
+		if (m_is_cancelled || (m_issued_task_count >= m_total_task_count))
 		{
 			count = 0;
 			return 0;
 		}
 
-		count = astc::min(m_task_count - base, granule);
+		size_t base = m_issued_task_count;
+		count = astc::min(m_total_task_count - base, granule);
+		m_issued_task_count += count;
 		return base;
 	}
 
@@ -245,25 +256,21 @@ public:
 	 */
 	void complete_task_assignment(size_t count)
 	{
-		// Keep m_done_count under the mutex; an atomic alone races with threads entering wait()
+		// Update m_done_task_count under the mutex to synchronize with threads entering wait()
 		size_t local_count;
-		float local_last_value;
 		{
 			std::unique_lock<std::mutex> lck(m_lock);
-			m_done_count += count;
-			local_count = m_done_count;
-			local_last_value = m_callback_last_value;
-
-			// Ensure the progress bar hits 100%
-			if (m_callback && m_done_count == m_task_count)
-			{
-				std::unique_lock<std::mutex> cblck(m_callback_lock);
-				m_callback(100.0f);
-				m_callback_last_value = 100.0f;
-			}
+			m_done_task_count += count;
+			local_count = m_done_task_count;
 
 			// Notify if nothing left to do
-			if (m_is_cancelled || m_done_count == m_task_count)
+			size_t task_count = m_total_task_count;
+			if (m_is_cancelled)
+			{
+				task_count = m_issued_task_count;
+			}
+
+			if (m_done_task_count == task_count)
 			{
 				lck.unlock();
 				m_complete.notify_all();
@@ -273,33 +280,39 @@ public:
 		// Report progress when a callback is registered
 		if (m_callback)
 		{
-			// Check the reporting interval before taking the callback lock
-			float num = static_cast<float>(local_count);
-			float den = static_cast<float>(m_task_count);
-			float this_value =  (num / den) * 100.0f;
-			bool report_test = (this_value - local_last_value) > m_callback_min_diff;
+			// Keep callbacks outside m_lock so a callback can cancel compression
+			std::lock_guard<std::mutex> cblck(m_callback_lock);
 
-			// Recheck under lock, because another thread might report first
+			float num = static_cast<float>(local_count);
+			float den = static_cast<float>(m_total_task_count);
+			float this_value =  (num / den) * 100.0f;
+			bool report_test = (local_count == m_total_task_count) ||
+			                   ((this_value - m_callback_last_value) > m_callback_min_diff);
+
 			if (report_test)
 			{
-				std::unique_lock<std::mutex> cblck(m_callback_lock);
-				bool report_retest = (this_value - m_callback_last_value) > m_callback_min_diff;
-				if (report_retest)
-				{
-					m_callback(this_value);
-					m_callback_last_value = this_value;
-				}
+				m_callback(this_value);
+				m_callback_last_value = this_value;
 			}
 		}
 	}
 
 	/**
-	 * @brief Wait for stage processing to complete.
+	 * @brief Wait for issued tasks to finish, including after cancellation.
 	 */
 	void wait()
 	{
 		std::unique_lock<std::mutex> lck(m_lock);
-		m_complete.wait(lck, [this]{ return m_is_cancelled || m_done_count == m_task_count; });
+
+		m_complete.wait(lck, [this] {
+			size_t task_count = m_total_task_count;
+			if (m_is_cancelled)
+			{
+				task_count = m_issued_task_count;
+			}
+
+			return m_done_task_count == task_count;
+		});
 	}
 
 	/**
