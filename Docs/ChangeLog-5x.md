@@ -14,6 +14,9 @@ clocked at 4.2 GHz, running `astcenc` using AVX2 and 6 threads.
 The 5.7.2 release is a minor maintenance release.
 
 * **Codec library updates:**
+  * **Bug fix:** Wait for outstanding tasks to finish before releasing shared
+    buffers when compression is cancelled.
+  * **Bug fix:** Remove a data race when reporting compression progress.
   * **Bug fix:** Remove data races when initializing configurations and
     allocating contexts concurrently.
   * **Bug fix:** Preserve the error threshold inherited by child contexts,
