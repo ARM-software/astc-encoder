@@ -1248,14 +1248,14 @@ struct astcenc_contexti
 	/** @brief The configuration this context was created with. */
 	astcenc_config config;
 
-	/** @brief The channels requested active before numerical weight floors are applied. */
-	unsigned int active_channel_mask;
-
 	/** @brief The thread count supported by this context. */
-	unsigned int thread_count;
+	size_t thread_count;
 
 	/** @brief Is this context the owner of @c bsd, or is it a child inheriting it. */
 	bool owns_bsd;
+
+	/** @brief The channels requested active before numerical weight floors are applied. */
+	unsigned int active_channel_mask;
 
 	/** @brief The block size descriptor this context was created with. */
 	const block_size_descriptor* bsd;

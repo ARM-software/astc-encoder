@@ -52,13 +52,13 @@ struct astc_compressed_image
 	unsigned int block_z { 0 };
 
 	/** @brief The image width in texels. */
-	unsigned int dim_x { 0 };
+	size_t dim_x { 0 };
 
 	/** @brief The image height in texels. */
-	unsigned int dim_y { 0 };
+	size_t dim_y { 0 };
 
 	/** @brief The image depth in texels. */
-	unsigned int dim_z { 0 };
+	size_t dim_z { 0 };
 
 	/** @brief The binary data payload. */
 	std::vector<uint8_t> data;
@@ -209,13 +209,13 @@ int get_output_filename_enforced_bitness(
  * @param dim_y     The height of the image, in texels.
  * @param dim_z     The depth of the image, in texels.
  *
- * @return The allocated image.
+ * @return The allocated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr alloc_image(
 	unsigned int bitness,
-	unsigned int dim_x,
-	unsigned int dim_y,
-	unsigned int dim_z);
+	size_t dim_x,
+	size_t dim_y,
+	size_t dim_z);
 
 /**
  * @brief Determine the number of active components in an image.
@@ -287,12 +287,12 @@ bool store_ktx_compressed_image(
  * @param dim_y    The height of the image, in texels.
  * @param y_flip   Should this image be vertically flipped?
  *
- * @return The populated image.
+ * @return The populated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr astc_img_from_floatx4_array(
 	const float* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip);
 
 /**
@@ -303,12 +303,12 @@ astcenc_image_ptr astc_img_from_floatx4_array(
  * @param dim_y    The height of the image, in texels.
  * @param y_flip   Should this image be vertically flipped?
  *
- * @return The populated image.
+ * @return The populated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr astc_img_from_unorm8x4_array(
 	const uint8_t* data,
-	unsigned int dim_x,
-	unsigned int dim_y,
+	size_t dim_x,
+	size_t dim_y,
 	bool y_flip);
 
 /**
@@ -323,7 +323,7 @@ astcenc_image_ptr astc_img_from_unorm8x4_array(
 std::vector<float> floatx4_array_from_astc_img(
 	const astcenc_image* img,
 	bool y_flip,
-	unsigned int z_index);
+	size_t z_index);
 
 /* ============================================================================
   Functions for printing build info and help messages

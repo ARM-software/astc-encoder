@@ -170,7 +170,7 @@ void compute_pixel_region_variance(
 				z_src -= kernel_radius_z;
 			}
 
-			z_src = astc::min(z_src, static_cast<size_t>(img->dim_z - 1));
+			z_src = astc::min(z_src, img->dim_z - 1);
 
 			uint8_t* data8 = static_cast<uint8_t*>(img->data[z_src]);
 
@@ -186,7 +186,7 @@ void compute_pixel_region_variance(
 					y_src -= kernel_radius_xy;
 				}
 
-				y_src = astc::min(y_src, static_cast<size_t>(img->dim_y - 1));
+				y_src = astc::min(y_src, img->dim_y - 1);
 
 				for (size_t x = 1; x < padsize_x; x++)
 				{
@@ -200,7 +200,7 @@ void compute_pixel_region_variance(
 						x_src -= kernel_radius_xy;
 					}
 
-					x_src = astc::min(x_src, static_cast<size_t>(img->dim_x - 1));
+					x_src = astc::min(x_src, img->dim_x - 1);
 
 					data[0] = data8[(4 * img->dim_x * y_src) + (4 * x_src    )];
 					data[1] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
@@ -242,7 +242,7 @@ void compute_pixel_region_variance(
 				z_src -= kernel_radius_z;
 			}
 
-			z_src = astc::min(z_src, static_cast<size_t>(img->dim_z - 1));
+			z_src = astc::min(z_src, img->dim_z - 1);
 
 			uint16_t* data16 = static_cast<uint16_t*>(img->data[z_src]);
 
@@ -258,7 +258,7 @@ void compute_pixel_region_variance(
 					y_src -= kernel_radius_xy;
 				}
 
-				y_src = astc::min(y_src, static_cast<size_t>(img->dim_y - 1));
+				y_src = astc::min(y_src, img->dim_y - 1);
 
 				for (size_t x = 1; x < padsize_x; x++)
 				{
@@ -272,7 +272,7 @@ void compute_pixel_region_variance(
 						x_src -= kernel_radius_xy;
 					}
 
-					x_src = astc::min(x_src, static_cast<size_t>(img->dim_x - 1));
+					x_src = astc::min(x_src, img->dim_x - 1);
 
 					data[0] = data16[(4 * img->dim_x * y_src) + (4 * x_src    )];
 					data[1] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
@@ -309,7 +309,7 @@ void compute_pixel_region_variance(
 				z_src -= kernel_radius_z;
 			}
 
-			z_src = astc::min(z_src, static_cast<size_t>(img->dim_z - 1));
+			z_src = astc::min(z_src, img->dim_z - 1);
 
 			float* data32 = static_cast<float*>(img->data[z_src]);
 
@@ -325,7 +325,7 @@ void compute_pixel_region_variance(
 					y_src -= kernel_radius_xy;
 				}
 
-				y_src = astc::min(y_src, static_cast<size_t>(img->dim_y - 1));
+				y_src = astc::min(y_src, img->dim_y - 1);
 
 				for (size_t x = 1; x < padsize_x; x++)
 				{
@@ -339,7 +339,7 @@ void compute_pixel_region_variance(
 						x_src -= kernel_radius_xy;
 					}
 
-					x_src = astc::min(x_src, static_cast<size_t>(img->dim_x - 1));
+					x_src = astc::min(x_src, img->dim_x - 1);
 
 					data[0] = data32[(4 * img->dim_x * y_src) + (4 * x_src    )];
 					data[1] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 1)];

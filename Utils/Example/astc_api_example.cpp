@@ -24,6 +24,7 @@
 // extension points. Error paths log failures and exit without freeing resources, keeping the
 // example simple.
 
+#include <limits>
 #include <stdio.h>
 
 #include "astcenc.h"
@@ -49,7 +50,7 @@ int main(int argc, char **argv)
 
 	// ------------------------------------------------------------------------
 	// Use fixed compressor settings for this example
-	static const unsigned int thread_count = 1;
+	static const size_t thread_count = 1;
 	static const unsigned int block_x = 6;
 	static const unsigned int block_y = 6;
 	static const unsigned int block_z = 1;
@@ -70,8 +71,8 @@ int main(int argc, char **argv)
 	}
 
 	// Compute the number of ASTC blocks in each dimension
-	unsigned int block_count_x = (image_x + block_x - 1) / block_x;
-	unsigned int block_count_y = (image_y + block_y - 1) / block_y;
+	size_t block_count_x = (static_cast<size_t>(image_x) + block_x - 1) / block_x;
+	size_t block_count_y = (static_cast<size_t>(image_y) + block_y - 1) / block_y;
 
 	// ------------------------------------------------------------------------
 	// Initialize the default configuration for the block size and quality
@@ -108,6 +109,12 @@ int main(int argc, char **argv)
 	image.data = reinterpret_cast<void**>(&slices);
 
 	// Space needed for 16 bytes of output per compressed block
+	if (block_count_x > std::numeric_limits<size_t>::max() / 16 / block_count_y)
+	{
+		printf("ERROR: Compressed image size overflow\n");
+		return 1;
+	}
+
 	size_t comp_len = block_count_x * block_count_y * 16;
 	uint8_t* comp_data = new uint8_t[comp_len];
 

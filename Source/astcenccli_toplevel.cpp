@@ -463,7 +463,7 @@ static void decompression_workload_runner(
  */
 static std::string get_slice_filename(
 	const std::string& basename,
-	unsigned int index,
+	size_t index,
 	bool& error
 ) {
 	size_t sep = basename.find_last_of('.');
@@ -493,7 +493,7 @@ static std::string get_slice_filename(
  */
 static astcenc_image_ptr load_uncomp_file(
 	const char* filename,
-	unsigned int dim_z,
+	size_t dim_z,
 	bool y_flip,
 	bool& is_hdr,
 	unsigned int& component_count
@@ -512,7 +512,7 @@ static astcenc_image_ptr load_uncomp_file(
 		std::vector<astcenc_image_ptr> slices;
 
 		// For a 3D image load an array of slices
-		for (unsigned int image_index = 0; image_index < dim_z; image_index++)
+		for (size_t image_index = 0; image_index < dim_z; image_index++)
 		{
 			bool error;
 			std::string slice_name = get_slice_filename(filename, image_index, error);
@@ -541,7 +541,7 @@ static astcenc_image_ptr load_uncomp_file(
 			{
 				if ((is_hdr != slice_is_hdr) || (component_count != slice_component_count))
 				{
-					print_error("ERROR: Image array[0] and [%u] are different formats\n", image_index);
+					print_error("ERROR: Image array[0] and [%zu] are different formats\n", image_index);
 					break;
 				}
 
@@ -549,7 +549,7 @@ static astcenc_image_ptr load_uncomp_file(
 				    (slices[0]->dim_y != slice->dim_y) ||
 				    (slices[0]->dim_z != slice->dim_z))
 				{
-					print_error("ERROR: Image array[0] and [%u] are different dimensions\n", image_index);
+					print_error("ERROR: Image array[0] and [%zu] are different dimensions\n", image_index);
 					break;
 				}
 			}
@@ -565,15 +565,20 @@ static astcenc_image_ptr load_uncomp_file(
 		// If all slices loaded correctly then repack them into a single image
 		if (slices.size() == dim_z)
 		{
-			unsigned int dim_x = slices[0]->dim_x;
-			unsigned int dim_y = slices[0]->dim_y;
+			size_t dim_x = slices[0]->dim_x;
+			size_t dim_y = slices[0]->dim_y;
 			int bitness = is_hdr ? 16 : 8;
-			size_t slice_size = static_cast<size_t>(dim_x) * dim_y;
+			size_t slice_size = dim_x * dim_y;
 
 			image = alloc_image(bitness, dim_x, dim_y, dim_z);
+			if (!image)
+			{
+				print_error("ERROR: Image memory size overflow\n");
+				return nullptr;
+			}
 
 			// Combine 2D source images into one 3D image
-			for (unsigned int z = 0; z < dim_z; z++)
+			for (size_t z = 0; z < dim_z; z++)
 			{
 				if (image->data_type == ASTCENC_TYPE_U8)
 				{
@@ -1576,9 +1581,9 @@ static void print_astcenc_config(
  */
 static vfloat4 image_get_pixel(
 	const astcenc_image& img,
-	unsigned int x,
-	unsigned int y,
-	unsigned int z
+	size_t x,
+	size_t y,
+	size_t z
 ) {
 	// We should never escape bounds
 	assert(x < img.dim_x);
@@ -1634,9 +1639,9 @@ static vfloat4 image_get_pixel(
  */
 static void image_set_pixel(
 	astcenc_image& img,
-	unsigned int x,
-	unsigned int y,
-	unsigned int z,
+	size_t x,
+	size_t y,
+	size_t z,
 	vfloat4 pixel
 ) {
 	// We should never escape bounds
@@ -1693,11 +1698,11 @@ static void image_preprocess_normalize(
 	const astcenc_image& input,
 	astcenc_image& output
 ) {
-	for (unsigned int z = 0; z < input.dim_z; z++)
+	for (size_t z = 0; z < input.dim_z; z++)
 	{
-		for (unsigned int y = 0; y < input.dim_y; y++)
+		for (size_t y = 0; y < input.dim_y; y++)
 		{
-			for (unsigned int x = 0; x < input.dim_x; x++)
+			for (size_t x = 0; x < input.dim_x; x++)
 			{
 				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
@@ -1776,11 +1781,11 @@ static void image_preprocess_premultiply(
 	astcenc_image& output,
 	astcenc_profile profile
 ) {
-	for (unsigned int z = 0; z < input.dim_z; z++)
+	for (size_t z = 0; z < input.dim_z; z++)
 	{
-		for (unsigned int y = 0; y < input.dim_y; y++)
+		for (size_t y = 0; y < input.dim_y; y++)
 		{
-			for (unsigned int x = 0; x < input.dim_x; x++)
+			for (size_t x = 0; x < input.dim_x; x++)
 			{
 				vfloat4 pixel = image_get_pixel(input, x, y, z);
 
@@ -1826,8 +1831,8 @@ static void print_diagnostic_image(
 	astcenc_image& diag_image,
 	std::function<vint4(astcenc_block_info&, size_t, size_t)> texel_func
 ) {
-	size_t block_cols = (image.dim_x + image.block_x - 1) / image.block_x;
-	size_t block_rows = (image.dim_y + image.block_y - 1) / image.block_y;
+	size_t block_cols = astc::get_block_count_safe(image.dim_x, image.block_x);
+	size_t block_rows = astc::get_block_count_safe(image.dim_y, image.block_y);
 
 	const uint8_t* data = image.data.data();
 	for (size_t block_y = 0; block_y < block_rows; block_y++)
@@ -1841,8 +1846,8 @@ static void print_diagnostic_image(
 			size_t start_row = block_y * image.block_y;
 			size_t start_col = block_x * image.block_x;
 
-			size_t end_row = astc::min(start_row + image.block_y, static_cast<size_t>(image.dim_y));
-			size_t end_col = astc::min(start_col + image.block_x, static_cast<size_t>(image.dim_x));
+			size_t end_row = astc::min(start_row + image.block_y, image.dim_y);
+			size_t end_col = astc::min(start_col + image.block_x, image.dim_x);
 
 			for (size_t texel_y = start_row; texel_y < end_row; texel_y++)
 			{
@@ -1882,6 +1887,11 @@ static void print_diagnostic_images(
 	}
 
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+	if (!diag_image)
+	{
+		print_error("ERROR: Image memory size overflow\n");
+		return;
+	}
 
 	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
 	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -2418,12 +2428,12 @@ int astcenc_main(
 			printf("    Color profile:              %s\n", image_uncomp_in_is_hdr ? "HDR" : "LDR");
 			if (image_uncomp_in->dim_z > 1)
 			{
-				printf("    Dimensions:                 3D, %ux%ux%u\n",
+				printf("    Dimensions:                 3D, %zux%zux%zu\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y, image_uncomp_in->dim_z);
 			}
 			else
 			{
-				printf("    Dimensions:                 2D, %ux%u\n",
+				printf("    Dimensions:                 2D, %zux%zu\n",
 				       image_uncomp_in->dim_x, image_uncomp_in->dim_y);
 			}
 			printf("    Components:                 %d\n\n", image_uncomp_in_component_count);
@@ -2450,10 +2460,21 @@ int astcenc_main(
 	{
 		print_astcenc_config(cli_config, config);
 
-		unsigned int blocks_x = (image_uncomp_in->dim_x + config.block_x - 1) / config.block_x;
-		unsigned int blocks_y = (image_uncomp_in->dim_y + config.block_y - 1) / config.block_y;
-		unsigned int blocks_z = (image_uncomp_in->dim_z + config.block_z - 1) / config.block_z;
-		size_t buffer_size = blocks_x * blocks_y * blocks_z * 16;
+		size_t blocks_x = astc::get_block_count_safe(image_uncomp_in->dim_x, config.block_x);
+		size_t blocks_y = astc::get_block_count_safe(image_uncomp_in->dim_y, config.block_y);
+		size_t blocks_z = astc::get_block_count_safe(image_uncomp_in->dim_z, config.block_z);
+
+		bool overflow { false };
+
+		size_t buffer_size = astc::mul_safe(blocks_x, blocks_y, overflow);
+		buffer_size = astc::mul_safe(buffer_size, blocks_z, overflow);
+		buffer_size = astc::mul_safe(buffer_size, 16, overflow);
+		if (overflow)
+		{
+			print_error("ERROR: Image memory size overflow\n");
+			return 1;
+		}
+
 		image_comp.data.resize(buffer_size);
 
 		compression_workload work;
@@ -2517,6 +2538,11 @@ int astcenc_main(
 	{
 		image_decomp_out = alloc_image(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
+		if (!image_decomp_out)
+		{
+			print_error("ERROR: Image memory size overflow\n");
+			return 1;
+		}
 
 		decompression_workload work;
 		work.context = codec_context.get();

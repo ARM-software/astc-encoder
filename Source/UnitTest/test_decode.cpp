@@ -47,14 +47,16 @@ TEST(decompress, overflow_in_z)
 	uint8_t data[1];
 	uint8_t output[1];
 
-	astcenc_image image;
-	// x * y always fits in 64-bit size_t, but xy * z will overflow
-	image.dim_x = 0xFFFFFFFFu;
-	image.dim_y = 0xFFFFFFFFu;
-	image.dim_z = 0xFFFFFFFFu;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+
+	// x * y always fits in 64-bit size_t, but xy * z will overflow
+	astcenc_image image {
+		.dim_x = 0xFFFFFFFFu,
+		.dim_y = 0xFFFFFFFFu,
+		.dim_z = 0xFFFFFFFFu,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
@@ -63,7 +65,7 @@ TEST(decompress, overflow_in_z)
 }
 
 
-/** @brief Input overflow tests for xyz * 16. */
+/** @brief Compressed byte size overflow with a valid uncompressed byte size. */
 TEST(decompress, overflow_in_16)
 {
 	astcenc_error status;
@@ -82,16 +84,133 @@ TEST(decompress, overflow_in_16)
 	uint8_t data[1];
 	uint8_t output[1];
 
-	astcenc_image image;
-	// xyz (in blocks) always fits in 64-bit size_t, but xyz * 16 will overflow
-	image.dim_x = 0x80000000u;
-	image.dim_y = 0x80000000u;
-	image.dim_z = 0x00000010u;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+
+	// Rounding up to a full block makes the compressed byte size overflow
+	astcenc_image image {
+		.dim_x = std::numeric_limits<size_t>::max() / 4,
+		.dim_y = 1,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Image storage overflow must be rejected before accessing the data. */
+TEST(decompress, image_size_overflow)
+{
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+
+	// Use 3D blocks so compressed storage does not mask RGBA byte overflow
+	astcenc_config_init(ASTCENC_PRF_LDR, 6, 6, 6, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	for (size_t component_size : { 1u, 2u, 4u })
+	{
+		astcenc_type type = component_size == 1 ? ASTCENC_TYPE_U8 :
+		                    component_size == 2 ? ASTCENC_TYPE_F16 : ASTCENC_TYPE_F32;
+		for (size_t axis = 0; axis < 3; axis++)
+		{
+			size_t dims[3] { 1, 1, 1 };
+			dims[axis] = std::numeric_limits<size_t>::max() / (4 * component_size) + 1;
+			astcenc_image image {
+				.dim_x = dims[0],
+				.dim_y = dims[1],
+				.dim_z = dims[2],
+				.data_type = type,
+				.data = nullptr
+			};
+
+			status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
+			EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+			// Include a multi-row or multi-slice product overflow
+			dims[axis] = std::numeric_limits<size_t>::max() / (8 * component_size) + 1;
+			dims[(axis + 1) % 3] = 2;
+			image = {
+				.dim_x = dims[0],
+				.dim_y = dims[1],
+				.dim_z = dims[2],
+				.data_type = type,
+				.data = nullptr
+			};
+
+			status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
+			EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+		}
+	}
+
+	// The slice pointer array can overflow even when U8 texel storage fits
+	astcenc_image image {
+		.dim_x = 1,
+		.dim_y = 1,
+		.dim_z = std::numeric_limits<size_t>::max() / sizeof(void*) + 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = nullptr
+	};
+
+	status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
+	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
+
+	astcenc_context_free(context);
+}
+
+/** @brief Dimensions wider than unsigned int must reach the buffer capacity check. */
+TEST(decompress, large_dimensions)
+{
+	if (sizeof(size_t) <= sizeof(unsigned int))
+	{
+		GTEST_SKIP();
+	}
+
+	astcenc_error status;
+	astcenc_config config;
+	astcenc_context* context;
+	astcenc_config_init(ASTCENC_PRF_LDR, 4, 4, 1, ASTCENC_PRE_MEDIUM, 0, &config);
+	status = astcenc_context_alloc(&config, 1, &context, nullptr);
+	ASSERT_EQ(status, ASTCENC_SUCCESS);
+
+	const astcenc_swizzle swizzle {
+		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A
+	};
+
+	for (size_t axis = 0; axis < 3; axis++)
+	{
+		size_t dims[3] { 1, 1, 1 };
+		dims[axis] = static_cast<size_t>(std::numeric_limits<unsigned int>::max()) + 1;
+		astcenc_image image {
+			.dim_x = dims[0],
+			.dim_y = dims[1],
+			.dim_z = dims[2],
+			.data_type = ASTCENC_TYPE_U8,
+			.data = nullptr
+		};
+
+		status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
+		EXPECT_EQ(status, ASTCENC_ERR_OUT_OF_MEM);
+	}
+
+	astcenc_image image {
+		.dim_x = 1,
+		.dim_y = 1,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = nullptr
+	};
+	status = astcenc_decompress_image(
+		context, nullptr, 0, &image, &swizzle, std::numeric_limits<size_t>::max());
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
 
 	astcenc_context_free(context);
@@ -116,13 +235,14 @@ TEST(decompress, data_buffer_exceeded)
 	uint8_t data[1];
 	uint8_t output[1];
 
-	astcenc_image image;
-	image.dim_x = 0x4u;
-	image.dim_y = 0x4u;
-	image.dim_z = 0x1u;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 0x4u,
+		.dim_y = 0x4u,
+		.dim_z = 0x1u,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	// Data size is 1 byte too short so this should error
 	status = astcenc_decompress_image(context, data, 15, &image, &swizzle, 0);
@@ -143,13 +263,8 @@ TEST(decompress, decompress12x12)
 	};
 
 	uint8_t data[16] {
-#if 0
-		0x84,0x00,0x38,0xC8,0x00,0x00,0x00,0x00,
-		0x00,0x00,0x00,0x00,0x00,0xB3,0x4D,0x78
-#else
 		0x29,0x00,0x1A,0x97,0x01,0x00,0x00,0x00,
 		0x00,0x00,0x00,0x00,0x00,0xCF,0x97,0x86
-#endif
 	};
 
 	uint8_t output[12*12*4];
@@ -158,26 +273,17 @@ TEST(decompress, decompress12x12)
 	status = astcenc_context_alloc(&config, 1, &context, nullptr);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
 
-	astcenc_image image;
-	image.dim_x = 12;
-	image.dim_y = 12;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 12,
+		.dim_y = 12,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
-#if 0
-	for (int y = 0; y < 12; y++)
-	{
-		for (int x = 0; x < 12; x++)
-		{
-			uint8_t* pixel = output + (12 * 4 * y) + (4 * x);
-			printf("[%2dx%2d] = %03d, %03d, %03d, %03d\n", x, y, pixel[0], pixel[1], pixel[2], pixel[3]);
-		}
-	}
-#endif
 
 	astcenc_context_free(context);
 }
@@ -196,13 +302,8 @@ TEST(decompress, context_inherit)
 	};
 
 	uint8_t data[16] {
-#if 0
-		0x84,0x00,0x38,0xC8,0x00,0x00,0x00,0x00,
-		0x00,0x00,0x00,0x00,0x00,0xB3,0x4D,0x78
-#else
 		0x29,0x00,0x1A,0x97,0x01,0x00,0x00,0x00,
 		0x00,0x00,0x00,0x00,0x00,0xCF,0x97,0x86
-#endif
 	};
 
 	uint8_t output[12*12*4];
@@ -217,13 +318,14 @@ TEST(decompress, context_inherit)
 	status = astcenc_context_alloc(&config, 1, &error_context, parent_context);
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
 
-	astcenc_image image;
-	image.dim_x = 12;
-	image.dim_y = 12;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 12,
+		.dim_y = 12,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
@@ -257,15 +359,15 @@ TEST(decompress, self_decompress_unsupported_partition)
 	status = astcenc_context_alloc(&config, 1, &context, nullptr);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);
 
-	astcenc_image image;
-	image.dim_x = 8;
-	image.dim_y = 8;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
-
 	uint8_t output[8 * 8 * 4];
 	uint8_t* slices = output;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = 8,
+		.dim_y = 8,
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices)
+	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
 	EXPECT_EQ(status, ASTCENC_SUCCESS);

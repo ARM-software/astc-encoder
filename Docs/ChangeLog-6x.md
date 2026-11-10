@@ -12,8 +12,11 @@ at 3.9 GHz, running `astcenc` using AVX2 and 12 threads.
 **Status:** In development.
 
 The 6.0.0 release is a major release, adding support for two flavors of AVX-512
-and making significant performance optimizations. Changes that break
-compatibility with the 5.x library API are also planned.
+and making significant performance optimizations to all of the ISA variants.
+
+This release includes changes to the public interface in the `astcenc.h`
+header. We always recommend rebuilding your client-side code using the
+header from the same release to avoid compatibility issues.
 
 * **Major feature updates:**
   * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
@@ -27,6 +30,8 @@ compatibility with the 5.x library API are also planned.
     13, and Visual Studio 2022. Minimum supported CMake version increased to
     3.21.
 * **Codec library updates:**
+  * **Change:** Use `size_t` for image dimensions, context thread counts, and
+    thread indices in the library API.
   * **Bug fix:** Remove data races when initializing configurations and
     allocating contexts concurrently.
   * **Bug fix:** Preserve the error threshold inherited by child contexts,
