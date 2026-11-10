@@ -29,6 +29,7 @@
 	#include <unistd.h>
 #endif
 #include <cassert>
+#include <charconv>
 #include <cerrno>
 #include <cctype>
 #include <cmath>
@@ -281,6 +282,53 @@ static bool parse_unsigned(
 
 	result = static_cast<unsigned int>(parsed);
 	return false;
+}
+
+/**
+ * @brief Parse a two- or three-dimensional crop argument.
+ *
+ * @param      option       The command line option being parsed.
+ * @param      value        The command line argument to parse.
+ * @param[out] result       The parsed coordinates or sizes.
+ * @param[out] dimensions   The number of dimensions specified.
+ *
+ * @return @c true if the value is invalid, @c false on success.
+ */
+static bool parse_crop(
+	const char* option,
+	const char* value,
+	size_t result[3],
+	unsigned int& dimensions
+) {
+	const char* end = value + strlen(value);
+	dimensions = 0;
+	while (dimensions < 3)
+	{
+		auto parsed = std::from_chars(value, end, result[dimensions]);
+		if (parsed.ec != std::errc())
+		{
+			break;
+		}
+
+		dimensions++;
+		if (parsed.ptr == end)
+		{
+			if (dimensions >= 2)
+			{
+				return false;
+			}
+			break;
+		}
+
+		if (*parsed.ptr != 'x')
+		{
+			break;
+		}
+		value = parsed.ptr + 1;
+	}
+
+	print_error("ERROR: Value for %s switch must have form XxY or XxYxZ\n", option);
+	return true;
 }
 
 /**
@@ -874,6 +922,52 @@ static bool edit_astcenc_config(
 			argidx++;
 			cli_config.silentmode = 1;
 		}
+		else if (!strcmp(argv[argidx], "--croporigin"))
+		{
+			const char* option = argv[argidx];
+			bool is_arg_error = advance_option(option, argc, 1, argidx);
+			if (is_arg_error)
+			{
+				return true;
+			}
+
+			cli_config.crop_origin[2] = 0;
+			bool is_parse_error = parse_crop(option, argv[argidx - 1],
+			                                 cli_config.crop_origin, cli_config.crop_origin_dims);
+			if (is_parse_error)
+			{
+				return true;
+			}
+
+			cli_config.is_crop_requested = true;
+		}
+		else if (!strcmp(argv[argidx], "--cropsize"))
+		{
+			const char* option = argv[argidx];
+			bool is_arg_error = advance_option(option, argc, 1, argidx);
+			if (is_arg_error)
+			{
+				return true;
+			}
+
+			cli_config.crop_size[2] = 1;
+			bool is_parse_error = parse_crop(option, argv[argidx - 1],
+			                                 cli_config.crop_size, cli_config.crop_size_dims);
+			if (is_parse_error)
+			{
+				return true;
+			}
+
+			if ((cli_config.crop_size[0] == 0) ||
+			    (cli_config.crop_size[1] == 0) ||
+			    (cli_config.crop_size[2] == 0))
+			{
+				print_error("ERROR: Values for %s switch must be greater than zero\n", option);
+				return true;
+			}
+
+			cli_config.is_crop_requested = true;
+		}
 		else if (!strcmp(argv[argidx], "-cw"))
 		{
 			bool arg_error = advance_option(argv[argidx], argc, 4, argidx);
@@ -1447,12 +1541,6 @@ static bool edit_astcenc_config(
 			}
 
 			cli_config.array_size = value;
-
-			if ((cli_config.array_size > 1) && (config.block_z == 1))
-			{
-				print_error("ERROR: -zdim with 3D input data for a 2D output format\n");
-				return true;
-			}
 		}
 #if defined(ASTCENC_DIAGNOSTICS)
 		else if (!strcmp(argv[argidx], "-dtrace"))
@@ -1566,6 +1654,78 @@ static void print_astcenc_config(
 }
 
 /**
+ * @brief Create a non-owning view of a cropped image.
+ *
+ * @param      input        The source image.
+ * @param      cli_config   The command line crop settings.
+ * @param[out] slices       Storage for the selected slice pointers.
+ * @param[out] output       The cropped image view.
+ *
+ * @return @c true if the crop is invalid or exceeds the input dimensions, @c false on success.
+ */
+static bool image_crop_view(
+	const astcenc_image& input,
+	const cli_config_options& cli_config,
+	std::vector<void*>& slices,
+	astcenc_image& output
+) {
+	if ((input.dim_z > 1) && ((cli_config.crop_origin_dims == 2) || (cli_config.crop_size_dims == 2)))
+	{
+		print_error("ERROR: Crop options require three dimensions for a 3D input image\n");
+		return true;
+	}
+
+	size_t dims[3] { input.dim_x, input.dim_y, input.dim_z };
+	size_t spans[3];
+	for (unsigned int axis = 0; axis < 3; axis++)
+	{
+		size_t origin = cli_config.crop_origin[axis];
+		size_t span = cli_config.crop_size[axis];
+		if ((origin >= dims[axis]) || ((span != 0) && (span > dims[axis] - origin)))
+		{
+			print_error("ERROR: Crop region exceeds input image dimensions\n");
+			return true;
+		}
+
+		if (span == 0)
+		{
+			span = dims[axis] - origin;
+		}
+
+		spans[axis] = span;
+	}
+
+	size_t component_size = sizeof(float);
+	if (input.data_type == ASTCENC_TYPE_U8)
+	{
+		component_size = sizeof(uint8_t);
+	}
+	else if (input.data_type == ASTCENC_TYPE_F16)
+	{
+		component_size = sizeof(uint16_t);
+	}
+
+	size_t row_stride = input.row_stride;
+	size_t offset = cli_config.crop_origin[1] * row_stride +
+	                cli_config.crop_origin[0] * 4 * component_size;
+	slices.resize(spans[2]);
+	for (size_t z = 0; z < spans[2]; z++)
+	{
+		slices[z] = static_cast<uint8_t*>(input.data[z + cli_config.crop_origin[2]]) + offset;
+	}
+
+	output = astcenc_image {
+		.dim_x = spans[0],
+		.dim_y = spans[1],
+		.dim_z = spans[2],
+		.data_type = input.data_type,
+		.data = slices.data(),
+		.row_stride = row_stride
+	};
+	return false;
+}
+
+/**
  * @brief Get the value of a single pixel in an image.
  *
  * Note, this implementation is not particularly optimal as it puts format
@@ -1593,23 +1753,25 @@ static vfloat4 image_get_pixel(
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
 		uint8_t* data = static_cast<uint8_t*>(img.data[z]);
+		size_t row_stride = img.row_stride / sizeof(uint8_t);
 
-		float r = data[(4 * img.dim_x * y) + (4 * x    )] / 255.0f;
-		float g = data[(4 * img.dim_x * y) + (4 * x + 1)] / 255.0f;
-		float b = data[(4 * img.dim_x * y) + (4 * x + 2)] / 255.0f;
-		float a = data[(4 * img.dim_x * y) + (4 * x + 3)] / 255.0f;
+		float r = data[(row_stride * y) + (4 * x    )] / 255.0f;
+		float g = data[(row_stride * y) + (4 * x + 1)] / 255.0f;
+		float b = data[(row_stride * y) + (4 * x + 2)] / 255.0f;
+		float a = data[(row_stride * y) + (4 * x + 3)] / 255.0f;
 
 		return vfloat4(r, g, b, a);
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
 		uint16_t* data = static_cast<uint16_t*>(img.data[z]);
+		size_t row_stride = img.row_stride / sizeof(uint16_t);
 
 		vint4 colori(
-			data[(4 * img.dim_x * y) + (4 * x    )],
-			data[(4 * img.dim_x * y) + (4 * x + 1)],
-			data[(4 * img.dim_x * y) + (4 * x + 2)],
-			data[(4 * img.dim_x * y) + (4 * x + 3)]
+			data[(row_stride * y) + (4 * x    )],
+			data[(row_stride * y) + (4 * x + 1)],
+			data[(row_stride * y) + (4 * x + 2)],
+			data[(row_stride * y) + (4 * x + 3)]
 		);
 
 		return float16_to_float(colori);
@@ -1618,12 +1780,13 @@ static vfloat4 image_get_pixel(
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
 		float* data = static_cast<float*>(img.data[z]);
+		size_t row_stride = img.row_stride / sizeof(float);
 
 		return vfloat4(
-			data[(4 * img.dim_x * y) + (4 * x    )],
-			data[(4 * img.dim_x * y) + (4 * x + 1)],
-			data[(4 * img.dim_x * y) + (4 * x + 2)],
-			data[(4 * img.dim_x * y) + (4 * x + 3)]
+			data[(row_stride * y) + (4 * x    )],
+			data[(row_stride * y) + (4 * x + 1)],
+			data[(row_stride * y) + (4 * x + 2)],
+			data[(row_stride * y) + (4 * x + 3)]
 		);
 	}
 }
@@ -2287,13 +2450,22 @@ int astcenc_main(
 
 	// Initialize cli_config_options with default values
 	cli_config_options cli_config {
-		0, 1, false, false,
+		.thread_count = 0,
+		.array_size = 1,
+		.silentmode = false,
+		.y_flip = false,
 #if defined(ASTCENC_DIAGNOSTICS)
-		false,
+		.diagnostic_images = false,
 #endif
-		-10, 10,
-		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
-		{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A }
+		.low_fstop = -10,
+		.high_fstop = 10,
+		.swz_encode = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
+		.swz_decode = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
+		.crop_origin = { 0, 0, 0 },
+		.crop_size = { 0, 0, 0 },
+		.crop_origin_dims = 0,
+		.crop_size_dims = 0,
+		.is_crop_requested = false
 	};
 
 	error = edit_astcenc_config(argc, argv, operation, cli_config, config);
@@ -2314,7 +2486,10 @@ int astcenc_main(
 		config.progress_callback = progress_emitter;
 	}
 
-	astcenc_image_ptr image_uncomp_in;
+	astcenc_image_ptr image_uncomp_in_storage;
+	astcenc_image* image_uncomp_in = nullptr;
+	astcenc_image image_crop {};
+	std::vector<void*> crop_slices;
 	unsigned int image_uncomp_in_component_count = 0;
 	bool image_uncomp_in_is_hdr = false;
 	astcenc_image_ptr image_decomp_out;
@@ -2383,15 +2558,69 @@ int astcenc_main(
 	// Load the uncompressed input file if needed
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
 	{
-		image_uncomp_in = load_uncomp_file(
-		    input_filename.c_str(), cli_config.array_size, cli_config.y_flip,
+		// A cropped image must be flipped after selecting the region
+		bool is_y_flip_needed = cli_config.y_flip && !cli_config.is_crop_requested;
+		image_uncomp_in_storage = load_uncomp_file(
+		    input_filename.c_str(), cli_config.array_size, is_y_flip_needed,
 		    image_uncomp_in_is_hdr, image_uncomp_in_component_count);
+		image_uncomp_in = image_uncomp_in_storage.get();
 		if (!image_uncomp_in)
 		{
 			print_error("ERROR: Failed to load uncompressed image file\n");
 			return 1;
 		}
 
+		if (cli_config.is_crop_requested)
+		{
+			error = image_crop_view(*image_uncomp_in, cli_config, crop_slices, image_crop);
+			if (error)
+			{
+				return 1;
+			}
+
+			image_uncomp_in = &image_crop;
+			if (cli_config.y_flip)
+			{
+				unsigned int bitness = 32;
+				if (image_crop.data_type == ASTCENC_TYPE_U8)
+				{
+					bitness = 8;
+				}
+				else if (image_crop.data_type == ASTCENC_TYPE_F16)
+				{
+					bitness = 16;
+				}
+
+				auto image_flipped = alloc_image(bitness, image_crop.dim_x, image_crop.dim_y, image_crop.dim_z);
+				if (!image_flipped)
+				{
+					print_error("ERROR: Failed to allocate flipped image\n");
+					return 1;
+				}
+
+				size_t row_bytes = image_crop.dim_x * 4 * (bitness / 8);
+				for (size_t z = 0; z < image_crop.dim_z; z++)
+				{
+					auto* source = static_cast<uint8_t*>(image_crop.data[z]);
+					auto* target = static_cast<uint8_t*>(image_flipped->data[z]);
+					for (size_t y = 0; y < image_crop.dim_y; y++)
+					{
+						memcpy(target + y * row_bytes,
+						       source + (image_crop.dim_y - y - 1) * image_crop.row_stride, row_bytes);
+					}
+				}
+
+				image_uncomp_in_storage = std::move(image_flipped);
+				image_uncomp_in = image_uncomp_in_storage.get();
+			}
+		}
+
+		// Check the selected depth so a single cropped plane can use 2D blocks
+		if ((cli_config.array_size > 1) && (config.block_z == 1) && (image_uncomp_in->dim_z > 1))
+		{
+			print_error("ERROR: -zdim with 3D input data for a 2D output format\n");
+			return 1;
+		}
 
 		if (preprocess != ASTCENC_PP_NONE)
 		{
@@ -2417,7 +2646,8 @@ int astcenc_main(
 				                             config.profile);
 			}
 
-			image_uncomp_in = std::move(image_pp);
+			image_uncomp_in_storage = std::move(image_pp);
+			image_uncomp_in = image_uncomp_in_storage.get();
 		}
 
 		if (!cli_config.silentmode)
@@ -2479,7 +2709,7 @@ int astcenc_main(
 
 		compression_workload work;
 		work.context = codec_context.get();
-		work.image = image_uncomp_in.get();
+		work.image = image_uncomp_in;
 		work.swizzle = cli_config.swz_encode;
 		work.data_out = image_comp.data.data();
 		work.data_len = buffer_size;
@@ -2593,7 +2823,7 @@ int astcenc_main(
 
 		compute_error_metrics(
 		    image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
-		    image_uncomp_in.get(), image_decomp_out.get(),
+		    image_uncomp_in, image_decomp_out.get(),
 		    cli_config.low_fstop, cli_config.high_fstop);
 	}
 

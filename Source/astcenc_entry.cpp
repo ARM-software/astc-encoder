@@ -31,14 +31,14 @@
 #include "astcenc_preset_configs.h"
 
 /**
- * @brief Get the texel count, validating the image memory size.
+ * @brief Validate image storage and resolve the default row stride.
  *
- * @param image   The image descriptor.
+ * @param[in,out] image   The image descriptor.
  *
  * @return The texel count, or zero for invalid dimensions, data type, or byte size.
  */
-static size_t get_texels_count(
-	const astcenc_image& image
+static size_t validate_image(
+	astcenc_image& image
 ) {
 	size_t component_size;
 	switch (image.data_type)
@@ -60,8 +60,27 @@ static size_t get_texels_count(
 	size_t texels_count = astc::mul_safe(image.dim_x, image.dim_y, overflow);
 	texels_count = astc::mul_safe(texels_count, image.dim_z, overflow);
 
-	// Validate RGBA storage and the array of slice pointers
-	astc::mul_safe(texels_count, 4 * component_size, overflow);
+	// Validate the row pitch before computing the extent of each slice
+	size_t row_bytes = astc::mul_safe(image.dim_x, 4 * component_size, overflow);
+	if (image.row_stride == 0)
+	{
+		image.row_stride = row_bytes;
+	}
+
+	size_t row_stride = image.row_stride;
+	if ((image.dim_y == 0) || (row_stride < row_bytes) || (row_stride % component_size != 0))
+	{
+		return 0;
+	}
+
+	size_t slice_bytes = astc::mul_safe(image.dim_y - 1, row_stride, overflow);
+	if (slice_bytes > SIZE_MAX - row_bytes)
+	{
+		return 0;
+	}
+
+	// The final row need not include padding
+	astc::mul_safe(slice_bytes + row_bytes, image.dim_z, overflow);
 	astc::mul_safe(image.dim_z, sizeof(void*), overflow);
 
 	if (overflow)
@@ -1079,7 +1098,9 @@ astcenc_error astcenc_compress_image(
 #else
 	astcenc_contexti* ctx = &ctxo->context;
 	astcenc_error status;
-	astcenc_image& image = *imagep;
+
+	// Normalize a local descriptor so codec threads do not write to shared caller data
+	astcenc_image image = *imagep;
 
 	if (ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY)
 	{
@@ -1101,7 +1122,7 @@ astcenc_error astcenc_compress_image(
 	size_t dim_y = image.dim_y;
 	size_t dim_z = image.dim_z;
 
-	size_t texel_count = get_texels_count(image);
+	size_t texel_count = validate_image(image);
 
 	// Image storage must fit in a size_t
 	if (texel_count == 0)
@@ -1229,7 +1250,9 @@ astcenc_error astcenc_decompress_image(
 	size_t thread_index
 ) {
 	astcenc_error status;
-	astcenc_image& image_out = *image_outp;
+
+	// Normalize a local descriptor so codec threads do not write to shared caller data
+	astcenc_image image_out = *image_outp;
 	astcenc_contexti* ctx = &ctxo->context;
 
 	// Today this doesn't matter (working set on stack) but might in future ...
@@ -1248,7 +1271,7 @@ astcenc_error astcenc_decompress_image(
 	size_t dim_y = image_out.dim_y;
 	size_t dim_z = image_out.dim_z;
 
-	size_t texel_count = get_texels_count(image_out);
+	size_t texel_count = validate_image(image_out);
 
 	// Image storage must fit in a size_t
 	if (texel_count == 0)

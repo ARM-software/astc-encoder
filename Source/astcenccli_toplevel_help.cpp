@@ -240,6 +240,22 @@ COMPRESSION
         specifying the input file as input.png would load input_0.png,
         input_1.png, etc.
 
+    --croporigin <x>x<y>[x<z>]
+        Set the crop origin in input image texels. Coordinates must be
+        nonnegative integers. The default origin is zero on all axes.
+
+    --cropsize <width>x<height>[x<depth>]
+        Set the crop size in texels. Sizes must be positive integers. The
+        default size covers the remaining extent from the crop origin.
+
+        The third component is optional for 2D input images, defaulting to
+        zero for the origin and one for the size. It is required for 3D
+        input images. The crop must fit entirely within the input image.
+
+        Cropping is supported in compression and test modes. Coordinates
+        refer to the original input image, before -yflip or preprocessing.
+        The compressed image dimensions are those of the selected region.
+
     -pp-normalize
         Set this for a normal map texture to run a preprocess over the
         image that forces normal vectors to be unit length. The

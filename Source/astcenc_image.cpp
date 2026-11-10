@@ -197,13 +197,16 @@ void load_image_block(
 
 	// Set up the function pointers for loading pipeline as needed
 	pixel_loader loader = load_texel_u8;
+	size_t row_stride = img.row_stride;
 	if (img.data_type == ASTCENC_TYPE_F16)
 	{
 		loader = load_texel_f16;
+		row_stride = img.row_stride / sizeof(uint16_t);
 	}
 	else if  (img.data_type == ASTCENC_TYPE_F32)
 	{
 		loader = load_texel_f32;
+		row_stride = img.row_stride / sizeof(float);
 	}
 
 	pixel_swizzler swizzler = swz_texel_skip;
@@ -231,7 +234,7 @@ void load_image_block(
 			{
 				size_t xi = astc::min(pos_x + x, size_x - 1);
 
-				vfloat4 datav = loader(plane, (4 * size_x * yi) + (4 * xi));
+				vfloat4 datav = loader(plane, (row_stride * yi) + (4 * xi));
 				datav = swizzler(datav, swz);
 				datav = converter(datav, lns_mask);
 
@@ -302,6 +305,7 @@ void load_image_block_fast_ldr(
 	size_t idx = 0;
 
 	const uint8_t* plane = static_cast<const uint8_t*>(img.data[0]);
+	size_t row_stride = img.row_stride;
 	for (size_t y = pos_y; y < pos_y + bsd.dim_y; y++)
 	{
 		size_t yi = astc::min(y, size_y - 1);
@@ -310,7 +314,7 @@ void load_image_block_fast_ldr(
 		{
 			size_t xi = astc::min(x, size_x - 1);
 
-			vint4 datavi = vint4(plane + (4 * size_x * yi) + (4 * xi));
+			vint4 datavi = vint4(plane + (row_stride * yi) + (4 * xi));
 			vfloat4 datav = int_to_float(datavi) * (65535.0f / 255.0f);
 
 			// Compute block metadata
@@ -379,6 +383,7 @@ void store_image_block(
 
 	if (img.data_type == ASTCENC_TYPE_U8)
 	{
+		size_t row_stride = img.row_stride;
 		for (size_t z = start_z; z < end_z; z++)
 		{
 			// Fetch the image plane
@@ -386,7 +391,7 @@ void store_image_block(
 
 			for (size_t y = start_y; y < end_y; y++)
 			{
-				uint8_t* data8_row = data8 + (4 * size_x * y) + (4 * start_x);
+				uint8_t* data8_row = data8 + (row_stride * y) + (4 * start_x);
 
 				for (size_t x = 0; x < count_x; x += ASTCENC_SIMD_WIDTH)
 				{
@@ -460,6 +465,7 @@ void store_image_block(
 	}
 	else if (img.data_type == ASTCENC_TYPE_F16)
 	{
+		size_t row_stride = img.row_stride / sizeof(uint16_t);
 		for (size_t z = start_z; z < end_z; z++)
 		{
 			// Fetch the image plane
@@ -467,7 +473,7 @@ void store_image_block(
 
 			for (size_t y = start_y; y < end_y; y++)
 			{
-				uint16_t* data16_row = data16 + (4 * size_x * y) + (4 * start_x);
+				uint16_t* data16_row = data16 + (row_stride * y) + (4 * start_x);
 
 				for (size_t x = 0; x < count_x; x++)
 				{
@@ -521,6 +527,7 @@ void store_image_block(
 	else  // if (img.data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img.data_type == ASTCENC_TYPE_F32);
+		size_t row_stride = img.row_stride / sizeof(float);
 
 		for (size_t z = start_z; z < end_z; z++)
 		{
@@ -529,7 +536,7 @@ void store_image_block(
 
 			for (size_t y = start_y; y < end_y; y++)
 			{
-				float* data32_row = data32 + (4 * size_x * y) + (4 * start_x);
+				float* data32_row = data32 + (row_stride * y) + (4 * start_x);
 
 				for (size_t x = 0; x < count_x; x++)
 				{

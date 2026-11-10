@@ -147,7 +147,8 @@ struct Image
 			.dim_y = y,
 			.dim_z = z,
 			.data_type = type,
-			.data = planes.data()
+			.data = planes.data(),
+			.row_stride = 0
 		};
 	}
 

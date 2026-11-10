@@ -55,7 +55,8 @@ TEST(decompress, overflow_in_z)
 		.dim_y = 0xFFFFFFFFu,
 		.dim_z = 0xFFFFFFFFu,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
@@ -92,7 +93,8 @@ TEST(decompress, overflow_in_16)
 		.dim_y = 1,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, data, -1, &image, &swizzle, 0);
@@ -130,7 +132,8 @@ TEST(decompress, image_size_overflow)
 				.dim_y = dims[1],
 				.dim_z = dims[2],
 				.data_type = type,
-				.data = nullptr
+				.data = nullptr,
+				.row_stride = 0
 			};
 
 			status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
@@ -144,7 +147,8 @@ TEST(decompress, image_size_overflow)
 				.dim_y = dims[1],
 				.dim_z = dims[2],
 				.data_type = type,
-				.data = nullptr
+				.data = nullptr,
+				.row_stride = 0
 			};
 
 			status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
@@ -158,7 +162,8 @@ TEST(decompress, image_size_overflow)
 		.dim_y = 1,
 		.dim_z = std::numeric_limits<size_t>::max() / sizeof(void*) + 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = nullptr
+		.data = nullptr,
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
@@ -195,7 +200,8 @@ TEST(decompress, large_dimensions)
 			.dim_y = dims[1],
 			.dim_z = dims[2],
 			.data_type = ASTCENC_TYPE_U8,
-			.data = nullptr
+			.data = nullptr,
+			.row_stride = 0
 		};
 
 		status = astcenc_decompress_image(context, nullptr, 0, &image, &swizzle, 0);
@@ -207,7 +213,8 @@ TEST(decompress, large_dimensions)
 		.dim_y = 1,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = nullptr
+		.data = nullptr,
+		.row_stride = 0
 	};
 	status = astcenc_decompress_image(
 		context, nullptr, 0, &image, &swizzle, std::numeric_limits<size_t>::max());
@@ -241,7 +248,8 @@ TEST(decompress, data_buffer_exceeded)
 		.dim_y = 0x4u,
 		.dim_z = 0x1u,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	// Data size is 1 byte too short so this should error
@@ -279,7 +287,8 @@ TEST(decompress, decompress12x12)
 		.dim_y = 12,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
@@ -324,7 +333,8 @@ TEST(decompress, context_inherit)
 		.dim_y = 12,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);
@@ -366,7 +376,8 @@ TEST(decompress, self_decompress_unsupported_partition)
 		.dim_y = 8,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_decompress_image(context, data, 16, &image, &swizzle, 0);

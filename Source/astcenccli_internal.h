@@ -97,6 +97,21 @@ struct cli_config_options
 
 	/** @brief The  post-decode swizzle. */
 	astcenc_swizzle swz_decode;
+
+	/** @brief The crop origin in input image texels. */
+	size_t crop_origin[3];
+
+	/** @brief The crop size in texels, or zero to use the remaining extent. */
+	size_t crop_size[3];
+
+	/** @brief The number of crop origin dimensions specified, or zero if omitted. */
+	unsigned int crop_origin_dims;
+
+	/** @brief The number of crop size dimensions specified, or zero if omitted. */
+	unsigned int crop_size_dims;
+
+	/** @brief Whether any crop option was specified. */
+	bool is_crop_requested;
 };
 
 /**

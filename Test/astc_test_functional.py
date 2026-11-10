@@ -966,6 +966,120 @@ class CLIPTest(CLITestBase):
         color_test = img.get_colors((0, 0))
         self.assertColorSame(color_ref, color_test)
 
+    def test_compress_crop(self) -> None:
+        '''
+        Cropping matches an externally cropped image, including preprocessing.
+        '''
+        values = numpy.arange(11 * 9 * 4, dtype=numpy.uint16)
+        pixels = ((values * 31) % 256).astype(numpy.uint8).reshape(9, 11, 4)
+        image = Image.fromarray(pixels)
+        source = self.get_tmp_image_path('EXP', '.png')
+        image.save(source)
+
+        cases = [
+            ((2, 1, 7, 7), ['--croporigin', '2x1', '--cropsize', '5x6']),
+            ((2, 0, 11, 9), ['--croporigin', '2x0']),
+            ((0, 0, 5, 4), ['--cropsize', '5x4']),
+            ((0, 0, 11, 9),
+             ['--croporigin', '0x0x0', '--cropsize', '11x9x1']),
+            ((10, 8, 11, 9), ['--croporigin', '10x8', '--cropsize', '1x1']),
+            ((2, 1, 7, 7), ['--croporigin', '0x0x0', '--cropsize', '1x1x1',
+                            '--croporigin', '2x1', '--cropsize', '5x6'])
+        ]
+
+        options = [[], ['-yflip'], ['-pp-normalize'], ['-pp-premultiply'],
+                   ['-yflip', '-pp-premultiply']]
+
+        for bounds, crop_args in cases:
+            cropped = self.get_tmp_image_path('EXP', '.png')
+            image.crop(bounds).save(cropped)
+
+            for extra in options:
+                with self.subTest(bounds=bounds, options=extra):
+                    expected = self.get_tmp_image_path('EXP', '.astc')
+                    actual = self.get_tmp_image_path('EXP', '.astc')
+                    common = ['4x4', '-fastest', '-j', '1'] + extra
+                    self.exec([self.binary, '-cl', cropped, expected] + common)
+                    self.exec([self.binary, '-cl', source, actual] +
+                              common + crop_args)
+                    self.assertEqual(
+                        actual.read_bytes(), expected.read_bytes())
+
+    def test_roundtrip_crop(self) -> None:
+        '''
+        Test mode compares the selected region and writes only its dimensions.
+        '''
+        source = self.get_image_path('Tiles/ldr-rgba.png')
+        cropped = self.get_tmp_image_path('EXP', '.png')
+        with Image.open(source) as image:
+            image.crop((1, 2, 6, 7)).save(cropped)
+
+        for extra in ([], ['-yflip']):
+            with self.subTest(options=extra):
+                expected = self.get_tmp_image_path('EXP', '.png')
+                actual = self.get_tmp_image_path('EXP', '.png')
+                common = ['4x4', '-fastest', '-j', '1'] + extra
+                expected_psnr = self.exec(
+                    [self.binary, '-tl', cropped, expected] + common,
+                    LDR_RGB_PSNR_PATTERN)
+                actual_psnr = self.exec(
+                    [self.binary, '-tl', source, actual] + common +
+                    ['--croporigin', '1x2', '--cropsize', '5x5'],
+                    LDR_RGB_PSNR_PATTERN)
+                self.assertEqual(actual_psnr, expected_psnr)
+                self.assertEqual(actual.read_bytes(), expected.read_bytes())
+                with Image.open(actual) as image:
+                    self.assertEqual(image.size, (5, 5))
+
+    def test_compress_crop_3d(self) -> None:
+        '''
+        A crop selects planes as well as rows and columns of a 3D image.
+        '''
+        source = self.get_tmp_image_path('EXP', '.png')
+        cropped = self.get_tmp_image_path('EXP', '.png')
+        for z in range(4):
+            values = numpy.arange(9 * 8 * 4, dtype=numpy.uint16)
+            pixels = ((values * 31 + z * 43) % 256).astype(
+                numpy.uint8).reshape(8, 9, 4)
+            image = Image.fromarray(pixels)
+            image.save(source.with_stem(f'{source.stem}_{z}'))
+            if 1 <= z < 3:
+                image.crop((2, 1, 7, 7)).save(
+                    cropped.with_stem(f'{cropped.stem}_{z - 1}'))
+
+        for extra in ([], ['-yflip']):
+            with self.subTest(options=extra):
+                expected = self.get_tmp_image_path('EXP', '.astc')
+                actual = self.get_tmp_image_path('EXP', '.astc')
+                common = ['3x3x3', '-fastest', '-j', '1'] + extra
+                self.exec([self.binary, '-cl', cropped, expected] +
+                          common + ['-zdim', '2'])
+                self.exec([self.binary, '-cl', source, actual] + common + [
+                    '-zdim', '4', '--croporigin', '2x1x1', '--cropsize',
+                    '5x6x2'])
+                self.assertEqual(actual.read_bytes(), expected.read_bytes())
+
+        # Selecting a single slice also permits a 2D block size
+        expected = self.get_tmp_image_path('EXP', '.astc')
+        actual = self.get_tmp_image_path('EXP', '.astc')
+        self.exec([
+            self.binary, '-cl', cropped.with_stem(f'{cropped.stem}_0'),
+            expected, '4x4', '-fastest', '-j', '1'])
+        self.exec([
+            self.binary, '-cl', source, actual, '4x4', '-fastest', '-j', '1',
+            '--croporigin', '2x1x1', '--cropsize', '5x6x1', '-zdim', '4'])
+        self.assertEqual(actual.read_bytes(), expected.read_bytes())
+
+    def test_crop_decompress(self) -> None:
+        '''
+        Crop options are ignored during decompression.
+        '''
+        for option in ('--croporigin', '--cropsize'):
+            self.exec([
+                self.binary, '-dl',
+                self.get_ref_image_path('LDR', 'comp', 'A'),
+                self.get_tmp_image_path('LDR', 'decomp'), option, '1x1'])
+
     def test_decompress_flip(self) -> None:
         '''
         Test LDR image flip on decompression.
@@ -2186,6 +2300,111 @@ class CLINTest(CLITestBase):
             with self.subTest(swizzle=bad_swizzle):
                 cmd[block_index] = bad_swizzle
                 self.exec(cmd)
+
+    def test_crop_invalid(self) -> None:
+        '''
+        Reject malformed crop values, missing arguments, and zero sizes.
+        '''
+        base = [
+            self.binary, '-cl', self.get_image_path('Tiles/ldr.png'),
+            self.get_tmp_image_path('LDR', 'comp'),
+            '4x4', '-fastest', '-j', '1']
+
+        for option in ('--croporigin', '--cropsize'):
+            bad_values = [
+                '-1x1', '1x-1', '1x1x-1', '1.5x2', '1xabc', '', '1', 'x1',
+                '1x', '1xx2', '1x2x', '1x2x3x4', '1x2x3x', '1X2', '1x2abc',
+                '18446744073709551616x1', '1x18446744073709551616',
+                '1x1x18446744073709551616'
+            ]
+
+            if option == '--cropsize':
+                bad_values += ['0x1', '1x0', '1x1x0']
+
+            for value in bad_values:
+                with self.subTest(option=option, value=value):
+                    self.exec(base + [option, value])
+
+            self.exec(base + [option])
+
+    def test_crop_out_of_bounds(self) -> None:
+        '''
+        Crops must fit the original image, including near-limit size_t values.
+        '''
+        base = [
+            self.binary, '-cl', self.get_image_path('Tiles/ldr.png'),
+            self.get_tmp_image_path('LDR', 'comp'),
+            '4x4', '-fastest', '-j', '1']
+        self.exec(base + ['--croporigin', '7x7', '--cropsize', '1x1'],
+                  expect_pass=True)
+        max_size = str(numpy.iinfo(numpy.uintp).max)
+
+        cases = [
+            ['--croporigin', value] for value in
+            ('8x0', '0x8', '0x0x1', f'{max_size}x0', f'0x{max_size}',
+             f'0x0x{max_size}')
+        ]
+
+        cases += [
+            ['--cropsize', value] for value in
+            ('9x1', '1x9', '1x1x2', f'{max_size}x1', f'1x{max_size}',
+             f'1x1x{max_size}')
+        ]
+
+        cases += [
+            ['--croporigin', '1x1', '--cropsize', value] for value in
+            ('8x1', '1x8', f'{max_size}x1', f'1x{max_size}')
+        ]
+
+        for args in cases:
+            with self.subTest(args=args):
+                self.exec(base + args)
+
+    def test_crop_3d_invalid(self) -> None:
+        '''
+        3D input requires explicit depth and rejects crops outside any axis.
+        '''
+        source = self.get_tmp_image_path('EXP', '.png')
+        tile = self.get_image_path('Tiles/ldr.png').read_bytes()
+
+        for z in range(2):
+            source.with_stem(f'{source.stem}_{z}').write_bytes(tile)
+
+        base = [
+            self.binary, '-cl', source,
+            self.get_tmp_image_path('LDR', 'comp'),
+            '3x3x3', '-fastest', '-j', '1', '-zdim', '2']
+
+        self.exec(base, expect_pass=True)
+        self.exec(base + ['--croporigin', '7x7x1', '--cropsize', '1x1x1'],
+                  expect_pass=True)
+
+        max_size = str(numpy.iinfo(numpy.uintp).max)
+
+        cases = [
+            ['--croporigin', '0x0'],
+            ['--cropsize', '4x4'],
+            ['--croporigin', '0x0', '--cropsize', '4x4x1'],
+            ['--croporigin', '0x0x0', '--cropsize', '4x4']
+        ]
+
+        cases += [
+            ['--croporigin', value] for value in ('8x0x0', '0x8x0', '0x0x2')
+        ]
+
+        cases += [
+            ['--cropsize', value] for value in ('9x1x1', '1x9x1', '1x1x3')
+        ]
+
+        cases += [
+            ['--croporigin', '1x1x1', '--cropsize', value] for value in
+            ('8x1x1', '1x8x1', '1x1x2', f'{max_size}x1x1',
+             f'1x{max_size}x1', f'1x1x{max_size}')
+        ]
+
+        for args in cases:
+            with self.subTest(args=args):
+                self.exec(base + args)
 
     def test_ch_mpsnr_missing_args(self) -> None:
         '''
