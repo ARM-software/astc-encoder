@@ -55,7 +55,8 @@ TEST(compress, overflow_in_z)
 		.dim_y = 0xFFFFFFFFu,
 		.dim_z = 0xFFFFFFFFu,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
@@ -89,7 +90,8 @@ TEST(compress, zero_block_z)
 		.dim_y = 4,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	// Compression must succeed despite zero config.block_z value
@@ -126,7 +128,8 @@ TEST(compress, overflow_in_16)
 		.dim_y = 1,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	status = astcenc_compress_image(context, &image, &swizzle, data, -1, 0);
@@ -162,7 +165,8 @@ TEST(compress, ascale_radius_clamped)
 		.dim_y = 4,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	// Compression should succeed without bad_alloc or ASAN failure
@@ -202,7 +206,8 @@ TEST(compress, image_size_overflow)
 				.dim_y = dims[1],
 				.dim_z = dims[2],
 				.data_type = type,
-				.data = nullptr
+				.data = nullptr,
+				.row_stride = 0
 			};
 			status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
 			EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
@@ -215,7 +220,8 @@ TEST(compress, image_size_overflow)
 				.dim_y = dims[1],
 				.dim_z = dims[2],
 				.data_type = type,
-				.data = nullptr
+				.data = nullptr,
+				.row_stride = 0
 			};
 
 			status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
@@ -229,7 +235,8 @@ TEST(compress, image_size_overflow)
 		.dim_y = 1,
 		.dim_z = std::numeric_limits<size_t>::max() / sizeof(void*) + 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = nullptr
+		.data = nullptr,
+		.row_stride = 0
 	};
 	status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
 	EXPECT_EQ(status, ASTCENC_ERR_BAD_PARAM);
@@ -265,7 +272,8 @@ TEST(compress, large_dimensions)
 			.dim_y = dims[1],
 			.dim_z = dims[2],
 			.data_type = ASTCENC_TYPE_U8,
-			.data = nullptr
+			.data = nullptr,
+			.row_stride = 0
 		};
 
 		status = astcenc_compress_image(context, &image, &swizzle, nullptr, 0, 0);
@@ -277,7 +285,8 @@ TEST(compress, large_dimensions)
 		.dim_y = 1,
 		.dim_z = 1,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = nullptr
+		.data = nullptr,
+		.row_stride = 0
 	};
 
 	status = astcenc_compress_image(
@@ -324,7 +333,8 @@ TEST(compress, data_buffer_exceeded)
 		.dim_y = 0x4u,
 		.dim_z = 0x1u,
 		.data_type = ASTCENC_TYPE_U8,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	// Data size is 1 byte too short so this should error
@@ -365,7 +375,8 @@ static void run_positive_test(
 		.dim_y = 4u,
 		.dim_z = 1u,
 		.data_type = ASTCENC_TYPE_F32,
-		.data = reinterpret_cast<void**>(&slices)
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
 	};
 
 	// Should not error or trip any UBSAN errors

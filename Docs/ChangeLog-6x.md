@@ -18,7 +18,11 @@ This release includes changes to the public interface in the `astcenc.h`
 header. We always recommend rebuilding your client-side code using the
 header from the same release to avoid compatibility issues.
 
-* **Major feature updates:**
+* **Major API and feature updates:**
+  * **API Change:** Add a row stride to `astcenc_image` for compression input
+    and decompression output. A zero stride selects tightly packed rows.
+  * **API Change:** Use `size_t` for image dimensions, context thread counts,
+    and thread indices in the library API.
   * **Feature:** Add AVX-512 SIMD backends to library, with corresponding
     command line tool variants. Implementation provides "AVX-256", which uses
     an enhanced version of the AVX2 backend operating on 256-bit vectors, and
@@ -33,8 +37,6 @@ header from the same release to avoid compatibility issues.
   * **Bug fix:** Wait for outstanding tasks to finish before releasing shared
     buffers when compression is cancelled.
   * **Bug fix:** Remove a data race when reporting compression progress.
-  * **Change:** Use `size_t` for image dimensions, context thread counts, and
-    thread indices in the library API.
   * **Bug fix:** Remove data races when initializing configurations and
     allocating contexts concurrently.
   * **Bug fix:** Preserve the error threshold inherited by child contexts,
@@ -89,6 +91,9 @@ header from the same release to avoid compatibility issues.
     `interleave_rgba8()`.
   * **Optimization:** Use SVE narrowing stores in the 4-wide implementation of
     `pack_and_store_low_bytes()`.
+* **Command line tool updates:**
+  * **Feature:** Add crop region support for compression. Crop regions are
+    extracted using image coordinate space before flipping or preprocessing.
 * **Build system updates:**
   * **Bug fix:** Restore Clang compression performance by disabling unintended
     floating-point trapping, retaining precise arithmetic and the configured

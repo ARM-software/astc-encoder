@@ -153,6 +153,7 @@ void compute_pixel_region_variance(
 	// Load N and N^2 values into the work buffers
 	if (img->data_type == ASTCENC_TYPE_U8)
 	{
+		size_t row_stride = img->row_stride / sizeof(uint8_t);
 		// Swizzle data structure 4 = ZERO, 5 = ONE
 		uint8_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -202,10 +203,10 @@ void compute_pixel_region_variance(
 
 					x_src = astc::min(x_src, img->dim_x - 1);
 
-					data[0] = data8[(4 * img->dim_x * y_src) + (4 * x_src    )];
-					data[1] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
-					data[2] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
-					data[3] = data8[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
+					data[0] = data8[(row_stride * y_src) + (4 * x_src    )];
+					data[1] = data8[(row_stride * y_src) + (4 * x_src + 1)];
+					data[2] = data8[(row_stride * y_src) + (4 * x_src + 2)];
+					data[3] = data8[(row_stride * y_src) + (4 * x_src + 3)];
 
 					uint8_t r = data[swz.r];
 					uint8_t g = data[swz.g];
@@ -225,6 +226,7 @@ void compute_pixel_region_variance(
 	}
 	else if (img->data_type == ASTCENC_TYPE_F16)
 	{
+		size_t row_stride = img->row_stride / sizeof(uint16_t);
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		uint16_t data[6];
 		data[ASTCENC_SWZ_0] = 0;
@@ -274,10 +276,10 @@ void compute_pixel_region_variance(
 
 					x_src = astc::min(x_src, img->dim_x - 1);
 
-					data[0] = data16[(4 * img->dim_x * y_src) + (4 * x_src    )];
-					data[1] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
-					data[2] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
-					data[3] = data16[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
+					data[0] = data16[(row_stride * y_src) + (4 * x_src    )];
+					data[1] = data16[(row_stride * y_src) + (4 * x_src + 1)];
+					data[2] = data16[(row_stride * y_src) + (4 * x_src + 2)];
+					data[3] = data16[(row_stride * y_src) + (4 * x_src + 3)];
 
 					vint4 di(data[swz.r], data[swz.g], data[swz.b], data[swz.a]);
 					vfloat4 d = float16_to_float(di);
@@ -291,6 +293,7 @@ void compute_pixel_region_variance(
 	else  // if (img->data_type == ASTCENC_TYPE_F32)
 	{
 		assert(img->data_type == ASTCENC_TYPE_F32);
+		size_t row_stride = img->row_stride / sizeof(float);
 
 		// Swizzle data structure 4 = ZERO, 5 = ONE (in FP16)
 		float data[6];
@@ -341,10 +344,10 @@ void compute_pixel_region_variance(
 
 					x_src = astc::min(x_src, img->dim_x - 1);
 
-					data[0] = data32[(4 * img->dim_x * y_src) + (4 * x_src    )];
-					data[1] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 1)];
-					data[2] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 2)];
-					data[3] = data32[(4 * img->dim_x * y_src) + (4 * x_src + 3)];
+					data[0] = data32[(row_stride * y_src) + (4 * x_src    )];
+					data[1] = data32[(row_stride * y_src) + (4 * x_src + 1)];
+					data[2] = data32[(row_stride * y_src) + (4 * x_src + 2)];
+					data[3] = data32[(row_stride * y_src) + (4 * x_src + 3)];
 
 					float r = data[swz.r];
 					float g = data[swz.g];

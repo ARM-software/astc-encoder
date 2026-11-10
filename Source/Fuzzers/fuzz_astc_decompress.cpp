@@ -83,15 +83,16 @@ extern "C" int LLVMFuzzerTestOneInput(
 	uint32_t dim_z = 1;
 
 	// Allocate output image
-	astcenc_image image_out;
-	image_out.dim_x = dim_x;
-	image_out.dim_y = dim_y;
-	image_out.dim_z = dim_z;
-	image_out.data_type = ASTCENC_TYPE_U8;
-
 	uint8_t* slice_data = new uint8_t[dim_x * dim_y * 4];
 	void* slices[] = { slice_data };
-	image_out.data = slices;
+	astcenc_image image_out {
+		.dim_x = dim_x,
+		.dim_y = dim_y,
+		.dim_z = dim_z,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = slices,
+		.row_stride = 0
+	};
 
 	astcenc_swizzle swizzle = {
 		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A

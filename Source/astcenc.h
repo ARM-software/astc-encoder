@@ -609,6 +609,10 @@ struct astcenc_config
  *
  * 3D images are passed in as an array of 2D slices. Each slice has identical
  * size and color format.
+ *
+ * To select an image region, offset each slice pointer to its first texel, set the dimensions
+ * to the region size, and preserve the source row pitch in @c row_stride. Select a Z region
+ * by passing only the required slice pointers and setting @c dim_z to the selected plane count.
  */
 struct astcenc_image
 {
@@ -626,6 +630,16 @@ struct astcenc_image
 
 	/** @brief The array of 2D slices, of length @c dim_z. */
 	void** data;
+
+	/**
+	 * @brief The byte offset between rows, or zero for tightly packed rows.
+	 *
+	 * Applies to both compression input and decompression output. A nonzero stride must be at
+	 * least @c dim_x times four times the component size, and a multiple of the component size.
+	 * Slice pointers must be aligned for the component type. Only the texels within the image
+	 * dimensions are accessed; row padding is left untouched.
+	 */
+	size_t row_stride;
 };
 
 /**

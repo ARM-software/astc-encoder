@@ -142,8 +142,25 @@ void compute_error_metrics(
 	}
 
 	double rgb_peak = 0.0;
-	size_t xsize1 = img1->dim_x;
-	size_t xsize2 = img2->dim_x;
+	size_t row_stride1 = img1->row_stride;
+	if (img1->data_type == ASTCENC_TYPE_F16)
+	{
+		row_stride1 /= sizeof(uint16_t);
+	}
+	else if (img1->data_type == ASTCENC_TYPE_F32)
+	{
+		row_stride1 /= sizeof(float);
+	}
+
+	size_t row_stride2 = img2->row_stride;
+	if (img2->data_type == ASTCENC_TYPE_F16)
+	{
+		row_stride2 /= sizeof(uint16_t);
+	}
+	else if (img2->data_type == ASTCENC_TYPE_F32)
+	{
+		row_stride2 /= sizeof(float);
+	}
 
 	for (size_t z = 0; z < dim_z; z++)
 	{
@@ -159,10 +176,10 @@ void compute_error_metrics(
 					uint8_t* data8 = static_cast<uint8_t*>(img1->data[z]);
 
 					color1 = vfloat4(
-					    data8[(4 * xsize1 * y) + (4 * x    )],
-					    data8[(4 * xsize1 * y) + (4 * x + 1)],
-					    data8[(4 * xsize1 * y) + (4 * x + 2)],
-					    data8[(4 * xsize1 * y) + (4 * x + 3)]);
+					    data8[(row_stride1 * y) + (4 * x    )],
+					    data8[(row_stride1 * y) + (4 * x + 1)],
+					    data8[(row_stride1 * y) + (4 * x + 2)],
+					    data8[(row_stride1 * y) + (4 * x + 3)]);
 
 					color1 = color1 / 255.0f;
 				}
@@ -171,10 +188,10 @@ void compute_error_metrics(
 					uint16_t* data16 = static_cast<uint16_t*>(img1->data[z]);
 
 					vint4 color1i = vint4(
-					    data16[(4 * xsize1 * y) + (4 * x    )],
-					    data16[(4 * xsize1 * y) + (4 * x + 1)],
-					    data16[(4 * xsize1 * y) + (4 * x + 2)],
-					    data16[(4 * xsize1 * y) + (4 * x + 3)]);
+					    data16[(row_stride1 * y) + (4 * x    )],
+					    data16[(row_stride1 * y) + (4 * x + 1)],
+					    data16[(row_stride1 * y) + (4 * x + 2)],
+					    data16[(row_stride1 * y) + (4 * x + 3)]);
 
 					color1 = float16_to_float(color1i);
 					color1 = clamp(0, 65504.0f, color1);
@@ -185,10 +202,10 @@ void compute_error_metrics(
 					float* data32 = static_cast<float*>(img1->data[z]);
 
 					color1 = vfloat4(
-					    data32[(4 * xsize1 * y) + (4 * x    )],
-					    data32[(4 * xsize1 * y) + (4 * x + 1)],
-					    data32[(4 * xsize1 * y) + (4 * x + 2)],
-					    data32[(4 * xsize1 * y) + (4 * x + 3)]);
+					    data32[(row_stride1 * y) + (4 * x    )],
+					    data32[(row_stride1 * y) + (4 * x + 1)],
+					    data32[(row_stride1 * y) + (4 * x + 2)],
+					    data32[(row_stride1 * y) + (4 * x + 3)]);
 
 					color1 = clamp(0, 65504.0f, color1);
 				}
@@ -198,10 +215,10 @@ void compute_error_metrics(
 					uint8_t* data8 = static_cast<uint8_t*>(img2->data[z]);
 
 					color2 = vfloat4(
-					    data8[(4 * xsize2 * y) + (4 * x    )],
-					    data8[(4 * xsize2 * y) + (4 * x + 1)],
-					    data8[(4 * xsize2 * y) + (4 * x + 2)],
-					    data8[(4 * xsize2 * y) + (4 * x + 3)]);
+					    data8[(row_stride2 * y) + (4 * x    )],
+					    data8[(row_stride2 * y) + (4 * x + 1)],
+					    data8[(row_stride2 * y) + (4 * x + 2)],
+					    data8[(row_stride2 * y) + (4 * x + 3)]);
 
 					color2 = color2 / 255.0f;
 				}
@@ -210,10 +227,10 @@ void compute_error_metrics(
 					uint16_t* data16 = static_cast<uint16_t*>(img2->data[z]);
 
 					vint4 color2i = vint4(
-					    data16[(4 * xsize2 * y) + (4 * x    )],
-					    data16[(4 * xsize2 * y) + (4 * x + 1)],
-					    data16[(4 * xsize2 * y) + (4 * x + 2)],
-					    data16[(4 * xsize2 * y) + (4 * x + 3)]);
+					    data16[(row_stride2 * y) + (4 * x    )],
+					    data16[(row_stride2 * y) + (4 * x + 1)],
+					    data16[(row_stride2 * y) + (4 * x + 2)],
+					    data16[(row_stride2 * y) + (4 * x + 3)]);
 
 					color2 = float16_to_float(color2i);
 					color2 = clamp(0, 65504.0f, color2);
@@ -224,10 +241,10 @@ void compute_error_metrics(
 					float* data32 = static_cast<float*>(img2->data[z]);
 
 					color2 = vfloat4(
-					    data32[(4 * xsize2 * y) + (4 * x    )],
-					    data32[(4 * xsize2 * y) + (4 * x + 1)],
-					    data32[(4 * xsize2 * y) + (4 * x + 2)],
-					    data32[(4 * xsize2 * y) + (4 * x + 3)]);
+					    data32[(row_stride2 * y) + (4 * x    )],
+					    data32[(row_stride2 * y) + (4 * x + 1)],
+					    data32[(row_stride2 * y) + (4 * x + 2)],
+					    data32[(row_stride2 * y) + (4 * x + 3)]);
 
 					color2 = clamp(0, 65504.0f, color2);
 				}

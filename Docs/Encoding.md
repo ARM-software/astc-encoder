@@ -230,6 +230,33 @@ For other use cases the alpha component is simply a fourth data component which
 is also storing an HDR value. For these cases use the `-cH` compressor option
 which will treat all components as HDR data.
 
+## Cropping input images
+
+The command line tool can compress a region of an input image using
+`--croporigin <x>x<y>[x<z>]` to set the origin and
+`--cropsize <width>x<height>[x<depth>]` to set its size. For example, to
+compress a 256 by 128 texel region starting at (64, 32):
+
+```sh
+astcenc -cl input.png output.astc 6x6 -medium \
+    --croporigin 64x32 --cropsize 256x128
+```
+
+The third component is optional for 2D input, defaulting to zero for the
+origin and one for the size. For 3D input, crop options must include all three
+components.
+
+The default origin is zero on all axes. If the size option is omitted, the
+crop covers the remaining extent from the origin. Explicit sizes must be
+positive integers, and the selected region must fit entirely within the
+original input image. Crop coordinates refer to the original input, before
+`-yflip` or preprocessing. The compressed image dimensions match the crop size.
+
+Callers of the library API select an XY region of each plane by offsetting each
+`astcenc_image::data` slice pointer to the desired origin texel, setting the
+image dimensions to the region size, and setting `row_stride` to the original
+image row size in bytes. Z region selection is handled by the caller, passing only the active planes to the API.
+
 - - -
 
 _Copyright © 2019-2026, Arm Limited and contributors._

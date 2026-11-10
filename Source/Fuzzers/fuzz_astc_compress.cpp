@@ -67,12 +67,6 @@ extern "C" int LLVMFuzzerTestOneInput(
 	uint32_t dim_y = block_y;
 	uint32_t dim_z = 1;
 
-	astcenc_image image;
-	image.dim_x = dim_x;
-	image.dim_y = dim_y;
-	image.dim_z = dim_z;
-	image.data_type = ASTCENC_TYPE_U8;
-
 	size_t input_data_len = dim_x * dim_y * 4;
 	if (fdp.remaining_bytes() < input_data_len)
 	{
@@ -82,7 +76,14 @@ extern "C" int LLVMFuzzerTestOneInput(
 
 	std::vector<uint8_t> input_data = fdp.ConsumeBytes<uint8_t>(input_data_len);
 	void* slices[] = { input_data.data() };
-	image.data = slices;
+	astcenc_image image {
+		.dim_x = dim_x,
+		.dim_y = dim_y,
+		.dim_z = dim_z,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = slices,
+		.row_stride = 0
+	};
 
 	astcenc_swizzle swizzle = {
 		ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A

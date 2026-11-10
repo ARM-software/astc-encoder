@@ -32,6 +32,7 @@ astcenc_image_ptr alloc_image(
 	size_t dim_z
 ) {
 	bool overflow { false };
+	size_t row_bytes = astc::mul_safe(dim_x, 4 * (bitness / 8), overflow);
 
 	size_t plane_components = astc::mul_safe(dim_x, dim_y, overflow);
 	plane_components = astc::mul_safe(plane_components, 4, overflow);
@@ -44,14 +45,15 @@ astcenc_image_ptr alloc_image(
 		return nullptr;
 	}
 
-	astcenc_image_ptr img { new astcenc_image };
-
 	// Initialize the image so cleanup is safe if new[] throws bad_alloc
-	img->dim_x = dim_x;
-	img->dim_y = dim_y;
-	img->dim_z = dim_z;
-	img->data_type = ASTCENC_TYPE_U8;
-	img->data = nullptr;
+	astcenc_image_ptr img { new astcenc_image {
+		.dim_x = dim_x,
+		.dim_y = dim_y,
+		.dim_z = dim_z,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = nullptr,
+		.row_stride = row_bytes
+	} };
 
 	void** data = new void*[dim_z] {};
 	img->data = data;

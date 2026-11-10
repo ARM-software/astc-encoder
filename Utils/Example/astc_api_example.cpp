@@ -100,13 +100,15 @@ int main(int argc, char **argv)
 
 	// ------------------------------------------------------------------------
 	// Compress the image
-	astcenc_image image;
-	image.dim_x = image_x;
-	image.dim_y = image_y;
-	image.dim_z = 1;
-	image.data_type = ASTCENC_TYPE_U8;
 	uint8_t* slices = image_data;
-	image.data = reinterpret_cast<void**>(&slices);
+	astcenc_image image {
+		.dim_x = static_cast<size_t>(image_x),
+		.dim_y = static_cast<size_t>(image_y),
+		.dim_z = 1,
+		.data_type = ASTCENC_TYPE_U8,
+		.data = reinterpret_cast<void**>(&slices),
+		.row_stride = 0
+	};
 
 	// Space needed for 16 bytes of output per compressed block
 	if (block_count_x > std::numeric_limits<size_t>::max() / 16 / block_count_y)
