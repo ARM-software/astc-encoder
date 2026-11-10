@@ -75,7 +75,7 @@ header from the same release to avoid compatibility issues.
     This significantly improves normal map compression performance.
   * **Optimization:** Use SoA-style SIMD batches for k-means cluster assignment.
   * **Optimization:** Process batches of partitioning candidates at a time
-    during partitioning selecton when using wider SIMD vectors.
+    during partitioning selection when using wider SIMD vectors.
   * **Optimization:** Specialize `compute_partition_averages_rgba()` for blocks
     with identical `RGB` components, skipping duplicate `GB` calculations.
     This significantly improves normal map compression performance.
