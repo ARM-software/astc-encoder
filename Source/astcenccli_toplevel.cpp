@@ -2559,9 +2559,9 @@ int astcenc_main(
 	if (operation & ASTCENC_STAGE_LD_NCOMP)
 	{
 		// A cropped image must be flipped after selecting the region
-		bool load_y_flip = cli_config.y_flip && !cli_config.is_crop_requested;
+		bool is_y_flip_needed = cli_config.y_flip && !cli_config.is_crop_requested;
 		image_uncomp_in_storage = load_uncomp_file(
-		    input_filename.c_str(), cli_config.array_size, load_y_flip,
+		    input_filename.c_str(), cli_config.array_size, is_y_flip_needed,
 		    image_uncomp_in_is_hdr, image_uncomp_in_component_count);
 		image_uncomp_in = image_uncomp_in_storage.get();
 		if (!image_uncomp_in)

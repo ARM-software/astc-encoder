@@ -38,17 +38,17 @@ using astcenc_context_unq_ptr = std::unique_ptr<astcenc_context, decltype(&astce
 /**
  * @brief Compare packed and strided compression and decompression.
  *
- * @tparam T             The component storage type.
+ * @tparam T                 The component storage type.
  *
- * @param  type          The component format.
- * @param  depth         The number of image planes.
- * @param  alpha_scale   Whether to exercise swizzling and alpha preprocessing.
+ * @param  type              The component format.
+ * @param  depth             The number of image planes.
+ * @param  is_alpha_scaled   Whether to exercise swizzling and alpha preprocessing.
  */
 template<typename T>
 static void test_row_stride(
 	astcenc_type type,
 	size_t depth,
-	bool alpha_scale
+	bool is_alpha_scaled
 ) {
 	constexpr size_t width = 5;
 	constexpr size_t height = 7;
@@ -122,7 +122,7 @@ static void test_row_stride(
 	    ASTCENC_PRF_LDR, block_xy, block_xy, block_z, ASTCENC_PRE_FASTEST, 0, &config);
 	ASSERT_EQ(status, ASTCENC_SUCCESS);
 
-	if (alpha_scale)
+	if (is_alpha_scaled)
 	{
 		config.a_scale_radius = 1;
 	}
@@ -139,7 +139,7 @@ static void test_row_stride(
 		.a = ASTCENC_SWZ_A
 	};
 
-	if (alpha_scale)
+	if (is_alpha_scaled)
 	{
 		swizzle.r = ASTCENC_SWZ_B;
 		swizzle.b = ASTCENC_SWZ_R;
@@ -205,12 +205,12 @@ TEST(image, row_stride)
 {
 	for (size_t depth : { 1u, 3u })
 	{
-		for (bool alpha_scale : { false, true })
+		for (bool is_alpha_scaled : { false, true })
 		{
-			SCOPED_TRACE(::testing::Message() << "Depth " << depth << ", alpha " << alpha_scale);
-			test_row_stride<uint8_t>(ASTCENC_TYPE_U8, depth, alpha_scale);
-			test_row_stride<uint16_t>(ASTCENC_TYPE_F16, depth, alpha_scale);
-			test_row_stride<float>(ASTCENC_TYPE_F32, depth, alpha_scale);
+			SCOPED_TRACE(::testing::Message() << "Depth " << depth << ", alpha " << is_alpha_scaled);
+			test_row_stride<uint8_t>(ASTCENC_TYPE_U8, depth, is_alpha_scaled);
+			test_row_stride<uint16_t>(ASTCENC_TYPE_F16, depth, is_alpha_scaled);
+			test_row_stride<float>(ASTCENC_TYPE_F32, depth, is_alpha_scaled);
 		}
 	}
 }
