@@ -204,7 +204,7 @@ static astcenc_image_ptr load_image_with_stb(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_exr_image_with_tinyexr(
 	const astcenc_image* img,
@@ -225,7 +225,7 @@ static bool store_exr_image_with_tinyexr(
 		}
 	}
 
-	return res >= 0;
+	return res < 0;
 }
 
 /**
@@ -235,7 +235,7 @@ static bool store_exr_image_with_tinyexr(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_png_image_with_stb(
 	const astcenc_image* img,
@@ -259,7 +259,7 @@ static bool store_png_image_with_stb(
 		}
 	}
 
-	return res != 0;
+	return res == 0;
 }
 
 /**
@@ -269,7 +269,7 @@ static bool store_png_image_with_stb(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_tga_image_with_stb(
 	const astcenc_image* img,
@@ -293,7 +293,7 @@ static bool store_tga_image_with_stb(
 		}
 	}
 
-	return res != 0;
+	return res == 0;
 }
 
 /**
@@ -303,7 +303,7 @@ static bool store_tga_image_with_stb(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_bmp_image_with_stb(
 	const astcenc_image* img,
@@ -327,7 +327,7 @@ static bool store_bmp_image_with_stb(
 		}
 	}
 
-	return res != 0;
+	return res == 0;
 }
 
 /**
@@ -337,7 +337,7 @@ static bool store_bmp_image_with_stb(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_hdr_image_with_stb(
 	const astcenc_image* img,
@@ -358,7 +358,7 @@ static bool store_hdr_image_with_stb(
 		}
 	}
 
-	return res != 0;
+	return res == 0;
 }
 
 /* ============================================================================
@@ -1289,7 +1289,7 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
  * @param[out] is_srgb    @c true if this is an sRGB image, @c false otherwise.
  * @param[out] img        The output image to populate.
  *
- * @return @c true on error, @c false otherwise.
+ * @return @c true on error, @c false on success.
  */
 bool load_ktx_compressed_image(
 	const char* filename,
@@ -1413,7 +1413,7 @@ bool load_ktx_compressed_image(
  * @param filename   The name of the file to save.
  * @param is_srgb    @c true if this is an sRGB image, @c false if linear.
  *
- * @return @c true on error, @c false otherwise.
+ * @return @c true on error, @c false on success.
  */
 bool store_ktx_compressed_image(
 	const astc_compressed_image& img,
@@ -1456,6 +1456,7 @@ bool store_ktx_compressed_image(
 	file.write(reinterpret_cast<const char*>(&hdr), sizeof(ktx_header));
 	file.write(reinterpret_cast<const char*>(&data_len), sizeof(uint32_t));
 	file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
+	file.close();
 	return file.fail();
 }
 
@@ -1466,7 +1467,7 @@ bool store_ktx_compressed_image(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_ktx_uncompressed_image(
 	const astcenc_image* img,
@@ -1488,7 +1489,7 @@ static bool store_ktx_uncompressed_image(
 	image_bytes = astc::mul_safe(image_bytes, bitness / 8, overflow);
 	if (overflow)
 	{
-		return false;
+		return true;
 	}
 
 	// Size of image data padded to a multiple of 4 bytes
@@ -1499,7 +1500,7 @@ static bool store_ktx_uncompressed_image(
 	uint32_t image_bytes_field = static_cast<uint32_t>(image_bytes);
 	if ((image_bytes_field != image_bytes) || (image_write_bytes < image_bytes))
 	{
-		return false;
+		return true;
 	}
 
 	ktx_header hdr;
@@ -1682,7 +1683,7 @@ static bool store_ktx_uncompressed_image(
 		}
 	}
 
-	bool retval { true };
+	bool error { false };
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (file)
 	{
@@ -1695,15 +1696,15 @@ static bool store_ktx_uncompressed_image(
 		file.write(reinterpret_cast<const char*>(dataptr), image_write_bytes);
 		if (file.fail())
 		{
-			retval = false;
+			error = true;
 		}
 	}
 	else
 	{
-		retval = false;
+		error = true;
 	}
 
-	return retval;
+	return error;
 }
 
 /*
@@ -2155,7 +2156,7 @@ static astcenc_image_ptr load_dds_uncompressed_image(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 static bool store_dds_uncompressed_image(
 	const astcenc_image* img,
@@ -2177,7 +2178,7 @@ static bool store_dds_uncompressed_image(
 	image_bytes = astc::mul_safe(image_bytes, bitness / 8, overflow);
 	if (overflow)
 	{
-		return false;
+		return true;
 	}
 
 	// Must be smaller than image_bytes, so no need to check overflow here
@@ -2188,7 +2189,7 @@ static bool store_dds_uncompressed_image(
 	uint32_t pitch_bytes_field = static_cast<uint32_t>(pitch_bytes);
 	if (pitch_bytes_field != pitch_bytes)
 	{
-		return false;
+		return true;
 	}
 
 	// DDS-pixel-format structures to use when storing LDR image with 1,2,3 or 4 components
@@ -2391,7 +2392,7 @@ static bool store_dds_uncompressed_image(
 		}
 	}
 
-	bool retval { true };
+	bool error { false };
 
 	uint32_t dds_magic = DDS_MAGIC;
 
@@ -2412,15 +2413,15 @@ static bool store_dds_uncompressed_image(
 		file.write(reinterpret_cast<const char*>(dataptr), image_bytes);
 		if (file.fail())
 		{
-			retval = false;
+			error = true;
 		}
 	}
 	else
 	{
-		retval = false;
+		error = true;
 	}
 
-	return retval;
+	return error;
 }
 
 /**
@@ -2581,7 +2582,7 @@ bool store_ncimage(
 	// preflight check
 	if (!storer)
 	{
-		return false;
+		return true;
 	}
 
 	return storer(output_image, filename, y_flip);
@@ -2616,7 +2617,7 @@ static unsigned int unpack_bytes(
 }
 
 /* See header for documentation. */
-int load_cimage(
+bool load_cimage(
 	const char* filename,
 	astc_compressed_image& img
 ) {
@@ -2624,7 +2625,7 @@ int load_cimage(
 	if (!file)
 	{
 		print_error("ERROR: File open failed '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	astc_header hdr;
@@ -2632,14 +2633,14 @@ int load_cimage(
 	if (file.fail())
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	unsigned int magicval = unpack_bytes(hdr.magic[0], hdr.magic[1], hdr.magic[2], hdr.magic[3]);
 	if (magicval != ASTC_MAGIC_ID)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	// Ensure these are not zero to avoid div by zero
@@ -2654,7 +2655,7 @@ int load_cimage(
 	if (dim_x == 0 || dim_y == 0 || dim_z == 0)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	// These cannot overflow as dim_* values are limited to 2^24 - 1
@@ -2672,7 +2673,7 @@ int load_cimage(
 	if (overflow)
 	{
 		print_error("ERROR: Image header corrupt '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	// Allocation may fail if image is suspiciously large
@@ -2684,7 +2685,7 @@ int load_cimage(
 	{
 		ASTCENC_UNUSED(e);
 		print_error("ERROR: Image memory allocation failed '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	file.read(reinterpret_cast<char*>(img.data.data()), data_size);
@@ -2692,7 +2693,7 @@ int load_cimage(
 	{
 		print_error("ERROR: File read failed '%s'\n", filename);
 		img.data.clear();
-		return 1;
+		return true;
 	}
 
 	// Values fit within the cast destination types
@@ -2704,11 +2705,11 @@ int load_cimage(
 	img.dim_y = static_cast<unsigned int>(dim_y);
 	img.dim_z = static_cast<unsigned int>(dim_z);
 
-	return 0;
+	return false;
 }
 
 /* See header for documentation. */
-int store_cimage(
+bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename
 ) {
@@ -2738,10 +2739,11 @@ int store_cimage(
 	if (!file)
 	{
 		print_error("ERROR: File open failed '%s'\n", filename);
-		return 1;
+		return true;
 	}
 
 	file.write(reinterpret_cast<char*>(&hdr), sizeof(astc_header));
 	file.write(reinterpret_cast<const char*>(img.data.data()), img.data.size());
-	return 0;
+	file.close();
+	return file.fail();
 }

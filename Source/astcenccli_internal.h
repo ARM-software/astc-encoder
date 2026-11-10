@@ -178,7 +178,7 @@ astcenc_image_ptr load_png_with_wuffs(
  * @param filename   The name of the file to save.
  * @param y_flip     Should the image be vertically flipped?
  *
- * @return @c true if the image saved OK, @c false on error.
+ * @return @c true on error, @c false on success.
  */
 bool store_ncimage(
 	const astcenc_image* img,
@@ -233,9 +233,9 @@ unsigned int determine_image_components(
  * @param      filename   The file to load.
  * @param[out] img        The image to populate with loaded data.
  *
- * @return Non-zero on error, zero on success.
+ * @return @c true on error, @c false on success.
  */
-int load_cimage(
+bool load_cimage(
 	const char* filename,
 	astc_compressed_image& img);
 
@@ -245,9 +245,9 @@ int load_cimage(
  * @param img        The image to store.
  * @param filename   The file to save.
  *
- * @return Non-zero on error, zero on success.
+ * @return @c true on error, @c false on success.
  */
-int store_cimage(
+bool store_cimage(
 	const astc_compressed_image& img,
 	const char* filename);
 
@@ -258,7 +258,7 @@ int store_cimage(
  * @param[out] is_srgb    Is this an sRGB encoded file?
  * @param[out] img        The image to populate with loaded data.
  *
- * @return Non-zero on error, zero on success.
+ * @return @c true on error, @c false on success.
  */
 bool load_ktx_compressed_image(
 	const char* filename,
@@ -272,7 +272,7 @@ bool load_ktx_compressed_image(
  * @param filename   The file to store.
  * @param is_srgb    Is this an sRGB encoded file?
  *
- * @return Non-zero on error, zero on success.
+ * @return @c true on error, @c false on success.
  */
 bool store_ktx_compressed_image(
 	const astc_compressed_image& img,
