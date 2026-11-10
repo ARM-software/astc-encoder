@@ -209,7 +209,7 @@ int get_output_filename_enforced_bitness(
  * @param dim_y     The height of the image, in texels.
  * @param dim_z     The depth of the image, in texels.
  *
- * @return The allocated image.
+ * @return The allocated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr alloc_image(
 	unsigned int bitness,
@@ -287,7 +287,7 @@ bool store_ktx_compressed_image(
  * @param dim_y    The height of the image, in texels.
  * @param y_flip   Should this image be vertically flipped?
  *
- * @return The populated image.
+ * @return The populated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr astc_img_from_floatx4_array(
 	const float* data,
@@ -303,7 +303,7 @@ astcenc_image_ptr astc_img_from_floatx4_array(
  * @param dim_y    The height of the image, in texels.
  * @param y_flip   Should this image be vertically flipped?
  *
- * @return The populated image.
+ * @return The populated image, or @c nullptr if the image memory size overflows.
  */
 astcenc_image_ptr astc_img_from_unorm8x4_array(
 	const uint8_t* data,

@@ -708,15 +708,13 @@ astcenc_error astcenc_context_alloc(
 		return status;
 	}
 
-#if !defined(ASTCENC_DECOMPRESS_ONLY)
 	bool overflow { false };
 	size_t worksize = astc::mul_safe(sizeof(compression_working_buffers), thread_count, overflow);
-	if (!(ctx->config.flags & ASTCENC_FLG_DECOMPRESS_ONLY) && overflow)
+	if (overflow)
 	{
 		delete ctxo;
 		return ASTCENC_ERR_BAD_PARAM;
 	}
-#endif
 
 	if (!parent_context)
 	{

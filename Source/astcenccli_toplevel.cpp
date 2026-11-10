@@ -571,6 +571,11 @@ static astcenc_image_ptr load_uncomp_file(
 			size_t slice_size = dim_x * dim_y;
 
 			image = alloc_image(bitness, dim_x, dim_y, dim_z);
+			if (!image)
+			{
+				print_error("ERROR: Image memory size overflow\n");
+				return nullptr;
+			}
 
 			// Combine 2D source images into one 3D image
 			for (size_t z = 0; z < dim_z; z++)
@@ -1882,6 +1887,11 @@ static void print_diagnostic_images(
 	}
 
 	auto diag_image = alloc_image(8, image.dim_x, image.dim_y, image.dim_z);
+	if (!diag_image)
+	{
+		print_error("ERROR: Image memory size overflow\n");
+		return;
+	}
 
 	// ---- ---- ---- ---- Partitioning ---- ---- ---- ----
 	auto partition_func = [](astcenc_block_info& info, size_t texel_x, size_t texel_y) {
@@ -2461,7 +2471,7 @@ int astcenc_main(
 		buffer_size = astc::mul_safe(buffer_size, 16, overflow);
 		if (overflow)
 		{
-			print_error("ERROR: Compressed image size overflow\n");
+			print_error("ERROR: Image memory size overflow\n");
 			return 1;
 		}
 
@@ -2528,6 +2538,11 @@ int astcenc_main(
 	{
 		image_decomp_out = alloc_image(
 		    out_bitness, image_comp.dim_x, image_comp.dim_y, image_comp.dim_z);
+		if (!image_decomp_out)
+		{
+			print_error("ERROR: Image memory size overflow\n");
+			return 1;
+		}
 
 		decompression_workload work;
 		work.context = codec_context.get();

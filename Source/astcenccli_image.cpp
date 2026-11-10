@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <cstring>
-#include <new>
 
 #include "astcenccli_internal.h"
 
@@ -32,15 +31,6 @@ astcenc_image_ptr alloc_image(
 	size_t dim_y,
 	size_t dim_z
 ) {
-	astcenc_image_ptr img { new astcenc_image };
-
-	// Initialize the image so cleanup is safe if new[] throws bad_alloc
-	img->dim_x = dim_x;
-	img->dim_y = dim_y;
-	img->dim_z = dim_z;
-	img->data_type = ASTCENC_TYPE_U8;
-	img->data = nullptr;
-
 	bool overflow { false };
 
 	size_t plane_components = astc::mul_safe(dim_x, dim_y, overflow);
@@ -51,8 +41,17 @@ astcenc_image_ptr alloc_image(
 	astc::mul_safe(dim_z, sizeof(void*), overflow);
 	if (overflow)
 	{
-		throw std::bad_array_new_length();
+		return nullptr;
 	}
+
+	astcenc_image_ptr img { new astcenc_image };
+
+	// Initialize the image so cleanup is safe if new[] throws bad_alloc
+	img->dim_x = dim_x;
+	img->dim_y = dim_y;
+	img->dim_z = dim_z;
+	img->data_type = ASTCENC_TYPE_U8;
+	img->data = nullptr;
 
 	void** data = new void*[dim_z] {};
 	img->data = data;
@@ -210,6 +209,10 @@ astcenc_image_ptr astc_img_from_floatx4_array(
 	bool y_flip
 ) {
 	auto img = alloc_image(16, dim_x, dim_y, 1);
+	if (!img)
+	{
+		return nullptr;
+	}
 
 	for (size_t y = 0; y < dim_y; y++)
 	{
@@ -244,6 +247,10 @@ astcenc_image_ptr astc_img_from_unorm8x4_array(
 	bool y_flip
 ) {
 	auto img = alloc_image(8, dim_x, dim_y, 1);
+	if (!img)
+	{
+		return nullptr;
+	}
 
 	for (size_t y = 0; y < dim_y; y++)
 	{

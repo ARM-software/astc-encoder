@@ -214,7 +214,8 @@ static bool store_exr_image_with_tinyexr(
 ) {
 	if (img->dim_x > INT_MAX || img->dim_y > INT_MAX)
 	{
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
 
 	int dim_x = static_cast<int>(img->dim_x);
@@ -252,7 +253,8 @@ static bool store_png_image_with_stb(
 ) {
 	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
 	{
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
 
 	int dim_x = static_cast<int>(img->dim_x);
@@ -293,7 +295,8 @@ static bool store_tga_image_with_stb(
 ) {
 	if (img->dim_x > UINT16_MAX || img->dim_y > UINT16_MAX)
 	{
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
 
 	int dim_x = static_cast<int>(img->dim_x);
@@ -334,7 +337,8 @@ static bool store_bmp_image_with_stb(
 ) {
 	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
 	{
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
 
 	int dim_x = static_cast<int>(img->dim_x);
@@ -375,7 +379,8 @@ static bool store_hdr_image_with_stb(
 ) {
 	if (img->dim_x > INT_MAX / 4 || img->dim_y > INT_MAX)
 	{
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
 
 	int dim_x = static_cast<int>(img->dim_x);
@@ -1285,6 +1290,12 @@ static astcenc_image_ptr load_ktx_uncompressed_image(
 		return nullptr;
 	}
 
+	if (!astc_img)
+	{
+		print_error("ERROR: Image memory size overflow\n");
+		return nullptr;
+	}
+
 	for (size_t z = 0; z < dim_z; z++)
 	{
 		for (size_t y = 0; y < dim_y; y++)
@@ -1459,6 +1470,11 @@ bool store_ktx_compressed_image(
 		return true;
 	}
 
+	uint32_t dim_x = static_cast<uint32_t>(img.dim_x);
+	uint32_t dim_y = static_cast<uint32_t>(img.dim_y);
+	uint32_t dim_z = static_cast<uint32_t>(img.dim_z);
+	uint32_t data_len = static_cast<uint32_t>(img.data.size());
+
 	unsigned int fmt = get_format(img.block_x, img.block_y, img.block_z, is_srgb);
 
 	ktx_header hdr;
@@ -1469,9 +1485,9 @@ bool store_ktx_compressed_image(
 	hdr.gl_format = 0;
 	hdr.gl_internal_format = fmt;
 	hdr.gl_base_internal_format = GL_RGBA;
-	hdr.pixel_width = static_cast<uint32_t>(img.dim_x);
-	hdr.pixel_height = static_cast<uint32_t>(img.dim_y);
-	hdr.pixel_depth = static_cast<uint32_t>((img.dim_z == 1) ? 0 : img.dim_z);
+	hdr.pixel_width = dim_x;
+	hdr.pixel_height = dim_y;
+	hdr.pixel_depth = (dim_z == 1) ? 0 : dim_z;
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
@@ -1487,7 +1503,6 @@ bool store_ktx_compressed_image(
 		return true;
 	}
 
-	uint32_t data_len = static_cast<uint32_t>(img.data.size());
 #if defined(ASTCENC_BIG_ENDIAN)
 	data_len = reverse_bytes_u32(data_len);
 #endif
@@ -1515,9 +1530,13 @@ static bool store_ktx_uncompressed_image(
 ) {
 	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
 	{
-		print_error("ERROR: Image dimensions exceed file format size limits\n");
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
+
+	uint32_t dim_x_field = static_cast<uint32_t>(img->dim_x);
+	uint32_t dim_y_field = static_cast<uint32_t>(img->dim_y);
+	uint32_t dim_z_field = static_cast<uint32_t>(img->dim_z);
 
 	size_t dim_x = img->dim_x;
 	size_t dim_y = img->dim_y;
@@ -1578,9 +1597,9 @@ static bool store_ktx_uncompressed_image(
 	}
 
 	hdr.gl_base_internal_format = hdr.gl_format;
-	hdr.pixel_width = static_cast<uint32_t>(dim_x);
-	hdr.pixel_height = static_cast<uint32_t>(dim_y);
-	hdr.pixel_depth = static_cast<uint32_t>((dim_z == 1) ? 0 : dim_z);
+	hdr.pixel_width = dim_x_field;
+	hdr.pixel_height = dim_y_field;
+	hdr.pixel_depth = (dim_z_field == 1) ? 0 : dim_z_field;
 	hdr.number_of_array_elements = 0;
 	hdr.number_of_faces = 1;
 	hdr.number_of_mipmap_levels = 1;
@@ -2156,6 +2175,12 @@ static astcenc_image_ptr load_dds_uncompressed_image(
 		return nullptr;
 	}
 
+	if (!astc_img)
+	{
+		print_error("ERROR: Image memory size overflow\n");
+		return nullptr;
+	}
+
 	for (size_t z = 0; z < dim_z; z++)
 	{
 		for (size_t y = 0; y < dim_y; y++)
@@ -2201,9 +2226,13 @@ static bool store_dds_uncompressed_image(
 ) {
 	if (img->dim_x > UINT32_MAX || img->dim_y > UINT32_MAX || img->dim_z > UINT32_MAX)
 	{
-		print_error("ERROR: Image dimensions exceed file format size limits\n");
-		return false;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
+
+	uint32_t dim_x_field = static_cast<uint32_t>(img->dim_x);
+	uint32_t dim_y_field = static_cast<uint32_t>(img->dim_y);
+	uint32_t dim_z_field = static_cast<uint32_t>(img->dim_z);
 
 	size_t dim_x = img->dim_x;
 	size_t dim_y = img->dim_y;
@@ -2259,10 +2288,10 @@ static bool store_dds_uncompressed_image(
 	dds_header hdr;
 	hdr.size = 124;
 	hdr.flags = 0x100F | (dim_z > 1 ? 0x800000 : 0);
-	hdr.height = static_cast<uint32_t>(dim_y);
-	hdr.width = static_cast<uint32_t>(dim_x);
+	hdr.height = dim_y_field;
+	hdr.width = dim_x_field;
 	hdr.pitch_or_linear_size = pitch_bytes_field;
-	hdr.depth = static_cast<uint32_t>(dim_z);
+	hdr.depth = dim_z_field;
 	hdr.mipmapcount = 1;
 	for (unsigned int i = 0; i < 11; i++)
 	{
@@ -2757,9 +2786,13 @@ bool store_cimage(
 ) {
 	if (img.dim_x > 0xFFFFFF || img.dim_y > 0xFFFFFF || img.dim_z > 0xFFFFFF)
 	{
-		print_error("ERROR: Image dimensions exceed file format size limits\n");
-		return 1;
+		print_error("ERROR: Image exceeds file format size limits\n");
+		return true;
 	}
+
+	uint32_t dim_x = static_cast<uint32_t>(img.dim_x);
+	uint32_t dim_y = static_cast<uint32_t>(img.dim_y);
+	uint32_t dim_z = static_cast<uint32_t>(img.dim_z);
 
 	astc_header hdr;
 	hdr.magic[0] =  ASTC_MAGIC_ID        & 0xFF;
@@ -2771,17 +2804,17 @@ bool store_cimage(
 	hdr.block_y = static_cast<uint8_t>(img.block_y);
 	hdr.block_z = static_cast<uint8_t>(img.block_z);
 
-	hdr.dim_x[0] =  img.dim_x        & 0xFF;
-	hdr.dim_x[1] = (img.dim_x >>  8) & 0xFF;
-	hdr.dim_x[2] = (img.dim_x >> 16) & 0xFF;
+	hdr.dim_x[0] =  dim_x        & 0xFF;
+	hdr.dim_x[1] = (dim_x >>  8) & 0xFF;
+	hdr.dim_x[2] = (dim_x >> 16) & 0xFF;
 
-	hdr.dim_y[0] =  img.dim_y       & 0xFF;
-	hdr.dim_y[1] = (img.dim_y >>  8) & 0xFF;
-	hdr.dim_y[2] = (img.dim_y >> 16) & 0xFF;
+	hdr.dim_y[0] =  dim_y        & 0xFF;
+	hdr.dim_y[1] = (dim_y >>  8) & 0xFF;
+	hdr.dim_y[2] = (dim_y >> 16) & 0xFF;
 
-	hdr.dim_z[0] =  img.dim_z        & 0xFF;
-	hdr.dim_z[1] = (img.dim_z >>  8) & 0xFF;
-	hdr.dim_z[2] = (img.dim_z >> 16) & 0xFF;
+	hdr.dim_z[0] =  dim_z        & 0xFF;
+	hdr.dim_z[1] = (dim_z >>  8) & 0xFF;
+	hdr.dim_z[2] = (dim_z >> 16) & 0xFF;
 
 	std::ofstream file(filename, std::ios::out | std::ios::binary);
 	if (!file)
