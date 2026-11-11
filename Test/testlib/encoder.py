@@ -37,7 +37,7 @@ from typing import Optional
 from .testset import TestImage
 
 
-RunResult = tuple[float, float, float, float]
+RunResult = tuple[float, float, float, float, float]
 
 
 class EncoderBase:
@@ -120,24 +120,26 @@ class EncoderBase:
 
     def parse_output(self, image: TestImage, output: list[str]) -> RunResult:
         '''
-        Parse the log output for PSNR and performance metrics.
+        Parse the log output for quality and performance metrics.
 
         Args:
             image: The test image that was compressed.
             output: The astcenc compression output log.
 
         Return:
-            Tuple containing PSNR in dB, total time in seconds, coding time
-            in seconds, and coding rate in MT/s.
+            Tuple containing PSNR in dB, SSIM, total time in seconds, coding
+            time in seconds, and coding rate in MT/s.
         '''
         # Regex patterns. provided by this particular subclass
         pattern_psnr = self.get_psnr_pattern(image)
+        pattern_ssim = self.get_ssim_pattern(image)
         pattern_total_time = self.get_total_time_pattern()
         pattern_coding_time = self.get_coding_time_pattern()
         pattern_coding_rate = self.get_coding_rate_pattern()
 
         # Extract results from the log
         psnr = None
+        ssim = 0.0
         total_time = None
         coding_time = None
         coding_rate = None
@@ -145,6 +147,10 @@ class EncoderBase:
         for line in output:
             if match := pattern_psnr.match(line):
                 psnr = float(match.group(1))
+                continue
+
+            if match := pattern_ssim.match(line):
+                ssim = float(match.group(1))
                 continue
 
             if match := pattern_total_time.match(line):
@@ -165,7 +171,7 @@ class EncoderBase:
         assert coding_time is not None, f'Missing coding time {stdout}'
         assert coding_rate is not None, f'Missing coding rate {stdout}'
 
-        return (psnr, total_time, coding_time, coding_rate)
+        return (psnr, ssim, total_time, coding_time, coding_rate)
 
     def get_psnr_pattern(self, image: TestImage) -> re.Pattern:
         '''
@@ -173,6 +179,22 @@ class EncoderBase:
 
         Note that, although this function is called PSNR, for some images we
         may choose to match another metric (e.g. mPSNR for HDR images).
+
+        Args:
+            image: The test image that was compressed.
+
+        Return:
+            The regex pattern.
+        '''
+        # pylint: disable=unused-argument,redundant-returns-doc
+        assert False, 'Missing subclass implementation'
+        return re.compile('^(?!x)x$')
+
+    def get_ssim_pattern(self, image: TestImage) -> re.Pattern:
+        '''
+        Get the regex pattern to match SSIM or mSSIM for the image.
+
+        Older encoder versions may omit this metric.
 
         Args:
             image: The test image that was compressed.
@@ -232,8 +254,8 @@ class EncoderBase:
             threads: The thread count to use.
 
         Return:
-            Tuple containing PSNR in dB, total time in seconds, coding time
-            in seconds, and coding rate in MT/s.
+            Tuple containing PSNR in dB, SSIM, total time in seconds, coding
+            time in seconds, and coding rate in MT/s.
         '''
         # pylint: disable=assignment-from-no-return
         command = self.build_cli(image, block_size, preset, keep_output,
@@ -241,6 +263,8 @@ class EncoderBase:
 
         # Execute test runs keeping best results
         best_psnr = 0.0
+        # SSIM can be negative, so start from its lower bound
+        best_ssim = -1.0
         best_total_time = sys.float_info.max
         best_coding_time = sys.float_info.max
         best_coding_rate = 0.0
@@ -249,13 +273,15 @@ class EncoderBase:
             output = self.execute(command)
             result = self.parse_output(image, output)
 
-            # Keep the best results (highest PSNR, lowest times, highest rate)
+            # Keep the highest quality scores, lowest times, and highest rate
             best_psnr = max(best_psnr, result[0])
-            best_total_time = min(best_total_time, result[1])
-            best_coding_time = min(best_coding_time, result[2])
-            best_coding_rate = max(best_coding_rate, result[3])
+            best_ssim = max(best_ssim, result[1])
+            best_total_time = min(best_total_time, result[2])
+            best_coding_time = min(best_coding_time, result[3])
+            best_coding_rate = max(best_coding_rate, result[4])
 
-        return (best_psnr, best_total_time, best_coding_time, best_coding_rate)
+        return (best_psnr, best_ssim, best_total_time, best_coding_time,
+                best_coding_rate)
 
 
 class Encoder2x(EncoderBase):
@@ -343,6 +369,26 @@ class Encoder2x(EncoderBase):
             pattern_psnr = r'\s*PSNR \(LDR-RGB\):\s*([0-9.]*) dB'
 
         return re.compile(pattern_psnr)
+
+    def get_ssim_pattern(self, image: TestImage) -> re.Pattern:
+        '''
+        Get the SSIM pattern for the image profile and color format.
+
+        Args:
+            image: The test image that was compressed.
+
+        Return:
+            The regex pattern.
+        '''
+        if image.color_profile in ('hdr', 'hdra'):
+            label = 'mSSIM (RGB)'
+        elif image.color_format == 'rgba':
+            label = 'SSIM (LDR-RGBA)'
+        else:
+            label = 'SSIM (LDR-RGB)'
+
+        return re.compile(
+            rf'\s*{re.escape(label)}:\s*([-+0-9.eE]+)(?:\s|$)')
 
     def get_total_time_pattern(self) -> re.Pattern:
         return re.compile(r'\s*Total time:\s*([0-9.]*) s')

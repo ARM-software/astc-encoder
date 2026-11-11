@@ -17,7 +17,7 @@
 '''
 A ResultSet stores a set of results about the performance of a TestSet. Each
 set keeps result Records for each image and block size tested, storing the
-PSNR and coding time.
+PSNR, SSIM, and coding time.
 
 ResultSets are often backed by a CSV file on disk, and a ResultSet can be
 compared against a set of reference results created by an earlier test run.
@@ -58,6 +58,7 @@ class Record:
         block_size: The block size.
         name: The image name.
         psnr: The image quality (PSNR dB)
+        ssim: The image SSIM, or mSSIM for HDR images; zero if not reported.
         total_time: The total time.
         coding_time: The coding time.
         coding_rate: The coding rate.
@@ -69,7 +70,8 @@ class Record:
     '''
 
     def __init__(self, block_size: str, name: str, psnr: float,
-                 total_time: float, coding_time: float, coding_rate: float):
+                 ssim: float, total_time: float, coding_time: float,
+                 coding_rate: float):
         '''
         Create a result record, initially in the NOT_RUN status.
 
@@ -77,6 +79,7 @@ class Record:
             block_size (str): The block size.
             name (str): The test image name.
             psnr (float): The image quality PSNR, in dB.
+            ssim (float): The SSIM or HDR mSSIM score; zero if not reported.
             total_time (float): The total compression time, in seconds.
             coding_time (float): The coding compression time, in seconds.
             coding_rate (float): The coding compression rate, in MPix/s.
@@ -84,6 +87,7 @@ class Record:
         self.block_size = block_size
         self.name = name
         self.psnr = psnr
+        self.ssim = ssim
         self.total_time = total_time
         self.coding_time = coding_time
         self.coding_rate = coding_rate
@@ -214,6 +218,7 @@ class ResultSet:
             'Block Size',
             'Name',
             'PSNR',
+            'SSIM',
             'Total Time',
             'Coding Time',
             'Coding Rate'
@@ -234,6 +239,7 @@ class ResultSet:
             record.block_size,
             record.name,
             f'{record.psnr:0.4f}',
+            f'{record.ssim:0.4f}',
             f'{record.total_time:0.4f}',
             f'{record.coding_time:0.4f}',
             f'{record.coding_rate:0.4f}'
@@ -264,7 +270,8 @@ class ResultSet:
                     float(row[3]),
                     float(row[4]),
                     float(row[5]),
-                    float(row[6])
+                    float(row[6]),
+                    float(row[7])
                 )
 
                 self.add_record(record)

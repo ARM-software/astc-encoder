@@ -610,6 +610,32 @@ class CLIPTest(CLITestBase):
         color_out = tli.Image(image_out).get_colors((0, 0))
         self.assertColorSame(color_in, color_out)
 
+    def test_ssim_reporting(self) -> None:
+        '''
+        Test SSIM channel labels, identity scores, and HDR exposure reporting.
+        '''
+        for profile, mode in (('LDR', '-tl'), ('LDRS', '-ts')):
+            with self.subTest(mode=mode):
+                image_in = self.get_ref_image_path(profile, 'input', 'A')
+                image_out = self.get_tmp_image_path('LDR', 'decomp')
+                cmd = [self.binary, mode, image_in, image_out,
+                       '6x6', '-exhaustive', '-j', '1']
+                stdout = self.exec(cmd)
+                self.assertRegex(stdout, r'SSIM \(LDR-RGB\):\s+1\.0000')
+                self.assertRegex(stdout, r'SSIM \(LDR-RGBA\):\s+1\.0000')
+                self.assertNotIn('mSSIM', stdout)
+
+        for mode in ('-th', '-tH'):
+            with self.subTest(mode=mode):
+                image_in = self.get_ref_image_path('HDR', 'input', 'A')
+                image_out = self.get_tmp_image_path('HDR', 'decomp')
+                cmd = [self.binary, mode, image_in, image_out,
+                       '6x6', '-exhaustive', '-mpsnr', '-2', '2', '-j', '1']
+                stdout = self.exec(cmd)
+                self.assertRegex(stdout, r'mSSIM \(RGB\):\s+1\.0000 '
+                                         r'\(fstops -2 to \+2\)')
+                self.assertNotIn('SSIM (LDR-', stdout)
+
     def test_valid_2d_block_sizes(self) -> None:
         '''
         Test all valid block sizes are accepted (2D images).

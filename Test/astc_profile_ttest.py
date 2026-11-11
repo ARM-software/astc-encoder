@@ -26,7 +26,8 @@ Use an astcenc test mode (-tl, -ts, -th, or -tH) to report image quality.
 Test image names (e.g. ldr-rgb-... or ldr-rgba-...) select RGB or RGBA PSNR;
 other names report both when available. Alpha-weighted compression uses
 alpha-weighted PSNR, HDR images use mPSNR, and normal maps also report mean
-and worst angular errors. Quality scores are averaged over measured runs,
+and worst angular errors. SSIM is included when both binaries report it.
+Quality scores are averaged over measured runs,
 excluding warmups; changes are reported as B minus A.
 '''
 
@@ -104,6 +105,19 @@ def report_quality(arguments: list[str], samples_a: list[CodecResult],
     if not metrics:
         raise ValueError('Codec did not report image quality scores')
 
+    # Older binaries do not report SSIM; compare it when both sides support it
+    ssim_metrics = {
+        'PSNR (LDR-RGB)': 'SSIM (LDR-RGB)',
+        'PSNR (LDR-RGBA)': 'SSIM (LDR-RGBA)',
+        'Alpha-weighted PSNR': 'SSIM (LDR-RGBA)',
+        'mPSNR (RGB)': 'mSSIM (RGB)'
+    }
+    for metric in list(metrics):
+        ssim = ssim_metrics.get(metric)
+        if ssim and all(ssim in samples[0].quality
+                        for samples in (samples_a, samples_b)):
+            metrics.append(ssim)
+
     print('Image quality (mean over measured runs; B - A):')
     for metric in metrics:
         if any(metric not in sample.quality
@@ -115,8 +129,13 @@ def report_quality(arguments: list[str], samples_a: list[CodecResult],
         mean_b = statistics.mean(
             sample.quality[metric] for sample in samples_b)
         unit, direction = QUALITY_METRICS[metric]
-        print(f'  {metric}: A {mean_a:.4f}, B {mean_b:.4f}, '
-              f'change {mean_b - mean_a:+.4f} {unit} '
+        precision = 4
+        if not unit:
+            precision = 6
+
+        print(f'  {metric}: A {mean_a:.{precision}f}, '
+              f'B {mean_b:.{precision}f}, '
+              f'change {mean_b - mean_a:+.{precision}f} {unit} '
               f'({direction} is better)')
 
 

@@ -94,6 +94,8 @@ header from the same release to avoid compatibility issues.
   * **Optimization:** Use SVE narrowing stores in the 4-wide implementation of
     `pack_and_store_low_bytes()`.
 * **Command line tool updates:**
+  * **Feature:** Report SSIM for LDR images and exposure-averaged mSSIM for
+    HDR images in test mode. HDR exposures follow the `-mpsnr` range.
   * **Feature:** Add crop region support for compression. Crop regions are
     extracted using image coordinate space before flipping or preprocessing.
 * **Build system updates:**
