@@ -23,10 +23,49 @@
 
 #include "gtest/gtest.h"
 
-#include "../astcenc.h"
+#include "../astcenc_internal.h"
 
 namespace astcenc
 {
+
+/** @brief Preserve HDR mode bits when endpoint quantization rounds down across a bit boundary. */
+TEST(compress, hdr_quantization_mode_bits)
+{
+	const vfloat4 colors[] {
+		vfloat4(31806.0f, 27290.0f, 27570.0f, 65535.0f),
+		vfloat4(30545.0f, 26180.0f, 28316.0f, 65535.0f)
+	};
+	const float offsets[] { 1209.0f, 1246.0f };
+	const int formats[] { FMT_HDR_RGB_SCALE, FMT_HDR_RGB };
+	const float error_limits[] { 5000000.0f, 300000.0f };
+
+	for (size_t i = 0; i < 2; i++)
+	{
+		vfloat4 ep0 = colors[i];
+		vfloat4 ep1 = ep0 + vfloat4(offsets[i], offsets[i], offsets[i], 0.0f);
+		vfloat4 rgbo = ep0;
+		rgbo.set_lane<3>(offsets[i]);
+
+		uint8_t values[8];
+		int format = pack_color_endpoints(ep0, ep1, vfloat4::zero(), rgbo,
+		                                  formats[i], values, QUANT_16);
+		EXPECT_EQ(format, formats[i]);
+
+		bool is_rgb_hdr;
+		bool is_alpha_hdr;
+		vint4 decoded0;
+		vint4 decoded1;
+		unpack_color_endpoints(ASTCENC_PRF_HDR_RGB_LDR_A, format, values,
+		                       is_rgb_hdr, is_alpha_hdr, decoded0, decoded1);
+		EXPECT_TRUE(is_rgb_hdr);
+		EXPECT_FALSE(is_alpha_hdr);
+
+		vfloat4 diff0 = ep0 - int_to_float(decoded0);
+		vfloat4 diff1 = ep1 - int_to_float(decoded1);
+		float error = hadd_rgb_s(diff0 * diff0 + diff1 * diff1);
+		EXPECT_LT(error, error_limits[i]);
+	}
+}
 
 /** @brief Input overflow tests for xy * z. */
 TEST(compress, overflow_in_z)

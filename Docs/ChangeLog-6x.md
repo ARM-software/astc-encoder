@@ -34,6 +34,8 @@ header from the same release to avoid compatibility issues.
     13, and Visual Studio 2022. Minimum supported CMake version increased to
     3.21.
 * **Codec library updates:**
+  * **Bug fix:** Preserve HDR endpoint mode bits when quantization rounds down
+    across a mode bit boundary.
   * **Bug fix:** Wait for outstanding tasks to finish before releasing shared
     buffers when compression is cancelled.
   * **Bug fix:** Remove a data race when reporting compression progress.

@@ -851,15 +851,15 @@ static inline void quantize_and_unquantize_retain_top_two_bits(
 
 		if ((quantval & 0xC0) > (value & 0xC0))
 		{
-			/// Quant/unquant rounded up so that the top two bits changed; decrement input value to
+			// Quant/unquant rounded up so that the top two bits changed; decrement input value to
 			// check if this avoids rounding up
 			value--;
 		}
 		else if ((quantval & 0xC0) < (value & 0xC0))
 		{
-			// Quant/unquant rounded down so that the top two bits changed; decrement input value
+			// Quant/unquant rounded down so that the top two bits changed; increment input value
 			// to check if this avoids rounding down
-			value--;
+			value++;
 		}
 	} while (perform_loop);
 
@@ -890,14 +890,14 @@ static inline void quantize_and_unquantize_retain_top_four_bits(
 		if ((quantval & 0xF0) > (value & 0xF0))
 		{
 			// Quant/unquant rounded up so that the top four bits changed; decrement input value to
-			// check if this avoids rounding up rounding up
+			// check if this avoids rounding up
 			value--;
 		}
 		else if ((quantval & 0xF0) < (value & 0xF0))
 		{
-			// Quant/unquant rounded down so that the top four bits changed; decrement input value
+			// Quant/unquant rounded down so that the top four bits changed; increment input value
 			// to check if this avoids rounding down
-			value--;
+			value++;
 		}
 	} while (perform_loop);
 
