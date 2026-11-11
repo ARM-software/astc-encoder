@@ -911,10 +911,10 @@ static void compress_image(
 	bool needs_swz = (swizzle.r != ASTCENC_SWZ_R) || (swizzle.g != ASTCENC_SWZ_G) ||
 	                 (swizzle.b != ASTCENC_SWZ_B) || (swizzle.a != ASTCENC_SWZ_A);
 
-	bool needs_hdr = (decode_mode == ASTCENC_PRF_HDR) ||
-	                 (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
+	bool is_hdr = (decode_mode == ASTCENC_PRF_HDR) ||
+	              (decode_mode == ASTCENC_PRF_HDR_RGB_LDR_A);
 
-	bool use_fast_load = !needs_swz && !needs_hdr &&
+	bool use_fast_load = !needs_swz && !is_hdr &&
 	                     block_z == 1 && image.data_type == ASTCENC_TYPE_U8;
 
 	auto load_func = load_image_block;
@@ -980,6 +980,24 @@ static void compress_image(
 			if (use_full_block)
 			{
 				load_func(decode_mode, image, blk, bsd, x * block_x, y * block_y, z * block_z, swizzle);
+
+				if (is_hdr && (ctx.config.flags & ASTCENC_FLG_USE_PERCEPTUAL))
+				{
+					// Approximate display-space error by weighting logarithmic channels by their
+					// geometric brightness
+					vfloat4 mean = blk.data_mean;
+					mean.set_lane<3>(0.0f);
+					vfloat4 geometric_mean = float16_to_float(lns_to_sf16(float_to_int(mean)));
+					float maximum = astc::max(hmax_s(geometric_mean), 1e-20f);
+
+					// Retain at least 1% weight for dim channels
+					vfloat4 weights = max(geometric_mean / maximum, vfloat4(0.01f));
+					weights.set_lane<3>(1.0f);
+					blk.channel_weight = weights * vfloat4(ctx.config.cw_r_weight,
+					                                       ctx.config.cw_g_weight,
+					                                       ctx.config.cw_b_weight,
+					                                       ctx.config.cw_a_weight);
+				}
 
 				// Scale RGB error contribution by the maximum alpha in the block. This encourages
 				// alpha accuracy in regions with high transparency, and can gain up to 0.5 dB.

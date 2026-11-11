@@ -226,7 +226,7 @@ COMPRESSION
         using at least 16/255 as your lower limit.
 
     -perceptual
-        Set this for LDR color textures to optimize for perceptual error
+        Set this for color textures to optimize for perceptual error
         instead of simple root-mean-square error.
 
         This improves perceived image quality in color data, but typically
