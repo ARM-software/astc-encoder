@@ -1032,6 +1032,27 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
+ * @brief Gather integers from a table using vector indices.
+ *
+ * @param base      The source integer table.
+ * @param indices   The table index for each lane.
+ *
+ * @return The selected table entries.
+ */
+ASTCENC_SIMD_INLINE vint4 gatheri(const int32_t* base, vint4 indices)
+{
+#if ASTCENC_SVE == 0
+	alignas(16) int idx[4];
+	storea(indices, idx);
+	return vint4(base[idx[0]], base[idx[1]], base[idx[2]], base[idx[3]]);
+#else
+	svint32_t offsets = svset_neonq_s32(svundef_s32(), indices.m);
+	svint32_t data = svld1_gather_s32index_s32(svptrue_pat_b32(SV_VL4), base, offsets);
+	return vint4(svget_neonq_s32(data));
+#endif
+}
+
+/**
  * @brief Load a vector of gathered results from an array.
  *
  * @param base      The source float table.

@@ -51,138 +51,238 @@ static void merge_endpoints(
 }
 
 /**
- * @brief Attempt to improve weights given a chosen configuration.
+ * @brief Refine undecimated weights for a single-partition block.
  *
- * Given a fixed weight grid decimation and weight value quantization, iterate over all weights (per
- * partition and per plane) and attempt to improve image quality by moving each weight up by one or
- * down by one quantization step.
- *
- * This is a specialized function which only supports operating on undecimated weight grids,
- * therefore primarily improving the performance of 4x4 and 5x5 blocks where grid decimation
- * is needed less often.
+ * Single partition blocks can have one or two weight planes, so we need to process
+ * both scenarios. Specializing these into separate functions has no measurable benefit.
  *
  * @param         decode_mode   The decode mode (LDR, HDR).
  * @param         bsd           The block size information.
  * @param         blk           The image block color data to compress.
- * @param[in,out] scb           The symbolic block whose weights are refined.
+ * @param[in,out] scb           The symbolic block with initialized SIMD weight padding.
+ *
+ * @return True if any weight was adjusted.
  */
-static bool realign_weights_undecimated(
+static bool realign_weights_undecimated_1partition(
 	astcenc_profile decode_mode,
 	const block_size_descriptor& bsd,
 	const image_block& blk,
 	symbolic_compressed_block& scb
 ) {
-	// Get the partition descriptor
-	unsigned int partition_count = scb.partition_count;
-	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
+	assert(scb.partition_count == 1);
 
-	// Get the quantization table
+	// One endpoint pair is shared by all weight planes
 	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
-	unsigned int weight_quant_level = bm.quant_mode;
-	const quant_and_transfer_table& qat = quant_and_xfer_tables[weight_quant_level];
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[bm.quant_mode];
 
-	unsigned int max_plane = bm.is_dual_plane;
-	int plane2_component = scb.plane2_component;
-	vmask4 plane_mask = vint4::lane_id() == vint4(plane2_component);
+	bool is_rgb_hdr;
+	bool is_alpha_hdr;
+	vint4 endpnt0;
+	vint4 endpnt1;
+	unpack_color_endpoints(decode_mode,
+	                       scb.color_formats[0],
+	                       scb.color_values[0],
+	                       is_rgb_hdr, is_alpha_hdr,
+	                       endpnt0, endpnt1);
 
-	// Decode the color endpoints
-	bool rgb_hdr;
-	bool alpha_hdr;
-	vint4 endpnt0[BLOCK_MAX_PARTITIONS];
-	vint4 endpnt1[BLOCK_MAX_PARTITIONS];
-	vfloat4 endpnt0f[BLOCK_MAX_PARTITIONS];
-	vfloat4 offset[BLOCK_MAX_PARTITIONS];
+	vfloat4 color_base = int_to_float(endpnt0);
+	vfloat4 endpoint_delta = int_to_float(endpnt1 - endpnt0) * (1.0f / 64.0f);
 
-	promise(partition_count > 0);
-
-	for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
-	{
-		unpack_color_endpoints(decode_mode,
-		                       scb.color_formats[pa_idx],
-		                       scb.color_values[pa_idx],
-		                       rgb_hdr, alpha_hdr,
-		                       endpnt0[pa_idx],
-		                       endpnt1[pa_idx]);
-	}
+	promise(bsd.texel_count > 0);
 
 	uint8_t* dec_weights_uquant = scb.weights;
-	bool adjustments = false;
+	bool is_adjusted = false;
 	vfloat4 error_weight = blk.channel_weight;
 
-	// For each plane and partition
+	unsigned int max_plane = bm.is_dual_plane;
+	vmask4 plane_mask = vint4::lane_id() == vint4(scb.plane2_component);
+
+	// Refine each plane independently using the shared endpoint base and delta
 	for (unsigned int pl_idx = 0; pl_idx <= max_plane; pl_idx++)
 	{
-		for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
-		{
-			// Compute the endpoint delta for all components in current plane
-			vint4 epd = endpnt1[pa_idx] - endpnt0[pa_idx];
-			epd = select(epd, vint4::zero(), plane_mask);
+		vfloat4 color_offset = select(endpoint_delta, vfloat4::zero(), plane_mask);
 
-			endpnt0f[pa_idx] = int_to_float(endpnt0[pa_idx]);
-			offset[pa_idx] = int_to_float(epd) * (1.0f / 64.0f);
+		vfloat base_r(color_base.lane<0>());
+		vfloat base_g(color_base.lane<1>());
+		vfloat base_b(color_base.lane<2>());
+		vfloat base_a(color_base.lane<3>());
+
+		vfloat offset_r(color_offset.lane<0>());
+		vfloat offset_g(color_offset.lane<1>());
+		vfloat offset_b(color_offset.lane<2>());
+		vfloat offset_a(color_offset.lane<3>());
+
+		vfloat weight_r(error_weight.lane<0>());
+		vfloat weight_g(error_weight.lane<1>());
+		vfloat weight_b(error_weight.lane<2>());
+		vfloat weight_a(error_weight.lane<3>());
+
+		vfloat error_quadratic(dot_s(color_offset * color_offset, error_weight));
+		vmask is_adjusted_batch(false);
+
+		// Color and weight padding allow full SIMD batches for the final texels
+		for (unsigned int texel = 0; texel < bsd.texel_count; texel += ASTCENC_SIMD_WIDTH)
+		{
+			vint uqw(dec_weights_uquant + texel);
+			vfloat uqw_base = int_to_float(uqw);
+
+			// Accumulate channel pairs to limit live vectors and preserve the dot product order
+			vfloat residual_r = (base_r + offset_r * uqw_base) - loada(blk.data_r + texel);
+			vfloat linear_rb = (residual_r * offset_r) * weight_r;
+			vfloat residual_b = (base_b + offset_b * uqw_base) - loada(blk.data_b + texel);
+			linear_rb = linear_rb + (residual_b * offset_b) * weight_b;
+
+			vfloat residual_g = (base_g + offset_g * uqw_base) - loada(blk.data_g + texel);
+			vfloat linear_ga = (residual_g * offset_g) * weight_g;
+			vfloat residual_a = (base_a + offset_a * uqw_base) - loada(blk.data_a + texel);
+			linear_ga = linear_ga + (residual_a * offset_a) * weight_a;
+			vfloat error_linear = linear_rb + linear_ga;
+
+			vint prev_and_next = gatheri(qat.prev_next_values, uqw);
+			vint uqw_down = prev_and_next & vint(0xFF);
+			vint uqw_up = lsr<8>(prev_and_next);
+			vfloat diff_down = int_to_float(uqw_down) - uqw_base;
+			vfloat diff_up = int_to_float(uqw_up) - uqw_base;
+
+			vfloat error_down = vfloat(2.0f) * diff_down * error_linear
+			                  + diff_down * diff_down * error_quadratic;
+			vfloat error_up = vfloat(2.0f) * diff_up * error_linear
+			                + diff_up * diff_up * error_quadratic;
+
+			// Compare float weights to avoid byte-mask conversions
+			// Preserve the scalar branch precedence when the selection masks overlap
+			vmask is_up = (error_up < vfloat::zero()) & (error_up < error_down)
+			            & (uqw_base < vfloat(64.0f));
+
+			vmask is_down = (error_down < vfloat::zero()) & (uqw_base > vfloat::zero());
+
+			vint result = select(uqw, uqw_down, is_down);
+			result = select(result, uqw_up, is_up);
+
+			pack_and_store_low_bytes(result, dec_weights_uquant + texel);
+
+			// Padding changes must not trigger another refinement iteration
+			vmask is_active = (vint(texel) + vint::lane_id()) < vint(bsd.texel_count);
+			is_adjusted_batch = is_adjusted_batch | ((is_up | is_down) & is_active);
 		}
 
-		// For each weight compute the error delta for the previous and next values
-		promise(bsd.texel_count > 0);
-		for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
-		{
-			int uqw = dec_weights_uquant[texel];
-			uint32_t prev_and_next = qat.prev_next_values[uqw];
-
-			float uqw_base = static_cast<float>(uqw);
-			float uqw_down = static_cast<float>(prev_and_next & 0xFF);
-			float uqw_up = static_cast<float>((prev_and_next >> 8) & 0xFF);
-
-			float uqw_diff_down = uqw_down - uqw_base;
-			float uqw_diff_up = uqw_up - uqw_base;
-
-			// Squared error is quadratic in the weight adjustment d:
-			//   E(d) - E(0) = 2 * d * A + d * d * B
-
-			// Interpolate the colors to create the diffs
-			unsigned int partition = pi.partition_of_texel[texel];
-			vfloat4 color_offset = offset[partition];
-			vfloat4 color_base   = endpnt0f[partition];
-
-			vfloat4 color = color_base + color_offset * uqw_base;
-			vfloat4 orig_color = blk.texel(texel);
-
-			// Current color residual before applying either candidate weight adjustment
-			vfloat4 color_diff = color - orig_color;
-
-			// Color change caused by a unit change to this grid weight
-			vfloat4 color_delta = color_offset;
-
-			// Compute coefficients and apply the channel weights
-			float error_linear = dot_s(color_diff * color_delta, error_weight);
-			float error_quadratic = dot_s(color_delta * color_delta, error_weight);
-
-			// Evaluate the polynomial for each candidate
-			// Current weight has d = 0 and therefore an error delta of zero
-			float error_down = 2.0f * uqw_diff_down * error_linear
-			                 + uqw_diff_down * uqw_diff_down * error_quadratic;
-			float error_up = 2.0f * uqw_diff_up * error_linear
-			               + uqw_diff_up * uqw_diff_up * error_quadratic;
-
-			// Check if the prev or next error is better, and if so use it
-			if ((error_up < 0.0f) && (error_up < error_down) && (uqw < 64))
-			{
-				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_up);
-				adjustments = true;
-			}
-			else if ((error_down < 0.0f) && (uqw > 0))
-			{
-				dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_down);
-				adjustments = true;
-			}
-		}
+		is_adjusted |= any(is_adjusted_batch);
 
 		// Prepare iteration for plane 2
 		dec_weights_uquant += WEIGHTS_PLANE2_OFFSET;
 		plane_mask = ~plane_mask;
 	}
 
-	return adjustments;
+	return is_adjusted;
+}
+
+/**
+ * @brief Refine undecimated weights for a multi-partition block.
+ *
+ * Multi-partition blocks are limited to have a single weight plane, which allows some
+ * simplification of this function compared to the single-partition implementation.
+ *
+ * @param         decode_mode   The decode mode (LDR, HDR).
+ * @param         bsd           The block size information.
+ * @param         blk           The image block color data to compress.
+ * @param[in,out] scb           The symbolic block whose weights are refined.
+ *
+ * @return True if any weight was adjusted.
+ */
+static bool realign_weights_undecimated_multipartition(
+	astcenc_profile decode_mode,
+	const block_size_descriptor& bsd,
+	const image_block& blk,
+	symbolic_compressed_block& scb
+) {
+	unsigned int partition_count = scb.partition_count;
+	assert(partition_count > 1);
+	promise(partition_count > 1);
+	const auto& pi = bsd.get_partition_info(partition_count, scb.partition_index);
+
+	const block_mode& bm = bsd.get_block_mode(scb.block_mode);
+	assert(!bm.is_dual_plane);
+	const quant_and_transfer_table& qat = quant_and_xfer_tables[bm.quant_mode];
+
+	// Multipartition blocks use every endpoint component in a single plane
+	bool is_rgb_hdr;
+	bool is_alpha_hdr;
+	vfloat4 endpnt0f[BLOCK_MAX_PARTITIONS];
+	vfloat4 offset[BLOCK_MAX_PARTITIONS];
+	for (unsigned int pa_idx = 0; pa_idx < partition_count; pa_idx++)
+	{
+		vint4 endpnt0;
+		vint4 endpnt1;
+		unpack_color_endpoints(decode_mode,
+		                       scb.color_formats[pa_idx],
+		                       scb.color_values[pa_idx],
+		                       is_rgb_hdr, is_alpha_hdr,
+		                       endpnt0, endpnt1);
+
+		endpnt0f[pa_idx] = int_to_float(endpnt0);
+		offset[pa_idx] = int_to_float(endpnt1 - endpnt0) * (1.0f / 64.0f);
+	}
+
+	uint8_t* dec_weights_uquant = scb.weights;
+	bool is_adjusted = false;
+	vfloat4 error_weight = blk.channel_weight;
+
+	promise(bsd.texel_count > 0);
+
+	for (unsigned int texel = 0; texel < bsd.texel_count; texel++)
+	{
+		int uqw = dec_weights_uquant[texel];
+		uint32_t prev_and_next = qat.prev_next_values[uqw];
+
+		float uqw_base = static_cast<float>(uqw);
+		float uqw_down = static_cast<float>(prev_and_next & 0xFF);
+		float uqw_up = static_cast<float>((prev_and_next >> 8) & 0xFF);
+
+		float uqw_diff_down = uqw_down - uqw_base;
+		float uqw_diff_up = uqw_up - uqw_base;
+
+		// Squared error is quadratic in the weight adjustment d:
+		//   E(d) - E(0) = 2 * d * A + d * d * B
+
+		// Interpolate the colors to create the diffs
+		unsigned int partition = pi.partition_of_texel[texel];
+		vfloat4 color_offset = offset[partition];
+		vfloat4 color_base   = endpnt0f[partition];
+
+		vfloat4 color = color_base + color_offset * uqw_base;
+		vfloat4 orig_color = blk.texel(texel);
+
+		// Current color residual before applying either candidate weight adjustment
+		vfloat4 color_diff = color - orig_color;
+
+		// Color change caused by a unit change to this grid weight
+		vfloat4 color_delta = color_offset;
+
+		// Compute coefficients and apply the channel weights
+		float error_linear = dot_s(color_diff * color_delta, error_weight);
+		float error_quadratic = dot_s(color_delta * color_delta, error_weight);
+
+		// Evaluate the polynomial for each candidate
+		// Current weight has d = 0 and therefore an error delta of zero
+		float error_down = 2.0f * uqw_diff_down * error_linear
+		                 + uqw_diff_down * uqw_diff_down * error_quadratic;
+		float error_up = 2.0f * uqw_diff_up * error_linear
+		               + uqw_diff_up * uqw_diff_up * error_quadratic;
+
+		// Check if the prev or next error is better, and if so use it
+		if ((error_up < 0.0f) && (error_up < error_down) && (uqw < 64))
+		{
+			dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_up);
+			is_adjusted = true;
+		}
+		else if ((error_down < 0.0f) && (uqw > 0))
+		{
+			dec_weights_uquant[texel] = static_cast<uint8_t>(uqw_down);
+			is_adjusted = true;
+		}
+	}
+
+	return is_adjusted;
 }
 
 /**
@@ -206,7 +306,7 @@ static inline float infill_weight(
 }
 
 /**
- * @brief Attempt to improve weights given a chosen configuration.
+ * @brief Refine the weights for the current configuration.
  *
  * Given a fixed weight grid decimation and weight value quantization, iterate over all weights (per
  * partition and per plane) and attempt to improve image quality by moving each weight up by one or
@@ -584,7 +684,9 @@ static float compress_symbolic_block_for_partition_1plane(
 
 		uint8_t* u8_weight_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index;
 
-		for (unsigned int j = 0; j < di.weight_count; j++)
+		// Preserve the quantized SIMD padding for undecimated weight refinement
+		size_t weight_count_simd = round_up_to_simd_multiple_vla(di.weight_count);
+		for (size_t j = 0; j < weight_count_simd; j++)
 		{
 			workscb.weights[j] = u8_weight_src[j];
 		}
@@ -705,8 +807,16 @@ static float compress_symbolic_block_for_partition_1plane(
 			}
 			else
 			{
-				adjustments = realign_weights_undecimated(
-					config.profile, bsd, blk, workscb);
+				if (partition_count == 1)
+				{
+					adjustments = realign_weights_undecimated_1partition(
+						config.profile, bsd, blk, workscb);
+				}
+				else
+				{
+					adjustments = realign_weights_undecimated_multipartition(
+						config.profile, bsd, blk, workscb);
+				}
 			}
 
 			// Post-realign test
@@ -961,7 +1071,9 @@ static float compress_symbolic_block_for_partition_2planes(
 		uint8_t* u8_weight1_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index;
 		uint8_t* u8_weight2_src = dec_weights_uquant + BLOCK_MAX_WEIGHTS * bm_packed_index + WEIGHTS_PLANE2_OFFSET;
 
-		for (int j = 0; j < di.weight_count; j++)
+		// Preserve the quantized SIMD padding for undecimated weight refinement
+		size_t weight_count_simd = round_up_to_simd_multiple_vla(di.weight_count);
+		for (size_t j = 0; j < weight_count_simd; j++)
 		{
 			workscb.weights[j] = u8_weight1_src[j];
 			workscb.weights[j + WEIGHTS_PLANE2_OFFSET] = u8_weight2_src[j];
@@ -1038,7 +1150,7 @@ static float compress_symbolic_block_for_partition_2planes(
 			}
 			else
 			{
-				adjustments = realign_weights_undecimated(
+				adjustments = realign_weights_undecimated_1partition(
 					config.profile, bsd, blk, workscb);
 			}
 

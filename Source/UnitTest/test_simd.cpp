@@ -1964,6 +1964,17 @@ TEST(SuiteVint4, two_to_the_n)
 	// -  Shift by 32 shifts off the end
 }
 
+/** @brief Test vint4 gatheri. */
+TEST(SuiteVint4, gatheri)
+{
+	vint4 indices(0, 4, 3, 2);
+	vint4 r = gatheri(s32_data, indices);
+	EXPECT_EQ(r.lane<0>(), 0);
+	EXPECT_EQ(r.lane<1>(), 4);
+	EXPECT_EQ(r.lane<2>(), 3);
+	EXPECT_EQ(r.lane<3>(), 2);
+}
+
 /** @brief Test vint4 storea. */
 TEST(SuiteVint4, storea)
 {
@@ -3725,20 +3736,23 @@ TEST(SuiteVint8, hmax)
 	EXPECT_EQ(ra[7], 5);
 }
 
-/** @brief Test vint8 storea. */
-TEST(SuiteVint8, storea)
+/** @brief Test vint8 gatheri. */
+TEST(SuiteVint8, gatheri)
 {
-	alignas(32) int out[8];
-	vint8 a(s32_data);
-	storea(a, out);
-	EXPECT_EQ(out[0], 0);
-	EXPECT_EQ(out[1], 1);
-	EXPECT_EQ(out[2], 2);
-	EXPECT_EQ(out[3], 3);
-	EXPECT_EQ(out[4], 4);
-	EXPECT_EQ(out[5], 5);
-	EXPECT_EQ(out[6], 6);
-	EXPECT_EQ(out[7], 7);
+	vint8 indices = vint8_lit(0, 4, 3, 2, 7, 4, 3, 2);
+	vint8 r = gatheri(s32_data, indices);
+
+	alignas(32) int ra[8];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 4);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 2);
+	EXPECT_EQ(ra[4], 7);
+	EXPECT_EQ(ra[5], 4);
+	EXPECT_EQ(ra[6], 3);
+	EXPECT_EQ(ra[7], 2);
 }
 
 /** @brief Test vint8 store. */
@@ -3757,6 +3771,22 @@ TEST(SuiteVint8, store)
 	EXPECT_EQ(ra[6], 5);
 	EXPECT_EQ(ra[7], 6);
 	EXPECT_EQ(ra[8], 7);
+}
+
+/** @brief Test vint8 storea. */
+TEST(SuiteVint8, storea)
+{
+	alignas(32) int out[8];
+	vint8 a(s32_data);
+	storea(a, out);
+	EXPECT_EQ(out[0], 0);
+	EXPECT_EQ(out[1], 1);
+	EXPECT_EQ(out[2], 2);
+	EXPECT_EQ(out[3], 3);
+	EXPECT_EQ(out[4], 4);
+	EXPECT_EQ(out[5], 5);
+	EXPECT_EQ(out[6], 6);
+	EXPECT_EQ(out[7], 7);
 }
 
 /** @brief Test vint8 store_nbytes. */
@@ -4331,6 +4361,30 @@ TEST(SuiteVfloat16, select)
 	EXPECT_EQ(ra[1], 3.0f);
 	EXPECT_EQ(ra[2], 2.0f);
 	EXPECT_EQ(ra[3], 1.0f);
+}
+
+/** @brief Test vint16 gatheri. */
+TEST(SuiteVint16, gatheri)
+{
+	alignas(64) const int s32_data16[16] {
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+	};
+
+	vint16 indices = vint16_lit(0, 4, 3, 2, 7, 15, 8, 1, 9, 10, 11, 12, 13, 14, 6, 5);
+	vint16 r = gatheri(s32_data16, indices);
+
+	alignas(64) int ra[16];
+	storea(r, ra);
+
+	EXPECT_EQ(ra[0], 0);
+	EXPECT_EQ(ra[1], 4);
+	EXPECT_EQ(ra[2], 3);
+	EXPECT_EQ(ra[3], 2);
+	EXPECT_EQ(ra[4], 7);
+	EXPECT_EQ(ra[5], 15);
+	EXPECT_EQ(ra[6], 8);
+	EXPECT_EQ(ra[7], 1);
+	EXPECT_EQ(ra[15], 5);
 }
 
 /** @brief Test vint16 table permute. */

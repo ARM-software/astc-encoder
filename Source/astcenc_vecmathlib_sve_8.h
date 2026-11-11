@@ -1023,6 +1023,19 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat8& accum, vfloat8 a, vmask8 m)
 }
 
 /**
+ * @brief Gather integers from a table using vector indices.
+ *
+ * @param base      The source integer table.
+ * @param indices   The table index for each lane.
+ *
+ * @return The selected table entries.
+ */
+ASTCENC_SIMD_INLINE vint8 gatheri(const int32_t* base, vint8 indices)
+{
+	return vint8(svld1_gather_s32index_s32(svptrue_b32(), base, indices.m));
+}
+
+/**
  * @brief Load a vector of gathered results from an array.
  *
  * @param base      The source float table.
