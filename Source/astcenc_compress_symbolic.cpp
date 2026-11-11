@@ -51,9 +51,10 @@ static void merge_endpoints(
 }
 
 /**
- * @brief Attempt to improve undecimated weights for a single-partition block.
+ * @brief Refine undecimated weights for a single-partition block.
  *
- * Supports one or two weight planes, processing independent texels in SIMD batches.
+ * Single partition blocks can have one or two weight planes, so we need to process
+ * both scenarios. Specializing these into separate functions has no measurable benefit.
  *
  * @param         decode_mode   The decode mode (LDR, HDR).
  * @param         bsd           The block size information.
@@ -176,9 +177,10 @@ static bool realign_weights_undecimated_1partition(
 }
 
 /**
- * @brief Attempt to improve undecimated weights for a multipartition block.
+ * @brief Refine undecimated weights for a multi-partition block.
  *
- * Multipartition blocks have a single weight plane.
+ * Multi-partition blocks are limited to have a single weight plane, which allows some
+ * simplification of this function compared to the single-partition implementation.
  *
  * @param         decode_mode   The decode mode (LDR, HDR).
  * @param         bsd           The block size information.
@@ -304,7 +306,7 @@ static inline float infill_weight(
 }
 
 /**
- * @brief Attempt to improve weights given a chosen configuration.
+ * @brief Refine the weights for the current configuration.
  *
  * Given a fixed weight grid decimation and weight value quantization, iterate over all weights (per
  * partition and per plane) and attempt to improve image quality by moving each weight up by one or
