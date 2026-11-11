@@ -1127,6 +1127,27 @@ ASTCENC_SIMD_INLINE void haccumulate(vfloat& accum, vfloat a, vmask m)
 }
 
 /**
+ * @brief Gather integers from a table using vector indices.
+ *
+ * @param base      The source integer table.
+ * @param indices   The table index for each lane.
+ *
+ * @return The selected table entries.
+ */
+ASTCENC_SIMD_INLINE vint gatheri(const int32_t* base, vint indices)
+{
+	ASTCENC_ALIGNAS int index_values[ASTCENC_SIMD_WIDTH];
+	ASTCENC_ALIGNAS int result[ASTCENC_SIMD_WIDTH];
+	storea(indices, index_values);
+	for (unsigned int lane = 0; lane < ASTCENC_SIMD_WIDTH; lane++)
+	{
+		result[lane] = base[index_values[lane]];
+	}
+
+	return vint::loada(result);
+}
+
+/**
  * @brief Load a vector of gathered results from an array.
  *
  * @param base      The source float table.

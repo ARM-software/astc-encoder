@@ -1163,6 +1163,19 @@ ASTCENC_SIMD_INLINE __mmask16 vbmi_load_mask(unsigned int count, unsigned int of
 }
 
 /**
+ * @brief Gather integers from a table using vector indices.
+ *
+ * @param base      The source integer table.
+ * @param indices   The table index for each lane.
+ *
+ * @return The selected table entries.
+ */
+ASTCENC_SIMD_INLINE vint16 gatheri(const int32_t* base, vint16 indices)
+{
+	return vint16(_mm512_i32gather_epi32(indices.m, base, 4));
+}
+
+/**
  * @brief Load a vector of gathered results from an array using scalar loads.
  *
  * @param base      The source float table.

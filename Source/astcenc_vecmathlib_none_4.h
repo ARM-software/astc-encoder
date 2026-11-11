@@ -1141,6 +1141,22 @@ ASTCENC_SIMD_INLINE vfloat4 select(vfloat4 a, vfloat4 b, vmask4 cond)
 }
 
 /**
+ * @brief Gather integers from a table using vector indices.
+ *
+ * @param base      The source integer table.
+ * @param indices   The table index for each lane.
+ *
+ * @return The selected table entries.
+ */
+ASTCENC_SIMD_INLINE vint4 gatheri(const int32_t* base, vint4 indices)
+{
+	return vint4(base[indices.m[0]],
+	             base[indices.m[1]],
+	             base[indices.m[2]],
+	             base[indices.m[3]]);
+}
+
+/**
  * @brief Load a vector of gathered results from an array.
  *
  * @param base      The source float table.

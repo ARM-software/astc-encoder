@@ -91,6 +91,34 @@ static vint8 vint8_lit(
 
 #endif
 
+/** @brief Gather signed integers, including the final entry of a 65-entry table. */
+TEST(SuiteVint, gather_integer_entries)
+{
+	int32_t values[65];
+	for (unsigned int i = 0; i < 65; i++)
+	{
+		values[i] = static_cast<int32_t>(i) * 12345 - 100000;
+	}
+
+	for (unsigned int start = 0; start < 65; start += ASTCENC_SIMD_WIDTH)
+	{
+		ASTCENC_ALIGNAS int indices[ASTCENC_SIMD_WIDTH];
+		for (unsigned int lane = 0; lane < ASTCENC_SIMD_WIDTH; lane++)
+		{
+			indices[lane] = static_cast<int>((start + lane) % 65);
+		}
+
+		vint result = gatheri(values, vint::loada(indices));
+		ASTCENC_ALIGNAS int output[ASTCENC_SIMD_WIDTH];
+		storea(result, output);
+		for (unsigned int lane = 0; lane < ASTCENC_SIMD_WIDTH; lane++)
+		{
+			int expected = values[indices[lane]];
+			EXPECT_EQ(output[lane], expected);
+		}
+	}
+}
+
 /** @brief Pack four-lane float groups in order at every VLA width. */
 TEST(SuiteVfloat, pack_quads)
 {
