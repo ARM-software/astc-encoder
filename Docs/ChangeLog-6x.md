@@ -96,6 +96,9 @@ header from the same release to avoid compatibility issues.
 * **Command line tool updates:**
   * **Feature:** Report SSIM for LDR images and exposure-averaged mSSIM for
     HDR images in test mode. HDR exposures follow the `-mpsnr` range.
+  * **Change:** Automatically center HDR image quality metric exposures on the
+    original image's geometric mean luminance, covering two stops either side.
+    An explicit `-mpsnr` range overrides automatic exposure selection.
   * **Feature:** Add crop region support for compression. Crop regions are
     extracted using image coordinate space before flipping or preprocessing.
 * **Build system updates:**

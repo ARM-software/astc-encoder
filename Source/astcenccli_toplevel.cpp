@@ -1505,6 +1505,7 @@ static bool edit_astcenc_config(
 
 			cli_config.low_fstop = low_fstop;
 			cli_config.high_fstop = high_fstop;
+			cli_config.is_hdr_fstop_auto = false;
 
 			if (cli_config.high_fstop < cli_config.low_fstop)
 			{
@@ -2457,8 +2458,9 @@ int astcenc_main(
 #if defined(ASTCENC_DIAGNOSTICS)
 		.diagnostic_images = false,
 #endif
-		.low_fstop = -10,
-		.high_fstop = 10,
+		.is_hdr_fstop_auto = true,
+		.low_fstop = -2,
+		.high_fstop = 2,
 		.swz_encode = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		.swz_decode = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A },
 		.crop_origin = { 0, 0, 0 },
@@ -2822,7 +2824,8 @@ int astcenc_main(
 		bool is_normal_map = config.flags & ASTCENC_FLG_MAP_NORMAL;
 
 		compute_error_metrics(
-		    image_uncomp_in_is_hdr, is_normal_map, image_uncomp_in_component_count,
+		    image_uncomp_in_is_hdr, cli_config.is_hdr_fstop_auto, is_normal_map,
+		    image_uncomp_in_component_count,
 		    image_uncomp_in, image_decomp_out.get(),
 		    cli_config.low_fstop, cli_config.high_fstop);
 	}
